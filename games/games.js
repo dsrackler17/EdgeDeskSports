@@ -108,7 +108,10 @@
     /* injuries, the bowl and trades (Phase 7): a game that cost somebody, a
        bowl earned and played, and the four moves on the trade floor */
     'injury_recorded', 'bowl_earned', 'bowl_played', 'trade_floor_view',
-    'trade_offer', 'trade_accept', 'trade_decline', 'trade_withdraw'];
+    'trade_offer', 'trade_accept', 'trade_decline', 'trade_withdraw',
+    /* the coaching staff (Phase 8): the building seen, a coach hired,
+       levelled and let go */
+    'staff_view', 'staff_hire', 'staff_promote', 'staff_fire'];
 
   var _level = null;
   function track(event, props) {
@@ -347,7 +350,9 @@
        games; this is the franchise one. */
     { key: 'conference', href: '/games/conference/',     label: 'Conference',   cls: 'gh-only-wider' },
     /* the trade floor: players change hands inside a conference (Phase 7) */
-    { key: 'trades',   href: '/games/trades/',           label: 'Trades',       cls: 'gh-only-wider' }
+    { key: 'trades',   href: '/games/trades/',           label: 'Trades',       cls: 'gh-only-wider' },
+    /* the coaching staff: where Coach Points go, for a thousand levels (Phase 8) */
+    { key: 'staff',    href: '/games/staff/',            label: 'Staff',        cls: 'gh-only-wider' }
   ];
   function header(current) {
     var nav = ROOMS.map(function (r) {
@@ -406,6 +411,7 @@
       + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
       + '<a href="/games/trophies/">Trophy Room</a><a href="/games/market/">Draft &amp; Market</a>'
       + '<a href="/games/conference/">Conference</a><a href="/games/trades/">Trades</a>'
+      + '<a href="/games/staff/">Staff</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'

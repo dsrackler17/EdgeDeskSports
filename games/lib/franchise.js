@@ -238,7 +238,12 @@
     bowl_bid:       { name: 'Bowl Bid' },
     bowl_win:       { name: 'Bowl Winner' },
     trade_first:    { name: 'The Deal' },
-    next_man_up:    { name: 'Next Man Up' }
+    next_man_up:    { name: 'Next Man Up' },
+    staff_first:    { name: 'A Staff' },
+    staff_full:     { name: 'Full Building' },
+    staff_100:      { name: 'Coordinator' },
+    staff_250:      { name: 'Veteran Staff' },
+    staff_1000:     { name: 'Hall of Fame' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -809,6 +814,85 @@
     return out + ' out, ' + ins + ' in';
   }
 
+  /* ── THE COACHING STAFF (Phase 8) ───────────────────────────────────────
+     Where Coach Points go, forever. Two curves and nothing else:
+
+       cost(L → L+1) = 1 + floor((L − 1) / 10)      a CP, +1 every ten levels
+       effect(L)     = cap × ln(L) / ln(1000)       a tenfold is another third
+
+     Both are restated here for display — what a level will cost before it is
+     bought, what a coach is worth — and pinned to the SQL by
+     tools/games/franchise.test.js. The server hires, levels and scores. */
+  var STAFF_VERSION = 'staff_v1';
+  var STAFF = {
+    max_level: 1000, hire_cost: 12, cost_base: 1, cost_step: 10,
+    specialty_every: 25, specialty_max: 10, promote_max: 100,
+    seats: [
+      { key: 'head',    name: 'Head Coach',             means: 'Steadies the fourth quarter and overtime', cap: 2.5, sort: 1 },
+      { key: 'offense', name: 'Offensive Coordinator',  means: 'Adds to the offense in every game', cap: 3.0, sort: 2 },
+      { key: 'defense', name: 'Defensive Coordinator',  means: 'Adds to the defense in every game', cap: 3.0, sort: 3 },
+      { key: 'trainer', name: 'Head Trainer',           means: 'Cuts the chance a game costs somebody, and grows the young faster', cap: 1.0, sort: 4 }
+    ],
+    grades: [
+      { at: 1, name: 'Rookie' }, { at: 25, name: 'Assistant' }, { at: 100, name: 'Coordinator' },
+      { at: 250, name: 'Veteran' }, { at: 500, name: 'Legend' }, { at: 1000, name: 'Hall of Fame' }
+    ]
+  };
+  /* what the next level costs */
+  function staffCost(level) {
+    var L = Math.max(1, Math.min(STAFF.max_level, level | 0));
+    return STAFF.cost_base + Math.floor((L - 1) / STAFF.cost_step);
+  }
+  /* what the whole climb from one level to another costs */
+  function staffCostBetween(from, to) {
+    var a = Math.max(1, from | 0), b = Math.min(STAFF.max_level, to | 0), n = 0, L;
+    for (L = a; L < b; L++) n += staffCost(L);
+    return n;
+  }
+  /* how many levels a purse buys from here, and what they cost */
+  function staffAfford(level, cp) {
+    var L = Math.max(1, level | 0), left = Math.max(0, cp | 0), n = 0, spent = 0, step;
+    while (L + n < STAFF.max_level && n < STAFF.promote_max) {
+      step = staffCost(L + n);
+      if (spent + step > left) break;
+      spent += step; n++;
+    }
+    return { levels: n, cost: spent };
+  }
+  /* what a level is worth: every tenfold is another third of the cap */
+  function staffEffect(level, cap) {
+    var L = Math.max(1, Math.min(STAFF.max_level, level | 0));
+    return Math.round((+cap || 0) * Math.log(L) / Math.log(STAFF.max_level) * 1000) / 1000;
+  }
+  function staffGrade(level) {
+    var L = Math.max(1, level | 0), out = STAFF.grades[0].name;
+    STAFF.grades.forEach(function (g) { if (g.at <= L) out = g.name; });
+    return out;
+  }
+  function staffSpecialtyCount(level) {
+    return Math.min(STAFF.specialty_max, Math.floor(Math.max(1, level | 0) / STAFF.specialty_every));
+  }
+  function staffSeat(key) {
+    var out = null;
+    STAFF.seats.forEach(function (s) { if (s.key === key) out = s; });
+    return out;
+  }
+  /* "Coordinator · level 137 of 1000 · +2.1 offense" */
+  function staffLine(seat) {
+    seat = obj(seat);
+    if (!seat.filled) return 'Empty · ' + STAFF.hire_cost + ' CP to hire';
+    var s = staffSeat(seat.seat) || {};
+    return (seat.grade || staffGrade(seat.level)) + ' · level ' + (seat.level | 0) + ' of ' + STAFF.max_level
+      + (seat.effect ? ' · +' + seat.effect + (s.key === 'trainer' ? '' : ' ' + (s.key === 'defense' ? 'defense' : s.key === 'offense' ? 'offense' : 'late game')) : '');
+  }
+  /* how far into the thousand a level is, for a bar that is honest about a
+     long climb: the COST spent, not the level, because the level is not linear */
+  function staffProgress(level) {
+    var spent = staffCostBetween(1, Math.max(1, level | 0));
+    return { spent: spent, total: staffCostBetween(1, STAFF.max_level),
+      pct: Math.max(0, Math.min(100, Math.round(1000 * spent / staffCostBetween(1, STAFF.max_level)) / 10)) };
+  }
+
   /* the title, as text */
   function titleShareText(t, me) {
     t = obj(t);
@@ -1078,6 +1162,18 @@
   }
   function tradeWithdraw(id) { return rpc('franchise_trade_withdraw', withSecret({ p_trade: String(id || '') })); }
 
+  /* THE COACHING STAFF (Phase 8). One read for the building; hire, promote
+     and fire each send a seat and the identity and nothing else. Never
+     queued — spending Coach Points must see its answer. */
+  function staff() { return rpc('franchise_staff_board', withSecret({})); }
+  function staffHire(seat) {
+    return rpc('franchise_staff_hire', withSecret({ p_seat: String(seat || '') })).then(moveThen);
+  }
+  function staffPromote(seat, levels) {
+    return rpc('franchise_staff_promote', withSecret({ p_seat: String(seat || ''), p_levels: levels | 0 })).then(moveThen);
+  }
+  function staffFire(seat) { return rpc('franchise_staff_fire', withSecret({ p_seat: String(seat || '') })); }
+
   /* THE DRAFT AND THE MARKET (Phase 5). The board is one read; a report, a
      pick, a signing and a release each send a player id and the identity
      and nothing else — the server prices, hides, reveals, counts the picks
@@ -1230,6 +1326,11 @@
     TRADE_VERSION: TRADE_VERSION, TRADE: TRADE, tradeSummary: tradeSummary,
     tradePartners: tradePartners, tradesMine: tradesMine, tradeOffer: tradeOffer,
     tradeRespond: tradeRespond, tradeWithdraw: tradeWithdraw,
+    STAFF_VERSION: STAFF_VERSION, STAFF: STAFF, staffCost: staffCost, staffCostBetween: staffCostBetween,
+    staffAfford: staffAfford, staffEffect: staffEffect, staffGrade: staffGrade,
+    staffSpecialtyCount: staffSpecialtyCount, staffSeat: staffSeat, staffLine: staffLine,
+    staffProgress: staffProgress,
+    staff: staff, staffHire: staffHire, staffPromote: staffPromote, staffFire: staffFire,
     conference: conference, conferenceCreate: conferenceCreate, conferencePeek: conferencePeek,
     conferenceJoin: conferenceJoin, conferenceLeave: conferenceLeave, conferenceStart: conferenceStart,
     conferenceAdvance: conferenceAdvance, conferenceGame: conferenceGame,

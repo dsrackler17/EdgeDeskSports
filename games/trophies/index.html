@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906b">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906b">
+<link rel="stylesheet" href="/games/games.css?v=20260906d">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906d">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906b"></script>
-<script src="/games/lib/scoring.js?v=20260906b"></script>
-<script src="/games/lib/challenge.js?v=20260906b"></script>
-<script src="/games/lib/research_state.js?v=20260906b"></script>
-<script src="/games/lib/attribution.js?v=20260906b"></script>
-<script src="/games/lib/store.js?v=20260906b"></script>
-<script src="/games/lib/dynasty.js?v=20260906b"></script>
-<script src="/games/lib/social.js?v=20260906b"></script>
-<script src="/games/lib/auth.js?v=20260906b"></script>
-<script src="/games/lib/franchise.js?v=20260906b"></script>
-<script src="/games/games.js?v=20260906b"></script>
+<script src="/games/lib/week.js?v=20260906d"></script>
+<script src="/games/lib/scoring.js?v=20260906d"></script>
+<script src="/games/lib/challenge.js?v=20260906d"></script>
+<script src="/games/lib/research_state.js?v=20260906d"></script>
+<script src="/games/lib/attribution.js?v=20260906d"></script>
+<script src="/games/lib/store.js?v=20260906d"></script>
+<script src="/games/lib/dynasty.js?v=20260906d"></script>
+<script src="/games/lib/social.js?v=20260906d"></script>
+<script src="/games/lib/auth.js?v=20260906d"></script>
+<script src="/games/lib/franchise.js?v=20260906d"></script>
+<script src="/games/games.js?v=20260906d"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -230,6 +230,22 @@
           }).join('')+'</ul>'
         +'<div class="ftp" style="margin-top:10px">A season with more wins than losses earns a ninth game against a club rated above you. '
         +'It counts in the record like any other.</div></div></div>':'')
+      +(function(){
+          /* THE BUILDING. A staff is the most permanent thing a franchise
+             has — nothing takes a coach away — so it belongs on this wall
+             next to the seasons and the rings. */
+          var sb=t.staff||null,seats=(sb&&sb.seats)||[],filled=seats.filter(function(x){return x.filled;});
+          if(!filled.length)return '';
+          return '<div class="sec"><div class="sec-h"><h2>The building</h2><span class="m">'+filled.length+' of '+seats.length+'</span></div>'
+            +'<div class="card"><ul class="mk-hist">'+filled.map(function(x){
+                return '<li><span class="k">'+esc(x.grade||'')+'</span><span class="o"><b>'+esc(x.coach||'')+'</b>'
+                  +'<small>'+esc(x.name||'')+' · level '+esc(x.level)+' of '+esc(x.max_level)
+                  +(x.specialties&&x.specialties.length?' · '+esc(x.specialties.length)+' specialt'+(x.specialties.length===1?'y':'ies'):'')+'</small></span>'
+                  +'<span class="r">+'+esc(x.effect)+'</span></li>';
+              }).join('')+'</ul>'
+            +'<div class="ftp" style="margin-top:10px">Coach Points hire and level them, and nothing else takes them away. '
+            +'<a href="/games/staff/">The building</a>.</div></div></div>';
+        })()
       +'<div class="sec"><div class="sec-h"><h2>The wall</h2><span class="m">'+earned+' of '+ach.length+'</span></div><div class="card">'
       +achievementsBlock(ach)
       +'<div class="ftp" style="margin-top:10px">Every achievement is read from your record on the server. Nothing here is granted, and nothing can be bought.</div></div></div>'

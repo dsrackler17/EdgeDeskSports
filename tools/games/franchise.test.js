@@ -92,6 +92,7 @@ const TROPHIES = fs.readFileSync(G('trophies/index.html'), 'utf8');
 const MARKET = fs.readFileSync(G('market/index.html'), 'utf8');
 const CONF = fs.readFileSync(G('conference/index.html'), 'utf8');
 const TRADES = fs.readFileSync(G('trades/index.html'), 'utf8');
+const STAFF = fs.readFileSync(G('staff/index.html'), 'utf8');
 const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
 const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -1397,6 +1398,157 @@ fresh();
   has(README, 'bowl_v1', 'and the bowl');
   has(README, 'trade_v1', 'and trades');
   has(README, 'legality, not fairness', 'and what the server checks about a deal');
+
+  /* ═══ 17. THE COACHING STAFF (PHASE 8) ═══════════════════════════════════ */
+  eq('the staff is staff_v1 on both sides', F.STAFF_VERSION, 'staff_v1');
+  has(SQL, "'version', 'staff_v1'", 'the SQL publishes the version');
+  chk('a thousand levels, twelve to hire, and the SQL\'s numbers throughout',
+    F.STAFF.max_level === 1000 && F.STAFF.hire_cost === 12 && F.STAFF.cost_base === 1 && F.STAFF.cost_step === 10
+    && F.STAFF.specialty_every === 25 && F.STAFF.specialty_max === 10 && F.STAFF.promote_max === 100
+    && /'max_level', 1000,\s*\n\s*'hire_cost', 12,/.test(SQL)
+    && /'specialty_every', 25,\s*\n\s*'specialty_max', 10,/.test(SQL));
+  chk('the four seats and their caps are the SQL\'s',
+    F.STAFF.seats.length === 4
+    && F.STAFF.seats.every(s => new RegExp("'key', '" + s.key + "',[\\s\\S]{0,200}?'cap', " + s.cap.toFixed(1)).test(SQL))
+    && F.staffSeat('offense').cap === 3.0 && F.staffSeat('trainer').cap === 1.0);
+  chk('the grades are the SQL\'s ladder',
+    F.STAFF.grades.length === 6
+    && F.STAFF.grades.every(g => new RegExp("'at', " + g.at + ",\\s+'name', '" + g.name + "'").test(SQL)));
+  /* THE COST CURVE — the same arithmetic on both sides, level for level */
+  chk('the next level costs a Coach Point, and a Point more every ten levels',
+    F.staffCost(1) === 1 && F.staffCost(10) === 1 && F.staffCost(11) === 2
+    && F.staffCost(100) === 10 && F.staffCost(1000) === 100);
+  chk('the climb is priced the same on both sides: nine, 540, and 50,400 for the thousand',
+    F.staffCostBetween(1, 10) === 9 && F.staffCostBetween(1, 100) === 540
+    && F.staffCostBetween(1, 1000) === 50400 && F.staffCostBetween(1, 1) === 0
+    && /public\.franchise_staff_cost_between\(1, 1000\) = 50400/.test(SQL));
+  chk('the cost never falls as the level rises', (() => {
+    for (let L = 1; L < 1000; L++) if (F.staffCost(L) > F.staffCost(L + 1)) return false;
+    return true;
+  })());
+  /* THE EFFECT CURVE — every tenfold is another third of the cap */
+  chk('a level-one coach adds nothing and a level-thousand coach adds the cap',
+    F.staffEffect(1, 3.0) === 0 && F.staffEffect(1000, 3.0) === 3.0);
+  chk('every tenfold in level is another third of the cap',
+    Math.abs(F.staffEffect(10, 3.0) - 1.0) < 0.01 && Math.abs(F.staffEffect(100, 3.0) - 2.0) < 0.01,
+    F.staffEffect(10, 3.0) + ' / ' + F.staffEffect(100, 3.0));
+  chk('the curve never falls and never passes the cap', (() => {
+    for (let L = 1; L < 1000; L++) {
+      if (F.staffEffect(L, 3.0) > F.staffEffect(L + 1, 3.0)) return false;
+      if (F.staffEffect(L, 3.0) > 3.0) return false;
+    }
+    return true;
+  })());
+  chk('the client and the SQL agree on the formula, not just on its ends',
+    /round\(\(coalesce\(p_cap, 0\) \* ln\(greatest\(1, least\(coalesce\(p_level, 1\), 1000\)\)\) \/ ln\(1000\)\)::numeric, 3\)/.test(SQL)
+    && /Math\.log\(L\) \/ Math\.log\(STAFF\.max_level\)/.test(FJS));
+  /* what a purse buys, and the names a level carries */
+  (() => {
+    const a = F.staffAfford(1, 30), b = F.staffAfford(1, 0), c = F.staffAfford(1000, 9999);
+    chk('a purse buys as many levels as it can pay the rising price for, and never more than a call may',
+      a.levels === 20 && a.cost === 30 && b.levels === 0 && b.cost === 0 && c.levels === 0
+      && F.staffAfford(1, 999999).levels === F.STAFF.promote_max,
+      JSON.stringify([a, b, c]));
+  })();
+  chk('a level carries a name, and a thousand carries the last one',
+    F.staffGrade(1) === 'Rookie' && F.staffGrade(24) === 'Rookie' && F.staffGrade(25) === 'Assistant'
+    && F.staffGrade(100) === 'Coordinator' && F.staffGrade(250) === 'Veteran'
+    && F.staffGrade(500) === 'Legend' && F.staffGrade(1000) === 'Hall of Fame');
+  chk('a specialty every twenty-five levels, ten at most',
+    F.staffSpecialtyCount(1) === 0 && F.staffSpecialtyCount(25) === 1
+    && F.staffSpecialtyCount(100) === 4 && F.staffSpecialtyCount(250) === 10 && F.staffSpecialtyCount(1000) === 10);
+  eq('an empty seat says what it costs to fill', F.staffLine({ filled: false }), 'Empty · 12 CP to hire');
+  eq('a filled one says the grade, the level and the worth',
+    F.staffLine({ filled: true, seat: 'offense', level: 137, grade: 'Coordinator', effect: 2.13 }),
+    'Coordinator · level 137 of 1000 · +2.13 offense');
+  (() => {
+    const p = F.staffProgress(100);
+    chk('progress toward the thousand is measured in Coach Points spent, and says how small a hundred is',
+      p.spent === 540 && p.total === 50400 && p.pct < 2, JSON.stringify(p));
+  })();
+  ['staff_first', 'staff_full', 'staff_100', 'staff_250', 'staff_1000'].forEach(id => {
+    const m = new RegExp("\\('" + id + "',\\s+'([^']+)',").exec(SQL);
+    chk('the SQL seeds ' + id + ' and the client names it the same', m && F.ACHIEVEMENTS[id] && F.ACHIEVEMENTS[id].name === m[1], m && m[1]);
+  });
+  /* the client asks; the server hires, levels and scores */
+  has(FJS, "rpc('franchise_staff_board', withSecret({}))", 'the building is one read');
+  has(FJS, "rpc('franchise_staff_hire', withSecret({ p_seat: String(seat || '') }))", 'a hire sends a seat and the identity');
+  has(FJS, "rpc('franchise_staff_promote', withSecret({ p_seat: String(seat || ''), p_levels: levels | 0 }))", 'a promotion sends a seat and a number of levels');
+  has(FJS, "rpc('franchise_staff_fire', withSecret({ p_seat: String(seat || '') }))", 'a firing sends a seat');
+  chk('no staff call is ever queued', !/record\('franchise_staff/.test(FJS));
+  chk('the client never generates a coach or decides what he is worth to a game',
+    !/first_name:\s*'/.test(STAFF) && !/Math\.random/.test(STAFF));
+  /* the page */
+  has(STAFF, 'FR.staff()', 'the staff page reads the building through the server');
+  has(STAFF, 'FR.staffHire(seat)', 'and hires through it');
+  has(STAFF, 'FR.staffPromote(s2,n)', 'and promotes through it');
+  has(STAFF, 'FR.staffFire(seat3)', 'and fires through it');
+  ['staff_view', 'staff_hire', 'staff_promote', 'staff_fire']
+    .forEach(e => chk('the staff page fires ' + e, new RegExp("track\\('" + e + "'").test(STAFF)));
+  has(STAFF, 'Every tenfold in level is another third', 'the page states the effect curve it is asking you to climb');
+  has(STAFF, 'so the climb is slow on purpose', 'and is honest that the climb is slow');
+  has(STAFF, 'a horizon, not a plan', 'and that the thousand is a horizon');
+  has(STAFF, 'the level goes with him', 'firing warns that the level goes too');
+  has(STAFF, 'cannot be bought', 'and the page says Coach Points are earned, never bought');
+  has(STAFF, 'Found my franchise', 'a visitor without a franchise is shown the door');
+  has(STAFF, 'STALE SCRIPT GUARD', 'and the page guards against a stale cached library');
+  chk('the seat bar goes to the next milestone, not to a thousand',
+    /next_milestone/.test(STAFF) && /NEXT MILESTONE, never to a/.test(FCSS));
+  chk('the staff page invents no level, no coach and no effect',
+    !/level:\s*\d/.test(STAFF) && !/effect:\s*\d/.test(STAFF));
+  /* the rest of the facility */
+  chk('the staff is a room of the facility',
+    require(G('games.js')).ROOMS.some(r => r.key === 'staff' && r.href === '/games/staff/')
+    && /href="\/games\/staff\/">Staff<\/a>/.test(JS));
+  ['staff_view', 'staff_hire', 'staff_promote', 'staff_fire']
+    .forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
+  has(HOME, "'Staff: '", 'the HQ makes an empty seat or idle Coach Points the day\'s objective');
+  has(HOME, 'data-cta="hq-staff"', 'and has a door to the building');
+  has(HOME, 'var sfb=snap.staff||null;', 'reading the staff off the home snapshot');
+  has(HOME, "' · staff <b>'", 'and the calendar line carries it');
+  has(TROPHIES, '<h2>The building</h2>', 'the Trophy Room carries the building, which is the most permanent thing a franchise has');
+  has(SITEMAP, 'https://edgedesksports.com/games/staff<', 'the sitemap lists the staff');
+  has(NOTFOUND, "p[1]==='staff'", 'the static host routes it');
+  chk('the asset bumper stamps the staff page',
+    require(path.join(ROOT, 'tools', 'games', 'bump_assets.js')).PAGES.some(p => /staff\/index\.html$/.test(p)));
+  chk('the seat cards stack on a phone and the actions meet the tap minimum',
+    /\.st-grid\{display:grid/.test(FCSS) && /\.st-seat \.pc-actions \.btn\{min-height:var\(--tap\)\}/.test(FCSS));
+  /* the SQL keeps its conventions on the new side */
+  ['franchise_generate_coach(uuid, text, text, integer)', 'franchise_staff_effects(uuid)',
+   'franchise_staff_json(uuid, text)', 'franchise_staff_specialties(text, text, integer)']
+    .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role',
+      SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
+  ['franchise_staff()', 'franchise_staff_cost(integer)', 'franchise_staff_cost_between(integer, integer)',
+   'franchise_staff_effect(integer, numeric)', 'franchise_staff_grade(integer)', 'franchise_staff_board(text)',
+   'franchise_staff_hire(text, text)', 'franchise_staff_promote(text, integer, text)', 'franchise_staff_fire(text, text)']
+    .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+  chk('the report grew to twenty-six rows', /select 26, 'the staff is '/.test(SQL));
+  chk('a coach is read by his owner and nobody else',
+    /create policy franchise_staff_members_own on public\.franchise_staff_members for select\s+using \(public\.franchise_is_mine\(franchise_id\)\)/.test(SQL));
+  chk('the staff reaches the simulator in the units it already reads, on both sides of a versus game',
+    /st := public\.franchise_staff_effects\(p_franchise\);/.test(SQL)
+    && /sta := public\.franchise_staff_effects\(p_a\); stb := public\.franchise_staff_effects\(p_b\);/.test(SQL)
+    && /\(st->>'offense'\)::numeric/.test(SQL) && /\(sta->>'late_offense'\)::numeric/.test(SQL));
+  chk('the trainer reaches the injury draw and the offseason',
+    /v_chance := v_chance \* \(1 - coalesce\(\(public\.franchise_staff_effects\(p_franchise\)->>'injury_resist'\)::numeric, 0\)\);/.test(SQL)
+    && /training := training \+ floor\(coalesce\(\(public\.franchise_staff_effects\(p_franchise\)->>'development'\)::numeric, 0\)\)::int;/.test(SQL));
+  chk('a promotion buys what it can afford rather than refusing the lot, and never overspends',
+    /exit when spent \+ step > f\.coach_points;/.test(SQL) && /'short', gained < want,/.test(SQL));
+  /* the claim is about the CODE, not the prose: the only thing that removes
+     a coach is the fire function, and nothing schedules or expires one */
+  chk('nothing takes a coach away but his owner: the only delete is the one he asks for',
+    (SQL.match(/delete from public\.franchise_staff_members/g) || []).length === 1
+    && /create or replace function public\.franchise_staff_fire[\s\S]*?delete from public\.franchise_staff_members/.test(SQL)
+    && !/franchise_staff_members[^;]*set level = 1\b/.test(SQL));
+  chk('the SQL suite proves both curves level by level, not just at their ends',
+    /21\. THE COACHING STAFF/.test(SQLTEST)
+    && /the sum of the steps is the price of the climb/.test(SQLTEST)
+    && /the curve never falls, and never passes the cap/.test(SQLTEST)
+    && /the man who replaces him starts at one/.test(SQLTEST));
+  has(README, 'staff_v1', 'the README documents the staff');
+  has(README, 'Every tenfold in level is another third of the\ncap', 'and the effect curve');
+  has(README, 'a horizon rather than a plan', 'and is honest about the thousand');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

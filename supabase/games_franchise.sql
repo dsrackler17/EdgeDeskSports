@@ -1995,7 +1995,7 @@ $$;
 create or replace function public.franchise_sim(p_franchise uuid, p_game uuid)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare
-  f public.franchises%rowtype; g public.franchise_games%rowtype; rt jsonb; opp jsonb; prep jsonb; tr jsonb; ps jsonb;
+  f public.franchises%rowtype; g public.franchise_games%rowtype; rt jsonb; opp jsonb; prep jsonb; tr jsonb; ps jsonb; st jsonb;
   my_off numeric; my_def numeric; my_st numeric; op_off numeric; op_def numeric; op_st numeric;
   h_me numeric; h_op numeric; prep_pts numeric; prep_adj numeric; sch_me numeric; sch_op numeric;
   a_off numeric; a_def numeric; b_off numeric; b_def numeric; late_off numeric; late_def numeric;
@@ -2038,11 +2038,14 @@ begin
   prep_adj := round((prep_pts - 50) / 50.0 * 3, 2);
   sch_me := public.franchise_scheme_edge(f.offense, opp->>'defense');
   sch_op := public.franchise_scheme_edge(opp->>'offense', f.defense);
-  a_off := my_off + h_me + prep_adj + sch_me + film + 0.25 * (tr->>'offense')::numeric;
-  a_def := my_def + h_me + prep_adj + film + 0.25 * (tr->>'defense')::numeric;
+  -- the coaching staff (Phase 8), in the same units everything else here is
+  st := public.franchise_staff_effects(p_franchise);
+  a_off := my_off + h_me + prep_adj + sch_me + film + 0.25 * (tr->>'offense')::numeric + (st->>'offense')::numeric;
+  a_def := my_def + h_me + prep_adj + film + 0.25 * (tr->>'defense')::numeric + (st->>'defense')::numeric;
   b_off := op_off + h_op + sch_op;
   b_def := op_def + h_op;
-  late_off := cond + 0.5 * (tr->>'late_offense')::numeric; late_def := cond + 0.5 * (tr->>'late_defense')::numeric;
+  late_off := cond + 0.5 * (tr->>'late_offense')::numeric + (st->>'late_offense')::numeric;
+  late_def := cond + 0.5 * (tr->>'late_defense')::numeric + (st->>'late_defense')::numeric;
   pass_me := public.franchise_pass_share(f.offense); pass_op := public.franchise_pass_share(opp->>'offense');
   qb_share := public.franchise_qb_rush_share(f.offense);
   passer := public.franchise_nth(ps, 'QB', 1); kicker := public.franchise_nth(ps, 'K', 1);
@@ -2068,7 +2071,7 @@ begin
       who := case when (k = 0) = me_first then 'me' else 'opp' end;
       if who = 'me' then
         d := public.franchise_sim_drive(a_off + case when q >= 4 then late_off else 0 end, b_def, my_st, pass_me, 0,
-               case when q >= 4 then 0.02 * (tr->>'clutch')::numeric else 0 end, short);
+               case when q >= 4 then 0.02 * ((tr->>'clutch')::numeric + (st->>'clutch')::numeric) else 0 end, short);
         pts_me := pts_me + (d->>'pts')::int; q_me[q] := q_me[q] + (d->>'pts')::int;
         tot_me := public.games_jsonb_sum(tot_me, public.franchise_drive_totals(d));
         if d->>'outcome' = 'td' then
@@ -2101,7 +2104,7 @@ begin
         end if;
       else
         d := public.franchise_sim_drive(b_off, a_def + case when q >= 4 then late_def else 0 end, op_st, pass_op,
-               0.01 * (tr->>'takeaway')::numeric, 0, short);
+               0.01 * ((tr->>'takeaway')::numeric + (st->>'takeaway')::numeric), 0, short);
         pts_op := pts_op + (d->>'pts')::int; q_op[q] := q_op[q] + (d->>'pts')::int;
         tot_op := public.games_jsonb_sum(tot_op, public.franchise_drive_totals(d));
         if d->>'outcome' = 'td' then
@@ -2384,6 +2387,8 @@ begin
   if not found then return '[]'::jsonb; end if;
   v_cond := coalesce((f.facilities->>'conditioning')::int, 0);
   v_chance := greatest(0, (cfg->>'base')::numeric - (cfg->>'per_conditioning')::numeric * v_cond);
+  -- and the head trainer takes a slice off what is left (Phase 8)
+  v_chance := v_chance * (1 - coalesce((public.franchise_staff_effects(p_franchise)->>'injury_resist')::numeric, 0));
 
   perform setseed(public.franchise_seed_float(p_seed || ':inj:' || p_franchise::text));
   if random() >= v_chance then return '[]'::jsonb; end if;
@@ -2700,7 +2705,7 @@ create or replace function public.franchise_sim_versus(p_a uuid, p_b uuid, p_see
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   fa public.franchises%rowtype; fb public.franchises%rowtype;
-  rta jsonb; rtb jsonb; prepa jsonb; prepb jsonb; tra jsonb; trb jsonb; psa jsonb; psb jsonb;
+  rta jsonb; rtb jsonb; prepa jsonb; prepb jsonb; tra jsonb; trb jsonb; psa jsonb; psb jsonb; sta jsonb; stb jsonb;
   a_off numeric; a_def numeric; a_st numeric; b_off numeric; b_def numeric; b_st numeric;
   a_prep numeric; b_prep numeric; a_sch numeric; b_sch numeric;
   a_late_off numeric; a_late_def numeric; b_late_off numeric; b_late_def numeric;
@@ -2737,14 +2742,18 @@ begin
   b_sch := public.franchise_scheme_edge(fb.offense, fa.defense);
   a_film := 0.5 * coalesce((fa.facilities->>'film')::numeric, 0); b_film := 0.5 * coalesce((fb.facilities->>'film')::numeric, 0);
   a_cond := 0.5 * coalesce((fa.facilities->>'conditioning')::numeric, 0); b_cond := 0.5 * coalesce((fb.facilities->>'conditioning')::numeric, 0);
-  a_off := (rta->>'offense')::numeric + a_prep + a_sch + a_film + 0.25 * (tra->>'offense')::numeric;
-  a_def := (rta->>'defense')::numeric + a_prep + a_film + 0.25 * (tra->>'defense')::numeric;
+  -- each side's own coaching staff (Phase 8)
+  sta := public.franchise_staff_effects(p_a); stb := public.franchise_staff_effects(p_b);
+  a_off := (rta->>'offense')::numeric + a_prep + a_sch + a_film + 0.25 * (tra->>'offense')::numeric + (sta->>'offense')::numeric;
+  a_def := (rta->>'defense')::numeric + a_prep + a_film + 0.25 * (tra->>'defense')::numeric + (sta->>'defense')::numeric;
   a_st := (rta->>'special')::numeric;
-  b_off := (rtb->>'offense')::numeric + b_prep + b_sch + b_film + 0.25 * (trb->>'offense')::numeric;
-  b_def := (rtb->>'defense')::numeric + b_prep + b_film + 0.25 * (trb->>'defense')::numeric;
+  b_off := (rtb->>'offense')::numeric + b_prep + b_sch + b_film + 0.25 * (trb->>'offense')::numeric + (stb->>'offense')::numeric;
+  b_def := (rtb->>'defense')::numeric + b_prep + b_film + 0.25 * (trb->>'defense')::numeric + (stb->>'defense')::numeric;
   b_st := (rtb->>'special')::numeric;
-  a_late_off := a_cond + 0.5 * (tra->>'late_offense')::numeric; a_late_def := a_cond + 0.5 * (tra->>'late_defense')::numeric;
-  b_late_off := b_cond + 0.5 * (trb->>'late_offense')::numeric; b_late_def := b_cond + 0.5 * (trb->>'late_defense')::numeric;
+  a_late_off := a_cond + 0.5 * (tra->>'late_offense')::numeric + (sta->>'late_offense')::numeric;
+  a_late_def := a_cond + 0.5 * (tra->>'late_defense')::numeric + (sta->>'late_defense')::numeric;
+  b_late_off := b_cond + 0.5 * (trb->>'late_offense')::numeric + (stb->>'late_offense')::numeric;
+  b_late_def := b_cond + 0.5 * (trb->>'late_defense')::numeric + (stb->>'late_defense')::numeric;
   a_pass := public.franchise_pass_share(fa.offense); b_pass := public.franchise_pass_share(fb.offense);
   a_qb := public.franchise_qb_rush_share(fa.offense); b_qb := public.franchise_qb_rush_share(fb.offense);
   a_passer := public.franchise_nth(psa, 'QB', 1); a_kicker := public.franchise_nth(psa, 'K', 1);
@@ -2769,7 +2778,8 @@ begin
       who := case when (k = 0) = a_first then 'a' else 'b' end;
       if who = 'a' then
         d := public.franchise_sim_drive(a_off + case when q >= 4 then a_late_off else 0 end, b_def + case when q >= 4 then b_late_def else 0 end,
-               a_st, a_pass, 0.01 * (trb->>'takeaway')::numeric, case when q >= 4 then 0.02 * (tra->>'clutch')::numeric else 0 end, short);
+               a_st, a_pass, 0.01 * ((trb->>'takeaway')::numeric + (stb->>'takeaway')::numeric),
+               case when q >= 4 then 0.02 * ((tra->>'clutch')::numeric + (sta->>'clutch')::numeric) else 0 end, short);
         pts_a := pts_a + (d->>'pts')::int; q_a[q] := q_a[q] + (d->>'pts')::int;
         tot_a := public.games_jsonb_sum(tot_a, public.franchise_drive_totals(d));
         play := public.franchise_sim_score_play(d, psa, a_passer, a_kicker, a_qb, tally_a);
@@ -2779,7 +2789,8 @@ begin
         end if;
       else
         d := public.franchise_sim_drive(b_off + case when q >= 4 then b_late_off else 0 end, a_def + case when q >= 4 then a_late_def else 0 end,
-               b_st, b_pass, 0.01 * (tra->>'takeaway')::numeric, case when q >= 4 then 0.02 * (trb->>'clutch')::numeric else 0 end, short);
+               b_st, b_pass, 0.01 * ((tra->>'takeaway')::numeric + (sta->>'takeaway')::numeric),
+               case when q >= 4 then 0.02 * ((trb->>'clutch')::numeric + (stb->>'clutch')::numeric) else 0 end, short);
         pts_b := pts_b + (d->>'pts')::int; q_b[q] := q_b[q] + (d->>'pts')::int;
         tot_b := public.games_jsonb_sum(tot_b, public.franchise_drive_totals(d));
         play := public.franchise_sim_score_play(d, psb, b_passer, b_kicker, b_qb, tally_b);
@@ -2801,9 +2812,9 @@ begin
     'sim', 'sim_v1', 'seed', p_seed, 'neutral', true, 'week_key', p_week_key, 'ot', ot, 'possessions', n,
     'result_a', result_a, 'scoring', scoring,
     'a', jsonb_build_object('id', fa.id, 'final', pts_a, 'quarters', to_jsonb(q_a), 'team', tot_a, 'players', players_a, 'potg', potg_a,
-      'edges', jsonb_build_object('prep', prepa, 'prep_adj', a_prep, 'scheme', a_sch, 'traits', tra, 'film', a_film, 'conditioning', a_cond, 'offense', round(a_off, 1), 'defense', round(a_def, 1))),
+      'edges', jsonb_build_object('prep', prepa, 'prep_adj', a_prep, 'scheme', a_sch, 'traits', tra, 'film', a_film, 'conditioning', a_cond, 'staff', sta, 'offense', round(a_off, 1), 'defense', round(a_def, 1))),
     'b', jsonb_build_object('id', fb.id, 'final', pts_b, 'quarters', to_jsonb(q_b), 'team', tot_b, 'players', players_b, 'potg', potg_b,
-      'edges', jsonb_build_object('prep', prepb, 'prep_adj', b_prep, 'scheme', b_sch, 'traits', trb, 'film', b_film, 'conditioning', b_cond, 'offense', round(b_off, 1), 'defense', round(b_def, 1))));
+      'edges', jsonb_build_object('prep', prepb, 'prep_adj', b_prep, 'scheme', b_sch, 'traits', trb, 'film', b_film, 'conditioning', b_cond, 'staff', stb, 'offense', round(b_off, 1), 'defense', round(b_def, 1))));
 end;
 $$;
 
@@ -3251,6 +3262,10 @@ begin
   if existing is not null then return existing; end if;
   perform setseed(public.franchise_seed_float(f.seed || ':offseason:' || p_from));
   training := coalesce((f.facilities->>'training')::int, 0);
+  -- the head trainer works alongside the Training Center (Phase 8): his
+  -- curve and his specialties add to the same number, rounded down, so a
+  -- staff built over years grows the young like another facility
+  training := training + floor(coalesce((public.franchise_staff_effects(p_franchise)->>'development')::numeric, 0))::int;
 
   -- everybody reports fit: an injury is a cost inside a season, never across one
   update public.game_players set injured_until = null, injury = null
@@ -3432,6 +3447,7 @@ begin
       'owner', case when f.user_id is not null then 'account' else 'device' end),
     'achievements', v_ach, 'seasons', v_seasons, 'leaders', v_leaders, 'alumni', v_alumni, 'record', v_record, 'rival', v_riv,
     'facilities', coalesce(f.facilities, '{}'::jsonb), 'facilities_table', public.franchise_facilities(),
+    'staff', public.franchise_staff_board(p_secret),
     'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
     'fc_record', (select jsonb_build_object('wins', coalesce(sum(fc_wins), 0), 'losses', coalesce(sum(fc_losses), 0), 'ties', coalesce(sum(fc_ties), 0))
                     from public.franchise_rivalries r where r.franchise_id = f.id),
@@ -3965,6 +3981,13 @@ begin
     -- franchise vs franchise: where I stand, and the last one played
     'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
     'facilities', coalesce(f.facilities, '{}'::jsonb),
+    -- the coaching staff (Phase 8): who is in the building, and what it cost
+    'staff', (select jsonb_build_object(
+        'filled', count(*), 'seats', jsonb_array_length(public.franchise_staff()->'seats'),
+        'levels', coalesce(sum(m.level), 0), 'best', coalesce(max(m.level), 0),
+        'hire_cost', (public.franchise_staff()->>'hire_cost')::int,
+        'next_cost', min(public.franchise_staff_cost(m.level)))
+      from public.franchise_staff_members m where m.franchise_id = f.id),
     'offseason', (select s.offseason - 'players' from public.franchise_seasons s where s.franchise_id = f.id and s.offseason is not null order by s.number desc limit 1),
     -- the draft and the market: what is on the board and what a report costs
     'market', jsonb_build_object('window', f.market_season, 'picks', f.draft_picks,
@@ -5499,6 +5522,456 @@ $$;
 commit;
 
 -- ===========================================================================
+-- THE COACHING STAFF — Phase 8, staff_v1
+--
+-- WHERE COACH POINTS GO. Every other currency has somewhere to spend itself
+-- forever: Scouting Points buy reports, ten a window; Team Credits buy free
+-- agents, priced per point. Coach Points had two facilities worth 76 CP in
+-- total and then nothing, which was backwards — CP is the currency you earn
+-- by WINNING, and the hardest content in the game paid in the thing with
+-- nothing behind it.
+--
+-- Four seats: a head coach, two coordinators and a trainer. Each is one
+-- named person, generated on the server from the same name pools the roster
+-- draws from, hired with CP and levelled with CP — to a thousand.
+--
+-- THE TWO CURVES, and they are the whole design.
+--
+--   COST      the next level costs 1 CP, going up a CP every ten levels:
+--                 cost(L → L+1) = 1 + floor((L − 1) / 10)
+--             so level 10 arrives in a first season, level 50 inside a year,
+--             level 100 at about three, and level 1000 is a horizon rather
+--             than a plan. That is deliberate. There is always another level.
+--
+--   EFFECT    every TENFOLD in level is another third of the cap:
+--                 effect(L) = cap × ln(L) / ln(1000)
+--             level 10 is a third of the way, level 100 two thirds, level
+--             1000 all of it. A coach is useful immediately and never
+--             finished, and the long tail is honest about being a long tail.
+--
+-- Because the tail is long, the levels themselves carry rewards: a SPECIALTY
+-- every twenty-five levels (ten of them, to level 250) and a GRADE that
+-- reads off the number — Rookie, Assistant, Coordinator, Veteran, Legend,
+-- and Hall of Fame at a thousand.
+--
+-- A COACH DOES NOT LEAVE. Nothing poaches him, nothing retires him. Three
+-- years of levelling cannot be taken away by a die roll — the sink is the
+-- levelling itself, four seats deep and effectively bottomless, and it does
+-- not need turnover to work. Firing a coach is allowed and resets that seat
+-- to nothing, which is why almost nobody will.
+-- ===========================================================================
+
+begin;
+
+create or replace function public.franchise_staff()
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'staff_v1',
+    'max_level', 1000,
+    'hire_cost', 12,            -- CP to fill an empty seat
+    'cost_base', 1,             -- CP for the first level…
+    'cost_step', 10,            -- …and a CP more every ten levels
+    'specialty_every', 25,
+    'specialty_max', 10,
+    'promote_max', 100,         -- levels one call may buy, so a loop is bounded
+    'seats', jsonb_build_array(
+      jsonb_build_object('key', 'head',    'name', 'Head Coach',
+        'means', 'Steadies the fourth quarter and overtime', 'cap', 2.5, 'sort', 1),
+      jsonb_build_object('key', 'offense', 'name', 'Offensive Coordinator',
+        'means', 'Adds to the offense in every game', 'cap', 3.0, 'sort', 2),
+      jsonb_build_object('key', 'defense', 'name', 'Defensive Coordinator',
+        'means', 'Adds to the defense in every game', 'cap', 3.0, 'sort', 3),
+      jsonb_build_object('key', 'trainer', 'name', 'Head Trainer',
+        'means', 'Cuts the chance a game costs somebody, and grows the young faster', 'cap', 1.0, 'sort', 4)),
+    'grades', jsonb_build_array(
+      jsonb_build_object('at', 1,    'name', 'Rookie'),
+      jsonb_build_object('at', 25,   'name', 'Assistant'),
+      jsonb_build_object('at', 100,  'name', 'Coordinator'),
+      jsonb_build_object('at', 250,  'name', 'Veteran'),
+      jsonb_build_object('at', 500,  'name', 'Legend'),
+      jsonb_build_object('at', 1000, 'name', 'Hall of Fame')),
+    -- what a specialty adds, in the units the simulator already reads
+    'specialties', jsonb_build_array(
+      jsonb_build_object('id', 'red_zone',   'name', 'Red Zone Architect', 'seats', jsonb_build_array('head','offense'), 'effect', jsonb_build_object('offense', 0.3)),
+      jsonb_build_object('id', 'tempo',      'name', 'Tempo Merchant',     'seats', jsonb_build_array('offense'),        'effect', jsonb_build_object('offense', 0.3)),
+      jsonb_build_object('id', 'protection', 'name', 'Protection Guru',    'seats', jsonb_build_array('offense'),        'effect', jsonb_build_object('offense', 0.2, 'injury_resist', 0.02)),
+      jsonb_build_object('id', 'pressure',   'name', 'Pressure Package',   'seats', jsonb_build_array('defense'),        'effect', jsonb_build_object('defense', 0.3)),
+      jsonb_build_object('id', 'coverage',   'name', 'Coverage Mind',      'seats', jsonb_build_array('defense'),        'effect', jsonb_build_object('defense', 0.3)),
+      jsonb_build_object('id', 'takeaway',   'name', 'Takeaway Drill',     'seats', jsonb_build_array('defense','head'), 'effect', jsonb_build_object('takeaway', 0.5)),
+      jsonb_build_object('id', 'closer',     'name', 'The Closer',         'seats', jsonb_build_array('head'),           'effect', jsonb_build_object('late_offense', 0.3, 'clutch', 0.5)),
+      jsonb_build_object('id', 'motivator',  'name', 'Motivator',          'seats', jsonb_build_array('head'),           'effect', jsonb_build_object('late_defense', 0.3)),
+      jsonb_build_object('id', 'sports_sci', 'name', 'Sports Scientist',   'seats', jsonb_build_array('trainer'),        'effect', jsonb_build_object('injury_resist', 0.03)),
+      jsonb_build_object('id', 'rehab',      'name', 'Rehab Specialist',   'seats', jsonb_build_array('trainer'),        'effect', jsonb_build_object('injury_resist', 0.02, 'development', 0.2)),
+      jsonb_build_object('id', 'strength',   'name', 'Strength Coach',     'seats', jsonb_build_array('trainer'),        'effect', jsonb_build_object('development', 0.3)),
+      jsonb_build_object('id', 'teacher',    'name', 'Teacher',            'seats', jsonb_build_array('head','trainer'), 'effect', jsonb_build_object('development', 0.3))),
+    'archetypes', jsonb_build_array('Players'' Coach', 'Disciplinarian', 'Innovator', 'Grinder',
+                                    'Tactician', 'Motivator', 'Technician', 'Old School'));
+$$;
+
+-- WHAT THE NEXT LEVEL COSTS: 1 CP, and a CP more every ten levels.
+create or replace function public.franchise_staff_cost(p_level integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case when coalesce(p_level, 1) < 1 then 1
+              else 1 + floor((least(coalesce(p_level, 1), 1000) - 1) / 10.0)::int end;
+$$;
+
+-- WHAT IT COSTS TO GET FROM ONE LEVEL TO ANOTHER, summed. Used to price a
+-- promotion before it is bought and to say "N CP to the next grade".
+create or replace function public.franchise_staff_cost_between(p_from integer, p_to integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce(sum(public.franchise_staff_cost(L)), 0)::int
+  from generate_series(greatest(1, coalesce(p_from, 1)),
+                       greatest(0, least(coalesce(p_to, 1), 1000) - 1)) L;
+$$;
+
+-- WHAT A LEVEL IS WORTH: every tenfold is another third of the cap.
+create or replace function public.franchise_staff_effect(p_level integer, p_cap numeric)
+returns numeric language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select round((coalesce(p_cap, 0) * ln(greatest(1, least(coalesce(p_level, 1), 1000))) / ln(1000))::numeric, 3);
+$$;
+
+-- The name a level carries.
+create or replace function public.franchise_staff_grade(p_level integer)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select g->>'name' from jsonb_array_elements(public.franchise_staff()->'grades') g
+   where (g->>'at')::int <= greatest(1, coalesce(p_level, 1))
+   order by (g->>'at')::int desc limit 1;
+$$;
+
+-- How many specialties a level has earned: one every twenty-five, ten at most.
+create or replace function public.franchise_staff_specialty_count(p_level integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select least((public.franchise_staff()->>'specialty_max')::int,
+               floor(greatest(1, coalesce(p_level, 1)) / (public.franchise_staff()->>'specialty_every')::numeric)::int);
+$$;
+
+-- ONE SEAT, one person. The level belongs to the coach: firing him resets it,
+-- and nothing else can.
+create table if not exists public.franchise_staff_members (
+  franchise_id   uuid not null references public.franchises (id) on delete cascade,
+  seat           text not null check (seat in ('head', 'offense', 'defense', 'trainer')),
+  first_name     text not null,
+  last_name      text not null,
+  archetype      text not null,
+  level          integer not null default 1 check (level between 1 and 1000),
+  specialties    jsonb not null default '[]'::jsonb,
+  seed           text not null,
+  hired_season   integer not null,
+  hired_at       timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  primary key (franchise_id, seat)
+);
+
+create index if not exists franchise_staff_members_franchise on public.franchise_staff_members (franchise_id);
+
+alter table public.franchise_staff_members enable row level security;
+
+drop policy if exists franchise_staff_members_own on public.franchise_staff_members;
+create policy franchise_staff_members_own on public.franchise_staff_members for select
+  using (public.franchise_is_mine(franchise_id));
+
+alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
+alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
+  ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
+   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason',
+   'market','scout','draft','signing','release',
+   'conf_joined','conf_season','conf_game','conf_win','conf_playoff','conf_title',
+   'bowl_bid','injury','trade',
+   'staff_hire','staff_promote','staff_fire'));
+
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('staff_first',  'A Staff',       'Hired your first coach.', null, 100),
+  ('staff_full',   'Full Building', 'Filled all four seats.', null, 101),
+  ('staff_100',    'Coordinator',   'Took a coach to level 100.', null, 102),
+  ('staff_250',    'Veteran Staff', 'Took a coach to level 250.', null, 103),
+  ('staff_1000',   'Hall of Fame',  'Took a coach to level 1000.', null, 104)
+on conflict (id) do nothing;
+
+commit;
+
+begin;
+
+-- ONE COACH, generated on the server from the same name pools the roster
+-- draws from, seeded so the same franchise hiring for the same seat in the
+-- same season gets the same man. He starts at level one with nothing; the
+-- levels are what make him.
+create or replace function public.franchise_generate_coach(
+  p_franchise uuid, p_seat text, p_seed text, p_season integer)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  firsts text[] := public.franchise_pool_first_names();
+  lasts text[] := public.franchise_pool_last_names();
+  cfg jsonb := public.franchise_staff(); v_arch text;
+begin
+  perform setseed(public.franchise_seed_float(p_seed));
+  v_arch := (cfg->'archetypes')->>(floor(random() * jsonb_array_length(cfg->'archetypes'))::int);
+  insert into public.franchise_staff_members
+    (franchise_id, seat, first_name, last_name, archetype, level, specialties, seed, hired_season)
+  values (p_franchise, p_seat,
+    firsts[1 + floor(random() * array_length(firsts, 1))::int],
+    lasts[1 + floor(random() * array_length(lasts, 1))::int],
+    v_arch, 1, '[]'::jsonb, p_seed, p_season)
+  on conflict (franchise_id, seat) do nothing;
+end;
+$$;
+
+-- THE SPECIALTIES A COACH HAS EARNED, drawn from the pool his seat can take,
+-- seeded from his own seed so the same coach always unlocks the same ones in
+-- the same order. Recomputed from the level rather than stored twice: the
+-- level is the only thing that decides them.
+create or replace function public.franchise_staff_specialties(p_seat text, p_seed text, p_level integer)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  cfg jsonb := public.franchise_staff(); pool jsonb := '[]'::jsonb; out_ jsonb := '[]'::jsonb;
+  n integer := public.franchise_staff_specialty_count(p_level); s jsonb; i integer; j integer; tmp jsonb;
+  arr jsonb[];
+begin
+  if n <= 0 then return '[]'::jsonb; end if;
+  for s in select * from jsonb_array_elements(cfg->'specialties') loop
+    if s->'seats' @> to_jsonb(p_seat) then pool := pool || jsonb_build_array(s); end if;
+  end loop;
+  if jsonb_array_length(pool) = 0 then return '[]'::jsonb; end if;
+  -- a seeded shuffle, so the order is his and never moves
+  select array_agg(x) into arr from jsonb_array_elements(pool) x;
+  perform setseed(public.franchise_seed_float(p_seed || ':spec'));
+  for i in reverse array_length(arr, 1)..2 loop
+    j := 1 + floor(random() * i)::int;
+    tmp := arr[i]; arr[i] := arr[j]; arr[j] := tmp;
+  end loop;
+  for i in 1..least(n, array_length(arr, 1)) loop
+    out_ := out_ || jsonb_build_array(arr[i]);
+  end loop;
+  return out_;
+end;
+$$;
+
+-- WHAT THE STAFF ADDS UP TO, in the units the simulator already reads — the
+-- same shape franchise_trait_effects returns, so the sim reads one more
+-- object rather than learning anything new. Each seat contributes its own
+-- curve, and its specialties on top.
+create or replace function public.franchise_staff_effects(p_franchise uuid)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  cfg jsonb := public.franchise_staff(); m record; seat jsonb; e numeric; sp jsonb; k text;
+  v_off numeric := 0; v_def numeric := 0; v_late_o numeric := 0; v_late_d numeric := 0;
+  v_clutch numeric := 0; v_take numeric := 0; v_inj numeric := 0; v_dev numeric := 0;
+  v_seats jsonb := '{}'::jsonb; v_n integer := 0;
+begin
+  for m in select * from public.franchise_staff_members where franchise_id = p_franchise loop
+    select x into seat from jsonb_array_elements(cfg->'seats') x where x->>'key' = m.seat;
+    if seat is null then continue; end if;
+    v_n := v_n + 1;
+    e := public.franchise_staff_effect(m.level, (seat->>'cap')::numeric);
+    -- the seat's own curve
+    if m.seat = 'offense' then v_off := v_off + e;
+    elsif m.seat = 'defense' then v_def := v_def + e;
+    elsif m.seat = 'head' then v_late_o := v_late_o + e; v_late_d := v_late_d + e;
+    elsif m.seat = 'trainer' then v_inj := v_inj + e * 0.4; v_dev := v_dev + e;
+    end if;
+    -- and what his specialties add
+    for sp in select * from jsonb_array_elements(public.franchise_staff_specialties(m.seat, m.seed, m.level)) loop
+      for k in select jsonb_object_keys(sp->'effect') loop
+        if k = 'offense' then v_off := v_off + (sp->'effect'->>k)::numeric;
+        elsif k = 'defense' then v_def := v_def + (sp->'effect'->>k)::numeric;
+        elsif k = 'late_offense' then v_late_o := v_late_o + (sp->'effect'->>k)::numeric;
+        elsif k = 'late_defense' then v_late_d := v_late_d + (sp->'effect'->>k)::numeric;
+        elsif k = 'clutch' then v_clutch := v_clutch + (sp->'effect'->>k)::numeric;
+        elsif k = 'takeaway' then v_take := v_take + (sp->'effect'->>k)::numeric;
+        elsif k = 'injury_resist' then v_inj := v_inj + (sp->'effect'->>k)::numeric;
+        elsif k = 'development' then v_dev := v_dev + (sp->'effect'->>k)::numeric;
+        end if;
+      end loop;
+    end loop;
+    v_seats := v_seats || jsonb_build_object(m.seat, jsonb_build_object(
+      'level', m.level, 'grade', public.franchise_staff_grade(m.level), 'effect', e));
+  end loop;
+  return jsonb_build_object('version', cfg->>'version',
+    'offense', round(v_off, 3), 'defense', round(v_def, 3),
+    'late_offense', round(v_late_o, 3), 'late_defense', round(v_late_d, 3),
+    'clutch', round(v_clutch, 3), 'takeaway', round(v_take, 3),
+    -- a fraction of the injury chance, never more than four fifths of it
+    'injury_resist', least(0.8, round(v_inj, 3)),
+    'development', round(v_dev, 3), 'seats', v_seats, 'filled', v_n);
+end;
+$$;
+
+-- A COACH as the pages read him.
+create or replace function public.franchise_staff_json(p_franchise uuid, p_seat text)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare m public.franchise_staff_members%rowtype; cfg jsonb := public.franchise_staff(); v_seat jsonb; nxt integer;
+begin
+  select x into v_seat from jsonb_array_elements(cfg->'seats') x where x->>'key' = p_seat;
+  select * into m from public.franchise_staff_members t where t.franchise_id = p_franchise and t.seat = p_seat;
+  if not found then
+    return jsonb_build_object('seat', p_seat, 'name', v_seat->>'name', 'means', v_seat->>'means',
+      'sort', (v_seat->>'sort')::int, 'filled', false, 'hire_cost', (cfg->>'hire_cost')::int);
+  end if;
+  -- the next level that changes something visible: the next specialty, or
+  -- the next grade, whichever comes first
+  nxt := least(
+    ((floor(m.level / (cfg->>'specialty_every')::numeric)::int + 1) * (cfg->>'specialty_every')::int),
+    coalesce((select min((g->>'at')::int) from jsonb_array_elements(cfg->'grades') g where (g->>'at')::int > m.level), 1000));
+  nxt := least(nxt, (cfg->>'max_level')::int);
+  return jsonb_build_object('seat', m.seat, 'name', v_seat->>'name', 'means', v_seat->>'means',
+    'sort', (v_seat->>'sort')::int, 'filled', true,
+    'coach', m.first_name || ' ' || m.last_name, 'archetype', m.archetype,
+    'level', m.level, 'grade', public.franchise_staff_grade(m.level),
+    'max_level', (cfg->>'max_level')::int,
+    'effect', public.franchise_staff_effect(m.level, (v_seat->>'cap')::numeric), 'cap', (v_seat->>'cap')::numeric,
+    'next_cost', case when m.level < (cfg->>'max_level')::int then public.franchise_staff_cost(m.level) end,
+    'specialties', public.franchise_staff_specialties(m.seat, m.seed, m.level),
+    'next_milestone', case when m.level < (cfg->>'max_level')::int then nxt end,
+    'to_milestone', case when m.level < (cfg->>'max_level')::int
+                         then public.franchise_staff_cost_between(m.level, nxt) end,
+    'hired_season', m.hired_season, 'hired_at', m.hired_at);
+end;
+$$;
+
+commit;
+
+begin;
+
+-- HIRE into an empty seat. One CP price, the same for every seat, and the
+-- man who turns up is the server's to pick.
+create or replace function public.franchise_staff_hire(p_seat text, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); cfg jsonb := public.franchise_staff();
+  f public.franchises%rowtype; cost integer := (cfg->>'hire_cost')::int; v_seat jsonb;
+  v_season integer := public.games_season_of(now()); v_new text[] := '{}'; v_n integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select x into v_seat from jsonb_array_elements(cfg->'seats') x where x->>'key' = p_seat;
+  if v_seat is null then raise exception 'no such seat' using errcode = '22023'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  if exists (select 1 from public.franchise_staff_members t where t.franchise_id = v_f and t.seat = p_seat) then
+    raise exception 'that seat is filled: fire the coach in it first' using errcode = '55000';
+  end if;
+  if f.coach_points < cost then
+    raise exception 'not enough Coach Points: % needed, % on hand', cost, f.coach_points using errcode = '55000';
+  end if;
+  perform public.franchise_generate_coach(v_f, p_seat, md5(f.seed || ':coach:' || p_seat || ':' || v_season || ':' || clock_timestamp()::text), v_season);
+  perform public.franchise_credit(v_f, 'cp', -cost, 'staff_hire', p_seat || ':' || v_season,
+    'Hired a ' || (v_seat->>'name'));
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'staff_hire', p_seat || ':' || v_season, public.games_week_key(now()), public.games_day_key(now()),
+    jsonb_build_object('seat', p_seat, 'cost', cost)) on conflict (franchise_id, kind, key) do nothing;
+  if public.franchise_award(v_f, 'staff_first', v_season, jsonb_build_object('seat', p_seat)) then
+    v_new := array_append(v_new, 'staff_first'); end if;
+  select count(*) into v_n from public.franchise_staff_members where franchise_id = v_f;
+  if v_n >= jsonb_array_length(cfg->'seats')
+     and public.franchise_award(v_f, 'staff_full', v_season, jsonb_build_object('seats', v_n)) then
+    v_new := array_append(v_new, 'staff_full'); end if;
+  return jsonb_build_object('ok', true, 'cost', cost, 'seat', public.franchise_staff_json(v_f, p_seat),
+    'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- PROMOTE. Buys as many levels as asked for and can afford, one at a time so
+-- the price rises as it climbs, and stops at the first one it cannot pay
+-- for rather than refusing the lot. One ledger row for the whole promotion,
+-- keyed by the level reached, so the same promotion cannot be paid twice.
+create or replace function public.franchise_staff_promote(
+  p_seat text, p_levels integer default 1, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); cfg jsonb := public.franchise_staff();
+  f public.franchises%rowtype; m public.franchise_staff_members%rowtype;
+  want integer; spent integer := 0; step integer; gained integer := 0; v_from integer;
+  v_season integer := public.games_season_of(now()); v_new text[] := '{}'; v_spec_before integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  select * into m from public.franchise_staff_members t where t.franchise_id = v_f and t.seat = p_seat for update;
+  if not found then raise exception 'that seat is empty: hire somebody first' using errcode = 'P0002'; end if;
+  if m.level >= (cfg->>'max_level')::int then
+    raise exception 'a coach stops at %', (cfg->>'max_level')::int using errcode = '55000';
+  end if;
+  want := greatest(1, least(coalesce(p_levels, 1), (cfg->>'promote_max')::int));
+  v_from := m.level; v_spec_before := public.franchise_staff_specialty_count(m.level);
+
+  while gained < want and (v_from + gained) < (cfg->>'max_level')::int loop
+    step := public.franchise_staff_cost(v_from + gained);
+    exit when spent + step > f.coach_points;
+    spent := spent + step; gained := gained + 1;
+  end loop;
+  if gained = 0 then
+    raise exception 'not enough Coach Points: % needed for the next level, % on hand',
+      public.franchise_staff_cost(v_from), f.coach_points using errcode = '55000';
+  end if;
+
+  update public.franchise_staff_members
+     set level = v_from + gained,
+         specialties = public.franchise_staff_specialties(p_seat, m.seed, v_from + gained),
+         updated_at = now()
+   where franchise_id = v_f and seat = p_seat returning * into m;
+  perform public.franchise_credit(v_f, 'cp', -spent, 'staff_promote', p_seat || ':' || m.level,
+    (select x->>'name' from jsonb_array_elements(cfg->'seats') x where x->>'key' = p_seat) || ' to level ' || m.level);
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'staff_promote', p_seat || ':' || m.level, public.games_week_key(now()), public.games_day_key(now()),
+    jsonb_build_object('seat', p_seat, 'from', v_from, 'to', m.level, 'cost', spent))
+  on conflict (franchise_id, kind, key) do nothing;
+
+  if m.level >= 100 and public.franchise_award(v_f, 'staff_100', v_season, jsonb_build_object('seat', p_seat, 'level', m.level)) then
+    v_new := array_append(v_new, 'staff_100'); end if;
+  if m.level >= 250 and public.franchise_award(v_f, 'staff_250', v_season, jsonb_build_object('seat', p_seat, 'level', m.level)) then
+    v_new := array_append(v_new, 'staff_250'); end if;
+  if m.level >= 1000 and public.franchise_award(v_f, 'staff_1000', v_season, jsonb_build_object('seat', p_seat)) then
+    v_new := array_append(v_new, 'staff_1000'); end if;
+
+  return jsonb_build_object('ok', true, 'from', v_from, 'to', m.level, 'levels', gained, 'cost', spent,
+    'asked', want, 'short', gained < want,
+    'new_specialties', public.franchise_staff_specialty_count(m.level) - v_spec_before,
+    'seat', public.franchise_staff_json(v_f, p_seat),
+    'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- FIRE. Free, irreversible, and it takes the level with him — which is the
+-- whole reason a coach is worth keeping.
+create or replace function public.franchise_staff_fire(p_seat text, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); m public.franchise_staff_members%rowtype;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into m from public.franchise_staff_members t where t.franchise_id = v_f and t.seat = p_seat;
+  if not found then return jsonb_build_object('ok', true, 'fired', false); end if;
+  delete from public.franchise_staff_members where franchise_id = v_f and seat = p_seat;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'staff_fire', p_seat || ':' || m.level || ':' || m.hired_at::text,
+    public.games_week_key(now()), public.games_day_key(now()),
+    jsonb_build_object('seat', p_seat, 'coach', m.first_name || ' ' || m.last_name, 'level', m.level))
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('ok', true, 'fired', true, 'level', m.level,
+    'seat', public.franchise_staff_json(v_f, p_seat));
+end;
+$$;
+
+-- THE STAFF PAGE, in one call.
+create or replace function public.franchise_staff_board(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); cfg jsonb := public.franchise_staff(); v_seats jsonb; s jsonb;
+begin
+  if v_f is null then return null; end if;
+  v_seats := '[]'::jsonb;
+  for s in select x from jsonb_array_elements(cfg->'seats') x order by (x->>'sort')::int loop
+    v_seats := v_seats || jsonb_build_array(public.franchise_staff_json(v_f, s->>'key'));
+  end loop;
+  return jsonb_build_object('me', public.franchise_identity_json(v_f),
+    'seats', v_seats, 'effects', public.franchise_staff_effects(v_f),
+    'resources', public.franchise_totals(v_f), 'rules', cfg);
+end;
+$$;
+
+commit;
+
+-- ===========================================================================
 -- GRANTS
 --
 -- Postgres grants EXECUTE on a new function to PUBLIC by default, so every
@@ -5573,6 +6046,12 @@ revoke all on function public.franchise_draw_injuries(uuid, text, text, timestam
 revoke all on function public.franchise_schedule_bowl(uuid, integer, timestamptz) from public, anon, authenticated;
 revoke all on function public.franchise_trade_json(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.franchise_trade_player_json(uuid) from public, anon, authenticated;
+-- Phase 8: the coach generator, the effects aggregate and the seat readers are
+-- the server's; the four moves and the published table are opened below
+revoke all on function public.franchise_generate_coach(uuid, text, text, integer) from public, anon, authenticated;
+revoke all on function public.franchise_staff_effects(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_staff_json(uuid, text) from public, anon, authenticated;
+revoke all on function public.franchise_staff_specialties(text, text, integer) from public, anon, authenticated;
 
 grant execute on function public.franchise_economy() to anon, authenticated;
 grant execute on function public.games_week_key(timestamptz) to anon, authenticated;
@@ -5667,6 +6146,18 @@ grant execute on function public.franchise_trade_offer(uuid, uuid[], uuid[], tex
 grant execute on function public.franchise_trade_respond(uuid, boolean, text) to anon, authenticated;
 grant execute on function public.franchise_trade_withdraw(uuid, text) to anon, authenticated;
 grant execute on function public.franchise_trades_mine(integer, text) to anon, authenticated;
+-- Phase 8: the staff table and its two curves are open to read, and the four
+-- moves are open on the same terms every other franchise move is
+grant execute on function public.franchise_staff() to anon, authenticated;
+grant execute on function public.franchise_staff_cost(integer) to anon, authenticated;
+grant execute on function public.franchise_staff_cost_between(integer, integer) to anon, authenticated;
+grant execute on function public.franchise_staff_effect(integer, numeric) to anon, authenticated;
+grant execute on function public.franchise_staff_grade(integer) to anon, authenticated;
+grant execute on function public.franchise_staff_specialty_count(integer) to anon, authenticated;
+grant execute on function public.franchise_staff_board(text) to anon, authenticated;
+grant execute on function public.franchise_staff_hire(text, text) to anon, authenticated;
+grant execute on function public.franchise_staff_promote(text, integer, text) to anon, authenticated;
+grant execute on function public.franchise_staff_fire(text, text) to anon, authenticated;
 
 commit;
 
@@ -5679,7 +6170,7 @@ select 1 as row, 'franchise tables exist' as what,
      'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
      'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries',
      'franchise_conferences','franchise_conference_members','franchise_conference_games','franchise_conference_titles',
-     'franchise_trades')) = 19
+     'franchise_trades','franchise_staff_members')) = 20
     then 'ok' else 'CHECK THIS' end as status
 union all
 select 2, 'row level security is on for every franchise table',
@@ -5688,7 +6179,7 @@ select 2, 'row level security is on for every franchise table',
      'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
      'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries',
      'franchise_conferences','franchise_conference_members','franchise_conference_games','franchise_conference_titles',
-     'franchise_trades')) = 19
+     'franchise_trades','franchise_staff_members')) = 20
     then 'ok' else 'CHECK THIS' end
 union all
 select 3, 'no client role may write a franchise table directly',
@@ -5697,7 +6188,7 @@ select 3, 'no client role may write a franchise table directly',
      'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
      'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries',
      'franchise_conferences','franchise_conference_members','franchise_conference_games','franchise_conference_titles',
-     'franchise_trades'))
+     'franchise_trades','franchise_staff_members'))
     then 'ok' else 'CHECK THIS' end
 union all
 select 4, 'the ledger write is reachable by no client role',
@@ -5833,5 +6324,17 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
         and exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_trades'
                       and cmd = 'SELECT' and qual like '%franchise_is_mine%')
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_trades' and cmd <> 'SELECT')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
+  case when public.franchise_staff()->>'version' = 'staff_v1'
+        and (public.franchise_staff()->>'max_level')::int = 1000
+        and public.franchise_staff_cost(1) = 1 and public.franchise_staff_cost(1000) = 100
+        and public.franchise_staff_cost_between(1, 1000) = 50400
+        and public.franchise_staff_effect(1, 3.0) = 0 and public.franchise_staff_effect(1000, 3.0) = 3.0
+        and has_function_privilege('anon', 'public.franchise_staff_hire(text, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_staff_promote(text, integer, text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_staff_effects(uuid)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

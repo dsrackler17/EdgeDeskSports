@@ -96,6 +96,9 @@ declare
   cn integer; cu uuid; cch uuid; cf uuid[] := '{}'; conf uuid; conf2 uuid; ctok text; ctok2 text;
   -- injuries, the bowl and trades
   bf uuid; tid uuid; tid2 uuid; pids uuid[]; pids2 uuid[];
+  -- the coaching staff
+  sf uuid;
+  SEC_S constant text := 'device-secret-ssssssssssssssssssssssssssss';
   SEC_C constant text := 'device-secret-cccccccccccccccccccccccccccc';
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
@@ -2755,5 +2758,260 @@ begin
     and has_function_privilege('anon', 'public.franchise_trade_respond(uuid, boolean, text)', 'execute')
     and has_function_privilege('authenticated', 'public.franchise_trade_withdraw(uuid, text)', 'execute')
     and has_function_privilege('anon', 'public.franchise_trades_mine(integer, text)', 'execute'));
+
+-- ═══ 21. THE COACHING STAFF ═══════════════════════════════════════════════
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the staff is staff_v1: four seats, a thousand levels, twelve Coach Points to hire',
+    public.franchise_staff()->>'version' = 'staff_v1'
+    and (public.franchise_staff()->>'max_level')::int = 1000
+    and (public.franchise_staff()->>'hire_cost')::int = 12
+    and jsonb_array_length(public.franchise_staff()->'seats') = 4
+    and (select bool_and(x->>'key' in ('head','offense','defense','trainer'))
+           from jsonb_array_elements(public.franchise_staff()->'seats') x));
+
+  -- ── the cost curve: a CP a level, a CP more every ten ───────────────────
+  perform pg_temp.ok('the next level costs one, and a coach past ten costs two, and past a thousand costs a hundred',
+    public.franchise_staff_cost(1) = 1 and public.franchise_staff_cost(10) = 1
+    and public.franchise_staff_cost(11) = 2 and public.franchise_staff_cost(20) = 2
+    and public.franchise_staff_cost(100) = 10 and public.franchise_staff_cost(1000) = 100);
+  perform pg_temp.ok('the cost never falls as the level rises',
+    (select bool_and(public.franchise_staff_cost(t.n) <= public.franchise_staff_cost(t.n + 1))
+       from generate_series(1, 999) as t(n)));
+  perform pg_temp.ok('and the whole climb is priced: ten levels for nine, a hundred for 540, a thousand for 50,400',
+    public.franchise_staff_cost_between(1, 10) = 9
+    and public.franchise_staff_cost_between(1, 100) = 540
+    and public.franchise_staff_cost_between(1, 1000) = 50400
+    and public.franchise_staff_cost_between(1, 1) = 0,
+    public.franchise_staff_cost_between(1, 1000)::text);
+  perform pg_temp.ok('the sum of the steps is the price of the climb — the two agree at every level',
+    (select bool_and(public.franchise_staff_cost_between(1, t.n)
+                     = (select coalesce(sum(public.franchise_staff_cost(u.n)), 0)
+                          from generate_series(1, t.n - 1) as u(n)))
+       from generate_series(1, 200) as t(n)));
+  perform pg_temp.ok('this is the point: a season of Coach Points buys the first ten levels and not the last one',
+    public.franchise_staff_cost_between(1, 11) < 30 and public.franchise_staff_cost(999) > 30);
+
+  -- ── the effect curve: every tenfold is another third of the cap ─────────
+  perform pg_temp.ok('a level-one coach adds nothing, and a level-thousand coach adds the cap',
+    public.franchise_staff_effect(1, 3.0) = 0 and public.franchise_staff_effect(1000, 3.0) = 3.0);
+  perform pg_temp.ok('every tenfold in level is another third of the cap: ten is a third, a hundred two thirds',
+    abs(public.franchise_staff_effect(10, 3.0) - 1.0) < 0.01
+    and abs(public.franchise_staff_effect(100, 3.0) - 2.0) < 0.01,
+    public.franchise_staff_effect(10, 3.0)::text || ' / ' || public.franchise_staff_effect(100, 3.0)::text);
+  perform pg_temp.ok('the curve never falls, and never passes the cap',
+    (select bool_and(public.franchise_staff_effect(t.n, 3.0) <= public.franchise_staff_effect(t.n + 1, 3.0)
+                 and public.franchise_staff_effect(t.n, 3.0) <= 3.0)
+       from generate_series(1, 999) as t(n)));
+  perform pg_temp.ok('the long tail is honest: the last nine hundred levels are worth a third of the first hundred''s cost many times over',
+    public.franchise_staff_effect(1000, 3.0) - public.franchise_staff_effect(100, 3.0) = 1.0
+    and public.franchise_staff_cost_between(100, 1000) > 90 * public.franchise_staff_cost_between(1, 100) / 100);
+
+  -- ── the grades and the specialties a level earns ────────────────────────
+  perform pg_temp.ok('a level carries a name, and a thousand carries the last one',
+    public.franchise_staff_grade(1) = 'Rookie' and public.franchise_staff_grade(24) = 'Rookie'
+    and public.franchise_staff_grade(25) = 'Assistant' and public.franchise_staff_grade(100) = 'Coordinator'
+    and public.franchise_staff_grade(250) = 'Veteran' and public.franchise_staff_grade(500) = 'Legend'
+    and public.franchise_staff_grade(1000) = 'Hall of Fame');
+  perform pg_temp.ok('a specialty every twenty-five levels, ten at most',
+    public.franchise_staff_specialty_count(1) = 0 and public.franchise_staff_specialty_count(24) = 0
+    and public.franchise_staff_specialty_count(25) = 1 and public.franchise_staff_specialty_count(100) = 4
+    and public.franchise_staff_specialty_count(250) = 10 and public.franchise_staff_specialty_count(1000) = 10);
+
+  -- ── hiring ──────────────────────────────────────────────────────────────
+  insert into auth.users (id, email, raw_user_meta_data)
+  values ('50000000-0000-0000-0000-000000000001', 'staff@example.com', '{}'::jsonb) on conflict (id) do nothing;
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  v := public.franchise_create('Sideline', 'Gale', 'GAL', 'horn', 'slate', 'pro_style', 'zone');
+  sf := (v->'franchise'->>'id')::uuid;
+  v := public.franchise_staff_board();
+  perform pg_temp.ok('an empty building reads four seats, all of them empty, with what a hire costs',
+    jsonb_array_length(v->'seats') = 4
+    and (select bool_and(not (x->>'filled')::boolean and (x->>'hire_cost')::int = 12)
+           from jsonb_array_elements(v->'seats') x)
+    and (v->'effects'->>'filled')::int = 0 and (v->'effects'->>'offense')::numeric = 0);
+  begin
+    perform public.franchise_staff_hire('offense');
+    perform pg_temp.ok('a franchise with no Coach Points cannot hire', false, 'it hired');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a franchise with no Coach Points cannot hire', true);
+  end;
+  perform pg_temp.as_owner();
+  perform public.franchise_credit(sf, 'cp', 400, 'test', 'staff-bank', 'bank');
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  begin
+    perform public.franchise_staff_hire('waterboy');
+    perform pg_temp.ok('there is no seat but the four', false, 'it hired');
+  exception when invalid_parameter_value then
+    perform pg_temp.ok('there is no seat but the four', true);
+  end;
+  v := public.franchise_staff_hire('offense');
+  perform pg_temp.ok('hiring fills the seat with a named man at level one, and costs twelve',
+    (v->>'ok')::boolean and (v->>'cost')::int = 12
+    and (v->'seat'->>'filled')::boolean and (v->'seat'->>'level')::int = 1
+    and v->'seat'->>'grade' = 'Rookie' and length(v->'seat'->>'coach') > 3
+    and v->'seat'->>'archetype' is not null
+    and (v->'seat'->>'effect')::numeric = 0
+    and jsonb_array_length(v->'seat'->'specialties') = 0,
+    (v->'seat')::text);
+  perform pg_temp.ok('and the twelve came off the ledger as one negative row',
+    (select delta = -12 from public.franchise_ledger where franchise_id = sf and kind = 'staff_hire' and currency = 'cp'));
+  perform pg_temp.ok('the first hire is on the wall',
+    exists (select 1 from public.franchise_achievements where franchise_id = sf and achievement_id = 'staff_first'));
+  begin
+    perform public.franchise_staff_hire('offense');
+    perform pg_temp.ok('a filled seat cannot be hired into twice', false, 'it hired');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a filled seat cannot be hired into twice', true);
+  end;
+
+  -- ── promoting ───────────────────────────────────────────────────────────
+  select coach_points into n0 from public.franchises where id = sf;
+  v := public.franchise_staff_promote('offense', 10);
+  perform pg_temp.ok('a promotion buys the levels asked for and charges the sum of their steps',
+    (v->>'from')::int = 1 and (v->>'to')::int = 11 and (v->>'levels')::int = 10
+    and (v->>'cost')::int = public.franchise_staff_cost_between(1, 11)
+    and not (v->>'short')::boolean, v::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the Coach Points left are what they were less the price',
+    (select coach_points = n0 - (v->>'cost')::int from public.franchises where id = sf));
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  v := public.franchise_staff_promote('offense', 14);
+  perform pg_temp.ok('twenty-five earns the first specialty, and the answer says one arrived',
+    (v->>'to')::int = 25 and (v->>'new_specialties')::int = 1
+    and jsonb_array_length(v->'seat'->'specialties') = 1
+    and v->'seat'->>'grade' = 'Assistant');
+  perform pg_temp.ok('a specialty is one his seat can hold',
+    (select bool_and(sp->'seats' @> to_jsonb('offense'::text))
+       from jsonb_array_elements(v->'seat'->'specialties') sp));
+  perform pg_temp.ok('and the coach is worth more than he was, but nowhere near his cap',
+    (v->'seat'->>'effect')::numeric > 0 and (v->'seat'->>'effect')::numeric < 1.5);
+  begin
+    perform public.franchise_staff_promote('defense', 1);
+    perform pg_temp.ok('an empty seat cannot be promoted', false, 'it promoted');
+  exception when no_data_found then
+    perform pg_temp.ok('an empty seat cannot be promoted', true);
+  end;
+
+  -- a promotion it cannot fully afford buys what it can and says so
+  perform pg_temp.as_owner();
+  select coach_points into n0 from public.franchises where id = sf;
+  perform public.franchise_credit(sf, 'cp', -(n0 - 7), 'test', 'staff-drain', 'drain');
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  v := public.franchise_staff_promote('offense', 50);
+  perform pg_temp.ok('a purse that cannot buy fifty levels buys what it can and says it fell short',
+    (v->>'levels')::int between 1 and 3 and (v->>'short')::boolean and (v->>'asked')::int = 50
+    and (v->>'cost')::int <= 7, v::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and it never spends what it does not have',
+    (select coach_points >= 0 from public.franchises where id = sf));
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  begin
+    perform public.franchise_staff_promote('offense', 1);
+    perform pg_temp.ok('and an empty purse buys no level at all', false, 'it promoted');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('and an empty purse buys no level at all', true);
+  end;
+
+  -- ── what the staff is worth to a game ───────────────────────────────────
+  perform pg_temp.as_owner();
+  -- enough to take one coordinator to three hundred: the climb from one to
+  -- 301 is 4,650 Coach Points, which is the point of the curve
+  perform public.franchise_credit(sf, 'cp', 6000, 'test', 'staff-bank-2', 'bank');
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  perform public.franchise_staff_hire('defense');
+  perform public.franchise_staff_hire('head');
+  perform public.franchise_staff_hire('trainer');
+  perform pg_temp.ok('a full building is on the wall',
+    exists (select 1 from public.franchise_achievements where franchise_id = sf and achievement_id = 'staff_full'));
+  for k in 1..3 loop
+    v := public.franchise_staff_promote('defense', 100);
+    exit when (v->>'short')::boolean;
+  end loop;
+  perform pg_temp.ok('three hundred levels of coordinator cost what the table says they cost',
+    (v->>'to')::int = 301 and not (v->>'short')::boolean
+    and (select 6000 + 400 - 12 * 4 - public.franchise_staff_cost_between(1, 301) - public.franchise_staff_cost_between(1, 25)
+           >= 0), (v->>'to'));
+  perform pg_temp.as_owner();
+  v := public.franchise_staff_effects(sf);
+  perform pg_temp.ok('the effects aggregate reads like the trait effects the simulator already takes',
+    v ? 'offense' and v ? 'defense' and v ? 'late_offense' and v ? 'late_defense'
+    and v ? 'clutch' and v ? 'takeaway' and v ? 'injury_resist' and v ? 'development'
+    and (v->>'filled')::int = 4 and v->>'version' = 'staff_v1');
+  perform pg_temp.ok('a levelled coordinator is worth something real to his side, and nothing to the other',
+    (v->>'defense')::numeric > 0.5 and (v->>'defense')::numeric <= 3.0 + 1.5,
+    (v->>'defense')::text);
+  perform pg_temp.ok('the trainer takes a slice off the injury chance, and never more than four fifths',
+    (v->>'injury_resist')::numeric >= 0 and (v->>'injury_resist')::numeric <= 0.8);
+  perform pg_temp.ok('every seat reports its level and its grade',
+    (select bool_and(v->'seats'->x ? 'level' and v->'seats'->x ? 'grade')
+       from unnest(array['head','offense','defense','trainer']) x));
+
+  -- the simulator reads it, and says so on the box
+  box := public.franchise_sim_versus(sf, fb, 'staff-seed', wk);
+  perform pg_temp.ok('the box states the staff among the edges it already states',
+    box->'a'->'edges' ? 'staff' and box->'a'->'edges'->'staff'->>'version' = 'staff_v1'
+    and (box->'a'->'edges'->'staff'->>'filled')::int = 4);
+  perform pg_temp.ok('and the same game with the same seed is still the same game',
+    public.franchise_sim_versus(sf, fb, 'staff-seed', wk) = box);
+
+  -- ── firing takes the levels with him ────────────────────────────────────
+  select level into n0 from public.franchise_staff_members where franchise_id = sf and seat = 'defense';
+  perform pg_temp.ok('the defensive coordinator got somewhere', n0 > 100, n0::text);
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  v := public.franchise_staff_fire('defense');
+  perform pg_temp.ok('firing empties the seat and takes the level with him',
+    (v->>'fired')::boolean and (v->>'level')::int = n0
+    and not (v->'seat'->>'filled')::boolean);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the staff is worth less for it',
+    (public.franchise_staff_effects(sf)->>'defense')::numeric = 0);
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
+  v := public.franchise_staff_hire('defense');
+  perform pg_temp.ok('the man who replaces him starts at one: the level was his, not the seat''s',
+    (v->'seat'->>'level')::int = 1);
+  perform pg_temp.ok('and firing an empty seat fires nobody',
+    not (public.franchise_staff_fire('trainer')->>'fired')::boolean
+      or not (public.franchise_staff_fire('trainer')->>'fired')::boolean);
+
+  -- ── who may read and write it ───────────────────────────────────────────
+  perform pg_temp.as_user(CARA);
+  perform pg_temp.ok('another franchise reads no coach of yours',
+    (select count(*) = 0 from public.franchise_staff_members where franchise_id = sf));
+  update public.franchise_staff_members set level = 999 where franchise_id = sf;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('nor writes one',
+    (select bool_and(level < 999) from public.franchise_staff_members where franchise_id = sf));
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('and anon reads none at all', (select count(*) = 0 from public.franchise_staff_members));
+  perform pg_temp.ok('the generator, the aggregate and the seat readers are reachable by no client role',
+    not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_staff_effects(uuid)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_staff_json(uuid, text)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_staff_specialties(text, text, integer)', 'execute'));
+  perform pg_temp.ok('and the table, the curves and the four moves are open to anon and authenticated alike',
+    has_function_privilege('anon', 'public.franchise_staff()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_staff_cost(integer)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_staff_effect(integer, numeric)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_staff_board(text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_staff_hire(text, text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_staff_promote(text, integer, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_staff_fire(text, text)', 'execute'));
+
+  -- ── a device franchise keeps a staff on the same terms ──────────────────
+  perform pg_temp.as_anon();
+  perform public.franchise_create('Longshots', 'Rill', 'RIL', 'arrow', 'teal', 'spread', 'press_man', SEC_S);
+  perform pg_temp.as_owner();
+  perform public.franchise_credit(public.franchise_of(SEC_S), 'cp', 40, 'test', 'staff-anon', 'bank');
+  perform pg_temp.as_anon();
+  v := public.franchise_staff_hire('head', SEC_S);
+  perform pg_temp.ok('a franchise on a device secret hires and promotes on the same terms as an account',
+    (v->>'ok')::boolean and (v->'seat'->>'filled')::boolean
+    and (public.franchise_staff_promote('head', 5, SEC_S)->>'to')::int = 6);
+  begin
+    perform public.franchise_staff_hire('head', SEC_X);
+    perform pg_temp.ok('and a guessed secret hires nobody', false, 'it hired');
+  exception when invalid_authorization_specification then
+    perform pg_temp.ok('and a guessed secret hires nobody', true);
+  end;
 end
 $test$;

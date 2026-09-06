@@ -26,7 +26,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const PAGES = ['index.html', 'price-it/index.html', 'pick-5/index.html', 'h2h/index.html',
   'groups/index.html', 'dynasty/index.html', 'two-minute-drill/index.html', 'status/index.html',
   'franchise/index.html', 'roster/index.html', 'gameday/index.html', 'trophies/index.html', 'market/index.html',
-  'conference/index.html', 'trades/index.html']
+  'conference/index.html', 'trades/index.html', 'staff/index.html']
   .map(p => path.join(ROOT, 'games', p));
 
 function today() {
