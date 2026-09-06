@@ -962,8 +962,10 @@ fresh();
     eq('a facility line', F.facilityLine('film', 1), 'Film Room · level 1 of 3');
   })();
   /* the offseason the client explains is the one the SQL ran */
-  eq('the offseason is offseason_v1', F.OFFSEASON_VERSION, 'offseason_v1');
-  has(SQL, "'version', 'offseason_v1'", 'the SQL writes the version on the report');
+  eq('the offseason is offseason_v2', F.OFFSEASON_VERSION, 'offseason_v2');
+  has(SQL, "select 'offseason_v2';", 'the SQL names the version in one place');
+  chk('and the report reads it from there rather than repeating it',
+    /'version', public\.franchise_offseason_version\(\), 'after_season', p_from/.test(SQL));
   chk('the retirement rule is the same on both sides', F.RETIRE_AGE === 35 && F.FADE_AGE === 33 && F.FADE_OVERALL === 55 && /retire := age_new >= 35 or \(age_new >= 33 and ovr < 55\)/.test(SQL));
   chk('nobody grows past his potential', /if ovr > pl\.potential and growth > 0 then/.test(SQL) && /pot := case when age_new >= 30 then ovr else greatest\(pl\.potential, ovr\) end/.test(SQL));
   chk('the Training Center is a level of development for the young', /\+ \(case when g >= 4 then 1 else 0 end\) \+ training \+ floor\(random\(\) \* 3\)::int - 1/.test(SQL));
@@ -1050,7 +1052,7 @@ fresh();
   chk('the room is the franchise\'s own', /function public\.franchise_trophies\(p_secret text default null\)[\s\S]*?where id = public\.franchise_of\(p_secret\)/.test(SQL));
   chk('the SQL suite plays the offseason and the facilities through', /17\. THE OFFSEASON AND THE FACILITIES/.test(SQLTEST) && /the dry run and the real one agree, player for player/.test(SQLTEST) && /one credit short is refused/.test(SQLTEST));
   has(README, 'facilities_v1', 'the README documents the facilities');
-  has(README, 'offseason_v1', 'and the offseason');
+  has(README, 'offseason_v2', 'and the offseason');
   has(README, 'one negative ledger row', 'and the ledger rule for spending');
   has(README, 'Trophy Room', 'and the Trophy Room');
 
@@ -2199,9 +2201,15 @@ fresh();
   chk('the preseason re-earns the depth chart rather than merely closing it up', () => {
     /* scoped to the offseason: reading the chart in depth order is right
        everywhere else — that is what a depth chart is for */
-    const off = (SQL.match(/create or replace function public\.franchise_offseason[\s\S]*?\n\$\$;/) || [''])[0];
+    /* the FULL signature: franchise_offseason_version() now sits above it and
+       a prefix match reads that one-line function instead */
+    const off = (SQL.match(/create or replace function public\.franchise_offseason\(p_franchise uuid, p_from integer\)[\s\S]*?\n\$\$;/) || [''])[0];
     return off.length > 0
-      && /for v_pos in select distinct position from public\.game_players where franchise_id = p_franchise and status = 'active' loop/.test(off)
+      /* Phase 17: the loop walks the roster PLAN as well, because a position
+         with nobody left in it is invisible to "where status = 'active'" and
+         so could never be signed again */
+      && /select pp->>'pos' from jsonb_array_elements\(public\.franchise_pool_plan\(\)\) pp/.test(off)
+      && /select distinct position from public\.game_players\s*\n\s*where franchise_id = p_franchise and status = 'active'/.test(off)
       && /order by overall desc, potential desc, id loop/.test(off)
       && !/order by depth, overall desc loop/.test(off)
       && !/status = 'retired' and retired_season = p_from loop/.test(

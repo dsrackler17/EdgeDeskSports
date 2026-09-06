@@ -110,6 +110,8 @@ declare
   mnf uuid; mn jsonb; mstory jsonb; mdrv jsonb; nkey integer; sside text; scall text; scall2 text;
   -- both sides of the ball
   cbf uuid; cb jsonb; nposs integer; nsecs integer;
+  -- the roster floor
+  rfl uuid; SEC_RF constant text := 'device-secret-rosterfloorfloor0001';
   SEC_CB constant text := 'device-secret-bothsidesbothsidesboth1';
   -- the playbook
   pbf uuid; pb jsonb; pnt numeric; pstale numeric; pfresh numeric;
@@ -1653,7 +1655,7 @@ begin
   exception when raise_exception then null;
   end;
   perform pg_temp.ok('the dry run left nothing behind',
-    rep->>'version' = 'offseason_v1'
+    rep->>'version' = 'offseason_v2'
     and (select offseason is null from public.franchise_seasons where franchise_id = fb and number = 1)
     and (select count(*) from public.game_players where franchise_id = fb and status = 'retired') = 0
     and (select count(*) from public.game_players where franchise_id = fb and status = 'active') = 38
@@ -1665,7 +1667,7 @@ begin
   select offseason into rep2 from public.franchise_seasons where franchise_id = fb and number = 1;
   perform pg_temp.ok('Season II opens on the offseason: the report is written on Season I, once, and home carries it without the player lines',
     (v->>'started')::boolean and (v->>'season_number')::int = 2 and rep2 is not null
-    and rep2->>'version' = 'offseason_v1' and (rep2->>'after_season')::int = 1 and (rep2->>'training')::int = 3
+    and rep2->>'version' = 'offseason_v2' and (rep2->>'after_season')::int = 1 and (rep2->>'training')::int = 3
     and v->'home'->'offseason'->'summary' = rep2->'summary' and v->'home'->'offseason' ? 'retired' and v->'home'->'offseason' ? 'rookies'
     and not (v->'home'->'offseason' ? 'players') and jsonb_array_length(rep2->'players') = 38
     and (select count(*) from public.franchise_activity where franchise_id = fb and kind = 'offseason' and key = '1') = 1);
@@ -4850,6 +4852,98 @@ begin
       'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
     and not has_function_privilege('authenticated',
       'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute'));
+
+-- ═══ 30. THE ROSTER FLOOR ═════════════════════════════════════════════════
+-- TEN THOUSAND SEASONS FOUND THIS, and it was the worst thing in the game.
+-- The offseason signed one rookie per man who retired at a position that
+-- STILL HAD SOMEBODY ACTIVE, because its outer loop read "select distinct
+-- position ... where status = 'active'". The moment the last quarterback
+-- retired, QB stopped appearing in that list and could never be signed
+-- again. Measured across fifteen franchises: fourteen had NO KICKER and NO
+-- PUNTER and nine had NO QUARTERBACK — and the first touchdown after that
+-- built a jsonb key out of a player who did not exist, threw "key must not
+-- be null", and killed the franchise for good. 38.5% of careers ended that
+-- way, the earliest at SEASON FIVE.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('the offseason is offseason_v2 and the plan is the floor',
+    public.franchise_offseason_version() = 'offseason_v2'
+    and (select sum(jsonb_array_length(pp->'targets'))
+           from jsonb_array_elements(public.franchise_pool_plan()) pp) = 38);
+
+  -- ── A GAME WITH NOBODY LEFT IS A BAD TEAM, NEVER A DEAD ONE ─────────────
+  perform pg_temp.ok('asked for a man who is not there, the lineup offers whoever is',
+    public.franchise_anybody('[]'::jsonb, 'QB', 1) is null
+    and public.franchise_anybody('[{"id":"x","position":"RB","overall":70,"depth":1}]'::jsonb, 'QB', 1)->>'id' = 'x'
+    and public.franchise_anybody('[{"id":"q","position":"QB","overall":60,"depth":1},
+                                   {"id":"r","position":"RB","overall":80,"depth":1}]'::jsonb, 'QB', 9)->>'id' = 'q');
+
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Floor', 'Bedrock', 'FLR', 'star', 'forest', 'pro_style', 'four_three', SEC_RF);
+  rfl := (v->'franchise'->>'id')::uuid;
+  perform public.franchise_start_season(SEC_RF);
+  perform pg_temp.as_owner();
+  -- take EVERY quarterback, kicker and punter off the board, the way sixty
+  -- seasons of retirements used to
+  update public.game_players set status = 'retired', retired_season = 1
+   where franchise_id = rfl and position in ('QB', 'K', 'P');
+  perform pg_temp.ok('a roster can be stripped of a whole position',
+    (select count(*) from public.game_players
+      where franchise_id = rfl and position in ('QB','K','P') and status = 'active') = 0);
+
+  update public.franchise_games set opens_at = now() - interval '1 hour'
+   where franchise_id = rfl and status = 'scheduled';
+  perform pg_temp.as_anon();
+  begin
+    v := public.franchise_play_week(SEC_RF);
+    caught := 'played';
+  exception when others then caught := SQLERRM; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and a game with NO QUARTERBACK AT ALL is still played, not thrown',
+    caught = 'played', caught);
+  -- The FULL box invariant cannot hold here and should not be asked to:
+  -- box_adds_up() compares receptions against the QUARTERBACK'S completions,
+  -- and a roster with no quarterback has no line for them to live on. What
+  -- must still hold is that a real game was played and its own numbers agree.
+  perform pg_temp.ok('and the game it produced is a real one: quarters that sum to the final, nothing negative',
+    (select (g.box->'final'->>'for')::int is not null
+        and (select sum(q::int) from jsonb_array_elements_text(g.box->'quarters'->'for') q) = (g.box->'final'->>'for')::int
+        and (select sum(q::int) from jsonb_array_elements_text(g.box->'quarters'->'against') q) = (g.box->'final'->>'against')::int
+        and (g.box->'team'->'for'->>'points')::int = (g.box->'final'->>'for')::int
+        and (select coalesce(bool_and((p->'stats'->>'yds')::int >= 0), true)
+               from jsonb_array_elements(g.box->'players') p where p->'stats' ? 'yds')
+       from public.franchise_games g
+      where g.franchise_id = rfl and g.season_number = 1 and g.week = 1));
+
+  -- ── AND THE OFFSEASON SIGNS THEM BACK ───────────────────────────────────
+  perform public.franchise_offseason(rfl, 1);
+  perform pg_temp.ok('every position stripped is signed back to the plan',
+    (select bool_and(have >= want) from (
+       select pp->>'pos' as pos,
+              (select count(*) from public.game_players p
+                where p.franchise_id = rfl and p.position = pp->>'pos' and p.status = 'active') as have,
+              jsonb_array_length(pp->'targets') as want
+         from jsonb_array_elements(public.franchise_pool_plan()) pp) q),
+    (select string_agg(pp->>'pos' || ':' ||
+              (select count(*) from public.game_players p
+                where p.franchise_id = rfl and p.position = pp->>'pos' and p.status = 'active'), ' ')
+       from jsonb_array_elements(public.franchise_pool_plan()) pp));
+  perform pg_temp.ok('and the roster is whole again rather than merely patched',
+    (select count(*) from public.game_players where franchise_id = rfl and status = 'active') >= 38);
+
+  -- THE FLOOR IS A FLOOR, NOT A TARGET: a roster already at the plan does not
+  -- grow every offseason, or a franchise would balloon over sixty seasons.
+  perform pg_temp.as_anon();
+  perform public.franchise_start_season(SEC_RF);
+  perform pg_temp.as_owner();
+  n := (select count(*) from public.game_players where franchise_id = rfl and status = 'active');
+  perform public.franchise_offseason(rfl, 2);
+  perform pg_temp.ok('an offseason on a full roster does not inflate it',
+    (select count(*) from public.game_players where franchise_id = rfl and status = 'active')
+      <= n + (select count(*) from public.game_players
+               where franchise_id = rfl and status = 'retired' and retired_season = 2),
+    n || ' before, ' || (select count(*) from public.game_players
+                          where franchise_id = rfl and status = 'active') || ' after');
 
 end
 $test$;

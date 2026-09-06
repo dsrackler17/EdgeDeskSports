@@ -658,7 +658,7 @@
     var spec = FACILITIES[key];
     return spec ? spec.name + ' · level ' + (level | 0) + ' of ' + spec.costs.length : '';
   }
-  var OFFSEASON_VERSION = 'offseason_v1';
+  var OFFSEASON_VERSION = 'offseason_v2';
   /* the retirement rule, as the SQL applies it: at 35, or at 33 and under 55 */
   var RETIRE_AGE = 35, FADE_AGE = 33, FADE_OVERALL = 55;
   function roman(n) {

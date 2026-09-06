@@ -201,11 +201,130 @@
     return withAttribution(TERMINAL, q) + frag;
   }
 
+  /* ── THE AGE GATE ─────────────────────────────────────────────────────
+     THE GAME IS OPEN TO EVERYONE. Nothing here gates a game, a page, a
+     score or a franchise, and nothing here is asked on arrival.
+
+     What it does gate is the one door out of the game: EdgeDesk's RESEARCH
+     TERMINAL, which is a betting-research product and carries a 21+ line of
+     its own in every footer on this site. So the terminal is asked for
+     exactly once, at the moment somebody reaches for it, and the answer is
+     remembered.
+
+     A "no" is remembered and respected. It is never asked twice, the game is
+     not altered by it in any way, and no page nags. That is the whole
+     policy: the game is for anyone, the research is for adults, and the
+     player is told which is which rather than discovering it.
+
+     Nothing is collected. No name, no date of birth, no request. It is a
+     self-attestation held in this browser and read back here. */
+  var AGE_MIN = 21;
+  var _ageEl = null;
+
+  function ageAnswer() {
+    try { return ST && ST.ageAnswer ? ST.ageAnswer() : null; } catch (_) { return null; }
+  }
+  function ageOk() { return ageAnswer() === 'yes'; }
+  function ageAsked() { return ageAnswer() !== null; }
+  function setAge(answer) {
+    try { if (ST && ST.setAgeAnswer) ST.setAgeAnswer(answer); } catch (_) {}
+    track('age_gate_answered', { answer: answer, min_age: AGE_MIN });
+    return answer;
+  }
+
+  function closeAge() {
+    if (_ageEl) { _ageEl.classList.remove('on'); _ageEl.setAttribute('aria-hidden', 'true'); }
+  }
+
+  /* Asks once, then calls back with true or false. If it has been asked
+     before, it calls back immediately and draws nothing. */
+  function askAge(onAnswer) {
+    var d = root.document;
+    if (ageAsked()) { if (onAnswer) onAnswer(ageOk()); return; }
+    if (!_ageEl) {
+      _ageEl = d.createElement('div');
+      _ageEl.className = 'age-gate';
+      _ageEl.setAttribute('role', 'dialog');
+      _ageEl.setAttribute('aria-modal', 'true');
+      _ageEl.setAttribute('aria-labelledby', 'ageGateTitle');
+      d.body.appendChild(_ageEl);
+    }
+    _ageEl.innerHTML = '<div class="ag-card">'
+      + '<div class="ag-eyebrow">One question, once</div>'
+      + '<h2 id="ageGateTitle">The research terminal is ' + AGE_MIN + '+</h2>'
+      + '<p>You are about to leave the game for <b>EdgeDesk research</b> — a betting-research '
+      + 'terminal for adults. The game itself is free, has no wagering of any kind, and is open '
+      + 'to anyone at any age.</p>'
+      + '<p class="ag-fine">Nothing is collected: no name, no date of birth, nothing sent anywhere. '
+      + 'Your answer is remembered in this browser so you are never asked again. If gambling is a '
+      + 'problem for you, call 1-800-GAMBLER.</p>'
+      + '<div class="ag-row">'
+      + '<button class="btn btn-go" type="button" data-age="yes">I am ' + AGE_MIN + ' or older</button>'
+      + '<button class="btn" type="button" data-age="no">I am not</button>'
+      + '</div></div>';
+    var done = function (ans) {
+      setAge(ans);
+      if (ans === 'no') {
+        _ageEl.innerHTML = '<div class="ag-card">'
+          + '<div class="ag-eyebrow">Understood</div>'
+          + '<h2>Nothing changes about the game</h2>'
+          + '<p>Every game, every score and your whole franchise stay exactly as they are. '
+          + 'We will not ask again and nothing here will nag you about it.</p>'
+          + '<div class="ag-row"><button class="btn btn-go" type="button" data-age="close">Back to the game</button></div>'
+          + '</div>';
+        _ageEl.querySelector('[data-age="close"]').addEventListener('click', function () {
+          closeAge(); if (onAnswer) onAnswer(false);
+        });
+        return;
+      }
+      closeAge();
+      if (onAnswer) onAnswer(true);
+    };
+    _ageEl.querySelector('[data-age="yes"]').addEventListener('click', function () { done('yes'); });
+    _ageEl.querySelector('[data-age="no"]').addEventListener('click', function () { done('no'); });
+    _ageEl.classList.add('on');
+    _ageEl.setAttribute('aria-hidden', 'false');
+    track('age_gate_shown', { min_age: AGE_MIN });
+    try { _ageEl.querySelector('[data-age="yes"]').focus(); } catch (_) {}
+  }
+
+  /* Runs `go` if the terminal may be opened; otherwise asks, once. */
+  function ifOfAge(go) {
+    if (ageOk()) { go(); return; }
+    if (ageAsked()) { toast('The research terminal is ' + AGE_MIN + '+.'); return; }
+    askAge(function (ok) { if (ok) go(); });
+  }
+
+  /* EVERY LINK TO THE TERMINAL, wherever it is written. Rather than ask each
+     page to remember, one delegated listener catches any anchor pointing at
+     the terminal — including ones added later — so a link cannot be added
+     that quietly skips the gate. */
+  function wireAgeGate() {
+    var d = root.document;
+    if (!d || d.__edAgeWired) return;
+    d.__edAgeWired = true;
+    d.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      if (href.indexOf(TERMINAL) < 0) return;      /* not the terminal */
+      if (ageOk()) return;                          /* already answered yes */
+      e.preventDefault();
+      ifOfAge(function () { root.location.href = a.href; });
+    }, true);
+  }
+
   /* Opening the research is the funnel's whole point, so it is recorded on
      the player's record (once per game — a reload is not a review) before
      the page leaves. The XP for it is celebrated when they come back. */
   function openResearch(ch, where, opts) {
     opts = opts || {};
+    /* the same gate the links go through — a page that calls this directly
+       must not be a way around it */
+    if (!ageOk()) {
+      ifOfAge(function () { openResearch(ch, where, opts); });
+      return;
+    }
     var first = false;
     if (ST && ST.recordResearchOpen && ch) {
       try { first = !!ST.recordResearchOpen(ch).first; } catch (_) {}
@@ -431,6 +550,9 @@
     if (h) h.outerHTML = header(current);
     if (f) f.outerHTML = footer();
     if (t) { t.outerHTML = tabs(current); try { d.body.classList.add('has-tabs'); } catch (_) {} }
+    /* every page mounts the chrome, so every page gets the gate on the one
+       link that leaves the game */
+    wireAgeGate();
   }
 
   /* ── the social endpoint ──────────────────────────────────────────────────
@@ -852,6 +974,8 @@
     ART: ART, TERMINAL: TERMINAL, FUNNEL: FUNNEL,
     SPREAD_RANGE: SPREAD_RANGE, SPREAD_STEP: SPREAD_STEP,
     track: track, withAttribution: withAttribution, initAttribution: initAttribution,
+    AGE_MIN: AGE_MIN, ageAnswer: ageAnswer, ageOk: ageOk, ageAsked: ageAsked,
+    askAge: askAge, ifOfAge: ifOfAge, wireAgeGate: wireAgeGate,
     artifact: artifact, config: config, researchUrl: researchUrl, openResearch: openResearch,
     pts: pts, line: line, kickoffLabel: kickoffLabel, esc: esc,
     shareText: shareText, shareUrl: shareUrl, share: share,

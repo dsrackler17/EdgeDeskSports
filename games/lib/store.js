@@ -59,7 +59,20 @@
          queue      rewards the server has not confirmed yet (offline, or a
                     request that failed): each is replayed on the next
                     boot, and every one is idempotent on the server */
-      franchise: { snapshot: null, fetched_at: null, user_id: null, queue: [] }
+      franchise: { snapshot: null, fetched_at: null, user_id: null, queue: [] },
+      /* ── the age gate (games/games.js) ────────────────────────────────
+         THE GAME IS OPEN TO EVERYONE. This is asked once, and only when
+         somebody reaches for the research terminal, which is a
+         betting-research product and carries a 21+ line of its own.
+
+         answer   null before it has been asked, then 'yes' or 'no'
+         at       when they answered, so the record is auditable
+
+         A 'no' is REMEMBERED AND RESPECTED: it is never asked again and
+         nothing about the game changes. Nothing here is a claim about who
+         the player is — it is a self-attestation with no name, no date of
+         birth and nothing sent anywhere. */
+      age: { answer: null, at: null }
     };
   }
 
@@ -332,6 +345,23 @@
      One row per matchup whose research this player opened. Unique per game,
      so opening the same page fifty times is one row — "reviewed 10 unique
      games" cannot be clicked into existence. Returns { first, rec }. */
+  /* ── THE AGE GATE ────────────────────────────────────────────────────
+     Reads and writes the single self-attestation. Deliberately tiny: the
+     policy lives in games.js, this only remembers the answer. */
+  function ageAnswer() {
+    var a = read().age;
+    return a && a.answer === 'yes' ? 'yes' : a && a.answer === 'no' ? 'no' : null;
+  }
+  function setAgeAnswer(answer, ms) {
+    if (answer !== 'yes' && answer !== 'no') return ageAnswer();
+    update(function (s) {
+      if (!s.age) s.age = { answer: null, at: null };
+      s.age.answer = answer;
+      s.age.at = new Date(ms || Date.now()).toISOString();
+    });
+    return answer;
+  }
+
   function recordResearchOpen(ch, ms) {
     if (!ch || ch.game_id == null) return { first: false, rec: null };
     var gid = String(ch.game_id);
@@ -563,6 +593,7 @@
   var API = {
     KEY: KEY, VERSION: VERSION,
     read: read, write: write, reset: reset, storageWorks: storageWorks,
+    ageAnswer: ageAnswer, setAgeAnswer: setAgeAnswer,
     liveStreak: liveStreak, touchStreak: touchStreak,
     priceItResult: priceItResult, recordPriceIt: recordPriceIt, priceItRecord: priceItRecord,
     pick5Card: pick5Card, submitPick5: submitPick5, settlePick5: settlePick5, pick5Record: pick5Record,

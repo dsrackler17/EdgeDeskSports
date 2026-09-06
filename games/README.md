@@ -1316,7 +1316,7 @@ go; and everything permanent about a franchise is one page.
 **The offseason runs before the next season, once.** When a franchise
 whose season is complete asks for the next one (`franchise_start_season`),
 `franchise_offseason()` runs first, on the server, seeded from the
-franchise and the season number (`offseason_v1`):
+franchise and the season number (`offseason_v2`):
 
 - **Ageing.** Every active player is a year older.
 - **Development.** A player 26 and under grows by his development tier
@@ -2577,7 +2577,7 @@ bracket belongs). The ledger accepts a negative delta for spending (the
 facilities, the reports and the signings use it), and
 `franchise_activity` is the record every future reward derives from. The
 simulator, the offseason, the market, the conference, injuries, the bowl,
-trades and the staff are each versioned (`sim_v4`, `offseason_v1`,
+trades and the staff are each versioned (`sim_v4`, `offseason_v2`,
 `market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
 `staff_v2`, `scouting_v1`, `development_v1`, `league_v1`, `rank_v1`, `packs_v1`,
 `career_v1`, `snap_v1`, `moment_v1`, `clock_v1`, `defense_v1`, `playbook_v1`) so a retuned one is a new version and old boxes, old reports,
