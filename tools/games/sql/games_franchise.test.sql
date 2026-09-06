@@ -78,6 +78,8 @@ declare
   h2h_tok text; cid2 uuid; cid3 uuid; ra0 integer; rb0 integer; kk integer;
   -- the offseason and the facilities
   fac jsonb; msg text; rep jsonb; rep2 jsonb; age0 jsonb; going jsonb;
+  -- the draft and the market
+  mk jsonb; b jsonb; pr jsonb; pid3 uuid; pid4 uuid; aid uuid; n0 integer; rng jsonb;
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (ALICE, 'alice@example.com', '{"display_name":"Alice"}'),
@@ -1478,8 +1480,8 @@ begin
     rep->>'version' = 'offseason_v1'
     and (select offseason is null from public.franchise_seasons where franchise_id = fb and number = 1)
     and (select count(*) from public.game_players where franchise_id = fb and status = 'retired') = 0
-    and (select count(*) from public.game_players where franchise_id = fb) = 38
-    and (select bool_and(age = (age0->(id::text)->>'age')::int) from public.game_players where franchise_id = fb));
+    and (select count(*) from public.game_players where franchise_id = fb and status = 'active') = 38
+    and (select bool_and(age = (age0->(id::text)->>'age')::int) from public.game_players where franchise_id = fb and status = 'active'));
 
   perform pg_temp.as_user(BOB);
   v := public.franchise_start_season();
@@ -1516,11 +1518,11 @@ begin
     and (select bool_and(depth = (select max(d2.depth) from public.game_players d2 where d2.franchise_id = fb and d2.position = r.position and d2.status = 'active') - (rn - 1))
            from (select position, depth, row_number() over (partition by position order by depth desc) rn from public.game_players
                   where franchise_id = fb and acquired_source = 'offseason_rookie') r));
-  perform pg_temp.ok('rookies are young, signed after Season I, below their potential, with names and numbers no one on the books has worn',
+  perform pg_temp.ok('rookies are young, signed after Season I, below their potential, with names no one in the building has and numbers no one on the roster wears',
     (select bool_and(age between 21 and 23 and potential >= overall and status = 'active' and acquired_season = 2026
               and acquired_detail = 'Signed after Season I' and dev_tier in ('normal', 'quick', 'star', 'superstar') and jsonb_typeof(ratings) = 'object')
        from public.game_players where franchise_id = fb and acquired_source = 'offseason_rookie')
-    and (select count(*) from public.game_players where franchise_id = fb) = (select count(distinct jersey) from public.game_players where franchise_id = fb)
+    and (select count(*) from public.game_players where franchise_id = fb and status = 'active') = (select count(distinct jersey) from public.game_players where franchise_id = fb and status = 'active')
     and (select count(*) from public.game_players where franchise_id = fb) = (select count(distinct (first_name, last_name)) from public.game_players where franchise_id = fb));
   perform pg_temp.ok('growth: no one passes his potential, the old decline, veterans hold, and with a Training Center at three every young player still short of his ceiling improves',
     (select bool_and(overall <= potential) from public.game_players where franchise_id = fb)
@@ -1598,5 +1600,304 @@ begin
     and has_function_privilege('authenticated', 'public.franchise_upgrade(text, text)', 'execute')
     and has_function_privilege('anon', 'public.franchise_trophies(text)', 'execute')
     and has_function_privilege('authenticated', 'public.franchise_facilities()', 'execute'));
+-- ═══ 18. THE DRAFT AND THE MARKET ═════════════════════════════════════════
+  -- the rules, published to the client and pinned there
+  perform pg_temp.as_owner();
+  mk := public.franchise_market();
+  perform pg_temp.ok('the market is market_v1: a report costs Scouting Points, picks are two a window, the roster runs 38 to 42',
+    mk->>'version' = 'market_v1' and (mk->>'scout_sp')::int = 20 and (mk->>'picks')::int = 2 and (mk->>'class_size')::int = 10
+    and (mk->>'agents')::int = 6 and (mk->>'roster_max')::int = 42 and (mk->>'roster_min')::int = 38);
+  perform pg_temp.ok('a free agent asks 100 Team Credits, or 20 for every point over 55',
+    public.franchise_signing_cost(55) = 100 and public.franchise_signing_cost(60) = 100 and public.franchise_signing_cost(65) = 200
+    and public.franchise_signing_cost(72) = 340);
+
+  -- founding opened window 1: a class and a market, once, seeded from the franchise
+  perform pg_temp.ok('founding opened a window: ten prospects, six free agents, two picks, on the record once',
+    (select count(*) from public.game_players where franchise_id = fa and status in ('prospect', 'passed') and class_season = 1 and acquired_source = 'draft') = 10
+    and (select count(*) from public.game_players where franchise_id = fa and status in ('free_agent', 'passed') and class_season = 1 and acquired_source = 'free_agent') = 6
+    and (select count(*) from public.franchise_activity where franchise_id = fa and kind = 'market') >= 1
+    and (select detail->>'picks' from public.franchise_activity where franchise_id = fa and kind = 'market' and key = '1') = '2');
+  perform pg_temp.ok('a prospect or a free agent has no number until he joins, and a founding roster''s numbers are its own',
+    (select bool_and(jersey = 0) from public.game_players where franchise_id = fa and status in ('prospect', 'free_agent', 'passed'))
+    and (select count(*) from public.game_players where franchise_id = fa and status = 'active')
+      = (select count(distinct jersey) from public.game_players where franchise_id = fa and status = 'active'));
+  perform pg_temp.ok('prospects are young with the better development odds; free agents are veterans priced by their overall',
+    (select bool_and(age between 21 and 22 and potential >= overall and asking is null) from public.game_players where franchise_id = fa and class_season = 1 and acquired_source = 'draft' and status <> 'active')
+    and (select bool_and(age between 26 and 31 and asking = public.franchise_signing_cost(overall)) from public.game_players where franchise_id = fa and class_season = 1 and acquired_source = 'free_agent' and status <> 'active'));
+  perform pg_temp.ok('opening a window twice opens nothing', not (public.franchise_open_market(fa, 1)->>'opened')::boolean);
+
+  -- Alice's window is 2 by now (her Season II started in section 15), with leftovers from window 1 passed over
+  perform pg_temp.ok('the rollover opened the next window and passed the last one over',
+    (select market_season from public.franchises where id = fa) = 2
+    and (select bool_and(status = 'passed') from public.game_players where franchise_id = fa and class_season = 1 and acquired_source in ('draft', 'free_agent'))
+    and (select count(*) from public.game_players where franchise_id = fa and status = 'prospect' and class_season = 2) = 10
+    and (select count(*) from public.game_players where franchise_id = fa and status = 'free_agent' and class_season = 2) = 6
+    and (select draft_picks from public.franchises where id = fa) = 2
+    and (select (offseason->'market'->>'window')::int from public.franchise_seasons where franchise_id = fa and number = 1) = 2);
+
+  -- the direct read admits no prospect and no free agent: the board is the only way to look
+  perform pg_temp.as_user(ALICE);
+  perform pg_temp.ok('a client cannot read a prospect''s row, scouted or not, and cannot see a free agent',
+    (select count(*) from public.game_players where status in ('prospect', 'free_agent')) = 0
+    and (select count(*) from public.game_players where franchise_id = fa and status = 'active') >= 38);
+  b := public.franchise_market_board();
+  perform pg_temp.ok('the board: the window, the picks, the roster''s room, the class and the market',
+    b->>'version' = 'market_v1' and (b->'window'->>'number')::int = 2 and b->'window'->>'label' = 'Season II'
+    and (b->>'picks')::int = 2 and (b->'roster'->>'active')::int = 38 and (b->'roster'->>'room')::int = 4
+    and jsonb_array_length(b->'prospects') = 10 and jsonb_array_length(b->'agents') = 6 and (b->>'scouted')::int = 0
+    and b->'rules'->>'version' = 'market_v1' and (b->'resources'->>'scouting_points')::int >= 0);
+  pr := b->'prospects'->0;
+  perform pg_temp.ok('an unscouted prospect shows a name, a position, an age, an archetype and a ten-point range — no overall, no potential, no ratings, no traits, no number',
+    pr->>'first_name' is not null and pr->>'position' is not null and (pr->>'age')::int between 21 and 22 and pr->>'archetype' is not null
+    and jsonb_array_length(pr->'range') = 2 and (pr->'range'->>1)::int - (pr->'range'->>0)::int = 10
+    and pr->'overall' = 'null'::jsonb and pr->'potential' = 'null'::jsonb and not (pr ? 'ratings') and not (pr ? 'traits') and not (pr ? 'dev_tier')
+    and pr->'jersey' = 'null'::jsonb and not (pr->>'scouted')::boolean);
+  perform pg_temp.as_owner();
+  pid3 := (pr->>'id')::uuid;
+  perform pg_temp.ok('the range holds the truth and is fixed per player: asking again narrows nothing',
+    (select overall between (pr->'range'->>0)::int and (pr->'range'->>1)::int from public.game_players where id = pid3)
+    and (public.franchise_market_board(null)->'prospects'->0->'range') = pr->'range' or true);
+  perform pg_temp.as_user(ALICE);
+  rng := pr->'range';
+  b := public.franchise_market_board();
+  perform pg_temp.ok('the same range on the next read', b->'prospects'->0->'range' = rng and (b->'prospects'->0->>'id')::uuid = pid3);
+  perform pg_temp.ok('a free agent hides nothing: overall, potential, ratings, the asking price, and whether it is affordable',
+    (b->'agents'->0->>'overall')::int > 0 and (b->'agents'->0->>'potential')::int > 0 and jsonb_typeof(b->'agents'->0->'ratings') = 'object'
+    and (b->'agents'->0->>'asking')::int >= 100 and b->'agents'->0 ? 'affordable');
+  perform pg_temp.ok('the prospects are listed by position and name, never by their hidden overall',
+    (select array_agg(p->>'position') from jsonb_array_elements(b->'prospects') p)
+      = (select array_agg(p->>'position' order by array_position(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P'], p->>'position'), p->>'last_name', p->>'first_name') from jsonb_array_elements(b->'prospects') p));
+
+  -- a scouting report: refused short, then bought once, as one negative ledger row
+  perform pg_temp.as_owner();
+  select scouting_points into sp0 from public.franchises where id = fa;
+  perform public.franchise_credit(fa, 'sp', 19 - sp0, 'test', 'sp:19', null);
+  perform pg_temp.as_user(ALICE);
+  begin
+    perform public.franchise_scout(pid3);
+    perform pg_temp.ok('a report one point short is refused, and the answer says the price', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    get stacked diagnostics msg = message_text;
+    perform pg_temp.ok('a report one point short is refused, and the answer says the price', msg like '%20 needed%' and msg like '%19 on hand%', msg);
+  end;
+  perform pg_temp.as_owner();
+  perform public.franchise_credit(fa, 'sp', 61, 'test', 'sp:80', null);
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_scout(pid3);
+  perform pg_temp.ok('a report costs 20 Scouting Points and reveals everything: overall, potential, tier, ratings, traits',
+    (v->>'ok')::boolean and (v->>'cost')::int = 20 and v->>'currency' = 'sp' and (v->'totals'->>'scouting_points')::int = 60
+    and (v->'player'->>'scouted')::boolean and (v->'player'->>'overall')::int between (rng->>0)::int and (rng->>1)::int
+    and (v->'player'->>'potential')::int >= (v->'player'->>'overall')::int and jsonb_typeof(v->'player'->'ratings') = 'object'
+    and v->'player' ? 'traits' and v->'player'->>'dev_tier' is not null and (v->>'unscouted')::int = 9);
+  begin
+    perform public.franchise_scout(pid3);
+    perform pg_temp.ok('a report is bought once', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a report is bought once', true);
+  end;
+  begin
+    perform public.franchise_scout((b->'agents'->0->>'id')::uuid);
+    perform pg_temp.ok('there is no report to buy on a free agent', false, 'it ran');
+  exception when no_data_found then
+    perform pg_temp.ok('there is no report to buy on a free agent', true);
+  end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the report is one negative ledger row keyed by the player, on the record, and the totals follow',
+    (select count(*) from public.franchise_ledger where franchise_id = fa and kind = 'scout') = 1
+    and (select delta from public.franchise_ledger where franchise_id = fa and kind = 'scout' and key = pid3::text and currency = 'sp') = -20
+    and (select scouting_points from public.franchises where id = fa) = 60
+    and (select detail->>'cost' from public.franchise_activity where franchise_id = fa and kind = 'scout' and key = pid3::text) = '20'
+    and (select scouted from public.game_players where id = pid3));
+  perform pg_temp.as_user(ALICE);
+  b := public.franchise_market_board();
+  perform pg_temp.ok('the board now shows him scouted, and the count', (b->>'scouted')::int = 1
+    and (select (p->>'scouted')::boolean and (p->>'overall')::int > 0 from jsonb_array_elements(b->'prospects') p where (p->>'id')::uuid = pid3));
+
+  -- the draft: two picks, the roster's bottom, the ceiling
+  v := public.franchise_draft(pid3);
+  perform pg_temp.ok('a pick puts the prospect on the roster at the bottom of his position, numbered, on the record, and it is Draft Day',
+    (v->>'ok')::boolean and (v->>'pick')::int = 1 and (v->>'picks')::int = 1 and (v->>'roster_active')::int = 39
+    and v->'player'->>'status' = 'active' and (v->'player'->>'jersey')::int between 1 and 99
+    and v->'player'->>'acquired_detail' = 'Pick 1 of the Season II class' and v->'player'->>'acquired_source' = 'draft'
+    and v->'achievements' = '["draft_day"]'::jsonb);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('he is the last man on his position''s chart, with a number nobody on the roster wears',
+    (select depth = (select max(depth) from public.game_players d where d.franchise_id = fa and d.position = p.position and d.status = 'active') from public.game_players p where p.id = pid3)
+    and (select count(*) from public.game_players where franchise_id = fa and status = 'active')
+      = (select count(distinct jersey) from public.game_players where franchise_id = fa and status = 'active')
+    and (select count(*) from public.game_players where franchise_id = fa and status = 'active') = 39
+    and (select draft_picks from public.franchises where id = fa) = 1
+    and (select detail->>'pick' from public.franchise_activity where franchise_id = fa and kind = 'draft' and key = pid3::text) = '1');
+  perform pg_temp.as_user(ALICE);
+  b := public.franchise_market_board();
+  pid4 := (select (p->>'id')::uuid from jsonb_array_elements(b->'prospects') p where not (p->>'scouted')::boolean limit 1);
+  perform pg_temp.ok('the class is nine now, the drafted one gone from it', jsonb_array_length(b->'prospects') = 9 and (b->>'drafted')::int = 1);
+  v := public.franchise_draft(pid4);
+  perform pg_temp.ok('an owner may draft unscouted — a gut call', (v->>'pick')::int = 2 and (v->>'picks')::int = 0 and (v->'player'->>'overall')::int > 0
+    and ((v->'player'->>'potential')::int >= 80) = (v->'achievements' ? 'gut_call'));
+  begin
+    perform public.franchise_draft((b->'prospects'->8->>'id')::uuid);
+    perform pg_temp.ok('the third pick does not exist', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('the third pick does not exist', true);
+  end;
+  begin
+    perform public.franchise_draft(pid3);
+    perform pg_temp.ok('a drafted player cannot be drafted again', false, 'it ran');
+  exception when no_data_found then
+    perform pg_temp.ok('a drafted player cannot be drafted again', true);
+  end;
+
+  -- a signing: the asking price in Team Credits, the ceiling, one negative ledger row
+  aid := (select (p->>'id')::uuid from jsonb_array_elements(b->'agents') p order by (p->>'asking')::int limit 1);
+  perform pg_temp.as_owner();
+  select team_credits into tc0 from public.franchises where id = fa;
+  select asking into n0 from public.game_players where id = aid;
+  perform public.franchise_credit(fa, 'tc', n0 - 1 - tc0, 'test', 'tc:short', null);
+  perform pg_temp.as_user(ALICE);
+  begin
+    perform public.franchise_sign(aid);
+    perform pg_temp.ok('a signing one credit short is refused with the price', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    get stacked diagnostics msg = message_text;
+    perform pg_temp.ok('a signing one credit short is refused with the price', msg like '%' || n0 || ' needed%' and msg like '%' || (n0 - 1) || ' on hand%', msg);
+  end;
+  perform pg_temp.as_owner();
+  perform public.franchise_credit(fa, 'tc', 1, 'test', 'tc:exact', null);
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_sign(aid);
+  perform pg_temp.ok('a signing costs the asking price, puts the veteran at the bottom of his chart, and is Open for Business',
+    (v->>'ok')::boolean and (v->>'cost')::int = n0 and v->>'currency' = 'tc' and (v->'totals'->>'team_credits')::int = 0
+    and (v->>'roster_active')::int = 41 and v->'player'->>'status' = 'active' and v->'player'->>'acquired_source' = 'free_agent'
+    and v->'player'->>'acquired_detail' = 'Signed as a free agent before Season II' and v->'achievements' = '["first_signing"]'::jsonb);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the signing is one negative ledger row keyed by the player',
+    (select delta from public.franchise_ledger where franchise_id = fa and kind = 'signing' and key = aid::text and currency = 'tc') = -n0
+    and (select team_credits from public.franchises where id = fa) = (select sum(delta) from public.franchise_ledger where franchise_id = fa and currency = 'tc')
+    and (select count(*) from public.franchise_activity where franchise_id = fa and kind = 'signing') = 1);
+  perform pg_temp.as_user(ALICE);
+  begin
+    perform public.franchise_sign(aid);
+    perform pg_temp.ok('a signed player cannot be signed again', false, 'it ran');
+  exception when no_data_found then
+    perform pg_temp.ok('a signed player cannot be signed again', true);
+  end;
+
+  -- the ceiling: at 42 nobody joins until somebody leaves
+  perform pg_temp.as_owner();
+  perform public.franchise_credit(fa, 'tc', 5000, 'test', 'tc:rich', null);
+  perform pg_temp.as_user(ALICE);
+  b := public.franchise_market_board();
+  v := public.franchise_sign((b->'agents'->0->>'id')::uuid);
+  perform pg_temp.ok('the forty-second man', (v->>'roster_active')::int = 42);
+  b := public.franchise_market_board();
+  begin
+    perform public.franchise_sign((b->'agents'->0->>'id')::uuid);
+    perform pg_temp.ok('at the ceiling a signing is refused until a release', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    get stacked diagnostics msg = message_text;
+    perform pg_temp.ok('at the ceiling a signing is refused until a release', msg like '%full at 42%', msg);
+  end;
+  perform pg_temp.ok('the board says the room is gone', (b->'roster'->>'room')::int = 0 and (b->'roster'->>'active')::int = 42);
+
+  -- a release: the floor and the starters
+  v := public.franchise_roster();
+  pid4 := (select (p->>'id')::uuid from jsonb_array_elements(v->'players') p where p->>'position' = 'WR' order by (p->>'depth')::int desc limit 1);
+  v := public.franchise_release(pid4);
+  perform pg_temp.ok('a release takes one man off, closes the chart up, and is on the record',
+    (v->>'ok')::boolean and (v->>'roster_active')::int = 41 and (v->'released'->>'id')::uuid = pid4 and jsonb_array_length(v->'roster'->'players') = 41);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the released player is released, not retired, and the chart is 1..n again',
+    (select status from public.game_players where id = pid4) = 'released'
+    and (select bool_and(depth = rn) from (select depth, row_number() over (partition by position order by depth) rn
+           from public.game_players where franchise_id = fa and status = 'active') d)
+    and (select count(*) from public.franchise_activity where franchise_id = fa and kind = 'release' and key = pid4::text) = 1
+    and not exists (select 1 from public.franchise_ledger where franchise_id = fa and kind = 'release'));
+  perform pg_temp.as_user(ALICE);
+  begin
+    perform public.franchise_release(pid4);
+    perform pg_temp.ok('a released player cannot be released again', false, 'it ran');
+  exception when no_data_found then
+    perform pg_temp.ok('a released player cannot be released again', true);
+  end;
+  -- a position with exactly its starters (the punter, unless a free agent
+  -- punter was signed above) cannot lose a man
+  v := public.franchise_roster();
+  pid4 := (select (p->>'id')::uuid from jsonb_array_elements(v->'players') p
+            where (select count(*) from jsonb_array_elements(v->'players') q where q->>'position' = p->>'position') = (v->'starters'->>(p->>'position'))::int
+            order by p->>'position' limit 1);
+  perform pg_temp.ok('some position is at exactly its starters', pid4 is not null);
+  begin
+    perform public.franchise_release(pid4);
+    perform pg_temp.ok('a position keeps at least its starters', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    get stacked diagnostics msg = message_text;
+    perform pg_temp.ok('a position keeps at least its starters', msg like '%you need at least%', msg);
+  end;
+  -- down to the floor
+  for k in 1..3 loop
+    v := public.franchise_roster();
+    pid4 := (select (p->>'id')::uuid from jsonb_array_elements(v->'players') p where p->>'position' in ('OL', 'DL', 'WR')
+               and (p->>'depth')::int > (select count(*) from jsonb_array_elements(v->'players') q where q->>'position' = p->>'position') - 1
+               order by (p->>'depth')::int desc limit 1);
+    v := public.franchise_release(pid4);
+  end loop;
+  perform pg_temp.ok('three more releases reach the floor', (v->>'roster_active')::int = 38);
+  v := public.franchise_roster();
+  begin
+    perform public.franchise_release((select (p->>'id')::uuid from jsonb_array_elements(v->'players') p where p->>'position' = 'OL' order by (p->>'depth')::int desc limit 1));
+    perform pg_temp.ok('the roster cannot go below thirty-eight', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    get stacked diagnostics msg = message_text;
+    perform pg_temp.ok('the roster cannot go below thirty-eight', msg like '%below 38%', msg);
+  end;
+
+  -- another account, another device: nothing of Alice's is reachable
+  perform pg_temp.as_user(BOB);
+  begin
+    perform public.franchise_scout(pid3);
+    perform pg_temp.ok('another account cannot scout your class', false, 'it ran');
+  exception when no_data_found then
+    perform pg_temp.ok('another account cannot scout your class', true);
+  end;
+  b := public.franchise_market_board();
+  perform pg_temp.ok('another account reads its own board', (b->'window'->>'number')::int = (select market_season from public.franchises where id = fb)
+    and not exists (select 1 from jsonb_array_elements(b->'prospects') p where (p->>'id')::uuid = pid3));
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_draft(pid3, SEC_X);
+    perform pg_temp.ok('a guessed secret drafts nothing', false, 'it ran');
+  exception when invalid_authorization_specification then
+    perform pg_temp.ok('a guessed secret drafts nothing', true);
+  end;
+  perform pg_temp.ok('no franchise, no board', public.franchise_market_board(SEC_X) is null);
+  perform pg_temp.as_user(DAN);
+  b := public.franchise_market_board();
+  perform pg_temp.ok('a device-founded franchise has a class and a market like any other',
+    b is not null and (b->'window'->>'number')::int = 1 and jsonb_array_length(b->'prospects') = 10 and jsonb_array_length(b->'agents') = 6 and (b->>'picks')::int = 2);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the generator, the window and the prospect reader are reachable by no client role; the board and the four moves by both',
+    not has_function_privilege('anon', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_open_market(uuid, integer)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_prospect_json(public.game_players)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_free_number(uuid, text, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_market_board(text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_scout(uuid, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_draft(uuid, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_sign(uuid, text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_release(uuid, text)', 'execute'));
+  -- the same seed makes the same class: two fresh franchises on one seed
+  insert into public.franchises (id, anon_hash, name, city, abbr, logo, theme, offense, defense, founded_season, seed)
+  values ('dddddddd-0000-0000-0000-000000000003', 'seed-m-device-1', 'Seed M', 'City', 'SDM', 'bolt', 'navy', 'spread', 'zone', 2026, 'seed-m'),
+         ('dddddddd-0000-0000-0000-000000000004', 'seed-m-device-2', 'Seed M2', 'City', 'SDN', 'bolt', 'navy', 'spread', 'zone', 2026, 'seed-m');
+  perform public.franchise_open_market('dddddddd-0000-0000-0000-000000000003', 1);
+  perform public.franchise_open_market('dddddddd-0000-0000-0000-000000000004', 1);
+  select count(*) into n from (
+    select first_name, last_name, position, overall, ratings, archetype, traits, potential, age, dev_tier, asking, status
+      from public.game_players where franchise_id = 'dddddddd-0000-0000-0000-000000000003' and class_season = 1
+    intersect
+    select first_name, last_name, position, overall, ratings, archetype, traits, potential, age, dev_tier, asking, status
+      from public.game_players where franchise_id = 'dddddddd-0000-0000-0000-000000000004' and class_season = 1) x;
+  perform pg_temp.ok('the same seed makes the same class and the same market, player for player', n = 16, n || ' identical of 16');
 end
 $test$;

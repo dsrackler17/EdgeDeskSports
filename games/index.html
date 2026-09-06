@@ -29,8 +29,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905e">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905e">
+<link rel="stylesheet" href="/games/games.css?v=20260905f">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905f">
 </head>
 <body>
 <div id="gh"></div>
@@ -267,19 +267,19 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905e"></script>
-<script src="/games/lib/scoring.js?v=20260905e"></script>
-<script src="/games/lib/challenge.js?v=20260905e"></script>
-<script src="/games/lib/research_state.js?v=20260905e"></script>
-<script src="/games/lib/attribution.js?v=20260905e"></script>
-<script src="/games/lib/store.js?v=20260905e"></script>
-<script src="/games/lib/dynasty.js?v=20260905e"></script>
-<script src="/games/lib/drill.js?v=20260905e"></script>
-<script src="/games/lib/leaderboard.js?v=20260905e"></script>
-<script src="/games/lib/social.js?v=20260905e"></script>
-<script src="/games/lib/auth.js?v=20260905e"></script>
-<script src="/games/lib/franchise.js?v=20260905e"></script>
-<script src="/games/games.js?v=20260905e"></script>
+<script src="/games/lib/week.js?v=20260905f"></script>
+<script src="/games/lib/scoring.js?v=20260905f"></script>
+<script src="/games/lib/challenge.js?v=20260905f"></script>
+<script src="/games/lib/research_state.js?v=20260905f"></script>
+<script src="/games/lib/attribution.js?v=20260905f"></script>
+<script src="/games/lib/store.js?v=20260905f"></script>
+<script src="/games/lib/dynasty.js?v=20260905f"></script>
+<script src="/games/lib/drill.js?v=20260905f"></script>
+<script src="/games/lib/leaderboard.js?v=20260905f"></script>
+<script src="/games/lib/social.js?v=20260905f"></script>
+<script src="/games/lib/auth.js?v=20260905f"></script>
+<script src="/games/lib/franchise.js?v=20260905f"></script>
+<script src="/games/games.js?v=20260905f"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -347,6 +347,11 @@
     row(!!(card&&card.submitted_at),card&&card.submitted_at?'Weekly slate: card submitted':'Weekly slate: submit your Pick 5 card','/games/pick-5/','+75 XP · +25 TC · +10 XP +15 TC per correct side','Preparation for Saturday.');
     row((wk.research|0)>0,(wk.research|0)>0?'Film: research reviewed this week':'Film: open the research on one matchup','/games/price-it/','+15 XP','Preparation for Saturday.');
     row((wk.fc|0)>0,(wk.fc|0)>0?'Rivalry: a franchise challenge played this week':'Rivalry: challenge a friend’s franchise','/games/gameday/#challenges','+60 XP · +30 TC · a win +40 XP · +40 TC · +2 CP','Your roster against theirs, on the server. The ladder and the rivalry move.');
+    /* the draft: picks to use are the roster's way forward; last, so the day's
+       objectives come first */
+    var mk=snap.market||{};
+    if((mk.picks|0)>0)row(false,'Draft: '+(mk.picks|0)+' pick'+((mk.picks|0)===1?'':'s')+' to use on the '+G.esc(ss.label||'Season I')+' class','/games/market/','a prospect for the roster',
+      (mk.unscouted|0)>0?(res.scouting_points|0)>=(mk.scout_sp||20)?'Scout first — '+(mk.scout_sp||20)+' SP reveals a prospect — or take a chance.':'A scouting report is '+(mk.scout_sp||20)+' SP; Price It earns them. Or take a chance.':'Every prospect is scouted.');
     var el=$('hq');
     el.setAttribute('style',FR.themeVars(f.theme));
     el.innerHTML='<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
@@ -376,6 +381,7 @@
       +'<div class="hq-cal"><span><b>'+G.esc(ss.label||'Season I')+'</b> · '+G.esc(ss.status==='preseason'?'preseason':ss.status==='complete'?'complete':'week '+((ss.week|0)+(ng?1:0))+' of '+(ss.weeks|0))+' · '+(ss.weeks|0)+' weeks'
       +(rv&&rv.name?' · rival <b>'+G.esc(rv.name)+'</b> '+G.esc((rv.wins|0)+'–'+(rv.losses|0)):'')
       +(lad.games?' · ladder <b>#'+G.esc(lad.rank)+'</b> '+G.esc(lad.rating):'')
+      +(mk.max?' · roster <b>'+G.esc(mk.active|0)+'</b> of '+G.esc(mk.max):'')+((mk.picks|0)>0?' · <b>'+G.esc(mk.picks)+'</b> pick'+((mk.picks|0)===1?'':'s'):'')
       +(chs.last?' · last challenge <b>'+G.esc(chs.last.result||'')+' '+G.esc((chs.last.score_for|0)+'–'+(chs.last.score_against|0))+'</b> vs '+G.esc((chs.last.them||{}).name||''):'')+'</span>'
       +'<span>'+(LIVE?'<b>'+G.esc(LIVE.season)+' CFB</b> · Week '+G.esc(LIVE.week)+' · live slate':'<b>Live slate</b> · loading')+'</span></div>'
       /* 2. what should I do today, and 3. what do I earn */
@@ -409,7 +415,8 @@
       +'<div class="cp"><div class="k">Coach</div><div class="v">'+G.esc(FR.fmt(res.coach_points))+'</div></div></div>'
       +(snap.offseason?'<div class="hq-off"><b>'+G.esc(FR.offseasonLine(snap.offseason))+'</b> <a href="/games/trophies/">The report</a></div>':'')
       +'<div class="btn-row two"><a class="btn" href="/games/gameday/" data-cta="hq-gameday">Game Day</a><a class="btn" href="/games/roster/" data-cta="hq-roster">Roster</a></div>'
-      +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/franchise/" data-cta="hq-office">Front Office</a><a class="btn btn-ghost" href="/games/trophies/" data-cta="hq-trophies">Trophy Room</a></div>';
+      +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/franchise/" data-cta="hq-office">Front Office</a><a class="btn btn-ghost" href="/games/trophies/" data-cta="hq-trophies">Trophy Room</a></div>'
+      +'<div class="btn-row"><a class="btn btn-ghost" href="/games/market/" data-cta="hq-market">Draft &amp; Market</a></div>';
     $('hqNote').innerHTML=(cached?'<b>Showing the last copy EdgeDesk sent.</b> Reconnect to refresh. ':'')
       +'Free to play · No real-money wagering · Nothing in the franchise can be bought.';
     /* a franchise that lives on this device alone: the one form that keeps it */

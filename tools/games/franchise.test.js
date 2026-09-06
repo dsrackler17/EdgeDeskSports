@@ -20,8 +20,9 @@
      9  the trusted worker computes no price and refuses to run blind
     10  the SQL file keeps the repository's conventions
     11  the weekly game, 12 franchise vs franchise, 13 the offseason and
-        the facilities: the constants the client shows are the SQL's, the
-        client asks and never decides, the pages say what they read
+        the facilities, 14 the draft and the market: the constants the
+        client shows are the SQL's, the client asks and never decides, the
+        pages say what they read
 
    Run: node tools/games/franchise.test.js
    =========================================================================== */
@@ -88,6 +89,7 @@ const OFFICE = fs.readFileSync(G('franchise/index.html'), 'utf8');
 const ROSTER = fs.readFileSync(G('roster/index.html'), 'utf8');
 const GAMEDAY = fs.readFileSync(G('gameday/index.html'), 'utf8');
 const TROPHIES = fs.readFileSync(G('trophies/index.html'), 'utf8');
+const MARKET = fs.readFileSync(G('market/index.html'), 'utf8');
 const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
 const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -459,7 +461,8 @@ fresh();
   [['front office', OFFICE, 'https://edgedesksports.com/games/franchise'],
    ['roster', ROSTER, 'https://edgedesksports.com/games/roster'],
    ['game day', GAMEDAY, 'https://edgedesksports.com/games/gameday'],
-   ['trophy room', TROPHIES, 'https://edgedesksports.com/games/trophies']].forEach(([n, p, url]) => {
+   ['trophy room', TROPHIES, 'https://edgedesksports.com/games/trophies'],
+   ['market', MARKET, 'https://edgedesksports.com/games/market']].forEach(([n, p, url]) => {
     has(p, '<link rel="canonical" href="' + url + '">', n + ' declares its canonical URL');
     has(p, 'name="robots" content="index,follow"', n + ' is crawlable');
     ['og:title', 'og:description', 'og:url'].forEach(k => has(p, 'property="' + k + '"', n + ' carries ' + k));
@@ -483,11 +486,12 @@ fresh();
   has(SITEMAP, 'https://edgedesksports.com/games/roster<', 'and the roster');
   has(SITEMAP, 'https://edgedesksports.com/games/gameday<', 'and Game Day');
   has(SITEMAP, 'https://edgedesksports.com/games/trophies<', 'and the Trophy Room');
-  has(NOTFOUND, "p[1]==='roster'||p[1]==='franchise'||p[1]==='gameday'||p[1]==='trophies'", 'the static host routes the new rooms');
-  chk('the pages exist where the routes claim', fs.existsSync(G('franchise/index.html')) && fs.existsSync(G('roster/index.html')) && fs.existsSync(G('gameday/index.html')) && fs.existsSync(G('trophies/index.html')));
+  has(SITEMAP, 'https://edgedesksports.com/games/market<', 'and the market');
+  has(NOTFOUND, "p[1]==='roster'||p[1]==='franchise'||p[1]==='gameday'||p[1]==='trophies'||p[1]==='market'", 'the static host routes the new rooms');
+  chk('the pages exist where the routes claim', fs.existsSync(G('franchise/index.html')) && fs.existsSync(G('roster/index.html')) && fs.existsSync(G('gameday/index.html')) && fs.existsSync(G('trophies/index.html')) && fs.existsSync(G('market/index.html')));
   /* the bumper knows the new pages, so a token bump reaches them */
   const bump = require(path.join(ROOT, 'tools', 'games', 'bump_assets.js'));
-  chk('the asset bumper stamps the new pages', bump.PAGES.some(p => /franchise\/index\.html$/.test(p)) && bump.PAGES.some(p => /roster\/index\.html$/.test(p)) && bump.PAGES.some(p => /gameday\/index\.html$/.test(p)) && bump.PAGES.some(p => /trophies\/index\.html$/.test(p)));
+  chk('the asset bumper stamps the new pages', bump.PAGES.some(p => /franchise\/index\.html$/.test(p)) && bump.PAGES.some(p => /roster\/index\.html$/.test(p)) && bump.PAGES.some(p => /gameday\/index\.html$/.test(p)) && bump.PAGES.some(p => /trophies\/index\.html$/.test(p)) && bump.PAGES.some(p => /market\/index\.html$/.test(p)));
 
   /* the Front Office */
   has(OFFICE, "G.saveCard(", 'saving goes through the shared one-step form');
@@ -580,13 +584,13 @@ fresh();
   ['franchise_created', 'franchise_home_view', 'player_view', 'roster_change', 'daily_objective_complete', 'scouting_spent',
    'player_scouted', 'weekly_game_started', 'weekly_game_completed', 'h2h_franchise_complete', 'achievement_unlocked',
    'season_complete', 'draft_pick', 'trophy_room_view'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
-  const ALL = HOME + PRICE + PICK + DRILL + DYN + OFFICE + ROSTER + GAMEDAY + TROPHIES + JS;
+  const ALL = HOME + PRICE + PICK + DRILL + DYN + OFFICE + ROSTER + GAMEDAY + TROPHIES + MARKET + JS;
   ['franchise_created', 'franchise_home_view', 'player_view', 'roster_change', 'roster_view', 'front_office_view', 'franchise_reward', 'franchise_import']
     .forEach(e => chk('and actually fires ' + e, new RegExp("track\\('" + e + "'").test(ALL)));
   chk('no second analytics vendor', !/posthog|mixpanel|segment\.com|amplitude|plausible\.io|fathom/i.test(ALL));
 
   /* the copy rules the rest of Games lives by */
-  const COPY = (OFFICE + ROSTER + GAMEDAY + TROPHIES + FCSS + JS + HOME).replace(/no real-money wagering/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const COPY = (OFFICE + ROSTER + GAMEDAY + TROPHIES + MARKET + FCSS + JS + HOME).replace(/no real-money wagering/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
   [/guaranteed edge/i, /free money/i, /can'?t lose/i, /sure thing/i, /risk-?free/i, /\bwager\b(?!ing)/i, /\bparlay\b/i,
    /loot box/i, /virtual currency/i, /pay[- ]to[- ]win/i, /\bpack\b(?!s? *, no premium)/i, /premium player/i, /\bjackpot\b/i, /\bcasino\b/i]
     .forEach(re => chk('the franchise copy avoids ' + re, !re.test(COPY.replace(/no packs, no premium players/gi, '')), (COPY.match(re) || [''])[0]));
@@ -1018,6 +1022,87 @@ fresh();
   has(README, 'offseason_v1', 'and the offseason');
   has(README, 'one negative ledger row', 'and the ledger rule for spending');
   has(README, 'Trophy Room', 'and the Trophy Room');
+
+  /* ═══ 14. THE DRAFT AND THE MARKET (PHASE 5) ═════════════════════════════ */
+  /* the market the client shows is the one the SQL runs */
+  eq('the market is market_v1 on both sides', F.MARKET_VERSION, 'market_v1');
+  has(SQL, "'version', 'market_v1'", 'the SQL publishes the version');
+  chk('a report, the picks, the class, the agents and the roster bounds are the SQL\'s numbers',
+    F.MARKET.scout_sp === 20 && F.MARKET.picks === 2 && F.MARKET.class_size === 10 && F.MARKET.agents === 6 && F.MARKET.roster_max === 42 && F.MARKET.roster_min === 38
+    && /'scout_sp', 20,\s*'picks', 2,\s*'class_size', 10,\s*'agents', 6,\s*'roster_max', 42,\s*'roster_min', 38,/.test(SQL));
+  chk('a free agent\'s price is the same formula on both sides', F.signingCost(55) === 100 && F.signingCost(60) === 100 && F.signingCost(65) === 200 && F.signingCost(72) === 340
+    && /select greatest\(100, \(coalesce\(p_overall, 0\) - 55\) \* 20\);/.test(SQL) && /'signing', jsonb_build_object\('floor', 100, 'per_point', 20, 'over', 55\)/.test(SQL));
+  ['draft_day', 'full_scout', 'gut_call', 'first_signing'].forEach(id => {
+    const m = new RegExp("\\('" + id + "',\\s+'([^']+)',").exec(SQL);
+    chk('the SQL seeds ' + id + ' and the client names it the same', m && F.ACHIEVEMENTS[id] && F.ACHIEVEMENTS[id].name === m[1], m && m[1]);
+  });
+  eq('an unscouted prospect\'s line is the range and nothing more', F.prospectLine({ position: 'QB', age: 22, archetype: 'Gunslinger', range: [55, 65] }), 'QB · 22 · Gunslinger · OVR 55–65 · potential unknown');
+  eq('a scouted one says what the report said', F.prospectLine({ position: 'QB', age: 22, archetype: 'Gunslinger', overall: 59, potential: 63, dev_tier: 'normal' }), 'QB · 22 · Gunslinger · OVR 59 · potential 63 · Steady');
+  eq('the range line', F.rangeLine({ range: [48, 58] }), 'OVR 48–58 · potential unknown');
+  eq('no range, no line', F.rangeLine({}), '');
+  (() => {
+    const r = F.rosterRoom({ active: 41, max: 42, min: 38 });
+    chk('the roster\'s room is counted from the board', r.room === 1 && !r.full && !r.floor && F.rosterRoom({ active: 42 }).full && F.rosterRoom({ active: 38 }).floor && F.rosterRoom({ active: 38 }).max === 42);
+  })();
+  eq('a drafted player\'s line says so', F.acquiredLine({ acquired_source: 'draft', acquired_season: 2026, acquired_detail: 'Pick 1 of the Season II class' }), 'Drafted · 2026 · Pick 1 of the Season II class');
+  eq('a signed one too', F.acquiredLine({ acquired_source: 'free_agent', acquired_season: 2026 }), 'Free agent · 2026');
+  /* the client asks; the server prices, hides, reveals and places */
+  has(FJS, "rpc('franchise_market_board', withSecret({}))", 'the board is one read');
+  has(FJS, "rpc('franchise_scout', withSecret({ p_player: String(playerId || '') }))", 'a report sends the player and the identity, never a price');
+  has(FJS, "rpc('franchise_draft', withSecret({ p_player: String(playerId || '') }))", 'a pick sends the player and the identity');
+  has(FJS, "rpc('franchise_sign', withSecret({ p_player: String(playerId || '') }))", 'a signing sends the player and the identity, never a price');
+  has(FJS, "rpc('franchise_release', withSecret({ p_player: String(playerId || '') }))", 'a release sends the player and the identity');
+  chk('none of the four is ever queued', !/record\('franchise_(scout|draft|sign|release)'/.test(FJS));
+  chk('the client never reveals a prospect on its own', !/range\[0\] \+ \d|function reveal|true_overall|hidden_overall/.test(FJS + MARKET));
+  /* the page */
+  has(MARKET, 'FR.market()', 'the market page reads the board through the server');
+  has(MARKET, 'FR.scout(id)', 'and scouts through it');
+  has(MARKET, 'FR.draft(id)', 'and drafts through it');
+  has(MARKET, 'FR.sign(id)', 'and signs through it');
+  ['market_view', 'scouting_spent', 'player_scouted', 'draft_pick', 'free_agent_signed'].forEach(e => chk('the market page fires ' + e, new RegExp("track\\('" + e + "'").test(MARKET)));
+  has(MARKET, 'potential unknown', 'an unscouted prospect says his potential is unknown');
+  has(MARKET, 'pc-hidden', 'and shows the ratings as hidden, not as zeros');
+  has(MARKET, 'Draft unscouted', 'a gut call is offered as what it is');
+  has(MARKET, 'A pick is not undone', 'and asked about once');
+  has(MARKET, 'earn more in Price It', 'a short purse points at Price It, never at a purchase');
+  has(MARKET, 'release a player on the', 'a full roster points at the roster');
+  has(MARKET, 'Nothing here can be bought with money', 'the page says money buys nothing');
+  has(MARKET, 'Found my franchise', 'a visitor without a franchise is shown the door');
+  chk('the market page never invents a prospect, a price or a pick', !/first_name:\s*'/.test(MARKET) && !/asking:\s*\d/.test(MARKET) && !/picks:\s*\d/.test(MARKET) && !/range:\s*\[\d/.test(MARKET));
+  /* the roster releases, the HQ counts the picks, the office points here */
+  has(ROSTER, 'FR.release(rid)', 'the roster releases through the server');
+  has(ROSTER, "track('player_released'", 'and measures it');
+  has(ROSTER, 'He leaves the franchise for good', 'and asks once, plainly');
+  chk('a release is offered only where the server would allow it', /if\(!FR\.isStarter\(p\)&&spare&&room&&!room\.floor\)actions\+=/.test(ROSTER));
+  has(HOME, "'Draft: '+(mk.picks|0)+' pick'", 'the HQ counts the picks left as an objective');
+  has(HOME, 'data-cta="hq-market"', 'and has a door to the market');
+  chk('the draft objective comes after the day\'s', HOME.indexOf("'Draft: '+(mk.picks|0)") > HOME.indexOf("'Rivalry: challenge"));
+  has(OFFICE, 'href="/games/market/"', 'the office points at the market for Scouting Points');
+  chk('the market is a room of the facility', require(G('games.js')).ROOMS.some(r => r.key === 'market' && r.href === '/games/market/') && /href="\/games\/market\/">Draft &amp; Market<\/a>/.test(JS));
+  ['market_view', 'free_agent_signed', 'player_released', 'scouting_spent', 'player_scouted', 'draft_pick'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
+  chk('the market cards stack on a phone and the actions meet the tap minimum', /\.pc-actions \.btn\{min-height:40px/.test(FCSS) && /\.mk-sum\{display:grid;grid-template-columns:repeat\(2,1fr\)/.test(FCSS));
+  /* the SQL keeps its conventions on the new side */
+  ['franchise_generate_player(uuid, text, integer, integer, text, text, text, integer)', 'franchise_open_market(uuid, integer)', 'franchise_prospect_json(public.game_players)', 'franchise_free_number(uuid, text, text)']
+    .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role', SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
+  ['franchise_market()', 'franchise_market_board(text)', 'franchise_scout(uuid, text)', 'franchise_draft(uuid, text)', 'franchise_sign(uuid, text)', 'franchise_release(uuid, text)']
+    .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated', SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+  chk('the report grew to nineteen rows', /select 18, 'the market is '/.test(SQL) && /select 19, 'a prospect''s true ratings are read through the board only/.test(SQL));
+  chk('the direct read admits no prospect and no free agent', /create policy game_players_own on public\.game_players for select\s+using \(franchise_id is not null and public\.franchise_is_mine\(franchise_id\) and status not in \('prospect', 'free_agent'\)\)/.test(SQL));
+  chk('an unscouted prospect is a range fixed per player, and no ratings', /lo := greatest\(40, p\.overall - 3 - \(abs\(hashtext\(p\.id::text\)\) % 5\)\);/.test(SQL)
+    && /'range', jsonb_build_array\(lo, least\(99, lo \+ 10\)\), 'overall', null, 'potential', null/.test(SQL));
+  chk('a report and a signing are one negative ledger row each, keyed by the player',
+    /public\.franchise_credit\(v_f, 'sp', -cost, 'scout', p\.id::text/.test(SQL) && /public\.franchise_credit\(v_f, 'tc', -p\.asking, 'signing', p\.id::text/.test(SQL));
+  chk('a short purse, a spent pick and a full roster are refused before anything is written',
+    /not enough Scouting Points: % needed, % on hand/.test(SQL) && /no draft picks left until the next offseason/.test(SQL) && /the roster is full at %: release a player first/.test(SQL)
+    && SQL.indexOf('not enough Scouting Points: % needed, % on hand') < SQL.indexOf("public.franchise_credit(v_f, 'sp', -cost, 'scout'"));
+  chk('the floor and the starters hold on a release', /the roster cannot go below %/.test(SQL) && /you need at least % at %/.test(SQL));
+  chk('founding opens the first window and the offseason the next', /perform public\.franchise_open_market\(v_id, 1\);/.test(SQL) && /mk := public\.franchise_open_market\(p_franchise, p_from \+ 1\);/.test(SQL));
+  chk('the picks are renewed, never banked', /set draft_picks = \(m->>'picks'\)::int, market_season = p_window/.test(SQL));
+  chk('a prospect has no number until he joins', /jersey = public\.franchise_free_number\(v_f, p\.position, p\.id::text\)/.test(SQL) && /'jersey', case when p\.status = 'active' then p\.jersey end/.test(SQL));
+  chk('the SQL suite plays the draft and the market through', /18\. THE DRAFT AND THE MARKET/.test(SQLTEST) && /a client cannot read a prospect''s row/.test(SQLTEST) && /the same seed makes the same class/.test(SQLTEST));
+  has(README, 'market_v1', 'the README documents the market');
+  has(README, 'Where Scouting Points go', 'and says what it is for');
+  has(README, 'The roster runs 38 to 42', 'and the roster bounds');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

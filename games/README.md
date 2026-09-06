@@ -1320,15 +1320,75 @@ chart closing up, rookies with names and numbers nobody in the colours
 has worn, growth capped at potential, the veterans' decline, the report
 written once, and the room read by its owner only.
 
+## Phase 5 — the draft and the market
+
+Where Scouting Points go. Every franchise gets a draft class of its own
+and a short market of veterans, once per window — at founding, and every
+offseason — generated on the server from the same pools as the founding
+roster and seeded from the franchise (`market_v1`, published by
+`franchise_market()` and mirrored in `EDFranchise.MARKET`):
+
+- **The class.** Ten prospects, 21 to 22, anywhere from raw to ready,
+  with the better development odds. Their true ratings are **hidden**: an
+  unscouted prospect shows a name, a position, an age, an archetype and
+  an overall range ten points wide whose placement is fixed per player,
+  so asking twice narrows nothing. The direct read policy on
+  `game_players` admits no prospect and no free agent at all; the board
+  (`franchise_market_board()`) is the only way to look, and it shows
+  what has been paid for.
+- **A scouting report** (`franchise_scout(p_player)`) costs 20 Scouting
+  Points, once per prospect, as one negative ledger row keyed by the
+  player, and reveals everything: overall, potential, tier, ratings,
+  traits. Scouting the whole class is **Scouted the Class**.
+- **The draft** (`franchise_draft(p_player)`): two picks a window,
+  renewed and never banked. A pick puts the prospect on the roster at the
+  bottom of his position's chart with a number nobody on the roster
+  wears. Scouted or not — the first pick is **Draft Day**, and an
+  unscouted pick who turns out to have a potential of 80 or more is a
+  **Gut Call**.
+- **The market** (`franchise_sign(p_player)`): six free agents, 26 to
+  31, who hide nothing and ask 100 Team Credits, or 20 for every point
+  over 55 — one negative ledger row keyed by the player. The first is
+  **Open for Business**.
+- **The roster runs 38 to 42.** At 42 nobody joins until somebody
+  leaves; `franchise_release(p_player)` takes a man off (never below 38,
+  never a position's last starter), closes the chart up and writes the
+  record. Free, irreversible, and on the record.
+- **The window turns** with the offseason: the class and the market not
+  taken are `passed` and kept as a record, a new class and market open,
+  the picks are renewed. Founding opens window one, so Scouting Points
+  have somewhere to go from the first day.
+
+The client never prices, hides, reveals or places anyone: the Market
+page sends a player id and the identity and nothing else, and reads the
+board back. The roster page offers a release only where the server would
+allow it, and asks once. The HQ counts the picks left as an objective
+and the roster's room on the calendar line.
+
+Report rows 18–19 cover it: the market is `market_v1`, scouting, the
+draft, signings and releases open to every franchise and the generator
+to none; the direct policy admits no prospect or free agent. The SQL
+suite plays it through: founding's window and the rollover's, the
+leftovers passed over, a client reading no prospect row, the range fixed
+per read, a report one point short that debits nothing, a report bought
+once with everything revealed, no report to buy on a free agent, two
+picks then none, a pick at the bottom of the chart with a fresh number,
+a gut call, a signing at the asking price and one credit short, the
+forty-second man and the refusal after him, a release closing the chart,
+a position keeping its starters, the floor at thirty-eight, another
+account and a guessed secret reaching nothing, and the same seed making
+the same class.
+
 ## Not built yet, on purpose
 
 Conferences — a league of friends with standings of its own — and
-playoffs; the draft and the transfer market (Phase 5), which is where
-Scouting Points will finally be spent. The schema leaves room:
-`franchise_seasons.status` admits `playoffs`, the ledger already accepts a
-negative delta for spending (the facilities use it), traits with no
-simulator effect yet (Iron Man) are stated as such, and
-`franchise_activity` is the record every future reward derives from. The
-simulator and the offseason are versioned (`sim_v1`, `offseason_v1`) so a
-retuned one is a new version and old boxes and old reports stay true to
-the rules they were played under.
+playoffs (Phase 6); trades between franchises; injuries. The schema
+leaves room: `franchise_seasons.status` admits `playoffs`,
+`game_players.status` admits `injured`, the ledger accepts a negative
+delta for spending (the facilities, the reports and the signings use
+it), traits with no simulator effect yet (Iron Man) are stated as such,
+and `franchise_activity` is the record every future reward derives from.
+The simulator, the offseason and the market are versioned (`sim_v1`,
+`offseason_v1`, `market_v1`) so a retuned one is a new version and old
+boxes, old reports and old classes stay true to the rules they were
+played under.

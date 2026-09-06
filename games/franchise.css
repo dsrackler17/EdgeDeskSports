@@ -486,3 +486,35 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .alum .o{min-width:0}
 .alum .o b{display:block;font-weight:600}
 .alum .o small{display:block;font-size:11px;color:var(--faint);line-height:1.45}
+
+/* ── THE DRAFT AND THE MARKET (Phase 5) ───────────────────────────────── */
+/* the board's strip: the window, the picks, the room, what a report costs */
+.mk-sum{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+@media(min-width:560px){.mk-sum{grid-template-columns:repeat(4,1fr)}}
+.mk-sum div{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.mk-sum .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-sum .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;margin-top:3px;line-height:1.1}
+.mk-sum .v small{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-sum .sp .v{color:var(--obs)}.mk-sum .tc .v{color:var(--est)}
+
+/* a prospect's card before the report: the range where the overall would be */
+.pc-range{position:absolute;right:14px;top:36px;text-align:center}
+.pc-range b{display:block;font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;line-height:1.2;color:var(--dim);white-space:nowrap}
+.pc-range span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.14em;color:var(--faint);margin-top:2px}
+.pc-hidden{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.pc-hidden i{display:block;height:44px;border-radius:9px;border:1px dashed var(--line2);background:var(--panel)}
+.pc-line{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.5}
+.pc-line b{color:var(--text);font-weight:600}
+.pc-ask{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:var(--est);margin-top:8px}
+.pc.pc-scouted{border-color:var(--val-dim)}
+.pc-tag{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--val);border:1px solid var(--val-dim);border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:middle}
+.pc-tag.off{color:var(--faint);border-color:var(--line2)}
+
+/* the board's history */
+.mk-hist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.mk-hist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px}
+.mk-hist .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);width:52px}
+.mk-hist .o{min-width:0}
+.mk-hist .o b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.mk-hist .o small{display:block;font-size:11px;color:var(--faint)}
+.mk-hist .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap;color:var(--dim)}
