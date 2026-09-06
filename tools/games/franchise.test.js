@@ -106,6 +106,7 @@ const SOCIALSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'games_social.sql'
 const DEV = fs.readFileSync(G('development/index.html'), 'utf8');
 const PACKS = fs.readFileSync(G('packs/index.html'), 'utf8');
 const SCHEMATOOL = fs.readFileSync(path.join(__dirname, 'schema.js'), 'utf8');
+const FRCSS = fs.readFileSync(G('franchise.css'), 'utf8');
 
 function fresh() { MEM = {}; ST.reset(); }
 const T0 = Date.parse('2026-09-04T18:00:00Z');   /* Friday, week of 2026-09-01 */
@@ -681,8 +682,13 @@ fresh();
 
   /* ═══ 11. THE WEEKLY GAME (PHASE 2) ═══════════════════════════════════════ */
   /* the simulator's published shape is the SQL's */
-  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v1');
-  has(SQL, "'sim', 'sim_v1'", 'and every box says so');
+  /* sim_v2 since Phase 13: a giveaway now hands the other side the ball in
+     scoring range, which is what makes a turnover cost anything. Old boxes
+     keep saying sim_v1 and stay true to the rules they were played under. */
+  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v2');
+  has(SQL, "'sim', 'sim_v2'", 'and every box says so');
+  chk('both simulators are the same version, so a challenge is the same football as a Saturday',
+    (SQL.match(/'sim', 'sim_v2'/g) || []).length === 2 && !/'sim', 'sim_v1'/.test(SQL));
   (() => {
     const m = SQL.match(/franchise_scheme_edges\(\)[\s\S]*?select '(\{[\s\S]*?\})'::jsonb;/);
     let sqlEdges = null; try { sqlEdges = m && JSON.parse(m[1]); } catch (_) {}
@@ -1406,9 +1412,10 @@ fresh();
     (SQL.match(/public\.franchise_is_available\(p?\.?status, p?\.?injured_until\)/g) || []).length >= 4);
   chk('an injury never leaves a position below its starters',
     /if left_at < coalesce\(starters, 1\) then return '\[\]'::jsonb; end if;/.test(SQL));
-  chk('the simulator itself is untouched: injuries are drawn after the game, not inside it',
+  chk('injuries are drawn after the game, not inside it',
     /v_box := v_box \|\| jsonb_build_object\('injuries', public\.franchise_draw_injuries/.test(SQL)
-    && /'sim', 'sim_v1'/.test(SQL) && !/sim_v2/.test(SQL));
+    && !/franchise_draw_injuries/.test(
+         (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0]));
   chk('the offseason sends everybody back out fit',
     /update public\.game_players set injured_until = null, injury = null\s+where franchise_id = p_franchise and injured_until is not null;/.test(SQL));
   chk('the bowl is paid its own line, not the weekly one',
@@ -1429,8 +1436,8 @@ fresh();
   has(README, 'legality, not fairness', 'and what the server checks about a deal');
 
   /* ═══ 17. THE COACHING STAFF (PHASE 8) ═══════════════════════════════════ */
-  eq('the staff is staff_v1 on both sides', F.STAFF_VERSION, 'staff_v1');
-  has(SQL, "'version', 'staff_v1'", 'the SQL publishes the version');
+  eq('the staff is staff_v2 on both sides', F.STAFF_VERSION, 'staff_v2');
+  has(SQL, "'version', 'staff_v2'", 'the SQL publishes the version');
   chk('a thousand levels, twelve to hire, and the SQL\'s numbers throughout',
     F.STAFF.max_level === 1000 && F.STAFF.hire_cost === 12 && F.STAFF.cost_base === 1 && F.STAFF.cost_step === 10
     && F.STAFF.specialty_every === 25 && F.STAFF.specialty_max === 10 && F.STAFF.promote_max === 100
@@ -1543,7 +1550,7 @@ fresh();
   chk('the seat cards stack on a phone and the actions meet the tap minimum',
     /\.st-grid\{display:grid/.test(FCSS) && /\.st-seat \.pc-actions \.btn\{min-height:var\(--tap\)\}/.test(FCSS));
   /* the SQL keeps its conventions on the new side */
-  ['franchise_generate_coach(uuid, text, text, integer)', 'franchise_staff_effects(uuid)',
+  ['franchise_generate_coach(uuid, text, text, integer, integer)', 'franchise_staff_effects(uuid)',
    'franchise_staff_json(uuid, text)', 'franchise_staff_specialties(text, text, integer)']
     .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role',
       SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
@@ -1574,7 +1581,10 @@ fresh();
     /21\. THE COACHING STAFF/.test(SQLTEST)
     && /the sum of the steps is the price of the climb/.test(SQLTEST)
     && /the curve never falls, and never passes the cap/.test(SQLTEST)
-    && /the man who replaces him starts at one/.test(SQLTEST));
+    /* staff_v2 replaced "starts at one" with "starts at what reputation
+       commands" — the claim that survives is that the level was HIS, and
+       does not carry over from the man fired */
+    && /the man who replaces him starts at what reputation commands, not at the fired man/.test(SQLTEST));
   has(README, 'staff_v1', 'the README documents the staff');
   has(README, 'Every tenfold in level is another third of the\ncap', 'and the effect curve');
   has(README, 'a horizon rather than a plan', 'and is honest about the thousand');
@@ -2036,11 +2046,18 @@ fresh();
   has(SQL, "'pack_version', 'packs_v1'", 'and on the packs');
 
   /* THE LOAD-BEARING ONE. A pack is earned by playing and by nothing else. */
-  chk('a pack costs no currency and no money: opening spends nothing',
-    /create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/.test(SQL)
-    && !/franchise_credit\([^)]*'pack'/.test(SQL)
-    && !((SQL.match(/create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/) || [''])[0]
-          .match(/franchise_credit|scouting_points\s*<|team_credits\s*<|coach_points\s*</)));
+  /* Since staff_v2 a rank also PAYS Coach Points, so the function does call
+     franchise_credit — with a positive delta. The claim being defended is
+     unchanged and is the one that matters: opening a pack never costs. */
+  chk('a pack costs no currency and no money: opening spends nothing', () => {
+    const fn = (SQL.match(/create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/) || [''])[0];
+    return fn.length > 0
+      /* no balance is ever checked against a price */
+      && !/scouting_points\s*<|team_credits\s*<|coach_points\s*</.test(fn)
+      /* and every ledger row it writes is a credit, never a debit */
+      && !/franchise_credit\([^;]*,\s*-/.test(fn)
+      && /public\.franchise_credit\(v_f, 'cp', v_cp, 'pack'/.test(fn);
+  });
   chk('and the page says so where a player can see it',
     /Nothing here can be bought|cannot be bought/.test(PACKS)
     && /no pack for sale/.test(PACKS));
@@ -2170,7 +2187,8 @@ fresh();
   chk('the report grew to thirty-one rows', /select 30, 'the rank is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 11, 'the rank and the packs'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 11);
+  chk('and the schema log records phase 11 by name',
+    /games_schema_note\('franchise', 11, 'the rank and the packs'\)/.test(SQL));
 
   /* THE BIGGEST THING THE SIXTY-SEASON RUN FOUND. The offseason compacted
      the depth chart but never re-sorted it, so every man acquired joined at
@@ -2195,6 +2213,318 @@ fresh();
   has(README, 'rank_v1', 'the README documents the rank');
   has(README, 'packs_v1', 'and the packs');
   has(README, 'earned by playing', 'and that a pack is never bought');
+
+  /* ═══ 22. THE LONG HAUL (PHASE 12) ═══════════════════════════════════════
+     Sixty seasons of measurement, on the game as Phase 11 left it. It climbs
+     to 81 by season ten and then cannot carry on. Three faults, all about the
+     long game: the roster turned over in a WAVE, the building could never be
+     STAFFED, and a replacement coach started at level one so firing anybody
+     was a trap rather than a choice. */
+
+  eq('careers are versioned', F.CAREER_VERSION, 'career_v1');
+  eq('and the staff moved to its second version', F.STAFF_VERSION, 'staff_v2');
+  has(SQL, "'version', 'career_v1'", 'the SQL agrees on careers');
+  has(SQL, "'version', 'staff_v2'", 'and on the staff');
+
+  /* ONE: the wave. Twenty-seven of thirty-eight founding players used to
+     retire inside seasons 8 to 14, and barely anybody before. */
+  chk('the founding roster is spread evenly across its ages, not skewed young', () => {
+    const gen = (SQL.match(/create or replace function public\.franchise_generate_roster[\s\S]*?\n\$\$;/) || [''])[0];
+    return gen.length > 0
+      && /age := \(public\.franchise_career\(\)->>'found_age_min'\)::int/.test(gen)
+      && /floor\(random\(\) \* \(\(public\.franchise_career\(\)->>'found_age_max'\)::int/.test(gen)
+      && !/age := 21 \+ floor\(power\(random\(\)/.test(gen);
+  });
+  chk('and the range it spreads across is the published one',
+    new RegExp("'found_age_min', " + F.CAREER.found_age_min
+      + ", 'found_age_max', " + F.CAREER.found_age_max).test(SQL)
+    && new RegExp("'retire_age', " + F.CAREER.retire_age + ",").test(SQL));
+  chk('the retirement rule is still the one the table publishes',
+    new RegExp("retire := age_new >= " + F.CAREER.retire_age
+      + " or \\(age_new >= " + F.CAREER.retire_fade_age
+      + " and ovr < " + F.CAREER.retire_fade_under + "\\);").test(SQL));
+
+  /* TWO: the building. 10.4 Coach Points a season against a seat that costs
+     540 to reach level 100 — one coach at level 99 in sixty years. */
+  chk('a rank pays the building, and pays more the further you have come', () => {
+    for (var r = 1; r < 200; r++) if (F.rankCoachPoints(r) >= F.rankCoachPoints(r + 1)) return false;
+    return F.rankCoachPoints(1) === F.STAFF.rank_cp_base
+      && F.rankCoachPoints(45) === F.STAFF.rank_cp_base + F.STAFF.rank_cp_step * 44;
+  });
+  chk('and the SQL pays it once, keyed by the rank, through the ledger',
+    /v_cp := public\.franchise_rank_coach_points\(v_rank\);/.test(SQL)
+    && /public\.franchise_credit\(v_f, 'cp', v_cp, 'pack', v_rank::text,/.test(SQL));
+  chk('the numbers are the SQL numbers',
+    new RegExp("'rank_cp_base', " + F.STAFF.rank_cp_base
+      + ", 'rank_cp_step', " + F.STAFF.rank_cp_step).test(SQL)
+    && new RegExp("'hire_level_max', " + F.STAFF.hire_level_max
+      + ", 'hire_per_rank', " + F.STAFF.hire_per_rank
+      + ", 'hire_per_standing', " + F.STAFF.hire_per_standing).test(SQL));
+  /* forty-five ranks over sixty seasons should pay for a building, which is
+     the whole point of the change */
+  chk('forty-five ranks pay several thousand Coach Points', () => {
+    var total = 0;
+    for (var r = 1; r <= 45; r++) total += F.rankCoachPoints(r);
+    return total > 2500 && total < 4500;
+  });
+
+  /* THREE: firing was a trap. "which is why almost nobody will" was in the
+     README as a feature; a choice nobody takes is not a choice. */
+  chk('a new coach arrives at what the reputation commands, not at level one', () =>
+    F.staffHireLevel(1, 0) === 1 && F.staffHireLevel(45, 60) === 29
+    && F.staffHireLevel(9999, 100) === F.STAFF.hire_level_max);
+  chk('reputation never lowers what it commands, and never runs off the cap', () => {
+    for (var r = 1; r < 300; r++) if (F.staffHireLevel(r, 50) > F.staffHireLevel(r + 1, 50)) return false;
+    for (var st = 0; st < 100; st++) if (F.staffHireLevel(20, st) > F.staffHireLevel(20, st + 1)) return false;
+    return [-9, 0, 1, 9999].every(n => F.staffHireLevel(n, 50) >= 1 && F.staffHireLevel(n, 50) <= F.STAFF.hire_level_max)
+      && [-9, 0, 200].every(n => F.staffHireLevel(20, n) >= 1 && F.staffHireLevel(20, n) <= F.STAFF.hire_level_max);
+  });
+  chk('the hire reads the franchise\u2019s own rank and standing',
+    /v_level := public\.franchise_staff_hire_level\(\s*\(public\.franchise_rank_report\(v_f\)->>'rank'\)::int, f\.standing\);/.test(SQL)
+    && /franchise_generate_coach\(v_f, p_seat,[\s\S]{0,160}v_season, v_level\);/.test(SQL));
+  chk('and the old four-argument coach generator is dropped, not left beside the new one',
+    /drop function if exists public\.franchise_generate_coach\(uuid, text, text, integer\);/.test(SQL)
+    && /revoke all on function public\.franchise_generate_coach\(uuid, text, text, integer, integer\) from public, anon, authenticated;/.test(SQL));
+  /* keeping one man is still the best a single seat can do — the point is
+     that firing is no longer a disaster, not that churning is now optimal */
+  chk('keeping a coach still beats replacing him, by a long way', () => {
+    /* a coach kept and levelled to 100 costs 540 CP; a replacement at the
+       very top of what reputation commands arrives at 60 */
+    return F.STAFF.hire_level_max < 100
+      && F.staffCostBetween(1, 100) > F.staffCostBetween(F.STAFF.hire_level_max, 100);
+  });
+
+  ['franchise_career()', 'franchise_rank_coach_points(integer)', 'franchise_staff_hire_level(integer, integer)']
+    .forEach(f => chk('the table ' + f.split('(')[0] + ' is open to read',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  chk('the report grew to thirty-two rows', /select 31, 'the long haul is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 12, 'the long haul: careers and a building you can staff'\)/.test(SQL));
+
+  has(README, 'career_v1', 'the README documents careers');
+  has(README, 'staff_v2', 'and the second staff version');
+  has(README, 'in a wave', 'and names the thing that was wrong');
+
+  /* ═══ 23. THE DRIVES YOU CALL (PHASE 13) ═════════════════════════════════
+     "Retro Bowl, but leagues." Everything under this game was deeper than the
+     game it is named after except the part your hands do: Game Day was one
+     button, and its own copy said "Simulated on the server from your roster,
+     your scheme, the opponent and this week's preparation." You never played
+     a down.
+
+     The load-bearing rule is the one this whole file exists to defend: A
+     CALL IS A DECISION, NEVER A RESULT. The client sends 'air'; the server
+     resolves the drive. These assertions pin the table to the SQL and prove
+     that no client role can reach a resolver. */
+
+  eq('the calls are snap_v1', F.SNAP_VERSION, 'snap_v1');
+  chk('and the SQL says the same', /'version', 'snap_v1'/.test(SQL));
+  eq('there are four of them', F.SNAPS.calls.length, 4);
+  eq('and quick play is one of them', F.SNAPS['default'], 'balanced');
+
+  /* the table, pinned number by number to franchise_snaps() */
+  F.SNAPS.calls.forEach(c => {
+    const row = new RegExp("'key', '" + c.key + "'[\\s\\S]{0,400}?'edge', ([-0-9.]+)\\)");
+    const blk = (SQL.match(new RegExp("'key', '" + c.key + "'[\\s\\S]{0,400}?'edge', [-0-9.]+\\)")) || [''])[0];
+    chk('the call ' + c.key + ' exists in the SQL', row.test(SQL));
+    ['pass', 'td', 'turnover', 'edge'].forEach(k => {
+      chk('and its ' + k + ' matches the client',
+        blk.indexOf("'" + k + "', " + c[k]) >= 0
+        || blk.indexOf("'" + k + "', " + c[k].toFixed(2)) >= 0
+        || blk.indexOf("'" + k + "', " + c[k].toFixed(3)) >= 0);
+    });
+  });
+
+  /* every call is a real trade — nothing is free */
+  chk('the ground game passes less, scores less and gives it away less',
+    F.snapCall('ground').pass < 0 && F.snapCall('ground').td < 0 && F.snapCall('ground').turnover < 0);
+  chk('the air game passes more, scores more and gives it away more',
+    F.snapCall('air').pass > 0 && F.snapCall('air').td > 0 && F.snapCall('air').turnover > 0);
+  chk('a shot is the most of both',
+    F.snapCall('shot').td > F.snapCall('air').td
+    && F.snapCall('shot').turnover > F.snapCall('air').turnover);
+  chk('no call scores more for free',
+    !F.SNAPS.calls.some(c => c.td > 0 && c.turnover <= 0));
+  chk('quick play moves nothing: Balanced is the zero row',
+    F.snapCall('balanced').pass === 0 && F.snapCall('balanced').td === 0
+    && F.snapCall('balanced').turnover === 0 && F.snapCall('balanced').edge === 0);
+  chk('an unknown call falls back to the default rather than throwing',
+    F.snapCall('nonsense').key === F.SNAPS['default'] && F.snapCall(null).key === F.SNAPS['default']);
+  chk('every call says what it means, in English',
+    F.SNAPS.calls.every(c => typeof c.means === 'string' && c.means.length > 20));
+
+  /* THE LOAD-BEARING ONE. A client sends a call and never a result. */
+  chk('the move takes a call and a secret, and nothing else',
+    /create or replace function public\.franchise_game_call\(p_call text, p_secret text default null\)/.test(SQL));
+  chk('and no client role can reach the drive resolver',
+    /revoke all on function public\.franchise_sim_drive/.test(SQL)
+    || SQL.indexOf('grant execute on function public.franchise_sim_drive') < 0);
+  chk('nor the possession count',
+    /revoke all on function public\.franchise_game_drives\(uuid, uuid\) from public, anon, authenticated;/.test(SQL));
+  chk('the seven-argument drive resolver is dropped, so nothing can call the form that ignores a call',
+    /drop function if exists public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean\);/.test(SQL));
+  chk('the report proves the rule rather than describing it',
+    /select 32, 'the game is '/.test(SQL)
+    && /not has_function_privilege\('anon', 'public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean\)', 'execute'\)/.test(SQL.replace(/\s+/g, ' ')));
+
+  /* ONE SIMULATOR, not two. The calls live on the game and franchise_sim
+     reads them, so re-running reproduces every drive already played. */
+  chk('the calls are stored on the game',
+    /alter table public\.franchise_games add column if not exists calls jsonb;/.test(SQL));
+  chk('and the simulator reads them from there', () => {
+    const sim = (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0];
+    return sim.length > 0
+      && /calls := coalesce\(g\.calls, '\[\]'::jsonb\);/.test(sim)
+      && /calls->>\(my_drive - 1\)/.test(sim)
+      && /'drives', drives/.test(sim);
+  });
+  chk('the last call finalises through the door every other game goes through',
+    /return public\.franchise_play_game\(v_f, now\(\)\) \|\| jsonb_build_object\('called', v_mine, 'complete', true\);/.test(SQL));
+
+  /* the two moves are open on the same terms every other franchise move is */
+  ['franchise_snaps()', 'franchise_snap_call(text)', 'franchise_game_open(text)', 'franchise_game_call(text, text)']
+    .forEach(f => chk('the move ' + f.split('(')[0] + ' is open to every franchise',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* quick play stays: nobody is made to tap twelve times to see a result */
+  chk('quick play is still there',
+    SQL.indexOf('grant execute on function public.franchise_play_week(text) to anon, authenticated') >= 0);
+  has(GAMEDAY, 'id="playBtn"', 'and Game Day still offers it');
+  has(GAMEDAY, 'Quick play instead', 'by name');
+  has(GAMEDAY, 'id="callBtn"', 'while calling it is the first thing offered');
+  has(GAMEDAY, 'you send a call, never a result', 'and the page says what a call is');
+  chk('Game Day no longer says you never play a down',
+    GAMEDAY.indexOf('Simulated on the server from your roster, your scheme, the opponent and this week’s preparation. Every game is played once') < 0);
+  chk('the page asks the library for the calls rather than listing its own',
+    /FR\.SNAPS\.calls\.map/.test(GAMEDAY) && /FR\.gameCall\(/.test(GAMEDAY) && /FR\.gameOpen\(\)/.test(GAMEDAY));
+  chk('and the stale-script guard knows the new moves',
+    /EDFranchise\.gameOpen/.test(GAMEDAY) && /EDFranchise\.gameCall/.test(GAMEDAY));
+  chk('every class the calling stage draws is defined in the stylesheet', () => {
+    return ['sn-board', 'sn-calls', 'sn-log'].every(c => FRCSS.indexOf('.' + c) >= 0);
+  });
+
+  chk('the report grew to thirty-three rows', /select 32, 'the game is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 13, 'the drives you call'\)/.test(SQL));
+
+
+  has(README, 'snap_v1', 'the README documents the calls');
+  has(README, 'never a result', 'and states the rule the whole phase rests on');
+
+  /* ═══ 24. KEY MOMENTS (PHASE 14) ═════════════════════════════════════════
+     Measured first. Fifteen hundred games between two IDENTICAL sides: by the
+     last possession only 44% are within a score. The first fix I tried — late
+     urgency for the trailing side — moved the margin 12.3 → 11.9 and the live
+     finishes 43.9% → 44.1%, which is nothing, because pushing buys variance
+     rather than points. And it SHOULD not close the gap: real football
+     averages eleven or twelve points of margin too.
+
+     So the football is not the fault. The game never knew which possessions
+     mattered. Nothing in this phase touches how a drive resolves, and the
+     assertions below are built to keep it that way. */
+  eq('moments are moment_v1', F.MOMENT_VERSION, 'moment_v1');
+  chk('and the SQL says the same', /'version', 'moment_v1'/.test(SQL));
+
+  /* the published table, pinned number for number */
+  Object.keys(F.MOMENTS).forEach(k => {
+    chk('the rule ' + k + ' matches the SQL',
+      new RegExp("'" + k + "', " + F.MOMENTS[k].toFixed(2).replace(/\.00$/, '')).test(SQL)
+      || SQL.indexOf("'" + k + "', " + F.MOMENTS[k]) >= 0);
+  });
+
+  /* THE STAKE. Two halves, each obviously right on its own. */
+  eq('a tied game on the last possession is everything', F.stake(0, 1), 1);
+  eq('a tied first quarter decides nothing', F.stake(0, 9), 0);
+  eq('and neither does four scores down with one to play', F.stake(28, 1), 0);
+  eq('a possession that cannot happen is worth nothing', F.stake(0, 0), 0);
+  chk('the stake never leaves [0, 1]', () => {
+    for (let g = -60; g <= 60; g++) for (let l = 0; l <= 20; l++) {
+      const v = F.stake(g, l);
+      if (!(v >= 0 && v <= 1)) return false;
+    }
+    return true;
+  });
+  chk('closer is never worth less', () => {
+    for (let l = 1; l <= 8; l++) for (let g = 0; g < 60; g++) {
+      if (F.stake(g, l) < F.stake(g + 1, l)) return false;
+    }
+    return true;
+  });
+  chk('later is never worth less', () => {
+    for (let g = 0; g <= 20; g++) for (let l = 1; l < 20; l++) {
+      if (F.stake(g, l) < F.stake(g + 0, l + 1)) return false;
+    }
+    return true;
+  });
+  chk('a possession is worth the same to the side defending a lead as to the side chasing it',
+    F.stake(7, 2) === F.stake(-7, 2) && F.stake(3, 1) === F.stake(-3, 1));
+  chk('a key moment is rare enough to mean something',
+    F.isKey(F.stake(0, 1)) && F.isKey(F.stake(7, 1)) && !F.isKey(F.stake(0, 4))
+    && !F.isKey(F.stake(0, 9)) && !F.isKey(F.stake(21, 1)));
+
+  /* THE LOAD-BEARING ONE. This phase reads the game; it does not play it. */
+  chk('the simulator is still sim_v2: nothing here changes how a drive resolves',
+    /'sim', 'sim_v2'/.test(SQL) && !/sim_v3/.test(SQL));
+  chk('the stake is computed from the running score, before anything resolves', () => {
+    const sim = (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0];
+    /* it must be drawn from pts_me/pts_op, never from a fresh roll */
+    return /v_stake := public\.franchise_stake\(pts_me - pts_op, v_left\);/.test(sim)
+      && !/random\(\)[^\n]*stake/i.test(sim);
+  });
+  chk('and both the stake and the story are immutable, so neither can consume a draw',
+    /create or replace function public\.franchise_stake\(p_gap integer, p_left integer\)\nreturns numeric language sql immutable/.test(SQL)
+    && /create or replace function public\.franchise_game_story\(p_drives jsonb\)\nreturns jsonb language sql immutable/.test(SQL));
+  chk('a possession is one moment, not two: both drives share a stake, so only yours is counted',
+    /'key', coalesce\(\(select count\(\*\) from d where \(x->>'key'\)::boolean and x->>'side' = 'me'\), 0\)/.test(SQL));
+
+  /* THE REEL IS DERIVED, so there is nothing to keep in step */
+  chk('there is no table of moments to drift out of step with the boxes',
+    !/create table if not exists public\.franchise_moment/.test(SQL)
+    && /jsonb_array_elements\(g\.box->'story'->'key_drives'\)/.test(SQL));
+  chk('a franchise reads its own reel and nobody else\'s',
+    /v_f uuid := public\.franchise_of\(p_secret\);/.test(
+      (SQL.match(/create or replace function public\.franchise_reel[\s\S]*?\n\$\$;/) || [''])[0]));
+
+  /* PLAYING IT OUT is quick play for what is left, not a shortcut past it */
+  chk('every possession left is called by the published default',
+    /set calls = coalesce\(calls, '\[\]'::jsonb\) \|\| to_jsonb\(public\.franchise_snaps\(\)->>'default'\)/.test(SQL));
+  chk('and it finishes through the same door every other game goes through',
+    /return public\.franchise_play_game\(v_f, now\(\)\)\s*\n?\s*\|\| jsonb_build_object\('called', jsonb_array_length\(coalesce\(g\.calls, '\[\]'::jsonb\)\),/.test(SQL));
+  chk('the fill cannot spin on a pathological seed',
+    /exit when v_guard > 60;/.test(SQL));
+
+  ['franchise_moments()', 'franchise_stake(integer, integer)', 'franchise_game_finish(text)', 'franchise_reel(text, integer)']
+    .forEach(f => chk('the move ' + f.split('(')[0] + ' is open to every franchise',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* the page says it out loud */
+  has(GAMEDAY, 'This one decides it', 'Game Day names a key moment');
+  has(GAMEDAY, 'id="finishBtn"', 'and offers a way out of a game already over');
+  has(GAMEDAY, 'Play the rest out', 'by name');
+  chk('the page asks the library for the stake rather than computing its own',
+    /FR\.stake\(me-op,left\)/.test(GAMEDAY) && /FR\.isKey\(st\)/.test(GAMEDAY)
+    && /FR\.gameFinish\(\)/.test(GAMEDAY));
+  chk('a way out is offered only when nothing is riding on it',
+    /!key&&st<0\.05&&left>1&&CALLED\.drives\.length/.test(GAMEDAY));
+  chk('and the stale-script guard knows the new moves',
+    /EDFranchise\.stake/.test(GAMEDAY) && /EDFranchise\.gameFinish/.test(GAMEDAY));
+  has(GAMEDAY, 'The story', 'every result card carries what happened to the lead');
+  chk('the story comes off the box rather than being recomputed in the page',
+    /var st=box\.story;/.test(GAMEDAY) && /st\.lead_changes/.test(GAMEDAY) && /st\.go_ahead/.test(GAMEDAY));
+  chk('every class the moment draws is defined in the stylesheet',
+    ['sn-key', 'sn-out', 'sn-story'].every(c => FRCSS.indexOf('.' + c) >= 0)
+    && FRCSS.indexOf('.sn-board.key') >= 0 && FRCSS.indexOf('.sn-log li.key') >= 0);
+
+  chk('the report grew to thirty-four rows', /select 33, 'moments are '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 14, 'key moments'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 14);
+  chk('and the report checks the same number',
+    /\(public\.games_schema\(\)->>'franchise'\)::int = 14/.test(SQL));
+
+  has(README, 'moment_v1', 'the README documents moments');
+  has(README, 'The football is not broken', 'and says what the measurement actually found');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });
