@@ -104,6 +104,7 @@ const README = fs.readFileSync(G('README.md'), 'utf8');
 const PUB = fs.readFileSync(G('publish_board.js'), 'utf8');
 const SOCIALSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'games_social.sql'), 'utf8');
 const DEV = fs.readFileSync(G('development/index.html'), 'utf8');
+const PACKS = fs.readFileSync(G('packs/index.html'), 'utf8');
 const SCHEMATOOL = fs.readFileSync(path.join(__dirname, 'schema.js'), 'utf8');
 
 function fresh() { MEM = {}; ST.reset(); }
@@ -1105,7 +1106,7 @@ fresh();
   ['market_view', 'free_agent_signed', 'player_released', 'scouting_spent', 'player_scouted', 'draft_pick'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
   chk('the market cards stack on a phone and the actions meet the tap minimum', /\.pc-actions \.btn\{min-height:40px/.test(FCSS) && /\.mk-sum\{display:grid;grid-template-columns:repeat\(2,1fr\)/.test(FCSS));
   /* the SQL keeps its conventions on the new side */
-  ['franchise_generate_player(uuid, text, integer, integer, text, text, text, integer)', 'franchise_open_market(uuid, integer)', 'franchise_prospect_json(public.game_players)', 'franchise_free_number(uuid, text, text)']
+  ['franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'franchise_open_market(uuid, integer)', 'franchise_prospect_json(public.game_players)', 'franchise_free_number(uuid, text, text)']
     .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role', SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
   ['franchise_market()', 'franchise_market_board(text)', 'franchise_scout(uuid, text)', 'franchise_draft(uuid, text)', 'franchise_sign(uuid, text)', 'franchise_release(uuid, text)']
     .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated', SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
@@ -2004,7 +2005,8 @@ fresh();
     /select 28, 'development is '/.test(SQL) && /select 29, 'the league is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 10, 'the development program and the league'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 10);
+  chk('and the schema log records phase 10 by name',
+    /games_schema_note\('franchise', 10, 'the development program and the league'\)/.test(SQL));
   chk('the SQL suite plays it through',
     /23\. THE DEVELOPMENT PROGRAM AND THE LEAGUE/.test(SQLTEST)
     && /the scheduler no longer rates an opponent from your own team overall/.test(SQLTEST)
@@ -2014,6 +2016,146 @@ fresh();
   has(README, 'development_v1', 'the README documents the program');
   has(README, 'league_v1', 'and the league');
   has(README, 'rubber band', 'and names the thing that was wrong');
+
+  /* ═══ 21. THE RANK AND THE PACKS (PHASE 11) ══════════════════════════════
+     What turning up is worth. Every other progression here is paid for by
+     being GOOD at something; the one number that measured PLAYING — the
+     franchise level off XP — decided nothing and stopped at 30. Hardest
+     claims first: nothing is purchasable; a pack's advertised band is true;
+     the rank is derived from the record and cannot drift; and the client's
+     copy of the curves is the SQL's. */
+
+  eq('the rank is versioned', F.RANK_VERSION, 'rank_v1');
+  eq('and the packs are', F.PACKS_VERSION, 'packs_v1');
+  has(SQL, "'version', 'rank_v1'", 'the SQL agrees on the rank');
+  has(SQL, "'pack_version', 'packs_v1'", 'and on the packs');
+
+  /* THE LOAD-BEARING ONE. A pack is earned by playing and by nothing else. */
+  chk('a pack costs no currency and no money: opening spends nothing',
+    /create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/.test(SQL)
+    && !/franchise_credit\([^)]*'pack'/.test(SQL)
+    && !((SQL.match(/create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/) || [''])[0]
+          .match(/franchise_credit|scouting_points\s*<|team_credits\s*<|coach_points\s*</)));
+  chk('and the page says so where a player can see it',
+    /Nothing here can be bought|cannot be bought/.test(PACKS)
+    && /no pack for sale/.test(PACKS));
+  chk('the rank counts ACTIVITY, never spending or winning',
+    /'weekly_game', 3, 'bowl_bid', 3, 'conf_game', 3/.test(SQL)
+    && !/weights[\s\S]{0,300}'weekly_win'/.test(SQL));
+
+  /* the table, pinned to the SQL rather than to a memory */
+  chk('the rank table is the SQL table',
+    new RegExp("'cost_base', " + F.RANKS.cost_base + ", 'cost_step', " + F.RANKS.cost_step).test(SQL)
+    && new RegExp("'pack_size', " + F.RANKS.pack_size + ", 'pack_keep', " + F.RANKS.pack_keep).test(SQL)
+    && new RegExp("'floor_below', " + F.RANKS.floor_below + ",").test(SQL)
+    && new RegExp("'edge_base', " + F.RANKS.edge_base + ", 'edge_per_rank', " + F.RANKS.edge_per_rank
+      + ", 'edge_max', " + F.RANKS.edge_max).test(SQL));
+  Object.keys(F.RANKS.weights).forEach(function (k) {
+    chk('an activity of kind ' + k + ' is worth what the SQL says',
+      new RegExp("'" + k + "', " + F.RANKS.weights[k] + "[,)]").test(SQL));
+  });
+
+  /* the curves */
+  eq('rank two costs the base', F.rankCost(1), F.RANKS.cost_base);
+  eq('and every rank after costs a step more', F.rankCost(2) - F.rankCost(1), F.RANKS.cost_step);
+  chk('the rank never caps and never gets cheaper', () => {
+    for (var r = 1; r < 300; r++) if (F.rankCost(r) >= F.rankCost(r + 1)) return false;
+    return F.rankCost(1000) > F.rankCost(999);
+  });
+  chk('the sum of the steps is the points a rank stands on, at every rank', () => {
+    for (var r = 1; r <= 80; r++) if (F.rankAt(r + 1) - F.rankAt(r) !== F.rankCost(r)) return false;
+    return F.rankAt(1) === 0;
+  });
+  chk('and a pile of points buys exactly the rank it stands on', () => {
+    for (var r = 1; r <= 80; r++) {
+      if (F.rankFor(F.rankAt(r)) !== r) return false;
+      if (r > 1 && F.rankFor(F.rankAt(r) - 1) !== r - 1) return false;
+    }
+    return F.rankFor(0) === 1 && F.rankFor(-50) === 1;
+  });
+  chk('a pack reaches further as the rank rises, and stops at the ceiling', () => {
+    for (var r = 1; r < 300; r++) if (F.rankEdge(r) > F.rankEdge(r + 1)) return false;
+    return F.rankEdge(1) === F.RANKS.edge_base && F.rankEdge(1000) === F.RANKS.edge_max;
+  });
+  chk('the band is drawn around your own team and never leaves 40 to 99', () =>
+    [30, 55, 70, 90, 99].every(function (o) {
+      return [1, 10, 40, 200].every(function (r) {
+        var b = F.packBand(o, r);
+        return b[0] >= 40 && b[1] <= 99 && b[0] <= b[1]
+          && b[0] === Math.max(40, o - F.RANKS.floor_below)
+          /* the ceiling is held at or above the floor: a team rated under 50
+             would otherwise be offered a band that runs backwards */
+          && b[1] === Math.max(b[0], Math.min(99, o + F.rankEdge(r)));
+      });
+    }));
+
+  /* THE SERVER COUNTS, ROLLS AND KEEPS */
+  chk('the rank is DERIVED from the activity already on the record',
+    /select coalesce\(sum\(coalesce\(\(w->>a\.kind\)::int, 0\)\), 0\) into v_points\s*\n\s*from public\.franchise_activity a where a\.franchise_id = p_franchise;/.test(SQL));
+  chk('and the only thing remembered is what has already been paid out',
+    /alter table public\.franchises add column if not exists rank_claimed integer not null default 0;/.test(SQL)
+    && /update public\.franchises set rank_claimed = v_rank/.test(SQL));
+  chk('a rank pays one pack and cannot pay it twice',
+    /if \(rep->>'packs'\)::int < 1 then/.test(SQL)
+    && /raise exception 'no pack to open: rank % and % already claimed'/.test(SQL));
+  chk('two packs are never on the table at once',
+    /open pack on the table: keep a man from it first/.test(SQL));
+  chk('a pack man is not on the roster until he is kept',
+    /when 'pack' then 'pack' else 'active' end,/.test(SQL)
+    && /where franchise_id = v_f and status = 'active'/.test(SQL));
+  chk('keeping one passes the other two over',
+    /update public\.game_players set status = 'passed'[\s\S]{0,120}status = 'pack' and id <> p\.id;/.test(SQL));
+  chk('and a full roster refuses him rather than growing past the ceiling',
+    /if v_active >= \(m->>'roster_max'\)::int then/.test(SQL)
+    && /the roster is full at %: release a player first/.test(SQL));
+
+  /* THE ADVERTISED BAND IS TRUE. The generator's archetype skew used to pull
+     a man several points off the number the roll was centred on, so a pack
+     that said 59 to 71 handed over a 73. */
+  chk('the generator lands on the target it was given',
+    /if p_target is not null and ovr <> greatest\(40, least\(99, p_target\)\) then/.test(SQL)
+    && /that advertises 59 to 71 and hands over a 73/.test(SQL));
+  chk('and the old eight-argument generator is dropped, not left beside the new one',
+    /drop function if exists public\.franchise_generate_player\(uuid, text, integer, integer, text, text, text, integer\);/.test(SQL)
+    && SQL.indexOf('drop function if exists public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer);')
+       < SQL.indexOf('p_kind text default \'rookie\', p_class integer default null, p_target integer default null)'));
+  chk('nobody counts their own rank; the moves are open like every other',
+    /revoke all on function public\.franchise_rank_report\(uuid\) from public, anon, authenticated;/.test(SQL)
+    && /revoke all on function public\.franchise_generate_player\(uuid, text, integer, integer, text, text, text, integer, integer\) from public, anon, authenticated;/.test(SQL));
+  ['franchise_ranks()', 'franchise_rank_cost(integer)', 'franchise_rank_at(integer)',
+   'franchise_rank_for(integer)', 'franchise_rank_edge(integer)', 'franchise_pack_open(text)',
+   'franchise_pack_keep(uuid, text)', 'franchise_rank_board(text)']
+    .forEach(f => chk('the door ' + f.split('(')[0] + ' is open to every franchise',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* the client asks and never decides */
+  chk('the client asks the server to open and to keep, and rolls nothing',
+    /function packOpen\(\) \{ return rpc\('franchise_pack_open', withSecret\(\{\}\)\)/.test(FJS)
+    && /function packKeep\(player\) \{[\s\S]{0,140}p_player: String\(player \|\| ''\)/.test(FJS)
+    && !/Math\.random/.test(FJS));
+
+  /* THE PAGE */
+  chk('the packs page asks the server and shows what a pack would hold',
+    /FR\.ranks\(\)/.test(PACKS) && /FR\.packOpen\(\)/.test(PACKS) && /FR\.packKeep\(id\)/.test(PACKS)
+    && /would_hold/.test(PACKS));
+  chk('and says a pack is three men and one is kept',
+    /Keep <b>one<\/b>/.test(PACKS) && /passed over/.test(PACKS));
+  chk('it names what the next rank costs in the things you actually do',
+    /FR\.rankWeight\('weekly_game'\)/.test(PACKS) && /FR\.rankWeight\('price_it'\)/.test(PACKS));
+  chk('the page is a room like the others, with the guard the others wear',
+    require(G('games.js')).ROOMS.some(r => r.key === 'packs' && r.href === '/games/packs/')
+    && /EDFranchise\.packOpen/.test(PACKS) && /stale games scripts/.test(PACKS));
+  has(SITEMAP, '/games/packs', 'the room is in the sitemap');
+  has(NOTFOUND, "p[1]==='packs'", 'and routed from 404');
+
+  chk('the report grew to thirty-one rows', /select 30, 'the rank is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 11, 'the rank and the packs'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 11);
+
+  has(README, 'rank_v1', 'the README documents the rank');
+  has(README, 'packs_v1', 'and the packs');
+  has(README, 'earned by playing', 'and that a pack is never bought');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

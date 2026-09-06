@@ -3199,9 +3199,13 @@ $$;
 -- with the better development odds — the reason a report is worth buying),
 -- or a free agent (a veteran who can play now, priced by his overall).
 -- Seeded; the same seed makes the same player.
+-- A TRAILING DEFAULT MAKES A NEW SIGNATURE, not a replacement, so the eight
+-- argument form is dropped first — otherwise both would exist and a caller
+-- would silently keep the old one.
+drop function if exists public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer);
 create or replace function public.franchise_generate_player(
   p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text,
-  p_kind text default 'rookie', p_class integer default null)
+  p_kind text default 'rookie', p_class integer default null, p_target integer default null)
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   first_names text[] := public.franchise_pool_first_names();
@@ -3218,9 +3222,14 @@ begin
   if p is null then raise exception 'no such position' using errcode = '22023'; end if;
   lo := (p->'nums'->>0)::int; hi := (p->'nums'->>1)::int;
   select min(t::int) into lowest from jsonb_array_elements_text(p->'targets') t;
-  target := case p_kind
-    when 'prospect'   then lowest - 7 + floor(random() * 11)::int - 5
-    when 'free_agent' then lowest + floor(random() * 11)::int - 1
+  -- p_target is packs_v1 asking for a man of about a given overall. The
+  -- attributes are still rolled and still skewed by the archetype, so two
+  -- men at the same target are not the same man; the target only says where
+  -- the roll is centred.
+  target := case
+    when p_target is not null then greatest(40, least(99, p_target))
+    when p_kind = 'prospect'   then lowest - 7 + floor(random() * 11)::int - 5
+    when p_kind = 'free_agent' then lowest + floor(random() * 11)::int - 1
     else lowest - 4 + floor(random() * 7)::int - 3 end;
   a := archetypes->p_pos;
   arch := a->(floor(random() * jsonb_array_length(a))::int);
@@ -3230,13 +3239,26 @@ begin
     attrs := attrs || jsonb_build_object(k, greatest(40, least(99, v)));
   end loop;
   select round(avg(x.value::int))::int into ovr from jsonb_each_text(attrs) x;
+  -- WHEN A TARGET WAS ASKED FOR, LAND ON IT. The archetype's skew can pull an
+  -- average several points off the number the roll was centred on, and a pack
+  -- that advertises 59 to 71 and hands over a 73 has told the player
+  -- something untrue. The spread between his attributes is kept; the whole
+  -- man is shifted so his overall is the number that was asked for.
+  if p_target is not null and ovr <> greatest(40, least(99, p_target)) then
+    select jsonb_object_agg(x.key, greatest(40, least(99, x.value::int + (greatest(40, least(99, p_target)) - ovr))))
+      into attrs from jsonb_each_text(attrs) x;
+    select round(avg(x.value::int))::int into ovr from jsonb_each_text(attrs) x;
+  end if;
   age := case p_kind when 'prospect' then 21 + floor(random() * 2)::int
                      when 'free_agent' then 26 + floor(random() * 6)::int
+                     -- a pack man is young enough to be worth developing
+                     when 'pack' then 21 + floor(random() * 5)::int
                      else 21 + floor(random() * 3)::int end;
   r := random();
   tier := case p_kind
     when 'prospect'   then (case when r < 0.06 then 'superstar' when r < 0.20 then 'star' when r < 0.45 then 'quick' else 'normal' end)
     when 'free_agent' then (case when r < 0.05 then 'star' when r < 0.20 then 'quick' else 'normal' end)
+    when 'pack'       then (case when r < 0.08 then 'superstar' when r < 0.24 then 'star' when r < 0.50 then 'quick' else 'normal' end)
     else (case when r < 0.03 then 'superstar' when r < 0.15 then 'star' when r < 0.40 then 'quick' else 'normal' end) end;
   bump := case tier when 'superstar' then 18 + floor(random() * 9)::int when 'star' then 12 + floor(random() * 9)::int
                     when 'quick' then 6 + floor(random() * 9)::int else 2 + floor(random() * 7)::int end;
@@ -3281,8 +3303,12 @@ begin
   values
     (p_franchise, fn, ln, p_pos, num, age, ovr, arch->>'name', tier, pot, 70 + floor(random() * 26)::int, 50,
      v_rarity, attrs, case when tr is null then '[]'::jsonb else jsonb_build_array(tr) end, p_depth,
-     case p_kind when 'prospect' then 'prospect' when 'free_agent' then 'free_agent' else 'active' end,
-     case p_kind when 'prospect' then 'draft' when 'free_agent' then 'free_agent' else 'offseason_rookie' end,
+     -- a pack man waits on the table until one of the three is kept; he is
+     -- not on the roster and does not count against it
+     case p_kind when 'prospect' then 'prospect' when 'free_agent' then 'free_agent'
+                 when 'pack' then 'pack' else 'active' end,
+     case p_kind when 'prospect' then 'draft' when 'free_agent' then 'free_agent'
+                 when 'pack' then 'pack' else 'offseason_rookie' end,
      p_season, p_detail, p_class, case when p_kind = 'free_agent' then public.franchise_signing_cost(ovr) end)
   returning id into v_id;
   return v_id;
@@ -6772,6 +6798,319 @@ $$;
 commit;
 
 -- ===========================================================================
+-- THE RANK AND THE PACKS — Phase 11, rank_v1 and packs_v1
+--
+-- WHAT PLAYING A LOT IS WORTH. Every other progression in this game is paid
+-- for by being GOOD at something: Scouting Points by pricing games well,
+-- Coach Points by winning, the standing by beating better clubs. Nothing was
+-- paid for by simply turning up, and the one number that measured turning up
+-- — the franchise LEVEL, off XP — was displayed on the Front Office and
+-- decided nothing at all. It also stopped: the curve caps at level 30, which
+-- a franchise playing three Price Its a week reaches in about nine seasons
+-- and then never moves again.
+--
+-- So: a RANK that counts what you did rather than how well, never caps, and
+-- pays in the one thing a football franchise always wants — players.
+--
+--   THE RANK      counted from the activity already on the record: every
+--                 game played, every game priced, every drill, every card,
+--                 every research read, and five for finishing a season.
+--                 Nothing new is written for it and nothing was added to a
+--                 hot path — it is DERIVED, the way scouting_points is
+--                 derived from the ledger, so it can never drift from what
+--                 the franchise actually did.
+--
+--                 Rank 2 costs 15 points, and every rank after costs three
+--                 more than the one before. A first season is worth about
+--                 fifty points and lands around rank 3; sixty seasons land
+--                 in the forties. There is always another rank.
+--
+--   THE PACK      one for every rank, held until opened. A pack is THREE
+--                 players and you keep ONE — that is the decision, and it is
+--                 also what keeps forty packs from burying a forty-two man
+--                 roster. The other two are passed over and stay on the
+--                 record as men you turned down.
+--
+--   WHO IS IN IT  drawn around YOUR OWN TEAM OVERALL, so a pack is never
+--                 junk and never a shortcut: the floor sits ten below your
+--                 team and the ceiling rises with the rank — plus two at
+--                 rank 1, plus fourteen at rank 40. Playing more does not
+--                 hand you better players outright; it widens the top of
+--                 what a pack can contain, and the roll still has to land.
+--
+-- NOTHING HERE IS PURCHASABLE. A pack is earned by playing and by nothing
+-- else. There is no pack to buy, no currency that buys one, and no way to
+-- open one faster with money — the same rule every other phase of this file
+-- keeps, and the reason a rank counts activity rather than spending.
+-- ===========================================================================
+
+begin;
+
+alter table public.game_players drop constraint if exists game_players_status_check;
+alter table public.game_players add constraint game_players_status_check
+  check (status in ('active','injured','retired','released','prospect','free_agent','passed','pack'));
+
+-- how many ranks have been paid out in packs. The rank itself is derived, so
+-- this is the only thing that needs remembering: what has already been given.
+alter table public.franchises add column if not exists rank_claimed integer not null default 0;
+-- which pack a man came out of, so a card can say so for the rest of his career
+alter table public.game_players add column if not exists pack_rank integer;
+
+alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
+alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
+  ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
+   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason',
+   'market','scout','draft','signing','release',
+   'conf_joined','conf_season','conf_game','conf_win','conf_playoff','conf_title',
+   'bowl_bid','injury','trade',
+   'staff_hire','staff_promote','staff_fire',
+   'program','pack'));
+
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('pack_first', 'First Pack',    'Opened your first pack and kept a player.', null, 120),
+  ('pack_ten',   'Ten Packs',     'Opened ten packs.', null, 121),
+  ('rank_ten',   'Rank Ten',      'Reached rank ten by playing.', null, 122),
+  ('rank_25',    'Rank Twenty-Five', 'Reached rank twenty-five. That is a lot of football.', null, 123)
+on conflict (id) do nothing;
+
+-- THE TABLE. What an activity is worth, what a rank costs, and what a pack
+-- can hold — in one place a page can render without a round trip.
+create or replace function public.franchise_ranks()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'rank_v1',
+    'pack_version', 'packs_v1',
+    'cost_base', 15, 'cost_step', 3,     -- rank 2 costs 15, and three more each time
+    'pack_size', 3, 'pack_keep', 1,      -- three men, one kept
+    'floor_below', 10,                   -- a pack's floor, under your team overall
+    'edge_base', 2, 'edge_per_rank', 0.3, 'edge_max', 14,
+    -- what turning up is worth. A season of playing weekly, pricing three
+    -- games a week and running a drill is about fifty.
+    'weights', jsonb_build_object(
+      'weekly_game', 3, 'bowl_bid', 3, 'conf_game', 3, 'fc_played', 2,
+      'price_it', 1, 'drill_daily', 1, 'research_open', 1,
+      'pick5_card', 2, 'season_complete', 5));
+$$;
+
+-- WHAT THE NEXT RANK COSTS: 15 points, and three more for every rank already
+-- held. Uncapped on purpose — the staff climbs to a thousand and this climbs
+-- with the seasons; there is always another one.
+create or replace function public.franchise_rank_cost(p_rank integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select (public.franchise_ranks()->>'cost_base')::int
+       + (public.franchise_ranks()->>'cost_step')::int * greatest(0, coalesce(p_rank, 1) - 1);
+$$;
+
+-- the points it takes to STAND at a rank: the sum of every step below it
+create or replace function public.franchise_rank_at(p_rank integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce((select sum(public.franchise_rank_cost(t.n))::int
+                     from generate_series(1, greatest(0, coalesce(p_rank, 1) - 1)) as t(n)), 0);
+$$;
+
+-- and the rank a pile of points buys. Closed form rather than a loop: the
+-- cost is an arithmetic series, so the rank is the root of a quadratic, and
+-- a franchise sixty seasons deep should not cost sixty iterations to read.
+create or replace function public.franchise_rank_for(p_points integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select greatest(1, floor(
+    (2 * ((public.franchise_ranks()->>'cost_base')::numeric
+          - (public.franchise_ranks()->>'cost_step')::numeric / 2)
+     * -1
+     + sqrt(power(2 * (public.franchise_ranks()->>'cost_base')::numeric
+                  - (public.franchise_ranks()->>'cost_step')::numeric, 2)
+            + 8 * (public.franchise_ranks()->>'cost_step')::numeric * greatest(0, coalesce(p_points, 0))))
+    / (2 * (public.franchise_ranks()->>'cost_step')::numeric) + 1)::int);
+$$;
+
+-- HOW FAR A PACK CAN REACH ABOVE YOUR TEAM: two at rank one, and three
+-- tenths of a rank after, to a ceiling of fourteen. Playing more does not
+-- hand you better players — it widens the top of what a pack can contain.
+create or replace function public.franchise_rank_edge(p_rank integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select least((public.franchise_ranks()->>'edge_max')::int,
+    (public.franchise_ranks()->>'edge_base')::int
+    + floor((public.franchise_ranks()->>'edge_per_rank')::numeric * greatest(0, coalesce(p_rank, 1) - 1))::int);
+$$;
+
+-- WHAT THIS FRANCHISE HAS DONE, and what it is worth. Derived from the
+-- activity already on the record — nothing is written for a rank and nothing
+-- was added to a hot path, so this can never drift from what was played.
+create or replace function public.franchise_rank_report(p_franchise uuid)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  cfg jsonb := public.franchise_ranks(); w jsonb := cfg->'weights';
+  v_points integer; v_rank integer; v_claimed integer;
+begin
+  select coalesce(sum(coalesce((w->>a.kind)::int, 0)), 0) into v_points
+    from public.franchise_activity a where a.franchise_id = p_franchise;
+  v_rank := public.franchise_rank_for(v_points);
+  select rank_claimed into v_claimed from public.franchises where id = p_franchise;
+  return jsonb_build_object(
+    'version', cfg->>'version', 'points', v_points, 'rank', v_rank,
+    'at', public.franchise_rank_at(v_rank),
+    'next_at', public.franchise_rank_at(v_rank + 1),
+    'next_cost', public.franchise_rank_cost(v_rank),
+    'to_next', greatest(0, public.franchise_rank_at(v_rank + 1) - v_points),
+    'edge', public.franchise_rank_edge(v_rank),
+    'claimed', coalesce(v_claimed, 0),
+    'packs', greatest(0, v_rank - coalesce(v_claimed, 0)));
+end;
+$$;
+
+commit;
+
+begin;
+
+-- OPEN A PACK. One rank, one pack: the rank must be ahead of what has been
+-- claimed, and claiming it is the same statement that generates the men, so
+-- a replayed request cannot open the same rank twice.
+create or replace function public.franchise_pack_open(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype;
+  cfg jsonb := public.franchise_ranks(); rep jsonb; v_rank integer; v_ovr integer;
+  v_low integer; v_high integer; v_target integer; i integer; pos text; pid uuid;
+  pool text[] := array['QB','RB','WR','TE','OL','DL','LB','CB','S','WR','DL','CB'];
+  v_men jsonb := '[]'::jsonb; v_new text[] := '{}'; v_real integer := public.games_season_of(now());
+  v_seed text;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  rep := public.franchise_rank_report(v_f);
+  if (rep->>'packs')::int < 1 then
+    raise exception 'no pack to open: rank % and % already claimed', rep->>'rank', rep->>'claimed'
+      using errcode = '55000';
+  end if;
+  -- an unopened pack of a previous rank is finished first, so the three men
+  -- on the table are never two packs' worth
+  if exists (select 1 from public.game_players where franchise_id = v_f and status = 'pack') then
+    raise exception 'open pack on the table: keep a man from it first' using errcode = '55000';
+  end if;
+
+  v_rank := coalesce(f.rank_claimed, 0) + 1;
+  v_ovr := (public.franchise_team_rating(v_f)->>'overall')::int;
+  v_low := greatest(40, v_ovr - (cfg->>'floor_below')::int);
+  -- a team rated below the floor would otherwise get a ceiling under it
+  v_high := greatest(v_low, least(99, v_ovr + public.franchise_rank_edge(v_rank)));
+  v_seed := f.seed || ':pack:' || v_rank;
+
+  for i in 1..(cfg->>'pack_size')::int loop
+    perform setseed(public.franchise_seed_float(v_seed || ':' || i));
+    pos := pool[1 + ((v_rank - 1) * 5 + i - 1) % array_length(pool, 1)];
+    -- the roll: somewhere between the floor and the ceiling, and the SERVER
+    -- rolls it. A pack is generated once, from the franchise's own seed and
+    -- the rank, so the same rank opens the same pack however often it is read.
+    v_target := v_low + floor(random() * greatest(1, v_high - v_low + 1))::int;
+    pid := public.franchise_generate_player(v_f, pos, 0, v_real, v_seed || ':' || i,
+             'Pack, rank ' || v_rank, 'pack', null, v_target);
+    update public.game_players set pack_rank = v_rank where id = pid;
+    select v_men || public.franchise_prospect_json(p) into v_men
+      from public.game_players p where p.id = pid;
+  end loop;
+
+  update public.franchises set rank_claimed = v_rank, updated_at = now() where id = v_f;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'pack', v_rank::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('rank', v_rank, 'team_overall', v_ovr, 'low', v_low, 'high', v_high,
+            'edge', public.franchise_rank_edge(v_rank), 'version', cfg->>'pack_version'))
+  on conflict (franchise_id, kind, key) do nothing;
+
+  if public.franchise_award(v_f, 'pack_first', v_real, jsonb_build_object('rank', v_rank)) then
+    v_new := array_append(v_new, 'pack_first'); end if;
+  if v_rank >= 10 and public.franchise_award(v_f, 'pack_ten', v_real, jsonb_build_object('rank', v_rank)) then
+    v_new := array_append(v_new, 'pack_ten'); end if;
+  if v_rank >= 10 and public.franchise_award(v_f, 'rank_ten', v_real, jsonb_build_object('rank', v_rank)) then
+    v_new := array_append(v_new, 'rank_ten'); end if;
+  if v_rank >= 25 and public.franchise_award(v_f, 'rank_25', v_real, jsonb_build_object('rank', v_rank)) then
+    v_new := array_append(v_new, 'rank_25'); end if;
+
+  return jsonb_build_object('ok', true, 'rank', v_rank, 'players', v_men,
+    'range', jsonb_build_array(v_low, v_high), 'team_overall', v_ovr,
+    'keep', (cfg->>'pack_keep')::int, 'achievements', to_jsonb(v_new),
+    'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- KEEP ONE. He joins the roster at the bottom of his position's chart; the
+-- other two are passed over and stay on the record as men you turned down.
+create or replace function public.franchise_pack_keep(p_player uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; p public.game_players%rowtype;
+  m jsonb := public.franchise_market(); v_active integer; v_depth integer; v_passed integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  select * into p from public.game_players where id = p_player and franchise_id = v_f and status = 'pack' for update;
+  if not found then raise exception 'that man is not in an open pack of yours' using errcode = 'P0002'; end if;
+  select count(*) into v_active from public.game_players where franchise_id = v_f and status = 'active';
+  if v_active >= (m->>'roster_max')::int then
+    raise exception 'the roster is full at %: release a player first', (m->>'roster_max')::int using errcode = '55000';
+  end if;
+
+  select coalesce(max(depth), 0) + 1 into v_depth from public.game_players
+   where franchise_id = v_f and position = p.position and status = 'active';
+  update public.game_players
+     set status = 'active', depth = v_depth,
+         jersey = public.franchise_free_number(v_f, p.position, p.id::text),
+         acquired_source = 'pack', acquired_season = public.games_season_of(now()),
+         updated_at = now()
+   where id = p.id;
+  -- the two you turned down
+  update public.game_players set status = 'passed', updated_at = now()
+   where franchise_id = v_f and status = 'pack' and id <> p.id;
+  get diagnostics v_passed = ROW_COUNT;
+
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'signing', p.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'position', p.position,
+            'overall', p.overall, 'potential', p.potential, 'cost', 0, 'currency', 'pack',
+            'pack_rank', p.pack_rank, 'passed', v_passed))
+  on conflict (franchise_id, kind, key) do nothing;
+
+  select * into p from public.game_players where id = p.id;
+  return jsonb_build_object('ok', true, 'player', public.franchise_prospect_json(p),
+    'passed', v_passed, 'roster_active', v_active + 1,
+    'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- THE BOARD: the rank, what the next one costs, how many packs are waiting,
+-- and the three men on the table if a pack is open. One read.
+create or replace function public.franchise_rank_board(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare f public.franchises%rowtype; cfg jsonb := public.franchise_ranks(); rep jsonb; v_ovr integer; v_active integer;
+begin
+  select * into f from public.franchises where id = public.franchise_of(p_secret);
+  if not found then return null; end if;
+  rep := public.franchise_rank_report(f.id);
+  v_ovr := (public.franchise_team_rating(f.id)->>'overall')::int;
+  select count(*) into v_active from public.game_players where franchise_id = f.id and status = 'active';
+  return jsonb_build_object(
+    'version', cfg->>'version', 'pack_version', cfg->>'pack_version', 'rules', cfg,
+    'rank', rep,
+    'team_overall', v_ovr,
+    'would_hold', jsonb_build_array(greatest(40, v_ovr - (cfg->>'floor_below')::int),
+      greatest(greatest(40, v_ovr - (cfg->>'floor_below')::int),
+               least(99, v_ovr + public.franchise_rank_edge((rep->>'rank')::int)))),
+    'roster', jsonb_build_object('active', v_active, 'max', (public.franchise_market()->>'roster_max')::int,
+      'room', greatest(0, (public.franchise_market()->>'roster_max')::int - v_active)),
+    'open', coalesce((select jsonb_agg(public.franchise_prospect_json(p) order by p.overall desc)
+                        from public.game_players p
+                       where p.franchise_id = f.id and p.status = 'pack'), '[]'::jsonb),
+    'kept', coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name,
+              'position', p.position, 'overall', p.overall, 'potential', p.potential, 'rank', p.pack_rank)
+              order by p.pack_rank desc)
+              from public.game_players p
+             where p.franchise_id = f.id and p.acquired_source = 'pack' and p.status = 'active'), '[]'::jsonb),
+    'resources', public.franchise_totals(f.id));
+end;
+$$;
+
+commit;
+
+-- ===========================================================================
 -- GRANTS
 --
 -- Postgres grants EXECUTE on a new function to PUBLIC by default, so every
@@ -6822,7 +7161,7 @@ revoke all on function public.franchise_pool_archetypes() from public, anon, aut
 revoke all on function public.franchise_pool_traits() from public, anon, authenticated;
 -- the draft and the market: the generator, the window opener and the
 -- prospect reader are the server's; the board and the four moves are open
-revoke all on function public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer) from public, anon, authenticated;
+revoke all on function public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer) from public, anon, authenticated;
 revoke all on function public.franchise_open_market(uuid, integer) from public, anon, authenticated;
 revoke all on function public.franchise_free_number(uuid, text, text) from public, anon, authenticated;
 revoke all on function public.franchise_prospect_json(public.game_players) from public, anon, authenticated;
@@ -6982,6 +7321,18 @@ revoke all on function public.franchise_dev_grade(uuid, uuid, integer) from publ
 -- and the league is public: the table of clubs, what a standing faces, and
 -- what a result is worth are the same for everybody and hide nothing
 grant execute on function public.franchise_league() to anon, authenticated;
+-- Phase 11: the rank table and its curves are open to read, the two moves are
+-- open on the same terms every other franchise move is, and the derived read
+-- of one franchise's own record is not
+grant execute on function public.franchise_ranks() to anon, authenticated;
+grant execute on function public.franchise_rank_cost(integer) to anon, authenticated;
+grant execute on function public.franchise_rank_at(integer) to anon, authenticated;
+grant execute on function public.franchise_rank_for(integer) to anon, authenticated;
+grant execute on function public.franchise_rank_edge(integer) to anon, authenticated;
+grant execute on function public.franchise_pack_open(text) to anon, authenticated;
+grant execute on function public.franchise_pack_keep(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_rank_board(text) to anon, authenticated;
+revoke all on function public.franchise_rank_report(uuid) from public, anon, authenticated;
 grant execute on function public.franchise_league_gap(integer, integer) to anon, authenticated;
 grant execute on function public.franchise_standing_delta(text, integer, integer, boolean) to anon, authenticated;
 
@@ -7007,6 +7358,7 @@ select public.games_schema_note('franchise', 7, 'injuries, the bowl and trades')
 select public.games_schema_note('franchise', 8, 'the coaching staff');
 select public.games_schema_note('franchise', 9, 'the scouting department');
 select public.games_schema_note('franchise', 10, 'the development program and the league');
+select public.games_schema_note('franchise', 11, 'the rank and the packs');
 commit;
 
 -- ===========================================================================
@@ -7116,7 +7468,7 @@ select 18, 'the market is ' || (public.franchise_market()->>'version') || ': sco
         and has_function_privilege('anon', 'public.franchise_sign(uuid, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_release(uuid, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_open_market(uuid, integer)', 'execute')
-        and not has_function_privilege('authenticated', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'execute')
     then 'ok' else 'CHECK THIS' end
 union all
 select 19, 'a prospect''s true ratings are read through the board only: the direct policy admits no prospect or free agent',
@@ -7176,7 +7528,7 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 10 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 11 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
@@ -7259,5 +7611,34 @@ select 29, 'the league is ' || (public.franchise_league()->>'version') || ': twe
         and exists (select 1 from information_schema.columns
                      where table_schema = 'public' and table_name = 'franchises' and column_name = 'standing')
         and has_function_privilege('anon', 'public.franchise_league()', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 30, 'the rank is ' || (public.franchise_ranks()->>'version') || ' and packs are '
+        || (public.franchise_ranks()->>'pack_version') || ': earned by playing, never bought, and drawn around your own team',
+  case when public.franchise_ranks()->>'version' = 'rank_v1'
+        and public.franchise_ranks()->>'pack_version' = 'packs_v1'
+        -- the rank never caps and every step costs more than the last
+        and public.franchise_rank_cost(1) = 15 and public.franchise_rank_cost(2) = 18
+        and public.franchise_rank_cost(100) > public.franchise_rank_cost(99)
+        -- the closed form and the sum of the steps agree at every rank
+        and (select bool_and(public.franchise_rank_for(public.franchise_rank_at(t.n)) = t.n)
+               from generate_series(1, 60) as t(n))
+        and (select bool_and(public.franchise_rank_at(t.n + 1) - public.franchise_rank_at(t.n)
+                             = public.franchise_rank_cost(t.n))
+               from generate_series(1, 60) as t(n))
+        -- a pack reaches further as the rank rises, and stops at fourteen
+        and public.franchise_rank_edge(1) = 2 and public.franchise_rank_edge(1000) = 14
+        and (select bool_and(public.franchise_rank_edge(t.n) <= public.franchise_rank_edge(t.n + 1))
+               from generate_series(1, 200) as t(n))
+        -- a pack is three men and one is kept
+        and (public.franchise_ranks()->>'pack_size')::int = 3
+        and (public.franchise_ranks()->>'pack_keep')::int = 1
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'franchises' and column_name = 'rank_claimed')
+        -- the moves are open; the derived read of one franchise's record is not
+        and has_function_privilege('anon', 'public.franchise_pack_open(text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_pack_keep(uuid, text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_rank_report(uuid)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_rank_report(uuid)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

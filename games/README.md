@@ -1903,6 +1903,76 @@ way, that the places run out, and that no client role can grade a season,
 count its own places, draw its own schedule, or write itself a standing or a
 ceiling.
 
+## Phase 11 — the rank, and the packs
+
+`rank_v1` and `packs_v1`. **What turning up is worth.**
+
+Every other progression in this game is paid for by being *good* at something:
+Scouting Points by pricing games well, Coach Points by winning, the standing
+by beating better clubs. Nothing was paid for by simply playing — and the one
+number that measured playing, the franchise **level** off XP, was shown on the
+Front Office and decided nothing at all. It also stopped: the curve caps at
+level 30, which a franchise pricing three games a week reaches in about nine
+seasons and then never moves again.
+
+### The rank
+
+Counted from the activity already on the record — every game played, every
+game priced, every drill, every card, every research read, and five for
+finishing a season. **Nothing new is written for it and nothing was added to a
+hot path**: it is derived, the way `scouting_points` is derived from the
+ledger, so it can never drift from what the franchise actually did.
+
+| what you did | worth |
+| --- | --- |
+| a weekly game, a bowl, a conference round | 3 |
+| a franchise challenge | 2 |
+| a Pick 5 card | 2 |
+| a Price It, a drill, a research read | 1 |
+| seeing a season out | 5 |
+
+Rank 2 costs **15** points and every rank after costs **three more** than the
+one before. A first season is worth about seventy and lands around rank 4;
+rank 20 stands on 798; rank 60 on 6,018. **It never caps** — the staff climbs
+to a thousand and this climbs with the seasons.
+
+### The packs
+
+One pack for every rank, held until opened. A pack is **three players and you
+keep one** — that is the decision, and it is also what stops forty packs
+burying a forty-two man roster. The other two are passed over and stay on the
+record as men you turned down.
+
+**Who is in it** is drawn around **your own team overall**, so a pack is never
+junk and never a shortcut:
+
+* the **floor** sits 10 under your team overall;
+* the **ceiling** rises with the rank — **+2** at rank 1, **+14** at rank 40
+  and after.
+
+Playing more does not hand you better players outright. It widens the top of
+what a pack can contain, and the roll still has to land.
+
+The advertised band is **true**. It did not used to be: the generator centres
+a man's attributes on a target and then skews them by his archetype, which
+pulled the average several points off — a pack that said 59 to 71 handed over
+a 73. The whole man is now shifted so his overall is the number that was asked
+for, keeping the spread between his attributes.
+
+### Nothing here is purchasable
+
+A pack is earned by playing and by nothing else. There is no pack to buy, no
+currency that buys one, and no way to open one faster with money — the same
+rule every other phase of this file keeps, and the reason a rank counts
+activity rather than spending.
+
+Report row 30 covers it. The SQL suite walks the rank curve step by step
+(the closed form and the sum of the steps agree at every rank to 60), proves a
+pack man is not on the roster until he is kept, that keeping one passes the
+other two over, that a full roster refuses him rather than growing past the
+ceiling, that a rank pays one pack and cannot pay it twice, and that no client
+role can count its own rank or reach the generator.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
