@@ -1,7 +1,7 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-05T12:57:27.933Z",
-  "ok": true,
+  "generated_at": "2026-09-06T13:03:17.045Z",
+  "ok": false,
   "last_ok_at": "2026-09-05T12:57:27.933Z",
   "run": {
     "trigger": "schedule",
@@ -28,9 +28,9 @@
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
-      "completed_in_feed": 8,
-      "absorbed": 8,
-      "data_through": "2026-08-30",
+      "completed_in_feed": 95,
+      "absorbed": 95,
+      "data_through": "2026-09-06",
       "schedule_source": "cfbfastR-data schedules 2026"
     }
   },
@@ -42,21 +42,15 @@
       "outliers": []
     },
     "p4": {
-      "compared": 20,
-      "median_gap": 5.32,
-      "max_gap": 10.53,
+      "compared": 5,
+      "median_gap": 3.59,
+      "max_gap": 41.7,
       "outliers": [
         {
-          "game": "Oklahoma State @ Tulsa",
-          "gap": 10.53,
-          "model": -0.97,
-          "market": -11.5
-        },
-        {
-          "game": "East Carolina @ Alabama",
-          "gap": 10.1,
-          "model": 15.4,
-          "market": 25.5
+          "game": "Wisconsin @ Notre Dame",
+          "gap": 41.7,
+          "model": 21.2,
+          "market": -20.5
         }
       ]
     }
@@ -126,7 +120,7 @@
       "id": "p4_ingest",
       "label": "CFB P4: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "8/8 absorbed, data through 2026-08-30"
+      "detail": "95/95 absorbed, data through 2026-09-06"
     },
     {
       "id": "p4_roster",
@@ -150,42 +144,42 @@
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "20 of 30 upcoming games have a book number"
+      "detail": "5 of 30 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
       "label": "CFB P4: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 20/30"
+      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 22/30"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "20 lines inside plausible bounds"
+      "detail": "5 lines inside plausible bounds"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
-      "status": "warn",
-      "detail": "median gap 5.32 pts over 20 games; 2 game(s) beyond 10 pts"
+      "status": "fail",
+      "detail": "Wisconsin @ Notre Dame gap 41.7 pts (model 21.2 vs market -20.5) — beyond the 21-pt hard bound; treat as a data fault, not an edge"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-05T12:57:27.933Z",
-    "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-05T12:57:27.933Z",
+    "daily_check_last_run": "2026-09-06T13:03:17.045Z",
+    "daily_check_last_status": "error",
+    "engine_tests_last_run": "2026-09-06T13:03:17.045Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-05T12:57:27.933Z",
+    "nfl_ingest_last_run": "2026-09-06T13:03:17.045Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-09-05T12:57:27.933Z",
+    "p4_ingest_last_run": "2026-09-06T13:03:17.045Z",
     "p4_ingest_last_status": "ok",
-    "row_count_p4_ingest": 8,
-    "projection_guard_last_run": "2026-09-05T12:57:27.933Z",
+    "row_count_p4_ingest": 95,
+    "projection_guard_last_run": "2026-09-06T13:03:17.045Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-05T12:57:27.933Z",
-    "line_guard_last_status": "ok",
-    "row_count_line_guard": 36
+    "line_guard_last_run": "2026-09-06T13:03:17.045Z",
+    "line_guard_last_status": "error",
+    "row_count_line_guard": 21
   }
 }
