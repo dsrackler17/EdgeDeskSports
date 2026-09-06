@@ -1692,7 +1692,7 @@ $$;
 commit;
 
 -- ===========================================================================
--- THE WEEKLY GAME — sim_v2
+-- THE WEEKLY GAME — sim_v4
 --
 -- The franchise's own calendar, and the game that gives a week its stakes.
 --
@@ -1963,18 +1963,31 @@ $$;
 -- calling the one that knows nothing about a call.
 drop function if exists public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean);
 drop function if exists public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text);
+drop function if exists public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean);
+drop function if exists public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text);
 create or replace function public.franchise_sim_drive(
   p_off numeric, p_def numeric, p_st numeric, p_pass_share numeric, p_takeaway numeric, p_clutch numeric, p_short_field boolean,
-  p_call text default null, p_lean numeric default 0, p_giveaway boolean default false)
+  p_call text default null, p_lean numeric default 0, p_giveaway boolean default false,
+  p_front text default null, p_play text default null, p_used integer default 0)
 returns jsonb language plpgsql set search_path = public, pg_temp as $$
 declare
   edge numeric := p_off - p_def; p_td numeric; p_fg numeric; p_to numeric; r numeric := random();
   outcome text; pts integer := 0; yds integer; plays integer; is_pass boolean; py integer; pp integer;
-  c jsonb;
+  c jsonb; fr jsonb; fr_td numeric := 0; fr_to numeric := 0;
+  pl jsonb; tell numeric; bought numeric; fresh numeric; gain numeric := 0; boom numeric := 0; broke boolean := false;
 begin
   -- THE CALL (snap_v1) is one more input beside home field, preparation and
   -- the scheme matchup: it shifts how the ball is moved and what it risks,
   -- and the server applies it. A client sends the call, never the outcome.
+  -- A PLAY IS A SPECIALISATION OF A CALL (playbook_v1), not a replacement: it
+  -- names one of the four and inherits that call's numbers exactly as they
+  -- were measured, then adds its own on top. So p_call is set FROM the play
+  -- when a play was run, and everything below is the path it always was.
+  pl := case when p_play is null then null else public.franchise_play(p_play) end;
+  if pl is not null then
+    p_call := pl->>'call';
+    boom := (pl->>'explosive')::numeric;
+  end if;
   c := case when p_call is null then null else public.franchise_snap_call(p_call) end;
   if c is not null then
     p_pass_share := greatest(0.05, least(0.95, p_pass_share + (c->>'pass')::numeric));
@@ -1987,6 +2000,19 @@ begin
     p_off := p_off + (c->>'edge')::numeric + p_lean * (c->>'pass')::numeric;
     edge := p_off - p_def;
   end if;
+  -- THE FRONT (defense_v1) is answered AFTER the offense has chosen how to
+  -- move the ball, because that is what a defensive call is: a guess at what
+  -- is coming. Stacking the box against a team that is throwing is worse than
+  -- playing it honest, and sitting deep against a team that is running is
+  -- worse still. p_pass_share is already the offense's own, call included, so
+  -- the weighting is the read.
+  fr := case when p_front is null then null else public.franchise_front_call(p_front) end;
+  if fr is not null then
+    fr_td := (fr->>'td_vs_pass')::numeric * p_pass_share
+           + (fr->>'td_vs_run')::numeric * (1 - p_pass_share);
+    fr_to := (fr->>'to_vs_pass')::numeric * p_pass_share
+           + (fr->>'to_vs_run')::numeric * (1 - p_pass_share);
+  end if;
   -- A GIVEAWAY HANDS THE OTHER SIDE THE BALL IN SCORING RANGE, which is what
   -- makes a turnover cost anything at all. Before this it cost exactly what a
   -- punt cost — nothing — and eight thousand measured drives said so: Take a
@@ -1994,11 +2020,47 @@ begin
   -- it, so there was no decision to make. This is the price.
   p_td := greatest(0.05, least(0.48, 0.21 + edge * 0.005
                                    + (case when p_giveaway then 0.26 when p_short_field then 0.15 else 0 end)
-                                   + coalesce((c->>'td')::numeric, 0)));
+                                   + coalesce((c->>'td')::numeric, 0)
+                                   + fr_td));
   p_fg := greatest(0.06, least(0.30, 0.15 + edge * 0.003
                                    + (case when p_giveaway then 0.16 when p_short_field then 0.12 else 0 end)));
-  p_to := greatest(0.04, least(0.40, 0.12 - edge * 0.003 + p_takeaway
-                                   + coalesce((c->>'turnover')::numeric, 0)));
+  p_to := 0.12 - edge * 0.003 + p_takeaway
+        + coalesce((c->>'turnover')::numeric, 0) + fr_to;
+  -- WHAT THE PLAY ITSELF IS WORTH, and — for a trick — whether they bought
+  -- the formation's tell. A flea flicker out of the I-Formation into a
+  -- stacked box is a touchdown; the same play into a defense sitting deep is
+  -- the ball on the floor. And it goes stale: every time you have called it
+  -- already in this game, the payoff is worth less.
+  if pl is not null then
+    if pl->>'type' = 'trick' then
+      tell := coalesce((public.franchise_formation(pl->>'formation')->>'tell')::numeric, 0);
+      bought := case
+        when p_front = 'stack' and tell <= -0.3 then 1.0     -- they sold out on the run look
+        when p_front = 'cover' and tell >= 0.3 then 1.0      -- they sat deep on the pass look
+        when p_front = 'blitz' then 0.75                     -- nobody left in to cover it
+        when p_front is null then 0.5
+        else 0.25 end;
+      fresh := greatest(0, 1 - 0.5 * greatest(0, coalesce(p_used, 0)));
+      gain := bought * fresh;
+      -- A TRICK THEY HAVE SEEN IS WORSE THAN AN HONEST PLAY, not merely less
+      -- good. The first cut only withheld the bonus, which left a stale trick
+      -- looking like a Take-a-shot with a few more giveaways — and measuring
+      -- whole games said so: calling the flea flicker on EVERY possession beat
+      -- a real mix by a point of margin and grinding it out by three and a
+      -- half. That is a trick-play strategy, which is the one thing this
+      -- phase exists to make impossible. So being read costs you.
+      p_td := p_td + (pl->>'td')::numeric * gain - 0.060 * (1 - fresh);
+      p_to := p_to + (pl->>'turnover')::numeric * (1 - 0.6 * gain) + 0.040 * (1 - fresh);
+      boom := boom * greatest(0.20, gain);
+    else
+      p_td := p_td + (pl->>'td')::numeric;
+      p_to := p_to + (pl->>'turnover')::numeric;
+    end if;
+    p_td := greatest(0.05, least(0.60, p_td));
+  end if;
+  -- the ceiling was 0.40 and a stale trick reached it, so the penalty was
+  -- being absorbed by the cap rather than paid
+  p_to := greatest(0.04, least(0.52, p_to));
   if r < p_td then outcome := 'td'; pts := 7;
   elsif r < p_td + p_fg then
     if random() < greatest(0.45, least(0.97, 0.72 + (p_st - 70) * 0.012 + p_clutch)) then outcome := 'fg'; pts := 3;
@@ -2015,11 +2077,26 @@ begin
                         when 'fg_miss' then 5 + floor(random() * 4)::int
                         when 'turnover' then 3 + floor(random() * 5)::int
                         else 3 + floor(random() * 4)::int end;
+  -- A CHUNK PLAY. Eight thousand drives said a touchdown drive was 55 to 85
+  -- yards EVERY TIME — there was no such thing as a big play. An explosive
+  -- play is more yards in fewer snaps, which the clock then feels: the ball
+  -- goes further and the drive takes less time.
+  if boom > 0 and random() < boom then
+    yds := least(99, round(yds * (1 + 0.55 * boom))::int);
+    plays := greatest(2, plays - greatest(1, round(3 * boom)::int));
+    broke := true;
+  end if;
   is_pass := random() < p_pass_share;
   py := round(yds * p_pass_share)::int; pp := round(plays * p_pass_share)::int;
   return jsonb_build_object('outcome', outcome, 'pts', pts, 'yds', yds, 'plays', plays, 'is_pass', is_pass,
     'pass_yds', py, 'rush_yds', yds - py, 'pass_plays', pp, 'rush_plays', plays - pp,
-    'call', case when c is null then null else c->>'key' end);
+    'call', case when c is null then null else c->>'key' end,
+    'front', case when fr is null then null else fr->>'key' end,
+    'play', case when pl is null then null else pl->>'key' end,
+    'formation', case when pl is null then null else pl->>'formation' end,
+    'trick', case when pl is null then null else pl->>'type' = 'trick' end,
+    'fooled', case when pl is null or pl->>'type' <> 'trick' then null else round(gain, 2) end,
+    'big', broke);
 end;
 $$;
 
@@ -2073,6 +2150,10 @@ declare
   fac jsonb; film numeric; cond numeric; stad numeric;
   calls jsonb; my_drive integer := 0; drives jsonb := '[]'::jsonb; lean numeric; give boolean := false;
   v_left integer; v_stake numeric; v_key boolean;   -- what is at stake here (moment_v1)
+  clk jsonb; total_secs integer; secs_left integer; v_secs integer; v_tempo numeric;   -- the clock (clock_v1)
+  my_call text; v_call text; v_front text;   -- what I called, and what each side ran
+  v_play text; v_used integer;   -- the play, and how stale the trick is (playbook_v1)
+  play jsonb;
 begin
   select * into f from public.franchises where id = p_franchise;
   if not found then raise exception 'no franchise' using errcode = '22023'; end if;
@@ -2127,41 +2208,72 @@ begin
   qb_share := public.franchise_qb_rush_share(f.offense);
   passer := public.franchise_nth(ps, 'QB', 1); kicker := public.franchise_nth(ps, 'K', 1);
 
-  -- possessions a side: tempo by scheme
-  n := 11 + floor(random() * 3)::int;
-  if f.offense in ('air_raid', 'spread') then n := n + 1; end if;
-  if (opp->>'offense') in ('air_raid', 'spread') then n := n + 1; end if;
-  if f.offense in ('power_run', 'option') then n := n - 1; end if;
-  if (opp->>'offense') in ('power_run', 'option') then n := n - 1; end if;
-  n := greatest(9, least(14, n));
+  -- THE CLOCK (clock_v1). There is no set number of possessions any more:
+  -- there are sixty minutes, and possessions are what fits inside them. A
+  -- drive costs time in proportion to its plays and how they were run.
+  clk := public.franchise_clock();
+  total_secs := (clk->>'quarters')::int * (clk->>'quarter_seconds')::int;
+  secs_left := total_secs;
   me_first := random() < 0.5;
+  n := 0;   -- counted as it happens, and reported afterwards
 
-  for i in 1..n + 4 loop
-    -- regulation is n possessions a side; then overtime rounds while tied
-    if i > n then
-      exit when pts_me <> pts_op or rnd >= 2;
-      rnd := rnd + 1; ot := true; q := 5; short := true;
-    else
-      q := 1 + ((i - 1) * 4) / n; short := false;
-    end if;
+  -- REGULATION. One possession at a time, alternating, until the clock is
+  -- gone. i counts possessions in the order they happen, which is also the
+  -- order the calls array is in — because you call BOTH sides now.
+  i := 0;
+  while secs_left > 0 and i < 60 loop
+    i := i + 1;
+    q := least((clk->>'quarters')::int,
+               1 + ((total_secs - secs_left) / (clk->>'quarter_seconds')::int));
+    short := false;
     -- WHAT IS AT STAKE ON THIS POSSESSION (moment_v1), from the score as it
     -- stands and the possessions left. Computed BEFORE anything resolves, and
     -- it consumes no randomness — a seeded game plays out exactly as it did
     -- before this phase existed. The stake is a property of the game state, so
     -- it is the same number for the side chasing and the side defending.
-    v_left := case when i > n then 1 else n - i + 1 end;
+    -- how many possessions this side has left, near enough to price what is
+    -- at stake: the clock divided by what a possession costs, halved because
+    -- the other team gets every other one.
+    v_left := greatest(1, round(secs_left::numeric
+                                / ((clk->>'nominal_drive')::numeric * 2))::int);
     v_stake := public.franchise_stake(pts_me - pts_op, v_left);
     v_key := public.franchise_is_key(v_stake);
-    for k in 0..1 loop
-      who := case when (k = 0) = me_first then 'me' else 'opp' end;
-      if who = 'me' then
+    -- whose ball: they alternate, and who received decides which is odd
+    who := case when (i % 2 = 1) = me_first then 'me' else 'opp' end;
+    -- YOUR CALL FOR THIS POSSESSION, whichever side of the ball it is on.
+    -- One array, one entry per possession, in the order they happened.
+    my_call := calls->>(i - 1);
+    if who = 'me' then
         -- MY drive: the call for this possession, if one was made (snap_v1).
         -- The calls live on the game, so re-running the simulator reproduces
         -- every drive already played and adds the new one.
         my_drive := my_drive + 1;
+        -- MY BALL: an offensive call if I made one, otherwise the caller
+        -- plays the situation for me — which is what quick play now is.
+        -- MY BALL. A PLAY if I called one out of my own book (playbook_v1),
+        -- otherwise a plain call — and if I called nothing at all, the caller
+        -- plays the situation for me, which is what quick play is.
+        v_play := case when my_call is not null and public.franchise_play_allowed(f.offense, my_call)
+                       then my_call end;
+        v_call := case when v_play is not null then null
+                       when public.franchise_call_side(my_call) = 'off' then my_call
+                       else public.franchise_ai_call(f.offense, pts_me - pts_op, v_left) end;
+        -- HOW STALE THE TRICK IS: how many times this exact play has already
+        -- been called in this game. There is no trick-play strategy.
+        v_used := case when v_play is null then 0 else
+          (select count(*) from jsonb_array_elements_text(calls) with ordinality t(cc, oo)
+            where oo < i and cc = v_play) end;
+        -- THE DEFENSE READS THE FORMATION I LINED UP IN. Lining up heavy
+        -- really does get a stacked box — which is what the trick play out of
+        -- it is for.
+        v_front := case when v_play is null then null else
+          public.franchise_ai_front(
+            (public.franchise_formation(public.franchise_play(v_play)->>'formation')->>'tell')::numeric,
+            pts_op - pts_me, v_left) end;
+        v_tempo := public.franchise_tempo(pts_me - pts_op, secs_left);
         d := public.franchise_sim_drive(a_off + case when q >= 4 then late_off else 0 end, b_def, my_st, pass_me, 0,
                case when q >= 4 then 0.02 * ((tr->>'clutch')::numeric + (st->>'clutch')::numeric) else 0 end, short,
-               calls->>(my_drive - 1), lean, give);
+               v_call, lean, give, v_front, v_play, v_used);
         -- a turnover on this drive is the next side's short field, and this
         -- one's gift is spent
         give := d->>'outcome' = 'turnover';
@@ -2169,11 +2281,18 @@ begin
         tot_me := public.games_jsonb_sum(tot_me, public.franchise_drive_totals(d));
         -- EVERY DRIVE ON THE RECORD, not only the scoring ones: this is what
         -- a game you call has to show you back, possession by possession.
+        v_secs := public.franchise_drive_seconds((d->>'plays')::int,
+                    coalesce(nullif((d->>'pass_plays')::numeric, 0) / nullif((d->>'plays')::numeric, 0), pass_me),
+                    d->>'outcome', v_tempo);
+        v_secs := least(v_secs, secs_left); secs_left := secs_left - v_secs;
         drives := drives || jsonb_build_object('n', my_drive, 'side', 'me', 'q', q,
-          'call', d->>'call', 'outcome', d->>'outcome', 'pts', (d->>'pts')::int,
+          'call', d->>'call', 'front', d->>'front', 'outcome', d->>'outcome', 'pts', (d->>'pts')::int,
           'yds', (d->>'yds')::int, 'plays', (d->>'plays')::int,
           'me', pts_me, 'op', pts_op,
-          'stake', v_stake, 'key', v_key, 'left', v_left);
+          'play', d->>'play', 'formation', d->>'formation',
+          'trick', (d->>'trick')::boolean, 'fooled', (d->>'fooled')::numeric, 'big', (d->>'big')::boolean,
+          'stake', v_stake, 'key', v_key, 'left', v_left,
+          'secs', v_secs, 'clock', secs_left, 'mine', true);
         if d->>'outcome' = 'td' then
           if (d->>'is_pass')::boolean then
             -- a receiver by share
@@ -2203,15 +2322,29 @@ begin
             'desc', coalesce(kicker->>'name', 'Field goal') || ', ' || dist || '-yd FG', 'for', pts_me, 'against', pts_op);
         end if;
       else
+        -- THEIR BALL. They call from their own scheme and the situation they
+        -- are in — so a power-run team nursing a lead runs at you, and the
+        -- same team down ten late has to throw. That is the read. My front is
+        -- the answer to it, and it is answered without seeing their card.
+        v_call := public.franchise_ai_call(opp->>'offense', pts_op - pts_me, v_left);
+        v_front := case when public.franchise_call_side(my_call) = 'def' then my_call
+                        else public.franchise_fronts()->>'default' end;
+        v_tempo := public.franchise_tempo(pts_op - pts_me, secs_left);
         d := public.franchise_sim_drive(b_off, a_def + case when q >= 4 then late_def else 0 end, op_st, pass_op,
-               0.01 * ((tr->>'takeaway')::numeric + (st->>'takeaway')::numeric), 0, short, null, 0, give);
+               0.01 * ((tr->>'takeaway')::numeric + (st->>'takeaway')::numeric), 0, short,
+               v_call, 0, give, v_front);
         give := d->>'outcome' = 'turnover';
         pts_op := pts_op + (d->>'pts')::int; q_op[q] := q_op[q] + (d->>'pts')::int;
+        v_secs := public.franchise_drive_seconds((d->>'plays')::int,
+                    coalesce(nullif((d->>'pass_plays')::numeric, 0) / nullif((d->>'plays')::numeric, 0), pass_op),
+                    d->>'outcome', v_tempo);
+        v_secs := least(v_secs, secs_left); secs_left := secs_left - v_secs;
         drives := drives || jsonb_build_object('n', my_drive, 'side', 'op', 'q', q,
-          'call', null, 'outcome', d->>'outcome', 'pts', (d->>'pts')::int,
+          'call', d->>'call', 'front', d->>'front', 'outcome', d->>'outcome', 'pts', (d->>'pts')::int,
           'yds', (d->>'yds')::int, 'plays', (d->>'plays')::int,
           'me', pts_me, 'op', pts_op,
-          'stake', v_stake, 'key', v_key, 'left', v_left);
+          'stake', v_stake, 'key', v_key, 'left', v_left,
+          'secs', v_secs, 'clock', secs_left, 'mine', false);
         tot_op := public.games_jsonb_sum(tot_op, public.franchise_drive_totals(d));
         if d->>'outcome' = 'td' then
           scoring := scoring || jsonb_build_object('q', q, 'side', 'against', 'type', 'TD', 'pts', 7,
@@ -2221,16 +2354,80 @@ begin
           scoring := scoring || jsonb_build_object('q', q, 'side', 'against', 'type', 'FG', 'pts', 3,
             'desc', (opp->>'name') || ', field goal', 'for', pts_me, 'against', pts_op);
         end if;
-      end if;
-    end loop;
+    end if;
+    n := greatest(n, my_drive);
   end loop;
+
+  -- OVERTIME. The clock is gone and it is level: possessions each, from a
+  -- short field, until somebody is in front at the end of a round.
+  if pts_me = pts_op then
+    ot := true; q := (clk->>'quarters')::int + 1;
+    for rnd in 1..(clk->>'ot_rounds')::int loop
+      v_left := 1;
+      v_stake := public.franchise_stake(pts_me - pts_op, v_left);
+      v_key := public.franchise_is_key(v_stake);
+      for k in 0..1 loop
+        who := case when (k = 0) = me_first then 'me' else 'opp' end;
+        i := i + 1;
+        my_call := calls->>(i - 1);
+        if who = 'me' then
+          my_drive := my_drive + 1;
+          v_call := case when public.franchise_call_side(my_call) = 'off' then my_call
+                         else public.franchise_ai_call(f.offense, pts_me - pts_op, 1) end;
+          d := public.franchise_sim_drive(a_off + late_off, b_def, my_st, pass_me, 0,
+                 0.02 * ((tr->>'clutch')::numeric + (st->>'clutch')::numeric), true,
+                 v_call, lean, give, null);
+          give := d->>'outcome' = 'turnover';
+          pts_me := pts_me + (d->>'pts')::int; q_me[q] := q_me[q] + (d->>'pts')::int;
+          tot_me := public.games_jsonb_sum(tot_me, public.franchise_drive_totals(d));
+          drives := drives || jsonb_build_object('n', my_drive, 'side', 'me', 'q', q,
+            'call', d->>'call', 'front', null, 'outcome', d->>'outcome', 'pts', (d->>'pts')::int,
+            'yds', (d->>'yds')::int, 'plays', (d->>'plays')::int, 'me', pts_me, 'op', pts_op,
+            'stake', v_stake, 'key', v_key, 'left', v_left, 'secs', 0, 'clock', 0, 'mine', true);
+          -- A SCORE HAS TO BE SOMEBODY'S. Writing this block by hand left an
+          -- overtime touchdown in the team totals and on nobody's line, and
+          -- one box in four hundred stopped adding up because of it. This is
+          -- the same attribution regulation does, through the helper the
+          -- versus simulator already shares.
+          play := public.franchise_sim_score_play(d, ps, passer, kicker, qb_share, tally);
+          if play is not null then
+            tally := play->'tally';
+            scoring := scoring || jsonb_build_object('q', q, 'side', 'for', 'type', play->>'type',
+              'pts', play->'pts', 'desc', play->>'desc', 'for', pts_me, 'against', pts_op);
+          end if;
+        else
+          v_call := public.franchise_ai_call(opp->>'offense', pts_op - pts_me, 1);
+          v_front := case when public.franchise_call_side(my_call) = 'def' then my_call
+                          else public.franchise_fronts()->>'default' end;
+          d := public.franchise_sim_drive(b_off, a_def + late_def, op_st, pass_op,
+                 0.01 * ((tr->>'takeaway')::numeric + (st->>'takeaway')::numeric), 0, true,
+                 v_call, 0, give, v_front);
+          give := d->>'outcome' = 'turnover';
+          pts_op := pts_op + (d->>'pts')::int; q_op[q] := q_op[q] + (d->>'pts')::int;
+          tot_op := public.games_jsonb_sum(tot_op, public.franchise_drive_totals(d));
+          drives := drives || jsonb_build_object('n', my_drive, 'side', 'op', 'q', q,
+            'call', d->>'call', 'front', d->>'front', 'outcome', d->>'outcome', 'pts', (d->>'pts')::int,
+            'yds', (d->>'yds')::int, 'plays', (d->>'plays')::int, 'me', pts_me, 'op', pts_op,
+            'stake', v_stake, 'key', v_key, 'left', v_left, 'secs', 0, 'clock', 0, 'mine', false);
+          if (d->>'pts')::int > 0 then
+            scoring := scoring || jsonb_build_object('q', q, 'side', 'against',
+              'type', case when d->>'outcome' = 'td' then 'TD' else 'FG' end, 'pts', (d->>'pts')::int,
+              'desc', (opp->>'name') || ', overtime ' || (d->>'plays') || '-play drive',
+              'for', pts_me, 'against', pts_op);
+          end if;
+        end if;
+      end loop;
+      exit when pts_me <> pts_op;
+    end loop;
+    n := greatest(n, my_drive);
+  end if;
 
   result := case when pts_me > pts_op then 'W' when pts_me < pts_op then 'L' else 'T' end;
   players := public.franchise_sim_lines(ps, f.offense, tot_me, tot_op, tally, tr);
   select p into potg from jsonb_array_elements(players) p order by (p->>'impact')::numeric desc limit 1;
 
   return jsonb_build_object(
-    'sim', 'sim_v2', 'seed', g.seed, 'home', g.home, 'rival', g.rival, 'week', g.week, 'season_number', g.season_number,
+    'sim', 'sim_v4', 'seed', g.seed, 'home', g.home, 'rival', g.rival, 'week', g.week, 'season_number', g.season_number,
     'opponent', opp, 'final', jsonb_build_object('for', pts_me, 'against', pts_op), 'result', result, 'ot', ot,
     'quarters', jsonb_build_object('for', to_jsonb(q_me), 'against', to_jsonb(q_op), 'ot', ot),
     'scoring', scoring,
@@ -2238,7 +2435,9 @@ begin
     'edges', jsonb_build_object('home', h_me, 'prep', prep, 'prep_adj', prep_adj, 'scheme_offense', sch_me, 'scheme_defense', sch_op,
       'facilities', jsonb_build_object('film', film, 'conditioning', cond, 'stadium', case when g.home then stad else 0 end),
       'traits', tr, 'offense', round(a_off, 1), 'defense', round(a_def, 1), 'opp_offense', round(b_off, 1), 'opp_defense', round(b_def, 1),
-      'lean', round(lean, 1), 'possessions', n),
+      'lean', round(lean, 1), 'possessions', n,
+      'clock', clk, 'seconds', total_secs, 'defense', public.franchise_fronts()->>'version',
+      'playbook', public.franchise_plays()->>'version'),
     'players', players, 'potg', potg, 'drives', drives,
     'story', public.franchise_game_story(drives), 'moment', public.franchise_moments()->>'version',
     'calls', case when jsonb_array_length(calls) > 0 then calls end,
@@ -2840,7 +3039,8 @@ declare
   a_pass numeric; b_pass numeric; a_qb numeric; b_qb numeric;
   a_passer jsonb; b_passer jsonb; a_kicker jsonb; b_kicker jsonb;
   n integer; i integer; k integer; q integer; d jsonb; who text; ot boolean := false; rnd integer := 0; short boolean;
-  give boolean := false;   -- a giveaway is the other side's short field (sim_v2)
+  give boolean := false;   -- a giveaway is the other side's short field
+  clk jsonb; total_secs integer; secs_left integer; v_secs integer; v_tempo numeric; v_left integer; v_call text;
   pts_a integer := 0; pts_b integer := 0; q_a integer[] := '{0,0,0,0,0}'; q_b integer[] := '{0,0,0,0,0}';
   scoring jsonb := '[]'::jsonb; tot_a jsonb := '{}'::jsonb; tot_b jsonb := '{}'::jsonb; a_first boolean;
   tally_a jsonb := '{}'::jsonb; tally_b jsonb := '{}'::jsonb; play jsonb;
@@ -2888,28 +3088,35 @@ begin
   a_passer := public.franchise_nth(psa, 'QB', 1); a_kicker := public.franchise_nth(psa, 'K', 1);
   b_passer := public.franchise_nth(psb, 'QB', 1); b_kicker := public.franchise_nth(psb, 'K', 1);
 
-  n := 11 + floor(random() * 3)::int;
-  if fa.offense in ('air_raid', 'spread') then n := n + 1; end if;
-  if fb.offense in ('air_raid', 'spread') then n := n + 1; end if;
-  if fa.offense in ('power_run', 'option') then n := n - 1; end if;
-  if fb.offense in ('power_run', 'option') then n := n - 1; end if;
-  n := greatest(9, least(14, n));
+  -- A CHALLENGE IS THE SAME FOOTBALL AS A SATURDAY, so it is played on the
+  -- same clock (clock_v1) rather than a possession count of its own. Neither
+  -- side is at a keyboard here, so both call from their own scheme and the
+  -- situation they are in — which is what quick play is on a Saturday too.
+  clk := public.franchise_clock();
+  total_secs := (clk->>'quarters')::int * (clk->>'quarter_seconds')::int;
+  secs_left := total_secs;
   a_first := random() < 0.5;
+  n := 0; i := 0;
 
-  for i in 1..n + 4 loop
-    if i > n then
-      exit when pts_a <> pts_b or rnd >= 2;
-      rnd := rnd + 1; ot := true; q := 5; short := true;
-    else
-      q := 1 + ((i - 1) * 4) / n; short := false;
-    end if;
-    for k in 0..1 loop
-      who := case when (k = 0) = a_first then 'a' else 'b' end;
+  while secs_left > 0 and i < 60 loop
+    i := i + 1;
+    q := least((clk->>'quarters')::int,
+               1 + ((total_secs - secs_left) / (clk->>'quarter_seconds')::int));
+    short := false;
+    v_left := greatest(1, round(secs_left::numeric / ((clk->>'nominal_drive')::numeric * 2))::int);
+    who := case when (i % 2 = 1) = a_first then 'a' else 'b' end;
+    if true then
       if who = 'a' then
+        v_call := public.franchise_ai_call(fa.offense, pts_a - pts_b, v_left);
+        v_tempo := public.franchise_tempo(pts_a - pts_b, secs_left);
         d := public.franchise_sim_drive(a_off + case when q >= 4 then a_late_off else 0 end, b_def + case when q >= 4 then b_late_def else 0 end,
                a_st, a_pass, 0.01 * ((trb->>'takeaway')::numeric + (stb->>'takeaway')::numeric),
-               case when q >= 4 then 0.02 * ((tra->>'clutch')::numeric + (sta->>'clutch')::numeric) else 0 end, short, null, 0, give);
+               case when q >= 4 then 0.02 * ((tra->>'clutch')::numeric + (sta->>'clutch')::numeric) else 0 end, short, v_call, 0, give, null, null, 0);
         give := d->>'outcome' = 'turnover';
+        v_secs := public.franchise_drive_seconds((d->>'plays')::int,
+                    coalesce(nullif((d->>'pass_plays')::numeric, 0) / nullif((d->>'plays')::numeric, 0), a_pass),
+                    d->>'outcome', v_tempo);
+        v_secs := least(v_secs, secs_left); secs_left := secs_left - v_secs; n := n + 1;
         pts_a := pts_a + (d->>'pts')::int; q_a[q] := q_a[q] + (d->>'pts')::int;
         tot_a := public.games_jsonb_sum(tot_a, public.franchise_drive_totals(d));
         play := public.franchise_sim_score_play(d, psa, a_passer, a_kicker, a_qb, tally_a);
@@ -2918,10 +3125,16 @@ begin
           scoring := scoring || jsonb_build_object('q', q, 'side', 'a', 'type', play->>'type', 'pts', play->'pts', 'desc', play->>'desc', 'a', pts_a, 'b', pts_b);
         end if;
       else
+        v_call := public.franchise_ai_call(fb.offense, pts_b - pts_a, v_left);
+        v_tempo := public.franchise_tempo(pts_b - pts_a, secs_left);
         d := public.franchise_sim_drive(b_off + case when q >= 4 then b_late_off else 0 end, a_def + case when q >= 4 then a_late_def else 0 end,
                b_st, b_pass, 0.01 * ((tra->>'takeaway')::numeric + (sta->>'takeaway')::numeric),
-               case when q >= 4 then 0.02 * ((trb->>'clutch')::numeric + (stb->>'clutch')::numeric) else 0 end, short, null, 0, give);
+               case when q >= 4 then 0.02 * ((trb->>'clutch')::numeric + (stb->>'clutch')::numeric) else 0 end, short, v_call, 0, give, null);
         give := d->>'outcome' = 'turnover';
+        v_secs := public.franchise_drive_seconds((d->>'plays')::int,
+                    coalesce(nullif((d->>'pass_plays')::numeric, 0) / nullif((d->>'plays')::numeric, 0), b_pass),
+                    d->>'outcome', v_tempo);
+        v_secs := least(v_secs, secs_left); secs_left := secs_left - v_secs; n := n + 1;
         pts_b := pts_b + (d->>'pts')::int; q_b[q] := q_b[q] + (d->>'pts')::int;
         tot_b := public.games_jsonb_sum(tot_b, public.franchise_drive_totals(d));
         play := public.franchise_sim_score_play(d, psb, b_passer, b_kicker, b_qb, tally_b);
@@ -2930,8 +3143,46 @@ begin
           scoring := scoring || jsonb_build_object('q', q, 'side', 'b', 'type', play->>'type', 'pts', play->'pts', 'desc', play->>'desc', 'a', pts_a, 'b', pts_b);
         end if;
       end if;
-    end loop;
+    end if;
   end loop;
+
+  -- overtime, on the same terms a Saturday gets
+  if pts_a = pts_b then
+    ot := true; q := (clk->>'quarters')::int + 1;
+    for rnd in 1..(clk->>'ot_rounds')::int loop
+      for k in 0..1 loop
+        who := case when (k = 0) = a_first then 'a' else 'b' end;
+        if who = 'a' then
+          d := public.franchise_sim_drive(a_off + a_late_off, b_def + b_late_def, a_st, a_pass,
+                 0.01 * ((trb->>'takeaway')::numeric + (stb->>'takeaway')::numeric),
+                 0.02 * ((tra->>'clutch')::numeric + (sta->>'clutch')::numeric), true,
+                 public.franchise_ai_call(fa.offense, pts_a - pts_b, 1), 0, give, null);
+          give := d->>'outcome' = 'turnover';
+          pts_a := pts_a + (d->>'pts')::int; q_a[q] := q_a[q] + (d->>'pts')::int;
+          tot_a := public.games_jsonb_sum(tot_a, public.franchise_drive_totals(d));
+          play := public.franchise_sim_score_play(d, psa, a_passer, a_kicker, a_qb, tally_a);
+          if play is not null then
+            tally_a := play->'tally';
+            scoring := scoring || jsonb_build_object('q', q, 'side', 'a', 'type', play->>'type', 'pts', play->'pts', 'desc', play->>'desc', 'a', pts_a, 'b', pts_b);
+          end if;
+        else
+          d := public.franchise_sim_drive(b_off + b_late_off, a_def + a_late_def, b_st, b_pass,
+                 0.01 * ((tra->>'takeaway')::numeric + (sta->>'takeaway')::numeric),
+                 0.02 * ((trb->>'clutch')::numeric + (stb->>'clutch')::numeric), true,
+                 public.franchise_ai_call(fb.offense, pts_b - pts_a, 1), 0, give, null);
+          give := d->>'outcome' = 'turnover';
+          pts_b := pts_b + (d->>'pts')::int; q_b[q] := q_b[q] + (d->>'pts')::int;
+          tot_b := public.games_jsonb_sum(tot_b, public.franchise_drive_totals(d));
+          play := public.franchise_sim_score_play(d, psb, b_passer, b_kicker, b_qb, tally_b);
+          if play is not null then
+            tally_b := play->'tally';
+            scoring := scoring || jsonb_build_object('q', q, 'side', 'b', 'type', play->>'type', 'pts', play->'pts', 'desc', play->>'desc', 'a', pts_a, 'b', pts_b);
+          end if;
+        end if;
+      end loop;
+      exit when pts_a <> pts_b;
+    end loop;
+  end if;
 
   result_a := case when pts_a > pts_b then 'W' when pts_a < pts_b then 'L' else 'T' end;
   players_a := public.franchise_sim_lines(psa, fa.offense, tot_a, tot_b, tally_a, tra);
@@ -2940,7 +3191,7 @@ begin
   select p into potg_b from jsonb_array_elements(players_b) p order by (p->>'impact')::numeric desc limit 1;
 
   return jsonb_build_object(
-    'sim', 'sim_v2', 'seed', p_seed, 'neutral', true, 'week_key', p_week_key, 'ot', ot, 'possessions', n,
+    'sim', 'sim_v4', 'seed', p_seed, 'neutral', true, 'week_key', p_week_key, 'ot', ot, 'possessions', n,
     'result_a', result_a, 'scoring', scoring,
     'a', jsonb_build_object('id', fa.id, 'final', pts_a, 'quarters', to_jsonb(q_a), 'team', tot_a, 'players', players_a, 'potg', potg_a,
       'edges', jsonb_build_object('prep', prepa, 'prep_adj', a_prep, 'scheme', a_sch, 'traits', tra, 'film', a_film, 'conditioning', a_cond, 'staff', sta, 'offense', round(a_off, 1), 'defense', round(a_def, 1))),
@@ -7514,7 +7765,7 @@ create or replace function public.franchise_game_open(p_secret text default null
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype;
-  s public.franchise_seasons%rowtype; g public.franchise_games%rowtype; v_box jsonb;
+  s public.franchise_seasons%rowtype; g public.franchise_games%rowtype; v_box jsonb; v_called integer;
 begin
   if v_f is null then raise exception 'create a franchise first' using errcode = '28000'; end if;
   select * into f from public.franchises where id = v_f;
@@ -7531,12 +7782,25 @@ begin
   -- A first look at the game — the calls already made and no others, so a
   -- game reopened part-way through says exactly where it stands. Nothing is
   -- written: the simulator returns the box, it never stores one.
+  --
+  -- SINCE PHASE 15 YOU CALL BOTH SIDES, so a possession is a possession
+  -- whoever has the ball, and the number of them is whatever the clock left
+  -- room for rather than a figure drawn before kickoff.
   v_box := public.franchise_sim(v_f, g.id);
+  v_called := jsonb_array_length(coalesce(g.calls, '[]'::jsonb));
   return jsonb_build_object('ok', true,
     'game', public.franchise_game_json(g.id, false),
     'rules', public.franchise_snaps(),
+    'fronts', public.franchise_fronts(),
+    'playbook', public.franchise_playbook(f.offense),
+    'clock', public.franchise_clock(),
+    'possessions', jsonb_array_length(v_box->'drives'),
     'drives', (select count(*) from jsonb_array_elements(v_box->'drives') x where x->>'side' = 'me'),
-    'called', jsonb_array_length(coalesce(g.calls, '[]'::jsonb)),
+    'called', v_called,
+    -- whose ball is next, so the page knows which table to show you
+    'next', case when v_called < jsonb_array_length(v_box->'drives') then jsonb_build_object(
+              'n', v_called + 1, 'of', jsonb_array_length(v_box->'drives'),
+              'side', case when (v_box->'drives'->v_called->>'mine')::boolean then 'off' else 'def' end) end,
     -- every possession already played, in the order it happened. A drive is
     -- numbered by MY possession, so the opponent's opening drive — the one
     -- before your first call, when they receive — is n = 0 and belongs here
@@ -7563,11 +7827,16 @@ create or replace function public.franchise_game_call(p_call text, p_secret text
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   v_f uuid := public.franchise_of(p_secret); s public.franchise_seasons%rowtype; g public.franchise_games%rowtype;
-  v_calls jsonb; v_key text; v_box jsonb; v_mine integer; v_n integer; v_drive jsonb; v_last jsonb;
+  v_calls jsonb; v_box jsonb; v_mine integer; v_n integer; v_drive jsonb; v_last jsonb;
+  v_side text; v_want text; f public.franchises%rowtype;
 begin
   if v_f is null then raise exception 'create a franchise first' using errcode = '28000'; end if;
-  v_key := public.franchise_snap_call(p_call)->>'key';
-  if p_call is not null and v_key is distinct from p_call then
+  select * into f from public.franchises where id = v_f;
+  -- A call names its own side of the ball, and the two tables never share a
+  -- key, so one meant for the other can be refused rather than quietly
+  -- treated as a default.
+  v_side := public.franchise_call_side(p_call);
+  if v_side is null then
     raise exception 'no such call: %', p_call using errcode = '22023';
   end if;
   select * into s from public.franchise_seasons where franchise_id = v_f order by number desc limit 1;
@@ -7582,21 +7851,41 @@ begin
     raise exception 'week % opens on %', g.week, to_char(g.opens_at, 'Dy DD Mon HH24:MI "UTC"') using errcode = '55000';
   end if;
 
-  v_calls := coalesce(g.calls, '[]'::jsonb) || to_jsonb(v_key);
+  -- WHOSE POSSESSION IS THIS. Asked of the simulator, which is the only thing
+  -- that knows: who received is drawn from the game's own seed, and the
+  -- number of possessions is whatever the clock left room for.
+  v_box := public.franchise_sim(v_f, g.id);
+  v_n := jsonb_array_length(v_box->'drives');
+  v_mine := jsonb_array_length(coalesce(g.calls, '[]'::jsonb));
+  if v_mine >= v_n then
+    raise exception 'every possession has been called' using errcode = '55000';
+  end if;
+  -- A PLAY HAS TO BE IN YOUR OWN BOOK. An Air Raid has no I-Formation, so it
+  -- has no flea flicker, and asking for one is refused rather than run.
+  if public.franchise_play(p_call)->>'key' = p_call
+     and not public.franchise_play_allowed(f.offense, p_call) then
+    raise exception '% is not in your playbook', p_call using errcode = '22023';
+  end if;
+  v_want := case when (v_box->'drives'->v_mine->>'mine')::boolean then 'off' else 'def' end;
+  if v_side <> v_want then
+    raise exception '% is not a call for %', p_call,
+      case when v_want = 'off' then 'your own possession' else 'defending theirs' end
+      using errcode = '22023';
+  end if;
+
+  v_calls := coalesce(g.calls, '[]'::jsonb) || to_jsonb(p_call);
   update public.franchise_games set calls = v_calls where id = g.id;
   select * into g from public.franchise_games where id = g.id;
 
   v_box := public.franchise_sim(v_f, g.id);
-  select count(*) into v_n from jsonb_array_elements(v_box->'drives') x where x->>'side' = 'me';
+  v_n := jsonb_array_length(v_box->'drives');
   v_mine := jsonb_array_length(v_calls);
-  -- What this call did, and whatever the other side answered with — plus, on
-  -- the first call, the opponent's opening drive if they received, which is
-  -- numbered 0 because it happened before you had a possession at all.
+  -- What this possession did. One entry per possession now, in the order they
+  -- happened, so this is simply the one just called.
   select jsonb_agg(x order by ord), (array_agg(x order by ord))[count(*)::int]
     into v_drive, v_last
     from (select x, ord from jsonb_array_elements(v_box->'drives') with ordinality t(x, ord)
-           where (x->>'n')::int = v_mine
-              or ((x->>'n')::int = 0 and v_mine = 1)) q;
+           where ord = v_mine) q;
 
   if v_mine >= v_n then
     -- the last possession: the game is played, once, through the same door
@@ -7605,11 +7894,14 @@ begin
   end if;
 
   return jsonb_build_object('ok', true, 'complete', false,
-    'called', v_mine, 'drives', v_n,
+    'called', v_mine, 'drives', v_n, 'possessions', v_n,
     'drive', v_drive,
     'score', jsonb_build_object('me', coalesce((v_last->>'me')::int, 0), 'op', coalesce((v_last->>'op')::int, 0)),
-    'next', jsonb_build_object('n', v_mine + 1, 'of', v_n),
-    'rules', public.franchise_snaps());
+    'clock', coalesce((v_last->>'clock')::int, 0),
+    'next', jsonb_build_object('n', v_mine + 1, 'of', v_n,
+      'side', case when (v_box->'drives'->v_mine->>'mine')::boolean then 'off' else 'def' end),
+    'rules', public.franchise_snaps(), 'fronts', public.franchise_fronts(),
+    'playbook', public.franchise_playbook(f.offense));
 end;
 $$;
 
@@ -7796,11 +8088,15 @@ begin
     v_guard := v_guard + 1;
     exit when v_guard > 60;
     v_box := public.franchise_sim(v_f, g.id);
-    select count(*) into v_n from jsonb_array_elements(v_box->'drives') x where x->>'side' = 'me';
+    v_n := jsonb_array_length(v_box->'drives');
     v_mine := jsonb_array_length(coalesce(g.calls, '[]'::jsonb));
     exit when v_mine >= v_n;
+    -- the published default for whichever side of the ball this one is on
     update public.franchise_games
-       set calls = coalesce(calls, '[]'::jsonb) || to_jsonb(public.franchise_snaps()->>'default')
+       set calls = coalesce(calls, '[]'::jsonb) || to_jsonb(
+             case when (v_box->'drives'->v_mine->>'mine')::boolean
+                  then public.franchise_snaps()->>'default'
+                  else public.franchise_fronts()->>'default' end)
      where id = g.id;
     select * into g from public.franchise_games where id = g.id;
   end loop;
@@ -7858,6 +8154,503 @@ $$;
 commit;
 
 -- ===========================================================================
+-- BOTH SIDES OF THE BALL — Phase 15, clock_v1 and defense_v1
+--
+-- MEASURED FIRST, on the game as Phase 14 left it. Six hundred games, the
+-- same seeds, every possession called the same way:
+--
+--   called every possession   ground   balanced   air    shot
+--   possessions a side         10.95    10.95    10.95   10.95
+--   spread                      0.83     0.83     0.83    0.83
+--
+-- IDENTICAL TO TWO DECIMAL PLACES. Possessions were drawn once, before a
+-- snap, from two scheme labels and a dice roll, and nothing that happened in
+-- the game ever touched them. Grind it out for sixty minutes and you got the
+-- same number of possessions as a team that threw on every down. That is not
+-- football; it is a turn counter wearing football's clothes.
+--
+-- And you only ever played half the game. Eleven possessions a side means
+-- eleven possessions where the other team had the ball and you watched.
+--
+-- So two things, and they are the same thing:
+--
+--   THE CLOCK (clock_v1). There is no set number of plays any more. There is
+--   a game clock, and possessions are what is left over when it runs out. A
+--   drive takes time in proportion to the plays in it and HOW those plays are
+--   run: the ball on the ground keeps the clock moving, the ball in the air
+--   stops it. Grind and there are fewer possessions in the game for both of
+--   you. Throw and there are more.
+--
+--   Clock management lives here too — a trailing side hurries, a leading side
+--   bleeds it against the other team's timeouts — and I should say plainly
+--   what that DOES NOT do, because I wrote the opposite in this comment
+--   before I measured it.
+--
+--   I claimed the clock would manufacture comebacks where Phase 14's variance
+--   experiment could not. It does not. Trailing with five minutes left, a
+--   side gets 2.93 possessions after that mark; leading, 2.95. Sweeping the
+--   leading side's tempo from 1.30 down to 0.70 moved the comeback rate 13.4,
+--   17.9, 15.7, 13.8 per cent — non-monotonic, and all of it inside the noise
+--   on a hundred-odd games a cell.
+--
+--   And the reason is structural rather than a tuning problem: POSSESSIONS
+--   STRICTLY ALTERNATE, so every second you save by hurrying hands the ball
+--   back sooner and buys the other side a possession too. Real football gets
+--   around that with timeouts, incompletions and onside kicks — a trailing
+--   team stopping the clock while it is NOT holding the ball — and none of
+--   that exists here.
+--
+--   So this is the second measurement in two phases to say the same thing:
+--   the football is fine, and drama is not a thing to manufacture. Tempo
+--   stays because it is true — a game late and close does run at a different
+--   speed — and it is described here as what it is rather than as a comeback
+--   engine.
+--
+--   DEFENSE (defense_v1). You call the other side's possessions too. Four
+--   fronts, and which one is right depends on what they are about to run —
+--   so the read is the game. Stack the box and a passing team goes over your
+--   head. Sit deep and a running team walks it down the field. Blitz and it
+--   is a coin with two very different faces.
+--
+--   The opponent is not a dice roll to be guessed at blindly: franchise_ai_call
+--   picks their play from THEIR SCHEME and THE SITUATION, so a power-run team
+--   protecting a lead will run at you, and the same team down ten with two
+--   minutes left has to throw. That is the read, and it is readable.
+--
+-- ONE SIMULATOR STILL. The calls array is now one entry per POSSESSION in the
+-- order they happen — your offensive call when you have the ball, your
+-- defensive call when they do — and franchise_sim() reads it exactly as it
+-- did before. Re-running still reproduces every possession already played.
+-- The simulator is SIM_V3; boxes already stored keep their own version and
+-- stay true to the rules they were played under.
+-- ===========================================================================
+
+begin;
+
+-- THE CLOCK. Sixty minutes, and what a play costs from it. The ball on the
+-- ground keeps the clock moving; the ball in the air stops it — which is the
+-- whole reason a trailing team throws and a leading team does not.
+create or replace function public.franchise_clock()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'clock_v1',
+    'quarters', 4,
+    'quarter_seconds', 900,          -- fifteen minutes a quarter
+    'run_seconds', 38,               -- a running play, huddle and all
+    'pass_seconds', 19,              -- the clock stops often enough to matter
+    'score_seconds', 18,             -- the kickoff after a score
+    'change_seconds', 12,            -- a punt or a turnover
+    'nominal_drive', 175,            -- what a possession costs, near enough,
+                                     -- for working out how many are left
+    'hurry_from', 300,               -- the last five minutes of a half
+    'hurry_tempo', 0.62,             -- trailing: no huddle
+    'grind_tempo', 1.15,             -- leading: bleed it, against timeouts
+    'ot_rounds', 2);
+$$;
+
+-- WHAT A DRIVE COST THE CLOCK. Plays, split by how they were run, plus what
+-- happens at the end of a possession. Pure — it consumes no randomness, so
+-- the clock cannot change a football outcome, only how many there are room for.
+create or replace function public.franchise_drive_seconds(
+  p_plays integer, p_pass_share numeric, p_outcome text, p_tempo numeric default 1)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select greatest(12, round(
+      greatest(1, coalesce(p_plays, 1))
+      * ( coalesce(p_pass_share, 0.5) * (public.franchise_clock()->>'pass_seconds')::numeric
+        + (1 - coalesce(p_pass_share, 0.5)) * (public.franchise_clock()->>'run_seconds')::numeric )
+      * greatest(0.4, least(2.0, coalesce(p_tempo, 1)))
+    + case when p_outcome in ('td', 'fg') then (public.franchise_clock()->>'score_seconds')::numeric
+           else (public.franchise_clock()->>'change_seconds')::numeric end
+  ))::int;
+$$;
+
+-- HOW A SIDE PLAYS THE CLOCK. Only late, and only when there is a lead to
+-- protect or chase. This is what makes a comeback possible: the trailing side
+-- buys possessions, which is the thing variance could never do.
+create or replace function public.franchise_tempo(p_gap integer, p_seconds_left integer)
+returns numeric language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select case
+    when coalesce(p_seconds_left, 0) > (public.franchise_clock()->>'hurry_from')::int then 1::numeric
+    when coalesce(p_gap, 0) < 0 then (public.franchise_clock()->>'hurry_tempo')::numeric
+    when coalesce(p_gap, 0) > 0 then (public.franchise_clock()->>'grind_tempo')::numeric
+    else 1::numeric end;
+$$;
+
+commit;
+
+begin;
+
+-- THE FOUR FRONTS (defense_v1). Which one is right depends entirely on what
+-- they are about to run, and that read is the whole game.
+--
+-- THE FIRST CUT OF THIS TABLE MOVED RATING POINTS, and measuring it showed
+-- why that was hopeless: a defensive call worth three rating points moves the
+-- touchdown odds by 0.015, which is five hundredths of a point a drive. Stack
+-- the box against a running team came out at 1.625 points allowed against
+-- Base's 1.584 — the wrong way round, and both inside the noise. A defensive
+-- call has to pull the same lever an offensive one does.
+--
+-- So a front moves the TOUCHDOWN and TURNOVER odds directly, exactly as
+-- snap_v1 does, and each number is split by whether the ball is on the ground
+-- or in the air: eff = vs_pass * pass_share + vs_run * (1 - pass_share),
+-- where pass_share is the offense's own, THEIR call already in it. Guess
+-- right and you take it away; guess wrong and you are the reason they scored.
+create or replace function public.franchise_fronts()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'defense_v1',
+    'default', 'base',
+    'calls', jsonb_build_array(
+      jsonb_build_object('key', 'stack', 'name', 'Stack the box',
+        'means', 'Crowd the line. Murder on the run — and they can go over the top of it.',
+        'td_vs_run', -0.060, 'td_vs_pass', 0.050,
+        'to_vs_run', 0.035, 'to_vs_pass', -0.020),
+      jsonb_build_object('key', 'base', 'name', 'Base',
+        'means', 'Play it honest. What quick play calls.',
+        'td_vs_run', 0.0, 'td_vs_pass', 0.0,
+        'to_vs_run', 0.0, 'to_vs_pass', 0.0),
+      jsonb_build_object('key', 'cover', 'name', 'Cover deep',
+        'means', 'Take the pass away. They can run it down your throat instead.',
+        'td_vs_run', 0.050, 'td_vs_pass', -0.060,
+        'to_vs_run', -0.020, 'to_vs_pass', 0.035),
+      jsonb_build_object('key', 'blitz', 'name', 'Blitz',
+        'means', 'Send them. The best chance of taking it away, and of being taken apart.',
+        'td_vs_run', 0.030, 'td_vs_pass', 0.040,
+        'to_vs_run', 0.080, 'to_vs_pass', 0.095)));
+$$;
+
+create or replace function public.franchise_front_call(p_key text)
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce(
+    (select c from jsonb_array_elements(public.franchise_fronts()->'calls') c
+      where c->>'key' = coalesce(p_key, '')),
+    (select c from jsonb_array_elements(public.franchise_fronts()->'calls') c
+      where c->>'key' = public.franchise_fronts()->>'default'));
+$$;
+
+-- IS THIS AN OFFENSIVE CALL OR A DEFENSIVE ONE. The two tables never share a
+-- key, so a call names its own side and the server can refuse one meant for
+-- the other.
+create or replace function public.franchise_call_side(p_key text)
+returns text language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select case
+    when exists (select 1 from jsonb_array_elements(public.franchise_snaps()->'calls') c
+                  where c->>'key' = coalesce(p_key, '')) then 'off'
+    when exists (select 1 from jsonb_array_elements(public.franchise_fronts()->'calls') c
+                  where c->>'key' = coalesce(p_key, '')) then 'def'
+    else null end;
+$$;
+
+commit;
+
+begin;
+
+-- WHAT THE OTHER SIDE IS ABOUT TO RUN. Not a blind dice roll — their scheme
+-- and their situation, so the read is a real read: a power-run team nursing a
+-- lead will run at you, and the same team down ten with two minutes left has
+-- to throw. Weighted rather than fixed, so it stays a read and never a
+-- certainty.
+create or replace function public.franchise_ai_call(p_scheme text, p_gap integer, p_left integer)
+returns text language plpgsql set search_path = public, pg_temp as $$
+declare w_ground numeric := 1; w_bal numeric := 2; w_air numeric := 1; w_shot numeric := 0.35;
+        r numeric; tot numeric; gap integer := coalesce(p_gap, 0); lf integer := greatest(1, coalesce(p_left, 9));
+begin
+  -- the scheme they were built to run
+  -- THE SCHEME HAS TO BITE, or every team looks the same and there is nothing
+  -- to read. The first cut moved these by 1.4 and 1.6, which left a power-run
+  -- team throwing on 47% of its plays against a pro-style team's 57% — ten
+  -- points apart, and the measurement said so: Stack the box came out WORSE
+  -- than Base against a running team, because the running team was barely
+  -- running. These numbers put them 41% and 69% apart instead.
+  if p_scheme in ('air_raid', 'spread') then
+    w_air := w_air + 2.2; w_shot := w_shot + 0.7; w_bal := w_bal - 0.5; w_ground := w_ground - 0.7;
+  elsif p_scheme in ('power_run', 'option') then
+    w_ground := w_ground + 3.0; w_bal := w_bal - 0.8; w_air := w_air - 0.7; w_shot := w_shot - 0.25;
+  end if;
+  -- and the situation they are actually in
+  if lf <= 3 then
+    if gap < -8 then w_shot := w_shot + 2.2; w_air := w_air + 1.8; w_ground := 0.05;
+    elsif gap < 0 then w_air := w_air + 1.2; w_shot := w_shot + 0.5; w_ground := greatest(0.1, w_ground - 0.6);
+    elsif gap > 3 then w_ground := w_ground + 2.4; w_air := greatest(0.1, w_air - 0.7); w_shot := 0.05;
+    end if;
+  end if;
+  w_ground := greatest(0.02, w_ground); w_bal := greatest(0.02, w_bal);
+  w_air := greatest(0.02, w_air); w_shot := greatest(0.02, w_shot);
+  tot := w_ground + w_bal + w_air + w_shot;
+  r := random() * tot;
+  if r < w_ground then return 'ground'; end if;
+  r := r - w_ground;
+  if r < w_bal then return 'balanced'; end if;
+  r := r - w_bal;
+  if r < w_air then return 'air'; end if;
+  return 'shot';
+end;
+$$;
+
+commit;
+
+-- ===========================================================================
+-- THE PLAYBOOK — Phase 16, playbook_v1
+--
+-- MEASURED FIRST, on the game as Phase 15 left it:
+--
+--   offensive options, any scheme     4
+--   do they differ by scheme?         no — franchise_snaps() takes no argument
+--   formations                        0
+--   trick plays                       0
+--
+-- Four calls was the ENTIRE offensive vocabulary, and every franchise in the
+-- game had the same four. Your scheme picked your pass share and nothing
+-- else, so an Air Raid and a Power-Run team called from an identical menu.
+--
+-- And there was no such thing as a big play. Eight thousand drives: a
+-- touchdown drive was 55 to 85 yards, every time, spread 9.0. Every score
+-- looked exactly like every other score.
+--
+--   FORMATIONS. Five of them, and each one TELLS the defense something. The
+--   I-Formation screams run; Empty screams pass. That tell is not flavour: the
+--   other side reads it and calls their front off it (franchise_ai_front), so
+--   lining up heavy really does get you a stacked box.
+--
+--   PLAYBOOKS. Which formations you carry depends on your scheme, so the menu
+--   is genuinely different from team to team: an Air Raid has no I-Formation
+--   and a Power-Run team has no Empty set. Twenty plays, and no franchise
+--   holds all of them.
+--
+--   TRICK PLAYS, and this is where the formation earns its keep. A trick play
+--   CONTRADICTS its own formation's tell — a flea flicker out of the
+--   I-Formation, a quarterback draw out of Empty — so it pays off exactly when
+--   the defense has bought the tell. Fool a stacked box with a flea flicker
+--   and it is a touchdown; run it into a defense sitting deep and it is the
+--   ball on the floor.
+--
+--   AND THEY GO STALE. Every time you call the same trick in a game it works
+--   less well, because the payoff scales by how fresh it is. There is no
+--   trick-play strategy, only a trick play.
+--
+-- HOW IT LAYERS. A play does not replace snap_v1, it SPECIALISES it: every
+-- play names one of the four calls as its category and inherits that call's
+-- numbers exactly as they were measured and tuned, then adds its own on top.
+-- So nothing measured in Phase 13 is thrown away, and quick play is still a
+-- game called Balanced.
+--
+-- The simulator is SIM_V4, because my own drives now face a real front rather
+-- than nobody: the other side reads my formation and answers it.
+-- ===========================================================================
+
+begin;
+
+-- THE FIVE FORMATIONS. `tell` is what lining up in it says to the defense:
+-- -1 screams run, +1 screams pass. It is the whole reason a trick play works.
+create or replace function public.franchise_formations()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'playbook_v1',
+    'sets', jsonb_build_array(
+      jsonb_build_object('key', 'i_form', 'name', 'I-Formation', 'tell', -0.75,
+        'means', 'Two backs, tight ends, everybody close. It says run before the snap.'),
+      jsonb_build_object('key', 'single', 'name', 'Singleback', 'tell', -0.25,
+        'means', 'One back, balanced personnel. It says nothing much, which is its own virtue.'),
+      jsonb_build_object('key', 'gun', 'name', 'Shotgun', 'tell', 0.45,
+        'means', 'Quarterback off the line, receivers spread. It leans pass and keeps the run.'),
+      jsonb_build_object('key', 'empty', 'name', 'Empty', 'tell', 0.90,
+        'means', 'Five out, nobody in the backfield. Everyone in the stadium knows what this is.'),
+      jsonb_build_object('key', 'wildcat', 'name', 'Wildcat', 'tell', -0.90,
+        'means', 'The ball to a back directly. No quarterback on the field, and they can see that.')));
+$$;
+
+-- THE PLAYBOOK. Twenty plays. Every one names a snap_v1 CALL as its category
+-- and inherits that call's numbers, then adds its own — so the four calls
+-- measured in Phase 13 are still underneath all of this, and a play is a
+-- specialisation rather than a replacement.
+--
+--   type      'run', 'pass' or 'trick'
+--   td / to   this play's own edge, on top of its category's
+--   explosive how much of a chunk play it is: raises the yards and cuts the
+--             plays it took, which the clock then feels
+create or replace function public.franchise_plays()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'playbook_v1',
+    'default', 'inside_zone',
+    'plays', jsonb_build_array(
+      -- I-FORMATION: it says run, so the run is honest and the pass is a lie
+      jsonb_build_object('key', 'iso', 'name', 'Iso', 'formation', 'i_form', 'type', 'run', 'call', 'ground',
+        'td', 0.0, 'turnover', -0.010, 'explosive', 0.0,
+        'means', 'Lead back through the hole. Nothing clever, nothing lost.'),
+      jsonb_build_object('key', 'power_o', 'name', 'Power O', 'formation', 'i_form', 'type', 'run', 'call', 'ground',
+        'td', 0.010, 'turnover', 0.0, 'explosive', 0.05,
+        'means', 'Pull the guard and follow him. The short-yardage answer.'),
+      jsonb_build_object('key', 'play_action', 'name', 'Play-action deep', 'formation', 'i_form', 'type', 'pass', 'call', 'air',
+        'td', 0.030, 'turnover', 0.015, 'explosive', 0.30,
+        'means', 'Sell the run from a run look, then throw over the top of it.'),
+      jsonb_build_object('key', 'flea_flicker', 'name', 'Flea flicker', 'formation', 'i_form', 'type', 'trick', 'call', 'shot',
+        'td', 0.110, 'turnover', 0.090, 'explosive', 0.55,
+        'means', 'Hand it off, get it back, throw it deep. Ruin against a stacked box.'),
+      -- SINGLEBACK: the formation that tells them nothing
+      jsonb_build_object('key', 'inside_zone', 'name', 'Inside zone', 'formation', 'single', 'type', 'run', 'call', 'ground',
+        'td', 0.0, 'turnover', 0.0, 'explosive', 0.05,
+        'means', 'The play every team has. It works often enough and loses nothing.'),
+      jsonb_build_object('key', 'curl_flat', 'name', 'Curl-flat', 'formation', 'single', 'type', 'pass', 'call', 'balanced',
+        'td', 0.0, 'turnover', -0.015, 'explosive', 0.0,
+        'means', 'Two receivers, high and low, and an easy read. Safe football.'),
+      jsonb_build_object('key', 'hb_screen', 'name', 'Screen', 'formation', 'single', 'type', 'pass', 'call', 'balanced',
+        'td', 0.015, 'turnover', 0.020, 'explosive', 0.25,
+        'means', 'Let them come, then throw behind them. Murder on a blitz.'),
+      jsonb_build_object('key', 'hb_pass', 'name', 'Halfback pass', 'formation', 'single', 'type', 'trick', 'call', 'shot',
+        'td', 0.100, 'turnover', 0.100, 'explosive', 0.50,
+        'means', 'Give it to the back and let him throw it. He is not a quarterback.'),
+      -- SHOTGUN: leans pass, keeps the run
+      jsonb_build_object('key', 'draw', 'name', 'Draw', 'formation', 'gun', 'type', 'run', 'call', 'balanced',
+        'td', 0.010, 'turnover', -0.010, 'explosive', 0.20,
+        'means', 'Wait for them to drop, then run through where they were.'),
+      jsonb_build_object('key', 'mesh', 'name', 'Mesh', 'formation', 'gun', 'type', 'pass', 'call', 'air',
+        'td', 0.0, 'turnover', -0.020, 'explosive', 0.05,
+        'means', 'Crossers underneath. Somebody is always open, nobody is ever deep.'),
+      jsonb_build_object('key', 'four_verts', 'name', 'Four verticals', 'formation', 'gun', 'type', 'pass', 'call', 'shot',
+        'td', 0.015, 'turnover', 0.010, 'explosive', 0.40,
+        'means', 'Everybody runs. Somebody wins, or nobody does.'),
+      jsonb_build_object('key', 'qb_keep', 'name', 'Quarterback keep', 'formation', 'gun', 'type', 'run', 'call', 'ground',
+        'td', 0.015, 'turnover', 0.010, 'explosive', 0.15,
+        'means', 'He pulls it and goes. Worth what your quarterback is worth on his feet.'),
+      jsonb_build_object('key', 'double_reverse', 'name', 'Double reverse', 'formation', 'gun', 'type', 'trick', 'call', 'ground',
+        'td', 0.085, 'turnover', 0.110, 'explosive', 0.45,
+        'means', 'Across, back across, and gone — if nobody stayed home.'),
+      -- EMPTY: everyone in the stadium knows what this is
+      jsonb_build_object('key', 'quick_slants', 'name', 'Quick slants', 'formation', 'empty', 'type', 'pass', 'call', 'air',
+        'td', 0.010, 'turnover', -0.025, 'explosive', 0.10,
+        'means', 'Out of his hands before anyone gets there. The blitz-beater.'),
+      jsonb_build_object('key', 'smash', 'name', 'Smash', 'formation', 'empty', 'type', 'pass', 'call', 'air',
+        'td', 0.020, 'turnover', 0.0, 'explosive', 0.20,
+        'means', 'Corner and hitch against the same defender. Pick your half.'),
+      jsonb_build_object('key', 'deep_shot', 'name', 'Deep shot', 'formation', 'empty', 'type', 'pass', 'call', 'shot',
+        'td', 0.020, 'turnover', 0.020, 'explosive', 0.55,
+        'means', 'One receiver, one defender, one throw.'),
+      jsonb_build_object('key', 'qb_draw', 'name', 'Quarterback draw', 'formation', 'empty', 'type', 'trick', 'call', 'ground',
+        'td', 0.090, 'turnover', 0.075, 'explosive', 0.35,
+        'means', 'Five receivers out and he runs it himself. Nobody is left in the box.'),
+      -- WILDCAT: no quarterback on the field, and they can see that
+      jsonb_build_object('key', 'wildcat_power', 'name', 'Wildcat power', 'formation', 'wildcat', 'type', 'run', 'call', 'ground',
+        'td', 0.020, 'turnover', 0.0, 'explosive', 0.10,
+        'means', 'An extra blocker where the quarterback used to be.'),
+      jsonb_build_object('key', 'jet_sweep', 'name', 'Jet sweep', 'formation', 'wildcat', 'type', 'run', 'call', 'ground',
+        'td', 0.015, 'turnover', 0.015, 'explosive', 0.30,
+        'means', 'Full speed to the edge. All of it or none of it.'),
+      jsonb_build_object('key', 'wildcat_pass', 'name', 'Wildcat pass', 'formation', 'wildcat', 'type', 'trick', 'call', 'shot',
+        'td', 0.120, 'turnover', 0.115, 'explosive', 0.60,
+        'means', 'The back pulls up and throws. Against eight in the box it is a touchdown.')));
+$$;
+
+create or replace function public.franchise_play(p_key text)
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce(
+    (select p from jsonb_array_elements(public.franchise_plays()->'plays') p
+      where p->>'key' = coalesce(p_key, '')),
+    (select p from jsonb_array_elements(public.franchise_plays()->'plays') p
+      where p->>'key' = public.franchise_plays()->>'default'));
+$$;
+
+create or replace function public.franchise_formation(p_key text)
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select p from jsonb_array_elements(public.franchise_formations()->'sets') p
+   where p->>'key' = coalesce(p_key, '');
+$$;
+
+commit;
+
+begin;
+
+-- WHICH FORMATIONS A SCHEME CARRIES. This is what makes a playbook a
+-- playbook: an Air Raid has no I-Formation and a Power-Run team has no Empty
+-- set, so the menu genuinely differs from franchise to franchise.
+create or replace function public.franchise_playbook_sets(p_scheme text)
+returns text[] language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select case coalesce(p_scheme, 'pro_style')
+    when 'power_run' then array['i_form', 'single', 'wildcat', 'gun']
+    when 'option'    then array['i_form', 'single', 'wildcat', 'gun']
+    when 'pro_style' then array['i_form', 'single', 'gun', 'empty']
+    when 'spread'    then array['single', 'gun', 'empty', 'wildcat']
+    when 'air_raid'  then array['gun', 'empty', 'single']
+    else array['i_form', 'single', 'gun', 'empty'] end;
+$$;
+
+-- THE PLAYBOOK ONE FRANCHISE ACTUALLY HAS, grouped the way a page draws it.
+create or replace function public.franchise_playbook(p_scheme text)
+returns jsonb language sql stable set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'version', public.franchise_plays()->>'version',
+    'scheme', coalesce(p_scheme, 'pro_style'),
+    'default', public.franchise_plays()->>'default',
+    'formations', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'key', fm->>'key', 'name', fm->>'name', 'tell', (fm->>'tell')::numeric,
+               'means', fm->>'means',
+               'plays', (select jsonb_agg(pl order by ord)
+                           from jsonb_array_elements(public.franchise_plays()->'plays') with ordinality t(pl, ord)
+                          where pl->>'formation' = fm->>'key'))
+               order by ord)
+        from jsonb_array_elements(public.franchise_formations()->'sets') with ordinality f(fm, ord)
+       where fm->>'key' = any (public.franchise_playbook_sets(p_scheme))), '[]'::jsonb));
+$$;
+
+-- is this play in this franchise's book at all?
+-- AND A PLAY IS AN OFFENSIVE CALL TOO. franchise_call_side() is defined in
+-- Phase 15, above the playbook, so it is extended here rather than there:
+-- a SQL function body is checked when it is created, and it cannot name a
+-- table of plays that does not exist yet.
+create or replace function public.franchise_call_side(p_key text)
+returns text language sql stable set search_path = pg_catalog, pg_temp as $$
+  select case
+    when exists (select 1 from jsonb_array_elements(public.franchise_snaps()->'calls') c
+                  where c->>'key' = coalesce(p_key, '')) then 'off'
+    when exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') c
+                  where c->>'key' = coalesce(p_key, '')) then 'off'
+    when exists (select 1 from jsonb_array_elements(public.franchise_fronts()->'calls') c
+                  where c->>'key' = coalesce(p_key, '')) then 'def'
+    else null end;
+$$;
+
+create or replace function public.franchise_play_allowed(p_scheme text, p_key text)
+returns boolean language sql stable set search_path = public, pg_temp as $$
+  select exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                  where p->>'key' = coalesce(p_key, '')
+                    and p->>'formation' = any (public.franchise_playbook_sets(p_scheme)));
+$$;
+
+commit;
+
+begin;
+
+-- THE DEFENSE READS YOUR FORMATION. This is what makes lining up a decision
+-- rather than a costume: a heavy set really does get you a stacked box, which
+-- is exactly why the trick play out of it works. Weighted, never certain.
+create or replace function public.franchise_ai_front(p_tell numeric, p_gap integer, p_left integer)
+returns text language plpgsql set search_path = public, pg_temp as $$
+declare w_stack numeric := 1; w_base numeric := 1.6; w_cover numeric := 1; w_blitz numeric := 0.45;
+        tell numeric := coalesce(p_tell, 0); r numeric; tot numeric;
+begin
+  -- what the formation told them
+  if tell < 0 then w_stack := w_stack + 2.4 * (-tell); w_cover := greatest(0.1, w_cover + 1.2 * tell);
+  else            w_cover := w_cover + 2.4 * tell;     w_stack := greatest(0.1, w_stack - 1.2 * tell);
+  end if;
+  -- and the situation: a defense needing the ball sends them
+  if coalesce(p_left, 9) <= 3 and coalesce(p_gap, 0) > 0 then w_blitz := w_blitz + 1.6; end if;
+  w_stack := greatest(0.02, w_stack); w_base := greatest(0.02, w_base);
+  w_cover := greatest(0.02, w_cover); w_blitz := greatest(0.02, w_blitz);
+  tot := w_stack + w_base + w_cover + w_blitz;
+  r := random() * tot;
+  if r < w_stack then return 'stack'; end if;
+  r := r - w_stack;
+  if r < w_base then return 'base'; end if;
+  r := r - w_base;
+  if r < w_cover then return 'cover'; end if;
+  return 'blitz';
+end;
+$$;
+
+commit;
+
+-- ===========================================================================
 -- GRANTS
 --
 -- Postgres grants EXECUTE on a new function to PUBLIC by default, so every
@@ -7885,7 +8678,7 @@ revoke all on function public.franchise_season_json(uuid, integer) from public, 
 revoke all on function public.franchise_game_json(uuid, boolean) from public, anon, authenticated;
 revoke all on function public.franchise_schedule_season(uuid, integer, timestamptz) from public, anon, authenticated;
 revoke all on function public.franchise_open_season(uuid, integer, timestamptz) from public, anon, authenticated;
-revoke all on function public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean) from public, anon, authenticated;
+revoke all on function public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer) from public, anon, authenticated;
 revoke all on function public.franchise_drive_totals(jsonb) from public, anon, authenticated;
 revoke all on function public.franchise_nth(jsonb, text, integer) from public, anon, authenticated;
 revoke all on function public.franchise_sim(uuid, uuid) from public, anon, authenticated;
@@ -8094,6 +8887,27 @@ grant execute on function public.franchise_is_key(numeric) to anon, authenticate
 grant execute on function public.franchise_game_story(jsonb) to anon, authenticated;
 grant execute on function public.franchise_game_finish(text) to anon, authenticated;
 grant execute on function public.franchise_reel(text, integer) to anon, authenticated;
+-- Phase 15: the clock and the fronts are published tables. The opponent's
+-- play-caller is NOT: seeing their card before you answer it would be the
+-- whole game handed over.
+grant execute on function public.franchise_clock() to anon, authenticated;
+grant execute on function public.franchise_drive_seconds(integer, numeric, text, numeric) to anon, authenticated;
+grant execute on function public.franchise_tempo(integer, integer) to anon, authenticated;
+grant execute on function public.franchise_fronts() to anon, authenticated;
+grant execute on function public.franchise_front_call(text) to anon, authenticated;
+grant execute on function public.franchise_call_side(text) to anon, authenticated;
+-- Phase 16: the playbook is a published table anyone may read. What the
+-- DEFENSE is about to line up in is not — reading your formation is their
+-- move, and seeing their answer before you commit would be the whole game.
+grant execute on function public.franchise_formations() to anon, authenticated;
+grant execute on function public.franchise_formation(text) to anon, authenticated;
+grant execute on function public.franchise_plays() to anon, authenticated;
+grant execute on function public.franchise_play(text) to anon, authenticated;
+grant execute on function public.franchise_playbook_sets(text) to anon, authenticated;
+grant execute on function public.franchise_playbook(text) to anon, authenticated;
+grant execute on function public.franchise_play_allowed(text, text) to anon, authenticated;
+revoke all on function public.franchise_ai_front(numeric, integer, integer) from public, anon, authenticated;
+revoke all on function public.franchise_ai_call(text, integer, integer) from public, anon, authenticated;
 revoke all on function public.franchise_game_drives(uuid, uuid) from public, anon, authenticated;
 -- Phase 12: what a career looks like, what a rank pays the building, and what
 -- a reputation is worth to a new coach — all public tables
@@ -8131,6 +8945,8 @@ select public.games_schema_note('franchise', 11, 'the rank and the packs');
 select public.games_schema_note('franchise', 12, 'the long haul: careers and a building you can staff');
 select public.games_schema_note('franchise', 13, 'the drives you call');
 select public.games_schema_note('franchise', 14, 'key moments');
+select public.games_schema_note('franchise', 15, 'both sides of the ball');
+select public.games_schema_note('franchise', 16, 'the playbook');
 commit;
 
 -- ===========================================================================
@@ -8300,7 +9116,7 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 14 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 16 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
@@ -8474,9 +9290,9 @@ select 32, 'the game is ' || (public.franchise_snaps()->>'version') || ': you ca
                 and (select array_agg(format_type(t, null) order by o)
                        from unnest(p.proargtypes) with ordinality u(t, o)) = array['text', 'text']) = 1
         and not has_function_privilege('anon',
-              'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean)', 'execute')
+              'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
         and not has_function_privilege('authenticated',
-              'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean)', 'execute')
+              'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_game_drives(uuid, uuid)', 'execute')
         and not has_function_privilege('authenticated', 'public.franchise_game_drives(uuid, uuid)', 'execute')
         -- the seven-argument drive resolver is gone, so nothing can call the
@@ -8506,11 +9322,13 @@ select 33, 'moments are ' || (public.franchise_moments()->>'version') || ': the 
         and public.franchise_stake(0, 0) = 0
         and public.franchise_is_key(public.franchise_stake(0, 1))
         and not public.franchise_is_key(public.franchise_stake(0, 9))
-        -- THE LOAD-BEARING ONE. This phase reads the game; it does not play
-        -- it. The stake is computed from the running score, so it consumes no
-        -- randomness and the simulator is still sim_v2 — a seeded game plays
-        -- out exactly as it did before moments existed.
-        and (select p.prosrc like '%''sim'', ''sim_v2''%'
+        -- THE LOAD-BEARING ONE, and it asserts the RULE rather than the
+        -- version number it happened to hold when it was written: the stake
+        -- is read off the running score the simulator already keeps, so it
+        -- consumes no randomness and cannot move a football outcome. (It said
+        -- "sim_v2" until Phase 15 put the game on a clock, which is exactly
+        -- how a number pinned in place of a rule goes wrong.)
+        and (select p.prosrc like '%v_stake := public.franchise_stake(pts_me - pts_op, v_left);%'
                from pg_proc p join pg_namespace n on n.oid = p.pronamespace
               where n.nspname = 'public' and p.proname = 'franchise_sim')
         and (select p.provolatile = 'i'
@@ -8533,5 +9351,133 @@ select 33, 'moments are ' || (public.franchise_moments()->>'version') || ': the 
         and has_function_privilege('anon', 'public.franchise_stake(integer, integer)', 'execute')
         and has_function_privilege('anon', 'public.franchise_game_finish(text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_reel(text, integer)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 34, 'the game is ' || (public.franchise_clock()->>'version') || ' and ' || (public.franchise_fronts()->>'version')
+        || ': a clock rather than a set number of plays, and you call both sides of the ball',
+  case when public.franchise_clock()->>'version' = 'clock_v1'
+        and public.franchise_fronts()->>'version' = 'defense_v1'
+        -- SIXTY MINUTES, and possessions are what fits inside them. There is
+        -- no possession count anywhere in the simulator any more.
+        and (public.franchise_clock()->>'quarters')::int * (public.franchise_clock()->>'quarter_seconds')::int = 3600
+        and (select p.prosrc not like '%n := 11 + floor(random() * 3)::int;%'
+               and p.prosrc like '%while secs_left > 0%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_sim')
+        -- the ball on the ground keeps the clock moving; the ball in the air
+        -- stops it, which is the whole reason a trailing team throws
+        and (public.franchise_clock()->>'run_seconds')::int > (public.franchise_clock()->>'pass_seconds')::int
+        and public.franchise_drive_seconds(6, 0.20, 'punt') > public.franchise_drive_seconds(6, 0.80, 'punt')
+        and public.franchise_drive_seconds(10, 0.5, 'punt') > public.franchise_drive_seconds(4, 0.5, 'punt')
+        and public.franchise_drive_seconds(6, 0.5, 'td') > public.franchise_drive_seconds(6, 0.5, 'punt')
+        -- a drive always costs something, so the clock can never stall
+        and (select bool_and(public.franchise_drive_seconds(t.n, 0.5, 'punt') > 0)
+               from generate_series(0, 30) as t(n))
+        -- trailing hurries up and leading bleeds it, but only late
+        and public.franchise_tempo(-7, 120) < 1 and public.franchise_tempo(7, 120) > 1
+        and public.franchise_tempo(-7, 1800) = 1 and public.franchise_tempo(0, 120) = 1
+        -- FOUR FRONTS, and every one of them is a real guess: nothing is
+        -- strong against the run and the pass both, and the one that is
+        -- neither pays for it in what it gives up
+        and jsonb_array_length(public.franchise_fronts()->'calls') = 4
+        -- NOTHING TAKES BOTH AWAY. Every front that helps against the run
+        -- hurts against the pass and the other way about — except the blitz,
+        -- which pays for helping against both in touchdowns allowed.
+        and not exists (select 1 from jsonb_array_elements(public.franchise_fronts()->'calls') c
+                         where (c->>'td_vs_run')::numeric < 0 and (c->>'td_vs_pass')::numeric < 0)
+        and (public.franchise_front_call('stack')->>'td_vs_run')::numeric < 0
+        and (public.franchise_front_call('stack')->>'td_vs_pass')::numeric > 0
+        and (public.franchise_front_call('cover')->>'td_vs_pass')::numeric < 0
+        and (public.franchise_front_call('cover')->>'td_vs_run')::numeric > 0
+        and (public.franchise_front_call('blitz')->>'to_vs_pass')::numeric > 0
+        and (public.franchise_front_call('blitz')->>'td_vs_pass')::numeric > 0
+        -- quick play is Base: the default names a real front that moves nothing
+        and public.franchise_front_call(null)->>'key' = public.franchise_fronts()->>'default'
+        and (select bool_and((public.franchise_front_call(null)->>k)::numeric = 0)
+               from unnest(array['td_vs_run', 'td_vs_pass', 'to_vs_run', 'to_vs_pass']) k)
+        -- the two tables never share a key, so a call names its own side and
+        -- one meant for the other can be refused
+        and public.franchise_call_side('shot') = 'off'
+        and public.franchise_call_side('blitz') = 'def'
+        and public.franchise_call_side('nonsense') is null
+        and not exists (select 1 from jsonb_array_elements(public.franchise_snaps()->'calls') o
+                          join jsonb_array_elements(public.franchise_fronts()->'calls') dd
+                            on dd->>'key' = o->>'key')
+        -- THE LOAD-BEARING ONE, still. A client sends a call — on either side
+        -- of the ball — and never a result; the resolver stays out of reach.
+        and not has_function_privilege('anon',
+              'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
+        and not has_function_privilege('authenticated',
+              'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
+        -- the opponent's play comes off their scheme and their situation, on
+        -- the server, so the read is real and no client ever sees their card
+        and not has_function_privilege('anon', 'public.franchise_ai_call(text, integer, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_ai_call(text, integer, integer)', 'execute')
+        -- the tables are open to read
+        and has_function_privilege('anon', 'public.franchise_clock()', 'execute')
+        and has_function_privilege('anon', 'public.franchise_fronts()', 'execute')
+        and has_function_privilege('anon', 'public.franchise_call_side(text)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 35, 'the playbook is ' || (public.franchise_plays()->>'version')
+        || ': twenty plays across five formations, a different book per scheme, and a trick play that needs a formation that lies',
+  case when public.franchise_plays()->>'version' = 'playbook_v1'
+        and public.franchise_formations()->>'version' = 'playbook_v1'
+        -- twenty plays, five formations, and a trick in every one of them
+        and jsonb_array_length(public.franchise_plays()->'plays') = 20
+        and jsonb_array_length(public.franchise_formations()->'sets') = 5
+        and (select count(*) from jsonb_array_elements(public.franchise_plays()->'plays') p
+              where p->>'type' = 'trick') = 5
+        -- every play lives in a real formation and names a real snap_v1 call,
+        -- so a play SPECIALISES a call rather than replacing it
+        and not exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                         where public.franchise_formation(p->>'formation') is null)
+        and not exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                         where not exists (select 1 from jsonb_array_elements(public.franchise_snaps()->'calls') c
+                                            where c->>'key' = p->>'call'))
+        and not exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                         where p->>'type' not in ('run', 'pass', 'trick'))
+        -- A TRICK CONTRADICTS ITS OWN FORMATION'S TELL. That is what makes it
+        -- a trick: a run look that throws, or a pass look that runs.
+        and not exists (
+              select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+               where p->>'type' = 'trick'
+                 and sign((public.franchise_formation(p->>'formation')->>'tell')::numeric)
+                     = sign(case when public.franchise_snap_call(p->>'call')->>'key' in ('air', 'shot')
+                                 then 1 else -1 end))
+        -- the tells run the whole way from a run look to a pass look
+        and (public.franchise_formation('i_form')->>'tell')::numeric < -0.5
+        and (public.franchise_formation('empty')->>'tell')::numeric > 0.5
+        and (select bool_and(abs((fm->>'tell')::numeric) <= 1)
+               from jsonb_array_elements(public.franchise_formations()->'sets') fm)
+        -- EVERY SCHEME HAS ITS OWN BOOK, and none of them has all of it
+        and array_length(public.franchise_playbook_sets('air_raid'), 1) between 2 and 4
+        and not ('i_form' = any (public.franchise_playbook_sets('air_raid')))
+        and not ('empty' = any (public.franchise_playbook_sets('power_run')))
+        and public.franchise_play_allowed('power_run', 'flea_flicker')
+        and not public.franchise_play_allowed('air_raid', 'flea_flicker')
+        and (select bool_and(jsonb_array_length(public.franchise_playbook(sch)->'formations') > 0)
+               from unnest(array['power_run', 'option', 'pro_style', 'spread', 'air_raid']) sch)
+        -- a play out of the book is an offensive call like any other
+        and public.franchise_call_side('flea_flicker') = 'off'
+        and public.franchise_call_side('blitz') = 'def'
+        -- and the book never collides with the four calls or the four fronts
+        and not exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                          join jsonb_array_elements(public.franchise_snaps()->'calls') c
+                            on c->>'key' = p->>'key')
+        and not exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                          join jsonb_array_elements(public.franchise_fronts()->'calls') c
+                            on c->>'key' = p->>'key')
+        -- THE LOAD-BEARING ONE, still. The client sends a play; the server
+        -- resolves it. And what the DEFENSE is about to line up in is theirs:
+        -- seeing their answer before you commit would be the whole game.
+        and not has_function_privilege('anon', 'public.franchise_ai_front(numeric, integer, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_ai_front(numeric, integer, integer)', 'execute')
+        and not has_function_privilege('anon',
+              'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
+        -- the book itself is open to read
+        and has_function_privilege('anon', 'public.franchise_plays()', 'execute')
+        and has_function_privilege('anon', 'public.franchise_playbook(text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_play_allowed(text, text)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

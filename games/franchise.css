@@ -308,6 +308,32 @@
 .sn-story .l{font-size:12.5px;color:var(--dim);margin-top:6px;line-height:1.5}
 .sn-story .l b{color:var(--text);font-weight:600}
 
+/* ── BOTH SIDES OF THE BALL (Phase 15) ──────────────────────────────────── */
+.sn-board .mid .ck{display:block;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
+  letter-spacing:.04em;color:var(--text);text-transform:none;margin-bottom:2px}
+.sn-who{font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:4px}
+/* the defensive table reads as the other side of the ball */
+.sn-calls.def button{background:rgba(92,157,255,.07);border-color:rgba(92,157,255,.30)}
+.sn-calls.def button:hover:not(:disabled){border-color:var(--obs);background:rgba(92,157,255,.14)}
+.sn-calls.def .t{color:var(--obs)}
+
+/* ── THE PLAYBOOK (Phase 16) ────────────────────────────────────────────── */
+.pb-set{margin-top:12px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.pb-head{display:flex;gap:8px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.pb-head .n{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;line-height:1.2}
+.pb-head .tell{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+  border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.pb-head .tell.run{color:var(--est);border-color:rgba(217,164,65,.45)}
+.pb-head .tell.pass{color:var(--obs);border-color:rgba(92,157,255,.45)}
+.pb-means{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.45}
+.sn-calls.pb{margin-top:8px}
+.sn-calls.pb button{background:var(--raised)}
+.sn-calls .trick{border-color:rgba(157,123,255,.45);background:rgba(157,123,255,.07)}
+.sn-calls .trick:hover:not(:disabled){border-color:var(--exp);background:rgba(157,123,255,.14)}
+.sn-calls .trick .t{color:var(--exp)}
+.sn-calls .trick .t em{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--exp);border:1px solid rgba(157,123,255,.45);border-radius:999px;padding:1px 5px;margin-left:5px;vertical-align:middle}
+
 /* between seasons */
 .gd-done{margin-top:14px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:14px}
 .gd-done .rec{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:700;line-height:1;color:var(--fr-primary,var(--val))}

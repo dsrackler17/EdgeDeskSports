@@ -65,7 +65,9 @@
       'the rank and the packs',
       'the long haul: careers and a building you can staff',
       'the drives you call',
-      'key moments'
+      'key moments',
+      'both sides of the ball',
+      'the playbook'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -298,13 +300,13 @@
     overall: { offense: 0.45, defense: 0.45, special: 0.10 }
   };
 
-  /* ── the weekly game, sim_v2 — the published shape of the simulator ────
+  /* ── the weekly game, sim_v4 — the published shape of the simulator ────
      The simulator runs on the server and nowhere else. These are the
      numbers it publishes so a pregame can say what is in play: home field,
      how much this week's preparation swings, and the scheme matchup table
      (offense against defense, in rating points for the offense). The
      table is pinned to franchise_scheme_edges() by the test suite. */
-  var SIM_VERSION = 'sim_v2';
+  var SIM_VERSION = 'sim_v4';
   var HOME_EDGE = 1.5;
   var PREP_SWING = 3;                       /* preparation 0 → −3, 100 → +3 */
   var SCHEME_EDGES = {
@@ -1045,6 +1047,237 @@
              : 'a punt';
     var c = m.call ? (snapCall(m.call) || {}).name : null;
     return (c ? c + ' — ' : '') + what + ', ' + (m.me | 0) + '–' + (m.op | 0);
+  }
+
+  /* ── BOTH SIDES OF THE BALL (Phase 15) ───────────────────────────────────
+     Measured first, and the measurement was damning: called every possession
+     the same way, a team got 10.95 possessions a side whether it ground the
+     ball out or threw it on every down — identical to two decimal places,
+     because possessions were drawn once before a snap from two scheme labels
+     and a dice roll. And you only ever played half the game.
+
+     THE CLOCK (clock_v1). No set number of plays: sixty minutes, and
+     possessions are what fits inside them. The ball on the ground keeps the
+     clock moving, the ball in the air stops it — so grinding now yields 10.57
+     possessions a side and shooting 12.08, with ranges of 8–13 and 10–15.
+
+     DEFENSE (defense_v1). You call their possessions too. The read is worth
+     about four points of margin either way, and which front is right depends
+     entirely on the team you are playing. */
+  var CLOCK_VERSION = 'clock_v1';
+  var CLOCK = {
+    quarters: 4, quarter_seconds: 900,
+    run_seconds: 38, pass_seconds: 19, score_seconds: 18, change_seconds: 12,
+    nominal_drive: 175, hurry_from: 300, hurry_tempo: 0.62, grind_tempo: 1.15, ot_rounds: 2
+  };
+  /* "Q2 · 2:35" — what the clock says, from seconds left in the game. The
+     quarter is worked out from time ELAPSED, the same way the simulator does
+     it, rather than from time remaining, which gets the opening kickoff
+     wrong. */
+  function clockLine(secsLeft) {
+    var total = CLOCK.quarters * CLOCK.quarter_seconds;
+    var s = Math.max(0, Math.min(total, secsLeft | 0));
+    var q = Math.min(CLOCK.quarters, 1 + Math.floor((total - s) / CLOCK.quarter_seconds));
+    var inQ = s - (CLOCK.quarters - q) * CLOCK.quarter_seconds;
+    var m = Math.floor(inQ / 60), ss = inQ % 60;
+    return { q: q, label: m + ':' + (ss < 10 ? '0' : '') + ss };
+  }
+  /* what a drive costs the clock — the same arithmetic franchise_drive_seconds does */
+  function driveSeconds(plays, passShare, outcome, tempo) {
+    var p = Math.max(1, plays | 0), ps = passShare == null ? 0.5 : +passShare;
+    var t = Math.max(0.4, Math.min(2.0, tempo == null ? 1 : +tempo));
+    var v = p * (ps * CLOCK.pass_seconds + (1 - ps) * CLOCK.run_seconds) * t
+          + (outcome === 'td' || outcome === 'fg' ? CLOCK.score_seconds : CLOCK.change_seconds);
+    return Math.max(12, Math.round(v));
+  }
+
+  /* THE FOUR FRONTS. Each number is split by whether the ball is on the
+     ground or in the air, and weighted by the offense's own pass share —
+     their call already in it. Guess right and you take it away. */
+  var DEFENSE_VERSION = 'defense_v1';
+  var FRONTS = {
+    'default': 'base',
+    calls: [
+      { key: 'stack', name: 'Stack the box',
+        means: 'Crowd the line. Murder on the run — and they can go over the top of it.',
+        td_vs_run: -0.060, td_vs_pass: 0.050, to_vs_run: 0.035, to_vs_pass: -0.020 },
+      { key: 'base', name: 'Base',
+        means: 'Play it honest. What quick play calls.',
+        td_vs_run: 0, td_vs_pass: 0, to_vs_run: 0, to_vs_pass: 0 },
+      { key: 'cover', name: 'Cover deep',
+        means: 'Take the pass away. They can run it down your throat instead.',
+        td_vs_run: 0.050, td_vs_pass: -0.060, to_vs_run: -0.020, to_vs_pass: 0.035 },
+      { key: 'blitz', name: 'Blitz',
+        means: 'Send them. The best chance of taking it away, and of being taken apart.',
+        td_vs_run: 0.030, td_vs_pass: 0.040, to_vs_run: 0.080, to_vs_pass: 0.095 }
+    ]
+  };
+  function frontCall(key) {
+    var out = null, def = null;
+    FRONTS.calls.forEach(function (c) {
+      if (c.key === key) out = c;
+      if (c.key === FRONTS['default']) def = c;
+    });
+    return out || def;
+  }
+  /* which side of the ball a call belongs to — the two tables never share a
+     key, so a call names its own side and the server refuses a wrong one */
+  function callSide(key) {
+    var side = null;
+    SNAPS.calls.forEach(function (c) { if (c.key === key) side = 'off'; });
+    FRONTS.calls.forEach(function (c) { if (c.key === key) side = 'def'; });
+    return side;
+  }
+  /* the table for whichever side of the ball this possession is on */
+  function callsFor(side) { return side === 'def' ? FRONTS.calls : SNAPS.calls; }
+
+  /* ── THE PLAYBOOK (Phase 16, playbook_v1) ────────────────────────────────
+     Measured first: four calls was the ENTIRE offensive vocabulary, identical
+     for every franchise in the game — franchise_snaps() takes no argument, so
+     an Air Raid and a Power-Run team called from the same menu. There were no
+     formations and no trick plays, and eight thousand drives said a touchdown
+     drive was 55 to 85 yards EVERY TIME: there was no such thing as a big
+     play.
+
+     A play SPECIALISES a call rather than replacing it — every play names one
+     of the four and inherits its numbers exactly as Phase 13 measured them —
+     so nothing tuned there is thrown away and quick play is still Balanced. */
+  var PLAYBOOK_VERSION = 'playbook_v1';
+
+  /* `tell` is what lining up in a set says to the defense: -1 screams run,
+     +1 screams pass. It is the whole reason a trick play works — measured,
+     the I-Formation draws a stacked box 55.6% of the time and Empty 2.4%. */
+  var FORMATIONS = [
+    { key: 'i_form', name: 'I-Formation', tell: -0.75,
+      means: 'Two backs, tight ends, everybody close. It says run before the snap.' },
+    { key: 'single', name: 'Singleback', tell: -0.25,
+      means: 'One back, balanced personnel. It says nothing much, which is its own virtue.' },
+    { key: 'gun', name: 'Shotgun', tell: 0.45,
+      means: 'Quarterback off the line, receivers spread. It leans pass and keeps the run.' },
+    { key: 'empty', name: 'Empty', tell: 0.90,
+      means: 'Five out, nobody in the backfield. Everyone in the stadium knows what this is.' },
+    { key: 'wildcat', name: 'Wildcat', tell: -0.90,
+      means: 'The ball to a back directly. No quarterback on the field, and they can see that.' }
+  ];
+
+  var PLAYS = [
+    { key: 'iso', name: 'Iso', formation: 'i_form', type: 'run', call: 'ground',
+      td: 0.0, turnover: -0.010, explosive: 0.0,
+      means: 'Lead back through the hole. Nothing clever, nothing lost.' },
+    { key: 'power_o', name: 'Power O', formation: 'i_form', type: 'run', call: 'ground',
+      td: 0.010, turnover: 0.0, explosive: 0.05,
+      means: 'Pull the guard and follow him. The short-yardage answer.' },
+    { key: 'play_action', name: 'Play-action deep', formation: 'i_form', type: 'pass', call: 'air',
+      td: 0.030, turnover: 0.015, explosive: 0.30,
+      means: 'Sell the run from a run look, then throw over the top of it.' },
+    { key: 'flea_flicker', name: 'Flea flicker', formation: 'i_form', type: 'trick', call: 'shot',
+      td: 0.110, turnover: 0.090, explosive: 0.55,
+      means: 'Hand it off, get it back, throw it deep. Ruin against a stacked box.' },
+    { key: 'inside_zone', name: 'Inside zone', formation: 'single', type: 'run', call: 'ground',
+      td: 0.0, turnover: 0.0, explosive: 0.05,
+      means: 'The play every team has. It works often enough and loses nothing.' },
+    { key: 'curl_flat', name: 'Curl-flat', formation: 'single', type: 'pass', call: 'balanced',
+      td: 0.0, turnover: -0.015, explosive: 0.0,
+      means: 'Two receivers, high and low, and an easy read. Safe football.' },
+    { key: 'hb_screen', name: 'Screen', formation: 'single', type: 'pass', call: 'balanced',
+      td: 0.015, turnover: 0.020, explosive: 0.25,
+      means: 'Let them come, then throw behind them. Murder on a blitz.' },
+    { key: 'hb_pass', name: 'Halfback pass', formation: 'single', type: 'trick', call: 'shot',
+      td: 0.100, turnover: 0.100, explosive: 0.50,
+      means: 'Give it to the back and let him throw it. He is not a quarterback.' },
+    { key: 'draw', name: 'Draw', formation: 'gun', type: 'run', call: 'balanced',
+      td: 0.010, turnover: -0.010, explosive: 0.20,
+      means: 'Wait for them to drop, then run through where they were.' },
+    { key: 'mesh', name: 'Mesh', formation: 'gun', type: 'pass', call: 'air',
+      td: 0.0, turnover: -0.020, explosive: 0.05,
+      means: 'Crossers underneath. Somebody is always open, nobody is ever deep.' },
+    { key: 'four_verts', name: 'Four verticals', formation: 'gun', type: 'pass', call: 'shot',
+      td: 0.015, turnover: 0.010, explosive: 0.40,
+      means: 'Everybody runs. Somebody wins, or nobody does.' },
+    { key: 'qb_keep', name: 'Quarterback keep', formation: 'gun', type: 'run', call: 'ground',
+      td: 0.015, turnover: 0.010, explosive: 0.15,
+      means: 'He pulls it and goes. Worth what your quarterback is worth on his feet.' },
+    { key: 'double_reverse', name: 'Double reverse', formation: 'gun', type: 'trick', call: 'ground',
+      td: 0.085, turnover: 0.110, explosive: 0.45,
+      means: 'Across, back across, and gone — if nobody stayed home.' },
+    { key: 'quick_slants', name: 'Quick slants', formation: 'empty', type: 'pass', call: 'air',
+      td: 0.010, turnover: -0.025, explosive: 0.10,
+      means: 'Out of his hands before anyone gets there. The blitz-beater.' },
+    { key: 'smash', name: 'Smash', formation: 'empty', type: 'pass', call: 'air',
+      td: 0.020, turnover: 0.0, explosive: 0.20,
+      means: 'Corner and hitch against the same defender. Pick your half.' },
+    { key: 'deep_shot', name: 'Deep shot', formation: 'empty', type: 'pass', call: 'shot',
+      td: 0.020, turnover: 0.020, explosive: 0.55,
+      means: 'One receiver, one defender, one throw.' },
+    { key: 'qb_draw', name: 'Quarterback draw', formation: 'empty', type: 'trick', call: 'ground',
+      td: 0.090, turnover: 0.075, explosive: 0.35,
+      means: 'Five receivers out and he runs it himself. Nobody is left in the box.' },
+    { key: 'wildcat_power', name: 'Wildcat power', formation: 'wildcat', type: 'run', call: 'ground',
+      td: 0.020, turnover: 0.0, explosive: 0.10,
+      means: 'An extra blocker where the quarterback used to be.' },
+    { key: 'jet_sweep', name: 'Jet sweep', formation: 'wildcat', type: 'run', call: 'ground',
+      td: 0.015, turnover: 0.015, explosive: 0.30,
+      means: 'Full speed to the edge. All of it or none of it.' },
+    { key: 'wildcat_pass', name: 'Wildcat pass', formation: 'wildcat', type: 'trick', call: 'shot',
+      td: 0.120, turnover: 0.115, explosive: 0.60,
+      means: 'The back pulls up and throws. Against eight in the box it is a touchdown.' }
+  ];
+
+  /* WHICH FORMATIONS A SCHEME CARRIES — what makes a playbook a playbook. */
+  var PLAYBOOK_SETS = {
+    power_run: ['i_form', 'single', 'wildcat', 'gun'],
+    option:    ['i_form', 'single', 'wildcat', 'gun'],
+    pro_style: ['i_form', 'single', 'gun', 'empty'],
+    spread:    ['single', 'gun', 'empty', 'wildcat'],
+    air_raid:  ['gun', 'empty', 'single']
+  };
+  function playbookSets(scheme) { return PLAYBOOK_SETS[scheme] || PLAYBOOK_SETS.pro_style; }
+  function formation(key) {
+    var out = null;
+    FORMATIONS.forEach(function (f) { if (f.key === key) out = f; });
+    return out;
+  }
+  function play(key) {
+    var out = null, def = null;
+    PLAYS.forEach(function (p) {
+      if (p.key === key) out = p;
+      if (p.key === 'inside_zone') def = p;
+    });
+    return out || def;
+  }
+  function playAllowed(scheme, key) {
+    var p = null;
+    PLAYS.forEach(function (x) { if (x.key === key) p = x; });
+    return !!p && playbookSets(scheme).indexOf(p.formation) >= 0;
+  }
+  /* the book one franchise actually has, grouped the way a page draws it */
+  function playbook(scheme) {
+    var sets = playbookSets(scheme), out = [];
+    FORMATIONS.forEach(function (f) {
+      if (sets.indexOf(f.key) < 0) return;
+      out.push({ key: f.key, name: f.name, tell: f.tell, means: f.means,
+                 plays: PLAYS.filter(function (p) { return p.formation === f.key; }) });
+    });
+    return out;
+  }
+  /* "Says run" / "Says pass" / "Says nothing" — what lining up here tells them */
+  function tellLine(tell) {
+    var t = +tell || 0;
+    if (t <= -0.6) return 'Screams run';
+    if (t <= -0.15) return 'Leans run';
+    if (t < 0.15) return 'Says nothing';
+    if (t < 0.6) return 'Leans pass';
+    return 'Screams pass';
+  }
+  /* what a play did, in the words a play-by-play uses */
+  function playLine(d) {
+    d = obj(d);
+    var p = d.play ? play(d.play) : null;
+    if (!p) return '';
+    var fm = formation(p.formation);
+    return p.name + (fm ? ' · ' + fm.name : '')
+      + (d.trick && d.fooled != null ? (d.fooled >= 0.7 ? ' · they bought it' : d.fooled <= 0.3 ? ' · they read it' : '') : '')
+      + (d.big ? ' · broke one' : '');
   }
 
   function staffSpecialtyCount(level) {
@@ -1814,6 +2047,12 @@
     CAREER_VERSION: CAREER_VERSION, CAREER: CAREER,
     SNAP_VERSION: SNAP_VERSION, SNAPS: SNAPS, snapCall: snapCall, snapLine: snapLine,
     MOMENT_VERSION: MOMENT_VERSION, MOMENTS: MOMENTS, stake: stake, isKey: isKey,
+    CLOCK_VERSION: CLOCK_VERSION, CLOCK: CLOCK, clockLine: clockLine, driveSeconds: driveSeconds,
+    PLAYBOOK_VERSION: PLAYBOOK_VERSION, FORMATIONS: FORMATIONS, PLAYS: PLAYS,
+    playbookSets: playbookSets, playbook: playbook, play: play, formation: formation,
+    playAllowed: playAllowed, tellLine: tellLine, playLine: playLine,
+    DEFENSE_VERSION: DEFENSE_VERSION, FRONTS: FRONTS, frontCall: frontCall,
+    callSide: callSide, callsFor: callsFor,
     stakeLine: stakeLine, momentLine: momentLine, gameFinish: gameFinish, reel: reel,
     driveLine: driveLine, gameOpen: gameOpen, gameCall: gameCall,
     rankCoachPoints: rankCoachPoints, staffHireLevel: staffHireLevel,

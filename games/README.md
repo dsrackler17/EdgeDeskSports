@@ -939,7 +939,7 @@ shows one button; afterwards, the result.
   the HQ answers "who am I playing?" from the first second; the next season
   starts when the player says so (`franchise_start_season`), numbered on,
   with the season lines reset and the careers kept.
-* **The simulator, `sim_v2`, runs on the server and nowhere else.** A
+* **The simulator, `sim_v4`, runs on the server and nowhere else.** A
   possession model: eleven to fourteen drives a side, each one resolved
   from the offense's effective rating against the defense's — team rating,
   home field (+1.5), that week's preparation (−3 at 0% to +3 at 100%), the
@@ -2278,7 +2278,8 @@ the old file and the new one:
 | --- | --- | --- | --- |
 | before vs after | 120 | **120** | **120** |
 
-Identical outcomes, yards and plays. The simulator is still `sim_v2`.
+Identical outcomes, yards and plays. The simulator was still `sim_v2` when
+this was written; Phase 15 put the game on a clock and made it `sim_v3`.
 
 ### The story
 
@@ -2310,6 +2311,262 @@ worth less, a possession is worth the same to the side defending a lead as
 to the side chasing it, and there is no table of moments anywhere in the
 schema.
 
+## Phase 15 — both sides of the ball
+
+Measured first, and the measurement was damning. Six hundred games, the same
+seeds, every possession called the same way:
+
+| called every possession | Ground | Balanced | Air it out | Take a shot |
+| --- | --- | --- | --- | --- |
+| possessions a side | **10.95** | **10.95** | **10.95** | **10.95** |
+| spread | 0.83 | 0.83 | 0.83 | 0.83 |
+
+**Identical to two decimal places.** Possessions were drawn once, before a
+snap, from two scheme labels and a dice roll, and nothing that happened in
+the game ever touched them. Grind it out for sixty minutes and you got the
+same number of possessions as a team that threw on every down. That is not
+football; it is a turn counter wearing football's clothes.
+
+And you only ever played half the game. Eleven possessions a side means
+eleven possessions where the other team had the ball and you watched.
+
+### The clock — `clock_v1`
+
+There is no set number of plays any more. There are sixty minutes, and
+possessions are what fits inside them. A drive costs time in proportion to
+the plays in it and **how** those plays are run: the ball on the ground keeps
+the clock moving (38 seconds a play), the ball in the air stops it (19).
+
+| called every possession | Ground | Balanced | Air it out | Take a shot |
+| --- | --- | --- | --- | --- |
+| possessions a side | **10.57** | 11.14 | 11.67 | **12.08** |
+| fewest → most | 8 → 13 | 9 → 13 | 9 → 14 | 10 → 15 |
+| your plays | 64.1 | 68.9 | 74.2 | 78.2 |
+
+Grind and there are fewer possessions in the game — for both of you, which
+is exactly why a team with a lead runs the ball. Throw and there are more.
+
+### What the clock does not do, which I claimed before measuring it
+
+I wrote in the header comment that the clock would manufacture comebacks
+where Phase 14's variance experiment could not. **It does not**, and I should
+have measured before writing it.
+
+Trailing with five minutes left, a side gets 2.93 possessions after that
+mark; leading, 2.95. Sweeping the leading side's tempo from 1.30 down to 0.70
+moved the comeback rate 13.4 → 17.9 → 15.7 → 13.8 per cent — non-monotonic,
+and all of it inside the noise on a hundred-odd games a cell.
+
+The reason is structural rather than a tuning problem: **possessions strictly
+alternate**, so every second you save by hurrying hands the ball back sooner
+and buys the other side a possession too. Real football gets around that with
+timeouts, incompletions and onside kicks — a trailing team stopping the clock
+while it is *not* holding the ball — and none of that exists here.
+
+That is the second measurement in two phases to say the same thing: the
+football is fine, and drama is not a thing to manufacture. Tempo stays
+because it is true — a game late and close does run at a different speed —
+and it is described as what it is rather than as a comeback engine.
+
+### Defense — `defense_v1`
+
+You call the other side's possessions too. Four fronts, and each number is
+split by whether the ball is on the ground or in the air, weighted by the
+offense's own pass share with **their call already in it**.
+
+| front | td vs run | td vs pass | takeaway vs run | takeaway vs pass |
+| --- | --- | --- | --- | --- |
+| **Stack the box** | −0.060 | +0.050 | +0.035 | −0.020 |
+| **Base** | 0 | 0 | 0 | 0 |
+| **Cover deep** | +0.050 | −0.060 | −0.020 | +0.035 |
+| **Blitz** | +0.030 | +0.040 | +0.080 | +0.095 |
+
+The first cut of this table moved *rating points*, and measuring it showed
+why that was hopeless: a call worth three rating points moves the touchdown
+odds by 0.015, which is five hundredths of a point a drive. Stack the box
+against a running team came out at **1.625** points allowed against Base's
+**1.584** — the wrong way round, and both inside the noise. A defensive call
+has to pull the same lever an offensive one does.
+
+### The read is about them
+
+Nine hundred whole games a cell, evenly matched sides, average margin:
+
+| they run | Stack | Base | Cover | Blitz |
+| --- | --- | --- | --- | --- |
+| **power run** | **+2.47** | +0.59 | −1.65 | −0.86 |
+| **pro style** | −0.41 | −0.09 | **+0.22** | −1.07 |
+| **air raid** | −2.16 | −0.62 | **+2.46** | −1.09 |
+
+Read down a column and it flips. Guessing right against a running team is
+worth two and a half points; guessing wrong costs you a point and a half.
+Against a passing team it is +2.46 and −2.16. Against a genuinely balanced
+team every front sits inside half a point of the others — reading a team with
+no tendency gains you nothing, which is correct.
+
+Blitz sits around −1 everywhere, and that is its job. It takes the ball away
+on **21.8%** of drives against Base's **12.8%**, and pays for it with 24.1%
+touchdowns allowed against 20.9%. It has the widest swing of the four. It is
+the front you call when you need the ball more than you need the point — the
+same trade *Take a shot* is on offense.
+
+That takeaway is not free money for the defense either: a giveaway hands the
+*other* side the ball in scoring range (Phase 13), so a blitz that works is
+worth a short field. Over whole games you score **25.6** with it against
+**22.9** on Base — an upside that never showed up in points-allowed-per-drive
+and only appeared when whole games were measured.
+
+### What they are about to run
+
+`franchise_ai_call()` picks the opponent's play from **their scheme** and
+**the situation**, on the server, and no client role may ask it. So a
+power-run team nursing a lead will run at you, and the same team down ten
+with two minutes left has to throw. That is the read, and it is readable.
+
+The first cut of that was too timid — it left a power-run team throwing on
+47% of its plays against a pro-style team's 57%, ten points apart, and the
+measurement said so: Stack the box came out *worse* than Base against a
+running team, because the running team was barely running. The scheme
+weights now put them 41% and 69% apart.
+
+### One simulator still
+
+The calls array is now one entry per **possession** in the order they
+happened — your offensive call when you have the ball, your defensive call
+when they do — and `franchise_sim()` reads it exactly as it did before.
+Re-running still reproduces every possession already played. A call names its
+own side (the two tables never share a key), so one meant for the other is
+refused rather than quietly defaulted.
+
+The simulator is `sim_v3`, and **franchise-vs-franchise challenges run on the
+same clock**, so a challenge is the same football as a Saturday. Neither side
+is at a keyboard there, so both call from their own scheme and situation —
+which is what quick play is on a Saturday too.
+
+Report row 34 covers it.
+
+## Phase 16 — the playbook
+
+Measured first:
+
+| | |
+| --- | --- |
+| offensive options, any scheme | **4** |
+| do they differ by scheme? | **no** — `franchise_snaps()` takes no argument |
+| formations | **0** |
+| trick plays | **0** |
+
+Four calls was the entire offensive vocabulary, and every franchise in the
+game had the same four. Your scheme picked your pass share and nothing else,
+so an Air Raid and a Power-Run team called from an identical menu.
+
+And there was no such thing as a big play. Eight thousand drives: a touchdown
+drive was **55 to 85 yards, every time**, spread 9.0. Every score looked
+exactly like every other score.
+
+### A play specialises a call — it does not replace one
+
+Every play names one of the four calls as its **category** and inherits that
+call's numbers exactly as Phase 13 measured and tuned them, then adds its own
+on top. Nothing measured there is thrown away, and quick play is still a game
+called Balanced.
+
+### Formations, and what lining up in one tells them
+
+Five sets. `tell` is what the formation says before the snap: −1 screams run,
++1 screams pass. That tell is not flavour — the other side reads it and calls
+their front off it. Three thousand snaps a row:
+
+| formation | tell | stack the box | base | cover deep | blitz |
+| --- | --- | --- | --- | --- | --- |
+| **Wildcat** | −0.90 | **59.9%** | 29.7% | 1.9% | 8.5% |
+| **I-Formation** | −0.75 | **55.6%** | 32.2% | 1.9% | 10.3% |
+| **Singleback** | −0.25 | 37.0% | 36.5% | 16.3% | 10.2% |
+| **Shotgun** | +0.45 | 9.6% | 34.8% | **45.4%** | 10.2% |
+| **Empty** | +0.90 | 2.4% | 29.7% | **59.3%** | 8.6% |
+
+Lining up heavy really does get you a stacked box. That is the cost of a run
+formation — and the entire reason the trick play out of it works.
+
+### Playbooks
+
+Which formations you carry depends on your scheme, so the menu genuinely
+differs from team to team:
+
+| scheme | book |
+| --- | --- |
+| power run / option | I-Formation, Singleback, Shotgun, Wildcat |
+| pro style | I-Formation, Singleback, Shotgun, Empty |
+| spread | Singleback, Shotgun, Empty, Wildcat |
+| air raid | Singleback, Shotgun, Empty |
+
+Twenty plays, and **no franchise holds all of them**. An Air Raid has no
+I-Formation, so it has no flea flicker, and asking for one is refused rather
+than run.
+
+### Trick plays need a formation that lies
+
+A trick play **contradicts its own formation's tell** — a flea flicker out of
+the I-Formation, a quarterback draw out of Empty — so it pays off exactly
+when the defense has bought the tell. The same trick, fresh, against the
+front its own formation actually draws:
+
+| trick | formation | points a drive | fooled them | broke a big one |
+| --- | --- | --- | --- | --- |
+| **Wildcat pass** | Wildcat | 3.013 | 0.74 | 43.9% |
+| **Flea flicker** | I-Formation | 2.913 | 0.72 | 38.5% |
+| **Halfback pass** | Singleback | 2.472 | **0.30** | 15.0% |
+| Quarterback draw | Empty | 2.176 | 0.74 | 25.6% |
+| Double reverse | Shotgun | 2.069 | 0.63 | 29.0% |
+
+The Halfback pass is the one that proves the rule. It lives in Singleback — a
+formation that tells them nothing — so it fools people **0.30** of the time
+against the Flea flicker's **0.72**, and it is worth half a point a drive
+less. A trick play is not a good play; it is a good **lie**, and it needs a
+formation willing to tell it.
+
+Against the front that bought the tell, a flea flicker is worth **3.196**
+points a drive. Against a defense sitting deep, **2.149**.
+
+### And they go stale, because there is no trick-play strategy
+
+| times called already this game | 0 | 1 | 2 | 3 |
+| --- | --- | --- | --- | --- |
+| points a drive | **3.259** | 2.877 | 2.437 | 2.524 |
+| touchdown | 41.6% | 36.2% | 30.1% | 30.8% |
+| giveaway | 33.5% | 36.4% | 39.1% | 38.3% |
+
+**My first cut of that was not enough**, and measuring whole games said so.
+It only withheld the bonus, which left a stale trick looking like a
+Take-a-shot with a few more giveaways — and calling the flea flicker on every
+possession came out as the **best** strategy in the game:
+
+| calling every possession | margin | before the fix |
+| --- | --- | --- |
+| all four verticals | −2.57 | −2.65 |
+| a real mix | −2.64 | −2.66 |
+| run then trick | −3.83 | −3.38 |
+| all inside zone | −5.05 | −5.05 |
+| two tricks | −6.57 | **−1.61** |
+| **all tricks** | **−6.98** | **−1.54** ← *was the best* |
+
+So being read now costs you: a trick they have seen is **worse** than an
+honest play, not merely less good. Trick spam went from the best strategy in
+the game to the worst, by four and a half points against a real mix.
+
+### A big play exists now
+
+An explosive play is more yards in fewer snaps — which the clock then feels,
+because a drive that goes 60 yards in four plays takes less time than one
+that goes 60 in nine. The flea flicker breaks one 38.5% of the time. Before
+this phase, nothing ever broke.
+
+Report row 35 covers it, and asserts the shape rather than the numbers: every
+play names a real call and lives in a real formation, every trick contradicts
+its own formation's tell, no scheme carries every set, and what the defense
+is about to line up in is reachable by no client role — seeing their answer
+before you commit would be the whole game.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
@@ -2320,9 +2577,9 @@ bracket belongs). The ledger accepts a negative delta for spending (the
 facilities, the reports and the signings use it), and
 `franchise_activity` is the record every future reward derives from. The
 simulator, the offseason, the market, the conference, injuries, the bowl,
-trades and the staff are each versioned (`sim_v2`, `offseason_v1`,
+trades and the staff are each versioned (`sim_v4`, `offseason_v1`,
 `market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
 `staff_v2`, `scouting_v1`, `development_v1`, `league_v1`, `rank_v1`, `packs_v1`,
-`career_v1`, `snap_v1`, `moment_v1`) so a retuned one is a new version and old boxes, old reports,
+`career_v1`, `snap_v1`, `moment_v1`, `clock_v1`, `defense_v1`, `playbook_v1`) so a retuned one is a new version and old boxes, old reports,
 old classes, old tables, old deals and old coaches stay true to the rules
 they were played under.
