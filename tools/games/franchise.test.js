@@ -2407,12 +2407,124 @@ fresh();
   chk('the report grew to thirty-three rows', /select 32, 'the game is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 13, 'the drives you call'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 13);
-  chk('and the report checks the same number',
-    /\(public\.games_schema\(\)->>'franchise'\)::int = 13/.test(SQL));
+
 
   has(README, 'snap_v1', 'the README documents the calls');
   has(README, 'never a result', 'and states the rule the whole phase rests on');
+
+  /* ═══ 24. KEY MOMENTS (PHASE 14) ═════════════════════════════════════════
+     Measured first. Fifteen hundred games between two IDENTICAL sides: by the
+     last possession only 44% are within a score. The first fix I tried — late
+     urgency for the trailing side — moved the margin 12.3 → 11.9 and the live
+     finishes 43.9% → 44.1%, which is nothing, because pushing buys variance
+     rather than points. And it SHOULD not close the gap: real football
+     averages eleven or twelve points of margin too.
+
+     So the football is not the fault. The game never knew which possessions
+     mattered. Nothing in this phase touches how a drive resolves, and the
+     assertions below are built to keep it that way. */
+  eq('moments are moment_v1', F.MOMENT_VERSION, 'moment_v1');
+  chk('and the SQL says the same', /'version', 'moment_v1'/.test(SQL));
+
+  /* the published table, pinned number for number */
+  Object.keys(F.MOMENTS).forEach(k => {
+    chk('the rule ' + k + ' matches the SQL',
+      new RegExp("'" + k + "', " + F.MOMENTS[k].toFixed(2).replace(/\.00$/, '')).test(SQL)
+      || SQL.indexOf("'" + k + "', " + F.MOMENTS[k]) >= 0);
+  });
+
+  /* THE STAKE. Two halves, each obviously right on its own. */
+  eq('a tied game on the last possession is everything', F.stake(0, 1), 1);
+  eq('a tied first quarter decides nothing', F.stake(0, 9), 0);
+  eq('and neither does four scores down with one to play', F.stake(28, 1), 0);
+  eq('a possession that cannot happen is worth nothing', F.stake(0, 0), 0);
+  chk('the stake never leaves [0, 1]', () => {
+    for (let g = -60; g <= 60; g++) for (let l = 0; l <= 20; l++) {
+      const v = F.stake(g, l);
+      if (!(v >= 0 && v <= 1)) return false;
+    }
+    return true;
+  });
+  chk('closer is never worth less', () => {
+    for (let l = 1; l <= 8; l++) for (let g = 0; g < 60; g++) {
+      if (F.stake(g, l) < F.stake(g + 1, l)) return false;
+    }
+    return true;
+  });
+  chk('later is never worth less', () => {
+    for (let g = 0; g <= 20; g++) for (let l = 1; l < 20; l++) {
+      if (F.stake(g, l) < F.stake(g + 0, l + 1)) return false;
+    }
+    return true;
+  });
+  chk('a possession is worth the same to the side defending a lead as to the side chasing it',
+    F.stake(7, 2) === F.stake(-7, 2) && F.stake(3, 1) === F.stake(-3, 1));
+  chk('a key moment is rare enough to mean something',
+    F.isKey(F.stake(0, 1)) && F.isKey(F.stake(7, 1)) && !F.isKey(F.stake(0, 4))
+    && !F.isKey(F.stake(0, 9)) && !F.isKey(F.stake(21, 1)));
+
+  /* THE LOAD-BEARING ONE. This phase reads the game; it does not play it. */
+  chk('the simulator is still sim_v2: nothing here changes how a drive resolves',
+    /'sim', 'sim_v2'/.test(SQL) && !/sim_v3/.test(SQL));
+  chk('the stake is computed from the running score, before anything resolves', () => {
+    const sim = (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0];
+    /* it must be drawn from pts_me/pts_op, never from a fresh roll */
+    return /v_stake := public\.franchise_stake\(pts_me - pts_op, v_left\);/.test(sim)
+      && !/random\(\)[^\n]*stake/i.test(sim);
+  });
+  chk('and both the stake and the story are immutable, so neither can consume a draw',
+    /create or replace function public\.franchise_stake\(p_gap integer, p_left integer\)\nreturns numeric language sql immutable/.test(SQL)
+    && /create or replace function public\.franchise_game_story\(p_drives jsonb\)\nreturns jsonb language sql immutable/.test(SQL));
+  chk('a possession is one moment, not two: both drives share a stake, so only yours is counted',
+    /'key', coalesce\(\(select count\(\*\) from d where \(x->>'key'\)::boolean and x->>'side' = 'me'\), 0\)/.test(SQL));
+
+  /* THE REEL IS DERIVED, so there is nothing to keep in step */
+  chk('there is no table of moments to drift out of step with the boxes',
+    !/create table if not exists public\.franchise_moment/.test(SQL)
+    && /jsonb_array_elements\(g\.box->'story'->'key_drives'\)/.test(SQL));
+  chk('a franchise reads its own reel and nobody else\'s',
+    /v_f uuid := public\.franchise_of\(p_secret\);/.test(
+      (SQL.match(/create or replace function public\.franchise_reel[\s\S]*?\n\$\$;/) || [''])[0]));
+
+  /* PLAYING IT OUT is quick play for what is left, not a shortcut past it */
+  chk('every possession left is called by the published default',
+    /set calls = coalesce\(calls, '\[\]'::jsonb\) \|\| to_jsonb\(public\.franchise_snaps\(\)->>'default'\)/.test(SQL));
+  chk('and it finishes through the same door every other game goes through',
+    /return public\.franchise_play_game\(v_f, now\(\)\)\s*\n?\s*\|\| jsonb_build_object\('called', jsonb_array_length\(coalesce\(g\.calls, '\[\]'::jsonb\)\),/.test(SQL));
+  chk('the fill cannot spin on a pathological seed',
+    /exit when v_guard > 60;/.test(SQL));
+
+  ['franchise_moments()', 'franchise_stake(integer, integer)', 'franchise_game_finish(text)', 'franchise_reel(text, integer)']
+    .forEach(f => chk('the move ' + f.split('(')[0] + ' is open to every franchise',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* the page says it out loud */
+  has(GAMEDAY, 'This one decides it', 'Game Day names a key moment');
+  has(GAMEDAY, 'id="finishBtn"', 'and offers a way out of a game already over');
+  has(GAMEDAY, 'Play the rest out', 'by name');
+  chk('the page asks the library for the stake rather than computing its own',
+    /FR\.stake\(me-op,left\)/.test(GAMEDAY) && /FR\.isKey\(st\)/.test(GAMEDAY)
+    && /FR\.gameFinish\(\)/.test(GAMEDAY));
+  chk('a way out is offered only when nothing is riding on it',
+    /!key&&st<0\.05&&left>1&&CALLED\.drives\.length/.test(GAMEDAY));
+  chk('and the stale-script guard knows the new moves',
+    /EDFranchise\.stake/.test(GAMEDAY) && /EDFranchise\.gameFinish/.test(GAMEDAY));
+  has(GAMEDAY, 'The story', 'every result card carries what happened to the lead');
+  chk('the story comes off the box rather than being recomputed in the page',
+    /var st=box\.story;/.test(GAMEDAY) && /st\.lead_changes/.test(GAMEDAY) && /st\.go_ahead/.test(GAMEDAY));
+  chk('every class the moment draws is defined in the stylesheet',
+    ['sn-key', 'sn-out', 'sn-story'].every(c => FRCSS.indexOf('.' + c) >= 0)
+    && FRCSS.indexOf('.sn-board.key') >= 0 && FRCSS.indexOf('.sn-log li.key') >= 0);
+
+  chk('the report grew to thirty-four rows', /select 33, 'moments are '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 14, 'key moments'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 14);
+  chk('and the report checks the same number',
+    /\(public\.games_schema\(\)->>'franchise'\)::int = 14/.test(SQL));
+
+  has(README, 'moment_v1', 'the README documents moments');
+  has(README, 'The football is not broken', 'and says what the measurement actually found');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

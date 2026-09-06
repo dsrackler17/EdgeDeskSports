@@ -2198,6 +2198,118 @@ that way is a game called **Balanced** the whole way through — the zero row of
 the table above. Nobody is made to tap twelve times to see a result, and every
 game already in the record was played under exactly the rules it says it was.
 
+## Phase 14 — key moments
+
+Measured before anything was written. Four hundred real games, and then
+fifteen hundred more between two **identical** sides so nothing here could
+be blamed on one team simply being better:
+
+| possession | 1 | 4 | 8 | 10 | 12 |
+| --- | --- | --- | --- | --- | --- |
+| still live (within one score) | 100% | 67% | 51% | 46% | **44%** |
+| average gap | 2.9 | 7.0 | 9.9 | 11.1 | **12.3** |
+
+By the last possession only **forty-four per cent** of games are within a
+score, and the leader has stopped changing about two fifths of the way in.
+You call twelve possessions and more than half the late ones are taps on a
+game already over.
+
+### The first fix I tried was the wrong one
+
+I gave the trailing side urgency late — push when behind, grind when ahead,
+mapped onto the `snap_v1` calls the game already has — and measured it:
+
+| | average margin | live finishes |
+| --- | --- | --- |
+| before | 12.3 | 43.9% |
+| with late urgency | 11.9 | 44.1% |
+
+Nothing. Pushing raises scoring *and* giveaways, so it buys variance rather
+than points: it widens the distribution without closing the gap.
+
+### The football is not broken
+
+And it should not close the gap. Real games average about eleven or twelve
+points of margin too. Blowouts are what football does. Building a rubber
+band to hide that would have made the simulator worse in order to chase
+drama — the same mistake Phase 10 found in the league and tore out.
+
+So the fault was never the football. It is that **the game did not know
+which possessions mattered.** All twelve were presented identically, none
+was ever marked, none was ever remembered, and you were made to tap through
+the dead ones.
+
+### The stake — `moment_v1`
+
+Every possession gets a number in `[0, 1]`: how much this one could swing
+the game. Two halves, each obviously right on its own, multiplied together.
+
+* **Lateness** — nothing is at stake in the first quarter of a tied game,
+  because there is a whole game left to put it right.
+* **Closeness** — nothing is at stake three scores down, because there is
+  not.
+
+| situation | stake |
+| --- | --- |
+| tied, last possession | **1.000** |
+| a score down, last possession | 0.778 |
+| tied, two to play | 0.750 |
+| two scores down, two to play | 0.292 |
+| tied, nine to play | 0.000 |
+| three scores down, last possession | 0.000 |
+
+At or above **0.50** the possession is a **key moment**: Game Day marks it,
+says what is riding on it, and the call you make there is the one the game
+is remembered for. That was always true and had never once been said out
+loud.
+
+Measured between even sides, a game has **1.36** key possessions, a third
+have none at all, and half have two or more. A third of games with no
+moment is the right answer — if every game had one, none would.
+
+### Nothing here touches how a drive resolves
+
+This is the load-bearing claim, and it is proved rather than asserted. The
+stake is computed from the running score the simulator already keeps, so it
+consumes no randomness. A hundred and twenty seeded games were played under
+the old file and the new one:
+
+| | games | same final score | same every drive |
+| --- | --- | --- | --- |
+| before vs after | 120 | **120** | **120** |
+
+Identical outcomes, yards and plays. The simulator is still `sim_v2`.
+
+### The story
+
+Every box now carries what happened to the lead — how often it changed
+hands, the drive that took it for the last time and kept it, the biggest
+moment played, and the possession after which it was over. Derived on the
+server from the drive log the box already holds, so it cannot disagree with
+the game.
+
+### Play it out
+
+When the stake is gone, one tap finishes the game rather than eleven. It is
+not a shortcut past the football: every possession left is called
+**Balanced** and resolved by the same simulator, which is exactly what quick
+play has always been, and it ends through `franchise_play_game()` like every
+other game.
+
+### The reel
+
+Sixty seasons of football and nothing stood out from anything else.
+`franchise_reel()` returns the possessions that decided games, across every
+season, ordered by what was at stake. It is **derived from the boxes already
+stored** — no new table, no new policy, nothing to keep in step. The moments
+a franchise remembers are exactly the ones it actually played.
+
+Report row 33 covers it, and asserts the shape rather than the numbers: the
+stake never leaves `[0, 1]`, closer is never worth less, later is never
+worth less, a possession is worth the same to the side defending a lead as
+to the side chasing it, and there is no table of moments anywhere in the
+schema.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
@@ -2211,6 +2323,6 @@ simulator, the offseason, the market, the conference, injuries, the bowl,
 trades and the staff are each versioned (`sim_v2`, `offseason_v1`,
 `market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
 `staff_v2`, `scouting_v1`, `development_v1`, `league_v1`, `rank_v1`, `packs_v1`,
-`career_v1`, `snap_v1`) so a retuned one is a new version and old boxes, old reports,
+`career_v1`, `snap_v1`, `moment_v1`) so a retuned one is a new version and old boxes, old reports,
 old classes, old tables, old deals and old coaches stay true to the rules
 they were played under.

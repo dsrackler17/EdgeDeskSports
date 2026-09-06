@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906o">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906o">
+<link rel="stylesheet" href="/games/games.css?v=20260906p">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906p">
 </head>
 <body>
 <div id="gh"></div>
@@ -54,17 +54,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906o"></script>
-<script src="/games/lib/scoring.js?v=20260906o"></script>
-<script src="/games/lib/challenge.js?v=20260906o"></script>
-<script src="/games/lib/research_state.js?v=20260906o"></script>
-<script src="/games/lib/attribution.js?v=20260906o"></script>
-<script src="/games/lib/store.js?v=20260906o"></script>
-<script src="/games/lib/dynasty.js?v=20260906o"></script>
-<script src="/games/lib/social.js?v=20260906o"></script>
-<script src="/games/lib/auth.js?v=20260906o"></script>
-<script src="/games/lib/franchise.js?v=20260906o"></script>
-<script src="/games/games.js?v=20260906o"></script>
+<script src="/games/lib/week.js?v=20260906p"></script>
+<script src="/games/lib/scoring.js?v=20260906p"></script>
+<script src="/games/lib/challenge.js?v=20260906p"></script>
+<script src="/games/lib/research_state.js?v=20260906p"></script>
+<script src="/games/lib/attribution.js?v=20260906p"></script>
+<script src="/games/lib/store.js?v=20260906p"></script>
+<script src="/games/lib/dynasty.js?v=20260906p"></script>
+<script src="/games/lib/social.js?v=20260906p"></script>
+<script src="/games/lib/auth.js?v=20260906p"></script>
+<script src="/games/lib/franchise.js?v=20260906p"></script>
+<script src="/games/games.js?v=20260906p"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or franchise.js for
    longer than it keeps this page, and a page built for the new library then
@@ -73,7 +73,7 @@
    from here on; this is the belt for the braces: if a required function is
    missing, say so and offer a fresh load instead of a dead screen. */
 (function(){
-  var need=['EDFranchise.playWeek','EDFranchise.gameOpen','EDFranchise.gameCall','EDFranchise.snapCall','EDFranchise.driveLine','EDFranchise.gamePhase','EDFranchise.schedule','EDFranchise.challengeAccept','EDFranchise.ladder','EDGames.saveCard','EDGames.franchiseReady'];
+  var need=['EDFranchise.playWeek','EDFranchise.gameOpen','EDFranchise.gameCall','EDFranchise.snapCall','EDFranchise.driveLine','EDFranchise.stake','EDFranchise.gameFinish','EDFranchise.gamePhase','EDFranchise.schedule','EDFranchise.challengeAccept','EDFranchise.ladder','EDGames.saveCard','EDGames.franchiseReady'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -258,6 +258,27 @@
         +'<span class="r">'+esc(i.label||'Out')+' · '+esc(i.games|0)+' game'+((i.games|0)===1?'':'s')+'</span></li>';
     }).join('')+'</ul>';
   }
+  /* WHAT HAPPENED TO THE LEAD (moment_v1). Derived on the server from the
+     drive log the box already carries, so it cannot disagree with the game. */
+  function storyCard(box,f,opp){
+    var st=box.story;
+    if(!st)return '';
+    var parts=[];
+    if((st.lead_changes|0)>0)parts.push('the lead changed hands '+(st.lead_changes===1?'once':st.lead_changes+' times'));
+    if((st.key|0)>0)parts.push((st.key===1?'one possession':st.key+' possessions')+' decided it');
+    if((st.decided_at|0)>0&&(st.possessions|0)>0){
+      var after=(st.possessions|0)-(st.decided_at|0);
+      if(after>0)parts.push('it was settled with '+after+' still to play');
+    }
+    if(!parts.length&&!st.go_ahead&&!st.biggest)return '';
+    var ga=st.go_ahead,bg=st.biggest;
+    return '<div class="sn-story">'
+      +'<div class="k">The story</div>'
+      +(parts.length?'<div class="t">'+esc(parts.join(', ').replace(/^./,function(c){return c.toUpperCase();}))+'.</div>':'')
+      +(ga?'<div class="l"><b>Went ahead for good</b> · Q'+esc(ga.q|0)+' · '+esc(FR.momentLine(ga))+'</div>':'')
+      +(bg&&(!ga||bg.n!==ga.n||bg.side!==ga.side)?'<div class="l"><b>Biggest moment</b> · Q'+esc(bg.q|0)+' · '+esc(FR.momentLine(bg))+'</div>':'')
+      +'</div>';
+  }
   function resultCard(game,snap,extra){
     extra=extra||{};
     var f=snap.franchise,box=game.box||{},opp=game.opponent||{},ss=extra.season||snap.season||{};
@@ -272,6 +293,7 @@
       +'<div class="res"><b>'+(res==='W'?'WIN':res==='L'?'LOSS':'TIE')+'</b><span>'+(game.home?'vs':'at')+' '+esc(FR.opponentTitle(opp))+'</span></div>'
       +'<div class="side" style="'+FR.themeVars(opp.theme)+'">'+FR.logoSvg(opp.logo,44,opp.theme)+'<div class="ab">'+esc(opp.abbr)+'</div><div class="n">'+esc(game.score_against|0)+'</div></div>'
       +'</div>'
+      +storyCard(box,f,opp)
       +(extra.rewards||'')
       +(potg?'<div class="potg"><div class="k">Player of the game</div><div class="n">'+esc(potg.name)+' <span>'+esc(potg.position)+(potg.jersey!=null?' · #'+esc(potg.jersey):'')+'</span></div>'
         +'<div class="l">'+esc(FR.statsLine(potg.position,potg.stats))+'</div></div>':'')
@@ -591,13 +613,20 @@
     var last=CALLED.drives.length?CALLED.drives[CALLED.drives.length-1]:null;
     var me=last?last.me|0:0,op=last?last.op|0:0;
     var n=(CALLED.called|0)+1,of=CALLED.of|0,done=n>of;
+    /* WHAT THIS ONE IS WORTH (moment_v1). The same number the server computes
+       and stamps on the drive — this page only says it out loud. */
+    var left=Math.max(0,of-(CALLED.called|0)),st=FR.stake(me-op,left),key=FR.isKey(st);
     return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season I')+' · '
       +(g.bowl?esc(g.bowl_name||'The bowl'):'Week '+esc(g.week)+' of '+esc(ss.weeks||8))+'</div>'
-      +'<div class="sn-board">'
+      +'<div class="sn-board'+(key?' key':'')+'">'
       +'<div class="side"><div class="ab">'+esc(f.abbr)+'</div><div class="n">'+esc(me)+'</div></div>'
       +'<div class="mid">'+(done?'Last possession':'Possession '+esc(n)+' of '+esc(of))+'<br>'+(g.home?'Home':'Away')+'</div>'
       +'<div class="side"><div class="ab">'+esc(opp.abbr)+'</div><div class="n">'+esc(op)+'</div></div>'
       +'</div>'
+      +(key
+        ?'<div class="sn-key"><div class="t">This one decides it</div>'
+          +'<div class="s">'+esc(FR.stakeLine(me-op,left))+'. Whatever you call here is the call the game is remembered for.</div></div>'
+        :'')
       +'<div class="eyebrow" style="margin-top:14px">Your call</div>'
       +'<ul class="sn-calls">'+FR.SNAPS.calls.map(function(c){
           return '<li><button type="button" class="snapBtn" data-call="'+esc(c.key)+'">'
@@ -605,6 +634,13 @@
         }).join('')+'</ul>'
       +'<div class="ftp" style="margin-top:8px">A call is one more input beside home field, preparation and the scheme matchup — the server resolves the drive and this page is told what happened. '
       +'Leave and come back and the game is where you left it.</div>'
+      /* THE MEASUREMENT SAID HALF THE LATE POSSESSIONS ARE TAPS ON A GAME
+         ALREADY OVER. When nothing is at stake, one tap finishes it — every
+         possession left called Balanced, which is what quick play always was. */
+      +(!key&&st<0.05&&left>1&&CALLED.drives.length
+        ?'<div class="sn-out"><div class="s">Nothing is riding on the '+esc(left)+' possessions left.</div>'
+          +'<button class="btn" type="button" id="finishBtn">Play the rest out</button></div>'
+        :'')
       +(CALLED.drives.length
         ?'<div class="eyebrow" style="margin-top:16px">The drives so far</div><ul class="sn-log">'
           +CALLED.drives.map(function(d){return driveRow(d,f,opp);}).join('')+'</ul>'
@@ -612,7 +648,7 @@
   }
   function driveRow(d,f,opp){
     var mine=d.side==='me',scored=(d.pts|0)>0;
-    return '<li class="'+(mine?'me':'')+(scored?' sc':'')+'">'
+    return '<li class="'+(mine?'me':'')+(scored?' sc':'')+(d.key?' key':'')+'">'
       +'<span class="q">Q'+esc(d.q|0)+'</span>'
       +'<span class="d">'+esc(FR.driveLine(d))
       +(mine&&d.call?'<em>You called '+esc((FR.snapCall(d.call)||{}).name||d.call)+'</em>':(mine?'':'<em>'+esc(FR.opponentTitle(opp))+'</em>'))
@@ -627,6 +663,8 @@
     Array.prototype.forEach.call(bs,function(b){
       b.addEventListener('click',function(){makeCall(b,bs,snap,ph);});
     });
+    var fb=$('finishBtn');
+    if(fb)fb.addEventListener('click',function(){playOut(fb,bs,snap,ph);});
     try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){}
   }
   function makeCall(btn,all,snap,ph){
@@ -651,6 +689,29 @@
       /* the server sent back this possession and whatever answered it */
       CALLED={drives:CALLED.drives.concat(d.drive||[]),of:d.drives|0,called:d.called|0};
       renderCalled(snap,ph);
+    });
+  }
+
+  /* one tap for a game that is already over. The server calls the published
+     default for every possession left and finishes through franchise_play_game
+     — the same door quick play and the last call both go through. */
+  function playOut(btn,all,snap,ph){
+    btn.disabled=true;btn.textContent='Playing it out…';
+    Array.prototype.forEach.call(all,function(b){b.disabled=true;});
+    FR.gameFinish().then(function(r){
+      if(!r.ok||!r.data||!r.data.game){
+        G.toast(r.message||'The game could not be played out. Try again.');
+        btn.disabled=false;btn.textContent='Play the rest out';
+        Array.prototype.forEach.call(all,function(b){b.disabled=false;});
+        return;
+      }
+      var d=r.data,g=d.game;
+      G.track('weekly_game_completed',{week:g.week,season:d.season?d.season.number:null,result:g.result,score_for:g.score_for,score_against:g.score_against,rival:!!g.rival,ot:!!g.ot,xp:d.rewards?d.rewards.xp:null,mode:'played_out'});
+      (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'gameday'});});
+      if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
+      CALLED=null;
+      showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
+      return FR.home().then(function(){return FR.schedule();}).then(function(sc){if(sc.ok&&sc.data){SCHED=sc.data;}renderAfter();});
     });
   }
 

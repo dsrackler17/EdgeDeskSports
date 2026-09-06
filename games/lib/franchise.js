@@ -64,7 +64,8 @@
       'the development program and the league',
       'the rank and the packs',
       'the long haul: careers and a building you can staff',
-      'the drives you call'
+      'the drives you call',
+      'key moments'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -997,6 +998,55 @@
     return who + ' ' + what + ' — ' + (d.plays | 0) + ' plays, ' + (d.yds | 0) + ' yards';
   }
 
+  /* ── KEY MOMENTS (Phase 14, moment_v1) ───────────────────────────────────
+     Measured before it was written. Fifteen hundred games between two
+     IDENTICAL sides: by the last possession only 44% are within a score, and
+     the average gap runs 2.9 → 7.0 → 9.9 → 12.3. You call twelve possessions
+     and more than half the late ones are taps on a game already over.
+
+     The first fix I tried was wrong: late urgency for the trailing side moved
+     the margin from 12.3 to 11.9 and the live finishes from 43.9% to 44.1%.
+     Pushing buys variance, not points. And it SHOULD NOT close the gap — real
+     football averages eleven or twelve points of margin too. The football is
+     not broken; the game just never knew which possessions mattered.
+
+     So nothing here touches how a drive resolves. The stake is computed from
+     the running score the simulator already keeps — a hundred and twenty
+     seeded games play out identically before and after this phase. */
+  var MOMENT_VERSION = 'moment_v1';
+  var MOMENTS = { key_stake: 0.50, one_score: 8, close: 3, late: 4, dead: 21 };
+
+  /* WHAT IS AT STAKE ON ONE POSSESSION, in [0, 1]. Two halves, each obviously
+     right on its own, multiplied together: nothing is at stake in the first
+     quarter of a tied game, and nothing is at stake three scores down.
+     Pinned number for number to franchise_stake() by the test file. */
+  function stake(gap, left) {
+    var l = left | 0;
+    if (l <= 0) return 0;
+    var late = MOMENTS.late;
+    var lateness = Math.max(0, Math.min(1, (late + 1 - Math.min(late + 1, l)) / late));
+    var closeness = Math.max(0, Math.min(1,
+      1 - Math.max(0, Math.abs(gap | 0) - MOMENTS.close) / (MOMENTS.dead - MOMENTS.close)));
+    return Math.round(lateness * closeness * 1000) / 1000;
+  }
+  function isKey(s) { return (+s || 0) >= MOMENTS.key_stake; }
+  /* "Down 4 with two to play" — what a possession is worth, in words */
+  function stakeLine(gap, left) {
+    var g = gap | 0, l = left | 0;
+    if (l <= 0) return '';
+    var where = g === 0 ? 'Tied' : (g > 0 ? 'Up ' : 'Down ') + Math.abs(g);
+    return where + ' with ' + (l === 1 ? 'one possession left' : l + ' to play');
+  }
+  /* the one line a moment is worth telling somebody */
+  function momentLine(m) {
+    m = obj(m);
+    var what = m.outcome === 'td' ? 'a touchdown' : m.outcome === 'fg' ? 'a field goal'
+             : m.outcome === 'fg_miss' ? 'a missed kick' : m.outcome === 'turnover' ? 'a giveaway'
+             : 'a punt';
+    var c = m.call ? (snapCall(m.call) || {}).name : null;
+    return (c ? c + ' — ' : '') + what + ', ' + (m.me | 0) + '–' + (m.op | 0);
+  }
+
   function staffSpecialtyCount(level) {
     return Math.min(STAFF.specialty_max, Math.floor(Math.max(1, level | 0) / STAFF.specialty_every));
   }
@@ -1545,6 +1595,17 @@
     });
   }
 
+  /* KEY MOMENTS (Phase 14). Playing a decided game out is quick play for the
+     possessions that are left — the server calls the published default for
+     each and finishes through the same door. The reel is a read: the moments
+     this franchise actually played, derived from the boxes already stored. */
+  function gameFinish() {
+    return rpc('franchise_game_finish', withSecret({})).then(moveThen);
+  }
+  function reel(limit) {
+    return rpc('franchise_reel', withSecret({ p_limit: Math.max(1, Math.min(100, limit | 0 || 20)) }));
+  }
+
   function development() { return rpc('franchise_development_board', withSecret({})); }
   function develop(player) {
     return rpc('franchise_develop', withSecret({ p_player: String(player || '') })).then(moveThen);
@@ -1752,6 +1813,8 @@
     scoutBand: scoutBand, scoutCost: scoutCost, scoutLift: scoutLift, scoutScore: scoutScore, scoutLine: scoutLine,
     CAREER_VERSION: CAREER_VERSION, CAREER: CAREER,
     SNAP_VERSION: SNAP_VERSION, SNAPS: SNAPS, snapCall: snapCall, snapLine: snapLine,
+    MOMENT_VERSION: MOMENT_VERSION, MOMENTS: MOMENTS, stake: stake, isKey: isKey,
+    stakeLine: stakeLine, momentLine: momentLine, gameFinish: gameFinish, reel: reel,
     driveLine: driveLine, gameOpen: gameOpen, gameCall: gameCall,
     rankCoachPoints: rankCoachPoints, staffHireLevel: staffHireLevel,
     STAFF_VERSION: STAFF_VERSION, STAFF: STAFF, staffCost: staffCost, staffCostBetween: staffCostBetween,

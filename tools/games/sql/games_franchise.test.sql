@@ -106,6 +106,9 @@ declare
   rkf uuid; rk jsonb; pk jsonb; pk2 jsonb; nlow integer; nhigh integer; nrank integer;
   -- the drives you call
   snf uuid; sn jsonb; sn2 jsonb; called integer; ndr integer; scored integer; before jsonb;
+  -- key moments
+  mnf uuid; mn jsonb; mstory jsonb; mdrv jsonb; nkey integer;
+  SEC_MN constant text := 'device-secret-momentmomentmomentmoment1';
   SEC_SN constant text := 'device-secret-snapsnapsnapsnapsnapsnap1';
   SEC_RK constant text := 'device-secret-rankrankrankrankrankrank1';
   SEC_DV constant text := 'device-secret-developdevelopdevelopdev';
@@ -4150,6 +4153,205 @@ begin
   perform pg_temp.as_owner();
   perform pg_temp.ok('a call with a secret that owns no franchise is refused',
     caught = '28000', caught);
+
+-- ═══ 27. KEY MOMENTS ══════════════════════════════════════════════════════
+-- Measured before it was written: between two IDENTICAL sides, only 44% of
+-- games are within a score by the last possession. Late urgency for the
+-- trailing side moved that to 44.1% — nothing — because pushing buys variance
+-- rather than points, and real football averages eleven or twelve points of
+-- margin anyway. The football is not the fault; the game never knew which
+-- possessions mattered. So NOTHING HERE TOUCHES HOW A DRIVE RESOLVES, and
+-- that is the first thing this section asserts.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('moments are moment_v1 and the stake is a pure function',
+    public.franchise_moments()->>'version' = 'moment_v1'
+    and (select bool_and(p.provolatile = 'i')
+           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public'
+            and p.proname in ('franchise_moments', 'franchise_stake', 'franchise_is_key', 'franchise_game_story')));
+
+  -- ── THE STAKE ───────────────────────────────────────────────────────────
+  perform pg_temp.ok('a tied game on the last possession is everything, and a blowout is nothing',
+    public.franchise_stake(0, 1) = 1
+    and public.franchise_stake(0, 9) = 0
+    and public.franchise_stake(28, 1) = 0
+    and public.franchise_stake(0, 0) = 0);
+  perform pg_temp.ok('the stake never leaves [0, 1]',
+    (select bool_and(public.franchise_stake(t.g, l.l) between 0 and 1)
+       from generate_series(-60, 60) as t(g), generate_series(0, 20) as l(l)));
+  perform pg_temp.ok('closer is never worth less, and later is never worth less',
+    (select bool_and(public.franchise_stake(t.g, 2) >= public.franchise_stake(t.g + 1, 2))
+       from generate_series(0, 60) as t(g))
+    and (select bool_and(public.franchise_stake(7, t.l) >= public.franchise_stake(7, t.l + 1))
+           from generate_series(1, 20) as t(l)));
+  perform pg_temp.ok('a possession is worth the same to the side defending a lead as to the side chasing it',
+    (select bool_and(public.franchise_stake(t.g, 2) = public.franchise_stake(-t.g, 2))
+       from generate_series(0, 40) as t(g)));
+
+  -- ── THE PHASE READS THE GAME; IT DOES NOT PLAY IT ───────────────────────
+  -- the same seed twice is still the same game, stake tags and all
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Moments', 'Ridgeline', 'MMT', 'star', 'forest', 'pro_style', 'four_three', SEC_MN);
+  mnf := (v->'franchise'->>'id')::uuid;
+  perform public.franchise_start_season(SEC_MN);
+  perform pg_temp.as_owner();
+  select id into gid from public.franchise_games
+   where franchise_id = mnf and season_number = 1 and week = 1;
+  box := public.franchise_sim(mnf, gid);
+  box2 := public.franchise_sim(mnf, gid);
+  perform pg_temp.ok('a seeded game is still the same game every time, stake and all',
+    box = box2 and box->>'sim' = 'sim_v2' and box->>'moment' = 'moment_v1');
+  perform pg_temp.ok('every possession carries what it was worth, and a stake sits in range',
+    (select bool_and(x ? 'stake' and x ? 'key' and x ? 'left'
+                 and (x->>'stake')::numeric between 0 and 1)
+       from jsonb_array_elements(box->'drives') x));
+  -- BOTH SIDES OF A POSSESSION SHARE ITS STAKE: it is a property of the game
+  -- state, not of who has the ball
+  perform pg_temp.ok('both drives in a possession are worth the same, because the stake is the situation',
+    (select bool_and(cnt = 1) from (
+       select count(distinct (x->>'stake')) as cnt
+         from jsonb_array_elements(box->'drives') x
+        group by (x->>'n')::int, (x->>'left')::int) q));
+  perform pg_temp.ok('and the stake agrees with the published function at every possession',
+    (select bool_and((x->>'stake')::numeric
+                     = public.franchise_stake((x->>'me')::int - (x->>'op')::int, (x->>'left')::int))
+       from jsonb_array_elements(box->'drives') with ordinality t(x, ord)
+      where x->>'side' = 'me' and (x->>'n')::int = 1));
+
+  -- ── THE STORY ───────────────────────────────────────────────────────────
+  mstory := box->'story';
+  perform pg_temp.ok('every box carries what happened to the lead',
+    mstory ? 'lead_changes' and mstory ? 'decided_at' and mstory ? 'go_ahead'
+    and mstory ? 'biggest' and mstory ? 'key' and mstory ? 'key_drives'
+    and (mstory->>'possessions')::int = jsonb_array_length(box->'drives'));
+  perform pg_temp.ok('a moment is counted once, not twice: only your own possessions are yours to have called',
+    (mstory->>'key')::int = (select count(*) from jsonb_array_elements(box->'drives') x
+                              where (x->>'key')::boolean and x->>'side' = 'me')
+    and (mstory->>'key')::int = jsonb_array_length(mstory->'key_drives'));
+  perform pg_temp.ok('the story never claims the lead changed more often than there were possessions',
+    (mstory->>'lead_changes')::int <= (mstory->>'possessions')::int
+    and (mstory->>'decided_at')::int <= (mstory->>'possessions')::int);
+  perform pg_temp.ok('a game with no drives has a story that says so, rather than throwing',
+    public.franchise_game_story('[]'::jsonb)->>'lead_changes' = '0'
+    and public.franchise_game_story(null)->>'possessions' = '0');
+  -- the go-ahead score really is the last time the lead changed hands
+  perform pg_temp.ok('the go-ahead drive is on the winning side and scored',
+    mstory->'go_ahead' is null
+    or ((mstory->'go_ahead'->>'pts')::int > 0
+        and sign((mstory->'go_ahead'->>'me')::int - (mstory->'go_ahead'->>'op')::int)
+            = sign((box->'final'->>'for')::int - (box->'final'->>'against')::int)));
+
+  -- A HAND-BUILT GAME, so the story is not at the mercy of a seed. Six
+  -- possessions: they lead, we tie it, we take it, they take it back, we take
+  -- it for good, then two possessions of nothing. THREE changes of who is in
+  -- front (a tie is nobody's lead, so it does not count as one), settled at
+  -- ordinal 6, and the go-ahead is the drive at n=4.
+  mdrv := '[
+    {"n":1,"side":"me","q":1,"pts":0,"me":0,"op":0,"stake":0.0,"key":false,"outcome":"punt","left":6},
+    {"n":1,"side":"op","q":1,"pts":7,"me":0,"op":7,"stake":0.0,"key":false,"outcome":"td","left":6},
+    {"n":2,"side":"me","q":2,"pts":7,"me":7,"op":7,"stake":0.0,"key":false,"outcome":"td","left":5},
+    {"n":2,"side":"op","q":2,"pts":0,"me":7,"op":7,"stake":0.0,"key":false,"outcome":"punt","left":5},
+    {"n":3,"side":"me","q":3,"pts":3,"me":10,"op":7,"stake":0.0,"key":false,"outcome":"fg","left":4},
+    {"n":3,"side":"op","q":3,"pts":7,"me":10,"op":14,"stake":0.25,"key":false,"outcome":"td","left":4},
+    {"n":4,"side":"me","q":4,"pts":7,"me":17,"op":14,"stake":0.75,"key":true,"outcome":"td","left":3},
+    {"n":4,"side":"op","q":4,"pts":0,"me":17,"op":14,"stake":0.75,"key":true,"outcome":"turnover","left":3},
+    {"n":5,"side":"me","q":4,"pts":0,"me":17,"op":14,"stake":0.75,"key":true,"outcome":"punt","left":2},
+    {"n":5,"side":"op","q":4,"pts":0,"me":17,"op":14,"stake":0.75,"key":true,"outcome":"punt","left":2},
+    {"n":6,"side":"me","q":4,"pts":3,"me":20,"op":14,"stake":0.75,"key":true,"outcome":"fg","left":1},
+    {"n":6,"side":"op","q":4,"pts":0,"me":20,"op":14,"stake":0.75,"key":true,"outcome":"punt","left":1}
+  ]'::jsonb;
+  mstory := public.franchise_game_story(mdrv);
+  perform pg_temp.ok('the story counts the lead changes rather than every score',
+    (mstory->>'lead_changes')::int = 3, mstory->>'lead_changes');
+  perform pg_temp.ok('it counts three key possessions, not six drives',
+    (mstory->>'key')::int = 3 and jsonb_array_length(mstory->'key_drives') = 3
+    and (select bool_and(x->>'side' = 'me') from jsonb_array_elements(mstory->'key_drives') x));
+  perform pg_temp.ok('it names the drive that took the lead for good',
+    (mstory->'go_ahead'->>'n')::int = 4 and mstory->'go_ahead'->>'side' = 'me'
+    and (mstory->'go_ahead'->>'pts')::int = 7, mstory->'go_ahead'->>'n');
+  perform pg_temp.ok('and the biggest thing that happened is the highest-stake score',
+    (mstory->'biggest'->>'stake')::numeric = 0.75
+    and (mstory->'biggest'->>'pts')::int > 0);
+  perform pg_temp.ok('and it knows the game was still live to the end',
+    (mstory->>'possessions')::int = 12
+    and (mstory->>'decided_at')::int = 6, mstory->>'decided_at');
+  -- a game nobody ever led differently: no lead changes, nothing to name
+  perform pg_temp.ok('a wire-to-wire win has no lead change and still tells a story',
+    (public.franchise_game_story('[
+       {"n":1,"side":"me","q":1,"pts":7,"me":7,"op":0,"stake":0.0,"key":false,"outcome":"td"},
+       {"n":1,"side":"op","q":1,"pts":0,"me":7,"op":0,"stake":0.0,"key":false,"outcome":"punt"}
+     ]'::jsonb)->>'lead_changes')::int = 0);
+
+  -- ── PLAY IT OUT ─────────────────────────────────────────────────────────
+  perform pg_temp.as_anon();
+  perform public.franchise_game_call('shot', SEC_MN);
+  v := public.franchise_game_finish(SEC_MN);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a decided game is played out in one, through the same door quick play uses',
+    (v->>'complete')::boolean and (v->>'played_out')::boolean
+    and v->'game'->>'result' in ('W', 'L', 'T') and v ? 'rewards');
+  perform pg_temp.ok('every possession that was left was called by the published default',
+    (select calls->>0 from public.franchise_games where id = gid) = 'shot'
+    and (select bool_and(c = public.franchise_snaps()->>'default')
+           from public.franchise_games g, jsonb_array_elements_text(g.calls) with ordinality t(c, ord)
+          where g.id = gid and ord > 1));
+  perform pg_temp.ok('and the game is final with a story on it',
+    (select status from public.franchise_games where id = gid) = 'final'
+    and (select g.box->'story'->>'possessions' from public.franchise_games g where g.id = gid) is not null);
+  -- nothing is replayable: a played-out game is as finished as any other
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_game_finish(SEC_MN);
+    caught := 'no error';
+  exception when others then caught := SQLSTATE; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a finished game cannot be played out again',
+    caught <> 'no error'
+    and (select count(*) from public.franchise_games where id = gid and status = 'final') = 1, caught);
+
+  -- ── THE REEL ────────────────────────────────────────────────────────────
+  perform pg_temp.as_anon();
+  mn := public.franchise_reel(SEC_MN, 5);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a franchise reads its own reel, derived from the boxes it actually played',
+    (mn->>'ok')::boolean and mn->>'version' = 'moment_v1'
+    and (mn->>'played')::int >= 1
+    and jsonb_array_length(mn->'moments') <= 5);
+  perform pg_temp.ok('every moment in the reel is one this franchise played',
+    (select coalesce(bool_and(exists (select 1 from public.franchise_games g
+                              where g.franchise_id = mnf and g.status = 'final'
+                                and g.season_number = (m->>'season')::int
+                                and g.week = (m->>'week')::int)), true)
+       from jsonb_array_elements(mn->'moments') m),
+    'moments: ' || jsonb_array_length(mn->'moments'));
+  perform pg_temp.ok('and the reel is ordered by what was at stake',
+    (select coalesce(bool_and(q.hi >= q.lo), true) from (
+       select (m->>'stake')::numeric as hi,
+              lead((m->>'stake')::numeric) over (order by ord) as lo
+         from jsonb_array_elements(mn->'moments') with ordinality t(m, ord)) q
+      where q.lo is not null));
+  -- somebody else's secret reads nothing of yours
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_reel(SEC_X, 5);
+    caught := 'no error';
+  exception when others then caught := SQLSTATE; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a reel needs a franchise of your own', caught = '28000', caught);
+  perform pg_temp.ok('the limit is held inside sane bounds',
+    jsonb_array_length(public.franchise_reel(SEC_MN, 100000)->'moments') <= 100
+    and public.franchise_reel(SEC_MN, -5) ? 'moments');
+
+  -- ── THE MOVES ARE OPEN; THERE IS NO TABLE TO GO STALE ───────────────────
+  perform pg_temp.ok('the rules and the stake are open to read, and the moves to every franchise',
+    has_function_privilege('anon', 'public.franchise_moments()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_stake(integer, integer)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_game_finish(text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_reel(text, integer)', 'execute'));
+  perform pg_temp.ok('no table of moments exists to drift out of step with the boxes',
+    not exists (select 1 from information_schema.tables
+                 where table_schema = 'public' and table_name like 'franchise_moment%'));
 
 end
 $test$;
