@@ -87,7 +87,7 @@ declare
   -- the weekly game
   gid uuid; gid2 uuid; seed0 text; opp0 jsonb; t0 timestamptz; box jsonb; box2 jsonb; k integer; w integer; l integer; nn integer;
   -- franchise vs franchise
-  h2h_tok text; cid2 uuid; cid3 uuid; ra0 integer; rb0 integer; kk integer;
+  h2h_tok text; cid2 uuid; cid3 uuid; ra0 integer; rb0 integer; kk integer; qb_a uuid;
   -- the offseason and the facilities
   fac jsonb; msg text; rep jsonb; rep2 jsonb; age0 jsonb; going jsonb;
   -- the draft and the market
@@ -1275,7 +1275,17 @@ begin
   select ladder_rating into ra0 from public.franchises where id = fa;
   select ladder_rating into rb0 from public.franchises where id = fb;
   select xp, team_credits, coach_points into xp0, tc0, cp0 from public.franchises where id = fb;
-  select (career_stats->>'games')::int into kk from public.game_players where franchise_id = fa and position = 'QB' and depth = 1;
+  -- PINNED TO ONE PLAYER, by id, with a floor of zero. Reading the count off
+  -- "the depth-one QB" twice is two queries that need not pick the same man —
+  -- nothing orders them — and a quarterback who has not played yet has no
+  -- 'games' key at all, so the count came back NULL, kk + 1 came back NULL,
+  -- and the whole assertion evaluated to NULL, which the runner fails. That
+  -- is what fired it about once in forty runs, with an empty detail message
+  -- because the detail was built from the same NULL.
+  select id, coalesce((career_stats->>'games')::int, 0) into qb_a, kk
+    from public.game_players
+   where franchise_id = fa and position = 'QB' and depth = 1
+   order by overall desc, id limit 1;
   perform pg_temp.ok('the fixture: both start the ladder at 1500 with no games', ra0 = 1500 and rb0 = 1500
     and (select ladder_games from public.franchises where id = fa) = 0);
   perform pg_temp.as_user(BOB);
@@ -1325,17 +1335,15 @@ begin
     and (select count(*) from public.franchise_ledger where kind = 'fc_win' and key = cid::text) = (case when v->'game'->>'result' = 'T' then 0 else 3 end)
     and (select count(distinct franchise_id) from public.franchise_ledger where kind = 'fc_played' and key = cid::text) = 2);
   perform pg_temp.ok('careers grew on both sides; the season lines did not — an exhibition is not a season game',
-    (select (career_stats->>'games')::int from public.game_players where franchise_id = fa and position = 'QB' and depth = 1) = kk + 1
-    and (select (career_stats->>'games')::int from public.game_players where franchise_id = fb and position = 'QB' and depth = 1) >= 1
+    (select coalesce((career_stats->>'games')::int, 0) from public.game_players where id = qb_a) = kk + 1
+    and (select coalesce(max((career_stats->>'games')::int), 0) from public.game_players
+          where franchise_id = fb and position = 'QB') >= 1
     and (select bool_and(season_stats = '{}'::jsonb) from public.game_players where franchise_id = fa),
-    'A''s QB was on ' || kk || ' and is on '
-    || coalesce((select (career_stats->>'games') from public.game_players
-                  where franchise_id = fa and position = 'QB' and depth = 1), 'no line')
-    || '; B''s QB is on '
-    || coalesce((select (career_stats->>'games') from public.game_players
-                  where franchise_id = fb and position = 'QB' and depth = 1), 'no line')
-    || '; A depth-1 QBs: ' || (select count(*) from public.game_players
-                                where franchise_id = fa and position = 'QB' and depth = 1)
+    'A''s QB was on ' || coalesce(kk::text, 'null') || ' and is on '
+    || coalesce((select (career_stats->>'games') from public.game_players where id = qb_a), 'no line')
+    || '; B''s best QB line is '
+    || coalesce((select max((career_stats->>'games')::int)::text from public.game_players
+                  where franchise_id = fb and position = 'QB'), 'none')
     || '; season lines written: ' || (select count(*) from public.game_players
                                        where franchise_id = fa and season_stats <> '{}'::jsonb));
   select c.box into box2 from public.franchise_challenges c where c.id = cid;
