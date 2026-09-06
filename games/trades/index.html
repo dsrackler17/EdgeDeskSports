@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Trades | EdgeDesk Games</title>
+<meta name="description" content="Trade players with the franchises in your conference: read their rosters, offer a deal, answer one. The server checks that a trade is legal, never that it is fair. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/trades">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/trades">
+<meta property="og:title" content="The trade floor — EdgeDesk Games">
+<meta property="og:description" content="Deal with the franchises in your conference. The server checks that a trade is legal, never that it is fair.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The trade floor — EdgeDesk Games">
+<meta name="twitter:description" content="Deal with the franchises in your conference. The server checks that a trade is legal, never that it is fair.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260906b">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906b">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Trades</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Opening the trade floor</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260906b"></script>
+<script src="/games/lib/scoring.js?v=20260906b"></script>
+<script src="/games/lib/challenge.js?v=20260906b"></script>
+<script src="/games/lib/research_state.js?v=20260906b"></script>
+<script src="/games/lib/attribution.js?v=20260906b"></script>
+<script src="/games/lib/store.js?v=20260906b"></script>
+<script src="/games/lib/dynasty.js?v=20260906b"></script>
+<script src="/games/lib/social.js?v=20260906b"></script>
+<script src="/games/lib/auth.js?v=20260906b"></script>
+<script src="/games/lib/franchise.js?v=20260906b"></script>
+<script src="/games/games.js?v=20260906b"></script>
+<script>
+/* STALE SCRIPT GUARD — the same belt every franchise page wears. */
+(function(){
+  var need=['EDFranchise.tradePartners','EDFranchise.tradeOffer','EDFranchise.tradeRespond',
+            'EDFranchise.tradesMine','EDFranchise.tradeSummary','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc;
+
+  var READY=G.boot('trades');
+  var BOARD=null,MINE=null;
+  /* what the player has picked, from each side */
+  var GIVE={},GET={},PARTNER=null;
+
+  function teamName(f){f=f||{};return ((f.city||'')+' '+(f.name||'')).trim();}
+  function mark(f,size){f=f||{};return FR.logoSvg(f.logo,size||30,f.theme);}
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dayLabel(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var d=new Date(t);return d.getDate()+' '+MON[d.getMonth()];
+  }
+  function keys(o){var k,out=[];for(k in o)if(o.hasOwnProperty(k)&&o[k])out.push(k);return out;}
+
+  /* ---- no franchise, or no conference ------------------------------------ */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Trades</div>'
+      +'<h1>Players change hands inside a conference.</h1>'
+      +'<p>That is the whole rule about who may deal with whom, and it is why the conference came first: a league of people who play each other '
+      +'every week is the only place a trade means anything — and the only place it is fair to let one franchise read another’s roster.</p>'
+      +'<ul class="fo-list"><li>Up to '+FR.TRADE.max_per_side+' players a side, either way.</li>'
+      +'<li>The server checks that a deal is <b>legal</b> — never that it is fair. That part is yours to argue about.</li>'
+      +'<li>Nothing is paid for a trade: no XP, no credits, no fee. Just players.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=trades" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    rooms.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'trades',game_type:'franchise'});});
+  }
+  function renderNoConference(b){
+    var me=(b&&b.me)||{};
+    stage.className='card';
+    stage.innerHTML='<div class="eyebrow">Trades</div>'
+      +'<div class="hq-id">'+mark(me,56)+'<div><div class="hq-city">'+esc(me.abbr||'')+'</div>'
+      +'<div class="hq-name">'+esc(teamName(me))+'</div>'
+      +'<div class="hq-line">No conference — nobody to deal with yet</div></div></div>'
+      +'<div class="fo-hero" style="margin-top:14px"><h1>Join a conference and the floor opens.</h1>'
+      +'<p>Trades happen between franchises in the same conference. Start one or take a friend’s link, and every roster in it '
+      +'becomes readable — and dealable — from here.</p></div>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/conference/">Open the conference</a></div>'
+      +'<div class="ftp" style="margin-top:12px">A deal is checked for legality, never for fairness. Nothing is paid for one.</div>';
+    rooms.innerHTML='';
+  }
+
+  /* ---- the floor --------------------------------------------------------- */
+  function renderStage(b){
+    var me=b.me||{},c=b.conference||{};
+    var snap=FR.snapshot()||{},f=snap.franchise||{};
+    var waiting=MINE?(MINE.incoming||[]).length:0;
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Trades · '+esc(c.name||'')+'</div>'
+      +'<div class="hq-id">'+mark(me,56)+'<div><div class="hq-city">'+esc(me.abbr||'')+'</div>'
+      +'<div class="hq-name">'+esc(teamName(me))+'</div>'
+      +'<div class="hq-line">'+esc((b.partners||[]).length)+' franchise'+((b.partners||[]).length===1?'':'s')+' to deal with</div></div>'
+      +(waiting?'<div class="hq-rec">'+esc(waiting)+'<span class="s">waiting on you</span></div>':'')+'</div>'
+      +'<div class="ftp" style="margin-top:12px">Up to '+esc(FR.TRADE.max_per_side)+' a side. The server checks that a deal is legal — the men named are still there, both rosters stay '
+      +'between '+esc(FR.MARKET.roster_min)+' and '+esc(FR.MARKET.roster_max)+', and neither side drops below the starters a position needs. '
+      +'<b>It never checks that a deal is fair.</b> Nothing is paid for a trade.</div>';
+  }
+
+  function pickRow(p,side,on){
+    return '<li aria-selected="'+(on?'true':'false')+'"><button type="button" data-pick="'+esc(p.id)+'" data-side="'+side+'">'
+      +'<span class="p">'+esc(p.position)+'</span>'
+      +'<span class="o"><b>'+esc(p.name)+'</b><small>'+esc(p.archetype||'')+' · age '+esc(p.age)
+      +(p.available===false?' · <span style="color:var(--neg)">'+esc(FR.injuryLine(p)||'out')+'</span>':'')+'</small></span>'
+      +'<span class="r">'+esc(p.overall)+'</span></button></li>';
+  }
+
+  function renderFloor(b){
+    var partner=null;
+    (b.partners||[]).forEach(function(x){if((x.franchise||{}).id===PARTNER)partner=x;});
+    if(!partner&&(b.partners||[]).length){partner=b.partners[0];PARTNER=(partner.franchise||{}).id;}
+    var mine=b.mine||[],theirs=partner?(partner.players||[]):[];
+    var giveN=keys(GIVE).length,getN=keys(GET).length;
+
+    rooms.innerHTML=
+      /* the inbox first: an offer waiting on you is the thing to do */
+      (MINE&&(MINE.incoming||[]).length
+        ?'<div class="sec"><div class="sec-h"><h2>Waiting on you</h2><span class="m">'+esc(MINE.incoming.length)+'</span></div>'
+          +'<div class="card"><ul class="tr-off">'+MINE.incoming.map(function(t){return offerRow(t,'in');}).join('')+'</ul></div></div>'
+        :'')
+      +'<div class="sec"><div class="sec-h"><h2>Make an offer</h2>'
+      +'<span class="m">'+esc(giveN)+' out, '+esc(getN)+' in</span></div><div class="card">'
+      +((b.partners||[]).length>1
+        ? '<div class="field"><label for="trPartner">Deal with</label><select id="trPartner">'
+          +b.partners.map(function(x){var fx=x.franchise||{};
+            return '<option value="'+esc(fx.id)+'"'+(fx.id===PARTNER?' selected':'')+'>'+esc(teamName(fx))+' · OVR '+esc(fx.overall)+'</option>';
+          }).join('')+'</select></div>'
+        : '')
+      +'<div class="tr-cols">'
+      +'<div><div class="eyebrow">You send</div>'
+      +(mine.length?'<ul class="tr-pick" id="trMine">'+mine.map(function(p){return pickRow(p,'give',!!GIVE[p.id]);}).join('')+'</ul>'
+        :'<div class="empty">No players.</div>')+'</div>'
+      +'<div><div class="eyebrow">You get</div>'
+      +(theirs.length?'<ul class="tr-pick" id="trTheirs">'+theirs.map(function(p){return pickRow(p,'get',!!GET[p.id]);}).join('')+'</ul>'
+        :'<div class="empty">Nothing to ask for.</div>')+'</div>'
+      +'</div>'
+      +'<div class="fc-new"><input type="text" id="trNote" maxlength="120" placeholder="A line to send with it (optional)" aria-label="A note for the offer">'
+      +'<button class="btn btn-go btn-big" type="button" id="trSend"'+(giveN&&getN?'':' disabled')+'>Send the offer</button></div>'
+      +'<div class="tr-why" id="trWhy"></div>'
+      +'<div class="ftp" style="margin-top:10px">A hurt player can be traded — he is still on the roster, he simply cannot play yet. '
+      +'The deadline is the bracket: nothing moves while your conference is in its playoffs.</div>'
+      +'</div></div>'
+
+      +(MINE&&(MINE.outgoing||[]).length
+        ?'<div class="sec"><div class="sec-h"><h2>Out there</h2><span class="m">'+esc(MINE.outgoing.length)+'</span></div>'
+          +'<div class="card"><ul class="tr-off">'+MINE.outgoing.map(function(t){return offerRow(t,'out');}).join('')+'</ul></div></div>'
+        :'')
+      +(MINE&&(MINE.done||[]).length
+        ?'<div class="sec"><div class="sec-h"><h2>On the record</h2><span class="m">last '+esc(MINE.done.length)+'</span></div>'
+          +'<div class="card"><ul class="tr-off">'+MINE.done.map(function(t){return offerRow(t,'done');}).join('')+'</ul>'
+          +'<div class="ftp" style="margin-top:10px">Every deal that was taken is on both franchises’ records, and neither side paid anything for it.</div></div></div>'
+        :'');
+    wireFloor();
+  }
+
+  function names(list){
+    return (list||[]).map(function(p){return p.position+' '+p.name+' ('+p.overall+')';}).join(', ')||'—';
+  }
+  function offerRow(t,kind){
+    var other=t.incoming?(t.from||{}):(t.to||{});
+    return '<li data-trade="'+esc(t.id)+'">'
+      +'<div class="h"><b>'+esc(teamName(other))+'</b><span class="st">'+esc(t.status)+(t.decided_at?' · '+esc(dayLabel(t.decided_at)):'')+'</span></div>'
+      +'<div class="sides"><div class="side"><span class="k">You send</span><span>'+esc(names(t.give))+'</span></div>'
+      +'<div class="side"><span class="k">You get</span><span>'+esc(names(t.get))+'</span></div></div>'
+      +(t.note?'<div class="note">'+esc(t.note)+'</div>':'')
+      +(t.reason?'<div class="tr-why">'+esc(t.reason)+'</div>':'')
+      +(kind==='in'&&t.status==='OPEN'
+        ?(t.legal
+            ?'<div class="btn-row two"><button class="btn btn-go" type="button" data-accept="'+esc(t.id)+'">Accept</button>'
+              +'<button class="btn" type="button" data-decline="'+esc(t.id)+'">Decline</button></div>'
+            :'<div class="tr-why">This offer cannot be taken now: '+esc(t.illegal_because||'a roster has moved under it')+'</div>'
+              +'<div class="btn-row"><button class="btn" type="button" data-decline="'+esc(t.id)+'">Decline</button></div>')
+        :'')
+      +(kind==='out'&&t.status==='OPEN'
+        ?'<div class="btn-row"><button class="btn btn-ghost" type="button" data-withdraw="'+esc(t.id)+'">Withdraw</button></div>'
+        :'')
+      +'</li>';
+  }
+
+  var _wired=false;
+  function wireFloor(){
+    var sel=$('trPartner');
+    if(sel)sel.addEventListener('change',function(){PARTNER=sel.value;GET={};renderFloor(BOARD);});
+    /* the floor is re-rendered on every pick, and `rooms` survives it: bind
+       the delegated handler once or a single click fires it a dozen times */
+    if(!_wired){rooms.addEventListener('click',onClick);_wired=true;}
+    var send=$('trSend');
+    if(send)send.addEventListener('click',function(){
+      var give=keys(GIVE),get=keys(GET);
+      if(!give.length||!get.length)return;
+      send.disabled=true;send.textContent='Sending…';
+      FR.tradeOffer(PARTNER,give,get,($('trNote')&&$('trNote').value||'').trim()).then(function(r){
+        send.disabled=false;send.textContent='Send the offer';
+        if(!r.ok||!r.data){$('trWhy').className='tr-why';$('trWhy').textContent=r.message||'That offer could not be made.';return;}
+        G.track('trade_offer',{give:give.length,get:get.length,game_type:'franchise'});
+        GIVE={};GET={};
+        G.toast('Offer sent.');
+        return reload();
+      });
+    });
+  }
+  function onClick(e){
+    var t=e.target.closest?e.target.closest('[data-pick],[data-accept],[data-decline],[data-withdraw]'):null;
+    if(!t)return;
+    if(t.hasAttribute('data-pick')){
+      var id=t.getAttribute('data-pick'),side=t.getAttribute('data-side');
+      var bag=side==='give'?GIVE:GET;
+      if(bag[id])delete bag[id];
+      else if(keys(bag).length>=FR.TRADE.max_per_side){G.toast('At most '+FR.TRADE.max_per_side+' a side.');return;}
+      else bag[id]=true;
+      renderFloor(BOARD);
+      return;
+    }
+    var tid=t.getAttribute('data-accept')||t.getAttribute('data-decline')||t.getAttribute('data-withdraw');
+    if(t.hasAttribute('data-withdraw')){
+      t.disabled=true;
+      FR.tradeWithdraw(tid).then(function(){G.track('trade_withdraw',{});return reload();});
+      return;
+    }
+    var accept=t.hasAttribute('data-accept');
+    if(accept&&!window.confirm('Accept this trade? Players change hands at once, and a deal is not undone.'))return;
+    t.disabled=true;t.textContent=accept?'Accepting…':'Declining…';
+    FR.tradeRespond(tid,accept).then(function(r){
+      if(!r.ok||!r.data){G.toast(r.message||'That could not be done.');return reload();}
+      var d=r.data;
+      if(!d.ok){G.toast(d.reason||'That offer can no longer be taken.');return reload();}
+      if(accept)G.track('trade_accept',{game_type:'franchise'});
+      else G.track('trade_decline',{game_type:'franchise'});
+      if(accept){
+        (d.achievements||[]).forEach(function(a){G.track('achievement_unlocked',{achievement:a,placement:'trades'});});
+        G.toast('Done. '+FR.tradeSummary(d.trade)+'.');
+      }else G.toast('Declined.');
+      return reload();
+    });
+  }
+
+  function reload(){
+    return FR.tradePartners().then(function(r){
+      if(!r.ok||!r.data)return r;
+      BOARD=r.data;
+      return FR.tradesMine().then(function(m){
+        if(m.ok&&m.data)MINE=m.data;
+        if(!BOARD.conference){renderNoConference(BOARD);return r;}
+        renderStage(BOARD);
+        renderFloor(BOARD);
+        return r;
+      });
+    });
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(st!=='franchise'){renderEmpty(st);return;}
+    return FR.tradePartners().then(function(r){
+      if(!r.ok){
+        stage.innerHTML='<div class="empty">The trade floor could not be loaded. '+esc(r.message||'Check your connection and reload.')+'</div>';
+        return;
+      }
+      if(!r.data){renderEmpty(FR.state());return;}
+      BOARD=r.data;
+      if(!BOARD.conference){renderNoConference(BOARD);return;}
+      return FR.tradesMine().then(function(m){
+        if(m.ok&&m.data)MINE=m.data;
+        renderStage(BOARD);
+        renderFloor(BOARD);
+        G.track('trade_floor_view',{partners:(BOARD.partners||[]).length,
+          incoming:MINE?(MINE.incoming||[]).length:0,outgoing:MINE?(MINE.outgoing||[]).length:0,game_type:'franchise'});
+      });
+    });
+  }).catch(function(){renderEmpty(FR.state());});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>

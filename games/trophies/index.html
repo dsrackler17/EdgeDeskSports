@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906a">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906a">
+<link rel="stylesheet" href="/games/games.css?v=20260906b">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906b">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906a"></script>
-<script src="/games/lib/scoring.js?v=20260906a"></script>
-<script src="/games/lib/challenge.js?v=20260906a"></script>
-<script src="/games/lib/research_state.js?v=20260906a"></script>
-<script src="/games/lib/attribution.js?v=20260906a"></script>
-<script src="/games/lib/store.js?v=20260906a"></script>
-<script src="/games/lib/dynasty.js?v=20260906a"></script>
-<script src="/games/lib/social.js?v=20260906a"></script>
-<script src="/games/lib/auth.js?v=20260906a"></script>
-<script src="/games/lib/franchise.js?v=20260906a"></script>
-<script src="/games/games.js?v=20260906a"></script>
+<script src="/games/lib/week.js?v=20260906b"></script>
+<script src="/games/lib/scoring.js?v=20260906b"></script>
+<script src="/games/lib/challenge.js?v=20260906b"></script>
+<script src="/games/lib/research_state.js?v=20260906b"></script>
+<script src="/games/lib/attribution.js?v=20260906b"></script>
+<script src="/games/lib/store.js?v=20260906b"></script>
+<script src="/games/lib/dynasty.js?v=20260906b"></script>
+<script src="/games/lib/social.js?v=20260906b"></script>
+<script src="/games/lib/auth.js?v=20260906b"></script>
+<script src="/games/lib/franchise.js?v=20260906b"></script>
+<script src="/games/games.js?v=20260906b"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -202,6 +202,11 @@
     var openSeason=0;
     seasons.some(function(s,i){if((s.games||[]).some(function(g){return g.status==='final';})){openSeason=i;return true;}return false;});
     var titles=t.titles||[],conf=t.conference||null;
+    var bowls=(t.seasons||[]).map(function(sn){
+      var g=(sn.games||[]).filter(function(x){return x.bowl;})[0];
+      return g?{season:sn.label,name:g.bowl_name,result:g.result,opponent:(g.opponent||{}).name,
+                score:(g.score_for|0)+'–'+(g.score_against|0)}:null;
+    }).filter(Boolean);
     rooms.innerHTML=
       '<div class="sec"><div class="sec-h"><h2>Titles</h2><span class="m">'+titles.length+'</span></div><div class="card">'
       +(titles.length
@@ -217,6 +222,14 @@
       +(conf?'You are in <b>'+esc(conf.name||'')+'</b> — '+esc((conf.members|0))+' franchise'+((conf.members|0)===1?'':'s')+', '+esc((FR.CONFERENCE_STATUS[conf.status]||{}).label||conf.status||'')+'. <a href="/games/conference/">The standings</a>.'
              :'A conference plays one round a football week; the top '+esc(FR.CONFERENCE.playoff_teams)+' make a bracket and the winner takes the title. <a href="/games/conference/">Start one</a>.')
       +' A title stays here even if the franchise later leaves the conference it won.</div></div></div>'
+      +(bowls.length?'<div class="sec"><div class="sec-h"><h2>Bowls</h2><span class="m">'+bowls.length+'</span></div><div class="card">'
+        +'<ul class="mk-hist">'+bowls.map(function(b){
+            return '<li><span class="k">'+esc(b.season||'')+'</span><span class="o"><b>'+esc(b.name||'The bowl')+'</b>'
+              +'<small>'+esc(b.result==='W'?'won':b.result==='L'?'lost':'drew')+' '+esc(b.score)+' against the '+esc(b.opponent||'')+'</small></span>'
+              +'<span class="r">'+(b.result==='W'?'won':'')+'</span></li>';
+          }).join('')+'</ul>'
+        +'<div class="ftp" style="margin-top:10px">A season with more wins than losses earns a ninth game against a club rated above you. '
+        +'It counts in the record like any other.</div></div></div>':'')
       +'<div class="sec"><div class="sec-h"><h2>The wall</h2><span class="m">'+earned+' of '+ach.length+'</span></div><div class="card">'
       +achievementsBlock(ach)
       +'<div class="ftp" style="margin-top:10px">Every achievement is read from your record on the server. Nothing here is granted, and nothing can be bought.</div></div></div>'

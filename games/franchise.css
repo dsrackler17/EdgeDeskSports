@@ -539,3 +539,55 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 /* a decided season, on the record */
 .cf-title{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
 .cf-title .rings{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--est);white-space:nowrap}
+
+/* ── INJURIES, THE BOWL AND TRADES (Phase 7) ──────────────────────────────
+   A hurt player is still on his card and still on the chart; what changes is
+   that the card says so, plainly, where the eye already goes. */
+.pc-hurt{opacity:.72;border-color:rgba(226,102,75,.35)}
+.pc-hurt::before{background:var(--neg)}
+.pc-out{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--neg);
+  border:1px solid rgba(226,102,75,.5);border-radius:999px;padding:2px 7px}
+.pc-start .pc-out{margin-left:6px}
+.pc-injury{font-size:12px;color:var(--neg);margin-top:8px;line-height:1.4}
+.pc-injury .k{display:block;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+/* the treatment room, on the roster and the HQ */
+.inj{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.inj li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
+  background:var(--cell);border:1px solid rgba(226,102,75,.28);border-radius:10px;padding:8px 12px;font-size:13px}
+.inj .p{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--faint);width:26px}
+.inj .o{min-width:0}
+.inj .o b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inj .o small{display:block;font-size:11px;color:var(--faint)}
+.inj .r{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--neg);white-space:nowrap}
+/* the bowl: the one game a winning season earns */
+.bowl{margin-top:14px;background:var(--cell);border:1px solid var(--est);border-radius:14px;padding:14px}
+.bowl .k{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--est)}
+.bowl .t{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;line-height:1.2;margin-top:3px}
+.bowl .s{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5}
+/* the trade floor */
+.tr-cols{display:grid;gap:10px;margin-top:10px}
+@media(min-width:760px){.tr-cols{grid-template-columns:1fr 1fr}}
+.tr-pick{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:5px;max-height:340px;overflow-y:auto}
+.tr-pick li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;
+  background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13px;min-height:44px}
+.tr-pick li[aria-selected="true"]{border-color:var(--val);background:rgba(63,184,131,.1)}
+.tr-pick .p{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--faint);width:26px}
+.tr-pick .o{min-width:0}
+.tr-pick .o b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.tr-pick .o small{display:block;font-size:11px;color:var(--faint)}
+.tr-pick .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;font-weight:700}
+.tr-pick button{all:unset;display:contents;cursor:pointer}
+.tr-why{font-size:12.5px;color:var(--neg);margin-top:10px;line-height:1.5;min-height:1.2em}
+.tr-why.ok{color:var(--val)}
+.tr-off{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.tr-off li{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tr-off .h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.tr-off .h b{font-family:'Space Grotesk',sans-serif;font-size:15px}
+.tr-off .h .st{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.tr-off .sides{display:grid;gap:6px;margin-top:8px;font-size:13px}
+@media(min-width:560px){.tr-off .sides{grid-template-columns:1fr 1fr}}
+.tr-off .side .k{display:block;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.tr-off .side span{display:block;color:var(--dim);line-height:1.5}
+.tr-off .note{font-size:12.5px;color:var(--text);margin-top:8px;border-left:3px solid var(--fr-primary,var(--val-dim));padding-left:10px}
+.tr-off .btn-row{margin-top:10px}
+.tr-off .btn{min-height:var(--tap)}

@@ -91,6 +91,7 @@ const GAMEDAY = fs.readFileSync(G('gameday/index.html'), 'utf8');
 const TROPHIES = fs.readFileSync(G('trophies/index.html'), 'utf8');
 const MARKET = fs.readFileSync(G('market/index.html'), 'utf8');
 const CONF = fs.readFileSync(G('conference/index.html'), 'utf8');
+const TRADES = fs.readFileSync(G('trades/index.html'), 'utf8');
 const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
 const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -1191,7 +1192,7 @@ fresh();
   /* the HQ, the Trophy Room and Game Day carry it */
   has(HOME, "'Conference: play '", 'the HQ makes a waiting round the day\'s objective');
   has(HOME, 'data-cta="hq-conference"', 'and has a door to it');
-  has(HOME, 'var cf=snap.conference||null;', 'reading the conference off the home snapshot');
+  has(HOME, 'var cf=snap.conference||null', 'reading the conference off the home snapshot');
   chk('the conference objective comes after the day\'s', HOME.indexOf("'Conference: play '") > HOME.indexOf("'Rivalry: challenge"));
   has(TROPHIES, 'Titles', 'the Trophy Room has a titles wall');
   has(TROPHIES, 'A title stays here even if the franchise later leaves', 'and says a title outlives the conference');
@@ -1252,6 +1253,150 @@ fresh();
   has(README, 'A **league of friends with standings of its own**', 'and says what it is for');
   has(README, 'circle method', 'and how the schedule is drawn');
   has(README, 'A playoff game cannot end level', 'and how a playoff tie is broken');
+
+  /* ═══ 16. INJURIES, THE BOWL AND TRADES (PHASE 7) ════════════════════════ */
+  /* three published tables, each pinned to the SQL number for number */
+  eq('injuries are injury_v1 on both sides', F.INJURY_VERSION, 'injury_v1');
+  has(SQL, "'version', 'injury_v1'", 'the SQL publishes the version');
+  chk('the chance, the Conditioning step, the Iron Man weight and the starter weight are the SQL\'s',
+    F.INJURY.base === 0.22 && F.INJURY.per_conditioning === 0.03 && F.INJURY.iron_man === 0.5 && F.INJURY.starter_weight === 2.0
+    && /'base', 0\.22,\s*.*\n\s*'per_conditioning', 0\.03,/.test(SQL) && /'iron_man', 0\.5,/.test(SQL) && /'starter_weight', 2\.0,/.test(SQL));
+  chk('the four severities are the SQL\'s, and they are a distribution',
+    F.INJURY.severity.length === 4
+    && F.INJURY.severity.reduce((a, x) => a + x.p, 0).toFixed(2) === '1.00'
+    && F.INJURY.severity.every(x => new RegExp("'" + x.key + "',\\s+'name', '" + x.name + "',\\s+'games', " + x.games + ", 'p', " + x.p).test(SQL)));
+  chk('every position\'s exposure is the SQL\'s number',
+    Object.keys(F.INJURY.exposure).every(k => new RegExp("'" + k + "', " + F.INJURY.exposure[k]).test(SQL))
+    && F.INJURY.exposure.RB > F.INJURY.exposure.QB && F.INJURY.exposure.K < 0.1);
+  eq('Conditioning buys the chance down to the published floor', F.injuryChance(3), 0.13);
+  eq('and no Conditioning is the base', F.injuryChance(0), 0.22);
+  eq('the bowl is bowl_v1 on both sides', F.BOWL_VERSION, 'bowl_v1');
+  has(SQL, "'version', 'bowl_v1'", 'the SQL publishes the version');
+  chk('the bowl rule is the same on both sides: more wins than losses, and nothing else',
+    F.bowlEarned(5, 3) && F.bowlEarned(8, 0) && !F.bowlEarned(4, 4) && !F.bowlEarned(3, 5)
+    && /select coalesce\(p_wins, 0\) > coalesce\(p_losses, 0\);/.test(SQL));
+  chk('and the opponent\'s edge is the SQL\'s table', F.BOWL.edge_base === 2 && F.BOWL.edge_per_win === 1 && F.BOWL.edge_max === 8
+    && /'edge_base', 2,.*\n\s*'edge_per_win', 1,.*\n\s*'edge_max', 8,/.test(SQL));
+  eq('trades are trade_v1 on both sides', F.TRADE_VERSION, 'trade_v1');
+  chk('one to three a side, a week to answer, the SQL\'s numbers',
+    F.TRADE.max_per_side === 3 && F.TRADE.expires_days === 7
+    && /'max_per_side', 3,\s*\n\s*'expires_days', 7,/.test(SQL));
+  ['bowl_bid', 'bowl_win', 'trade_first', 'next_man_up'].forEach(id => {
+    const m = new RegExp("\\('" + id + "',\\s+'([^']+)',").exec(SQL);
+    chk('the SQL seeds ' + id + ' and the client names it the same', m && F.ACHIEVEMENTS[id] && F.ACHIEVEMENTS[id].name === m[1], m && m[1]);
+  });
+  chk('the bowl pays what the SQL pays', F.ECONOMY.bowl_game.xp === 150 && F.ECONOMY.bowl_game.tc === 60
+    && F.ECONOMY.bowl_win.xp === 300 && F.ECONOMY.bowl_win.tc === 200 && F.ECONOMY.bowl_win.cp === 5
+    && F.rewardsFor('bowl_win').cp === 5 && F.rewardsFor('bowl_game').tc === 60);
+  /* availability, and how a card says it */
+  chk('availability follows the server\'s flag, and the clock when there is none',
+    F.isAvailable({ available: true }) && !F.isAvailable({ available: false })
+    && F.isAvailable({ status: 'active' }) && !F.isAvailable({ status: 'retired' })
+    && !F.isAvailable({ status: 'active', injured_until: new Date(Date.now() + 6e5).toISOString() })
+    && F.isAvailable({ status: 'active', injured_until: new Date(Date.now() - 6e5).toISOString() }));
+  eq('a hurt player\'s line names the injury and the games', F.injuryLine({ available: false, injury: { name: 'Sprain', games: 3 } }), 'Sprain · out 3 games');
+  eq('one game reads singular', F.injuryLine({ available: false, injury: { name: 'Knock', games: 1 } }), 'Knock · out 1 game');
+  eq('a fit player has no line', F.injuryLine({ available: true }), '');
+  (() => {
+    const a = F.bowlWatch({ wins: 5, losses: 2, ties: 0, weeks: 8 });
+    const b = F.bowlWatch({ wins: 2, losses: 3, ties: 0, weeks: 8 });
+    /* 2–4 with two to play tops out at 4–4, which is not a winning record:
+       the watch says the bowl has gone rather than naming a number */
+    const c = F.bowlWatch({ wins: 2, losses: 4, ties: 0, weeks: 8 });
+    chk('the bowl watch says earned, or how many more wins it takes, or that it has gone',
+      a.earned && a.need === 0 && !b.earned && b.need === 2 && !c.earned && c.need === null,
+      JSON.stringify([a.need, b.need, c.need]));
+  })();
+  eq('an offer reads from the viewer\'s side', F.tradeSummary({ give: [1, 2], get: [3] }), '2 out, 1 in');
+  eq('a traded player says where he came from', F.acquiredLine({ acquired_source: 'trade', acquired_season: 2026, acquired_detail: 'From the Comets' }), 'Traded for · 2026 · From the Comets');
+  /* the client asks; the server draws, schedules and checks */
+  has(FJS, "rpc('franchise_trade_partners', withSecret({}))", 'the trade floor is one read');
+  has(FJS, "rpc('franchise_trade_offer', withSecret({", 'an offer sends ids and the identity');
+  has(FJS, "rpc('franchise_trade_respond', withSecret({ p_trade: String(id || ''), p_accept: !!accept }))", 'an answer sends the trade and yes or no');
+  has(FJS, "rpc('franchise_trade_withdraw', withSecret({ p_trade: String(id || '') }))", 'a withdrawal sends the trade');
+  chk('no trade call is ever queued', !/record\('franchise_trade/.test(FJS));
+  chk('the client never draws an injury, schedules a bowl or decides a trade is legal',
+    !/Math\.random/.test(FJS + TRADES)
+    && !/function drawInjur|function scheduleBowl|function checkTrade/.test(FJS + TRADES));
+  /* the pages */
+  has(TRADES, 'FR.tradePartners()', 'the trade page reads the floor through the server');
+  has(TRADES, 'FR.tradeOffer(', 'and offers through it');
+  has(TRADES, 'FR.tradeRespond(', 'and answers through it');
+  has(TRADES, 'FR.tradeWithdraw(', 'and withdraws through it');
+  ['trade_floor_view', 'trade_offer', 'trade_accept', 'trade_decline', 'trade_withdraw']
+    .forEach(e => chk('the trade page fires ' + e, new RegExp("track\\('" + e + "'").test(TRADES)));
+  has(TRADES, 'never that it is fair', 'the page says what the server does and does not check');
+  has(TRADES, 'a deal is not undone', 'and asks once before a deal that cannot be undone');
+  has(TRADES, 'The deadline is the bracket', 'and states the deadline');
+  has(TRADES, 'A hurt player can be traded', 'and that a hurt man is still an asset');
+  has(TRADES, 'Join a conference and the floor opens', 'a franchise with no conference is shown the door');
+  has(TRADES, 'STALE SCRIPT GUARD', 'and the page guards against a stale cached library');
+  chk('the trade page binds its delegated handler once, not once per render', /if\(!_wired\)\{rooms\.addEventListener/.test(TRADES));
+  chk('the trade page invents no player, no price and no verdict',
+    !/overall:\s*\d/.test(TRADES) && !/legal:\s*(true|false)/.test(TRADES));
+  has(ROSTER, 'Treatment room', 'the roster has a treatment room');
+  has(ROSTER, 'FR.isAvailable(p)', 'read from the server\'s own flag');
+  has(ROSTER, 'still on the roster, still against the ceiling', 'and says a hurt man is still yours');
+  has(GAMEDAY, 'injuryNote(', 'Game Day says what a game cost');
+  has(GAMEDAY, 'bowl_name', 'and names the bowl rather than calling it week nine');
+  has(GAMEDAY, 'earned a ninth game', 'and says where the ninth game came from');
+  has(HOME, "'Bowl: play '", 'the HQ makes a bowl to play the day\'s objective');
+  has(HOME, 'more win', 'and counts the wins that would earn one');
+  has(HOME, 'data-cta="hq-trades"', 'and has a door to the trade floor');
+  has(HOME, "' · <b>'+G.esc(inj.out)+'</b> hurt'", 'the calendar line carries the treatment room');
+  has(TROPHIES, '<h2>Bowls</h2>', 'the Trophy Room has a bowls shelf');
+  chk('the trade floor is a room of the facility',
+    require(G('games.js')).ROOMS.some(r => r.key === 'trades' && r.href === '/games/trades/')
+    && /href="\/games\/trades\/">Trades<\/a>/.test(JS));
+  ['trade_floor_view', 'trade_offer', 'trade_accept', 'bowl_earned', 'injury_recorded']
+    .forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
+  has(SITEMAP, 'https://edgedesksports.com/games/trades<', 'the sitemap lists the trade floor');
+  has(NOTFOUND, "p[1]==='trades'", 'the static host routes it');
+  chk('the asset bumper stamps the trade page',
+    require(path.join(ROOT, 'tools', 'games', 'bump_assets.js')).PAGES.some(p => /trades\/index\.html$/.test(p)));
+  chk('a hurt player is marked on the shared card and the mark has styling',
+    /pc-hurt/.test(FJS) && /\.pc-hurt\{/.test(FCSS) && /\.pc-out\{/.test(FCSS) && /\.inj li\{/.test(FCSS)
+    && /\.tr-off \.btn\{min-height:var\(--tap\)\}/.test(FCSS));
+  /* the SQL keeps its conventions on the new side */
+  ['franchise_draw_injuries(uuid, text, text, timestamptz)', 'franchise_schedule_bowl(uuid, integer, timestamptz)',
+   'franchise_trade_json(uuid, uuid)', 'franchise_trade_player_json(uuid)']
+    .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role',
+      SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
+  ['franchise_injuries()', 'franchise_postseason()', 'franchise_trade_rules()', 'franchise_trade_partners(text)',
+   'franchise_trade_offer(uuid, uuid[], uuid[], text, text)', 'franchise_trade_respond(uuid, boolean, text)',
+   'franchise_trade_withdraw(uuid, text)', 'franchise_trades_mine(integer, text)']
+    .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+  chk('the report grew to twenty-five rows', /select 23, 'injuries are '/.test(SQL)
+    && /select 24, 'the bowl is '/.test(SQL) && /select 25, 'trades are '/.test(SQL));
+  chk('availability is a function of the clock, so there is no heal job to miss',
+    /select p_status = 'active' and \(p_injured_until is null or p_injured_until <= p_at\);/.test(SQL)
+    && !/franchise_heal/.test(SQL));
+  chk('the five reads that decide a game all ask whether a player is available',
+    (SQL.match(/public\.franchise_is_available\(p?\.?status, p?\.?injured_until\)/g) || []).length >= 4);
+  chk('an injury never leaves a position below its starters',
+    /if left_at < coalesce\(starters, 1\) then return '\[\]'::jsonb; end if;/.test(SQL));
+  chk('the simulator itself is untouched: injuries are drawn after the game, not inside it',
+    /v_box := v_box \|\| jsonb_build_object\('injuries', public\.franchise_draw_injuries/.test(SQL)
+    && /'sim', 'sim_v1'/.test(SQL) && !/sim_v2/.test(SQL));
+  chk('the offseason sends everybody back out fit',
+    /update public\.game_players set injured_until = null, injury = null\s+where franchise_id = p_franchise and injured_until is not null;/.test(SQL));
+  chk('the bowl is paid its own line, not the weekly one',
+    /v_kind := case when g\.bowl then 'bowl_game' else 'weekly_game' end;/.test(SQL)
+    && /v_kind_win := case when g\.bowl then 'bowl_win' else 'weekly_win' end;/.test(SQL));
+  chk('a trade is re-checked at the moment it is taken, and a dead one keeps its reason',
+    /RE-CHECKED at the moment it is taken/.test(SQL)
+    && /update public\.franchise_trades set status = 'EXPIRED', reason = v_why, decided_at = now\(\) where id = t\.id;\s+return jsonb_build_object\('ok', false/.test(SQL));
+  chk('a trade moves no currency at all', !/franchise_credit\([^)]*'trade/.test(SQL));
+  chk('the SQL suite plays injuries, the bowl and trades through',
+    /20\. INJURIES, THE BOWL AND TRADES/.test(SQLTEST)
+    && /the specialists a roster has one of are never taken/.test(SQLTEST)
+    && /a winning record earns the bowl rather than ending the season/.test(SQLTEST)
+    && /a deal that would leave a position short is refused, by name/.test(SQLTEST));
+  has(README, 'injury_v1', 'the README documents injuries');
+  has(README, 'bowl_v1', 'and the bowl');
+  has(README, 'trade_v1', 'and trades');
+  has(README, 'legality, not fairness', 'and what the server checks about a deal');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

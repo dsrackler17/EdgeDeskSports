@@ -104,7 +104,11 @@
        an invite opened and taken, a season drawn, a round played, a title
        decided, the link shared, a conference left */
     'conference_view', 'conference_create', 'conference_invite_open', 'conference_join',
-    'conference_start', 'conference_round', 'conference_title', 'conference_share', 'conference_leave'];
+    'conference_start', 'conference_round', 'conference_title', 'conference_share', 'conference_leave',
+    /* injuries, the bowl and trades (Phase 7): a game that cost somebody, a
+       bowl earned and played, and the four moves on the trade floor */
+    'injury_recorded', 'bowl_earned', 'bowl_played', 'trade_floor_view',
+    'trade_offer', 'trade_accept', 'trade_decline', 'trade_withdraw'];
 
   var _level = null;
   function track(event, props) {
@@ -341,7 +345,9 @@
     /* the conference: a league of friends with standings of its own (Phase 6).
        League (Groups) stays what it is — the leaderboard league for the real
        games; this is the franchise one. */
-    { key: 'conference', href: '/games/conference/',     label: 'Conference',   cls: 'gh-only-wider' }
+    { key: 'conference', href: '/games/conference/',     label: 'Conference',   cls: 'gh-only-wider' },
+    /* the trade floor: players change hands inside a conference (Phase 7) */
+    { key: 'trades',   href: '/games/trades/',           label: 'Trades',       cls: 'gh-only-wider' }
   ];
   function header(current) {
     var nav = ROOMS.map(function (r) {
@@ -399,7 +405,7 @@
       + '<a href="/games/gameday/">Game Day</a>'
       + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
       + '<a href="/games/trophies/">Trophy Room</a><a href="/games/market/">Draft &amp; Market</a>'
-      + '<a href="/games/conference/">Conference</a>'
+      + '<a href="/games/conference/">Conference</a><a href="/games/trades/">Trades</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'

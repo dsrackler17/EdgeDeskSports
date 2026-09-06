@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906a">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906a">
+<link rel="stylesheet" href="/games/games.css?v=20260906b">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906b">
 </head>
 <body>
 <div id="gh"></div>
@@ -49,17 +49,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906a"></script>
-<script src="/games/lib/scoring.js?v=20260906a"></script>
-<script src="/games/lib/challenge.js?v=20260906a"></script>
-<script src="/games/lib/research_state.js?v=20260906a"></script>
-<script src="/games/lib/attribution.js?v=20260906a"></script>
-<script src="/games/lib/store.js?v=20260906a"></script>
-<script src="/games/lib/dynasty.js?v=20260906a"></script>
-<script src="/games/lib/social.js?v=20260906a"></script>
-<script src="/games/lib/auth.js?v=20260906a"></script>
-<script src="/games/lib/franchise.js?v=20260906a"></script>
-<script src="/games/games.js?v=20260906a"></script>
+<script src="/games/lib/week.js?v=20260906b"></script>
+<script src="/games/lib/scoring.js?v=20260906b"></script>
+<script src="/games/lib/challenge.js?v=20260906b"></script>
+<script src="/games/lib/research_state.js?v=20260906b"></script>
+<script src="/games/lib/attribution.js?v=20260906b"></script>
+<script src="/games/lib/store.js?v=20260906b"></script>
+<script src="/games/lib/dynasty.js?v=20260906b"></script>
+<script src="/games/lib/social.js?v=20260906b"></script>
+<script src="/games/lib/auth.js?v=20260906b"></script>
+<script src="/games/lib/franchise.js?v=20260906b"></script>
+<script src="/games/games.js?v=20260906b"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -137,6 +137,23 @@
       +'<span class="r">'+esc(val)+'<small>OVR</small></span></summary>'
       +'<div class="pc-grid">'+cards+'</div></details>';
   }
+  /* THE TREATMENT ROOM. A hurt player keeps his card, his number and his
+     place on the chart; what he does not do is count toward the team rating
+     or take the field. The block only exists when somebody is in it. */
+  function injuryBlock(d){
+    var out=(d.players||[]).filter(function(p){return !FR.isAvailable(p);});
+    if(!out.length)return '';
+    return '<div class="side-h" style="margin-bottom:0"><h2 style="font-size:14px">Treatment room</h2>'
+      +'<span class="m">'+esc(out.length)+' unavailable</span></div>'
+      +'<ul class="inj">'+out.map(function(p){
+        return '<li><span class="p">'+esc(p.position)+'</span>'
+          +'<span class="o"><b>'+esc(FR.fullName(p))+'</b><small>OVR '+esc(p.overall)
+          +(FR.isStarter(p)?' · starter':'')+'</small></span>'
+          +'<span class="r">'+esc(FR.injuryLine(p))+'</span></li>';
+      }).join('')+'</ul>'
+      +'<div class="ftp" style="margin-top:8px">They are still yours — still on the roster, still against the ceiling. '
+      +'They are back the week the injury says, with nothing to do and nothing to press.</div>';
+  }
   function renderRoster(d,fresh){
     DATA=d;
     var f=d.franchise,rt=d.rating||{},gs=FR.groups(d.players),weak=FR.weakest(rt),strong=FR.strongest(rt);
@@ -149,8 +166,9 @@
       +'<div class="hq-line">'+(strong?'Strongest: <b>'+esc(strong.name)+' '+esc(strong.value)+'</b>':'')
       +(weak?' · Weakest: <b>'+esc(weak.name)+' '+esc(weak.value)+'</b>':'')+'</div></div></div>'
       +rate(rt)
+      +injuryBlock(d)
       +'<div class="ftp" style="margin-top:12px">Overall is the mean of a player’s four ratings. Team ratings weight the starters by position; '
-      +'the depth chart decides who starts. Every number here was generated on the server and cannot be edited.</div>';
+      +'the depth chart decides who starts, and only a fit player is counted. Every number here was generated on the server and cannot be edited.</div>';
 
     var sides=[['offense','Offense','QB, RB, WR, TE, OL'],['defense','Defense','DL, LB, CB, S'],['special','Special teams','K, P']];
     groupsEl.innerHTML=sides.map(function(sd){
