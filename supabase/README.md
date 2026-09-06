@@ -59,6 +59,77 @@ with the rule's wording corrected — paste as `index.ts` for the function
 (`collective/index.html`, `app.html`) already states and enforces the rule and
 collapses the games feed to the counting row.
 
+### `collective_member_removal.sql` — removing a contributor, safely
+Until this file there was no way to remove somebody from the Collective except
+by hand in the SQL editor: no preview, no deletion order, no rollback, no audit
+and no recalculation. It installs the whole path in the **database**, so the
+guarantee does not depend on a browser being honest or on which edge function
+happens to be deployed:
+
+* `collective.admin_member_preview(actor, slug)` — read-only. Exactly what a
+  removal would delete and what it would preserve, counted from real rows.
+* `collective.admin_member_remove(actor, slug, mode, confirm)` — the removal, in
+  **one transaction**, in two modes. `membership_only` revokes access (every
+  key, origin and invite goes) and keeps every submission, grade and record.
+  `full_collective_delete` additionally deletes every row under that creator in
+  the collective schema, and is refused unless `confirm` is the word `DELETE`.
+* `collective.admin_member_activity(actor)` — submissions, graded count, last
+  slate and removal state per creator, for the admin list.
+* `public.collective_member_*` — the three doors a signed-in admin's browser may
+  knock on over PostgREST. The acting user is `auth.uid()` and there is **no
+  argument for it**, so nothing the page sends can claim to be somebody else.
+  `authenticated` has execute; `anon` is revoked.
+
+Admin is decided by `collective.mcr_is_admin()` against the config key
+`admin.user_ids` — the allowlist `collective_admin` already uses, not a second
+admin system.
+
+**Nothing is hardcoded except what must be.** The Collective's schema is not in
+this repository, so the creators / models / projections tables and every
+dependent table are discovered from `to_regclass` and from `pg_constraint` at
+call time; deletion follows the real foreign keys, deepest first, with no
+`CASCADE` anywhere. What is hardcoded is what may never be deleted: games,
+teams, aliases, odds, books, closing lines, sports, seasons, config; anything
+financial (earnings, ledgers, payouts, invoices, billing, subscriptions,
+referrals); the audit log; every other contributor's rows; and anything outside
+the collective schema — `auth.users` above all. **The creator row itself is kept
+in both modes** and stamped `removed_at` / `removed_by` / `removal_mode`, so a
+removal is auditable and a slug cannot be silently reused. Two config keys
+adjust the protected set without editing the file:
+`collective.member_removal.extra_protected` and `.extra_deletable`.
+
+A protected table that still points at rows being deleted raises its own foreign
+key and the **whole removal rolls back** — half a contributor is not an outcome
+this offers. The attempt is in `collective.admin_audit_log` either way; that
+table has RLS on and no client grants, and records deleted credentials as a
+count, never as a prefix or a hash.
+
+Deletes on `collective.projections` go through the `collective.maintenance`
+switch the append-only trigger honours, set transaction-locally so it lifts on
+rollback as well as on commit. Afterwards every materialized view in the schema
+is refreshed and every zero-argument `rebuild_*` / `recalc_*` / `refresh_*`
+routine is run, and the response says which. Views — `consensus`,
+`model_records`, `model_coverage_totals` — need nothing: they are derived, so
+they are correct the instant the rows are gone.
+
+Run it once, in the SQL editor, like every other file here. Rows 0–10 of its
+report should each say `ok`. Tested against a real PostgreSQL by
+`tools/collective/member_removal_sql.test.js` (`npm run collective:sql`), which
+applies this file unmodified to a reconstruction of the Collective schema and
+then attacks it as anon, as a contributor, twice over, and with a foreign key
+deliberately in the way. The admin screen that drives it is
+`collective/admin.html`, held offline by
+`tools/collective/member_removal.test.js`.
+
+**One thing this file cannot do.** `collective_ingest`, `collective_public` and
+`collective_admin` are deployed from the dashboard and are not in this
+repository, so they do not know the word `removed_at`. Enforcement here is
+therefore structural rather than polite: the removal deletes the credentials, and
+a trigger on `projections` refuses an insert for a removed contributor's model
+(failing **open** on anything unexpected, so a removal that cannot be confirmed
+never costs another creator their slate). When those functions are next
+committed, they should read `removed_at` too.
+
 ### `publisher_briefs.sql` — shareable snapshots of a decision
 Two tables, because the boundary between what is publishable and what is
 privileged should be a structural fact rather than a policy that has to stay
