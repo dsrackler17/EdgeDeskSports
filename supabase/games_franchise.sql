@@ -185,6 +185,12 @@ set search_path = pg_catalog, pg_temp as $$
     'fc_played',     jsonb_build_object('xp', 60, 'tc', 30),
     'fc_win',        jsonb_build_object('xp', 40, 'tc', 40, 'cp', 2),
     'fc_upset',      jsonb_build_object('xp', 40, 'cp', 1),
+    -- the conference (Phase 6): a round played, a round won, a playoff game
+    -- won on top of it, and the title
+    'conf_game',     jsonb_build_object('xp', 80, 'tc', 35),
+    'conf_win',      jsonb_build_object('xp', 50, 'tc', 50, 'cp', 2),
+    'conf_playoff',  jsonb_build_object('xp', 100, 'cp', 1),
+    'conf_title',    jsonb_build_object('xp', 400, 'tc', 300, 'cp', 10),
     'import_unverified_price_it', jsonb_build_object('xp', 50),
     'import_unverified_pick5',    jsonb_build_object('xp', 75)
   );
@@ -3141,7 +3147,19 @@ begin
     'facilities', coalesce(f.facilities, '{}'::jsonb), 'facilities_table', public.franchise_facilities(),
     'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
     'fc_record', (select jsonb_build_object('wins', coalesce(sum(fc_wins), 0), 'losses', coalesce(sum(fc_losses), 0), 'ties', coalesce(sum(fc_ties), 0))
-                    from public.franchise_rivalries r where r.franchise_id = f.id));
+                    from public.franchise_rivalries r where r.franchise_id = f.id),
+    -- the titles, wherever they were won: the conference, the season, the
+    -- team beaten in the final. A franchise that has since left the
+    -- conference keeps every one of them.
+    'titles', (select coalesce(jsonb_agg(jsonb_build_object(
+        'conference', c.name, 'season_number', t.season_number,
+        'label', 'Season ' || public.games_roman(t.season_number),
+        'runner_up', public.franchise_identity_json(t.runner_up_id),
+        'completed_at', t.completed_at) order by t.completed_at desc), '[]'::jsonb)
+      from public.franchise_conference_titles t join public.franchise_conferences c on c.id = t.conference_id
+      where t.champion_id = f.id),
+    'conference', (select public.franchise_conference_json(m.conference_id)
+                     from public.franchise_conference_members m where m.franchise_id = f.id));
 end;
 $$;
 
@@ -3573,10 +3591,27 @@ create or replace function public.franchise_home(p_secret text default null)
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
 declare
   f public.franchises%rowtype; v_week text := public.games_week_key(now()); v_season integer;
-  v_wk jsonb; v_ach jsonb; v_ss jsonb; v_recent jsonb;
+  v_wk jsonb; v_ach jsonb; v_ss jsonb; v_recent jsonb; v_conf jsonb; v_cid uuid;
 begin
   select * into f from public.franchises where id = public.franchise_of(p_secret);
   if not found then return null; end if;
+  v_cid := public.franchise_conference_of(f.id);
+  if v_cid is not null then
+    v_conf := public.franchise_conference_json(v_cid) || jsonb_build_object(
+      'place', (select (j->>'place')::int from jsonb_array_elements(public.franchise_conference_standings_json(v_cid)) j
+                 where (j->'franchise'->>'id')::uuid = f.id),
+      'line', (select (j->>'wins') || '–' || (j->>'losses') || (case when (j->>'ties')::int > 0 then '–' || (j->>'ties') else '' end)
+                 from jsonb_array_elements(public.franchise_conference_standings_json(v_cid)) j
+                where (j->'franchise'->>'id')::uuid = f.id),
+      'titles', (select coalesce(m.titles, 0) from public.franchise_conference_members m
+                  where m.conference_id = v_cid and m.franchise_id = f.id),
+      'ready', exists (select 1 from public.franchise_conference_games g
+                        where g.conference_id = v_cid and g.status = 'scheduled' and g.opens_at <= now()
+                          and g.season_number = (select season_number from public.franchise_conferences where id = v_cid)),
+      'next', (select public.franchise_conference_game_json(g.id, false) from public.franchise_conference_games g
+                where g.conference_id = v_cid and g.status = 'scheduled' and (g.a_id = f.id or g.b_id = f.id)
+                order by g.round limit 1));
+  end if;
   select jsonb_build_object(
       'week_key', v_week,
       'price_it', count(*) filter (where kind = 'price_it'),
@@ -3589,7 +3624,9 @@ begin
       'h2h', count(*) filter (where kind = 'h2h_locked'),
       'h2h_wins', count(*) filter (where kind = 'h2h_win'),
       'fc', count(*) filter (where kind = 'fc_played'),
-      'fc_wins', count(*) filter (where kind = 'fc_win'))
+      'fc_wins', count(*) filter (where kind = 'fc_win'),
+      'conf', count(*) filter (where kind = 'conf_game'),
+      'conf_wins', count(*) filter (where kind = 'conf_win'))
     into v_wk from public.franchise_activity where franchise_id = f.id and week_key = v_week;
   select coalesce(jsonb_agg(jsonb_build_object('id', a.achievement_id, 'name', d.name, 'description', d.description,
       'season', a.season, 'earned_at', a.earned_at, 'exclusive_season', d.exclusive_season) order by d.sort), '[]'::jsonb)
@@ -3645,6 +3682,9 @@ begin
       'played', (select count(*) from public.franchise_challenges c where (c.challenger_id = f.id or c.opponent_id = f.id) and c.status = 'FINAL'),
       'last', (select public.franchise_challenge_json(c.id, f.id) - 'box' from public.franchise_challenges c
                 where (c.challenger_id = f.id or c.opponent_id = f.id) and c.status = 'FINAL' order by c.played_at desc limit 1)),
+    -- the conference (Phase 6): where the franchise stands in its league of
+    -- friends, whether a round is waiting to be played, and the titles won
+    'conference', v_conf,
     'economy', public.franchise_economy()->>'version');
 end;
 $$;
@@ -3869,6 +3909,938 @@ create trigger franchise_h2h_settled
 commit;
 
 -- ===========================================================================
+-- CONFERENCES AND PLAYOFFS — Phase 6, conference_v1
+--
+-- A LEAGUE OF FRIENDS WITH STANDINGS OF ITS OWN. Phase 3 gave a franchise a
+-- one-off game against another franchise; a conference gives it a season
+-- against several: a round robin drawn on the server, one round a football
+-- week, standings that are the sum of what happened, a bracket at the end
+-- and a title that stays on the record.
+--
+-- It is the same simulator, the same neutral field and the same ladder the
+-- challenge already uses. What is new is the SHAPE: a table of franchises
+-- that all play each other, a round that opens on a clock rather than on an
+-- invite, seeds drawn from the standings, and a champion.
+--
+-- WHO DECIDES WHAT
+--   * the commissioner (the franchise that created it) names it, and starts
+--     a season when the conference is full enough;
+--   * the SERVER draws the schedule, from the conference's own seed, so
+--     nobody picks their own opponents or their own week;
+--   * ANY member may advance the conference — the round is played once, on
+--     the server, and a second caller changes nothing. There is no cron and
+--     no privileged client: whoever opens the page after the round opens
+--     plays it for everybody.
+--
+-- A CONFERENCE IS FRANCHISES, NEVER ACCOUNTS. Every row a member reads names
+-- a franchise — a city, a mark, a record. The invite is a link, the same
+-- shape Head-to-Head and the challenge already use, and a franchise founded
+-- on a device secret joins on the same terms as one on an account.
+-- ===========================================================================
+
+begin;
+
+-- THE CONFERENCE. One row per league; its season state lives here, and the
+-- permanent record of each season it has finished lives in
+-- franchise_conference_titles.
+create table if not exists public.franchise_conferences (
+  id               uuid primary key default gen_random_uuid(),
+  invite_token     text not null unique default public.games_token(),
+  name             text not null check (char_length(name) between 2 and 32),
+  commissioner_id  uuid not null references public.franchises (id) on delete cascade,
+  seed             text not null,
+  status           text not null default 'forming'
+                     check (status in ('forming', 'regular', 'playoffs', 'complete')),
+  season_number    integer not null default 0 check (season_number >= 0),
+  rounds           integer not null default 0 check (rounds >= 0),   -- regular rounds this season
+  playoff_teams    integer not null default 0 check (playoff_teams in (0, 2, 4)),
+  champion_id      uuid references public.franchises (id) on delete set null,
+  created_at       timestamptz not null default now(),
+  started_at       timestamptz,
+  completed_at     timestamptz
+);
+
+create index if not exists franchise_conferences_commissioner on public.franchise_conferences (commissioner_id);
+
+-- A MEMBER, and its standing in the season under way. A franchise belongs to
+-- at most one conference at a time — the unique key says so rather than a
+-- comment — and leaving deletes the row; what it earned stays on the title
+-- record and on its own ledger.
+create table if not exists public.franchise_conference_members (
+  conference_id    uuid not null references public.franchise_conferences (id) on delete cascade,
+  franchise_id     uuid not null unique references public.franchises (id) on delete cascade,
+  role             text not null default 'member' check (role in ('commissioner', 'member')),
+  joined_at        timestamptz not null default now(),
+  wins             integer not null default 0,
+  losses           integer not null default 0,
+  ties             integer not null default 0,
+  points_for       integer not null default 0,
+  points_against   integer not null default 0,
+  seed             integer,                    -- set when the regular rounds end
+  eliminated       boolean not null default false,
+  titles           integer not null default 0,
+  primary key (conference_id, franchise_id)
+);
+
+-- ONE CONFERENCE GAME. Neutral, like every franchise-versus-franchise game:
+-- two real rosters, two schemes, each side's own week of preparation. `a` is
+-- the higher seed in a playoff round, which is also who advances from a tie
+-- the overtime could not break.
+create table if not exists public.franchise_conference_games (
+  id               uuid primary key default gen_random_uuid(),
+  conference_id    uuid not null references public.franchise_conferences (id) on delete cascade,
+  season_number    integer not null,
+  round            integer not null check (round >= 1),
+  kind             text not null default 'regular' check (kind in ('regular', 'semifinal', 'final')),
+  week_key         text not null,
+  opens_at         timestamptz not null,
+  a_id             uuid not null references public.franchises (id) on delete cascade,
+  b_id             uuid not null references public.franchises (id) on delete cascade,
+  a_seed           integer,
+  b_seed           integer,
+  status           text not null default 'scheduled' check (status in ('scheduled', 'final')),
+  seed             text not null,
+  played_at        timestamptz,
+  score_a          integer,
+  score_b          integer,
+  result           text check (result in ('W', 'L', 'T')),   -- a's
+  advanced_id      uuid references public.franchises (id) on delete set null,
+  box              jsonb not null default '{}'::jsonb,
+  sim_version      text,
+  created_at       timestamptz not null default now(),
+  constraint franchise_conference_games_two_sides check (a_id <> b_id),
+  unique (conference_id, season_number, round, a_id)
+);
+
+create index if not exists franchise_conference_games_round
+  on public.franchise_conference_games (conference_id, season_number, round, status);
+create index if not exists franchise_conference_games_side
+  on public.franchise_conference_games (a_id, played_at desc);
+create index if not exists franchise_conference_games_side_b
+  on public.franchise_conference_games (b_id, played_at desc);
+
+-- A FINISHED CONFERENCE SEASON, frozen. The champion, the runner-up and the
+-- standings exactly as they read when the final was played — so a franchise
+-- that later leaves the conference is still in the record it earned.
+create table if not exists public.franchise_conference_titles (
+  conference_id    uuid not null references public.franchise_conferences (id) on delete cascade,
+  season_number    integer not null,
+  champion_id      uuid references public.franchises (id) on delete set null,
+  runner_up_id     uuid references public.franchises (id) on delete set null,
+  standings        jsonb not null default '[]'::jsonb,
+  completed_at     timestamptz not null default now(),
+  primary key (conference_id, season_number)
+);
+
+create index if not exists franchise_conference_titles_champion
+  on public.franchise_conference_titles (champion_id, completed_at desc);
+
+-- The record grows the kinds a conference writes.
+alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
+alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
+  ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
+   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason',
+   'market','scout','draft','signing','release',
+   'conf_joined','conf_season','conf_game','conf_win','conf_playoff','conf_title'));
+
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('conf_first', 'League of Friends', 'Joined a conference of franchises.', null, 80),
+  ('conf_top',   'Top Seed',          'Finished a conference regular season in first.', null, 81),
+  ('conf_post',  'Postseason',        'Won a conference playoff game.', null, 82),
+  ('conf_title', 'Champion',          'Won a conference title.', null, 83),
+  ('conf_two',   'Two Rings',         'Won a second conference title.', null, 84)
+on conflict (id) do nothing;
+
+-- RLS: deny by default, as everywhere else. A member reads the conference it
+-- is in, the members of it, its games and its titles — the invite link
+-- included, because inviting a friend is what a member is for. A stranger
+-- holding a link reads nothing from the tables; franchise_conference_peek()
+-- decides what they may see, and nobody writes anything directly.
+alter table public.franchise_conferences         enable row level security;
+alter table public.franchise_conference_members  enable row level security;
+alter table public.franchise_conference_games    enable row level security;
+alter table public.franchise_conference_titles   enable row level security;
+
+-- "Is the caller's account a member of this conference?" — a definer
+-- function for the same reason franchise_is_mine is one: a policy that asks
+-- its own table recurses.
+create or replace function public.franchise_conference_is_mine(p_conference uuid)
+returns boolean language sql stable security definer set search_path = public, pg_temp as $$
+  select auth.uid() is not null and exists (
+    select 1 from public.franchise_conference_members m
+      join public.franchises f on f.id = m.franchise_id
+     where m.conference_id = p_conference and f.user_id = auth.uid());
+$$;
+
+drop policy if exists franchise_conferences_member on public.franchise_conferences;
+create policy franchise_conferences_member on public.franchise_conferences for select
+  using (public.franchise_conference_is_mine(id));
+
+drop policy if exists franchise_conference_members_member on public.franchise_conference_members;
+create policy franchise_conference_members_member on public.franchise_conference_members for select
+  using (public.franchise_conference_is_mine(conference_id));
+
+drop policy if exists franchise_conference_games_member on public.franchise_conference_games;
+create policy franchise_conference_games_member on public.franchise_conference_games for select
+  using (public.franchise_conference_is_mine(conference_id));
+
+drop policy if exists franchise_conference_titles_member on public.franchise_conference_titles;
+create policy franchise_conference_titles_member on public.franchise_conference_titles for select
+  using (public.franchise_conference_is_mine(conference_id));
+
+commit;
+
+begin;
+
+-- THE PUBLISHED TABLE — conference_v1. Sizes, the round cap, how many make
+-- the bracket and what the ladder moves by, in one place, so the client can
+-- render the rules without a round trip and the test can pin the two
+-- together number for number.
+create or replace function public.franchise_conference_config()
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'conference_v1',
+    'name_max', 32,
+    'min_teams', 4, 'max_teams', 12, 'start_min', 4,
+    'rounds_max', 7,
+    'playoff_teams', 4, 'playoff_small', 2, 'playoff_large_from', 6,
+    'ladder_k', 24,
+    'tiebreak', jsonb_build_array('wins', 'point differential', 'points scored', 'ladder rating', 'joined first'));
+$$;
+
+-- How many franchises make the bracket, for a conference of n.
+create or replace function public.franchise_conference_playoff_teams(p_n integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case when coalesce(p_n, 0) >= (public.franchise_conference_config()->>'playoff_large_from')::int
+              then (public.franchise_conference_config()->>'playoff_teams')::int
+              else (public.franchise_conference_config()->>'playoff_small')::int end;
+$$;
+
+-- ── read models ───────────────────────────────────────────────────────────
+
+-- THE STANDINGS, in the order the tiebreak publishes: wins (a tie is half a
+-- win), then point differential, then points scored, then ladder rating,
+-- then who joined first. Every row is a FRANCHISE — a city, a mark, a
+-- record — and never an account.
+create or replace function public.franchise_conference_standings_json(p_conference uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'place', s.rn, 'franchise', public.franchise_identity_json(s.franchise_id),
+      'role', s.role, 'wins', s.wins, 'losses', s.losses, 'ties', s.ties,
+      'points_for', s.points_for, 'points_against', s.points_against,
+      'diff', s.points_for - s.points_against, 'played', s.wins + s.losses + s.ties,
+      'seed', s.seed, 'eliminated', s.eliminated, 'titles', s.titles) order by s.rn), '[]'::jsonb)
+  from (select m.*, row_number() over (
+            order by (m.wins * 2 + m.ties) desc, (m.points_for - m.points_against) desc,
+                     m.points_for desc, f.ladder_rating desc, m.joined_at, m.franchise_id) as rn
+          from public.franchise_conference_members m
+          join public.franchises f on f.id = m.franchise_id
+         where m.conference_id = p_conference) s;
+$$;
+
+-- ONE CONFERENCE GAME as the pages read it: both sides named, the score, and
+-- the full box only when asked for.
+create or replace function public.franchise_conference_game_json(p_game uuid, p_full boolean default false)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('id', g.id, 'season_number', g.season_number, 'round', g.round, 'kind', g.kind,
+      'week_key', g.week_key, 'opens_at', g.opens_at, 'open', g.opens_at <= now(), 'status', g.status,
+      'a', public.franchise_identity_json(g.a_id), 'b', public.franchise_identity_json(g.b_id),
+      'a_seed', g.a_seed, 'b_seed', g.b_seed,
+      'played_at', g.played_at, 'score_a', g.score_a, 'score_b', g.score_b, 'result', g.result,
+      'ot', coalesce((g.box->>'ot')::boolean, false), 'advanced_id', g.advanced_id,
+      'potg', case when g.status = 'final' then jsonb_build_object('a', g.box->'a'->'potg'->>'name', 'b', g.box->'b'->'potg'->>'name') end,
+      'sim_version', g.sim_version,
+      'box', case when p_full then g.box else null end)
+  from public.franchise_conference_games g where g.id = p_game;
+$$;
+
+-- The conference itself, without the standings or the schedule: what a chip
+-- or a line on the HQ needs.
+create or replace function public.franchise_conference_json(p_conference uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('id', c.id, 'name', c.name, 'status', c.status,
+      'season_number', c.season_number, 'label', case when c.season_number > 0 then 'Season ' || public.games_roman(c.season_number) end,
+      'rounds', c.rounds, 'playoff_teams', c.playoff_teams,
+      'members', (select count(*) from public.franchise_conference_members m where m.conference_id = c.id),
+      'commissioner', public.franchise_identity_json(c.commissioner_id),
+      'champion', case when c.champion_id is not null then public.franchise_identity_json(c.champion_id) end,
+      'created_at', c.created_at, 'started_at', c.started_at, 'completed_at', c.completed_at,
+      'round_played', (select coalesce(max(g.round), 0) from public.franchise_conference_games g
+                        where g.conference_id = c.id and g.season_number = c.season_number and g.status = 'final'),
+      'next_opens_at', (select min(g.opens_at) from public.franchise_conference_games g
+                         where g.conference_id = c.id and g.season_number = c.season_number and g.status = 'scheduled'))
+  from public.franchise_conferences c where c.id = p_conference;
+$$;
+
+-- The conference a franchise belongs to, or null.
+create or replace function public.franchise_conference_of(p_franchise uuid)
+returns uuid language sql stable security definer set search_path = public, pg_temp as $$
+  select conference_id from public.franchise_conference_members where franchise_id = p_franchise;
+$$;
+
+commit;
+
+begin;
+
+-- ── the schedule ──────────────────────────────────────────────────────────
+
+-- DRAW A SEASON. A single round robin by the circle method: one franchise
+-- held still, the rest rotated a place a round, so everybody plays everybody
+-- once and nobody plays twice in a round. An odd conference carries a ghost,
+-- and whoever draws it has the week off. The order the franchises enter the
+-- circle is seeded from the conference's own seed and the season number, so
+-- the same conference always draws the same schedule and no client chooses
+-- its own opponents. Rounds are capped by the published table, so a large
+-- conference plays a partial round robin rather than a season without end.
+create or replace function public.franchise_conference_draw(p_conference uuid, p_now timestamptz default now())
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  c public.franchise_conferences%rowtype; cfg jsonb := public.franchise_conference_config();
+  ids uuid[]; n integer; m integer; l integer; v_rounds integer; r integer; t integer;
+  ia uuid; ib uuid; wk text; opens timestamptz; made integer := 0;
+  slot integer[];
+begin
+  select * into c from public.franchise_conferences where id = p_conference for update;
+  if not found then raise exception 'no conference' using errcode = '22023'; end if;
+  select array_agg(franchise_id order by md5(c.seed || ':' || c.season_number || ':' || franchise_id::text))
+    into ids from public.franchise_conference_members where conference_id = p_conference;
+  n := coalesce(array_length(ids, 1), 0);
+  if n < (cfg->>'start_min')::int then
+    raise exception 'a conference needs % franchises to start; there are %', (cfg->>'start_min')::int, n using errcode = '55000';
+  end if;
+  if exists (select 1 from public.franchise_conference_games
+              where conference_id = p_conference and season_number = c.season_number) then
+    return 0;
+  end if;
+
+  m := n + (n % 2);                       -- the ghost makes it even
+  l := m - 1;                             -- the rotating places
+  v_rounds := least((cfg->>'rounds_max')::int, l);
+
+  for r in 1..v_rounds loop
+    wk := public.games_week_key(p_now + ((r - 1) * interval '7 days'));
+    opens := ((wk::date + 4)::timestamp + interval '7 hours') at time zone 'UTC';
+    -- the rotated places, 1..l, for this round (r - 1 turns of the circle)
+    slot := array(select 2 + ((s - 1 + (r - 1)) % l) from generate_series(1, l) s);
+    for t in 0..(m / 2 - 1) loop
+      if t = 0 then
+        ia := ids[1];                     -- the franchise held still
+        ib := ids[slot[l]];
+      else
+        ia := ids[slot[t]];
+        ib := ids[slot[l - t]];
+      end if;
+      -- a bye: the ghost sits at index m, which no franchise fills
+      continue when ia is null or ib is null;
+      insert into public.franchise_conference_games
+        (conference_id, season_number, round, kind, week_key, opens_at, a_id, b_id, seed)
+      values (p_conference, c.season_number, r, 'regular', wk, opens, ia, ib,
+        md5(c.seed || ':g:' || c.season_number || ':' || r || ':' || ia::text || ':' || ib::text));
+      made := made + 1;
+    end loop;
+  end loop;
+  update public.franchise_conferences set rounds = v_rounds, playoff_teams = public.franchise_conference_playoff_teams(n)
+   where id = p_conference;
+  return made;
+end;
+$$;
+
+-- SEED THE BRACKET. Called once, when the last regular round has been
+-- played: every member takes the place the standings gave it, the ones who
+-- did not make the bracket are eliminated, and the first playoff round is
+-- scheduled for the following football week. Four make a bracket where the
+-- conference is big enough for one; otherwise the top two meet in the final.
+create or replace function public.franchise_conference_bracket(p_conference uuid)
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  c public.franchise_conferences%rowtype; st jsonb; k integer; pt integer; n integer;
+  wk text; opens timestamptz; base timestamptz; made integer := 0; s1 uuid; s2 uuid; s3 uuid; s4 uuid;
+  row_ jsonb; v_season integer := public.games_season_of(now());
+begin
+  select * into c from public.franchise_conferences where id = p_conference for update;
+  if not found then raise exception 'no conference' using errcode = '22023'; end if;
+  st := public.franchise_conference_standings_json(p_conference);
+  n := jsonb_array_length(st);
+  pt := least(coalesce(nullif(c.playoff_teams, 0), public.franchise_conference_playoff_teams(n)), n);
+  -- the place each member finished, and who is out
+  for k in 0..n - 1 loop
+    row_ := st->k;
+    update public.franchise_conference_members
+       set seed = k + 1, eliminated = (k + 1) > pt
+     where conference_id = p_conference and franchise_id = (row_->'franchise'->>'id')::uuid;
+  end loop;
+  if n > 0 then
+    perform public.franchise_award((st->0->'franchise'->>'id')::uuid, 'conf_top', v_season,
+      jsonb_build_object('conference', p_conference, 'season_number', c.season_number));
+  end if;
+
+  -- the playoff round opens the football week after the last regular one
+  select max(opens_at) into base from public.franchise_conference_games
+   where conference_id = p_conference and season_number = c.season_number;
+  wk := public.games_week_key(coalesce(base, now()) + interval '7 days');
+  opens := ((wk::date + 4)::timestamp + interval '7 hours') at time zone 'UTC';
+
+  -- a bracket needs two sides. The only way a season reaches this with fewer
+  -- is an account deleted mid-season taking its franchise with it; the
+  -- season is closed where it stands rather than left half-drawn.
+  if n < 2 then
+    update public.franchise_conferences
+       set status = 'complete', champion_id = case when n = 1 then (st->0->'franchise'->>'id')::uuid end,
+           completed_at = now()
+     where id = p_conference;
+    return 0;
+  end if;
+  s1 := (st->0->'franchise'->>'id')::uuid;
+  s2 := (st->1->'franchise'->>'id')::uuid;
+  if pt >= 4 then
+    s3 := (st->2->'franchise'->>'id')::uuid; s4 := (st->3->'franchise'->>'id')::uuid;
+    insert into public.franchise_conference_games
+      (conference_id, season_number, round, kind, week_key, opens_at, a_id, b_id, a_seed, b_seed, seed)
+    values (p_conference, c.season_number, c.rounds + 1, 'semifinal', wk, opens, s1, s4, 1, 4,
+            md5(c.seed || ':sf1:' || c.season_number)),
+           (p_conference, c.season_number, c.rounds + 1, 'semifinal', wk, opens, s2, s3, 2, 3,
+            md5(c.seed || ':sf2:' || c.season_number));
+    made := 2;
+  else
+    insert into public.franchise_conference_games
+      (conference_id, season_number, round, kind, week_key, opens_at, a_id, b_id, a_seed, b_seed, seed)
+    values (p_conference, c.season_number, c.rounds + 1, 'final', wk, opens, s1, s2, 1, 2,
+            md5(c.seed || ':fin:' || c.season_number));
+    made := 1;
+  end if;
+  update public.franchise_conferences set status = 'playoffs', playoff_teams = pt where id = p_conference;
+  return made;
+end;
+$$;
+
+-- THE FINAL, once both semifinals are in: the two who advanced, the higher
+-- seed listed first, the football week after the semifinals.
+create or replace function public.franchise_conference_final(p_conference uuid)
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  c public.franchise_conferences%rowtype; a uuid; b uuid; sa integer; sb integer;
+  swap_id uuid; swap_seed integer;
+  wk text; opens timestamptz; base timestamptz; sf_round integer;
+begin
+  select * into c from public.franchise_conferences where id = p_conference for update;
+  if not found then return 0; end if;
+  select round into sf_round from public.franchise_conference_games
+   where conference_id = p_conference and season_number = c.season_number and kind = 'semifinal' limit 1;
+  if sf_round is null then return 0; end if;
+  if exists (select 1 from public.franchise_conference_games
+              where conference_id = p_conference and season_number = c.season_number and kind = 'final') then
+    return 0;
+  end if;
+  if exists (select 1 from public.franchise_conference_games
+              where conference_id = p_conference and season_number = c.season_number and kind = 'semifinal' and status <> 'final') then
+    return 0;
+  end if;
+  select g.advanced_id, case when g.advanced_id = g.a_id then g.a_seed else g.b_seed end, g.opens_at
+    into a, sa, base
+    from public.franchise_conference_games g
+   where g.conference_id = p_conference and g.season_number = c.season_number and g.kind = 'semifinal'
+   order by least(g.a_seed, g.b_seed) limit 1;
+  select g.advanced_id, case when g.advanced_id = g.a_id then g.a_seed else g.b_seed end
+    into b, sb
+    from public.franchise_conference_games g
+   where g.conference_id = p_conference and g.season_number = c.season_number and g.kind = 'semifinal'
+   order by least(g.a_seed, g.b_seed) desc limit 1;
+  if a is null or b is null or a = b then return 0; end if;
+  if sb < sa then                                    -- the better seed is listed first
+    swap_id := a; swap_seed := sa; a := b; sa := sb; b := swap_id; sb := swap_seed;
+  end if;
+  wk := public.games_week_key(coalesce(base, now()) + interval '7 days');
+  opens := ((wk::date + 4)::timestamp + interval '7 hours') at time zone 'UTC';
+  insert into public.franchise_conference_games
+    (conference_id, season_number, round, kind, week_key, opens_at, a_id, b_id, a_seed, b_seed, seed)
+  values (p_conference, c.season_number, sf_round + 1, 'final', wk, opens, a, b, sa, sb,
+          md5(c.seed || ':fin:' || c.season_number));
+  return 1;
+end;
+$$;
+
+commit;
+
+begin;
+
+-- ── playing a round ───────────────────────────────────────────────────────
+
+-- ONE CONFERENCE GAME, played on the server. The same versus simulator a
+-- challenge runs on: both rosters, both schemes, both weeks of preparation,
+-- a neutral field, seeded from the conference's own seed so the same game
+-- simulated twice is the same game. Both sides are paid by the table, keyed
+-- once by the game; both careers grow by the box; the rivalry between them
+-- moves; and both move on the ladder by the same ordinary Elo the challenge
+-- uses. A playoff tie the overtime could not break advances the better seed,
+-- and the row says so.
+create or replace function public.franchise_conference_play_one(p_game uuid, p_now timestamptz default now())
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  g public.franchise_conference_games%rowtype; c public.franchise_conferences%rowtype;
+  econ jsonb := public.franchise_economy(); v_box jsonb; pts_a integer; pts_b integer; res_a text;
+  ra integer; rb integer; da integer; db integer; ln jsonb; adv uuid;
+  side record; v_label text; v_season integer := public.games_season_of(p_now); v_titles integer;
+begin
+  select * into g from public.franchise_conference_games where id = p_game for update;
+  if not found then raise exception 'no game' using errcode = 'P0002'; end if;
+  if g.status = 'final' then return public.franchise_conference_game_json(g.id, false); end if;
+  select * into c from public.franchise_conferences where id = g.conference_id;
+
+  -- both franchise rows, in id order, so two callers cannot deadlock
+  perform 1 from public.franchises where id in (g.a_id, g.b_id) order by id for update;
+  select ladder_rating into ra from public.franchises where id = g.a_id;
+  select ladder_rating into rb from public.franchises where id = g.b_id;
+
+  v_box := public.franchise_sim_versus(g.a_id, g.b_id, g.seed, g.week_key);
+  pts_a := (v_box->'a'->>'final')::int; pts_b := (v_box->'b'->>'final')::int; res_a := v_box->>'result_a';
+  -- a playoff cannot end level: the better seed is `a`, and advances
+  adv := case when g.kind = 'regular' then null
+              when pts_a >= pts_b then g.a_id else g.b_id end;
+  da := public.games_elo_delta(ra, rb, case res_a when 'W' then 1 when 'L' then 0 else 0.5 end, (public.franchise_conference_config()->>'ladder_k')::int);
+  db := public.games_elo_delta(rb, ra, case res_a when 'W' then 0 when 'L' then 1 else 0.5 end, (public.franchise_conference_config()->>'ladder_k')::int);
+
+  update public.franchise_conference_games
+     set status = 'final', played_at = p_now, score_a = pts_a, score_b = pts_b, result = res_a,
+         advanced_id = adv, box = v_box, sim_version = v_box->>'sim'
+   where id = g.id;
+  update public.franchises set ladder_rating = ladder_rating + da, ladder_games = ladder_games + 1, updated_at = p_now where id = g.a_id;
+  update public.franchises set ladder_rating = ladder_rating + db, ladder_games = ladder_games + 1, updated_at = p_now where id = g.b_id;
+  perform public.franchise_rivalry_bump(g.a_id, g.b_id, 'fc', res_a);
+
+  -- the standings are the sum of what happened, not a number a client sends
+  update public.franchise_conference_members
+     set wins = wins + (res_a = 'W')::int, losses = losses + (res_a = 'L')::int, ties = ties + (res_a = 'T')::int,
+         points_for = points_for + pts_a, points_against = points_against + pts_b
+   where conference_id = g.conference_id and franchise_id = g.a_id;
+  update public.franchise_conference_members
+     set wins = wins + (res_a = 'L')::int, losses = losses + (res_a = 'W')::int, ties = ties + (res_a = 'T')::int,
+         points_for = points_for + pts_b, points_against = points_against + pts_a
+   where conference_id = g.conference_id and franchise_id = g.b_id;
+  if g.kind <> 'regular' and adv is not null then
+    update public.franchise_conference_members set eliminated = true
+     where conference_id = g.conference_id and franchise_id in (g.a_id, g.b_id) and franchise_id <> adv;
+  end if;
+
+  -- careers grow by the box on both sides; the solo season's lines do not —
+  -- a conference is its own competition
+  for ln in select * from jsonb_array_elements(v_box->'a'->'players') loop
+    update public.game_players set career_stats = public.games_jsonb_sum(career_stats, ln->'stats'), updated_at = p_now
+     where id = (ln->>'id')::uuid and franchise_id = g.a_id;
+  end loop;
+  for ln in select * from jsonb_array_elements(v_box->'b'->'players') loop
+    update public.game_players set career_stats = public.games_jsonb_sum(career_stats, ln->'stats'), updated_at = p_now
+     where id = (ln->>'id')::uuid and franchise_id = g.b_id;
+  end loop;
+
+  for side in
+    select g.a_id as fid, res_a as res, pts_a as pf, pts_b as pa, (select name from public.franchises where id = g.b_id) as opp
+    union all
+    select g.b_id, case res_a when 'W' then 'L' when 'L' then 'W' else 'T' end, pts_b, pts_a,
+           (select name from public.franchises where id = g.a_id)
+  loop
+    v_label := c.name || ' · ' || (case g.kind when 'regular' then 'Round ' || g.round when 'semifinal' then 'Semifinal' else 'The final' end)
+      || ' vs ' || side.opp || ': ' || side.res || ' ' || side.pf || '–' || side.pa;
+    insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+    values (side.fid, 'conf_game', g.id::text, g.week_key, public.games_day_key(p_now),
+      jsonb_build_object('conference', c.id, 'conference_name', c.name, 'game', g.id, 'season_number', g.season_number,
+        'round', g.round, 'kind', g.kind, 'result', side.res, 'for', side.pf, 'against', side.pa, 'opponent', side.opp), p_now)
+    on conflict (franchise_id, kind, key) do nothing;
+    perform public.franchise_credit(side.fid, 'xp', (econ->'conf_game'->>'xp')::int, 'conf_game', g.id::text, v_label);
+    perform public.franchise_credit(side.fid, 'tc', (econ->'conf_game'->>'tc')::int, 'conf_game', g.id::text, v_label);
+    perform public.franchise_award(side.fid, 'conf_first', v_season, jsonb_build_object('conference', c.id));
+    if side.res = 'W' then
+      insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+      values (side.fid, 'conf_win', g.id::text, g.week_key, public.games_day_key(p_now),
+        jsonb_build_object('conference', c.id, 'game', g.id, 'kind', g.kind, 'opponent', side.opp), p_now)
+      on conflict (franchise_id, kind, key) do nothing;
+      perform public.franchise_credit(side.fid, 'xp', (econ->'conf_win'->>'xp')::int, 'conf_win', g.id::text, v_label);
+      perform public.franchise_credit(side.fid, 'tc', (econ->'conf_win'->>'tc')::int, 'conf_win', g.id::text, v_label);
+      perform public.franchise_credit(side.fid, 'cp', (econ->'conf_win'->>'cp')::int, 'conf_win', g.id::text, v_label);
+    end if;
+    -- a playoff game won is worth more than a round in the middle of it
+    if g.kind <> 'regular' and side.fid = adv then
+      insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+      values (side.fid, 'conf_playoff', g.id::text, g.week_key, public.games_day_key(p_now),
+        jsonb_build_object('conference', c.id, 'game', g.id, 'kind', g.kind, 'opponent', side.opp), p_now)
+      on conflict (franchise_id, kind, key) do nothing;
+      perform public.franchise_credit(side.fid, 'xp', (econ->'conf_playoff'->>'xp')::int, 'conf_playoff', g.id::text,
+        c.name || ' · ' || (case g.kind when 'semifinal' then 'Semifinal' else 'The final' end) || ' won');
+      perform public.franchise_credit(side.fid, 'cp', (econ->'conf_playoff'->>'cp')::int, 'conf_playoff', g.id::text,
+        c.name || ' · ' || (case g.kind when 'semifinal' then 'Semifinal' else 'The final' end) || ' won');
+      perform public.franchise_award(side.fid, 'conf_post', v_season, jsonb_build_object('conference', c.id, 'game', g.id));
+    end if;
+  end loop;
+
+  -- the final decides a champion, and the record is written once
+  if g.kind = 'final' and adv is not null then
+    v_label := c.name || ' · ' || 'Season ' || public.games_roman(g.season_number) || ' champion';
+    insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+    values (adv, 'conf_title', c.id::text || ':' || g.season_number, g.week_key, public.games_day_key(p_now),
+      jsonb_build_object('conference', c.id, 'conference_name', c.name, 'season_number', g.season_number,
+        'opponent', (select name from public.franchises where id = case when adv = g.a_id then g.b_id else g.a_id end)), p_now)
+    on conflict (franchise_id, kind, key) do nothing;
+    perform public.franchise_credit(adv, 'xp', (econ->'conf_title'->>'xp')::int, 'conf_title', c.id::text || ':' || g.season_number, v_label);
+    perform public.franchise_credit(adv, 'tc', (econ->'conf_title'->>'tc')::int, 'conf_title', c.id::text || ':' || g.season_number, v_label);
+    perform public.franchise_credit(adv, 'cp', (econ->'conf_title'->>'cp')::int, 'conf_title', c.id::text || ':' || g.season_number, v_label);
+    update public.franchise_conference_members set titles = titles + 1
+     where conference_id = c.id and franchise_id = adv returning titles into v_titles;
+    perform public.franchise_award(adv, 'conf_title', v_season, jsonb_build_object('conference', c.id, 'season_number', g.season_number));
+    if coalesce(v_titles, 0) >= 2 then
+      perform public.franchise_award(adv, 'conf_two', v_season, jsonb_build_object('conference', c.id, 'titles', v_titles));
+    end if;
+  end if;
+
+  return public.franchise_conference_game_json(g.id, false);
+end;
+$$;
+
+-- CLOSE THE SEASON. The champion, the runner-up and the standings frozen as
+-- they read; the conference goes complete and waits for its commissioner to
+-- start another. Written once — a second call finds the row already there.
+create or replace function public.franchise_conference_settle(p_conference uuid, p_now timestamptz default now())
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare c public.franchise_conferences%rowtype; f public.franchise_conference_games%rowtype; loser uuid;
+begin
+  select * into c from public.franchise_conferences where id = p_conference for update;
+  if not found then raise exception 'no conference' using errcode = '22023'; end if;
+  select * into f from public.franchise_conference_games
+   where conference_id = p_conference and season_number = c.season_number and kind = 'final' and status = 'final' limit 1;
+  if not found then return null; end if;
+  loser := case when f.advanced_id = f.a_id then f.b_id else f.a_id end;
+  insert into public.franchise_conference_titles (conference_id, season_number, champion_id, runner_up_id, standings, completed_at)
+  values (p_conference, c.season_number, f.advanced_id, loser, public.franchise_conference_standings_json(p_conference), p_now)
+  on conflict (conference_id, season_number) do nothing;
+  update public.franchise_conferences
+     set status = 'complete', champion_id = f.advanced_id, completed_at = p_now
+   where id = p_conference and status <> 'complete';
+  return jsonb_build_object('champion', public.franchise_identity_json(f.advanced_id),
+                            'runner_up', public.franchise_identity_json(loser),
+                            'season_number', c.season_number);
+end;
+$$;
+
+commit;
+
+begin;
+
+-- ── what a client may call ────────────────────────────────────────────────
+
+-- CREATE a conference. The franchise that creates it is its commissioner and
+-- its first member. A franchise belongs to one conference at a time, and the
+-- server says so rather than silently moving it.
+create or replace function public.franchise_conference_create(p_name text, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); cfg jsonb := public.franchise_conference_config();
+  v_name text; v_id uuid; v_token text;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  if public.franchise_conference_of(v_f) is not null then
+    raise exception 'your franchise is already in a conference' using errcode = '55000';
+  end if;
+  v_name := public.franchise_clean(p_name, (cfg->>'name_max')::int);
+  if v_name is null or char_length(v_name) < 2 then
+    raise exception 'a conference needs a name' using errcode = '22023';
+  end if;
+  insert into public.franchise_conferences (name, commissioner_id, seed)
+  values (v_name, v_f, md5(gen_random_uuid()::text || ':' || v_f::text))
+  returning id, invite_token into v_id, v_token;
+  insert into public.franchise_conference_members (conference_id, franchise_id, role)
+  values (v_id, v_f, 'commissioner');
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'conf_joined', v_id::text, public.games_week_key(now()), public.games_day_key(now()),
+    jsonb_build_object('conference', v_id, 'conference_name', v_name, 'role', 'commissioner'))
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('ok', true, 'id', v_id, 'invite_token', v_token,
+    'conference', public.franchise_conference_json(v_id), 'config', cfg);
+end;
+$$;
+
+-- WHAT A LINK SHOWS before joining: the conference, who is in it, and
+-- whether the caller could join. Franchises, never accounts; no token.
+create or replace function public.franchise_conference_peek(p_token text, p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  c public.franchise_conferences%rowtype; v_f uuid := public.franchise_of(p_secret);
+  cfg jsonb := public.franchise_conference_config(); v_n integer; v_mine uuid;
+begin
+  select * into c from public.franchise_conferences where invite_token = p_token;
+  if not found then return null; end if;
+  select count(*) into v_n from public.franchise_conference_members where conference_id = c.id;
+  v_mine := case when v_f is null then null else public.franchise_conference_of(v_f) end;
+  return jsonb_build_object(
+    'conference', public.franchise_conference_json(c.id),
+    'members', public.franchise_conference_standings_json(c.id),
+    'me', case when v_f is null then null else public.franchise_identity_json(v_f) end,
+    'is_member', coalesce(v_mine = c.id, false),
+    'needs_franchise', v_f is null,
+    'full', v_n >= (cfg->>'max_teams')::int,
+    'open', c.status in ('forming', 'complete'),
+    'in_another', v_mine is not null and v_mine <> c.id,
+    'can_join', v_f is not null and v_mine is null and v_n < (cfg->>'max_teams')::int and c.status in ('forming', 'complete'),
+    'config', cfg);
+end;
+$$;
+
+-- JOIN by link. Open while the conference is forming and between its
+-- seasons; never in the middle of one, because a schedule already drawn
+-- cannot grow a team.
+create or replace function public.franchise_conference_join(p_token text, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); c public.franchise_conferences%rowtype;
+  cfg jsonb := public.franchise_conference_config(); v_n integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into c from public.franchise_conferences where invite_token = p_token for update;
+  if not found then raise exception 'no such conference' using errcode = 'P0002'; end if;
+  if exists (select 1 from public.franchise_conference_members where conference_id = c.id and franchise_id = v_f) then
+    return jsonb_build_object('ok', true, 'already', true, 'conference', public.franchise_conference_json(c.id));
+  end if;
+  if public.franchise_conference_of(v_f) is not null then
+    raise exception 'your franchise is already in a conference' using errcode = '55000';
+  end if;
+  if c.status not in ('forming', 'complete') then
+    raise exception 'the % season is under way; a conference cannot grow a team mid-season', c.name using errcode = '55000';
+  end if;
+  select count(*) into v_n from public.franchise_conference_members where conference_id = c.id;
+  if v_n >= (cfg->>'max_teams')::int then
+    raise exception 'the % is full at % franchises', c.name, (cfg->>'max_teams')::int using errcode = '55000';
+  end if;
+  -- an empty conference kept for its record takes its new commissioner from
+  -- whoever opens the link first; there is nobody else to hand it to
+  insert into public.franchise_conference_members (conference_id, franchise_id, role)
+  values (c.id, v_f, case when v_n = 0 then 'commissioner' else 'member' end);
+  if v_n = 0 then
+    update public.franchise_conferences set commissioner_id = v_f where id = c.id;
+  end if;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'conf_joined', c.id::text, public.games_week_key(now()), public.games_day_key(now()),
+    jsonb_build_object('conference', c.id, 'conference_name', c.name, 'role', case when v_n = 0 then 'commissioner' else 'member' end))
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('ok', true, 'already', false, 'conference', public.franchise_conference_json(c.id));
+end;
+$$;
+
+-- LEAVE. Between seasons only, for the same reason joining is: the schedule
+-- under way names you. A commissioner who leaves hands the conference to
+-- whoever joined next.
+--
+-- THE LAST ONE OUT. An empty conference that never decided a season is
+-- deleted — there is nothing in it to keep. One that DID decide a season is
+-- kept, empty and dormant, because deleting it would take its titles with
+-- it, and a title is a record rather than a possession of whoever is still
+-- in the room. The first franchise to open its link again becomes its
+-- commissioner.
+create or replace function public.franchise_conference_leave(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); c public.franchise_conferences%rowtype; v_next uuid; v_titles integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into c from public.franchise_conferences where id = public.franchise_conference_of(v_f) for update;
+  if not found then return jsonb_build_object('ok', true, 'left', false); end if;
+  if c.status in ('regular', 'playoffs') then
+    raise exception 'the % season is under way; you can leave when it is decided', c.name using errcode = '55000';
+  end if;
+  delete from public.franchise_conference_members where conference_id = c.id and franchise_id = v_f;
+  select franchise_id into v_next from public.franchise_conference_members
+   where conference_id = c.id order by joined_at, franchise_id limit 1;
+  if v_next is null then
+    select count(*) into v_titles from public.franchise_conference_titles where conference_id = c.id;
+    if v_titles = 0 then
+      delete from public.franchise_conferences where id = c.id;
+      return jsonb_build_object('ok', true, 'left', true, 'dissolved', true);
+    end if;
+    update public.franchise_conferences set status = 'forming' where id = c.id;
+    return jsonb_build_object('ok', true, 'left', true, 'dissolved', false, 'dormant', true);
+  end if;
+  if c.commissioner_id = v_f then
+    update public.franchise_conferences set commissioner_id = v_next where id = c.id;
+    update public.franchise_conference_members set role = 'commissioner' where conference_id = c.id and franchise_id = v_next;
+  end if;
+  return jsonb_build_object('ok', true, 'left', true, 'dissolved', false, 'dormant', false);
+end;
+$$;
+
+-- START A SEASON. The commissioner's call, and the only one of theirs: the
+-- schedule is the server's to draw. Records are cleared, the season number
+-- turns, and round one opens on the Saturday of this football week.
+create or replace function public.franchise_conference_start(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); c public.franchise_conferences%rowtype;
+  cfg jsonb := public.franchise_conference_config(); v_n integer; v_made integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into c from public.franchise_conferences where id = public.franchise_conference_of(v_f) for update;
+  if not found then raise exception 'join a conference first' using errcode = 'P0002'; end if;
+  if c.commissioner_id <> v_f then
+    raise exception 'only the commissioner starts a season' using errcode = '42501';
+  end if;
+  if c.status in ('regular', 'playoffs') then
+    raise exception 'the % season is already under way', c.name using errcode = '55000';
+  end if;
+  select count(*) into v_n from public.franchise_conference_members where conference_id = c.id;
+  if v_n < (cfg->>'start_min')::int then
+    raise exception 'a conference needs % franchises to start; there are %', (cfg->>'start_min')::int, v_n using errcode = '55000';
+  end if;
+  update public.franchise_conferences
+     set season_number = c.season_number + 1, status = 'regular', started_at = now(),
+         completed_at = null, champion_id = null
+   where id = c.id returning * into c;
+  update public.franchise_conference_members
+     set wins = 0, losses = 0, ties = 0, points_for = 0, points_against = 0, seed = null, eliminated = false
+   where conference_id = c.id;
+  v_made := public.franchise_conference_draw(c.id, now());
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  select m.franchise_id, 'conf_season', c.id::text || ':' || c.season_number,
+         public.games_week_key(now()), public.games_day_key(now()),
+         jsonb_build_object('conference', c.id, 'conference_name', c.name, 'season_number', c.season_number, 'games', v_made)
+    from public.franchise_conference_members m where m.conference_id = c.id
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('ok', true, 'started', true, 'games', v_made,
+    'conference', public.franchise_conference_json(c.id));
+end;
+$$;
+
+-- RUN THE CONFERENCE FORWARD. Every round whose Saturday has come is played
+-- here, in order, and the first round that has not opened stops the walk.
+-- The bracket is drawn when the regular rounds are done, the final when the
+-- semifinals are, and the season is closed when the final is played. Running
+-- it twice changes nothing: a game already final is left alone.
+--
+-- It takes the clock, the way franchise_play_game() does, so the suite can
+-- play a whole conference season without waiting eleven weeks for it. No
+-- client role may call it; franchise_conference_advance() below is the door,
+-- and it passes now().
+create or replace function public.franchise_conference_run(p_conference uuid, p_now timestamptz default now())
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  c public.franchise_conferences%rowtype;
+  v_round integer; v_kind text; v_opens timestamptz; g record; guard integer := 0;
+  v_played jsonb := '[]'::jsonb; v_settled jsonb;
+begin
+  select * into c from public.franchise_conferences where id = p_conference for update;
+  if not found then raise exception 'no conference' using errcode = '22023'; end if;
+  if c.status not in ('regular', 'playoffs') then
+    return jsonb_build_object('played', 0, 'games', v_played, 'settled', null);
+  end if;
+
+  loop
+    guard := guard + 1;
+    exit when guard > 24;
+    select round, kind, min(opens_at) into v_round, v_kind, v_opens
+      from public.franchise_conference_games
+     where conference_id = c.id and season_number = c.season_number and status = 'scheduled'
+     group by round, kind order by round limit 1;
+    exit when v_round is null;
+    exit when v_opens > p_now;
+    for g in select id from public.franchise_conference_games
+              where conference_id = c.id and season_number = c.season_number and round = v_round and status = 'scheduled'
+              order by id loop
+      v_played := v_played || jsonb_build_array(public.franchise_conference_play_one(g.id, p_now));
+    end loop;
+    if v_kind = 'regular' and v_round >= c.rounds then
+      perform public.franchise_conference_bracket(c.id);
+      select * into c from public.franchise_conferences where id = c.id;
+    elsif v_kind = 'semifinal' then
+      perform public.franchise_conference_final(c.id);
+    elsif v_kind = 'final' then
+      v_settled := public.franchise_conference_settle(c.id, p_now);
+      exit;
+    end if;
+  end loop;
+
+  return jsonb_build_object('played', jsonb_array_length(v_played), 'games', v_played, 'settled', v_settled);
+end;
+$$;
+
+-- ADVANCE THE CONFERENCE. Any member may call it, and calling it twice
+-- changes nothing. There is no cron and no privileged client: whoever opens
+-- the page after a round's Saturday plays that round for everybody, and the
+-- answer names what happened and which of it was theirs.
+create or replace function public.franchise_conference_advance(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); v_cid uuid; v_run jsonb; v_mine jsonb;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  v_cid := public.franchise_conference_of(v_f);
+  if v_cid is null then raise exception 'join a conference first' using errcode = 'P0002'; end if;
+  v_run := public.franchise_conference_run(v_cid, now());
+  select coalesce(jsonb_agg(j), '[]'::jsonb) into v_mine
+    from jsonb_array_elements(v_run->'games') j
+   where (j->'a'->>'id')::uuid = v_f or (j->'b'->>'id')::uuid = v_f;
+  return jsonb_build_object('ok', true, 'played', (v_run->>'played')::int,
+    'games', v_run->'games', 'mine', v_mine, 'settled', v_run->'settled',
+    'conference', public.franchise_conference_json(v_cid),
+    'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- THE CONFERENCE PAGE, in one call: the conference, the standings, the
+-- schedule round by round, the bracket, the caller's own next game, and the
+-- titles the conference has awarded. A franchise with no conference reads
+-- its shape and nothing else.
+create or replace function public.franchise_conference_board(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); c public.franchise_conferences%rowtype;
+  cfg jsonb := public.franchise_conference_config(); v_games jsonb; v_titles jsonb; v_n integer;
+begin
+  if v_f is null then return null; end if;
+  select * into c from public.franchise_conferences where id = public.franchise_conference_of(v_f);
+  if not found then
+    return jsonb_build_object('me', public.franchise_identity_json(v_f), 'conference', null, 'config', cfg);
+  end if;
+  select count(*) into v_n from public.franchise_conference_members where conference_id = c.id;
+  select coalesce(jsonb_agg(public.franchise_conference_game_json(g.id, false)
+      order by g.round, g.kind, g.a_seed nulls last, g.created_at), '[]'::jsonb)
+    into v_games from public.franchise_conference_games g
+   where g.conference_id = c.id and g.season_number = c.season_number;
+  select coalesce(jsonb_agg(jsonb_build_object('season_number', t.season_number,
+      'label', 'Season ' || public.games_roman(t.season_number),
+      'champion', public.franchise_identity_json(t.champion_id),
+      'runner_up', public.franchise_identity_json(t.runner_up_id),
+      'standings', t.standings, 'completed_at', t.completed_at) order by t.season_number desc), '[]'::jsonb)
+    into v_titles from public.franchise_conference_titles t where t.conference_id = c.id;
+  return jsonb_build_object(
+    'me', public.franchise_identity_json(v_f),
+    'conference', public.franchise_conference_json(c.id),
+    'invite_token', c.invite_token,
+    'is_commissioner', c.commissioner_id = v_f,
+    'can_start', c.commissioner_id = v_f and c.status in ('forming', 'complete') and v_n >= (cfg->>'start_min')::int,
+    'can_leave', c.status in ('forming', 'complete'),
+    'needs', greatest(0, (cfg->>'start_min')::int - v_n),
+    'standings', public.franchise_conference_standings_json(c.id),
+    'games', v_games,
+    'mine', (select coalesce(jsonb_agg(j order by (j->>'round')::int), '[]'::jsonb) from jsonb_array_elements(v_games) j
+              where (j->'a'->>'id')::uuid = v_f or (j->'b'->>'id')::uuid = v_f),
+    'next', (select public.franchise_conference_game_json(g.id, false) from public.franchise_conference_games g
+              where g.conference_id = c.id and g.season_number = c.season_number and g.status = 'scheduled'
+                and (g.a_id = v_f or g.b_id = v_f) order by g.round limit 1),
+    'ready', exists (select 1 from public.franchise_conference_games g
+                      where g.conference_id = c.id and g.season_number = c.season_number
+                        and g.status = 'scheduled' and g.opens_at <= now()),
+    'titles', v_titles,
+    'config', cfg);
+end;
+$$;
+
+-- ONE CONFERENCE GAME with its box — a member's to read, and nobody else's.
+create or replace function public.franchise_conference_game(p_game uuid, p_secret text default null)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select public.franchise_conference_game_json(g.id, true)
+  from public.franchise_conference_games g
+  where g.id = p_game
+    and exists (select 1 from public.franchise_conference_members m
+                 where m.conference_id = g.conference_id and m.franchise_id = public.franchise_of(p_secret));
+$$;
+
+commit;
+
+-- ===========================================================================
 -- GRANTS
 --
 -- Postgres grants EXECUTE on a new function to PUBLIC by default, so every
@@ -3923,6 +4895,20 @@ revoke all on function public.franchise_generate_player(uuid, text, integer, int
 revoke all on function public.franchise_open_market(uuid, integer) from public, anon, authenticated;
 revoke all on function public.franchise_free_number(uuid, text, text) from public, anon, authenticated;
 revoke all on function public.franchise_prospect_json(public.game_players) from public, anon, authenticated;
+-- the conference: the draw, the bracket, the final, the game writer, the
+-- settlement and the read models are the server's; the eight a member calls
+-- are opened below
+revoke all on function public.franchise_conference_standings_json(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_conference_game_json(uuid, boolean) from public, anon, authenticated;
+revoke all on function public.franchise_conference_json(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_conference_of(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_conference_playoff_teams(integer) from public, anon, authenticated;
+revoke all on function public.franchise_conference_draw(uuid, timestamptz) from public, anon, authenticated;
+revoke all on function public.franchise_conference_bracket(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_conference_final(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_conference_play_one(uuid, timestamptz) from public, anon, authenticated;
+revoke all on function public.franchise_conference_settle(uuid, timestamptz) from public, anon, authenticated;
+revoke all on function public.franchise_conference_run(uuid, timestamptz) from public, anon, authenticated;
 
 grant execute on function public.franchise_economy() to anon, authenticated;
 grant execute on function public.games_week_key(timestamptz) to anon, authenticated;
@@ -3992,6 +4978,18 @@ grant execute on function public.franchise_scout(uuid, text) to anon, authentica
 grant execute on function public.franchise_draft(uuid, text) to anon, authenticated;
 grant execute on function public.franchise_sign(uuid, text) to anon, authenticated;
 grant execute on function public.franchise_release(uuid, text) to anon, authenticated;
+-- the conference: a league of friends is joined by link, on the same terms
+-- as Head-to-Head, so every one of these is open to a device franchise too
+grant execute on function public.franchise_conference_config() to anon, authenticated;
+grant execute on function public.franchise_conference_is_mine(uuid) to anon, authenticated;
+grant execute on function public.franchise_conference_create(text, text) to anon, authenticated;
+grant execute on function public.franchise_conference_peek(text, text) to anon, authenticated;
+grant execute on function public.franchise_conference_join(text, text) to anon, authenticated;
+grant execute on function public.franchise_conference_leave(text) to anon, authenticated;
+grant execute on function public.franchise_conference_start(text) to anon, authenticated;
+grant execute on function public.franchise_conference_advance(text) to anon, authenticated;
+grant execute on function public.franchise_conference_board(text) to anon, authenticated;
+grant execute on function public.franchise_conference_game(uuid, text) to anon, authenticated;
 
 commit;
 
@@ -4002,21 +5000,24 @@ select 1 as row, 'franchise tables exist' as what,
   case when (select count(*) from pg_tables where schemaname = 'public' and tablename in
     ('game_board','franchises','franchise_seasons','game_players','franchise_activity','franchise_ledger',
      'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
-     'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries')) = 14
+     'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries',
+     'franchise_conferences','franchise_conference_members','franchise_conference_games','franchise_conference_titles')) = 18
     then 'ok' else 'CHECK THIS' end as status
 union all
 select 2, 'row level security is on for every franchise table',
   case when (select count(*) from pg_tables where schemaname = 'public' and rowsecurity and tablename in
     ('game_board','franchises','franchise_seasons','game_players','franchise_activity','franchise_ledger',
      'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
-     'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries')) = 14
+     'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries',
+     'franchise_conferences','franchise_conference_members','franchise_conference_games','franchise_conference_titles')) = 18
     then 'ok' else 'CHECK THIS' end
 union all
 select 3, 'no client role may write a franchise table directly',
   case when not exists (select 1 from pg_policies where schemaname = 'public' and cmd <> 'SELECT' and tablename in
     ('game_board','franchises','franchise_seasons','game_players','franchise_activity','franchise_ledger',
      'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
-     'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries'))
+     'franchise_opponents','franchise_games','franchise_challenges','franchise_rivalries',
+     'franchise_conferences','franchise_conference_members','franchise_conference_games','franchise_conference_titles'))
     then 'ok' else 'CHECK THIS' end
 union all
 select 4, 'the ledger write is reachable by no client role',
@@ -4102,5 +5103,30 @@ union all
 select 19, 'a prospect''s true ratings are read through the board only: the direct policy admits no prospect or free agent',
   case when exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'game_players' and policyname = 'game_players_own'
                       and qual like '%prospect%' and qual like '%free_agent%')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 20, 'the conference is ' || (public.franchise_conference_config()->>'version') || ': created, joined, started and advanced by every franchise, drawn and simulated by none',
+  case when public.franchise_conference_config()->>'version' = 'conference_v1'
+        and has_function_privilege('anon', 'public.franchise_conference_create(text, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_conference_join(text, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_conference_start(text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_conference_advance(text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_conference_draw(uuid, timestamptz)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_conference_play_one(uuid, timestamptz)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_conference_bracket(uuid)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_conference_settle(uuid, timestamptz)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_conference_run(uuid, timestamptz)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 21, 'a conference is read by its members only, and names franchises rather than accounts',
+  case when (select count(*) from pg_policies where schemaname = 'public' and cmd = 'SELECT' and tablename in
+              ('franchise_conferences','franchise_conference_members','franchise_conference_games','franchise_conference_titles')
+              and qual like '%franchise_conference_is_mine%') = 4
+        and not has_function_privilege('anon', 'public.franchise_conference_standings_json(uuid)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 22, 'a franchise belongs to one conference at a time, and the key says so',
+  case when exists (select 1 from pg_constraint where conname = 'franchise_conference_members_franchise_id_key'
+                      and conrelid = 'public.franchise_conference_members'::regclass and contype = 'u')
     then 'ok' else 'CHECK THIS' end
 order by 1;

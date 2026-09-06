@@ -29,8 +29,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905g">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905g">
+<link rel="stylesheet" href="/games/games.css?v=20260906a">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906a">
 </head>
 <body>
 <div id="gh"></div>
@@ -267,19 +267,19 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905g"></script>
-<script src="/games/lib/scoring.js?v=20260905g"></script>
-<script src="/games/lib/challenge.js?v=20260905g"></script>
-<script src="/games/lib/research_state.js?v=20260905g"></script>
-<script src="/games/lib/attribution.js?v=20260905g"></script>
-<script src="/games/lib/store.js?v=20260905g"></script>
-<script src="/games/lib/dynasty.js?v=20260905g"></script>
-<script src="/games/lib/drill.js?v=20260905g"></script>
-<script src="/games/lib/leaderboard.js?v=20260905g"></script>
-<script src="/games/lib/social.js?v=20260905g"></script>
-<script src="/games/lib/auth.js?v=20260905g"></script>
-<script src="/games/lib/franchise.js?v=20260905g"></script>
-<script src="/games/games.js?v=20260905g"></script>
+<script src="/games/lib/week.js?v=20260906a"></script>
+<script src="/games/lib/scoring.js?v=20260906a"></script>
+<script src="/games/lib/challenge.js?v=20260906a"></script>
+<script src="/games/lib/research_state.js?v=20260906a"></script>
+<script src="/games/lib/attribution.js?v=20260906a"></script>
+<script src="/games/lib/store.js?v=20260906a"></script>
+<script src="/games/lib/dynasty.js?v=20260906a"></script>
+<script src="/games/lib/drill.js?v=20260906a"></script>
+<script src="/games/lib/leaderboard.js?v=20260906a"></script>
+<script src="/games/lib/social.js?v=20260906a"></script>
+<script src="/games/lib/auth.js?v=20260906a"></script>
+<script src="/games/lib/franchise.js?v=20260906a"></script>
+<script src="/games/games.js?v=20260906a"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -347,6 +347,15 @@
     row(!!(card&&card.submitted_at),card&&card.submitted_at?'Weekly slate: card submitted':'Weekly slate: submit your Pick 5 card','/games/pick-5/','+75 XP · +25 TC · +10 XP +15 TC per correct side','Preparation for Saturday.');
     row((wk.research|0)>0,(wk.research|0)>0?'Film: research reviewed this week':'Film: open the research on one matchup','/games/price-it/','+15 XP','Preparation for Saturday.');
     row((wk.fc|0)>0,(wk.fc|0)>0?'Rivalry: a franchise challenge played this week':'Rivalry: challenge a friend’s franchise','/games/gameday/#challenges','+60 XP · +30 TC · a win +40 XP · +40 TC · +2 CP','Your roster against theirs, on the server. The ladder and the rivalry move.');
+    /* the conference: a round waiting to be played is the thing to do; a
+       conference forming or resting between seasons is a door, not a chore */
+    var cf=snap.conference||null;
+    if(cf&&cf.ready)row(false,'Conference: play '+(cf.next?FR.roundName(cf.next).toLowerCase():'the round')+' in '+G.esc(cf.name||'your conference'),'/games/conference/',
+      '+'+FR.ECONOMY.conf_game.xp+' XP · +'+FR.ECONOMY.conf_game.tc+' TC · a win +'+FR.ECONOMY.conf_win.xp+' XP · +'+FR.ECONOMY.conf_win.tc+' TC · +'+FR.ECONOMY.conf_win.cp+' CP',
+      'Anyone in the conference can play it — whoever gets there first plays it for everybody.');
+    else if(cf&&cf.status==='forming')row(false,'Conference: '+(cf.members|0)+' of '+FR.CONFERENCE.start_min+' franchises in '+G.esc(cf.name||'your conference'),'/games/conference/','a season to draw','Send the link to anyone; founding a franchise is free.');
+    else if(!cf)row(false,'Conference: start a league of friends','/games/conference/','standings of your own','Everybody plays everybody, one round a football week, and a bracket decides it.');
+    else if((wk.conf|0)>0)row(true,'Conference: a round played this week','/games/conference/','','The standings are the sum of what happened.');
     /* the draft: picks to use are the roster's way forward; last, so the day's
        objectives come first */
     var mk=snap.market||{};
@@ -382,7 +391,8 @@
       +(rv&&rv.name?' · rival <b>'+G.esc(rv.name)+'</b> '+G.esc((rv.wins|0)+'–'+(rv.losses|0)):'')
       +(lad.games?' · ladder <b>#'+G.esc(lad.rank)+'</b> '+G.esc(lad.rating):'')
       +(mk.max?' · roster <b>'+G.esc(mk.active|0)+'</b> of '+G.esc(mk.max):'')+((mk.picks|0)>0?' · <b>'+G.esc(mk.picks)+'</b> pick'+((mk.picks|0)===1?'':'s'):'')
-      +(chs.last?' · last challenge <b>'+G.esc(chs.last.result||'')+' '+G.esc((chs.last.score_for|0)+'–'+(chs.last.score_against|0))+'</b> vs '+G.esc((chs.last.them||{}).name||''):'')+'</span>'
+      +(chs.last?' · last challenge <b>'+G.esc(chs.last.result||'')+' '+G.esc((chs.last.score_for|0)+'–'+(chs.last.score_against|0))+'</b> vs '+G.esc((chs.last.them||{}).name||''):'')
+      +(cf?' · '+G.esc(cf.name||'conference')+' <b>'+G.esc(cf.place?'#'+cf.place+' of '+(cf.members|0):cf.status)+'</b>'+(cf.line?' '+G.esc(cf.line):'')+(cf.titles?' · <b>'+G.esc(cf.titles)+'</b> ring'+((cf.titles|0)===1?'':'s'):''):'')+'</span>'
       +'<span>'+(LIVE?'<b>'+G.esc(LIVE.season)+' CFB</b> · Week '+G.esc(LIVE.week)+' · live slate':'<b>Live slate</b> · loading')+'</span></div>'
       /* 2. what should I do today, and 3. what do I earn */
       +'<div class="eyebrow" style="margin:16px 0 0">Today</div>'
@@ -416,7 +426,8 @@
       +(snap.offseason?'<div class="hq-off"><b>'+G.esc(FR.offseasonLine(snap.offseason))+'</b> <a href="/games/trophies/">The report</a></div>':'')
       +'<div class="btn-row two"><a class="btn" href="/games/gameday/" data-cta="hq-gameday">Game Day</a><a class="btn" href="/games/roster/" data-cta="hq-roster">Roster</a></div>'
       +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/franchise/" data-cta="hq-office">Front Office</a><a class="btn btn-ghost" href="/games/trophies/" data-cta="hq-trophies">Trophy Room</a></div>'
-      +'<div class="btn-row"><a class="btn btn-ghost" href="/games/market/" data-cta="hq-market">Draft &amp; Market</a></div>';
+      +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/market/" data-cta="hq-market">Draft &amp; Market</a>'
+      +'<a class="btn btn-ghost" href="/games/conference/" data-cta="hq-conference">Conference</a></div>';
     $('hqNote').innerHTML=(cached?'<b>Showing the last copy EdgeDesk sent.</b> Reconnect to refresh. ':'')
       +'Free to play · No real-money wagering · Nothing in the franchise can be bought.';
     /* a franchise that lives on this device alone: the one form that keeps it */

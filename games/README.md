@@ -1004,6 +1004,10 @@ shows one button; afterwards, the result.
   matchup, the window, this week's preparation and what is in play; the
   result with its box score and player of the game; the schedule, the
   all-time record and the rivalry. Head-to-Head is linked from it.
+* **Conference** (`/games/conference`, Phase 6): a league of friends with
+  standings of its own — the table, the round waiting to be played, the
+  schedule, the bracket, the invite link and the titles the conference has
+  awarded.
 
 ## The one rule, again
 
@@ -1058,6 +1062,10 @@ paid resources, and a subscriber earns exactly what anyone else earns.
 | a weekly game won | 60 | | 60 | 2 |
 | the rival beaten, on top | 50 | | | 1 |
 | a season completed | 250 | | 150 | |
+| a conference round played (Phase 6) | 80 | | 35 | |
+| a conference round won | 50 | | 50 | 2 |
+| a conference playoff game won, on top | 100 | | | 1 |
+| a conference title | 400 | | 300 | 10 |
 
 XP levels the franchise on the War Room's curve (`25 × (L − 1) × (L + 2)`,
 level 30 at 23,200). If any number changes, the version changes and this
@@ -1379,16 +1387,82 @@ a position keeping its starters, the floor at thirty-eight, another
 account and a guessed secret reaching nothing, and the same seed making
 the same class.
 
+## Phase 6 — conferences and playoffs
+
+A **league of friends with standings of its own**. Phase 3 gave a
+franchise a one-off game against another franchise; a conference gives it
+a season against several — a round robin drawn on the server, one round a
+football week, a table that is the sum of what happened, a bracket at the
+end and a title that stays on the record (`conference_v1`, published by
+`franchise_conference_config()` and mirrored in `EDFranchise.CONFERENCE`).
+
+- **The conference.** Four to twelve franchises. The one that creates it
+  is its **commissioner**; everyone joins by a link, the same shape
+  Head-to-Head and the challenge already use, and a franchise that lives
+  on a device secret joins on the same terms as one on an account. A
+  franchise belongs to **one conference at a time** — the unique key on
+  `franchise_conference_members.franchise_id` says so rather than a
+  comment.
+- **The draw.** `franchise_conference_start()` is the commissioner's one
+  privilege, and even it decides nothing: the schedule is drawn by
+  `franchise_conference_draw()` by the **circle method** — one franchise
+  held still, the rest rotated a place a round — from the conference's
+  own seed, so everybody plays everybody once, nobody plays twice in a
+  round, an odd conference carries a ghost and whoever draws it has the
+  week off, and no client picks its own opponents. Rounds are capped at
+  seven, so a large conference plays a partial round robin rather than a
+  season without end. Round one opens on the Saturday of this football
+  week, at the same 07:00 UTC boundary the weekly game uses; each round
+  is the next week.
+- **Playing it.** `franchise_conference_advance()` is open to **any
+  member**, and calling it twice changes nothing. There is no cron and no
+  privileged client: whoever opens the page after a round's Saturday
+  plays that round for everybody, on the server, on the same versus
+  simulator a challenge runs on — both rosters, both schemes, each side's
+  own week of preparation, a neutral field, seeded from the conference's
+  seed so the same game simulated twice is the same game. Both sides are
+  paid by the table, keyed once by the game; both careers grow by the box
+  (the solo season's lines do not — a conference is its own competition);
+  the rivalry between them moves; and both move on the ladder by the same
+  ordinary Elo the challenge uses.
+- **The bracket.** When the last regular round is played, every member
+  takes the place the standings gave it — wins (a tie is half a win),
+  then point difference, then points scored, then ladder rating, then who
+  joined first — and the rest are eliminated. Four make the bracket from
+  six franchises up, two below that: 1v4 and 2v3 in the semifinals, then
+  the final, one round a week. **A playoff game cannot end level**: the
+  better seed is listed first and advances when the overtime cannot
+  separate them, and the row says so.
+- **The title.** The final crowns a champion, and the season is frozen in
+  `franchise_conference_titles`: the champion, the runner-up and the
+  standings exactly as they read, so a franchise that later leaves keeps
+  every line it earned. The commissioner may start another season — the
+  records begin again at nothing and the rings stay. The Trophy Room
+  names the conference, the season and who was beaten in the final.
+- **Achievements.** League of Friends, Top Seed, Postseason, Champion,
+  Two Rings.
+
+The client never draws, seeds, plays or crowns: the Conference page sends
+a name or a token and the identity and nothing else, and reads the board
+back. The HQ counts a waiting round as the day's objective and carries
+where the franchise stands. Report rows 20–22 cover it: the conference is
+`conference_v1`, created, joined, started and advanced by every franchise
+and drawn and simulated by none; read by its members only and naming
+franchises rather than accounts; one conference to a franchise, by the
+key. The SQL suite plays two whole conferences through — a five-team
+round robin into a two-team final, and a six-team one into a bracket of
+four.
+
 ## Not built yet, on purpose
 
-Conferences — a league of friends with standings of its own — and
-playoffs (Phase 6); trades between franchises; injuries. The schema
-leaves room: `franchise_seasons.status` admits `playoffs`,
-`game_players.status` admits `injured`, the ledger accepts a negative
-delta for spending (the facilities, the reports and the signings use
-it), traits with no simulator effect yet (Iron Man) are stated as such,
-and `franchise_activity` is the record every future reward derives from.
-The simulator, the offseason and the market are versioned (`sim_v1`,
-`offseason_v1`, `market_v1`) so a retuned one is a new version and old
-boxes, old reports and old classes stay true to the rules they were
-played under.
+Trades between franchises; injuries; a postseason for the franchise's own
+eight-week season, which keeps its eight games — the bracket lives in the
+conference. The schema leaves room: `franchise_seasons.status` admits
+`playoffs`, `game_players.status` admits `injured`, the ledger accepts a
+negative delta for spending (the facilities, the reports and the signings
+use it), traits with no simulator effect yet (Iron Man) are stated as
+such, and `franchise_activity` is the record every future reward derives
+from. The simulator, the offseason, the market and the conference are
+versioned (`sim_v1`, `offseason_v1`, `market_v1`, `conference_v1`) so a
+retuned one is a new version and old boxes, old reports, old classes and
+old tables stay true to the rules they were played under.

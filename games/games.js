@@ -99,7 +99,12 @@
     /* the draft and the market (Phase 5): the board seen, a free agent
        signed, a player released; scouting_spent, player_scouted and
        draft_pick are declared above */
-    'market_view', 'free_agent_signed', 'player_released'];
+    'market_view', 'free_agent_signed', 'player_released',
+    /* the conference (Phase 6): the standings seen, a conference started,
+       an invite opened and taken, a season drawn, a round played, a title
+       decided, the link shared, a conference left */
+    'conference_view', 'conference_create', 'conference_invite_open', 'conference_join',
+    'conference_start', 'conference_round', 'conference_title', 'conference_share', 'conference_leave'];
 
   var _level = null;
   function track(event, props) {
@@ -332,7 +337,11 @@
     /* the Trophy Room: everything permanent about a franchise (Phase 4) */
     { key: 'trophies', href: '/games/trophies/',         label: 'Trophy Room',  cls: 'gh-only-wider' },
     /* the draft and the market: where Scouting Points are spent (Phase 5) */
-    { key: 'market',   href: '/games/market/',           label: 'Market',       cls: 'gh-only-wider' }
+    { key: 'market',   href: '/games/market/',           label: 'Market',       cls: 'gh-only-wider' },
+    /* the conference: a league of friends with standings of its own (Phase 6).
+       League (Groups) stays what it is — the leaderboard league for the real
+       games; this is the franchise one. */
+    { key: 'conference', href: '/games/conference/',     label: 'Conference',   cls: 'gh-only-wider' }
   ];
   function header(current) {
     var nav = ROOMS.map(function (r) {
@@ -390,6 +399,7 @@
       + '<a href="/games/gameday/">Game Day</a>'
       + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
       + '<a href="/games/trophies/">Trophy Room</a><a href="/games/market/">Draft &amp; Market</a>'
+      + '<a href="/games/conference/">Conference</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'

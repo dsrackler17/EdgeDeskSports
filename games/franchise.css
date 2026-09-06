@@ -518,3 +518,24 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .mk-hist .o b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .mk-hist .o small{display:block;font-size:11px;color:var(--faint)}
 .mk-hist .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap;color:var(--dim)}
+
+/* ── THE CONFERENCE (Phase 6) ─────────────────────────────────────────────
+   A league of friends with standings of its own. The standings reuse the
+   ladder table and the schedule reuses the challenge list; what is added
+   here is the room a phone needs — five columns do not fit 360px, so the
+   points-for column goes and the record stays — and the marks a bracket
+   needs: who is in it, who is out, and who took the title. */
+.cf-tag{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:middle;color:var(--val);border:1px solid var(--val-dim)}
+.cf-tag.out{color:var(--faint);border-color:var(--line2)}
+.cf-tag.seed{color:var(--est);border-color:rgba(217,164,65,.45)}
+.ladder td.cf-pf{display:none}
+@media(min-width:560px){.ladder td.cf-pf,.ladder th.cf-pf{display:table-cell}}
+.ladder th.cf-pf{display:none}
+/* the round panel's action is the page's one button: keep it at the tap
+   minimum on the narrowest phone, as every other primary action is */
+.cf-round .btn{min-height:var(--tap)}
+.cf-round{margin-top:14px}
+/* a decided season, on the record */
+.cf-title{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.cf-title .rings{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--est);white-space:nowrap}

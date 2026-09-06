@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905g">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905g">
+<link rel="stylesheet" href="/games/games.css?v=20260906a">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906a">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905g"></script>
-<script src="/games/lib/scoring.js?v=20260905g"></script>
-<script src="/games/lib/challenge.js?v=20260905g"></script>
-<script src="/games/lib/research_state.js?v=20260905g"></script>
-<script src="/games/lib/attribution.js?v=20260905g"></script>
-<script src="/games/lib/store.js?v=20260905g"></script>
-<script src="/games/lib/dynasty.js?v=20260905g"></script>
-<script src="/games/lib/social.js?v=20260905g"></script>
-<script src="/games/lib/auth.js?v=20260905g"></script>
-<script src="/games/lib/franchise.js?v=20260905g"></script>
-<script src="/games/games.js?v=20260905g"></script>
+<script src="/games/lib/week.js?v=20260906a"></script>
+<script src="/games/lib/scoring.js?v=20260906a"></script>
+<script src="/games/lib/challenge.js?v=20260906a"></script>
+<script src="/games/lib/research_state.js?v=20260906a"></script>
+<script src="/games/lib/attribution.js?v=20260906a"></script>
+<script src="/games/lib/store.js?v=20260906a"></script>
+<script src="/games/lib/dynasty.js?v=20260906a"></script>
+<script src="/games/lib/social.js?v=20260906a"></script>
+<script src="/games/lib/auth.js?v=20260906a"></script>
+<script src="/games/lib/franchise.js?v=20260906a"></script>
+<script src="/games/games.js?v=20260906a"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -201,8 +201,23 @@
        that has only just been scheduled has nothing to read yet */
     var openSeason=0;
     seasons.some(function(s,i){if((s.games||[]).some(function(g){return g.status==='final';})){openSeason=i;return true;}return false;});
+    var titles=t.titles||[],conf=t.conference||null;
     rooms.innerHTML=
-      '<div class="sec"><div class="sec-h"><h2>The wall</h2><span class="m">'+earned+' of '+ach.length+'</span></div><div class="card">'
+      '<div class="sec"><div class="sec-h"><h2>Titles</h2><span class="m">'+titles.length+'</span></div><div class="card">'
+      +(titles.length
+        ?'<ul class="mk-hist">'+titles.map(function(x){
+            var ru=x.runner_up||{};
+            return '<li><span class="k">'+esc(x.label||'')+'</span><span class="o"><b>'+esc(x.conference||'')+'</b>'
+              +'<small>beat the '+esc(ru.name||'')+' in the final · '+esc(dayLabel(x.completed_at))+'</small></span>'
+              +'<span class="r">champion</span></li>';
+          }).join('')+'</ul>'
+        :'<div class="empty">No title yet. A conference — a league of friends with standings of its own — is where one is won. '
+          +'<a href="/games/conference/">Start or join one</a>.</div>')
+      +'<div class="ftp" style="margin-top:10px">'
+      +(conf?'You are in <b>'+esc(conf.name||'')+'</b> — '+esc((conf.members|0))+' franchise'+((conf.members|0)===1?'':'s')+', '+esc((FR.CONFERENCE_STATUS[conf.status]||{}).label||conf.status||'')+'. <a href="/games/conference/">The standings</a>.'
+             :'A conference plays one round a football week; the top '+esc(FR.CONFERENCE.playoff_teams)+' make a bracket and the winner takes the title. <a href="/games/conference/">Start one</a>.')
+      +' A title stays here even if the franchise later leaves the conference it won.</div></div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>The wall</h2><span class="m">'+earned+' of '+ach.length+'</span></div><div class="card">'
       +achievementsBlock(ach)
       +'<div class="ftp" style="margin-top:10px">Every achievement is read from your record on the server. Nothing here is granted, and nothing can be bought.</div></div></div>'
       +'<div class="sec"><div class="sec-h"><h2>Seasons</h2><span class="m">'+seasons.length+'</span></div>'
@@ -213,7 +228,7 @@
       +'<div><div class="eyebrow">Receiving</div>'+leaderRows(lead.receiving,'receiving')+'</div>'
       +'<div><div class="eyebrow">Tackles</div>'+leaderRows(lead.tackles,'tackles')+'</div>'
       +'<div><div class="eyebrow">Sacks</div>'+leaderRows(lead.sacks,'sacks')+'</div></div>'
-      +'<div class="ftp" style="margin-top:10px">Careers count every season game and every franchise challenge. The retired keep theirs.</div></div></div>'
+      +'<div class="ftp" style="margin-top:10px">Careers count every season game, every franchise challenge and every conference round. The retired keep theirs.</div></div></div>'
       +'<div class="sec"><div class="sec-h"><h2>Alumni</h2><span class="m">'+(t.alumni||[]).length+' retired</span></div><div class="card">'+alumniBlock(t.alumni)+'</div></div>'
       +'<div class="sec"><div class="card"><div class="eyebrow">How the room fills</div>'
       +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Play <a href="/games/gameday/">Game Day</a> and the season writes itself here, game by game. '
@@ -245,7 +260,7 @@
       }
       renderRoom(r.data);
       var rc=r.data.record||{};
-      G.track('trophy_room_view',{seasons:rc.seasons|0,achievements:(r.data.achievements||[]).filter(function(a){return a.earned;}).length,alumni:(r.data.alumni||[]).length,game_type:'franchise'});
+      G.track('trophy_room_view',{seasons:rc.seasons|0,achievements:(r.data.achievements||[]).filter(function(a){return a.earned;}).length,alumni:(r.data.alumni||[]).length,titles:(r.data.titles||[]).length,game_type:'franchise'});
     });
   }).catch(function(){renderEmpty(FR.state());});
   READY.catch(function(){});

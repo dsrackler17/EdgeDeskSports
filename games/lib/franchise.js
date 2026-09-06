@@ -54,6 +54,12 @@
     fc_played:     { xp: 60, tc: 30 },
     fc_win:        { xp: 40, tc: 40, cp: 2 },
     fc_upset:      { xp: 40, cp: 1 },
+    /* the conference (Phase 6): a round played, a round won, a playoff game
+       won on top of it, and the title */
+    conf_game:     { xp: 80, tc: 35 },
+    conf_win:      { xp: 50, tc: 50, cp: 2 },
+    conf_playoff:  { xp: 100, cp: 1 },
+    conf_title:    { xp: 400, tc: 300, cp: 10 },
     import_unverified_price_it: { xp: 50 },
     import_unverified_pick5:    { xp: 75 }
   };
@@ -94,6 +100,10 @@
       case 'fc_played': return { xp: ECONOMY.fc_played.xp, tc: ECONOMY.fc_played.tc };
       case 'fc_win': return { xp: ECONOMY.fc_win.xp, tc: ECONOMY.fc_win.tc, cp: ECONOMY.fc_win.cp };
       case 'fc_upset': return { xp: ECONOMY.fc_upset.xp, cp: ECONOMY.fc_upset.cp };
+      case 'conf_game': return { xp: ECONOMY.conf_game.xp, tc: ECONOMY.conf_game.tc };
+      case 'conf_win': return { xp: ECONOMY.conf_win.xp, tc: ECONOMY.conf_win.tc, cp: ECONOMY.conf_win.cp };
+      case 'conf_playoff': return { xp: ECONOMY.conf_playoff.xp, cp: ECONOMY.conf_playoff.cp };
+      case 'conf_title': return { xp: ECONOMY.conf_title.xp, tc: ECONOMY.conf_title.tc, cp: ECONOMY.conf_title.cp };
     }
     return {};
   }
@@ -214,7 +224,12 @@
     draft_day:      { name: 'Draft Day' },
     full_scout:     { name: 'Scouted the Class' },
     gut_call:       { name: 'Gut Call' },
-    first_signing:  { name: 'Open for Business' }
+    first_signing:  { name: 'Open for Business' },
+    conf_first:     { name: 'League of Friends' },
+    conf_top:       { name: 'Top Seed' },
+    conf_post:      { name: 'Postseason' },
+    conf_title:     { name: 'Champion' },
+    conf_two:       { name: 'Two Rings' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -650,6 +665,85 @@
     return { active: active, max: max, min: min, room: Math.max(0, max - active), full: active >= max, floor: active <= min };
   }
 
+  /* ── CONFERENCES AND PLAYOFFS (Phase 6) ─────────────────────────────────
+     A league of friends with standings of its own. Everything here is
+     presentation: the shape of the competition, mirrored from
+     franchise_conference_config() so a page can say the rules without a
+     round trip, and pinned to the SQL by tools/games/franchise.test.js. The
+     server draws every schedule, plays every round and decides every seed. */
+  var CONFERENCE_VERSION = 'conference_v1';
+  var CONFERENCE = { name_max: 32, min_teams: 4, max_teams: 12, start_min: 4, rounds_max: 7,
+                     playoff_teams: 4, playoff_small: 2, playoff_large_from: 6, ladder_k: LADDER_K };
+  var CONFERENCE_STATUS = {
+    forming:  { label: 'Forming',     means: 'Waiting for franchises. The commissioner starts the season.' },
+    regular:  { label: 'In season',   means: 'One round a football week, on Saturday.' },
+    playoffs: { label: 'Playoffs',    means: 'The bracket is set. Win or go home.' },
+    complete: { label: 'Decided',     means: 'The title is on the record. A new season may be started.' }
+  };
+  var ROUND_NAMES = { regular: 'Round', semifinal: 'Semifinal', final: 'The final' };
+  /* how many make the bracket in a conference of n, the server's rule */
+  function playoffTeams(n) {
+    return (n | 0) >= CONFERENCE.playoff_large_from ? CONFERENCE.playoff_teams : CONFERENCE.playoff_small;
+  }
+  /* the invite link, the same shape a challenge uses */
+  function conferenceUrl(token) {
+    var o = (root.location && root.location.origin) || 'https://edgedesksports.com';
+    return o + '/games/conference/?join=' + encodeURIComponent(String(token || ''));
+  }
+  function conferenceInviteText(c, me) {
+    var L = [], nm = obj(c).name || 'my conference';
+    L.push('Bring your franchise to ' + nm + '.');
+    if (me && me.name) L.push('The ' + ((me.city || '') + ' ' + me.name).trim() + (me.overall != null ? ' (OVR ' + me.overall + ')' : '') + ' are already in.');
+    L.push('A round a week, everybody plays everybody, and a bracket at the end. No account needed — found a franchise free and join here:');
+    return L.join('\n');
+  }
+  /* what a round is called: "Round 3", "Semifinal", "The final" */
+  function roundName(g) {
+    g = obj(g);
+    return g.kind && g.kind !== 'regular' ? (ROUND_NAMES[g.kind] || 'Playoff') : 'Round ' + (g.round | 0);
+  }
+  /* one line for a game on the schedule, from a viewer's side when it has
+     one: "Round 3 · beat the Comets 24–17" or "Semifinal · Outlaws v Comets" */
+  function conferenceGameLine(g, meId) {
+    g = obj(g);
+    var a = obj(g.a), b = obj(g.b), mine = meId && (a.id === meId || b.id === meId);
+    var head = roundName(g);
+    if (g.status !== 'final') return head + ' · ' + (a.name || '?') + ' v ' + (b.name || '?');
+    if (!mine) return head + ' · ' + (a.name || '?') + ' ' + (g.score_a | 0) + ', ' + (b.name || '?') + ' ' + (g.score_b | 0) + (g.ot ? ' (OT)' : '');
+    var meA = a.id === meId, my = meA ? (g.score_a | 0) : (g.score_b | 0), their = meA ? (g.score_b | 0) : (g.score_a | 0);
+    var them = (meA ? b : a).name || 'them';
+    var verb = my > their ? 'beat' : my < their ? 'lost to' : 'drew with';
+    return head + ' · ' + verb + ' the ' + them + ' ' + my + '–' + their + (g.ot ? ' (OT)' : '');
+  }
+  /* a standings row as one line: "3–1 · +34" */
+  function standingLine(row) {
+    row = obj(row);
+    var d = (row.diff | 0);
+    return recordLine(row) + ' · ' + (d > 0 ? '+' : '') + d;
+  }
+  /* what the page should say is next: a round waiting to be played, a round
+     that has not opened, or the state the conference is resting in */
+  function conferencePhase(board) {
+    board = obj(board);
+    var c = obj(board.conference);
+    if (!board.conference) return { phase: 'none', label: 'No conference yet' };
+    if (c.status === 'forming') return { phase: 'forming', label: 'Forming', needs: board.needs | 0 };
+    if (c.status === 'complete') return { phase: 'complete', label: 'Decided', champion: c.champion || null };
+    if (board.ready) return { phase: 'ready', label: 'A round is waiting' };
+    return { phase: 'waiting', label: 'Next round', opens_at: c.next_opens_at || null };
+  }
+  /* the title, as text */
+  function titleShareText(t, me) {
+    t = obj(t);
+    var nm = me ? ((me.city || '') + ' ' + (me.name || '')).trim().toUpperCase() : 'MY FRANCHISE';
+    var L = [];
+    L.push(nm + ' — ' + (t.conference || 'conference') + ' champions, ' + (t.label || ''));
+    if (t.runner_up && t.runner_up.name) L.push('Beat the ' + t.runner_up.name + ' in the final.');
+    L.push('');
+    L.push('EdgeDesk Games');
+    return L.join('\n');
+  }
+
   function arr(v) { return Array.isArray(v) ? v : []; }
   function obj(v) { return v && typeof v === 'object' ? v : {}; }
   function vals(o) { o = obj(o); var out = [], k; for (k in o) if (o.hasOwnProperty(k)) out.push(o[k]); return out; }
@@ -869,6 +963,28 @@
   }
   function trophies() { return rpc('franchise_trophies', withSecret({})); }
 
+  /* THE CONFERENCE (Phase 6). The board is one read. Creating, joining,
+     leaving, starting a season and advancing one each send a name or a
+     token and the identity and nothing else: the server draws the
+     schedule, plays the round, seeds the bracket and crowns the champion.
+     None of these is ever queued — a player who presses "play the round"
+     must see what happened. */
+  function conference() { return rpc('franchise_conference_board', withSecret({})); }
+  function conferenceCreate(name) {
+    return rpc('franchise_conference_create', withSecret({ p_name: String(name || '') }));
+  }
+  function conferencePeek(token) { return rpc('franchise_conference_peek', withSecret({ p_token: String(token || '') })); }
+  function conferenceJoin(token) { return rpc('franchise_conference_join', withSecret({ p_token: String(token || '') })); }
+  function conferenceLeave() { return rpc('franchise_conference_leave', withSecret({})); }
+  function conferenceStart() { return rpc('franchise_conference_start', withSecret({})); }
+  function conferenceAdvance() {
+    return rpc('franchise_conference_advance', withSecret({})).then(function (r) {
+      if (r.ok && r.data && r.data.totals) touchTotals(r.data.totals);
+      return r;
+    });
+  }
+  function conferenceGame(id) { return rpc('franchise_conference_game', withSecret({ p_game: String(id) })); }
+
   /* THE DRAFT AND THE MARKET (Phase 5). The board is one read; a report, a
      pick, a signing and a release each send a player id and the identity
      and nothing else — the server prices, hides, reveals, counts the picks
@@ -1011,6 +1127,13 @@
     roman: roman, offseasonLine: offseasonLine, trophyShareText: trophyShareText, upgrade: upgrade, trophies: trophies,
     MARKET_VERSION: MARKET_VERSION, MARKET: MARKET, signingCost: signingCost, rangeLine: rangeLine, prospectLine: prospectLine,
     rosterRoom: rosterRoom, market: market, scout: scout, draft: draft, sign: sign, release: release,
+    CONFERENCE_VERSION: CONFERENCE_VERSION, CONFERENCE: CONFERENCE, CONFERENCE_STATUS: CONFERENCE_STATUS,
+    ROUND_NAMES: ROUND_NAMES, playoffTeams: playoffTeams, conferenceUrl: conferenceUrl,
+    conferenceInviteText: conferenceInviteText, roundName: roundName, conferenceGameLine: conferenceGameLine,
+    standingLine: standingLine, conferencePhase: conferencePhase, titleShareText: titleShareText,
+    conference: conference, conferenceCreate: conferenceCreate, conferencePeek: conferencePeek,
+    conferenceJoin: conferenceJoin, conferenceLeave: conferenceLeave, conferenceStart: conferenceStart,
+    conferenceAdvance: conferenceAdvance, conferenceGame: conferenceGame,
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,
