@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Coaching Staff | EdgeDesk Games</title>
+<meta name="description" content="Where Coach Points go: a head coach, two coordinators and a trainer, hired and levelled with the points you earn by winning. A thousand levels, and every tenfold is another third of what a coach can be. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/staff">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/staff">
+<meta property="og:title" content="The coaching staff — EdgeDesk Games">
+<meta property="og:description" content="Four seats, a thousand levels, and Coach Points to climb them. Every tenfold in level is another third of what a coach can be.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The coaching staff — EdgeDesk Games">
+<meta name="twitter:description" content="Four seats, a thousand levels, and Coach Points to climb them. Every tenfold in level is another third of what a coach can be.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260906d">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906d">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Coaching Staff</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Opening the building</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260906d"></script>
+<script src="/games/lib/scoring.js?v=20260906d"></script>
+<script src="/games/lib/challenge.js?v=20260906d"></script>
+<script src="/games/lib/research_state.js?v=20260906d"></script>
+<script src="/games/lib/attribution.js?v=20260906d"></script>
+<script src="/games/lib/store.js?v=20260906d"></script>
+<script src="/games/lib/dynasty.js?v=20260906d"></script>
+<script src="/games/lib/social.js?v=20260906d"></script>
+<script src="/games/lib/auth.js?v=20260906d"></script>
+<script src="/games/lib/franchise.js?v=20260906d"></script>
+<script src="/games/games.js?v=20260906d"></script>
+<script>
+/* STALE SCRIPT GUARD — the same belt every franchise page wears. */
+(function(){
+  var need=['EDFranchise.staff','EDFranchise.staffHire','EDFranchise.staffPromote',
+            'EDFranchise.staffCost','EDFranchise.staffAfford','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc,fmt=FR.fmt;
+
+  var READY=G.boot('staff');
+  var BOARD=null;
+
+  function teamName(f){f=f||{};return ((f.city||'')+' '+(f.name||'')).trim();}
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Coaching Staff</div>'
+      +'<h1>Where Coach Points go.</h1>'
+      +'<p>You earn Coach Points by winning — a weekly game, your rival, a franchise challenge, a conference round, a bowl, a title. '
+      +'They hire and they level the four people in the building: a head coach, two coordinators and a trainer.</p>'
+      +'<ul class="fo-list"><li>A coach starts at level one and climbs to <b>'+FR.STAFF.max_level+'</b>. There is always another level.</li>'
+      +'<li>Every <b>tenfold</b> in level is another third of what he can be — level 10 is a third of the way, 100 two thirds, 1000 all of it.</li>'
+      +'<li>A specialty every '+FR.STAFF.specialty_every+' levels, and a grade that reads off the number.</li>'
+      +'<li>Nothing takes a coach away from you. Only you can.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=staff" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Coach Points are earned by playing and cannot be bought</div></div>';
+    rooms.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'staff',game_type:'franchise'});});
+  }
+
+  /* ---- the building ------------------------------------------------------- */
+  function renderStage(b){
+    var me=b.me||{},res=b.resources||{},eff=b.effects||{};
+    var snap=FR.snapshot()||{},f=snap.franchise||{};
+    var filled=(b.seats||[]).filter(function(s){return s.filled;}).length;
+    var levels=(b.seats||[]).reduce(function(a,s){return a+(s.level|0);},0);
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Coaching Staff</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(me.abbr||'')+'</div><div class="hq-name">'+esc(teamName(me))+'</div>'
+      +'<div class="hq-line">'+esc(filled)+' of '+esc((b.seats||[]).length)+' seats filled</div></div>'
+      +'<div class="hq-rec">'+esc(fmt(res.coach_points))+'<span class="s">Coach Points</span></div></div>'
+      +'<div class="mk-sum">'
+      +'<div class="cp"><div class="k">On hand</div><div class="v">'+esc(fmt(res.coach_points))+'<small>a hire is '+esc(b.rules.hire_cost)+' CP</small></div></div>'
+      +'<div><div class="k">Levels</div><div class="v">'+esc(fmt(levels))+'<small>across the building</small></div></div>'
+      +'<div><div class="k">Offense</div><div class="v">+'+esc(eff.offense||0)+'<small>every game</small></div></div>'
+      +'<div><div class="k">Defense</div><div class="v">+'+esc(eff.defense||0)+'<small>every game</small></div></div>'
+      +'</div>'
+      +'<div class="ftp" style="margin-top:12px">Every tenfold in level is another third of what a coach can be: level 10 is a third of the way, 100 two thirds, '
+      +esc(FR.STAFF.max_level)+' all of it. The next level costs '+esc(FR.STAFF.cost_base)+' Coach Point and a Point more every '+esc(FR.STAFF.cost_step)+' levels, '
+      +'so the climb is slow on purpose. <b>Coach Points are earned by winning and cannot be bought.</b></div>';
+  }
+
+  function seatCard(s,b){
+    var res=b.resources||{},cp=res.coach_points|0;
+    var meta=FR.staffSeat(s.seat)||{};
+    if(!s.filled){
+      var can=cp>=(b.rules.hire_cost|0);
+      return '<div class="st-seat"><div class="st-h"><div><div class="st-role">'+esc(s.name)+'</div>'
+        +'<div class="st-means">'+esc(s.means)+'</div></div><div class="st-lvl empty">—</div></div>'
+        +'<div class="st-body"><div class="empty" style="text-align:left;padding:10px 0">Nobody in this seat.</div></div>'
+        +'<div class="pc-actions">'
+        +(can?'<button class="btn btn-go" type="button" data-hire="'+esc(s.seat)+'">Hire · '+esc(b.rules.hire_cost)+' CP</button>'
+             :'<span class="pc-line">'+esc(b.rules.hire_cost)+' CP to hire · '+esc(fmt(cp))+' on hand · <a href="/games/gameday/">win a game</a> to earn more</span>')
+        +'</div></div>';
+    }
+    /* the bar goes to the NEXT MILESTONE, not to a thousand: a level-100
+       coach is one per cent of the way to the top, and a bar saying so
+       after three years of work would be a lie about what he is worth */
+    var toNext=s.to_milestone|0,step=s.next_cost|0;
+    var span=FR.staffCostBetween(Math.max(1,(s.next_milestone|0)-FR.STAFF.specialty_every),s.next_milestone||1)||1;
+    var pct=Math.max(0,Math.min(100,Math.round(100*(1-(toNext/span)))));
+    var aff=FR.staffAfford(s.level,cp);
+    return '<div class="st-seat"><div class="st-h"><div><div class="st-role">'+esc(s.name)+'</div>'
+      +'<div class="st-means">'+esc(s.means)+'</div></div>'
+      +'<div class="st-lvl"><b>'+esc(s.level)+'</b><span>of '+esc(s.max_level)+'</span></div></div>'
+      +'<div class="st-body">'
+      +'<div class="st-name">'+esc(s.coach)+'</div>'
+      +'<div class="st-arch">'+esc(s.archetype)+' <span class="sep">·</span> <b>'+esc(s.grade)+'</b></div>'
+      +'<div class="st-eff">+'+esc(s.effect)+' <small>of a possible '+esc(s.cap)+'</small></div>'
+      +(s.next_milestone
+        ?'<div class="meter" style="margin-top:10px"><div class="k">Next at level '+esc(s.next_milestone)+'<b>'+esc(fmt(toNext))+' CP</b></div>'
+          +'<div class="bar"><div class="fill" style="width:'+pct+'%"></div></div>'
+          +'<div class="s">A specialty every '+esc(FR.STAFF.specialty_every)+' levels, and a new grade above it.</div></div>'
+        :'<div class="st-eff" style="color:var(--est)">Hall of Fame. There is no level above this one.</div>')
+      +(s.specialties&&s.specialties.length
+        ?'<div class="st-specs">'+s.specialties.map(function(sp){
+            return '<span class="st-spec" title="'+esc(effectWords(sp.effect))+'">'+esc(sp.name)+'</span>';
+          }).join('')+'</div>'
+        :'<div class="pc-line">No specialty yet — the first arrives at level '+esc(FR.STAFF.specialty_every)+'.</div>')
+      +'</div>'
+      +'<div class="pc-actions">'
+      +(s.level<s.max_level
+        ?(aff.levels>0
+            ?'<button class="btn btn-go" type="button" data-promote="'+esc(s.seat)+'" data-levels="1">+1 level · '+esc(step)+' CP</button>'
+              +(aff.levels>1?'<button class="btn" type="button" data-promote="'+esc(s.seat)+'" data-levels="'+esc(aff.levels)+'">+'+esc(aff.levels)+' · '+esc(fmt(aff.cost))+' CP</button>':'')
+            :'<span class="pc-line">The next level is '+esc(step)+' CP · '+esc(fmt(cp))+' on hand</span>')
+        :'')
+      +'<button class="btn btn-ghost" type="button" data-fire="'+esc(s.seat)+'" data-name="'+esc(s.coach)+'" data-level="'+esc(s.level)+'">Fire</button>'
+      +'</div></div>';
+  }
+  function effectWords(e){
+    e=e||{};
+    return Object.keys(e).map(function(k){return '+'+e[k]+' '+k.replace(/_/g,' ');}).join(', ');
+  }
+
+  function renderBoard(b,fresh){
+    BOARD=b;
+    renderStage(b);
+    var eff=b.effects||{};
+    rooms.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>The building</h2><span class="m">'+esc((b.seats||[]).length)+' seats</span></div>'
+      +'<div class="st-grid">'+(b.seats||[]).map(function(s){return seatCard(s,b);}).join('')+'</div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>What the staff is worth</h2><span class="m">'+esc(b.effects.version||'')+'</span></div>'
+      +'<div class="card"><ul class="gd-edges">'
+      +row('Offense, every game','+'+(eff.offense||0))
+      +row('Defense, every game','+'+(eff.defense||0))
+      +row('Fourth quarter and overtime','+'+(eff.late_offense||0)+' / +'+(eff.late_defense||0))
+      +row('Takeaways','+'+(eff.takeaway||0))
+      +row('Kicks that decide a game','+'+(eff.clutch||0))
+      +row('Injury chance','−'+Math.round((eff.injury_resist||0)*100)+'%')
+      +row('Offseason development','+'+(eff.development||0))
+      +'</ul>'
+      +'<div class="ftp" style="margin-top:10px">These are the same units the simulator already reads — the scheme matchup, the week’s preparation, the Film Room and a player’s traits '
+      +'all arrive in the same place. A coach is one more of them, not a new kind of thing.</div></div></div>'
+      +'<div class="sec"><div class="card"><div class="eyebrow">The two curves</div>'
+      +'<p style="margin:8px 0 0;color:var(--dim);font-size:14px;line-height:1.6">'
+      +'<b style="color:var(--text)">What a level costs.</b> '+esc(FR.STAFF.cost_base)+' Coach Point, and a Point more every '+esc(FR.STAFF.cost_step)+' levels. '
+      +'Reaching level 10 costs '+esc(FR.staffCostBetween(1,10))+'; level 100 costs '+esc(fmt(FR.staffCostBetween(1,100)))+'; '
+      +'level '+esc(FR.STAFF.max_level)+' costs '+esc(fmt(FR.staffCostBetween(1,FR.STAFF.max_level)))+'. '
+      +'That last number is a horizon, not a plan.<br><br>'
+      +'<b style="color:var(--text)">What a level is worth.</b> Every tenfold is another third of the cap. A coach is useful the week you hire him and never finished. '
+      +'The long tail is meant to be long — that is what the specialties and the grades are for.</p></div></div>';
+    wire();
+    if(fresh)G.track('staff_view',{filled:(b.seats||[]).filter(function(s){return s.filled;}).length,
+      levels:(b.seats||[]).reduce(function(a,s){return a+(s.level|0);},0),cp:(b.resources||{}).coach_points|0,game_type:'franchise'});
+  }
+  function row(k,v){
+    return '<li><span class="k">'+esc(k)+'</span><b>'+esc(v)+'</b></li>';
+  }
+
+  var _wired=false;
+  function wire(){
+    if(_wired)return; _wired=true;
+    rooms.addEventListener('click',function(e){
+      var t=e.target.closest?e.target.closest('[data-hire],[data-promote],[data-fire]'):null;
+      if(!t||!BOARD)return;
+      if(t.hasAttribute('data-hire')){
+        var seat=t.getAttribute('data-hire');
+        t.disabled=true;t.textContent='Hiring…';
+        FR.staffHire(seat).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'Nobody could be hired.');return reload();}
+          var d=r.data;
+          G.track('staff_hire',{seat:seat,cost:d.cost,game_type:'franchise'});
+          (d.achievements||[]).forEach(function(a){G.track('achievement_unlocked',{achievement:a,placement:'staff'});});
+          G.toast('Hired '+(d.seat&&d.seat.coach?d.seat.coach:'a coach')+'.');
+          return reload();
+        });
+        return;
+      }
+      if(t.hasAttribute('data-promote')){
+        var s2=t.getAttribute('data-promote'),n=t.getAttribute('data-levels')|0;
+        t.disabled=true;t.textContent='Working…';
+        FR.staffPromote(s2,n).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'That promotion could not be bought.');return reload();}
+          var d=r.data;
+          G.track('staff_promote',{seat:s2,from:d.from,to:d.to,levels:d.levels,cost:d.cost,game_type:'franchise'});
+          (d.achievements||[]).forEach(function(a){G.track('achievement_unlocked',{achievement:a,placement:'staff'});});
+          if((d.new_specialties|0)>0){
+            G.moment({eyebrow:'Level '+d.to,title:(d.seat&&d.seat.coach?d.seat.coach:'Your coach')+' is a '+(d.seat?d.seat.grade:''),
+              sub:(d.seat&&d.seat.specialties&&d.seat.specialties.length?d.seat.specialties[d.seat.specialties.length-1].name:''),
+              body:'A specialty every '+FR.STAFF.specialty_every+' levels. He is worth +'+((d.seat&&d.seat.effect)||0)+' now, of a possible '+((d.seat&&d.seat.cap)||0)+'.',
+              cta:'Back to the building',dismiss:'Close'});
+          }else G.toast('Level '+d.from+' → '+d.to+' for '+d.cost+' CP'+(d.short?' (that is all the Points would buy)':''));
+          return reload();
+        });
+        return;
+      }
+      var seat3=t.getAttribute('data-fire'),nm=t.getAttribute('data-name'),lv=t.getAttribute('data-level');
+      if(!window.confirm('Fire '+nm+'? He is level '+lv+', and the level goes with him. Whoever replaces him starts at one.'))return;
+      t.disabled=true;
+      FR.staffFire(seat3).then(function(r){
+        if(!r.ok){G.toast(r.message||'That could not be done.');return reload();}
+        G.track('staff_fire',{seat:seat3,level:lv|0,game_type:'franchise'});
+        G.toast('Seat empty.');
+        return reload();
+      });
+    });
+  }
+
+  function reload(){
+    return FR.staff().then(function(r){if(r.ok&&r.data)renderBoard(r.data,false);return r;});
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(st!=='franchise'){renderEmpty(st);return;}
+    return FR.staff().then(function(r){
+      if(!r.ok){
+        stage.innerHTML='<div class="empty">The building could not be opened. '+esc(r.message||'Check your connection and reload.')+'</div>';
+        return;
+      }
+      if(!r.data){renderEmpty(FR.state());return;}
+      renderBoard(r.data,true);
+    });
+  }).catch(function(){renderEmpty(FR.state());});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>

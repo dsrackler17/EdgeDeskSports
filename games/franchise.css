@@ -591,3 +591,33 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .tr-off .note{font-size:12.5px;color:var(--text);margin-top:8px;border-left:3px solid var(--fr-primary,var(--val-dim));padding-left:10px}
 .tr-off .btn-row{margin-top:10px}
 .tr-off .btn{min-height:var(--tap)}
+
+/* ── THE COACHING STAFF (Phase 8) ─────────────────────────────────────────
+   Four seats, not a collection: each one is a card big enough to read a
+   name, a grade, a level out of a thousand, and the one button that moves
+   it. The bar inside a seat goes to the NEXT MILESTONE, never to a
+   thousand — a level-100 coach is one per cent of the way to the top, and
+   a bar that said so would be a lie about what he is worth. */
+.st-grid{display:grid;gap:10px;margin-top:10px}
+@media(min-width:720px){.st-grid{grid-template-columns:repeat(2,1fr)}}
+.st-seat{background:var(--cell);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0;
+  display:flex;flex-direction:column}
+.st-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.st-role{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.st-means{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.4}
+.st-lvl{text-align:right;flex:none}
+.st-lvl b{display:block;font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;line-height:1;color:var(--exp)}
+.st-lvl span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.1em;color:var(--faint);margin-top:2px}
+.st-lvl.empty{font-family:'Space Grotesk',sans-serif;font-size:24px;color:var(--line2)}
+.st-body{flex:1;min-width:0}
+.st-name{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;line-height:1.15;margin-top:12px;overflow-wrap:break-word}
+.st-arch{font-size:12.5px;color:var(--dim);margin-top:3px}
+.st-arch b{color:var(--exp)}
+.st-eff{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;color:var(--val);margin-top:8px}
+.st-eff small{font-family:'Inter',sans-serif;font-size:11.5px;font-weight:500;color:var(--faint);margin-left:4px}
+.st-specs{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.st-spec{font-size:10.5px;font-weight:600;color:var(--exp);border:1px solid rgba(155,124,214,.45);
+  border-radius:999px;padding:3px 9px;background:rgba(155,124,214,.07)}
+.st-seat .pc-actions{margin-top:12px}
+.st-seat .pc-actions .btn{min-height:var(--tap)}
+.mk-sum .cp .v{color:var(--exp)}

@@ -1011,6 +1011,8 @@ shows one button; afterwards, the result.
 * **Trades** (`/games/trades`, Phase 7): the rosters of the conference you
   are in, an offer built from both sides, the offers waiting on you, and
   every deal that was taken.
+* **Coaching Staff** (`/games/staff`, Phase 8): four seats, what each coach
+  is worth, what the next level costs, and the two curves that decide both.
 
 ## The one rule, again
 
@@ -1071,6 +1073,9 @@ paid resources, and a subscriber earns exactly what anyone else earns.
 | a conference title | 400 | | 300 | 10 |
 | the bowl played (Phase 7) | 150 | | 60 | |
 | the bowl won | 300 | | 200 | 5 |
+
+Coach Points are the only currency you cannot earn by playing a real game:
+every one of them comes from **winning** something. Phase 8 is where they go.
 
 XP levels the franchise on the War Room's curve (`25 × (L − 1) × (L + 2)`,
 level 30 at 23,200). If any number changes, the version changes and this
@@ -1546,6 +1551,78 @@ that hurts somebody and never the lone kicker, a record built to earn a
 bowl and the bowl played, and a trade offered, declined, withdrawn,
 refused for leaving a hole, and taken.
 
+## Phase 8 — the coaching staff
+
+**Where Coach Points go, forever.** Every other currency had somewhere to
+spend itself indefinitely — Scouting Points buy reports, ten a window; Team
+Credits buy free agents, priced per point. Coach Points had two facilities
+worth **76 CP in total** and then nothing, while a single decent season
+earns around thirty. That was backwards in a specific way: CP is the
+currency you earn by *winning* — a weekly game, your rival, a challenge, a
+conference round, a bowl, a title — so the hardest content in the game paid
+in the one thing with nothing behind it.
+
+Four seats, `staff_v1`, published by `franchise_staff()` and mirrored in
+`EDFranchise.STAFF`: a **head coach**, an **offensive** and a **defensive
+coordinator**, and a **head trainer**. Each is one named person, generated
+on the server from the same name pools the roster draws from, hired for 12
+CP and levelled with CP — to a thousand.
+
+### The two curves, which are the whole design
+
+    cost(L → L+1) = 1 + floor((L − 1) / 10)
+    effect(L)     = cap × ln(L) / ln(1000)
+
+**What a level costs.** One Coach Point, going up a Point every ten levels.
+Ten levels cost 9; a hundred cost 540; the whole thousand costs **50,400**.
+So level 10 arrives in a first season, level 50 inside a year, level 100 at
+about three — and level 1000 is *a horizon rather than a plan*. That is
+deliberate. There is always another level.
+
+**What a level is worth.** Every tenfold in level is another third of the
+cap: level 10 is a third of the way, level 100 two thirds, level 1000 all
+of it. A coach is useful the week you hire him and never finished, and the
+long tail is honest about being a long tail.
+
+Because the tail is long, the levels carry rewards of their own: a
+**specialty** every 25 levels (ten of them, to level 250, drawn from the
+pool that seat can hold and seeded so a coach always unlocks the same ones
+in the same order) and a **grade** that reads off the number — Rookie,
+Assistant, Coordinator, Veteran, Legend, and Hall of Fame at a thousand.
+
+### Where a coach reaches
+
+Nowhere new. `franchise_staff_effects()` returns the same shape
+`franchise_trait_effects()` already does, so the simulator reads one more
+object rather than learning anything: the coordinators add to offense and
+defense, the head coach to the fourth quarter and overtime, and their
+specialties to takeaways and clutch kicks. The trainer takes a slice off
+the injury chance `injury_v1` already computes — never more than four
+fifths of it — and adds to the offseason development the Training Center
+already grants. A game's box states the staff among the edges it already
+states.
+
+The **team overall stays the roster's** number. Coaching is not player
+quality and is not counted as it.
+
+### A coach does not leave
+
+Nothing poaches him, nothing retires him, nothing expires. Three years of
+levelling cannot be taken away by a die roll — the sink is the levelling
+itself, four seats deep and effectively bottomless, and it does not need
+turnover to work. Firing is allowed and resets that seat to nothing, which
+is exactly why almost nobody will: the level belongs to the coach, not to
+the seat, and whoever replaces him starts at one.
+
+Report row 26 covers it. The SQL suite proves both curves **level by
+level** rather than at their ends — the cost never falls, the sum of the
+steps equals the price of the climb at every level to 200, the effect never
+falls and never passes the cap — and plays the building through: hiring
+into an empty seat and refusing a filled one, a promotion that buys what
+the purse can afford and says it fell short, a coordinator taken to level
+301 for the 4,650 Coach Points the table says it costs, and a firing that
+takes the level with him.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
@@ -1555,8 +1632,9 @@ after), and a bracket for the solo season (the conference is where a
 bracket belongs). The ledger accepts a negative delta for spending (the
 facilities, the reports and the signings use it), and
 `franchise_activity` is the record every future reward derives from. The
-simulator, the offseason, the market, the conference, injuries, the bowl
-and trades are each versioned (`sim_v1`, `offseason_v1`, `market_v1`,
-`conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`) so a retuned one is a
-new version and old boxes, old reports, old classes, old tables and old
-deals stay true to the rules they were played under.
+simulator, the offseason, the market, the conference, injuries, the bowl,
+trades and the staff are each versioned (`sim_v1`, `offseason_v1`,
+`market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
+`staff_v1`) so a retuned one is a new version and old boxes, old reports,
+old classes, old tables, old deals and old coaches stay true to the rules
+they were played under.
