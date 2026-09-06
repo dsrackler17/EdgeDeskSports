@@ -1194,15 +1194,141 @@ Phase 2 fires `gameday_view` · `season_started` · `weekly_game_started` ·
   the next one started with the careers kept. It skips loudly without
   Postgres; `games-sql.yml` refuses the skip.
 
+## Phase 3 — franchise vs franchise
+
+**A challenge is a link.** From Game Day a franchise makes a challenge link
+(`franchise_challenge_create`: up to ten open at once, good for fourteen
+days, an optional line to send with it). Anyone holding the link sees who
+is calling them out — the franchise's card: name, mark, overall, record —
+with or without a franchise of their own (`franchise_challenge_peek`; the
+token is the key, and it is returned to nobody but the challenger). A
+visitor without a franchise founds one, no account needed, and the link
+brings them straight back. Whoever accepts plays the game **at once, on
+the server** (`franchise_challenge_accept`): `franchise_sim_versus()` runs
+the same drive model as the season on **both real rosters**, each side's
+own scheme matchup, traits and this week's preparation, on a neutral
+field, seeded from a seed the server derives. The client sends the token
+and nothing else. A challenge is played once.
+
+**What a challenge moves, on both sides.** The ledger, by the table:
+`fc_played` 60 XP and 30 TC; `fc_win` 40 XP, 40 TC and 2 CP; `fc_upset`
+40 XP and 1 CP for beating a franchise rated five or more points higher.
+Achievements: Exhibition Debut, Beat a Friend, Giant Killer, Three
+Straight. Careers grow by the box; the season lines and the season record
+do not — an exhibition is not a season game. The **rivalry record**
+between the two franchises (`franchise_rivalries`, both directions,
+append-only) counts challenges "on the field" beside real-game
+Head-to-Heads "on the board", which the existing settlement trigger now
+writes too. And both move on **the ladder**: ordinary Elo, K = 24, from
+1500, zero-sum.
+
+**The ladder lists franchises, never accounts.** `franchise_ladder()` is
+public and returns a name, a city, a mark, an overall, a record and a
+rating — no id a client could use, no email, no user. A franchise appears
+on it only once it has played a challenge; founding alone puts nobody on
+a public list. Game Day shows the top of it and where you stand.
+
+**Head-to-Head, with the franchises behind the names.** When both players
+in a real-game Head-to-Head have franchises, the page says which, with
+the marks, and the record between the two franchises
+(`franchise_h2h_context`, read by token; `games_social.sql` is untouched).
+A franchise claimed into an account after an anonymous entry still maps
+(`franchises.claimed_hash`).
+
+Report rows 13–15 cover it: the versus simulator and the rivalry writer
+are reachable by no client role; a challenge is open to every franchise;
+the ladder is public and carries no account. The SQL suite plays it
+through: the link read by a stranger and by the challenger, refused for
+oneself, refused without a franchise, accepted once, both sides paid once,
+the rivalry mirrored, the ladder zero-sum, the box adding up on both
+sides, expiry, cancellation, the cap of ten, the upset paid only to the
+weaker winner, and three straight.
+
+## Phase 4 — the offseason, the facilities, the Trophy Room
+
+The franchise now has a past and a future. Between seasons the roster
+ages; the Front Office has the first place Team Credits and Coach Points
+go; and everything permanent about a franchise is one page.
+
+**The offseason runs before the next season, once.** When a franchise
+whose season is complete asks for the next one (`franchise_start_season`),
+`franchise_offseason()` runs first, on the server, seeded from the
+franchise and the season number (`offseason_v1`):
+
+- **Ageing.** Every active player is a year older.
+- **Development.** A player 26 and under grows by his development tier
+  (Steady 1, Quick 2, Star 3, Superstar 4), one more if he played four or
+  more games, one more per Training Center level, with a little noise;
+  27 to 29 hold about level (a point up with games and a Training Center
+  at two); 30 to 32 slip a point or two (held up by a Training Center at
+  three); 33 and over decline. Nobody grows past his potential, and a
+  player past 30 has none left.
+- **Retirement.** At 35, or at 33 and under 55 overall, a player
+  retires. He keeps his career, leaves the roster read and joins the
+  alumni (`game_players.status = 'retired'`, `retired_season`).
+- **Rookies.** For every retirement one rookie is signed at that position
+  from the same name and archetype pools as the founding roster,
+  seeded so the same offseason signs the same player: 21 to 23, rated
+  below the founding backups, with room to grow. The depth chart closes
+  up first, so the chart is always 1..n. Thirty-eight players, always.
+- **The report** — every player's before and after, the retired, the
+  rookies, a summary — is written on the season that just ended
+  (`franchise_seasons.offseason`), read back by home and by the Trophy
+  Room, and never written twice. A founder retiring is a **Farewell**; a
+  leap of four or more is a **Breakout**.
+
+**The facilities are the first resource sink.** Four of them, three
+levels each, published in `franchise_facilities()` (`facilities_v1`) and
+mirrored in `EDFranchise.FACILITIES`:
+
+| Facility | Bought with | Levels | Effect |
+|---|---|---|---|
+| Training Center | Team Credits 300 / 600 / 1000 | 3 | +1 development a level for players 26 and under, each offseason; veterans fade slower at levels 2 and 3 |
+| Film Room | Coach Points 6 / 12 / 20 | 3 | +0.5 offense and defense in every game |
+| Conditioning | Team Credits 300 / 600 / 1000 | 3 | +0.5 in the fourth quarter and overtime |
+| Stadium | Coach Points 6 / 12 / 20 | 3 | +0.25 home field in season games |
+
+`franchise_upgrade(p_facility)` takes a name and nothing else. The server
+reads the level, the price and what is on hand, refuses the top level or
+a short purse (`55000`, with the price and the amount on hand in the
+message), and writes **one negative ledger row** keyed by facility and
+level (`kind = 'facility'`, `key = 'training:2'`), so the totals still
+derive from the ledger and nothing else. The first upgrade is
+**Groundbreaking**. The Film Room, Conditioning and the Stadium show in
+the box of every game they touch (`box.edges.facilities`, and each side's
+own `film` and `conditioning` in a challenge) — a franchise challenge on
+a neutral field has no Stadium. Nothing is bought with money; the page
+says so beside the button.
+
+**The Trophy Room** (`/games/trophies/`, `franchise_trophies()`) is one
+read: every achievement definition with earned-or-not and the day, every
+season newest first with its games and its offseason report, the career
+leaders (passing, rushing, receiving, tackles, sacks — the retired
+counted), the alumni with their careers, the all-time record, the rival
+series, the facilities, the ladder and the challenge record. It is the
+franchise's own room and nobody else's; a visitor without a franchise is
+shown the door to the Front Office.
+
+Report rows 16–17 cover it: the offseason and the rookie generator are
+reachable by no client role; facilities are `facilities_v1`, bought with
+earned resources through the ledger only. The SQL suite plays it through:
+a refusal one credit short that debits nothing, the three prices, the top
+level refused, the Film Room in a season box and on the owner's side of a
+challenge, an offseason dry run rolled back and compared player for
+player with the real one, ageing, the retirement rule both ways, the
+chart closing up, rookies with names and numbers nobody in the colours
+has worn, growth capped at potential, the veterans' decline, the report
+written once, and the room read by its owner only.
+
 ## Not built yet, on purpose
 
-Franchise Head-to-Head context, rivalries between players and conferences
-(Phase 3); the Trophy Room page, facilities, player development, ageing and
-the offseason between seasons (Phase 4); the draft and the transfer market
-(Phase 5); playoffs and standings against other players' franchises. The
-schema leaves room: `franchise_seasons.status` admits `playoffs`, the
-ledger accepts a negative delta for spending, traits with no simulator
-effect yet (Iron Man) are stated as such, and `franchise_activity` is the
-record every future reward derives from. The simulator is versioned
-(`sim_v1`) so a retuned one is a new version and old boxes stay true to the
-rules they were played under.
+Conferences — a league of friends with standings of its own — and
+playoffs; the draft and the transfer market (Phase 5), which is where
+Scouting Points will finally be spent. The schema leaves room:
+`franchise_seasons.status` admits `playoffs`, the ledger already accepts a
+negative delta for spending (the facilities use it), traits with no
+simulator effect yet (Iron Man) are stated as such, and
+`franchise_activity` is the record every future reward derives from. The
+simulator and the offseason are versioned (`sim_v1`, `offseason_v1`) so a
+retuned one is a new version and old boxes and old reports stay true to
+the rules they were played under.

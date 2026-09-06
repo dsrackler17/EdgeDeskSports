@@ -49,6 +49,11 @@
     weekly_win:    { xp: 60, tc: 60, cp: 2 },
     rival_win:     { xp: 50, cp: 1 },
     season_complete: { xp: 250, tc: 150 },
+    /* franchise vs franchise (Phase 3): a challenge played, won, and won
+       against a team rated five or more higher */
+    fc_played:     { xp: 60, tc: 30 },
+    fc_win:        { xp: 40, tc: 40, cp: 2 },
+    fc_upset:      { xp: 40, cp: 1 },
     import_unverified_price_it: { xp: 50 },
     import_unverified_pick5:    { xp: 75 }
   };
@@ -86,6 +91,9 @@
       case 'weekly_win': return { xp: ECONOMY.weekly_win.xp, tc: ECONOMY.weekly_win.tc, cp: ECONOMY.weekly_win.cp };
       case 'rival_win': return { xp: ECONOMY.rival_win.xp, cp: ECONOMY.rival_win.cp };
       case 'season_complete': return { xp: ECONOMY.season_complete.xp, tc: ECONOMY.season_complete.tc };
+      case 'fc_played': return { xp: ECONOMY.fc_played.xp, tc: ECONOMY.fc_played.tc };
+      case 'fc_win': return { xp: ECONOMY.fc_win.xp, tc: ECONOMY.fc_win.tc, cp: ECONOMY.fc_win.cp };
+      case 'fc_upset': return { xp: ECONOMY.fc_upset.xp, cp: ECONOMY.fc_upset.cp };
     }
     return {};
   }
@@ -195,7 +203,14 @@
     shutout:        { name: 'Shutout' },
     first_season:   { name: 'A Full Season' },
     winning_season: { name: 'Winning Season' },
-    perfect_season: { name: 'Perfect Season' }
+    perfect_season: { name: 'Perfect Season' },
+    fc_first:       { name: 'Exhibition Debut' },
+    fc_first_win:   { name: 'Beat a Friend' },
+    fc_upset:       { name: 'Giant Killer' },
+    fc_three:       { name: 'Three Straight' },
+    first_upgrade:  { name: 'Groundbreaking' },
+    breakout:       { name: 'Breakout' },
+    farewell:       { name: 'Farewell' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -487,7 +502,117 @@
     return L.join('\n');
   }
 
+  /* ── franchise vs franchise ─────────────────────────────────────────────
+     A challenge is a link; the franchise that opens it plays it at once,
+     on the server. These say the invite, the result and a record plainly. */
+  var LADDER_START = 1500, LADDER_K = 24;
+  function recordLine(r) { r = r || {}; return (r.wins | 0) + '–' + (r.losses | 0) + (r.ties ? '–' + r.ties : ''); }
+  function challengeUrl(token) {
+    var o = (root.location && root.location.origin) || 'https://edgedesksports.com';
+    return o + '/games/gameday/?fc=' + encodeURIComponent(String(token || ''));
+  }
+  /* the invite, as text: who is calling, how good they are, and the door */
+  function challengeInviteText(f, ch) {
+    var me = f ? ((f.city || '') + ' ' + (f.name || '')).trim() : 'My franchise';
+    var L = [];
+    L.push('The ' + me + (f && f.overall != null ? ' (OVR ' + f.overall + (f.record ? ', ' + recordLine(f.record) : '') + ')' : '') + ' challenge your franchise.');
+    if (ch && ch.note) L.push('“' + ch.note + '”');
+    L.push('One game, on the server, from both rosters. No account needed — found a franchise free and play it here:');
+    return L.join('\n');
+  }
+  /* the result, as text, from my side */
+  function challengeShareText(ch) {
+    if (!ch || !ch.me) return '';
+    var me = ((ch.me.city || '') + ' ' + (ch.me.name || '')).trim().toUpperCase(), them = ch.them ? ((ch.them.city || '') + ' ' + (ch.them.name || '')).trim() : 'a franchise';
+    var L = [];
+    if (ch.status === 'FINAL') {
+      L.push(me + ' ' + (ch.score_for | 0) + ', ' + them + ' ' + (ch.score_against | 0) + (ch.ot ? ' (OT)' : ''));
+      L.push('EdgeDesk franchise challenge · neutral field');
+      if (ch.potg && ch.potg.name) L.push('Player of the game: ' + ch.potg.name + ', ' + ch.potg.position + ' — ' + statsLine(ch.potg.position, ch.potg.stats));
+      if (ch.rating_delta != null) L.push('Ladder: ' + (ch.rating_delta > 0 ? '+' : '') + ch.rating_delta);
+    } else {
+      L.push(me + ' challenge ' + them + '.');
+    }
+    L.push('');
+    L.push('EdgeDesk Games');
+    return L.join('\n');
+  }
+
   /* ── the anonymous envelope: what it would be worth, and its payload ──── */
+  /* ── THE OFFSEASON AND THE FACILITIES (Phase 4) ─────────────────────────
+     Mirrors of franchise_facilities() and franchise_offseason() in the SQL,
+     for display only: the client shows a price, the server charges it; the
+     client explains a report, the server wrote it. Pinned to the SQL by
+     tools/games/franchise.test.js. */
+  var FACILITIES_VERSION = 'facilities_v1';
+  var FACILITIES = {
+    training:     { name: 'Training Center', currency: 'tc', costs: [300, 600, 1000], per_level: 1,
+                    effect: '+1 development a level for players 26 and under, each offseason; veterans fade slower at levels 2 and 3' },
+    film:         { name: 'Film Room',       currency: 'cp', costs: [6, 12, 20],      per_level: 0.5,
+                    effect: '+0.5 offense and defense in every game' },
+    conditioning: { name: 'Conditioning',    currency: 'tc', costs: [300, 600, 1000], per_level: 0.5,
+                    effect: '+0.5 in the fourth quarter and overtime' },
+    stadium:      { name: 'Stadium',         currency: 'cp', costs: [6, 12, 20],      per_level: 0.25,
+                    effect: '+0.25 home field in season games' }
+  };
+  var FACILITY_ORDER = ['training', 'film', 'conditioning', 'stadium'];
+  /* one facility as a page shows it: the level, what the next one costs,
+     and whether what is on hand covers it. The server decides again. */
+  function facilityState(key, facilities, resources) {
+    var spec = FACILITIES[key];
+    if (!spec) return null;
+    var level = Math.max(0, Math.min(spec.costs.length, obj(facilities)[key] | 0));
+    var top = level >= spec.costs.length, cost = top ? null : spec.costs[level];
+    var cur = CURRENCIES[spec.currency], have = obj(resources)[cur.field] | 0;
+    return { key: key, name: spec.name, currency: spec.currency, unit: cur.short, level: level, max: spec.costs.length, top: top,
+      cost: cost, have: have, affordable: !top && have >= cost, short: top ? 0 : Math.max(0, cost - have),
+      effect: spec.effect, bonus: spec.per_level * level, next_bonus: top ? null : spec.per_level * (level + 1) };
+  }
+  function facilityStates(facilities, resources) {
+    return FACILITY_ORDER.map(function (k) { return facilityState(k, facilities, resources); });
+  }
+  function facilityLine(key, level) {
+    var spec = FACILITIES[key];
+    return spec ? spec.name + ' · level ' + (level | 0) + ' of ' + spec.costs.length : '';
+  }
+  var OFFSEASON_VERSION = 'offseason_v1';
+  /* the retirement rule, as the SQL applies it: at 35, or at 33 and under 55 */
+  var RETIRE_AGE = 35, FADE_AGE = 33, FADE_OVERALL = 55;
+  function roman(n) {
+    n = n | 0; if (n <= 0 || n >= 4000) return String(n);
+    var t = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']], out = '', i;
+    for (i = 0; i < t.length; i++) while (n >= t[i][0]) { out += t[i][1]; n -= t[i][0]; }
+    return out;
+  }
+  /* the offseason report in one sentence: who improved, who declined, who
+     retired, who was signed. Every number is the server's. */
+  function offseasonLine(rep) {
+    rep = obj(rep); var s = obj(rep.summary), bits = [];
+    if (rep.after_season == null) return '';
+    bits.push((s.improved | 0) + ' improved');
+    bits.push((s.declined | 0) + ' declined');
+    if (s.retired | 0) bits.push((s.retired | 0) + ' retired');
+    if (s.signed | 0) bits.push((s.signed | 0) + ' rookie' + ((s.signed | 0) === 1 ? '' : 's') + ' signed');
+    var out = 'Offseason after Season ' + roman(rep.after_season) + ': ' + bits.join(', ') + '.';
+    if ((s.biggest | 0) >= 4) out += ' Biggest leap +' + (s.biggest | 0) + '.';
+    return out;
+  }
+  /* the Trophy Room as text: the identity, the seasons, the record, the
+     wall — and no claim about anything but a free game */
+  function trophyShareText(t) {
+    t = obj(t); var f = obj(t.franchise), r = obj(t.record), ach = arr(t.achievements).filter(function (a) { return a && a.earned; });
+    var lines = [((f.city || '') + ' ' + (f.name || '')).trim().toUpperCase()];
+    lines.push('Founded ' + (f.founded_season || '') + ' · ' + (r.seasons | 0) + ' season' + ((r.seasons | 0) === 1 ? '' : 's') + ' · ' + recordLine(r) + ' all-time');
+    var w = ach.length + ' achievement' + (ach.length === 1 ? '' : 's');
+    if (t.rival && t.rival.name) w += ' · Rival series ' + recordLine(t.rival);
+    if (t.ladder && t.ladder.games) w += ' · Ladder ' + (t.ladder.rating | 0);
+    lines.push(w);
+    var qb = arr(obj(t.leaders).passing)[0];
+    if (qb && qb.yds) lines.push('Career passing: ' + qb.name + ', ' + fmt(qb.yds) + ' yds');
+    lines.push('', 'EdgeDesk Games');
+    return lines.join('\n');
+  }
+
   function arr(v) { return Array.isArray(v) ? v : []; }
   function obj(v) { return v && typeof v === 'object' ? v : {}; }
   function vals(o) { o = obj(o); var out = [], k; for (k in o) if (o.hasOwnProperty(k)) out.push(o[k]); return out; }
@@ -671,6 +796,42 @@
   function schedule(number) { return rpc('franchise_schedule', withSecret({ p_number: number == null ? null : (number | 0) })); }
   function game(id) { return rpc('franchise_game', withSecret({ p_game: String(id) })); }
 
+  /* FRANCHISE VS FRANCHISE. The link is the key: peeking works with or
+     without a franchise (the landing must work before one exists);
+     accepting plays the game on the server at once and is never queued. */
+  function challengeCreate(note) { return rpc('franchise_challenge_create', withSecret({ p_note: note || null })); }
+  function challengePeek(token) { return rpc('franchise_challenge_peek', withSecret({ p_token: String(token || '') })); }
+  function challengeAccept(token) {
+    return rpc('franchise_challenge_accept', withSecret({ p_token: String(token || '') })).then(function (r) {
+      if (r.ok && r.data && r.data.totals) touchTotals(r.data.totals);
+      return r;
+    });
+  }
+  function challengeCancel(id) { return rpc('franchise_challenge_cancel', withSecret({ p_id: String(id) })); }
+  function challengesMine(limit) { return rpc('franchise_challenges_mine', withSecret({ p_limit: limit || 20 })); }
+  function ladder(limit) { return rpc('franchise_ladder', withSecret({ p_limit: limit || 25 })); }
+  function h2hContext(token) { return rpc('franchise_h2h_context', { p_token: String(token || '') }); }
+
+  /* THE FACILITIES AND THE TROPHY ROOM (Phase 4). An upgrade is asked for
+     by name and nothing else; the server reads the level, the price and
+     what is on hand, and writes the one debit. Never queued — a player
+     spending must see the answer. The snapshot is kept current from the
+     answer so the HQ and the office agree without another read. */
+  function upgrade(facility) {
+    return rpc('franchise_upgrade', withSecret({ p_facility: String(facility || '') })).then(function (r) {
+      if (r.ok && r.data) {
+        var snap = snapshot();
+        if (snap) {
+          if (r.data.totals) snap.resources = r.data.totals;
+          if (r.data.facilities) snap.facilities = r.data.facilities;
+          remember(snap);
+        }
+      }
+      return r;
+    });
+  }
+  function trophies() { return rpc('franchise_trophies', withSecret({})); }
+
   /* CLAIM the device's franchise into the account just signed in. Proof is
      the secret; the server refuses if the account already owns one, and
      says so. The cache moves with it. */
@@ -787,6 +948,14 @@
     opponentTitle: opponentTitle, matchupLine: matchupLine, resultLine: resultLine, opensIn: opensIn,
     gamePhase: gamePhase, matchupEdges: matchupEdges, gameShareText: gameShareText,
     startSeason: startSeason, playWeek: playWeek, schedule: schedule, game: game,
+    LADDER_START: LADDER_START, LADDER_K: LADDER_K, recordLine: recordLine, challengeUrl: challengeUrl,
+    challengeInviteText: challengeInviteText, challengeShareText: challengeShareText,
+    challengeCreate: challengeCreate, challengePeek: challengePeek, challengeAccept: challengeAccept, challengeCancel: challengeCancel,
+    challengesMine: challengesMine, ladder: ladder, h2hContext: h2hContext,
+    FACILITIES_VERSION: FACILITIES_VERSION, FACILITIES: FACILITIES, FACILITY_ORDER: FACILITY_ORDER,
+    facilityState: facilityState, facilityStates: facilityStates, facilityLine: facilityLine,
+    OFFSEASON_VERSION: OFFSEASON_VERSION, RETIRE_AGE: RETIRE_AGE, FADE_AGE: FADE_AGE, FADE_OVERALL: FADE_OVERALL,
+    roman: roman, offseasonLine: offseasonLine, trophyShareText: trophyShareText, upgrade: upgrade, trophies: trophies,
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,

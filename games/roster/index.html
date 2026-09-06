@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905c">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
+<link rel="stylesheet" href="/games/games.css?v=20260905e">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905e">
 </head>
 <body>
 <div id="gh"></div>
@@ -49,17 +49,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905c"></script>
-<script src="/games/lib/scoring.js?v=20260905c"></script>
-<script src="/games/lib/challenge.js?v=20260905c"></script>
-<script src="/games/lib/research_state.js?v=20260905c"></script>
-<script src="/games/lib/attribution.js?v=20260905c"></script>
-<script src="/games/lib/store.js?v=20260905c"></script>
-<script src="/games/lib/dynasty.js?v=20260905c"></script>
-<script src="/games/lib/social.js?v=20260905c"></script>
-<script src="/games/lib/auth.js?v=20260905c"></script>
-<script src="/games/lib/franchise.js?v=20260905c"></script>
-<script src="/games/games.js?v=20260905c"></script>
+<script src="/games/lib/week.js?v=20260905e"></script>
+<script src="/games/lib/scoring.js?v=20260905e"></script>
+<script src="/games/lib/challenge.js?v=20260905e"></script>
+<script src="/games/lib/research_state.js?v=20260905e"></script>
+<script src="/games/lib/attribution.js?v=20260905e"></script>
+<script src="/games/lib/store.js?v=20260905e"></script>
+<script src="/games/lib/dynasty.js?v=20260905e"></script>
+<script src="/games/lib/social.js?v=20260905e"></script>
+<script src="/games/lib/auth.js?v=20260905e"></script>
+<script src="/games/lib/franchise.js?v=20260905e"></script>
+<script src="/games/games.js?v=20260905e"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -155,10 +155,11 @@
     }).join('');
 
     after.innerHTML='<div class="sec"><div class="card"><div class="eyebrow">Improving it</div>'
-      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Player development, the draft and the transfer market arrive with later seasons. '
-      +'For now the way to a better team is the same as the way to a better read: <a href="/games/price-it/">scout in Price It</a>, '
-      +'<a href="/games/pick-5/">play the week</a>, <a href="/games/two-minute-drill/">run the drill</a>. Your resources are on the '
-      +'<a href="/games/franchise/">Front Office</a> page.</p></div></div>';
+      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Players develop in the offseason, after every season: the young grow toward their potential, '
+      +'the old fade, anyone 35 retires (33 and under 55 too), and a rookie is signed for every one who goes. A <a href="/games/franchise/">Training Center</a> '
+      +'speeds the young along. The draft and the transfer market arrive with later seasons. The way to a better team is still the way to a better read: '
+      +'<a href="/games/price-it/">scout in Price It</a>, <a href="/games/pick-5/">play the week</a>, <a href="/games/two-minute-drill/">run the drill</a>. '
+      +'The retired are in the <a href="/games/trophies/">Trophy Room</a>.</p></div></div>';
 
     wire();
     if(fresh)G.track('roster_view',{players:d.players.length,overall:rt.overall,weakest:weak?weak.position:null});

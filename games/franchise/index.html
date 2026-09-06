@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905c">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
+<link rel="stylesheet" href="/games/games.css?v=20260905e">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905e">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905c"></script>
-<script src="/games/lib/scoring.js?v=20260905c"></script>
-<script src="/games/lib/challenge.js?v=20260905c"></script>
-<script src="/games/lib/research_state.js?v=20260905c"></script>
-<script src="/games/lib/attribution.js?v=20260905c"></script>
-<script src="/games/lib/store.js?v=20260905c"></script>
-<script src="/games/lib/dynasty.js?v=20260905c"></script>
-<script src="/games/lib/social.js?v=20260905c"></script>
-<script src="/games/lib/auth.js?v=20260905c"></script>
-<script src="/games/lib/franchise.js?v=20260905c"></script>
-<script src="/games/games.js?v=20260905c"></script>
+<script src="/games/lib/week.js?v=20260905e"></script>
+<script src="/games/lib/scoring.js?v=20260905e"></script>
+<script src="/games/lib/challenge.js?v=20260905e"></script>
+<script src="/games/lib/research_state.js?v=20260905e"></script>
+<script src="/games/lib/attribution.js?v=20260905e"></script>
+<script src="/games/lib/store.js?v=20260905e"></script>
+<script src="/games/lib/dynasty.js?v=20260905e"></script>
+<script src="/games/lib/social.js?v=20260905e"></script>
+<script src="/games/lib/auth.js?v=20260905e"></script>
+<script src="/games/lib/franchise.js?v=20260905e"></script>
+<script src="/games/games.js?v=20260905e"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -68,7 +68,7 @@
    function is missing, say so and offer a fresh load instead of a dead
    screen. */
 (function(){
-  var need=['EDFranchise.create','EDFranchise.importHistory','EDGamesAuth.signIn','EDGames.franchiseReady','EDGamesStore.franchiseSnapshot'];
+  var need=['EDFranchise.create','EDFranchise.importHistory','EDFranchise.upgrade','EDFranchise.facilityStates','EDGamesAuth.signIn','EDGames.franchiseReady','EDGamesStore.franchiseSnapshot'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -92,6 +92,8 @@
     return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null;
   }
   var INTENT=param('intent')||'direct';
+  /* where to go once founded: only a games path, never an outside one */
+  var NEXT=(function(){var n=param('next')||'';try{n=decodeURIComponent(n);}catch(_){}return /^\/games\/[a-z0-9\-\/]*(\?[A-Za-z0-9=&_\-]*)?$/.test(n)?n:null;})();
 
   var READY=G.boot('franchise');
   G.track('front_office_view',{intent:INTENT,game_type:'franchise'});
@@ -265,8 +267,7 @@
                 sub:'Team overall '+(home&&home.rating?home.rating.overall:'—')+' · Founder Season '+(home&&home.franchise?home.franchise.founded_season:''),
                 body:'Your roster is generated and your history starts here. Every Price It, card and drill from now on builds it.'
                   +(imp&&imp.totals?' Carried over: '+fmt(imp.totals.xp)+' XP, '+fmt(imp.totals.scouting_points)+' Scouting Points, '+fmt(imp.totals.team_credits)+' Team Credits.':''),
-                cta:'See my roster',dismiss:'Open the Front Office'});
-              var go=document.querySelector('.moment .btn-go');if(go)go.href='/games/roster/';
+                cta:NEXT?'Play the challenge':'See my roster',dismiss:'Open the Front Office',href:NEXT||'/games/roster/'});
             });
           });
         });
@@ -290,6 +291,60 @@
       +'<div class="res-note"><b>Scouting Points</b> come from Price It accuracy. <b>Team Credits</b> come from playing. '
       +'<b>Coach Points</b> come from Head-to-Head. XP levels the franchise. None of them can be bought.</div>';
   }
+  /* ---- the facilities: the first place Team Credits and Coach Points go --
+     Four of them, three levels each, priced by the published table
+     (EDFranchise.FACILITIES mirrors franchise_facilities()). The page shows
+     the price; the server charges it, once, as a line on the ledger, and
+     refuses a level it cannot afford. Nothing here is bought with money. */
+  var FAC_NOW={training:' development for players 26 and under, each offseason',film:' offense and defense in every game',
+    conditioning:' late in games',stadium:' home field'};
+  function facilitiesBlock(snap){
+    var st=FR.facilityStates(snap.facilities||{},snap.resources||{});
+    return '<div class="fac">'+st.map(function(f){
+      var dots='';for(var i=0;i<f.max;i++)dots+='<i'+(i<f.level?' class="on"':'')+'></i>';
+      var now=f.level?'Level '+f.level+' · +'+esc(f.bonus)+esc(FAC_NOW[f.key]||''):'Not built';
+      var act=f.top?'<span class="top">Built out</span>'
+        :f.affordable?'<button class="btn btn-go" type="button" data-upgrade="'+esc(f.key)+'">Level '+(f.level+1)+' · '+fmt(f.cost)+' '+esc(f.unit)+'</button>'
+        :'<span class="short">Level '+(f.level+1)+' · '+fmt(f.cost)+' '+esc(f.unit)+' · '+fmt(f.have)+' on hand</span>';
+      return '<div class="fac-i" data-fac="'+esc(f.key)+'"><div class="fac-h"><div class="n">'+esc(f.name)+'</div>'
+        +'<div class="lv" aria-label="level '+f.level+' of '+f.max+'">'+dots+'</div></div>'
+        +'<div class="e">'+esc(f.effect)+'</div><div class="s">'+now+'</div><div class="act">'+act+'</div></div>';
+    }).join('')+'</div>'
+    +'<div class="ftp" style="margin-top:10px">Facilities are built with the Team Credits and Coach Points you have earned, never with money. '
+    +'Every level is one line on the ledger, charged once by the server; the Film Room, Conditioning and the Stadium show in every box score they touch.</div>';
+  }
+  var FAC_WIRED=false;
+  function wireFacilities(){
+    if(FAC_WIRED)return;FAC_WIRED=true;
+    after.addEventListener('click',function(e){
+      var b=e.target.closest?e.target.closest('button[data-upgrade]'):null;
+      if(!b)return;
+      var key=b.getAttribute('data-upgrade');
+      b.disabled=true;b.textContent='Building…';
+      FR.upgrade(key).then(function(r){
+        var snap=FR.snapshot()||{};
+        if(!r.ok||!r.data){
+          G.toast(r.message||'The upgrade could not be made.');
+          if($('facCard'))$('facCard').innerHTML=facilitiesBlock(snap);
+          return;
+        }
+        var d=r.data;
+        G.track('facility_upgrade',{facility:key,level:d.level,cost:d.cost,currency:d.currency,game_type:'franchise'});
+        (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'front_office'});});
+        if($('resCard'))$('resCard').innerHTML=resBlock(snap.resources||{});
+        if($('facCard'))$('facCard').innerHTML=facilitiesBlock(snap);
+        G.paintFranchise();
+        G.toast(FR.FACILITIES[key].name+' is level '+d.level);
+        if(d.achievements&&d.achievements.length){
+          G.moment({eyebrow:'Achievement',title:FR.achievementName(d.achievements[0]),
+            sub:FR.FACILITIES[key].name+' · level '+d.level,
+            body:'The first facility a franchise builds. It is on the wall in the Trophy Room, and the level is on the ledger.',
+            cta:'See the Trophy Room',dismiss:'Back to the office',href:'/games/trophies/'});
+        }
+      });
+    });
+  }
+
   function renderOffice(){
     var snap=FR.snapshot();
     if(!snap||!snap.franchise){renderFound();return;}
@@ -308,19 +363,23 @@
       +'<div><div class="k">Defense</div><div class="v">'+esc(rt.defense!=null?rt.defense:'—')+'</div></div>'
       +'<div><div class="k">Special</div><div class="v">'+esc(rt.special!=null?rt.special:'—')+'</div></div>'
       +'</div>'
-      +'<div class="btn-row two"><a class="btn btn-go" href="/games/roster/">Open the roster</a><a class="btn" href="/games/">Back to HQ</a></div>';
+      +'<div class="btn-row two"><a class="btn btn-go" href="/games/roster/">Open the roster</a><a class="btn" href="/games/trophies/">Trophy Room</a></div>';
 
     var ach=(snap.achievements||[]);
     var recent=(snap.recent||[]);
     after.innerHTML=
       '<div class="sec"><div class="sec-h"><h2>Resources</h2><span class="m">'+esc(FR.ECONOMY_VERSION)+'</span></div><div class="card" id="resCard">'+resBlock(res)+'</div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>Facilities</h2><span class="m">'+esc(FR.FACILITIES_VERSION)+'</span></div><div class="card" id="facCard">'+facilitiesBlock(snap)+'</div></div>'
+      +(snap.offseason?'<div class="sec"><div class="sec-h"><h2>Offseason</h2><span class="m">'+esc(FR.OFFSEASON_VERSION)+'</span></div><div class="card">'
+          +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">'+esc(FR.offseasonLine(snap.offseason))+' The full report — every player’s change, the retired and the rookies — is in the <a href="/games/trophies/">Trophy Room</a>.</p></div></div>':'')
       +'<div class="sec"><div class="sec-h"><h2>Trophy Room</h2><span class="m">'+ach.length+' earned</span></div>'
       +'<div class="card">'+(ach.length?'<div class="ach">'+ach.map(function(a){
           return '<div><div class="n">'+esc(a.name)+'</div><div class="d">'+esc(a.description)+'</div>'
             +'<div class="w">'+esc(dayLabel(a.earned_at))+' · '+esc(a.season)+'</div>'
             +(a.exclusive_season?'<span class="x">Season exclusive</span>':'')+'</div>';
         }).join('')+'</div>':'<div class="empty">Nothing on the wall yet. The first Price It your scouting department files is the first one.</div>')
-      +'<div class="ftp" style="margin-top:10px">Every achievement is read from your record on the server. Nothing here is granted.</div></div></div>'
+      +'<div class="btn-row"><a class="btn" href="/games/trophies/">Open the Trophy Room</a></div>'
+      +'<div class="ftp" style="margin-top:10px">Every achievement is read from your record on the server. Nothing here is granted. The Trophy Room holds the rest: every season, the career leaders, the alumni.</div></div></div>'
       +'<div class="sec"><div class="sec-h"><h2>Ledger</h2><span class="m" id="ledgerNote">recent</span></div><div class="card" id="ledgerCard">'
       +(recent.length?ledgerTable(recent):'<div class="empty">Nothing on the ledger yet.</div>')+'</div></div>'
       +(f.owner==='device'
@@ -341,6 +400,7 @@
       +'<div class="btn-row"><button class="btn btn-ghost" type="button" id="doShare">Share my franchise</button></div></div></div>';
     if($('doSignOut'))$('doSignOut').addEventListener('click',signOut);
     if(f.owner==='device')wireAuth(renderOffice);
+    wireFacilities();
     $('doShare').addEventListener('click',function(){shareFranchise(snap);});
     if(snap.franchise)G.track('franchise_home_view',{placement:'front_office',level:res.level,overall:rt.overall});
     /* the fuller ledger, from the server */

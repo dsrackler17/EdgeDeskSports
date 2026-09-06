@@ -130,8 +130,18 @@ played), `franchises.rival_key`, four activity kinds, six achievement rows,
 and the functions `franchise_start_season`, `franchise_play_week`,
 `franchise_schedule` and `franchise_game`. The simulator (`franchise_sim`),
 the scheduler and the writer are internal and granted to no client role.
-Safe to re-run over a Phase 1 installation. Report rows 1–12 should each
-say `ok`. Tested against a real PostgreSQL by
+Phase 3 adds franchise vs franchise: `franchise_challenges`,
+`franchise_rivalries`, the ladder columns on `franchises`, and the
+functions `franchise_challenge_create`, `franchise_challenge_peek`,
+`franchise_challenge_accept`, `franchise_challenge_cancel`,
+`franchise_challenges_mine`, `franchise_ladder` and
+`franchise_h2h_context`. Phase 4 adds the offseason and the facilities:
+`franchises.facilities`, `franchise_seasons.offseason`,
+`game_players.retired_season`, three achievement rows, and the functions
+`franchise_upgrade` and `franchise_trophies` (the offseason, the rookie
+generator and the name pools are internal and granted to no client
+role). Safe to re-run over any earlier installation. Report rows 1–17
+should each say `ok`. Tested against a real PostgreSQL by
 `tools/games/franchise_sql.test.js`. See `games/README.md`.
 
 Two trusted functions, `game_board_upsert` and `franchise_settle_pick5`, are

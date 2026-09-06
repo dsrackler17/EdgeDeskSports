@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Trophy Room | EdgeDesk Games</title>
+<meta name="description" content="Everything permanent about your fictional football franchise: every achievement, every season and its games, the career leaders, the retired. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/trophies">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/trophies">
+<meta property="og:title" content="The Trophy Room — EdgeDesk Games">
+<meta property="og:description" content="Every achievement, every season, the career leaders and the alumni of a franchise that is yours for good.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The Trophy Room — EdgeDesk Games">
+<meta name="twitter:description" content="Every achievement, every season, the career leaders and the alumni of a franchise that is yours for good.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260905e">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905e">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Trophy Room</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Opening the Trophy Room</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260905e"></script>
+<script src="/games/lib/scoring.js?v=20260905e"></script>
+<script src="/games/lib/challenge.js?v=20260905e"></script>
+<script src="/games/lib/research_state.js?v=20260905e"></script>
+<script src="/games/lib/attribution.js?v=20260905e"></script>
+<script src="/games/lib/store.js?v=20260905e"></script>
+<script src="/games/lib/dynasty.js?v=20260905e"></script>
+<script src="/games/lib/social.js?v=20260905e"></script>
+<script src="/games/lib/auth.js?v=20260905e"></script>
+<script src="/games/lib/franchise.js?v=20260905e"></script>
+<script src="/games/games.js?v=20260905e"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDFranchise.trophies','EDFranchise.trophyShareText','EDFranchise.offseasonLine','EDFranchise.careerLine','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc,fmt=FR.fmt;
+
+  var READY=G.boot('trophies');
+  var DATA=null;
+
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dayLabel(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var d=new Date(t);return d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();
+  }
+  function rec(r){return FR.recordLine(r||{});}
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Trophy Room</div>'
+      +'<h1>Everything permanent, in one room.</h1>'
+      +'<p>Every achievement a franchise earns, every season it plays with every game in it, the career leaders, '
+      +'the players who retired in its colours and the rookies who took their places. It is written on the server as it happens, '
+      +'and nothing in it is granted — a Trophy Room is only what the franchise did.</p>'
+      +'<ul class="fo-list"><li>Found a franchise and the wall starts with Founder Season.</li>'
+      +'<li>Play a season and the offseason writes the next chapter: who grew, who faded, who retired.</li>'
+      +'<li>Every record stays, for as long as the franchise does.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=trophies" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    rooms.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'trophies',game_type:'franchise'});});
+  }
+
+  /* ---- the room ----------------------------------------------------------- */
+  function facilitiesLine(fac){
+    var on=FR.FACILITY_ORDER.filter(function(k){return (fac||{})[k]|0;});
+    if(!on.length)return 'No facilities built yet';
+    return on.map(function(k){return FR.FACILITIES[k].name+' '+((fac||{})[k]|0);}).join(' · ');
+  }
+  function renderStage(t){
+    var f=t.franchise,r=t.record||{},id=FR.identity(f),lad=t.ladder||{},rv=t.rival,fc=t.fc_record||{};
+    var earned=(t.achievements||[]).filter(function(a){return a.earned;}).length;
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Trophy Room</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city)+' · '+esc(f.abbr)+'</div><div class="hq-name">'+esc(f.name)+'</div>'
+      +'<div class="hq-line">'+esc(id.offense?id.offense.label:f.offense)+' · '+esc(id.defense?id.defense.label:f.defense)+' · <b>Founded '+esc(f.founded_season)+'</b></div></div>'
+      +'<div class="hq-rec">'+esc(rec(r))+'<span class="s">'+esc((r.seasons|0)+' season'+((r.seasons|0)===1?'':'s'))+'</span></div></div>'
+      +'<div class="tr-sum">'
+      +'<div><div class="k">On the wall</div><div class="v">'+esc(earned)+'<small>of '+esc((t.achievements||[]).length)+'</small></div></div>'
+      +'<div><div class="k">Points</div><div class="v">'+esc(fmt(r.points_for))+'<small>for · '+esc(fmt(r.points_against))+' against</small></div></div>'
+      +'<div><div class="k">Rival series</div><div class="v">'+(rv&&rv.name?esc(rec(rv))+'<small>vs '+esc(rv.name)+'</small>':'—<small>no rival yet</small>')+'</div></div>'
+      +'<div><div class="k">Ladder</div><div class="v">'+(lad.games?esc(lad.rating)+'<small>#'+esc(lad.rank)+' · '+esc(rec(fc))+' in challenges</small>':'—<small>no challenge played</small>')+'</div></div>'
+      +'</div>'
+      +'<div class="tr-fac">'+esc(facilitiesLine(t.facilities))+' · <a href="/games/franchise/">Front Office</a></div>'
+      +'<div class="btn-row two"><button class="btn btn-go" type="button" id="doShare">Share the room</button><a class="btn" href="/games/roster/">The roster today</a></div>';
+    $('doShare').addEventListener('click',share);
+  }
+  function achievementsBlock(list){
+    list=(list||[]).slice().sort(function(a,b){return (a.sort|0)-(b.sort|0);});
+    return '<div class="ach">'+list.map(function(a){
+      return '<div class="'+(a.earned?'':'locked')+'"><div class="n">'+esc(a.name)+'</div><div class="d">'+esc(a.description)+'</div>'
+        +(a.earned?'<div class="w">'+esc(dayLabel(a.earned_at))+(a.season?' · '+esc(a.season):'')+'</div>':'<div class="w">Not yet</div>')
+        +(a.exclusive_season?'<span class="x">Season exclusive</span>':'')+'</div>';
+    }).join('')+'</div>';
+  }
+  function gameRow(g){
+    var opp=g.opponent||{};
+    return '<li><span class="wk">Wk '+esc(g.week)+'</span>'+FR.logoSvg(opp.logo,22,opp.theme)
+      +'<span class="o"><b>'+esc(FR.matchupLine(g))+'</b><small>OVR '+esc(opp.overall!=null?opp.overall:'—')+(g.rival?' · rival':'')+(g.potg?' · POTG '+esc(g.potg):'')+'</small></span>'
+      +'<span class="r '+esc(String(g.result||'').toLowerCase())+'">'+(g.status==='final'?esc(FR.resultLine(g)):'—')+'</span></li>';
+  }
+  function offseasonBlock(rep){
+    if(!rep)return '';
+    var s=rep.summary||{},ret=rep.retired||[],rk=rep.rookies||[],pl=rep.players||[];
+    var leaps=pl.filter(function(p){return (p.delta|0)>=4;}).sort(function(a,b){return (b.delta|0)-(a.delta|0);}).slice(0,3);
+    return '<div class="off"><div class="eyebrow">Offseason</div><div class="off-l">'+esc(FR.offseasonLine(rep))+'</div>'
+      +(leaps.length?'<div class="off-s"><b>Leaps</b> '+leaps.map(function(p){return esc(p.name)+' ('+esc(p.position)+') '+esc(p.before)+' → '+esc(p.after);}).join(' · ')+'</div>':'')
+      +(ret.length?'<div class="off-s"><b>Retired</b> '+ret.map(function(p){return esc(p.name)+' ('+esc(p.position)+', '+esc(p.age)+')';}).join(' · ')+'</div>':'')
+      +(rk.length?'<div class="off-s"><b>Signed</b> '+rk.map(function(p){return esc(p.name)+' ('+esc(p.position)+', '+esc(p.age)+', OVR '+esc(p.overall)+')';}).join(' · ')+'</div>':'')
+      +(rep.training?'<div class="off-s">Training Center level '+esc(rep.training)+' was in effect.</div>':'')
+      +'</div>';
+  }
+  function seasonBlock(s,open){
+    var games=s.games||[];
+    return '<details class="sea"'+(open?' open':'')+'><summary><span class="p">'+esc(s.label||('Season '+s.number))+'</span>'
+      +'<span class="n">'+esc(s.status||'')+' · '+esc(s.season||'')+(games.length?' · '+games.filter(function(g){return g.status==='final';}).length+' of '+games.length+' played':'')+'</span>'
+      +'<span class="r">'+esc(rec(s))+'</span></summary>'
+      +(games.length?'<ul class="sea-g">'+games.map(gameRow).join('')+'</ul>':'<div class="empty">No games scheduled yet.</div>')
+      +offseasonBlock(s.offseason)+'</details>';
+  }
+  function leaderRows(rows,kind){
+    if(!rows||!rows.length)return '<div class="empty" style="padding:8px 0">Nobody yet.</div>';
+    return '<ol class="lead">'+rows.map(function(p){
+      var line=kind==='tackles'?fmt(p.tkl)+' tkl'+(p.sacks?', '+esc(p.sacks)+' sack'+(p.sacks===1?'':'s'):'')+(p.int?', '+esc(p.int)+' INT':'')
+        :kind==='sacks'?fmt(p.sacks)+' sack'+(p.sacks===1?'':'s')
+        :fmt(p.yds)+' yds'+(p.td?', '+esc(p.td)+' TD':'');
+      return '<li><span class="o"><b>'+esc(p.name)+'</b><small>'+esc(p.position)+(p.status==='retired'?' · retired':'')+' · '+esc(p.games|0)+' GP</small></span><span class="r">'+line+'</span></li>';
+    }).join('')+'</ol>';
+  }
+  function alumniBlock(list){
+    if(!list||!list.length)return '<div class="empty">Nobody has retired in these colours yet. Players go at 35, or at 33 when they have faded under 55.</div>';
+    return '<ul class="alum">'+list.map(function(p){
+      return '<li><span class="j">#'+esc(p.jersey)+'</span><span class="o"><b>'+esc(p.name)+'</b><small>'+esc(p.position)+' · '+esc(p.archetype||'')+' · retired after Season '+esc(FR.roman(p.retired_season))+' at '+esc(p.age)+' · OVR '+esc(p.overall)+'</small>'
+        +'<small>'+esc(FR.careerLine({position:p.position,career_stats:p.career_stats||{},acquired_season:p.acquired_season})||'')+'</small></span></li>';
+    }).join('')+'</ul>';
+  }
+  function renderRoom(t){
+    DATA=t;
+    renderStage(t);
+    var seasons=t.seasons||[],ach=t.achievements||[],lead=t.leaders||{};
+    var earned=ach.filter(function(a){return a.earned;}).length;
+    /* the season open by default is the newest with a game in it — a season
+       that has only just been scheduled has nothing to read yet */
+    var openSeason=0;
+    seasons.some(function(s,i){if((s.games||[]).some(function(g){return g.status==='final';})){openSeason=i;return true;}return false;});
+    rooms.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>The wall</h2><span class="m">'+earned+' of '+ach.length+'</span></div><div class="card">'
+      +achievementsBlock(ach)
+      +'<div class="ftp" style="margin-top:10px">Every achievement is read from your record on the server. Nothing here is granted, and nothing can be bought.</div></div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>Seasons</h2><span class="m">'+seasons.length+'</span></div>'
+      +(seasons.length?seasons.map(function(s,i){return seasonBlock(s,i===openSeason);}).join(''):'<div class="card"><div class="empty">No season yet.</div></div>')+'</div>'
+      +'<div class="sec"><div class="sec-h"><h2>Career leaders</h2><span class="m">all seasons, all games</span></div><div class="card">'
+      +'<div class="lead-g"><div><div class="eyebrow">Passing</div>'+leaderRows(lead.passing,'passing')+'</div>'
+      +'<div><div class="eyebrow">Rushing</div>'+leaderRows(lead.rushing,'rushing')+'</div>'
+      +'<div><div class="eyebrow">Receiving</div>'+leaderRows(lead.receiving,'receiving')+'</div>'
+      +'<div><div class="eyebrow">Tackles</div>'+leaderRows(lead.tackles,'tackles')+'</div>'
+      +'<div><div class="eyebrow">Sacks</div>'+leaderRows(lead.sacks,'sacks')+'</div></div>'
+      +'<div class="ftp" style="margin-top:10px">Careers count every season game and every franchise challenge. The retired keep theirs.</div></div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>Alumni</h2><span class="m">'+(t.alumni||[]).length+' retired</span></div><div class="card">'+alumniBlock(t.alumni)+'</div></div>'
+      +'<div class="sec"><div class="card"><div class="eyebrow">How the room fills</div>'
+      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Play <a href="/games/gameday/">Game Day</a> and the season writes itself here, game by game. '
+      +'Start the next season and the offseason runs first: everyone a year older, the young growing toward their potential, the old fading, '
+      +'retirements and the rookies who replace them — reported once, on the season that ended. A <a href="/games/franchise/">Training Center</a> makes the young grow faster. '
+      +'<b style="color:var(--text)">Free to play.</b> Nothing here can be bought.</p></div></div>';
+  }
+
+  function share(){
+    if(!DATA)return;
+    var text=FR.trophyShareText(DATA),url=location.origin+'/games/franchise/';
+    G.track('trophy_share',{game_type:'franchise',seasons:(DATA.record||{}).seasons|0});
+    if(navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+    var payload=text+'\n'+url;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(payload).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});
+    }
+    G.toast('Copy this: '+url);
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(st!=='franchise'){renderEmpty(st);return;}
+    return FR.trophies().then(function(r){
+      if(!r.ok||!r.data){
+        stage.innerHTML='<div class="empty">The Trophy Room could not be loaded. '+esc(r.message||'Check your connection and reload.')+'</div>';
+        return;
+      }
+      renderRoom(r.data);
+      var rc=r.data.record||{};
+      G.track('trophy_room_view',{seasons:rc.seasons|0,achievements:(r.data.achievements||[]).filter(function(a){return a.earned;}).length,alumni:(r.data.alumni||[]).length,game_type:'franchise'});
+    });
+  }).catch(function(){renderEmpty(FR.state());});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>
