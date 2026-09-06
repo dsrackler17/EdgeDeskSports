@@ -63,7 +63,8 @@
       'the scouting department',
       'the development program and the league',
       'the rank and the packs',
-      'the long haul: careers and a building you can staff'
+      'the long haul: careers and a building you can staff',
+      'the drives you call'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -296,13 +297,13 @@
     overall: { offense: 0.45, defense: 0.45, special: 0.10 }
   };
 
-  /* ── the weekly game, sim_v1 — the published shape of the simulator ────
+  /* ── the weekly game, sim_v2 — the published shape of the simulator ────
      The simulator runs on the server and nowhere else. These are the
      numbers it publishes so a pregame can say what is in play: home field,
      how much this week's preparation swings, and the scheme matchup table
      (offense against defense, in rating points for the offense). The
      table is pinned to franchise_scheme_edges() by the test suite. */
-  var SIM_VERSION = 'sim_v1';
+  var SIM_VERSION = 'sim_v2';
   var HOME_EDGE = 1.5;
   var PREP_SWING = 3;                       /* preparation 0 → −3, 100 → +3 */
   var SCHEME_EDGES = {
@@ -934,6 +935,68 @@
   var CAREER = { found_age_min: 21, found_age_max: 32,
                  retire_age: 35, retire_fade_age: 33, retire_fade_under: 55 };
 
+  /* ── THE DRIVES YOU CALL (Phase 13, snap_v1) ─────────────────────────────
+     Everything under this game was deeper than the game it is named after,
+     except the part your hands do: Game Day was one button and the page said
+     so — "Simulated on the server from your roster, your scheme, the opponent
+     and this week's preparation." You never played a down.
+
+     Now the weekly game is a dozen decisions, one a possession. A CALL IS A
+     DECISION, NEVER A RESULT: the page sends 'air', never 'touchdown', and
+     the server resolves the drive from the game's own seed, the roster, the
+     opponent and the call. These numbers are presentation — the same table
+     franchise_snaps() returns, pinned to it by tools/games/franchise.test.js.
+
+     Quick play stays: a game played that way is a game called Balanced the
+     whole way through. */
+  var SNAP_VERSION = 'snap_v1';
+  var SNAPS = {
+    'default': 'balanced',
+    calls: [
+      { key: 'ground', name: 'Ground',
+        means: 'Lean on the backs and the line. Safer, slower, fewer scores.',
+        pass: -0.22, td: -0.025, turnover: -0.075, edge: 0 },
+      { key: 'balanced', name: 'Balanced',
+        means: 'Your scheme\'s own shape. What quick play calls.',
+        pass: 0, td: 0, turnover: 0, edge: 0 },
+      { key: 'air', name: 'Air it out',
+        means: 'Lean on the quarterback and the receivers. More scores, more risk.',
+        pass: 0.20, td: 0.030, turnover: 0.095, edge: 0 },
+      { key: 'shot', name: 'Take a shot',
+        means: 'Everything at once: the best chance of seven, and of handing it back.',
+        pass: 0.28, td: 0.060, turnover: 0.190, edge: 0 }
+    ]
+  };
+  /* one call by key, defaulting to the scheme's own shape */
+  function snapCall(key) {
+    var out = null, def = null;
+    SNAPS.calls.forEach(function (c) {
+      if (c.key === key) out = c;
+      if (c.key === SNAPS['default']) def = c;
+    });
+    return out || def;
+  }
+  /* "Ground · 4th possession of 12" */
+  function snapLine(key, n, of) {
+    var c = snapCall(key) || {};
+    return c.name + ' · ' + ordinal(n | 0) + ' possession of ' + (of | 0);
+  }
+  function ordinal(n) {
+    var t = n % 100, o = n % 10;
+    return n + (t >= 11 && t <= 13 ? 'th' : o === 1 ? 'st' : o === 2 ? 'nd' : o === 3 ? 'rd' : 'th');
+  }
+  /* what a drive did, in the words a scoreboard uses */
+  function driveLine(d) {
+    d = obj(d);
+    var who = d.side === 'me' ? 'You' : 'They';
+    var what = d.outcome === 'td' ? 'score a touchdown'
+             : d.outcome === 'fg' ? 'kick a field goal'
+             : d.outcome === 'fg_miss' ? 'miss the field goal'
+             : d.outcome === 'turnover' ? 'give it away'
+             : 'punt it away';
+    return who + ' ' + what + ' — ' + (d.plays | 0) + ' plays, ' + (d.yds | 0) + ' yards';
+  }
+
   function staffSpecialtyCount(level) {
     return Math.min(STAFF.specialty_max, Math.floor(Math.max(1, level | 0) / STAFF.specialty_every));
   }
@@ -1465,6 +1528,23 @@
      makes it a decision — but a pack must never be able to block the rest. */
   function packPass() { return rpc('franchise_pack_pass', withSecret({})).then(moveThen); }
 
+  /* THE DRIVES YOU CALL (Phase 13). Opening resolves nothing: it says how
+     many possessions the game holds, what the four calls do, and every drive
+     already played. Calling sends a CALL and never a result — the server
+     re-runs its own seeded simulator over the calls made so far, so every
+     drive already played comes back identical and the new one is added, and
+     a replayed request cannot change a drive that has already happened.
+     The last call comes back with the finished game, the same shape quick
+     play returns. Never queued: a possession must see its answer. */
+  function gameOpen() { return rpc('franchise_game_open', withSecret({})); }
+  function gameCall(call) {
+    return rpc('franchise_game_call', withSecret({ p_call: String(call || '') })).then(function (r) {
+      /* a finished game is a move like any other — the rewards, the standing
+         and the achievements land through the same door quick play uses */
+      return obj(r).complete ? moveThen(r) : r;
+    });
+  }
+
   function development() { return rpc('franchise_development_board', withSecret({})); }
   function develop(player) {
     return rpc('franchise_develop', withSecret({ p_player: String(player || '') })).then(moveThen);
@@ -1671,6 +1751,8 @@
     SCOUTING_VERSION: SCOUTING_VERSION, SCOUTING: SCOUTING, scoutGradeOf: scoutGradeOf, scoutNext: scoutNext,
     scoutBand: scoutBand, scoutCost: scoutCost, scoutLift: scoutLift, scoutScore: scoutScore, scoutLine: scoutLine,
     CAREER_VERSION: CAREER_VERSION, CAREER: CAREER,
+    SNAP_VERSION: SNAP_VERSION, SNAPS: SNAPS, snapCall: snapCall, snapLine: snapLine,
+    driveLine: driveLine, gameOpen: gameOpen, gameCall: gameCall,
     rankCoachPoints: rankCoachPoints, staffHireLevel: staffHireLevel,
     STAFF_VERSION: STAFF_VERSION, STAFF: STAFF, staffCost: staffCost, staffCostBetween: staffCostBetween,
     staffAfford: staffAfford, staffEffect: staffEffect, staffGrade: staffGrade,

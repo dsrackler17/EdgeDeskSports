@@ -104,6 +104,9 @@ declare
   dvf uuid; dv jsonb; dv2 jsonb; grd jsonb; pot0 integer; ovr0 integer; std0 integer; nslot integer;
   -- the rank and the packs
   rkf uuid; rk jsonb; pk jsonb; pk2 jsonb; nlow integer; nhigh integer; nrank integer;
+  -- the drives you call
+  snf uuid; sn jsonb; sn2 jsonb; called integer; ndr integer; scored integer; before jsonb;
+  SEC_SN constant text := 'device-secret-snapsnapsnapsnapsnapsnap1';
   SEC_RK constant text := 'device-secret-rankrankrankrankrankrank1';
   SEC_DV constant text := 'device-secret-developdevelopdevelopdev';
   SEC_SC constant text := 'device-secret-scoutscoutscoutscoutscout1';
@@ -948,7 +951,7 @@ begin
   perform pg_temp.as_owner();
   box := public.franchise_sim(fa, gid);
   box2 := public.franchise_sim(fa, gid);
-  perform pg_temp.ok('the same game simulated twice is the same game', box = box2 and box->>'sim' = 'sim_v1');
+  perform pg_temp.ok('the same game simulated twice is the same game', box = box2 and box->>'sim' = 'sim_v2');
   perform pg_temp.ok('a game is eleven to fourteen possessions a side, four quarters, and a final that is the sum of them',
     (box->'edges'->>'possessions')::int between 9 and 14
     and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'for') q) = (box->'final'->>'for')::int
@@ -1014,7 +1017,7 @@ begin
   perform pg_temp.ok('the game is played, once, and the result is the simulator''s',
     (v->'game'->>'status') = 'final' and (v->'game'->>'week')::int = 1
     and (v->'game'->>'score_for')::int = (box->'final'->>'for')::int and (v->'game'->>'score_against')::int = (box->'final'->>'against')::int
-    and v->'game'->>'result' = box->>'result' and v->'game'->>'sim_version' = 'sim_v1');
+    and v->'game'->>'result' = box->>'result' and v->'game'->>'sim_version' = 'sim_v2');
   perform pg_temp.ok('the season record moved by exactly one game',
     (v->'season'->>'week')::int = 1 and (v->'season'->>'wins')::int + (v->'season'->>'losses')::int + (v->'season'->>'ties')::int = 1
     and (v->'season'->>'points_for')::int = (box->'final'->>'for')::int and not (v->>'season_complete')::boolean);
@@ -1058,7 +1061,7 @@ begin
     and v->'prep'->>'version' = 'prep_v1' and (v->'record'->>'wins')::int + (v->'record'->>'losses')::int + (v->'record'->>'ties')::int = 2
     and v->'rival'->>'name' is not null and (v->'rival'->>'wins')::int = 0);
   v := public.franchise_game(gid);
-  perform pg_temp.ok('a game is read back with its box', v->'box'->>'sim' = 'sim_v1' and jsonb_array_length(v->'box'->'players') >= 22);
+  perform pg_temp.ok('a game is read back with its box', v->'box'->>'sim' = 'sim_v2' and jsonb_array_length(v->'box'->'players') >= 22);
   v := public.franchise_schedule();
   perform pg_temp.ok('the schedule shows two finals and six to come',
     (select count(*) from jsonb_array_elements(v->'games') g where g->>'status' = 'final') = 2
@@ -1239,7 +1242,7 @@ begin
   perform pg_temp.ok('the challenge is played at once, on the server, and read from the acceptor''s side',
     (v->>'ok')::boolean and v->'game'->>'status' = 'FINAL' and v->'game'->>'you' = 'opponent'
     and v->'game'->'them'->>'name' = 'Lubbock Outlaws' and v->'game'->'me'->>'name' = 'Wranglers'
-    and v->'game'->>'sim_version' = 'sim_v1' and v->'game'->>'result' in ('W', 'L', 'T')
+    and v->'game'->>'sim_version' = 'sim_v2' and v->'game'->>'result' in ('W', 'L', 'T')
     and ((v->'game'->>'score_for')::int > (v->'game'->>'score_against')::int) = (v->'game'->>'result' = 'W'));
   box := v->'game'->'box';
   perform pg_temp.ok('the box carries both sides: my lines and theirs, a player of the game each, quarters that sum to the final, a neutral field',
@@ -2183,7 +2186,7 @@ begin
   perform pg_temp.ok('the rounds that have not opened are untouched',
     (select count(*) = 10 - cn from public.franchise_conference_games where conference_id = conf and status = 'scheduled'));
   perform pg_temp.ok('a game that was played is a neutral-field box on the shared simulator',
-    cn = 0 or (select bool_and(g.sim_version = 'sim_v1' and (g.box->>'neutral')::boolean and g.box ? 'a' and g.box ? 'b')
+    cn = 0 or (select bool_and(g.sim_version = 'sim_v2' and (g.box->>'neutral')::boolean and g.box ? 'a' and g.box ? 'b')
                  from public.franchise_conference_games g where g.conference_id = conf and g.status = 'final'));
   perform pg_temp.ok('the standings are the sum of the games played',
     (select coalesce(sum(wins + losses + ties), 0) = 2 * cn from public.franchise_conference_members where conference_id = conf)
@@ -2552,7 +2555,7 @@ begin
   -- seven of the eight are won outright, so the record earns the ninth
   -- whatever the simulator does with the last one
   update public.franchise_games set status = 'final', played_at = now(), score_for = 30, score_against = 10,
-    result = 'W', box = '{}'::jsonb, sim_version = 'sim_v1'
+    result = 'W', box = '{}'::jsonb, sim_version = 'sim_v2'
    where franchise_id = bf and season_number = 1 and week between 1 and 7;
   update public.franchise_seasons set week = 7, wins = 7, points_for = 210, points_against = 70
    where franchise_id = bf and number = 1;
@@ -3934,6 +3937,219 @@ begin
   perform pg_temp.ok('firing costs the difference, not everything: the next man starts where reputation says',
     (v->>'level')::int = nrank and (v->>'level')::int < n);
   perform pg_temp.as_owner();
+
+-- ═══ 26. THE DRIVES YOU CALL ══════════════════════════════════════════════
+-- "Retro Bowl, but leagues." Game Day was one button and its own copy said so.
+-- Now the weekly game is a dozen decisions, one a possession — and the whole
+-- point of this section is the rule underneath it: A CALL IS A DECISION, NEVER
+-- A RESULT. The client sends 'air'; the server resolves the drive. There is
+-- one simulator, the calls live on the game, and a replayed request cannot
+-- change a drive that has already happened.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('the game is snap_v1 and quick play is one of its calls',
+    public.franchise_snaps()->>'version' = 'snap_v1'
+    and jsonb_array_length(public.franchise_snaps()->'calls') = 4
+    and public.franchise_snap_call(null)->>'key' = public.franchise_snaps()->>'default');
+  perform pg_temp.ok('an unknown call falls back to the default rather than throwing',
+    public.franchise_snap_call('touchdown')->>'key' = 'balanced'
+    and (public.franchise_snap_call('touchdown')->>'td')::numeric = 0);
+  perform pg_temp.ok('no call scores more for free',
+    not exists (select 1 from jsonb_array_elements(public.franchise_snaps()->'calls') c
+                 where (c->>'td')::numeric > 0 and (c->>'turnover')::numeric <= 0));
+
+  -- a franchise of its own, so nothing else in this suite is disturbed
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Callers', 'Steepwater', 'CLR', 'bolt', 'crimson', 'air_raid', 'four_three', SEC_SN);
+  snf := (v->'franchise'->>'id')::uuid;
+  perform public.franchise_start_season(SEC_SN);
+
+  -- ── OPENING RESOLVES NOTHING ────────────────────────────────────────────
+  sn := public.franchise_game_open(SEC_SN);
+  ndr := (sn->>'drives')::int;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('opening says how many possessions the game holds, and writes nothing',
+    (sn->>'ok')::boolean and ndr between 9 and 20 and (sn->>'called')::int = 0
+    and (select status from public.franchise_games
+          where franchise_id = snf and season_number = 1 and week = 1) = 'scheduled',
+    'drives ' || ndr);
+  perform pg_temp.ok('and it is the same answer twice: the simulator is seeded, not rolled afresh',
+    (public.franchise_game_open(SEC_SN)->>'drives')::int = ndr);
+  perform pg_temp.ok('opening publishes the table the page renders',
+    sn->'rules'->>'version' = 'snap_v1');
+
+  -- ── A CALL IS A DECISION ────────────────────────────────────────────────
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_game_call('touchdown', SEC_SN);
+    caught := 'no error';
+  exception when others then caught := SQLSTATE; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a call that is not a call is refused rather than quietly defaulted',
+    caught = '22023', caught);
+  perform pg_temp.ok('and nothing was written by the attempt',
+    (select calls from public.franchise_games
+      where franchise_id = snf and season_number = 1 and week = 1) is null);
+
+  perform pg_temp.as_anon();
+  sn := public.franchise_game_call('shot', SEC_SN);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a call comes back with what the server did with it, and the game is not over',
+    not (sn->>'complete')::boolean and (sn->>'called')::int = 1
+    and jsonb_array_length(sn->'drive') >= 1
+    and (select x->>'call' from jsonb_array_elements(sn->'drive') x where x->>'side' = 'me') = 'shot');
+  perform pg_temp.ok('the call is on the game, where the simulator reads it from',
+    (select calls from public.franchise_games
+      where franchise_id = snf and season_number = 1 and week = 1) = '["shot"]'::jsonb);
+  before := sn->'drive';
+
+  -- THE LOAD-BEARING ONE. Re-running after the next call must reproduce every
+  -- drive already played: that is what makes this one simulator rather than a
+  -- half-played game somebody could edit.
+  perform pg_temp.as_anon();
+  sn2 := public.franchise_game_call('ground', SEC_SN);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the drive already played comes back identical after the next call',
+    (select jsonb_agg(x order by ord)
+       from jsonb_array_elements(public.franchise_sim(snf,
+              (select id from public.franchise_games
+                where franchise_id = snf and season_number = 1 and week = 1))->'drives')
+            with ordinality t(x, ord)
+      where (x->>'n')::int <= 1) = before);
+  perform pg_temp.ok('and the second call was applied to the second possession, not the first',
+    (select x->>'call' from jsonb_array_elements(sn2->'drive') x where x->>'side' = 'me') = 'ground'
+    and (select calls from public.franchise_games
+          where franchise_id = snf and season_number = 1 and week = 1) = '["shot", "ground"]'::jsonb);
+
+  -- ── CALL IT THROUGH TO THE END ──────────────────────────────────────────
+  called := 2;
+  loop
+    exit when (sn2->>'complete')::boolean or called > 40;
+    perform pg_temp.as_anon();
+    sn2 := public.franchise_game_call('air', SEC_SN);
+    perform pg_temp.as_owner();
+    called := called + 1;
+  end loop;
+  perform pg_temp.ok('the last call finishes the game, through the same door quick play uses',
+    (sn2->>'complete')::boolean and sn2->'game'->>'result' in ('W', 'L', 'T')
+    and sn2 ? 'rewards',
+    'possessions called: ' || called);
+  perform pg_temp.ok('and the game is final on the books, with the calls kept',
+    (select status from public.franchise_games
+      where franchise_id = snf and season_number = 1 and week = 1) = 'final'
+    and (select jsonb_array_length(calls) from public.franchise_games
+          where franchise_id = snf and season_number = 1 and week = 1) = called
+    and (select g.box->>'snap' from public.franchise_games g
+          where g.franchise_id = snf and g.season_number = 1 and g.week = 1) = 'snap_v1');
+  perform pg_temp.ok('the box a called game produced is the box every other game produces',
+    (select g.box ? 'players' and g.box ? 'potg' and g.box ? 'quarters' and g.box ? 'team'
+       from public.franchise_games g
+      where g.franchise_id = snf and g.season_number = 1 and g.week = 1));
+  perform pg_temp.ok('every possession is on the record, not only the scoring ones',
+    (select count(*) from public.franchise_games g,
+            jsonb_array_elements(g.box->'drives') x
+      where g.franchise_id = snf and g.season_number = 1 and g.week = 1) >= called);
+  perform pg_temp.ok('and the final score is the running score the last drive was told',
+    (select (x->>'me')::int || '-' || (x->>'op')::int
+       from public.franchise_games g, jsonb_array_elements(g.box->'drives') with ordinality t(x, ord)
+      where g.franchise_id = snf and g.season_number = 1 and g.week = 1
+      order by ord desc limit 1)
+    = (select (g.box->'final'->>'for')::int || '-' || (g.box->'final'->>'against')::int
+         from public.franchise_games g
+        where g.franchise_id = snf and g.season_number = 1 and g.week = 1));
+
+  -- NOTHING IS REPLAYABLE. A finished game is finished, called or not.
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_game_call('air', SEC_SN);
+    caught := 'no error';
+  exception when others then caught := SQLSTATE; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a finished game cannot be called again for a better one',
+    caught <> 'no error'
+    and (select count(*) from public.franchise_games
+          where franchise_id = snf and season_number = 1 and week = 1 and status = 'final') = 1,
+    caught);
+
+  -- ── A CALL IS A REAL TRADE, MEASURED ────────────────────────────────────
+  -- The first cut of this table was a lie. Eight thousand measured drives at
+  -- an even matchup said Take a shot scored 2.32 points a drive against
+  -- Balanced's 1.78 and gave up NOTHING for it, because a turnover ended a
+  -- drive exactly the way a punt did. There was no decision. Two things fixed
+  -- it, and these assert both.
+  --
+  -- ONE: a giveaway hands the other side the ball in scoring range.
+  perform pg_temp.ok('a giveaway is worth more to the other side than an ordinary possession', (
+    with t as (
+      select public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, null, 0, true) as gave,
+             public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, null, 0, false) as kept
+        from generate_series(1, 3000))
+    select avg((gave->>'pts')::numeric) > avg((kept->>'pts')::numeric) * 1.7 from t));
+  perform pg_temp.ok('and the simulator hands it over: a turnover sets the next drive short',
+    (select p.prosrc like '%give := d->>''outcome'' = ''turnover'';%'
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'franchise_sim'));
+  perform pg_temp.ok('in both simulators, so a challenge is the same football as a Saturday',
+    (select p.prosrc like '%give := d->>''outcome'' = ''turnover'';%'
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'franchise_sim_versus'));
+
+  -- TWO: which call is yours is a fact about YOUR ROSTER. A team that throws
+  -- it better than it runs it gains on the pass calls and loses on the ground.
+  perform pg_temp.ok('a passing roster gains from leaning on the pass, and a running roster loses by it', (
+    with t as (
+      select avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'shot',  8, false)->>'pts')::numeric) as pass_shot,
+             avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'shot', -8, false)->>'pts')::numeric) as run_shot,
+             avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'ground',  8, false)->>'pts')::numeric) as pass_grd,
+             avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'ground', -8, false)->>'pts')::numeric) as run_grd
+        from generate_series(1, 4000))
+    select pass_shot > run_shot and run_grd > pass_grd from t));
+  perform pg_temp.ok('the lean comes off the roster the simulator already rates, and is published on the box',
+    (select p.prosrc like '%lean := greatest(-10, least(10,%'
+        and p.prosrc like '%''lean'', round(lean, 1)%'
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'franchise_sim'));
+  perform pg_temp.ok('a call with no lean and no giveaway is the drive it always was',
+    public.franchise_snap_call('balanced')->>'edge' = '0.0'
+    and (public.franchise_snap_call('balanced')->>'td')::numeric = 0);
+
+  -- ── QUICK PLAY STAYS ────────────────────────────────────────────────────
+  -- a game played the fast way carries no calls, and the box says so
+  perform pg_temp.as_owner();
+  update public.franchise_games set opens_at = now() - interval '1 hour'
+   where franchise_id = snf and season_number = 1 and week = 2;
+  perform pg_temp.as_anon();
+  v := public.franchise_play_week(SEC_SN);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('quick play is untouched, and a game played that way carries no calls',
+    v->'game'->>'result' in ('W', 'L', 'T')
+    and (select g.calls is null and g.box->>'snap' is null from public.franchise_games g
+          where g.franchise_id = snf and g.season_number = 1 and g.week = 2));
+
+  -- ── THE MOVES ARE OPEN; THE RESOLVERS ARE NOT ───────────────────────────
+  perform pg_temp.ok('a client may open a game and call a drive',
+    has_function_privilege('anon', 'public.franchise_game_open(text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_game_call(text, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_snaps()', 'execute'));
+  perform pg_temp.ok('and no client role can reach the drive resolver or the possession count',
+    not has_function_privilege('anon',
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean)', 'execute')
+    and not has_function_privilege('authenticated',
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_game_drives(uuid, uuid)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_game_drives(uuid, uuid)', 'execute'));
+  perform pg_temp.ok('the seven-argument resolver is gone, so nothing can call the form that ignores a call',
+    (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'franchise_sim_drive') = 1);
+  -- somebody else's secret buys nothing: a call is scoped to its own franchise
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_game_call('air', SEC_X);
+    caught := 'no error';
+  exception when others then caught := SQLSTATE; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a call with a secret that owns no franchise is refused',
+    caught = '28000', caught);
 
 end
 $test$;

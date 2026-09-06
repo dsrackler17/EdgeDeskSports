@@ -106,6 +106,7 @@ const SOCIALSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'games_social.sql'
 const DEV = fs.readFileSync(G('development/index.html'), 'utf8');
 const PACKS = fs.readFileSync(G('packs/index.html'), 'utf8');
 const SCHEMATOOL = fs.readFileSync(path.join(__dirname, 'schema.js'), 'utf8');
+const FRCSS = fs.readFileSync(G('franchise.css'), 'utf8');
 
 function fresh() { MEM = {}; ST.reset(); }
 const T0 = Date.parse('2026-09-04T18:00:00Z');   /* Friday, week of 2026-09-01 */
@@ -681,8 +682,13 @@ fresh();
 
   /* ═══ 11. THE WEEKLY GAME (PHASE 2) ═══════════════════════════════════════ */
   /* the simulator's published shape is the SQL's */
-  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v1');
-  has(SQL, "'sim', 'sim_v1'", 'and every box says so');
+  /* sim_v2 since Phase 13: a giveaway now hands the other side the ball in
+     scoring range, which is what makes a turnover cost anything. Old boxes
+     keep saying sim_v1 and stay true to the rules they were played under. */
+  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v2');
+  has(SQL, "'sim', 'sim_v2'", 'and every box says so');
+  chk('both simulators are the same version, so a challenge is the same football as a Saturday',
+    (SQL.match(/'sim', 'sim_v2'/g) || []).length === 2 && !/'sim', 'sim_v1'/.test(SQL));
   (() => {
     const m = SQL.match(/franchise_scheme_edges\(\)[\s\S]*?select '(\{[\s\S]*?\})'::jsonb;/);
     let sqlEdges = null; try { sqlEdges = m && JSON.parse(m[1]); } catch (_) {}
@@ -1406,9 +1412,10 @@ fresh();
     (SQL.match(/public\.franchise_is_available\(p?\.?status, p?\.?injured_until\)/g) || []).length >= 4);
   chk('an injury never leaves a position below its starters',
     /if left_at < coalesce\(starters, 1\) then return '\[\]'::jsonb; end if;/.test(SQL));
-  chk('the simulator itself is untouched: injuries are drawn after the game, not inside it',
+  chk('injuries are drawn after the game, not inside it',
     /v_box := v_box \|\| jsonb_build_object\('injuries', public\.franchise_draw_injuries/.test(SQL)
-    && /'sim', 'sim_v1'/.test(SQL) && !/sim_v2/.test(SQL));
+    && !/franchise_draw_injuries/.test(
+         (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0]));
   chk('the offseason sends everybody back out fit',
     /update public\.game_players set injured_until = null, injury = null\s+where franchise_id = p_franchise and injured_until is not null;/.test(SQL));
   chk('the bowl is paid its own line, not the weekly one',
@@ -2294,11 +2301,118 @@ fresh();
   chk('the report grew to thirty-two rows', /select 31, 'the long haul is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 12, 'the long haul: careers and a building you can staff'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 12);
 
   has(README, 'career_v1', 'the README documents careers');
   has(README, 'staff_v2', 'and the second staff version');
   has(README, 'in a wave', 'and names the thing that was wrong');
+
+  /* ═══ 23. THE DRIVES YOU CALL (PHASE 13) ═════════════════════════════════
+     "Retro Bowl, but leagues." Everything under this game was deeper than the
+     game it is named after except the part your hands do: Game Day was one
+     button, and its own copy said "Simulated on the server from your roster,
+     your scheme, the opponent and this week's preparation." You never played
+     a down.
+
+     The load-bearing rule is the one this whole file exists to defend: A
+     CALL IS A DECISION, NEVER A RESULT. The client sends 'air'; the server
+     resolves the drive. These assertions pin the table to the SQL and prove
+     that no client role can reach a resolver. */
+
+  eq('the calls are snap_v1', F.SNAP_VERSION, 'snap_v1');
+  chk('and the SQL says the same', /'version', 'snap_v1'/.test(SQL));
+  eq('there are four of them', F.SNAPS.calls.length, 4);
+  eq('and quick play is one of them', F.SNAPS['default'], 'balanced');
+
+  /* the table, pinned number by number to franchise_snaps() */
+  F.SNAPS.calls.forEach(c => {
+    const row = new RegExp("'key', '" + c.key + "'[\\s\\S]{0,400}?'edge', ([-0-9.]+)\\)");
+    const blk = (SQL.match(new RegExp("'key', '" + c.key + "'[\\s\\S]{0,400}?'edge', [-0-9.]+\\)")) || [''])[0];
+    chk('the call ' + c.key + ' exists in the SQL', row.test(SQL));
+    ['pass', 'td', 'turnover', 'edge'].forEach(k => {
+      chk('and its ' + k + ' matches the client',
+        blk.indexOf("'" + k + "', " + c[k]) >= 0
+        || blk.indexOf("'" + k + "', " + c[k].toFixed(2)) >= 0
+        || blk.indexOf("'" + k + "', " + c[k].toFixed(3)) >= 0);
+    });
+  });
+
+  /* every call is a real trade — nothing is free */
+  chk('the ground game passes less, scores less and gives it away less',
+    F.snapCall('ground').pass < 0 && F.snapCall('ground').td < 0 && F.snapCall('ground').turnover < 0);
+  chk('the air game passes more, scores more and gives it away more',
+    F.snapCall('air').pass > 0 && F.snapCall('air').td > 0 && F.snapCall('air').turnover > 0);
+  chk('a shot is the most of both',
+    F.snapCall('shot').td > F.snapCall('air').td
+    && F.snapCall('shot').turnover > F.snapCall('air').turnover);
+  chk('no call scores more for free',
+    !F.SNAPS.calls.some(c => c.td > 0 && c.turnover <= 0));
+  chk('quick play moves nothing: Balanced is the zero row',
+    F.snapCall('balanced').pass === 0 && F.snapCall('balanced').td === 0
+    && F.snapCall('balanced').turnover === 0 && F.snapCall('balanced').edge === 0);
+  chk('an unknown call falls back to the default rather than throwing',
+    F.snapCall('nonsense').key === F.SNAPS['default'] && F.snapCall(null).key === F.SNAPS['default']);
+  chk('every call says what it means, in English',
+    F.SNAPS.calls.every(c => typeof c.means === 'string' && c.means.length > 20));
+
+  /* THE LOAD-BEARING ONE. A client sends a call and never a result. */
+  chk('the move takes a call and a secret, and nothing else',
+    /create or replace function public\.franchise_game_call\(p_call text, p_secret text default null\)/.test(SQL));
+  chk('and no client role can reach the drive resolver',
+    /revoke all on function public\.franchise_sim_drive/.test(SQL)
+    || SQL.indexOf('grant execute on function public.franchise_sim_drive') < 0);
+  chk('nor the possession count',
+    /revoke all on function public\.franchise_game_drives\(uuid, uuid\) from public, anon, authenticated;/.test(SQL));
+  chk('the seven-argument drive resolver is dropped, so nothing can call the form that ignores a call',
+    /drop function if exists public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean\);/.test(SQL));
+  chk('the report proves the rule rather than describing it',
+    /select 32, 'the game is '/.test(SQL)
+    && /not has_function_privilege\('anon', 'public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean\)', 'execute'\)/.test(SQL.replace(/\s+/g, ' ')));
+
+  /* ONE SIMULATOR, not two. The calls live on the game and franchise_sim
+     reads them, so re-running reproduces every drive already played. */
+  chk('the calls are stored on the game',
+    /alter table public\.franchise_games add column if not exists calls jsonb;/.test(SQL));
+  chk('and the simulator reads them from there', () => {
+    const sim = (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0];
+    return sim.length > 0
+      && /calls := coalesce\(g\.calls, '\[\]'::jsonb\);/.test(sim)
+      && /calls->>\(my_drive - 1\)/.test(sim)
+      && /'drives', drives/.test(sim);
+  });
+  chk('the last call finalises through the door every other game goes through',
+    /return public\.franchise_play_game\(v_f, now\(\)\) \|\| jsonb_build_object\('called', v_mine, 'complete', true\);/.test(SQL));
+
+  /* the two moves are open on the same terms every other franchise move is */
+  ['franchise_snaps()', 'franchise_snap_call(text)', 'franchise_game_open(text)', 'franchise_game_call(text, text)']
+    .forEach(f => chk('the move ' + f.split('(')[0] + ' is open to every franchise',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* quick play stays: nobody is made to tap twelve times to see a result */
+  chk('quick play is still there',
+    SQL.indexOf('grant execute on function public.franchise_play_week(text) to anon, authenticated') >= 0);
+  has(GAMEDAY, 'id="playBtn"', 'and Game Day still offers it');
+  has(GAMEDAY, 'Quick play instead', 'by name');
+  has(GAMEDAY, 'id="callBtn"', 'while calling it is the first thing offered');
+  has(GAMEDAY, 'you send a call, never a result', 'and the page says what a call is');
+  chk('Game Day no longer says you never play a down',
+    GAMEDAY.indexOf('Simulated on the server from your roster, your scheme, the opponent and this week’s preparation. Every game is played once') < 0);
+  chk('the page asks the library for the calls rather than listing its own',
+    /FR\.SNAPS\.calls\.map/.test(GAMEDAY) && /FR\.gameCall\(/.test(GAMEDAY) && /FR\.gameOpen\(\)/.test(GAMEDAY));
+  chk('and the stale-script guard knows the new moves',
+    /EDFranchise\.gameOpen/.test(GAMEDAY) && /EDFranchise\.gameCall/.test(GAMEDAY));
+  chk('every class the calling stage draws is defined in the stylesheet', () => {
+    return ['sn-board', 'sn-calls', 'sn-log'].every(c => FRCSS.indexOf('.' + c) >= 0);
+  });
+
+  chk('the report grew to thirty-three rows', /select 32, 'the game is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 13, 'the drives you call'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 13);
+  chk('and the report checks the same number',
+    /\(public\.games_schema\(\)->>'franchise'\)::int = 13/.test(SQL));
+
+  has(README, 'snap_v1', 'the README documents the calls');
+  has(README, 'never a result', 'and states the rule the whole phase rests on');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

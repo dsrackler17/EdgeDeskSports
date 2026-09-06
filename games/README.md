@@ -939,7 +939,7 @@ shows one button; afterwards, the result.
   the HQ answers "who am I playing?" from the first second; the next season
   starts when the player says so (`franchise_start_season`), numbered on,
   with the season lines reset and the careers kept.
-* **The simulator, `sim_v1`, runs on the server and nowhere else.** A
+* **The simulator, `sim_v2`, runs on the server and nowhere else.** A
   possession model: eleven to fourteen drives a side, each one resolved
   from the offense's effective rating against the defense's — team rating,
   home field (+1.5), that week's preparation (−3 at 0% to +3 at 100%), the
@@ -1515,7 +1515,7 @@ The three things the last phase left on the list.
 ### Injuries — `injury_v1`
 
 A game costs somebody. Drawn **after** the game from a seed derived from
-its own, and never inside the simulator: `sim_v1` plays exactly the game
+its own, and never inside the simulator: the simulator plays exactly the game
 it always played, and an injury is a thing recorded to have happened in
 it. What it costs is the **weeks ahead** — the player cannot play, the
 team rating drops, and the next game is played without him.
@@ -2066,19 +2066,151 @@ than the one before, a reputation never commands less than a smaller one, and
 neither runs off its cap — and asserts that the founding ages come from the
 published range rather than the old skew.
 
+## Phase 13 — the drives you call
+
+*Retro Bowl, but leagues.*
+
+Everything under this game was already deeper than the game it is named
+after: a roster, a draft, a market, trades, a staff, a development
+programme, a league of twenty-four clubs and a league of your friends.
+What it did not have is the part your hands do. Game Day was **one
+button**, and the page said so in as many words:
+
+> Simulated on the server from your roster, your scheme, the opponent and
+> this week's preparation.
+
+You never played a down.
+
+So the weekly game becomes a game you play — not sixty snaps, a dozen
+decisions, one a possession, two or three minutes with a thumb:
+
+```
+WEEK 6 · 2nd quarter · you 10, Bayou 7 · your ball
+  [ Ground ]  [ Balanced ]  [ Air it out ]  [ Take a shot ]
+```
+
+### A call is a decision, never a result
+
+This is the rule the whole phase rests on, and it is the same rule
+everything else in this layer rests on. **The client sends `air`. It never
+sends `touchdown`.** The drive is resolved on the server from the game's own
+seed, your roster, the opponent and the call — the call is one more input
+beside home field, preparation and the scheme matchup, exactly like the ones
+that were already there. Nothing here lets a page hand itself a score.
+
+`franchise_game_call(p_call text, p_secret text)` takes a call and an
+identity and nothing else. `franchise_sim_drive` and `franchise_game_drives`
+are reachable by no client role. Report row 32 asserts both, and the SQL
+suite plays a whole game a possession at a time and then tries to play it
+again.
+
+### The four calls — `snap_v1`
+
+Published by `franchise_snaps()` and mirrored in `games/lib/franchise.js`,
+so the page renders them without a round trip and the test file pins every
+number to the SQL.
+
+| call | pass share | touchdown | turnover |
+| --- | --- | --- | --- |
+| **Ground** | −0.22 | −0.025 | −0.075 |
+| **Balanced** | 0 | 0 | 0 |
+| **Air it out** | +0.20 | +0.030 | +0.095 |
+| **Take a shot** | +0.28 | +0.060 | +0.190 |
+
+### The first cut of that table was a lie, and eight thousand drives said so
+
+The numbers above are the second draft. The first one gave *Take a shot* a
+bigger touchdown chance and a matching turnover chance and called it a
+trade. It was not, because **a turnover ended a drive exactly the way a punt
+did** — at nothing. Eight thousand measured drives at an even matchup:
+
+| call | points a drive | touchdown | turnover |
+| --- | --- | --- | --- |
+| Ground | 1.70 | 19.0% | 8.6% |
+| Balanced | 1.78 | 20.4% | 12.3% |
+| Air it out | 2.10 | 25.0% | 14.9% |
+| **Take a shot** | **2.32** | 28.4% | 19.6% |
+
+Shoot every possession and you score half a point a drive more for nothing.
+That is not a decision, it is a button with a right answer, which is the
+thing this phase existed to get rid of. Two changes fixed it.
+
+**One — a giveaway hands the other side the ball in scoring range**
+(`sim_v2`). This is what makes a turnover cost anything at all, and it is a
+rule of football rather than a rule of calling, so it applies to quick play
+and to franchise-vs-franchise challenges too. Old boxes still say `sim_v1`
+and stay true to the rules they were played under.
+
+**Two — which call is yours is a fact about your roster.** The simulator
+computes a *lean*: how much better this team throws it than runs it, in
+rating points, off the same position groups `franchise_team_rating()`
+already publishes. A call cashes that lean in proportion to how far it leans
+on the pass. So the same table produces a different best call for a
+different team.
+
+Measured again — two thousand whole games a cell, evenly matched sides,
+twelve possessions each, every possession called the same way:
+
+| roster | Ground | Balanced | Air it out | Take a shot |
+| --- | --- | --- | --- | --- |
+| **runs it better** (−8) | **+0.28** | +0.07 | −1.30 | −1.26 |
+| **balanced** (0) | −0.58 | +0.19 | −0.41 | −0.15 |
+| **throws it better** (+8) | −0.93 | −0.29 | +0.64 | **+0.74** |
+
+*(average margin, in points; a cell is worth about ±0.34)*
+
+Read down a column and it flips. On a team built around a line and a back,
+shooting every possession costs you a point and a quarter a game; on a team
+with a quarterback it gains you three quarters of one. On a balanced roster
+all four sit inside a point of each other, which is to say **no button has a
+right answer.**
+
+They also differ in how much they swing a game — Ground ±14.6 points, Take a
+shot ±16.6 — which is the other half of the decision: grind with a lead,
+shoot from behind.
+
+The report asserts the shape rather than the numbers: no call may raise the
+touchdown odds without raising the turnover odds with them. The SQL suite
+measures both fixes directly — that a giveaway is worth substantially more
+to the other side than an ordinary possession, and that a passing roster
+gains on the pass calls while a running roster loses by them.
+
+### How it stays one simulator
+
+There is no second simulator and no half-played game sitting in a table for
+somebody to edit. The calls are stored on the game row, and `franchise_sim()`
+reads them. Because the simulator is **seeded** and resolves drives in order,
+a drive's outcome depends only on the seed and the calls *before* it — so
+re-running after each call reproduces every drive already played and adds the
+new one. A replayed request cannot change a drive that has already happened,
+and the last call finalises through `franchise_play_game()` itself, so the
+box, the rewards, the standing and the achievements are the ones every other
+game has always produced.
+
+Leave the page mid-game and come back and you are where you left it: the
+calls are on the game, so opening it again replays them and shows you every
+possession so far.
+
+### Quick play stays
+
+`franchise_play_week()` still plays the whole game at once, and a game played
+that way is a game called **Balanced** the whole way through — the zero row of
+the table above. Nobody is made to tap twelve times to see a result, and every
+game already in the record was played under exactly the rules it says it was.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
 trades (that is the point of them), an in-game injury that changes the
-game it happened in (`sim_v1` plays the game; the injury is recorded
+game it happened in (the simulator plays the game; the injury is recorded
 after), and a bracket for the solo season (the conference is where a
 bracket belongs). The ledger accepts a negative delta for spending (the
 facilities, the reports and the signings use it), and
 `franchise_activity` is the record every future reward derives from. The
 simulator, the offseason, the market, the conference, injuries, the bowl,
-trades and the staff are each versioned (`sim_v1`, `offseason_v1`,
+trades and the staff are each versioned (`sim_v2`, `offseason_v1`,
 `market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
 `staff_v2`, `scouting_v1`, `development_v1`, `league_v1`, `rank_v1`, `packs_v1`,
-`career_v1`) so a retuned one is a new version and old boxes, old reports,
+`career_v1`, `snap_v1`) so a retuned one is a new version and old boxes, old reports,
 old classes, old tables, old deals and old coaches stay true to the rules
 they were played under.
