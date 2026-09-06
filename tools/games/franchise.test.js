@@ -2098,8 +2098,19 @@ fresh();
   chk('a rank pays one pack and cannot pay it twice',
     /if \(rep->>'packs'\)::int < 1 then/.test(SQL)
     && /raise exception 'no pack to open: rank % and % already claimed'/.test(SQL));
-  chk('two packs are never on the table at once',
-    /open pack on the table: keep a man from it first/.test(SQL));
+  /* MEASURED OVER SIXTY SEASONS: a pack opened with a full roster could not
+     be kept from, and since two packs are never on the table at once it then
+     refused every pack after it — rank 45, 37 claimed, three men stuck for
+     twenty seasons. There must always be a way forward. */
+  chk('two packs are never on the table at once, and the refusal names the way out',
+    /open pack on the table: keep a man from it, or pass on it/.test(SQL));
+  chk('a pack can always be turned down, so one can never block the rest',
+    /create or replace function public\.franchise_pack_pass[\s\S]*?\n\$\$;/.test(SQL)
+    && /raise exception 'no pack on the table'/.test(SQL)
+    && SQL.indexOf('grant execute on function public.franchise_pack_pass(text) to anon, authenticated') >= 0);
+  chk('and passing spends the rank, so it is a decision and not a re-roll',
+    !((SQL.match(/create or replace function public\.franchise_pack_pass[\s\S]*?\n\$\$;/) || [''])[0]
+        .match(/rank_claimed/)));
   chk('a pack man is not on the roster until he is kept',
     /when 'pack' then 'pack' else 'active' end,/.test(SQL)
     && /where franchise_id = v_f and status = 'active'/.test(SQL));
@@ -2140,6 +2151,9 @@ fresh();
     && /would_hold/.test(PACKS));
   chk('and says a pack is three men and one is kept',
     /Keep <b>one<\/b>/.test(PACKS) && /passed over/.test(PACKS));
+  chk('and offers the way out, so a pack can never block the ones behind it',
+    /FR\.packPass\(\)/.test(PACKS) && /turn the whole pack down/.test(PACKS)
+    && /the rank is spent either way/.test(PACKS));
   chk('it names what the next rank costs in the things you actually do',
     /FR\.rankWeight\('weekly_game'\)/.test(PACKS) && /FR\.rankWeight\('price_it'\)/.test(PACKS));
   chk('the page is a room like the others, with the guard the others wear',
@@ -2152,6 +2166,26 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 11, 'the rank and the packs'\)/.test(SQL));
   eq('and the client expects it', F.SCHEMA.franchise, 11);
+
+  /* THE BIGGEST THING THE SIXTY-SEASON RUN FOUND. The offseason compacted
+     the depth chart but never re-sorted it, so every man acquired joined at
+     the bottom and stayed there for his whole career: a franchise sixty
+     seasons deep started a 59 receiver ahead of a 75, and team overall
+     DECAYED from 74 to 67 while the roster got better. */
+  chk('the preseason re-earns the depth chart rather than merely closing it up', () => {
+    /* scoped to the offseason: reading the chart in depth order is right
+       everywhere else — that is what a depth chart is for */
+    const off = (SQL.match(/create or replace function public\.franchise_offseason[\s\S]*?\n\$\$;/) || [''])[0];
+    return off.length > 0
+      && /for v_pos in select distinct position from public\.game_players where franchise_id = p_franchise and status = 'active' loop/.test(off)
+      && /order by overall desc, potential desc, id loop/.test(off)
+      && !/order by depth, overall desc loop/.test(off)
+      && !/status = 'retired' and retired_season = p_from loop/.test(
+           (off.match(/for v_pos in[\s\S]*?loop/) || [''])[0]);
+  });
+  chk('a player can still say otherwise afterwards',
+    /create or replace function public\.franchise_set_starter/.test(SQL)
+    && SQL.indexOf('grant execute on function public.franchise_set_starter(uuid, integer, text) to anon, authenticated') >= 0);
 
   has(README, 'rank_v1', 'the README documents the rank');
   has(README, 'packs_v1', 'and the packs');

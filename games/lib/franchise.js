@@ -1428,6 +1428,9 @@
   function packKeep(player) {
     return rpc('franchise_pack_keep', withSecret({ p_player: String(player || '') })).then(moveThen);
   }
+  /* turn the whole pack down. The rank is spent either way — that is what
+     makes it a decision — but a pack must never be able to block the rest. */
+  function packPass() { return rpc('franchise_pack_pass', withSecret({})).then(moveThen); }
 
   function development() { return rpc('franchise_development_board', withSecret({})); }
   function develop(player) {
@@ -1627,7 +1630,7 @@
     RANK_VERSION: RANK_VERSION, PACKS_VERSION: PACKS_VERSION, RANKS: RANKS,
     rankCost: rankCost, rankAt: rankAt, rankFor: rankFor, rankEdge: rankEdge,
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
-    ranks: ranks, packOpen: packOpen, packKeep: packKeep,
+    ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,

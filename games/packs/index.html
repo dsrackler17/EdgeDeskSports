@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906j">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906j">
+<link rel="stylesheet" href="/games/games.css?v=20260906k">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906k">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,22 +48,22 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906j"></script>
-<script src="/games/lib/scoring.js?v=20260906j"></script>
-<script src="/games/lib/challenge.js?v=20260906j"></script>
-<script src="/games/lib/research_state.js?v=20260906j"></script>
-<script src="/games/lib/attribution.js?v=20260906j"></script>
-<script src="/games/lib/store.js?v=20260906j"></script>
-<script src="/games/lib/dynasty.js?v=20260906j"></script>
-<script src="/games/lib/social.js?v=20260906j"></script>
-<script src="/games/lib/auth.js?v=20260906j"></script>
-<script src="/games/lib/franchise.js?v=20260906j"></script>
-<script src="/games/games.js?v=20260906j"></script>
+<script src="/games/lib/week.js?v=20260906k"></script>
+<script src="/games/lib/scoring.js?v=20260906k"></script>
+<script src="/games/lib/challenge.js?v=20260906k"></script>
+<script src="/games/lib/research_state.js?v=20260906k"></script>
+<script src="/games/lib/attribution.js?v=20260906k"></script>
+<script src="/games/lib/store.js?v=20260906k"></script>
+<script src="/games/lib/dynasty.js?v=20260906k"></script>
+<script src="/games/lib/social.js?v=20260906k"></script>
+<script src="/games/lib/auth.js?v=20260906k"></script>
+<script src="/games/lib/franchise.js?v=20260906k"></script>
+<script src="/games/games.js?v=20260906k"></script>
 <script>
 /* STALE SCRIPT GUARD — the same belt every franchise page wears. */
 (function(){
   var need=['EDFranchise.ranks','EDFranchise.packOpen','EDFranchise.packKeep',
-            'EDFranchise.rankEdge','EDFranchise.packBand','EDGames.franchiseReady'];
+            'EDFranchise.packPass','EDFranchise.rankEdge','EDFranchise.packBand','EDGames.franchiseReady'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -162,7 +162,9 @@
       +'<span class="m">'+esc(FR.PACKS_VERSION)+'</span></div>'
       +(open.length
         ? '<div class="pc-grid">'+open.map(function(p){return packCard(p,b);}).join('')+'</div>'
-          +'<div class="ftp" style="margin-top:10px">Keep <b>one</b>. The other two are passed over — they stay on your record as men you turned down.</div>'
+          +'<div class="ftp" style="margin-top:10px">Keep <b>one</b>. The other two are passed over — they stay on your record as men you turned down. '
+          +'If none of them is worth a place, <button class="lnk" type="button" id="passPack">turn the whole pack down</button> — '
+          +'the rank is spent either way, but a pack can never block the ones behind it.</div>'
         : (packs>0
             ? '<div class="card"><div class="empty" style="padding:22px 12px">'
               +'<div style="font-size:15px;color:var(--text);margin-bottom:6px"><b>'+esc(packs)+' pack'+(packs===1?'':'s')+' waiting</b></div>'
@@ -179,6 +181,18 @@
       +'</div></div>';
     if(fresh)G.track('packs_view',{rank:(b.rank||{}).rank|0,packs:packs,open:open.length,game_type:'franchise'});
 
+    var pb=$('passPack');
+    if(pb)pb.addEventListener('click',function(){
+      if(BUSY)return; BUSY=true; pb.disabled=true; pb.textContent='Passing…';
+      FR.packPass().then(function(r){
+        BUSY=false;
+        if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
+        G.track('pack_passed',{passed:(r.data||{}).passed,game_type:'franchise'});
+        G.toast('Pack turned down');
+        G.paintFranchise();
+        load(false);
+      });
+    });
     var ob=$('openPack');
     if(ob)ob.addEventListener('click',function(){
       if(BUSY)return; BUSY=true; ob.disabled=true; ob.textContent='Opening…';

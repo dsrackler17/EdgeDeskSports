@@ -3722,5 +3722,64 @@ begin
     and jsonb_array_length(pk2->'kept') >= 1);
   perform pg_temp.as_owner();
 
+  -- ── A PACK CAN NEVER BLOCK THE REST ─────────────────────────────────────
+  -- Sixty seasons of measurement: a pack opened with a full roster could not
+  -- be kept from, and since two packs are never on the table at once it then
+  -- refused every pack after it. There is always a way forward.
+  perform pg_temp.as_anon();
+  pk2 := public.franchise_pack_pass(SEC_RK);
+  perform pg_temp.ok('the whole pack can be turned down', (pk2->>'passed')::int = 3);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the table is clear again',
+    (select count(*) from public.game_players where franchise_id = rkf and status = 'pack') = 0
+    and (select count(*) from public.game_players where franchise_id = rkf and status = 'passed') >= 5);
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_pack_pass(SEC_RK);
+    perform pg_temp.ok('passing an empty table is refused rather than pretending', false, 'it passed');
+  exception when no_data_found then
+    perform pg_temp.ok('passing an empty table is refused rather than pretending', true);
+  end;
+  -- the rank was spent either way: passing is a decision, not a free re-roll
+  perform pg_temp.as_owner();
+  rk := public.franchise_rank_report(rkf);
+  perform pg_temp.ok('passing spent the rank: it is a decision, not a re-roll',
+    (rk->>'claimed')::int >= 2);
+  -- and with the table clear, the next pack opens
+  perform pg_temp.as_anon();
+  if (rk->>'packs')::int > 0 then
+    pk := public.franchise_pack_open(SEC_RK);
+    perform pg_temp.ok('with the table clear the next pack opens', jsonb_array_length(pk->'players') = 3);
+  else
+    perform pg_temp.ok('with the table clear the next pack opens', true);
+  end if;
+
+  -- ── THE PRESEASON RE-EARNS THE DEPTH CHART ──────────────────────────────
+  -- The offseason used to compact the chart while preserving whoever was in
+  -- front, so a man acquired at the bottom stayed there for his career and a
+  -- franchise sixty seasons deep started a 59 receiver ahead of a 75.
+  perform pg_temp.as_owner();
+  update public.game_players set status = 'released' where franchise_id = rkf and status = 'active' and position = 'WR';
+  perform public.franchise_generate_player(rkf, 'WR', 1, 2026, 'chart:weak', 'weak', 'rookie', null, 55);
+  perform public.franchise_generate_player(rkf, 'WR', 2, 2026, 'chart:best', 'best', 'rookie', null, 85);
+  perform public.franchise_generate_player(rkf, 'WR', 3, 2026, 'chart:mid',  'mid',  'rookie', null, 70);
+  perform pg_temp.ok('the chart starts in the order they arrived, worst in front',
+    (select overall from public.game_players where franchise_id = rkf and position = 'WR' and status = 'active' and depth = 1) < 60);
+  -- run an offseason over it
+  update public.franchise_seasons set offseason = null where franchise_id = rkf;
+  perform public.franchise_offseason(rkf, (select max(number) from public.franchise_seasons where franchise_id = rkf));
+  perform pg_temp.ok('and after a preseason the best man is starting',
+    (select p.overall from public.game_players p
+      where p.franchise_id = rkf and p.position = 'WR' and p.status = 'active'
+      order by p.depth limit 1)
+    = (select max(q.overall) from public.game_players q
+        where q.franchise_id = rkf and q.position = 'WR' and q.status = 'active'),
+    (select string_agg(p.depth || ':' || p.overall, ' ' order by p.depth) from public.game_players p
+      where p.franchise_id = rkf and p.position = 'WR' and p.status = 'active'));
+  perform pg_temp.ok('the chart is a run of places with no gaps and no ties',
+    (select count(*) = count(distinct depth) and min(depth) = 1 and max(depth) = count(*)
+       from public.game_players where franchise_id = rkf and position = 'WR' and status = 'active'));
+
+
 end
 $test$;

@@ -1966,6 +1966,27 @@ currency that buys one, and no way to open one faster with money — the same
 rule every other phase of this file keeps, and the reason a rank counts
 activity rather than spending.
 
+### Two things sixty seasons found
+
+The measurement run this phase asks for turned up two faults, both now fixed
+and both asserted:
+
+* **A pack you could not keep from blocked every pack behind it.** Two packs
+  are never on the table at once, so a pack opened with a full roster sat
+  there forever — one franchise reached rank 45 having claimed 37, with three
+  men stuck on the table for twenty seasons. You can now **turn the whole pack
+  down**. The rank is spent either way, which is what keeps it a decision
+  rather than a free re-roll.
+
+* **The preseason never re-earned the depth chart**, and this was the larger
+  one. The offseason compacted the chart but preserved whoever was already in
+  front, so every man acquired — drafted, signed, kept from a pack, developed
+  — joined at the bottom and stayed there for his whole career. A franchise
+  sixty seasons deep was starting a **59 receiver ahead of a 75** and a 53
+  corner ahead of a 66, and its **team overall decayed from 74 to 67 while its
+  roster got better**. The preseason now sorts every position by who is best
+  now; a player who wants it otherwise still says so on the roster.
+
 Report row 30 covers it. The SQL suite walks the rank curve step by step
 (the closed form and the sum of the steps agree at every rank to 60), proves a
 pack man is not on the roster until he is kept, that keeping one passes the

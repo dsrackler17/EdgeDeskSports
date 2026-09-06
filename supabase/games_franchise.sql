@@ -3381,10 +3381,19 @@ begin
     end if;
   end loop;
 
-  -- the chart closes up, and a rookie is signed for every retirement
-  for v_pos in select distinct position from public.game_players where franchise_id = p_franchise and status = 'retired' and retired_season = p_from loop
+  -- THE CHART IS RE-EARNED, not merely closed up. Measured over sixty
+  -- seasons: this loop used to run only for positions that lost somebody and
+  -- to order by DEPTH, so it compacted the chart while preserving whoever was
+  -- already in front. Every man acquired — drafted, signed, kept from a pack,
+  -- developed — joins at the bottom, so he stayed at the bottom for the rest
+  -- of his career while the ageing starter kept playing. A franchise sixty
+  -- seasons deep was starting a 59 receiver ahead of a 75 and a 53 corner
+  -- ahead of a 66, and its team overall DECAYED from 74 to 67 while its
+  -- roster got better. A preseason sorts by who is best now; a player who
+  -- wants it otherwise still says so with franchise_set_starter().
+  for v_pos in select distinct position from public.game_players where franchise_id = p_franchise and status = 'active' loop
     k2 := 0;
-    for pl in select id from public.game_players where franchise_id = p_franchise and position = v_pos and status = 'active' order by depth, overall desc loop
+    for pl in select id from public.game_players where franchise_id = p_franchise and position = v_pos and status = 'active' order by overall desc, potential desc, id loop
       k2 := k2 + 1;
       update public.game_players set depth = k2 where id = pl.id;
     end loop;
@@ -6985,7 +6994,7 @@ begin
   -- an unopened pack of a previous rank is finished first, so the three men
   -- on the table are never two packs' worth
   if exists (select 1 from public.game_players where franchise_id = v_f and status = 'pack') then
-    raise exception 'open pack on the table: keep a man from it first' using errcode = '55000';
+    raise exception 'open pack on the table: keep a man from it, or pass on it' using errcode = '55000';
   end if;
 
   v_rank := coalesce(f.rank_claimed, 0) + 1;
@@ -7072,6 +7081,27 @@ begin
   select * into p from public.game_players where id = p.id;
   return jsonb_build_object('ok', true, 'player', public.franchise_prospect_json(p),
     'passed', v_passed, 'roster_active', v_active + 1,
+    'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- PASS ON THE WHOLE PACK. Measured over sixty seasons: a pack opened with a
+-- full roster could not be kept from, and because two packs are never on the
+-- table at once it then refused every pack after it — a franchise reached
+-- rank 45 having claimed 37, with three men stuck on the table for twenty
+-- seasons. There must always be a way forward, so this is it: turn all three
+-- down. The rank is already spent either way, which is what makes it a real
+-- decision rather than a free re-roll.
+create or replace function public.franchise_pack_pass(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); v_n integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  update public.game_players set status = 'passed', updated_at = now()
+   where franchise_id = v_f and status = 'pack';
+  get diagnostics v_n = ROW_COUNT;
+  if v_n = 0 then raise exception 'no pack on the table' using errcode = 'P0002'; end if;
+  return jsonb_build_object('ok', true, 'passed', v_n,
     'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
 end;
 $$;
@@ -7331,6 +7361,7 @@ grant execute on function public.franchise_rank_for(integer) to anon, authentica
 grant execute on function public.franchise_rank_edge(integer) to anon, authenticated;
 grant execute on function public.franchise_pack_open(text) to anon, authenticated;
 grant execute on function public.franchise_pack_keep(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_pack_pass(text) to anon, authenticated;
 grant execute on function public.franchise_rank_board(text) to anon, authenticated;
 revoke all on function public.franchise_rank_report(uuid) from public, anon, authenticated;
 grant execute on function public.franchise_league_gap(integer, integer) to anon, authenticated;
