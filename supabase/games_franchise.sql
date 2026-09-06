@@ -1019,8 +1019,15 @@ begin
       end loop;
       select round(avg(x.value::int))::int into ovr from jsonb_each_text(attrs) x;
 
-      -- age leans young; development and potential follow
-      age := 21 + floor(power(random(), 1.4) * 12)::int;
+      -- AGES SPREAD EVENLY across the range, not skewed young (career_v1).
+      -- the old curve leaned so hard toward 21 that twenty-seven of
+      -- thirty-eight founding players retired inside seasons 8 to 14 and
+      -- barely anybody before, which is the cliff a sixty-season measurement
+      -- falls off. Flat means about three men go every season, from the
+      -- first, and the roster is always part-way through renewing itself.
+      age := (public.franchise_career()->>'found_age_min')::int
+           + floor(random() * ((public.franchise_career()->>'found_age_max')::int
+                             - (public.franchise_career()->>'found_age_min')::int + 1))::int;
       r := random();
       tier := case when r < 0.03 then 'superstar' when r < 0.15 then 'star'
                    when r < 0.40 then 'quick' else 'normal' end;
@@ -5736,7 +5743,11 @@ create or replace function public.franchise_staff()
 returns jsonb language sql immutable
 set search_path = pg_catalog, pg_temp as $$
   select jsonb_build_object(
-    'version', 'staff_v1',
+    'version', 'staff_v2',
+    -- what a rank pays in Coach Points, and what a reputation is worth to a
+    -- new hire (Phase 12) — the two numbers that make a building staffable
+    'rank_cp_base', 20, 'rank_cp_step', 2,
+    'hire_level_max', 60, 'hire_per_rank', 0.5, 'hire_per_standing', 10,
     'max_level', 1000,
     'hire_cost', 12,            -- CP to fill an empty seat
     'cost_base', 1,             -- CP for the first level…
@@ -5870,8 +5881,11 @@ begin;
 -- draws from, seeded so the same franchise hiring for the same seat in the
 -- same season gets the same man. He starts at level one with nothing; the
 -- levels are what make him.
+-- A trailing default makes a new signature, so the four-argument form is
+-- dropped first — otherwise both would exist and the hire would keep the old.
+drop function if exists public.franchise_generate_coach(uuid, text, text, integer);
 create or replace function public.franchise_generate_coach(
-  p_franchise uuid, p_seat text, p_seed text, p_season integer)
+  p_franchise uuid, p_seat text, p_seed text, p_season integer, p_level integer default 1)
 returns void language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   firsts text[] := public.franchise_pool_first_names();
@@ -5885,7 +5899,7 @@ begin
   values (p_franchise, p_seat,
     firsts[1 + floor(random() * array_length(firsts, 1))::int],
     lasts[1 + floor(random() * array_length(lasts, 1))::int],
-    v_arch, 1, '[]'::jsonb, p_seed, p_season)
+    v_arch, greatest(1, coalesce(p_level, 1)), '[]'::jsonb, p_seed, p_season)
   on conflict (franchise_id, seat) do nothing;
 end;
 $$;
@@ -6013,7 +6027,7 @@ returns jsonb language plpgsql security definer set search_path = public, pg_tem
 declare
   v_f uuid := public.franchise_of(p_secret); cfg jsonb := public.franchise_staff();
   f public.franchises%rowtype; cost integer := (cfg->>'hire_cost')::int; v_seat jsonb;
-  v_season integer := public.games_season_of(now()); v_new text[] := '{}'; v_n integer;
+  v_season integer := public.games_season_of(now()); v_new text[] := '{}'; v_n integer; v_level integer;
 begin
   if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
   select x into v_seat from jsonb_array_elements(cfg->'seats') x where x->>'key' = p_seat;
@@ -6025,19 +6039,28 @@ begin
   if f.coach_points < cost then
     raise exception 'not enough Coach Points: % needed, % on hand', cost, f.coach_points using errcode = '55000';
   end if;
-  perform public.franchise_generate_coach(v_f, p_seat, md5(f.seed || ':coach:' || p_seat || ':' || v_season || ':' || clock_timestamp()::text), v_season);
+  -- WHAT YOUR REPUTATION COMMANDS (staff_v2). A replacement used to start at
+  -- level one, which made firing anybody unthinkable and left the choice a
+  -- trap rather than a decision. A club that has been at it for years and
+  -- wins its games attracts a man who has done the job before.
+  v_level := public.franchise_staff_hire_level(
+    (public.franchise_rank_report(v_f)->>'rank')::int, f.standing);
+  perform public.franchise_generate_coach(v_f, p_seat,
+    md5(f.seed || ':coach:' || p_seat || ':' || v_season || ':' || clock_timestamp()::text), v_season, v_level);
   perform public.franchise_credit(v_f, 'cp', -cost, 'staff_hire', p_seat || ':' || v_season,
     'Hired a ' || (v_seat->>'name'));
   insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
   values (v_f, 'staff_hire', p_seat || ':' || v_season, public.games_week_key(now()), public.games_day_key(now()),
-    jsonb_build_object('seat', p_seat, 'cost', cost)) on conflict (franchise_id, kind, key) do nothing;
+    jsonb_build_object('seat', p_seat, 'cost', cost, 'level', v_level))
+  on conflict (franchise_id, kind, key) do nothing;
   if public.franchise_award(v_f, 'staff_first', v_season, jsonb_build_object('seat', p_seat)) then
     v_new := array_append(v_new, 'staff_first'); end if;
   select count(*) into v_n from public.franchise_staff_members where franchise_id = v_f;
   if v_n >= jsonb_array_length(cfg->'seats')
      and public.franchise_award(v_f, 'staff_full', v_season, jsonb_build_object('seats', v_n)) then
     v_new := array_append(v_new, 'staff_full'); end if;
-  return jsonb_build_object('ok', true, 'cost', cost, 'seat', public.franchise_staff_json(v_f, p_seat),
+  return jsonb_build_object('ok', true, 'cost', cost, 'level', v_level,
+    'seat', public.franchise_staff_json(v_f, p_seat),
     'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
 end;
 $$;
@@ -6995,7 +7018,7 @@ declare
   v_low integer; v_high integer; v_target integer; i integer; pos text; pid uuid;
   pool text[] := array['QB','RB','WR','TE','OL','DL','LB','CB','S','WR','DL','CB'];
   v_men jsonb := '[]'::jsonb; v_new text[] := '{}'; v_real integer := public.games_season_of(now());
-  v_seed text;
+  v_seed text; v_cp integer;
 begin
   if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
   select * into f from public.franchises where id = v_f for update;
@@ -7032,10 +7055,18 @@ begin
   end loop;
 
   update public.franchises set rank_claimed = v_rank, updated_at = now() where id = v_f;
+  -- A RANK PAYS COACH POINTS TOO (staff_v2). Sixty seasons of winning paid
+  -- 621 CP, against a building that costs thousands — one coach at level 99
+  -- and three empty chairs. Turning up is what staffs a building, and the
+  -- rank is what measures turning up. Keyed by the rank, so it pays once.
+  v_cp := public.franchise_rank_coach_points(v_rank);
+  perform public.franchise_credit(v_f, 'cp', v_cp, 'pack', v_rank::text,
+    'Rank ' || v_rank || ': the building');
   insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
   values (v_f, 'pack', v_rank::text, public.games_week_key(now()), public.games_day_key(now()),
           jsonb_build_object('rank', v_rank, 'team_overall', v_ovr, 'low', v_low, 'high', v_high,
-            'edge', public.franchise_rank_edge(v_rank), 'version', cfg->>'pack_version'))
+            'edge', public.franchise_rank_edge(v_rank), 'coach_points', v_cp,
+            'version', cfg->>'pack_version'))
   on conflict (franchise_id, kind, key) do nothing;
 
   if public.franchise_award(v_f, 'pack_first', v_real, jsonb_build_object('rank', v_rank)) then
@@ -7048,7 +7079,7 @@ begin
     v_new := array_append(v_new, 'rank_25'); end if;
 
   return jsonb_build_object('ok', true, 'rank', v_rank, 'players', v_men,
-    'range', jsonb_build_array(v_low, v_high), 'team_overall', v_ovr,
+    'range', jsonb_build_array(v_low, v_high), 'team_overall', v_ovr, 'coach_points', v_cp,
     'keep', (cfg->>'pack_keep')::int, 'achievements', to_jsonb(v_new),
     'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
 end;
@@ -7154,6 +7185,105 @@ $$;
 commit;
 
 -- ===========================================================================
+-- THE LONG HAUL — Phase 12, career_v1 and staff_v2
+--
+-- MEASURED OVER SIXTY SEASONS, on the game as Phase 11 left it. It climbs
+-- beautifully to season ten and then cannot carry on:
+--
+--   season    1    5   10   15   20   30   45   60
+--   overall  69   80   81   75   73   74   76   71
+--
+-- Three faults, all of them about the LONG game rather than the first one.
+--
+-- ONE: THE ROSTER TURNS OVER IN A WAVE. The founding roster is generated at
+-- ages 21 to 32, but skewed hard young by power(random(), 1.4) — so almost
+-- nobody retires for seven seasons and then everybody does:
+--
+--   season       1-7    8    9   10   11   12   13   14   15+
+--   founders out   1    4    1    5    4    2    4    7     0
+--
+-- Twenty-seven of thirty-eight founding players left in seven seasons, which
+-- is the cliff the curve above falls off. Worse, their replacements were all
+-- signed at once too, so the wave re-forms every fourteen years for ever.
+-- Ages are now spread EVENLY across the same range, so about three men go
+-- every season from the first, and the roster is always part-way through
+-- renewing itself instead of doing it all at once.
+--
+-- TWO: THE BUILDING COULD NEVER BE STAFFED. Coach Points came only from
+-- winning — two a win, five a bowl, one for the rival — which measured out
+-- at TEN AND A HALF A SEASON. Reaching level 100 costs 540; four seats at
+-- that level cost 2,160, or two hundred seasons. After sixty seasons of
+-- winning football the measured franchise had ONE COACH AT LEVEL 99 and
+-- three empty chairs. So the rank now pays Coach Points as well as a pack:
+-- turning up is what staffs a building, and the rank is the number that
+-- measures turning up.
+--
+-- THREE: A REPLACEMENT COACH STARTED AT LEVEL ONE, which made firing one
+-- unthinkable — the README said so itself: "which is why almost nobody
+-- will". That is not a choice, it is a trap. A coach now arrives at a level
+-- set by the FRANCHISE'S REPUTATION — its rank and its standing — because a
+-- club that has been at it for years and wins its games attracts somebody
+-- who has done the job before. So both ways of playing work:
+--
+--   a new head coach every year, if you are bad and want to keep trying:
+--   your reputation is low, so the men you hire are cheap and you lose
+--   almost nothing by moving on;
+--
+--   three or four coaches across sixty seasons, if you are good: each
+--   replacement arrives near what your reputation commands, and the years
+--   you then put into him are what take him past it.
+--
+-- Keeping one man for sixty seasons is still the best a single seat can do.
+-- It is no longer the only thing that is not a disaster.
+-- ===========================================================================
+
+begin;
+
+-- ── ONE: a roster that renews itself every season ────────────────────────
+
+-- what a career looks like, published so a page can say it
+create or replace function public.franchise_career()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'career_v1',
+    'found_age_min', 21, 'found_age_max', 32,   -- spread EVENLY across this
+    'retire_age', 35, 'retire_fade_age', 33, 'retire_fade_under', 55);
+$$;
+
+commit;
+
+begin;
+
+-- ── TWO: the rank pays Coach Points ──────────────────────────────────────
+
+-- WHAT A RANK IS WORTH IN COACH POINTS: twenty, and two more for every rank
+-- already held. Rank 10 pays 38, rank 45 pays 108; the forty-five ranks a
+-- sixty-season franchise earns pay about three thousand, against the six
+-- hundred that sixty seasons of winning paid before. That is the difference
+-- between one coach at level 99 and a building with four people in it.
+create or replace function public.franchise_rank_coach_points(p_rank integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select (public.franchise_staff()->>'rank_cp_base')::int
+       + (public.franchise_staff()->>'rank_cp_step')::int * greatest(0, coalesce(p_rank, 1) - 1);
+$$;
+
+-- ── THREE: what a franchise's reputation is worth to a new coach ─────────
+
+-- A club that has been at it for years and wins attracts somebody who has
+-- done the job before. Half a level for every rank, and one for every ten
+-- points of standing — a new franchise hires at level 1 and a sixty-season
+-- contender at about thirty. Capped, so reputation never hands over a coach
+-- who would take a decade of Coach Points to build.
+create or replace function public.franchise_staff_hire_level(p_rank integer, p_standing integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select greatest(1, least((public.franchise_staff()->>'hire_level_max')::int,
+    1 + floor(greatest(0, coalesce(p_rank, 1) - 1) * (public.franchise_staff()->>'hire_per_rank')::numeric)::int
+      + floor(greatest(0, coalesce(p_standing, 0)) / (public.franchise_staff()->>'hire_per_standing')::numeric)::int));
+$$;
+
+commit;
+
+-- ===========================================================================
 -- GRANTS
 --
 -- Postgres grants EXECUTE on a new function to PUBLIC by default, so every
@@ -7230,7 +7360,7 @@ revoke all on function public.franchise_trade_json(uuid, uuid) from public, anon
 revoke all on function public.franchise_trade_player_json(uuid) from public, anon, authenticated;
 -- Phase 8: the coach generator, the effects aggregate and the seat readers are
 -- the server's; the four moves and the published table are opened below
-revoke all on function public.franchise_generate_coach(uuid, text, text, integer) from public, anon, authenticated;
+revoke all on function public.franchise_generate_coach(uuid, text, text, integer, integer) from public, anon, authenticated;
 revoke all on function public.franchise_staff_effects(uuid) from public, anon, authenticated;
 revoke all on function public.franchise_staff_json(uuid, text) from public, anon, authenticated;
 revoke all on function public.franchise_staff_specialties(text, text, integer) from public, anon, authenticated;
@@ -7375,6 +7505,11 @@ grant execute on function public.franchise_rank_edge(integer) to anon, authentic
 grant execute on function public.franchise_pack_open(text) to anon, authenticated;
 grant execute on function public.franchise_pack_keep(uuid, text) to anon, authenticated;
 grant execute on function public.franchise_pack_pass(text) to anon, authenticated;
+-- Phase 12: what a career looks like, what a rank pays the building, and what
+-- a reputation is worth to a new coach — all public tables
+grant execute on function public.franchise_career() to anon, authenticated;
+grant execute on function public.franchise_rank_coach_points(integer) to anon, authenticated;
+grant execute on function public.franchise_staff_hire_level(integer, integer) to anon, authenticated;
 grant execute on function public.franchise_rank_board(text) to anon, authenticated;
 revoke all on function public.franchise_rank_report(uuid) from public, anon, authenticated;
 grant execute on function public.franchise_league_gap(integer, integer) to anon, authenticated;
@@ -7403,6 +7538,7 @@ select public.games_schema_note('franchise', 8, 'the coaching staff');
 select public.games_schema_note('franchise', 9, 'the scouting department');
 select public.games_schema_note('franchise', 10, 'the development program and the league');
 select public.games_schema_note('franchise', 11, 'the rank and the packs');
+select public.games_schema_note('franchise', 12, 'the long haul: careers and a building you can staff');
 commit;
 
 -- ===========================================================================
@@ -7572,18 +7708,18 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 11 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 12 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
-  case when public.franchise_staff()->>'version' = 'staff_v1'
+  case when public.franchise_staff()->>'version' = 'staff_v2'
         and (public.franchise_staff()->>'max_level')::int = 1000
         and public.franchise_staff_cost(1) = 1 and public.franchise_staff_cost(1000) = 100
         and public.franchise_staff_cost_between(1, 1000) = 50400
         and public.franchise_staff_effect(1, 3.0) = 0 and public.franchise_staff_effect(1000, 3.0) = 3.0
         and has_function_privilege('anon', 'public.franchise_staff_hire(text, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_staff_promote(text, integer, text)', 'execute')
-        and not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer, integer)', 'execute')
         and not has_function_privilege('authenticated', 'public.franchise_staff_effects(uuid)', 'execute')
     then 'ok' else 'CHECK THIS' end
 union all
@@ -7684,5 +7820,30 @@ select 30, 'the rank is ' || (public.franchise_ranks()->>'version') || ' and pac
         and has_function_privilege('anon', 'public.franchise_pack_keep(uuid, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_rank_report(uuid)', 'execute')
         and not has_function_privilege('authenticated', 'public.franchise_rank_report(uuid)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 31, 'the long haul is ' || (public.franchise_career()->>'version') || ' and '
+        || (public.franchise_staff()->>'version') || ': a roster that renews every season, and a building a rank can staff',
+  case when public.franchise_career()->>'version' = 'career_v1'
+        and public.franchise_staff()->>'version' = 'staff_v2'
+        -- the founding ages are spread EVENLY, not skewed young
+        and (select p.prosrc like '%franchise_career()->>''found_age_min''%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_generate_roster')
+        -- a rank pays the building, and pays more the further you have come
+        and public.franchise_rank_coach_points(1) = 20
+        and public.franchise_rank_coach_points(45) = 108
+        and (select bool_and(public.franchise_rank_coach_points(t.n) < public.franchise_rank_coach_points(t.n + 1))
+               from generate_series(1, 200) as t(n))
+        -- a new coach arrives at what the reputation commands, never past the cap
+        and public.franchise_staff_hire_level(1, 0) = 1
+        and public.franchise_staff_hire_level(45, 60) = 29
+        and public.franchise_staff_hire_level(9999, 100) = (public.franchise_staff()->>'hire_level_max')::int
+        and (select bool_and(public.franchise_staff_hire_level(t.n, 50)
+                             <= public.franchise_staff_hire_level(t.n + 1, 50))
+               from generate_series(1, 300) as t(n))
+        and has_function_privilege('anon', 'public.franchise_career()', 'execute')
+        and has_function_privilege('anon', 'public.franchise_staff_hire_level(integer, integer)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer, integer)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

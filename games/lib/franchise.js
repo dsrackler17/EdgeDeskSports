@@ -62,7 +62,8 @@
       'the coaching staff',
       'the scouting department',
       'the development program and the league',
-      'the rank and the packs'
+      'the rank and the packs',
+      'the long haul: careers and a building you can staff'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -861,9 +862,18 @@
      Both are restated here for display — what a level will cost before it is
      bought, what a coach is worth — and pinned to the SQL by
      tools/games/franchise.test.js. The server hires, levels and scores. */
-  var STAFF_VERSION = 'staff_v1';
+  var STAFF_VERSION = 'staff_v2';
   var STAFF = {
     max_level: 1000, hire_cost: 12, cost_base: 1, cost_step: 10,
+    /* staff_v2 (Phase 12). Measured over sixty seasons: Coach Points came
+       only from winning and made 10.4 a season, against a building where
+       one seat at level 100 costs 540 — the measured franchise finished
+       sixty years with ONE coach at level 99 and three empty chairs. The
+       rank pays the building now, and a replacement arrives at what the
+       franchise's reputation commands rather than at level one, so firing
+       somebody is a decision instead of a trap. */
+    rank_cp_base: 20, rank_cp_step: 2,
+    hire_level_max: 60, hire_per_rank: 0.5, hire_per_standing: 10,
     specialty_every: 25, specialty_max: 10, promote_max: 100,
     seats: [
       { key: 'head',    name: 'Head Coach',             means: 'Steadies the fourth quarter and overtime', cap: 2.5, sort: 1 },
@@ -907,6 +917,23 @@
     STAFF.grades.forEach(function (g) { if (g.at <= L) out = g.name; });
     return out;
   }
+  /* what a rank pays the building: 20, and two more for every rank held */
+  function rankCoachPoints(rank) {
+    return STAFF.rank_cp_base + STAFF.rank_cp_step * Math.max(0, (rank | 0) - 1);
+  }
+  /* the level a new coach arrives at — what your reputation commands */
+  function staffHireLevel(rank, standing) {
+    return Math.max(1, Math.min(STAFF.hire_level_max,
+      1 + Math.floor(Math.max(0, (rank | 0) - 1) * STAFF.hire_per_rank)
+        + Math.floor(Math.max(0, standing | 0) / STAFF.hire_per_standing)));
+  }
+  /* CAREER (Phase 12): the founding roster is spread evenly across these
+     ages so about three men retire every season instead of twenty-seven in
+     seven — the cliff a sixty-season measurement fell off. */
+  var CAREER_VERSION = 'career_v1';
+  var CAREER = { found_age_min: 21, found_age_max: 32,
+                 retire_age: 35, retire_fade_age: 33, retire_fade_under: 55 };
+
   function staffSpecialtyCount(level) {
     return Math.min(STAFF.specialty_max, Math.floor(Math.max(1, level | 0) / STAFF.specialty_every));
   }
@@ -1643,6 +1670,8 @@
     standingDelta: standingDelta, standingName: standingName,
     SCOUTING_VERSION: SCOUTING_VERSION, SCOUTING: SCOUTING, scoutGradeOf: scoutGradeOf, scoutNext: scoutNext,
     scoutBand: scoutBand, scoutCost: scoutCost, scoutLift: scoutLift, scoutScore: scoutScore, scoutLine: scoutLine,
+    CAREER_VERSION: CAREER_VERSION, CAREER: CAREER,
+    rankCoachPoints: rankCoachPoints, staffHireLevel: staffHireLevel,
     STAFF_VERSION: STAFF_VERSION, STAFF: STAFF, staffCost: staffCost, staffCostBetween: staffCostBetween,
     staffAfford: staffAfford, staffEffect: staffEffect, staffGrade: staffGrade,
     staffSpecialtyCount: staffSpecialtyCount, staffSeat: staffSeat, staffLine: staffLine,

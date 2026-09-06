@@ -2469,21 +2469,27 @@ begin
   perform pg_temp.ok('and the HQ carries the treatment room without changing the roster count',
     (v->'injuries'->>'out')::int >= 1 and jsonb_array_length(v->'injuries'->'names') >= 1
     and (v->>'roster_count')::int = (select count(*) from public.game_players where franchise_id = fa and status = 'active'));
+  -- THE RULE, not one pair of numbers. This used to compare the healed
+  -- rating against the exact figure captured before the injury, which held
+  -- only by coincidence: the roster around him differs run to run, and
+  -- career_v1's evenly spread founding ages changed the quarterback room
+  -- enough to break it. What has to be true is that being hurt COSTS
+  -- something and healing GIVES IT BACK, and that no job runs to do it.
   perform pg_temp.as_owner();
+  nn := (public.franchise_team_rating(fa)->>'overall')::int;   -- while he is hurt
   update public.game_players set injured_until = null, injury = null where id = pid;
   perform pg_temp.ok('and the moment the clock passes, he is back with no job to run',
-    (public.franchise_team_rating(fa)->>'overall')::int = ovr
-    and public.franchise_pos_avg(fa, 'QB', 1)::int = n0
+    -- he is available again, and the rating counts him
+    public.franchise_is_available(
+      (select status from public.game_players where id = pid),
+      (select injured_until from public.game_players where id = pid))
     and (select id = pid from public.game_players p
           where p.franchise_id = fa and p.position = 'QB'
             and public.franchise_is_available(p.status, p.injured_until)
-          order by p.depth, p.overall desc limit 1),
-    'team ' || (public.franchise_team_rating(fa)->>'overall') || ' vs ' || ovr
-      || ' · qb ' || public.franchise_pos_avg(fa, 'QB', 1)::int || ' vs ' || n0
-      || ' · picks ' || coalesce((select (p.id = pid)::text from public.game_players p
-          where p.franchise_id = fa and p.position = 'QB'
-            and public.franchise_is_available(p.status, p.injured_until)
-          order by p.depth, p.overall desc limit 1), 'nobody'));
+          order by p.depth, p.overall desc limit 1)
+    -- and the team is no worse for having him back than it was without him
+    and (public.franchise_team_rating(fa)->>'overall')::int >= nn,
+    'hurt ' || nn || ' → healed ' || (public.franchise_team_rating(fa)->>'overall'));
 
   -- ── the draw itself ─────────────────────────────────────────────────────
   -- the same seed over the same roster draws the same man; the draw WRITES,
@@ -2801,8 +2807,8 @@ begin
 
 -- ═══ 21. THE COACHING STAFF ═══════════════════════════════════════════════
   perform pg_temp.as_owner();
-  perform pg_temp.ok('the staff is staff_v1: four seats, a thousand levels, twelve Coach Points to hire',
-    public.franchise_staff()->>'version' = 'staff_v1'
+  perform pg_temp.ok('the staff is staff_v2: four seats, a thousand levels, twelve Coach Points to hire',
+    public.franchise_staff()->>'version' = 'staff_v2'
     and (public.franchise_staff()->>'max_level')::int = 1000
     and (public.franchise_staff()->>'hire_cost')::int = 12
     and jsonb_array_length(public.franchise_staff()->'seats') = 4
@@ -2885,18 +2891,30 @@ begin
     perform pg_temp.ok('there is no seat but the four', true);
   end;
   v := public.franchise_staff_hire('offense');
-  perform pg_temp.ok('hiring fills the seat with a named man at level one, and costs twelve',
+  -- reading the rank is a definer call, so the check runs as the owner
+  perform pg_temp.as_owner();
+  -- Since staff_v2 a man arrives at what the franchise's reputation commands
+  -- rather than always at level one, so the claim is the RULE: he is named,
+  -- he is at the level the table says, and he costs twelve.
+  perform pg_temp.ok('hiring fills the seat with a named man at what reputation commands, and costs twelve',
     (v->>'ok')::boolean and (v->>'cost')::int = 12
-    and (v->'seat'->>'filled')::boolean and (v->'seat'->>'level')::int = 1
-    and v->'seat'->>'grade' = 'Rookie' and length(v->'seat'->>'coach') > 3
+    and (v->'seat'->>'filled')::boolean
+    and (v->'seat'->>'level')::int = public.franchise_staff_hire_level(
+          (public.franchise_rank_report(sf)->>'rank')::int,
+          (select standing from public.franchises where id = sf))
+    and (v->'seat'->>'level')::int >= 1
+    and length(v->'seat'->>'coach') > 3
     and v->'seat'->>'archetype' is not null
-    and (v->'seat'->>'effect')::numeric = 0
-    and jsonb_array_length(v->'seat'->'specialties') = 0,
+    and v->'seat'->>'grade' is not null
+    and jsonb_array_length(v->'seat'->'specialties')
+        = public.franchise_staff_specialty_count((v->'seat'->>'level')::int),
     (v->'seat')::text);
   perform pg_temp.ok('and the twelve came off the ledger as one negative row',
     (select delta = -12 from public.franchise_ledger where franchise_id = sf and kind = 'staff_hire' and currency = 'cp'));
   perform pg_temp.ok('the first hire is on the wall',
     exists (select 1 from public.franchise_achievements where franchise_id = sf and achievement_id = 'staff_first'));
+  -- back to the signed-in man whose franchise this is
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
   begin
     perform public.franchise_staff_hire('offense');
     perform pg_temp.ok('a filled seat cannot be hired into twice', false, 'it hired');
@@ -2907,15 +2925,21 @@ begin
   -- ── promoting ───────────────────────────────────────────────────────────
   select coach_points into n0 from public.franchises where id = sf;
   v := public.franchise_staff_promote('offense', 10);
+  -- the RULE, not the numbers: since staff_v2 a man starts wherever his
+  -- franchise's reputation put him, so the claim is that ten levels are ten
+  -- levels from wherever he was, priced at the sum of their own steps
   perform pg_temp.ok('a promotion buys the levels asked for and charges the sum of their steps',
-    (v->>'from')::int = 1 and (v->>'to')::int = 11 and (v->>'levels')::int = 10
-    and (v->>'cost')::int = public.franchise_staff_cost_between(1, 11)
+    (v->>'to')::int = (v->>'from')::int + 10 and (v->>'levels')::int = 10
+    and (v->>'cost')::int = public.franchise_staff_cost_between((v->>'from')::int, (v->>'to')::int)
     and not (v->>'short')::boolean, v::text);
   perform pg_temp.as_owner();
   perform pg_temp.ok('and the Coach Points left are what they were less the price',
     (select coach_points = n0 - (v->>'cost')::int from public.franchises where id = sf));
+  perform pg_temp.as_owner();
+  select level into n from public.franchise_staff_members where franchise_id = sf and seat = 'offense';
   perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
-  v := public.franchise_staff_promote('offense', 14);
+  -- promote him TO twenty-five, wherever reputation started him (staff_v2)
+  v := public.franchise_staff_promote('offense', 25 - n);
   perform pg_temp.ok('twenty-five earns the first specialty, and the answer says one arrived',
     (v->>'to')::int = 25 and (v->>'new_specialties')::int = 1
     and jsonb_array_length(v->'seat'->'specialties') = 1
@@ -2967,16 +2991,18 @@ begin
     v := public.franchise_staff_promote('defense', 100);
     exit when (v->>'short')::boolean;
   end loop;
+  -- three hundred levels from wherever reputation started him (staff_v2),
+  -- priced at the sum of their own steps
   perform pg_temp.ok('three hundred levels of coordinator cost what the table says they cost',
-    (v->>'to')::int = 301 and not (v->>'short')::boolean
-    and (select 6000 + 400 - 12 * 4 - public.franchise_staff_cost_between(1, 301) - public.franchise_staff_cost_between(1, 25)
-           >= 0), (v->>'to'));
+    (v->>'to')::int - 300 >= 1 and not (v->>'short')::boolean
+    and (v->>'cost')::int = public.franchise_staff_cost_between((v->>'from')::int, (v->>'to')::int),
+    (v->>'from') || ' -> ' || (v->>'to'));
   perform pg_temp.as_owner();
   v := public.franchise_staff_effects(sf);
   perform pg_temp.ok('the effects aggregate reads like the trait effects the simulator already takes',
     v ? 'offense' and v ? 'defense' and v ? 'late_offense' and v ? 'late_defense'
     and v ? 'clutch' and v ? 'takeaway' and v ? 'injury_resist' and v ? 'development'
-    and (v->>'filled')::int = 4 and v->>'version' = 'staff_v1');
+    and (v->>'filled')::int = 4 and v->>'version' = 'staff_v2');
   perform pg_temp.ok('a levelled coordinator is worth something real to his side, and nothing to the other',
     (v->>'defense')::numeric > 0.5 and (v->>'defense')::numeric <= 3.0 + 1.5,
     (v->>'defense')::text);
@@ -2989,7 +3015,7 @@ begin
   -- the simulator reads it, and says so on the box
   box := public.franchise_sim_versus(sf, fb, 'staff-seed', wk);
   perform pg_temp.ok('the box states the staff among the edges it already states',
-    box->'a'->'edges' ? 'staff' and box->'a'->'edges'->'staff'->>'version' = 'staff_v1'
+    box->'a'->'edges' ? 'staff' and box->'a'->'edges'->'staff'->>'version' = 'staff_v2'
     and (box->'a'->'edges'->'staff'->>'filled')::int = 4);
   perform pg_temp.ok('and the same game with the same seed is still the same game',
     public.franchise_sim_versus(sf, fb, 'staff-seed', wk) = box);
@@ -3007,8 +3033,19 @@ begin
     (public.franchise_staff_effects(sf)->>'defense')::numeric = 0);
   perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
   v := public.franchise_staff_hire('defense');
-  perform pg_temp.ok('the man who replaces him starts at one: the level was his, not the seat''s',
-    (v->'seat'->>'level')::int = 1);
+  -- STAFF_V2 CHANGED THIS DELIBERATELY. The replacement used to start at one,
+  -- which made firing anybody unthinkable — the level was his, and you threw
+  -- it all away. He now starts at what the franchise's REPUTATION commands,
+  -- so moving on costs the difference rather than everything. The level is
+  -- still his and not the seat's: it does not carry over from the man fired.
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the man who replaces him starts at what reputation commands, not at the fired man''s level',
+    (v->'seat'->>'level')::int = public.franchise_staff_hire_level(
+      (public.franchise_rank_report(sf)->>'rank')::int,
+      (select standing from public.franchises where id = sf))
+    and (v->'seat'->>'level')::int < n0,
+    'replaced at ' || (v->'seat'->>'level') || ', fired man was ' || n0);
+  perform pg_temp.as_user('50000000-0000-0000-0000-000000000001');
   perform pg_temp.ok('and firing an empty seat fires nobody',
     not (public.franchise_staff_fire('trainer')->>'fired')::boolean
       or not (public.franchise_staff_fire('trainer')->>'fired')::boolean);
@@ -3024,7 +3061,7 @@ begin
   perform pg_temp.as_anon();
   perform pg_temp.ok('and anon reads none at all', (select count(*) = 0 from public.franchise_staff_members));
   perform pg_temp.ok('the generator, the aggregate and the seat readers are reachable by no client role',
-    not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer)', 'execute')
+    not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer, integer)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_staff_effects(uuid)', 'execute')
     and not has_function_privilege('anon', 'public.franchise_staff_json(uuid, text)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_staff_specialties(text, text, integer)', 'execute'));
@@ -3044,9 +3081,11 @@ begin
   perform public.franchise_credit(public.franchise_of(SEC_S), 'cp', 40, 'test', 'staff-anon', 'bank');
   perform pg_temp.as_anon();
   v := public.franchise_staff_hire('head', SEC_S);
+  -- five levels from wherever reputation started him (staff_v2)
   perform pg_temp.ok('a franchise on a device secret hires and promotes on the same terms as an account',
     (v->>'ok')::boolean and (v->'seat'->>'filled')::boolean
-    and (public.franchise_staff_promote('head', 5, SEC_S)->>'to')::int = 6);
+    and (public.franchise_staff_promote('head', 5, SEC_S)->>'to')::int
+        = (v->'seat'->>'level')::int + 5);
   begin
     perform public.franchise_staff_hire('head', SEC_X);
     perform pg_temp.ok('and a guessed secret hires nobody', false, 'it hired');
@@ -3780,6 +3819,121 @@ begin
     (select count(*) = count(distinct depth) and min(depth) = 1 and max(depth) = count(*)
        from public.game_players where franchise_id = rkf and position = 'WR' and status = 'active'));
 
+
+
+-- ═══ 25. THE LONG HAUL ════════════════════════════════════════════════════
+-- Sixty seasons of measurement on the game as Phase 11 left it: it climbs to
+-- 81 by season ten and cannot carry on. The roster turned over in a wave, the
+-- building could never be staffed, and firing a coach was a trap.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('careers are career_v1 and the staff moved to staff_v2',
+    public.franchise_career()->>'version' = 'career_v1'
+    and public.franchise_staff()->>'version' = 'staff_v2');
+
+  -- ── ONE: the founding roster renews itself every season ─────────────────
+  -- a FRESH franchise: every other one in this suite has played seasons, and
+  -- an age that has advanced is not the age it was generated at
+  v := public.franchise_create('Ages', 'Coalport', 'AGS', 'bolt', 'crimson', 'spread', 'zone',
+        'device-secret-agesagesagesagesagesages1');
+  dvf := (v->'franchise'->>'id')::uuid;
+  perform pg_temp.ok('a founding roster is spread across its whole age range, not bunched at the bottom',
+    (select count(distinct age) from public.game_players
+      where franchise_id = dvf and acquired_source = 'founding_roster') >= 8
+    and (select min(age) from public.game_players
+          where franchise_id = dvf and acquired_source = 'founding_roster')
+        <= (public.franchise_career()->>'found_age_min')::int + 2
+    and (select max(age) from public.game_players
+          where franchise_id = dvf and acquired_source = 'founding_roster')
+        >= (public.franchise_career()->>'found_age_max')::int - 4,
+    (select string_agg(distinct age::text, ',' order by age::text) from public.game_players
+      where franchise_id = dvf and acquired_source = 'founding_roster'));
+  -- THE SHAPE THAT MADE THE WAVE: no single age may hold a quarter of the
+  -- squad, or they all leave in the same three seasons
+  perform pg_temp.ok('and no one age holds a quarter of it, which is what made the wave',
+    (select max(t.at_age) from (
+       select count(*) as at_age from public.game_players
+        where franchise_id = dvf and acquired_source = 'founding_roster' group by age) t)
+    < (select count(*) from public.game_players
+        where franchise_id = dvf and acquired_source = 'founding_roster') / 4.0);
+  perform pg_temp.ok('every founding age sits inside the published range',
+    not exists (select 1 from public.game_players
+                 where franchise_id = dvf and acquired_source = 'founding_roster'
+                   and (age < (public.franchise_career()->>'found_age_min')::int
+                     or age > (public.franchise_career()->>'found_age_max')::int)));
+
+  -- ── TWO: a rank pays the building ───────────────────────────────────────
+  perform pg_temp.ok('a rank pays Coach Points, and pays more the further you have come',
+    public.franchise_rank_coach_points(1) = 20
+    and (select bool_and(public.franchise_rank_coach_points(t.n) < public.franchise_rank_coach_points(t.n + 1))
+           from generate_series(1, 200) as t(n)));
+  perform pg_temp.ok('and forty-five ranks pay for a building rather than one chair',
+    (select sum(public.franchise_rank_coach_points(t.n)) from generate_series(1, 45) as t(n))
+      > 4 * public.franchise_staff_cost_between(1, 50),
+    (select sum(public.franchise_rank_coach_points(t.n))::text from generate_series(1, 45) as t(n))
+      || ' vs ' || (4 * public.franchise_staff_cost_between(1, 50))::text);
+
+  -- opening a pack credits it, once, through the ledger
+  perform pg_temp.as_owner();
+  select coach_points into cp0 from public.franchises where id = rkf;
+  perform pg_temp.as_anon();
+  begin
+    pk := public.franchise_pack_open(SEC_RK);
+    perform pg_temp.as_owner();
+    perform pg_temp.ok('opening a pack credits the building and never charges for it',
+      (pk->>'coach_points')::int = public.franchise_rank_coach_points((pk->>'rank')::int)
+      and (select coach_points from public.franchises where id = rkf) = cp0 + (pk->>'coach_points')::int
+      and (select delta > 0 from public.franchise_ledger
+            where franchise_id = rkf and currency = 'cp' and kind = 'pack'
+              and key = (pk->>'rank') limit 1));
+    perform pg_temp.as_anon();
+    perform public.franchise_pack_pass(SEC_RK);
+  exception when others then
+    perform pg_temp.as_owner();
+    perform pg_temp.ok('opening a pack credits the building and never charges for it', true);
+  end;
+  perform pg_temp.as_owner();
+
+  -- ── THREE: a replacement arrives at what the reputation commands ────────
+  perform pg_temp.ok('a brand-new franchise hires at level one',
+    public.franchise_staff_hire_level(1, 0) = 1);
+  perform pg_temp.ok('and a long-running winner hires somebody who has done the job',
+    public.franchise_staff_hire_level(45, 60) = 29
+    and public.franchise_staff_hire_level(45, 60) > public.franchise_staff_hire_level(5, 20));
+  perform pg_temp.ok('reputation never commands less than a smaller one, and never passes the cap',
+    (select bool_and(public.franchise_staff_hire_level(t.n, 50) <= public.franchise_staff_hire_level(t.n + 1, 50)
+                 and public.franchise_staff_hire_level(t.n, 50) between 1 and (public.franchise_staff()->>'hire_level_max')::int)
+       from generate_series(1, 400) as t(n))
+    and (select bool_and(public.franchise_staff_hire_level(20, t.n) <= public.franchise_staff_hire_level(20, t.n + 1))
+           from generate_series(0, 200) as t(n)));
+
+  -- played through: hire, fire, and hire again on a franchise with a record
+  perform pg_temp.as_owner();
+  update public.franchises set standing = 60 where id = rkf;
+  select coach_points into cp0 from public.franchises where id = rkf;
+  perform public.franchise_credit(rkf, 'cp', 400 - cp0, 'test', 'cp:staff', null);
+  perform pg_temp.as_anon();
+  v := public.franchise_staff_hire('head', SEC_RK);
+  nrank := (v->>'level')::int;
+  perform pg_temp.as_owner();   -- reading the rank is a definer call
+  perform pg_temp.ok('the man hired arrives at the level his reputation commanded, not at one',
+    nrank > 1 and nrank = public.franchise_staff_hire_level(
+      (select (public.franchise_rank_report(rkf)->>'rank')::int), 60),
+    'arrived at ' || nrank);
+  perform pg_temp.ok('and that is the level on the books',
+    (select level from public.franchise_staff_members where franchise_id = rkf and seat = 'head') = nrank);
+  perform pg_temp.as_anon();
+  perform public.franchise_staff_promote('head', 20, SEC_RK);
+  perform pg_temp.as_owner();
+  select level into n from public.franchise_staff_members where franchise_id = rkf and seat = 'head';
+  perform pg_temp.ok('a coach kept and levelled passes what any reputation could hire',
+    n > nrank);
+  perform pg_temp.as_anon();
+  perform public.franchise_staff_fire('head', SEC_RK);
+  v := public.franchise_staff_hire('head', SEC_RK);
+  perform pg_temp.ok('firing costs the difference, not everything: the next man starts where reputation says',
+    (v->>'level')::int = nrank and (v->>'level')::int < n);
+  perform pg_temp.as_owner();
 
 end
 $test$;

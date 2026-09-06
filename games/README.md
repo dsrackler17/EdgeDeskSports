@@ -1607,7 +1607,7 @@ currency you earn by *winning* — a weekly game, your rival, a challenge, a
 conference round, a bowl, a title — so the hardest content in the game paid
 in the one thing with nothing behind it.
 
-Four seats, `staff_v1`, published by `franchise_staff()` and mirrored in
+Four seats, `staff_v1` (extended to `staff_v2` in Phase 12), published by `franchise_staff()` and mirrored in
 `EDFranchise.STAFF`: a **head coach**, an **offensive** and a **defensive
 coordinator**, and a **head trainer**. Each is one named person, generated
 on the server from the same name pools the roster draws from, hired for 12
@@ -1994,6 +1994,78 @@ other two over, that a full roster refuses him rather than growing past the
 ceiling, that a rank pays one pack and cannot pay it twice, and that no client
 role can count its own rank or reach the generator.
 
+## Phase 12 — the long haul
+
+`career_v1` and `staff_v2`. **Measured over sixty seasons**, on the game as
+Phase 11 left it. It climbs beautifully and then cannot carry on:
+
+| season | 1 | 5 | 10 | 15 | 20 | 30 | 45 | 60 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| team overall | 69 | 80 | **81** | 75 | 73 | 74 | 76 | 71 |
+
+Three faults, all of them about the long game rather than the first ten
+seasons.
+
+### One — the roster turned over in a wave
+
+The founding roster is generated across ages 21 to 32, but the old curve
+skewed it hard toward 21. So almost nobody retired for seven seasons and then
+everybody did:
+
+| season | 1–7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15+ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| founders out | **1** | 4 | 1 | 5 | 4 | 2 | 4 | **7** | 0 |
+
+**Twenty-seven of thirty-eight founding players left inside seven seasons** —
+that is the cliff the curve falls off. Worse, their replacements were all
+signed at once too, so the wave re-formed every fourteen years for ever.
+
+Ages are now spread **evenly** across the same range, so about three men go
+every season from the first, and the roster is always part-way through
+renewing itself instead of doing it all at once.
+
+### Two — the building could never be staffed
+
+Coach Points came only from winning: two a win, five a bowl, one for the
+rival. Measured across sixty seasons that is **10.4 a season**, against a
+building where one seat at level 100 costs **540** and four seats cost 2,160
+— two hundred seasons. After sixty years of winning football the measured
+franchise had **one coach at level 99 and three empty chairs.**
+
+So **a rank now pays Coach Points as well as a pack**: 20 for the first, two
+more for every rank held after. The forty-five ranks a sixty-season franchise
+earns pay about three thousand, against the six hundred that sixty seasons of
+winning paid. Turning up is what staffs a building, and the rank is the number
+that measures turning up.
+
+### Three — firing a coach was a trap, not a choice
+
+A replacement started at **level one**, so moving on from anybody threw away
+every Coach Point you had ever spent on him. The README said so itself —
+*"which is why almost nobody will"* — and a choice nobody takes is not a
+choice.
+
+A coach now arrives at a level set by the franchise's **reputation**: half a
+level for every rank, one for every ten points of standing, capped at 60. A
+club that has been at it for years and wins its games attracts somebody who
+has done the job before. So both ways of playing work:
+
+* **a new head coach every year**, if you are bad and want to keep trying —
+  your reputation is low, the men you hire are cheap, and you lose almost
+  nothing by moving on;
+* **three or four coaches across sixty seasons**, if you are good — each
+  replacement arrives near what your reputation commands, and the years you
+  then put into him are what take him past it.
+
+Keeping one man for sixty seasons is still the best a single seat can do: the
+hire cap is 60 and a kept coach passes that inside a few years. It is simply
+no longer the only thing that is not a disaster.
+
+Report row 31 covers it. The suite walks both curves — a rank never pays less
+than the one before, a reputation never commands less than a smaller one, and
+neither runs off its cap — and asserts that the founding ages come from the
+published range rather than the old skew.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
@@ -2006,6 +2078,7 @@ facilities, the reports and the signings use it), and
 simulator, the offseason, the market, the conference, injuries, the bowl,
 trades and the staff are each versioned (`sim_v1`, `offseason_v1`,
 `market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
-`staff_v1`) so a retuned one is a new version and old boxes, old reports,
+`staff_v2`, `scouting_v1`, `development_v1`, `league_v1`, `rank_v1`, `packs_v1`,
+`career_v1`) so a retuned one is a new version and old boxes, old reports,
 old classes, old tables, old deals and old coaches stay true to the rules
 they were played under.

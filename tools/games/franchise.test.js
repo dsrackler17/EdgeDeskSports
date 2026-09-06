@@ -1429,8 +1429,8 @@ fresh();
   has(README, 'legality, not fairness', 'and what the server checks about a deal');
 
   /* ═══ 17. THE COACHING STAFF (PHASE 8) ═══════════════════════════════════ */
-  eq('the staff is staff_v1 on both sides', F.STAFF_VERSION, 'staff_v1');
-  has(SQL, "'version', 'staff_v1'", 'the SQL publishes the version');
+  eq('the staff is staff_v2 on both sides', F.STAFF_VERSION, 'staff_v2');
+  has(SQL, "'version', 'staff_v2'", 'the SQL publishes the version');
   chk('a thousand levels, twelve to hire, and the SQL\'s numbers throughout',
     F.STAFF.max_level === 1000 && F.STAFF.hire_cost === 12 && F.STAFF.cost_base === 1 && F.STAFF.cost_step === 10
     && F.STAFF.specialty_every === 25 && F.STAFF.specialty_max === 10 && F.STAFF.promote_max === 100
@@ -1543,7 +1543,7 @@ fresh();
   chk('the seat cards stack on a phone and the actions meet the tap minimum',
     /\.st-grid\{display:grid/.test(FCSS) && /\.st-seat \.pc-actions \.btn\{min-height:var\(--tap\)\}/.test(FCSS));
   /* the SQL keeps its conventions on the new side */
-  ['franchise_generate_coach(uuid, text, text, integer)', 'franchise_staff_effects(uuid)',
+  ['franchise_generate_coach(uuid, text, text, integer, integer)', 'franchise_staff_effects(uuid)',
    'franchise_staff_json(uuid, text)', 'franchise_staff_specialties(text, text, integer)']
     .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role',
       SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
@@ -1574,7 +1574,10 @@ fresh();
     /21\. THE COACHING STAFF/.test(SQLTEST)
     && /the sum of the steps is the price of the climb/.test(SQLTEST)
     && /the curve never falls, and never passes the cap/.test(SQLTEST)
-    && /the man who replaces him starts at one/.test(SQLTEST));
+    /* staff_v2 replaced "starts at one" with "starts at what reputation
+       commands" — the claim that survives is that the level was HIS, and
+       does not carry over from the man fired */
+    && /the man who replaces him starts at what reputation commands, not at the fired man/.test(SQLTEST));
   has(README, 'staff_v1', 'the README documents the staff');
   has(README, 'Every tenfold in level is another third of the\ncap', 'and the effect curve');
   has(README, 'a horizon rather than a plan', 'and is honest about the thousand');
@@ -2036,11 +2039,18 @@ fresh();
   has(SQL, "'pack_version', 'packs_v1'", 'and on the packs');
 
   /* THE LOAD-BEARING ONE. A pack is earned by playing and by nothing else. */
-  chk('a pack costs no currency and no money: opening spends nothing',
-    /create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/.test(SQL)
-    && !/franchise_credit\([^)]*'pack'/.test(SQL)
-    && !((SQL.match(/create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/) || [''])[0]
-          .match(/franchise_credit|scouting_points\s*<|team_credits\s*<|coach_points\s*</)));
+  /* Since staff_v2 a rank also PAYS Coach Points, so the function does call
+     franchise_credit — with a positive delta. The claim being defended is
+     unchanged and is the one that matters: opening a pack never costs. */
+  chk('a pack costs no currency and no money: opening spends nothing', () => {
+    const fn = (SQL.match(/create or replace function public\.franchise_pack_open[\s\S]*?\n\$\$;/) || [''])[0];
+    return fn.length > 0
+      /* no balance is ever checked against a price */
+      && !/scouting_points\s*<|team_credits\s*<|coach_points\s*</.test(fn)
+      /* and every ledger row it writes is a credit, never a debit */
+      && !/franchise_credit\([^;]*,\s*-/.test(fn)
+      && /public\.franchise_credit\(v_f, 'cp', v_cp, 'pack'/.test(fn);
+  });
   chk('and the page says so where a player can see it',
     /Nothing here can be bought|cannot be bought/.test(PACKS)
     && /no pack for sale/.test(PACKS));
@@ -2170,7 +2180,8 @@ fresh();
   chk('the report grew to thirty-one rows', /select 30, 'the rank is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 11, 'the rank and the packs'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 11);
+  chk('and the schema log records phase 11 by name',
+    /games_schema_note\('franchise', 11, 'the rank and the packs'\)/.test(SQL));
 
   /* THE BIGGEST THING THE SIXTY-SEASON RUN FOUND. The offseason compacted
      the depth chart but never re-sorted it, so every man acquired joined at
@@ -2195,6 +2206,99 @@ fresh();
   has(README, 'rank_v1', 'the README documents the rank');
   has(README, 'packs_v1', 'and the packs');
   has(README, 'earned by playing', 'and that a pack is never bought');
+
+  /* ═══ 22. THE LONG HAUL (PHASE 12) ═══════════════════════════════════════
+     Sixty seasons of measurement, on the game as Phase 11 left it. It climbs
+     to 81 by season ten and then cannot carry on. Three faults, all about the
+     long game: the roster turned over in a WAVE, the building could never be
+     STAFFED, and a replacement coach started at level one so firing anybody
+     was a trap rather than a choice. */
+
+  eq('careers are versioned', F.CAREER_VERSION, 'career_v1');
+  eq('and the staff moved to its second version', F.STAFF_VERSION, 'staff_v2');
+  has(SQL, "'version', 'career_v1'", 'the SQL agrees on careers');
+  has(SQL, "'version', 'staff_v2'", 'and on the staff');
+
+  /* ONE: the wave. Twenty-seven of thirty-eight founding players used to
+     retire inside seasons 8 to 14, and barely anybody before. */
+  chk('the founding roster is spread evenly across its ages, not skewed young', () => {
+    const gen = (SQL.match(/create or replace function public\.franchise_generate_roster[\s\S]*?\n\$\$;/) || [''])[0];
+    return gen.length > 0
+      && /age := \(public\.franchise_career\(\)->>'found_age_min'\)::int/.test(gen)
+      && /floor\(random\(\) \* \(\(public\.franchise_career\(\)->>'found_age_max'\)::int/.test(gen)
+      && !/age := 21 \+ floor\(power\(random\(\)/.test(gen);
+  });
+  chk('and the range it spreads across is the published one',
+    new RegExp("'found_age_min', " + F.CAREER.found_age_min
+      + ", 'found_age_max', " + F.CAREER.found_age_max).test(SQL)
+    && new RegExp("'retire_age', " + F.CAREER.retire_age + ",").test(SQL));
+  chk('the retirement rule is still the one the table publishes',
+    new RegExp("retire := age_new >= " + F.CAREER.retire_age
+      + " or \\(age_new >= " + F.CAREER.retire_fade_age
+      + " and ovr < " + F.CAREER.retire_fade_under + "\\);").test(SQL));
+
+  /* TWO: the building. 10.4 Coach Points a season against a seat that costs
+     540 to reach level 100 — one coach at level 99 in sixty years. */
+  chk('a rank pays the building, and pays more the further you have come', () => {
+    for (var r = 1; r < 200; r++) if (F.rankCoachPoints(r) >= F.rankCoachPoints(r + 1)) return false;
+    return F.rankCoachPoints(1) === F.STAFF.rank_cp_base
+      && F.rankCoachPoints(45) === F.STAFF.rank_cp_base + F.STAFF.rank_cp_step * 44;
+  });
+  chk('and the SQL pays it once, keyed by the rank, through the ledger',
+    /v_cp := public\.franchise_rank_coach_points\(v_rank\);/.test(SQL)
+    && /public\.franchise_credit\(v_f, 'cp', v_cp, 'pack', v_rank::text,/.test(SQL));
+  chk('the numbers are the SQL numbers',
+    new RegExp("'rank_cp_base', " + F.STAFF.rank_cp_base
+      + ", 'rank_cp_step', " + F.STAFF.rank_cp_step).test(SQL)
+    && new RegExp("'hire_level_max', " + F.STAFF.hire_level_max
+      + ", 'hire_per_rank', " + F.STAFF.hire_per_rank
+      + ", 'hire_per_standing', " + F.STAFF.hire_per_standing).test(SQL));
+  /* forty-five ranks over sixty seasons should pay for a building, which is
+     the whole point of the change */
+  chk('forty-five ranks pay several thousand Coach Points', () => {
+    var total = 0;
+    for (var r = 1; r <= 45; r++) total += F.rankCoachPoints(r);
+    return total > 2500 && total < 4500;
+  });
+
+  /* THREE: firing was a trap. "which is why almost nobody will" was in the
+     README as a feature; a choice nobody takes is not a choice. */
+  chk('a new coach arrives at what the reputation commands, not at level one', () =>
+    F.staffHireLevel(1, 0) === 1 && F.staffHireLevel(45, 60) === 29
+    && F.staffHireLevel(9999, 100) === F.STAFF.hire_level_max);
+  chk('reputation never lowers what it commands, and never runs off the cap', () => {
+    for (var r = 1; r < 300; r++) if (F.staffHireLevel(r, 50) > F.staffHireLevel(r + 1, 50)) return false;
+    for (var st = 0; st < 100; st++) if (F.staffHireLevel(20, st) > F.staffHireLevel(20, st + 1)) return false;
+    return [-9, 0, 1, 9999].every(n => F.staffHireLevel(n, 50) >= 1 && F.staffHireLevel(n, 50) <= F.STAFF.hire_level_max)
+      && [-9, 0, 200].every(n => F.staffHireLevel(20, n) >= 1 && F.staffHireLevel(20, n) <= F.STAFF.hire_level_max);
+  });
+  chk('the hire reads the franchise\u2019s own rank and standing',
+    /v_level := public\.franchise_staff_hire_level\(\s*\(public\.franchise_rank_report\(v_f\)->>'rank'\)::int, f\.standing\);/.test(SQL)
+    && /franchise_generate_coach\(v_f, p_seat,[\s\S]{0,160}v_season, v_level\);/.test(SQL));
+  chk('and the old four-argument coach generator is dropped, not left beside the new one',
+    /drop function if exists public\.franchise_generate_coach\(uuid, text, text, integer\);/.test(SQL)
+    && /revoke all on function public\.franchise_generate_coach\(uuid, text, text, integer, integer\) from public, anon, authenticated;/.test(SQL));
+  /* keeping one man is still the best a single seat can do — the point is
+     that firing is no longer a disaster, not that churning is now optimal */
+  chk('keeping a coach still beats replacing him, by a long way', () => {
+    /* a coach kept and levelled to 100 costs 540 CP; a replacement at the
+       very top of what reputation commands arrives at 60 */
+    return F.STAFF.hire_level_max < 100
+      && F.staffCostBetween(1, 100) > F.staffCostBetween(F.STAFF.hire_level_max, 100);
+  });
+
+  ['franchise_career()', 'franchise_rank_coach_points(integer)', 'franchise_staff_hire_level(integer, integer)']
+    .forEach(f => chk('the table ' + f.split('(')[0] + ' is open to read',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  chk('the report grew to thirty-two rows', /select 31, 'the long haul is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 12, 'the long haul: careers and a building you can staff'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 12);
+
+  has(README, 'career_v1', 'the README documents careers');
+  has(README, 'staff_v2', 'and the second staff version');
+  has(README, 'in a wave', 'and names the thing that was wrong');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });
