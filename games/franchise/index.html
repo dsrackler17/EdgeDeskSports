@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906f">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906f">
+<link rel="stylesheet" href="/games/games.css?v=20260906i">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906i">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906f"></script>
-<script src="/games/lib/scoring.js?v=20260906f"></script>
-<script src="/games/lib/challenge.js?v=20260906f"></script>
-<script src="/games/lib/research_state.js?v=20260906f"></script>
-<script src="/games/lib/attribution.js?v=20260906f"></script>
-<script src="/games/lib/store.js?v=20260906f"></script>
-<script src="/games/lib/dynasty.js?v=20260906f"></script>
-<script src="/games/lib/social.js?v=20260906f"></script>
-<script src="/games/lib/auth.js?v=20260906f"></script>
-<script src="/games/lib/franchise.js?v=20260906f"></script>
-<script src="/games/games.js?v=20260906f"></script>
+<script src="/games/lib/week.js?v=20260906i"></script>
+<script src="/games/lib/scoring.js?v=20260906i"></script>
+<script src="/games/lib/challenge.js?v=20260906i"></script>
+<script src="/games/lib/research_state.js?v=20260906i"></script>
+<script src="/games/lib/attribution.js?v=20260906i"></script>
+<script src="/games/lib/store.js?v=20260906i"></script>
+<script src="/games/lib/dynasty.js?v=20260906i"></script>
+<script src="/games/lib/social.js?v=20260906i"></script>
+<script src="/games/lib/auth.js?v=20260906i"></script>
+<script src="/games/lib/franchise.js?v=20260906i"></script>
+<script src="/games/games.js?v=20260906i"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -284,6 +284,38 @@
      VOLUME of your Price It; the grade is the ACCURACY, and it is the thing
      that decides what next season's draft class looks like. They are
      different numbers and the page must not let them read as one. */
+  /* WHERE THE FRANCHISE STANDS (Phase 10, league_v1). Until this phase every
+     opponent was rated from your own team overall, so a better roster could
+     not win one extra game. The clubs have ratings of their own now, and this
+     is the number that decides which of them you play. */
+  function standingRow(h){
+    var st=(h&&h.standing)||null;
+    if(!st)return '';
+    var v=st.value|0;
+    return '<div class="lg-stand"><div class="k">Where you stand</div>'
+      +'<div class="v">'+esc(FR.standingName(v))+' · '+esc(v)+'</div>'
+      +'<div class="lg-bar"><i style="width:'+esc(Math.max(2,Math.min(100,v)))+'%"></i></div>'
+      +'<div class="m">Next season is drawn around clubs rating about <b>'+esc(st.facing|0)+'</b>. '
+      +esc(st.above|0)+' of the league still rate above you'
+      +(st.top?(' · the best is <b>'+esc(st.top)+'</b>'):'')+'.<br>'
+      +'Beating a club above you moves this most; losing to one below it costs most. Nothing else moves it.</div></div>';
+  }
+
+  /* THE DEVELOPMENT WINDOW (Phase 10). It is open only between a completed
+     season and the next one, and starting the next one shuts it — so the HQ
+     has to say so while it is open, or the places are simply lost. */
+  function devRow(h){
+    var d=(h&&h.development)||null;
+    if(!d||!d.open)return '';
+    var left=Math.max(0,(d.slots|0)-(d.used|0));
+    if(left<=0)return '';
+    return '<div class="res-scout" style="border-left-color:var(--val)"><div class="k">The offseason is open</div>'
+      +'<div class="v" style="color:var(--val)">'+esc(left)+' development place'+(left===1?'':'s')+'</div>'
+      +'<div class="m">A program raises a player’s ceiling, and what he gains depends on the season he just played. '
+      +'<b>Starting the next season shuts the window</b> and the places do not carry over. '
+      +'<a href="/games/development/">Open the program</a></div></div>';
+  }
+
   function scoutRow(h){
     var sc=(h&&h.scouting)||null;
     if(!sc)return '';
@@ -307,6 +339,8 @@
       +'<div class="tc"><div class="k">Credits</div><div class="v">'+fmt(res.team_credits)+'</div></div>'
       +'<div class="cp"><div class="k">Coach</div><div class="v">'+fmt(res.coach_points)+'</div></div>'
       +'</div>'
+      +devRow(h)
+      +standingRow(h)
       +scoutRow(h)
       +'<div class="res-note"><b>Scouting Points</b> come from Price It accuracy and buy scouting reports on the <a href="/games/market/">draft class</a>. <b>Team Credits</b> come from playing and build facilities or sign free agents. '
       +'<b>Coach Points</b> come from Head-to-Head and franchise challenges. XP levels the franchise. None of them can be bought.</div>';

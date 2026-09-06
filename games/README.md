@@ -1771,6 +1771,138 @@ the overalls are identical and only the potential differs, and checks at
 **every width from 4 to 20** that the band contains the true overall and is
 exactly as wide as it says.
 
+## Phase 10 — the development program, and a league that stands still
+
+`development_v1` and `league_v1`. **Two halves of one problem, measured before
+either was written.**
+
+Ten seasons of a franchise doing everything right — every facility maxed,
+every pick used, every free agent signed, every prospect scouted, four coaches
+hired and promoted:
+
+| | season 1 | season 4 | season 10 |
+| --- | --- | --- | --- |
+| team overall | 69 | 71 | **71** |
+| record | 6-3 | 4-4 | 6-3 |
+| facilities | 6 | **12 (maxed)** | 12 |
+| achievements | 10 | 14 | **15 of 37** |
+| Scouting Points banked | 600 | 2,550 | **6,050** |
+| SP actually spent | 200 | 650 | **1,550** |
+
+Ten years of perfect play was worth two points of team overall. There were two
+reasons, and fixing either alone would have done nothing.
+
+### One: a player could not be made better than he was born
+
+`franchise_offseason()` claws back any growth past a man's `potential`, and
+potential itself only ever holds the line. By season ten **76% of the roster
+sat exactly at its ceiling**, with 1.43 points of headroom left across the
+whole squad. The Training Center and the head trainer do not raise the wall;
+they get a man to it sooner.
+
+And the wall was low and the same for everybody. Of 425 players generated
+across twenty franchise-seasons: none with 90 potential, two with 85, the
+generator's best 83. **The finest 42 players it could ever roll would have
+rated 78.** There was no great team to reach.
+
+### Two: the league was a rubber band
+
+```sql
+oovr := greatest(45, least(95, round(ovr + d + (random() * 2 - 1))));
+```
+
+Every opponent was rated **from your own team overall**, plus a fixed offset
+from `[-6,-3,-1,0,1,2,4]`. Get better and the league got better with you,
+exactly in step. A twelve-season A/B — four franchises an arm on identical
+seeds — found a development program worth +2.8 team overall and **not one
+extra win**. It could not have been otherwise.
+
+### The program — `development_v1`
+
+An offseason ritual over your own roster, paid for with the currency nobody
+could spend.
+
+* **The window** opens when a season completes and shuts when the next one
+  starts — the one moment the season just played is still on the books.
+  Finish, look at who played, invest, advance. Starting the next season closes
+  it and the places do not carry over.
+* **The places** are two, plus one for every level of the Training Center — so
+  two to five a year. Scarcity is the whole decision: not *can I afford it*
+  but **who**.
+* **The grade** is what he did on the field, 0–100, read straight out of the
+  boxes the simulator already wrote — nothing was added to the hot path:
+  **40** for the games he was available for, **30** for the team's record in
+  them, **30** for his impact against **par** for his position and depth. Par
+  is published and was measured off four thousand real box lines. Where the
+  box score does not measure a man — the offensive line, the punter — impact
+  sits at par by construction and his grade is availability and the team's
+  record, which is the honest way to grade a lineman. **Play your young men
+  and they develop; bench them and they do not.**
+* **What it buys** is **potential, never overall**. A program does not make a
+  nineteen-year-old better today; it earns him the right to grow, and he still
+  grows into it through the same offseason curve — so the Training Center and
+  the trainer become *more* valuable, not less.
+* **The limits**: +1 to +6 by grade, full value to 26, half from 27 to 29,
+  nothing at 30. A lifetime cap of **+15** a man, about three good programs,
+  so an 83-potential prospect can become a 98 and nobody is remade in one
+  offseason.
+* **The price** is 100 Scouting Points for a man never developed and 15 more
+  for every point already given him.
+
+### The league — `league_v1`
+
+The twenty-four clubs get ratings of their own, from **54 to 88**. They are
+published, absolute, and have nothing to do with you.
+
+* **Your standing** is where you sit, 0 to 100, moved by **results and nothing
+  else**. Beating a club above you is worth several points; beating one well
+  below is worth one. Losing to a club above you costs one; losing to one
+  below costs several. The rival counts **exactly** double either way — the
+  figure is rounded before it is doubled, so the promise holds. It starts at
+  **40** — the bottom third, among clubs a new franchise can beat.
+* **Each season's slate** is drawn around your standing: most of it near you,
+  one club well above, one well below, the rival last. Climb and it hardens;
+  fall and it softens. That is the protection the rubber band used to give,
+  kept — without the part that made improvement pointless. **Within a season
+  the clubs do not move, and a better roster beats them.**
+
+Measured on the built thing, rosters pinned at fixed ratings:
+
+Wins out of eight, four franchises a cell:
+
+| standing | faces | team 60 | team 70 | team 80 | team 90 |
+| --- | --- | --- | --- | --- | --- |
+| 20 | 61.8 | 4.5 | 5.5 | 7.8 | 8.0 |
+| 40 | 64.6 | 3.8 | **5.8** | 7.8 | 7.8 |
+| 60 | 69.5 | 2.5 | 3.3 | 6.3 | 7.8 |
+| 80 | 75.9 | 0.5 | 2.3 | **5.8** | 6.8 |
+| 100 | 79.9 | 0.5 | 1.5 | 4.3 | **6.8** |
+
+Across a row a better team wins more — that row was **flat by construction**
+before. Down a column, climbing makes it harder. A new franchise (a 70 team at
+standing 40) has a winning season at 5.8; the same roster at standing 60 wins
+3.3 and has to improve. Each rung asks for about **ten points of roster**,
+which is roughly what a career of development delivers, and even a 90 team
+does not go undefeated at the top.
+
+The slate deliberately sits a little *below* where you stand: measured with
+pinned rosters, a team playing clubs of its own rating wins about four of
+nine, not half, and without that offset a franchise ratchets into a difficulty
+it cannot answer and loses from then on. An earlier tuning did exactly that —
+fifteen seasons climbed to standing 70 with a 77 roster and then won one game
+a year.
+
+That is the loop: **develop your players → win more → climb the league → face
+better clubs → and the ceiling you raised is what lets you beat them.**
+
+Report rows 28 and 29 cover it. The SQL suite walks both sets of curves step
+by step, plays a season out and proves a starter who played every game grades
+above a man who never dressed, that a program moves potential and leaves
+overall exactly where it was, that the window is shut while a season is under
+way, that the places run out, and that no client role can grade a season,
+count its own places, draw its own schedule, or write itself a standing or a
+ceiling.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on

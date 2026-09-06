@@ -60,7 +60,8 @@
       'conferences and playoffs',
       'injuries, the bowl and trades',
       'the coaching staff',
-      'the scouting department'
+      'the scouting department',
+      'the development program and the league'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -921,6 +922,84 @@
     return (seat.grade || staffGrade(seat.level)) + ' · level ' + (seat.level | 0) + ' of ' + STAFF.max_level
       + (seat.effect ? ' · +' + seat.effect + (s.key === 'trainer' ? '' : ' ' + (s.key === 'defense' ? 'defense' : s.key === 'offense' ? 'offense' : 'late game')) : '');
   }
+  /* ── THE DEVELOPMENT PROGRAM AND THE LEAGUE (Phase 10) ───────────────────
+     Measured before it was written. Over ten seasons of a franchise doing
+     everything right, team overall went 69 → 71 and the record never moved,
+     for two reasons that had to be fixed together:
+
+       a player's ceiling was set at birth and nothing could raise it — 76%
+       of a season-ten roster sat exactly at its potential, and the finest 42
+       players the generator could ever roll would have rated 78;
+
+       and every opponent was rated FROM YOUR OWN TEAM OVERALL, so the league
+       was a rubber band and a better roster could not win one extra game.
+
+     So: a program that raises a man's ceiling, paid for with the Scouting
+     Points nobody could spend, graded on the football he actually played —
+     and twenty-four clubs with ratings of their own to spend it against.
+
+     Everything here is presentation and pinned to the SQL by
+     tools/games/franchise.test.js. THE SERVER GRADES, LIFTS AND SCHEDULES. */
+  var DEVELOPMENT_VERSION = 'development_v1';
+  var DEVELOPMENT = {
+    slots_base: 2, cap: 15, cost_base: 100, cost_step: 15,
+    lift_base: 1, lift_span: 5, age_full: 26, age_half: 29,
+    grade: { available: 40, record: 30, impact: 30 }
+  };
+  /* what the next program costs a man who has already been given this much */
+  function devCost(developed) {
+    var d = Math.max(0, Math.min(DEVELOPMENT.cap, developed | 0));
+    return DEVELOPMENT.cost_base + DEVELOPMENT.cost_step * d;
+  }
+  /* what a grade is worth at an age: +1 to +6, halved from 27, nothing at 30 */
+  function devLift(grade, age) {
+    var g = Math.max(0, Math.min(100, grade | 0));
+    var raw = DEVELOPMENT.lift_base + Math.round(DEVELOPMENT.lift_span * g / 100);
+    if ((age | 0) > DEVELOPMENT.age_half) return 0;
+    if ((age | 0) > DEVELOPMENT.age_full) return Math.max(1, Math.floor(raw / 2));
+    return raw;
+  }
+  /* how many places an offseason has: two, and one per Training Center level */
+  function devSlots(training) { return DEVELOPMENT.slots_base + Math.max(0, Math.min(3, training | 0)); }
+  /* "Ever-present on a winning team" — what a grade means, in words */
+  function devGradeLine(g) {
+    g = obj(g);
+    var n = g.grade | 0;
+    return (n >= 80 ? 'A season that earns the most a program can give'
+      : n >= 60 ? 'A good season'
+      : n >= 40 ? 'A part season'
+      : n >= 20 ? 'Barely played' : 'He did not play')
+      + ' · ' + (g.played | 0) + ' of ' + (g.games | 0) + ' games';
+  }
+
+  var LEAGUE_VERSION = 'league_v1';
+  var LEAGUE = { standing_start: 40, standing_min: 0, standing_max: 100,
+                 win_base: 2, loss_base: -3, edge_per_point: 0.20, rival_multiplier: 2 };
+  /* what a standing faces: the rating at the middle of the slate it draws */
+  function leagueFacing(standing) {
+    return 48 + Math.round(Math.max(0, Math.min(100, standing | 0)) * 0.34);
+  }
+  /* the gap between where you stand and what a club rates */
+  function leagueGap(standing, strength) { return (strength | 0) - leagueFacing(standing); }
+  /* what a result moves the standing — the same arithmetic the server does */
+  /* ROUNDED FIRST, THEN DOUBLED — the same order the SQL uses, so a rival
+     result is exactly twice an ordinary one rather than twice-then-rounded. */
+  function standingDelta(result, standing, strength, rival) {
+    var gap = leagueGap(standing, strength), n;
+    if (result === 'W') n = Math.max(1, LEAGUE.win_base + LEAGUE.edge_per_point * gap);
+    else if (result === 'L') n = Math.min(-1, LEAGUE.loss_base + LEAGUE.edge_per_point * gap);
+    else return 0;
+    return Math.round(n) * (rival ? LEAGUE.rival_multiplier : 1);
+  }
+  /* where a standing puts you, in words */
+  function standingName(standing) {
+    var n = Math.max(0, Math.min(100, standing | 0));
+    return n >= 85 ? 'Among the best in the league'
+      : n >= 65 ? 'In the upper half'
+      : n >= 40 ? 'Mid-table'
+      : n >= 20 ? 'Lower half' : 'Bottom of the league';
+  }
+
   /* ── THE SCOUTING DEPARTMENT (Phase 9) ───────────────────────────────────
      What reading real football well is worth. The average Price It score
      over the last twenty VERIFIED pricings, pulled toward a neutral 50 in
@@ -1282,6 +1361,15 @@
   /* THE COACHING STAFF (Phase 8). One read for the building; hire, promote
      and fire each send a seat and the identity and nothing else. Never
      queued — spending Coach Points must see its answer. */
+  /* THE DEVELOPMENT PROGRAM (Phase 10). The board is one read; a program
+     sends a player id and the identity and nothing else — the server grades
+     the season out of its own boxes, decides the lift, prices it and takes
+     the Scouting Points. Never queued: spending must see its answer. */
+  function development() { return rpc('franchise_development_board', withSecret({})); }
+  function develop(player) {
+    return rpc('franchise_develop', withSecret({ p_player: String(player || '') })).then(moveThen);
+  }
+
   function staff() { return rpc('franchise_staff_board', withSecret({})); }
   function staffHire(seat) {
     return rpc('franchise_staff_hire', withSecret({ p_seat: String(seat || '') })).then(moveThen);
@@ -1471,6 +1559,11 @@
     tradeRespond: tradeRespond, tradeWithdraw: tradeWithdraw,
     SCHEMA: SCHEMA, SCHEMA_PHASES: SCHEMA_PHASES, SCHEMA_FILES: SCHEMA_FILES,
     schema: schema, schemaGap: schemaGap,
+    development: development, develop: develop,
+    DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
+    devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
+    LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,
+    standingDelta: standingDelta, standingName: standingName,
     SCOUTING_VERSION: SCOUTING_VERSION, SCOUTING: SCOUTING, scoutGradeOf: scoutGradeOf, scoutNext: scoutNext,
     scoutBand: scoutBand, scoutCost: scoutCost, scoutLift: scoutLift, scoutScore: scoutScore, scoutLine: scoutLine,
     STAFF_VERSION: STAFF_VERSION, STAFF: STAFF, staffCost: staffCost, staffCostBetween: staffCostBetween,

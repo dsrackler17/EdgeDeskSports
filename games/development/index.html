@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Development | EdgeDesk Games</title>
+<meta name="description" content="The offseason where you make players better than they were born. A few places a year, paid in Scouting Points, and what a man gains depends on the football he actually played. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/development">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/development">
+<meta property="og:title" content="The development program — EdgeDesk Games">
+<meta property="og:description" content="A few places each offseason to raise a player's ceiling. What he gains depends on the season he just played.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The development program — EdgeDesk Games">
+<meta name="twitter:description" content="A few places each offseason to raise a player's ceiling. What he gains depends on the season he just played.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260906i">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906i">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Development</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Opening the offseason</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260906i"></script>
+<script src="/games/lib/scoring.js?v=20260906i"></script>
+<script src="/games/lib/challenge.js?v=20260906i"></script>
+<script src="/games/lib/research_state.js?v=20260906i"></script>
+<script src="/games/lib/attribution.js?v=20260906i"></script>
+<script src="/games/lib/store.js?v=20260906i"></script>
+<script src="/games/lib/dynasty.js?v=20260906i"></script>
+<script src="/games/lib/social.js?v=20260906i"></script>
+<script src="/games/lib/auth.js?v=20260906i"></script>
+<script src="/games/lib/franchise.js?v=20260906i"></script>
+<script src="/games/games.js?v=20260906i"></script>
+<script>
+/* STALE SCRIPT GUARD — the same belt every franchise page wears. */
+(function(){
+  var need=['EDFranchise.development','EDFranchise.develop','EDFranchise.devCost',
+            'EDFranchise.devLift','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc,fmt=FR.fmt;
+  var READY=G.boot('development');
+  var BOARD=null;
+
+  function teamName(f){f=f||{};return ((f.city||'')+' '+(f.name||'')).trim();}
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Development</div>'
+      +'<h1>Make a player better than he was born.</h1>'
+      +'<p>Every player arrives with a ceiling, and until you develop him that ceiling is the end of him. '
+      +'A development program raises it. You get a few places each offseason and pay for them in the '
+      +'<b>Scouting Points</b> your reads in Price It earn.</p>'
+      +'<ul class="fo-list"><li>What a man gains depends on <b>the season he just played</b> — the games he was available for, '
+      +'how the team did in them, and what he did on the field.</li>'
+      +'<li>A program raises <b>potential, never overall</b>. He earns the right to grow; the offseason is where he grows into it.</li>'
+      +'<li>Full value to '+FR.DEVELOPMENT.age_full+', half to '+FR.DEVELOPMENT.age_half+', nothing after. '
+      +'A man can be given <b>+'+FR.DEVELOPMENT.cap+'</b> in a career.</li>'
+      +'<li>The window opens when a season ends and closes when the next one starts.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=development" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Scouting Points are earned by playing and cannot be bought</div></div>';
+    rooms.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'development',game_type:'franchise'});});
+  }
+
+  /* ---- the offseason ------------------------------------------------------ */
+  function renderStage(b){
+    var snap=FR.snapshot()||{},f=snap.franchise||{},res=b.resources||{},sl=b.slots||{},se=b.season||{};
+    var eligible=(b.players||[]).filter(function(p){return p.eligible&&!p.done;}).length;
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Development · '+esc(se.label||'')+'</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city||'')+' · '+esc(f.abbr||'')+'</div>'
+      +'<div class="hq-name">'+esc(f.name||'')+'</div>'
+      +'<div class="hq-line">'+(b.open
+          ? esc(sl.left|0)+' of '+esc(sl.of|0)+' place'+((sl.of|0)===1?'':'s')+' left · '+esc(eligible)+' eligible'
+          : 'The window is shut')+'</div></div>'
+      +'<div class="hq-rec">'+esc(sl.left|0)+'<span class="s">place'+((sl.left|0)===1?'':'s')+'</span></div></div>'
+      +'<div class="mk-sum">'
+      +'<div class="sp"><div class="k">Scouting</div><div class="v">'+esc(fmt(res.scouting_points))+'<small>a place from '+esc(FR.devCost(0))+' SP</small></div></div>'
+      +'<div><div class="k">Places</div><div class="v">'+esc(sl.of|0)+'<small>'+esc(sl.base|0)+' + '+esc(sl.training|0)+' Training Center</small></div></div>'
+      +'<div><div class="k">Season</div><div class="v">'+esc(se.wins|0)+'–'+esc(se.losses|0)+'<small>'+esc(se.label||'')+'</small></div></div>'
+      +'<div><div class="k">Cap</div><div class="v">+'+esc(FR.DEVELOPMENT.cap)+'<small>a man, for a career</small></div></div>'
+      +'</div>'
+      +(b.open
+        ? '<div class="ftp" style="margin-top:12px">A program raises <b>potential, never overall</b> — he earns the right to grow, and the offseason is where he grows into it. '
+          +'Starting the next season closes this window and the places do not carry over.</div>'
+        : '<div class="ftp" style="margin-top:12px">The window opens when a season <b>ends</b> and shuts when the next one starts. '
+          +'Play out the season on <a href="/games/gameday/">Game Day</a> and come back.</div>');
+  }
+
+  /* one player: what he did, what it would cost, what it would give */
+  function manCard(p,b){
+    var g=p.grade||{},gr=g.grade|0;
+    var cls=p.done?' pc-scouted':'';
+    var top='<div class="pc-top"><span class="pc-pos">'+esc(p.position)+(p.depth>1?('<sub>'+esc(p.depth)+'</sub>'):'')+'</span>'
+      +'<span class="pc-num">'+esc(p.age)+' yrs</span>'
+      +(p.done?'<span class="pc-tag">Developed</span>':p.capped?'<span class="pc-tag off">At the cap</span>':'')
+      +(p.developed>0?'<span class="pc-rar">+'+esc(p.developed)+' given</span>':'')+'</div>';
+    var body='<div class="pc-ovr"><b>'+esc(p.overall)+'</b><span>OVR</span></div>'
+      +'<div class="pc-name">'+esc(p.name)+'</div>'
+      +'<div class="pc-arch">ceiling <b>'+esc(p.potential)+'</b> · '+esc(FR.DEV_TIERS[p.dev_tier]||p.dev_tier||'')+'</div>'
+      +'<div class="dv-grade"><div class="dv-bar"><i style="width:'+esc(Math.max(2,gr))+'%"></i></div>'
+      +'<div class="dv-line"><b>'+esc(gr)+'</b> · '+esc(FR.devGradeLine(g))+'</div></div>';
+    var why='';
+    if(!b.open) why='The window is shut.';
+    else if(p.done) why='Already developed this offseason.';
+    else if(p.capped) why='He has had everything a program can give.';
+    else if(p.age>FR.DEVELOPMENT.age_half) why='He is '+esc(p.age)+'; a program does nothing past '+esc(FR.DEVELOPMENT.age_half)+'.';
+    else if(!p.affordable) why=esc(p.cost)+' SP needed · '+esc(fmt((b.resources||{}).scouting_points))+' on hand · <a href="/games/price-it/">earn more in Price It</a>';
+    else if((b.slots||{}).left<=0) why='No places left this offseason.';
+    var acts='<div class="pc-actions">'
+      +(why?('<span class="pc-line">'+why+'</span>')
+           :('<button class="btn btn-go" type="button" data-dev="'+esc(p.id)+'" data-name="'+esc(p.name)+'">'
+             +'Develop · '+esc(p.cost)+' SP · <b>+'+esc(p.lift)+'</b> ceiling</button>'))
+      +'</div>';
+    return '<div class="pc'+cls+'" data-player="'+esc(p.id)+'">'+top+body+acts+'</div>';
+  }
+
+  function histRow(h){
+    var d=h.detail||{};
+    return '<li><span class="k">+'+esc(d.lift)+'</span><span class="o"><b>'+esc(d.name||'')+'</b><small>'
+      +esc(d.position||'')+' · grade '+esc(d.grade)+' · Season '+esc(d.season)+' · ceiling '+esc(d.potential)
+      +'</small></span><span class="r">-'+esc(d.cost)+' SP</span></li>';
+  }
+
+  function renderBoard(b,fresh){
+    BOARD=b;
+    renderStage(b);
+    var men=(b.players||[]).slice().sort(function(x,y){
+      if(!!x.done!==!!y.done)return x.done?1:-1;
+      if(!!x.eligible!==!!y.eligible)return x.eligible?-1:1;
+      return ((y.grade&&y.grade.grade)|0)-((x.grade&&x.grade.grade)|0);
+    });
+    rooms.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>Your roster</h2><span class="m">'+esc(FR.DEVELOPMENT_VERSION)+'</span></div>'
+      +(men.length?'<div class="pc-grid">'+men.map(function(p){return manCard(p,b);}).join('')+'</div>'
+        :'<div class="card"><div class="empty">No players yet.</div></div>')
+      +'<div class="ftp" style="margin-top:10px">The grade is <b>'+esc(FR.DEVELOPMENT.grade.available)+'</b> for the games he was available for, '
+      +'<b>'+esc(FR.DEVELOPMENT.grade.record)+'</b> for how the team did in them and <b>'+esc(FR.DEVELOPMENT.grade.impact)+'</b> for what he did on the field, '
+      +'against par for his position and place on the chart. A lineman is graded on the first two, which is the honest way to grade a lineman. '
+      +'Play your young men and they develop; leave them on the bench and they do not.</div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>On the record</h2><span class="m">last '+esc((b.history||[]).length)+'</span></div><div class="card">'
+      +((b.history||[]).length?'<ul class="mk-hist">'+b.history.map(histRow).join('')+'</ul>'
+        :'<div class="empty">No player developed yet.</div>')
+      +'</div></div>';
+    if(fresh)G.track('development_view',{open:!!b.open,slots:(b.slots||{}).of|0,used:(b.slots||{}).used|0,game_type:'franchise'});
+    rooms.querySelectorAll('[data-dev]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var id=btn.getAttribute('data-dev'),name=btn.getAttribute('data-name');
+        btn.disabled=true;btn.textContent='Working…';
+        FR.develop(id).then(function(r){
+          if(!r.ok){G.toast(r.message||'That did not go through');btn.disabled=false;return load(false);}
+          var d=r.data||{};
+          G.track('player_developed',{player:id,lift:d.lift,cost:d.cost,grade:(d.grade||{}).grade,game_type:'franchise'});
+          (d.achievements||[]).forEach(function(a){G.track('achievement_unlocked',{achievement:a,placement:'development'});});
+          G.toast(name+' · +'+(d.lift|0)+' ceiling');
+          G.paintFranchise();
+          load(false);
+        });
+      });
+    });
+  }
+
+  function load(fresh){
+    return FR.development().then(function(r){
+      if(r.ok&&r.data)return renderBoard(r.data,fresh);
+      if(r.status===404||r.error==='not_configured')return renderEmpty('not_deployed');
+      return renderEmpty(null);
+    });
+  }
+
+  /* ASK THE SERVER, don't trust a cached snapshot. A device that has a
+     franchise but no snapshot yet — a fresh browser, cleared storage — would
+     otherwise be shown the founding page for a team it already owns. A null
+     board is the honest "no franchise". */
+  READY.then(function(){ return load(true); });
+})();
+</script>
+</body>
+</html>

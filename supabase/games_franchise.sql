@@ -1855,10 +1855,9 @@ $$;
 create or replace function public.franchise_schedule_season(p_franchise uuid, p_number integer, p_now timestamptz default now())
 returns integer language plpgsql security definer set search_path = public, pg_temp as $$
 declare
-  f public.franchises%rowtype; s public.franchise_seasons%rowtype; ovr numeric;
-  keys text[]; k text; w integer; offsets integer[] := array[-6, -3, -1, 0, 1, 2, 4];
-  i integer; j integer; tmp integer; o public.franchise_opponents%rowtype;
-  oovr integer; d integer; spread integer; home boolean; wk text; opens timestamptz; made integer := 0;
+  f public.franchises%rowtype; s public.franchise_seasons%rowtype;
+  keys text[]; k text; w integer; i integer; o public.franchise_opponents%rowtype;
+  oovr integer; spread integer; home boolean; wk text; opens timestamptz; made integer := 0;
 begin
   select * into f from public.franchises where id = p_franchise for update;
   if not found then raise exception 'no franchise' using errcode = '22023'; end if;
@@ -1868,7 +1867,6 @@ begin
     return 0;
   end if;
   perform setseed(public.franchise_seed_float(f.seed || ':season:' || p_number));
-  ovr := (public.franchise_team_rating(p_franchise)->>'overall')::numeric;
 
   -- the rival, once
   if f.rival_key is null then
@@ -1877,20 +1875,46 @@ begin
     f.rival_key := k;
   end if;
 
-  -- the other clubs, distinct, and the offsets shuffled
-  select array_agg(key) into keys
-    from (select key from public.franchise_opponents where key <> f.rival_key order by random() limit s.weeks - 1) q;
-  for i in reverse array_length(offsets, 1)..2 loop
-    j := 1 + floor(random() * i)::int;
-    tmp := offsets[i]; offsets[i] := offsets[j]; offsets[j] := tmp;
+  -- THE SLATE, DRAWN AROUND YOUR STANDING (league_v1). Before this phase the
+  -- opponents were rated from your own team overall, which meant a better
+  -- roster could not win a single extra game. Now the clubs have ratings of
+  -- their own and the schedule picks WHICH clubs by where you stand: most of
+  -- the slate near you, one well above to measure yourself against, one well
+  -- below, and the rival last. Climb and it hardens; fall and it softens.
+  select array_agg(q.ck) into keys from (
+    select c.key as ck from public.franchise_opponents c
+     where c.key <> f.rival_key
+     order by abs(public.franchise_league_gap(f.standing, c.strength))
+       + case when random() < 0.5 then 2 else 0 end, random()
+     limit greatest(1, s.weeks - 3)) q;
+  -- one club well above and one well below, so a season is not all one note
+  select array_cat(keys, coalesce(array_agg(q.ck), '{}')) into keys from (
+    select c.key as ck from public.franchise_opponents c
+     where c.key <> f.rival_key and not (c.key = any(coalesce(keys, '{}')))
+       and public.franchise_league_gap(f.standing, c.strength) > 6
+     order by public.franchise_league_gap(f.standing, c.strength), random() limit 1) q;
+  select array_cat(keys, coalesce(array_agg(q.ck), '{}')) into keys from (
+    select c.key as ck from public.franchise_opponents c
+     where c.key <> f.rival_key and not (c.key = any(coalesce(keys, '{}')))
+       and public.franchise_league_gap(f.standing, c.strength) < -6
+     order by public.franchise_league_gap(f.standing, c.strength) desc, random() limit 1) q;
+  -- anything still short (an extreme standing near the ends of the table) is
+  -- filled from whoever is nearest, so a slate is never short a club
+  for i in 1..s.weeks loop
+    exit when coalesce(array_length(keys, 1), 0) >= s.weeks - 1;
+    select array_cat(keys, coalesce(array_agg(q.ck), '{}')) into keys from (
+      select c.key as ck from public.franchise_opponents c
+       where c.key <> f.rival_key and not (c.key = any(coalesce(keys, '{}')))
+       order by abs(public.franchise_league_gap(f.standing, c.strength)), random() limit 1) q;
   end loop;
   home := random() < 0.5;
 
   for w in 1..s.weeks loop
-    if w = s.weeks then k := f.rival_key; d := 2;
-    else k := keys[w]; d := offsets[((w - 1) % array_length(offsets, 1)) + 1]; end if;
+    if w = s.weeks then k := f.rival_key; else k := keys[w]; end if;
     select * into o from public.franchise_opponents where key = k;
-    oovr := greatest(45, least(95, round(ovr + d + (random() * 2 - 1))::int));
+    -- THE CLUB'S OWN RATING, not yours. A seeded point either way so the same
+    -- club is not the same game twice, and nothing here reads team overall.
+    oovr := greatest(45, least(95, o.strength + floor(random() * 3)::int - 1));
     spread := floor(random() * 9)::int - 4;
     wk := public.games_week_key(p_now + ((w - 1) * interval '7 days'));
     opens := ((wk::date + 4)::timestamp + interval '7 hours') at time zone 'UTC';
@@ -2457,7 +2481,7 @@ declare
   f public.franchises%rowtype; s public.franchise_seasons%rowtype; g public.franchise_games%rowtype;
   v_box jsonb; pf integer; pa integer; res text; ln jsonb; econ jsonb := public.franchise_economy();
   v_key text; v_xp integer := 0; v_tc integer := 0; v_cp integer := 0; v_new text[] := '{}'; v_label text; v_done boolean := false;
-  v_kind text; v_kind_win text; v_bowl uuid;
+  v_kind text; v_kind_win text; v_bowl uuid; v_move integer; v_standing integer;
 begin
   select * into f from public.franchises where id = p_franchise for update;
   if not found then raise exception 'no franchise' using errcode = '22023'; end if;
@@ -2493,6 +2517,24 @@ begin
      set week = g.week, wins = wins + (res = 'W')::int, losses = losses + (res = 'L')::int, ties = ties + (res = 'T')::int,
          points_for = points_for + pf, points_against = points_against + pa
    where franchise_id = p_franchise and number = s.number returning * into s;
+
+  -- WHERE THIS PUTS YOU IN THE LEAGUE (league_v1). Results move the standing
+  -- and nothing else does: beating a club above you is worth several points,
+  -- beating one well below is worth almost nothing, and the rival counts
+  -- double. The standing is what next season's slate is drawn around.
+  v_move := public.franchise_standing_delta(res, f.standing,
+              coalesce((g.opponent->>'overall')::int,
+                       (select strength from public.franchise_opponents where key = g.opponent_key)),
+              g.rival);
+  if v_move <> 0 then
+    update public.franchises
+       set standing = greatest((public.franchise_league()->>'standing_min')::int,
+                        least((public.franchise_league()->>'standing_max')::int, standing + v_move)),
+           updated_at = p_now
+     where id = p_franchise returning standing into v_standing;
+  else
+    v_standing := f.standing;
+  end if;
 
   v_key := s.number || ':' || g.week;
   -- the bowl pays its own line; everything else about it is an ordinary game
@@ -2574,6 +2616,7 @@ begin
     'season_complete', v_done,
     'bowl', case when v_bowl is not null then public.franchise_game_json(v_bowl, false) end,
     'injuries', coalesce(v_box->'injuries', '[]'::jsonb),
+    'standing', jsonb_build_object('was', f.standing, 'now', v_standing, 'move', v_move),
     'rewards', jsonb_build_object('xp', v_xp, 'tc', v_tc, 'cp', v_cp),
     'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(p_franchise));
 end;
@@ -4068,6 +4111,25 @@ begin
     -- the scouting department (Phase 9): how well this franchise is reading
     -- real games right now, and what the next window would be worth
     'scouting', public.franchise_scout_report(f.id),
+    -- where the franchise stands in the league, and what the next slate is
+    -- drawn around (Phase 10, league_v1)
+    'standing', jsonb_build_object('value', f.standing,
+      'facing', 50 + round(f.standing * 0.40)::int,
+      'top', (select max(strength) from public.franchise_opponents),
+      'bottom', (select min(strength) from public.franchise_opponents),
+      'above', (select count(*) from public.franchise_opponents o
+                 where public.franchise_league_gap(f.standing, o.strength) > 0)),
+    -- the development window (Phase 10): open only between a completed
+    -- season and the next one, which is the whole ritual
+    'development', jsonb_build_object(
+      'open', exists (select 1 from public.franchise_seasons x
+                       where x.franchise_id = f.id and x.status = 'complete'
+                         and x.number = (select max(number) from public.franchise_seasons where franchise_id = f.id)),
+      'slots', public.franchise_dev_slots(f.id),
+      'used', (select count(*) from public.franchise_activity a
+                where a.franchise_id = f.id and a.kind = 'program'
+                  and a.key like (select max(number) from public.franchise_seasons where franchise_id = f.id) || ':%'),
+      'version', public.franchise_development()->>'version'),
     'challenges', jsonb_build_object(
       'open', (select count(*) from public.franchise_challenges c where c.challenger_id = f.id and c.status = 'OPEN' and c.expires_at > now()),
       'played', (select count(*) from public.franchise_challenges c where (c.challenger_id = f.id or c.opponent_id = f.id) and c.status = 'FINAL'),
@@ -6231,6 +6293,485 @@ $$;
 commit;
 
 -- ===========================================================================
+-- THE DEVELOPMENT PROGRAM — Phase 10, development_v1
+--
+-- A PLAYER CANNOT BE MADE BETTER THAN HE WAS BORN, and that was the ceiling
+-- on the whole game. This is what the file measured before the phase was
+-- written, over ten seasons of a franchise that did everything right — every
+-- facility maxed, every pick used, every free agent signed, every prospect
+-- scouted, four coaches hired and promoted:
+--
+--   team overall  season 1: 69   season 4: 71   season 10: 71
+--   record        6-3            4-4            6-3
+--
+-- Ten years of perfect play was worth two points. The cause is one line in
+-- franchise_offseason(): growth past a man's potential is clawed straight
+-- back, and potential itself only ever holds the line. By season ten, 76%
+-- of the roster sat exactly at its ceiling with 1.43 points of headroom
+-- left across the whole squad. The facilities and the trainer do not raise
+-- the wall; they only get a man to it sooner.
+--
+-- And the wall is low, and the same for everybody. Of 425 players generated
+-- across twenty franchise-seasons: none with 90 potential, two with 85, the
+-- generator's best 83. THE FINEST 42 EVER ROLLED WOULD RATE 78. There was no
+-- great team to reach — though the simulator pays for one handsomely: a
+-- roster pinned at 55 wins 37% of its games, one pinned at 85 wins all of
+-- them, 40.5 points for against 8.1.
+--
+-- Meanwhile Scouting Points had become the mirror of the Coach Points
+-- problem Phase 8 fixed — dead by SURPLUS. The same ten seasons banked
+-- 6,050 and spent 1,550. And every yard, touchdown, tackle and sack a man
+-- accumulated over a decade was written, shown in the Trophy Room, and read
+-- by nothing: the only statistic the game consumed was a binary "played
+-- four games".
+--
+-- So: an offseason in which you invest in your own players, paid for with
+-- the currency nobody could spend, and graded on the football they actually
+-- played.
+--
+--   THE WINDOW    a program is bought AFTER a season completes and BEFORE
+--                 the next is started — the one moment the season just
+--                 played is still on the books. Starting the next season
+--                 clears it. That is the ritual: finish, look at who played,
+--                 invest, advance.
+--
+--   THE SLOTS     two, plus one for every level of the Training Center, so
+--                 two to five a year. Scarcity is the whole decision: not
+--                 "can I afford it" but WHO.
+--
+--   THE GRADE     what he did on the field, 0 to 100, read straight out of
+--                 the boxes the simulator already wrote:
+--                     40  availability — he played the games
+--                     30  the team's record in the games he played
+--                     30  his impact against PAR for his position and depth
+--                 Par is published below and was measured off 4,000 real
+--                 box lines. Where the box score does not measure a man —
+--                 the offensive line, the punter — impact sits exactly at
+--                 par by construction and his grade is availability and the
+--                 team's record, which is the honest way to grade a lineman.
+--
+--   WHAT IT BUYS  POTENTIAL, never overall. A program does not make a
+--                 nineteen-year-old better today; it earns him the RIGHT to
+--                 grow, and he still has to grow into it through the same
+--                 offseason curve as everybody else. So the Training Center
+--                 and the head trainer become more valuable, not less.
+--
+--   THE LIMITS    +1 to +6 a program by grade, so a benched man gains almost
+--                 nothing and an ever-present starter on a winning team gains
+--                 six. Full value to 26, half from 27 to 29, nothing at 30 —
+--                 the same shape the development curve already has. And a
+--                 lifetime cap of +15 per man, about three good programs, so
+--                 an 83-potential prospect can become a 98 and no man is ever
+--                 remade in one offseason.
+--
+-- WHAT THIS IS NOT. It is not a way to buy overall, not a way to fix a bad
+-- roster in an offseason, and not available to a man over thirty. It is a
+-- decade-long project for a franchise that plays its young men and reads
+-- real football well enough to pay for it.
+-- ===========================================================================
+
+begin;
+
+-- how much potential this man has been given beyond what he was born with,
+-- and how many programs it took: the cost curve reads the first, the record
+-- reads both, and neither ever falls
+alter table public.game_players add column if not exists developed integer not null default 0;
+alter table public.game_players add column if not exists programs integer not null default 0;
+
+alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
+alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
+  ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
+   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason',
+   'market','scout','draft','signing','release',
+   'conf_joined','conf_season','conf_game','conf_win','conf_playoff','conf_title',
+   'bowl_bid','injury','trade',
+   'staff_hire','staff_promote','staff_fire',
+   'program'));
+
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('dev_first',  'Development Program', 'Put a player through his first development program.', null, 110),
+  ('dev_ten',    'Ten Points Better',   'Carried a player ten points past the ceiling he was born with.', null, 111),
+  ('dev_capped', 'Made, Not Found',     'Took a player to the top of what a development program can give.', null, 112),
+  ('dynasty_80', 'A Real Team',         'Fielded a roster rated 80 overall.', null, 113)
+on conflict (id) do nothing;
+
+-- THE TABLE. Everything development_v1 is, in one place a page can render
+-- without a round trip.
+create or replace function public.franchise_development()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'development_v1',
+    'slots_base', 2,          -- plus one for every level of the Training Center
+    'cap', 15,                -- the most potential one man can ever be given
+    'cost_base', 100,         -- Scouting Points for a man never developed
+    'cost_step', 15,          -- and 15 more for every point already given
+    'lift_base', 1, 'lift_span', 5,        -- +1 at grade 0, +6 at grade 100
+    'age_full', 26, 'age_half', 29,        -- half from 27, nothing at 30
+    'grade', jsonb_build_object('available', 40, 'record', 30, 'impact', 30),
+    -- PAR: the average impact per game for a position at a depth, measured
+    -- off four thousand box lines the simulator wrote. The offensive line
+    -- and the punter are flat by construction — the box score does not
+    -- measure them — so their grade is availability and the team's record.
+    'par', jsonb_build_object(
+      'QB', jsonb_build_array(18.0),
+      'RB', jsonb_build_array(14.8, 4.5),
+      'WR', jsonb_build_array(6.9, 5.4, 3.7, 1.6),
+      'TE', jsonb_build_array(3.8),
+      'OL', jsonb_build_array(0.1),
+      'DL', jsonb_build_array(5.7, 4.4, 3.3, 4.0),
+      'LB', jsonb_build_array(7.5, 4.9, 3.8),
+      'CB', jsonb_build_array(4.5, 4.0),
+      'S',  jsonb_build_array(5.1, 4.0),
+      'K',  jsonb_build_array(3.7),
+      'P',  jsonb_build_array(0.2)));
+$$;
+
+-- par for a position at a depth: the last entry stands for every deeper slot,
+-- so a sixth receiver is graded against the fourth and nobody falls off the
+-- end of the table
+create or replace function public.franchise_dev_par(p_position text, p_depth integer)
+returns numeric language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce(
+    (public.franchise_development()->'par'->coalesce(p_position, '')
+      ->> least(greatest(coalesce(p_depth, 1), 1) - 1,
+                jsonb_array_length(coalesce(public.franchise_development()->'par'->coalesce(p_position, ''),
+                                            '[]'::jsonb)) - 1))::numeric,
+    1.0);
+$$;
+
+-- WHAT THE NEXT PROGRAM COSTS: 100 Scouting Points for a man never
+-- developed, 15 more for every point already given him. Priced so that a
+-- franchise reading real football diligently can fill its places — the
+-- decision this phase asks for is WHO, not whether the purse stretches.
+create or replace function public.franchise_dev_cost(p_developed integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select (public.franchise_development()->>'cost_base')::int
+       + (public.franchise_development()->>'cost_step')::int
+         * least(greatest(coalesce(p_developed, 0), 0), (public.franchise_development()->>'cap')::int);
+$$;
+
+-- WHAT A GRADE IS WORTH: +1 at nothing, +4 at a perfect season, halved from
+-- twenty-seven and nothing at thirty — the shape the offseason curve has.
+create or replace function public.franchise_dev_lift(p_grade integer, p_age integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select case
+    when coalesce(p_age, 0) > (public.franchise_development()->>'age_half')::int then 0
+    when coalesce(p_age, 0) > (public.franchise_development()->>'age_full')::int
+      then greatest(1, ((public.franchise_development()->>'lift_base')::int
+        + round((public.franchise_development()->>'lift_span')::int
+                * least(100, greatest(0, coalesce(p_grade, 0))) / 100.0)::int) / 2)
+    else (public.franchise_development()->>'lift_base')::int
+       + round((public.franchise_development()->>'lift_span')::int
+               * least(100, greatest(0, coalesce(p_grade, 0))) / 100.0)::int end;
+$$;
+
+-- HOW MANY PROGRAMS A YEAR: two, plus a level of the Training Center. The
+-- facility that was finished by season four has something to do again.
+create or replace function public.franchise_dev_slots(p_franchise uuid)
+returns integer language sql stable security definer set search_path = public, pg_temp as $$
+  select (public.franchise_development()->>'slots_base')::int
+       + coalesce((select (facilities->>'training')::int from public.franchises where id = p_franchise), 0);
+$$;
+
+-- THE GRADE, read out of the boxes the simulator already wrote. Nothing is
+-- accumulated for this and nothing was added to the hot path: a season's
+-- games carry their own box, and the box carries every player's line and the
+-- impact number the simulator computed to name a player of the game.
+create or replace function public.franchise_dev_grade(p_franchise uuid, p_player uuid, p_season integer)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  cfg jsonb := public.franchise_development(); pl public.game_players%rowtype;
+  n_games integer; n_played integer; n_won integer; v_imp numeric; v_par numeric;
+  a numeric; r numeric; i numeric; v_grade integer;
+begin
+  select * into pl from public.game_players where id = p_player and franchise_id = p_franchise;
+  if not found then return null; end if;
+  select count(*) into n_games from public.franchise_games
+   where franchise_id = p_franchise and season_number = p_season and status = 'final';
+  select count(*), count(*) filter (where g.result = 'W'), coalesce(sum((ln->>'impact')::numeric), 0)
+    into n_played, n_won, v_imp
+    from public.franchise_games g, jsonb_array_elements(g.box->'players') ln
+   where g.franchise_id = p_franchise and g.season_number = p_season and g.status = 'final'
+     and g.box is not null and (ln->>'id')::uuid = p_player;
+  v_par := public.franchise_dev_par(pl.position, pl.depth);
+  -- availability, the team's record in the games he played, and his own
+  -- impact against par. A man who did not play at all grades zero.
+  a := case when n_games = 0 then 0 else least(1, n_played::numeric / n_games) end;
+  r := case when n_played = 0 then 0 else n_won::numeric / n_played end;
+  i := case when n_played = 0 or v_par <= 0 then 0
+            else least(1, (v_imp / n_played) / (2 * v_par)) end;
+  v_grade := least(100, greatest(0, round(
+      (cfg->'grade'->>'available')::int * a
+    + (cfg->'grade'->>'record')::int * r
+    + (cfg->'grade'->>'impact')::int * i)::int));
+  return jsonb_build_object('grade', v_grade, 'played', n_played, 'games', n_games, 'won', n_won,
+    'impact', round(case when n_played = 0 then 0 else v_imp / n_played end, 2), 'par', v_par,
+    'parts', jsonb_build_object('available', round(a * 100)::int, 'record', round(r * 100)::int, 'impact', round(i * 100)::int));
+end;
+$$;
+
+commit;
+
+begin;
+
+-- PUT A MAN THROUGH A PROGRAM. Refused before anything is written: the
+-- window must be open, a slot must be free, the purse must cover it, he must
+-- be under thirty and not already at his cap. One negative ledger row keyed
+-- by the season and the player, so a replayed request cannot pay twice.
+create or replace function public.franchise_develop(p_player uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; p public.game_players%rowtype;
+  cfg jsonb := public.franchise_development(); s public.franchise_seasons%rowtype;
+  v_cost integer; v_slots integer; v_used integer; v_grade jsonb; v_lift integer; v_cap integer;
+  ok boolean; v_new text[] := '{}'; v_real integer := public.games_season_of(now()); v_ovr integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  select * into s from public.franchise_seasons where franchise_id = v_f order by number desc limit 1;
+  if not found or s.status <> 'complete' then
+    raise exception 'the development window opens when a season is complete and closes when the next one starts'
+      using errcode = '55000';
+  end if;
+  select * into p from public.game_players where id = p_player and franchise_id = v_f for update;
+  if not found or p.status <> 'active' then
+    raise exception 'that player is not on your roster' using errcode = 'P0002';
+  end if;
+  v_cap := (cfg->>'cap')::int;
+  if p.developed >= v_cap then
+    raise exception '% has had everything a program can give (+% is the cap)',
+      p.first_name || ' ' || p.last_name, v_cap using errcode = '55000';
+  end if;
+  if p.age > (cfg->>'age_half')::int then
+    raise exception '% is %; a program does nothing past %',
+      p.first_name || ' ' || p.last_name, p.age, (cfg->>'age_half')::int using errcode = '55000';
+  end if;
+  v_slots := public.franchise_dev_slots(v_f);
+  select count(*) into v_used from public.franchise_activity
+   where franchise_id = v_f and kind = 'program' and key like s.number || ':%';
+  if v_used >= v_slots then
+    raise exception 'no places left this offseason: % of %', v_used, v_slots using errcode = '55000';
+  end if;
+  v_cost := public.franchise_dev_cost(p.developed);
+  if f.scouting_points < v_cost then
+    raise exception 'not enough Scouting Points: % needed, % on hand', v_cost, f.scouting_points using errcode = '55000';
+  end if;
+
+  v_grade := public.franchise_dev_grade(v_f, p.id, s.number);
+  v_lift := least(public.franchise_dev_lift((v_grade->>'grade')::int, p.age), v_cap - p.developed);
+
+  ok := public.franchise_credit(v_f, 'sp', -v_cost, 'program', s.number || ':' || p.id::text,
+          'Development: ' || p.first_name || ' ' || p.last_name);
+  if not ok then raise exception 'that program is already on the books' using errcode = '55000'; end if;
+
+  -- POTENTIAL, NEVER OVERALL. He has earned the right to grow; the offseason
+  -- that follows is where he grows into it.
+  update public.game_players
+     set potential = least(99, potential + v_lift),
+         developed = developed + v_lift,
+         programs = programs + 1,
+         rarity = case when overall >= 82 or least(99, potential + v_lift) >= 90 then 'elite'
+                       when overall >= 75 or least(99, potential + v_lift) >= 84 then 'rare'
+                       when overall >= 68 or least(99, potential + v_lift) >= 77 then 'uncommon'
+                       else 'common' end,
+         updated_at = now()
+   where id = p.id;
+
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'program', s.number || ':' || p.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'position', p.position, 'age', p.age,
+            'season', s.number, 'grade', (v_grade->>'grade')::int, 'lift', v_lift, 'cost', v_cost, 'currency', 'sp',
+            'developed', p.developed + v_lift, 'potential', least(99, p.potential + v_lift),
+            'version', cfg->>'version'))
+  on conflict (franchise_id, kind, key) do nothing;
+
+  if public.franchise_award(v_f, 'dev_first', v_real, jsonb_build_object('player', p.id)) then
+    v_new := array_append(v_new, 'dev_first'); end if;
+  if p.developed + v_lift >= 10
+     and public.franchise_award(v_f, 'dev_ten', v_real, jsonb_build_object('player', p.id, 'developed', p.developed + v_lift)) then
+    v_new := array_append(v_new, 'dev_ten'); end if;
+  if p.developed + v_lift >= v_cap
+     and public.franchise_award(v_f, 'dev_capped', v_real, jsonb_build_object('player', p.id)) then
+    v_new := array_append(v_new, 'dev_capped'); end if;
+
+  select * into p from public.game_players where id = p.id;
+  return jsonb_build_object('ok', true, 'player', public.franchise_prospect_json(p), 'grade', v_grade,
+    'lift', v_lift, 'cost', v_cost, 'currency', 'sp',
+    'slots', jsonb_build_object('used', v_used + 1, 'of', v_slots),
+    'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- THE BOARD: whether the window is open, what a place costs, and every man
+-- on the roster with the season he just played and what a program would give
+-- him. One read.
+create or replace function public.franchise_development_board(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; cfg jsonb := public.franchise_development(); s public.franchise_seasons%rowtype;
+  v_open boolean; v_slots integer; v_used integer; v_men jsonb := '[]'::jsonb; p public.game_players%rowtype;
+  g jsonb; v_lift integer; v_cost integer; v_cap integer := (cfg->>'cap')::int;
+begin
+  select * into f from public.franchises where id = public.franchise_of(p_secret);
+  if not found then return null; end if;
+  select * into s from public.franchise_seasons where franchise_id = f.id order by number desc limit 1;
+  v_open := found and s.status = 'complete';
+  v_slots := public.franchise_dev_slots(f.id);
+  select count(*) into v_used from public.franchise_activity
+   where franchise_id = f.id and kind = 'program' and key like coalesce(s.number, 0) || ':%';
+  for p in select * from public.game_players where franchise_id = f.id and status = 'active'
+            order by position, depth, overall desc loop
+    g := case when s.number is null then null else public.franchise_dev_grade(f.id, p.id, s.number) end;
+    v_cost := public.franchise_dev_cost(p.developed);
+    v_lift := case when p.developed >= v_cap then 0
+                   else least(public.franchise_dev_lift(coalesce((g->>'grade')::int, 0), p.age), v_cap - p.developed) end;
+    v_men := v_men || jsonb_build_object(
+      'id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'depth', p.depth,
+      'age', p.age, 'overall', p.overall, 'potential', p.potential, 'dev_tier', p.dev_tier,
+      'developed', p.developed, 'programs', p.programs, 'capped', p.developed >= v_cap,
+      'grade', g, 'lift', v_lift, 'cost', v_cost,
+      'affordable', f.scouting_points >= v_cost,
+      'eligible', v_open and p.developed < v_cap and p.age <= (cfg->>'age_half')::int,
+      'done', exists (select 1 from public.franchise_activity a
+                       where a.franchise_id = f.id and a.kind = 'program'
+                         and a.key = coalesce(s.number, 0) || ':' || p.id::text));
+  end loop;
+  return jsonb_build_object(
+    'version', cfg->>'version', 'rules', cfg,
+    'open', v_open,
+    'season', jsonb_build_object('number', s.number, 'label', s.label, 'status', s.status,
+      'wins', s.wins, 'losses', s.losses, 'ties', s.ties),
+    'slots', jsonb_build_object('of', v_slots, 'used', v_used, 'left', greatest(0, v_slots - v_used),
+      'base', (cfg->>'slots_base')::int, 'training', coalesce((f.facilities->>'training')::int, 0)),
+    'resources', public.franchise_totals(f.id),
+    'players', v_men,
+    'history', coalesce((select jsonb_agg(jsonb_build_object('at', a.created_at, 'detail', a.detail)
+        order by a.created_at desc, a.id desc)
+      from (select * from public.franchise_activity where franchise_id = f.id and kind = 'program'
+             order by created_at desc, id desc limit 12) a), '[]'::jsonb));
+end;
+$$;
+
+commit;
+
+-- ===========================================================================
+-- A LEAGUE THAT STANDS STILL — Phase 10, league_v1
+--
+-- THE DEEPER HALF OF THE SAME PROBLEM. A development program raises a man's
+-- ceiling, but before this phase raising it could not win a single extra
+-- game, because of one line in franchise_schedule_season():
+--
+--     oovr := greatest(45, least(95, round(ovr + d + (random() * 2 - 1))));
+--
+-- Every opponent was rated FROM YOUR OWN TEAM OVERALL, plus a fixed offset
+-- from [-6,-3,-1,0,1,2,4]. The league was a rubber band: get better and it
+-- got better with you, exactly in step, and your record was pinned to those
+-- seven offsets whatever you did. Twelve seasons of A/B measurement, four
+-- franchises an arm on identical seeds, found the program worth +2.8 team
+-- overall and NOT ONE EXTRA WIN. It could not have been otherwise.
+--
+-- So the twenty-four clubs get ratings of their own. They are published,
+-- absolute, and have nothing to do with you: Trenton is a 58 and Kingsport
+-- is an 86 whether you are a 60 or a 95.
+--
+--   STANDING      where the franchise sits in the league, 0 to 100, moved by
+--                 RESULTS and nothing else. Beating a club above you is worth
+--                 several; beating one well below is worth one. Losing to a
+--                 club above you costs one; losing to one below costs several.
+--                 The rival counts double either way. It starts at 40,
+--                 which is the bottom third: a new franchise begins among
+--                 clubs it can beat.
+--
+--   THE SLATE     each season is drawn around your standing — most of it
+--                 near you, one club well above, one well below, and the
+--                 rival last. Climb and the schedule hardens; fall and it
+--                 softens. That is the protection the rubber band used to
+--                 give, kept, without the part that made improvement
+--                 pointless: WITHIN a season the clubs do not move, and a
+--                 better roster beats them.
+--
+--   THE CLIMB     is the point. At standing 40 you play clubs in the sixties
+--                 and win. Winning lifts you into the seventies, where the
+--                 roster you have is no longer enough — and the development
+--                 program is how you answer. A dynasty is a franchise that
+--                 climbed to the top of the league and can still win there.
+-- ===========================================================================
+
+begin;
+
+-- an absolute rating for every club, and the tier it sits in. Published, so
+-- a page can show the league table, and fixed, so a season means something.
+-- A DEFAULT, NOT A NULL. The pool's own seed insert sits in Phase 1, far
+-- above this line, and re-runs before it — a not-null with no default makes
+-- the second application of this file fail on the first club. The real
+-- ratings are set immediately below; the default only has to be legal.
+alter table public.franchise_opponents add column if not exists strength integer not null default 70;
+-- where this franchise stands in that league, 0 to 100
+alter table public.franchises add column if not exists standing integer not null default 40;
+
+-- THE LEAGUE TABLE. Twenty-four clubs from 54 to 88, spread evenly so every
+-- standing has somebody to play, keyed off the pool's own sort order so the
+-- table is the same in every database that ever applies this file.
+update public.franchise_opponents o set strength = t.s
+  from (select key, 54 + ((sort - 1) * 34) / 23 as s from public.franchise_opponents) t
+ where o.key = t.key and o.strength is distinct from t.s;
+
+create or replace function public.franchise_league()
+returns jsonb language sql stable set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'league_v1',
+    'standing_start', 40, 'standing_min', 0, 'standing_max', 100,
+    -- what a result moves the standing: a win is worth more against a better
+    -- club, a loss costs more against a worse one, and the rival counts double
+    'win_base', 2, 'loss_base', -3, 'edge_per_point', 0.20, 'rival_multiplier', 2,
+    'clubs', coalesce((select jsonb_agg(jsonb_build_object(
+        'key', o.key, 'city', o.city, 'name', o.name, 'abbr', o.abbr,
+        'logo', o.logo, 'theme', o.theme, 'style', o.style, 'strength', o.strength)
+        order by o.strength desc, o.key) from public.franchise_opponents o), '[]'::jsonb));
+$$;
+
+-- WHAT A CLUB IS WORTH TO YOU, at a standing: the gap between where you
+-- stand and what it rates, so a page can say "you are not ready for these"
+-- without pretending to simulate anything.
+-- The middle of the slate at a standing. MEASURED, not guessed: with rosters
+-- pinned at fixed ratings, a team playing clubs of its own rating wins about
+-- four of nine, not half — so the slate sits a little BELOW where you stand,
+-- or a franchise ratchets into a difficulty it cannot answer and simply loses
+-- from then on. At the top of the standing it is 82, and the best clubs in
+-- the league rate 88, so the very top is always a stretch.
+create or replace function public.franchise_league_gap(p_standing integer, p_strength integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce(p_strength, 0) - (48 + round(coalesce(p_standing, 40) * 0.34)::int);
+$$;
+
+-- WHAT A RESULT MOVES THE STANDING. A win over a club well above you is worth
+-- several; a win over one well below is worth almost nothing. Losing to a
+-- weaker club costs. The rival counts double, either way.
+-- ROUNDED FIRST, THEN DOUBLED. "A rival win is worth twice as much" is a
+-- promise the game makes to a player, so it is kept exactly: rounding the
+-- doubled figure instead would make a 3.6 into 4 and a 7.2 into 7, and 7 is
+-- not twice 4.
+create or replace function public.franchise_standing_delta(
+  p_result text, p_standing integer, p_strength integer, p_rival boolean default false)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select round(
+    case p_result
+      when 'W' then greatest(1, (public.franchise_league()->>'win_base')::numeric
+             + (public.franchise_league()->>'edge_per_point')::numeric
+               * public.franchise_league_gap(p_standing, p_strength))
+      -- the gap is added, not subtracted: a NEGATIVE gap is a club below you,
+      -- and losing to one of those is what costs. Losing to a club well above
+      -- you costs the floor of one and no more.
+      when 'L' then least(-1, (public.franchise_league()->>'loss_base')::numeric
+             + (public.franchise_league()->>'edge_per_point')::numeric
+               * public.franchise_league_gap(p_standing, p_strength))
+      else 0 end)::int
+    * case when p_rival then (public.franchise_league()->>'rival_multiplier')::int else 1 end;
+$$;
+
+commit;
+
+-- ===========================================================================
 -- GRANTS
 --
 -- Postgres grants EXECUTE on a new function to PUBLIC by default, so every
@@ -6427,6 +6968,22 @@ grant execute on function public.franchise_scout_band(integer) to anon, authenti
 grant execute on function public.franchise_scout_cost(integer) to anon, authenticated;
 grant execute on function public.franchise_scout_lift(integer) to anon, authenticated;
 revoke all on function public.franchise_scout_report(uuid) from public, anon, authenticated;
+-- Phase 10: the development table and its four curves are open to read, the
+-- move and the board are open on the same terms every other franchise move
+-- is, and the two definer reads that touch one franchise's own record are not
+grant execute on function public.franchise_development() to anon, authenticated;
+grant execute on function public.franchise_dev_par(text, integer) to anon, authenticated;
+grant execute on function public.franchise_dev_cost(integer) to anon, authenticated;
+grant execute on function public.franchise_dev_lift(integer, integer) to anon, authenticated;
+grant execute on function public.franchise_develop(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_development_board(text) to anon, authenticated;
+revoke all on function public.franchise_dev_slots(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_dev_grade(uuid, uuid, integer) from public, anon, authenticated;
+-- and the league is public: the table of clubs, what a standing faces, and
+-- what a result is worth are the same for everybody and hide nothing
+grant execute on function public.franchise_league() to anon, authenticated;
+grant execute on function public.franchise_league_gap(integer, integer) to anon, authenticated;
+grant execute on function public.franchise_standing_delta(text, integer, integer, boolean) to anon, authenticated;
 
 commit;
 
@@ -6449,6 +7006,7 @@ select public.games_schema_note('franchise', 6, 'conferences and playoffs');
 select public.games_schema_note('franchise', 7, 'injuries, the bowl and trades');
 select public.games_schema_note('franchise', 8, 'the coaching staff');
 select public.games_schema_note('franchise', 9, 'the scouting department');
+select public.games_schema_note('franchise', 10, 'the development program and the league');
 commit;
 
 -- ===========================================================================
@@ -6618,7 +7176,7 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 9 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 10 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
@@ -6656,5 +7214,50 @@ select 27, 'scouting is ' || (public.franchise_scouting()->>'version') || ': acc
         and has_function_privilege('anon', 'public.franchise_scout_band(integer)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_scout_report(uuid)', 'execute')
         and not has_function_privilege('authenticated', 'public.franchise_scout_report(uuid)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 28, 'development is ' || (public.franchise_development()->>'version') || ': a ceiling can be raised, paid in Scouting Points and graded on the football played',
+  case when public.franchise_development()->>'version' = 'development_v1'
+        -- the lift runs +1 to +4 by grade, halves at 27, and stops at 30
+        and public.franchise_dev_lift(0, 21) = 1 and public.franchise_dev_lift(100, 21) = 6
+        and public.franchise_dev_lift(100, 27) = 3 and public.franchise_dev_lift(100, 30) = 0
+        -- the price rises with what a man has already been given
+        and public.franchise_dev_cost(0) = 100 and public.franchise_dev_cost(15) = 325
+        and public.franchise_dev_cost(0) < public.franchise_dev_cost(1)
+        -- par is published for every position the roster can hold
+        and (select bool_and(public.franchise_dev_par(t.p, 1) > 0)
+               from unnest(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P']) as t(p))
+        -- the record of what a man was given, and what it took
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'game_players' and column_name = 'developed')
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'game_players' and column_name = 'programs')
+        -- the table and the move are open; the grade and the slot count are not
+        and has_function_privilege('anon', 'public.franchise_development()', 'execute')
+        and has_function_privilege('anon', 'public.franchise_develop(uuid, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_development_board(text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_dev_grade(uuid, uuid, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_dev_slots(uuid)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 29, 'the league is ' || (public.franchise_league()->>'version') || ': twenty-four clubs with ratings of their own, and a standing moved by results',
+  case when public.franchise_league()->>'version' = 'league_v1'
+        -- every club has an absolute rating, and they are spread across the table
+        and (select count(*) from public.franchise_opponents where strength is null) = 0
+        and (select max(strength) - min(strength) from public.franchise_opponents) >= 25
+        -- THE LOAD-BEARING ONE: nothing in the scheduler reads team overall any
+        -- more. While it did, a better roster could not win one extra game.
+        and (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_schedule_season'
+                and p.prosrc like '%franchise_team_rating%') = 0
+        -- a win over a better club is worth more than one over a worse
+        and public.franchise_standing_delta('W', 40, 85) > public.franchise_standing_delta('W', 40, 55)
+        and public.franchise_standing_delta('L', 40, 55) < public.franchise_standing_delta('L', 40, 85)
+        and public.franchise_standing_delta('L', 40, 85) = -1
+        and public.franchise_standing_delta('W', 40, 70, true) = 2 * public.franchise_standing_delta('W', 40, 70, false)
+        and public.franchise_standing_delta('T', 40, 70) = 0
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'franchises' and column_name = 'standing')
+        and has_function_privilege('anon', 'public.franchise_league()', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

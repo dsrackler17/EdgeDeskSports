@@ -103,6 +103,7 @@ const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
 const README = fs.readFileSync(G('README.md'), 'utf8');
 const PUB = fs.readFileSync(G('publish_board.js'), 'utf8');
 const SOCIALSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'games_social.sql'), 'utf8');
+const DEV = fs.readFileSync(G('development/index.html'), 'utf8');
 const SCHEMATOOL = fs.readFileSync(path.join(__dirname, 'schema.js'), 'utf8');
 
 function fresh() { MEM = {}; ST.reset(); }
@@ -830,9 +831,18 @@ fresh();
   has(SQL, "perform setseed(public.franchise_seed_float(g.seed))", 'the simulator is seeded from the game');
   has(SQL, 'perform public.franchise_open_season(v_id, 1, now());', 'Season I is scheduled at founding');
   has(SQL, "for update", 'the franchise row is locked while a game is played');
+  /* league_v1 introduced ONE function that takes a result — the published
+     franchise_standing_delta(), which says what a win is worth and applies
+     nothing. The claim being defended is unchanged: no function that WRITES
+     will take a score, a result or a seed from a client. */
   chk('a client sends nothing that changes a result: play and start take the identity and nothing else',
     /franchise_play_week\(p_secret text default null\)/.test(SQL) && /franchise_start_season\(p_secret text default null\)/.test(SQL)
-    && !/p_score_for\b|p_result\b|p_box\b|p_game_seed/.test(SQL));
+    && !/p_score_for\b|p_box\b|p_game_seed/.test(SQL));
+  chk('and the only function anywhere that takes a result is the published one that just prices it',
+    (SQL.match(/\bp_result\b/g) || []).length > 0
+    && (SQL.match(/create or replace function public\.\w+\([^)]*\bp_result\b/g) || [])
+        .every(d => /franchise_standing_delta/.test(d))
+    && /create or replace function public\.franchise_standing_delta\([\s\S]*?returns integer language sql immutable/.test(SQL));
   has(README, 'sim_v1', 'the README documents the simulator version');
   has(README, 'Saturday at 07:00 UTC', 'and the calendar rule');
   has(README, 'Save it, in one step', 'and the one-step save');
@@ -975,7 +985,15 @@ fresh();
   chk('an upgrade is never queued — spending must see its answer', !/record\('franchise_upgrade'/.test(FJS));
   has(FJS, "rpc('franchise_trophies', withSecret({}))", 'the Trophy Room is one read');
   chk('the snapshot follows the answer, so the HQ and the office agree', /if \(r\.data\.totals\) snap\.resources = r\.data\.totals;\s*if \(r\.data\.facilities\) snap\.facilities = r\.data\.facilities;/.test(FJS));
-  chk('the client never ages, develops or retires a player', !/function (offseason|age|develop|retire|rookie)\(/.test(FJS) && !/rpc\('franchise_offseason/.test(FJS) && !/rpc\('franchise_generate_rookie/.test(FJS) && !/retired_season\s*[:=]/.test(FJS));
+  /* Phase 10 gave the client a develop() — but it ASKS, it does not decide.
+     What must stay true is that no lift, no grade and no ceiling is ever
+     computed here and sent to the server. */
+  chk('the client never ages, retires or generates a player',
+    !/function (offseason|age|retire|rookie)\(/.test(FJS) && !/rpc\('franchise_offseason/.test(FJS)
+    && !/rpc\('franchise_generate_rookie/.test(FJS) && !/retired_season\s*[:=]/.test(FJS));
+  chk('and asks for a development rather than deciding one: a player id and the identity, nothing else',
+    /function develop\(player\) \{\s*return rpc\('franchise_develop', withSecret\(\{ p_player: String\(player \|\| ''\) \}\)\)/.test(FJS)
+    && !/p_lift|p_grade|p_potential|p_developed/.test(FJS));
   /* the Front Office */
   has(OFFICE, 'FR.upgrade(key)', 'the office upgrades through the server');
   has(OFFICE, 'FR.facilityStates(', 'and shows the published table');
@@ -1824,11 +1842,178 @@ fresh();
 
   chk('the report grew to twenty-eight rows', /select 27, 'scouting is '/.test(SQL));
   chk('the schema log records the phase', /games_schema_note\('franchise', 9, 'the scouting department'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 9);
+  chk('and the schema log records phase 9 by name',
+    /games_schema_note\('franchise', 9, 'the scouting department'\)/.test(SQL));
 
   has(README, 'scouting_v1', 'the README documents the department');
   has(README, 'last twenty', 'and the window it grades on');
   has(README, '**potential, never overall**', 'and what it will not touch');
+
+  /* ═══ 20. THE DEVELOPMENT PROGRAM AND THE LEAGUE (PHASE 10) ══════════════
+     Two halves of one measured problem. Ten seasons of a franchise doing
+     everything right moved team overall 69 → 71, because a man's ceiling was
+     set at birth AND every opponent was rated from your own team overall.
+     Hardest claims first: the schedule no longer reads your rating; a program
+     raises potential and never overall; the client's copies of both tables
+     are the SQL's; and no page decides a grade, a lift or a slate. */
+
+  eq('development is versioned', F.DEVELOPMENT_VERSION, 'development_v1');
+  eq('and the league is', F.LEAGUE_VERSION, 'league_v1');
+  has(SQL, "'version', 'development_v1'", 'the SQL agrees on the program');
+  has(SQL, "'version', 'league_v1'", 'and on the league');
+
+  /* THE LOAD-BEARING ONE. While the scheduler read the team's own rating, a
+     better roster could not win one extra game — measured, twelve seasons,
+     four franchises an arm, +2.8 overall and not one extra win. */
+  chk('the scheduler no longer rates an opponent from your own team overall', () => {
+    const fn = (SQL.match(/create or replace function public\.franchise_schedule_season[\s\S]*?\n\$\$;/) || [''])[0];
+    return fn.length > 0 && !/franchise_team_rating/.test(fn) && /o\.strength/.test(fn);
+  });
+  chk('every club carries a rating of its own, set from the pool and not from anybody',
+    /alter table public\.franchise_opponents add column if not exists strength integer not null default 70;/.test(SQL)
+    && /update public\.franchise_opponents o set strength = t\.s/.test(SQL));
+  chk('and the column carries a default, so the pool insert above it can re-run',
+    SQL.indexOf('insert into public.franchise_opponents (key, city, name')
+      < SQL.indexOf('add column if not exists strength integer not null default 70'));
+
+  /* the two tables, pinned to the SQL rather than to a memory */
+  chk('the program table is the SQL table',
+    new RegExp("'slots_base', " + F.DEVELOPMENT.slots_base + ",").test(SQL)
+    && new RegExp("'cap', " + F.DEVELOPMENT.cap + ",").test(SQL)
+    && new RegExp("'cost_base', " + F.DEVELOPMENT.cost_base + ",").test(SQL)
+    && new RegExp("'cost_step', " + F.DEVELOPMENT.cost_step + ",").test(SQL)
+    && new RegExp("'lift_base', " + F.DEVELOPMENT.lift_base + ", 'lift_span', " + F.DEVELOPMENT.lift_span + ",").test(SQL)
+    && new RegExp("'age_full', " + F.DEVELOPMENT.age_full + ", 'age_half', " + F.DEVELOPMENT.age_half + ",").test(SQL));
+  chk('the grade weights are the SQL weights, and they add to a hundred',
+    new RegExp("'available', " + F.DEVELOPMENT.grade.available + ", 'record', " + F.DEVELOPMENT.grade.record
+      + ", 'impact', " + F.DEVELOPMENT.grade.impact + "\\)").test(SQL)
+    && F.DEVELOPMENT.grade.available + F.DEVELOPMENT.grade.record + F.DEVELOPMENT.grade.impact === 100);
+  /* the SQL writes 0.20 where the client writes 0.2, so the numbers are
+     compared as numbers rather than as the text either happens to use */
+  chk('the league table is the SQL table', () => {
+    const num = key => {
+      const m = SQL.match(new RegExp("'" + key + "', (-?[0-9.]+)"));
+      return m ? Number(m[1]) : null;
+    };
+    return num('standing_start') === F.LEAGUE.standing_start
+      && num('standing_min') === F.LEAGUE.standing_min && num('standing_max') === F.LEAGUE.standing_max
+      && num('win_base') === F.LEAGUE.win_base && num('loss_base') === F.LEAGUE.loss_base
+      && num('edge_per_point') === F.LEAGUE.edge_per_point
+      && num('rival_multiplier') === F.LEAGUE.rival_multiplier;
+  });
+
+  /* the curves, walked step by step against the shapes the SQL walks */
+  eq('a program gives +1 for a season not played', F.devLift(0, 21), 1);
+  eq('and +6 for a perfect one', F.devLift(100, 21), F.DEVELOPMENT.lift_base + F.DEVELOPMENT.lift_span);
+  eq('halved past 26', F.devLift(100, 27), 3);
+  eq('and nothing at 30', F.devLift(100, 30), 0);
+  chk('the lift never falls as the grade rises, and never leaves its band', () => {
+    for (var n = 0; n < 100; n++) if (F.devLift(n, 22) > F.devLift(n + 1, 22)) return false;
+    return [-99, 0, 50, 100, 199].every(n => F.devLift(n, 22) >= 1 && F.devLift(n, 22) <= 6);
+  });
+  eq('a first place costs the base', F.devCost(0), F.DEVELOPMENT.cost_base);
+  eq('and the last costs base plus the whole cap', F.devCost(F.DEVELOPMENT.cap),
+    F.DEVELOPMENT.cost_base + F.DEVELOPMENT.cost_step * F.DEVELOPMENT.cap);
+  chk('a place never gets cheaper the more a man has been given', () => {
+    for (var n = 0; n < F.DEVELOPMENT.cap; n++) if (F.devCost(n) >= F.devCost(n + 1)) return false;
+    return F.devCost(-5) === F.devCost(0) && F.devCost(99) === F.devCost(F.DEVELOPMENT.cap);
+  });
+  chk('places are two, and one for every level of the Training Center', () =>
+    F.devSlots(0) === 2 && F.devSlots(1) === 3 && F.devSlots(3) === 5 && F.devSlots(9) === 5);
+
+  /* the standing: results, and nothing else */
+  chk('beating a club above you is worth more than beating one below', () =>
+    F.standingDelta('W', 40, 85) > F.standingDelta('W', 40, 55) && F.standingDelta('W', 40, 55) >= 1);
+  chk('losing to a club BELOW you is what costs; losing to one above costs the floor', () =>
+    F.standingDelta('L', 40, 55) < F.standingDelta('L', 40, 85) && F.standingDelta('L', 40, 85) === -1);
+  chk('the rival counts double either way, and a draw moves nothing', () =>
+    F.standingDelta('W', 40, 70, true) === 2 * F.standingDelta('W', 40, 70)
+    && F.standingDelta('L', 40, 60, true) === 2 * F.standingDelta('L', 40, 60)
+    && F.standingDelta('T', 40, 70) === 0 && F.standingDelta('T', 40, 70, true) === 0);
+  chk('a higher standing faces better clubs, always', () => {
+    for (var n = 0; n < 100; n++) if (F.leagueFacing(n) > F.leagueFacing(n + 1)) return false;
+    return F.leagueGap(40, 85) > 0 && F.leagueGap(40, 55) < 0;
+  });
+  chk('the client walks the same arithmetic the SQL does',
+    /public\.franchise_league_gap\(p_standing, p_strength\)/.test(SQL)
+    && /select coalesce\(p_strength, 0\) - \(48 \+ round\(coalesce\(p_standing, 40\) \* 0\.34\)::int\);/.test(SQL));
+  /* the ONE place the two could drift and nobody would notice: the client
+     must round before doubling, exactly as the SQL does */
+  chk('and rounds before doubling, so a rival result is exactly twice an ordinary one',
+    /return Math\.round\(n\) \* \(rival \? LEAGUE\.rival_multiplier : 1\);/.test(FJS)
+    && /else 0 end\)::int\s*\* case when p_rival then/.test(SQL));
+
+  /* THE SERVER GRADES, LIFTS AND SCHEDULES */
+  chk('a program raises POTENTIAL and never overall',
+    /set potential = least\(99, potential \+ v_lift\),/.test(SQL)
+    && /developed = developed \+ v_lift,/.test(SQL)
+    && !/set overall = [^;]*v_lift/.test(SQL));
+  chk('the window is between a completed season and the next, and nothing else opens it',
+    /the development window opens when a season is complete and closes when the next one starts/.test(SQL)
+    && /if not found or s\.status <> 'complete' then/.test(SQL));
+  chk('the grade is read out of the boxes the simulator already wrote, not accumulated on the hot path',
+    /from public\.franchise_games g, jsonb_array_elements\(g\.box->'players'\) ln/.test(SQL)
+    && !/season_stats = public\.games_jsonb_sum\(season_stats, ln->'stats' \|\|/.test(SQL));
+  chk('a man is developed once an offseason, keyed by the season and the player',
+    /'program', s\.number \|\| ':' \|\| p\.id::text,/.test(SQL)
+    && /if not ok then raise exception 'that program is already on the books'/.test(SQL));
+  chk('nobody grades a season, counts their own places or draws their own schedule',
+    /revoke all on function public\.franchise_dev_grade\(uuid, uuid, integer\) from public, anon, authenticated;/.test(SQL)
+    && /revoke all on function public\.franchise_dev_slots\(uuid\) from public, anon, authenticated;/.test(SQL)
+    && /revoke all on function public\.franchise_schedule_season/.test(SQL));
+  ['franchise_development()', 'franchise_dev_cost(integer)', 'franchise_dev_lift(integer, integer)',
+   'franchise_dev_par(text, integer)', 'franchise_develop(uuid, text)', 'franchise_development_board(text)',
+   'franchise_league()', 'franchise_league_gap(integer, integer)']
+    .forEach(f => chk('the door ' + f.split('(')[0] + ' is open to every franchise',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* THE PAGES */
+  chk('the development page asks the server and never decides a lift',
+    /FR\.development\(\)/.test(DEV) && /FR\.develop\(id\)/.test(DEV)
+    && !/potential\s*[:+]=|lift\s*=\s*[0-9]/.test(DEV));
+  chk('and shows what the season was, because that is what a program is worth on him',
+    /dv-grade/.test(DEV) && /FR\.devGradeLine\(g\)/.test(DEV) && /par for his position/.test(DEV));
+  chk('it is honest that a program raises the ceiling and not the man',
+    /potential, never overall|<b>potential, never overall<\/b>/.test(DEV));
+  chk('and that the window shuts when the next season starts',
+    /Starting the next season closes this window/.test(DEV) && /do not carry over/.test(DEV));
+  chk('the Front Office says where the franchise stands and what that faces',
+    /function standingRow\(h\)/.test(OFFICE) && /FR\.standingName\(v\)/.test(OFFICE)
+    && /drawn around clubs rating about/.test(OFFICE));
+  chk('and warns while the window is open, because the places are otherwise lost',
+    /function devRow\(h\)/.test(OFFICE) && /Starting the next season shuts the window/.test(OFFICE));
+  chk('the page is a room like the others, with the guard the others wear',
+    require(G('games.js')).ROOMS.some(r => r.key === 'development' && r.href === '/games/development/')
+    && /EDFranchise\.development/.test(DEV) && /stale games scripts/.test(DEV));
+  chk('both pages carry the styles they use', /\.dv-grade\{/.test(FCSS) && /\.lg-stand\{/.test(FCSS));
+  /* A rule that names a variable nobody defines is not a style, it is a
+     silent no-op — three of them shipped in Phase 9 before this caught them. */
+  chk('every colour variable the franchise styles use is actually defined', () => {
+    const defined = new Set();
+    (CSS + FCSS).replace(/--([a-z0-9-]+)\s*:/g, (m, n) => { defined.add(n); return m; });
+    const used = new Set();
+    (FCSS + OFFICE + DEV + MARKET + ROSTER + GAMEDAY).replace(
+      /var\(--([a-z0-9-]+)\)/g, (m, n) => { used.add(n); return m; });
+    const missing = [...used].filter(n => !defined.has(n));
+    return missing.length === 0 || (failures.push('undefined CSS variables: ' + missing.join(', ')) && false);
+  });
+  has(SITEMAP, '/games/development', 'the room is in the sitemap');
+  has(NOTFOUND, "p[1]==='development'", 'and routed from 404');
+
+  chk('the report grew to thirty rows',
+    /select 28, 'development is '/.test(SQL) && /select 29, 'the league is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 10, 'the development program and the league'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 10);
+  chk('the SQL suite plays it through',
+    /23\. THE DEVELOPMENT PROGRAM AND THE LEAGUE/.test(SQLTEST)
+    && /the scheduler no longer rates an opponent from your own team overall/.test(SQLTEST)
+    && /a program raises POTENTIAL and never overall/.test(SQLTEST)
+    && /a starter who played every game grades above a man who never dressed/.test(SQLTEST));
+
+  has(README, 'development_v1', 'the README documents the program');
+  has(README, 'league_v1', 'and the league');
+  has(README, 'rubber band', 'and names the thing that was wrong');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });
