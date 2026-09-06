@@ -1919,8 +1919,13 @@ fresh();
     for (var n = 0; n < F.DEVELOPMENT.cap; n++) if (F.devCost(n) >= F.devCost(n + 1)) return false;
     return F.devCost(-5) === F.devCost(0) && F.devCost(99) === F.devCost(F.DEVELOPMENT.cap);
   });
-  chk('places are two, and one for every level of the Training Center', () =>
-    F.devSlots(0) === 2 && F.devSlots(1) === 3 && F.devSlots(3) === 5 && F.devSlots(9) === 5);
+  chk('places are two, one per Training Center level, and one every ten ranks', () =>
+    F.devSlots(0, 1) === 2 && F.devSlots(1, 1) === 3 && F.devSlots(3, 1) === 5
+    && F.devSlots(9, 1) === 5
+    && F.devSlots(3, 10) === 6 && F.devSlots(3, 40) === 9
+    && new RegExp("'slots_per_rank', " + F.DEVELOPMENT.slots_per_rank + ",").test(SQL)
+    && /franchise_rank_report\(p_franchise\)->>'rank'/.test(
+         (SQL.match(/create or replace function public\.franchise_dev_slots[\s\S]*?\n\$\$;/) || [''])[0]));
 
   /* the standing: results, and nothing else */
   chk('beating a club above you is worth more than beating one below', () =>

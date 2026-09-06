@@ -996,7 +996,7 @@
      tools/games/franchise.test.js. THE SERVER GRADES, LIFTS AND SCHEDULES. */
   var DEVELOPMENT_VERSION = 'development_v1';
   var DEVELOPMENT = {
-    slots_base: 2, cap: 15, cost_base: 100, cost_step: 15,
+    slots_base: 2, slots_per_rank: 10, cap: 15, cost_base: 100, cost_step: 15,
     lift_base: 1, lift_span: 5, age_full: 26, age_half: 29,
     grade: { available: 40, record: 30, impact: 30 }
   };
@@ -1013,8 +1013,14 @@
     if ((age | 0) > DEVELOPMENT.age_full) return Math.max(1, Math.floor(raw / 2));
     return raw;
   }
-  /* how many places an offseason has: two, and one per Training Center level */
-  function devSlots(training) { return DEVELOPMENT.slots_base + Math.max(0, Math.min(3, training | 0)); }
+  /* how many places an offseason has: two, one per Training Center level, and
+     one for every ten ranks of having played (rank_v1) — a franchise that has
+     been at it for years has a bigger department, which is what pays for the
+     rebuild when a founding roster ages out together */
+  function devSlots(training, rank) {
+    return DEVELOPMENT.slots_base + Math.max(0, Math.min(3, training | 0))
+      + Math.floor(Math.max(1, rank | 0) / DEVELOPMENT.slots_per_rank);
+  }
   /* "Ever-present on a winning team" — what a grade means, in words */
   function devGradeLine(g) {
     g = obj(g);

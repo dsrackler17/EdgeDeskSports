@@ -6437,6 +6437,7 @@ returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
   select jsonb_build_object(
     'version', 'development_v1',
     'slots_base', 2,          -- plus one for every level of the Training Center
+    'slots_per_rank', 10,     -- and one for every ten ranks of having played
     'cap', 15,                -- the most potential one man can ever be given
     'cost_base', 100,         -- Scouting Points for a man never developed
     'cost_step', 15,          -- and 15 more for every point already given
@@ -6502,10 +6503,22 @@ $$;
 
 -- HOW MANY PROGRAMS A YEAR: two, plus a level of the Training Center. The
 -- facility that was finished by season four has something to do again.
+-- ...AND ONE FOR EVERY TEN RANKS (rank_v1). Measured over sixty seasons: at
+-- two-to-five places a year a franchise could not spend what it earned —
+-- 7,950 Scouting Points banked against about nine hundred a season spent —
+-- and it could not rebuild through the retirement wave that takes a founding
+-- roster out together around season ten, after which team overall fell from
+-- 81 and never came back. A franchise that has played for years has a bigger
+-- department; that is what the rank measures, and it is what the surplus is
+-- for.
 create or replace function public.franchise_dev_slots(p_franchise uuid)
-returns integer language sql stable security definer set search_path = public, pg_temp as $$
-  select (public.franchise_development()->>'slots_base')::int
-       + coalesce((select (facilities->>'training')::int from public.franchises where id = p_franchise), 0);
+returns integer language plpgsql stable security definer set search_path = public, pg_temp as $$
+begin
+  return (public.franchise_development()->>'slots_base')::int
+       + coalesce((select (facilities->>'training')::int from public.franchises where id = p_franchise), 0)
+       + floor(coalesce((public.franchise_rank_report(p_franchise)->>'rank')::int, 1)
+               / (public.franchise_development()->>'slots_per_rank')::numeric)::int;
+end;
 $$;
 
 -- THE GRADE, read out of the boxes the simulator already wrote. Nothing is
