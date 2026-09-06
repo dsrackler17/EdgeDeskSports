@@ -76,6 +76,8 @@ declare
   gid uuid; gid2 uuid; seed0 text; opp0 jsonb; t0 timestamptz; box jsonb; box2 jsonb; k integer; w integer; l integer; nn integer;
   -- franchise vs franchise
   h2h_tok text; cid2 uuid; cid3 uuid; ra0 integer; rb0 integer; kk integer;
+  -- the offseason and the facilities
+  fac jsonb; msg text; rep jsonb; rep2 jsonb; age0 jsonb; going jsonb;
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (ALICE, 'alice@example.com', '{"display_name":"Alice"}'),
@@ -1320,5 +1322,281 @@ begin
   perform pg_temp.ok('three straight is an achievement', w = 1 and exists (select 1 from public.franchise_achievements where franchise_id = fa and achievement_id = 'fc_three'));
   perform pg_temp.ok('a device-owned franchise can be challenged and can challenge, exactly as an account one',
     (select public.franchise_challenge_peek((select invite_token from public.franchise_challenges where challenger_id = fa order by created_at desc limit 1), SEC_X)) is not null);
+-- ═══ 17. THE OFFSEASON AND THE FACILITIES ═════════════════════════════════
+  -- the table, published to the client and pinned there
+  perform pg_temp.as_owner();
+  fac := public.franchise_facilities();
+  perform pg_temp.ok('facilities are facilities_v1: four of them, three levels each, bought with Team Credits or Coach Points and nothing else',
+    fac->>'version' = 'facilities_v1'
+    and (select count(*) from jsonb_object_keys(fac) fk where fk <> 'version') = 4
+    and (select bool_and(jsonb_array_length(fac->fk->'costs') = 3 and fac->fk->>'currency' in ('tc', 'cp') and fac->fk ? 'effect' and fac->fk ? 'name')
+           from jsonb_object_keys(fac) fk where fk <> 'version')
+    and (fac->'training'->'costs'->>0)::int = 300 and (fac->'film'->'costs'->>0)::int = 6);
+
+  -- a franchise is needed
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_upgrade('training', SEC_X);
+    perform pg_temp.ok('no franchise, no upgrade', false, 'it ran');
+  exception when invalid_authorization_specification then
+    perform pg_temp.ok('no franchise, no upgrade', true);
+  end;
+
+  -- Bob, brought to one credit short, then to the credit exactly
+  perform pg_temp.as_owner();
+  select team_credits into tc0 from public.franchises where id = fb;
+  perform public.franchise_credit(fb, 'tc', 299 - tc0, 'test', 'tc:299', null);
+  perform pg_temp.as_user(BOB);
+  begin
+    perform public.franchise_upgrade('training');
+    perform pg_temp.ok('one credit short is refused, and the answer says what it costs and what is on hand', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    get stacked diagnostics msg = message_text;
+    perform pg_temp.ok('one credit short is refused, and the answer says what it costs and what is on hand',
+      msg like '%300%' and msg like '%299%' and msg like '%Team Credits%', msg);
+  end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a refusal debits nothing',
+    (select team_credits from public.franchises where id = fb) = 299
+    and not exists (select 1 from public.franchise_ledger where franchise_id = fb and kind = 'facility')
+    and (select facilities->>'training' from public.franchises where id = fb) = '0');
+  perform public.franchise_credit(fb, 'tc', 1, 'test', 'tc:300', null);
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_upgrade('training');
+  perform pg_temp.ok('the Training Center goes up a level for 300 Team Credits, and the first upgrade is Groundbreaking',
+    (v->>'ok')::boolean and (v->>'level')::int = 1 and (v->>'cost')::int = 300 and v->>'currency' = 'tc'
+    and (v->'facilities'->>'training')::int = 1 and (v->'facilities'->>'film')::int = 0
+    and v->'achievements' = '["first_upgrade"]'::jsonb and (v->'totals'->>'team_credits')::int = 0);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the ledger carries the debit once, keyed by facility and level, and the totals follow the ledger',
+    (select count(*) from public.franchise_ledger where franchise_id = fb and kind = 'facility') = 1
+    and (select delta from public.franchise_ledger where franchise_id = fb and kind = 'facility' and key = 'training:1' and currency = 'tc') = -300
+    and (select team_credits from public.franchises where id = fb)
+      = (select sum(delta) from public.franchise_ledger where franchise_id = fb and currency = 'tc')
+    and (select team_credits from public.franchises where id = fb) = 0
+    and (select detail->>'level' from public.franchise_activity where franchise_id = fb and kind = 'facility' and key = 'training:1') = '1'
+    and (select count(*) from public.franchise_achievements where franchise_id = fb and achievement_id = 'first_upgrade') = 1);
+
+  -- levels two and three cost more; there is no fourth
+  perform public.franchise_credit(fb, 'tc', 1600, 'test', 'tc:1600', null);
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_upgrade('training');
+  v2 := public.franchise_upgrade('training');
+  perform pg_temp.ok('levels two and three cost 600 and 1000, and only the first is an achievement',
+    (v->>'level')::int = 2 and (v->>'cost')::int = 600 and (v2->>'level')::int = 3 and (v2->>'cost')::int = 1000
+    and (v2->'totals'->>'team_credits')::int = 0 and v->'achievements' = '[]'::jsonb and v2->'achievements' = '[]'::jsonb);
+  perform pg_temp.as_owner();
+  perform public.franchise_credit(fb, 'tc', 1000, 'test', 'tc:top', null);
+  perform pg_temp.as_user(BOB);
+  begin
+    perform public.franchise_upgrade('training');
+    perform pg_temp.ok('the top level is the top level', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('the top level is the top level', true);
+  end;
+  begin
+    perform public.franchise_upgrade('parking');
+    perform pg_temp.ok('there is no such facility', false, 'it ran');
+  exception when invalid_parameter_value then
+    perform pg_temp.ok('there is no such facility', true);
+  end;
+  begin
+    perform public.franchise_upgrade('version');
+    perform pg_temp.ok('the version line is not a facility', false, 'it ran');
+  exception when invalid_parameter_value then
+    perform pg_temp.ok('the version line is not a facility', true);
+  end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a refused upgrade leaves the credits alone',
+    (select team_credits from public.franchises where id = fb) = 1000
+    and (select count(*) from public.franchise_ledger where franchise_id = fb and kind = 'facility') = 3);
+
+  -- Coach Points buy the Film Room
+  select coach_points into cp0 from public.franchises where id = fb;
+  perform public.franchise_credit(fb, 'cp', 6 - cp0, 'test', 'cp:6', null);
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_upgrade('film');
+  perform pg_temp.ok('the Film Room is bought with Coach Points',
+    v->>'currency' = 'cp' and (v->>'cost')::int = 6 and (v->'facilities'->>'film')::int = 1 and (v->'totals'->>'coach_points')::int = 0);
+  begin
+    perform public.franchise_upgrade('stadium');
+    perform pg_temp.ok('with no Coach Points left, the Stadium waits', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('with no Coach Points left, the Stadium waits', true);
+  end;
+  v := public.franchise_home();
+  perform pg_temp.ok('the Front Office reads the facilities',
+    v->'facilities' = '{"film": 1, "stadium": 0, "training": 3, "conditioning": 0}'::jsonb and v->'offseason' = 'null'::jsonb);
+  begin
+    update public.franchises set facilities = '{"training": 3, "film": 3, "conditioning": 3, "stadium": 3}'::jsonb where id = fb;
+    get diagnostics n = row_count;
+    perform pg_temp.ok('a client cannot build its own facilities', n = 0, 'updated ' || n);
+  exception when insufficient_privilege then
+    perform pg_temp.ok('a client cannot build its own facilities', true);
+  end;
+
+  -- the Film Room is in the box of every game, each side's own
+  perform pg_temp.as_owner();
+  select id, opens_at into gid, t0 from public.franchise_games where franchise_id = fb and season_number = 1 and week = 1;
+  v := public.franchise_play_game(fb, t0);
+  perform pg_temp.ok('the Film Room shows in the box edges as +0.5, the unbuilt Conditioning and Stadium as 0',
+    (select (fg.box->'edges'->'facilities'->>'film')::numeric = 0.5 and (fg.box->'edges'->'facilities'->>'conditioning')::numeric = 0
+        and (fg.box->'edges'->'facilities'->>'stadium')::numeric = 0 from public.franchise_games fg where fg.id = gid));
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_challenge_create(null); tok := v->>'invite_token';
+  perform pg_temp.as_user(CARA);
+  v := public.franchise_challenge_accept(tok);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the Film Room travels to a franchise challenge, and only its owner''s side',
+    (select (ch.box->'a'->'edges'->>'film')::numeric = 0.5 and (ch.box->'b'->'edges'->>'film')::numeric = 0
+        and (ch.box->'a'->'edges'->>'conditioning')::numeric = 0 from public.franchise_challenges ch where ch.invite_token = tok));
+
+  -- the rest of Bob's season, then the offseason
+  for k in 2..8 loop
+    select opens_at into t0 from public.franchise_games where franchise_id = fb and season_number = 1 and week = k;
+    v := public.franchise_play_game(fb, t0);
+  end loop;
+  perform pg_temp.ok('Bob''s first season is complete', v->'season'->>'status' = 'complete');
+  -- four founders on their way out: the starting quarterback and two linemen at 34, a receiver at 32 and fading
+  update public.game_players set age = 34 where franchise_id = fb and position = 'QB' and depth = 1;
+  update public.game_players set age = 34 where franchise_id = fb and position = 'OL' and depth in (2, 5);
+  update public.game_players set age = 32, overall = 52, potential = 52,
+         ratings = (select jsonb_object_agg(x.key, 52) from jsonb_each(ratings) x)
+   where franchise_id = fb and position = 'WR' and depth = 3;
+  select jsonb_agg(id) into going from public.game_players where franchise_id = fb and (age = 34 or (position = 'WR' and depth = 3));
+  select jsonb_object_agg(id, jsonb_build_object('age', age, 'overall', overall, 'potential', potential)) into age0
+    from public.game_players where franchise_id = fb and status = 'active';
+  perform pg_temp.ok('thirty-eight active players and four going', (select count(*) from jsonb_object_keys(age0)) = 38 and jsonb_array_length(going) = 4);
+
+  -- a dry run, rolled back; the report it wrote is kept for comparison
+  begin
+    rep := public.franchise_offseason(fb, 1);
+    raise exception 'undo' using errcode = 'P0001';
+  exception when raise_exception then null;
+  end;
+  perform pg_temp.ok('the dry run left nothing behind',
+    rep->>'version' = 'offseason_v1'
+    and (select offseason is null from public.franchise_seasons where franchise_id = fb and number = 1)
+    and (select count(*) from public.game_players where franchise_id = fb and status = 'retired') = 0
+    and (select count(*) from public.game_players where franchise_id = fb) = 38
+    and (select bool_and(age = (age0->(id::text)->>'age')::int) from public.game_players where franchise_id = fb));
+
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_start_season();
+  perform pg_temp.as_owner();
+  select offseason into rep2 from public.franchise_seasons where franchise_id = fb and number = 1;
+  perform pg_temp.ok('Season II opens on the offseason: the report is written on Season I, once, and home carries it without the player lines',
+    (v->>'started')::boolean and (v->>'season_number')::int = 2 and rep2 is not null
+    and rep2->>'version' = 'offseason_v1' and (rep2->>'after_season')::int = 1 and (rep2->>'training')::int = 3
+    and v->'home'->'offseason'->'summary' = rep2->'summary' and v->'home'->'offseason' ? 'retired' and v->'home'->'offseason' ? 'rookies'
+    and not (v->'home'->'offseason' ? 'players') and jsonb_array_length(rep2->'players') = 38
+    and (select count(*) from public.franchise_activity where franchise_id = fb and kind = 'offseason' and key = '1') = 1);
+  perform pg_temp.ok('the offseason is a pure function of the seed: the dry run and the real one agree, player for player',
+    rep->'players' = rep2->'players' and rep->'summary' = rep2->'summary' and rep->'retired' = rep2->'retired'
+    and (select jsonb_agg(r - 'id') from jsonb_array_elements(rep->'rookies') r) = (select jsonb_agg(r - 'id') from jsonb_array_elements(rep2->'rookies') r));
+  perform pg_temp.ok('a second offseason is the first one again', public.franchise_offseason(fb, 1) = rep2
+    and (select count(*) from public.franchise_seasons where franchise_id = fb and offseason is not null) = 1);
+  perform pg_temp.ok('every player is a year older, in the report and on the roster',
+    (select bool_and(p.age = (age0->(p.id::text)->>'age')::int + 1) from public.game_players p where p.franchise_id = fb and age0 ? p.id::text)
+    and (select bool_and((p->>'age')::int = (age0->(p->>'id')->>'age')::int + 1 and (p->>'before')::int = (age0->(p->>'id')->>'overall')::int)
+           from jsonb_array_elements(rep2->'players') p));
+  perform pg_temp.ok('the four went, at 35 or at 33 and under 55, and no one stayed past that',
+    (select bool_and(status = 'retired' and retired_season = 1) from public.game_players where id in (select (g#>>'{}')::uuid from jsonb_array_elements(going) g))
+    and (select bool_and(age >= 35 or (age >= 33 and overall < 55)) from public.game_players where franchise_id = fb and status = 'retired')
+    and (select bool_and(age < 35 and not (age >= 33 and overall < 55)) from public.game_players where franchise_id = fb and status = 'active')
+    and (rep2->'summary'->>'retired')::int = (select count(*) from public.game_players where franchise_id = fb and status = 'retired')
+    and (select count(*) from jsonb_array_elements(rep2->'retired') r where (r->>'founder')::boolean) = (rep2->'summary'->>'retired')::int);
+  perform pg_temp.ok('the chart closes up and a rookie is signed for every retirement: 38 active, depths 1..n at every position',
+    (select count(*) from public.game_players where franchise_id = fb and status = 'active') = 38
+    and (select bool_and(depth = rn) from (select depth, row_number() over (partition by position order by depth) rn
+           from public.game_players where franchise_id = fb and status = 'active') d)
+    and (rep2->'summary'->>'signed')::int = (rep2->'summary'->>'retired')::int
+    and (select count(*) from public.game_players where franchise_id = fb and acquired_source = 'offseason_rookie') = (rep2->'summary'->>'retired')::int
+    and (select count(*) from public.game_players where franchise_id = fb and position = 'QB' and status = 'active') = 2
+    and (select bool_and(depth = (select max(d2.depth) from public.game_players d2 where d2.franchise_id = fb and d2.position = r.position and d2.status = 'active') - (rn - 1))
+           from (select position, depth, row_number() over (partition by position order by depth desc) rn from public.game_players
+                  where franchise_id = fb and acquired_source = 'offseason_rookie') r));
+  perform pg_temp.ok('rookies are young, signed after Season I, below their potential, with names and numbers no one on the books has worn',
+    (select bool_and(age between 21 and 23 and potential >= overall and status = 'active' and acquired_season = 2026
+              and acquired_detail = 'Signed after Season I' and dev_tier in ('normal', 'quick', 'star', 'superstar') and jsonb_typeof(ratings) = 'object')
+       from public.game_players where franchise_id = fb and acquired_source = 'offseason_rookie')
+    and (select count(*) from public.game_players where franchise_id = fb) = (select count(distinct jersey) from public.game_players where franchise_id = fb)
+    and (select count(*) from public.game_players where franchise_id = fb) = (select count(distinct (first_name, last_name)) from public.game_players where franchise_id = fb));
+  perform pg_temp.ok('growth: no one passes his potential, the old decline, veterans hold, and with a Training Center at three every young player still short of his ceiling improves',
+    (select bool_and(overall <= potential) from public.game_players where franchise_id = fb)
+    and (select coalesce(bool_and((p->>'delta')::int < 0 or (p->>'after')::int <= 41), true) from jsonb_array_elements(rep2->'players') p where (p->>'age')::int >= 33)
+    -- at 30 to 32 a level-three Training Center holds a player about level: a point up at most
+    and (select coalesce(bool_and((p->>'delta')::int <= 1), true) from jsonb_array_elements(rep2->'players') p where (p->>'age')::int between 30 and 32)
+    and (select bool_and((p->>'delta')::int > 0) from jsonb_array_elements(rep2->'players') p
+          where (p->>'age')::int <= 26 and (age0->(p->>'id')->>'overall')::int < (age0->(p->>'id')->>'potential')::int)
+    and (rep2->'summary'->>'improved')::int = (select count(*) from jsonb_array_elements(rep2->'players') p where (p->>'delta')::int > 0)
+    and (rep2->'summary'->>'biggest')::int = (select max((p->>'delta')::int) from jsonb_array_elements(rep2->'players') p));
+  perform pg_temp.ok('a founder''s retirement is a Farewell, and a leap of four or more is a Breakout',
+    exists (select 1 from public.franchise_achievements where franchise_id = fb and achievement_id = 'farewell')
+    and exists (select 1 from public.franchise_achievements where franchise_id = fb and achievement_id = 'breakout') = ((rep2->'summary'->>'biggest')::int >= 4));
+  perform pg_temp.ok('the retired keep their careers and leave the roster read',
+    (select bool_and((career_stats->>'games')::int >= 8) from public.game_players where franchise_id = fb and status = 'retired' and position = 'QB')
+    and (select bool_and(season_stats = '{}'::jsonb) from public.game_players where franchise_id = fb));
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_roster();
+  perform pg_temp.ok('the roster read is the active thirty-eight', jsonb_array_length(v->'players') = 38
+    and not exists (select 1 from jsonb_array_elements(v->'players') p where p->>'status' = 'retired'));
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('Alice''s rollover in section 15 ran the offseason too, with no Training Center',
+    (select offseason->>'training' from public.franchise_seasons where franchise_id = fa and number = 1) = '0'
+    and (select jsonb_array_length(offseason->'players') from public.franchise_seasons where franchise_id = fa and number = 1) = 38);
+
+  -- the Trophy Room
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_trophies();
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the Trophy Room lists every achievement, earned or not, in order, with the day it was earned',
+    jsonb_array_length(v->'achievements') = (select count(*) from public.franchise_achievement_defs)
+    and (select bool_and((a->>'earned')::boolean = exists (select 1 from public.franchise_achievements x where x.franchise_id = fb and x.achievement_id = a->>'id')
+                         and ((a->>'earned')::boolean = (a->>'earned_at' is not null)))
+           from jsonb_array_elements(v->'achievements') a)
+    and (select count(*) from jsonb_array_elements(v->'achievements') a where (a->>'earned')::boolean) >= 4
+    and (v->'achievements'->0->>'sort')::int <= (v->'achievements'->1->>'sort')::int);
+  perform pg_temp.ok('the seasons come newest first, each with its games and its offseason report',
+    jsonb_array_length(v->'seasons') = 2 and (v->'seasons'->0->>'number')::int = 2 and (v->'seasons'->1->>'number')::int = 1
+    and jsonb_array_length(v->'seasons'->1->'games') = 8 and v->'seasons'->1->'offseason'->'summary' = rep2->'summary'
+    and (select bool_and(g->>'status' = 'final' and g->'opponent'->>'name' is not null and g->>'result' in ('W', 'L', 'T') and g ? 'potg')
+           from jsonb_array_elements(v->'seasons'->1->'games') g)
+    and v->'seasons'->0->'offseason' = 'null'::jsonb and v->'seasons'->0->>'status' = 'active');
+  perform pg_temp.ok('the leaders are career lines: the passing leader threw for the most, tackles run high to low, the retired are still counted',
+    (v->'leaders'->'passing'->0->>'yds')::int = (select max((career_stats->>'yds')::int) from public.game_players where franchise_id = fb and position = 'QB')
+    and v->'leaders'->'passing'->0->>'status' = 'retired'
+    and jsonb_array_length(v->'leaders'->'tackles') = 3 and (v->'leaders'->'tackles'->0->>'tkl')::int >= (v->'leaders'->'tackles'->2->>'tkl')::int
+    and jsonb_array_length(v->'leaders'->'rushing') between 1 and 3 and jsonb_array_length(v->'leaders'->'receiving') between 1 and 3);
+  perform pg_temp.ok('the alumni are the retired, with their careers',
+    jsonb_array_length(v->'alumni') = (select count(*) from public.game_players where franchise_id = fb and status = 'retired')
+    and (select bool_and((a->>'retired_season')::int = 1 and a->>'acquired_source' = 'founding_roster' and (a->'career_stats'->>'games')::int >= 8)
+           from jsonb_array_elements(v->'alumni') a));
+  perform pg_temp.ok('the record is the sum of the seasons, the rival comes with the series, the facilities and the ladder come along',
+    (v->'record'->>'wins')::int = (select sum(wins) from public.franchise_seasons where franchise_id = fb) and (v->'record'->>'seasons')::int = 1
+    and v->'rival'->>'name' is not null and (v->'rival'->>'wins')::int + (v->'rival'->>'losses')::int + (v->'rival'->>'ties')::int = 1
+    and (v->'facilities'->>'training')::int = 3 and v->'facilities_table'->>'version' = 'facilities_v1'
+    and (v->'ladder'->>'rating')::int = (select ladder_rating from public.franchises where id = fb)
+    and (v->'fc_record'->>'wins')::int + (v->'fc_record'->>'losses')::int + (v->'fc_record'->>'ties')::int = (select ladder_games from public.franchises where id = fb)
+    and v->'franchise'->>'owner' = 'account' and (v->'franchise'->>'id')::uuid = fb
+    and not (v::text like '%user_id%') and not (v::text like '%example.com%') and not (v::text like '%anon_hash%'));
+  perform pg_temp.as_user(CARA);
+  v2 := public.franchise_trophies();
+  perform pg_temp.ok('another account reads its own room, never yours',
+    (v2->'franchise'->>'id')::uuid = fc and v2->'seasons'->0->'offseason' = 'null'::jsonb
+    and (select count(*) from public.game_players where franchise_id = fb) = 0
+    and (select count(*) from public.franchise_seasons where franchise_id = fb and offseason is not null) = 0);
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('no franchise, no room', public.franchise_trophies(SEC_X) is null);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the offseason, the rookie generator and the pools are reachable by no client role; the upgrade and the room by both',
+    not has_function_privilege('anon', 'public.franchise_offseason(uuid, integer)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_offseason(uuid, integer)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_generate_rookie(uuid, text, integer, integer, text, text)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_pool_first_names()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_upgrade(text, text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_upgrade(text, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_trophies(text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_facilities()', 'execute'));
 end
 $test$;

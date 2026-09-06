@@ -294,6 +294,9 @@ create table if not exists public.franchise_seasons (
   completed_at     timestamptz,
   primary key (franchise_id, number)
 );
+-- the offseason that followed a completed season: who grew, who declined,
+-- who retired, who was signed — written once by the server (Phase 4)
+alter table public.franchise_seasons add column if not exists offseason jsonb;
 
 -- ── fictional players ─────────────────────────────────────────────────────
 -- Generated here, never by a client. Ratings are small: four visible
@@ -326,6 +329,9 @@ create table if not exists public.game_players (
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
+-- the franchise season a player retired after (Phase 4); an alumnus keeps
+-- his row, his card and his career line
+alter table public.game_players add column if not exists retired_season integer;
 
 create index if not exists game_players_franchise on public.game_players (franchise_id, position, depth);
 
@@ -339,7 +345,7 @@ create table if not exists public.franchise_activity (
   franchise_id   uuid not null references public.franchises (id) on delete cascade,
   kind           text not null check (kind in
                    ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
-                    'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win')),
+                    'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason')),
   key            text not null,
   week_key       text not null,
   day_key        text not null,
@@ -485,6 +491,9 @@ alter table public.franchises add column if not exists rival_key text references
 -- the device hash a franchise was claimed FROM, kept so a Head-to-Head
 -- entered anonymously before the claim still maps to the franchise after it
 alter table public.franchises add column if not exists claimed_hash text;
+-- FACILITIES (Phase 4): the first place earned resources are spent. Levels
+-- per facility; the table of costs and effects is franchise_facilities().
+alter table public.franchises add column if not exists facilities jsonb not null default '{"training":0,"film":0,"conditioning":0,"stadium":0}'::jsonb;
 
 -- ONE GAME. Scheduled with the season (the opponent's identity and ratings
 -- frozen at scheduling, so a schedule cannot change under a player), opened
@@ -523,7 +532,7 @@ create index if not exists franchise_games_next on public.franchise_games (franc
 alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
 alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
   ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
-   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win'));
+   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason'));
 
 insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
   ('first_win',       'First Win',       'Your franchise''s first weekly game won.', null, 40),
@@ -589,6 +598,12 @@ insert into public.franchise_achievement_defs (id, name, description, exclusive_
   ('fc_first_win', 'Beat a Friend',    'Won a franchise challenge.', null, 51),
   ('fc_upset',     'Giant Killer',     'Beat a franchise rated five or more points higher than yours.', null, 52),
   ('fc_three',     'Three Straight',   'Won three franchise challenges in a row.', null, 53)
+on conflict (id) do nothing;
+
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('first_upgrade', 'Groundbreaking', 'Upgraded a facility with resources your franchise earned.', null, 60),
+  ('breakout',      'Breakout',       'A player gained four or more overall in one offseason.', null, 61),
+  ('farewell',      'Farewell',       'A founding-roster player retired with your franchise.', null, 62)
 on conflict (id) do nothing;
 
 -- ===========================================================================
@@ -742,22 +757,14 @@ set search_path = pg_catalog, pg_temp as $$
     (('x' || substr(md5(coalesce(p_seed, '')), 1, 8))::bit(32)::int)::double precision / 2147483647.0));
 $$;
 
--- THE GENERATOR.
---
--- The roster plan: 38 players. Per position, the target overall of each
--- depth slot (starters first), the four visible attributes, the jersey
--- range, and how many start. Targets are tuned so a founding team lands at
--- roughly 68–72 overall — playable, and clearly improvable.
---
--- Each player: target ± 3, an archetype whose skew moves the four attributes
--- apart, ± 2 noise per attribute, and the overall is the rounded mean of the
--- four — so a card is always consistent with its own numbers. Age leans
--- young; potential grows with youth and a development tier; rarity is read
--- off overall and potential. Starters carry a trait more often than backups.
-create or replace function public.franchise_generate_roster(p_franchise uuid, p_seed text, p_season integer)
-returns integer language plpgsql security definer set search_path = public, pg_temp as $$
-declare
-  first_names text[] := array[
+-- ── the pools the generator draws from ───────────────────────────────────
+-- The name lists, the roster plan, the archetypes and the trait pool, as
+-- immutable functions so the founding generator and the offseason's rookie
+-- generator draw from the same well. The founding generator's draws are
+-- unchanged: it reads the same values in the same order.
+create or replace function public.franchise_pool_first_names()
+returns text[] language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select array[
     'Mason','Cameron','Jalen','Trey','Dorian','Malik','Bryce','Colton','Elijah','Deshawn',
     'Tanner','Marcus','Kellen','Rashad','Tyler','Isaiah','Devin','Grant','Xavier','Jordan',
     'Caleb','Andre','Brock','Terrell','Wyatt','Darius','Hunter','Jamal','Cody','Antonio',
@@ -769,7 +776,11 @@ declare
     'Tucker','Isaac','Brooks','Andre','Knox','Terrell','Cruz','Dante','Sterling','Kofi',
     'Ridge','Josiah','Colby','Malachi','Turner','Rasheed','Gage','Adrian','Walker','Jabari',
     'Bishop','Tobias','Cyrus','Elias','Vance','Amos','Judah','Levi','Rowan','Otis'];
-  last_names text[] := array[
+$$;
+
+create or replace function public.franchise_pool_last_names()
+returns text[] language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select array[
     'Crowe','Redd','Vale','Hargrove','Whitlock','Bell','Okafor','Dawson','Pruitt','Marsh',
     'Calloway','Reyes','Sutton','Banks','Thorne','Delgado','Mercer','Kincaid','Ashby','Fontaine',
     'Greer','Holloway','Ingram','Jessup','Kerrigan','Lockhart','Maddox','Navarro','Osei','Pemberton',
@@ -785,7 +796,11 @@ declare
     'Ulrich','Villanueva','Waverly','Blackwood','Coleman','Darby','Escobar','Frost','Gilliam','Hollis',
     'Ibarra','Judd','Kemp','Lacey','Merriweather','Oyelaran','Pace','Reinholt','Sloan','Tatum',
     'Vega','Winslow','Ackerman','Boudreaux','Carrick','Dunbar','Farrow','Guthrie','Hyde','Larkin'];
-  plan jsonb := '[
+$$;
+
+create or replace function public.franchise_pool_plan()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select '[
     {"pos":"QB","starters":1,"targets":[72,62],"attrs":["arm","acc","iq","spd"],"nums":[1,19]},
     {"pos":"RB","starters":1,"targets":[70,64,58],"attrs":["spd","pwr","elu","hnd"],"nums":[20,39]},
     {"pos":"WR","starters":3,"targets":[72,69,66,60,56],"attrs":["spd","rte","hnd","iq"],"nums":[80,89]},
@@ -798,7 +813,11 @@ declare
     {"pos":"K","starters":1,"targets":[70],"attrs":["pwr","acc","clu","con"],"nums":[1,19]},
     {"pos":"P","starters":1,"targets":[69],"attrs":["pwr","acc","clu","con"],"nums":[1,19]}
   ]'::jsonb;
-  archetypes jsonb := '{
+$$;
+
+create or replace function public.franchise_pool_archetypes()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select '{
     "QB":[{"name":"Field General","skew":{"iq":6,"acc":3,"arm":-2,"spd":-4}},
           {"name":"Gunslinger","skew":{"arm":7,"acc":-2,"iq":-1,"spd":-2}},
           {"name":"Scrambler","skew":{"spd":8,"arm":-3,"acc":-2,"iq":-1}}],
@@ -833,7 +852,11 @@ declare
          {"name":"Precision","skew":{"acc":7,"pwr":-4}},
          {"name":"Directional","skew":{"con":6,"pwr":-2}}]
   }'::jsonb;
-  trait_pool jsonb := '[
+$$;
+
+create or replace function public.franchise_pool_traits()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select '[
     {"id":"ice_veins","name":"Ice Veins","desc":"+4 late-game passing performance","pos":["QB"],"effect":{"late_game_passing":4}},
     {"id":"quick_release","name":"Quick Release","desc":"Harder to bring down under pressure","pos":["QB"],"effect":{"pressure_resist":3}},
     {"id":"workhorse","name":"Workhorse","desc":"Holds up under a heavy workload","pos":["RB"],"effect":{"fatigue_resist":4}},
@@ -853,6 +876,28 @@ declare
     {"id":"iron_man","name":"Iron Man","desc":"Rarely misses time","pos":["QB","RB","WR","TE","OL","DL","LB","CB","S"],"effect":{"injury_resist":3}},
     {"id":"film_junkie","name":"Film Junkie","desc":"Prepares better every week","pos":["QB","LB","S","CB","OL"],"effect":{"preparation":2}}
   ]'::jsonb;
+$$;
+
+-- THE GENERATOR.
+--
+-- The roster plan: 38 players. Per position, the target overall of each
+-- depth slot (starters first), the four visible attributes, the jersey
+-- range, and how many start. Targets are tuned so a founding team lands at
+-- roughly 68–72 overall — playable, and clearly improvable.
+--
+-- Each player: target ± 3, an archetype whose skew moves the four attributes
+-- apart, ± 2 noise per attribute, and the overall is the rounded mean of the
+-- four — so a card is always consistent with its own numbers. Age leans
+-- young; potential grows with youth and a development tier; rarity is read
+-- off overall and potential. Starters carry a trait more often than backups.
+create or replace function public.franchise_generate_roster(p_franchise uuid, p_seed text, p_season integer)
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  first_names text[] := public.franchise_pool_first_names();
+  last_names text[] := public.franchise_pool_last_names();
+  plan jsonb := public.franchise_pool_plan();
+  archetypes jsonb := public.franchise_pool_archetypes();
+  trait_pool jsonb := public.franchise_pool_traits();
   p jsonb; a jsonb; arch jsonb; eligible jsonb; tr jsonb;
   used_names text[] := '{}'; used_nums integer[] := '{}';
   pos text; d integer; nstart integer; target integer; ovr integer; attrs jsonb; k text; v integer;
@@ -1861,6 +1906,7 @@ declare
   rec_w numeric[] := array[0.30, 0.22, 0.14, 0.16, 0.12, 0.06]; rec_pos text[] := array['WR','WR','WR','TE','RB','WR'];
   rec_n integer[] := array[1, 2, 3, 1, 1, 4];
   players jsonb; potg jsonb; result text; short boolean;
+  fac jsonb; film numeric; cond numeric; stad numeric;
 begin
   select * into f from public.franchises where id = p_franchise;
   if not found then raise exception 'no franchise' using errcode = '22023'; end if;
@@ -1879,16 +1925,22 @@ begin
   -- effective ratings
   my_off := (rt->>'offense')::numeric; my_def := (rt->>'defense')::numeric; my_st := (rt->>'special')::numeric;
   op_off := (opp->>'offense_r')::numeric; op_def := (opp->>'defense_r')::numeric; op_st := coalesce((opp->>'special_r')::numeric, op_off);
-  h_me := case when g.home then 1.5 else 0 end; h_op := case when g.home then 0 else 1.5 end;
+  -- the facilities: the Film Room in every game, Conditioning late, the
+  -- Stadium at home (franchise_facilities)
+  fac := coalesce(f.facilities, '{}'::jsonb);
+  film := 0.5 * coalesce((fac->>'film')::numeric, 0);
+  cond := 0.5 * coalesce((fac->>'conditioning')::numeric, 0);
+  stad := 0.25 * coalesce((fac->>'stadium')::numeric, 0);
+  h_me := case when g.home then 1.5 + stad else 0 end; h_op := case when g.home then 0 else 1.5 end;
   prep_pts := least(100, (prep->>'preparation')::numeric + 2 * (tr->>'preparation')::numeric);
   prep_adj := round((prep_pts - 50) / 50.0 * 3, 2);
   sch_me := public.franchise_scheme_edge(f.offense, opp->>'defense');
   sch_op := public.franchise_scheme_edge(opp->>'offense', f.defense);
-  a_off := my_off + h_me + prep_adj + sch_me + 0.25 * (tr->>'offense')::numeric;
-  a_def := my_def + h_me + prep_adj + 0.25 * (tr->>'defense')::numeric;
+  a_off := my_off + h_me + prep_adj + sch_me + film + 0.25 * (tr->>'offense')::numeric;
+  a_def := my_def + h_me + prep_adj + film + 0.25 * (tr->>'defense')::numeric;
   b_off := op_off + h_op + sch_op;
   b_def := op_def + h_op;
-  late_off := 0.5 * (tr->>'late_offense')::numeric; late_def := 0.5 * (tr->>'late_defense')::numeric;
+  late_off := cond + 0.5 * (tr->>'late_offense')::numeric; late_def := cond + 0.5 * (tr->>'late_defense')::numeric;
   pass_me := public.franchise_pass_share(f.offense); pass_op := public.franchise_pass_share(opp->>'offense');
   qb_share := public.franchise_qb_rush_share(f.offense);
   passer := public.franchise_nth(ps, 'QB', 1); kicker := public.franchise_nth(ps, 'K', 1);
@@ -1973,6 +2025,7 @@ begin
     'scoring', scoring,
     'team', jsonb_build_object('for', tot_me, 'against', tot_op),
     'edges', jsonb_build_object('home', h_me, 'prep', prep, 'prep_adj', prep_adj, 'scheme_offense', sch_me, 'scheme_defense', sch_op,
+      'facilities', jsonb_build_object('film', film, 'conditioning', cond, 'stadium', case when g.home then stad else 0 end),
       'traits', tr, 'offense', round(a_off, 1), 'defense', round(a_def, 1), 'opp_offense', round(b_off, 1), 'opp_defense', round(b_def, 1),
       'possessions', n),
     'players', players, 'potg', potg);
@@ -2342,6 +2395,7 @@ declare
   scoring jsonb := '[]'::jsonb; tot_a jsonb := '{}'::jsonb; tot_b jsonb := '{}'::jsonb; a_first boolean;
   tally_a jsonb := '{}'::jsonb; tally_b jsonb := '{}'::jsonb; play jsonb;
   players_a jsonb; players_b jsonb; potg_a jsonb; potg_b jsonb; result_a text;
+  a_film numeric; b_film numeric; a_cond numeric; b_cond numeric;
 begin
   select * into fa from public.franchises where id = p_a;
   if not found then raise exception 'no franchise' using errcode = '22023'; end if;
@@ -2363,14 +2417,16 @@ begin
   b_prep := round((least(100, (prepb->>'preparation')::numeric + 2 * (trb->>'preparation')::numeric) - 50) / 50.0 * 3, 2);
   a_sch := public.franchise_scheme_edge(fa.offense, fb.defense);
   b_sch := public.franchise_scheme_edge(fb.offense, fa.defense);
-  a_off := (rta->>'offense')::numeric + a_prep + a_sch + 0.25 * (tra->>'offense')::numeric;
-  a_def := (rta->>'defense')::numeric + a_prep + 0.25 * (tra->>'defense')::numeric;
+  a_film := 0.5 * coalesce((fa.facilities->>'film')::numeric, 0); b_film := 0.5 * coalesce((fb.facilities->>'film')::numeric, 0);
+  a_cond := 0.5 * coalesce((fa.facilities->>'conditioning')::numeric, 0); b_cond := 0.5 * coalesce((fb.facilities->>'conditioning')::numeric, 0);
+  a_off := (rta->>'offense')::numeric + a_prep + a_sch + a_film + 0.25 * (tra->>'offense')::numeric;
+  a_def := (rta->>'defense')::numeric + a_prep + a_film + 0.25 * (tra->>'defense')::numeric;
   a_st := (rta->>'special')::numeric;
-  b_off := (rtb->>'offense')::numeric + b_prep + b_sch + 0.25 * (trb->>'offense')::numeric;
-  b_def := (rtb->>'defense')::numeric + b_prep + 0.25 * (trb->>'defense')::numeric;
+  b_off := (rtb->>'offense')::numeric + b_prep + b_sch + b_film + 0.25 * (trb->>'offense')::numeric;
+  b_def := (rtb->>'defense')::numeric + b_prep + b_film + 0.25 * (trb->>'defense')::numeric;
   b_st := (rtb->>'special')::numeric;
-  a_late_off := 0.5 * (tra->>'late_offense')::numeric; a_late_def := 0.5 * (tra->>'late_defense')::numeric;
-  b_late_off := 0.5 * (trb->>'late_offense')::numeric; b_late_def := 0.5 * (trb->>'late_defense')::numeric;
+  a_late_off := a_cond + 0.5 * (tra->>'late_offense')::numeric; a_late_def := a_cond + 0.5 * (tra->>'late_defense')::numeric;
+  b_late_off := b_cond + 0.5 * (trb->>'late_offense')::numeric; b_late_def := b_cond + 0.5 * (trb->>'late_defense')::numeric;
   a_pass := public.franchise_pass_share(fa.offense); b_pass := public.franchise_pass_share(fb.offense);
   a_qb := public.franchise_qb_rush_share(fa.offense); b_qb := public.franchise_qb_rush_share(fb.offense);
   a_passer := public.franchise_nth(psa, 'QB', 1); a_kicker := public.franchise_nth(psa, 'K', 1);
@@ -2427,9 +2483,9 @@ begin
     'sim', 'sim_v1', 'seed', p_seed, 'neutral', true, 'week_key', p_week_key, 'ot', ot, 'possessions', n,
     'result_a', result_a, 'scoring', scoring,
     'a', jsonb_build_object('id', fa.id, 'final', pts_a, 'quarters', to_jsonb(q_a), 'team', tot_a, 'players', players_a, 'potg', potg_a,
-      'edges', jsonb_build_object('prep', prepa, 'prep_adj', a_prep, 'scheme', a_sch, 'traits', tra, 'offense', round(a_off, 1), 'defense', round(a_def, 1))),
+      'edges', jsonb_build_object('prep', prepa, 'prep_adj', a_prep, 'scheme', a_sch, 'traits', tra, 'film', a_film, 'conditioning', a_cond, 'offense', round(a_off, 1), 'defense', round(a_def, 1))),
     'b', jsonb_build_object('id', fb.id, 'final', pts_b, 'quarters', to_jsonb(q_b), 'team', tot_b, 'players', players_b, 'potg', potg_b,
-      'edges', jsonb_build_object('prep', prepb, 'prep_adj', b_prep, 'scheme', b_sch, 'traits', trb, 'offense', round(b_off, 1), 'defense', round(b_def, 1))));
+      'edges', jsonb_build_object('prep', prepb, 'prep_adj', b_prep, 'scheme', b_sch, 'traits', trb, 'film', b_film, 'conditioning', b_cond, 'offense', round(b_off, 1), 'defense', round(b_def, 1))));
 end;
 $$;
 
@@ -2710,6 +2766,321 @@ commit;
 
 begin;
 
+commit;
+
+-- ===========================================================================
+-- THE OFFSEASON AND THE FACILITIES — Phase 4
+--
+-- A season ends; before the next one is scheduled the offseason runs, on
+-- the server, seeded from the franchise seed and the season number: every
+-- player ages a year and moves by his development tier, his age, the games
+-- he played and the Training Center's level; nobody grows past his
+-- potential; the old decline; a player of 35 (or 33 and below 55) retires,
+-- keeps his card and his career line, and a rookie is signed at his
+-- position from the same pools the founding roster came from. The report
+-- is written once, on the completed season.
+--
+-- Facilities are the first thing resources are spent on. The table of
+-- costs and effects is published once here and mirrored in the client; an
+-- upgrade is one negative ledger row, keyed by facility and level, so a
+-- replayed request cannot debit twice. Nothing here can be bought with
+-- money: the only currencies are the earned ones.
+-- ===========================================================================
+
+begin;
+
+-- THE FACILITIES TABLE, facilities_v1. Costs per level, and the effect the
+-- simulator or the offseason applies per level.
+create or replace function public.franchise_facilities()
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'facilities_v1',
+    'training',     jsonb_build_object('name', 'Training Center', 'currency', 'tc', 'costs', jsonb_build_array(300, 600, 1000), 'per_level', 1,
+                      'effect', '+1 development a level for players 26 and under, each offseason; veterans fade slower at levels 2 and 3'),
+    'film',         jsonb_build_object('name', 'Film Room', 'currency', 'cp', 'costs', jsonb_build_array(6, 12, 20), 'per_level', 0.5,
+                      'effect', '+0.5 offense and defense in every game'),
+    'conditioning', jsonb_build_object('name', 'Conditioning', 'currency', 'tc', 'costs', jsonb_build_array(300, 600, 1000), 'per_level', 0.5,
+                      'effect', '+0.5 in the fourth quarter and overtime'),
+    'stadium',      jsonb_build_object('name', 'Stadium', 'currency', 'cp', 'costs', jsonb_build_array(6, 12, 20), 'per_level', 0.25,
+                      'effect', '+0.25 home field in season games'));
+$$;
+
+-- ONE ROOKIE, at a position, from the same pools as the founding roster,
+-- seeded so the same offseason signs the same player. Rated below the
+-- founding backups, young, with room to grow.
+create or replace function public.franchise_generate_rookie(
+  p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  first_names text[] := public.franchise_pool_first_names();
+  last_names text[] := public.franchise_pool_last_names();
+  plan jsonb := public.franchise_pool_plan();
+  archetypes jsonb := public.franchise_pool_archetypes();
+  trait_pool jsonb := public.franchise_pool_traits();
+  p jsonb; a jsonb; arch jsonb; eligible jsonb; tr jsonb; used_names text[]; used_nums integer[];
+  target integer; ovr integer; attrs jsonb; k text; v integer; fn text; ln text; tries integer; num integer; lo integer; hi integer;
+  age integer; tier text; r double precision; bump integer; pot integer; v_rarity text; youth double precision; v_id uuid; lowest integer;
+begin
+  perform setseed(public.franchise_seed_float(p_seed));
+  select x into p from jsonb_array_elements(plan) x where x->>'pos' = p_pos;
+  if p is null then raise exception 'no such position' using errcode = '22023'; end if;
+  lo := (p->'nums'->>0)::int; hi := (p->'nums'->>1)::int;
+  select min(t::int) into lowest from jsonb_array_elements_text(p->'targets') t;
+  target := lowest - 4 + floor(random() * 7)::int - 3;
+  a := archetypes->p_pos;
+  arch := a->(floor(random() * jsonb_array_length(a))::int);
+  attrs := '{}'::jsonb;
+  for k in select jsonb_array_elements_text(p->'attrs') loop
+    v := target + coalesce((arch->'skew'->>k)::int, 0) + floor(random() * 5)::int - 2;
+    attrs := attrs || jsonb_build_object(k, greatest(40, least(99, v)));
+  end loop;
+  select round(avg(x.value::int))::int into ovr from jsonb_each_text(attrs) x;
+  age := 21 + floor(random() * 3)::int;
+  r := random();
+  tier := case when r < 0.03 then 'superstar' when r < 0.15 then 'star' when r < 0.40 then 'quick' else 'normal' end;
+  bump := case tier when 'superstar' then 18 + floor(random() * 9)::int when 'star' then 12 + floor(random() * 9)::int
+                    when 'quick' then 6 + floor(random() * 9)::int else 2 + floor(random() * 7)::int end;
+  youth := (33 - age) / 12.0;
+  pot := least(99, greatest(ovr, ovr + round(bump * youth)::int));
+  v_rarity := case when ovr >= 82 or pot >= 90 then 'elite' when ovr >= 75 or pot >= 84 then 'rare'
+                   when ovr >= 68 or pot >= 77 then 'uncommon' else 'common' end;
+  tr := null;
+  if random() < 0.25 then
+    select jsonb_agg(x) into eligible from jsonb_array_elements(trait_pool) x where x->'pos' ? p_pos;
+    if eligible is not null and jsonb_array_length(eligible) > 0 then
+      tr := eligible->(floor(random() * jsonb_array_length(eligible))::int);
+      tr := tr - 'pos';
+    end if;
+  end if;
+  -- no name and no number of anyone who ever wore the colors, retired included
+  select coalesce(array_agg(first_name || ' ' || last_name), '{}'), coalesce(array_agg(jersey), '{}')
+    into used_names, used_nums from public.game_players where franchise_id = p_franchise;
+  tries := 0;
+  loop
+    fn := first_names[1 + floor(random() * array_length(first_names, 1))::int];
+    ln := last_names[1 + floor(random() * array_length(last_names, 1))::int];
+    exit when not ((fn || ' ' || ln) = any (used_names)) or tries > 20;
+    tries := tries + 1;
+  end loop;
+  tries := 0;
+  loop
+    num := lo + floor(random() * (hi - lo + 1))::int;
+    exit when not (num = any (used_nums)) or tries > 40;
+    tries := tries + 1;
+  end loop;
+  insert into public.game_players
+    (franchise_id, first_name, last_name, position, jersey, age, overall, archetype, dev_tier, potential, stamina, chemistry,
+     rarity, ratings, traits, depth, status, acquired_source, acquired_season, acquired_detail)
+  values
+    (p_franchise, fn, ln, p_pos, num, age, ovr, arch->>'name', tier, pot, 70 + floor(random() * 26)::int, 50,
+     v_rarity, attrs, case when tr is null then '[]'::jsonb else jsonb_build_array(tr) end, p_depth, 'active',
+     'offseason_rookie', p_season, p_detail)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
+-- THE OFFSEASON, after season p_from. Runs once; a second call returns the
+-- report already written.
+create or replace function public.franchise_offseason(p_franchise uuid, p_from integer)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; pl record; training integer; g integer; growth integer; k text; v integer; newattrs jsonb; ovr integer;
+  pot integer; v_rarity text; age_new integer; report jsonb; players jsonb := '[]'::jsonb; retired jsonb := '[]'::jsonb;
+  rookies jsonb := '[]'::jsonb; nimp integer := 0; ndec integer := 0; nret integer := 0; rid uuid; v_pos text; d integer; k2 integer;
+  delta integer; retire boolean; big integer := 0; founder_retired boolean := false; v_real integer; existing jsonb;
+begin
+  select * into f from public.franchises where id = p_franchise for update;
+  if not found then raise exception 'no franchise' using errcode = '22023'; end if;
+  select offseason, season into existing, v_real from public.franchise_seasons where franchise_id = p_franchise and number = p_from;
+  if existing is not null then return existing; end if;
+  perform setseed(public.franchise_seed_float(f.seed || ':offseason:' || p_from));
+  training := coalesce((f.facilities->>'training')::int, 0);
+
+  for pl in select * from public.game_players where franchise_id = p_franchise and status = 'active' order by position, depth, id loop
+    age_new := pl.age + 1;
+    g := coalesce((pl.season_stats->>'games')::int, 0);
+    growth := case
+      when age_new <= 26 then (case pl.dev_tier when 'superstar' then 4 when 'star' then 3 when 'quick' then 2 else 1 end)
+                              + (case when g >= 4 then 1 else 0 end) + training + floor(random() * 3)::int - 1
+      when age_new <= 29 then floor(random() * 3)::int - 1 + (case when g >= 4 and training >= 2 then 1 else 0 end)
+      when age_new <= 32 then -1 + floor(random() * 2)::int - 1 + (case when training >= 3 then 1 else 0 end)
+      else -2 + floor(random() * 2)::int - 1 end;
+    newattrs := '{}'::jsonb;
+    for k, v in select key, value::int from jsonb_each_text(pl.ratings) loop
+      newattrs := newattrs || jsonb_build_object(k, greatest(40, least(99, v + growth + floor(random() * 3)::int - 1)));
+    end loop;
+    select round(avg(x.value::int))::int into ovr from jsonb_each_text(newattrs) x;
+    -- the ceiling: growth cannot lift a player past his potential
+    if ovr > pl.potential and growth > 0 then
+      select jsonb_object_agg(x.key, greatest(40, x.value::int - (ovr - pl.potential))) into newattrs from jsonb_each_text(newattrs) x;
+      select round(avg(x.value::int))::int into ovr from jsonb_each_text(newattrs) x;
+    end if;
+    pot := case when age_new >= 30 then ovr else greatest(pl.potential, ovr) end;
+    v_rarity := case when ovr >= 82 or pot >= 90 then 'elite' when ovr >= 75 or pot >= 84 then 'rare'
+                     when ovr >= 68 or pot >= 77 then 'uncommon' else 'common' end;
+    delta := ovr - pl.overall;
+    retire := age_new >= 35 or (age_new >= 33 and ovr < 55);
+    update public.game_players
+       set age = age_new, ratings = newattrs, overall = ovr, potential = pot, rarity = v_rarity,
+           status = case when retire then 'retired' else status end,
+           retired_season = case when retire then p_from else retired_season end,
+           updated_at = now()
+     where id = pl.id;
+    players := players || jsonb_build_object('id', pl.id, 'name', pl.first_name || ' ' || pl.last_name, 'position', pl.position,
+      'age', age_new, 'before', pl.overall, 'after', ovr, 'delta', delta, 'retired', retire);
+    if delta > 0 then nimp := nimp + 1; elsif delta < 0 then ndec := ndec + 1; end if;
+    if delta > big then big := delta; end if;
+    if retire then
+      nret := nret + 1;
+      retired := retired || jsonb_build_object('id', pl.id, 'name', pl.first_name || ' ' || pl.last_name, 'position', pl.position,
+        'age', age_new, 'overall', ovr, 'founder', pl.acquired_source = 'founding_roster', 'games', coalesce((pl.career_stats->>'games')::int, 0));
+      if pl.acquired_source = 'founding_roster' then founder_retired := true; end if;
+    end if;
+  end loop;
+
+  -- the chart closes up, and a rookie is signed for every retirement
+  for v_pos in select distinct position from public.game_players where franchise_id = p_franchise and status = 'retired' and retired_season = p_from loop
+    k2 := 0;
+    for pl in select id from public.game_players where franchise_id = p_franchise and position = v_pos and status = 'active' order by depth, overall desc loop
+      k2 := k2 + 1;
+      update public.game_players set depth = k2 where id = pl.id;
+    end loop;
+    for d in 1..(select count(*) from public.game_players where franchise_id = p_franchise and position = v_pos and status = 'retired' and retired_season = p_from) loop
+      k2 := k2 + 1;
+      rid := public.franchise_generate_rookie(p_franchise, v_pos, k2, coalesce(v_real, public.games_season_of(now())),
+               f.seed || ':rookie:' || p_from || ':' || v_pos || ':' || d, 'Signed after Season ' || public.games_roman(p_from));
+      rookies := rookies || (select jsonb_build_object('id', id, 'name', first_name || ' ' || last_name, 'position', position,
+        'overall', overall, 'age', age, 'potential', potential, 'depth', depth) from public.game_players where id = rid);
+    end loop;
+  end loop;
+
+  report := jsonb_build_object('version', 'offseason_v1', 'after_season', p_from, 'training', training,
+    'players', players, 'retired', retired, 'rookies', rookies,
+    'summary', jsonb_build_object('improved', nimp, 'declined', ndec, 'retired', nret, 'signed', jsonb_array_length(rookies), 'biggest', big));
+  update public.franchise_seasons set offseason = report where franchise_id = p_franchise and number = p_from;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (p_franchise, 'offseason', p_from::text, public.games_week_key(now()), public.games_day_key(now()), report->'summary')
+  on conflict (franchise_id, kind, key) do nothing;
+  if big >= 4 then perform public.franchise_award(p_franchise, 'breakout', public.games_season_of(now()), jsonb_build_object('after_season', p_from, 'delta', big)); end if;
+  if founder_retired then perform public.franchise_award(p_franchise, 'farewell', public.games_season_of(now()), jsonb_build_object('after_season', p_from)); end if;
+  return report;
+end;
+$$;
+
+-- UPGRADE A FACILITY. One negative ledger row, keyed by facility and level;
+-- refused when the level is the top one or the resource is short.
+create or replace function public.franchise_upgrade(p_facility text, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; tbl jsonb := public.franchise_facilities();
+  spec jsonb; lvl integer; cost integer; cur text; bal integer; ok boolean; v_new text[] := '{}';
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  if p_facility is null or p_facility = 'version' then raise exception 'no such facility' using errcode = '22023'; end if;
+  spec := tbl->p_facility;
+  if spec is null then raise exception 'no such facility' using errcode = '22023'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  lvl := coalesce((f.facilities->>p_facility)::int, 0);
+  if lvl >= jsonb_array_length(spec->'costs') then
+    raise exception '% is already at its top level', spec->>'name' using errcode = '55000';
+  end if;
+  cost := (spec->'costs'->>lvl)::int; cur := spec->>'currency';
+  bal := case cur when 'tc' then f.team_credits when 'cp' then f.coach_points when 'sp' then f.scouting_points else 0 end;
+  if bal < cost then
+    raise exception 'not enough %: % needed, % on hand',
+      (case cur when 'tc' then 'Team Credits' when 'cp' then 'Coach Points' else 'Scouting Points' end), cost, bal
+      using errcode = '55000';
+  end if;
+  ok := public.franchise_credit(v_f, cur, -cost, 'facility', p_facility || ':' || (lvl + 1), (spec->>'name') || ' level ' || (lvl + 1));
+  if not ok then raise exception 'that upgrade is already on the books' using errcode = '55000'; end if;
+  update public.franchises set facilities = coalesce(facilities, '{}'::jsonb) || jsonb_build_object(p_facility, lvl + 1), updated_at = now() where id = v_f;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'facility', p_facility || ':' || (lvl + 1), public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('facility', p_facility, 'level', lvl + 1, 'cost', cost, 'currency', cur))
+  on conflict (franchise_id, kind, key) do nothing;
+  if public.franchise_award(v_f, 'first_upgrade', public.games_season_of(now()), jsonb_build_object('facility', p_facility)) then
+    v_new := array_append(v_new, 'first_upgrade');
+  end if;
+  return jsonb_build_object('ok', true, 'facility', p_facility, 'level', lvl + 1, 'cost', cost, 'currency', cur,
+    'facilities', (select facilities from public.franchises where id = v_f),
+    'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- THE TROPHY ROOM: everything permanent about a franchise, in one read.
+create or replace function public.franchise_trophies(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare f public.franchises%rowtype; v_ach jsonb; v_seasons jsonb; v_leaders jsonb; v_alumni jsonb; v_record jsonb; v_riv jsonb;
+begin
+  select * into f from public.franchises where id = public.franchise_of(p_secret);
+  if not found then return null; end if;
+  select coalesce(jsonb_agg(jsonb_build_object('id', d.id, 'name', d.name, 'description', d.description, 'exclusive_season', d.exclusive_season,
+      'sort', d.sort, 'earned', a.franchise_id is not null, 'earned_at', a.earned_at, 'season', a.season) order by d.sort), '[]'::jsonb)
+    into v_ach from public.franchise_achievement_defs d
+    left join public.franchise_achievements a on a.achievement_id = d.id and a.franchise_id = f.id;
+  select coalesce(jsonb_agg(public.franchise_season_json(f.id, s.number) || jsonb_build_object(
+      'offseason', s.offseason,
+      'games', (select coalesce(jsonb_agg(jsonb_build_object('week', g.week, 'home', g.home, 'rival', g.rival, 'status', g.status,
+                  'result', g.result, 'score_for', g.score_for, 'score_against', g.score_against, 'ot', coalesce((g.box->>'ot')::boolean, false),
+                  'potg', g.box->'potg'->>'name',
+                  'opponent', jsonb_build_object('name', g.opponent->>'name', 'city', g.opponent->>'city', 'abbr', g.opponent->>'abbr',
+                    'logo', g.opponent->>'logo', 'theme', g.opponent->>'theme', 'overall', g.opponent->'overall')) order by g.week), '[]'::jsonb)
+                 from public.franchise_games g where g.franchise_id = f.id and g.season_number = s.number))
+      order by s.number desc), '[]'::jsonb)
+    into v_seasons from public.franchise_seasons s where s.franchise_id = f.id;
+  select jsonb_build_object(
+    'passing', (select coalesce(jsonb_agg(l order by (l->>'yds')::int desc), '[]'::jsonb) from (
+       select jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'status', p.status,
+         'yds', (p.career_stats->>'yds')::int, 'td', coalesce((p.career_stats->>'td')::int, 0), 'games', coalesce((p.career_stats->>'games')::int, 0)) l
+       from public.game_players p where p.franchise_id = f.id and p.position = 'QB' and (p.career_stats->>'yds')::int > 0 order by (p.career_stats->>'yds')::int desc limit 3) s),
+    'rushing', (select coalesce(jsonb_agg(l order by (l->>'yds')::int desc), '[]'::jsonb) from (
+       select jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'status', p.status,
+         'yds', (p.career_stats->>'yds')::int, 'td', coalesce((p.career_stats->>'td')::int, 0), 'games', coalesce((p.career_stats->>'games')::int, 0)) l
+       from public.game_players p where p.franchise_id = f.id and p.position = 'RB' and (p.career_stats->>'yds')::int > 0 order by (p.career_stats->>'yds')::int desc limit 3) s),
+    'receiving', (select coalesce(jsonb_agg(l order by (l->>'yds')::int desc), '[]'::jsonb) from (
+       select jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'status', p.status,
+         'yds', (p.career_stats->>'yds')::int, 'td', coalesce((p.career_stats->>'td')::int, 0), 'games', coalesce((p.career_stats->>'games')::int, 0)) l
+       from public.game_players p where p.franchise_id = f.id and p.position in ('WR', 'TE') and (p.career_stats->>'yds')::int > 0 order by (p.career_stats->>'yds')::int desc limit 3) s),
+    'tackles', (select coalesce(jsonb_agg(l order by (l->>'tkl')::int desc), '[]'::jsonb) from (
+       select jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'status', p.status,
+         'tkl', (p.career_stats->>'tkl')::int, 'sacks', coalesce((p.career_stats->>'sacks')::int, 0), 'int', coalesce((p.career_stats->>'int')::int, 0), 'games', coalesce((p.career_stats->>'games')::int, 0)) l
+       from public.game_players p where p.franchise_id = f.id and p.position in ('DL', 'LB', 'CB', 'S') and (p.career_stats->>'tkl')::int > 0 order by (p.career_stats->>'tkl')::int desc limit 3) s),
+    'sacks', (select coalesce(jsonb_agg(l order by (l->>'sacks')::int desc), '[]'::jsonb) from (
+       select jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'status', p.status,
+         'sacks', (p.career_stats->>'sacks')::int, 'games', coalesce((p.career_stats->>'games')::int, 0)) l
+       from public.game_players p where p.franchise_id = f.id and p.position in ('DL', 'LB') and (p.career_stats->>'sacks')::int > 0 order by (p.career_stats->>'sacks')::int desc limit 3) s))
+    into v_leaders;
+  select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'jersey', p.jersey,
+      'age', p.age, 'overall', p.overall, 'archetype', p.archetype, 'rarity', p.rarity, 'retired_season', p.retired_season,
+      'acquired_source', p.acquired_source, 'acquired_season', p.acquired_season, 'career_stats', p.career_stats)
+      order by p.retired_season desc, p.overall desc), '[]'::jsonb)
+    into v_alumni from public.game_players p where p.franchise_id = f.id and p.status = 'retired';
+  select jsonb_build_object('wins', coalesce(sum(wins), 0), 'losses', coalesce(sum(losses), 0), 'ties', coalesce(sum(ties), 0),
+      'points_for', coalesce(sum(points_for), 0), 'points_against', coalesce(sum(points_against), 0), 'seasons', count(*) filter (where status = 'complete'))
+    into v_record from public.franchise_seasons where franchise_id = f.id;
+  select jsonb_build_object('key', o.key, 'city', o.city, 'name', o.name, 'abbr', o.abbr, 'logo', o.logo, 'theme', o.theme,
+      'wins', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'W'),
+      'losses', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'L'),
+      'ties', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'T'))
+    into v_riv from public.franchise_opponents o where o.key = f.rival_key;
+  return jsonb_build_object(
+    'franchise', jsonb_build_object('id', f.id, 'name', f.name, 'city', f.city, 'abbr', f.abbr, 'logo', f.logo, 'theme', f.theme,
+      'offense', f.offense, 'defense', f.defense, 'founded_season', f.founded_season, 'created_at', f.created_at,
+      'owner', case when f.user_id is not null then 'account' else 'device' end),
+    'achievements', v_ach, 'seasons', v_seasons, 'leaders', v_leaders, 'alumni', v_alumni, 'record', v_record, 'rival', v_riv,
+    'facilities', coalesce(f.facilities, '{}'::jsonb), 'facilities_table', public.franchise_facilities(),
+    'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
+    'fc_record', (select jsonb_build_object('wins', coalesce(sum(fc_wins), 0), 'losses', coalesce(sum(fc_losses), 0), 'ties', coalesce(sum(fc_ties), 0))
+                    from public.franchise_rivalries r where r.franchise_id = f.id));
+end;
+$$;
+
+commit;
+
+begin;
+
 -- ── the public side of the weekly game ────────────────────────────────────
 
 -- START A SEASON. A franchise still in preseason gets its schedule; a
@@ -2730,6 +3101,9 @@ begin
     perform public.franchise_open_season(v_f, s.number, now());
     v_n := s.number; v_started := true;
   elsif s.status = 'complete' then
+    -- the offseason first: ageing, development, retirements and rookies,
+    -- reported once on the season that just ended
+    perform public.franchise_offseason(v_f, s.number);
     v_n := s.number + 1;
     insert into public.franchise_seasons (franchise_id, number, label, season, status, weeks)
     values (v_f, v_n, 'Season ' || public.games_roman(v_n), v_real, 'preseason', s.weeks);
@@ -2863,6 +3237,8 @@ begin
                from public.franchise_opponents o where o.key = f.rival_key),
     -- franchise vs franchise: where I stand, and the last one played
     'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
+    'facilities', coalesce(f.facilities, '{}'::jsonb),
+    'offseason', (select s.offseason - 'players' from public.franchise_seasons s where s.franchise_id = f.id and s.offseason is not null order by s.number desc limit 1),
     'challenges', jsonb_build_object(
       'open', (select count(*) from public.franchise_challenges c where c.challenger_id = f.id and c.status = 'OPEN' and c.expires_at > now()),
       'played', (select count(*) from public.franchise_challenges c where (c.challenger_id = f.id or c.opponent_id = f.id) and c.status = 'FINAL'),
@@ -3132,6 +3508,14 @@ revoke all on function public.franchise_rivalry_bump(uuid, uuid, text, text) fro
 revoke all on function public.franchise_sim_score_play(jsonb, jsonb, jsonb, jsonb, numeric, jsonb) from public, anon, authenticated;
 revoke all on function public.franchise_sim_versus(uuid, uuid, text, text) from public, anon, authenticated;
 revoke all on function public.franchise_challenge_json(uuid, uuid) from public, anon, authenticated;
+-- the offseason and its rookie generator, and the pools they draw from
+revoke all on function public.franchise_offseason(uuid, integer) from public, anon, authenticated;
+revoke all on function public.franchise_generate_rookie(uuid, text, integer, integer, text, text) from public, anon, authenticated;
+revoke all on function public.franchise_pool_first_names() from public, anon, authenticated;
+revoke all on function public.franchise_pool_last_names() from public, anon, authenticated;
+revoke all on function public.franchise_pool_plan() from public, anon, authenticated;
+revoke all on function public.franchise_pool_archetypes() from public, anon, authenticated;
+revoke all on function public.franchise_pool_traits() from public, anon, authenticated;
 
 grant execute on function public.franchise_economy() to anon, authenticated;
 grant execute on function public.games_week_key(timestamptz) to anon, authenticated;
@@ -3190,6 +3574,10 @@ grant execute on function public.franchise_challenge_cancel(uuid, text) to anon,
 grant execute on function public.franchise_challenges_mine(integer, text) to anon, authenticated;
 grant execute on function public.franchise_ladder(integer, text) to anon, authenticated;
 grant execute on function public.franchise_h2h_context(text) to anon, authenticated;
+-- facilities and the Trophy Room
+grant execute on function public.franchise_facilities() to anon, authenticated;
+grant execute on function public.franchise_upgrade(text, text) to anon, authenticated;
+grant execute on function public.franchise_trophies(text) to anon, authenticated;
 
 commit;
 
@@ -3273,5 +3661,17 @@ union all
 select 15, 'the ladder is public and lists franchises, never accounts',
   case when has_function_privilege('anon', 'public.franchise_ladder(integer, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_identity_json(uuid)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 16, 'the offseason and the rookie generator are reachable by no client role',
+  case when not has_function_privilege('anon', 'public.franchise_offseason(uuid, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_offseason(uuid, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_generate_rookie(uuid, text, integer, integer, text, text)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 17, 'facilities are ' || (public.franchise_facilities()->>'version') || ', bought with earned resources through the ledger only',
+  case when public.franchise_facilities()->>'version' = 'facilities_v1'
+        and has_function_privilege('anon', 'public.franchise_upgrade(text, text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_credit(uuid, text, integer, text, text, text)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

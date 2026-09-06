@@ -415,3 +415,74 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .vs-fr{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:var(--faint)}
 .vs-fr .fr-mark{width:18px;height:18px;border-radius:5px}
 .h2h-riv{text-align:center;font-size:12px;color:var(--dim);margin-top:8px;font-family:'JetBrains Mono',monospace}
+
+/* ── THE OFFSEASON AND THE FACILITIES (Phase 4) ───────────────────────── */
+/* the facilities on the Front Office: four of them, a level meter each,
+   one button that names the price */
+.fac{display:grid;gap:8px;margin-top:10px}
+@media(min-width:720px){.fac{grid-template-columns:1fr 1fr}}
+.fac-i{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.fac-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fac-h .n{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px}
+.fac-h .lv{display:flex;gap:4px;flex:none}
+.fac-h .lv i{width:14px;height:6px;border-radius:3px;background:var(--line2);display:block}
+.fac-h .lv i.on{background:var(--fr-primary,var(--val))}
+.fac-i .e{font-size:12px;color:var(--faint);margin-top:6px;line-height:1.45}
+.fac-i .s{font-size:12.5px;color:var(--dim);margin-top:6px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;line-height:1.45}
+.fac-i .act{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fac-i .act .btn{min-height:40px;font-size:13px;padding:0 12px}
+.fac-i .short{font-size:12px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;line-height:1.45}
+.fac-i .top{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--val);border:1px solid var(--val-dim);border-radius:999px;padding:3px 9px}
+
+/* the HQ's offseason line */
+.hq-off{margin-top:12px;font-size:13px;color:var(--dim);line-height:1.5;border-left:3px solid var(--fr-primary,var(--val-dim));padding-left:10px}
+.hq-off b{color:var(--text);font-weight:600}
+
+/* the Trophy Room: the summary strip, the wall, the seasons, the leaders,
+   the alumni */
+.tr-sum{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+@media(min-width:560px){.tr-sum{grid-template-columns:repeat(4,1fr)}}
+.tr-sum div{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.tr-sum .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-sum .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;margin-top:3px;line-height:1.1}
+.tr-sum .v small{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-fac{margin-top:10px;font-size:12.5px;color:var(--dim);line-height:1.5}
+.ach .locked{border-color:var(--line);opacity:.62}
+.ach .locked .n{color:var(--dim)}
+
+.sea{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-top:8px;overflow:hidden}
+.sea>summary{list-style:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;cursor:pointer;min-height:var(--tap)}
+.sea>summary::-webkit-details-marker{display:none}
+.sea>summary .p{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;white-space:nowrap}
+.sea>summary .n{font-size:12px;color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sea>summary .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.sea .empty{margin:0 14px 12px}
+.sea-g{list-style:none;margin:0;padding:0 14px 12px;display:grid;gap:6px}
+.sea-g li{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:8px;align-items:center;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px}
+.sea-g .wk{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);white-space:nowrap}
+.sea-g .fr-mark{width:22px;height:22px;border-radius:6px}
+.sea-g .o{min-width:0}
+.sea-g .o b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.sea-g .o small{display:block;font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sea-g .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap;font-weight:700}
+.sea-g .r.w{color:var(--val)}.sea-g .r.l{color:var(--neg)}.sea-g .r.t{color:var(--est)}
+.off{margin:0 14px 14px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px}
+.off-l{font-size:14px;line-height:1.5;margin-top:4px}
+.off-s{font-size:12.5px;color:var(--dim);line-height:1.55;margin-top:6px;overflow-wrap:anywhere}
+.off-s b{color:var(--text)}
+
+.lead-g{display:grid;gap:14px;margin-top:6px}
+@media(min-width:720px){.lead-g{grid-template-columns:1fr 1fr}}
+.lead{list-style:none;margin:6px 0 0;padding:0;counter-reset:lead;display:grid;gap:6px}
+.lead li{counter-increment:lead;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px}
+.lead li::before{content:counter(lead);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);width:14px}
+.lead .o{min-width:0}
+.lead .o b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.lead .o small{display:block;font-size:11px;color:var(--faint)}
+.lead .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap;text-align:right}
+.alum{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.alum li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
+.alum .j{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--faint);width:34px}
+.alum .o{min-width:0}
+.alum .o b{display:block;font-weight:600}
+.alum .o small{display:block;font-size:11px;color:var(--faint);line-height:1.45}

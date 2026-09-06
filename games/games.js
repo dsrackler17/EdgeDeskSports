@@ -92,7 +92,10 @@
     'season_started', 'gameday_view', 'game_share',
     /* franchise vs franchise (Phase 3): a challenge issued, its link
        opened, accepted, completed, shared; the ladder seen */
-    'fc_create', 'fc_invite_open', 'fc_accept', 'fc_complete', 'fc_share', 'ladder_view'];
+    'fc_create', 'fc_invite_open', 'fc_accept', 'fc_complete', 'fc_share', 'ladder_view',
+    /* the offseason and the facilities (Phase 4): a facility built, the
+       Trophy Room seen (declared above), the room shared */
+    'facility_upgrade', 'trophy_share'];
 
   var _level = null;
   function track(event, props) {
@@ -321,7 +324,9 @@
     { key: 'gameday',  href: '/games/gameday/',          label: 'Game Day',     tab: 'Game Day', cls: 'gh-only-wide' },
     { key: 'roster',   href: '/games/roster/',           label: 'Roster',       tab: 'Roster',   cls: 'gh-only-wide' },
     { key: 'groups',   href: '/games/groups/',           label: 'League',       cls: 'gh-only-wider' },
-    { key: 'franchise', href: '/games/franchise/',       label: 'Front Office', cls: 'gh-only-wider' }
+    { key: 'franchise', href: '/games/franchise/',       label: 'Front Office', cls: 'gh-only-wider' },
+    /* the Trophy Room: everything permanent about a franchise (Phase 4) */
+    { key: 'trophies', href: '/games/trophies/',         label: 'Trophy Room',  cls: 'gh-only-wider' }
   ];
   function header(current) {
     var nav = ROOMS.map(function (r) {
@@ -378,6 +383,7 @@
       + '<a href="/games/pick-5/">Pick 5</a><a href="/games/groups/">Groups</a>'
       + '<a href="/games/gameday/">Game Day</a>'
       + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
+      + '<a href="/games/trophies/">Trophy Room</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'

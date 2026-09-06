@@ -207,7 +207,10 @@
     fc_first:       { name: 'Exhibition Debut' },
     fc_first_win:   { name: 'Beat a Friend' },
     fc_upset:       { name: 'Giant Killer' },
-    fc_three:       { name: 'Three Straight' }
+    fc_three:       { name: 'Three Straight' },
+    first_upgrade:  { name: 'Groundbreaking' },
+    breakout:       { name: 'Breakout' },
+    farewell:       { name: 'Farewell' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -536,6 +539,80 @@
   }
 
   /* ── the anonymous envelope: what it would be worth, and its payload ──── */
+  /* ── THE OFFSEASON AND THE FACILITIES (Phase 4) ─────────────────────────
+     Mirrors of franchise_facilities() and franchise_offseason() in the SQL,
+     for display only: the client shows a price, the server charges it; the
+     client explains a report, the server wrote it. Pinned to the SQL by
+     tools/games/franchise.test.js. */
+  var FACILITIES_VERSION = 'facilities_v1';
+  var FACILITIES = {
+    training:     { name: 'Training Center', currency: 'tc', costs: [300, 600, 1000], per_level: 1,
+                    effect: '+1 development a level for players 26 and under, each offseason; veterans fade slower at levels 2 and 3' },
+    film:         { name: 'Film Room',       currency: 'cp', costs: [6, 12, 20],      per_level: 0.5,
+                    effect: '+0.5 offense and defense in every game' },
+    conditioning: { name: 'Conditioning',    currency: 'tc', costs: [300, 600, 1000], per_level: 0.5,
+                    effect: '+0.5 in the fourth quarter and overtime' },
+    stadium:      { name: 'Stadium',         currency: 'cp', costs: [6, 12, 20],      per_level: 0.25,
+                    effect: '+0.25 home field in season games' }
+  };
+  var FACILITY_ORDER = ['training', 'film', 'conditioning', 'stadium'];
+  /* one facility as a page shows it: the level, what the next one costs,
+     and whether what is on hand covers it. The server decides again. */
+  function facilityState(key, facilities, resources) {
+    var spec = FACILITIES[key];
+    if (!spec) return null;
+    var level = Math.max(0, Math.min(spec.costs.length, obj(facilities)[key] | 0));
+    var top = level >= spec.costs.length, cost = top ? null : spec.costs[level];
+    var cur = CURRENCIES[spec.currency], have = obj(resources)[cur.field] | 0;
+    return { key: key, name: spec.name, currency: spec.currency, unit: cur.short, level: level, max: spec.costs.length, top: top,
+      cost: cost, have: have, affordable: !top && have >= cost, short: top ? 0 : Math.max(0, cost - have),
+      effect: spec.effect, bonus: spec.per_level * level, next_bonus: top ? null : spec.per_level * (level + 1) };
+  }
+  function facilityStates(facilities, resources) {
+    return FACILITY_ORDER.map(function (k) { return facilityState(k, facilities, resources); });
+  }
+  function facilityLine(key, level) {
+    var spec = FACILITIES[key];
+    return spec ? spec.name + ' · level ' + (level | 0) + ' of ' + spec.costs.length : '';
+  }
+  var OFFSEASON_VERSION = 'offseason_v1';
+  /* the retirement rule, as the SQL applies it: at 35, or at 33 and under 55 */
+  var RETIRE_AGE = 35, FADE_AGE = 33, FADE_OVERALL = 55;
+  function roman(n) {
+    n = n | 0; if (n <= 0 || n >= 4000) return String(n);
+    var t = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']], out = '', i;
+    for (i = 0; i < t.length; i++) while (n >= t[i][0]) { out += t[i][1]; n -= t[i][0]; }
+    return out;
+  }
+  /* the offseason report in one sentence: who improved, who declined, who
+     retired, who was signed. Every number is the server's. */
+  function offseasonLine(rep) {
+    rep = obj(rep); var s = obj(rep.summary), bits = [];
+    if (rep.after_season == null) return '';
+    bits.push((s.improved | 0) + ' improved');
+    bits.push((s.declined | 0) + ' declined');
+    if (s.retired | 0) bits.push((s.retired | 0) + ' retired');
+    if (s.signed | 0) bits.push((s.signed | 0) + ' rookie' + ((s.signed | 0) === 1 ? '' : 's') + ' signed');
+    var out = 'Offseason after Season ' + roman(rep.after_season) + ': ' + bits.join(', ') + '.';
+    if ((s.biggest | 0) >= 4) out += ' Biggest leap +' + (s.biggest | 0) + '.';
+    return out;
+  }
+  /* the Trophy Room as text: the identity, the seasons, the record, the
+     wall — and no claim about anything but a free game */
+  function trophyShareText(t) {
+    t = obj(t); var f = obj(t.franchise), r = obj(t.record), ach = arr(t.achievements).filter(function (a) { return a && a.earned; });
+    var lines = [((f.city || '') + ' ' + (f.name || '')).trim().toUpperCase()];
+    lines.push('Founded ' + (f.founded_season || '') + ' · ' + (r.seasons | 0) + ' season' + ((r.seasons | 0) === 1 ? '' : 's') + ' · ' + recordLine(r) + ' all-time');
+    var w = ach.length + ' achievement' + (ach.length === 1 ? '' : 's');
+    if (t.rival && t.rival.name) w += ' · Rival series ' + recordLine(t.rival);
+    if (t.ladder && t.ladder.games) w += ' · Ladder ' + (t.ladder.rating | 0);
+    lines.push(w);
+    var qb = arr(obj(t.leaders).passing)[0];
+    if (qb && qb.yds) lines.push('Career passing: ' + qb.name + ', ' + fmt(qb.yds) + ' yds');
+    lines.push('', 'EdgeDesk Games');
+    return lines.join('\n');
+  }
+
   function arr(v) { return Array.isArray(v) ? v : []; }
   function obj(v) { return v && typeof v === 'object' ? v : {}; }
   function vals(o) { o = obj(o); var out = [], k; for (k in o) if (o.hasOwnProperty(k)) out.push(o[k]); return out; }
@@ -735,6 +812,26 @@
   function ladder(limit) { return rpc('franchise_ladder', withSecret({ p_limit: limit || 25 })); }
   function h2hContext(token) { return rpc('franchise_h2h_context', { p_token: String(token || '') }); }
 
+  /* THE FACILITIES AND THE TROPHY ROOM (Phase 4). An upgrade is asked for
+     by name and nothing else; the server reads the level, the price and
+     what is on hand, and writes the one debit. Never queued — a player
+     spending must see the answer. The snapshot is kept current from the
+     answer so the HQ and the office agree without another read. */
+  function upgrade(facility) {
+    return rpc('franchise_upgrade', withSecret({ p_facility: String(facility || '') })).then(function (r) {
+      if (r.ok && r.data) {
+        var snap = snapshot();
+        if (snap) {
+          if (r.data.totals) snap.resources = r.data.totals;
+          if (r.data.facilities) snap.facilities = r.data.facilities;
+          remember(snap);
+        }
+      }
+      return r;
+    });
+  }
+  function trophies() { return rpc('franchise_trophies', withSecret({})); }
+
   /* CLAIM the device's franchise into the account just signed in. Proof is
      the secret; the server refuses if the account already owns one, and
      says so. The cache moves with it. */
@@ -855,6 +952,10 @@
     challengeInviteText: challengeInviteText, challengeShareText: challengeShareText,
     challengeCreate: challengeCreate, challengePeek: challengePeek, challengeAccept: challengeAccept, challengeCancel: challengeCancel,
     challengesMine: challengesMine, ladder: ladder, h2hContext: h2hContext,
+    FACILITIES_VERSION: FACILITIES_VERSION, FACILITIES: FACILITIES, FACILITY_ORDER: FACILITY_ORDER,
+    facilityState: facilityState, facilityStates: facilityStates, facilityLine: facilityLine,
+    OFFSEASON_VERSION: OFFSEASON_VERSION, RETIRE_AGE: RETIRE_AGE, FADE_AGE: FADE_AGE, FADE_OVERALL: FADE_OVERALL,
+    roman: roman, offseasonLine: offseasonLine, trophyShareText: trophyShareText, upgrade: upgrade, trophies: trophies,
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,

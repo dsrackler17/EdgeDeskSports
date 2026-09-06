@@ -19,6 +19,9 @@
      8  the pages, the routes, the shell, the copy rules and the funnel
      9  the trusted worker computes no price and refuses to run blind
     10  the SQL file keeps the repository's conventions
+    11  the weekly game, 12 franchise vs franchise, 13 the offseason and
+        the facilities: the constants the client shows are the SQL's, the
+        client asks and never decides, the pages say what they read
 
    Run: node tools/games/franchise.test.js
    =========================================================================== */
@@ -84,6 +87,7 @@ const STATUS = fs.readFileSync(G('status/index.html'), 'utf8');
 const OFFICE = fs.readFileSync(G('franchise/index.html'), 'utf8');
 const ROSTER = fs.readFileSync(G('roster/index.html'), 'utf8');
 const GAMEDAY = fs.readFileSync(G('gameday/index.html'), 'utf8');
+const TROPHIES = fs.readFileSync(G('trophies/index.html'), 'utf8');
 const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
 const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -158,8 +162,11 @@ chk('every mark draws', F.LOGOS.every(l => /<path d="M/.test(F.logoSvg(l.key, 32
 
 /* the roster plan */
 (() => {
-  const plan = SQL.match(/plan jsonb := '(\[[\s\S]*?\])'::jsonb;/);
+  /* the plan is a pool function since Phase 4, so the founding roster and
+     the offseason's rookies are drawn from one literal */
+  const plan = SQL.match(/function public\.franchise_pool_plan\(\)[\s\S]*?select '(\[[\s\S]*?\])'::jsonb;/);
   chk('the SQL states its roster plan', !!plan);
+  chk('and the founding generator and the rookie generator both read it', /plan jsonb := public\.franchise_pool_plan\(\);[\s\S]*plan jsonb := public\.franchise_pool_plan\(\);/.test(SQL));
   const rows = plan ? JSON.parse(plan[1]) : [];
   eq('eleven positions', rows.length, 11);
   rows.forEach(r => {
@@ -451,7 +458,8 @@ fresh();
   /* ═══ 8. THE PAGES, THE SHELL, THE COPY ═══════════════════════════════════ */
   [['front office', OFFICE, 'https://edgedesksports.com/games/franchise'],
    ['roster', ROSTER, 'https://edgedesksports.com/games/roster'],
-   ['game day', GAMEDAY, 'https://edgedesksports.com/games/gameday']].forEach(([n, p, url]) => {
+   ['game day', GAMEDAY, 'https://edgedesksports.com/games/gameday'],
+   ['trophy room', TROPHIES, 'https://edgedesksports.com/games/trophies']].forEach(([n, p, url]) => {
     has(p, '<link rel="canonical" href="' + url + '">', n + ' declares its canonical URL');
     has(p, 'name="robots" content="index,follow"', n + ' is crawlable');
     ['og:title', 'og:description', 'og:url'].forEach(k => has(p, 'property="' + k + '"', n + ' carries ' + k));
@@ -474,11 +482,12 @@ fresh();
   has(SITEMAP, 'https://edgedesksports.com/games/franchise<', 'the sitemap lists the Front Office');
   has(SITEMAP, 'https://edgedesksports.com/games/roster<', 'and the roster');
   has(SITEMAP, 'https://edgedesksports.com/games/gameday<', 'and Game Day');
-  has(NOTFOUND, "p[1]==='roster'||p[1]==='franchise'||p[1]==='gameday'", 'the static host routes the new rooms');
-  chk('the pages exist where the routes claim', fs.existsSync(G('franchise/index.html')) && fs.existsSync(G('roster/index.html')) && fs.existsSync(G('gameday/index.html')));
+  has(SITEMAP, 'https://edgedesksports.com/games/trophies<', 'and the Trophy Room');
+  has(NOTFOUND, "p[1]==='roster'||p[1]==='franchise'||p[1]==='gameday'||p[1]==='trophies'", 'the static host routes the new rooms');
+  chk('the pages exist where the routes claim', fs.existsSync(G('franchise/index.html')) && fs.existsSync(G('roster/index.html')) && fs.existsSync(G('gameday/index.html')) && fs.existsSync(G('trophies/index.html')));
   /* the bumper knows the new pages, so a token bump reaches them */
   const bump = require(path.join(ROOT, 'tools', 'games', 'bump_assets.js'));
-  chk('the asset bumper stamps the new pages', bump.PAGES.some(p => /franchise\/index\.html$/.test(p)) && bump.PAGES.some(p => /roster\/index\.html$/.test(p)) && bump.PAGES.some(p => /gameday\/index\.html$/.test(p)));
+  chk('the asset bumper stamps the new pages', bump.PAGES.some(p => /franchise\/index\.html$/.test(p)) && bump.PAGES.some(p => /roster\/index\.html$/.test(p)) && bump.PAGES.some(p => /gameday\/index\.html$/.test(p)) && bump.PAGES.some(p => /trophies\/index\.html$/.test(p)));
 
   /* the Front Office */
   has(OFFICE, "G.saveCard(", 'saving goes through the shared one-step form');
@@ -571,13 +580,13 @@ fresh();
   ['franchise_created', 'franchise_home_view', 'player_view', 'roster_change', 'daily_objective_complete', 'scouting_spent',
    'player_scouted', 'weekly_game_started', 'weekly_game_completed', 'h2h_franchise_complete', 'achievement_unlocked',
    'season_complete', 'draft_pick', 'trophy_room_view'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
-  const ALL = HOME + PRICE + PICK + DRILL + DYN + OFFICE + ROSTER + GAMEDAY + JS;
+  const ALL = HOME + PRICE + PICK + DRILL + DYN + OFFICE + ROSTER + GAMEDAY + TROPHIES + JS;
   ['franchise_created', 'franchise_home_view', 'player_view', 'roster_change', 'roster_view', 'front_office_view', 'franchise_reward', 'franchise_import']
     .forEach(e => chk('and actually fires ' + e, new RegExp("track\\('" + e + "'").test(ALL)));
   chk('no second analytics vendor', !/posthog|mixpanel|segment\.com|amplitude|plausible\.io|fathom/i.test(ALL));
 
   /* the copy rules the rest of Games lives by */
-  const COPY = (OFFICE + ROSTER + GAMEDAY + FCSS + JS + HOME).replace(/no real-money wagering/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const COPY = (OFFICE + ROSTER + GAMEDAY + TROPHIES + FCSS + JS + HOME).replace(/no real-money wagering/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
   [/guaranteed edge/i, /free money/i, /can'?t lose/i, /sure thing/i, /risk-?free/i, /\bwager\b(?!ing)/i, /\bparlay\b/i,
    /loot box/i, /virtual currency/i, /pay[- ]to[- ]win/i, /\bpack\b(?!s? *, no premium)/i, /premium player/i, /\bjackpot\b/i, /\bcasino\b/i]
     .forEach(re => chk('the franchise copy avoids ' + re, !re.test(COPY.replace(/no packs, no premium players/gi, '')), (COPY.match(re) || [''])[0]));
@@ -676,7 +685,7 @@ fresh();
   eq('Air Raid into Press Man loses two', F.schemeEdge('air_raid', 'press_man'), -2);
   eq('an unknown scheme is even', F.schemeEdge('nope', 'zone'), 0);
   chk('home field and the preparation swing are the SQL\'s numbers', F.HOME_EDGE === 1.5 && F.PREP_SWING === 3
-    && /then 1\.5 else 0 end/.test(SQL) && /\/ 50\.0 \* 3, 2\)/.test(SQL));
+    && /h_me := case when g\.home then 1\.5 \+ stad else 0 end; h_op := case when g\.home then 0 else 1\.5 end;/.test(SQL) && /\/ 50\.0 \* 3, 2\)/.test(SQL));
   chk('preparation swings −3 at 0%, 0 at 50%, +3 at 100%, −0.54 at 41%', F.prepAdj(0) === -3 && F.prepAdj(50) === 0 && F.prepAdj(100) === 3 && F.prepAdj(41) === -0.54);
   /* preparation, prep_v1: the client's worked examples are the ones the SQL suite pins */
   (() => {
@@ -905,6 +914,110 @@ fresh();
   })();
   has(README, 'franchise_sim_versus', 'the README documents the versus simulator');
   has(README, 'lists franchises, never accounts', 'and the ladder rule');
+
+  /* ═══ 13. THE OFFSEASON AND THE FACILITIES (PHASE 4) ═════════════════════ */
+  /* the facilities table the client shows is the one the SQL charges */
+  eq('facilities are facilities_v1 on both sides', F.FACILITIES_VERSION, 'facilities_v1');
+  has(SQL, "'version', 'facilities_v1'", 'the SQL publishes the version');
+  F.FACILITY_ORDER.forEach(k => {
+    const f = F.FACILITIES[k];
+    const re = new RegExp("'" + k + "',\\s+jsonb_build_object\\('name', '" + f.name + "', 'currency', '" + f.currency + "', 'costs', jsonb_build_array\\(" + f.costs.join(', ') + "\\), 'per_level', " + f.per_level + ",\\s+'effect', '" + f.effect.replace(/[+.;]/g, c => '\\' + c) + "'\\)");
+    chk('the SQL prices ' + f.name + ' the same, level for level, with the same effect', re.test(SQL), re.source.slice(0, 80));
+  });
+  chk('every facility is bought with an earned currency, never with money', F.FACILITY_ORDER.every(k => /^(tc|cp)$/.test(F.FACILITIES[k].currency)) && !/'usd'|price_cents|stripe/i.test(SQL));
+  (() => {
+    const s = F.facilityState('training', { training: 2 }, { team_credits: 700 });
+    chk('a facility state names the next price and the shortfall', s.level === 2 && s.cost === 1000 && s.short === 300 && !s.affordable && s.unit === 'TC' && s.bonus === 2 && s.next_bonus === 3);
+    chk('a built-out facility has no price', F.facilityState('film', { film: 3 }, { coach_points: 99 }).top && F.facilityState('film', { film: 3 }, {}).cost === null);
+    chk('an affordable one says so', F.facilityState('stadium', {}, { coach_points: 6 }).affordable && F.facilityState('stadium', {}, { coach_points: 5 }).short === 1);
+    eq('an unknown facility is null', F.facilityState('parking', {}, {}), null);
+    eq('the four come in the published order', F.facilityStates({}, {}).map(x => x.key).join(','), 'training,film,conditioning,stadium');
+    eq('a facility line', F.facilityLine('film', 1), 'Film Room · level 1 of 3');
+  })();
+  /* the offseason the client explains is the one the SQL ran */
+  eq('the offseason is offseason_v1', F.OFFSEASON_VERSION, 'offseason_v1');
+  has(SQL, "'version', 'offseason_v1'", 'the SQL writes the version on the report');
+  chk('the retirement rule is the same on both sides', F.RETIRE_AGE === 35 && F.FADE_AGE === 33 && F.FADE_OVERALL === 55 && /retire := age_new >= 35 or \(age_new >= 33 and ovr < 55\)/.test(SQL));
+  chk('nobody grows past his potential', /if ovr > pl\.potential and growth > 0 then/.test(SQL) && /pot := case when age_new >= 30 then ovr else greatest\(pl\.potential, ovr\) end/.test(SQL));
+  chk('the Training Center is a level of development for the young', /\+ \(case when g >= 4 then 1 else 0 end\) \+ training \+ floor\(random\(\) \* 3\)::int - 1/.test(SQL));
+  chk('the offseason runs once, before the next season is written', /if existing is not null then return existing; end if;/.test(SQL)
+    && SQL.indexOf('perform public.franchise_offseason(v_f, s.number);') < SQL.indexOf("values (v_f, v_n, 'Season ' || public.games_roman(v_n), v_real, 'preseason', s.weeks);"));
+  chk('a rookie is signed for every retirement, from the founding pools, seeded', /f\.seed \|\| ':rookie:' \|\| p_from \|\| ':' \|\| v_pos \|\| ':' \|\| d/.test(SQL) && /public\.franchise_pool_first_names\(\)/.test(SQL.slice(SQL.indexOf('function public.franchise_generate_rookie'))));
+  chk('the founding generator draws from the same pools', /first_names text\[\] := public\.franchise_pool_first_names\(\);/.test(SQL.slice(SQL.indexOf('function public.franchise_generate_roster'), SQL.indexOf('function public.franchise_generate_rookie'))));
+  chk('the retired keep their careers and leave the roster read', /status = case when retire then 'retired' else status end/.test(SQL) && /where p\.franchise_id = f\.id and p\.status = 'active'/.test(SQL));
+  eq('an offseason line', F.offseasonLine({ after_season: 1, summary: { improved: 15, declined: 18, retired: 4, signed: 4, biggest: 17 } }), 'Offseason after Season I: 15 improved, 18 declined, 4 retired, 4 rookies signed. Biggest leap +17.');
+  eq('a quiet one', F.offseasonLine({ after_season: 2, summary: { improved: 25, declined: 12, retired: 0, signed: 0, biggest: 3 } }), 'Offseason after Season II: 25 improved, 12 declined.');
+  eq('no report, no line', F.offseasonLine(null), '');
+  eq('roman numerals', [4, 9, 14, 40].map(F.roman).join(' '), 'IV IX XIV XL');
+  ['first_upgrade', 'breakout', 'farewell'].forEach(id => {
+    const m = new RegExp("\\('" + id + "',\\s+'([^']+)',").exec(SQL);
+    chk('the SQL seeds ' + id + ' and the client names it the same', m && F.ACHIEVEMENTS[id] && F.ACHIEVEMENTS[id].name === m[1], m && m[1]);
+  });
+  (() => {
+    const t = F.trophyShareText({ franchise: { city: 'Lubbock', name: 'Outlaws', founded_season: 2026 }, record: { wins: 9, losses: 7, seasons: 2 },
+      achievements: [{ earned: true }, { earned: false }, { earned: true }], rival: { name: 'Condors', wins: 1, losses: 1 }, ladder: { games: 3, rating: 1512 },
+      leaders: { passing: [{ name: 'Jamal Ellsworth', yds: 2424 }] } });
+    chk('a shared room is the identity, the seasons, the record, the wall and the passing leader — and no claim',
+      /^LUBBOCK OUTLAWS\n/.test(t) && /Founded 2026 · 2 seasons · 9–7 all-time/.test(t) && /2 achievements · Rival series 1–1 · Ladder 1512/.test(t)
+      && /Career passing: Jamal Ellsworth, 2,424 yds/.test(t) && /EdgeDesk Games$/.test(t) && !/\b(bet|wager|odds|edge|lock)\b/i.test(t), t);
+  })();
+  /* the client asks; the server charges */
+  has(FJS, "rpc('franchise_upgrade', withSecret({ p_facility: String(facility || '') }))", 'an upgrade sends a name and the identity, never a price');
+  chk('an upgrade is never queued — spending must see its answer', !/record\('franchise_upgrade'/.test(FJS));
+  has(FJS, "rpc('franchise_trophies', withSecret({}))", 'the Trophy Room is one read');
+  chk('the snapshot follows the answer, so the HQ and the office agree', /if \(r\.data\.totals\) snap\.resources = r\.data\.totals;\s*if \(r\.data\.facilities\) snap\.facilities = r\.data\.facilities;/.test(FJS));
+  chk('the client never ages, develops or retires a player', !/function (offseason|age|develop|retire|rookie)\(/.test(FJS) && !/rpc\('franchise_offseason/.test(FJS) && !/rpc\('franchise_generate_rookie/.test(FJS) && !/retired_season\s*[:=]/.test(FJS));
+  /* the Front Office */
+  has(OFFICE, 'FR.upgrade(key)', 'the office upgrades through the server');
+  has(OFFICE, 'FR.facilityStates(', 'and shows the published table');
+  has(OFFICE, "track('facility_upgrade'", 'an upgrade is measured');
+  has(OFFICE, 'Built out', 'a built-out facility says so');
+  has(OFFICE, "' on hand</span>'", 'a short purse shows the price and what is on hand instead of a button');
+  has(OFFICE, 'never with money', 'and the page says money buys nothing');
+  has(OFFICE, 'FR.offseasonLine(snap.offseason)', 'the office carries the last offseason');
+  has(OFFICE, 'href="/games/trophies/"', 'and opens the Trophy Room');
+  chk('the office never invents a level, a price or a report', !/facilities:\s*\{\s*training:\s*\d/.test(OFFICE) && !/cost:\s*\d/.test(OFFICE) && !/after_season:\s*\d/.test(OFFICE));
+  /* the Trophy Room, the page */
+  has(TROPHIES, 'FR.trophies()', 'the Trophy Room reads through the server');
+  has(TROPHIES, "track('trophy_room_view'", 'and is measured');
+  has(TROPHIES, "track('trophy_share'", 'and a share is');
+  has(TROPHIES, 'FR.trophyShareText(DATA)', 'the share is the published text');
+  ['The wall', 'Seasons', 'Career leaders', 'Alumni', 'Offseason'].forEach(h => has(TROPHIES, h, 'the room has ' + h));
+  has(TROPHIES, 'Not yet</div>', 'an unearned achievement is shown, not hidden');
+  has(TROPHIES, 'retired after Season', 'an alumnus says when he went');
+  has(TROPHIES, 'Nothing here is granted', 'the room says nothing is granted');
+  has(TROPHIES, 'Found my franchise', 'a visitor without a franchise is shown the door');
+  chk('the Trophy Room never renders a player, a season or an achievement it invented', !/first_name:\s*'/.test(TROPHIES) && !/earned:\s*true/.test(TROPHIES) && !/wins:\s*\d/.test(TROPHIES) && !/name:\s*'[A-Z][a-z]+ [A-Z]/.test(TROPHIES));
+  /* the HQ, the roster, the shell */
+  has(HOME, 'FR.offseasonLine(snap.offseason)', 'the HQ says what the offseason did');
+  has(HOME, 'data-cta="hq-trophies"', 'and has a door to the Trophy Room');
+  has(ROSTER, 'Players develop in the offseason', 'the roster says how a team improves now');
+  has(ROSTER, 'anyone 35 retires (33 and under 55 too)', 'and states the retirement rule');
+  chk('the Trophy Room is a room of the facility', require(G('games.js')).ROOMS.some(r => r.key === 'trophies' && r.href === '/games/trophies/') && /href="\/games\/trophies\/">Trophy Room<\/a>/.test(JS));
+  ['facility_upgrade', 'trophy_share', 'trophy_room_view'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
+  ['facility_upgrade', 'trophy_share', 'trophy_room_view'].forEach(e => chk('and the pages fire ' + e, new RegExp("track\\('" + e + "'").test(OFFICE + TROPHIES)));
+  chk('the facilities meet the tap minimum and stack on a phone', /\.fac-i \.act \.btn\{min-height:40px/.test(FCSS) && /\.fac\{display:grid;gap:8px/.test(FCSS) && /@media\(min-width:720px\)\{\.fac\{grid-template-columns:1fr 1fr\}\}/.test(FCSS));
+  /* the SQL keeps its conventions on the new side */
+  ['franchise_offseason(uuid, integer)', 'franchise_generate_rookie(uuid, text, integer, integer, text, text)', 'franchise_pool_first_names()', 'franchise_pool_last_names()', 'franchise_pool_plan()', 'franchise_pool_archetypes()', 'franchise_pool_traits()']
+    .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role', SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
+  ['franchise_upgrade(text, text)', 'franchise_trophies(text)', 'franchise_facilities()']
+    .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated', SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+  chk('the report grew to seventeen rows', /select 16, 'the offseason and the rookie generator are reachable by no client role'/.test(SQL)
+    && /select 17, 'facilities are ' \|\| \(public\.franchise_facilities\(\)->>'version'\) \|\| ', bought with earned resources through the ledger only'/.test(SQL));
+  chk('an upgrade is one negative ledger row, keyed by facility and level, and the totals still derive from the ledger',
+    /public\.franchise_credit\(v_f, cur, -cost, 'facility', p_facility \|\| ':' \|\| \(lvl \+ 1\)/.test(SQL) && /team_credits = \(select coalesce\(sum\(l\.delta\), 0\) from public\.franchise_ledger l/.test(SQL));
+  chk('the top level and a short purse are refused before anything is written',
+    /'% is already at its top level', spec->>'name' using errcode = '55000'/.test(SQL) && /not enough %: % needed, % on hand/.test(SQL)
+    && SQL.indexOf("not enough %: % needed, % on hand") < SQL.indexOf("ok := public.franchise_credit(v_f, cur, -cost, 'facility'"));
+  chk('the Film Room, Conditioning and the Stadium are in the box', /'facilities', jsonb_build_object\('film', film, 'conditioning', cond, 'stadium', case when g\.home then stad else 0 end\)/.test(SQL)
+    && /'film', a_film, 'conditioning', a_cond/.test(SQL) && /'film', b_film, 'conditioning', b_cond/.test(SQL));
+  chk('a challenge on a neutral field has no Stadium', !/stad/.test(SQL.slice(SQL.indexOf('function public.franchise_sim_versus'), SQL.indexOf('$$;', SQL.indexOf('function public.franchise_sim_versus')))));
+  chk('the room is the franchise\'s own', /function public\.franchise_trophies\(p_secret text default null\)[\s\S]*?where id = public\.franchise_of\(p_secret\)/.test(SQL));
+  chk('the SQL suite plays the offseason and the facilities through', /17\. THE OFFSEASON AND THE FACILITIES/.test(SQLTEST) && /the dry run and the real one agree, player for player/.test(SQLTEST) && /one credit short is refused/.test(SQLTEST));
+  has(README, 'facilities_v1', 'the README documents the facilities');
+  has(README, 'offseason_v1', 'and the offseason');
+  has(README, 'one negative ledger row', 'and the ledger rule for spending');
+  has(README, 'Trophy Room', 'and the Trophy Room');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

@@ -1244,14 +1244,91 @@ the rivalry mirrored, the ladder zero-sum, the box adding up on both
 sides, expiry, cancellation, the cap of ten, the upset paid only to the
 weaker winner, and three straight.
 
+## Phase 4 — the offseason, the facilities, the Trophy Room
+
+The franchise now has a past and a future. Between seasons the roster
+ages; the Front Office has the first place Team Credits and Coach Points
+go; and everything permanent about a franchise is one page.
+
+**The offseason runs before the next season, once.** When a franchise
+whose season is complete asks for the next one (`franchise_start_season`),
+`franchise_offseason()` runs first, on the server, seeded from the
+franchise and the season number (`offseason_v1`):
+
+- **Ageing.** Every active player is a year older.
+- **Development.** A player 26 and under grows by his development tier
+  (Steady 1, Quick 2, Star 3, Superstar 4), one more if he played four or
+  more games, one more per Training Center level, with a little noise;
+  27 to 29 hold about level (a point up with games and a Training Center
+  at two); 30 to 32 slip a point or two (held up by a Training Center at
+  three); 33 and over decline. Nobody grows past his potential, and a
+  player past 30 has none left.
+- **Retirement.** At 35, or at 33 and under 55 overall, a player
+  retires. He keeps his career, leaves the roster read and joins the
+  alumni (`game_players.status = 'retired'`, `retired_season`).
+- **Rookies.** For every retirement one rookie is signed at that position
+  from the same name and archetype pools as the founding roster,
+  seeded so the same offseason signs the same player: 21 to 23, rated
+  below the founding backups, with room to grow. The depth chart closes
+  up first, so the chart is always 1..n. Thirty-eight players, always.
+- **The report** — every player's before and after, the retired, the
+  rookies, a summary — is written on the season that just ended
+  (`franchise_seasons.offseason`), read back by home and by the Trophy
+  Room, and never written twice. A founder retiring is a **Farewell**; a
+  leap of four or more is a **Breakout**.
+
+**The facilities are the first resource sink.** Four of them, three
+levels each, published in `franchise_facilities()` (`facilities_v1`) and
+mirrored in `EDFranchise.FACILITIES`:
+
+| Facility | Bought with | Levels | Effect |
+|---|---|---|---|
+| Training Center | Team Credits 300 / 600 / 1000 | 3 | +1 development a level for players 26 and under, each offseason; veterans fade slower at levels 2 and 3 |
+| Film Room | Coach Points 6 / 12 / 20 | 3 | +0.5 offense and defense in every game |
+| Conditioning | Team Credits 300 / 600 / 1000 | 3 | +0.5 in the fourth quarter and overtime |
+| Stadium | Coach Points 6 / 12 / 20 | 3 | +0.25 home field in season games |
+
+`franchise_upgrade(p_facility)` takes a name and nothing else. The server
+reads the level, the price and what is on hand, refuses the top level or
+a short purse (`55000`, with the price and the amount on hand in the
+message), and writes **one negative ledger row** keyed by facility and
+level (`kind = 'facility'`, `key = 'training:2'`), so the totals still
+derive from the ledger and nothing else. The first upgrade is
+**Groundbreaking**. The Film Room, Conditioning and the Stadium show in
+the box of every game they touch (`box.edges.facilities`, and each side's
+own `film` and `conditioning` in a challenge) — a franchise challenge on
+a neutral field has no Stadium. Nothing is bought with money; the page
+says so beside the button.
+
+**The Trophy Room** (`/games/trophies/`, `franchise_trophies()`) is one
+read: every achievement definition with earned-or-not and the day, every
+season newest first with its games and its offseason report, the career
+leaders (passing, rushing, receiving, tackles, sacks — the retired
+counted), the alumni with their careers, the all-time record, the rival
+series, the facilities, the ladder and the challenge record. It is the
+franchise's own room and nobody else's; a visitor without a franchise is
+shown the door to the Front Office.
+
+Report rows 16–17 cover it: the offseason and the rookie generator are
+reachable by no client role; facilities are `facilities_v1`, bought with
+earned resources through the ledger only. The SQL suite plays it through:
+a refusal one credit short that debits nothing, the three prices, the top
+level refused, the Film Room in a season box and on the owner's side of a
+challenge, an offseason dry run rolled back and compared player for
+player with the real one, ageing, the retirement rule both ways, the
+chart closing up, rookies with names and numbers nobody in the colours
+has worn, growth capped at potential, the veterans' decline, the report
+written once, and the room read by its owner only.
+
 ## Not built yet, on purpose
 
 Conferences — a league of friends with standings of its own — and
-playoffs; the Trophy Room page, facilities, player development, ageing and
-the offseason between seasons (Phase 4); the draft and the transfer market
-(Phase 5). The schema leaves room: `franchise_seasons.status` admits
-`playoffs`, the ledger accepts a negative delta for spending, traits with
-no simulator effect yet (Iron Man) are stated as such, and
+playoffs; the draft and the transfer market (Phase 5), which is where
+Scouting Points will finally be spent. The schema leaves room:
+`franchise_seasons.status` admits `playoffs`, the ledger already accepts a
+negative delta for spending (the facilities use it), traits with no
+simulator effect yet (Iron Man) are stated as such, and
 `franchise_activity` is the record every future reward derives from. The
-simulator is versioned (`sim_v1`) so a retuned one is a new version and
-old boxes stay true to the rules they were played under.
+simulator and the offseason are versioned (`sim_v1`, `offseason_v1`) so a
+retuned one is a new version and old boxes and old reports stay true to
+the rules they were played under.
