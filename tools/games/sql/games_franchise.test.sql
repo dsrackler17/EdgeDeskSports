@@ -961,11 +961,17 @@ begin
   box := public.franchise_sim(fa, gid);
   box2 := public.franchise_sim(fa, gid);
   perform pg_temp.ok('the same game simulated twice is the same game', box = box2 and box->>'sim' = 'sim_v4');
-  perform pg_temp.ok('a game is eleven to fourteen possessions a side, four quarters, and a final that is the sum of them',
-    (box->'edges'->>'possessions')::int between 9 and 14
+  -- HOW MANY POSSESSIONS A GAME HOLDS IS NOT A FIXED BAND ANY MORE. This
+  -- pinned 9 to 14, which was the dice roll Phase 15 replaced with a clock:
+  -- how you play decides it now, and a measured game runs 8 to 15 a side. So
+  -- this asserts the RULE — a plausible number of possessions, and a box that
+  -- adds up — and the clock's own bounds are asserted where the clock lives.
+  perform pg_temp.ok('a game is a sensible number of possessions, four quarters, and a final that is the sum of them',
+    (box->'edges'->>'possessions')::int between 6 and 20
     and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'for') q) = (box->'final'->>'for')::int
     and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'against') q) = (box->'final'->>'against')::int
-    and (box->'team'->'for'->>'points')::int = (box->'final'->>'for')::int);
+    and (box->'team'->'for'->>'points')::int = (box->'final'->>'for')::int,
+    (box->'edges'->>'possessions') || ' possessions a side');
   perform pg_temp.ok('every scoring play names a player of yours, and a running score',
     (select bool_and((p->>'desc') like '%' || (case when p->>'type' = 'FG' then '-yd FG' else 'TD' end) || '%' and (p->'for') is not null)
       from jsonb_array_elements(box->'scoring') p where p->>'side' = 'for'));
@@ -4148,13 +4154,20 @@ begin
 
   -- TWO: which call is yours is a fact about YOUR ROSTER. A team that throws
   -- it better than it runs it gains on the pass calls and loses on the ground.
+  -- MEASURED ON TOUCHDOWN RATE RATHER THAN POINTS, at the full lean, over
+  -- three times the sample. The first cut of this compared POINTS a drive at
+  -- lean +/-8 over 4000 draws: the effect there is about 0.08 points against a
+  -- standard error of 0.044, under two sigma, and it duly failed a CI run once
+  -- it had been run enough times. Points carry the field-goal and touchdown
+  -- spread on top of the effect; the touchdown RATE is the thing the lean
+  -- actually moves, and it has about a seventh of the variance per draw.
   perform pg_temp.ok('a passing roster gains from leaning on the pass, and a running roster loses by it', (
     with t as (
-      select avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'shot',  8, false)->>'pts')::numeric) as pass_shot,
-             avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'shot', -8, false)->>'pts')::numeric) as run_shot,
-             avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'ground',  8, false)->>'pts')::numeric) as pass_grd,
-             avg((public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'ground', -8, false)->>'pts')::numeric) as run_grd
-        from generate_series(1, 4000))
+      select avg(case when public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'shot',  10, false)->>'outcome' = 'td' then 1.0 else 0 end) as pass_shot,
+             avg(case when public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'shot', -10, false)->>'outcome' = 'td' then 1.0 else 0 end) as run_shot,
+             avg(case when public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'ground',  10, false)->>'outcome' = 'td' then 1.0 else 0 end) as pass_grd,
+             avg(case when public.franchise_sim_drive(75, 75, 75, 0.55, 0, 0, false, 'ground', -10, false)->>'outcome' = 'td' then 1.0 else 0 end) as run_grd
+        from generate_series(1, 12000))
     select pass_shot > run_shot and run_grd > pass_grd from t));
   perform pg_temp.ok('the lean comes off the roster the simulator already rates, and is published on the box',
     (select p.prosrc like '%lean := greatest(-10, least(10,%'
