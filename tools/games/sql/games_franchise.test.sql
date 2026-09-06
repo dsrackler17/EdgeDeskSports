@@ -111,6 +111,9 @@ declare
   -- both sides of the ball
   cbf uuid; cb jsonb; nposs integer; nsecs integer;
   SEC_CB constant text := 'device-secret-bothsidesbothsidesboth1';
+  -- the playbook
+  pbf uuid; pb jsonb; pnt numeric; pstale numeric; pfresh numeric;
+  SEC_PB constant text := 'device-secret-playbookplaybookplay01';
   SEC_MN constant text := 'device-secret-momentmomentmomentmoment1';
   SEC_SN constant text := 'device-secret-snapsnapsnapsnapsnapsnap1';
   SEC_RK constant text := 'device-secret-rankrankrankrankrankrank1';
@@ -957,7 +960,7 @@ begin
   perform pg_temp.as_owner();
   box := public.franchise_sim(fa, gid);
   box2 := public.franchise_sim(fa, gid);
-  perform pg_temp.ok('the same game simulated twice is the same game', box = box2 and box->>'sim' = 'sim_v3');
+  perform pg_temp.ok('the same game simulated twice is the same game', box = box2 and box->>'sim' = 'sim_v4');
   perform pg_temp.ok('a game is eleven to fourteen possessions a side, four quarters, and a final that is the sum of them',
     (box->'edges'->>'possessions')::int between 9 and 14
     and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'for') q) = (box->'final'->>'for')::int
@@ -1032,7 +1035,7 @@ begin
   perform pg_temp.ok('the game is played, once, and the result is the simulator''s',
     (v->'game'->>'status') = 'final' and (v->'game'->>'week')::int = 1
     and (v->'game'->>'score_for')::int = (box->'final'->>'for')::int and (v->'game'->>'score_against')::int = (box->'final'->>'against')::int
-    and v->'game'->>'result' = box->>'result' and v->'game'->>'sim_version' = 'sim_v3');
+    and v->'game'->>'result' = box->>'result' and v->'game'->>'sim_version' = 'sim_v4');
   perform pg_temp.ok('the season record moved by exactly one game',
     (v->'season'->>'week')::int = 1 and (v->'season'->>'wins')::int + (v->'season'->>'losses')::int + (v->'season'->>'ties')::int = 1
     and (v->'season'->>'points_for')::int = (box->'final'->>'for')::int and not (v->>'season_complete')::boolean);
@@ -1076,7 +1079,7 @@ begin
     and v->'prep'->>'version' = 'prep_v1' and (v->'record'->>'wins')::int + (v->'record'->>'losses')::int + (v->'record'->>'ties')::int = 2
     and v->'rival'->>'name' is not null and (v->'rival'->>'wins')::int = 0);
   v := public.franchise_game(gid);
-  perform pg_temp.ok('a game is read back with its box', v->'box'->>'sim' = 'sim_v3' and jsonb_array_length(v->'box'->'players') >= 22);
+  perform pg_temp.ok('a game is read back with its box', v->'box'->>'sim' = 'sim_v4' and jsonb_array_length(v->'box'->'players') >= 22);
   v := public.franchise_schedule();
   perform pg_temp.ok('the schedule shows two finals and six to come',
     (select count(*) from jsonb_array_elements(v->'games') g where g->>'status' = 'final') = 2
@@ -1257,7 +1260,7 @@ begin
   perform pg_temp.ok('the challenge is played at once, on the server, and read from the acceptor''s side',
     (v->>'ok')::boolean and v->'game'->>'status' = 'FINAL' and v->'game'->>'you' = 'opponent'
     and v->'game'->'them'->>'name' = 'Lubbock Outlaws' and v->'game'->'me'->>'name' = 'Wranglers'
-    and v->'game'->>'sim_version' = 'sim_v3' and v->'game'->>'result' in ('W', 'L', 'T')
+    and v->'game'->>'sim_version' = 'sim_v4' and v->'game'->>'result' in ('W', 'L', 'T')
     and ((v->'game'->>'score_for')::int > (v->'game'->>'score_against')::int) = (v->'game'->>'result' = 'W'));
   box := v->'game'->'box';
   perform pg_temp.ok('the box carries both sides: my lines and theirs, a player of the game each, quarters that sum to the final, a neutral field',
@@ -2214,7 +2217,7 @@ begin
   perform pg_temp.ok('the rounds that have not opened are untouched',
     (select count(*) = 10 - cn from public.franchise_conference_games where conference_id = conf and status = 'scheduled'));
   perform pg_temp.ok('a game that was played is a neutral-field box on the shared simulator',
-    cn = 0 or (select bool_and(g.sim_version = 'sim_v3' and (g.box->>'neutral')::boolean and g.box ? 'a' and g.box ? 'b')
+    cn = 0 or (select bool_and(g.sim_version = 'sim_v4' and (g.box->>'neutral')::boolean and g.box ? 'a' and g.box ? 'b')
                  from public.franchise_conference_games g where g.conference_id = conf and g.status = 'final'));
   perform pg_temp.ok('the standings are the sum of the games played',
     (select coalesce(sum(wins + losses + ties), 0) = 2 * cn from public.franchise_conference_members where conference_id = conf)
@@ -2583,7 +2586,7 @@ begin
   -- seven of the eight are won outright, so the record earns the ninth
   -- whatever the simulator does with the last one
   update public.franchise_games set status = 'final', played_at = now(), score_for = 30, score_against = 10,
-    result = 'W', box = '{}'::jsonb, sim_version = 'sim_v3'
+    result = 'W', box = '{}'::jsonb, sim_version = 'sim_v4'
    where franchise_id = bf and season_number = 1 and week between 1 and 7;
   update public.franchise_seasons set week = 7, wins = 7, points_for = 210, points_against = 70
    where franchise_id = bf and number = 1;
@@ -4182,9 +4185,9 @@ begin
     and has_function_privilege('anon', 'public.franchise_snaps()', 'execute'));
   perform pg_temp.ok('and no client role can reach the drive resolver or the possession count',
     not has_function_privilege('anon',
-      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text)', 'execute')
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
     and not has_function_privilege('authenticated',
-      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text)', 'execute')
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
     and not has_function_privilege('anon', 'public.franchise_game_drives(uuid, uuid)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_game_drives(uuid, uuid)', 'execute'));
   perform pg_temp.ok('the seven-argument resolver is gone, so nothing can call the form that ignores a call',
@@ -4247,7 +4250,7 @@ begin
   box := public.franchise_sim(mnf, gid);
   box2 := public.franchise_sim(mnf, gid);
   perform pg_temp.ok('a seeded game is still the same game every time, stake and all',
-    box = box2 and box->>'sim' = 'sim_v3' and box->>'moment' = 'moment_v1');
+    box = box2 and box->>'sim' = 'sim_v4' and box->>'moment' = 'moment_v1');
   perform pg_temp.ok('every possession carries what it was worth, and a stake sits in range',
     (select bool_and(x ? 'stake' and x ? 'key' and x ? 'left'
                  and (x->>'stake')::numeric between 0 and 1)
@@ -4500,9 +4503,9 @@ begin
     and not has_function_privilege('authenticated', 'public.franchise_ai_call(text, integer, integer)', 'execute'));
   perform pg_temp.ok('and the drive resolver is still out of reach on either side of the ball',
     not has_function_privilege('anon',
-      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text)', 'execute')
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
     and not has_function_privilege('authenticated',
-      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text)', 'execute'));
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute'));
   perform pg_temp.ok('the clock and the fronts are open to read',
     has_function_privilege('anon', 'public.franchise_clock()', 'execute')
     and has_function_privilege('anon', 'public.franchise_fronts()', 'execute')
@@ -4549,9 +4552,9 @@ begin
     and (select count(*) filter (where public.franchise_call_side(c) = 'def') > 0
            from public.franchise_games g, jsonb_array_elements_text(g.calls) c
           where g.franchise_id = cbf and g.season_number = 1 and g.week = 1));
-  perform pg_temp.ok('the box is sim_v3 and every defended possession names the front you played',
+  perform pg_temp.ok('the box is sim_v4 and every defended possession names the front you played',
     (select g.box->>'sim' from public.franchise_games g
-      where g.franchise_id = cbf and g.season_number = 1 and g.week = 1) = 'sim_v3'
+      where g.franchise_id = cbf and g.season_number = 1 and g.week = 1) = 'sim_v4'
     and (select bool_and((x->>'front') is not null)
            from public.franchise_games g, jsonb_array_elements(g.box->'drives') x
           where g.franchise_id = cbf and g.season_number = 1 and g.week = 1
@@ -4585,6 +4588,193 @@ begin
     nsecs > nposs,
     'ground ' || round(nposs / 40.0, 2) || ' possessions, shot ' || round(nsecs / 40.0, 2));
   update public.franchise_games set calls = null where id = gid2;
+
+-- ═══ 29. THE PLAYBOOK ═════════════════════════════════════════════════════
+-- Measured first: four calls was the ENTIRE offensive vocabulary and every
+-- franchise had the same four, because franchise_snaps() takes no argument.
+-- No formations, no trick plays, and eight thousand drives said a touchdown
+-- drive was 55 to 85 yards every time — there was no such thing as a big play.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('the playbook is playbook_v1: twenty plays, five formations, a trick in each',
+    public.franchise_plays()->>'version' = 'playbook_v1'
+    and public.franchise_formations()->>'version' = 'playbook_v1'
+    and jsonb_array_length(public.franchise_plays()->'plays') = 20
+    and jsonb_array_length(public.franchise_formations()->'sets') = 5
+    and (select count(*) from jsonb_array_elements(public.franchise_plays()->'plays') p
+          where p->>'type' = 'trick') = 5);
+
+  -- A PLAY SPECIALISES A CALL rather than replacing it
+  perform pg_temp.ok('every play names one of the four calls and lives in a real formation',
+    not exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                 where public.franchise_formation(p->>'formation') is null
+                    or not exists (select 1 from jsonb_array_elements(public.franchise_snaps()->'calls') c
+                                    where c->>'key' = p->>'call')));
+  perform pg_temp.ok('and a play key never collides with a call or a front',
+    not exists (select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+                  join jsonb_array_elements(public.franchise_snaps()->'calls'
+                       || public.franchise_fronts()->'calls') c on c->>'key' = p->>'key'));
+  perform pg_temp.ok('an unknown play falls back to the default rather than throwing',
+    public.franchise_play('statue_of_liberty')->>'key' = public.franchise_plays()->>'default'
+    and public.franchise_play(null)->>'key' is not null);
+
+  -- A TRICK CONTRADICTS ITS OWN FORMATION'S TELL. That is what makes it one.
+  perform pg_temp.ok('every trick play contradicts the formation it is run from',
+    not exists (
+      select 1 from jsonb_array_elements(public.franchise_plays()->'plays') p
+       where p->>'type' = 'trick'
+         and sign((public.franchise_formation(p->>'formation')->>'tell')::numeric)
+             = sign(case when p->>'call' in ('air', 'shot') then 1 else -1 end)));
+  perform pg_temp.ok('the tells run all the way from a run look to a pass look',
+    (public.franchise_formation('i_form')->>'tell')::numeric < -0.5
+    and (public.franchise_formation('empty')->>'tell')::numeric > 0.5
+    and (select bool_and(abs((fm->>'tell')::numeric) <= 1)
+           from jsonb_array_elements(public.franchise_formations()->'sets') fm));
+
+  -- THE DEFENSE READS THE FORMATION: lining up heavy really does get stacked
+  perform pg_temp.ok('a run look draws a stacked box and a pass look draws coverage', (
+    with t as (
+      select avg(case when public.franchise_ai_front(-0.75, 0, 9) = 'stack' then 1.0 else 0 end) as heavy_stacked,
+             avg(case when public.franchise_ai_front(0.90, 0, 9) = 'stack' then 1.0 else 0 end) as empty_stacked,
+             avg(case when public.franchise_ai_front(0.90, 0, 9) = 'cover' then 1.0 else 0 end) as empty_covered
+        from generate_series(1, 3000))
+    select heavy_stacked > 0.4 and empty_covered > 0.4 and empty_stacked < 0.1 from t));
+  perform pg_temp.ok('and no client role may ask what they are about to line up in',
+    not has_function_privilege('anon', 'public.franchise_ai_front(numeric, integer, integer)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_ai_front(numeric, integer, integer)', 'execute'));
+
+  -- A TRICK PAYS OFF WHEN THEY BOUGHT THE TELL, AND NOT OTHERWISE
+  perform pg_temp.ok('a flea flicker is worth far more against a stacked box than against coverage', (
+    with t as (
+      select avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,'stack','flea_flicker',0)->>'pts')::numeric) as fooled,
+             avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,'cover','flea_flicker',0)->>'pts')::numeric) as read_it
+        from generate_series(1, 4000))
+    select fooled > read_it * 1.2 from t));
+  -- AND IT NEEDS A FORMATION THAT LIES: the Singleback trick fools nobody,
+  -- because the formation it lives in tells them nothing
+  perform pg_temp.ok('a trick out of a formation that tells them nothing fools nobody', (
+    with t as (
+      select avg(coalesce((public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,
+               public.franchise_ai_front((public.franchise_formation('i_form')->>'tell')::numeric,0,9),
+               'flea_flicker', 0)->>'fooled')::numeric, 0)) as lies,
+             avg(coalesce((public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,
+               public.franchise_ai_front((public.franchise_formation('single')->>'tell')::numeric,0,9),
+               'hb_pass', 0)->>'fooled')::numeric, 0)) as honest
+        from generate_series(1, 3000))
+    select lies > honest * 1.5 from t));
+
+  -- AND THEY GO STALE. There is no trick-play strategy.
+  select avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,'stack','flea_flicker',0)->>'pts')::numeric)
+    into pfresh from generate_series(1, 4000);
+  select avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,'stack','flea_flicker',3)->>'pts')::numeric)
+    into pstale from generate_series(1, 4000);
+  perform pg_temp.ok('a trick they have already seen three times is worth much less',
+    pstale < pfresh * 0.9, round(pfresh, 3) || ' fresh vs ' || round(pstale, 3) || ' stale');
+  -- and worse than an honest play out of the same set, which is the point
+  select avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,'stack','power_o',0)->>'pts')::numeric)
+    into pnt from generate_series(1, 4000);
+  perform pg_temp.ok('a stale trick gives the ball away more than an honest play does', (
+    with t as (
+      select avg(case when public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,'stack','flea_flicker',3)->>'outcome' = 'turnover' then 1.0 else 0 end) as stale_to,
+             avg(case when public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,'stack','power_o',0)->>'outcome' = 'turnover' then 1.0 else 0 end) as honest_to
+        from generate_series(1, 4000))
+    select stale_to > honest_to * 1.5 from t));
+
+  -- A BIG PLAY EXISTS NOW, which it did not before
+  perform pg_temp.ok('an explosive play breaks one sometimes, and nothing without one ever does', (
+    with t as (
+      select avg(case when (public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,null,'deep_shot',0)->>'big')::boolean then 1.0 else 0 end) as boomy,
+             avg(case when (public.franchise_sim_drive(75,75,75,0.55,0,0,false,null,0,false,null,'curl_flat',0)->>'big')::boolean then 1.0 else 0 end) as flat
+        from generate_series(1, 3000))
+    select boomy > 0.15 and flat = 0 from t));
+
+  -- ── EVERY SCHEME HAS ITS OWN BOOK ───────────────────────────────────────
+  perform pg_temp.ok('an Air Raid has no I-Formation and a Power-Run team has no Empty set',
+    not ('i_form' = any (public.franchise_playbook_sets('air_raid')))
+    and not ('empty' = any (public.franchise_playbook_sets('power_run')))
+    and public.franchise_play_allowed('power_run', 'flea_flicker')
+    and not public.franchise_play_allowed('air_raid', 'flea_flicker'));
+  perform pg_temp.ok('every scheme has a book, and none of them holds all of it',
+    (select bool_and(jsonb_array_length(public.franchise_playbook(sch)->'formations') between 3 and 4)
+       from unnest(array['power_run', 'option', 'pro_style', 'spread', 'air_raid']) sch));
+  perform pg_temp.ok('and every play in a book really is in that scheme''s formations',
+    (select bool_and(public.franchise_play_allowed('power_run', pl->>'key'))
+       from jsonb_array_elements(public.franchise_playbook('power_run')->'formations') fm,
+            jsonb_array_elements(fm->'plays') pl));
+
+  -- ── PLAYED THROUGH, OUT OF A REAL BOOK ──────────────────────────────────
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Playbook', 'Marlow', 'PBK', 'star', 'forest', 'power_run', 'four_three', SEC_PB);
+  pbf := (v->'franchise'->>'id')::uuid;
+  perform public.franchise_start_season(SEC_PB);
+  -- a play from a set this franchise does not carry is refused
+  begin
+    perform public.franchise_game_call('deep_shot', SEC_PB);
+    caught := 'no error';
+  exception when others then caught := SQLSTATE; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a play that is not in your book is refused rather than run',
+    caught = '22023', caught);
+  perform pg_temp.ok('and nothing was written by the attempt',
+    (select calls from public.franchise_games
+      where franchise_id = pbf and season_number = 1 and week = 1) is null);
+
+  pb := public.franchise_game_open(SEC_PB);
+  perform pg_temp.ok('opening publishes the book this franchise actually has',
+    pb->'playbook'->>'scheme' = 'power_run'
+    and jsonb_array_length(pb->'playbook'->'formations') = 4
+    and not exists (select 1 from jsonb_array_elements(pb->'playbook'->'formations') fm
+                     where fm->>'key' = 'empty'));
+
+  called := 0;
+  loop
+    perform pg_temp.as_owner();
+    sside := pb->'next'->>'side';
+    exit when sside is null or called > 60;
+    perform pg_temp.as_anon();
+    pb := public.franchise_game_call(
+            case when sside = 'def' then 'base'
+                 when called % 6 = 5 then 'flea_flicker'
+                 else (array['iso', 'power_o', 'inside_zone'])[1 + (called % 3)] end, SEC_PB);
+    called := called + 1;
+    exit when (pb->>'complete')::boolean;
+  end loop;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a game called out of the book finishes through the same door quick play uses',
+    (pb->>'complete')::boolean and pb->'game'->>'result' in ('W', 'L', 'T') and pb ? 'rewards',
+    called || ' possessions called');
+  perform pg_temp.ok('every possession of mine names the play I ran and the formation I was in',
+    (select bool_and(x->>'play' is not null and x->>'formation' is not null)
+       from public.franchise_games g, jsonb_array_elements(g.box->'drives') x
+      where g.franchise_id = pbf and g.season_number = 1 and g.week = 1
+        and (x->>'mine')::boolean and (x->>'q')::int <= 4));
+  perform pg_temp.ok('and every one of them was a play from this franchise''s own book',
+    (select bool_and(public.franchise_play_allowed('power_run', x->>'play'))
+       from public.franchise_games g, jsonb_array_elements(g.box->'drives') x
+      where g.franchise_id = pbf and g.season_number = 1 and g.week = 1
+        and x->>'play' is not null));
+  perform pg_temp.ok('the defense answered each formation with a front of its own',
+    (select bool_and(x->>'front' is not null)
+       from public.franchise_games g, jsonb_array_elements(g.box->'drives') x
+      where g.franchise_id = pbf and g.season_number = 1 and g.week = 1
+        and (x->>'mine')::boolean and (x->>'q')::int <= 4));
+  perform pg_temp.ok('the box is sim_v4 and names the playbook it was called from',
+    (select g.box->>'sim' from public.franchise_games g
+      where g.franchise_id = pbf and g.season_number = 1 and g.week = 1) = 'sim_v4'
+    and (select g.box->'edges'->>'playbook' from public.franchise_games g
+          where g.franchise_id = pbf and g.season_number = 1 and g.week = 1) = 'playbook_v1');
+
+  -- ── THE BOOK IS OPEN TO READ; THEIR CARD IS NOT ─────────────────────────
+  perform pg_temp.ok('the playbook is open to every franchise',
+    has_function_privilege('anon', 'public.franchise_plays()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_formations()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_playbook(text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_play_allowed(text, text)', 'execute'));
+  perform pg_temp.ok('and the drive resolver is still reachable by no client role',
+    not has_function_privilege('anon',
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
+    and not has_function_privilege('authenticated',
+      'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute'));
 
 end
 $test$;

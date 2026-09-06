@@ -685,11 +685,11 @@ fresh();
   /* sim_v2 since Phase 13: a giveaway now hands the other side the ball in
      scoring range, which is what makes a turnover cost anything. Old boxes
      keep saying sim_v1 and stay true to the rules they were played under. */
-  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v3');
-  has(SQL, "'sim', 'sim_v3'", 'and every box says so');
+  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v4');
+  has(SQL, "'sim', 'sim_v4'", 'and every box says so');
   chk('both simulators are the same version, so a challenge is the same football as a Saturday',
-    (SQL.match(/'sim', 'sim_v3'/g) || []).length === 2
-    && !/'sim', 'sim_v1'/.test(SQL) && !/'sim', 'sim_v2'/.test(SQL));
+    (SQL.match(/'sim', 'sim_v4'/g) || []).length === 2
+    && !/'sim', 'sim_v[123]'/.test(SQL));
   (() => {
     const m = SQL.match(/franchise_scheme_edges\(\)[\s\S]*?select '(\{[\s\S]*?\})'::jsonb;/);
     let sqlEdges = null; try { sqlEdges = m && JSON.parse(m[1]); } catch (_) {}
@@ -2367,7 +2367,7 @@ fresh();
     /drop function if exists public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean\);/.test(SQL));
   chk('the report proves the rule rather than describing it',
     /select 32, 'the game is '/.test(SQL)
-    && /not has_function_privilege\('anon', 'public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text\)', 'execute'\)/.test(SQL.replace(/\s+/g, ' ')));
+    && /not has_function_privilege\('anon', 'public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer\)', 'execute'\)/.test(SQL.replace(/\s+/g, ' ')));
 
   /* ONE SIMULATOR, not two. The calls live on the game and franchise_sim
      reads them, so re-running reproduces every drive already played. */
@@ -2398,7 +2398,7 @@ fresh();
   chk('Game Day no longer says you never play a down',
     GAMEDAY.indexOf('Simulated on the server from your roster, your scheme, the opponent and this week’s preparation. Every game is played once') < 0);
   chk('the page asks the library for the calls rather than listing its own',
-    /FR\.callsFor\(def\?'def':'off'\)\.map/.test(GAMEDAY)
+    /FR\.callsFor\('def'\)\.map/.test(GAMEDAY) && /FR\.playbook\(f\.offense\)\.map/.test(GAMEDAY)
     && /FR\.gameCall\(/.test(GAMEDAY) && /FR\.gameOpen\(\)/.test(GAMEDAY));
   chk('and the stale-script guard knows the new moves',
     /EDFranchise\.gameOpen/.test(GAMEDAY) && /EDFranchise\.gameCall/.test(GAMEDAY));
@@ -2622,7 +2622,7 @@ fresh();
   chk('and no client role can ask what they are about to run',
     /revoke all on function public\.franchise_ai_call\(text, integer, integer\) from public, anon, authenticated;/.test(SQL));
   chk('the drive resolver is still out of reach, on either side of the ball',
-    /revoke all on function public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text\) from public, anon, authenticated;/.test(SQL));
+    /revoke all on function public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer\) from public, anon, authenticated;/.test(SQL));
 
   ['franchise_clock()', 'franchise_fronts()', 'franchise_front_call(text)', 'franchise_call_side(text)']
     .forEach(f => chk('the table ' + f.split('(')[0] + ' is open to read',
@@ -2632,7 +2632,7 @@ fresh();
   has(GAMEDAY, 'Your defense', 'Game Day calls the other side of the ball too');
   has(GAMEDAY, 'have the ball', 'and says whose ball it is');
   chk('it asks the library which table to show rather than choosing itself',
-    /FR\.callsFor\(def\?'def':'off'\)/.test(GAMEDAY) && /CALLED\.side==='def'/.test(GAMEDAY));
+    /FR\.callsFor\('def'\)/.test(GAMEDAY) && /CALLED\.side==='def'/.test(GAMEDAY));
   chk('the clock is on the board',
     /FR\.clockLine\(/.test(GAMEDAY) && /class="ck"/.test(GAMEDAY));
   chk('and the log names both cards after the fact',
@@ -2644,13 +2644,119 @@ fresh();
   chk('the report grew to thirty-five rows', /select 34, 'the game is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 15, 'both sides of the ball'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 15);
-  chk('and the report checks the same number',
-    /\(public\.games_schema\(\)->>'franchise'\)::int = 15/.test(SQL));
 
   has(README, 'clock_v1', 'the README documents the clock');
   has(README, 'defense_v1', 'and the fronts');
   has(README, '10.95', 'and the measurement that made the case for both');
+
+  /* ═══ 26. THE PLAYBOOK (PHASE 16) ════════════════════════════════════════
+     Measured first: four calls was the ENTIRE offensive vocabulary and every
+     franchise had the same four, because franchise_snaps() takes no argument.
+     No formations, no trick plays, and eight thousand drives said a touchdown
+     drive was 55 to 85 yards every time — no such thing as a big play. */
+  eq('the playbook is playbook_v1', F.PLAYBOOK_VERSION, 'playbook_v1');
+  chk('and the SQL says the same', /'version', 'playbook_v1'/.test(SQL));
+  eq('twenty plays', F.PLAYS.length, 20);
+  eq('across five formations', F.FORMATIONS.length, 5);
+  eq('and a trick in every one of them', F.PLAYS.filter(p => p.type === 'trick').length, 5);
+
+  /* the whole book pinned number for number to the SQL */
+  F.PLAYS.forEach(p => {
+    const blk = (SQL.match(new RegExp("'key', '" + p.key + "'[\\s\\S]{0,500}?'explosive', [-0-9.]+")) || [''])[0];
+    chk('the play ' + p.key + ' exists in the SQL', blk.length > 0);
+    chk('and its formation, type and category match',
+      blk.indexOf("'formation', '" + p.formation + "'") >= 0
+      && blk.indexOf("'type', '" + p.type + "'") >= 0
+      && blk.indexOf("'call', '" + p.call + "'") >= 0);
+    ['td', 'turnover', 'explosive'].forEach(k => chk('and its ' + k + ' matches the client',
+      [p[k], p[k].toFixed(1), p[k].toFixed(2), p[k].toFixed(3)]
+        .some(v => blk.indexOf("'" + k + "', " + v) >= 0)));
+  });
+  F.FORMATIONS.forEach(f => chk('the formation ' + f.key + ' has the same tell as the SQL',
+    new RegExp("'key', '" + f.key + "'[\\s\\S]{0,120}?'tell', " + f.tell).test(SQL)));
+
+  /* A PLAY SPECIALISES A CALL rather than replacing it */
+  chk('every play names one of the four calls, so Phase 13 is still underneath all of it',
+    F.PLAYS.every(p => F.SNAPS.calls.some(c => c.key === p.call)));
+  chk('and lives in a real formation',
+    F.PLAYS.every(p => !!F.formation(p.formation)));
+  chk('the resolver takes the category FROM the play rather than being told it',
+    /p_call := pl->>'call';/.test(SQL));
+  chk('and a play key never collides with a call or a front',
+    !F.PLAYS.some(p => F.SNAPS.calls.some(c => c.key === p.key) || F.FRONTS.calls.some(c => c.key === p.key)));
+
+  /* A TRICK CONTRADICTS ITS OWN FORMATION'S TELL — that is what makes it one */
+  chk('every trick play contradicts the formation it is run from', () =>
+    F.PLAYS.filter(p => p.type === 'trick').every(p => {
+      const tell = F.formation(p.formation).tell;
+      const throws = p.call === 'air' || p.call === 'shot';
+      return (tell < 0) === throws;   /* a run look that throws, or a pass look that runs */
+    }));
+  chk('the tells run all the way from a run look to a pass look',
+    F.formation('i_form').tell < -0.5 && F.formation('empty').tell > 0.5
+    && F.FORMATIONS.every(f => Math.abs(f.tell) <= 1));
+  chk('and the page says what each one tells them',
+    F.tellLine(-0.9) === 'Screams run' && F.tellLine(0.9) === 'Screams pass'
+    && F.tellLine(0) === 'Says nothing');
+
+  /* THE DEFENSE READS THE FORMATION, and never the other way about */
+  chk('the defense picks its front off the formation you lined up in',
+    /create or replace function public\.franchise_ai_front\(p_tell numeric, p_gap integer, p_left integer\)/.test(SQL)
+    && /v_front := case when v_play is null then null else\s*\n\s*public\.franchise_ai_front\(/.test(SQL));
+  chk('and no client role may ask what they are about to line up in',
+    /revoke all on function public\.franchise_ai_front\(numeric, integer, integer\) from public, anon, authenticated;/.test(SQL));
+
+  /* AND A TRICK GOES STALE. There is no trick-play strategy. */
+  chk('a trick pays off by how much they bought the tell, and how fresh it is',
+    /fresh := greatest\(0, 1 - 0\.5 \* greatest\(0, coalesce\(p_used, 0\)\)\);/.test(SQL)
+    && /gain := bought \* fresh;/.test(SQL));
+  chk('and one they have seen is WORSE than an honest play, not merely less good',
+    /- 0\.060 \* \(1 - fresh\)/.test(SQL) && /\+ 0\.040 \* \(1 - fresh\)/.test(SQL));
+  chk('the simulator counts how often you have already called it this game',
+    /where oo < i and cc = v_play/.test(SQL));
+
+  /* EVERY SCHEME HAS ITS OWN BOOK */
+  chk('an Air Raid has no I-Formation and a Power-Run team has no Empty set',
+    F.playbookSets('air_raid').indexOf('i_form') < 0
+    && F.playbookSets('power_run').indexOf('empty') < 0);
+  chk('so the flea flicker is in one book and not the other',
+    F.playAllowed('power_run', 'flea_flicker') && !F.playAllowed('air_raid', 'flea_flicker'));
+  chk('every scheme has a book, and none of them has all of it',
+    ['power_run', 'option', 'pro_style', 'spread', 'air_raid'].every(s =>
+      F.playbook(s).length >= 3 && F.playbookSets(s).length < F.FORMATIONS.length));
+  chk('and the server refuses a play that is not in yours',
+    /is not in your playbook/.test(SQL)
+    && /not public\.franchise_play_allowed\(f\.offense, p_call\)/.test(SQL));
+
+  /* A BIG PLAY EXISTS NOW, which it did not before */
+  chk('an explosive play is more yards in fewer snaps, which the clock then feels',
+    /yds := least\(99, round\(yds \* \(1 \+ 0\.55 \* boom\)\)::int\);/.test(SQL)
+    && /plays := greatest\(2, plays - greatest\(1, round\(3 \* boom\)::int\)\);/.test(SQL));
+  chk('and the drive says whether one broke',
+    /'big', broke\);/.test(SQL));
+
+  /* the page draws YOUR book */
+  chk('Game Day draws the playbook grouped by formation',
+    /FR\.playbook\(f\.offense\)\.map/.test(GAMEDAY) && /pb-set/.test(GAMEDAY)
+    && /FR\.tellLine\(fm\.tell\)/.test(GAMEDAY));
+  has(GAMEDAY, 'only works out of one that lies', 'and says what a formation is for');
+  chk('a trick play is marked as one',
+    /pl\.type==='trick'\?' trick':''/.test(GAMEDAY));
+  chk('and the log tells the story of the play afterwards',
+    /FR\.playLine\(d\)/.test(GAMEDAY));
+  chk('every class the playbook draws is defined in the stylesheet',
+    ['pb-set', 'pb-head', 'pb-means'].every(c => FRCSS.indexOf('.' + c) >= 0)
+    && FRCSS.indexOf('.sn-calls .trick') >= 0);
+
+  chk('the report grew to thirty-six rows', /select 35, 'the playbook is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 16, 'the playbook'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 16);
+  chk('and the report checks the same number',
+    /\(public\.games_schema\(\)->>'franchise'\)::int = 16/.test(SQL));
+
+  has(README, 'playbook_v1', 'the README documents the playbook');
+  has(README, 'a formation that lies', 'and what a trick play actually needs');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

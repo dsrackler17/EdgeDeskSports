@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906q">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906q">
+<link rel="stylesheet" href="/games/games.css?v=20260906r">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906r">
 </head>
 <body>
 <div id="gh"></div>
@@ -54,17 +54,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906q"></script>
-<script src="/games/lib/scoring.js?v=20260906q"></script>
-<script src="/games/lib/challenge.js?v=20260906q"></script>
-<script src="/games/lib/research_state.js?v=20260906q"></script>
-<script src="/games/lib/attribution.js?v=20260906q"></script>
-<script src="/games/lib/store.js?v=20260906q"></script>
-<script src="/games/lib/dynasty.js?v=20260906q"></script>
-<script src="/games/lib/social.js?v=20260906q"></script>
-<script src="/games/lib/auth.js?v=20260906q"></script>
-<script src="/games/lib/franchise.js?v=20260906q"></script>
-<script src="/games/games.js?v=20260906q"></script>
+<script src="/games/lib/week.js?v=20260906r"></script>
+<script src="/games/lib/scoring.js?v=20260906r"></script>
+<script src="/games/lib/challenge.js?v=20260906r"></script>
+<script src="/games/lib/research_state.js?v=20260906r"></script>
+<script src="/games/lib/attribution.js?v=20260906r"></script>
+<script src="/games/lib/store.js?v=20260906r"></script>
+<script src="/games/lib/dynasty.js?v=20260906r"></script>
+<script src="/games/lib/social.js?v=20260906r"></script>
+<script src="/games/lib/auth.js?v=20260906r"></script>
+<script src="/games/lib/franchise.js?v=20260906r"></script>
+<script src="/games/games.js?v=20260906r"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or franchise.js for
    longer than it keeps this page, and a page built for the new library then
@@ -73,7 +73,7 @@
    from here on; this is the belt for the braces: if a required function is
    missing, say so and offer a fresh load instead of a dead screen. */
 (function(){
-  var need=['EDFranchise.playWeek','EDFranchise.gameOpen','EDFranchise.gameCall','EDFranchise.snapCall','EDFranchise.driveLine','EDFranchise.stake','EDFranchise.gameFinish','EDFranchise.callsFor','EDFranchise.clockLine','EDFranchise.gamePhase','EDFranchise.schedule','EDFranchise.challengeAccept','EDFranchise.ladder','EDGames.saveCard','EDGames.franchiseReady'];
+  var need=['EDFranchise.playWeek','EDFranchise.gameOpen','EDFranchise.gameCall','EDFranchise.snapCall','EDFranchise.driveLine','EDFranchise.stake','EDFranchise.gameFinish','EDFranchise.callsFor','EDFranchise.clockLine','EDFranchise.playbook','EDFranchise.tellLine','EDFranchise.playLine','EDFranchise.gamePhase','EDFranchise.schedule','EDFranchise.challengeAccept','EDFranchise.ladder','EDGames.saveCard','EDGames.franchiseReady'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -183,7 +183,7 @@
       +edgeRow('Their '+(ed.opp_offense?ed.opp_offense.label:opp.offense)+' vs your '+(ed.defense?ed.defense.label:f.defense),-ed.scheme_defense,'your defense against their offense')
       +edgeRow('Preparation',ed.prep_adj,esc(prep.preparation|0)+'% this week')
       +'</ul>'
-      +'<div class="ftp" style="margin-top:8px">In rating points, from the published table (sim_v3). Your starters’ traits add on the server; the result explains what applied.</div>'
+      +'<div class="ftp" style="margin-top:8px">In rating points, from the published table (sim_v4). Your starters’ traits add on the server; the result explains what applied.</div>'
       +(snap.last_game?'<div class="gd-last">Last time out: <a href="/games/gameday/?game='+esc(snap.last_game.id)+'"><b>'+esc(FR.resultLine(snap.last_game))+'</b> '+esc(FR.matchupLine(snap.last_game))+'</a>'
           +(snap.last_game.potg?' · POTG '+esc(snap.last_game.potg.name):'')+'</div>':'');
   }
@@ -244,7 +244,7 @@
     rows.push(edgeRow('Their '+(FR.optionOf(FR.OFFENSES,opp.offense)||{}).label+' vs your '+(FR.optionOf(FR.DEFENSES,f.defense)||{}).label,-(+e.scheme_defense||0),'your defense'));
     if(tr.count)rows.push(edgeRow('Starters’ traits',Math.round(((+tr.offense||0)+(+tr.defense||0))*0.25*10)/10,tr.count+' traits in the lineup'));
     return '<ul class="gd-edges">'+rows.join('')+'</ul>'
-      +'<div class="ftp" style="margin-top:8px">Effective ratings on the day: your offense '+esc(e.offense)+' vs their defense '+esc(e.opp_defense)+'; their offense '+esc(e.opp_offense)+' vs your defense '+esc(e.defense)+'. '+esc(e.possessions)+' possessions a side'+(box.ot?', overtime':'')+'. '+esc(box.sim||'sim_v3')+'.</div>';
+      +'<div class="ftp" style="margin-top:8px">Effective ratings on the day: your offense '+esc(e.offense)+' vs their defense '+esc(e.opp_defense)+'; their offense '+esc(e.opp_offense)+' vs your defense '+esc(e.defense)+'. '+esc(e.possessions)+' possessions a side'+(box.ot?', overtime':'')+'. '+esc(box.sim||'sim_v4')+'.</div>';
   }
   /* WHAT THE GAME COST. The server draws injuries after a game and writes
      them onto the box; this only says what it found. An empty list is no
@@ -516,7 +516,7 @@
         +edgeRow('Their preparation',box.edges.theirs?box.edges.theirs.prep_adj:0,(box.edges.theirs&&box.edges.theirs.prep?box.edges.theirs.prep.preparation|0:0)+'% this week')
         +edgeRow('Your offense vs their defense',box.edges.mine.scheme,'scheme matchup')
         +edgeRow('Their offense vs your defense',-(+(box.edges.theirs?box.edges.theirs.scheme:0)||0),'scheme matchup')
-        +'</ul><div class="ftp" style="margin-top:8px">Neutral field: no home edge. Effective ratings: your offense '+esc(box.edges.mine.offense)+', your defense '+esc(box.edges.mine.defense)+'; theirs '+esc(box.edges.theirs?box.edges.theirs.offense:'—')+' and '+esc(box.edges.theirs?box.edges.theirs.defense:'—')+'. '+esc(box.sim||'sim_v3')+'.</div>':'')
+        +'</ul><div class="ftp" style="margin-top:8px">Neutral field: no home edge. Effective ratings: your offense '+esc(box.edges.mine.offense)+', your defense '+esc(box.edges.mine.defense)+'; theirs '+esc(box.edges.theirs?box.edges.theirs.offense:'—')+' and '+esc(box.edges.theirs?box.edges.theirs.defense:'—')+'. '+esc(box.sim||'sim_v4')+'.</div>':'')
       +'<div class="btn-row two" style="margin-top:16px"><button class="btn" type="button" id="shareFc">Share the result</button><a class="btn" href="/games/gameday/">Game Day</a></div>'
       +(extra.fresh&&FR.owner()==='device'?'<div id="gdSave" style="margin-top:14px">'+G.conversionCard('fc_after')+'</div>':'');
     var sh=$('shareFc');
@@ -638,11 +638,30 @@
       +'<div class="sn-who">'+(def
         ?esc(FR.opponentTitle(opp))+' have the ball. They run '+esc((opp.style||'').toLowerCase()||'their own thing')+' — read it and take it away.'
         :'Your ball.')+'</div>'
-      +'<ul class="sn-calls'+(def?' def':'')+'">'+FR.callsFor(def?'def':'off').map(function(c){
-          return '<li><button type="button" class="snapBtn" data-call="'+esc(c.key)+'">'
-            +'<span class="t">'+esc(c.name)+'</span><span class="s">'+esc(c.means)+'</span></button></li>';
-        }).join('')+'</ul>'
-      +'<div class="ftp" style="margin-top:8px">A call is one more input beside home field, preparation and the scheme matchup — the server resolves the possession and this page is told what happened. '
+      /* ON DEFENSE it is the four fronts. ON OFFENSE it is YOUR PLAYBOOK
+         (Phase 16), grouped by formation — because which formation you line
+         up in is what the other side reads, and a trick play only works out
+         of a formation that lies. */
+      +(def
+        ?'<ul class="sn-calls def">'+FR.callsFor('def').map(function(c){
+            return '<li><button type="button" class="snapBtn" data-call="'+esc(c.key)+'">'
+              +'<span class="t">'+esc(c.name)+'</span><span class="s">'+esc(c.means)+'</span></button></li>';
+          }).join('')+'</ul>'
+        :FR.playbook(f.offense).map(function(fm){
+            return '<div class="pb-set">'
+              +'<div class="pb-head"><span class="n">'+esc(fm.name)+'</span>'
+                +'<span class="tell '+(fm.tell<-0.15?'run':fm.tell>0.15?'pass':'')+'">'+esc(FR.tellLine(fm.tell))+'</span></div>'
+              +'<div class="pb-means">'+esc(fm.means)+'</div>'
+              +'<ul class="sn-calls pb">'+fm.plays.map(function(pl){
+                  return '<li><button type="button" class="snapBtn'+(pl.type==='trick'?' trick':'')+'" data-call="'+esc(pl.key)+'">'
+                    +'<span class="t">'+esc(pl.name)+(pl.type==='trick'?' <em>trick</em>':'')+'</span>'
+                    +'<span class="s">'+esc(pl.means)+'</span></button></li>';
+                }).join('')+'</ul>'
+              +'</div>';
+          }).join(''))
+      +'<div class="ftp" style="margin-top:8px">'
+      +(def?'A front is one more input beside home field, preparation and the scheme matchup — the server resolves the possession and this page is told what happened. '
+           :'The formation you line up in is what they read, and a trick play only works out of one that lies. Call the same trick twice and they stop buying it. ')
       +'You never see their card before you answer it. Leave and come back and the game is where you left it.</div>'
       /* THE MEASUREMENT SAID HALF THE LATE POSSESSIONS ARE TAPS ON A GAME
          ALREADY OVER. When nothing is at stake, one tap finishes it — every
@@ -661,7 +680,8 @@
     return '<li class="'+(mine?'me':'')+(scored?' sc':'')+(d.key?' key':'')+'">'
       +'<span class="q">Q'+esc(d.q|0)+'</span>'
       +'<span class="d">'+esc(FR.driveLine(d))
-      +(mine&&d.call?'<em>You called '+esc((FR.snapCall(d.call)||{}).name||d.call)+'</em>'
+      +(mine&&d.play?'<em>'+esc(FR.playLine(d))+(d.front?' · they were in '+esc((FR.frontCall(d.front)||{}).name||d.front):'')+'</em>'
+        :mine&&d.call?'<em>You called '+esc((FR.snapCall(d.call)||{}).name||d.call)+'</em>'
         :(d.front?'<em>They ran '+esc((FR.snapCall(d.call)||{}).name||d.call||'it')+' · you played '+esc((FR.frontCall(d.front)||{}).name||d.front)+'</em>'
           :'<em>'+esc(FR.opponentTitle(opp))+'</em>'))
       +'</span>'

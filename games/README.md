@@ -939,7 +939,7 @@ shows one button; afterwards, the result.
   the HQ answers "who am I playing?" from the first second; the next season
   starts when the player says so (`franchise_start_season`), numbered on,
   with the season lines reset and the careers kept.
-* **The simulator, `sim_v3`, runs on the server and nowhere else.** A
+* **The simulator, `sim_v4`, runs on the server and nowhere else.** A
   possession model: eleven to fourteen drives a side, each one resolved
   from the offense's effective rating against the defense's — team rating,
   home field (+1.5), that week's preparation (−3 at 0% to +3 at 100%), the
@@ -2445,6 +2445,128 @@ which is what quick play is on a Saturday too.
 
 Report row 34 covers it.
 
+## Phase 16 — the playbook
+
+Measured first:
+
+| | |
+| --- | --- |
+| offensive options, any scheme | **4** |
+| do they differ by scheme? | **no** — `franchise_snaps()` takes no argument |
+| formations | **0** |
+| trick plays | **0** |
+
+Four calls was the entire offensive vocabulary, and every franchise in the
+game had the same four. Your scheme picked your pass share and nothing else,
+so an Air Raid and a Power-Run team called from an identical menu.
+
+And there was no such thing as a big play. Eight thousand drives: a touchdown
+drive was **55 to 85 yards, every time**, spread 9.0. Every score looked
+exactly like every other score.
+
+### A play specialises a call — it does not replace one
+
+Every play names one of the four calls as its **category** and inherits that
+call's numbers exactly as Phase 13 measured and tuned them, then adds its own
+on top. Nothing measured there is thrown away, and quick play is still a game
+called Balanced.
+
+### Formations, and what lining up in one tells them
+
+Five sets. `tell` is what the formation says before the snap: −1 screams run,
++1 screams pass. That tell is not flavour — the other side reads it and calls
+their front off it. Three thousand snaps a row:
+
+| formation | tell | stack the box | base | cover deep | blitz |
+| --- | --- | --- | --- | --- | --- |
+| **Wildcat** | −0.90 | **59.9%** | 29.7% | 1.9% | 8.5% |
+| **I-Formation** | −0.75 | **55.6%** | 32.2% | 1.9% | 10.3% |
+| **Singleback** | −0.25 | 37.0% | 36.5% | 16.3% | 10.2% |
+| **Shotgun** | +0.45 | 9.6% | 34.8% | **45.4%** | 10.2% |
+| **Empty** | +0.90 | 2.4% | 29.7% | **59.3%** | 8.6% |
+
+Lining up heavy really does get you a stacked box. That is the cost of a run
+formation — and the entire reason the trick play out of it works.
+
+### Playbooks
+
+Which formations you carry depends on your scheme, so the menu genuinely
+differs from team to team:
+
+| scheme | book |
+| --- | --- |
+| power run / option | I-Formation, Singleback, Shotgun, Wildcat |
+| pro style | I-Formation, Singleback, Shotgun, Empty |
+| spread | Singleback, Shotgun, Empty, Wildcat |
+| air raid | Singleback, Shotgun, Empty |
+
+Twenty plays, and **no franchise holds all of them**. An Air Raid has no
+I-Formation, so it has no flea flicker, and asking for one is refused rather
+than run.
+
+### Trick plays need a formation that lies
+
+A trick play **contradicts its own formation's tell** — a flea flicker out of
+the I-Formation, a quarterback draw out of Empty — so it pays off exactly
+when the defense has bought the tell. The same trick, fresh, against the
+front its own formation actually draws:
+
+| trick | formation | points a drive | fooled them | broke a big one |
+| --- | --- | --- | --- | --- |
+| **Wildcat pass** | Wildcat | 3.013 | 0.74 | 43.9% |
+| **Flea flicker** | I-Formation | 2.913 | 0.72 | 38.5% |
+| **Halfback pass** | Singleback | 2.472 | **0.30** | 15.0% |
+| Quarterback draw | Empty | 2.176 | 0.74 | 25.6% |
+| Double reverse | Shotgun | 2.069 | 0.63 | 29.0% |
+
+The Halfback pass is the one that proves the rule. It lives in Singleback — a
+formation that tells them nothing — so it fools people **0.30** of the time
+against the Flea flicker's **0.72**, and it is worth half a point a drive
+less. A trick play is not a good play; it is a good **lie**, and it needs a
+formation willing to tell it.
+
+Against the front that bought the tell, a flea flicker is worth **3.196**
+points a drive. Against a defense sitting deep, **2.149**.
+
+### And they go stale, because there is no trick-play strategy
+
+| times called already this game | 0 | 1 | 2 | 3 |
+| --- | --- | --- | --- | --- |
+| points a drive | **3.259** | 2.877 | 2.437 | 2.524 |
+| touchdown | 41.6% | 36.2% | 30.1% | 30.8% |
+| giveaway | 33.5% | 36.4% | 39.1% | 38.3% |
+
+**My first cut of that was not enough**, and measuring whole games said so.
+It only withheld the bonus, which left a stale trick looking like a
+Take-a-shot with a few more giveaways — and calling the flea flicker on every
+possession came out as the **best** strategy in the game:
+
+| calling every possession | margin | before the fix |
+| --- | --- | --- |
+| all four verticals | −2.57 | −2.65 |
+| a real mix | −2.64 | −2.66 |
+| run then trick | −3.83 | −3.38 |
+| all inside zone | −5.05 | −5.05 |
+| two tricks | −6.57 | **−1.61** |
+| **all tricks** | **−6.98** | **−1.54** ← *was the best* |
+
+So being read now costs you: a trick they have seen is **worse** than an
+honest play, not merely less good. Trick spam went from the best strategy in
+the game to the worst, by four and a half points against a real mix.
+
+### A big play exists now
+
+An explosive play is more yards in fewer snaps — which the clock then feels,
+because a drive that goes 60 yards in four plays takes less time than one
+that goes 60 in nine. The flea flicker breaks one 38.5% of the time. Before
+this phase, nothing ever broke.
+
+Report row 35 covers it, and asserts the shape rather than the numbers: every
+play names a real call and lives in a real formation, every trick contradicts
+its own formation's tell, no scheme carries every set, and what the defense
+is about to line up in is reachable by no client role — seeing their answer
+before you commit would be the whole game.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
@@ -2455,9 +2577,9 @@ bracket belongs). The ledger accepts a negative delta for spending (the
 facilities, the reports and the signings use it), and
 `franchise_activity` is the record every future reward derives from. The
 simulator, the offseason, the market, the conference, injuries, the bowl,
-trades and the staff are each versioned (`sim_v3`, `offseason_v1`,
+trades and the staff are each versioned (`sim_v4`, `offseason_v1`,
 `market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
 `staff_v2`, `scouting_v1`, `development_v1`, `league_v1`, `rank_v1`, `packs_v1`,
-`career_v1`, `snap_v1`, `moment_v1`, `clock_v1`, `defense_v1`) so a retuned one is a new version and old boxes, old reports,
+`career_v1`, `snap_v1`, `moment_v1`, `clock_v1`, `defense_v1`, `playbook_v1`) so a retuned one is a new version and old boxes, old reports,
 old classes, old tables, old deals and old coaches stay true to the rules
 they were played under.
