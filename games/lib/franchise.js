@@ -59,7 +59,8 @@
       'the draft and the market',
       'conferences and playoffs',
       'injuries, the bowl and trades',
-      'the coaching staff'
+      'the coaching staff',
+      'the scouting department'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -920,6 +921,87 @@
     return (seat.grade || staffGrade(seat.level)) + ' · level ' + (seat.level | 0) + ' of ' + STAFF.max_level
       + (seat.effect ? ' · +' + seat.effect + (s.key === 'trainer' ? '' : ' ' + (s.key === 'defense' ? 'defense' : s.key === 'offense' ? 'offense' : 'late game')) : '');
   }
+  /* ── THE SCOUTING DEPARTMENT (Phase 9) ───────────────────────────────────
+     What reading real football well is worth. The average Price It score
+     over the last twenty VERIFIED pricings, pulled toward a neutral 50 in
+     proportion to how far short of twenty the record is — so a new franchise
+     starts in the middle, and the twentieth pricing is worth more than the
+     first.
+
+     Everything the grade buys is in the draft window and is decided ONCE,
+     when the window opens: the band an unscouted prospect is shown in, what
+     a report costs, how much POTENTIAL the class carries, and an extra pick
+     at the top. The ends are chosen so that a NEUTRAL grade is exactly the
+     game as it was before this phase — band 11, report 20 SP, no lift.
+
+     The four curves are restated here so a page can say what the next grade
+     is worth without a round trip, and pinned to the SQL by
+     tools/games/franchise.test.js. THE SERVER GRADES; nothing here decides
+     a band, a price or a class. */
+  var SCOUTING_VERSION = 'scouting_v1';
+  var SCOUTING = {
+    window: 20, neutral: 50, ceiling: 6, extra_pick: 90,
+    band: { wide: 18, tight: 4 }, report: { dear: 28, cheap: 12 },
+    grades: [
+      { key: 'unrated',  name: 'Unrated',           min: 0,
+        means: 'No read on these games yet. The widest band, the dearest report.' },
+      { key: 'regional', name: 'Regional scout',    min: 40,
+        means: 'Where a franchise with no record starts.' },
+      { key: 'area',     name: 'Area scout',        min: 55,
+        means: 'A tighter band, a cheaper report, and the first points of upside.' },
+      { key: 'national', name: 'National scout',    min: 68,
+        means: 'Reading games well. The class starts to carry real potential.' },
+      { key: 'director', name: 'Scouting director', min: 80,
+        means: 'Four of six points of ceiling, and a report for little.' },
+      { key: 'war_room', name: 'War room',          min: 90,
+        means: 'The tightest band, the cheapest report, the whole ceiling — and one more draft pick.' }
+    ]
+  };
+  function scoutClamp(score) { return Math.max(0, Math.min(100, Math.round(+score || 0))); }
+  /* which grade a number is */
+  function scoutGradeOf(score) {
+    var n = scoutClamp(score), out = SCOUTING.grades[0];
+    SCOUTING.grades.forEach(function (g) { if (g.min <= n) out = g; });
+    return out;
+  }
+  /* the next grade up, and how far off it is — the only motivating line here */
+  function scoutNext(score) {
+    var n = scoutClamp(score), out = null;
+    SCOUTING.grades.forEach(function (g) { if (out === null && g.min > n) out = g; });
+    return out === null ? null : { key: out.key, name: out.name, at: out.min, need: out.min - n };
+  }
+  /* the band an unscouted prospect is shown in: 18 points at 0, 11 at
+     neutral, 4 at the top — the same straight line the SQL walks */
+  function scoutBand(score) {
+    return Math.max(SCOUTING.band.tight,
+      SCOUTING.band.wide - Math.round((SCOUTING.band.wide - SCOUTING.band.tight) * scoutClamp(score) / 100));
+  }
+  /* what a report costs: 28 Scouting Points down to 12, through 20 at neutral */
+  function scoutCost(score) {
+    return Math.max(SCOUTING.report.cheap,
+      SCOUTING.report.dear - Math.round((SCOUTING.report.dear - SCOUTING.report.cheap) * scoutClamp(score) / 100));
+  }
+  /* how much POTENTIAL the department finds — never overall, and never below
+     zero: a bad department misses, it does not make players worse */
+  function scoutLift(score) {
+    return Math.max(0, Math.round(SCOUTING.ceiling
+      * Math.max(0, scoutClamp(score) - SCOUTING.neutral) / (100 - SCOUTING.neutral)));
+  }
+  /* the grade a record of n pricings averaging avg would be, before the
+     window has filled — the preview a page shows next to "twenty pricings
+     settle it" */
+  function scoutScore(count, avg) {
+    var n = Math.max(0, Math.min(SCOUTING.window, count | 0));
+    return scoutClamp((scoutClamp(avg) * n + SCOUTING.neutral * (SCOUTING.window - n)) / SCOUTING.window);
+  }
+  /* "War room · 94 · 18 of 20 priced" */
+  function scoutLine(sc) {
+    sc = obj(sc);
+    var g = sc.grade_name || scoutGradeOf(sc.score).name;
+    return g + ' · ' + scoutClamp(sc.score)
+      + ' · ' + Math.min(SCOUTING.window, sc.priced | 0) + ' of ' + SCOUTING.window + ' priced';
+  }
+
   /* how far into the thousand a level is, for a bar that is honest about a
      long climb: the COST spent, not the level, because the level is not linear */
   function staffProgress(level) {
@@ -1389,6 +1471,8 @@
     tradeRespond: tradeRespond, tradeWithdraw: tradeWithdraw,
     SCHEMA: SCHEMA, SCHEMA_PHASES: SCHEMA_PHASES, SCHEMA_FILES: SCHEMA_FILES,
     schema: schema, schemaGap: schemaGap,
+    SCOUTING_VERSION: SCOUTING_VERSION, SCOUTING: SCOUTING, scoutGradeOf: scoutGradeOf, scoutNext: scoutNext,
+    scoutBand: scoutBand, scoutCost: scoutCost, scoutLift: scoutLift, scoutScore: scoutScore, scoutLine: scoutLine,
     STAFF_VERSION: STAFF_VERSION, STAFF: STAFF, staffCost: staffCost, staffCostBetween: staffCostBetween,
     staffAfford: staffAfford, staffEffect: staffEffect, staffGrade: staffGrade,
     staffSpecialtyCount: staffSpecialtyCount, staffSeat: staffSeat, staffLine: staffLine,

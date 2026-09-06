@@ -1093,8 +1093,12 @@ fresh();
     .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated', SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
   chk('the report grew to nineteen rows', /select 18, 'the market is '/.test(SQL) && /select 19, 'a prospect''s true ratings are read through the board only/.test(SQL));
   chk('the direct read admits no prospect and no free agent', /create policy game_players_own on public\.game_players for select\s+using \(franchise_id is not null and public\.franchise_is_mine\(franchise_id\) and status not in \('prospect', 'free_agent'\)\)/.test(SQL));
-  chk('an unscouted prospect is a range fixed per player, and no ratings', /lo := greatest\(40, p\.overall - 3 - \(abs\(hashtext\(p\.id::text\)\) % 5\)\);/.test(SQL)
-    && /'range', jsonb_build_array\(lo, least\(99, lo \+ 10\)\), 'overall', null, 'potential', null/.test(SQL));
+  /* the band is fixed per player and its WIDTH comes off his own row since
+     scouting_v1; what has not changed is that it hides everything else */
+  chk('an unscouted prospect is a band fixed per player, and no ratings',
+    /lo := greatest\(40, p\.overall - \(abs\(hashtext\(p\.id::text \|\| ':band'\)\) % w\)\);/.test(SQL)
+    && /hi := least\(99, lo \+ w - 1\);/.test(SQL)
+    && /'range', jsonb_build_array\(lo, hi\), 'band', w, 'overall', null, 'potential', null/.test(SQL));
   chk('a report and a signing are one negative ledger row each, keyed by the player',
     /public\.franchise_credit\(v_f, 'sp', -cost, 'scout', p\.id::text/.test(SQL) && /public\.franchise_credit\(v_f, 'tc', -p\.asking, 'signing', p\.id::text/.test(SQL));
   chk('a short purse, a spent pick and a full roster are refused before anything is written',
@@ -1102,7 +1106,11 @@ fresh();
     && SQL.indexOf('not enough Scouting Points: % needed, % on hand') < SQL.indexOf("public.franchise_credit(v_f, 'sp', -cost, 'scout'"));
   chk('the floor and the starters hold on a release', /the roster cannot go below %/.test(SQL) && /you need at least % at %/.test(SQL));
   chk('founding opens the first window and the offseason the next', /perform public\.franchise_open_market\(v_id, 1\);/.test(SQL) && /mk := public\.franchise_open_market\(p_franchise, p_from \+ 1\);/.test(SQL));
-  chk('the picks are renewed, never banked', /set draft_picks = \(m->>'picks'\)::int, market_season = p_window/.test(SQL));
+  /* renewed, never banked — and since scouting_v1 the count itself is the
+     rule plus at most the one pick the top grade is worth */
+  chk('the picks are renewed, never banked',
+    /set draft_picks = v_picks, market_season = p_window/.test(SQL)
+    && /v_picks := \(m->>'picks'\)::int \+ case when \(sc->>'extra_pick'\)::boolean then 1 else 0 end;/.test(SQL));
   chk('a prospect has no number until he joins', /jersey = public\.franchise_free_number\(v_f, p\.position, p\.id::text\)/.test(SQL) && /'jersey', case when p\.status = 'active' then p\.jersey end/.test(SQL));
   chk('the SQL suite plays the draft and the market through', /18\. THE DRAFT AND THE MARKET/.test(SQLTEST) && /a client cannot read a prospect''s row/.test(SQLTEST) && /the same seed makes the same class/.test(SQLTEST));
   has(README, 'market_v1', 'the README documents the market');
@@ -1601,8 +1609,10 @@ fresh();
       JSON.stringify(F.SCHEMA_PHASES[layer]) === JSON.stringify(rows.map(r => r.name)),
       'client ' + JSON.stringify(F.SCHEMA_PHASES[layer]) + ' vs sql ' + JSON.stringify(rows.map(r => r.name)));
   });
+  /* the last note, whatever number it is, and the commit right after it */
   chk('the franchise notes are applied in one transaction, so a half-run cannot claim a phase',
-    /begin;[\s\S]{0,200}games_schema_note\('franchise', 1,[\s\S]*?games_schema_note\('franchise', 8,[\s\S]{0,80}commit;/.test(SQL));
+    new RegExp("begin;[\\s\\S]{0,200}games_schema_note\\('franchise', 1,[\\s\\S]*?games_schema_note\\('franchise', "
+      + F.SCHEMA.franchise + ",[\\s\\S]{0,80}commit;").test(SQL));
   chk('the self-check report opens by saying what this database has',
     /select 0, 'the schema log says what this database has/.test(SQL));
 
@@ -1676,6 +1686,149 @@ fresh();
   chk('the tool has a script name that does not need remembering', () =>
     JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
       .scripts['games:schema'] === 'node tools/games/schema.js');
+
+  /* ═══ 19. THE SCOUTING DEPARTMENT (PHASE 9) ═══════════════════════════════
+     Accuracy at real football, finally load-bearing. What these assertions
+     defend, hardest first: the client's copy of the four curves is the SQL's
+     copy; a neutral grade is exactly the game as it was; the department is
+     named as touching POTENTIAL and never overall; and no page decides a
+     grade, a band or a price. */
+
+  eq('scouting is versioned', F.SCOUTING_VERSION, 'scouting_v1');
+  has(SQL, "'version', 'scouting_v1'", 'and the SQL agrees');
+  /* the whole table, pinned to franchise_scouting() rather than to a memory */
+  chk('the window, the neutral, the ceiling and the extra pick are the SQL numbers',
+    new RegExp("'window', " + F.SCOUTING.window + ",[\\s\\S]{0,80}'neutral', " + F.SCOUTING.neutral).test(SQL)
+    && new RegExp("'ceiling', " + F.SCOUTING.ceiling + ",").test(SQL)
+    && new RegExp("'extra_pick', " + F.SCOUTING.extra_pick + ",").test(SQL));
+  chk('the band and the report price are the SQL ends',
+    new RegExp("'band',\\s+jsonb_build_object\\('wide', " + F.SCOUTING.band.wide
+      + ", 'tight', " + F.SCOUTING.band.tight + "\\)").test(SQL)
+    && new RegExp("'report',\\s+jsonb_build_object\\('dear', " + F.SCOUTING.report.dear
+      + ", 'cheap', " + F.SCOUTING.report.cheap + "\\)").test(SQL));
+  F.SCOUTING.grades.forEach(function (g) {
+    chk('the grade ' + g.key + ' is the SQL grade, at the SQL number',
+      new RegExp("'key', '" + g.key + "',\\s+'name', '" + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        + "',\\s+'min', +" + g.min + "\\)").test(SQL));
+  });
+  chk('the grades run from zero and never go backwards', () =>
+    F.SCOUTING.grades[0].min === 0
+    && F.SCOUTING.grades.every((g, i) => i === 0 || g.min > F.SCOUTING.grades[i - 1].min));
+
+  /* THE ANCHOR. Everything else about this phase is a tuning argument; this
+     is the one that says an existing player's game did not change under them. */
+  eq('a neutral grade is the band every class had before this phase',
+    F.scoutBand(F.SCOUTING.neutral), 11);
+  eq('and the report price market_v1 always charged',
+    F.scoutCost(F.SCOUTING.neutral), F.MARKET.scout_sp);
+  eq('and finds no extra potential at all', F.scoutLift(F.SCOUTING.neutral), 0);
+
+  chk('the band never widens and the price never rises as the grade does', () => {
+    for (var n = 0; n < 100; n++) {
+      if (F.scoutBand(n) < F.scoutBand(n + 1)) return false;
+      if (F.scoutCost(n) < F.scoutCost(n + 1)) return false;
+      if (F.scoutLift(n) > F.scoutLift(n + 1)) return false;
+    }
+    return F.scoutBand(0) === F.SCOUTING.band.wide && F.scoutBand(100) === F.SCOUTING.band.tight
+      && F.scoutCost(0) === F.SCOUTING.report.dear && F.scoutCost(100) === F.SCOUTING.report.cheap
+      && F.scoutLift(100) === F.SCOUTING.ceiling;
+  });
+  chk('a department below neutral finds nothing rather than taking something away', () => {
+    for (var n = -50; n <= F.SCOUTING.neutral; n++) if (F.scoutLift(n) !== 0) return false;
+    return true;
+  });
+  chk('nothing runs off the ends of the curves', () =>
+    [-999, -1, 0, 50, 100, 101, 9999, null, undefined, NaN, 'x'].every(function (n) {
+      var b = F.scoutBand(n), c = F.scoutCost(n), l = F.scoutLift(n);
+      return b >= F.SCOUTING.band.tight && b <= F.SCOUTING.band.wide
+        && c >= F.SCOUTING.report.cheap && c <= F.SCOUTING.report.dear
+        && l >= 0 && l <= F.SCOUTING.ceiling;
+    }));
+
+  /* THE CONFIDENCE RAMP: a new franchise is neutral, and the twentieth
+     pricing is worth more than the first */
+  eq('no record at all is a neutral grade', F.scoutScore(0, 0), F.SCOUTING.neutral);
+  eq('five perfect pricings are not a perfect department', F.scoutScore(5, 100), 63);
+  eq('twenty are', F.scoutScore(20, 100), 100);
+  eq('and twenty terrible ones are the floor', F.scoutScore(20, 0), 0);
+  chk('the ramp is monotone: another pricing at the same average never lowers the grade', () => {
+    for (var n = 0; n < F.SCOUTING.window; n++) if (F.scoutScore(n, 90) > F.scoutScore(n + 1, 90)) return false;
+    for (n = 0; n < F.SCOUTING.window; n++) if (F.scoutScore(n, 10) < F.scoutScore(n + 1, 10)) return false;
+    return true;
+  });
+
+  chk('the grade a number is, and the next one up with the distance to it', () =>
+    F.scoutGradeOf(0).key === 'unrated' && F.scoutGradeOf(39).key === 'unrated'
+    && F.scoutGradeOf(40).key === 'regional' && F.scoutGradeOf(89).key === 'director'
+    && F.scoutGradeOf(90).key === 'war_room' && F.scoutGradeOf(100).key === 'war_room'
+    && F.scoutNext(100) === null && F.scoutNext(38).need === 2 && F.scoutNext(38).at === 40);
+  eq('the one-line summary reads as a grade, a number and a record',
+    F.scoutLine({ score: 94, priced: 18, grade_name: 'War room' }), 'War room · 94 · 18 of 20 priced');
+
+  /* THE SERVER GRADES. The client mirrors the table for display and asks for
+     nothing; there is no RPC here that could hand a grade to a page. */
+  chk('no page and no client function decides a grade, a band or a price',
+    !/scout_grade\s*[:=]\s*[0-9]/.test(FJS)
+    && !/franchise_scout_report/.test(FJS)
+    && !/franchise_scout_report/.test(MARKET) && !/franchise_scout_report/.test(OFFICE));
+  chk('the grade is a definer read, reached through the board that proves who is asking',
+    /revoke all on function public\.franchise_scout_report\(uuid\) from public, anon, authenticated;/.test(SQL)
+    && /'scouting', public\.franchise_scout_report\(f\.id\)/.test(SQL));
+  ['franchise_scouting()', 'franchise_scout_grade_of(integer)', 'franchise_scout_band(integer)',
+   'franchise_scout_cost(integer)', 'franchise_scout_lift(integer)']
+    .forEach(f => chk('the table function ' + f.split('(')[0] + ' is open to read',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* WHAT IT TOUCHES, and the one thing it must not */
+  chk('the department raises POTENTIAL and never overall',
+    /set potential = least\(99, greatest\(overall, potential \+ v_lift\)\)/.test(SQL)
+    && !/set overall = [^;]*v_lift/.test(SQL));
+  chk('and restates rarity by the generator’s own rule rather than leaving it stale',
+    /rarity = case when overall >= 82 or least\(99, greatest\(overall, potential \+ v_lift\)\) >= 90 then 'elite'/.test(SQL));
+  chk('it does not reach the simulator: no scouting term in either game',
+    !/franchise_scout_(band|cost|lift|report|grade_of)\(/.test(
+      (SQL.match(/create or replace function public\.franchise_play_week[\s\S]*?\n\$\$;/) || [''])[0]
+      + (SQL.match(/create or replace function public\.franchise_play_versus[\s\S]*?\n\$\$;/) || [''])[0]));
+  chk('everything is decided once, when the window opens, and stamped on the class',
+    /sc := public\.franchise_scout_report\(p_franchise\);/.test(SQL)
+    && /scout_grade = v_grade/.test(SQL)
+    && /scout_band = v_band/.test(SQL)
+    && /'scout_grade', v_grade, 'scout_name', sc->>'grade_name'/.test(SQL));
+  chk('an extra pick comes only at the top grade',
+    /v_picks := \(m->>'picks'\)::int \+ case when \(sc->>'extra_pick'\)::boolean then 1 else 0 end;/.test(SQL));
+  chk('a class opened before this phase is shown and priced the way it always was',
+    /w := greatest\(2, coalesce\(p\.scout_band, 11\)\);/.test(SQL)
+    && /case when f\.scout_grade is null then \(public\.franchise_market\(\)->>'scout_sp'\)::int/.test(SQL));
+  chk('the band always contains the truth, and the SQL suite proves it at every width',
+    /the band always contains the true overall, and is exactly as wide as it says, at every width/.test(SQLTEST)
+    && /22\. THE SCOUTING DEPARTMENT/.test(SQLTEST)
+    && /the department finds POTENTIAL and never touches overall/.test(SQLTEST)
+    && /a NEUTRAL grade is exactly what every class had before this phase/.test(SQLTEST));
+
+  /* THE PAGES */
+  chk('the market page names the department that found this class AND the one you have now',
+    /THIS CLASS WAS FOUND BY|This class was found by/.test(MARKET)
+    && /Right now/.test(MARKET) && /function department\(b\)/.test(MARKET));
+  chk('and prices every report from the class rather than the flat rule',
+    /function cost\(b\)\{ return \(b&&b\.scout_cost!=null\)/.test(MARKET)
+    && (MARKET.match(/esc\(cost\(b\)\)/g) || []).length >= 3);
+  chk('an unscouted card says how wide its band is', /-point band — the true number is anywhere inside it/.test(MARKET));
+  chk('the page is honest about what a grade does not do',
+    /never how a Saturday goes, and never a rating on anybody already on the roster/.test(MARKET));
+  chk('the Front Office shows the grade next to the Scouting Points it is not',
+    /function scoutRow\(h\)/.test(OFFICE) && /Scouting department/.test(OFFICE)
+    && /FR\.scoutGradeOf\(sc\.score\)/.test(OFFICE));
+  chk('and says how many more games settle it', /more priced games and the grade is your own/.test(OFFICE));
+  chk('both pages carry the styles they use',
+    /\.sd-found,\.sd-now\{/.test(FCSS) && /\.res-scout\{/.test(FCSS));
+
+  chk('the report grew to twenty-eight rows', /select 27, 'scouting is '/.test(SQL));
+  chk('the schema log records the phase', /games_schema_note\('franchise', 9, 'the scouting department'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 9);
+
+  has(README, 'scouting_v1', 'the README documents the department');
+  has(README, 'last twenty', 'and the window it grades on');
+  has(README, '**potential, never overall**', 'and what it will not touch');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

@@ -498,6 +498,28 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .mk-sum .sp .v{color:var(--obs)}.mk-sum .tc .v{color:var(--est)}
 
 /* a prospect's card before the report: the range where the overall would be */
+.res-scout{background:var(--cell);border:1px solid var(--line);border-left:3px solid var(--obs);
+  border-radius:12px;padding:11px 13px;margin-top:10px}
+.res-scout .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.res-scout .v{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin-top:3px;color:var(--obs)}
+.res-scout .m{font-size:12.5px;line-height:1.55;color:var(--dim);margin-top:6px}
+.res-scout .m b{color:var(--fg)}
+/* THE SCOUTING DEPARTMENT (Phase 9). Two panels, because they answer two
+   different questions — what found THIS class, and what the department is
+   now — and reading them as one number is the mistake to prevent. */
+.sd{display:grid;gap:10px}
+@media(min-width:560px){.sd{grid-template-columns:1fr 1fr;align-items:start}
+  .sd .ftp{grid-column:1/-1}}
+.sd-found,.sd-now{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.sd-now{border-color:var(--obs)}
+.sd .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.sd .v{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin-top:4px;line-height:1.2}
+.sd-now .v{color:var(--obs)}
+.sd .v small{display:block;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:12px;font-weight:500;color:var(--faint);margin-top:3px}
+.sd-fill,.sd-next{font-size:12.5px;line-height:1.55;color:var(--dim);margin-top:8px}
+.sd-next{border-top:1px solid var(--line);padding-top:8px}
+.sd-next b{color:var(--fg)}
 .pc-range{position:absolute;right:14px;top:36px;text-align:center}
 .pc-range b{display:block;font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;line-height:1.2;color:var(--dim);white-space:nowrap}
 .pc-range span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.14em;color:var(--faint);margin-top:2px}

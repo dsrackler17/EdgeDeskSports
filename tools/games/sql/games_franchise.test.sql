@@ -98,6 +98,10 @@ declare
   bf uuid; tid uuid; tid2 uuid; pids uuid[]; pids2 uuid[];
   -- the coaching staff
   sf uuid;
+  -- the scouting department
+  scf uuid; scg uuid; sc jsonb; sc2 jsonb; band_lo integer; band_hi integer; wdt integer;
+  SEC_SC constant text := 'device-secret-scoutscoutscoutscoutscout1';
+  SEC_SG constant text := 'device-secret-scoutscoutscoutscoutscout2';
   SEC_S constant text := 'device-secret-ssssssssssssssssssssssssssss';
   SEC_C constant text := 'device-secret-cccccccccccccccccccccccccccc';
 begin
@@ -1731,9 +1735,15 @@ begin
     and jsonb_array_length(b->'prospects') = 10 and jsonb_array_length(b->'agents') = 6 and (b->>'scouted')::int = 0
     and b->'rules'->>'version' = 'market_v1' and (b->'resources'->>'scouting_points')::int >= 0);
   pr := b->'prospects'->0;
-  perform pg_temp.ok('an unscouted prospect shows a name, a position, an age, an archetype and a ten-point range — no overall, no potential, no ratings, no traits, no number',
+  -- THE RULE, not one width. Since scouting_v1 the band is as wide as the
+  -- department that found the class made it (four to eighteen points), so
+  -- what has to hold is that the card shows a band of exactly that width and
+  -- gives away nothing else.
+  perform pg_temp.ok('an unscouted prospect shows a name, a position, an age, an archetype and a band — no overall, no potential, no ratings, no traits, no number',
     pr->>'first_name' is not null and pr->>'position' is not null and (pr->>'age')::int between 21 and 22 and pr->>'archetype' is not null
-    and jsonb_array_length(pr->'range') = 2 and (pr->'range'->>1)::int - (pr->'range'->>0)::int = 10
+    and jsonb_array_length(pr->'range') = 2
+    and (pr->'range'->>1)::int - (pr->'range'->>0)::int + 1 between 4 and 18
+    and (pr->'range'->>1)::int - (pr->'range'->>0)::int + 1 = (pr->>'band')::int
     and pr->'overall' = 'null'::jsonb and pr->'potential' = 'null'::jsonb and not (pr ? 'ratings') and not (pr ? 'traits') and not (pr ? 'dev_tier')
     and pr->'jersey' = 'null'::jsonb and not (pr->>'scouted')::boolean);
   perform pg_temp.as_owner();
@@ -1752,24 +1762,28 @@ begin
     (select array_agg(p->>'position') from jsonb_array_elements(b->'prospects') p)
       = (select array_agg(p->>'position' order by array_position(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P'], p->>'position'), p->>'last_name', p->>'first_name') from jsonb_array_elements(b->'prospects') p));
 
-  -- a scouting report: refused short, then bought once, as one negative ledger row
+  -- a scouting report: refused short, then bought once, as one negative ledger row.
+  -- Since scouting_v1 the price is the one the department that found this class
+  -- charges, so the fixture reads it off the board rather than assuming twenty.
   perform pg_temp.as_owner();
+  n0 := (b->>'scout_cost')::int;
   select scouting_points into sp0 from public.franchises where id = fa;
-  perform public.franchise_credit(fa, 'sp', 19 - sp0, 'test', 'sp:19', null);
+  perform public.franchise_credit(fa, 'sp', (n0 - 1) - sp0, 'test', 'sp:short', null);
   perform pg_temp.as_user(ALICE);
   begin
     perform public.franchise_scout(pid3);
     perform pg_temp.ok('a report one point short is refused, and the answer says the price', false, 'it ran');
   exception when object_not_in_prerequisite_state then
     get stacked diagnostics msg = message_text;
-    perform pg_temp.ok('a report one point short is refused, and the answer says the price', msg like '%20 needed%' and msg like '%19 on hand%', msg);
+    perform pg_temp.ok('a report one point short is refused, and the answer says the price',
+      msg like '%' || n0 || ' needed%' and msg like '%' || (n0 - 1) || ' on hand%', msg);
   end;
   perform pg_temp.as_owner();
-  perform public.franchise_credit(fa, 'sp', 61, 'test', 'sp:80', null);
+  perform public.franchise_credit(fa, 'sp', 80 - (n0 - 1), 'test', 'sp:80', null);
   perform pg_temp.as_user(ALICE);
   v := public.franchise_scout(pid3);
-  perform pg_temp.ok('a report costs 20 Scouting Points and reveals everything: overall, potential, tier, ratings, traits',
-    (v->>'ok')::boolean and (v->>'cost')::int = 20 and v->>'currency' = 'sp' and (v->'totals'->>'scouting_points')::int = 60
+  perform pg_temp.ok('a report costs what this class charges and reveals everything: overall, potential, tier, ratings, traits',
+    (v->>'ok')::boolean and (v->>'cost')::int = n0 and v->>'currency' = 'sp' and (v->'totals'->>'scouting_points')::int = 80 - n0
     and (v->'player'->>'scouted')::boolean and (v->'player'->>'overall')::int between (rng->>0)::int and (rng->>1)::int
     and (v->'player'->>'potential')::int >= (v->'player'->>'overall')::int and jsonb_typeof(v->'player'->'ratings') = 'object'
     and v->'player' ? 'traits' and v->'player'->>'dev_tier' is not null and (v->>'unscouted')::int = 9);
@@ -1788,9 +1802,9 @@ begin
   perform pg_temp.as_owner();
   perform pg_temp.ok('the report is one negative ledger row keyed by the player, on the record, and the totals follow',
     (select count(*) from public.franchise_ledger where franchise_id = fa and kind = 'scout') = 1
-    and (select delta from public.franchise_ledger where franchise_id = fa and kind = 'scout' and key = pid3::text and currency = 'sp') = -20
-    and (select scouting_points from public.franchises where id = fa) = 60
-    and (select detail->>'cost' from public.franchise_activity where franchise_id = fa and kind = 'scout' and key = pid3::text) = '20'
+    and (select delta from public.franchise_ledger where franchise_id = fa and kind = 'scout' and key = pid3::text and currency = 'sp') = -n0
+    and (select scouting_points from public.franchises where id = fa) = 80 - n0
+    and (select detail->>'cost' from public.franchise_activity where franchise_id = fa and kind = 'scout' and key = pid3::text) = n0::text
     and (select scouted from public.game_players where id = pid3));
   perform pg_temp.as_user(ALICE);
   b := public.franchise_market_board();
@@ -3013,5 +3027,204 @@ begin
   exception when invalid_authorization_specification then
     perform pg_temp.ok('and a guessed secret hires nobody', true);
   end;
+
+-- ═══ 22. THE SCOUTING DEPARTMENT ══════════════════════════════════════════
+-- What reading real football well is worth. Everything scouting_v1 gives is
+-- in the draft window and is decided ONCE, when the window opens. These
+-- assertions defend four claims, in order of how much a wrong one would
+-- cost: the band ALWAYS contains the truth; the department never touches
+-- overall, only potential; a neutral grade is exactly the game as it was;
+-- and no client role can grade itself.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('scouting is scouting_v1: twenty pricings, neutral fifty, six points of ceiling',
+    public.franchise_scouting()->>'version' = 'scouting_v1'
+    and (public.franchise_scouting()->>'window')::int = 20
+    and (public.franchise_scouting()->>'neutral')::int = 50
+    and (public.franchise_scouting()->>'ceiling')::int = 6
+    and jsonb_array_length(public.franchise_scouting()->'grades') = 6);
+
+  -- ── the curves, end to end and every step between ───────────────────────
+  perform pg_temp.ok('the band runs eighteen points to four, and never wider or narrower',
+    public.franchise_scout_band(0) = 18 and public.franchise_scout_band(100) = 4
+    and (select bool_and(public.franchise_scout_band(t.n) between 4 and 18) from generate_series(-50, 150) as t(n)));
+  perform pg_temp.ok('the band never widens as the grade rises',
+    (select bool_and(public.franchise_scout_band(t.n) >= public.franchise_scout_band(t.n + 1))
+       from generate_series(0, 99) as t(n)));
+  perform pg_temp.ok('a report runs 28 Scouting Points down to 12, and never cheapens as the grade falls',
+    public.franchise_scout_cost(0) = 28 and public.franchise_scout_cost(100) = 12
+    and (select bool_and(public.franchise_scout_cost(t.n) >= public.franchise_scout_cost(t.n + 1))
+           from generate_series(0, 99) as t(n)));
+  -- THE ANCHOR: a franchise with no record at all plays the game market_v1
+  -- described. scouting_v1 differentiates; it does not move the middle.
+  perform pg_temp.ok('a NEUTRAL grade is exactly what every class had before this phase: band 11, report 20 SP',
+    public.franchise_scout_band(50) = 11
+    and public.franchise_scout_cost(50) = (public.franchise_market()->>'scout_sp')::int);
+  perform pg_temp.ok('a department below neutral finds nothing — it never makes a player worse',
+    (select bool_and(public.franchise_scout_lift(t.n) = 0) from generate_series(-20, 50) as t(n))
+    and public.franchise_scout_lift(100) = 6
+    and (select bool_and(public.franchise_scout_lift(t.n) <= public.franchise_scout_lift(t.n + 1))
+           from generate_series(0, 99) as t(n)));
+  perform pg_temp.ok('every score lands in exactly one grade, and the ends are the ends',
+    public.franchise_scout_grade_of(0)->>'key' = 'unrated'
+    and public.franchise_scout_grade_of(39)->>'key' = 'unrated'
+    and public.franchise_scout_grade_of(40)->>'key' = 'regional'
+    and public.franchise_scout_grade_of(89)->>'key' = 'director'
+    and public.franchise_scout_grade_of(90)->>'key' = 'war_room'
+    and (select bool_and(public.franchise_scout_grade_of(t.n) is not null) from generate_series(0, 100) as t(n)));
+
+  -- ── the grade, over a rolling window of twenty ──────────────────────────
+  perform public.game_board_upsert((select jsonb_agg(jsonb_build_object(
+      'game_id', 'sc' || i, 'slug', 'sc' || i, 'season', 2026, 'week', 1,
+      'home_team', 'SCH' || i, 'away_team', 'SCA' || i,
+      'kickoff', (now() + interval '2 days')::text, 'edgedesk_spread', -7, 'market_spread', -7.5))
+    from generate_series(1, 60) i));
+
+  v := public.franchise_create('Scouts', 'Austin', 'SCT', 'bolt', 'crimson', 'spread', 'zone', SEC_SC);
+  scf := (v->'franchise'->>'id')::uuid;
+  sc := public.franchise_scout_report(scf);
+  perform pg_temp.ok('a franchise with no record at all is graded neutral, not zero',
+    (sc->>'score')::int = 50 and (sc->>'priced')::int = 0 and (sc->>'settled')::boolean = false,
+    sc->>'score');
+  perform pg_temp.ok('and its band and price are the ones market_v1 always gave',
+    (sc->>'band')::int = 11 and (sc->>'report_cost')::int = (public.franchise_market()->>'scout_sp')::int
+    and (sc->>'lift')::int = 0 and (sc->>'extra_pick')::boolean = false);
+
+  for k in 1..5 loop perform public.franchise_apply_price_it(scf, 'sc' || k, -7, true, now()); end loop;
+  sc2 := public.franchise_scout_report(scf);
+  perform pg_temp.ok('five perfect pricings do not make a perfect department: the grade is pulled toward neutral',
+    (sc2->>'raw')::int = 100 and (sc2->>'score')::int > 50 and (sc2->>'score')::int < 100,
+    sc2->>'score');
+  perform pg_temp.ok('and the twentieth pricing is worth more than the first — the grade rises with the record',
+    (sc2->>'score')::int = round((100.0 * 5 + 50 * 15) / 20)::int, sc2->>'score');
+
+  for k in 6..20 loop perform public.franchise_apply_price_it(scf, 'sc' || k, -7, true, now()); end loop;
+  sc := public.franchise_scout_report(scf);
+  perform pg_temp.ok('twenty perfect pricings settle it at the top',
+    (sc->>'score')::int = 100 and (sc->>'settled')::boolean and (sc->>'extra_pick')::boolean
+    and (sc->>'band')::int = 4 and (sc->>'report_cost')::int = 12 and (sc->>'lift')::int = 6);
+  perform pg_temp.ok('at the top there is no next grade to chase', sc->'next' = 'null'::jsonb or sc->'next' is null);
+
+  -- THE WINDOW ROLLS. A department is what it is doing NOW.
+  for k in 21..40 loop perform public.franchise_apply_price_it(scf, 'sc' || k, 20, true, now() + (k || ' seconds')::interval); end loop;
+  sc := public.franchise_scout_report(scf);
+  perform pg_temp.ok('twenty bad pricings roll the perfect ones out of the window',
+    (sc->>'score')::int = 0 and (sc->>'band')::int = 18 and (sc->>'report_cost')::int = 28,
+    sc->>'score');
+  perform pg_temp.ok('and the next grade up is named with the distance to it',
+    (sc->'next'->>'at')::int = 40 and (sc->'next'->>'need')::int = 40);
+
+  -- AN IMPORTED HISTORY IS NOT EVIDENCE. It earns XP and grades nothing.
+  select count(*) into n from public.franchise_activity where franchise_id = scf and kind = 'price_it' and verified;
+  perform public.franchise_apply_price_it(scf, 'sc41', -7, false, now() + interval '100 seconds');
+  sc2 := public.franchise_scout_report(scf);
+  perform pg_temp.ok('an unverified pricing earns XP and grades nothing',
+    (sc2->>'priced')::int = (sc->>'priced')::int and (sc2->>'score')::int = (sc->>'score')::int);
+
+  -- ── TWO IDENTICAL FRANCHISES, opposite departments ──────────────────────
+  -- The same seed generates the same class; the only difference is the grade,
+  -- so every difference below is the department and nothing else.
+  v := public.franchise_create('Grades', 'Bell', 'GRD', 'bolt', 'crimson', 'spread', 'zone', SEC_SG);
+  scg := (v->'franchise'->>'id')::uuid;
+  update public.franchises set seed = 'identical-scouting-seed' where id in (scf, scg);
+  for k in 1..20 loop perform public.franchise_apply_price_it(scg, 'sc' || k, -7, true, now() + interval '200 seconds'); end loop;
+  perform public.franchise_open_market(scf, 7);   -- graded 0
+  perform public.franchise_open_market(scg, 7);   -- graded 100
+
+  select scout_grade into n from public.franchises where id = scf;
+  select scout_grade into nn from public.franchises where id = scg;
+  perform pg_temp.ok('the window stamps the grade it opened under on the franchise', n = 0 and nn = 100,
+    coalesce(n::text, 'null') || ' / ' || coalesce(nn::text, 'null'));
+  perform pg_temp.ok('the top grade is worth one more draft pick, and the bottom is not',
+    (select draft_picks from public.franchises where id = scg) = (public.franchise_market()->>'picks')::int + 1
+    and (select draft_picks from public.franchises where id = scf) = (public.franchise_market()->>'picks')::int);
+
+  -- THE LOAD-BEARING ONE: potential, never overall.
+  perform pg_temp.ok('the department finds POTENTIAL and never touches overall',
+    (select round(avg(overall), 3) from public.game_players where franchise_id = scf and status = 'prospect' and class_season = 7)
+    = (select round(avg(overall), 3) from public.game_players where franchise_id = scg and status = 'prospect' and class_season = 7)
+    and (select avg(potential) from public.game_players where franchise_id = scg and status = 'prospect' and class_season = 7)
+      > (select avg(potential) from public.game_players where franchise_id = scf and status = 'prospect' and class_season = 7));
+  perform pg_temp.ok('and never past a prospect''s own ceiling of 99',
+    not exists (select 1 from public.game_players where class_season = 7 and status = 'prospect' and potential > 99));
+  perform pg_temp.ok('the band is stamped on the class, wide for one department and tight for the other',
+    (select min(scout_band) from public.game_players where franchise_id = scf and status = 'prospect' and class_season = 7) = 18
+    and (select max(scout_band) from public.game_players where franchise_id = scg and status = 'prospect' and class_season = 7) = 4);
+  perform pg_temp.ok('and the record of who found this class is on the books',
+    (select detail->>'scout_name' from public.franchise_activity where franchise_id = scg and kind = 'market' and key = '7') = 'War room'
+    and (select (detail->>'lift')::int from public.franchise_activity where franchise_id = scg and kind = 'market' and key = '7') = 6);
+
+  -- THE BAND MUST ALWAYS CONTAIN THE TRUTH, at every width. A band that can
+  -- exclude the real number is a lie, and the report would contradict it.
+  for wdt in 4..20 loop
+    update public.game_players set scout_band = wdt where status = 'prospect' and class_season = 7;
+    select count(*) into n from (
+      select p.overall, public.franchise_prospect_json(p) j from public.game_players p
+       where p.status = 'prospect' and p.class_season = 7) t
+     where not ((j->'range'->>0)::int <= overall and overall <= (j->'range'->>1)::int)
+        or (j->'range'->>1)::int - (j->'range'->>0)::int + 1 <> wdt;
+    exit when n > 0;
+  end loop;
+  perform pg_temp.ok('the band always contains the true overall, and is exactly as wide as it says, at every width',
+    n = 0, 'failed at width ' || wdt);
+
+  -- ── the report is priced by the department that found the class ─────────
+  update public.game_players set scout_band = 4 where franchise_id = scg and status = 'prospect' and class_season = 7;
+  select id into pid4 from public.game_players
+   where franchise_id = scg and status = 'prospect' and class_season = 7 and not scouted limit 1;
+  select scouting_points into sp0 from public.franchises where id = scg;
+  update public.franchises set scouting_points = 500 where id = scg;
+  perform pg_temp.as_anon();
+  v := public.franchise_scout(pid4, SEC_SG);
+  perform pg_temp.ok('a report costs what the department that found the class charges, not the flat rule',
+    (v->>'cost')::int = 12 and (v->>'cost')::int <> (public.franchise_market()->>'scout_sp')::int);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the report reveals the number the band always contained',
+    (v->'player'->>'overall')::int is not null
+    and (v->'player'->>'overall')::int = (select overall from public.game_players where id = pid4));
+
+  -- ── who may grade, and who may only read the table ──────────────────────
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('the table itself is public: a page can say what a grade is worth without asking about anybody',
+    (public.franchise_scouting()->>'version') = 'scouting_v1'
+    and public.franchise_scout_band(80) = 7 and public.franchise_scout_cost(80) = 15);
+  begin
+    perform public.franchise_scout_report(scg);
+    perform pg_temp.ok('but nobody may grade a franchise by its id', false, 'it graded');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('but nobody may grade a franchise by its id', true);
+  end;
+  perform pg_temp.as_user(ALICE);
+  begin
+    perform public.franchise_scout_report(scg);
+    perform pg_temp.ok('not signed in either — the grade is reached through the board, which proves who is asking', false, 'it graded');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('not signed in either — the grade is reached through the board, which proves who is asking', true);
+  end;
+  -- RLS with no write policy is what stops this, so the update is not an
+  -- error — it simply touches nothing. Assert the row, not the exception.
+  perform pg_temp.as_anon();
+  update public.franchises set scout_grade = 7 where id = scg;
+  get diagnostics n = ROW_COUNT;
+  perform pg_temp.ok('no client role can write itself a grade: the update reaches no row', n = 0, 'wrote ' || n);
+  perform pg_temp.as_user(ALICE);
+  update public.franchises set scout_grade = 7 where id = scg;
+  get diagnostics n = ROW_COUNT;
+  perform pg_temp.ok('and a signed-in one cannot either', n = 0, 'wrote ' || n);
+  perform pg_temp.as_owner();
+  select scout_grade into n from public.franchises where id = scg;
+  perform pg_temp.ok('the grade on the books is still the one the server wrote', n = 100, coalesce(n::text, 'null'));
+
+  -- ── the board says both things, and they are different questions ────────
+  v := public.franchise_market_board(SEC_SG);
+  perform pg_temp.ok('the board names the department that found this class AND the one you have now',
+    (v->'department'->>'score')::int = 100 and (v->'department'->>'grade') = 'war_room'
+    and (v->'scouting'->>'version') = 'scouting_v1'
+    and (v->>'scout_cost')::int = 12);
+  v := public.franchise_home(SEC_SG);
+  perform pg_temp.ok('and the Front Office carries the grade without a second read',
+    (v->'scouting'->>'grade_name') is not null and (v->'market'->>'scout_grade')::int = 100);
+  update public.franchises set scouting_points = sp0 where id = scg;
+
 end
 $test$;
