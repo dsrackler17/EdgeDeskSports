@@ -1008,6 +1008,9 @@ shows one button; afterwards, the result.
   standings of its own — the table, the round waiting to be played, the
   schedule, the bracket, the invite link and the titles the conference has
   awarded.
+* **Trades** (`/games/trades`, Phase 7): the rosters of the conference you
+  are in, an offer built from both sides, the offers waiting on you, and
+  every deal that was taken.
 
 ## The one rule, again
 
@@ -1066,6 +1069,8 @@ paid resources, and a subscriber earns exactly what anyone else earns.
 | a conference round won | 50 | | 50 | 2 |
 | a conference playoff game won, on top | 100 | | | 1 |
 | a conference title | 400 | | 300 | 10 |
+| the bowl played (Phase 7) | 150 | | 60 | |
+| the bowl won | 300 | | 200 | 5 |
 
 XP levels the franchise on the War Room's curve (`25 × (L − 1) × (L + 2)`,
 level 30 at 23,200). If any number changes, the version changes and this
@@ -1453,16 +1458,105 @@ key. The SQL suite plays two whole conferences through — a five-team
 round robin into a two-team final, and a six-team one into a bracket of
 four.
 
+## Phase 7 — injuries, the bowl, and trades
+
+The three things the last phase left on the list.
+
+### Injuries — `injury_v1`
+
+A game costs somebody. Drawn **after** the game from a seed derived from
+its own, and never inside the simulator: `sim_v1` plays exactly the game
+it always played, and an injury is a thing recorded to have happened in
+it. What it costs is the **weeks ahead** — the player cannot play, the
+team rating drops, and the next game is played without him.
+
+- **The chance** a franchise loses somebody is 0.22, less 0.03 for every
+  level of the **Conditioning** facility (0.13 at level three).
+- **Who** is a weighted draw over the men who were available: by position
+  exposure (a back carries the ball, a kicker does not), doubled for a
+  starter, and **halved for an Iron Man** — the trait that until now was
+  documented as having no effect.
+- **How long** is a draw against four severities: a Knock (one game), a
+  Strain (two), a Sprain (three), a Fracture (five).
+- **The one refusal**: a position is never taken below the starters it
+  needs. A roster with one kicker keeps its kicker, and the draw comes
+  back empty rather than leaving a lineup the simulator cannot fill.
+
+**Availability is a function of the clock.** A player carries the instant
+he is fit again (`game_players.injured_until`), and every read compares it
+against the time it is asked about — so there is no heal job to run, no
+cron to miss, and no window in which a healed player is still listed as
+hurt. Five reads decide a game and all five ask it: the team rating, the
+position averages, the trait effects and both simulators' lineups.
+Everything about **roster membership** is unchanged: a hurt player holds
+his number, his place on the depth chart and his place against the
+ceiling. He is still yours. (`game_players.status` still admits
+`'injured'`; it stays unused room, because a status needs somebody to
+change it back and the clock does not.) The offseason sends everybody back
+out fit — an injury is a cost inside a season, never across one.
+
+### The bowl — `bowl_v1`
+
+A postseason for the franchise's **own** season, for the player who never
+joins a conference. Finish the eight weeks with **more wins than losses**
+and a ninth game is scheduled a football week later: one club drawn from
+the pool the season did not play, rated above you by two, plus one for
+every win over .500, capped at eight — so a 7–1 season draws a harder game
+than a 5–3 one. It gets a name (*the Copper Bowl*), it is played on the
+same simulator on its own Saturday, and it counts in the record like any
+other game. `franchise_seasons.status` finally uses `'playoffs'`: the
+season is not complete, and does not roll over, until the bowl is played.
+The bowl is paid its own line rather than the weekly one, and winning it
+is **Bowl Winner**.
+
+The conference keeps the bracket. This is one game, and it is the reason a
+5–3 season is worth chasing.
+
+### Trades — `trade_v1`
+
+Players change hands between two franchises **in the same conference**.
+That is the whole rule about who may deal with whom, and it is why the
+conference came first: a league of people who play each other every week
+is the only place a trade means anything, and the only place it is fair to
+let one franchise read another's roster.
+
+**The server checks legality, not fairness.** Whether a deal is lopsided
+is for the two of them to argue about; whether it leaves a roster that
+cannot field a team is not. One to three players a side, seven days to
+answer, and every offer is **re-checked at the moment it is accepted**,
+because a roster moves under an offer that has been sitting for a day: the
+men named must still be there, both rosters must stay between 38 and 42,
+and neither side may drop below the starters a position needs. A deal that
+has gone bad is closed **with its reason on it** rather than raised — an
+exception would roll back the very row that records why it died.
+
+A hurt player can be traded; he is still on the roster, he simply cannot
+play yet. The deadline is the bracket: nothing moves while the conference
+is in its playoffs. **Nothing is paid for a trade** — no XP, no credits,
+no fee. Just players, a new number where the old one is taken, the bottom
+of the new depth chart, and a line on both records saying where he came
+from.
+
+Report rows 23–25 cover the three: injuries drawn by the server with
+availability read off the clock, the bowl earned by a record and scheduled
+by no client role, and trades open to both parties only, checked by the
+server, and free. The SQL suite plays all three through — a hurt starter
+dropping out of every read that decides a game, a sweep of sixty games
+that hurts somebody and never the lone kicker, a record built to earn a
+bowl and the bowl played, and a trade offered, declined, withdrawn,
+refused for leaving a hole, and taken.
+
 ## Not built yet, on purpose
 
-Trades between franchises; injuries; a postseason for the franchise's own
-eight-week season, which keeps its eight games — the bracket lives in the
-conference. The schema leaves room: `franchise_seasons.status` admits
-`playoffs`, `game_players.status` admits `injured`, the ledger accepts a
-negative delta for spending (the facilities, the reports and the signings
-use it), traits with no simulator effect yet (Iron Man) are stated as
-such, and `franchise_activity` is the record every future reward derives
-from. The simulator, the offseason, the market and the conference are
-versioned (`sim_v1`, `offseason_v1`, `market_v1`, `conference_v1`) so a
-retuned one is a new version and old boxes, old reports, old classes and
-old tables stay true to the rules they were played under.
+Nothing on the roadmap. What is deliberately absent: a fairness check on
+trades (that is the point of them), an in-game injury that changes the
+game it happened in (`sim_v1` plays the game; the injury is recorded
+after), and a bracket for the solo season (the conference is where a
+bracket belongs). The ledger accepts a negative delta for spending (the
+facilities, the reports and the signings use it), and
+`franchise_activity` is the record every future reward derives from. The
+simulator, the offseason, the market, the conference, injuries, the bowl
+and trades are each versioned (`sim_v1`, `offseason_v1`, `market_v1`,
+`conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`) so a retuned one is a
+new version and old boxes, old reports, old classes, old tables and old
+deals stay true to the rules they were played under.

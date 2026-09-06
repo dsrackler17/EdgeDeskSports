@@ -60,6 +60,9 @@
     conf_win:      { xp: 50, tc: 50, cp: 2 },
     conf_playoff:  { xp: 100, cp: 1 },
     conf_title:    { xp: 400, tc: 300, cp: 10 },
+    /* the bowl (Phase 7): the ninth game a winning season earns, and taking it */
+    bowl_game:     { xp: 150, tc: 60 },
+    bowl_win:      { xp: 300, tc: 200, cp: 5 },
     import_unverified_price_it: { xp: 50 },
     import_unverified_pick5:    { xp: 75 }
   };
@@ -104,6 +107,8 @@
       case 'conf_win': return { xp: ECONOMY.conf_win.xp, tc: ECONOMY.conf_win.tc, cp: ECONOMY.conf_win.cp };
       case 'conf_playoff': return { xp: ECONOMY.conf_playoff.xp, cp: ECONOMY.conf_playoff.cp };
       case 'conf_title': return { xp: ECONOMY.conf_title.xp, tc: ECONOMY.conf_title.tc, cp: ECONOMY.conf_title.cp };
+      case 'bowl_game': return { xp: ECONOMY.bowl_game.xp, tc: ECONOMY.bowl_game.tc };
+      case 'bowl_win': return { xp: ECONOMY.bowl_win.xp, tc: ECONOMY.bowl_win.tc, cp: ECONOMY.bowl_win.cp };
     }
     return {};
   }
@@ -229,7 +234,11 @@
     conf_top:       { name: 'Top Seed' },
     conf_post:      { name: 'Postseason' },
     conf_title:     { name: 'Champion' },
-    conf_two:       { name: 'Two Rings' }
+    conf_two:       { name: 'Two Rings' },
+    bowl_bid:       { name: 'Bowl Bid' },
+    bowl_win:       { name: 'Bowl Winner' },
+    trade_first:    { name: 'The Deal' },
+    next_man_up:    { name: 'Next Man Up' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -335,7 +344,8 @@
     if (c.games == null) return '';
     return statsLine(p && p.position, c, { games: true });
   }
-  var SOURCES = { founding_roster: 'Founder roster', offseason_rookie: 'Rookie', draft: 'Drafted', free_agent: 'Free agent' };
+  var SOURCES = { founding_roster: 'Founder roster', offseason_rookie: 'Rookie', draft: 'Drafted',
+                  free_agent: 'Free agent', trade: 'Traded for' };
   function acquiredLine(p) {
     if (!p) return '';
     var src = SOURCES[p.acquired_source] || String(p.acquired_source || '').replace(/_/g, ' ');
@@ -349,15 +359,17 @@
     o = o || {};
     if (!p) return '';
     var rar = RARITY[p.rarity] || RARITY.common, tr = traitOf(p), starter = isStarter(p);
+    var hurt = !isAvailable(p), hurtLine = hurt ? injuryLine(p) : '';
     var attrs = keyRatings(p).map(function (a) {
       return '<div class="pc-a"><span class="k">' + esc(a.label) + '</span><b>' + (a.value == null ? '—' : a.value) + '</b></div>';
     }).join('');
-    return '<article class="pc pc-' + esc(rar.key) + (starter ? ' pc-start' : '') + (o.compact ? ' pc-compact' : '')
+    return '<article class="pc pc-' + esc(rar.key) + (starter ? ' pc-start' : '') + (hurt ? ' pc-hurt' : '') + (o.compact ? ' pc-compact' : '')
       + '" data-player="' + esc(p.id) + '" data-position="' + esc(p.position) + '" data-depth="' + (p.depth | 0) + '">'
       + '<div class="pc-top"><span class="pc-num mono">#' + (p.jersey == null ? '—' : p.jersey) + '</span>'
       + '<span class="pc-pos">' + esc(p.position) + '</span>'
       + '<span class="pc-rar">' + esc(rar.label) + '</span>'
       + (starter ? '<span class="pc-st">' + (STARTERS[p.position] > 1 ? esc(p.position) + (p.depth | 0) : 'Starter') + '</span>' : '')
+      + (hurt ? '<span class="pc-out">Out</span>' : '')
       + '</div>'
       + '<div class="pc-name">' + esc(fullName(p)) + '</div>'
       + '<div class="pc-arch">' + esc(p.position) + ' <span class="sep">|</span> ' + esc(p.archetype || '') + '</div>'
@@ -367,6 +379,7 @@
             : '<div class="pc-trait none"><span class="k">Trait</span><span class="d">None yet</span></div>')
       + '<div class="pc-meta">Age ' + (p.age | 0) + ' <span class="sep">·</span> POT ' + (p.potential | 0)
       + ' <span class="sep">·</span> ' + esc(DEV_TIERS[p.dev_tier] || p.dev_tier || '') + '</div>'
+      + (hurt ? '<div class="pc-injury"><span class="k">Unavailable</span>' + esc(hurtLine) + '</div>' : '')
       + '<div class="pc-acq"><span class="k">Acquired</span>' + esc(acquiredLine(p)) + '</div>'
       + (seasonLine(p) ? '<div class="pc-career"><span class="k">This season</span>' + esc(seasonLine(p)) + '</div>' : '')
       + '<div class="pc-career"><span class="k">Career</span>' + esc(careerLine(p)) + '</div>'
@@ -488,7 +501,9 @@
     if (ss.status === 'complete') return { phase: 'complete', game: null, season: ss };
     if (!ng) return { phase: 'between', game: null, season: ss };
     var o = opensIn(ng.opens_at, now), open = ng.open === true || o.open;
-    return { phase: open ? 'ready' : 'waiting', game: ng, season: ss, opens: o };
+    /* the bowl is the ninth game a winning season earned (Phase 7): the same
+       phase as any other, named differently */
+    return { phase: open ? 'ready' : 'waiting', game: ng, season: ss, opens: o, bowl: !!ng.bowl };
   }
   /* what a pregame can say about the matchup, from the published numbers */
   function matchupEdges(f, game, prep) {
@@ -732,6 +747,68 @@
     if (board.ready) return { phase: 'ready', label: 'A round is waiting' };
     return { phase: 'waiting', label: 'Next round', opens_at: c.next_opens_at || null };
   }
+  /* ── INJURIES, THE BOWL AND TRADES (Phase 7) ────────────────────────────
+     Three published tables, mirrored from the SQL for display only. The
+     server draws every injury, schedules every bowl and checks every trade;
+     nothing here decides any of it. Pinned to the SQL by
+     tools/games/franchise.test.js. */
+  var INJURY_VERSION = 'injury_v1';
+  var INJURY = {
+    base: 0.22, per_conditioning: 0.03, iron_man: 0.5, starter_weight: 2.0,
+    exposure: { QB: 0.8, RB: 1.6, WR: 1.0, TE: 0.9, OL: 1.2, DL: 1.3, LB: 1.2, CB: 1.0, S: 0.9, K: 0.05, P: 0.05 },
+    severity: [
+      { key: 'knock',    name: 'Knock',    games: 1, p: 0.45 },
+      { key: 'strain',   name: 'Strain',   games: 2, p: 0.30 },
+      { key: 'sprain',   name: 'Sprain',   games: 3, p: 0.18 },
+      { key: 'fracture', name: 'Fracture', games: 5, p: 0.07 }
+    ]
+  };
+  var BOWL_VERSION = 'bowl_v1';
+  var BOWL = { qualify: 'more wins than losses', games: 1, edge_base: 2, edge_per_win: 1, edge_max: 8 };
+  var TRADE_VERSION = 'trade_v1';
+  var TRADE = { max_per_side: 3, expires_days: 7 };
+
+  /* the chance a game costs a franchise somebody, at a level of Conditioning */
+  function injuryChance(conditioning) {
+    return Math.max(0, Math.round((INJURY.base - INJURY.per_conditioning * (conditioning | 0)) * 100) / 100);
+  }
+  /* can this player take the field? The SERVER says so on the row; this is
+     the fallback for a row that predates the field. */
+  function isAvailable(p) {
+    p = obj(p);
+    if (p.available != null) return !!p.available;
+    if (p.status && p.status !== 'active') return false;
+    if (!p.injured_until) return true;
+    var t = Date.parse(String(p.injured_until).replace(' ', 'T'));
+    return !isFinite(t) || t <= Date.now();
+  }
+  /* "Sprain · out 3 games" — empty for a fit player */
+  function injuryLine(p) {
+    p = obj(p);
+    if (isAvailable(p)) return '';
+    var i = obj(p.injury);
+    var g = i.games | 0;
+    return (i.name || 'Out') + (g ? ' · out ' + g + ' game' + (g === 1 ? '' : 's') : '');
+  }
+  /* the bowl rule, the server's, restated for the page that promises it */
+  function bowlEarned(wins, losses) { return (wins | 0) > (losses | 0); }
+  /* how a season stands against the bowl: earned, or how many wins short */
+  function bowlWatch(season) {
+    season = obj(season);
+    var w = season.wins | 0, l = season.losses | 0, played = w + l + (season.ties | 0);
+    var left = Math.max(0, (season.weeks | 0) - played);
+    return { earned: bowlEarned(w, l), wins: w, losses: l, left: left,
+      /* the wins still needed to finish above .500 if every remaining game
+         were won or lost; null once it can no longer be reached */
+      need: bowlEarned(w, l) ? 0 : (w + left > l ? (l - w) + 1 : null) };
+  }
+  /* "two out, one in", from the viewer's side of an offer */
+  function tradeSummary(t) {
+    t = obj(t);
+    var out = arr(t.give).length, ins = arr(t.get).length;
+    return out + ' out, ' + ins + ' in';
+  }
+
   /* the title, as text */
   function titleShareText(t, me) {
     t = obj(t);
@@ -985,6 +1062,22 @@
   }
   function conferenceGame(id) { return rpc('franchise_conference_game', withSecret({ p_game: String(id) })); }
 
+  /* TRADES (Phase 7). The board is one read; an offer, an answer and a
+     withdrawal each send ids and the identity and nothing else — the server
+     decides whether the deal is legal, moves the players and writes the
+     record. Never queued: a deal must see its answer. */
+  function tradePartners() { return rpc('franchise_trade_partners', withSecret({})); }
+  function tradesMine(limit) { return rpc('franchise_trades_mine', withSecret({ p_limit: limit || 20 })); }
+  function tradeOffer(other, give, get, note) {
+    return rpc('franchise_trade_offer', withSecret({
+      p_other: String(other || ''), p_give: (give || []).map(String), p_get: (get || []).map(String),
+      p_note: note || null }));
+  }
+  function tradeRespond(id, accept) {
+    return rpc('franchise_trade_respond', withSecret({ p_trade: String(id || ''), p_accept: !!accept }));
+  }
+  function tradeWithdraw(id) { return rpc('franchise_trade_withdraw', withSecret({ p_trade: String(id || '') })); }
+
   /* THE DRAFT AND THE MARKET (Phase 5). The board is one read; a report, a
      pick, a signing and a release each send a player id and the identity
      and nothing else — the server prices, hides, reveals, counts the picks
@@ -1131,6 +1224,12 @@
     ROUND_NAMES: ROUND_NAMES, playoffTeams: playoffTeams, conferenceUrl: conferenceUrl,
     conferenceInviteText: conferenceInviteText, roundName: roundName, conferenceGameLine: conferenceGameLine,
     standingLine: standingLine, conferencePhase: conferencePhase, titleShareText: titleShareText,
+    INJURY_VERSION: INJURY_VERSION, INJURY: INJURY, injuryChance: injuryChance,
+    isAvailable: isAvailable, injuryLine: injuryLine,
+    BOWL_VERSION: BOWL_VERSION, BOWL: BOWL, bowlEarned: bowlEarned, bowlWatch: bowlWatch,
+    TRADE_VERSION: TRADE_VERSION, TRADE: TRADE, tradeSummary: tradeSummary,
+    tradePartners: tradePartners, tradesMine: tradesMine, tradeOffer: tradeOffer,
+    tradeRespond: tradeRespond, tradeWithdraw: tradeWithdraw,
     conference: conference, conferenceCreate: conferenceCreate, conferencePeek: conferencePeek,
     conferenceJoin: conferenceJoin, conferenceLeave: conferenceLeave, conferenceStart: conferenceStart,
     conferenceAdvance: conferenceAdvance, conferenceGame: conferenceGame,

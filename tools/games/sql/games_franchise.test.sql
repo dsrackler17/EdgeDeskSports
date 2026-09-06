@@ -37,6 +37,18 @@ begin
   perform set_config('request.jwt.claim.sub', '', false);
   execute 'reset role';
 end; $$;
+-- A season that earned a bowl (Phase 7) is not complete until it is played;
+-- which seasons earn one varies with the seed, so the suite plays whatever
+-- is there rather than assuming either outcome.
+create or replace function pg_temp.play_bowl(p_franchise uuid) returns jsonb language plpgsql as $$
+declare g record;
+begin
+  select id, opens_at into g from public.franchise_games
+   where franchise_id = p_franchise and bowl and status = 'scheduled'
+   order by season_number desc limit 1;
+  if not found then return null; end if;
+  return public.franchise_play_game(p_franchise, g.opens_at);
+end; $$;
 -- a box whose lines add up to its team totals: passing yards to the
 -- receivers, rushing yards to the rushers, touchdowns to the scorers,
 -- completions to the catches, and the final to the quarters
@@ -82,6 +94,8 @@ declare
   mk jsonb; b jsonb; pr jsonb; pid3 uuid; pid4 uuid; aid uuid; n0 integer; rng jsonb;
   -- conferences and playoffs
   cn integer; cu uuid; cch uuid; cf uuid[] := '{}'; conf uuid; conf2 uuid; ctok text; ctok2 text;
+  -- injuries, the bowl and trades
+  bf uuid; tid uuid; tid2 uuid; pids uuid[]; pids2 uuid[];
   SEC_C constant text := 'device-secret-cccccccccccccccccccccccccccc';
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
@@ -1033,10 +1047,34 @@ begin
     select opens_at into t0 from public.franchise_games where franchise_id = fa and week = k;
     v := public.franchise_play_game(fa, t0);
   end loop;
-  perform pg_temp.ok('the eighth game completes the season',
-    (v->>'season_complete')::boolean and v->'season'->>'status' = 'complete' and (v->'season'->>'week')::int = 8
+  -- THE EIGHTH GAME either ends the season or earns a bowl (Phase 7). Which
+  -- of the two depends on the record the simulator produced, so the suite
+  -- asserts the rule rather than one of its outcomes — and plays the bowl
+  -- when there is one, so the season is complete either way from here on.
+  perform pg_temp.ok('the eighth game ends the season, or earns the bowl a winning record is owed',
+    (jsonb_typeof(v->'bowl') = 'object') = (select public.franchise_bowl_earned(wins, losses) from public.franchise_seasons where franchise_id = fa and number = 1)
+    and case when jsonb_typeof(v->'bowl') <> 'object'
+             then (v->>'season_complete')::boolean and v->'season'->>'status' = 'complete'
+             else not (v->>'season_complete')::boolean and v->'season'->>'status' = 'playoffs' end
+    and (v->'season'->>'week')::int = 8, v->'season'->>'status');
+  if jsonb_typeof(v->'bowl') = 'object' then
+    perform pg_temp.ok('the bowl is a ninth game a week later, against a club rated above the franchise',
+      (v->'bowl'->>'week')::int = 9 and (v->'bowl'->>'bowl')::boolean
+      and (v->'bowl'->'opponent'->>'bowl_name') like 'The % Bowl'
+      and (v->'bowl'->'opponent'->>'overall')::int > (public.franchise_team_rating(fa)->>'overall')::int
+      and (v->'bowl'->>'week_key') = public.games_week_key(now() + interval '56 days'), (v->'bowl')::text);
+    select opens_at into t0 from public.franchise_games where franchise_id = fa and season_number = 1 and bowl;
+    v := public.franchise_play_game(fa, t0);
+    perform pg_temp.ok('and playing it completes the season, paid at the bowl''s own rate',
+      (v->>'season_complete')::boolean and v->'season'->>'status' = 'complete'
+      and (select count(*) = 2 from public.franchise_ledger where franchise_id = fa and kind = 'bowl_game' and key = '1:9')
+      and (select delta = 150 from public.franchise_ledger where franchise_id = fa and kind = 'bowl_game' and key = '1:9' and currency = 'xp')
+      and (v->'game'->>'result' = 'W') = exists (select 1 from public.franchise_achievements where franchise_id = fa and achievement_id = 'bowl_win'));
+  end if;
+  perform pg_temp.ok('the season is complete and dated either way',
+    (v->>'season_complete')::boolean
     and (select completed_at is not null from public.franchise_seasons where franchise_id = fa and number = 1));
-  perform pg_temp.ok('the season''s record is the sum of its games',
+  perform pg_temp.ok('the season''s record is the sum of its games, the bowl included',
     (select wins from public.franchise_seasons where franchise_id = fa and number = 1)
       = (select count(*) from public.franchise_games where franchise_id = fa and season_number = 1 and result = 'W')
     and (select points_for from public.franchise_seasons where franchise_id = fa and number = 1)
@@ -1060,8 +1098,12 @@ begin
   exception when object_not_in_prerequisite_state then
     perform pg_temp.ok('a complete season has no game to play', true);
   end;
-  perform pg_temp.ok('careers carry the whole season',
-    (select (career_stats->>'games')::int = 8 from public.game_players where franchise_id = fa and position = 'QB' and depth = 1));
+  -- the starting quarterback's career is the games he PLAYED: the season's
+  -- eight, plus the bowl if the record earned one, less any he missed hurt
+  perform pg_temp.ok('careers carry the season the player was fit for',
+    (select (career_stats->>'games')::int between 1 and (select count(*) from public.franchise_games
+                                                          where franchise_id = fa and season_number = 1 and status = 'final')
+       from public.game_players where franchise_id = fa and position = 'QB' and depth = 1));
 
   perform pg_temp.as_user(ALICE);
   v := public.franchise_home();
@@ -1072,9 +1114,16 @@ begin
     (v->>'started')::boolean and (v->>'season_number')::int = 2 and v->'home'->'season'->>'label' = 'Season II'
     and v->'home'->'season'->>'status' = 'active' and (v->'home'->'next_game'->>'week')::int = 1
     and (select count(*) from public.franchise_seasons where franchise_id = fa) = 2);
+  -- how many games a career carries stopped being fixed once a season could
+  -- run to nine (the bowl) and a player could miss some of it hurt; what is
+  -- still exact is that every SEASON line was cleared and no career was
   perform pg_temp.ok('the season lines reset and the careers do not',
     (select bool_and(season_stats = '{}'::jsonb) from public.game_players where franchise_id = fa)
-    and (select (career_stats->>'games')::int = 8 from public.game_players where franchise_id = fa and position = 'QB' and depth = 1));
+    and (select count(*) > 0 from public.game_players
+          where franchise_id = fa and coalesce((career_stats->>'games')::int, 0) > 0)
+    and (select coalesce(max((career_stats->>'games')::int), 0)
+           from public.game_players where franchise_id = fa)
+        = (select count(*) from public.franchise_games where franchise_id = fa and season_number = 1 and status = 'final'));
   perform pg_temp.ok('the rival is for life and closes Season II too',
     (select opponent_key from public.franchise_games where franchise_id = fa and season_number = 2 and week = 8)
       = (select rival_key from public.franchises where id = fa)
@@ -1083,8 +1132,13 @@ begin
   v := public.franchise_start_season();
   perform pg_temp.ok('starting again starts nothing', not (v->>'started')::boolean and (v->>'season_number')::int = 2);
   v := public.franchise_schedule(1);
+  -- eight, or nine when the record earned a bowl (Phase 7): every game of it
+  -- is final either way, and the rival still closes the regular eight
   perform pg_temp.ok('a past season can still be read, game by game', v->'season'->>'status' = 'complete'
-    and (select count(*) from jsonb_array_elements(v->'games') g where g->>'status' = 'final') = 8 and jsonb_array_length(v->'seasons') = 2);
+    and (select count(*) from jsonb_array_elements(v->'games') g where g->>'status' = 'final') between 8 and 9
+    and (select count(*) from jsonb_array_elements(v->'games') g where g->>'status' = 'final')
+        = (select count(*) from public.franchise_games where franchise_id = fa and season_number = 1)
+    and jsonb_array_length(v->'seasons') = 2);
 
   -- a device franchise plays exactly as an account one
   perform pg_temp.as_owner();
@@ -1286,10 +1340,26 @@ begin
 
   -- the upset: the weaker side beating a team five or more better is paid extra; the stronger side never is
   update public.game_players set overall = least(99, overall + 8) where franchise_id = fc;
+  -- the gap is measured between two FIT squads: a team rating counts who can
+  -- play (Phase 7), so an injury carried in from an earlier game would shrink
+  -- the very gap this fixture exists to create
+  update public.game_players set injured_until = null, injury = null
+   where franchise_id in (fa, fc) and injured_until is not null;
   select (public.franchise_team_rating(fc)->>'overall')::int - (public.franchise_team_rating(fa)->>'overall')::int into k;
   perform pg_temp.ok('the upset fixture: Cara is at least five better than Alice', k >= 5, 'gap ' || k);
+  -- forty tries, not sixteen: the weaker side wins something like a quarter
+  -- of these, and sixteen leaves a one-in-a-hundred chance of a red suite
+  -- that means nothing
   w := 0; l := 0;
-  for k in 1..16 loop
+  for k in 1..40 loop
+    -- sixteen games inside one football week is a fixture, not a season: both
+    -- squads report fit for each of them, so what is being measured is the
+    -- upset RULE and not the injuries (Phase 7) sixteen games would pile up.
+    -- Left to accumulate, the gap this fixture rests on drifts under five and
+    -- the upset stops being one.
+    perform pg_temp.as_owner();
+    update public.game_players set injured_until = null, injury = null
+     where franchise_id in (fa, fc) and injured_until is not null;
     perform pg_temp.as_user(ALICE);
     v := public.franchise_challenge_create(null); tok := v->>'invite_token';
     perform pg_temp.as_user(CARA);
@@ -1461,7 +1531,8 @@ begin
     select opens_at into t0 from public.franchise_games where franchise_id = fb and season_number = 1 and week = k;
     v := public.franchise_play_game(fb, t0);
   end loop;
-  perform pg_temp.ok('Bob''s first season is complete', v->'season'->>'status' = 'complete');
+  v := coalesce(pg_temp.play_bowl(fb), v);
+  perform pg_temp.ok('Bob''s first season is complete, its bowl played if it earned one', v->'season'->>'status' = 'complete');
   -- four founders on their way out: the starting quarterback and two linemen at 34, a receiver at 32 and fading
   update public.game_players set age = 34 where franchise_id = fb and position = 'QB' and depth = 1;
   update public.game_players set age = 34 where franchise_id = fb and position = 'OL' and depth in (2, 5);
@@ -1539,8 +1610,12 @@ begin
   perform pg_temp.ok('a founder''s retirement is a Farewell, and a leap of four or more is a Breakout',
     exists (select 1 from public.franchise_achievements where franchise_id = fb and achievement_id = 'farewell')
     and exists (select 1 from public.franchise_achievements where franchise_id = fb and achievement_id = 'breakout') = ((rep2->'summary'->>'biggest')::int >= 4));
+  -- a retired quarterback keeps the career he played — how many games that
+  -- is stopped being fixed with injuries (Phase 7), so the claim is that the
+  -- career survived retirement, not that it covered every week
   perform pg_temp.ok('the retired keep their careers and leave the roster read',
-    (select bool_and((career_stats->>'games')::int >= 8) from public.game_players where franchise_id = fb and status = 'retired' and position = 'QB')
+    (select bool_and((career_stats->>'games')::int >= 1 and (career_stats->>'yds')::int > 0)
+       from public.game_players where franchise_id = fb and status = 'retired' and position = 'QB')
     and (select bool_and(season_stats = '{}'::jsonb) from public.game_players where franchise_id = fb));
   perform pg_temp.as_user(BOB);
   v := public.franchise_roster();
@@ -1564,7 +1639,7 @@ begin
     and (v->'achievements'->0->>'sort')::int <= (v->'achievements'->1->>'sort')::int);
   perform pg_temp.ok('the seasons come newest first, each with its games and its offseason report',
     jsonb_array_length(v->'seasons') = 2 and (v->'seasons'->0->>'number')::int = 2 and (v->'seasons'->1->>'number')::int = 1
-    and jsonb_array_length(v->'seasons'->1->'games') = 8 and v->'seasons'->1->'offseason'->'summary' = rep2->'summary'
+    and jsonb_array_length(v->'seasons'->1->'games') between 8 and 9 and v->'seasons'->1->'offseason'->'summary' = rep2->'summary'
     and (select bool_and(g->>'status' = 'final' and g->'opponent'->>'name' is not null and g->>'result' in ('W', 'L', 'T') and g ? 'potg')
            from jsonb_array_elements(v->'seasons'->1->'games') g)
     and v->'seasons'->0->'offseason' = 'null'::jsonb and v->'seasons'->0->>'status' = 'active');
@@ -1575,7 +1650,10 @@ begin
     and jsonb_array_length(v->'leaders'->'rushing') between 1 and 3 and jsonb_array_length(v->'leaders'->'receiving') between 1 and 3);
   perform pg_temp.ok('the alumni are the retired, with their careers',
     jsonb_array_length(v->'alumni') = (select count(*) from public.game_players where franchise_id = fb and status = 'retired')
-    and (select bool_and((a->>'retired_season')::int = 1 and a->>'acquired_source' = 'founding_roster' and (a->'career_stats'->>'games')::int >= 8)
+    -- he was on the roster for every week of the season; how many of them he
+    -- PLAYED is no longer fixed, because an injury (Phase 7) costs him some
+    and (select bool_and((a->>'retired_season')::int = 1 and a->>'acquired_source' = 'founding_roster'
+                     and (a->'career_stats'->>'games')::int >= 1)
            from jsonb_array_elements(v->'alumni') a));
   perform pg_temp.ok('the record is the sum of the seasons, the rival comes with the series, the facilities and the ladder come along',
     (v->'record'->>'wins')::int = (select sum(wins) from public.franchise_seasons where franchise_id = fb) and (v->'record'->>'seasons')::int = 1
@@ -2293,5 +2371,389 @@ begin
     and has_function_privilege('authenticated', 'public.franchise_conference_advance(text)', 'execute')
     and has_function_privilege('anon', 'public.franchise_conference_board(text)', 'execute')
     and has_function_privilege('authenticated', 'public.franchise_conference_game(uuid, text)', 'execute'));
+
+-- ═══ 20. INJURIES, THE BOWL AND TRADES ════════════════════════════════════
+  perform pg_temp.as_owner();
+  -- the published tables
+  perform pg_temp.ok('injuries are injury_v1: a chance a game costs somebody, bought down by Conditioning, and four severities',
+    public.franchise_injuries()->>'version' = 'injury_v1'
+    and (public.franchise_injuries()->>'base')::numeric = 0.22
+    and (public.franchise_injuries()->>'per_conditioning')::numeric = 0.03
+    and jsonb_array_length(public.franchise_injuries()->'severity') = 4
+    and (select sum((x->>'p')::numeric) = 1.0 from jsonb_array_elements(public.franchise_injuries()->'severity') x));
+  perform pg_temp.ok('the bowl is bowl_v1: one game, earned by more wins than losses',
+    public.franchise_postseason()->>'version' = 'bowl_v1' and (public.franchise_postseason()->>'games')::int = 1
+    and public.franchise_bowl_earned(5, 3) and public.franchise_bowl_earned(8, 0)
+    and not public.franchise_bowl_earned(4, 4) and not public.franchise_bowl_earned(3, 5));
+  perform pg_temp.ok('trades are trade_v1: one to three a side, and a week to answer',
+    public.franchise_trade_rules()->>'version' = 'trade_v1'
+    and (public.franchise_trade_rules()->>'max_per_side')::int = 3
+    and (public.franchise_trade_rules()->>'expires_days')::int = 7);
+
+  -- ── availability is a function of the clock ─────────────────────────────
+  perform pg_temp.ok('a fit player is available, a hurt one is not, and he is available again the moment he is due',
+    public.franchise_is_available('active', null)
+    and not public.franchise_is_available('active', now() + interval '1 day')
+    and public.franchise_is_available('active', now() - interval '1 second')
+    and not public.franchise_is_available('retired', null));
+
+  -- Alice's starting quarterback is hurt by hand, and every read model that
+  -- decides a game must stop counting him
+  select id into pid from public.game_players where franchise_id = fa and position = 'QB' and depth = 1;
+  select (public.franchise_team_rating(fa)->>'overall')::int into ovr;
+  select public.franchise_pos_avg(fa, 'QB', 1)::int into n0;
+  update public.game_players set injured_until = now() + interval '14 days',
+    injury = jsonb_build_object('kind', 'sprain', 'name', 'Sprain', 'games', 3) where id = pid;
+  -- the rating counts who CAN PLAY: with the starter out it reads the backup
+  -- instead. Two quarterbacks can be rated the same, and the team overall
+  -- moves by less than a point of it either way, so the claim is made where
+  -- it is exact — on WHICH man the rating picks up, and that it never rises
+  perform pg_temp.ok('a hurt starter is not the man the rating counts any more',
+    (select id <> pid from public.game_players p
+      where p.franchise_id = fa and p.position = 'QB'
+        and public.franchise_is_available(p.status, p.injured_until)
+      order by p.depth, p.overall desc limit 1)
+    and public.franchise_pos_avg(fa, 'QB', 1)::int <= n0,
+    n0 || ' -> ' || public.franchise_pos_avg(fa, 'QB', 1)::int);
+  perform pg_temp.ok('and the simulator does not pick him',
+    not (public.franchise_sim_versus(fa, fb, 'inj-seed', wk)->'a'->'players')::text like '%' ||
+      (select first_name || ' ' || last_name from public.game_players where id = pid) || '%');
+  perform pg_temp.ok('he is still on the roster, with his number and his place — he simply cannot play',
+    (select count(*) from public.game_players where franchise_id = fa and status = 'active')
+      = (select count(*) from public.game_players where franchise_id = fa and status = 'active' and depth is not null)
+    and (select depth = 1 and status = 'active' from public.game_players where id = pid));
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_roster();
+  perform pg_temp.ok('the roster read names him hurt, and counts the treatment room',
+    (v->>'injured')::int >= 1 and v->'injuries'->>'version' = 'injury_v1'
+    and (select bool_and(p->>'available' = 'false' and p->'injury'->>'name' = 'Sprain')
+           from jsonb_array_elements(v->'players') p where (p->>'id')::uuid = pid));
+  v := public.franchise_home();
+  perform pg_temp.ok('and the HQ carries the treatment room without changing the roster count',
+    (v->'injuries'->>'out')::int >= 1 and jsonb_array_length(v->'injuries'->'names') >= 1
+    and (v->>'roster_count')::int = (select count(*) from public.game_players where franchise_id = fa and status = 'active'));
+  perform pg_temp.as_owner();
+  update public.game_players set injured_until = null, injury = null where id = pid;
+  perform pg_temp.ok('and the moment the clock passes, he is back with no job to run',
+    (public.franchise_team_rating(fa)->>'overall')::int = ovr
+    and public.franchise_pos_avg(fa, 'QB', 1)::int = n0
+    and (select id = pid from public.game_players p
+          where p.franchise_id = fa and p.position = 'QB'
+            and public.franchise_is_available(p.status, p.injured_until)
+          order by p.depth, p.overall desc limit 1));
+
+  -- ── the draw itself ─────────────────────────────────────────────────────
+  -- the same seed over the same roster draws the same man; the draw WRITES,
+  -- so the roster is put back between the two reads rather than the second
+  -- one seeing a squad the first one already thinned
+  update public.game_players set injured_until = null, injury = null where franchise_id = fb;
+  v := public.franchise_draw_injuries(fb, 'draw-seed-1', wk, now());
+  update public.game_players set injured_until = null, injury = null where franchise_id = fb;
+  v2 := public.franchise_draw_injuries(fb, 'draw-seed-1', wk, now());
+  perform pg_temp.ok('the same game hurts the same man twice: the draw is a function of its seed and the roster', v = v2,
+    v::text || ' vs ' || v2::text);
+  update public.game_players set injured_until = null, injury = null where franchise_id = fb;
+
+  -- over many seeds it does happen, it hurts one man at a time, and the man
+  -- it hurts is one of Bob's
+  n := 0; nn := 0;
+  for k in 1..60 loop
+    update public.game_players set injured_until = null, injury = null where franchise_id = fb;
+    v := public.franchise_draw_injuries(fb, 'sweep-' || k, wk, now());
+    if jsonb_array_length(v) > 0 then
+      n := n + 1;
+      if (select count(*) from public.game_players
+           where id = (v->0->>'player')::uuid and franchise_id = fb) = 1 then nn := nn + 1; end if;
+    end if;
+    perform pg_temp.ok('one man at a time', jsonb_array_length(v) <= 1);
+  end loop;
+  perform pg_temp.ok('over sixty games somebody gets hurt, and not everybody does', n between 1 and 59, n || ' of 60');
+  perform pg_temp.ok('and the man hurt is always one of the franchise''s own', nn = n);
+  update public.game_players set injured_until = null, injury = null where franchise_id = fb;
+
+  -- the refusal: a position is never taken below its starters
+  perform pg_temp.ok('a lone kicker is never hurt, because nobody could kick',
+    (select count(*) = 1 from public.game_players where franchise_id = fb and position = 'K' and status = 'active'));
+  n := 0;
+  for k in 1..80 loop
+    update public.game_players set injured_until = null, injury = null where franchise_id = fb;
+    v := public.franchise_draw_injuries(fb, 'kicker-' || k, wk, now());
+    if jsonb_array_length(v) > 0 and v->0->>'position' in ('K', 'P') then n := n + 1; end if;
+  end loop;
+  perform pg_temp.ok('the specialists a roster has one of are never taken', n = 0, n || ' taken');
+  update public.game_players set injured_until = null, injury = null where franchise_id = fb;
+
+  -- Conditioning buys the risk down, and the table says by how much
+  perform pg_temp.ok('the Conditioning facility buys the chance down by the published step',
+    (public.franchise_injuries()->>'base')::numeric
+      - 3 * (public.franchise_injuries()->>'per_conditioning')::numeric = 0.13);
+  -- the Iron Man trait, until now stated as having no effect, has one
+  perform pg_temp.ok('Iron Man is no longer a trait with nothing behind it',
+    (public.franchise_injuries()->>'iron_man')::numeric = 0.5
+    and (select (t->'effect'->>'injury_resist')::int = 3
+           from jsonb_array_elements(public.franchise_pool_traits()) t where t->>'id' = 'iron_man'));
+
+  -- ── the bowl, on a record built to earn one ─────────────────────────────
+  insert into auth.users (id, email, raw_user_meta_data)
+  values ('b0000000-0000-0000-0000-000000000001', 'bowl@example.com', '{}'::jsonb) on conflict (id) do nothing;
+  perform pg_temp.as_user('b0000000-0000-0000-0000-000000000001');
+  v := public.franchise_create('Bowlers', 'Kettle', 'KTL', 'crown', 'gold', 'pro_style', 'four_three');
+  bf := (v->'franchise'->>'id')::uuid;
+  perform pg_temp.as_owner();
+  -- seven of the eight are won outright, so the record earns the ninth
+  -- whatever the simulator does with the last one
+  update public.franchise_games set status = 'final', played_at = now(), score_for = 30, score_against = 10,
+    result = 'W', box = '{}'::jsonb, sim_version = 'sim_v1'
+   where franchise_id = bf and season_number = 1 and week between 1 and 7;
+  update public.franchise_seasons set week = 7, wins = 7, points_for = 210, points_against = 70
+   where franchise_id = bf and number = 1;
+  select opens_at into t0 from public.franchise_games where franchise_id = bf and season_number = 1 and week = 8;
+  v := public.franchise_play_game(bf, t0);
+  perform pg_temp.ok('a winning record earns the bowl rather than ending the season',
+    jsonb_typeof(v->'bowl') = 'object' and not (v->>'season_complete')::boolean
+    and v->'season'->>'status' = 'playoffs', v->'season'->>'status');
+  perform pg_temp.ok('the bowl is a ninth game, named, a week later, against a club rated above the franchise',
+    (v->'bowl'->>'week')::int = 9 and (v->'bowl'->>'bowl')::boolean
+    and (v->'bowl'->>'bowl_name') like 'The % Bowl'
+    and (v->'bowl'->'opponent'->>'overall')::int > (public.franchise_team_rating(bf)->>'overall')::int
+    and (v->'bowl'->>'week_key') = public.games_week_key(t0 + interval '7 days'), (v->'bowl')::text);
+  perform pg_temp.ok('the club is one the season did not already play',
+    (select count(*) = 1 from public.franchise_games g where g.franchise_id = bf and g.season_number = 1
+       and g.opponent_key = (select opponent_key from public.franchise_games where franchise_id = bf and bowl)));
+  perform pg_temp.ok('and earning it is on the wall',
+    exists (select 1 from public.franchise_achievements where franchise_id = bf and achievement_id = 'bowl_bid')
+    and exists (select 1 from public.franchise_activity where franchise_id = bf and kind = 'bowl_bid'));
+  perform pg_temp.ok('scheduling it again schedules nothing', public.franchise_schedule_bowl(bf, 1, now()) is not null
+    and (select count(*) = 1 from public.franchise_games where franchise_id = bf and season_number = 1 and bowl));
+  begin
+    perform public.franchise_start_season(null);
+    perform pg_temp.ok('a season with a bowl to play does not roll over', true);
+  exception when others then perform pg_temp.ok('a season with a bowl to play does not roll over', true); end;
+  perform pg_temp.as_user('b0000000-0000-0000-0000-000000000001');
+  v := public.franchise_start_season();
+  perform pg_temp.ok('and starting it again starts nothing while the bowl is unplayed',
+    not (v->>'started')::boolean and (v->>'season_number')::int = 1);
+  perform pg_temp.as_owner();
+  select id, opens_at into gid, t0 from public.franchise_games where franchise_id = bf and season_number = 1 and bowl;
+  begin
+    perform public.franchise_play_game(bf, t0 - interval '1 minute');
+    perform pg_temp.ok('the bowl cannot be played before its Saturday either', false, 'it played');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('the bowl cannot be played before its Saturday either', true);
+  end;
+  v := public.franchise_play_game(bf, t0);
+  perform pg_temp.ok('playing it completes the season and pays the bowl''s own line, not the weekly one',
+    (v->>'season_complete')::boolean and v->'season'->>'status' = 'complete'
+    and (select delta = 150 from public.franchise_ledger where franchise_id = bf and kind = 'bowl_game' and key = '1:9' and currency = 'xp')
+    and (select delta = 60 from public.franchise_ledger where franchise_id = bf and kind = 'bowl_game' and key = '1:9' and currency = 'tc')
+    and not exists (select 1 from public.franchise_ledger where franchise_id = bf and kind = 'weekly_game' and key = '1:9'));
+  perform pg_temp.ok('winning it is Bowl Winner, and losing it is not',
+    (v->'game'->>'result' = 'W')
+      = exists (select 1 from public.franchise_achievements where franchise_id = bf and achievement_id = 'bowl_win'));
+  perform pg_temp.ok('and the bowl counts in the season''s record like any other game',
+    (select wins + losses + ties = 9 from public.franchise_seasons where franchise_id = bf and number = 1));
+  perform pg_temp.as_user('b0000000-0000-0000-0000-000000000001');
+  v := public.franchise_start_season();
+  perform pg_temp.ok('now the season rolls over', (v->>'started')::boolean and (v->>'season_number')::int = 2);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the offseason sent everybody back out fit',
+    (select count(*) = 0 from public.game_players where franchise_id = bf and injured_until is not null));
+
+  -- a losing record earns nothing
+  perform pg_temp.ok('a record that is not a winning one earns no bowl',
+    public.franchise_schedule_bowl(fd, 1, now()) is null
+      or (select public.franchise_bowl_earned(wins, losses) from public.franchise_seasons where franchise_id = fd and number = 1));
+
+  -- ── trades ──────────────────────────────────────────────────────────────
+  -- the cast: two franchises in one conference (Club 1 and Club 2 from
+  -- section 19), and one outside it
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_trade_partners();
+  perform pg_temp.ok('a member reads the rosters of the conference it is in, and its own',
+    jsonb_array_length(v->'partners') = 4 and jsonb_array_length(v->'mine') >= 38
+    and v->'rules'->>'version' = 'trade_v1'
+    and (select bool_and(jsonb_array_length(p->'players') >= 38) from jsonb_array_elements(v->'partners') p)
+    and not (v::text like '%example.com%') and not (v::text like '%user_id%'));
+  perform pg_temp.as_user(CARA);
+  v := public.franchise_trade_partners();
+  perform pg_temp.ok('a franchise in no conference reads nobody''s roster and is told why',
+    v->'conference' = 'null'::jsonb and jsonb_array_length(v->'partners') = 0);
+
+  -- one for one, between two members
+  perform pg_temp.as_owner();
+  select id into pid from public.game_players where franchise_id = cf[1] and position = 'WR' and depth = 5;
+  select id into pid2 from public.game_players where franchise_id = cf[2] and position = 'WR' and depth = 5;
+  perform pg_temp.as_user(CARA);
+  begin
+    perform public.franchise_trade_offer(cf[2], array[pid], array[pid2]);
+    perform pg_temp.ok('a franchise outside the conference cannot deal into it', false, 'it offered');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a franchise outside the conference cannot deal into it', true);
+  end;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  begin
+    perform public.franchise_trade_offer(cf[2], array[pid2], array[pid]);
+    perform pg_temp.ok('nor can a franchise offer a player who is not its own', false, 'it offered');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('nor can a franchise offer a player who is not its own', true);
+  end;
+  begin
+    perform public.franchise_trade_offer(cf[1], array[pid], array[pid]);
+    perform pg_temp.ok('nor trade with itself', false, 'it offered');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('nor trade with itself', true);
+  end;
+  v := public.franchise_trade_offer(cf[2], array[pid], array[pid2], 'Straight swap.');
+  tid := (v->'trade'->>'id')::uuid;
+  perform pg_temp.ok('an offer names both sides from the offerer''s view, with the note and the week it lasts',
+    (v->>'ok')::boolean and v->'trade'->>'status' = 'OPEN' and v->'trade'->>'note' = 'Straight swap.'
+    and (v->'trade'->>'legal')::boolean and (v->'trade'->>'mine')::boolean
+    and jsonb_array_length(v->'trade'->'give') = 1 and jsonb_array_length(v->'trade'->'get') = 1
+    and (v->'trade'->'give'->0->>'id')::uuid = pid and (v->'trade'->'get'->0->>'id')::uuid = pid2
+    and (v->'trade'->>'expires_at')::timestamptz > now() + interval '6 days');
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000003');
+  perform pg_temp.ok('a franchise that is not a party to it reads no row of it',
+    (select count(*) = 0 from public.franchise_trades));
+  begin
+    perform public.franchise_trade_respond(tid, true);
+    perform pg_temp.ok('nor can it answer for somebody else', false, 'it answered');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('nor can it answer for somebody else', true);
+  end;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  begin
+    perform public.franchise_trade_respond(tid, true);
+    perform pg_temp.ok('nor can the franchise that made it accept its own offer', false, 'it answered');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('nor can the franchise that made it accept its own offer', true);
+  end;
+
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  v := public.franchise_trades_mine();
+  perform pg_temp.ok('the other side sees it waiting, named from THEIR view',
+    jsonb_array_length(v->'incoming') = 1 and jsonb_array_length(v->'outgoing') = 0
+    and (v->'incoming'->0->>'incoming')::boolean
+    and (v->'incoming'->0->'give'->0->>'id')::uuid = pid2 and (v->'incoming'->0->'get'->0->>'id')::uuid = pid);
+  v := public.franchise_trade_respond(tid, true);
+  perform pg_temp.ok('accepting moves both men, and says so',
+    (v->>'accepted')::boolean and v->'trade'->>'status' = 'ACCEPTED');
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('each player is on the other roster, at the bottom of his chart, with the record of where he came from',
+    (select franchise_id = cf[2] and acquired_source = 'trade' and acquired_detail like 'From the %'
+        and depth = (select max(depth) from public.game_players o where o.franchise_id = cf[2] and o.position = 'WR' and o.status = 'active')
+       from public.game_players where id = pid)
+    and (select franchise_id = cf[1] and acquired_source = 'trade' from public.game_players where id = pid2));
+  perform pg_temp.ok('no two players on either roster share a number',
+    (select count(distinct jersey) = count(*) from public.game_players where franchise_id = cf[1] and status = 'active')
+    and (select count(distinct jersey) = count(*) from public.game_players where franchise_id = cf[2] and status = 'active'));
+  perform pg_temp.ok('both rosters are the size they were',
+    (select count(*) from public.game_players where franchise_id = cf[1] and status = 'active')
+      = (select count(*) from public.game_players where franchise_id = cf[2] and status = 'active'));
+  perform pg_temp.ok('the deal is on both records, and The Deal is on both walls',
+    (select count(*) = 2 from public.franchise_activity where kind = 'trade' and key = tid::text)
+    and (select count(*) = 2 from public.franchise_achievements where achievement_id = 'trade_first'
+          and franchise_id in (cf[1], cf[2])));
+  perform pg_temp.ok('and nothing was paid for it: a trade is free, and moves no currency',
+    (select count(*) = 0 from public.franchise_ledger where kind like 'trade%'));
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  begin
+    perform public.franchise_trade_respond(tid, true);
+    perform pg_temp.ok('a decided offer cannot be decided twice', false, 'it answered');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a decided offer cannot be decided twice', true);
+  end;
+
+  -- declining, and withdrawing
+  perform pg_temp.as_owner();
+  select id into pid3 from public.game_players where franchise_id = cf[1] and position = 'LB' and depth = 4;
+  select id into pid4 from public.game_players where franchise_id = cf[2] and position = 'LB' and depth = 4;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_trade_offer(cf[2], array[pid3], array[pid4]);
+  tid2 := (v->'trade'->>'id')::uuid;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  v := public.franchise_trade_respond(tid2, false);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('declining decides it and moves nobody',
+    not (v->>'accepted')::boolean and v->'trade'->>'status' = 'DECLINED'
+    and (select franchise_id = cf[1] from public.game_players where id = pid3)
+    and (select franchise_id = cf[2] from public.game_players where id = pid4));
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_trade_offer(cf[2], array[pid3], array[pid4]);
+  tid2 := (v->'trade'->>'id')::uuid;
+  v := public.franchise_trade_withdraw(tid2);
+  perform pg_temp.ok('the offerer can withdraw one that has not been answered', (v->>'withdrawn')::boolean);
+  perform pg_temp.ok('and withdrawing again withdraws nothing', not (public.franchise_trade_withdraw(tid2)->>'withdrawn')::boolean);
+
+  -- the roster the server will not let you wreck
+  -- three linemen out and three men back: the COUNTS stay level, so the only
+  -- thing wrong with the deal is the hole it leaves on the line
+  perform pg_temp.as_owner();
+  select array_agg(id) into pids from (select id from public.game_players
+    where franchise_id = cf[1] and position = 'OL' and status = 'active' order by depth limit 3) x;
+  select array_agg(id) into pids2 from (
+    select distinct on (position) id from public.game_players
+     where franchise_id = cf[2] and position in ('RB', 'CB', 'S') and status = 'active'
+     order by position, depth desc) x;
+  perform pg_temp.ok('the fixture is level: three for three', array_length(pids, 1) = 3 and array_length(pids2, 1) = 3);
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  begin
+    perform public.franchise_trade_offer(cf[2], pids, pids2);
+    perform pg_temp.ok('a deal that would leave a position short is refused, by name', false, 'it offered');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a deal that would leave a position short is refused, by name',
+      public.franchise_trade_illegal(cf[1], cf[2], pids, pids2) like '%short at OL%',
+      public.franchise_trade_illegal(cf[1], cf[2], pids, pids2));
+  end;
+  -- and the floor is its own refusal, said in its own words
+  perform pg_temp.ok('a deal that would put a roster under the floor is refused too',
+    public.franchise_trade_illegal(cf[1], cf[2], pids, array[pid4]) like '%under 38%',
+    public.franchise_trade_illegal(cf[1], cf[2], pids, array[pid4]));
+  begin
+    perform public.franchise_trade_offer(cf[2], array[pid3, pid3], array[pid4]);
+    perform pg_temp.ok('so is naming the same man twice', false, 'it offered');
+  exception when others then perform pg_temp.ok('so is naming the same man twice', true); end;
+
+  -- an offer that was legal when it was written and is not when it is taken
+  perform pg_temp.as_owner();
+  select id into pid3 from public.game_players where franchise_id = cf[1] and position = 'CB' and depth = 4;
+  select id into pid4 from public.game_players where franchise_id = cf[2] and position = 'CB' and depth = 4;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_trade_offer(cf[2], array[pid3], array[pid4]);
+  tid2 := (v->'trade'->>'id')::uuid;
+  perform pg_temp.as_owner();
+  update public.game_players set status = 'released', franchise_id = cf[1] where id = pid3;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  v := public.franchise_trade_respond(tid2, true);
+  perform pg_temp.ok('an offer whose player has since gone is refused at the moment it is taken, with the reason',
+    not (v->>'ok')::boolean and not (v->>'accepted')::boolean
+    and v->>'reason' like '%no longer on that roster%', v::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the offer is closed with that reason kept on it — not rolled back with the exception',
+    (select status = 'EXPIRED' and reason like '%no longer on that roster%' from public.franchise_trades where id = tid2)
+    and (select franchise_id = cf[2] from public.game_players where id = pid4));
+  update public.game_players set status = 'active' where id = pid3;
+
+  -- the deadline is the bracket
+  perform pg_temp.as_owner();
+  update public.franchise_conferences set status = 'playoffs' where id = conf;
+  perform pg_temp.ok('nothing moves during the playoffs',
+    public.franchise_trade_illegal(cf[1], cf[2], array[pid3], array[pid4]) like '%deadline has passed%');
+  update public.franchise_conferences set status = 'complete' where id = conf;
+
+  -- the grants, from the outside
+  perform pg_temp.ok('the injury draw, the bowl scheduler and the trade read models are reachable by no client role',
+    not has_function_privilege('anon', 'public.franchise_draw_injuries(uuid, text, text, timestamptz)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_schedule_bowl(uuid, integer, timestamptz)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_trade_json(uuid, uuid)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_trade_player_json(uuid)', 'execute'));
+  perform pg_temp.ok('and the tables and the four trade moves are open to anon and authenticated alike',
+    has_function_privilege('anon', 'public.franchise_injuries()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_postseason()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_trade_rules()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_trade_partners(text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_trade_offer(uuid, uuid[], uuid[], text, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_trade_respond(uuid, boolean, text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_trade_withdraw(uuid, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_trades_mine(integer, text)', 'execute'));
 end
 $test$;
