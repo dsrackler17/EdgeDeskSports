@@ -80,6 +80,9 @@ declare
   fac jsonb; msg text; rep jsonb; rep2 jsonb; age0 jsonb; going jsonb;
   -- the draft and the market
   mk jsonb; b jsonb; pr jsonb; pid3 uuid; pid4 uuid; aid uuid; n0 integer; rng jsonb;
+  -- conferences and playoffs
+  cn integer; cu uuid; cch uuid; cf uuid[] := '{}'; conf uuid; conf2 uuid; ctok text; ctok2 text;
+  SEC_C constant text := 'device-secret-cccccccccccccccccccccccccccc';
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (ALICE, 'alice@example.com', '{"display_name":"Alice"}'),
@@ -1899,5 +1902,396 @@ begin
     select first_name, last_name, position, overall, ratings, archetype, traits, potential, age, dev_tier, asking, status
       from public.game_players where franchise_id = 'dddddddd-0000-0000-0000-000000000004' and class_season = 1) x;
   perform pg_temp.ok('the same seed makes the same class and the same market, player for player', n = 16, n || ' identical of 16');
+
+-- ═══ 19. CONFERENCES AND PLAYOFFS ═════════════════════════════════════════
+  -- the cast: nine franchises of their own, so the conference sections do
+  -- not disturb the seasons the earlier ones played
+  perform pg_temp.as_owner();
+  for cn in 1..9 loop
+    cu := ('c0000000-0000-0000-0000-00000000000' || cn)::uuid;
+    insert into auth.users (id, email, raw_user_meta_data)
+    values (cu, 'conf' || cn || '@example.com', '{}'::jsonb) on conflict (id) do nothing;
+  end loop;
+  for cn in 1..9 loop
+    cu := ('c0000000-0000-0000-0000-00000000000' || cn)::uuid;
+    perform pg_temp.as_user(cu);
+    v := public.franchise_create('Club ' || cn, 'Town ' || cn, 'C' || cn, 'shield', 'forest', 'pro_style', 'four_three');
+    cf := cf || (v->'franchise'->>'id')::uuid;
+  end loop;
+
+  -- the published table
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the conference is conference_v1: four to twelve franchises, seven rounds at most, four in the bracket from six up',
+    public.franchise_conference_config()->>'version' = 'conference_v1'
+    and (public.franchise_conference_config()->>'min_teams')::int = 4
+    and (public.franchise_conference_config()->>'max_teams')::int = 12
+    and (public.franchise_conference_config()->>'rounds_max')::int = 7
+    and public.franchise_conference_playoff_teams(4) = 2 and public.franchise_conference_playoff_teams(5) = 2
+    and public.franchise_conference_playoff_teams(6) = 4 and public.franchise_conference_playoff_teams(12) = 4);
+
+  -- ── creating one, and joining it by link ────────────────────────────────
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_conference_create('The Friday Five');
+  conf := (v->>'id')::uuid; ctok := v->>'invite_token';
+  perform pg_temp.ok('a conference is founded by a franchise, which becomes its commissioner and its first member',
+    (v->>'ok')::boolean and length(ctok) = 26 and v->'conference'->>'status' = 'forming'
+    and (v->'conference'->>'members')::int = 1 and v->'conference'->'commissioner'->>'name' = 'Club 1'
+    and (v->'conference'->>'season_number')::int = 0);
+  begin
+    perform public.franchise_conference_create('Another');
+    perform pg_temp.ok('a franchise cannot found a second conference while it is in one', false, 'it founded');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a franchise cannot found a second conference while it is in one', true);
+  end;
+  begin
+    perform public.franchise_conference_start();
+    perform pg_temp.ok('a conference of one cannot start a season', false, 'it started');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a conference of one cannot start a season', true);
+  end;
+
+  -- an outsider holding the link, and one holding nothing
+  perform pg_temp.as_user(CARA);
+  v := public.franchise_conference_peek(ctok);
+  perform pg_temp.ok('a link names the conference and everyone in it — franchises, never accounts, and never the token',
+    v->'conference'->>'name' = 'The Friday Five' and jsonb_array_length(v->'members') = 1
+    and (v->>'can_join')::boolean and not (v->>'is_member')::boolean
+    and not (v::text like '%example.com%') and not (v::text like '%user_id%') and not (v::text like '%invite_token%'), v::text);
+  perform pg_temp.ok('and an outsider reads no row of it at all',
+    (select count(*) from public.franchise_conferences) = 0
+    and (select count(*) from public.franchise_conference_members) = 0
+    and (select count(*) from public.franchise_conference_games) = 0
+    and (select count(*) from public.franchise_conference_titles) = 0);
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('nor does anon', (select count(*) from public.franchise_conferences) = 0);
+  perform pg_temp.ok('a guessed link is nothing', public.franchise_conference_peek('nope') is null);
+  begin
+    perform public.franchise_conference_join(ctok);
+    perform pg_temp.ok('a link cannot be joined without a franchise', false, 'it joined');
+  exception when invalid_authorization_specification then
+    perform pg_temp.ok('a link cannot be joined without a franchise', true);
+  end;
+
+  -- three more join, and then a franchise that has no account at all — a
+  -- team comes before an account here too
+  for cn in 2..4 loop
+    perform pg_temp.as_user(('c0000000-0000-0000-0000-00000000000' || cn)::uuid);
+    v := public.franchise_conference_join(ctok);
+    perform pg_temp.ok('Club ' || cn || ' joined by link', (v->>'ok')::boolean and not (v->>'already')::boolean);
+  end loop;
+  perform pg_temp.as_anon();
+  perform public.franchise_create('Drifters', 'Ely', 'ELY', 'wolf', 'slate', 'option', 'blitz_heavy', SEC_C);
+  v := public.franchise_conference_join(ctok, SEC_C);
+  perform pg_temp.ok('a franchise that lives on a device secret joins on the same terms as an account',
+    (v->>'ok')::boolean and (v->'conference'->>'members')::int = 5);
+  v := public.franchise_conference_join(ctok, SEC_C);
+  perform pg_temp.ok('and joining twice is a no-op, not a second row', (v->>'already')::boolean);
+  begin
+    perform public.franchise_conference_join(ctok, SEC_X);
+    perform pg_temp.ok('a guessed secret joins nothing', false, 'it joined');
+  exception when invalid_authorization_specification then
+    perform pg_temp.ok('a guessed secret joins nothing', true);
+  end;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  begin
+    perform public.franchise_conference_start();
+    perform pg_temp.ok('only the commissioner starts a season', false, 'it started');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('only the commissioner starts a season', true);
+  end;
+
+  -- ── the draw ────────────────────────────────────────────────────────────
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_conference_start();
+  perform pg_temp.ok('five franchises draw five rounds of two games — a full round robin with a week off each',
+    (v->>'games')::int = 10 and v->'conference'->>'status' = 'regular'
+    and (v->'conference'->>'rounds')::int = 5 and (v->'conference'->>'season_number')::int = 1
+    and (v->'conference'->>'playoff_teams')::int = 2, v::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('everybody plays everybody exactly once',
+    (select count(distinct (least(a_id, b_id), greatest(a_id, b_id))) = 10
+       and count(*) = 10 from public.franchise_conference_games where conference_id = conf));
+  perform pg_temp.ok('and nobody plays twice in a round',
+    not exists (select 1 from (select round, a_id x from public.franchise_conference_games where conference_id = conf
+                               union all select round, b_id from public.franchise_conference_games where conference_id = conf) s
+                 group by round, x having count(*) > 1));
+  perform pg_temp.ok('every franchise plays four of the five rounds, and sits out one',
+    (select count(*) = 5 and bool_and(c = 4) from
+      (select x, count(*) c from (select a_id x from public.franchise_conference_games where conference_id = conf
+                                  union all select b_id from public.franchise_conference_games where conference_id = conf) u
+        group by x) s));
+  perform pg_temp.ok('round one is this football week and opens on Saturday at 07:00 UTC; each round is the next week',
+    (select bool_and(g.week_key = public.games_week_key(now() + ((g.round - 1) * interval '7 days'))
+                 and g.opens_at = (((g.week_key::date + 4)::timestamp + interval '7 hours') at time zone 'UTC'))
+       from public.franchise_conference_games g where g.conference_id = conf));
+  perform pg_temp.ok('every game''s seed was derived by the server from the conference''s own seed',
+    (select bool_and(g.seed = md5(c.seed || ':g:' || g.season_number || ':' || g.round || ':' || g.a_id::text || ':' || g.b_id::text))
+       from public.franchise_conference_games g join public.franchise_conferences c on c.id = g.conference_id
+      where g.conference_id = conf));
+  perform pg_temp.ok('drawing the same season twice draws nothing', public.franchise_conference_draw(conf, now()) = 0);
+
+  -- nobody joins or leaves a season already drawn
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000005');
+  begin
+    perform public.franchise_conference_join(ctok);
+    perform pg_temp.ok('a conference cannot grow a team mid-season', false, 'it joined');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a conference cannot grow a team mid-season', true);
+  end;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  begin
+    perform public.franchise_conference_leave();
+    perform pg_temp.ok('nor lose one', false, 'it left');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('nor lose one', true);
+  end;
+
+  -- ── a client cannot write any of it ─────────────────────────────────────
+  update public.franchise_conference_games set score_a = 99 where conference_id = conf;
+  update public.franchise_conference_members set wins = 9 where conference_id = conf;
+  update public.franchise_conferences set status = 'complete' where id = conf;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a member cannot write a score, a standing or a status',
+    (select bool_and(score_a is null) from public.franchise_conference_games where conference_id = conf)
+    and (select bool_and(wins = 0) from public.franchise_conference_members where conference_id = conf)
+    and (select status = 'regular' from public.franchise_conferences where id = conf));
+
+  -- ── playing it ──────────────────────────────────────────────────────────
+  select count(*) into cn from public.franchise_conference_games where conference_id = conf and opens_at <= now();
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000003');
+  v := public.franchise_conference_advance();
+  perform pg_temp.ok('any member advances the conference, and only the rounds whose Saturday has come',
+    (v->>'played')::int = cn, (v->>'played') || ' of ' || cn);
+  v2 := public.franchise_conference_advance();
+  perform pg_temp.ok('advancing again plays nothing and pays nothing', (v2->>'played')::int = 0);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the rounds that have not opened are untouched',
+    (select count(*) = 10 - cn from public.franchise_conference_games where conference_id = conf and status = 'scheduled'));
+  perform pg_temp.ok('a game that was played is a neutral-field box on the shared simulator',
+    cn = 0 or (select bool_and(g.sim_version = 'sim_v1' and (g.box->>'neutral')::boolean and g.box ? 'a' and g.box ? 'b')
+                 from public.franchise_conference_games g where g.conference_id = conf and g.status = 'final'));
+  perform pg_temp.ok('the standings are the sum of the games played',
+    (select coalesce(sum(wins + losses + ties), 0) = 2 * cn from public.franchise_conference_members where conference_id = conf)
+    and (select coalesce(sum(points_for), 0) = coalesce(sum(points_against), 0) from public.franchise_conference_members where conference_id = conf));
+
+  -- the whole season, with the clock in hand: the internal runner takes it,
+  -- the way franchise_play_game() does, so a suite need not wait ten weeks
+  select max(opens_at) into t0 from public.franchise_conference_games where conference_id = conf;
+  v := public.franchise_conference_run(conf, t0 + interval '1 day');
+  perform pg_temp.ok('the rest of the regular season plays and the bracket is drawn',
+    (v->>'played')::int = 10 - cn
+    and (select status = 'playoffs' and playoff_teams = 2 from public.franchise_conferences where id = conf));
+  perform pg_temp.ok('every member takes the place the standings gave it, and all but the top two are out',
+    (select count(*) = 5 and count(*) filter (where eliminated) = 3 and count(distinct seed) = 5
+       from public.franchise_conference_members where conference_id = conf));
+  perform pg_temp.ok('the top seed is named for it',
+    (select count(*) >= 1 from public.franchise_achievements where achievement_id = 'conf_top'));
+  perform pg_temp.ok('a conference of five sends its top two straight to a final, a week after the last round',
+    (select count(*) = 1 and bool_and(kind = 'final' and a_seed = 1 and b_seed = 2)
+       from public.franchise_conference_games where conference_id = conf and season_number = 1 and status = 'scheduled'));
+
+  select opens_at into t0 from public.franchise_conference_games where conference_id = conf and kind = 'final';
+  v := public.franchise_conference_run(conf, t0 + interval '1 day');
+  perform pg_temp.ok('the final decides a champion and closes the season',
+    (v->>'played')::int = 1 and v->'settled'->'champion' ? 'name'
+    and (select status = 'complete' and champion_id is not null and completed_at is not null
+           from public.franchise_conferences where id = conf), v::text);
+  perform pg_temp.ok('a final cannot end level: the better seed advances when the overtime cannot separate them',
+    (select advanced_id is not null and (result <> 'T' or advanced_id = a_id)
+       from public.franchise_conference_games where conference_id = conf and kind = 'final'));
+  perform pg_temp.ok('the record is frozen: the champion, the runner-up and the standings as they read',
+    (select count(*) = 1 and bool_and(jsonb_array_length(standings) = 5 and champion_id is not null and runner_up_id is not null)
+       from public.franchise_conference_titles where conference_id = conf));
+  perform pg_temp.ok('every side of every game was paid exactly once — ten rounds and a final, twenty-two lines',
+    (select count(*) = 22 from public.franchise_ledger l where l.kind = 'conf_game' and l.currency = 'xp'
+       and l.franchise_id in (select franchise_id from public.franchise_conference_members where conference_id = conf)));
+  perform pg_temp.ok('the winner of the final took the playoff purse and the title purse, once each',
+    (select count(*) = 1 from public.franchise_ledger where kind = 'conf_title' and currency = 'xp')
+    and (select count(*) = 1 from public.franchise_ledger where kind = 'conf_playoff' and currency = 'xp')
+    and (select count(*) = 1 from public.franchise_achievements where achievement_id = 'conf_title'));
+  perform pg_temp.ok('a rerun after the season is decided plays nothing and pays nothing',
+    (public.franchise_conference_run(conf, t0 + interval '60 days')->>'played')::int = 0
+    and (select count(*) = 22 from public.franchise_ledger l where l.kind = 'conf_game' and l.currency = 'xp'
+           and l.franchise_id in (select franchise_id from public.franchise_conference_members where conference_id = conf)));
+  perform pg_temp.ok('the ladder and the rivalry moved for every member, on the same Elo a challenge uses',
+    (select bool_and(f.ladder_games >= 4) from public.franchises f
+       join public.franchise_conference_members m on m.franchise_id = f.id where m.conference_id = conf)
+    and (select count(*) = 20 from public.franchise_rivalries r
+          where r.franchise_id in (select franchise_id from public.franchise_conference_members where conference_id = conf)
+            and r.other_id in (select franchise_id from public.franchise_conference_members where conference_id = conf)));
+  perform pg_temp.ok('careers grew by the box, and the solo season''s lines did not',
+    (select count(*) > 0 from public.game_players p
+      where p.franchise_id = cf[1] and coalesce((p.career_stats->>'games')::int, 0) > 0)
+    and (select bool_and(coalesce((p.season_stats->>'games')::int, 0) = 0) from public.game_players p where p.franchise_id = cf[1]));
+
+  -- ── the board, and the next season ──────────────────────────────────────
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  v := public.franchise_conference_board();
+  perform pg_temp.ok('the board is one read: the conference, the standings, the schedule, the title and the link',
+    jsonb_array_length(v->'standings') = 5 and jsonb_array_length(v->'games') = 11
+    and jsonb_array_length(v->'titles') = 1 and v->>'invite_token' = ctok
+    and not (v->>'is_commissioner')::boolean and not (v->>'can_start')::boolean and (v->>'can_leave')::boolean
+    and not (v::text like '%example.com%') and not (v::text like '%user_id%') and not (v::text like '%anon_hash%'), v::text);
+  perform pg_temp.as_user(CARA);
+  v := public.franchise_conference_board();
+  perform pg_temp.ok('a franchise with no conference is told the rules and offered nothing else',
+    v->'conference' = 'null'::jsonb and v->'config'->>'version' = 'conference_v1' and v->'me'->>'name' = 'Comets');
+  begin
+    perform public.franchise_conference_advance();
+    perform pg_temp.ok('a franchise in no conference cannot advance one', false, 'it advanced');
+  exception when no_data_found then
+    perform pg_temp.ok('a franchise in no conference cannot advance one', true);
+  end;
+
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_conference_board();
+  perform pg_temp.ok('the commissioner is offered the next season', (v->>'can_start')::boolean and (v->>'is_commissioner')::boolean);
+  v := public.franchise_conference_start();
+  perform pg_temp.ok('season two draws a fresh schedule and clears every record but the rings',
+    (v->'conference'->>'season_number')::int = 2 and (v->>'games')::int = 10);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the standings start again at nothing, and the title is still on the record',
+    (select bool_and(wins = 0 and losses = 0 and points_for = 0 and seed is null and not eliminated)
+       from public.franchise_conference_members where conference_id = conf)
+    and (select sum(titles) = 1 from public.franchise_conference_members where conference_id = conf)
+    and (select count(*) = 1 from public.franchise_conference_titles where conference_id = conf));
+
+  -- ── a bracket of four ───────────────────────────────────────────────────
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000005');
+  v := public.franchise_conference_create('The Big Six');
+  conf2 := (v->>'id')::uuid; ctok2 := v->>'invite_token';
+  for cn in 6..9 loop
+    perform pg_temp.as_user(('c0000000-0000-0000-0000-00000000000' || cn)::uuid);
+    perform public.franchise_conference_join(ctok2);
+  end loop;
+  perform pg_temp.as_user(CARA);
+  perform public.franchise_conference_join(ctok2);
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000002');
+  begin
+    perform public.franchise_conference_join(ctok2);
+    perform pg_temp.ok('a franchise belongs to one conference at a time', false, 'it joined a second');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a franchise belongs to one conference at a time', true);
+  end;
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000005');
+  v := public.franchise_conference_start();
+  perform pg_temp.ok('six franchises draw five rounds of three, and a bracket of four',
+    (v->>'games')::int = 15 and (v->'conference'->>'rounds')::int = 5 and (v->'conference'->>'playoff_teams')::int = 4);
+  perform pg_temp.as_owner();
+  select max(opens_at) into t0 from public.franchise_conference_games where conference_id = conf2;
+  perform public.franchise_conference_run(conf2, t0 + interval '1 day');
+  perform pg_temp.ok('the top four meet 1v4 and 2v3 in two semifinals, and the other two are out',
+    (select count(*) = 2 and bool_and((a_seed = 1 and b_seed = 4) or (a_seed = 2 and b_seed = 3))
+       from public.franchise_conference_games where conference_id = conf2 and kind = 'semifinal')
+    and (select count(*) filter (where eliminated) = 2 from public.franchise_conference_members where conference_id = conf2));
+  select max(opens_at) into t0 from public.franchise_conference_games where conference_id = conf2;
+  perform public.franchise_conference_run(conf2, t0 + interval '1 day');
+  perform pg_temp.ok('both semifinals produce somebody, and the final pairs them with the better seed first',
+    (select bool_and(advanced_id is not null) from public.franchise_conference_games where conference_id = conf2 and kind = 'semifinal')
+    and (select count(*) = 1 and bool_and(a_seed < b_seed) from public.franchise_conference_games where conference_id = conf2 and kind = 'final'));
+  select max(opens_at) into t0 from public.franchise_conference_games where conference_id = conf2;
+  v := public.franchise_conference_run(conf2, t0 + interval '1 day');
+  perform pg_temp.ok('the final crowns the franchise that advanced from it',
+    v->'settled'->'champion' ? 'name'
+    and (select c.champion_id = g.advanced_id from public.franchise_conferences c
+           join public.franchise_conference_games g on g.conference_id = c.id and g.kind = 'final' and g.season_number = 1
+          where c.id = conf2));
+  perform pg_temp.ok('three playoff games were won and three purses paid',
+    (select count(*) = 3 from public.franchise_ledger l
+      where l.kind = 'conf_playoff' and l.currency = 'xp'
+        and l.franchise_id in (select franchise_id from public.franchise_conference_members where conference_id = conf2)));
+
+  -- ── leaving ─────────────────────────────────────────────────────────────
+  perform pg_temp.as_user(CARA);
+  v := public.franchise_conference_leave();
+  perform pg_temp.ok('a franchise leaves between seasons', (v->>'left')::boolean and not (v->>'dissolved')::boolean);
+  perform pg_temp.ok('and reads nothing of the conference once it is out',
+    (select count(*) = 0 from public.franchise_conference_titles where conference_id = conf2)
+    and public.franchise_conference_board()->'conference' = 'null'::jsonb);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('but the record it earned still names it',
+    (select count(*) = 1 from public.franchise_conference_titles where conference_id = conf2)
+    and (select standings::text like '%Comets%' from public.franchise_conference_titles where conference_id = conf2));
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000005');
+  v := public.franchise_conference_leave();
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a commissioner who leaves hands the conference to whoever joined next',
+    (v->>'left')::boolean and not (v->>'dissolved')::boolean
+    and (select count(*) = 1 from public.franchise_conference_members m
+          join public.franchise_conferences c on c.id = m.conference_id
+         where m.conference_id = conf2 and m.franchise_id = c.commissioner_id and m.role = 'commissioner' and m.franchise_id <> cf[5]));
+  perform pg_temp.ok('and the conference it left is four franchises now',
+    (select count(*) = 4 from public.franchise_conference_members where conference_id = conf2));
+  -- the last one out of a conference that decided a season leaves the
+  -- record standing; the first back in takes the commission
+  for cn in 6..9 loop
+    perform pg_temp.as_user(('c0000000-0000-0000-0000-00000000000' || cn)::uuid);
+    v := public.franchise_conference_leave();
+  end loop;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the last one out of a conference with a title leaves it standing, empty and dormant',
+    (v->>'dormant')::boolean and not (v->>'dissolved')::boolean
+    and (select count(*) = 1 from public.franchise_conferences where id = conf2)
+    and (select count(*) = 0 from public.franchise_conference_members where conference_id = conf2)
+    and (select count(*) = 1 from public.franchise_conference_titles where conference_id = conf2), v::text);
+  perform pg_temp.as_user(CARA);
+  v := public.franchise_conference_join(ctok2);
+  perform pg_temp.ok('and the first franchise back in takes the commission',
+    (v->>'ok')::boolean
+    and (select commissioner_id = fc from public.franchise_conferences where id = conf2)
+    and (select role = 'commissioner' from public.franchise_conference_members where conference_id = conf2 and franchise_id = fc));
+  perform public.franchise_conference_leave();
+  -- a conference that never decided a season goes with its last member
+  v := public.franchise_conference_create('Gone Tomorrow');
+  v2 := public.franchise_conference_leave();
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a conference that never decided a season is deleted when its last member leaves',
+    (v2->>'dissolved')::boolean
+    and (select count(*) = 0 from public.franchise_conferences c where c.name = 'Gone Tomorrow'),
+    'create=' || v::text || ' leave=' || v2::text);
+
+  -- ── the HQ and the Trophy Room carry it ─────────────────────────────────
+  perform pg_temp.as_user('c0000000-0000-0000-0000-000000000001');
+  v := public.franchise_home();
+  perform pg_temp.ok('the HQ carries the conference, where the franchise stands in it and whether a round is waiting',
+    v->'conference'->>'name' = 'The Friday Five' and (v->'conference'->>'place')::int between 1 and 5
+    and v->'conference' ? 'ready' and v->'conference' ? 'next' and (v->'week') ? 'conf');
+  v := public.franchise_trophies();
+  perform pg_temp.ok('the Trophy Room carries the titles and the conference, wherever they were won',
+    v ? 'titles' and v->'conference'->>'name' = 'The Friday Five');
+  perform pg_temp.as_owner();
+  select t.champion_id into cch from public.franchise_conference_titles t where t.conference_id = conf limit 1;
+  select f.user_id into cu from public.franchises f where f.id = cch;
+  if cu is null then
+    perform pg_temp.as_anon();
+    v := public.franchise_trophies(SEC_C);
+  else
+    perform pg_temp.as_user(cu);
+    v := public.franchise_trophies();
+  end if;
+  perform pg_temp.ok('a champion''s Trophy Room names the conference, the season it won and who it beat',
+    jsonb_array_length(v->'titles') = 1 and v->'titles'->0->>'conference' = 'The Friday Five'
+    and v->'titles'->0->>'label' = 'Season I' and v->'titles'->0->'runner_up' ? 'name', (v->'titles')::text);
+
+  -- ── the grants, once more, from the outside ─────────────────────────────
+  perform pg_temp.ok('the draw, the bracket, the final, the game writer, the settlement and the runner are reachable by no client role',
+    not has_function_privilege('anon', 'public.franchise_conference_draw(uuid, timestamptz)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_conference_draw(uuid, timestamptz)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_conference_bracket(uuid)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_conference_final(uuid)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_conference_play_one(uuid, timestamptz)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_conference_settle(uuid, timestamptz)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_conference_run(uuid, timestamptz)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_conference_standings_json(uuid)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_conference_game_json(uuid, boolean)', 'execute'));
+  perform pg_temp.ok('and the eight a member calls are open to anon and authenticated alike',
+    has_function_privilege('anon', 'public.franchise_conference_create(text, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_conference_peek(text, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_conference_join(text, text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_conference_leave(text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_conference_start(text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_conference_advance(text)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_conference_board(text)', 'execute')
+    and has_function_privilege('authenticated', 'public.franchise_conference_game(uuid, text)', 'execute'));
 end
 $test$;

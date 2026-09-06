@@ -90,6 +90,7 @@ const ROSTER = fs.readFileSync(G('roster/index.html'), 'utf8');
 const GAMEDAY = fs.readFileSync(G('gameday/index.html'), 'utf8');
 const TROPHIES = fs.readFileSync(G('trophies/index.html'), 'utf8');
 const MARKET = fs.readFileSync(G('market/index.html'), 'utf8');
+const CONF = fs.readFileSync(G('conference/index.html'), 'utf8');
 const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
 const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -1103,6 +1104,154 @@ fresh();
   has(README, 'market_v1', 'the README documents the market');
   has(README, 'Where Scouting Points go', 'and says what it is for');
   has(README, 'The roster runs 38 to 42', 'and the roster bounds');
+
+  /* ═══ 15. CONFERENCES AND PLAYOFFS (PHASE 6) ═════════════════════════════ */
+  /* the shape of the competition the client shows is the one the SQL runs */
+  eq('the conference is conference_v1 on both sides', F.CONFERENCE_VERSION, 'conference_v1');
+  has(SQL, "'version', 'conference_v1'", 'the SQL publishes the version');
+  chk('the sizes, the round cap, the bracket and the ladder K are the SQL\'s numbers',
+    F.CONFERENCE.min_teams === 4 && F.CONFERENCE.max_teams === 12 && F.CONFERENCE.start_min === 4
+    && F.CONFERENCE.rounds_max === 7 && F.CONFERENCE.playoff_teams === 4 && F.CONFERENCE.playoff_small === 2
+    && F.CONFERENCE.playoff_large_from === 6 && F.CONFERENCE.ladder_k === F.LADDER_K
+    && /'name_max', 32,\s*'min_teams', 4, 'max_teams', 12, 'start_min', 4,\s*'rounds_max', 7,\s*'playoff_teams', 4, 'playoff_small', 2, 'playoff_large_from', 6,\s*'ladder_k', 24,/.test(SQL));
+  chk('the bracket rule is the same on both sides: four from six up, two below',
+    F.playoffTeams(4) === 2 && F.playoffTeams(5) === 2 && F.playoffTeams(6) === 4 && F.playoffTeams(12) === 4
+    && /select case when coalesce\(p_n, 0\) >= \(public\.franchise_conference_config\(\)->>'playoff_large_from'\)::int/.test(SQL));
+  chk('the conference pays what the SQL pays', F.ECONOMY.conf_game.xp === 80 && F.ECONOMY.conf_game.tc === 35
+    && F.ECONOMY.conf_win.xp === 50 && F.ECONOMY.conf_win.tc === 50 && F.ECONOMY.conf_win.cp === 2
+    && F.ECONOMY.conf_playoff.xp === 100 && F.ECONOMY.conf_playoff.cp === 1
+    && F.ECONOMY.conf_title.xp === 400 && F.ECONOMY.conf_title.tc === 300 && F.ECONOMY.conf_title.cp === 10);
+  chk('and rewardsFor names those four kinds',
+    F.rewardsFor('conf_game').tc === 35 && F.rewardsFor('conf_win').cp === 2
+    && F.rewardsFor('conf_playoff').xp === 100 && F.rewardsFor('conf_title').cp === 10);
+  ['conf_first', 'conf_top', 'conf_post', 'conf_title', 'conf_two'].forEach(id => {
+    const m = new RegExp("\\('" + id + "',\\s+'([^']+)',").exec(SQL);
+    chk('the SQL seeds ' + id + ' and the client names it the same', m && F.ACHIEVEMENTS[id] && F.ACHIEVEMENTS[id].name === m[1], m && m[1]);
+  });
+  /* presentation is a pure function of a row */
+  eq('a regular round is named by its number', F.roundName({ kind: 'regular', round: 3 }), 'Round 3');
+  eq('a semifinal is named', F.roundName({ kind: 'semifinal', round: 6 }), 'Semifinal');
+  eq('and the final is the final', F.roundName({ kind: 'final', round: 7 }), 'The final');
+  eq('a played game reads from the viewer\'s side',
+    F.conferenceGameLine({ status: 'final', kind: 'regular', round: 2, a: { id: 'x', name: 'Outlaws' }, b: { id: 'y', name: 'Comets' }, score_a: 24, score_b: 17 }, 'x'),
+    'Round 2 · beat the Comets 24–17');
+  eq('and from the other side', 
+    F.conferenceGameLine({ status: 'final', kind: 'regular', round: 2, a: { id: 'x', name: 'Outlaws' }, b: { id: 'y', name: 'Comets' }, score_a: 24, score_b: 17 }, 'y'),
+    'Round 2 · lost to the Outlaws 17–24');
+  eq('a game between two others is named, not taken sides in',
+    F.conferenceGameLine({ status: 'final', kind: 'final', a: { id: 'x', name: 'Outlaws' }, b: { id: 'y', name: 'Comets' }, score_a: 24, score_b: 17 }, 'z'),
+    'The final · Outlaws 24, Comets 17');
+  eq('a scheduled one says who meets whom',
+    F.conferenceGameLine({ status: 'scheduled', kind: 'semifinal', a: { id: 'x', name: 'Outlaws' }, b: { id: 'y', name: 'Comets' } }, 'x'),
+    'Semifinal · Outlaws v Comets');
+  eq('a standings row is a record and a difference', F.standingLine({ wins: 4, losses: 1, ties: 0, diff: 33 }), '4–1 · +33');
+  eq('a negative difference keeps its sign', F.standingLine({ wins: 1, losses: 4, ties: 0, diff: -38 }), '1–4 · -38');
+  (() => {
+    const P = o => F.conferencePhase(o).phase;
+    chk('the phase is read from the board, never guessed',
+      P({}) === 'none' && P({ conference: { status: 'forming' } }) === 'forming'
+      && P({ conference: { status: 'regular' }, ready: true }) === 'ready'
+      && P({ conference: { status: 'playoffs' }, ready: false }) === 'waiting'
+      && P({ conference: { status: 'complete' } }) === 'complete');
+  })();
+  chk('the invite link is a games URL carrying the token and nothing else',
+    F.conferenceUrl('abc123') === 'https://edgedesksports.com/games/conference/?join=abc123');
+  chk('the invite text names the conference and never an account',
+    /Bring your franchise to The Friday Six\./.test(F.conferenceInviteText({ name: 'The Friday Six' }, { city: 'Lubbock', name: 'Outlaws', overall: 74 }))
+    && !/@/.test(F.conferenceInviteText({ name: 'X' }, { city: 'A', name: 'B' })));
+  chk('a title shares as a title', /CHAMPIONS/.test(F.titleShareText({ conference: 'The Friday Six', label: 'Season I', runner_up: { name: 'Comets' } }, { city: 'Lubbock', name: 'Outlaws' }).toUpperCase()));
+  /* the client asks; the server draws, plays, seeds and crowns */
+  has(FJS, "rpc('franchise_conference_board', withSecret({}))", 'the board is one read');
+  has(FJS, "rpc('franchise_conference_create', withSecret({ p_name: String(name || '') }))", 'creating sends a name and the identity');
+  has(FJS, "rpc('franchise_conference_join', withSecret({ p_token: String(token || '') }))", 'joining sends a token and the identity');
+  has(FJS, "rpc('franchise_conference_start', withSecret({}))", 'starting a season sends nothing else');
+  has(FJS, "rpc('franchise_conference_advance', withSecret({}))", 'and advancing sends nothing at all');
+  chk('none of the conference calls is ever queued', !/record\('franchise_conference/.test(FJS));
+  chk('the client never draws a schedule, seeds a bracket or picks a champion',
+    !/circle method|function draw|function seedBracket|champion\s*=\s*(?!null)/.test(FJS + CONF));
+  /* the page */
+  has(CONF, 'FR.conference()', 'the conference page reads the board through the server');
+  has(CONF, 'FR.conferenceStart()', 'and starts a season through it');
+  has(CONF, 'FR.conferenceAdvance()', 'and plays the round through it');
+  has(CONF, 'FR.conferenceJoin(JOIN)', 'and joins through it');
+  has(CONF, 'FR.conferenceLeave()', 'and leaves through it');
+  ['conference_view', 'conference_create', 'conference_invite_open', 'conference_join', 'conference_start',
+   'conference_round', 'conference_title', 'conference_share', 'conference_leave']
+    .forEach(e => chk('the conference page fires ' + e, new RegExp("track\\('" + e + "'").test(CONF)));
+  has(CONF, 'whoever gets here first plays it for everybody', 'the page says who may advance the round');
+  has(CONF, 'The server draws the schedule. Nobody picks their own opponents.', 'and who draws the schedule');
+  has(CONF, 'the better seed advances', 'a playoff tie is explained where it is decided');
+  has(CONF, 'cannot grow a team mid-season', 'and so is the closed window');
+  has(CONF, 'Franchises only, never accounts', 'the standings say what they list');
+  has(CONF, 'Nothing here can be bought', 'the page says money buys nothing');
+  has(CONF, 'Found my franchise', 'a visitor without a franchise is shown the door');
+  has(CONF, 'STALE SCRIPT GUARD', 'and the page guards against a stale cached library');
+  chk('the page invents no standing, no seed and no score',
+    !/wins:\s*\d/.test(CONF) && !/score_a:\s*\d/.test(CONF) && !/seed:\s*\d/.test(CONF) && !/place:\s*\d/.test(CONF));
+  /* the HQ, the Trophy Room and Game Day carry it */
+  has(HOME, "'Conference: play '", 'the HQ makes a waiting round the day\'s objective');
+  has(HOME, 'data-cta="hq-conference"', 'and has a door to it');
+  has(HOME, 'var cf=snap.conference||null;', 'reading the conference off the home snapshot');
+  chk('the conference objective comes after the day\'s', HOME.indexOf("'Conference: play '") > HOME.indexOf("'Rivalry: challenge"));
+  has(TROPHIES, 'Titles', 'the Trophy Room has a titles wall');
+  has(TROPHIES, 'A title stays here even if the franchise later leaves', 'and says a title outlives the conference');
+  has(GAMEDAY, 'href="/games/conference/"', 'Game Day points at the conference from the challenges');
+  chk('the conference is a room of the facility',
+    require(G('games.js')).ROOMS.some(r => r.key === 'conference' && r.href === '/games/conference/')
+    && /href="\/games\/conference\/">Conference<\/a>/.test(JS));
+  ['conference_view', 'conference_create', 'conference_join', 'conference_round', 'conference_title']
+    .forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
+  has(SITEMAP, 'https://edgedesksports.com/games/conference<', 'the sitemap lists the conference');
+  has(NOTFOUND, "p[1]==='conference'", 'the static host routes it');
+  chk('the asset bumper stamps the conference page',
+    require(path.join(ROOT, 'tools', 'games', 'bump_assets.js')).PAGES.some(p => /conference\/index\.html$/.test(p)));
+  chk('the conference standings fit a phone: five columns become four', /\.ladder td\.cf-pf\{display:none\}/.test(FCSS)
+    && /@media\(min-width:560px\)\{\.ladder td\.cf-pf,\.ladder th\.cf-pf\{display:table-cell\}\}/.test(FCSS)
+    && /\.cf-round \.btn\{min-height:var\(--tap\)\}/.test(FCSS));
+  /* the SQL keeps its conventions on the new side */
+  ['franchise_conference_draw(uuid, timestamptz)', 'franchise_conference_bracket(uuid)', 'franchise_conference_final(uuid)',
+   'franchise_conference_play_one(uuid, timestamptz)', 'franchise_conference_settle(uuid, timestamptz)',
+   'franchise_conference_run(uuid, timestamptz)', 'franchise_conference_standings_json(uuid)',
+   'franchise_conference_game_json(uuid, boolean)', 'franchise_conference_json(uuid)', 'franchise_conference_of(uuid)']
+    .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role',
+      SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
+  ['franchise_conference_config()', 'franchise_conference_create(text, text)', 'franchise_conference_peek(text, text)',
+   'franchise_conference_join(text, text)', 'franchise_conference_leave(text)', 'franchise_conference_start(text)',
+   'franchise_conference_advance(text)', 'franchise_conference_board(text)', 'franchise_conference_game(uuid, text)']
+    .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+  chk('the report grew to twenty-two rows', /select 20, 'the conference is '/.test(SQL)
+    && /select 21, 'a conference is read by its members only/.test(SQL)
+    && /select 22, 'a franchise belongs to one conference at a time/.test(SQL));
+  chk('a conference is read by its members and nobody else',
+    /create policy franchise_conferences_member on public\.franchise_conferences for select\s+using \(public\.franchise_conference_is_mine\(id\)\)/.test(SQL)
+    && /create policy franchise_conference_games_member on public\.franchise_conference_games for select\s+using \(public\.franchise_conference_is_mine\(conference_id\)\)/.test(SQL));
+  chk('one conference to a franchise, held by the key, not by a comment',
+    /franchise_id\s+uuid not null unique references public\.franchises \(id\) on delete cascade/.test(SQL));
+  chk('the draw is the circle method, seeded from the conference and capped by the table',
+    /slot := array\(select 2 \+ \(\(s - 1 \+ \(r - 1\)\) % l\) from generate_series\(1, l\) s\);/.test(SQL)
+    && /v_rounds := least\(\(cfg->>'rounds_max'\)::int, l\);/.test(SQL)
+    && /order by md5\(c\.seed \|\| ':' \|\| c\.season_number \|\| ':' \|\| franchise_id::text\)/.test(SQL));
+  chk('a round opens on the same Saturday boundary the weekly game uses',
+    /opens := \(\(wk::date \+ 4\)::timestamp \+ interval '7 hours'\) at time zone 'UTC';/.test(SQL));
+  chk('a playoff cannot end level: the better seed is a, and advances',
+    /adv := case when g\.kind = 'regular' then null\s+when pts_a >= pts_b then g\.a_id else g\.b_id end;/.test(SQL));
+  chk('the standings are the sum of the games, never a number a client sends',
+    /set wins = wins \+ \(res_a = 'W'\)::int, losses = losses \+ \(res_a = 'L'\)::int/.test(SQL)
+    && /-- the standings are the sum of what happened, not a number a client sends/.test(SQL));
+  chk('a decided season is frozen with its standings',
+    /insert into public\.franchise_conference_titles \(conference_id, season_number, champion_id, runner_up_id, standings, completed_at\)/.test(SQL));
+  chk('a conference round grows careers but not the solo season\'s lines',
+    /-- careers grow by the box on both sides; the solo season's lines do not —/.test(SQL)
+    && !/season_stats = public\.games_jsonb_sum\(season_stats[^;]*franchise_conference/.test(SQL));
+  chk('the SQL suite plays two conferences through', /19\. CONFERENCES AND PLAYOFFS/.test(SQLTEST)
+    && /every franchise plays four of the five rounds, and sits out one/.test(SQLTEST)
+    && /the top four meet 1v4 and 2v3 in two semifinals/.test(SQLTEST)
+    && /a franchise that lives on a device secret joins on the same terms as an account/.test(SQLTEST));
+  has(README, 'conference_v1', 'the README documents the conference');
+  has(README, 'A **league of friends with standings of its own**', 'and says what it is for');
+  has(README, 'circle method', 'and how the schedule is drawn');
+  has(README, 'A playoff game cannot end level', 'and how a playoff tie is broken');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

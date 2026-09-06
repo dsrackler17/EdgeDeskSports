@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Conference | EdgeDesk Games</title>
+<meta name="description" content="A league of friends with standings of its own: your franchise against theirs, a round a week, everybody plays everybody, a bracket at the end and a title on the record. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/conference">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/conference">
+<meta property="og:title" content="The conference — EdgeDesk Games">
+<meta property="og:description" content="A league of friends with standings of its own. Everybody plays everybody, one round a week, and a bracket decides it.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The conference — EdgeDesk Games">
+<meta name="twitter:description" content="A league of friends with standings of its own. Everybody plays everybody, one round a week, and a bracket decides it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260906a">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906a">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Conference</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Reading the standings</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260906a"></script>
+<script src="/games/lib/scoring.js?v=20260906a"></script>
+<script src="/games/lib/challenge.js?v=20260906a"></script>
+<script src="/games/lib/research_state.js?v=20260906a"></script>
+<script src="/games/lib/attribution.js?v=20260906a"></script>
+<script src="/games/lib/store.js?v=20260906a"></script>
+<script src="/games/lib/dynasty.js?v=20260906a"></script>
+<script src="/games/lib/social.js?v=20260906a"></script>
+<script src="/games/lib/auth.js?v=20260906a"></script>
+<script src="/games/lib/franchise.js?v=20260906a"></script>
+<script src="/games/games.js?v=20260906a"></script>
+<script>
+/* STALE SCRIPT GUARD — the same belt the market page wears. A browser can
+   keep an old games.js or franchise.js for longer than it keeps this page;
+   a page built for the new library then dies on the first function the old
+   copy lacks. Say so and offer a fresh load rather than a dead screen. */
+(function(){
+  var need=['EDFranchise.conference','EDFranchise.conferenceJoin','EDFranchise.conferenceAdvance',
+            'EDFranchise.conferenceGameLine','EDFranchise.conferencePhase','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc;
+
+  var READY=G.boot('conference');
+  var BOARD=null;
+  var JOIN=new URLSearchParams(location.search).get('join')||'';
+
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dayLabel(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var d=new Date(t);return d.getDate()+' '+MON[d.getMonth()];
+  }
+  /* how long until a round opens, in the words the weekly game uses */
+  function opensIn(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var ms=t-Date.now();
+    if(ms<=0)return 'now';
+    var h=Math.round(ms/36e5);
+    if(h<24)return 'in '+h+' hour'+(h===1?'':'s');
+    var d=Math.round(h/24);
+    return 'in '+d+' day'+(d===1?'':'s');
+  }
+  function mark(f,size){f=f||{};return FR.logoSvg(f.logo,size||30,f.theme);}
+  function teamName(f){f=f||{};return ((f.city||'')+' '+(f.name||'')).trim();}
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    /* the invite is kept on the way to the Front Office, so a stranger who
+       founds a franchise from a conference link comes back to that link */
+    var back='/games/franchise/?intent=conference'+(JOIN?'&next='+encodeURIComponent('/games/conference/?join='+JOIN):'');
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Conference</div>'
+      +'<h1>A league of friends, with standings of its own.</h1>'
+      +'<p>Bring your franchise into a conference of '+FR.CONFERENCE.min_teams+' to '+FR.CONFERENCE.max_teams+'. Everybody plays everybody, one round a football week, '
+      +'on the same simulator your own season runs on — both rosters, both schemes, both weeks of preparation, a neutral field. '
+      +'The standings are the sum of what happened, and a bracket at the end decides the title.</p>'
+      +'<ul class="fo-list"><li>The server draws the schedule. Nobody picks their own opponents.</li>'
+      +'<li>Any member plays the round once its Saturday comes — there is nothing to organise.</li>'
+      +'<li>The title stays on your record, in the Trophy Room, for good.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="'+esc(back)+'" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    rooms.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'conference',game_type:'franchise'});});
+  }
+
+  /* ---- the invite landing ------------------------------------------------- */
+  /* A stranger from a group chat, on a phone, must read what they are being
+     asked into and answer without scrolling: the conference, who is already
+     in it, one button. */
+  function renderInvite(pk){
+    if(!pk){
+      stage.className='card';
+      stage.innerHTML='<div class="eyebrow">Conference</div><div class="empty">This conference link is not one EdgeDesk knows. <a href="/games/conference/">Your conference</a></div>';
+      rooms.innerHTML='';
+      return;
+    }
+    var c=pk.conference||{},me=pk.me||{},st=FR.CONFERENCE_STATUS[c.status]||{};
+    G.track('conference_invite_open',{status:c.status,members:c.members|0,has_franchise:!pk.needs_franchise,can_join:!!pk.can_join});
+    stage.className='card';
+    stage.innerHTML='<div class="eyebrow">You are invited</div>'
+      +'<div class="hq-id" style="margin-top:10px"><div><div class="hq-city">Conference · '+esc(st.label||c.status||'')+'</div>'
+      +'<div class="hq-name">'+esc(c.name||'')+'</div>'
+      +'<div class="hq-line">'+esc(c.members|0)+' franchise'+((c.members|0)===1?'':'s')+' · commissioned by the <b>'+esc((c.commissioner||{}).name||'')+'</b>'
+      +(c.label?' · '+esc(c.label):'')+'</div></div></div>'
+      +'<ul class="fcl" style="margin-top:12px">'+(pk.members||[]).map(function(m){
+          var f=m.franchise||{};
+          return '<li>'+mark(f,30)+'<div class="o"><b>'+esc(teamName(f))+'</b><small>OVR '+esc(f.overall)+' · '+esc(FR.recordLine(m))+'</small></div>'
+            +'<div class="r">'+(m.titles?esc(m.titles)+' ring'+(m.titles===1?'':'s'):'')+'</div></li>';
+        }).join('')+'</ul>'
+      +'<div id="joinBox" class="btn-row" style="margin-top:14px"></div>'
+      +'<div class="ftp" style="margin-top:12px">A conference plays one round a football week on the same simulator your own season runs on. '
+      +'Free to play, no account needed, and nothing here can be bought.</div>';
+    var box=$('joinBox');
+    if(pk.is_member){
+      box.innerHTML='<a class="btn btn-go btn-big" href="/games/conference/">You are already in — open the standings</a>';
+    }else if(pk.needs_franchise){
+      box.innerHTML='<a class="btn btn-go btn-big" href="/games/franchise/?intent=conference&next='+encodeURIComponent('/games/conference/?join='+JOIN)+'" id="goFound">Found a franchise and join</a>';
+    }else if(pk.in_another){
+      box.innerHTML='<div class="empty" style="text-align:left">Your franchise is already in a conference. A franchise belongs to one at a time — leave that one between its seasons and this link will still work.</div>';
+    }else if(pk.full){
+      box.innerHTML='<div class="empty" style="text-align:left">This conference is full at '+esc(FR.CONFERENCE.max_teams)+' franchises.</div>';
+    }else if(!pk.open){
+      box.innerHTML='<div class="empty" style="text-align:left">The '+esc(c.name||'')+' season is under way. A conference cannot grow a team mid-season — this link works again once the title is decided.</div>';
+    }else{
+      box.innerHTML='<button class="btn btn-go btn-big" type="button" id="joinBtn">Join the '+esc(c.name||'conference')+'</button>';
+      $('joinBtn').addEventListener('click',function(){
+        var b=this;b.disabled=true;b.textContent='Joining…';
+        FR.conferenceJoin(JOIN).then(function(r){
+          if(!r.ok){b.disabled=false;b.textContent='Join';G.toast(r.message||'Could not join.');return;}
+          G.track('conference_join',{members:(c.members|0)+1});
+          location.replace('/games/conference/');
+        });
+      });
+    }
+    rooms.innerHTML='';
+  }
+
+  /* ---- a franchise with no conference ------------------------------------- */
+  function renderNone(b){
+    var me=b&&b.me?b.me:{};
+    stage.className='card';
+    stage.innerHTML='<div class="eyebrow">Conference</div>'
+      +'<div class="hq-id">'+mark(me,56)+'<div><div class="hq-city">'+esc(me.abbr||'')+'</div>'
+      +'<div class="hq-name">'+esc(teamName(me))+'</div>'
+      +'<div class="hq-line">OVR <b>'+esc(me.overall)+'</b> · no conference yet</div></div></div>'
+      +'<div class="fo-hero" style="margin-top:14px"><h1>A league of friends, with standings of its own.</h1>'
+      +'<p>Your franchise against theirs, a round a football week, everybody playing everybody. The server draws the schedule and plays every round; '
+      +'the standings are the sum of what happened. '+FR.CONFERENCE.min_teams+' franchises start a season, up to '+FR.CONFERENCE.max_teams+' can be in one, '
+      +'and the top '+FR.CONFERENCE.playoff_teams+' make the bracket once there are '+FR.CONFERENCE.playoff_large_from+' of you.</p></div>'
+      +'<div class="fc-new"><label class="field"><span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">Name your conference</span>'
+      +'<input id="cfName" type="text" maxlength="'+esc(FR.CONFERENCE.name_max)+'" placeholder="The Friday Night League" autocomplete="off"></label>'
+      +'<button class="btn btn-go btn-big" type="button" id="cfCreate">Start a conference</button></div>'
+      +'<div class="ftp" style="margin-top:12px">You become its commissioner: you name it, and you start each season. Everything else — the draw, the rounds, the seeds, the champion — is the server’s.</div>';
+    rooms.innerHTML='<div class="sec"><div class="sec-h"><h2>Joining one</h2><span class="m">by link</span></div>'
+      +'<div class="card"><div class="empty" style="text-align:left">A conference is joined by a link, the same way a challenge is. Ask whoever runs yours for theirs and open it — '
+      +'no account is needed, and a franchise that lives on this device joins on the same terms as one on an account.</div>'
+      +'<div class="btn-row" style="margin-top:10px"><a class="btn" href="/games/gameday/#challenges">Challenge a friend instead</a></div></div></div>';
+    var cb=$('cfCreate');
+    cb.addEventListener('click',function(){
+      var nm=($('cfName').value||'').trim();
+      if(nm.length<2){G.toast('Give the conference a name first.');return;}
+      cb.disabled=true;cb.textContent='Starting…';
+      FR.conferenceCreate(nm).then(function(r){
+        cb.disabled=false;cb.textContent='Start a conference';
+        if(!r.ok||!r.data){G.toast(r.message||'Could not start the conference.');return;}
+        G.track('conference_create',{});
+        return reload(true);
+      });
+    });
+  }
+
+  /* ---- the board ---------------------------------------------------------- */
+  function renderStage(b){
+    var c=b.conference||{},st=FR.CONFERENCE_STATUS[c.status]||{},ph=FR.conferencePhase(b);
+    var snap=FR.snapshot()||{},f=snap.franchise||{};
+    var mine=null;
+    (b.standings||[]).forEach(function(r){if((r.franchise||{}).id===(b.me||{}).id)mine=r;});
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    var next=b.next;
+    stage.innerHTML='<div class="eyebrow">Conference · '+esc(st.label||c.status||'')+(c.label?' · '+esc(c.label):'')+'</div>'
+      +'<div class="hq-id"><div><div class="hq-city">'+esc(c.members|0)+' franchise'+((c.members|0)===1?'':'s')
+      +(b.is_commissioner?' · you are the commissioner':' · commissioned by the '+esc((c.commissioner||{}).name||''))+'</div>'
+      +'<div class="hq-name">'+esc(c.name||'')+'</div>'
+      +'<div class="hq-line">'+esc(st.means||'')+'</div></div>'
+      /* a place before a game has been played is not a standing, it is an
+         alphabet — the badge waits until the table means something */
+      +(mine&&(mine.played|0)>0?'<div class="hq-rec">'+esc(mine.place)+'<span class="s">of '+esc(c.members|0)+'</span></div>':'')+'</div>'
+      +'<div class="mk-sum">'
+      +'<div><div class="k">Your record</div><div class="v">'+esc(mine&&(mine.played|0)>0?FR.recordLine(mine):'—')
+        +'<small>'+esc(mine&&(mine.played|0)>0?((mine.diff>0?'+':'')+mine.diff+' points'):'no round played yet')+'</small></div></div>'
+      +'<div><div class="k">Rounds</div><div class="v">'+esc((c.rounds|0)?(c.round_played|0):'—')
+        +'<small>'+esc((c.rounds|0)?'of '+(c.rounds|0)+' played':'drawn when the season starts')+'</small></div></div>'
+      +'<div><div class="k">Bracket</div><div class="v">'+esc(FR.playoffTeams(c.members|0))
+        +'<small>'+esc((c.playoff_teams|0)?'make the playoffs':'would make it, with '+(c.members|0)+' so far')+'</small></div></div>'
+      +'<div><div class="k">Rings</div><div class="v">'+esc(mine?(mine.titles|0):0)+'<small>'+esc(jsonTitles(b))+'</small></div></div>'
+      +'</div>'
+      +'<div class="cf-round">'+roundPanel(b,ph,next)+'</div>';
+  }
+  function jsonTitles(b){
+    var n=(b.titles||[]).length;
+    return n?n+' season'+(n===1?'':'s')+' decided':'no season decided yet';
+  }
+  /* WHAT IS NEXT. One panel, one action: start the season, play the round
+     that has opened, or say when the next one does. */
+  function roundPanel(b,ph,next){
+    var c=b.conference||{};
+    if(ph.phase==='forming'){
+      return '<div class="gd-win'+(b.can_start?' on':'')+'"><div class="t">'
+        +(b.can_start?'Ready when you are.':'Waiting for '+esc(b.needs|0)+' more franchise'+((b.needs|0)===1?'':'s')+'.')+'</div>'
+        +'<div class="s">'+(b.can_start
+            ?'The server draws the schedule from the conference’s own seed: everybody plays everybody, one round a football week.'
+            :'A conference needs '+esc(FR.CONFERENCE.start_min)+' franchises to start a season. Send the link below to anyone with a franchise — or to anyone at all; founding one is free and takes a moment.')+'</div>'
+        +(b.can_start?'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="cfStart">Start the season</button></div>':'')+'</div>';
+    }
+    if(ph.phase==='complete'){
+      var ch=c.champion||{};
+      return '<div class="gd-done"><div class="rec">'+esc(ch.abbr||'—')+'</div>'
+        +'<div class="t">'+esc(teamName(ch))+' took '+esc(c.label||'the season')+'.</div>'
+        +'<div class="s">The record is frozen below. '+(b.can_start?'Start the next season whenever you like — the standings begin again at nothing and the rings stay.':'Only the commissioner starts the next season.')+'</div>'
+        +(b.can_start?'<div class="btn-row"><button class="btn btn-go" type="button" id="cfStart">Start the next season</button></div>':'')+'</div>';
+    }
+    if(ph.phase==='ready'){
+      return '<div class="gd-win on"><div class="t">A round is waiting to be played.</div>'
+        +'<div class="s">Every game in it runs on the server, from both rosters and both weeks of preparation. Anyone in the conference can play it — whoever gets here first plays it for everybody.</div>'
+        +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="cfPlay">Play the round</button></div>'
+        +'<div class="ftp">+'+esc(FR.ECONOMY.conf_game.xp)+' XP · +'+esc(FR.ECONOMY.conf_game.tc)+' TC for playing · a win +'+esc(FR.ECONOMY.conf_win.xp)+' XP · +'+esc(FR.ECONOMY.conf_win.tc)+' TC · +'+esc(FR.ECONOMY.conf_win.cp)+' CP</div></div>';
+    }
+    return '<div class="gd-win"><div class="t">'+(next?esc(FR.roundName(next))+' · '+esc(teamName(next.a.id===(b.me||{}).id?next.b:next.a)):'Nothing scheduled')+'</div>'
+      +'<div class="s">'+(next?'Opens Saturday '+esc(dayLabel(next.opens_at))+' at 07:00 UTC — '+esc(opensIn(next.opens_at))+'. '
+        +(next.kind==='regular'?'':'A playoff game: the better seed advances if the overtime cannot separate them.')
+        :'The conference has nothing left to play this season.')+'</div>'
+      +(b.ready?'<div class="btn-row"><button class="btn btn-go" type="button" id="cfPlay">Play the round</button></div>':'')+'</div>';
+  }
+
+  function standingsTable(b){
+    var meId=(b.me||{}).id,c=b.conference||{},cut=c.playoff_teams|0;
+    return '<table class="ladder"><thead><tr><th>#</th><th>Franchise</th><th style="text-align:right">W–L</th><th style="text-align:right">Diff</th><th class="cf-pf" style="text-align:right">PF</th></tr></thead><tbody>'
+      +(b.standings||[]).map(function(r){
+        var f=r.franchise||{},me=f.id===meId;
+        var seedTag=r.seed?(r.eliminated?'out':'seed '+r.seed):(cut&&r.place<=cut&&c.status==='regular'?'in the bracket':'');
+        return '<tr'+(me?' class="me"':'')+'><td class="rk">'+esc(r.place)+'</td>'
+          +'<td class="nm">'+mark(f,26)+'<b>'+esc(teamName(f))+'</b>'
+          +(r.titles?'<span class="cf-tag">'+esc(r.titles)+' ring'+(r.titles===1?'':'s')+'</span>':'')
+          +(seedTag?'<span class="cf-tag '+(r.eliminated?'out':'seed')+'">'+esc(seedTag)+'</span>':'')
+          +'<small>OVR '+esc(f.overall)+' · '+esc(r.played|0)+' played</small></td>'
+          +'<td class="rt">'+esc(FR.recordLine(r))+'</td>'
+          +'<td class="rc">'+esc((r.diff>0?'+':'')+(r.diff|0))+'</td>'
+          +'<td class="rc cf-pf">'+esc(r.points_for|0)+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }
+
+  function gameRow(g,meId){
+    var a=g.a||{},bb=g.b||{},mine=a.id===meId||bb.id===meId;
+    var right;
+    if(g.status==='final'){
+      var meA=a.id===meId,my=meA?(g.score_a|0):(g.score_b|0),their=meA?(g.score_b|0):(g.score_a|0);
+      var cls=!mine?'':(my>their?'w':my<their?'l':'t');
+      right=mine
+        ?'<b class="'+cls+'">'+esc(my>their?'W':my<their?'L':'T')+'</b> '+esc(my)+'–'+esc(their)+(g.ot?' <small>OT</small>':'')
+        :esc(g.score_a|0)+'–'+esc(g.score_b|0)+(g.ot?' <small>OT</small>':'');
+      if(g.advanced_id)right+='<span class="d up">'+esc(((g.advanced_id===a.id?a:bb).abbr)||'')+' advance</span>';
+    }else{
+      right=g.open?'<b class="go">ready</b>':esc(opensIn(g.opens_at));
+    }
+    /* two lines, not one: a 360px phone truncates "City Name v City Name"
+       into nonsense, and a bracket is exactly where both names matter */
+    return '<li'+(mine?' style="border-color:var(--fr-primary,var(--line2))"':'')+'>'+mark(a,30)
+      +'<div class="o"><b>'+esc(teamName(a))+(g.a_seed?' ('+esc(g.a_seed)+')':'')+'</b>'
+      +'<small>v '+esc(teamName(bb))+(g.b_seed?' ('+esc(g.b_seed)+')':'')+'</small>'
+      +'<small>'+esc(FR.roundName(g))+(g.potg&&g.potg.a?' · POTG '+esc(g.potg.a):'')+'</small></div>'
+      +'<div class="r">'+right+'</div></li>';
+  }
+
+  function renderBoard(b,fresh){
+    BOARD=b;
+    if(!b.conference){renderNone(b);return;}
+    renderStage(b);
+    var meId=(b.me||{}).id,c=b.conference||{};
+    var games=b.games||[],rounds=[];
+    games.forEach(function(g){
+      var r=rounds[rounds.length-1];
+      if(!r||r.round!==g.round){r={round:g.round,kind:g.kind,games:[]};rounds.push(r);}
+      r.games.push(g);
+    });
+    var post=rounds.filter(function(r){return r.kind!=='regular';});
+    var url=FR.conferenceUrl(b.invite_token);
+
+    rooms.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>Standings</h2><span class="m">'+esc(c.label||'')+'</span></div>'
+      +'<div class="card">'+standingsTable(b)
+      +'<div class="ladder-me">Ordered by wins — a tie is half a win — then point difference, then points scored, then ladder rating, then who joined first. '
+      +'Franchises only, never accounts.</div></div></div>'
+
+      +(post.length?'<div class="sec"><div class="sec-h"><h2>The bracket</h2><span class="m">top '+esc(c.playoff_teams|0)+'</span></div>'
+        +'<div class="card">'+post.map(function(r){
+            return '<div class="side-h" style="margin-top:0"><h2 style="font-size:14px">'+esc(FR.ROUND_NAMES[r.kind]||'Playoff')+'</h2></div>'
+              +'<ul class="fcl">'+r.games.map(function(g){return gameRow(g,meId);}).join('')+'</ul>';
+          }).join('')
+        +'<div class="ftp" style="margin-top:10px">The better seed is listed first and advances if the overtime cannot separate them. Nothing is decided in a browser.</div></div></div>':'')
+
+      +'<div class="sec"><div class="sec-h"><h2>The schedule</h2><span class="m">'+esc(games.length)+' game'+(games.length===1?'':'s')+'</span></div>'
+      +'<div class="card">'+(rounds.length?rounds.map(function(r){
+          return '<div class="side-h" style="margin-top:10px"><h2 style="font-size:14px">'+esc(r.kind==='regular'?'Round '+r.round:(FR.ROUND_NAMES[r.kind]||'Playoff'))+'</h2>'
+            +'<span class="m">'+esc(r.games[0].week_key||'')+'</span></div>'
+            +'<ul class="fcl">'+r.games.map(function(g){return gameRow(g,meId);}).join('')+'</ul>';
+        }).join(''):'<div class="empty">No season drawn yet.</div>')
+      +'<div class="ftp" style="margin-top:10px">One round a football week, opening Saturday at 07:00 UTC. Every game is the shared simulator on a neutral field: both rosters, both schemes, '
+      +'and each side’s own week of preparation.</div></div></div>'
+
+      +'<div class="sec"><div class="sec-h"><h2>Invite a franchise</h2><span class="m">'+esc(c.members|0)+' of '+esc(FR.CONFERENCE.max_teams)+'</span></div>'
+      +'<div class="card"><div class="fc-link"><div><b>Your conference link.</b> Anyone who opens it with a franchise joins; anyone without one can found a franchise free and be in it a minute later.</div>'
+      +'<div class="u">'+esc(url)+'</div>'
+      +'<div class="btn-row two"><button class="btn btn-go" type="button" id="cfShare">Share the link</button><button class="btn" type="button" id="cfCopy">Copy</button></div></div>'
+      +'<div class="ftp" style="margin-top:10px">A conference cannot grow a team mid-season; the link works while it is forming and between seasons.</div>'
+      +(b.can_leave?'<div class="btn-row" style="margin-top:10px"><button class="btn btn-ghost" type="button" id="cfLeave">Leave the conference</button></div>':'')
+      +'</div></div>'
+
+      +(b.titles&&b.titles.length?'<div class="sec"><div class="sec-h"><h2>On the record</h2><span class="m">'+esc(b.titles.length)+' decided</span></div>'
+        +'<div class="card"><ul class="mk-hist">'+b.titles.map(function(t){
+            var ch=t.champion||{},ru=t.runner_up||{};
+            return '<li><span class="k">'+esc(t.label||'')+'</span><span class="o"><b>'+esc(teamName(ch))+'</b>'
+              +'<small>beat the '+esc(ru.name||'')+' in the final · '+esc(dayLabel(t.completed_at))+'</small></span>'
+              +'<span class="r">'+((ch.id===meId)?'yours':'')+'</span></li>';
+          }).join('')+'</ul>'
+        +'<div class="ftp" style="margin-top:10px">A decided season is frozen: the champion, the runner-up and the standings exactly as they read. A franchise that later leaves keeps every line it earned.</div></div></div>':'');
+
+    wireBoard(b);
+    if(fresh)G.track('conference_view',{status:c.status,members:c.members|0,round:c.round_played|0,rounds:c.rounds|0,ready:!!b.ready,game_type:'franchise'});
+  }
+
+  function wireBoard(b){
+    var s=$('cfStart');
+    if(s)s.addEventListener('click',function(){
+      s.disabled=true;s.textContent='Drawing…';
+      FR.conferenceStart().then(function(r){
+        if(!r.ok||!r.data){s.disabled=false;s.textContent='Start the season';G.toast(r.message||'Could not start the season.');return;}
+        G.track('conference_start',{games:r.data.games|0,members:(b.conference||{}).members|0});
+        G.toast('The schedule is drawn — '+(r.data.games|0)+' games.');
+        return reload(false);
+      });
+    });
+    var p=$('cfPlay');
+    if(p)p.addEventListener('click',function(){
+      p.disabled=true;p.textContent='Playing…';
+      FR.conferenceAdvance().then(function(r){
+        if(!r.ok||!r.data){p.disabled=false;p.textContent='Play the round';G.toast(r.message||'Could not play the round.');return;}
+        var d=r.data;
+        G.track('conference_round',{played:d.played|0,mine:(d.mine||[]).length,settled:!!d.settled});
+        celebrate(d,b);
+        return reload(false);
+      });
+    });
+    var sh=$('cfShare'),cp=$('cfCopy');
+    if(sh)sh.addEventListener('click',function(){shareInvite(b,false);});
+    if(cp)cp.addEventListener('click',function(){shareInvite(b,true);});
+    var lv=$('cfLeave');
+    if(lv)lv.addEventListener('click',function(){
+      if(!window.confirm('Leave '+((b.conference||{}).name||'the conference')+'? The record you earned stays, but you would have to be invited back.'))return;
+      lv.disabled=true;
+      FR.conferenceLeave().then(function(r){
+        if(!r.ok){lv.disabled=false;G.toast(r.message||'Could not leave.');return;}
+        G.track('conference_leave',{});
+        return reload(false);
+      });
+    });
+  }
+
+  function shareInvite(b,copyOnly){
+    var url=FR.conferenceUrl(b.invite_token),text=FR.conferenceInviteText(b.conference,b.me);
+    G.track('conference_share',{copy:!!copyOnly});
+    if(!copyOnly&&navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text+'\n'+url).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});
+    }
+    G.toast('Copy this: '+url);
+  }
+
+  /* What just happened, in one sentence — the round the caller played, and
+     the title if the final decided one. */
+  function celebrate(d,b){
+    var meId=(b.me||{}).id,mine=(d.mine||[])[0];
+    if(d.settled&&d.settled.champion){
+      var ch=d.settled.champion,ours=ch.id===meId;
+      G.track('conference_title',{yours:ours});
+      G.moment({eyebrow:ours?'Champions':'The title is decided',
+        title:teamName(ch)+' take '+((b.conference||{}).name||'the conference'),
+        sub:d.settled.runner_up?'Beat the '+d.settled.runner_up.name+' in the final':'',
+        body:ours?'It is on your record for good — the Trophy Room names the conference, the season and who you beat.'
+                 :'The standings are frozen below. The commissioner may start another season whenever they like.',
+        cta:'See the Trophy Room',dismiss:'Back to the standings',href:'/games/trophies/'});
+      return;
+    }
+    if(mine)G.toast(FR.conferenceGameLine(mine,meId));
+    else if((d.played|0)>0)G.toast((d.played|0)+' game'+((d.played|0)===1?'':'s')+' played — you had the week off.');
+    else G.toast('Nothing to play yet.');
+  }
+
+  function reload(fresh){
+    return FR.conference().then(function(r){
+      if(r.ok&&r.data)renderBoard(r.data,!!fresh);
+      return r;
+    });
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(JOIN){
+      return FR.conferencePeek(JOIN).then(function(r){
+        if(!r.ok&&r.error==='not_deployed'){renderEmpty('not_deployed');return;}
+        renderInvite(r.ok?r.data:null);
+      });
+    }
+    if(st!=='franchise'){renderEmpty(st);return;}
+    return FR.conference().then(function(r){
+      if(!r.ok){
+        stage.innerHTML='<div class="empty">The conference could not be loaded. '+esc(r.message||'Check your connection and reload.')+'</div>';
+        return;
+      }
+      if(!r.data){renderEmpty(FR.state());return;}
+      renderBoard(r.data,true);
+    });
+  }).catch(function(){renderEmpty(FR.state());});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>
