@@ -4342,9 +4342,15 @@ begin
   perform pg_temp.ok('a game with no drives has a story that says so, rather than throwing',
     public.franchise_game_story('[]'::jsonb)->>'lead_changes' = '0'
     and public.franchise_game_story(null)->>'possessions' = '0');
-  -- the go-ahead score really is the last time the lead changed hands
+  -- The go-ahead score really is the last time the lead changed hands — and a
+  -- TIED GAME HAS NO SUCH DRIVE. jsonb_build_object with a null value emits
+  -- JSON null rather than SQL NULL, so `-> 'go_ahead' is null` is FALSE on a
+  -- tie and the whole expression went to NULL, which the runner counts as a
+  -- failure. Ties are rare enough that this fired about once in sixty runs
+  -- while the story function was perfectly correct: 3,550 probed games never
+  -- broke the invariant itself.
   perform pg_temp.ok('the go-ahead drive is on the winning side and scored',
-    mstory->'go_ahead' is null
+    jsonb_typeof(mstory->'go_ahead') = 'null'
     or ((mstory->'go_ahead'->>'pts')::int > 0
         and sign((mstory->'go_ahead'->>'me')::int - (mstory->'go_ahead'->>'op')::int)
             = sign((box->'final'->>'for')::int - (box->'final'->>'against')::int)));
@@ -4519,17 +4525,22 @@ begin
 
   -- THE READ PAYS, and it is a read about THEM. Guessing right against a
   -- running team takes points off the board; guessing wrong puts them on.
+  -- On TOUCHDOWN RATE over three times the sample, for the same reason the
+  -- roster-lean assertion moved to it: the effect here is about 0.16 points a
+  -- drive against a standard error of 0.058 on the difference, under three
+  -- sigma, and it duly failed once in sixty runs. The touchdown rate is what
+  -- the front actually moves and carries a fraction of the variance.
   perform pg_temp.ok('stacking the box beats playing it honest against a team that is running it', (
     with t as (
-      select avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,'ground',0,false,'stack')->>'pts')::numeric) as stacked,
-             avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,'ground',0,false,'base')->>'pts')::numeric) as honest
-        from generate_series(1, 4000))
+      select avg(case when public.franchise_sim_drive(75,75,75,0.55,0,0,false,'ground',0,false,'stack')->>'outcome' = 'td' then 1.0 else 0 end) as stacked,
+             avg(case when public.franchise_sim_drive(75,75,75,0.55,0,0,false,'ground',0,false,'base')->>'outcome' = 'td' then 1.0 else 0 end) as honest
+        from generate_series(1, 12000))
     select stacked < honest from t));
   perform pg_temp.ok('and it is the wrong call against a team that is throwing it', (
     with t as (
-      select avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,'shot',0,false,'stack')->>'pts')::numeric) as stacked,
-             avg((public.franchise_sim_drive(75,75,75,0.55,0,0,false,'shot',0,false,'cover')->>'pts')::numeric) as covered
-        from generate_series(1, 4000))
+      select avg(case when public.franchise_sim_drive(75,75,75,0.55,0,0,false,'shot',0,false,'stack')->>'outcome' = 'td' then 1.0 else 0 end) as stacked,
+             avg(case when public.franchise_sim_drive(75,75,75,0.55,0,0,false,'shot',0,false,'cover')->>'outcome' = 'td' then 1.0 else 0 end) as covered
+        from generate_series(1, 12000))
     select covered < stacked from t));
   perform pg_temp.ok('a blitz takes the ball away far more often, and pays for it in touchdowns', (
     with t as (
