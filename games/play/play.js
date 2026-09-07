@@ -1671,6 +1671,97 @@
   }
   function closeOverlay() { ovHost.innerHTML = ''; }
 
+  /* ── THE WHOLE SCREEN ───────────────────────────────────────────
+     A football game wants the phone, not a letterbox between an address bar
+     and a toolbar. Where the platform has the Fullscreen API this takes it.
+     Where it does not — Safari on iPhone has never shipped fullscreen for a
+     web page, only for a video — it says so plainly and points at the one
+     thing on that phone that genuinely does hand over the whole screen.
+
+     The way OUT is the same control that got you in, it never moves, and it
+     turns green while you are in there. Nothing here can put you anywhere
+     you cannot leave with one tap. */
+  var FULL = (function () {
+    var self = {}, root = document.documentElement;
+    function current() {
+      return document.fullscreenElement || document.webkitFullscreenElement || null;
+    }
+    /* added to the home screen: the browser has already given up its bars */
+    function standalone() {
+      try {
+        if (root.ownerDocument.defaultView.navigator.standalone === true) return true;
+        return !!(window.matchMedia
+          && window.matchMedia('(display-mode:standalone),(display-mode:fullscreen)').matches);
+      } catch (_) { return false; }
+    }
+    self.standalone = standalone;
+    self.on = function () { return !!current(); };
+    self.can = function () {
+      /* an iframe without allowfullscreen, and iPhone Safari, both say no —
+         one with the flag, the other by never defining the method at all */
+      if (document.fullscreenEnabled === false) return false;
+      if (document.webkitFullscreenEnabled === false && !document.fullscreenEnabled) return false;
+      return !!(root.requestFullscreen || root.webkitRequestFullscreen);
+    };
+    self.enter = function () {
+      try {
+        var p = root.requestFullscreen ? root.requestFullscreen({ navigationUI: 'hide' })
+          : root.webkitRequestFullscreen ? root.webkitRequestFullscreen() : null;
+        if (p && p['catch']) p['catch'](function () { fullTip(); });
+      } catch (_) { fullTip(); }
+    };
+    self.exit = function () {
+      try {
+        var p = document.exitFullscreen ? document.exitFullscreen()
+          : document.webkitExitFullscreen ? document.webkitExitFullscreen() : null;
+        if (p && p['catch']) p['catch'](function () {});
+      } catch (_) {}
+    };
+    return self;
+  })();
+
+  function isApple() {
+    var ua = navigator.userAgent || '', pf = navigator.platform || '';
+    if (/iPhone|iPad|iPod/.test(ua) || /iPhone|iPad|iPod/.test(pf)) return true;
+    /* an iPad on iPadOS 13+ reports itself as a Mac; a touch count gives it away */
+    return /Mac/.test(pf) && (navigator.maxTouchPoints || 0) > 1;
+  }
+
+  function toggleFull() {
+    SOUND.tap();
+    if (FULL.on()) { FULL.exit(); syncTools(); return; }
+    if (FULL.can()) { FULL.enter(); return; }
+    fullTip();
+  }
+
+  /* WHEN THE BROWSER WILL NOT DO IT, SAY SO. A button that appears to do
+     nothing is worse than no button; this one tells you exactly why, and on
+     an iPhone the three taps that actually work. */
+  function fullTip() {
+    if (FULL.standalone()) {
+      overlay('<div class="eyebrow">Fullscreen</div><h2>You already have the whole screen</h2>'
+        + '<p class="tip-p">Game Day is running from your Home Screen, so there are no browser bars '
+        + 'left to hide.</p>'
+        + '<div class="btn-row"><button class="btn btn-go" id="btnTipOk" type="button">Back to the game</button></div>');
+    } else if (isApple()) {
+      overlay('<div class="eyebrow">Fullscreen</div><h2>Safari keeps its bars. Your Home Screen does not.</h2>'
+        + '<p class="tip-p">Safari on iPhone has never let a web page go fullscreen — only a video. '
+        + 'Add Game Day to your Home Screen and it opens with no address bar and no toolbar at all: '
+        + 'the whole phone, the same saved game, and it still works with no signal.</p>'
+        + '<ol class="tip-steps">'
+        + '<li>Tap <b>Share</b> — the square with the arrow coming out of it.</li>'
+        + '<li>Scroll down to <b>Add to Home Screen</b>.</li>'
+        + '<li>Open <b>Game Day</b> from your Home Screen.</li></ol>'
+        + '<div class="btn-row"><button class="btn btn-go" id="btnTipOk" type="button">Got it</button></div>');
+    } else {
+      overlay('<div class="eyebrow">Fullscreen</div><h2>This browser would not hand it over</h2>'
+        + '<p class="tip-p">The request was refused. The game already fills whatever room it is given, '
+        + 'so nothing is missing — there is just a browser around it.</p>'
+        + '<div class="btn-row"><button class="btn btn-go" id="btnTipOk" type="button">Got it</button></div>');
+    }
+    $('btnTipOk').onclick = closeOverlay;
+  }
+
   function settingsOverlay() {
     function seg(name, opts, val) {
       return '<div class="seg">' + opts.map(function (o) {
@@ -1708,6 +1799,19 @@
   function syncTools() {
     $('btnArt').setAttribute('aria-pressed', String(!!set.art));
     $('btnSound').setAttribute('aria-pressed', String(!!set.sound));
+    syncFull();
+  }
+  /* THE FULLSCREEN CONTROLS AGREE WITH THE BROWSER, ALWAYS. There can be two
+     of them on screen — the tools row above the field, and the one beside
+     Kick off — and you can also leave fullscreen without touching either, with
+     Escape or a swipe. So the browser's own event drives this, not the tap. */
+  function syncFull() {
+    var on = FULL.on();
+    Array.prototype.forEach.call(document.querySelectorAll('[data-full]'), function (b) {
+      b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('title', on ? 'Leave fullscreen' : 'Fullscreen');
+      b.setAttribute('aria-label', on ? 'Leave fullscreen' : 'Fullscreen');
+    });
   }
 
   /* ── PREGAME ──────────────────────────────────────────────────────────── */
@@ -1818,18 +1922,31 @@
       + (oppTeam ? '<p class="mu-scout">' + esc(oppTeam.blurb) + '</p>'
           + '<div class="mu-tags"><span>Rated ' + oppTeam.overall + '</span>'
           + '<span>Tendencies: low confidence</span></div>' : '')
+      /* THE ACTION THAT STARTS A FOOTBALL GAME RIDES THE BOTTOM OF THE
+         SCREEN. This card is longer than a phone, so if the only way to
+         reach Kick off is to scroll, then anything that stops the page
+         scrolling is a game that cannot be started at all — which is exactly
+         what happened. It is on screen from the first paint now, whether or
+         not anything else on this page behaves. */
+      + '<div class="pre-go">'
+      + (resumable
+          ? '<button class="btn btn-go btn-big" id="btnResume" type="button"><span>Resume</span><i>'
+            + esc(resumable.show.home + ' ' + resumable.show.score.home + ' · ' + resumable.show.away + ' '
+              + resumable.show.score.away + ' · Q' + resumable.show.quarter) + '</i></button>'
+          : '<button class="btn btn-go btn-big" id="btnStart" type="button">Kick off</button>')
+      + '<button class="btn btn-ico" id="btnFull2" type="button" data-full aria-pressed="false"'
+      + ' title="Fullscreen" aria-label="Fullscreen">⛶</button>'
+      + '</div>'
       + '<div class="btn-row">'
-      + (resumable ? '<button class="btn btn-go" id="btnResume" type="button">Resume &mdash; '
-          + esc(resumable.show.home + ' ' + resumable.show.score.home + ', ' + resumable.show.away + ' '
-            + resumable.show.score.away + ' · Q' + resumable.show.quarter) + '</button>' : '')
-      + '<button class="btn ' + (resumable ? '' : 'btn-go') + ' btn-big" id="btnStart" type="button">'
-      + (resumable ? 'Start a new game' : 'Kick off') + '</button>'
+      + (resumable ? '<button class="btn btn-big" id="btnStart" type="button">Start a new game</button>' : '')
       + '<button class="btn btn-ghost" id="btnSet2" type="button">Settings</button>'
       + '<a class="btn btn-ghost" href="/games/gameday/">Back to Game Day</a></div>';
     paintPreField();
     if ($('btnResume')) $('btnResume').onclick = function () { resumeGame(resumable); };
     $('btnStart').onclick = function () { S.clearSave(); newGame(); };
     $('btnSet2').onclick = settingsOverlay;
+    $('btnFull2').onclick = toggleFull;
+    syncFull();
   }
   /* the two teams, lined up behind the card. Same artist, same camera and
      the same men who will take the first snap — it is not a picture of a
@@ -1970,8 +2087,13 @@
       set.sound = !set.sound; S.saveSettings(set); syncTools();
       if (set.sound) SOUND.ambience(0.2); else SOUND.quiet();
     };
+    $('btnFull').onclick = toggleFull;
     $('btnSet').onclick = settingsOverlay;
     $('btnExit').onclick = function () { location.href = '/games/gameday/'; };
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+      document.addEventListener(ev, syncFull, false);
+    });
+    syncFull();
     /* TAP TO SKIP. Anywhere on the field, and only while a sequence is
        actually running — it must never eat a tap meant for a receiver. */
     fieldWrap.addEventListener('pointerdown', function (e) {
@@ -1982,9 +2104,25 @@
       kickSkip();
     }, true);
     window.addEventListener('beforeunload', function () { if (game && !game.over) S.save(game); });
-    /* no rubber-banding under the thumbs */
+    /* ── NO RUBBER-BANDING UNDER THE THUMBS, AND NOTHING ELSE ────────────
+       A joystick dragged across a canvas must not drag the page with it. But
+       this was cancelling EVERY touchmove on the document from the moment the
+       page booted, with an allow-list of three class names — one of which
+       (`.deck`) no longer exists, and one of which (`.dr-list`) is not even
+       the element that scrolls. So the matchup screen could not be scrolled
+       at all: you arrived on a phone, the Kick off button was under the
+       browser's own toolbar, and there was no way to reach it. The game was
+       unplayable before it started.
+
+       It belongs to the field and to nothing else. The call sheet, the
+       overlays and the matchup page are ordinary scrolling content and are
+       left alone; the field already carries `touch-action:none` and the body
+       `overscroll-behavior:none`, so this is the belt for those braces and
+       only over the grass. */
     document.addEventListener('touchmove', function (e) {
-      if (e.target.closest && e.target.closest('.deck, .ov-in, .dr-list')) return;
+      if (gd.hidden) return;
+      if (!e.target || !e.target.closest) return;
+      if (!e.target.closest('.gd-field')) return;
       e.preventDefault();
     }, { passive: false });
   }
