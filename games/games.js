@@ -530,7 +530,7 @@
       + '<a href="/games/two-minute-drill/">Two-Minute Drill</a>'
       + '<a href="/games/price-it/">Price It</a><a href="/games/h2h/">Head-to-Head</a>'
       + '<a href="/games/pick-5/">Pick 5</a><a href="/games/groups/">Groups</a>'
-      + '<a href="/games/gameday/">Game Day</a>'
+      + '<a href="/games/gameday/">Game Day</a><a href="/games/play/">Play</a>'
       + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
       + '<a href="/games/trophies/">Trophy Room</a><a href="/games/market/">Draft &amp; Market</a>'
       + '<a href="/games/conference/">Conference</a><a href="/games/trades/">Trades</a>'
