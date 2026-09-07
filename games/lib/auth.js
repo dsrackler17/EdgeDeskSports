@@ -32,6 +32,7 @@
 
   function configure(url, key) { SB_URL = url || SB_URL; SB_KEY = key || SB_KEY; }
   function configured() { return !!(SB_URL && SB_KEY); }
+  function origin() { try { return root.location.origin; } catch (_) { return 'https://edgedesksports.com'; } }
 
   function withTimeout(p, ms) {
     return new Promise(function (res, rej) {
@@ -64,6 +65,10 @@
 
   /* A readable sentence from a Supabase Auth error body. */
   function authMessage(d, status, mode) {
+    /* lib/edgedesk_auth.js is the site-wide vocabulary. Games loads before it
+       on a cold cache, so this stays as the fallback rather than a hard
+       dependency — but when it is there, the wording is the same everywhere. */
+    if (root.EDAuth && root.EDAuth.message) return root.EDAuth.message(d, status, mode);
     var em = String((d && (d.msg || d.error_description || d.error || d.message)) || '').toLowerCase();
     if (em.indexOf('invalid login') >= 0 || (em.indexOf('invalid') >= 0 && em.indexOf('credential') >= 0))
       return 'Wrong email or password. Check them and try again.';
@@ -115,13 +120,18 @@
     email = String(email || '').trim(); password = String(password || '');
     if (!configured()) return Promise.resolve({ ok: false, error: 'not_configured', message: 'Sign-up is not configured in this build.' });
     if (!email || !password) return Promise.resolve({ ok: false, error: 'input', message: 'Enter your email and a password.' });
+    if (root.EDAuth && !root.EDAuth.validEmail(email))
+      return Promise.resolve({ ok: false, error: 'input', message: 'That email address does not look right. Check it and try again.' });
     if (password.length < 6) return Promise.resolve({ ok: false, error: 'input', message: 'Choose a password of at least 6 characters.' });
     if (!consent) return Promise.resolve({ ok: false, error: 'consent', message: 'Please confirm you are 21+ and agree to the Terms to continue.' });
     var data = { consent_21plus: true, consent_terms: true, consent_at: new Date().toISOString(),
       consent_version: CONSENT_VERSION };
     var a = attrPayload(), k;
     for (k in a) if (a.hasOwnProperty(k)) data[k] = a[k];
-    return post('/auth/v1/signup', { email: email, password: password, data: data })
+    /* The confirmation link comes back to GAMES, where the franchise is,
+       rather than to whatever Site URL the project happens to declare. */
+    return post('/auth/v1/signup?redirect_to=' + encodeURIComponent(origin() + '/games/'),
+                { email: email, password: password, data: data })
       .then(function (r) {
         if (!r.ok) return { ok: false, error: 'auth', status: r.status, message: authMessage(r.data, r.status, 'signup') };
         if (r.data && r.data.access_token) {
@@ -158,12 +168,63 @@
     });
   }
 
+  /* KEEPING A SESSION ALIVE, FROM INSIDE GAMES.
+
+     games/lib/social.js will not present an expired access token — correctly,
+     because PostgREST rejects the whole request at the gateway before the
+     function runs. Its comment said the terminal owns refreshing. That stopped
+     being true the moment this file learned to CREATE accounts: a player who
+     founded a franchise here and never opened the research terminal was
+     silently demoted to an anonymous device about an hour later, and their
+     franchise disappeared from their own screen. The refresh token was sitting
+     in storage the whole time.
+
+     Single-flight, because every page boots several readers at once and three
+     simultaneous refreshes would spend the token twice and lose the race. */
+  var _refreshing = null;
+  function refresh() {
+    if (_refreshing) return _refreshing;
+    var s = S ? S.session() : null;
+    if (!configured() || !s || !s.refresh_token) return Promise.resolve({ ok: false, error: 'no_token' });
+    _refreshing = post('/auth/v1/token?grant_type=refresh_token', { refresh_token: s.refresh_token })
+      .then(function (r) {
+        _refreshing = null;
+        if (!r.ok || !r.data || !r.data.access_token) {
+          /* A refresh token the server refuses is spent or revoked. THE
+             SESSION IS LEFT WHERE IT IS: social.js already treats it as
+             lapsed, and clearing it here would turn "sign in again" into
+             "your franchise is gone" for anyone whose network blipped. */
+          return { ok: false, error: 'refused', status: r.status };
+        }
+        storeSession(r.data);
+        return { ok: true, user: S ? S.user() : null };
+      })
+      .catch(function () { _refreshing = null; return { ok: false, error: 'unreachable' }; });
+    return _refreshing;
+  }
+
+  /* Called once per page boot, before anything reads identity: renew a lapsed
+     session if it can be renewed, and answer whether the player is signed in.
+     Never rejects, and never blocks the page on the network for long — a
+     failed renewal just means the anonymous device identity is used, which is
+     exactly what happened before this existed. */
+  function ensure() {
+    if (!S) return Promise.resolve(false);
+    if (S.signedIn()) return Promise.resolve(true);
+    if (!S.expired()) return Promise.resolve(false);
+    return refresh().then(function (r) { return !!(r && r.ok); });
+  }
+
   /* A password reset email, through Supabase Auth's own flow. */
   function recover(email) {
     email = String(email || '').trim();
     if (!configured()) return Promise.resolve({ ok: false, error: 'not_configured', message: 'Not configured in this build.' });
     if (!email) return Promise.resolve({ ok: false, error: 'input', message: 'Enter your email first.' });
-    return post('/auth/v1/recover', { email: email })
+    if (root.EDAuth && !root.EDAuth.validEmail(email))
+      return Promise.resolve({ ok: false, error: 'input', message: 'That email address does not look right.' });
+    /* WITHOUT redirect_to the link lands on the project's Site URL, which has
+       no password form on it. Same bug the landing page had. */
+    return post('/auth/v1/recover?redirect_to=' + encodeURIComponent(origin() + '/reset.html'), { email: email })
       .then(function (r) { return r.ok ? { ok: true } : { ok: false, error: 'auth', status: r.status, message: authMessage(r.data, r.status, 'recover') }; })
       .catch(function () { return { ok: false, error: 'unreachable', message: 'Could not reach EdgeDesk. Check your connection and try again.' }; });
   }
@@ -186,6 +247,7 @@
     SESSION_KEY: SESSION_KEY, CONSENT_VERSION: CONSENT_VERSION,
     configure: configure, configured: configured, attrPayload: attrPayload,
     signIn: signIn, signUp: signUp, save: save, recover: recover, signOut: signOut, user: user, signedIn: signedIn,
+    refresh: refresh, ensure: ensure,
     authMessage: authMessage
   };
   root.EDGamesAuth = API;

@@ -3467,11 +3467,21 @@ begin
   end;
   perform pg_temp.as_owner();
 
-  -- play the season out
-  t0 := now();
-  for k in 1..12 loop
-    t0 := t0 + interval '8 days';
-    begin perform public.franchise_play_game(dvf, t0); exception when others then exit; end;
+  -- PLAY THE SEASON OUT, AT THE SCHEDULE'S OWN KICKOFFS.
+  -- This used to step a clock forward eight days at a time and `exit` on the
+  -- first refusal, which made the assertion below depend on the day of the
+  -- week the suite happened to run: a winning record earns a bowl a week
+  -- after the eighth game, the bowl's kickoff is the Saturday of that
+  -- football week (up to thirteen days out), and a step that landed short of
+  -- it broke the loop and left the season sitting at `playoffs`. It failed
+  -- roughly half the time, on main, for that reason and no other.
+  -- Each game is now played at its own opens_at, so nothing here is timing.
+  for k in 1..20 loop
+    select opens_at into t0 from public.franchise_games
+     where franchise_id = dvf and status = 'scheduled'
+     order by opens_at asc limit 1;
+    exit when t0 is null;
+    perform public.franchise_play_game(dvf, t0);
   end loop;
   perform pg_temp.ok('the season completed and the standing moved off its start',
     (select status from public.franchise_seasons where franchise_id = dvf and number = 1) = 'complete',

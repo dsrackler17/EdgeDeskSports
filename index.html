@@ -101,12 +101,36 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 .btn:disabled{opacity:.55;cursor:default;transform:none}
 .navprice{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--val);font-weight:700;letter-spacing:.04em;margin-right:2px;white-space:nowrap}
 @media(max-width:1080px){.nlink.hideS{display:none}}
+/* Games is the FREE, no-account half of the product and the only thing a
+   visitor who will not pay today can actually use. It carried `hideS`, so it
+   vanished below 1080px — invisible on every phone and tablet, which is most
+   of the traffic. It stays in the bar at every width; the marketing anchors
+   are what collapse. */
+@media(max-width:1080px){.nav-in .nlink[href="/games/"]{display:inline-flex}}
+@media(max-width:560px){.nav-in .nlink[href="/games/"]{padding-left:0;padding-right:6px;font-size:13px}}
 @media(max-width:900px){.navprice{display:none}}
 @media(max-width:560px){
   .nav-in{gap:7px;padding:11px 0}
   .btn{padding:9px 12px;font-size:13px;white-space:nowrap}
   .logo{font-size:15px;gap:8px}.logo small{display:none}
   .wrap{padding:0 18px}
+}
+/* Below ~400px the bar has to give something up, and the thing it gives up is
+   chrome, not a destination: the tag beside the logo, the gaps and the button
+   padding all shrink so the logo, Games, Log in and the primary action still
+   fit side by side without the page scrolling sideways. Measured at 320px. */
+@media(max-width:400px){
+  .wrap{padding:0 12px}
+  /* On a 320px phone the bar cannot hold the logo AND every destination on one
+     line. It wraps onto two rather than dropping one of them: hiding "Log in"
+     would take away the only sign-out a signed-in visitor has on this page,
+     and hiding Games would put the free product back out of reach — which is
+     the bug this whole rule exists to fix. */
+  .nav-in{gap:4px;flex-wrap:wrap;row-gap:4px;padding:9px 0}
+  .nav-sp{flex:1 0 100%;height:0}
+  .nav-in .btn{padding:8px 9px;font-size:12.5px}
+  .nav-in .nlink{padding:6px 4px;font-size:12.5px}
+  .logo{font-size:14px;gap:6px}
 }
 
 /* ---------- sections ---------- */
@@ -974,7 +998,7 @@ section.band.lp-quiet{padding:56px 0}
     <!-- EdgeDesk Games: the free, public, no-account front door. A link only —
          Games is its own acquisition product and the traffic it wants is
          Games -> EdgeDesk, not the other way round. -->
-    <a class="nlink hideS" href="/games/">Games</a>
+    <a class="nlink" href="/games/">Games</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
     <span class="navprice">7 days free</span>
     <button class="btn primary" id="navSignup" onclick="startSubscribe()">Start researching</button>
@@ -1946,7 +1970,7 @@ section.band.lp-quiet{padding:56px 0}
       <div>21+ &middot; 1-800-GAMBLER &middot; ncpgambling.org</div>
       <div style="margin-top:10px"><a href="#steps">How it works</a> &middot; <a href="#evidence">Evidence</a> &middot; <a href="#record">Live record</a> &middot; <a href="#pricing">Pricing</a></div>
       <div style="margin-top:8px"><a href="/terms.html">Terms</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/disclaimer.html">Disclaimer</a></div>
-      <div style="margin-top:10px">Feedback: <a href="mailto:davis@edgedesksports.com">davis@edgedesksports.com</a> &middot; Support: <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a></div>
+      <div style="margin-top:10px"><a href="#" data-ed-report style="font-weight:700">Report a problem</a> &middot; Support: <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a></div>
       <div style="margin-top:10px;color:var(--faint)">&copy; <span id="yr"></span> Rackler Tech Ventures LLC &middot; 2013 89th St, Lubbock, TX 79423</div>
     </div>
   </div>
@@ -2002,6 +2026,7 @@ section.band.lp-quiet{padding:56px 0}
     <button class="btn primary lg authbtn" id="authSubmit" onclick="submitAuth()" disabled>Sign up</button>
     <div class="auth-msg" id="authMsg"></div>
     <div class="auth-toggle" id="authToggle"></div>
+    <p class="auth-legal">Stuck? <button type="button" data-ed-report="I could not sign up or log in" style="color:var(--accent);background:none;border:none;padding:0;font:inherit;font-weight:700;cursor:pointer;text-decoration:underline">Report a problem</button> &mdash; it reaches a person, and says whether it was received.</p>
     <p class="auth-legal">By continuing you confirm you're 21+ and that betting is legal where you are. EdgeDesk is a research tool, not betting advice. 1-800-GAMBLER.</p>
   </div>
 </div>
@@ -2013,6 +2038,16 @@ section.band.lp-quiet{padding:56px 0}
      so this flow and those anchors have to live here. Do not rewrite it as part
      of a presentation change.
      ========================================================================== -->
+<!-- The shared auth vocabulary: what a link in an email means, what a
+     Supabase error means, and whether a signup created anything. Loaded here
+     rather than duplicated inline so the landing page, the reset page and
+     EdgeDesk Games cannot drift apart on any of the three. -->
+<script src="/lib/edgedesk_auth.js?v=20260907b"></script>
+<!-- The same "Report a problem" the terminal, Games and the 404 page use. It
+     matters most HERE: somebody who cannot get past signup has no account, no
+     terminal and, until now, nothing but a mailto in the footer. -->
+<script src="/lib/edgedesk_report.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
 <script>
 document.getElementById('yr').textContent=new Date().getFullYear();
 
@@ -2020,6 +2055,8 @@ var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 var APP_URL="./app.html";
 var authMode='signup';
+try{ window.EDReport.configure({url:SB_URL,key:SB_KEY,version:'landing-2026-09',surface:'landing'}); }
+catch(e){ try{console.error('problem reporting not configured',e);}catch(_){} }
 
 /* ==========================================================================
    REFERRAL ATTRIBUTION
@@ -2501,9 +2538,14 @@ function closeAuth(){document.getElementById('authModal').classList.remove('on')
 async function forgotPassword(){
   var email=document.getElementById('aEmail').value.trim();
   if(!email){msg('Enter your email above first, then tap "Forgot password?"');return;}
+  if(window.EDAuth&&!EDAuth.validEmail(email)){msg('That email address does not look right. Check it and try again.');return;}
   msg('Sending reset link…','ok');
   try{
-    await fetch(SB_URL+'/auth/v1/recover',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({email:email})});
+    /* WITHOUT redirect_to THE LINK GOES TO THE SITE URL, which is this page —
+       and this page has no password form on it. Every reset email pointed at
+       the wrong door until this parameter was passed. */
+    await fetch(SB_URL+'/auth/v1/recover?redirect_to='+encodeURIComponent(location.origin+'/reset.html'),
+      {method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({email:email})});
     // always show success (don't reveal whether an account exists)
     msg('If an account exists for '+email+', a reset link is on its way. Check your inbox.','ok');
   }catch(e){msg('Network error. Try again.');}
@@ -2514,7 +2556,8 @@ async function resendConfirm(){
   if(!email){msg('Enter your email above first.');return;}
   msg('Resending confirmation…','ok');
   try{
-    await fetch(SB_URL+'/auth/v1/resend',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({type:'signup',email:email})});
+    await fetch(SB_URL+'/auth/v1/resend?redirect_to='+encodeURIComponent(location.origin+'/'),
+      {method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({type:'signup',email:email})});
     msg('Confirmation email resent to '+email+'. Check your inbox and spam.','ok');
   }catch(e){msg('Network error. Try again.');}
 }
@@ -2531,14 +2574,36 @@ document.getElementById('aConsent').addEventListener('change',function(){
   if(authMode==='signup')document.getElementById('authSubmit').disabled=!this.checked;
 });
 
+/* One answer for the two ways Supabase reports an address that is already
+   taken — an explicit "already registered" error, and the silent 200 with no
+   identities. Both mean the same thing to the person typing, and both used to
+   read as success on one path and as a raw error on the other. */
+function showExisting(email){
+  var m=document.getElementById('authMsg');
+  m.className='auth-msg err';
+  m.innerHTML='<b>'+esc(email)+' already has an EdgeDesk account.</b> '+
+    '<button onclick="openAuth(\'login\');document.getElementById(\'aEmail\').value='+JSON.stringify(email)+'" '+
+    'style="color:var(--accent);background:none;border:none;font-weight:600;cursor:pointer;text-decoration:underline">Log in instead</button>'+
+    ' &middot; <button onclick="forgotPassword()" style="color:var(--accent);background:none;border:none;font-weight:600;cursor:pointer;text-decoration:underline">Forgot password?</button>';
+}
+
 async function submitAuth(){
   var email=document.getElementById('aEmail').value.trim(),pass=document.getElementById('aPass').value;
   if(!email||!pass){msg('Enter your email and password.');return;}
+  /* Catch a mistyped address here rather than spending a round trip to be
+     told "Unable to validate email address: invalid format" — a gateway
+     sentence that used to be shown to the customer verbatim. */
+  if(window.EDAuth&&!EDAuth.validEmail(email)){msg('That email address does not look right. Check it and try again.');return;}
   if(pass.length<6){msg('Password must be at least 6 characters.');return;}
   if(authMode==='signup'&&!document.getElementById('aConsent').checked){msg('Please confirm you are 21+ and agree to the Terms to continue.');return;}
   var consentAt=new Date().toISOString();
   var btn=document.getElementById('authSubmit');btn.disabled=true;var old=btn.textContent;btn.textContent='…';
-  var path=authMode==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password';
+  /* The confirmation link comes back HERE, and handleAuthCallback finishes it.
+     Without redirect_to it goes to whatever Site URL the project has, which is
+     not necessarily the host the visitor is standing on. */
+  var path=authMode==='signup'
+    ? '/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+'/')
+    : '/auth/v1/token?grant_type=password';
   var payload={email:email,password:pass};
   // log the affirmation with the signup so there's a timestamped record of consent
   /* Attribution goes onto the auth user itself, not only into a side table.
@@ -2551,12 +2616,18 @@ async function submitAuth(){
     var r=await fetch(SB_URL+path,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify(payload)});
     var d=await r.json();
     if(!r.ok){
-      var em=(d.msg||d.error_description||d.error||'').toLowerCase();
-      if(em.indexOf('invalid login')>=0||em.indexOf('invalid')>=0&&em.indexOf('credential')>=0){msg('Wrong email or password. Check them and try again, or use "Forgot password?"');}
-      else if(em.indexOf('not confirmed')>=0||em.indexOf('email not confirmed')>=0||em.indexOf('confirm')>=0){var m=document.getElementById('authMsg');m.className='auth-msg err';m.innerHTML='Please confirm your email first. <button onclick="resendConfirm()" style="color:var(--accent);background:none;border:none;font-weight:600;cursor:pointer;text-decoration:underline">Resend email</button>';}
-      else if(em.indexOf('already registered')>=0||em.indexOf('already been registered')>=0){msg('That email is already registered. Try logging in instead.');}
-      else if(em.indexOf('weak')>=0||em.indexOf('password')>=0&&em.indexOf('short')>=0){msg('Password is too weak. Use at least 6 characters.');}
-      else msg(d.msg||d.error_description||d.error||'Something went wrong. Try again.');
+      var em=(d&&(d.msg||d.error_description||d.error)||'').toLowerCase();
+      if(em.indexOf('not confirmed')>=0){
+        var m=document.getElementById('authMsg');m.className='auth-msg err';
+        m.innerHTML='Confirm your email first &mdash; check your inbox and spam. <button onclick="resendConfirm()" style="color:var(--accent);background:none;border:none;font-weight:600;cursor:pointer;text-decoration:underline">Resend the link</button>';
+      } else if(em.indexOf('already registered')>=0||em.indexOf('already been registered')>=0){
+        showExisting(email);
+      } else {
+        /* NEVER the gateway's own words. lib/edgedesk_auth.js maps the ones
+           we recognise and gives an honest generic for the rest. */
+        msg(window.EDAuth?EDAuth.message(d,r.status,authMode==='signup'?'signup':'signin')
+                         :'Something went wrong. Try again.');
+      }
       btn.disabled=false;btn.textContent=old;return;
     }
     if(d.access_token){
@@ -2573,12 +2644,20 @@ async function submitAuth(){
         setTimeout(function(){closeAuth();openArl();},400);return;}
       msg('Signed in, opening your scanner…','ok');setTimeout(function(){window.location.href=APP_URL;},700);
     }else{
-      /* No token means email confirmation is on. Keep the flag set so the click
-         from the confirmation email resumes checkout instead of dead-ending. */
-      if(pendingSubscribe)setPendingSub(true);
+      /* No token means email confirmation is on for this project. Two very
+         different things arrive here and used to be reported identically. */
+      if(authMode==='signup'&&window.EDAuth&&EDAuth.isExistingUser(d)){
+        /* Supabase answers a signup for an ALREADY REGISTERED address with 200
+           and an empty `identities` array — it will not confirm or deny an
+           account to a stranger. Reading only `access_token` turned that into
+           "Account created. Confirm your email", so a returning customer sat
+           waiting for a message that was never sent. */
+        showExisting(email);
+        btn.disabled=false;btn.textContent=old;return;
+      }
       if(authMode==='signup')setPendingSub(true);
       msg(authMode==='signup'
-        ? 'Account created. Confirm your email ('+email+'), then come back and tap Start free trial — checkout picks up where you left off.'
+        ? 'Account created. Confirm your email ('+email+') — the link signs you in and picks checkout up where you left off. Check spam if it is not there in a minute.'
         : 'Check your email to confirm, then log in.','ok');
       btn.disabled=false;btn.textContent=old;
     }
@@ -2700,10 +2779,74 @@ async function edSubState(){
   }catch(e){ return 'unknown'; }
 }
 
+/* ==========================================================================
+   THE LINK FROM THE EMAIL
+   Signing up with confirmation on returns no token: the visitor leaves for
+   their inbox and comes back here on a link Supabase built. Until this
+   existed nothing read that link, so a confirmed account landed on a
+   marketing page that still said "Start researching", still called them a
+   stranger, and left the access token sitting in the address bar. Every
+   shape of that link is decided in lib/edgedesk_auth.js; this function is
+   only what the page DOES about each answer.
+   ========================================================================== */
+function retnPanel(head, body, foot, ctaHTML){
+  var box=retnEl('retnBox'); if(!box) return;
+  var h=retnEl('retnH'), p=retnEl('retnP'), f=retnEl('retnFoot'), c=retnEl('retnCta');
+  var bar=retnEl('retnBar'); if(bar&&bar.parentNode) bar.parentNode.style.display=ctaHTML?'none':'';
+  if(h) h.textContent=head;
+  if(p) p.innerHTML=body;
+  if(f) f.innerHTML=foot||'';
+  if(c){ c.style.display=ctaHTML?'':'none'; c.innerHTML=ctaHTML||''; }
+  box.classList.add('on');
+}
+async function handleAuthCallback(){
+  if(!window.EDAuth) return false;
+  var r;
+  try{ r=await EDAuth.consume({url:SB_URL,key:SB_KEY}); }
+  catch(e){ try{console.error('auth callback failed',e);}catch(_){} return false; }
+  if(!r||!r.handled) return false;
+
+  if(!r.ok){
+    /* An expired or already-spent link is the single most common way a real
+       signup dies. Say which, and put the way out on the same screen. */
+    retnPanel('That link did not work', esc(r.message||'The link could not be used.'),
+      'Links are valid for one hour and can only be used once.',
+      '<button class="btn primary" onclick="retnEl(\'retnBox\').classList.remove(\'on\');openAuth(\'login\')">Log in</button>'+
+      '<button class="btn ghost" onclick="retnEl(\'retnBox\').classList.remove(\'on\');openAuth(\'signup\');resendConfirm()">Send a new link</button>');
+    return true;
+  }
+
+  /* A recovery link is a password reset, not a login. reset.html owns that
+     screen; the session it needs is already in storage. */
+  if(r.type==='recovery'){ window.location.replace('./reset.html?from=email'); return true; }
+
+  var u=edUserFromSession()||{};
+  var who=u.email?('You are signed in as <b>'+esc(u.email)+'</b>.'):'You are signed in.';
+  var resume=pendingSubscribe||getPendingSub();
+  retnPanel('Email confirmed',
+    who+(resume?' Opening your free trial…':' Opening EdgeDesk…'),
+    'Nothing else to do — this happens automatically.','');
+  var bar=retnEl('retnBar'); if(bar) bar.style.width='100%';
+
+  /* An account is not access. Someone who confirmed but never paid is walked
+     into checkout; someone who already has a subscription goes to the
+     terminal; and nobody is left staring at a marketing page. */
+  var paid=await edSubState();
+  setTimeout(function(){
+    if(paid==='yes'){ window.location.href=APP_URL; return; }
+    setPendingSub(false); pendingSubscribe=true;
+    retnEl('retnBox').classList.remove('on');
+    openArl();
+  }, 900);
+  return true;
+}
+
 (async function bootAuthState(){
-  /* A customer coming back from Stripe is not a visitor to be marketed at.
-     Resolve that first and forward them; nothing below should run. */
+  /* Two arrivals are not visits to be marketed at, and both are resolved
+     before anything below runs: somebody back from Stripe, and somebody back
+     from the confirmation link in their email. */
   if(await handleCheckoutReturn()) return;
+  if(await handleAuthCallback()) return;
   var s=edSession();
   if(s&&(s.access_token||s.refresh_token)){
     var u=edUserFromSession()||{};

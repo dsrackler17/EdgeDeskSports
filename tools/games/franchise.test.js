@@ -448,9 +448,14 @@ fresh();
     global.fetch = (url, o) => { sent = { url, body: JSON.parse(o.body), headers: o.headers }; return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ access_token: 'x.' + Buffer.from(JSON.stringify({ sub: 'user-a', email: 'a@example.com', exp: 4102444800 })).toString('base64') + '.y', refresh_token: 'r', expires_at: 4102444800 })) }); };
     r = await AU.signUp('a@example.com', 'longenough', true);
     chk('sign-up posts to Supabase Auth with the anon key, the consent record and the attribution',
-      sent && /\/auth\/v1\/signup$/.test(sent.url) && sent.headers.apikey === 'anon-key'
+      sent && /\/auth\/v1\/signup\?/.test(sent.url) && sent.headers.apikey === 'anon-key'
       && sent.body.data.consent_21plus === true && sent.body.data.consent_terms === true && sent.body.data.consent_version === AU.CONSENT_VERSION
       && sent.body.data.ref === 'partnera');
+    /* THE CONFIRMATION LINK HAS TO COME BACK TO GAMES. Without redirect_to it
+       lands on the project's Site URL — the marketing page — and a player who
+       just founded a franchise is shown a pitch instead of their team. */
+    chk('and tells Supabase to send the confirmation link back into Games',
+      /redirect_to=[^&]*%2Fgames%2F/.test(sent.url));
     chk('and stores the session under the terminal’s key', !!MEM[AU.SESSION_KEY] && JSON.parse(MEM[AU.SESSION_KEY]).access_token.indexOf('x.') === 0);
     chk('and the social layer now sees a signed-in user', S.signedIn() && S.user().id === 'user-a');
     lacks(JSON.stringify(MEM), 'longenough', 'no password is ever stored');
@@ -820,7 +825,22 @@ fresh();
   chk('the form is wired wherever a conversion card is', /function wireConversion\(onSaved\) \{[\s\S]*?wireSaveCard\(onSaved\)/.test(JS));
   chk('sign-up falls back to sign-in when the email already has an account', /function save\(email, password, consent\)[\s\S]*?already has an account[\s\S]*?signIn\(email, password\)/.test(AUTHJS));
   chk('and a confirmation-mode sign-up that returns no identities is read as an existing account', /identities\.length === 0/.test(AUTHJS) && /r\.ok && r\.existing/.test(AUTHJS));
-  has(AUTHJS, "post('/auth/v1/recover', { email: email })", 'the reset goes through Supabase Auth');
+  has(AUTHJS, "/auth/v1/recover?redirect_to=", 'the reset goes through Supabase Auth');
+  /* The reset link used to land on the Site URL, which has no password form on
+     it — so every "forgot password" from Games was a dead end. */
+  chk('and the reset link is aimed at the page that can actually reset it',
+    /recover\?redirect_to=' \+ encodeURIComponent\(origin\(\) \+ '\/reset\.html'\)/.test(AUTHJS));
+  /* A lapsed session must be renewable from inside Games. Before this, a
+     player who signed up here and never opened the terminal was silently
+     demoted to an anonymous device an hour later. */
+  chk('a lapsed session is renewed from the refresh token rather than dropped',
+    /grant_type=refresh_token/.test(AUTHJS) && /function ensure\(\)/.test(AUTHJS));
+  chk('and the renewal is single-flight, so parallel page readers cannot spend the token twice',
+    /var _refreshing = null;/.test(AUTHJS) && /if \(_refreshing\) return _refreshing;/.test(AUTHJS));
+  chk('a refused refresh leaves the session in storage rather than erasing the franchise',
+    /THE\s+SESSION IS LEFT WHERE IT IS/.test(AUTHJS));
+  chk('the games boot renews before the franchise decides whose it is',
+    /AU\.ensure\(\)/.test(JS) && JS.indexOf('AU.ensure()') < JS.indexOf('return FR.boot()'));
   chk('consent is recorded only when an account is created, never on the fall-back sign-in', /consent_21plus: true/.test(AUTHJS) && !/signIn\([^)]*consent/.test(AUTHJS));
   eq('it is the terminal\'s session key', AU.SESSION_KEY, 'edgedesk_session');
   has(LANDING, "localStorage.getItem('edgedesk_session')", 'which the landing page reads');

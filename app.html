@@ -2180,8 +2180,8 @@ body.focus .dk-focusnote{display:block}
       <button onclick="__avGo('account')">Profile</button>
       <button onclick="__avGo('edge')">Settings</button>
       <button onclick="__avGo('subscription')">Billing</button>
+      <button data-ed-report onclick="try{document.getElementById('avMenu').classList.remove('open')}catch(_){}">Report a problem</button>
       <button onclick="__avGo('feedback')">Release notes</button>
-      <button onclick="__avGo('feedback')">Feedback</button>
       <button onclick="__avGo('about')">Help &amp; support</button>
       <button onclick="try{var m=document.getElementById('avMenu');if(m)m.classList.remove('open');window.hiwOpen&&window.hiwOpen()}catch(_){}">How EdgeDesk works</button>
       <hr><button class="danger" onclick="edSignOut()">Log out</button>
@@ -14430,17 +14430,33 @@ function renderSetPrivacy(){
   setGate('Delete account','Account deletion needs a server-side admin call \u2014 the browser client cannot delete its own auth user. Until that endpoint exists, this button would do nothing. Email support to have an account removed.');
 }
 
-var FEEDBACK_CATS=['Bug Report','Feature Request','General Feedback','Success Story','Suggestion'];
+/* ==========================================================================
+   REPORT A PROBLEM  (was: "Send feedback")
+
+   The form this replaces never worked. Its textarea was id="fbBody" — and so
+   is the football research board, three thousand lines up. $('fbBody')
+   therefore returned the BOARD, `.value` was undefined, and `.trim()` threw a
+   TypeError on the first line of the handler, outside its try/catch. The
+   Submit button did nothing at all: no message, no request, nothing in the
+   console the reporter could have seen. It also posted to `public.feedback`,
+   a table no file in this repository ever created, and told the CUSTOMER to
+   "run feedback.sql if the table is missing".
+
+   So this panel no longer owns a form. It opens the one reporter the whole
+   product shares (lib/edgedesk_report.js), which writes to the committed
+   public.issue_reports, shows a real reference on success, and hands the
+   report back as a prefilled email if the write fails.
+   ========================================================================== */
 function renderSetFeedback(){
-  var out=setCard('Send feedback','Every submission is stored and reviewed.',
-    setRow('Category','<select class="set-sel" id="fbCat">'+FEEDBACK_CATS.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select>')+
-    setRow('Priority','<select class="set-sel" id="fbPri"><option>Low</option><option selected>Normal</option><option>High</option></select>')+
-    setRow('Title','<input class="set-in" id="fbTitle" placeholder="Short summary">')+
-    '<textarea class="set-ta" id="fbBody" rows="5" placeholder="What happened, what you expected, and anything that would help reproduce it."></textarea>'+
-    '<div class="set-act"><button class="btn sm" onclick="__submitFeedback()">Submit</button><span class="set-msg" id="fbMsg"></span></div>');
+  var out=setCard('Report a problem',
+    'It goes to the people who build EdgeDesk, with the page, the build and your account attached. You will see here whether it was received.',
+    '<div class="set-act"><button class="btn sm" data-ed-report>Report a problem</button>'+
+    '<span class="set-msg">No password, login token or payment detail is ever included.</span></div>');
   out+=setCard('Recently shipped','Version '+ED_VERSION+'.',
     '<div class="set-ship">'+
-    ['CFB research tab \u2014 CollegeFootballData ingestion, matchup comparison, team deep dive',
+    ['Report a problem \u2014 one working reporter across the site, stored in public.issue_reports',
+     'Email confirmation \u2014 the link in the signup email now signs you in instead of dead-ending',
+     'CFB research tab \u2014 CollegeFootballData ingestion, matchup comparison, team deep dive',
      'Research tab \u2014 CFB, UFC, Stats and Props grouped under one nav entry',
      'Multi-engine Edges \u2014 MARKET, MODEL and CONSENSUS as separate labelled engines',
      'Consensus Insight \u2014 deterministic plain-English read on every consensus card',
@@ -14451,22 +14467,6 @@ function renderSetFeedback(){
   out+=setGate('Public roadmap','There is no roadmap board wired to real data. Rather than publish a hardcoded list that drifts out of date, this stays empty until it reads from something real.');
   return out;
 }
-window.__submitFeedback=async function(){
-  var msg=$('fbMsg'),t=$('fbTitle').value.trim(),b=$('fbBody').value.trim();
-  if(!t||!b){msg.className='set-msg neg';msg.textContent='Title and description are required.';return;}
-  msg.className='set-msg';msg.textContent='Sending\u2026';
-  var u=edUser()||{};
-  try{
-    var s=edSession();
-    var r=await fetch(SB_URL+'/rest/v1/feedback',{method:'POST',
-      headers:{apikey:SB_KEY,authorization:'Bearer '+((s&&s.access_token)||SB_KEY),'content-type':'application/json',prefer:'return=minimal'},
-      body:JSON.stringify([{user_email:u.email||null,category:$('fbCat').value,priority:$('fbPri').value,
-        title:t,body:b,app_version:ED_VERSION,user_agent:navigator.userAgent.slice(0,300)}])});
-    if(!r.ok)throw new Error('submit failed ('+r.status+')');
-    $('fbTitle').value='';$('fbBody').value='';
-    msg.className='set-msg pos';msg.textContent='Thank you. Every submission is reviewed and helps shape EdgeDesk.';
-  }catch(e){msg.className='set-msg neg';msg.textContent=e.message+' \u2014 run feedback.sql if the table is missing.';}
-};
 
 function renderSetAbout(){
   var cap=window.__edgeLatest?ago(window.__edgeLatest):'unknown';
@@ -14545,7 +14545,7 @@ var SETTINGS_SECTIONS=[
   {id:'notifications',label:'Notifications',     render:renderSetNotif},
   {id:'display',      label:'Display',           render:renderSetDisplay},
   {id:'privacy',      label:'Privacy & Security',render:renderSetPrivacy},
-  {id:'feedback',     label:'Feedback',          render:renderSetFeedback},
+  {id:'feedback',     label:'Report a problem',  render:renderSetFeedback},
   {id:'about',        label:'About',             render:renderSetAbout}
 ];
 var SET_ACTIVE='account';
@@ -16396,6 +16396,12 @@ function pgLockedHTML(note){
     '</ul>'+
     '<a class="pg-btn" href="'+pgCheckoutURL()+'">Subscribe \u2014 '+SUB_PRICE_DISPLAY+'/mo</a>'+
     '<button class="pg-btn ghost" onclick="pgRecheck()">I already paid \u2014 check again</button>'+
+    /* THIS SCREEN USED TO BE A DEAD END. Three buttons — pay, re-check, sign
+       out — for the one visitor most likely to have hit a bug: brand new,
+       just signed up, not yet paid. There was no way from here to say so, and
+       no way to reach the free half of the product they can use today. */
+    '<a class="pg-btn ghost" href="/games/?ref=paygate" style="display:block;text-align:center;text-decoration:none;line-height:1.35;padding-top:13px;padding-bottom:13px">Play EdgeDesk Games \u2014 free, no subscription</a>'+
+    '<button class="pg-btn ghost" data-ed-report="Payment or billing">Report a problem</button>'+
     '<button class="pg-btn ghost" onclick="edSignOut()">Sign out</button>'+
     '<div class="pg-msg mut" id="pgMsg"></div>'+
     '<div class="pg-foot">Billed monthly by Rackler Tech Ventures LLC. Renews automatically until cancelled. '+
@@ -37511,5 +37517,18 @@ try{
 /* ================= end FOOTBALL ENGINE module ================= */
 </script>
 
+<!-- ONE way to report a problem, shared with the landing page, the 404 page
+     and EdgeDesk Games. lib/edgedesk_report.js decides what a report contains
+     and whether it was stored; the _ui file is only the screen. Loaded last:
+     nothing above depends on it, and the terminal must paint without it. -->
+<script src="/lib/edgedesk_auth.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
+<script>
+try{
+  window.EDReport.configure({url:SB_URL,key:SB_KEY,
+    version:(typeof ED_VERSION!=='undefined'?ED_VERSION:'unknown'),surface:'terminal'});
+}catch(e){try{console.error('problem reporting not configured',e);}catch(_){}}
+</script>
 </body>
 </html>

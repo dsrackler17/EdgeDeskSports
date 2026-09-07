@@ -88,6 +88,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
   <div class="tabs">
     <button class="tab on" data-t="elig">Eligibility</button>
     <button class="tab" data-t="boards">Conference boards</button>
+    <button class="tab" data-t="issues">Problem reports</button>
   </div>
 
   <!-- ELIGIBILITY -->
@@ -157,6 +158,30 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
       <div id="b_list"><p class="lede">Loading…</p></div>
     </div>
   </section>
+
+  <!-- PROBLEM REPORTS -----------------------------------------------------
+       What users actually filed, from lib/edgedesk_report.js into
+       public.issue_reports. Nothing here is public: the read is the operator
+       policy in supabase/issue_reports.sql, so a signed-in account that is
+       not on public.issue_report_admins sees an empty list rather than a
+       permission error it could learn something from. -->
+  <section id="t-issues" class="hide">
+    <h2>Problem reports</h2>
+    <p class="lede">Filed from the landing page, the terminal, EdgeDesk Games and the 404 page. Reports are evidence: they cannot be edited or deleted, only triaged.</p>
+    <div class="card">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <select id="i_filter" style="flex:0 0 auto">
+          <option value="open" selected>Open (new + triaged + in progress)</option>
+          <option value="new">New only</option>
+          <option value="">Everything</option>
+        </select>
+        <button class="btn sm" id="i_reload">Reload</button>
+        <span class="lede" id="i_count" style="margin:0"></span>
+      </div>
+      <div id="i_list"><p class="lede">Loading…</p></div>
+      <div class="msg" id="i_msg"></div>
+    </div>
+  </section>
 </main>
 <footer style="max-width:920px;margin:30px auto 40px;padding:18px 20px 0;border-top:1px solid var(--border,#262c36);font-size:12px;color:#5b6472;line-height:1.7;text-align:center">
   Internal admin · Rackler Tech Ventures LLC. Research tool only — not betting advice. 21+ · <a href="https://www.1800gambler.net" style="color:#8a93a2">1-800-GAMBLER</a>
@@ -204,9 +229,77 @@ document.getElementById('logout').onclick=gateOut;
 /* ---- tabs ---- */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
-  document.getElementById('t-elig').classList.toggle('hide',t.dataset.t!=='elig');
-  document.getElementById('t-boards').classList.toggle('hide',t.dataset.t!=='boards');
+  ['elig','boards','issues'].forEach(k=>{
+    const el=document.getElementById('t-'+k); if(el)el.classList.toggle('hide',t.dataset.t!==k);
+  });
+  if(t.dataset.t==='issues')loadIssues();
 });
+
+/* ---- problem reports ------------------------------------------------------
+   One read, one write. The write is a triage update — status, severity, a
+   note — and the database refuses everything else from a client role, so this
+   screen cannot corrupt what a user reported even if it is wrong about what
+   it is doing. */
+const I_STATUS=['new','triaged','in_progress','resolved','wont_fix','duplicate'];
+function iEsc(v){return String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function iWhen(t){ if(!t)return '\u2014'; const d=new Date(t); return isNaN(d)?'\u2014':d.toISOString().replace('T',' ').slice(0,16)+'Z'; }
+async function loadIssues(){
+  const host=document.getElementById('i_list'), cnt=document.getElementById('i_count');
+  host.innerHTML='<p class="lede">Loading\u2026</p>'; msg('i_msg','');
+  const f=document.getElementById('i_filter').value;
+  let q='issue_reports?select=*&order=created_at.desc&limit=200';
+  if(f==='open')q+='&status=in.(new,triaged,in_progress)';
+  else if(f)q+='&status=eq.'+encodeURIComponent(f);
+  try{
+    const rows=await sbSelect(q);
+    cnt.textContent=(rows?rows.length:0)+' report'+((rows&&rows.length===1)?'':'s');
+    if(!rows||!rows.length){
+      host.innerHTML='<p class="lede">Nothing here. Either nobody has reported a problem, or this account is not on <span class="mono">public.issue_report_admins</span> \u2014 the read policy returns an empty list either way, so add yourself in the SQL editor if you expected rows.</p>';
+      return;
+    }
+    host.innerHTML=rows.map(r=>{
+      const who=r.user_email||r.contact_email||(r.user_id?('user '+String(r.user_id).slice(0,8)):'anonymous');
+      return '<div class="rowline" style="align-items:flex-start;flex-wrap:wrap">'
+        +'<span class="pill">'+iEsc(r.status)+'</span>'
+        +'<div class="g" style="min-width:240px">'
+        +'<div class="nm">'+iEsc(r.summary)+'</div>'
+        +'<div class="meta">'+iEsc(r.category)+' &middot; '+iEsc(who)+' &middot; '+iWhen(r.created_at)+'</div>'
+        +'<div class="meta mono" style="opacity:.8">'+iEsc(r.route||'\u2014')+' &middot; '+iEsc(r.surface||'\u2014')+' &middot; build '+iEsc(r.app_version||'\u2014')+' &middot; auth '+iEsc(r.auth_state||'\u2014')+' &middot; '+iEsc(r.viewport||'\u2014')+'</div>'
+        +'<details style="margin-top:6px"><summary class="meta" style="cursor:pointer">Full report</summary>'
+        +'<pre style="white-space:pre-wrap;font-size:12px;margin:6px 0 0;color:#c9d0da">'+iEsc(r.details)
+        +(r.steps?('\n\nSteps:\n'+iEsc(r.steps)):'')
+        +'\n\nURL: '+iEsc(r.page_url||'\u2014')
+        +'\nBrowser: '+iEsc(r.user_agent||'\u2014')
+        +(r.referrer?('\nCame from: '+iEsc(r.referrer)):'')
+        +(r.admin_notes?('\n\nOperator note: '+iEsc(r.admin_notes)):'')+'</pre></details>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+        +'<select data-st="'+iEsc(r.id)+'">'+I_STATUS.map(x=>'<option'+(x===r.status?' selected':'')+'>'+x+'</option>').join('')+'</select>'
+        +'<input data-note="'+iEsc(r.id)+'" placeholder="operator note" value="'+iEsc(r.admin_notes||'')+'" style="min-width:150px">'
+        +'<button class="btn sm" data-save="'+iEsc(r.id)+'">Save</button>'
+        +'</div></div>';
+    }).join('');
+    host.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.save;
+      const st=host.querySelector('[data-st="'+id+'"]').value;
+      const note=host.querySelector('[data-note="'+id+'"]').value.trim();
+      b.disabled=true;
+      try{
+        await sbWrite('issue_reports?id=eq.'+encodeURIComponent(id),'PATCH',
+          {status:st,admin_notes:note||null,resolved_at:(st==='resolved'||st==='wont_fix')?new Date().toISOString():null},
+          'return=minimal');
+        msg('i_msg','Saved.','ok'); loadIssues();
+      }catch(e){ msg('i_msg','Could not save: '+e.message); b.disabled=false; }
+    });
+  }catch(e){
+    host.innerHTML='<p class="lede">Could not read reports.</p>';
+    msg('i_msg',/40[13]/.test(e.message)
+      ? 'This account is not on public.issue_report_admins \u2014 add it in the SQL editor.'
+      : e.message);
+  }
+}
+document.getElementById('i_reload').onclick=loadIssues;
+document.getElementById('i_filter').onchange=loadIssues;
 
 /* ---- eligibility ---- */
 async function loadElig(){

@@ -56,6 +56,19 @@ p{color:var(--dim);font-size:13.5px;line-height:1.6}
   <h1>Nothing lives at this address</h1>
   <p>The page may have moved, or the link was truncated.</p>
   <p><a href="/">EdgeDesk home</a> &middot; <a href="/games/">EdgeDesk Games</a> &middot; <a href="/collective/">The Model Collective</a> &middot; <a href="/app.html">The terminal</a></p>
+  <!-- A link that should have worked is a bug report waiting to be typed, and
+       this is the page it happens on. The reporter records which address was
+       asked for, so a broken link somebody pasted is traceable. -->
+  <p style="margin-top:18px"><a href="#" data-ed-report="Something is broken">Report a broken link</a></p>
 </div>
+<script src="/lib/edgedesk_auth.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
+<script>
+try{ window.EDReport.configure({
+  url:"https://iattxbkbufslbauoumga.supabase.co",
+  key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8",
+  version:'404', surface:'not-found'}); }catch(e){}
+</script>
 </body>
 </html>
