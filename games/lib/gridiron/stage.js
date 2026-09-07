@@ -68,14 +68,18 @@
      test can count and the stage can walk onto the field. */
   function alignOffense(playObj, fk, bx, ly, units, kit) {
     var form = F.formation(fk), out = [], i;
-    var olNames = ['LT', 'LG', 'C', 'RG', 'RT'], olY = [-4.6, -2.3, 0, 2.3, 4.6];
+    /* SPLITS ARE FEET, NOT YARDS. Two and a bit yards between adjacent
+       linemen put the tackles nine yards apart and strung the whole front
+       across half the hashes; a real line is about six yards tackle to
+       tackle, which is what makes the trenches look like trenches. */
+    var olNames = ['LT', 'LG', 'C', 'RG', 'RT'], olY = [-3.0, -1.5, 0, 1.5, 3.0];
     var olPlayers = (units && units.ol && units.ol.players) || [];
     for (i = 0; i < 5; i++) {
       out.push(Actor({ id: 'o_' + olNames[i], side: 'off', pos: 'OL', slot: olNames[i],
         num: (olPlayers[i] && jersey(olPlayers[i], 70 + i)) || (70 + i),
         name: olPlayers[i] ? RO.shortName(olPlayers[i]) : '',
         player: olPlayers[i] || null,
-        x: clamp(bx + olY[i], 1, FIELD.width - 1), y: ly - 1.1,
+        x: clamp(bx + olY[i], 1, FIELD.width - 1), y: ly - 0.9,
         top: speedOf('OL', olPlayers[i] ? olPlayers[i].overall : 60), accel: 16, kit: kit }));
     }
     Object.keys(form.spots).forEach(function (slot) {
@@ -132,7 +136,10 @@
       out.push(Actor({ id: 'd_DL' + i, side: 'def', pos: 'DL', slot: 'DL' + i,
         num: dl[i] ? jersey(dl[i], 90 + i) : 90 + i, name: dl[i] ? RO.shortName(dl[i]) : '',
         player: dl[i] || null,
-        x: clamp(bx + dlY[i] + shade, 1, FIELD.width - 1), y: ly + 2.2,
+        /* a yard off the ball, not three: the neutral zone is the width of the
+           football, and a front seven parked two yards upfield of it made the
+           two lines look like they were playing different games */
+        x: clamp(bx + dlY[i] + shade, 1, FIELD.width - 1), y: ly + 1.0,
         top: speedOf('DL', dl[i] ? dl[i].overall : 65), accel: 20, kit: kit }));
     }
     var lbY = nLB >= 4 ? [-6.5, -2.2, 2.2, 6.5] : nLB === 3 ? [-5.2, 0, 5.2] : nLB === 2 ? [-3.4, 3.4] : [0];
@@ -285,6 +292,35 @@
     }
     /* seconds the loop is held open for a camera move that is not football */
     var glide = 0;
+    /* ── HOW MUCH OF THE PICTURE SOMETHING IS SITTING ON ─────────────────
+       The call sheet covers the bottom half of the screen, and the camera
+       went on framing the line of scrimmage at sixty per cent of the CANVAS
+       — which is behind it. You were choosing a play against a strip of empty
+       grass while the formation you were choosing against was under your
+       thumb. Tell the stage what is covered and it frames the football into
+       what is left. */
+    var coverBottom = 0;
+    function applyAnchor() {
+      var vis = Math.max(0.35, 1 - coverBottom / Math.max(1, cam.h));
+      /* THE ESTABLISHING SHOT IS A COMPOSITION AND KEEPS ITS FRAMING. Pulling
+         it up out from under the kickoff sheet the way the play shot is
+         pulled up threw the whole building off the top of the picture. It
+         gives up a little and no more. */
+      if (shot === 'wide') { cam.anchor = clamp(0.62 * vis + 0.20, 0.46, 0.62); return; }
+      /* the offence draws BETWEEN the camera and the line of scrimmage, so the
+         line has to sit high enough in what is left for both fronts to be in
+         the picture while the sheet is up */
+      cam.anchor = clamp(0.62 * vis - 0.04, 0.19, 0.62);
+    }
+    self.setCover = function (px) {
+      var v = Math.max(0, px || 0);
+      if (Math.abs(v - coverBottom) < 2) return;
+      coverBottom = v;
+      applyAnchor();
+      fitCamera();
+      camFollow(0, true);
+      draw();
+    };
     var reduce = false;
     try { reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
 
@@ -301,7 +337,7 @@
          empty turf; on a short one it backs off. Everything else — how far
          away the far men are, how hard the sidelines lean in — falls out of
          the perspective on its own. */
-      cam.anchor = 0.62;
+      applyAnchor();
       fitCamera();
       /* re-frame at once: a resize with a stale camera shows the wrong shot
          until something moves, and between plays nothing does */
@@ -334,6 +370,8 @@
       var want = k === 'wide' ? 'wide' : 'play';
       if (want === shot) return;
       shot = want;
+      applyAnchor();
+      fitCamera();
       if (snap === false) { glide = 1.7; start(); return; }
       camFollow(0, true);
       draw();
@@ -548,6 +586,42 @@
           if (events.onEnd) events.onEnd(endKindOf(result), result);
         }
       }
+      /* ── HOW LONG HE HAS BEEN ON THE GROUND ─────────────────────────────
+         The simulation flips a man to 'down' on one tick and that is correct;
+         a body takes about a third of a second to actually get there. This is
+         the clock the renderer eases the fall over, and nothing but the
+         picture ever reads it. */
+      if (actors) {
+        for (var fi = 0; fi < actors.length; fi++) {
+          var fa = actors[fi];
+          if (fa.state === 'down') fa.fallT = (fa.fallT || 0) + dt;
+          else fa.fallT = 0;
+          /* the same clock for a throw, so the arm has time to come through */
+          if (fa.state === 'throw') fa.throwT = (fa.throwT || 0) + dt;
+          else fa.throwT = 0;
+        }
+      }
+      /* ── HOW HE IS GOING TO HAVE TO CATCH IT ───────────────────────────
+         Every completion played the same overhead reach because 'catch' was
+         one state. Where the ball actually is when it gets there decides it:
+         over his head, out to one side, or into his chest. */
+      if (ball && ball.flight && ball.flight.to) {
+        var rc = ball.flight.to;
+        var bz = ball.z || 0, bdx = ball.x - rc.x, bdy = ball.y - rc.y;
+        rc.catchKind = bz > 2.7 ? 'high'
+          : Math.abs(bdx) > 1.25 ? (bdx > 0 ? 'reachR' : 'reachL')
+          : bdy < -0.9 ? 'back' : 'chest';
+      }
+
+      /* ── SOMEBODY CELEBRATES ────────────────────────────────────────────
+         A touchdown ends with the scorer standing exactly as he was running.
+         Once the whistle has gone and the ball is in the end zone he puts his
+         arms up, which costs nothing and is the difference between a play
+         ending and a play being scored. */
+      if (phase === 'dead' && result && result.touchdown && dead > 0.25) {
+        var scorer = ball.holder || userActor;
+        if (scorer && scorer.state !== 'down') scorer.state = 'celebrate';
+      }
       if (phase === 'dead') dead += dt;
       excite = Math.max(exciteFloor, excite - dt * 0.30);
       camFollow(dt);
@@ -596,6 +670,19 @@
         wide = clamp(hi - lo + 7, 32, los > 80 ? 38 : 44);
         wantX = (lo + hi) / 2;
         wantY = los + 2;
+      } else if (ball.flight) {
+        /* ── THE BALL IS IN THE AIR ──────────────────────────────────────
+           The story is no longer at the line, it is wherever the ball is
+           coming down, and the throw has to be watchable while it travels.
+           The lens eases out and slides up the field between the release and
+           the catch point, further and faster the deeper the throw is. */
+        var f = ball.flight;
+        var air = Math.max(0, f.ty - los);
+        var u = clamp(f.t / Math.max(0.15, f.dur), 0, 1);
+        var ease = u * u * (3 - 2 * u);
+        wide = clamp(36 + air * 0.32, 36, 50);
+        wantX = ballX + (f.tx - ballX) * ease * 0.8;
+        wantY = los + 2 + (f.ty - los - 2) * ease * 0.72;
       } else if (holding) {
         /* while he is holding it the routes are the story — but the story
            starts at the line, not five yards past it, and a shot wide enough
@@ -607,17 +694,59 @@
         var breakaway = ball.holder && ball.holder.carry && Math.hypot(ball.holder.vx, ball.holder.vy) > 8.4;
         wide = breakaway ? 28 : los > 80 ? 31 : 35;
         wantX = tx;
-        wantY = ty + (phase === 'dead' ? 0.5 : 2.5);
+        /* A SCORE IS FOLLOWED IN. Cutting the moment he crosses the line
+           leaves the whole celebration happening off the top of the picture,
+           so the lens carries on into the end zone with him for a beat. */
+        var scored = result && result.touchdown;
+        wantY = ty + (phase === 'dead' ? (scored ? 3.5 : 0.5) : 2.5);
       }
       /* never show more sideline than there is field */
       var halfW = wide / 2;
       wantX = clamp(wantX, halfW - 4, FIELD.width - halfW + 4);
-      var k = snap ? 1 : 1 - Math.pow(0.004, dt);
-      var kz = snap ? 1 : 1 - Math.pow(0.05, dt);
+      /* EASING, NOT TRACKING. A lens that arrives exactly where it was told
+         every frame is a spreadsheet cell following a number; a camera lags a
+         little and catches up. Zoom lags further than pan, because a shot
+         that changes width as fast as it changes aim is the thing that makes
+         people put the phone down. */
+      var k = snap ? 1 : 1 - Math.pow(0.010, dt);
+      var kz = snap ? 1 : 1 - Math.pow(0.14, dt);
       cam.x += (wantX - cam.x) * k;
       cam.y += (wantY - cam.y) * k;
       cam.wide += (wide - cam.wide) * kz;
       fitCamera();
+    }
+
+    /* ── THE TRENCHES, SO YOU CAN SEE THEM ───────────────────────────────
+       A blocker and the man he is blocking converge on one coordinate and the
+       two of them draw on top of each other: the line of scrimmage turns into
+       a row of single bodies and you cannot tell who is winning. The
+       simulation is right to put them there — that IS what a block is — so the
+       fix belongs here, in the picture: hold the pair apart by a shoulder
+       each, along the line between them, and let whoever is winning the rep
+       stand the deeper of the two. Nothing below is read by the football. */
+    function engagementOffsets() {
+      var i, a;
+      for (i = 0; i < actors.length; i++) { actors[i].ox = 0; actors[i].oy = 0; }
+      for (i = 0; i < actors.length; i++) {
+        a = actors[i];
+        if (a.side !== 'off' || !a.lock) continue;
+        var d = null, j;
+        for (j = 0; j < actors.length; j++) if (actors[j].id === a.lock) { d = actors[j]; break; }
+        if (!d) continue;
+        var dx = d.x - a.x, dy = d.y - a.y, m = Math.hypot(dx, dy);
+        if (m < 0.001) { dx = 0; dy = 1; m = 1; }
+        dx /= m; dy /= m;
+        /* how the rep is going: the blocker still has time on the clock and is
+           driving, or he is out of it and being walked backwards */
+        var win = clamp((a.rep || 0) / 1.6, 0, 1) - 0.5;
+        var gap = 0.46 - m * 0.16;                    /* only ever pushes apart */
+        if (gap < 0) gap = 0;
+        a.ox = -dx * gap - dx * win * 0.30; a.oy = -dy * gap - dy * win * 0.30;
+        d.ox = dx * gap - dx * win * 0.30; d.oy = dy * gap - dy * win * 0.30;
+        /* and the arms go out toward the man, not down by his sides */
+        a.engageX = dx; a.engageY = dy;
+        d.engageX = -dx; d.engageY = -dy;
+      }
     }
 
     /* ── DRAW ────────────────────────────────────────────────────────────── */
@@ -659,6 +788,7 @@
          has the football already wears a white ring, and two tags a yard
          apart just cover each other up. */
       actors.forEach(function (a) { a.label = (a.sel && userMode === 'play') ? a.name : null; });
+      engagementOffsets();
       var sorted = actors.slice().sort(function (a, b) { return b.y - a.y; });
       /* back to front, so the near men overlap the far ones — except the two
          you must never lose in a pile: whoever has the football, and whoever

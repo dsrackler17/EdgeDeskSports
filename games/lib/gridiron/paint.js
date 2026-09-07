@@ -117,14 +117,21 @@
   function uniform(theme, away) {
     var t = theme || {};
     var p = t.primary || '#3fb883', s = t.secondary || '#123326', ink = t.ink || '#06231a';
+    /* A KIT IS THREE VALUES, NOT ONE COLOUR. Helmet, jersey and pants have to
+       separate at twenty yards or the man reads as one silhouette with a
+       number on it — which is exactly what a green helmet over a green jersey
+       looked like: a lineman with no head. So the home side wears its colour
+       on the shirt, a light trouser under it and a deep shell above it, and
+       the away side inverts the whole thing. */
     if (away) {
-      return { jersey: '#e8ecf2', jerseyDark: '#c6ccd6', pants: '#dfe4ec',
-               helmet: p, helmetDark: shade(p, -0.35), trim: p, ink: '#1a2029',
-               sleeve: p, sock: p };
+      return { jersey: '#e9edf3', jerseyDark: '#c2c9d4', pants: '#dee3ea',
+               helmet: p, helmetDark: shade(p, -0.42), trim: p, ink: '#1a2029',
+               sleeve: shade(p, -0.06), sock: p, collar: shade(p, -0.20) };
     }
-    return { jersey: p, jerseyDark: shade(p, -0.30), pants: shade(p, -0.55),
-             helmet: shade(p, -0.12), helmetDark: shade(p, -0.45), trim: '#ffffff',
-             ink: readable(p), sleeve: shade(p, -0.42), sock: '#ffffff' };
+    return { jersey: p, jerseyDark: shade(p, -0.32), pants: shade(p, 0.70),
+             helmet: shade(p, -0.40), helmetDark: shade(p, -0.66), trim: '#ffffff',
+             ink: readable(p), sleeve: shade(p, -0.16), sock: shade(p, -0.30),
+             collar: '#ffffff' };
   }
   /* a colour, whatever form it arrives in — shade() returns rgb() strings and
      they get shaded again, so this has to read its own output */
@@ -153,160 +160,341 @@
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
   /* ── BUILD ───────────────────────────────────────────────────────────────
-     A lineman is not a corner. Position decides how wide the pads are, how
-     thick the body is and how tall the whole man stands. */
+     A lineman is not a corner, and the difference has to be visible at
+     twenty yards. Five numbers per position rather than three: how tall he
+     stands, how wide the pads are, how much torso is under them, how thick
+     the limbs are, and how long the legs run. A receiver is the same height
+     as a guard and looks nothing like him. */
   var BUILD = {
-    QB: { w: 1.00, h: 1.00, pads: 1.00 },
-    RB: { w: 1.02, h: 0.96, pads: 1.02 },
-    FB: { w: 1.10, h: 0.98, pads: 1.10 },
-    WR: { w: 0.88, h: 1.02, pads: 0.90 },
-    TE: { w: 1.08, h: 1.04, pads: 1.10 },
-    OL: { w: 1.06, h: 1.02, pads: 1.12 },
-    DL: { w: 1.08, h: 1.02, pads: 1.14 },
-    LB: { w: 1.10, h: 1.00, pads: 1.12 },
-    CB: { w: 0.86, h: 0.99, pads: 0.88 },
-    S:  { w: 0.92, h: 1.00, pads: 0.94 },
-    K:  { w: 0.95, h: 0.98, pads: 0.95 },
-    P:  { w: 0.95, h: 0.98, pads: 0.95 }
+    QB: { h: 1.01, pads: 1.00, torso: 1.00, limb: 0.99, leg: 1.00 },
+    RB: { h: 0.96, pads: 1.05, torso: 1.06, limb: 1.02, leg: 0.98 },
+    FB: { h: 0.98, pads: 1.15, torso: 1.16, limb: 1.10, leg: 0.97 },
+    WR: { h: 1.03, pads: 0.93, torso: 0.91, limb: 0.93, leg: 1.05 },
+    TE: { h: 1.06, pads: 1.12, torso: 1.09, limb: 1.07, leg: 1.02 },
+    OL: { h: 1.03, pads: 1.24, torso: 1.24, limb: 1.20, leg: 0.96 },
+    DL: { h: 1.03, pads: 1.21, torso: 1.18, limb: 1.17, leg: 0.97 },
+    LB: { h: 1.00, pads: 1.11, torso: 1.09, limb: 1.08, leg: 0.99 },
+    CB: { h: 1.00, pads: 0.92, torso: 0.89, limb: 0.92, leg: 1.06 },
+    S:  { h: 1.01, pads: 0.97, torso: 0.95, limb: 0.95, leg: 1.03 },
+    K:  { h: 0.99, pads: 0.95, torso: 0.95, limb: 0.95, leg: 1.02 },
+    P:  { h: 0.99, pads: 0.95, torso: 0.95, limb: 0.95, leg: 1.02 }
   };
   function build(pos) { return BUILD[pos] || BUILD.LB; }
+
+  /* ── THE SKELETON ────────────────────────────────────────────────────────
+     Where the joints are, as fractions of standing height, feet on the grass
+     at zero and the crown of the helmet at one. These are a man's
+     proportions, not a doll's: the helmet is a sixth of him and the shoulders
+     are a quarter of him across. The first version of this renderer gave him
+     a head three tenths of his height and shoulders wider than he was tall,
+     which is exactly why it read as a placeholder however carefully the rest
+     of it was shaded. */
+  var SK = {
+    foot: 0.000, ankle: 0.055, knee: 0.255, hip: 0.470,
+    waist: 0.530, chest: 0.720, shoulder: 0.805, neck: 0.845,
+    head: 0.905, crown: 1.000,
+    padHalf: 0.146, chestHalf: 0.114, waistHalf: 0.092, hipHalf: 0.100,
+    thighHalf: 0.053, calfHalf: 0.040, upperHalf: 0.037, foreHalf: 0.030,
+    helmR: 0.096
+  };
 
   /* the height of a man on the field, in yards, before his build */
   var BODY = 2.6;
 
   /* ── ONE FOOTBALL PLAYER ─────────────────────────────────────────────────
-     p: { x, y, pos, kit, num, state, phase, face, lean, sel, down }
+     p: { x, y, pos, kit, num, state, phase, face, lean, sel, down, vx, vy }
        state  stance | run | block | engaged | shed | tackle | down | catch
               | throw | carry | celebrate | idle
-       phase  seconds of animation, for the running cycle
-       face   -1 .. 1 lateral facing, and `back` when running away from camera */
+       phase  seconds, for the stride
+       face   left | right | front | back
+       vx,vy  yards a second, when the simulation is running him. The GAIT
+              comes out of these rather than out of the state name, which is
+              how a corner opening his hips and a corner sprinting can look
+              like two different things while the engine calls both 'run'.  */
   function player(ctx, p, cam) {
-    var sx = cam.sx(p.x, p.y), sy = cam.sy(p.y);
+    /* ox/oy are a PRESENTATION nudge in yards — engagement offsets so two men
+       in a block do not stand on the same blade of grass. The simulation
+       never sees them; it is still one coordinate per man. */
+    var px = p.x + (p.ox || 0), py = p.y + (p.oy || 0);
+    var sx = cam.sx(px, py), sy = cam.sy(py);
     if (sx < -90 || sx > cam.w + 90 || sy < -90 || sy > cam.h + 110) return;
     var b = build(p.pos), k = p.kit || uniform(null);
     /* HOW BIG HE IS IS HOW FAR AWAY HE IS. Nothing else. */
-    var u = cam.scale(p.y) * (p.scale || 1);                /* pixels per yard here */
+    var u = cam.scale(py) * (p.scale || 1);                /* pixels per yard here */
     if (u < 2.2) return;
     var H = BODY * b.h * u;                                  /* pixel height */
     var down = p.state === 'down';
-    var run = p.state === 'run' || p.state === 'carry' || p.state === 'shed';
+    var st = p.state;
     var ph = p.phase || 0;
-    var cyc = run ? Math.sin(ph * 13) : p.state === 'engaged' ? Math.sin(ph * 22) * 0.35 : 0;
-    var lean = (p.lean || 0) + (run ? 0.10 : 0);
     var back = p.face === 'back';
+    var side = p.face === 'left' ? -1 : p.face === 'right' ? 1 : 0;
+
+    /* ── THE GAIT ──────────────────────────────────────────────────────
+       How fast he is going decides how he is moving, and how he is going
+       relative to the way he is looking decides what it is called. */
+    var vx = p.vx || 0, vy = p.vy || 0;
+    var spd = Math.sqrt(vx * vx + vy * vy);
+    var sn = clamp(spd / 9, 0, 1.2);
+    /* RUNNING THE OPPOSITE WAY TO THE WAY HE IS LOOKING. Take it off the
+       facing rather than off the side of the ball he plays on: a corner
+       dropping into a zone and a corner chasing a post are both 'run' to the
+       simulation and have to look nothing alike. `back` means he is facing
+       away from the camera, which is up the field. */
+    var retreat = back ? vy < -1.2 : vy > 1.2;
+    var lateral = Math.abs(vx) > Math.abs(vy) * 1.7 && sn > 0.18;
+    var gait = st === 'block' || st === 'engaged' ? 'block'
+             : st === 'tackle' ? 'tackle'
+             : sn < 0.10 ? 'idle'
+             : retreat ? 'backpedal'
+             : lateral ? 'shuffle'
+             : sn < 0.30 ? 'walk' : sn < 0.62 ? 'jog' : 'sprint';
+
+    /* STRIDE RATE FOLLOWS SPEED. A man jogging and a man at a dead sprint
+       cycling their legs at the same rate is the single clearest tell that
+       nothing on the screen has any weight. */
+    var rate = gait === 'backpedal' ? 8 + sn * 9
+             : gait === 'shuffle' ? 7 + sn * 7
+             : 5.0 + sn * 10.5;
+    var cyc = gait === 'idle' ? 0
+            : gait === 'block' ? Math.sin(ph * 21) * 0.30
+            : Math.sin(ph * rate);
+    /* how far the legs actually travel: a walk is not a sprint at half speed */
+    var reach = gait === 'idle' ? 0.06
+              : gait === 'backpedal' ? 0.34
+              : gait === 'shuffle' ? 0.30
+              : gait === 'walk' ? 0.42
+              : gait === 'jog' ? 0.72 : 1.0;
+
+    /* NOBODY STANDS UP STRAIGHT BEFORE A SNAP. A crouch is the knees folding,
+       so the hip comes down and everything above it comes with it — and a
+       lineman folds twice as far as a receiver and pitches over the ball. */
+    var lineman = p.pos === 'OL' || p.pos === 'DL';
+    var crouch = st === 'stance' ? (lineman ? 0.115 : 0.042) : 0;
+
+    /* the body leans into what it is doing, and the lean is momentum */
+    var lean = (p.lean || 0) * 0.55 + (st === 'stance' ? (lineman ? 0.30 : 0.10) : 0);
+    if (gait === 'sprint') lean += 0.16;
+    else if (gait === 'jog') lean += 0.09;
+    else if (gait === 'backpedal') lean -= 0.10;
+    if (st === 'block' || st === 'engaged') lean += 0.13;
+    if (p.move === 'truck') lean += 0.20;
 
     ctx.save();
     ctx.translate(sx, sy);
 
     /* how flat a circle drawn on the turf looks from here */
-    var squash = Math.max(0.16, Math.min(0.70, cam.fore(p.y) / Math.max(0.001, cam.lat(p.y))));
+    var squash = clamp(cam.fore(py) / Math.max(0.001, cam.lat(py)), 0.16, 0.70);
 
     /* the shadow stays on the ground whatever the body does */
     ctx.save();
     ctx.scale(1, squash);
     ctx.beginPath();
-    ctx.arc(0, 0, H * 0.26, 0, 6.2832);
-    ctx.fillStyle = 'rgba(0,0,0,.30)';
+    ctx.arc(0, 0, H * 0.20, 0, 6.2832);
+    ctx.fillStyle = 'rgba(0,0,0,.32)';
     ctx.fill();
     ctx.restore();
 
-    if (down) {
-      /* on the ground: the whole body laid over, seen from above */
-      ctx.rotate((p.fell || 1) * 1.35);
-      ctx.scale(1, 0.55);
-    } else {
-      ctx.rotate(lean * 0.28);
+    /* THE MAN WITH THE FOOTBALL COMES OUT OF THE PILE. Six bodies inside two
+       yards of each other and the one that matters is somewhere in the middle
+       of them; a soft light behind him separates him without putting another
+       badge on the screen. */
+    if ((p.sel || p.carry) && !down) {
+      var hal = ctx.createRadialGradient(0, -H * 0.52, H * 0.06, 0, -H * 0.52, H * 0.66);
+      hal.addColorStop(0, p.sel ? 'rgba(84,240,158,.34)' : 'rgba(255,255,255,.26)');
+      hal.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = hal;
+      ctx.fillRect(-H * 0.7, -H * 1.2, H * 1.4, H * 1.4);
     }
 
-    var pw = H * 0.295 * b.w;         /* body half-width */
-    var padW = H * 0.262 * b.pads;    /* shoulder half-width */
-    var hipY = -H * 0.43;
-    var shoY = -H * 0.79;
-    var headY = -H * 1.00;
+    if (down) {
+      /* ON THE GROUND, BUT NOT INSTANTLY. He was upright a tick ago; a body
+         that snaps flat between two frames reads as a sprite being switched
+         off. The fall eases over a third of a second, the legs go first and
+         the shoulders follow, and he keeps sliding the way he was going. */
+      var e = clamp((p.fallT == null ? 1 : p.fallT) / 0.34, 0, 1);
+      e = e * e * (3 - 2 * e);
+      ctx.translate(0, H * 0.10 * e);
+      ctx.rotate((p.fell || 1) * 1.42 * e);
+      ctx.scale(1 - 0.06 * e, 1 - 0.45 * e);
+    } else {
+      ctx.rotate(lean * 0.30);
+      /* A CUT ROTATES THE BODY INTO IT. He does not slide sideways facing
+         forwards; he plants and turns, and the shoulders go first. */
+      if (p.move === 'juke' || p.move === 'spin') {
+        ctx.rotate(clamp((p.cutDir || (vx > 0 ? 1 : -1)) * 0.24, -0.3, 0.3));
+      }
+    }
 
-    /* ── LEGS ──────────────────────────────────────────────────────────── */
-    var swing = cyc * H * 0.20;
-    leg(ctx, -pw * 0.46, hipY, H, k, swing, u);
-    leg(ctx, pw * 0.46, hipY, H, k, -swing, u);
+    /* ── THE JOINTS, in pixels, y negative upward ─────────────────────── */
+    var legL = b.leg;
+    var hipY = -H * SK.hip * legL;
+    var kneeY = -H * SK.knee * legL;
+    var shoY = -H * SK.shoulder;
+    var chestY = -H * SK.chest;
+    var waistY = -H * SK.waist;
+    var headY = -H * SK.head;
+    if (crouch) {
+      var drop = H * crouch;
+      /* the spine pitches as well as the knees folding, so the head does not
+         come down as far as the hips do — otherwise it settles onto the pads
+         and a crouched lineman looks decapitated */
+      hipY += drop; waistY += drop; chestY += drop;
+      shoY += drop * 0.86; headY += drop * 0.66;
+      kneeY += drop * 0.30;
+    }
+    var padW = H * SK.padHalf * b.pads;
+    var chW = H * SK.chestHalf * b.torso;
+    var wsW = H * SK.waistHalf * b.torso;
+    var hpW = H * SK.hipHalf * b.torso;
+    var thW = H * SK.thighHalf * b.limb;
+    var clW = H * SK.calfHalf * b.limb;
+    var upW = H * SK.upperHalf * b.limb;
+    var foW = H * SK.foreHalf * b.limb;
+    var hr = H * SK.helmR;
 
-    /* ── PANTS ─────────────────────────────────────────────────────────── */
+    /* ── LEGS ──────────────────────────────────────────────────────────
+       Two segments with a knee between them, so a stride bends instead of
+       swinging like a pendulum from a hip. */
+    var swing = cyc * reach;
+    var lift = gait === 'sprint' ? 0.62 : gait === 'jog' ? 0.42 : 0.24;
+    var stanceW = gait === 'shuffle' ? 1.7 : gait === 'block' ? 1.5 : 1;
+    legPair(ctx, hipY, kneeY, hpW * stanceW, thW, clW, k, swing, lift, H, gait);
+
+    /* ── PANTS over the hips ───────────────────────────────────────────── */
     ctx.fillStyle = k.pants;
-    roundRect(ctx, -pw * 0.86, hipY - H * 0.06, pw * 1.72, H * 0.25, H * 0.06);
+    roundRect(ctx, -hpW * 1.06, hipY - H * 0.055, hpW * 2.12, H * 0.125, H * 0.045);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.16)';
+    roundRect(ctx, -hpW * 1.06, hipY + H * 0.03, hpW * 2.12, H * 0.04, H * 0.02);
     ctx.fill();
 
-    /* ── TORSO / JERSEY ────────────────────────────────────────────────── */
-    var g = ctx.createLinearGradient(0, shoY, 0, hipY);
-    g.addColorStop(0, k.jersey);
+    /* ── THE FAR ARM, behind the body ──────────────────────────────────── */
+    armOf(ctx, -1, padW, shoY, upW, foW, k, st, -cyc * reach, p, H, gait, true);
+
+    /* ── TORSO ─────────────────────────────────────────────────────────
+       Shoulders down through the lats to the waist, as a curve. A trapezoid
+       is a sack; a man has a shape. */
+    var g = ctx.createLinearGradient(-padW, shoY, padW * 0.55, hipY);
+    g.addColorStop(0, shade(k.jersey, 0.12));
+    g.addColorStop(0.55, k.jersey);
     g.addColorStop(1, k.jerseyDark);
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.moveTo(-padW * 0.92, shoY + H * 0.04);
-    ctx.lineTo(padW * 0.92, shoY + H * 0.04);
-    ctx.lineTo(pw * 0.80, hipY);
-    ctx.lineTo(-pw * 0.80, hipY);
+    ctx.moveTo(-padW * 0.86, shoY);
+    ctx.quadraticCurveTo(-chW * 1.12, chestY, -wsW, waistY);
+    ctx.quadraticCurveTo(-wsW * 1.04, hipY - H * 0.02, -hpW * 0.94, hipY + H * 0.01);
+    ctx.lineTo(hpW * 0.94, hipY + H * 0.01);
+    ctx.quadraticCurveTo(wsW * 1.04, hipY - H * 0.02, wsW, waistY);
+    ctx.quadraticCurveTo(chW * 1.12, chestY, padW * 0.86, shoY);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,.38)';
-    ctx.lineWidth = Math.max(0.8, H * 0.016);
-    ctx.stroke();
-
-    /* the number, on the back if he is running away from you */
-    if (p.num != null && H > 24) {
-      var txt = String(p.num);
-      var fs = Math.min(H * 0.235, (padW * 1.55) / Math.max(1, txt.length) * 1.35);
-      ctx.fillStyle = k.ink;
-      ctx.font = '700 ' + Math.round(fs) + 'px "JetBrains Mono", ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(txt, 0, shoY + H * 0.26);
+    /* a seam of shade down the near side so the chest has a front and a side */
+    if (H > 16) {
+      ctx.fillStyle = 'rgba(0,0,0,.14)';
+      ctx.beginPath();
+      ctx.moveTo(padW * 0.30, shoY);
+      ctx.quadraticCurveTo(chW * 0.70, chestY, wsW * 0.66, waistY);
+      ctx.lineTo(hpW * 0.94, hipY + H * 0.01);
+      ctx.quadraticCurveTo(wsW * 1.04, hipY - H * 0.02, wsW, waistY);
+      ctx.quadraticCurveTo(chW * 1.12, chestY, padW * 0.86, shoY);
+      ctx.closePath();
+      ctx.fill();
     }
 
-    /* ── ARMS ──────────────────────────────────────────────────────────── */
-    var armState = p.state;
-    arm(ctx, -1, padW, shoY, H, k, armState, cyc, p);
-    arm(ctx, 1, padW, shoY, H, k, armState, -cyc, p);
+    /* the number, and it is on his back when he is running away from you */
+    if (p.num != null && H > 26) {
+      var txt = String(p.num);
+      var fs = Math.min(H * 0.150, (chW * 1.8) / Math.max(1, txt.length) * 1.25);
+      ctx.fillStyle = rgba(k.ink, 0.92);
+      ctx.font = '800 ' + Math.round(fs) + 'px "Space Grotesk", "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.save();
+      /* paint on cloth follows the chest round, so it narrows as he turns */
+      ctx.scale(back ? 1 : side ? 0.62 : 0.92, 1);
+      ctx.fillText(txt, 0, chestY * 0.36 + waistY * 0.64);
+      ctx.restore();
+    }
 
-    /* ── SHOULDER PADS ─────────────────────────────────────────────────── */
-    ctx.fillStyle = k.jersey;
-    roundRect(ctx, -padW, shoY - H * 0.045, padW * 2, H * 0.155, H * 0.065);
+    /* ── SHOULDER PADS, a yoke over the top of the jersey ──────────────── */
+    ctx.fillStyle = shade(k.jersey, 0.10);
+    ctx.beginPath();
+    ctx.moveTo(-padW, shoY + H * 0.026);
+    ctx.quadraticCurveTo(-padW * 1.02, shoY - H * 0.052, -padW * 0.54, shoY - H * 0.060);
+    ctx.quadraticCurveTo(0, shoY - H * 0.082, padW * 0.54, shoY - H * 0.060);
+    ctx.quadraticCurveTo(padW * 1.02, shoY - H * 0.052, padW, shoY + H * 0.026);
+    ctx.quadraticCurveTo(0, shoY + H * 0.060, -padW, shoY + H * 0.026);
+    ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,.40)';
-    ctx.lineWidth = Math.max(0.8, H * 0.018);
-    ctx.stroke();
-    ctx.fillStyle = rgba(k.trim === '#ffffff' ? '#ffffff' : k.trim, 0.85);
-    roundRect(ctx, -padW, shoY - H * 0.045, padW * 2, H * 0.032, H * 0.018);
+    if (H > 18) {
+      ctx.strokeStyle = rgba(k.trim, 0.55);
+      ctx.lineWidth = Math.max(0.7, H * 0.010);
+      ctx.stroke();
+      /* the collar: a band of the club's other colour right under the helmet,
+         which is what actually separates a head from a set of shoulders */
+      ctx.fillStyle = rgba(k.collar || k.trim, 0.85);
+      roundRect(ctx, -padW * 0.34, shoY - H * 0.062, padW * 0.68, H * 0.030, H * 0.014);
+      ctx.fill();
+    }
+
+    /* ── THE NEAR ARM, in front ────────────────────────────────────────── */
+    armOf(ctx, 1, padW, shoY, upW, foW, k, st, cyc * reach, p, H, gait, false);
+
+    /* a neck, so the helmet is attached to the man rather than resting on him */
+    ctx.fillStyle = 'rgba(0,0,0,.30)';
+    roundRect(ctx, -hr * 0.34, headY + hr * 0.55, hr * 0.68, shoY - headY - hr * 0.35, hr * 0.2);
     ctx.fill();
 
-    /* ── HELMET ────────────────────────────────────────────────────────── */
-    var hr = H * 0.152;
-    var hg = ctx.createRadialGradient(-hr * 0.35, headY - hr * 0.35, hr * 0.15, 0, headY, hr * 1.15);
-    hg.addColorStop(0, shade(k.helmet, 0.35));
+    /* ── HELMET ────────────────────────────────────────────────────────
+       Taller than it is wide, with a jaw at the front and the facemask
+       hung off it. A circle reads as a head; this reads as equipment. */
+    ctx.save();
+    ctx.translate(side * hr * 0.10, headY);
+    var hg = ctx.createRadialGradient(-hr * 0.40, -hr * 0.45, hr * 0.10, 0, 0, hr * 1.25);
+    hg.addColorStop(0, shade(k.helmet, 0.42));
+    hg.addColorStop(0.62, k.helmet);
     hg.addColorStop(1, k.helmetDark);
     ctx.fillStyle = hg;
     ctx.beginPath();
-    ctx.arc(0, headY, hr, 0, 6.2832);
+    ctx.ellipse(0, 0, hr * 0.98, hr * 1.06, 0, 0, 6.2832);
     ctx.fill();
-    /* a rim, so the helmet reads as a helmet and not as a head */
-    ctx.strokeStyle = 'rgba(0,0,0,.42)';
-    ctx.lineWidth = Math.max(0.8, hr * 0.13);
-    ctx.beginPath(); ctx.arc(0, headY, hr, 0, 6.2832); ctx.stroke();
-    /* the stripe down the crown */
-    ctx.fillStyle = rgba(k.trim, 0.92);
-    roundRect(ctx, -hr * 0.17, headY - hr, hr * 0.34, hr * (back ? 1.55 : 0.85), hr * 0.16);
-    ctx.fill();
+    /* the jaw, forward of the crown, which is what makes it a helmet */
     if (!back) {
-      /* the facemask, pointing the way he is looking */
-      var fx = (p.face === 'left' ? -1 : p.face === 'right' ? 1 : 0);
-      ctx.strokeStyle = 'rgba(232,238,246,.95)';
-      ctx.lineWidth = Math.max(1.1, hr * 0.16);
       ctx.beginPath();
-      ctx.arc(fx * hr * 0.30, headY + hr * 0.26, hr * 0.66, 0.12, Math.PI - 0.12);
-      ctx.stroke();
+      ctx.ellipse(side * hr * 0.30, hr * 0.34, hr * 0.72, hr * 0.60, 0, 0, 6.2832);
+      ctx.fill();
+    }
+    if (H > 15) {
+      ctx.strokeStyle = 'rgba(0,0,0,.40)';
+      ctx.lineWidth = Math.max(0.6, hr * 0.11);
       ctx.beginPath();
-      ctx.moveTo(-hr * 0.55 + fx * hr * 0.30, headY + hr * 0.34);
-      ctx.lineTo(hr * 0.55 + fx * hr * 0.30, headY + hr * 0.34);
+      ctx.ellipse(0, 0, hr * 0.98, hr * 1.06, 0, 0, 6.2832);
       ctx.stroke();
     }
+    /* the stripe down the crown */
+    ctx.fillStyle = rgba(k.trim, 0.9);
+    roundRect(ctx, -hr * 0.14, -hr * 1.05, hr * 0.28, hr * (back ? 1.75 : 0.80), hr * 0.13);
+    ctx.fill();
+    if (!back) {
+      /* THE FACEMASK IS A HOLE WITH BARS ACROSS IT. Drawn as bright strokes
+         it read as a wide white smile on every man on the field; what the eye
+         actually sees at twenty yards is the dark of the opening, with the
+         cage catching a little light in front of it. */
+      var fx = side * hr * 0.26;
+      ctx.fillStyle = 'rgba(16,20,26,.62)';
+      ctx.beginPath();
+      ctx.ellipse(fx, hr * 0.56, hr * 0.40, hr * 0.26, 0, 0, 6.2832);
+      ctx.fill();
+      if (H > 24) {
+        ctx.strokeStyle = 'rgba(198,208,220,.45)';
+        ctx.lineWidth = Math.max(0.6, hr * 0.075);
+        ctx.beginPath();
+        ctx.moveTo(fx - hr * 0.36, hr * 0.52);
+        ctx.lineTo(fx + hr * 0.36, hr * 0.52);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
 
     ctx.restore();
 
@@ -320,24 +508,24 @@
       ctx.save();
       ctx.scale(1, squash);
       ctx.beginPath();
-      ctx.arc(0, 0, H * 0.44, 0, 6.2832);
-      ctx.strokeStyle = p.sel ? (p.selColor || 'rgba(84,240,158,.95)') : 'rgba(255,255,255,.92)';
-      ctx.lineWidth = Math.max(2, H * 0.07);
+      ctx.arc(0, 0, H * 0.34, 0, 6.2832);
+      ctx.strokeStyle = p.sel ? (p.selColor || 'rgba(84,240,158,.95)') : 'rgba(255,255,255,.88)';
+      ctx.lineWidth = Math.max(1.8, H * 0.052);
       ctx.stroke();
       if (p.carry && p.sel) {
         ctx.beginPath();
-        ctx.arc(0, 0, H * 0.60, 0, 6.2832);
-        ctx.strokeStyle = 'rgba(245,190,50,.55)';
-        ctx.lineWidth = Math.max(1, H * 0.035);
+        ctx.arc(0, 0, H * 0.47, 0, 6.2832);
+        ctx.strokeStyle = 'rgba(245,190,50,.50)';
+        ctx.lineWidth = Math.max(1, H * 0.028);
         ctx.stroke();
       }
       ctx.restore();
       if (p.label && H > 26) {
-        var lf = Math.max(8, Math.round(H * 0.20));
+        var lf = Math.max(8, Math.round(H * 0.19));
         ctx.font = '700 ' + lf + 'px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         var lw = ctx.measureText(p.label).width + lf * 0.9;
-        var ly = H * 0.44 * squash + lf * 0.85;
+        var ly = H * 0.34 * squash + lf * 0.85;
         ctx.fillStyle = 'rgba(8,12,17,.80)';
         roundRect(ctx, -lw / 2, ly - lf * 0.65, lw, lf * 1.3, lf * 0.5);
         ctx.fill();
@@ -346,6 +534,124 @@
       }
       ctx.restore();
     }
+  }
+
+  /* the range of tones on a football field, warm to deep */
+  var SKIN = ['#c9a181', '#a87d5c', '#7d5637', '#5c3d27', '#8d6544', '#dcb894',
+              '#6a4630', '#b8906c'];
+
+  /* ── A PAIR OF LEGS ──────────────────────────────────────────────────────
+     Thigh, knee, calf, boot. The far one first and darker, so there is a
+     front and a back to him. */
+  function legPair(ctx, hipY, kneeY, hipW, thW, clW, k, swing, lift, H, gait) {
+    legOne(ctx, -hipW * 0.44, hipY, kneeY, thW, clW, k, -swing, lift, H, gait, true);
+    legOne(ctx, hipW * 0.44, hipY, kneeY, thW, clW, k, swing, lift, H, gait, false);
+  }
+  function legOne(ctx, dx, hipY, kneeY, thW, clW, k, swing, lift, H, gait, far) {
+    /* the knee is BELOW the hip, so this is positive and the thigh is drawn
+       downward from it; drawn upward it put the legs inside the jersey and
+       left the whole man hovering a stride above his own shadow */
+    var thighL = kneeY - hipY;
+    ctx.save();
+    ctx.translate(dx, hipY);
+    /* the thigh swings from the hip */
+    var hipA = swing * 0.62;
+    ctx.rotate(hipA);
+    ctx.fillStyle = far ? shade(k.pants, -0.22) : k.pants;
+    roundRect(ctx, -thW, 0, thW * 2, thighL, thW * 0.8);
+    ctx.fill();
+    /* and the shin folds behind it — a leg that never bends is a stilt */
+    ctx.translate(0, thighL);
+    var kneeA = gait === 'backpedal' ? -Math.abs(swing) * 0.9 - 0.18
+              : -Math.max(0, -swing) * 1.15 - lift * 0.30;
+    ctx.rotate(kneeA);
+    var shinL = -kneeY * 0.86;
+    ctx.fillStyle = far ? shade(k.pants, -0.30) : shade(k.pants, -0.06);
+    roundRect(ctx, -clW * 0.92, 0, clW * 1.84, shinL * 0.42, clW * 0.7);
+    ctx.fill();
+    ctx.fillStyle = far ? shade(k.sock, -0.24) : k.sock;
+    roundRect(ctx, -clW * 0.80, shinL * 0.50, clW * 1.6, shinL * 0.36, clW * 0.5);
+    ctx.fill();
+    /* the boot, and it points the way the shin does */
+    ctx.fillStyle = far ? '#0d1015' : '#191f27';
+    roundRect(ctx, -clW * 0.95, shinL * 0.85, clW * 2.3, shinL * 0.19, clW * 0.55);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* ── AN ARM ──────────────────────────────────────────────────────────────
+     Upper arm from the pad, forearm from the elbow, a hand on the end. What
+     the arms are doing is most of what tells you what a man is doing. */
+  function armOf(ctx, sd, padW, shoY, upW, foW, k, state, cyc, p, H, gait, far) {
+    var upA, elA;
+    /* ARMS THAT REACH FORWARD ARE FORESHORTENED. Swung out to the horizontal
+       a blocker looked like a scarecrow; what he is actually doing is putting
+       his hands into a man in front of him, which from a camera behind him is
+       a short arm, not a wide one. */
+    var squeeze = 1;
+    if (state === 'block' || state === 'engaged') {
+      upA = sd * -0.92; elA = sd * -0.30; squeeze = 0.70;
+    } else if (state === 'shed') { upA = sd * -0.86; elA = sd * 0.50; squeeze = 0.78; }
+    else if (state === 'tackle') { upA = sd * -0.98; elA = sd * -0.48; squeeze = 0.74; }
+    else if (state === 'catch') {
+      /* CHEST, HANDS, OVERHEAD, OR REACHING FOR IT. One pose for every
+         completion made every completion look like the same completion. */
+      var ck = p.catchKind || 'chest';
+      if (ck === 'high') { upA = sd * -2.10; elA = sd * -0.16; squeeze = 1.02; }
+      else if (ck === 'back') { upA = sd * -1.86; elA = sd * -0.10; squeeze = 0.94; }
+      else if (ck === 'reachR') { upA = (sd > 0 ? -1.98 : -1.05) * sd; elA = sd * -0.20; }
+      else if (ck === 'reachL') { upA = (sd < 0 ? -1.98 : -1.05) * sd; elA = sd * -0.20; }
+      else { upA = sd * -1.28; elA = sd * -0.86; squeeze = 0.82; }
+    }
+    else if (state === 'celebrate') { upA = sd * -2.35; elA = sd * -0.20; }
+    else if (state === 'throw') {
+      /* COCK, THROW, FOLLOW THROUGH. Held in the cocked pose the whole time
+         he was in it, the arm never actually threw anything — the ball simply
+         appeared in the air beside a man doing a statue. It comes over now. */
+      var tw = clamp((p.throwT == null ? 0.3 : p.throwT) / 0.34, 0, 1);
+      var arc = tw < 0.34 ? -2.45 + tw * 0.9 : -2.15 + (tw - 0.34) * 3.1;
+      if (sd === (p.hand || 1)) { upA = sd * arc; elA = sd * (-1.05 + tw * 1.35); }
+      else { upA = sd * (-0.95 + tw * 0.5); elA = sd * -0.20; }
+      squeeze = 0.88;
+    } else if (p.carry) {
+      /* the ball is tucked in one arm and the other one runs */
+      if (sd === (p.hand || 1)) { upA = sd * -0.58; elA = sd * -1.25; }
+      else { upA = sd * (0.20 + cyc * 0.85); elA = sd * -0.70 - Math.abs(cyc) * 0.35; }
+    } else if (state === 'stance') {
+      /* hands on the thighs, or down by the ball if he plays in the trenches */
+      if (p.pos === 'OL' || p.pos === 'DL') { upA = sd * -0.22; elA = sd * 0.46; }
+      else { upA = sd * 0.16; elA = sd * -0.62; }
+    } else if (gait === 'backpedal') { upA = sd * (0.30 + cyc * 0.42); elA = sd * -1.05; }
+    else if (gait === 'shuffle') { upA = sd * 0.42; elA = sd * -0.95; }
+    else { upA = sd * (0.16 + cyc * 0.95); elA = sd * -0.62 - Math.abs(cyc) * 0.55; }
+
+    ctx.save();
+    ctx.translate(sd * padW * 0.72, shoY + H * 0.030);
+    ctx.rotate(upA);
+    var upL = H * 0.190 * squeeze;
+    ctx.fillStyle = far ? shade(k.sleeve, -0.26) : k.sleeve;
+    roundRect(ctx, -upW, 0, upW * 2, upL, upW * 0.85);
+    ctx.fill();
+    if (H > 20) {
+      ctx.fillStyle = rgba(k.trim, far ? 0.45 : 0.72);
+      roundRect(ctx, -upW, upL * 0.74, upW * 2, upL * 0.15, upW * 0.4);
+      ctx.fill();
+    }
+    ctx.translate(0, upL);
+    ctx.rotate(elA);
+    var foL = H * 0.140 * squeeze;
+    /* SKIN IS NOT ONE COLOUR. Twenty-two men in the same shade of tan is a
+       tell nobody can name and everybody sees; the tone comes off his number
+       so it is his, and it never changes between frames. */
+    var sk = SKIN[(p.num == null ? 3 : (p.num * 7 + 3)) % SKIN.length];
+    ctx.fillStyle = far ? shade(sk, -0.26) : sk;
+    roundRect(ctx, -foW, 0, foW * 2, foL, foW * 0.9);
+    ctx.fill();
+    /* the hand */
+    ctx.fillStyle = far ? shade(sk, -0.36) : shade(sk, -0.12);
+    roundRect(ctx, -foW * 1.05, foL * 0.88, foW * 2.1, foL * 0.30, foW * 0.8);
+    ctx.fill();
+    ctx.restore();
   }
 
   /* ── A TARGET BADGE ──────────────────────────────────────────────────────
@@ -398,45 +704,6 @@
     }
     ctx.restore();
     return { x: sx, y: cy, r: r * 1.7 };
-  }
-
-  function leg(ctx, dx, hipY, H, k, swing, u) {
-    ctx.save();
-    ctx.translate(dx, hipY);
-    ctx.rotate(swing * 0.06);
-    ctx.fillStyle = k.pants;
-    roundRect(ctx, -H * 0.060, 0, H * 0.12, H * 0.30, H * 0.05);
-    ctx.fill();
-    ctx.fillStyle = k.sock;
-    roundRect(ctx, -H * 0.052, H * 0.28, H * 0.104, H * 0.13, H * 0.04);
-    ctx.fill();
-    ctx.fillStyle = '#14181f';
-    roundRect(ctx, -H * 0.062, H * 0.39, H * 0.13, H * 0.055, H * 0.027);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function arm(ctx, side, padW, shoY, H, k, state, cyc, p) {
-    ctx.save();
-    ctx.translate(side * padW * 0.86, shoY + H * 0.05);
-    var rot;
-    if (state === 'block' || state === 'engaged') rot = side * -1.15;
-    else if (state === 'tackle') rot = side * -0.95;
-    else if (state === 'catch') rot = side * -1.55;
-    else if (state === 'celebrate') rot = side * -2.05;
-    else if (state === 'throw') rot = side === (p.hand || 1) ? -2.2 * side : side * -0.5;
-    else rot = side * (0.18 + cyc * 0.55);
-    ctx.rotate(rot);
-    ctx.fillStyle = k.sleeve;
-    roundRect(ctx, -H * 0.046, 0, H * 0.092, H * 0.215, H * 0.04);
-    ctx.fill();
-    ctx.fillStyle = rgba(k.trim, 0.75);
-    roundRect(ctx, -H * 0.046, H * 0.10, H * 0.092, H * 0.026, H * 0.013);
-    ctx.fill();
-    ctx.fillStyle = '#c8a487';
-    roundRect(ctx, -H * 0.040, H * 0.195, H * 0.080, H * 0.15, H * 0.038);
-    ctx.fill();
-    ctx.restore();
   }
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -619,8 +886,11 @@
          stars rather than as eighty thousand people */
       var sz = clamp(cam.scale(pt.y) * 0.20, 1.5, 5.0);
       /* the ones on their feet bounce; the rest are a texture */
+      /* A STILL CROWD IS A PHOTOGRAPH OF A CROWD. The ones on their feet
+         bounce; the rest are never quite motionless either. */
       var up = d[2] < excite;
-      var bob = up ? Math.sin(tick * 7 + d[3] * 40) * sz * 0.9 : 0;
+      var bob = up ? Math.sin(tick * 7 + d[3] * 40) * sz * 0.9
+                   : Math.sin(tick * 1.6 + d[3] * 24) * sz * 0.13;
       /* which shade of the crowd he is, and whether he is wearing a club */
       var band = d[2] < 0.34 ? 0 : d[2] < 0.67 ? 1 : 2;
       var key = d[3] < 0.20 ? 9 + band : d[3] < 0.32 ? 12 + (band > 1 ? 1 : band) : band * 3 + (up ? 1 : 0);
@@ -826,6 +1096,42 @@
       ctx.fill();
     }
 
+    /* ── THE SCOREBOARD, up on the far deck ────────────────────────────
+       Every stadium has one and it is the brightest thing in the building
+       after the field. Only drawn where it can be seen — from the play lens
+       it is a long way above the top of the picture. */
+    var sbY = cam.sy(yFar + BOWL.endDeep * 0.55, BOWL.high + 6);
+    var sbB = cam.sy(yFar + BOWL.endDeep * 0.55, BOWL.high + 1.2);
+    if (sbY > -20 && sbY < H && sbB > sbY + 3) {
+      var sbL = cam.sx(hw / 2 - 17, yFar + BOWL.endDeep * 0.55);
+      var sbR = cam.sx(hw / 2 + 17, yFar + BOWL.endDeep * 0.55);
+      ctx.fillStyle = '#0a0d12';
+      roundRect(ctx, sbL, sbY, sbR - sbL, sbB - sbY, (sbB - sbY) * 0.12);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.6)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      /* the panel itself, glowing, with a band of the home club's colour */
+      var pad2 = (sbB - sbY) * 0.16;
+      var sg2 = ctx.createLinearGradient(0, sbY, 0, sbB);
+      sg2.addColorStop(0, L.lights ? 'rgba(46,60,52,.95)' : 'rgba(30,38,34,.95)');
+      sg2.addColorStop(1, L.lights ? 'rgba(22,32,28,.95)' : 'rgba(18,24,22,.95)');
+      ctx.fillStyle = sg2;
+      ctx.fillRect(sbL + pad2, sbY + pad2, (sbR - sbL) - pad2 * 2, (sbB - sbY) - pad2 * 2);
+      if (o.homeTint) {
+        ctx.fillStyle = rgba(o.homeTint, L.lights ? 0.55 : 0.30);
+        ctx.fillRect(sbL + pad2, sbB - pad2 * 2.2, (sbR - sbL) - pad2 * 2, pad2 * 1.1);
+      }
+      if (L.lights) {
+        var glw = ctx.createRadialGradient((sbL + sbR) / 2, (sbY + sbB) / 2, 2,
+                                           (sbL + sbR) / 2, (sbY + sbB) / 2, (sbR - sbL) * 0.75);
+        glw.addColorStop(0, 'rgba(150,220,190,.16)');
+        glw.addColorStop(1, 'rgba(150,220,190,0)');
+        ctx.fillStyle = glw;
+        ctx.fillRect(sbL - (sbR - sbL) * 0.4, sbY - (sbB - sbY), (sbR - sbL) * 1.8, (sbB - sbY) * 3);
+      }
+    }
+
     /* ── THE LIGHTS ──────────────────────────────────────────────────── */
     if (L.lights) {
       [-1, 1].forEach(function (side) {
@@ -865,7 +1171,7 @@
   /* ── GOAL POSTS ──────────────────────────────────────────────────────────
      A real one, on the back line of the end zone, in the perspective. Uprights
      eighteen and a half feet apart, crossbar ten feet up. */
-  function goalposts(ctx, cam, y, color) {
+  function goalposts(ctx, cam, y, color, o) {
     if (y < cam.nearestY() - 1) return;
     var cx = FIELD.half, halfW = 3.08, bar = 3.33, up = 12;
     var lw = Math.max(1.2, cam.lat(y) * 0.24);
@@ -890,6 +1196,27 @@
       ctx.stroke();
     });
     ctx.lineCap = 'butt';
+    /* THE RIBBONS, which are the only thing on a football field that tells you
+       what the wind is doing. Two of them, on the tops of the uprights,
+       streaming the way it blows and fluttering at the rate it blows. */
+    if (o && o.wind > 0.02) {
+      var t2 = o.tick || 0;
+      var flow = (o.windX >= 0 ? 1 : -1) * clamp(o.wind, 0, 1);
+      ctx.strokeStyle = 'rgba(240,224,120,.85)';
+      ctx.lineWidth = Math.max(0.9, cam.lat(y) * 0.10);
+      [-halfW, halfW].forEach(function (dx, i) {
+        var x0 = cam.sx(cx + dx, y), y0 = cam.sy(y, up);
+        var L2 = Math.max(4, cam.lat(y) * 1.5);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.quadraticCurveTo(
+          x0 + flow * L2 * 0.55,
+          y0 + Math.sin(t2 * 5.5 + i * 2.1) * L2 * 0.22,
+          x0 + flow * L2,
+          y0 + Math.sin(t2 * 5.5 + i * 2.1 + 0.9) * L2 * 0.30);
+        ctx.stroke();
+      });
+    }
   }
 
   /* ── THE SIDELINE ────────────────────────────────────────────────────────
@@ -924,17 +1251,24 @@
         var h = BODY * sc * 0.52;
         var px = cam.sx(x, y), py = cam.sy(y, 0);
         var coach = (i % 4) === 0;
+        /* NOBODY ON A SIDELINE IS STANDING PERFECTLY STILL. A row of frozen
+           figures beside a moving game is the thing that says "backdrop"; a
+           quarter of an inch of sway, each man on his own phase, and the
+           touchline is populated rather than printed. */
+        var sway = Math.sin((o.tick || 0) * (1.1 + jitter * 0.9) + i * 1.7)
+                 * h * (coach ? 0.020 : 0.034);
+        var bob = Math.abs(Math.sin((o.tick || 0) * (0.9 + jitter * 0.7) + i * 2.3)) * h * 0.018;
         /* a shadow, a body, a head — three shapes and they read as people */
         ctx.fillStyle = 'rgba(0,0,0,.30)';
         ctx.beginPath();
         ctx.ellipse(px, py, h * 0.20, h * 0.07, 0, 0, 6.2832);
         ctx.fill();
         ctx.fillStyle = coach ? '#1c222b' : rgba(kit || '#3fb883', 0.55);
-        roundRect(ctx, px - h * 0.21, py - h * 0.74, h * 0.42, h * 0.58, h * 0.12);
+        roundRect(ctx, px + sway - h * 0.21, py - bob - h * 0.74, h * 0.42, h * 0.58 + bob, h * 0.12);
         ctx.fill();
         ctx.fillStyle = coach ? '#33404e' : shade(kit || '#3fb883', -0.35);
         ctx.beginPath();
-        ctx.arc(px, py - h * 0.84, h * 0.155, 0, 6.2832);
+        ctx.arc(px + sway * 1.35, py - bob - h * 0.84, h * 0.155, 0, 6.2832);
         ctx.fill();
       }
     });
@@ -1072,6 +1406,48 @@
     ground(-14, FIELD.width + 14, yNear, yFar);
     ctx.fill();
 
+    /* ── WEAR AND GRAIN ────────────────────────────────────────────────
+       A field is not a colour swatch. It is played on down the middle and
+       hardly at all near the sidelines, and by the fourth quarter the strip
+       between the hashes is a shade browner than the rest of it. And no grass
+       anywhere is one flat tone: a few hundred seeded specks give it a
+       surface the eye reads as depth without ever being able to name why. */
+    var wearA = Math.max(yNear, 8), wearB = Math.min(yFar, 92);
+    if (wearB > wearA) {
+      /* IT HAS TO FALL OFF AT BOTH ENDS AS WELL AS BOTH SIDES. Faded across
+         and cut square top and bottom, the worn strip read as a rectangle
+         somebody had painted on the grass. A pool centred on midfield fades
+         everywhere at once. */
+      var wcx = cam.sx(FIELD.half, 50), wcy = cam.sy(50);
+      var wr = Math.max(cam.w, cam.h) * 0.62;
+      var wg = ctx.createRadialGradient(wcx, wcy, wr * 0.05, wcx, wcy, wr);
+      wg.addColorStop(0, 'rgba(104,84,52,.17)');
+      wg.addColorStop(0.55, 'rgba(104,84,52,.09)');
+      wg.addColorStop(1, 'rgba(104,84,52,0)');
+      ctx.fillStyle = wg;
+      ground(FIELD.half - 12, FIELD.half + 12, wearA, wearB);
+      ctx.fill();
+    }
+    /* TWO FILLS, NOT FOUR HUNDRED. Every speck setting its own fillStyle is
+       four hundred canvas state changes a frame — the same mistake that once
+       cost the establishing shot thirty-five milliseconds. Light and dark go
+       into one path each. */
+    var gr = seats(), gi, gN = clamp(Math.round(W * H / 900), 90, 420);
+    var grTop = cam.sy(Math.min(yFar, 100));
+    var pass2;
+    for (pass2 = 0; pass2 < 2; pass2++) {
+      ctx.fillStyle = pass2 ? 'rgba(0,0,0,.030)' : 'rgba(255,255,255,.022)';
+      ctx.beginPath();
+      for (gi = 0; gi < gN; gi++) {
+        var q3 = gr[(gi * 13 + 5) % gr.length];
+        if ((q3[3] < 0.5 ? 0 : 1) !== pass2) continue;
+        var gyy = q3[1] * H;
+        if (gyy < grTop) continue;
+        ctx.rect(q3[0] * W, gyy, 1.4 + q3[2] * 2.4, 1.0 + q3[2] * 1.2);
+      }
+      ctx.fill();
+    }
+
     /* ── END ZONES ─────────────────────────────────────────────────────── */
     /* THE FAR END ZONE BELONGS TO THE MEN DEFENDING IT. You drive toward
        their paint, not your own — and from this lens that block of colour is
@@ -1150,8 +1526,10 @@
     }
 
     /* ── THE STICKS, at both ends ──────────────────────────────────────── */
-    goalposts(ctx, cam, 100, '#f2c744');
-    goalposts(ctx, cam, 0, '#f2c744');
+    var Wx = weatherOf(o.weather);
+    var wind = { tick: o.tick || 0, wind: Wx.wind, windX: 1 };
+    goalposts(ctx, cam, 100, '#f2c744', wind);
+    goalposts(ctx, cam, 0, '#f2c744', wind);
     sidelines(ctx, cam, o);
 
     /* ── PYLONS, which stand up off the ground ─────────────────────────── */
@@ -1363,7 +1741,7 @@
   }
 
   var API = {
-    FIELD: FIELD, BODY: BODY, BUILD: BUILD,
+    FIELD: FIELD, BODY: BODY, BUILD: BUILD, SKELETON: SK,
     camera: camera, uniform: uniform, shade: shade, readable: readable, rgba: rgba, hex: hex,
     player: player, target: target, ball: ball,
     stadium: stadium, goalposts: goalposts, sidelines: sidelines,
