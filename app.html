@@ -14271,9 +14271,44 @@ var SUB_PRICE_DISPLAY="$79.99";
 var PAYWALL_LIVE=true;
 window.PAYWALL_LIVE=PAYWALL_LIVE;
 
+/* ---- A COMPED SUBSCRIPTION --------------------------------------------
+   `price_id = 'owner_comp'` with `status = 'active'` is full paid access
+   granted inside this database rather than bought through Stripe: the
+   owner's own account, and anything else ever comped the same way.
+
+   Such a row has NO stripe_customer_id and NO stripe_subscription_id, and
+   that is not a broken row -- nothing was ever bought, so there is nothing
+   for Stripe to have an id for. Every check that reasons from a Stripe id,
+   a renewal date or a checkout link has to be told that, or it reads a
+   complete entitlement as an unfinished purchase and walks the one account
+   that can never be charged into a payment screen.
+
+   Access before the calendar, deliberately: a comp does not lapse. The
+   period-end test in pgEntitled() exists to catch a Stripe row left behind
+   after a subscription really ended, and a comp has no such story --
+   current_period_end on one of these is a formality, not a deadline. So
+   subIsComp() is consulted BEFORE any date arithmetic, never after it.
+
+   One list, one predicate, used by every gate in this file and mirrored by
+   the same two names in index.html. Adding a comp kind is one string here.
+
+   DEFINED HERE, not down beside the paywall, because the settings boot calls
+   loadSubStatus() at parse time -- well above the paywall block -- and a
+   column list that is still undefined at that moment asks PostgREST for
+   `select=undefined` and comes back with nothing. */
+var COMP_PRICE_IDS=['owner_comp'];
+function subIsComp(sub){
+  if(!sub||sub.status!=='active')return false;
+  return COMP_PRICE_IDS.indexOf(String(sub.price_id||''))>=0;
+}
+/* The columns every subscription read asks for. price_id is on this list
+   because without it subIsComp() cannot see a comp at all: the row comes back
+   looking like an ordinary subscription with no way to have been paid for. */
+var PG_SUB_COLS='status,price_id,current_period_end,cancel_at_period_end,stripe_customer_id';
+
 async function loadSubStatus(){
   try{
-    var rows=await sbGet('subscriptions?select=status,current_period_end,cancel_at_period_end,stripe_customer_id&limit=1');
+    var rows=await sbGet('subscriptions?select='+PG_SUB_COLS+'&limit=1');
     window.SUB=(rows&&rows[0])||null;
   }catch(e){ window.SUB=undefined; }   // undefined = couldn't read; null = no subscription
   if(SET_ACTIVE==='subscription')renderSettings();
@@ -14294,6 +14329,24 @@ function renderSetSub(){
       setRow('Price','<span class="set-val">'+SUB_PRICE_DISPLAY+' / month</span>','Renews monthly until cancelled')+
       '<div class="set-act"><a class="btn sm" href="./index.html#subscribe" style="text-decoration:none">Subscribe</a></div>'+
       '<div class="set-note">Subscribing takes you through the automatic renewal terms before any payment is collected.</div>');
+    return out;
+  }
+  /* A COMP. Every row below this point describes a Stripe subscription -- a
+     renewal date, a monthly charge, a portal to cancel it in -- and none of
+     it is true of an account that was never billed. Telling the owner
+     "Renews on 31 December 2099: you will be charged $79.99 on this date" is
+     not a cosmetic slip. It states a charge that is never coming and offers
+     a cancel button for a subscription Stripe has never heard of. */
+  if(subIsComp(sub)){
+    out+=setCard('Subscription',null,
+      setRow('Plan','<span class="set-val">EdgeDesk Research Terminal</span>')+
+      setRow('Status','<span class="set-val pos">PAID · Owner Access</span>')+
+      setRow('Price','<span class="set-val">$0 — comped</span>','Granted on the account, not billed through Stripe')+
+      setRow('Renews on','<span class="set-val">Never expires</span>','No card on file, and no charge scheduled'));
+    out+=setCard('Manage',null,
+      '<div class="set-note" style="border:none;padding-top:0">Nothing to cancel. This account has full access '+
+      'without a subscription, so it has no Stripe customer, no payment method and no billing history — '+
+      'there is nothing here that can charge you.</div>');
     return out;
   }
   var active=(sub.status==='active'||sub.status==='trialing');
@@ -16305,6 +16358,8 @@ var PG_GRACE_DAYS=21;
 
 function pgEntitled(sub){
   if(!sub)return false;
+  /* A comp is entitled on the row alone, before any date is looked at. */
+  if(subIsComp(sub))return true;
   var ok=['active','trialing'];
   if(ok.indexOf(sub.status)>=0){
     if(sub.current_period_end){
@@ -16340,20 +16395,34 @@ function pgWarnBar(sub){
 }
 function pgIsOwner(){var u=(typeof edUser==='function')?edUser():null;return !!(u&&u.id===PG_OWNER_ID);}
 
-/* single source of truth: 'ok' | 'locked' | 'unknown' */
+/* single source of truth: 'ok' | 'locked' | 'unknown'
+
+   The owner short-circuit used to come FIRST and return without reading
+   anything, which opened the app and left window.SUB unset -- so Settings
+   said "Checking your subscription…" forever and the gate could not tell
+   anyone why they were in. The row is read first now and the hardcoded id is
+   what it always should have been: a backstop for the day the row is missing,
+   not the thing that grants access. The comp row grants it. */
 async function pgCheck(){
-  if(pgIsOwner())return 'ok';
   try{
-    var rows=await sbGet('subscriptions?select=status,current_period_end,cancel_at_period_end,stripe_customer_id&limit=1');
+    var rows=await sbGet('subscriptions?select='+PG_SUB_COLS+'&limit=1');
     window.SUB=(rows&&rows[0])||null;
-    return pgEntitled(window.SUB)?'ok':'locked';
   }catch(e){
     window.SUB=undefined;
-    return 'unknown';                      /* read failed - never lock on this */
+    return pgIsOwner()?'ok':'unknown';     /* read failed - never lock on this */
   }
+  if(pgEntitled(window.SUB))return 'ok';
+  return pgIsOwner()?'ok':'locked';
 }
 
 function pgShow(html){
+  /* A comped account can never need this overlay: there is no purchase to
+     finish and no webhook to wait for, and every panel it shows ends in a
+     Stripe checkout button. Every path that opens the gate already checks
+     entitlement first, so this is not load-bearing today -- it is what makes
+     "a comp is never sent to checkout" a property of the code rather than a
+     property of the current call graph. */
+  if(subIsComp(window.SUB)){pgHide();return;}
   var el=$('payGate'); if(!el)return;
   el.querySelector('.pg-card').innerHTML=html;
   el.classList.add('on');

@@ -2442,6 +2442,18 @@ function edSignOut(){try{localStorage.removeItem('edgedesk_session');localStorag
 function openArl(){
   var u=edUserFromSession();
   if(!u||!u.id){ setPendingSub(true); openAuth('signup'); return; }
+  /* ALREADY PAID: never show this screen. It is the renewal-terms consent for
+     a purchase, and an account that already has access has no purchase to
+     make -- a live subscriber sent through it buys a second one, and a comp
+     has nothing to buy at all. Asynchronous on purpose: the modal opens for
+     everybody else at once, and only an answered 'yes' takes it away again.
+     'unknown' is a failed read and must never block a real customer from
+     paying, so only a definite yes redirects. */
+  edSubState().then(function(st){
+    if(st!=='yes')return;
+    document.getElementById('arlModal').classList.remove('on');
+    window.location.href=APP_URL;
+  }).catch(function(){});
   /* Show the attribution the customer is about to be recorded under. If a
      partner is going to be paid on this subscription for as long as it lives,
      the customer should be able to see that at the moment they consent. */
@@ -2462,6 +2474,25 @@ async function confirmArl(){
   if(!cb.checked){msg.className='auth-msg err';msg.textContent='Please confirm the automatic renewal terms to continue.';return;}
   var u=edUserFromSession(), s=edSession();
   if(!u||!u.id||!s){msg.className='auth-msg err';msg.textContent='Session expired. Please log in again.';return;}
+
+  /* THE LAST GATE BEFORE STRIPE. An account that already has access has
+     nothing to buy: a live subscriber pressing this buys a second
+     subscription and is charged twice, and a comped account is being sent to
+     pay for what it already has. Checked BEFORE the consent write, because a
+     consent record is a legal statement that this person agreed to be billed
+     on these terms — writing one for a charge that must never happen puts a
+     false record in an append-only evidence table.
+
+     Only a definite 'yes' stops it. 'unknown' is a read that failed, and
+     refusing to sell to somebody because the database blinked is worse than
+     the risk it would avoid. */
+  var already=await edSubState();
+  if(already==='yes'){
+    msg.className='auth-msg ok';
+    msg.innerHTML='<b>This account already has full access</b> — there is nothing to pay for. Opening the terminal…';
+    setTimeout(function(){window.location.href=APP_URL;},700);
+    return;
+  }
 
   var btn=document.getElementById('arlSubmit'); btn.disabled=true; var old=btn.textContent; btn.textContent='…';
   /* Record the consent BEFORE sending them to Stripe, storing the exact terms
@@ -2783,6 +2814,22 @@ async function edRecheckSub(btn){
 /* ===== boot =====
    Two jobs: stop showing "Sign up" to someone already signed in, and resume a
    checkout that was interrupted by email confirmation. */
+/* ---- A COMPED SUBSCRIPTION --------------------------------------------
+   The same two names, and the same meaning, as app.html: `price_id =
+   'owner_comp'` with `status = 'active'` is full paid access granted on the
+   account rather than bought through Stripe. It has no stripe_customer_id
+   and no stripe_subscription_id because nothing was ever bought.
+
+   It matters HERE because this page is the one that sends people to Stripe.
+   Every "Start free trial" button, the renewal-terms screen, and the
+   checkout link behind it are decided by edSubState(), so a comp that this
+   page cannot recognise is an account walked into a payment screen it must
+   never see. */
+var COMP_PRICE_IDS=['owner_comp'];
+function subIsComp(sub){
+  if(!sub||sub.status!=='active')return false;
+  return COMP_PRICE_IDS.indexOf(String(sub.price_id||''))>=0;
+}
 /* Is this signed-in account actually paid?
    'yes' | 'no' | 'unknown'. Unknown means the read failed — treated as neither,
    so a database hiccup never tells a paying subscriber they are locked out. The
@@ -2791,11 +2838,15 @@ async function edRecheckSub(btn){
 async function edSubState(){
   var s=edSession(); if(!s||!s.access_token)return 'no';
   try{
-    var r=await fetch(SB_URL+'/rest/v1/subscriptions?select=status&limit=1',
+    /* price_id, not status alone: without it a comp is indistinguishable
+       from an ordinary active subscription and subIsComp() can never fire. */
+    var r=await fetch(SB_URL+'/rest/v1/subscriptions?select=status,price_id&limit=1',
       {headers:{apikey:SB_KEY,authorization:'Bearer '+s.access_token}});
     if(!r.ok)return 'unknown';
     var rows=await r.json();
-    var st=(rows&&rows[0]&&rows[0].status)||'';
+    var sub=(rows&&rows[0])||null;
+    if(subIsComp(sub))return 'yes';
+    var st=(sub&&sub.status)||'';
     return (st==='active'||st==='trialing')?'yes':'no';
   }catch(e){ return 'unknown'; }
 }
