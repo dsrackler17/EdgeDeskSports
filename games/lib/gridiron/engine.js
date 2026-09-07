@@ -28,7 +28,12 @@
 
   var ENGINE_VERSION = 'gridiron_v1';
 
-  /* ── the rules ─────────────────────────────────────────────────────────── */
+  /* ── the rules ───────────────────────────────────────────────────────────
+     FOUR FIFTEEN-MINUTE QUARTERS, which is 3,600 seconds, and at the clock
+     model below that is about 60 snaps and 10 to 12 possessions a side — the
+     shape tools/games/gridiron_sim.test.js bands against. The phone offers
+     8:00 and 5:00 quarters; every figure in the harness is a rate, so a
+     shorter game is the same football in less of it. */
   var RULES = {
     quarters: 4,
     quarter_seconds: 900,        /* 15:00, the real thing; the clock is what compresses */

@@ -718,13 +718,32 @@
       var heat = heatOn(qb);
       var prog = progression();
 
-      /* THE USER'S QUARTERBACK IS THE USER'S. All he gets is the bail-out a
-         real one has: when he has been back far too long and somebody is on
-         him, he throws it away rather than eat a twelve-yard sack for a snap
-         nobody was ever going to make. Late enough that a player who is
-         actually playing never meets it. */
+      /* ── THE USER'S QUARTERBACK IS THE USER'S ─────────────────────────
+         Every throw is the player's to make and he can hold it as long as he
+         likes in a clean pocket. What he gets is the two things a real
+         quarterback does when the pocket is not clean and he has not decided:
+         he checks it down, and then he throws it away. Without them a player
+         who has not yet learned to tap a receiver takes four sacks a half,
+         which is not a lesson — it is a wall.
+
+         Both are gated on somebody actually closing on him. Nothing here ever
+         fires while he is protected, so a player waiting on a deep route
+         never has the ball taken out of his hands. */
       if (!autoQB) {
-        if (t > Math.max(3.6, hold + 2.1) && heat > 0.72) throwAway('nothing there');
+        /* a clean pocket is his to stand in for as long as he likes */
+        if (heat < 0.45 && t < 5.5) return;
+        if (t > hold * 0.95 && heat > 0.45) {
+          var dump = null, dv = -1, k;
+          for (k = 0; k < prog.length; k++) {
+            var m = prog[k];
+            if (!m || m.state === 'down') continue;
+            if (t < (m.job.t || 2.0) * 0.65) continue;
+            var ov = openAhead(m, iq);
+            if (ov > dv) { dv = ov; dump = m; }
+          }
+          if (dump && dv >= 0.22) { throwTo(dump.id); return; }
+        }
+        if ((heat > 0.60 && t > hold * 1.15) || t > 5.5) throwAway('nothing there');
         return;
       }
 
