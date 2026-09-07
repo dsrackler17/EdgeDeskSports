@@ -344,5 +344,44 @@ console.log('\nPLAY MODE — the thumbs');
   chk('and only once', real.snap() === false);
 })();
 
+/* ── ONE NAME, ONE THING ──────────────────────────────────────────────────
+   play.js is a single closure two thousand lines long, and `var` does not
+   care: declaring the same name twice at module scope silently gives the
+   whole file whichever one is assigned last. That shipped: a table of player
+   milestones called MARKS, and eleven hundred lines later the table of club
+   badges that had always been called MARKS. The second won, `MARKS.forEach`
+   threw on the first snap of every game, and because it threw inside the
+   whistle handler the game stopped dead — no next play, no clock, nothing to
+   press. Every test passed and the simulation was perfect. Only a browser
+   found it, and the badges are CLUB_MARKS now.
+
+   Two lines of guard against an entire class of that. */
+(() => {
+  const FILES = ['games/play/play.js', 'games/lib/gridiron/live.js',
+                 'games/lib/gridiron/stage.js', 'games/lib/gridiron/engine.js',
+                 'games/lib/gridiron/paint.js', 'games/lib/gridiron/session.js'];
+  const fs = require('fs');
+  FILES.forEach((rel) => {
+    const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    const seen = {}, dupes = [];
+    /* module scope inside the closure is exactly two spaces of indent; a
+       function-local `var` is indented further and is nobody's business */
+    const re = /^ {2}var ([A-Za-z_$][\w$]*)\s*=/gm;
+    let m;
+    while ((m = re.exec(src))) {
+      const line = src.slice(0, m.index).split('\n').length;
+      if (seen[m[1]]) dupes.push(m[1] + ' (lines ' + seen[m[1]] + ' and ' + line + ')');
+      else seen[m[1]] = line;
+    }
+    chk(rel.split('/').pop() + ' declares each name once', dupes.length === 0, dupes.join(', '));
+    /* and it is at least valid JavaScript. play.js is two thousand lines of
+       the only part of this game a person actually touches, and until now
+       nothing in the suite so much as read it. */
+    let parsed = true, why = '';
+    try { new Function(src); } catch (e) { parsed = false; why = e.message; }
+    chk(rel.split('/').pop() + ' parses', parsed, why);
+  });
+})();
+
 console.log('  ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { console.log('\nFAILURES'); fails.forEach(f => console.log(f)); process.exit(1); }
