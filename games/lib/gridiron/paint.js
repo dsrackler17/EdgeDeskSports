@@ -1690,6 +1690,48 @@
     band(los, 'rgba(74,142,255,.72)');
   }
 
+  /* ── THE CREASE ───────────────────────────────────────────────────────────
+     The hole, while the run is happening. Not the lane the play was drawn
+     with — the gap the blocking has actually made, handed over by the live
+     simulation frame by frame.
+
+     It is drawn as grass rather than as a diagram: a soft wedge that opens
+     out of the line of scrimmage, brightest where the hole is widest and gone
+     three yards downfield. A player watching a run can otherwise only see a
+     man vanish into a pile; this is the four-yards-instead-of-one, on the
+     field, while it is still true. Quiet on purpose — it must never be the
+     brightest thing on the screen, which is the football. */
+  function crease(ctx, cam, c) {
+    if (!c || !(c.w > 0)) return;
+    var a = 0.05 + c.open * 0.16;
+    var y0 = c.y - 0.4, y1 = c.y + 3.4;
+    var half0 = c.w / 2, half1 = c.w / 2 * 0.62;
+    var grad;
+    var xa = cam.sx(c.x, y0), ya = cam.sy(y0), yb = cam.sy(y1);
+    try {
+      grad = ctx.createLinearGradient(xa, ya, xa, yb);
+      grad.addColorStop(0, 'rgba(242,199,68,' + a.toFixed(3) + ')');
+      grad.addColorStop(1, 'rgba(242,199,68,0)');
+      ctx.fillStyle = grad;
+    } catch (_) { ctx.fillStyle = 'rgba(242,199,68,' + (a * 0.6).toFixed(3) + ')'; }
+    ctx.beginPath();
+    ctx.moveTo(cam.sx(c.x - half0, y0), cam.sy(y0));
+    ctx.lineTo(cam.sx(c.x + half0, y0), cam.sy(y0));
+    ctx.lineTo(cam.sx(c.x + half1, y1), cam.sy(y1));
+    ctx.lineTo(cam.sx(c.x - half1, y1), cam.sy(y1));
+    ctx.closePath();
+    ctx.fill();
+    /* the two edges of it, so the hole has a shape rather than a glow */
+    ctx.strokeStyle = 'rgba(242,199,68,' + (a * 1.5).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(1, 1.6 * cam.lat(y0) / 15);
+    ctx.beginPath();
+    ctx.moveTo(cam.sx(c.x - half0, y0), cam.sy(y0));
+    ctx.lineTo(cam.sx(c.x - half1, y1), cam.sy(y1));
+    ctx.moveTo(cam.sx(c.x + half0, y0), cam.sy(y0));
+    ctx.lineTo(cam.sx(c.x + half1, y1), cam.sy(y1));
+    ctx.stroke();
+  }
+
   /* ── PLAY ART: routes, the run path and blitz arrows ──────────────────── */
   function art(ctx, cam, paths) {
     if (!paths || !paths.length) return;
@@ -1745,7 +1787,7 @@
     camera: camera, uniform: uniform, shade: shade, readable: readable, rgba: rgba, hex: hex,
     player: player, target: target, ball: ball,
     stadium: stadium, goalposts: goalposts, sidelines: sidelines,
-    atmosphere: atmosphere, conditions: conditions, LIGHT: LIGHT, WEATHER: WEATHER, field: field, markers: markers, art: art, roundRect: roundRect
+    atmosphere: atmosphere, conditions: conditions, LIGHT: LIGHT, WEATHER: WEATHER, field: field, markers: markers, art: art, crease: crease, roundRect: roundRect
   };
   root.EDGridironPaint = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

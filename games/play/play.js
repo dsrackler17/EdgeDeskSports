@@ -911,12 +911,24 @@
     else if (p.incomplete) line = 'Incomplete';
     else if (p.completion) line = p.yards + '-yard catch';
     else line = p.yards + '-yard rush';
-    /* the reason: the engine already says it, after the dash */
+    /* ── THE REASON, AND THE MOST SPECIFIC ONE AVAILABLE ──────────────────
+       "They had eight in the box" is true of the whole defence; "Wexler held
+       the point" is true of the block the run went behind, and it is the one
+       a player can do something with next time. Play Mode knows it because
+       twenty-two men actually blocked each other, so when it is there it
+       wins. */
     var why = '';
-    var c = String(p.commentary || '');
-    var cut = c.indexOf(' — ');
-    if (cut > 0) why = c.slice(cut + 3);
-    else if (p.notes && p.notes.length) why = p.notes[p.notes.length - 1];
+    var block = null;
+    (p.notes || []).forEach(function (n) {
+      if (/held the point|beat the block|came free|beat /.test(n)) block = n;
+    });
+    if (block) why = block;
+    else {
+      var c = String(p.commentary || '');
+      var cut = c.indexOf(' — ');
+      if (cut > 0) why = c.slice(cut + 3);
+      else if (p.notes && p.notes.length) why = p.notes[p.notes.length - 1];
+    }
     var d = document.createElement('div');
     d.className = 'res' + (p.big ? ' res-big' : '');
     d.innerHTML = (who ? '<b>' + esc(who) + '</b>' : '')

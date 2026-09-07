@@ -82,7 +82,7 @@
     var thrown = false, pressureSeen = false, handedOff = false;
     var notes = [];
     var threwAway = false;
-    var bailAt = 0, bailKind = null, bailLane = null, thrownAt = null;
+    var bailAt = 0, bailKind = null, bailLane = null, thrownAt = null, poaX = null;
     /* ── WHOSE QUARTERBACK IS THIS ────────────────────────────────────────
        He belongs to the user only while the user is on offence with a thumb
        on the screen. Every other snap — Coach Mode, and every snap the other
@@ -331,6 +331,11 @@
          and the back's for the rest of it; until the ball is in his belly
          there is nothing for a thumb to steer. */
       if (play.type === 'run' && !handedOff && t >= handoffAt) handoff();
+      /* WHERE HE HIT THE LINE. The point of attack is not where he was
+         tackled and it is not where the play was drawn — it is the spot he
+         crossed the line of scrimmage, and it is the only place worth asking
+         who won a block. */
+      if (poaX == null && carrier && carrier.carry && carrier.y >= los) poaX = carrier.x;
 
       /* 1 — the thumbs */
       applyInput(input);
@@ -1124,6 +1129,8 @@
           return;
         }
         b.rep -= dt;
+        b.heldFor = (b.heldFor || 0) + dt;
+        d.heldBy = b.id;
         d.engaged = b.id; b.engaged = d.id;
         /* ── THE BULL RUSH, AND WHICH WAY IT GOES ────────────────────────
            A defender who is winning the rep drives the man in front of him
@@ -1138,10 +1145,12 @@
                          - (play.type === 'run' ? b.k.rbk : b.k.blk), -0.5, 0.6);
         b.y -= give * 1.5 * dt; d.y -= give * 1.5 * dt;
         if (b.rep <= 0) {
+          var beatenBlocker = b;
           release(b);
           /* he beat the block, and he comes off it going somewhere */
           d.stun = 0.10;
           d.beat = (d.beat || 0) + 1;
+          d.beatWho = beatenBlocker.id;
           if (qb && play.type === 'pass') {
             var ex = qb.x - d.x, ey = qb.y - d.y, el = len(ex, ey) || 1;
             d.vx += ex / el * 2.2; d.vy += ey / el * 2.2;
@@ -1430,7 +1439,6 @@
       var r = {};
       var k;
       for (k in env.template) if (Object.prototype.hasOwnProperty.call(env.template, k)) r[k] = env.template[k];
-      r.notes = notes.slice();
 
       var endY;
       if (kind === 'incomplete') {
@@ -1464,6 +1472,22 @@
           if (c === qb && play.type === 'pass') r.scramble = true;
         }
       }
+      blockCredit(r, c, tk);
+      /* ── THE FOOTBALL REASON, IN FOUR WORDS ─────────────────────────────
+         The whole point of simulating twenty-two men is that the answer has
+         a cause; a result card that only says "3-yard rush" throws it away.
+         One line, only when it is actually the story. */
+      if (play.type === 'run' && kind !== 'sack') {
+        var gained = Math.round((c ? c.y : los) - los);
+        if (gained >= 4 && r.blockWon) notes.push(shortName(r.blockWon) + ' held the point.');
+        else if (gained <= 1 && r.blockBeat) notes.push(shortName(r.blockBeat) + ' beat the block.');
+        else if (gained <= 1 && r.blockFree) notes.push(shortName(r.blockFree) + ' came free — nobody blocked him.');
+      } else if (kind === 'sack' && r.blockBeat) {
+        notes.push(shortName(r.blockBeat) + ' beat '
+          + (r.blockBeaten ? shortName(r.blockBeaten) : 'his man') + '.');
+      }
+      /* taken here, after the play has said everything it has to say */
+      r.notes = notes.slice();
       if (pressureSeen) r.pressure = true;
       /* WHERE ON THE FIELD IT ACTUALLY ENDED. The engine only books the
          yards, but the spot is what the next snap is placed on and what a
@@ -1476,6 +1500,88 @@
       r.broke = (c && c.broke) || 0;
       outcome = r;
       if (events.onEnd) events.onEnd(kind, r);
+    }
+
+    /* ── THE CREASE ───────────────────────────────────────────────────────
+       Where the hole actually is, this frame. Not the lane the play was drawn
+       with — the gap the blocking has made, between the two nearest men in
+       the front who could still make the tackle, in front of whoever has the
+       ball.
+
+       It is the one thing a player watching a run cannot otherwise see. The
+       engine knows exactly why a carry got four instead of one; without this
+       the picture does not, and a run play is a man disappearing into a pile.
+       Engaged defenders are not walls — a blocker with his hands on somebody
+       is what makes the hole — so they are left out of it. */
+    self.crease = function () {
+      if (phase !== 'live' || play.type !== 'run') return null;
+      if (!carrier || !carrier.carry) return null;
+      var front = [], i;
+      for (i = 0; i < actors.length; i++) {
+        var d = actors[i];
+        if (d.side !== 'def' || d.state === 'down') continue;
+        if (d.lock) continue;                       /* somebody has him */
+        if (d.pos !== 'DL' && d.pos !== 'LB') continue;
+        if (d.y < carrier.y - 1.5) continue;        /* behind the ball */
+        if (d.y > los + 9) continue;                /* not part of this */
+        front.push(d.x);
+      }
+      if (front.length < 2) return null;
+      front.sort(function (a, b) { return a - b; });
+      /* THE GAP BETWEEN TWO MEN, not the edge of the box. Measuring from the
+         sideline in gave a crease eight yards wide on almost every snap,
+         which tells a player nothing — a hole is somewhere two defenders are
+         not, and it is the one he can get to that matters. */
+      var best = null;
+      for (i = 0; i < front.length - 1; i++) {
+        var a = front[i], b = front[i + 1], w = b - a;
+        if (w < 2.2) continue;
+        var mid = (a + b) / 2;
+        var reach = Math.abs(mid - carrier.x);
+        var sc = w - reach * 0.55;
+        if (!best || sc > best.sc) best = { x: mid, w: w, reach: reach, sc: sc };
+      }
+      if (!best || best.reach > 9) return null;
+      return { x: best.x, w: Math.min(best.w, 6.5), y: Math.max(los, carrier.y),
+               open: clamp((best.w - 2.2) / 4.5, 0, 1) };
+    };
+
+    /* ── WHO WON THE BLOCK ────────────────────────────────────────────────
+       At the whistle, the two men worth naming: the blocker who held the
+       point the run went through, and the defender who beat his to make the
+       play. Both come straight off the reps the simulation already ran. */
+    function blockCredit(r, c, tk) {
+      var poa = poaX == null ? (c ? c.x : ballX) : poaX, i, a;
+      var held = null, heldScore = -1;
+      for (i = 0; i < actors.length; i++) {
+        a = actors[i];
+        if (a.side !== 'off' || !a.job) continue;
+        if (['block', 'lead', 'stalk', 'protect'].indexOf(a.job.kind) < 0) continue;
+        if (!(a.heldFor > 0.55)) continue;
+        /* THE MAN AT THE HOLE, not the man who held longest. A centre holds
+           his man on every snap in football; naming him on every carry is a
+           credit nobody learns anything from. */
+        /* WHERE HE ENDED UP OR WHERE HE LINED UP, whichever is nearer the
+           hole. A receiver who stalked a corner on a toss is at the point of
+           attack even though he lined up on the numbers, and he is exactly
+           the block that sprung it. */
+        var away = Math.min(Math.abs(a.x - poa),
+                            Math.abs((a.hx == null ? a.x : a.hx) - poa));
+        if (away > 7) continue;
+        var sc = Math.min(a.heldFor, 2.2) * 0.9 - away * 0.75;
+        if (sc > heldScore) { heldScore = sc; held = a; }
+      }
+      if (held) r.blockWon = held.player || null;
+      if (tk && tk.beat > 0) {
+        r.blockBeat = tk.player || null;
+        var by = tk.beatWho && byId[tk.beatWho];
+        r.blockBeaten = (by && by.player) || null;
+      } else if (tk && !tk.heldBy) {
+        /* nobody ever got a hand on him, which is a different failure and
+           the one a player can do something about next time */
+        r.blockFree = tk.player || null;
+      }
+      return r;
     }
 
     /* ── SMALL HELPERS ────────────────────────────────────────────────────── */
@@ -1493,7 +1599,13 @@
       var d = nearestDefTo(a);
       return d ? clamp((dist(a, d) - 1.2) / 4.5, 0, 1) : 1;
     }
-    function shortName(a) { return (a && a.name) || 'He'; }
+    function shortName(a) {
+      if (!a) return 'He';
+      if (a.name) return a.name;
+      /* a player card rather than an actor */
+      if (a.last_name) return (a.first_name || ' ').charAt(0) + '. ' + a.last_name;
+      return 'He';
+    }
 
     return self;
   }

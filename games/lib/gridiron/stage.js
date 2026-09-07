@@ -782,6 +782,14 @@
       P.field(ctx, cam, scene);
       P.markers(ctx, cam, los, firstDown);
       if (phase === 'set' && showArt && artPaths) P.art(ctx, cam, artPaths);
+      /* ── AND THE HOLE, ONCE THE BALL IS LIVE ────────────────────────────
+         The pre-snap art shows the lane the play is drawn with; this shows
+         the one the blocking made. Same switch as the art, so a player who
+         has turned the diagrams off does not get it. */
+      if (phase === 'live' && showArt && sim && sim.crease) {
+        var cr = sim.crease();
+        if (cr) P.crease(ctx, cam, cr);
+      }
       /* back to front, so the near men overlap the far ones — except whoever
          has the football, who is drawn last and is never buried in a pile */
       /* ONE NAME ON THE SCREEN AT A TIME: the man you are steering. Whoever
