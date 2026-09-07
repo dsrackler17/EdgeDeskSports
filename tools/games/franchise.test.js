@@ -2264,8 +2264,10 @@ fresh();
       && F.rankCoachPoints(45) === F.STAFF.rank_cp_base + F.STAFF.rank_cp_step * 44;
   });
   chk('and the SQL pays it once, keyed by the rank, through the ledger',
-    /v_cp := public\.franchise_rank_coach_points\(v_rank\);/.test(SQL)
+    /public\.franchise_rank_coach_points\(v_rank\)/.test(SQL)
     && /public\.franchise_credit\(v_f, 'cp', v_cp, 'pack', v_rank::text,/.test(SQL));
+  chk('but only for a rank that was EARNED — credits must not buy a building',
+    /v_cp := case when v_rank <= v_earned then public\.franchise_rank_coach_points\(v_rank\) else 0 end;/.test(SQL));
   chk('the numbers are the SQL numbers',
     new RegExp("'rank_cp_base', " + F.STAFF.rank_cp_base
       + ", 'rank_cp_step', " + F.STAFF.rank_cp_step).test(SQL)
@@ -2963,6 +2965,82 @@ fresh();
     /rank <b>'\+\(rep\.rank\|0\)/.test(HOME) && /\(rep\.points\|0\)\+'\/'\+\(rep\.next_at\|0\)/.test(HOME));
   chk('both lead to the room that opens them',
     (HOME.match(/href="\/games\/packs\/"/g) || []).length >= 2);
+
+  /* ═══ 31. THE SEASONS OF THE YEAR, AND THE PACK STORE ════════════════════ */
+  eq('the seasons are versioned', F.PACK_SEASON_VERSION, 'packseason_v1');
+  has(SQL, "'version', 'packseason_v1'", 'and the SQL carries the same version');
+  eq('the store is versioned', F.PACK_STORE_VERSION, 'packstore_v1');
+  has(SQL, "'version', 'packstore_v1'", 'and the SQL carries that one too');
+  eq('four seasons', F.PACK_SEASONS.length, 4);
+  chk('every month of the year belongs to exactly one season', (() => {
+    const seen = {};
+    F.PACK_SEASONS.forEach(s => s.months.forEach(m => { seen[m] = (seen[m] || 0) + 1; }));
+    for (let m = 1; m <= 12; m++) if (seen[m] !== 1) return false;
+    return true;
+  })());
+  F.PACK_SEASONS.forEach(s => {
+    has(SQL, "'key','" + s.key + "','name','" + s.name + "'", 'the SQL names ' + s.key + ' the same');
+    chk(s.key + ' carries the months the SQL gives it',
+      new RegExp("'key','" + s.key + "'[\\s\\S]{0,80}jsonb_build_array\\(" + s.months.join(',') + "\\)").test(SQL));
+    chk(s.key + ' carries its own ink and glow', /^#[0-9a-f]{6}$/i.test(s.ink) && /^#[0-9a-f]{6}$/i.test(s.glow));
+    has(SQL, "'ink','" + s.ink + "'", 'and the SQL agrees on ' + s.key + "'s ink");
+  });
+  chk('a season the client does not know renders as nothing rather than a guess',
+    F.packSeason('nope') === null && F.packSeasonVars('nope') === '');
+
+  /* THE PRICE, and that it can only ever rise */
+  eq('the first pack costs the SQL price', F.packPrice(0), 250);
+  has(SQL, "'cost_base', 250, 'cost_step', 150", 'and the SQL carries both numbers');
+  chk('and it never falls, at any depth',
+    (() => { for (let n = 0; n < 400; n++) if (F.packPrice(n) >= F.packPrice(n + 1)) return false; return true; })());
+  eq('a negative count cannot make a pack cheaper', F.packPrice(-50), F.packPrice(0));
+
+  /* THE SERVER DECIDES WHAT TIME OF YEAR IT IS */
+  chk('the client never decides the season from its own clock',
+    !/packSeason[\s\S]{0,300}new Date|getMonth\(\)/.test(FJS.slice(FJS.indexOf('function packSeason'), FJS.indexOf('function packSeason') + 600)));
+  has(SQL, 'public.franchise_pack_season_of(now())', 'the SQL reads the season off its own clock');
+  chk('and the board hands the page a season rather than a date to interpret',
+    /'season', public\.franchise_pack_season_now\(\)/.test(SQL));
+
+  /* THE SEASON IS PRESENTATION. It must not touch who is in the pack, or the
+     best play becomes waiting for a better month. */
+  chk('the pack seed carries the franchise and the rank — never the season',
+    /v_seed := f\.seed \|\| ':pack:' \|\| v_rank;/.test(SQL)
+    && !/v_seed :=[^\n]*v_season/.test(SQL));
+  chk('and the band comes from the EARNED rank, never from what was bought',
+    /v_high := greatest\(v_low, least\(99, v_ovr \+ public\.franchise_rank_edge\(v_earned\)\)\);/.test(SQL)
+    && /v_earned := \(rep->>'rank'\)::int;/.test(SQL));
+
+  /* BUYING */
+  has(FJS, "rpc('franchise_pack_buy', withSecret({}))", 'buying sends the intent and the identity, never a price');
+  chk('and is never queued — spending must see its answer', !/record\('franchise_pack_buy'/.test(FJS));
+  chk('the server prices it from what this franchise has already bought',
+    /v_price := public\.franchise_pack_price\(v_bought\);/.test(SQL));
+  chk('it is paid through the ledger, keyed so a replay cannot pay twice',
+    /public\.franchise_credit\(v_f, 'tc', -v_price, 'pack_buy', \(v_bought \+ 1\)::text,/.test(SQL));
+  chk('and what was bought is counted like what was claimed, never like the rank',
+    /'bought', coalesce\(v_bought, 0\)/.test(SQL)
+    && /'packs', greatest\(0, v_rank \+ coalesce\(v_bought, 0\) - coalesce\(v_claimed, 0\)\)/.test(SQL));
+
+  /* THE PAGE */
+  has(PACKS, 'The pack store', 'the room has a store');
+  has(PACKS, 'FR.packSeason(', 'and paints the season the server sent');
+  chk('the page says plainly that no money is involved',
+    /No money, ever/.test(PACKS) && /earned by playing/i.test(PACKS));
+  chk('and that a bought pack is not a better pack',
+    /exactly the same band/.test(PACKS) && /pays no Coach Points/.test(PACKS));
+  chk('the reveal is one card at a time', /animation-delay:'\+\(\(i\|0\)\*220\)/.test(PACKS));
+  chk('and a player who asked for less motion gets all three at once',
+    /prefers-reduced-motion:reduce/.test(FRCSS) && /animation:none/.test(FRCSS));
+  chk('nothing waits on the reveal — the server decided all three already',
+    /Nothing waits on it/.test(PACKS) || /nothing waits on it/.test(PACKS));
+  has(README, 'packseason_v1', 'the README documents the seasons');
+  has(README, 'packstore_v1', 'and the store');
+
+  chk('and the deploy-time report proves both claims out loud',
+    /select 38, 'packs wear the season of the year/.test(SQL)
+    && /public\.franchise_rank_edge\(v_earned\)%'/.test(SQL)
+    && /bool_and\(t\.hits = 1\)/.test(SQL));
 
   has(README, 'The game is **open to everyone**', 'the README states the age policy');
   has(README, 'nothing is collected', 'and that nothing is collected');

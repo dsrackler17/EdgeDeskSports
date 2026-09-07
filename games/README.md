@@ -2922,6 +2922,73 @@ still `stable`, no column holds a rank, and `franchise_activity` still carries
 its uniqueness constraint. Drop that constraint and a lost answer pays twice —
 a rank bought by a bad connection.
 
+## Phase 18 — the seasons of the year, and the pack store
+
+Two things a rank could not do: look like the time of year, and be had more
+than once a rank.
+
+### The seasons — `packseason_v1`
+
+| season | months | the class it signs |
+| --- | --- | --- |
+| **Winter Meetings** | Dec–Feb | *Signed in the cold, between the seasons.* |
+| **Spring Practice** | Mar–May | *Signed in shorts, with everything still to prove.* |
+| **Summer Camp** | Jun–Aug | *Signed in the heat, when the two-a-days decide it.* |
+| **The Fall Slate** | Sep–Nov | *Signed with the season already running.* |
+
+Every month of the year belongs to **exactly one** season, which the tests
+check rather than trusting the list to stay complete. The season is decided by
+the **server**, from its own clock — a browser clock is a thing a player can
+change, and the class a man was signed in stays on his record for ever
+(`Pack, rank 4 · Winter Meetings`, on the roster and in the Trophy Room).
+
+**The season changes what a pack looks like and what its class is called. It
+does not change who is in it.** The band, the odds and the positions are
+identical in July and in January. This is deliberate and it is the whole
+reason the seasons are safe: the moment one season draws better men, the best
+play is to stop playing until it comes round — and a game that pays you to
+not play it is broken. The pack seed is `franchise seed : pack : rank` and the
+season is not in it, which is asserted rather than described.
+
+### The store — `packstore_v1`
+
+**No money, ever.** There is no wallet, no deposit, and no price in any
+currency that exists outside the game. The store spends **Team Credits**,
+which are earned by playing and by nothing else — so "a pack is earned by
+playing" is still literally true. The store only lets you choose to spend what
+you earned on packs rather than on a facility.
+
+| packs bought | 0 | 1 | 2 | 9 |
+| --- | --- | --- | --- | --- |
+| price | **250** | 400 | 550 | **1600** |
+
+The price rises by 150 every time and **never falls**, so a pile of credits
+cannot become an endless supply of rerolls.
+
+Two things a bought pack is not, both measured rather than asserted:
+
+| | rank pack | after six bought packs |
+| --- | --- | --- |
+| the band | `[61, 73]` | **`[61, 73]`** — unchanged |
+| Coach Points paid | 20 | **0** |
+
+* **it is not a wider band.** The reach comes from the rank you *earned*, not
+  from the claim index — otherwise twenty bought packs would hand a rank-three
+  franchise a rank-twenty ceiling. Found while building it, and closed.
+* **it does not staff a building.** Coach Points are paid by the rank, not by
+  the pack; paying them for a bought one would let credits buy a coach.
+
+The rank itself stays **derived**. `packs_bought` counts what was *bought* and
+`rank_claimed` what was *opened*, exactly as before — the rank is still the
+sum of the activity log and nothing writes to it.
+
+### And the pack opens like a pack
+
+Three cards arriving at once is a table of data; three arriving in turn is a
+pack being opened. They reveal 220ms apart, wearing the season's ink and glow.
+Nothing waits on it — the server decided all three before the first appeared —
+and a player who asked for less motion gets all three at once, in place.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on

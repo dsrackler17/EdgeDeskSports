@@ -7357,6 +7357,10 @@ alter table public.game_players add constraint game_players_status_check
 -- how many ranks have been paid out in packs. The rank itself is derived, so
 -- this is the only thing that needs remembering: what has already been given.
 alter table public.franchises add column if not exists rank_claimed integer not null default 0;
+-- PACKS BOUGHT WITH EARNED CREDITS (packstore_v1). Like rank_claimed this
+-- counts what was SPENT, not what was won — the rank itself stays derived
+-- from the activity log and nothing here writes to it.
+alter table public.franchises add column if not exists packs_bought integer not null default 0;
 -- which pack a man came out of, so a card can say so for the rest of his career
 alter table public.game_players add column if not exists pack_rank integer;
 
@@ -7437,6 +7441,75 @@ returns integer language sql immutable set search_path = pg_catalog, pg_temp as 
     + floor((public.franchise_ranks()->>'edge_per_rank')::numeric * greatest(0, coalesce(p_rank, 1) - 1))::int);
 $$;
 
+-- ── THE SEASONS OF THE YEAR, AND THE STORE — Phase 18, packseason_v1 ─────
+-- A pack opened in July should not look like one opened in January. Four
+-- seasons, decided BY THE SERVER from its own clock, because a browser clock
+-- is a thing a player can change and the class a man was signed in is part of
+-- his record for ever.
+--
+-- THE SEASON CHANGES WHAT A PACK LOOKS LIKE AND WHAT ITS CLASS IS CALLED.
+-- It does not change WHO IS IN IT. The band, the odds and the positions are
+-- identical in July and in January, on purpose: the moment a season draws
+-- better men, the best strategy is to stop playing until it comes round, and
+-- a game that pays you to not play it is broken. Held down by a test that
+-- opens the same rank in all four seasons and compares the men.
+create or replace function public.franchise_pack_seasons()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'packseason_v1',
+    'seasons', jsonb_build_array(
+      jsonb_build_object('key','winter','name','Winter Meetings','months', jsonb_build_array(12,1,2),
+        'line','Signed in the cold, between the seasons.',
+        'ink','#7fb2ff','glow','#1a2c4d','mark','snow'),
+      jsonb_build_object('key','spring','name','Spring Practice','months', jsonb_build_array(3,4,5),
+        'line','Signed in shorts, with everything still to prove.',
+        'ink','#79dba0','glow','#16351f','mark','shoot'),
+      jsonb_build_object('key','summer','name','Summer Camp','months', jsonb_build_array(6,7,8),
+        'line','Signed in the heat, when the two-a-days decide it.',
+        'ink','#ffc76b','glow','#3a2a12','mark','sun'),
+      jsonb_build_object('key','autumn','name','The Fall Slate','months', jsonb_build_array(9,10,11),
+        'line','Signed with the season already running.',
+        'ink','#ff8f6b','glow','#3d1f16','mark','leaf')));
+$$;
+
+-- WHICH SEASON A MOMENT FALLS IN. Immutable and total: every month of the
+-- year belongs to exactly one season, which the report checks rather than
+-- trusting this list to stay complete.
+create or replace function public.franchise_pack_season_of(p_when timestamptz)
+returns text language sql stable set search_path = public, pg_temp as $$
+  select s->>'key' from jsonb_array_elements(public.franchise_pack_seasons()->'seasons') s
+   where s->'months' @> to_jsonb(extract(month from coalesce(p_when, now()) at time zone 'UTC')::int)
+   limit 1;
+$$;
+
+create or replace function public.franchise_pack_season_now()
+returns jsonb language sql stable set search_path = public, pg_temp as $$
+  select s from jsonb_array_elements(public.franchise_pack_seasons()->'seasons') s
+   where s->>'key' = public.franchise_pack_season_of(now())
+   limit 1;
+$$;
+
+-- ── THE STORE ────────────────────────────────────────────────────────────
+-- NOTHING HERE COSTS MONEY. There is no wallet, no deposit and no price in
+-- any currency that exists outside this game. The store spends Team Credits,
+-- which are earned by playing and by nothing else — so "earned by playing" is
+-- still literally true, and a pack still cannot be bought, only worked for.
+--
+-- The price RISES with every pack bought, and never falls, so credits cannot
+-- be turned into an endless supply of rerolls: the tenth pack costs six times
+-- the first. A rank pack stays free.
+create or replace function public.franchise_pack_store()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object('version', 'packstore_v1', 'currency', 'tc',
+    'cost_base', 250, 'cost_step', 150);
+$$;
+
+create or replace function public.franchise_pack_price(p_bought integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select (public.franchise_pack_store()->>'cost_base')::int
+       + (public.franchise_pack_store()->>'cost_step')::int * greatest(0, coalesce(p_bought, 0));
+$$;
+
 -- WHAT THIS FRANCHISE HAS DONE, and what it is worth. Derived from the
 -- activity already on the record — nothing is written for a rank and nothing
 -- was added to a hot path, so this can never drift from what was played.
@@ -7444,12 +7517,13 @@ create or replace function public.franchise_rank_report(p_franchise uuid)
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
 declare
   cfg jsonb := public.franchise_ranks(); w jsonb := cfg->'weights';
-  v_points integer; v_rank integer; v_claimed integer;
+  v_points integer; v_rank integer; v_claimed integer; v_bought integer;
 begin
   select coalesce(sum(coalesce((w->>a.kind)::int, 0)), 0) into v_points
     from public.franchise_activity a where a.franchise_id = p_franchise;
   v_rank := public.franchise_rank_for(v_points);
-  select rank_claimed into v_claimed from public.franchises where id = p_franchise;
+  select rank_claimed, packs_bought into v_claimed, v_bought
+    from public.franchises where id = p_franchise;
   return jsonb_build_object(
     'version', cfg->>'version', 'points', v_points, 'rank', v_rank,
     'at', public.franchise_rank_at(v_rank),
@@ -7458,7 +7532,13 @@ begin
     'to_next', greatest(0, public.franchise_rank_at(v_rank + 1) - v_points),
     'edge', public.franchise_rank_edge(v_rank),
     'claimed', coalesce(v_claimed, 0),
-    'packs', greatest(0, v_rank - coalesce(v_claimed, 0)));
+    'bought', coalesce(v_bought, 0),
+    -- one pack for every rank, plus every pack bought with earned credits,
+    -- less every pack already opened. The RANK is still derived; only what
+    -- was spent and what was bought are counted.
+    'packs', greatest(0, v_rank + coalesce(v_bought, 0) - coalesce(v_claimed, 0)),
+    'next_price', public.franchise_pack_price(coalesce(v_bought, 0)),
+    'season', public.franchise_pack_season_now());
 end;
 $$;
 
@@ -7477,7 +7557,7 @@ declare
   v_low integer; v_high integer; v_target integer; i integer; pos text; pid uuid;
   pool text[] := array['QB','RB','WR','TE','OL','DL','LB','CB','S','WR','DL','CB'];
   v_men jsonb := '[]'::jsonb; v_new text[] := '{}'; v_real integer := public.games_season_of(now());
-  v_seed text; v_cp integer;
+  v_seed text; v_cp integer; v_earned integer; v_season text; v_sjson jsonb;
 begin
   if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
   select * into f from public.franchises where id = v_f for update;
@@ -7493,10 +7573,16 @@ begin
   end if;
 
   v_rank := coalesce(f.rank_claimed, 0) + 1;
+  -- THE BAND IS BOUGHT WITH RANK, NEVER WITH CREDITS. v_rank is only the
+  -- claim index — with a store it runs past the rank actually earned — so the
+  -- reach comes from the EARNED rank. Otherwise twenty bought packs would
+  -- hand a rank-three franchise a rank-twenty ceiling.
+  v_earned := (rep->>'rank')::int;
   v_ovr := (public.franchise_team_rating(v_f)->>'overall')::int;
   v_low := greatest(40, v_ovr - (cfg->>'floor_below')::int);
   -- a team rated below the floor would otherwise get a ceiling under it
-  v_high := greatest(v_low, least(99, v_ovr + public.franchise_rank_edge(v_rank)));
+  v_high := greatest(v_low, least(99, v_ovr + public.franchise_rank_edge(v_earned)));
+  v_season := public.franchise_pack_season_of(now());
   v_seed := f.seed || ':pack:' || v_rank;
 
   for i in 1..(cfg->>'pack_size')::int loop
@@ -7507,7 +7593,10 @@ begin
     -- the rank, so the same rank opens the same pack however often it is read.
     v_target := v_low + floor(random() * greatest(1, v_high - v_low + 1))::int;
     pid := public.franchise_generate_player(v_f, pos, 0, v_real, v_seed || ':' || i,
-             'Pack, rank ' || v_rank, 'pack', null, v_target);
+             'Pack, rank ' || v_rank || ' · '
+               || (select x->>'name' from jsonb_array_elements(public.franchise_pack_seasons()->'seasons') x
+                    where x->>'key' = v_season),
+             'pack', null, v_target);
     update public.game_players set pack_rank = v_rank where id = pid;
     select v_men || public.franchise_prospect_json(p) into v_men
       from public.game_players p where p.id = pid;
@@ -7518,13 +7607,19 @@ begin
   -- 621 CP, against a building that costs thousands — one coach at level 99
   -- and three empty chairs. Turning up is what staffs a building, and the
   -- rank is what measures turning up. Keyed by the rank, so it pays once.
-  v_cp := public.franchise_rank_coach_points(v_rank);
-  perform public.franchise_credit(v_f, 'cp', v_cp, 'pack', v_rank::text,
-    'Rank ' || v_rank || ': the building');
+  -- COACH POINTS ARE PAID BY THE RANK, NOT BY THE PACK. A bought pack is a
+  -- pack and nothing else; paying CP for one would let credits buy a building.
+  v_cp := case when v_rank <= v_earned then public.franchise_rank_coach_points(v_rank) else 0 end;
+  if v_cp > 0 then
+    perform public.franchise_credit(v_f, 'cp', v_cp, 'pack', v_rank::text,
+      'Rank ' || v_rank || ': the building');
+  end if;
   insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
   values (v_f, 'pack', v_rank::text, public.games_week_key(now()), public.games_day_key(now()),
-          jsonb_build_object('rank', v_rank, 'team_overall', v_ovr, 'low', v_low, 'high', v_high,
-            'edge', public.franchise_rank_edge(v_rank), 'coach_points', v_cp,
+          jsonb_build_object('rank', v_rank, 'earned_rank', v_earned, 'team_overall', v_ovr,
+            'low', v_low, 'high', v_high, 'season', v_season,
+            'edge', public.franchise_rank_edge(v_earned), 'coach_points', v_cp,
+            'bought', v_rank > v_earned,
             'version', cfg->>'pack_version'))
   on conflict (franchise_id, kind, key) do nothing;
 
@@ -7537,9 +7632,51 @@ begin
   if v_rank >= 25 and public.franchise_award(v_f, 'rank_25', v_real, jsonb_build_object('rank', v_rank)) then
     v_new := array_append(v_new, 'rank_25'); end if;
 
-  return jsonb_build_object('ok', true, 'rank', v_rank, 'players', v_men,
+  select x into v_sjson from jsonb_array_elements(public.franchise_pack_seasons()->'seasons') x
+   where x->>'key' = v_season;
+  return jsonb_build_object('ok', true, 'rank', v_rank, 'players', v_men, 'season', v_sjson,
+    'earned_rank', v_earned, 'bought', v_rank > v_earned,
     'range', jsonb_build_array(v_low, v_high), 'team_overall', v_ovr, 'coach_points', v_cp,
     'keep', (cfg->>'pack_keep')::int, 'achievements', to_jsonb(v_new),
+    'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- BUY A PACK WITH EARNED CREDITS (packstore_v1). No money touches this: Team
+-- Credits come from playing and from nothing else, so "a pack is earned by
+-- playing" is still literally true — the store only lets a player choose to
+-- spend what they earned on packs rather than on a facility.
+--
+-- The price rises with every pack ever bought and never falls, so a pile of
+-- credits cannot become an endless supply of rerolls. The band still comes
+-- from the rank, so a bought pack is never a better pack — only another one.
+create or replace function public.franchise_pack_buy(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype;
+  v_price integer; v_bought integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  -- an unopened pack is finished first, exactly as a rank pack is
+  if exists (select 1 from public.game_players where franchise_id = v_f and status = 'pack') then
+    raise exception 'open pack on the table: keep a man from it, or pass on it' using errcode = '55000';
+  end if;
+  v_bought := coalesce(f.packs_bought, 0);
+  v_price := public.franchise_pack_price(v_bought);
+  if coalesce(f.team_credits, 0) < v_price then
+    raise exception 'not enough Team Credits: % needed, % on hand', v_price, coalesce(f.team_credits, 0)
+      using errcode = '55000';
+  end if;
+  -- the ledger is the truth and the key makes it idempotent: the same
+  -- purchase replayed cannot be paid for twice
+  if not public.franchise_credit(v_f, 'tc', -v_price, 'pack_buy', (v_bought + 1)::text,
+       'Pack ' || (v_bought + 1) || ' from the store') then
+    raise exception 'that purchase is already on the books' using errcode = '55000';
+  end if;
+  update public.franchises set packs_bought = v_bought + 1, updated_at = now() where id = v_f;
+  return jsonb_build_object('ok', true, 'bought', v_bought + 1, 'paid', v_price,
+    'next_price', public.franchise_pack_price(v_bought + 1),
     'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
 end;
 $$;
@@ -7629,6 +7766,15 @@ begin
                least(99, v_ovr + public.franchise_rank_edge((rep->>'rank')::int)))),
     'roster', jsonb_build_object('active', v_active, 'max', (public.franchise_market()->>'roster_max')::int,
       'room', greatest(0, (public.franchise_market()->>'roster_max')::int - v_active)),
+    -- THE STORE, and the time of year. Both read off the server: a browser
+    -- clock is a thing a player can change, and the class a man was signed in
+    -- is part of his record for ever.
+    'store', public.franchise_pack_store() || jsonb_build_object(
+      'bought', coalesce(f.packs_bought, 0),
+      'price', public.franchise_pack_price(coalesce(f.packs_bought, 0)),
+      'affordable', coalesce(f.team_credits, 0) >= public.franchise_pack_price(coalesce(f.packs_bought, 0))),
+    'season', public.franchise_pack_season_now(),
+    'seasons', public.franchise_pack_seasons()->'seasons',
     'open', coalesce((select jsonb_agg(public.franchise_prospect_json(p) order by p.overall desc)
                         from public.game_players p
                        where p.franchise_id = f.id and p.status = 'pack'), '[]'::jsonb),
@@ -8997,6 +9143,14 @@ grant execute on function public.franchise_rank_at(integer) to anon, authenticat
 grant execute on function public.franchise_rank_for(integer) to anon, authenticated;
 grant execute on function public.franchise_rank_edge(integer) to anon, authenticated;
 grant execute on function public.franchise_pack_open(text) to anon, authenticated;
+grant execute on function public.franchise_pack_buy(text) to anon, authenticated;
+-- the published tables are open to read: a page must be able to show what a
+-- pack costs and what time of year it is without asking permission
+grant execute on function public.franchise_pack_seasons() to anon, authenticated;
+grant execute on function public.franchise_pack_season_of(timestamptz) to anon, authenticated;
+grant execute on function public.franchise_pack_season_now() to anon, authenticated;
+grant execute on function public.franchise_pack_store() to anon, authenticated;
+grant execute on function public.franchise_pack_price(integer) to anon, authenticated;
 grant execute on function public.franchise_pack_keep(uuid, text) to anon, authenticated;
 grant execute on function public.franchise_pack_pass(text) to anon, authenticated;
 -- Phase 13: the calls are a published table, and the two moves are open on
@@ -9713,5 +9867,46 @@ select 37, 'the rank is derived from the record and a replayed reward cannot cou
         and public.franchise_rank_for(0) = 1 and public.franchise_rank_for(-99) = 1
         and (select bool_and(public.franchise_rank_for(public.franchise_rank_at(t.n)) = t.n)
                from generate_series(2, 200) as t(n))
+    then 'ok' else 'CHECK THIS' end
+union all
+select 38, 'packs wear the season of the year (' || (public.franchise_pack_seasons()->>'version')
+        || ') and the store spends only what was earned (' || (public.franchise_pack_store()->>'version') || ')',
+  case when public.franchise_pack_seasons()->>'version' = 'packseason_v1'
+        and public.franchise_pack_store()->>'version' = 'packstore_v1'
+        -- EVERY MONTH OF THE YEAR BELONGS TO EXACTLY ONE SEASON. A gap would
+        -- leave a pack with no class at all for a whole month of the year.
+        and jsonb_array_length(public.franchise_pack_seasons()->'seasons') = 4
+        and (select bool_and(t.hits = 1) from (
+              select mm.m as mon, count(*) as hits from generate_series(1, 12) as mm(m)
+                join lateral (select 1 from jsonb_array_elements(public.franchise_pack_seasons()->'seasons') s
+                               where s->'months' @> to_jsonb(mm.m)) x on true
+               group by mm.m) t)
+        and (select bool_and(public.franchise_pack_season_of(make_timestamptz(2026, m, 15, 12, 0, 0)) is not null)
+               from generate_series(1, 12) m)
+        -- THE PRICE ONLY EVER RISES, so credits can never become an endless
+        -- run of rerolls, and a negative count cannot make one cheaper.
+        and public.franchise_pack_price(0) = 250
+        and (select bool_and(public.franchise_pack_price(t.n) < public.franchise_pack_price(t.n + 1))
+               from generate_series(0, 400) as t(n))
+        and public.franchise_pack_price(-50) = public.franchise_pack_price(0)
+        -- THE SEASON IS PRESENTATION. The pack seed is the franchise and the
+        -- rank and nothing else, so no month of the year draws better men —
+        -- if one did, the best play would be to stop playing until it came.
+        and (select p.prosrc like '%v_seed := f.seed || '':pack:'' || v_rank;%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_pack_open')
+        -- AND A BOUGHT PACK IS ANOTHER PACK, NEVER A BETTER ONE: the band is
+        -- the rank EARNED, and no Coach Points are paid for one.
+        and (select p.prosrc like '%public.franchise_rank_edge(v_earned)%'
+                and p.prosrc like '%case when v_rank <= v_earned then public.franchise_rank_coach_points(v_rank) else 0 end%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_pack_open')
+        -- the store is reachable, the tables are readable, and the counter is
+        -- moved by nobody but the function that charges for it
+        and has_function_privilege('anon', 'public.franchise_pack_buy(text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_pack_seasons()', 'execute')
+        and has_function_privilege('anon', 'public.franchise_pack_price(integer)', 'execute')
+        and not exists (select 1 from pg_policies
+                         where schemaname = 'public' and tablename = 'franchises' and cmd <> 'SELECT')
     then 'ok' else 'CHECK THIS' end
 order by 1;

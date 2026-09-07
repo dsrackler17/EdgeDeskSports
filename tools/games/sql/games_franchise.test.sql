@@ -117,6 +117,10 @@ declare
   pbf uuid; pb jsonb; pnt numeric; pstale numeric; pfresh numeric;
   -- ranking up offline
   ofl uuid; ofl2 uuid; ofrep jsonb; ofrep2 jsonb; ofrows integer; ofled integer; ofcap integer;
+  -- the seasons of the year and the pack store
+  psf uuid; psb jsonb; psv jsonb; pslo integer; pshi integer; pslo2 integer; pshi2 integer;
+  pscp integer; pscp2 integer; psprice integer;
+  SEC_PS constant text := 'device-secret-packstorepackstorepack1';
   SEC_OF constant text := 'device-secret-offlineofflineoffline01';
   SEC_O2 constant text := 'device-secret-offlineofflineoffline02';
   SEC_PB constant text := 'device-secret-playbookplaybookplay01';
@@ -5142,6 +5146,156 @@ begin
   perform pg_temp.as_owner();
   perform pg_temp.ok('and it agrees, key for key, with what the Packs room reads',
     v->'reputation' = public.franchise_rank_report(ofl));
+
+-- ═══ 32. THE SEASONS OF THE YEAR, AND THE PACK STORE ══════════════════════
+-- Two claims carry this phase, and neither is safe to take on trust:
+--
+--   the season changes what a pack LOOKS like and never who is in it — the
+--   moment one season draws better men, the best play is to stop playing
+--   until it comes round;
+--
+--   and a bought pack is another pack, never a better one: the band comes
+--   from the rank you EARNED and it pays no Coach Points, or credits would
+--   buy a ceiling and a building.
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the seasons and the store are versioned',
+    public.franchise_pack_seasons()->>'version' = 'packseason_v1'
+    and public.franchise_pack_store()->>'version' = 'packstore_v1');
+  perform pg_temp.ok('four seasons, and every month of the year in exactly one',
+    jsonb_array_length(public.franchise_pack_seasons()->'seasons') = 4
+    and (select bool_and(t.hits = 1) from (
+          select mm.m as mon, count(*) as hits from generate_series(1, 12) as mm(m)
+            join lateral (select 1 from jsonb_array_elements(public.franchise_pack_seasons()->'seasons') s
+                           where s->'months' @> to_jsonb(mm.m)) x on true
+           group by mm.m) t));
+  perform pg_temp.ok('and every month of the year resolves to one of them',
+    (select bool_and(public.franchise_pack_season_of(make_timestamptz(2026, m, 15, 12, 0, 0)) is not null)
+       from generate_series(1, 12) m));
+  perform pg_temp.ok('the calendar lands where a person would expect it to',
+    public.franchise_pack_season_of('2026-01-15'::timestamptz) = 'winter'
+    and public.franchise_pack_season_of('2026-04-15'::timestamptz) = 'spring'
+    and public.franchise_pack_season_of('2026-07-15'::timestamptz) = 'summer'
+    and public.franchise_pack_season_of('2026-10-15'::timestamptz) = 'autumn');
+
+  -- THE PRICE ONLY EVER RISES. Credits must not become an endless run of
+  -- rerolls, at any depth, and a negative count cannot make one cheaper.
+  perform pg_temp.ok('the first pack is 250 credits and every one after costs 150 more',
+    public.franchise_pack_price(0) = 250 and public.franchise_pack_price(1) = 400
+    and public.franchise_pack_price(9) = 1600);
+  perform pg_temp.ok('and the price never falls, at any depth',
+    (select bool_and(public.franchise_pack_price(t.n) < public.franchise_pack_price(t.n + 1))
+       from generate_series(0, 400) as t(n))
+    and public.franchise_pack_price(-50) = public.franchise_pack_price(0));
+
+  -- ── a franchise, a rank pack, then six bought ones ──────────────────────
+  perform pg_temp.as_anon();
+  psv := public.franchise_create('Store', 'Sitka', 'STO', 'bolt', 'slate', 'pro_style', 'zone', SEC_PS);
+  psf := (psv->'franchise'->>'id')::uuid;
+  perform pg_temp.as_owner();
+  perform public.franchise_credit(psf, 'tc', 100000, 'market', 'psseed', 'credits to spend');
+
+  psb := public.franchise_rank_board(SEC_PS);
+  perform pg_temp.ok('the board carries the store, the price and the time of year',
+    psb ? 'store' and psb ? 'season'
+    and (psb->'store'->>'price')::int = public.franchise_pack_price(0)
+    and (psb->'store'->>'bought')::int = 0
+    and (psb->'season'->>'key') = public.franchise_pack_season_of(now()),
+    (psb->'store')::text);
+
+  perform pg_temp.as_anon();
+  psv := public.franchise_pack_open(SEC_PS);
+  pslo := (psv->'range'->>0)::int; pshi := (psv->'range'->>1)::int;
+  pscp := (psv->>'coach_points')::int;
+  perform pg_temp.ok('a rank pack names the season it was opened in, and pays the rank''s Coach Points',
+    psv->'season'->>'key' = public.franchise_pack_season_of(now())
+    and not (psv->>'bought')::boolean and pscp > 0, psv->>'coach_points');
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the man carries the class he was signed in, on his record',
+    (select bool_and(p.acquired_detail like '%' || (public.franchise_pack_season_now()->>'name') || '%')
+       from public.game_players p where p.franchise_id = psf and p.status = 'pack'),
+    (select min(acquired_detail) from public.game_players where franchise_id = psf and status = 'pack'));
+  perform pg_temp.as_anon();
+  perform public.franchise_pack_pass(SEC_PS);
+
+  -- buying with nothing on the table, six times
+  for i in 1..6 loop
+    perform public.franchise_pack_buy(SEC_PS);
+    psv := public.franchise_pack_open(SEC_PS);
+    perform public.franchise_pack_pass(SEC_PS);
+  end loop;
+  pslo2 := (psv->'range'->>0)::int; pshi2 := (psv->'range'->>1)::int;
+  pscp2 := (psv->>'coach_points')::int;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('SIX BOUGHT PACKS DO NOT WIDEN THE BAND — the reach is the rank you earned',
+    pslo2 = pslo and pshi2 = pshi,
+    pslo || '-' || pshi || ' then ' || pslo2 || '-' || pshi2);
+  perform pg_temp.ok('and a bought pack pays no Coach Points, so credits cannot buy a building',
+    pscp2 = 0 and (psv->>'bought')::boolean
+    and (select coalesce(sum(delta), 0) from public.franchise_ledger
+          where franchise_id = psf and currency = 'cp') = pscp,
+    pscp || ' from the rank, ' || pscp2 || ' from the seventh');
+  psb := public.franchise_rank_board(SEC_PS);
+  perform pg_temp.ok('the arithmetic holds: rank plus bought less claimed is what is waiting',
+    (psb->'rank'->>'packs')::int
+      = greatest(0, (psb->'rank'->>'rank')::int + (psb->'rank'->>'bought')::int - (psb->'rank'->>'claimed')::int)
+    and (psb->'rank'->>'bought')::int = 6 and (psb->'rank'->>'claimed')::int = 7,
+    (psb->'rank')::text);
+  perform pg_temp.ok('and the price has risen with every one of them',
+    (psb->'store'->>'price')::int = public.franchise_pack_price(6));
+
+  -- THE LEDGER IS THE TRUTH. Every purchase is on it, and the credits really left.
+  perform pg_temp.ok('six purchases are six ledger rows, and they cost what they said',
+    (select count(*) from public.franchise_ledger where franchise_id = psf and kind = 'pack_buy') = 6
+    and (select -sum(delta) from public.franchise_ledger where franchise_id = psf and kind = 'pack_buy')
+        = (select sum(public.franchise_pack_price(g.n)) from generate_series(0, 5) as g(n)));
+
+  -- A PACK CANNOT BE BOUGHT ON TOP OF ONE ALREADY ON THE TABLE, or two packs'
+  -- worth of men would sit there at once.
+  perform pg_temp.as_anon();
+  perform public.franchise_pack_buy(SEC_PS);
+  perform public.franchise_pack_open(SEC_PS);
+  begin
+    perform public.franchise_pack_buy(SEC_PS);
+    perform pg_temp.ok('a pack cannot be bought over one still on the table', false, 'it bought');
+  exception when others then
+    perform pg_temp.ok('a pack cannot be bought over one still on the table', sqlstate = '55000', sqlstate);
+  end;
+  perform public.franchise_pack_pass(SEC_PS);
+
+  -- AND CREDITS YOU DO NOT HAVE BUY NOTHING.
+  perform pg_temp.as_owner();
+  psprice := public.franchise_pack_price((select packs_bought from public.franchises where id = psf));
+  perform public.franchise_credit(psf, 'tc',
+    -(select team_credits from public.franchises where id = psf) + psprice - 1, 'market', 'psdrain', 'drain');
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_pack_buy(SEC_PS);
+    perform pg_temp.ok('a pack cannot be bought without the credits', false, 'it bought');
+  exception when others then
+    perform pg_temp.ok('a pack cannot be bought without the credits', sqlstate = '55000', sqlstate);
+  end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and a refused purchase leaves the count and the credits alone',
+    (select packs_bought from public.franchises where id = psf) = 7
+    and (select team_credits from public.franchises where id = psf) = psprice - 1);
+
+  -- THE PUBLISHED TABLES ARE OPEN TO READ; the store is not open to write.
+  perform pg_temp.ok('a page may read what a pack costs and what season it is',
+    has_function_privilege('anon', 'public.franchise_pack_seasons()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_pack_store()', 'execute')
+    and has_function_privilege('anon', 'public.franchise_pack_price(integer)', 'execute')
+    and has_function_privilege('anon', 'public.franchise_pack_buy(text)', 'execute'));
+  -- THE COUNTER MOVES ONLY INSIDE franchise_pack_buy, which charges the ledger
+  -- first. Supabase grants anon UPDATE on every table by default, so the grant
+  -- proves nothing — RLS with no write policy is the whole defence, and that
+  -- is what this checks.
+  perform pg_temp.ok('and no client role may move the counter itself',
+    (select relrowsecurity from pg_class where oid = 'public.franchises'::regclass)
+    and not exists (select 1 from pg_policies
+                     where schemaname = 'public' and tablename = 'franchises' and cmd <> 'SELECT')
+    and exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'franchises'
+                   and column_name = 'packs_bought'));
 
 end
 $test$;
