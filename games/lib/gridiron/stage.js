@@ -302,6 +302,11 @@
     var coverBottom = 0;
     function applyAnchor() {
       var vis = Math.max(0.35, 1 - coverBottom / Math.max(1, cam.h));
+      /* THE ESTABLISHING SHOT IS A COMPOSITION AND KEEPS ITS FRAMING. Pulling
+         it up out from under the kickoff sheet the way the play shot is
+         pulled up threw the whole building off the top of the picture. It
+         gives up a little and no more. */
+      if (shot === 'wide') { cam.anchor = clamp(0.62 * vis + 0.20, 0.46, 0.62); return; }
       /* the offence draws BETWEEN the camera and the line of scrimmage, so the
          line has to sit high enough in what is left for both fronts to be in
          the picture while the sheet is up */
@@ -365,6 +370,8 @@
       var want = k === 'wide' ? 'wide' : 'play';
       if (want === shot) return;
       shot = want;
+      applyAnchor();
+      fitCamera();
       if (snap === false) { glide = 1.7; start(); return; }
       camFollow(0, true);
       draw();

@@ -872,8 +872,11 @@
          stars rather than as eighty thousand people */
       var sz = clamp(cam.scale(pt.y) * 0.20, 1.5, 5.0);
       /* the ones on their feet bounce; the rest are a texture */
+      /* A STILL CROWD IS A PHOTOGRAPH OF A CROWD. The ones on their feet
+         bounce; the rest are never quite motionless either. */
       var up = d[2] < excite;
-      var bob = up ? Math.sin(tick * 7 + d[3] * 40) * sz * 0.9 : 0;
+      var bob = up ? Math.sin(tick * 7 + d[3] * 40) * sz * 0.9
+                   : Math.sin(tick * 1.6 + d[3] * 24) * sz * 0.13;
       /* which shade of the crowd he is, and whether he is wearing a club */
       var band = d[2] < 0.34 ? 0 : d[2] < 0.67 ? 1 : 2;
       var key = d[3] < 0.20 ? 9 + band : d[3] < 0.32 ? 12 + (band > 1 ? 1 : band) : band * 3 + (up ? 1 : 0);
@@ -1079,6 +1082,42 @@
       ctx.fill();
     }
 
+    /* ── THE SCOREBOARD, up on the far deck ────────────────────────────
+       Every stadium has one and it is the brightest thing in the building
+       after the field. Only drawn where it can be seen — from the play lens
+       it is a long way above the top of the picture. */
+    var sbY = cam.sy(yFar + BOWL.endDeep * 0.55, BOWL.high + 6);
+    var sbB = cam.sy(yFar + BOWL.endDeep * 0.55, BOWL.high + 1.2);
+    if (sbY > -20 && sbY < H && sbB > sbY + 3) {
+      var sbL = cam.sx(hw / 2 - 17, yFar + BOWL.endDeep * 0.55);
+      var sbR = cam.sx(hw / 2 + 17, yFar + BOWL.endDeep * 0.55);
+      ctx.fillStyle = '#0a0d12';
+      roundRect(ctx, sbL, sbY, sbR - sbL, sbB - sbY, (sbB - sbY) * 0.12);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.6)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      /* the panel itself, glowing, with a band of the home club's colour */
+      var pad2 = (sbB - sbY) * 0.16;
+      var sg2 = ctx.createLinearGradient(0, sbY, 0, sbB);
+      sg2.addColorStop(0, L.lights ? 'rgba(46,60,52,.95)' : 'rgba(30,38,34,.95)');
+      sg2.addColorStop(1, L.lights ? 'rgba(22,32,28,.95)' : 'rgba(18,24,22,.95)');
+      ctx.fillStyle = sg2;
+      ctx.fillRect(sbL + pad2, sbY + pad2, (sbR - sbL) - pad2 * 2, (sbB - sbY) - pad2 * 2);
+      if (o.homeTint) {
+        ctx.fillStyle = rgba(o.homeTint, L.lights ? 0.55 : 0.30);
+        ctx.fillRect(sbL + pad2, sbB - pad2 * 2.2, (sbR - sbL) - pad2 * 2, pad2 * 1.1);
+      }
+      if (L.lights) {
+        var glw = ctx.createRadialGradient((sbL + sbR) / 2, (sbY + sbB) / 2, 2,
+                                           (sbL + sbR) / 2, (sbY + sbB) / 2, (sbR - sbL) * 0.75);
+        glw.addColorStop(0, 'rgba(150,220,190,.16)');
+        glw.addColorStop(1, 'rgba(150,220,190,0)');
+        ctx.fillStyle = glw;
+        ctx.fillRect(sbL - (sbR - sbL) * 0.4, sbY - (sbB - sbY), (sbR - sbL) * 1.8, (sbB - sbY) * 3);
+      }
+    }
+
     /* ── THE LIGHTS ──────────────────────────────────────────────────── */
     if (L.lights) {
       [-1, 1].forEach(function (side) {
@@ -1177,17 +1216,24 @@
         var h = BODY * sc * 0.52;
         var px = cam.sx(x, y), py = cam.sy(y, 0);
         var coach = (i % 4) === 0;
+        /* NOBODY ON A SIDELINE IS STANDING PERFECTLY STILL. A row of frozen
+           figures beside a moving game is the thing that says "backdrop"; a
+           quarter of an inch of sway, each man on his own phase, and the
+           touchline is populated rather than printed. */
+        var sway = Math.sin((o.tick || 0) * (1.1 + jitter * 0.9) + i * 1.7)
+                 * h * (coach ? 0.020 : 0.034);
+        var bob = Math.abs(Math.sin((o.tick || 0) * (0.9 + jitter * 0.7) + i * 2.3)) * h * 0.018;
         /* a shadow, a body, a head — three shapes and they read as people */
         ctx.fillStyle = 'rgba(0,0,0,.30)';
         ctx.beginPath();
         ctx.ellipse(px, py, h * 0.20, h * 0.07, 0, 0, 6.2832);
         ctx.fill();
         ctx.fillStyle = coach ? '#1c222b' : rgba(kit || '#3fb883', 0.55);
-        roundRect(ctx, px - h * 0.21, py - h * 0.74, h * 0.42, h * 0.58, h * 0.12);
+        roundRect(ctx, px + sway - h * 0.21, py - bob - h * 0.74, h * 0.42, h * 0.58 + bob, h * 0.12);
         ctx.fill();
         ctx.fillStyle = coach ? '#33404e' : shade(kit || '#3fb883', -0.35);
         ctx.beginPath();
-        ctx.arc(px, py - h * 0.84, h * 0.155, 0, 6.2832);
+        ctx.arc(px + sway * 1.35, py - bob - h * 0.84, h * 0.155, 0, 6.2832);
         ctx.fill();
       }
     });
@@ -1324,6 +1370,42 @@
     ctx.fillStyle = pool;
     ground(-14, FIELD.width + 14, yNear, yFar);
     ctx.fill();
+
+    /* ── WEAR AND GRAIN ────────────────────────────────────────────────
+       A field is not a colour swatch. It is played on down the middle and
+       hardly at all near the sidelines, and by the fourth quarter the strip
+       between the hashes is a shade browner than the rest of it. And no grass
+       anywhere is one flat tone: a few hundred seeded specks give it a
+       surface the eye reads as depth without ever being able to name why. */
+    var wearA = Math.max(yNear, 12), wearB = Math.min(yFar, 88);
+    if (wearB > wearA) {
+      var wg = ctx.createLinearGradient(cam.sx(FIELD.half - 11, 50), 0, cam.sx(FIELD.half + 11, 50), 0);
+      wg.addColorStop(0, 'rgba(96,78,48,0)');
+      wg.addColorStop(0.5, 'rgba(96,78,48,.16)');
+      wg.addColorStop(1, 'rgba(96,78,48,0)');
+      ctx.fillStyle = wg;
+      ground(FIELD.half - 11, FIELD.half + 11, wearA, wearB);
+      ctx.fill();
+    }
+    /* TWO FILLS, NOT FOUR HUNDRED. Every speck setting its own fillStyle is
+       four hundred canvas state changes a frame — the same mistake that once
+       cost the establishing shot thirty-five milliseconds. Light and dark go
+       into one path each. */
+    var gr = seats(), gi, gN = clamp(Math.round(W * H / 900), 90, 420);
+    var grTop = cam.sy(Math.min(yFar, 100));
+    var pass2;
+    for (pass2 = 0; pass2 < 2; pass2++) {
+      ctx.fillStyle = pass2 ? 'rgba(0,0,0,.030)' : 'rgba(255,255,255,.022)';
+      ctx.beginPath();
+      for (gi = 0; gi < gN; gi++) {
+        var q3 = gr[(gi * 13 + 5) % gr.length];
+        if ((q3[3] < 0.5 ? 0 : 1) !== pass2) continue;
+        var gyy = q3[1] * H;
+        if (gyy < grTop) continue;
+        ctx.rect(q3[0] * W, gyy, 1.4 + q3[2] * 2.4, 1.0 + q3[2] * 1.2);
+      }
+      ctx.fill();
+    }
 
     /* ── END ZONES ─────────────────────────────────────────────────────── */
     /* THE FAR END ZONE BELONGS TO THE MEN DEFENDING IT. You drive toward

@@ -197,42 +197,81 @@
   /* ── PLAY DIAGRAMS for the call sheet ─────────────────────────────────── */
   /* THE PLAY, AS A COACH WOULD SKETCH IT. Small, but big enough to tell a
      four-vertical from a screen without reading the name. */
+  /* ── THE PLAY, AS A COACH WOULD SKETCH IT ────────────────────────────────
+     Small, but big enough to tell a four-vertical from a screen without
+     reading the name — which means it has to show the SHAPE of the concept:
+     where the line is, who is on it, and where the football is going. Routes
+     are coloured by how deep they run, so the depth of a concept is legible
+     before any of the words are. */
+  var DEPTH_INK = { short: '#7fe3c0', int: '#4fc9ff', deep: '#f2c744' };
   function diagram(playKey, formKey) {
-    var play = F.play(playKey), form = F.formation(formKey), W = 88, H = 58;
-    var cx = W / 2, ly = H * 0.70;
-    var kx = 1.62, ky = 1.55;
-    var out = '<svg class="pdiag" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'
-      + '<line x1="3" y1="' + ly.toFixed(1) + '" x2="' + (W - 3) + '" y2="' + ly.toFixed(1)
-      + '" stroke="rgba(255,255,255,.34)" stroke-width="1.2"/>';
-    [-5.0, -2.5, 0, 2.5, 5.0].forEach(function (dx) {
-      out += '<rect x="' + (cx + dx * kx - 1.5).toFixed(1) + '" y="' + (ly - 4.2).toFixed(1)
-        + '" width="3" height="3.2" rx="1" fill="rgba(255,255,255,.55)"/>';
+    var play = F.play(playKey), form = F.formation(formKey), W = 92, H = 60;
+    var cx = W / 2, ly = H * 0.66;
+    var kx = 1.62, ky = 1.42;
+    var out = '<svg class="pdiag" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">';
+    /* the far hash, so there is a field under it rather than a void */
+    out += '<line x1="2" y1="' + (ly - 13).toFixed(1) + '" x2="' + (W - 2) + '" y2="'
+      + (ly - 13).toFixed(1) + '" stroke="rgba(255,255,255,.07)" stroke-width="1"/>';
+    /* the line of scrimmage */
+    out += '<line x1="2" y1="' + ly.toFixed(1) + '" x2="' + (W - 2) + '" y2="' + ly.toFixed(1)
+      + '" stroke="rgba(255,255,255,.40)" stroke-width="1.3"/>';
+    /* the five up front, as one block of men rather than five loose dots */
+    [-4.4, -2.2, 0, 2.2, 4.4].forEach(function (dx) {
+      out += '<rect x="' + (cx + dx * kx - 1.6).toFixed(1) + '" y="' + (ly - 4.4).toFixed(1)
+        + '" width="3.2" height="3.4" rx="1.1" fill="rgba(233,237,244,.62)"/>';
     });
-    var spots = form.spots, slot;
+
+    var spots = form.spots, slot, paths = '', dots = '';
     for (slot in spots) {
       if (!spots.hasOwnProperty(slot)) continue;
       var s = spots[slot];
       var x = Math.max(3.5, Math.min(W - 3.5, cx + s[1] * kx * 0.56));
-      var y = Math.min(H - 3, ly - s[0] * ky);
+      var y = Math.min(H - 3.5, ly - s[0] * ky);
       var rk = play.assign && play.assign[slot];
       if (play.type === 'pass' && rk && rk !== 'block' && F.ROUTES[rk]) {
-        var r = F.ROUTES[rk], mir = s[1] >= 0 ? 1 : -1, d = 'M' + x.toFixed(1) + ',' + y.toFixed(1);
+        var r = F.ROUTES[rk], mir = s[1] >= 0 ? 1 : -1;
+        var d = 'M' + x.toFixed(1) + ',' + y.toFixed(1), lx = x, lyy = y;
         r.pts.forEach(function (pt) {
-          d += 'L' + Math.max(2, Math.min(W - 2, x + pt[1] * mir * kx * 0.56)).toFixed(1)
-            + ',' + Math.max(2, y - pt[0] * ky * 0.70).toFixed(1);
+          lx = Math.max(2, Math.min(W - 2, x + pt[1] * mir * kx * 0.56));
+          lyy = Math.max(2, y - pt[0] * ky * 0.70);
+          d += 'L' + lx.toFixed(1) + ',' + lyy.toFixed(1);
         });
-        out += '<path d="' + d + '" fill="none" stroke="#3fb883" stroke-width="1.5" '
-          + 'stroke-linecap="round" stroke-linejoin="round"/>';
+        var ink = DEPTH_INK[r.band] || DEPTH_INK.int;
+        paths += '<path d="' + d + '" fill="none" stroke="' + ink + '" stroke-width="1.6" '
+          + 'stroke-linecap="round" stroke-linejoin="round" opacity=".92"/>'
+          /* a pip where the route ends: the eye finds the break instantly */
+          + '<circle cx="' + lx.toFixed(1) + '" cy="' + lyy.toFixed(1) + '" r="1.5" fill="' + ink + '"/>';
       }
-      out += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="#e9edf4"/>';
+      dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="#e9edf4"/>';
     }
+    out += paths + dots;
+
     if (play.type === 'run') {
-      var lane = play.concept === 'outside' ? 9 : play.concept === 'gap' ? 4.4 : 1.4;
-      out += '<path d="M' + cx + ',' + (ly + 7) + ' Q' + (cx + lane * 0.5).toFixed(1) + ',' + (ly + 1)
-        + ' ' + (cx + lane).toFixed(1) + ',' + (ly - 8)
-        + '" fill="none" stroke="#f2c744" stroke-width="1.9" stroke-linecap="round"/>'
-        + '<path d="M' + (cx + lane - 2).toFixed(1) + ',' + (ly - 6) + 'L' + (cx + lane).toFixed(1)
-        + ',' + (ly - 9.5) + 'L' + (cx + lane + 2).toFixed(1) + ',' + (ly - 6) + 'Z" fill="#f2c744"/>';
+      /* THE TRACK THE FOOTBALL TAKES, AND EVERY RUN TAKES A DIFFERENT ONE.
+         Three gap schemes drawn as the same yellow arrow are three cards you
+         cannot tell apart, which is the whole job of the picture. */
+      var lane = play.concept === 'outside' ? 9.5 : play.concept === 'gap' ? 4.6 : 1.4;
+      var mis = playKey === 'counter' || playKey === 'draw' ? -3.4 : 0;
+      var d2 = 'M' + cx + ',' + (ly + 9);
+      if (mis) {
+        /* the false step: he shows one way before he goes the other */
+        d2 += 'Q' + (cx + mis).toFixed(1) + ',' + (ly + 6.5) + ' ' + (cx + mis * 0.55).toFixed(1)
+            + ',' + (ly + 4);
+      }
+      d2 += 'Q' + (cx + lane * 0.55).toFixed(1) + ',' + (ly + 1) + ' '
+          + (cx + lane).toFixed(1) + ',' + (ly - 9);
+      out += '<path d="' + d2 + '" fill="none" stroke="#f2c744" stroke-width="2.1" '
+        + 'stroke-linecap="round" stroke-linejoin="round"/>'
+        + '<path d="M' + (cx + lane - 2.3).toFixed(1) + ',' + (ly - 7) + 'L' + (cx + lane).toFixed(1)
+        + ',' + (ly - 11).toFixed(1) + 'L' + (cx + lane + 2.3).toFixed(1) + ',' + (ly - 7) + 'Z" fill="#f2c744"/>';
+      /* a gap scheme pulls somebody: show him going the other way across it */
+      if (play.concept === 'gap') {
+        out += '<path d="M' + (cx - lane * 0.55 - 3.4).toFixed(1) + ',' + (ly - 2).toFixed(1)
+          + ' Q' + (cx).toFixed(1) + ',' + (ly + 2.4).toFixed(1) + ' '
+          + (cx + lane * 0.8).toFixed(1) + ',' + (ly - 3.2).toFixed(1)
+          + '" fill="none" stroke="rgba(233,237,244,.55)" stroke-width="1.3" '
+          + 'stroke-linecap="round" stroke-dasharray="2.4 2"/>';
+      }
     }
     return out + '</svg>';
   }
@@ -320,12 +359,20 @@
       + '<div class="dr-tabs">' + OFF_TABS.map(function (t) {
           return '<button data-tab="' + t[0] + '" aria-selected="' + (offTab === t[0]) + '">' + t[1] + '</button>';
         }).join('') + '</div>';
-    var body = '<div class="dr-list">' + list.map(function (p) {
+    var body = '<div class="dr-list">' + list.map(function (p, i) {
       var forms = F.playForms(p.key, teams.me.offense);
       var fk = forms[0] || p.forms[0];
-      return '<button class="dr-play" type="button" data-play="' + esc(p.key) + '" data-form="' + esc(fk) + '">'
+      /* THE CALL THE COACH WOULD MAKE, MARKED. Three suggestions in a list of
+         identical cards is three suggestions nobody reads; the first one on
+         the suggested tab wears the accent and says why it is there. */
+      var top = offTab === 'suggested' && i === 0;
+      return '<button class="dr-play' + (top ? ' dr-top' : '') + '" type="button" data-play="'
+        + esc(p.key) + '" data-form="' + esc(fk) + '">'
         + diagram(p.key, fk)
-        + '<span class="dr-txt"><b>' + esc(p.name) + '</b>'
+        + '<span class="dr-txt">'
+        + (top ? '<u>Top call · ' + esc(ordinal(sit.down)) + ' &amp; '
+            + (sit.goalToGo ? 'goal' : sit.toGo) + '</u>' : '')
+        + '<b>' + esc(p.name) + '</b>'
         + '<i>' + esc(F.formation(fk).name) + ' · ' + esc(p.group === 'pa' ? 'Play action' : p.group) + '</i>'
         + '<em>' + esc(p.means) + '</em></span></button>';
     }).join('') + '</div>';

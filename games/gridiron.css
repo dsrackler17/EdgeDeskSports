@@ -210,15 +210,24 @@
   font:700 12px 'Inter',sans-serif;white-space:nowrap;cursor:pointer}
 .dr-tabs button[aria-selected="true"]{background:var(--val);border-color:var(--val);color:#06231a}
 
-.dr-list{display:flex;flex-direction:column;gap:7px;padding:2px 12px 10px}
-.dr-play{display:flex;align-items:center;gap:11px;text-align:left;width:100%;
-  min-height:70px;padding:8px 11px;border-radius:13px;border:1px solid var(--line2);
-  background:var(--raised);color:var(--text);cursor:pointer}
-.dr-play:active{transform:scale(.99);border-color:var(--val)}
-.pdiag{flex:0 0 auto;width:82px;height:54px;background:rgba(10,26,17,.8);
-  border:1px solid var(--line);border-radius:8px}
+.dr-list{display:flex;flex-direction:column;gap:8px;padding:2px 12px 10px}
+/* ONE RADIUS, ONE TOUCH TARGET. Every card in the sheet is the same shape and
+   the same height to a thumb; only the accent tells them apart. */
+.dr-play{display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+  min-height:76px;padding:9px 12px;border-radius:14px;border:1px solid var(--line2);
+  background:var(--raised);color:var(--text);cursor:pointer;
+  transition:border-color .12s,transform .09s}
+.dr-play:active{transform:scale(.985);border-color:var(--val)}
+/* the recommendation carries the accent down its edge and says what it is for */
+.dr-play.dr-top{border-color:rgba(63,184,131,.55);
+  background:linear-gradient(90deg,rgba(63,184,131,.10),var(--raised) 42%);
+  box-shadow:inset 3px 0 0 var(--val)}
+.pdiag{flex:0 0 auto;width:88px;height:58px;background:rgba(9,24,16,.85);
+  border:1px solid var(--line);border-radius:10px}
 .dr-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
-.dr-txt b{font:700 15px 'Space Grotesk',sans-serif;line-height:1.15}
+.dr-txt u{text-decoration:none;font:800 9.5px 'Space Grotesk',sans-serif;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--val);margin-bottom:2px}
+.dr-txt b{font:700 15.5px 'Space Grotesk',sans-serif;line-height:1.15}
 .dr-txt i{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.09em;
   text-transform:uppercase;color:var(--faint)}
 .dr-txt em{font-style:normal;font-size:11.5px;color:var(--dim);line-height:1.3}
