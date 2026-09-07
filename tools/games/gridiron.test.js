@@ -820,6 +820,27 @@ function repeat(playKey, defKey, n, extra, opts) {
   has(css, '--tap', 'tap targets come from the shared token') ;
   chk('nothing in the game screen scrolls sideways', css.indexOf('overflow:hidden') > 0);
 
+  /* ── THE PAGE HAS TO BE ABLE TO SCROLL ────────────────────────────────
+     A joystick dragged across the field must not drag the page with it, so
+     the page cancels touchmove. For a while it cancelled EVERY one of them,
+     on the whole document, from the moment it booted, against an allow-list
+     of three class names — one of which no longer existed and one of which
+     was not the element that scrolls. The matchup screen could not be
+     scrolled at all: you arrived on a phone with the Kick off button under
+     the browser's own toolbar and no way to reach it.
+
+     The guard belongs to the field, it stands down before the game starts,
+     and the thing it names has to be a class the page actually has. */
+  const gi = js.indexOf("document.addEventListener('touchmove'");
+  chk('the page guards touchmove somewhere', gi > 0);
+  const guard = js.slice(gi, js.indexOf('{ passive: false }', gi));
+  chk('the touch guard is scoped to the field', guard.indexOf('.gd-field') > 0, guard);
+  chk('and stands down before the game starts', guard.indexOf('hidden') > 0, guard);
+  chk('and the class it names is one the page has',
+      css.indexOf('.gd-field') > 0 && page.indexOf('gd-field') > 0);
+  chk('the matchup page leaves room under its last control for the browser chrome',
+      css.indexOf('#pre{') > 0 && /#pre\{[^}]*padding-bottom/.test(css.replace(/\s+/g, '')));
+
   has(js, 'navigator.vibrate', 'haptics are wired');
   has(js, 'AudioContext', 'sound is synthesised rather than downloaded');
   has(js, 'serviceWorker', 'the offline shell is registered');

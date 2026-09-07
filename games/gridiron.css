@@ -532,7 +532,11 @@
    Before a snap is taken the screen is still a football field with two
    teams standing on it, because the first second of looking at this should
    answer "what is this" with "a football game" and not with a paragraph. */
-#pre{position:relative;isolation:isolate}
+#pre{position:relative;isolation:isolate;
+  /* A PHONE BROWSER PUTS ITS OWN TOOLBAR OVER THE BOTTOM OF THE PAGE, and the
+     button that starts the game was landing underneath it. Room to scroll the
+     last control clear of the chrome, and of the home indicator under that. */
+  padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 
 /* ── THE MATCHUP ──────────────────────────────────────────────────────────
    A broadcast card, not an analytics dashboard. Two clubs, their colours,

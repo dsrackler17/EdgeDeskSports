@@ -1976,9 +1976,25 @@
       kickSkip();
     }, true);
     window.addEventListener('beforeunload', function () { if (game && !game.over) S.save(game); });
-    /* no rubber-banding under the thumbs */
+    /* ── NO RUBBER-BANDING UNDER THE THUMBS, AND NOTHING ELSE ────────────
+       A joystick dragged across a canvas must not drag the page with it. But
+       this was cancelling EVERY touchmove on the document from the moment the
+       page booted, with an allow-list of three class names — one of which
+       (`.deck`) no longer exists, and one of which (`.dr-list`) is not even
+       the element that scrolls. So the matchup screen could not be scrolled
+       at all: you arrived on a phone, the Kick off button was under the
+       browser's own toolbar, and there was no way to reach it. The game was
+       unplayable before it started.
+
+       It belongs to the field and to nothing else. The call sheet, the
+       overlays and the matchup page are ordinary scrolling content and are
+       left alone; the field already carries `touch-action:none` and the body
+       `overscroll-behavior:none`, so this is the belt for those braces and
+       only over the grass. */
     document.addEventListener('touchmove', function (e) {
-      if (e.target.closest && e.target.closest('.deck, .ov-in, .dr-list')) return;
+      if (gd.hidden) return;
+      if (!e.target || !e.target.closest) return;
+      if (!e.target.closest('.gd-field')) return;
       e.preventDefault();
     }, { passive: false });
   }
