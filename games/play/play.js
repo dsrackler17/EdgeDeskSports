@@ -1016,9 +1016,13 @@
     var ahead = game.score[me] > game.score[them];
     var all = S.why(box, me);
     if (!all.length) return '';
+    /* the one that runs against the way it is going: what is keeping you in
+       it when you are behind, what could still cost you when you are not */
     var pick = all.filter(function (r) { return r.good !== ahead; })[0] || all[0];
-    return '<div class="tkw"><span>' + (ahead ? 'Watch' : 'The problem') + '</span>'
-      + esc(pick.text) + '</div>';
+    var head = pick.good
+      ? (ahead ? 'What is working' : 'What is keeping you in it')
+      : (ahead ? 'What could still cost you' : 'The problem');
+    return '<div class="tkw"><span>' + esc(head) + '</span>' + esc(pick.text) + '</div>';
   }
 
   /* ── THE RECAP ────────────────────────────────────────────────────────── */
