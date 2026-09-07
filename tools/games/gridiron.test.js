@@ -52,7 +52,8 @@ const RO = require(G('lib/gridiron/roster.js'));
 const EN = require(G('lib/gridiron/engine.js'));
 const AI = require(G('lib/gridiron/ai.js'));
 const AU = require(G('lib/gridiron/autoplay.js'));
-const RD = require(G('lib/gridiron/render.js'));
+const PA = require(G('lib/gridiron/paint.js'));
+const SG = require(G('lib/gridiron/stage.js'));
 const SE = require(G('lib/gridiron/session.js'));
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
@@ -568,60 +569,170 @@ function repeat(playKey, defKey, n, extra, opts) {
 })();
 
 /* ============================================================================
-   8  THE RENDERER DRAWS WHAT THE ENGINE RESOLVED
+   8  THE PRESENTATION: TWENTY-TWO FOOTBALL PLAYERS, NOT TWENTY-TWO DOTS
    ========================================================================== */
-(function renderer() {
+(function presentation() {
+  /* every formation puts eleven on the field, in a shape a coach would own */
   Object.keys(FB.FORMATIONS).forEach(k => {
     eq(k + ' puts eleven on the field', Object.keys(FB.FORMATIONS[k].spots).length + 5, 11);
   });
-  const off = RD.alignOffense(FB.play('four_verts'), 'gun');
+  const BALLX = PA.FIELD.half;
+  const off = SG.alignOffense(FB.play('four_verts'), 'gun', BALLX, 30, null, null);
   eq('eleven on offence', off.length, 11);
   eq('five of them are linemen', off.filter(p => p.pos === 'OL').length, 5);
-  chk('everybody is on the field', off.every(p => Math.abs(p.fy) <= 26.7));
+  chk('everybody is between the sidelines', off.every(p => p.x >= 0 && p.x <= PA.FIELD.width));
+  chk('the offence lines up behind the ball', off.filter(p => p.pos !== 'OL').every(p => p.y <= 30.1));
+  chk('the offence looks downfield', off.every(p => p.face === 'back'));
 
   FB.DEF_CALLS.forEach(d => {
-    const def = RD.alignDefense(FB.defParts(d), null, 1);
+    const def = SG.alignDefense(FB.defParts(d), BALLX, 30, 1, null, FB.play('slant'), 'trips', null);
     eq('eleven on defence for ' + d.key, def.length, 11);
-    chk('the defence is on the field for ' + d.key, def.every(p => Math.abs(p.fy) <= 26.7));
-    chk('the defence is on its own side for ' + d.key, def.every(p => p.fx >= 0));
+    chk('the defence is between the sidelines for ' + d.key,
+      def.every(p => p.x >= 0 && p.x <= PA.FIELD.width));
+    chk('the defence is on its own side for ' + d.key, def.every(p => p.y >= 30));
+    chk('the defence faces the offence for ' + d.key, def.every(p => p.face === 'front'));
   });
-  const zero = RD.alignDefense(FB.defParts('zero'), null, 0);
-  chk('a zero blitz shows blitzers', zero.filter(p => p.blitz).length > 0);
-  const quarters = RD.alignDefense(FB.defParts('quarters'), null, 0);
-  chk('quarters shows two safeties deep', quarters.filter(p => p.pos === 'S' && p.fx >= 10).length >= 2);
+  const quarters = SG.alignDefense(FB.defParts('quarters'), BALLX, 30, 0, null, FB.play('four_verts'), 'gun', null);
+  chk('quarters shows two safeties deep', quarters.filter(p => p.pos === 'S' && p.y >= 40).length >= 2);
+  const zero = SG.alignDefense(FB.defParts('zero'), BALLX, 30, 0, null, FB.play('mesh'), 'gun', null);
+  chk('a zero blitz walks men up to the line', zero.filter(p => p.blitz).length >= 1);
+  chk('and it has no deep help', zero.filter(p => p.pos === 'S' && p.y >= 45).length === 0);
+  const press = SG.alignDefense(FB.defParts('zero'), BALLX, 30, 0, null, FB.play('slant'), 'trips', null);
+  const soft = SG.alignDefense(FB.defParts('quarters'), BALLX, 30, 0, null, FB.play('slant'), 'trips', null);
+  const pressDepth = avgY(press.filter(p => p.pos === 'CB')) - 30;
+  const softDepth = avgY(soft.filter(p => p.pos === 'CB')) - 30;
+  chk('press coverage lines up on the receiver', pressDepth < softDepth - 2,
+    'press ' + pressDepth.toFixed(1) + ', off ' + softDepth.toFixed(1));
+  function avgY(l) { return l.reduce((s2, p) => s2 + p.y, 0) / Math.max(1, l.length); }
 
-  /* every result the engine can produce must choreograph without throwing */
-  const rand = EN.rng(11);
-  const o = team({ name: 'O', seed: 'o' }), d = team({ name: 'D', seed: 'd' });
-  let plans = 0;
-  FB.PLAYS.forEach(p => {
-    FB.DEF_CALLS.forEach(dc => {
-      const r = EN.resolve({ off: o, def: d, rand, tick: plans, playKey: p.key,
-        formKey: p.forms[0], defCall: dc.key, sit: { down: 1, toGo: 10, ball: 30, toGoal: 70 },
-        mem: EN.newMemory() });
-      r.startBall = 30;
-      const plan = RD.choreograph(r);
-      if (plan.actors.length !== 22) throw new Error('actors ' + plan.actors.length + ' for ' + p.key);
-      if (!(plan.duration > 0.4 && plan.duration <= 6.5)) throw new Error('duration ' + plan.duration + ' on ' + p.key + '/' + dc.key);
-      plan.actors.forEach(a => {
-        if (!a.track.length) throw new Error('no track for ' + a.id);
-        a.track.forEach(k => {
-          if (!isFinite(k.fx) || !isFinite(k.fy)) throw new Error('bad keyframe on ' + a.id);
-        });
-        for (let i = 1; i < a.track.length; i++) {
-          if (a.track[i].t < a.track[i - 1].t) throw new Error('time runs backwards on ' + a.id);
+  /* the front shades toward its strength, and the page can see it */
+  const left = SG.alignDefense(FB.defParts('base_3'), BALLX, 30, -1, null, FB.play('slant'), 'gun', null);
+  const right = SG.alignDefense(FB.defParts('base_3'), BALLX, 30, 1, null, FB.play('slant'), 'gun', null);
+  chk('the front shades to the strength, visibly',
+    avgX(right.filter(p => p.pos === 'DL')) > avgX(left.filter(p => p.pos === 'DL')) + 1.5);
+  function avgX(l) { return l.reduce((s2, p) => s2 + p.x, 0) / Math.max(1, l.length); }
+
+  /* routes are run in field coordinates, mirrored for the side he lines up on */
+  Object.keys(FB.ROUTES).forEach(rk => {
+    const r = FB.ROUTES[rk];
+    if (!r.band) return;
+    const rightSide = SG.routeWorld(rk, BALLX + 12, 30, BALLX);
+    const leftSide = SG.routeWorld(rk, BALLX - 12, 30, BALLX);
+    chk(rk + ' runs a real path', rightSide.length >= 2);
+    chk(rk + ' stays on the field',
+      rightSide.every(p => p[0] >= 0 && p[0] <= PA.FIELD.width) &&
+      leftSide.every(p => p[0] >= 0 && p[0] <= PA.FIELD.width));
+    const rBreak = rightSide[rightSide.length - 1][0] - (BALLX + 12);
+    const lBreak = leftSide[leftSide.length - 1][0] - (BALLX - 12);
+    if (Math.abs(rBreak) > 1.5) {
+      chk(rk + ' mirrors for the other side of the formation', rBreak * lBreak < 0,
+        'right ' + rBreak.toFixed(1) + ', left ' + lBreak.toFixed(1));
+    }
+  });
+
+  /* the camera: two scales, and both of them sane */
+  const cam = PA.camera({ w: 390, h: 560, x: PA.FIELD.half, y: 30, zoomX: 12, zoomY: 14 });
+  eq('the middle of the field is the middle of the screen', Math.round(cam.sx(PA.FIELD.half)), 195);
+  chk('downfield is up the screen', cam.sy(40) < cam.sy(30));
+  chk('the near side of the shot draws bigger', cam.depth(cam.h) > cam.depth(0));
+  chk('a yard across is compressed against a yard downfield', cam.zoomX < cam.zoomY);
+
+  /* the kits are never the same two colours */
+  const home = PA.uniform({ primary: '#3fb883', secondary: '#123326', ink: '#06231a' }, false);
+  const away = PA.uniform({ primary: '#e2664b', secondary: '#3a1611', ink: '#2a0c08' }, true);
+  chk('home and away jerseys differ', home.jersey !== away.jersey);
+  chk('a shaded colour can be shaded again',
+    /^rgb\(\d+,\d+,\d+\)$/.test(PA.shade(PA.shade('#3fb883', -0.3), 0.4)));
+  chk('the number is legible on the jersey', PA.readable('#ffffff') === '#101418'
+    && PA.readable('#06231a') === '#ffffff');
+
+  /* EVERY PLAYER IN EVERY STATE DRAWS. A canvas that throws mid-frame is a
+     black screen, so this walks the whole vocabulary through a recording
+     context and insists on real geometry coming out of it. */
+  const STATES = ['stance', 'run', 'carry', 'block', 'engaged', 'tackle', 'down', 'catch',
+                  'throw', 'celebrate', 'shed', 'idle'];
+  const FACES = ['back', 'front', 'left', 'right'];
+  let drawn = 0;
+  Object.keys(PA.BUILD).forEach(pos => {
+    STATES.forEach(st => {
+      FACES.forEach(face => {
+        const ctx = recorder();
+        PA.player(ctx, { x: PA.FIELD.half, y: 30, pos: pos, kit: home, num: 88,
+          state: st, phase: 0.4, face: face, lean: 0.1, sel: st === 'carry' }, cam);
+        if (ctx.bad.length) throw new Error(pos + '/' + st + '/' + face + ': ' + ctx.bad[0]);
+        if (ctx.calls.fill + ctx.calls.stroke < 6) {
+          throw new Error('too little drawn for ' + pos + '/' + st + '/' + face);
         }
+        drawn++;
       });
-      plans++;
     });
   });
-  chk('every play against every defence choreographs cleanly (' + plans + ' of them)', plans > 600, plans);
+  chk('every position in every state draws a whole player (' + drawn + ' of them)', drawn > 400, drawn);
 
-  /* the field draws itself */
-  const svg = RD.fieldSvg();
-  has(svg, 'stroke="#fff"', 'the goal lines are drawn');
-  has(svg, 'class="fnum"', 'the yard numbers are drawn');
-  chk('the field is a sane size', svg.length > 4000 && svg.length < 80000, svg.length);
+  /* a player is a PLAYER: a helmet, pads, a body and legs, not a circle */
+  const ctxOne = recorder();
+  PA.player(ctxOne, { x: PA.FIELD.half, y: 30, pos: 'QB', kit: home, num: 7, state: 'run',
+    phase: 0.2, face: 'back' }, cam);
+  chk('a player is drawn from many parts, not one dot', ctxOne.calls.fill >= 8, ctxOne.calls.fill);
+  chk('a player has a helmet', ctxOne.calls.arc >= 2, ctxOne.calls.arc);
+  chk('a player wears his number', ctxOne.calls.fillText >= 1);
+
+  /* the field, the ball, the markers and the art all draw */
+  const fctx = recorder();
+  PA.field(fctx, cam, { tick: 1, homeColor: '#123326', awayColor: '#2a1a2f',
+    homeName: 'HIGH PLAINS', awayName: 'FORGEMEN' });
+  chk('the field draws its markings', fctx.calls.stroke > 30, fctx.calls.stroke);
+  chk('the field draws its turf and its end zones', fctx.calls.fillRect > 10, fctx.calls.fillRect);
+  chk('the field carries the team names in the end zones', fctx.calls.fillText >= 2);
+  chk('nothing in the field is NaN', fctx.bad.length === 0, fctx.bad[0]);
+
+  const bctx = recorder();
+  PA.ball(bctx, { x: PA.FIELD.half, y: 34, z: 2.4, spin: 1 }, cam);
+  chk('the ball draws in the air with a shadow under it', bctx.calls.fill >= 2 && bctx.bad.length === 0);
+
+  const actx = recorder();
+  PA.art(actx, cam, [{ pts: [[20, 30], [22, 36], [30, 40]], color: '#3fb883' }]);
+  chk('play art draws a route with an arrow head', actx.calls.stroke >= 1 && actx.calls.fill >= 1);
+
+  const mctx = recorder();
+  PA.markers(mctx, cam, 30, 40);
+  chk('the line of scrimmage and the chains are drawn', mctx.calls.stroke === 2);
+
+  /* a recording 2D context: counts what was drawn and catches any NaN, which
+     is the one way canvas fails silently */
+  function recorder() {
+    const c = { calls: { fill: 0, stroke: 0, fillRect: 0, fillText: 0, arc: 0 }, bad: [] };
+    const num = (name, args) => {
+      for (const a of args) {
+        if (typeof a === 'number' && !isFinite(a)) { c.bad.push(name + ' got ' + a); return; }
+      }
+    };
+    const noop = name => function () { num(name, arguments); };
+    ['save', 'restore', 'translate', 'rotate', 'scale', 'beginPath', 'moveTo', 'lineTo',
+     'closePath', 'arcTo', 'ellipse', 'setLineDash', 'clip', 'setTransform', 'rect']
+      .forEach(m => { c[m] = noop(m); });
+    c.fill = function () { c.calls.fill++; };
+    c.stroke = function () { c.calls.stroke++; };
+    c.fillRect = function () { num('fillRect', arguments); c.calls.fillRect++; };
+    c.fillText = function () { num('fillText', arguments); c.calls.fillText++; };
+    c.arc = function () { num('arc', arguments); c.calls.arc++; };
+    c.createLinearGradient = function () { num('gradient', arguments); return grad(); };
+    c.createRadialGradient = function () { num('gradient', arguments); return grad(); };
+    function grad() {
+      return { addColorStop: function (o, col) {
+        if (!isFinite(o)) c.bad.push('colour stop offset ' + o);
+        if (/NaN|undefined/.test(String(col))) c.bad.push('colour ' + col);
+      } };
+    }
+    Object.defineProperty(c, 'fillStyle', { set: function (v) {
+      if (/NaN|undefined/.test(String(v))) c.bad.push('fillStyle ' + v); }, get: function () { return ''; } });
+    Object.defineProperty(c, 'strokeStyle', { set: function (v) {
+      if (/NaN|undefined/.test(String(v))) c.bad.push('strokeStyle ' + v); }, get: function () { return ''; } });
+    ['lineWidth', 'font', 'textAlign', 'textBaseline', 'lineCap', 'lineJoin', 'filter', 'globalAlpha']
+      .forEach(k => { Object.defineProperty(c, k, { set: function (v) {
+        if (/NaN|undefined/.test(String(v))) c.bad.push(k + ' ' + v); }, get: function () { return ''; } }); });
+    return c;
+  }
 })();
 
 /* ============================================================================
@@ -634,13 +745,14 @@ function repeat(playKey, defKey, n, extra, opts) {
   const sw = fs.readFileSync(G('play/sw.js'), 'utf8');
   const man = JSON.parse(fs.readFileSync(G('play/manifest.webmanifest'), 'utf8'));
 
-  ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'render.js', 'session.js']
+  ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'paint.js', 'stage.js', 'session.js']
     .forEach(f => has(page, '/games/lib/gridiron/' + f, 'the page loads ' + f));
   has(page, 'viewport-fit=cover', 'the page is drawn into the safe area');
   has(page, 'manifest.webmanifest', 'the page declares a manifest');
   has(page, 'apple-touch-icon', 'the page has a home-screen icon');
-  has(page, 'id="stage"', 'the page has a field to draw on');
-  has(page, 'id="deck"', 'the page has a call sheet');
+  has(page, 'id="fld"', 'the page has a canvas to draw the field on');
+  has(page, 'id="drawer"', 'the page has a call sheet');
+  has(page, 'id="pad"', 'the page has somewhere to put the thumbs');
 
   has(css, 'env(safe-area-inset-bottom)', 'the call sheet clears the home indicator');
   has(css, 'prefers-reduced-motion', 'motion can be turned down');
@@ -662,7 +774,7 @@ function repeat(playKey, defKey, n, extra, opts) {
 
   has(sw, 'gridiron-v1', 'the shell cache is versioned');
   has(sw, 'caches.delete', 'the old cache is dropped on activate');
-  ['football.js', 'engine.js', 'render.js', 'session.js']
+  ['football.js', 'engine.js', 'paint.js', 'stage.js', 'session.js']
     .forEach(f => has(sw, '/games/lib/gridiron/' + f, 'the shell caches ' + f));
 
   /* the doors into it */
@@ -671,7 +783,7 @@ function repeat(playKey, defKey, n, extra, opts) {
   has(fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8'), '/games/play', 'the sitemap lists the game');
 
   /* the modules keep the repository's conventions */
-  ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'render.js', 'session.js'].forEach(f => {
+  ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'paint.js', 'stage.js', 'session.js'].forEach(f => {
     const src = fs.readFileSync(G('lib/gridiron/' + f), 'utf8');
     has(src, "'use strict'", f + ' is strict');
     has(src, 'module.exports', f + ' runs under Node');
@@ -680,7 +792,7 @@ function repeat(playKey, defKey, n, extra, opts) {
   });
 
   /* no pay-to-win, anywhere near this */
-  const all = ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'render.js', 'session.js']
+  const all = ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'paint.js', 'stage.js', 'session.js']
     .map(f => fs.readFileSync(G('lib/gridiron/' + f), 'utf8')).join('\n') + js;
   [/\bgems?\b/i, /\bdiamonds?\b/i, /\bloot\b/i, /energy bar/i, /premium pack/i,
    /\bpurchase\b/i, /\bcheckout\b/i, /\bmicrotransaction/i, /\bpaywall\b/i]
