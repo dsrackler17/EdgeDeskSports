@@ -1820,6 +1820,226 @@ var S=sandbox;
 
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 
+  /* ---- the door: which room a signed-in account gets --------------------
+     The regression this covers is a lockout, not a wrong pixel. The slate
+     uploader lives on the creator dashboard and nowhere else on this site,
+     and the router used to hand out that room on the strength of the `role`
+     word alone. `role` is computed from an active creator row owned by the
+     signed-in auth user; the uploader is served by /v1/dashboard, which
+     looks the same row up itself. Any drift between them -- a row owned by
+     the email somebody else redeemed the invite on, a status a removal
+     moved off 'active', an older /v1/me -- came out as the member
+     dashboard: no uploader, no explanation, no way back. So: drive the real
+     router against a server whose label and whose rows disagree, and against
+     one that is simply broken, and assert on the room and on the way out. */
+  var realFetchDoor=S.fetch;
+  var doorAsked=[];
+  function refuse(status,message){
+    return Promise.resolve({ok:false,status:status,json:function(){
+      return Promise.resolve({error:{code:'x',message:message}});}});
+  }
+  function doorFetch(role,answer){
+    return function(url,opts){
+      var u=String(url);
+      doorAsked.push(u);
+      if(u.indexOf('/v1/me')>=0)
+        return reply({signed_in:true,role:role,email:'operator@example.com',admin:true,entitled:true});
+      if(u.indexOf('/v1/dashboard')>=0){
+        if(answer==='yes')return reply({creator:{slug:'edgedesksports',display_name:'EdgedeskSports'},models:[]});
+        if(answer==='down')return refuse(500,'briefly unreachable');
+        return refuse(404,'no creator on this account');
+      }
+      return realFetchDoor(url,opts);
+    };
+  }
+  /* a session whose token carries a real-looking auth user id, because the
+     admin remedy is filled in from it */
+  var DOOR_UID='11111111-2222-3333-4444-555555555555';
+  S.localStorage.setItem('collective_session',JSON.stringify({
+    access_token:'x.'+Buffer.from(JSON.stringify({sub:DOOR_UID})).toString('base64')+'.y',
+    refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+  S.localStorage.setItem('mc_welcomed','1');
+  chk('the page can read its own account id out of the session token',
+    S.sessionUserId()===DOOR_UID,{got:S.sessionUserId()});
+
+  var realCreator=S.renderCreatorDash,realMember=S.renderMemberDash,room=null,gotProbe=null;
+  S.renderCreatorDash=function(){room='creator';return Promise.resolve();};
+  S.renderMemberDash=function(v,me,probe){room='member';gotProbe=probe;return Promise.resolve();};
+
+  /* the label agrees: nothing changes, and the creator endpoint is not
+     asked twice for an answer the label already gave */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('creator','no');
+  await S.renderDashboard(node());
+  chk('a creator labelled a creator still goes straight to the creator dashboard',
+    room==='creator'&&!doorAsked.some(function(u){return u.indexOf('/v1/dashboard')>=0;}),
+    {room:room,asked:doorAsked});
+
+  /* the label says member, the rows say creator: the rows win */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('member','yes');
+  await S.renderDashboard(node());
+  chk('a creator the label calls a member still gets the uploader',
+    room==='creator',{room:room,asked:doorAsked});
+
+  /* really not a creator: the member dashboard, and the probe travels with
+     it so the page can say what was asked */
+  S.CREATOR_PROBE=null;room=null;gotProbe=null;doorAsked.length=0;S.fetch=doorFetch('member','no');
+  await S.renderDashboard(node());
+  chk('an account with no creator row gets the member dashboard, told why',
+    room==='member'&&gotProbe&&gotProbe.state==='no'&&gotProbe.status===404,{room:room,probe:gotProbe});
+  /* and the answer is remembered, so navigating back does not re-ask */
+  doorAsked.length=0;
+  await S.renderDashboard(node());
+  chk('a settled "no" is asked once per session, not on every visit',
+    !doorAsked.some(function(u){return u.indexOf('/v1/dashboard')>=0;}),{asked:doorAsked});
+
+  /* the API is having a bad minute. This is the case that must NOT read as
+     "not a creator" and must NOT be cached, or one 500 costs a creator
+     their uploader for the rest of the session. */
+  S.CREATOR_PROBE=null;room=null;gotProbe=null;doorAsked.length=0;S.fetch=doorFetch('member','down');
+  await S.renderDashboard(node());
+  chk('a broken creator endpoint is reported as unknown, never as "not a creator"',
+    room==='member'&&gotProbe&&gotProbe.state==='unknown'&&gotProbe.status===500,{room:room,probe:gotProbe});
+  chk('and an unknown is never cached, so the next visit asks again',
+    S.CREATOR_PROBE===null,{cached:S.CREATOR_PROBE});
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('member','yes');
+  await S.renderDashboard(node());
+  chk('so the creator whose API hiccuped gets their dashboard back on the next look',
+    room==='creator',{room:room});
+
+  /* a dead session is a dead session, not an answer about creators */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;
+  S.fetch=function(url){var u=String(url);
+    if(u.indexOf('/v1/me')>=0)return reply({signed_in:true,role:'member',email:'a@b.c'});
+    if(u.indexOf('/v1/dashboard')>=0)return refuse(401,'expired');
+    return realFetchDoor(url);};
+  await S.renderDashboard(node());
+  chk('a 401 from the creator endpoint signs out instead of being filed as "no creator"',
+    room===null&&S.CREATOR_PROBE===null&&!S.localStorage.getItem('collective_session'),
+    {room:room,cached:S.CREATOR_PROBE});
+
+  S.renderCreatorDash=realCreator;S.renderMemberDash=realMember;
+  /* the 401 case above signed this session out, and the admin remedy is
+     filled in from the token, so sign back in before reading the panel */
+  S.localStorage.setItem('collective_session',JSON.stringify({
+    access_token:'x.'+Buffer.from(JSON.stringify({sub:DOOR_UID})).toString('base64')+'.y',
+    refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+
+  /* ---- the way out, on the page itself ---------------------------------
+     The panel is the whole point: an account that cannot post has to be
+     told what was asked, what came back, and how to ask again. */
+  var gateNo=S.creatorGateHTML({state:'no',status:404},{email:'operator@example.com',admin:false},WALL);
+  chk('the member dashboard says where the uploader is and that it was actually asked for',
+    /creator dashboard/.test(gateNo)&&/v1\/dashboard/.test(gateNo)&&/404/.test(gateNo)
+      &&gateNo.indexOf('operator@example.com')>=0,{html:gateNo.slice(0,400)});
+  chk('and offers the ask again, so the page is not a dead end',
+    /id="ctRetry"/.test(gateNo));
+  var gateDown=S.creatorGateHTML({state:'unknown',status:500,message:'briefly unreachable'},{email:'operator@example.com'},WALL);
+  chk('a failure to ask reads as a failure to ask, not as a verdict',
+    /could not ask/i.test(gateDown)&&/500/.test(gateDown)&&!/no active creator row/.test(gateDown),
+    {html:gateDown.slice(0,400)});
+  chk('a non-admin is not handed database instructions for a database they do not run',
+    !/ctSql/.test(gateNo)&&!/ctSlug/.test(gateNo));
+  var gateAdmin=S.creatorGateHTML({state:'no',status:404},{email:'operator@example.com',admin:true},WALL);
+  chk('an admin gets their own account id and the models actually on this wall',
+    /id="ctSql"/.test(gateAdmin)&&gateAdmin.indexOf(DOOR_UID)>=0
+      &&gateAdmin.indexOf('value="edgedesksports"')>=0,{html:gateAdmin.slice(0,600)});
+  chk('an admin whose API is merely down is told to retry, not to edit the database',
+    !/ctSql/.test(S.creatorGateHTML({state:'unknown',status:500},{admin:true},WALL)));
+  /* A panel drawn with no probe behind it must not report a refusal nobody
+     asked for -- that is the same mistake as the silence it replaced. */
+  var gateNone=S.creatorGateHTML(null,{email:'operator@example.com',admin:true},WALL);
+  chk('with nothing asked, the panel says so and asks rather than inventing a verdict',
+    /has not checked/.test(gateNone)&&/id="ctRetry"/.test(gateNone)
+      &&!/came back with no creator row/.test(gateNone)&&!/ctSql/.test(gateNone),{html:gateNone.slice(0,400)});
+  /* a 200 carrying no creator is not a refusal, and must not be described as
+     one -- "refused (200)" is the kind of sentence that sends somebody
+     hunting for a permissions problem that is not there */
+  chk('a 200 with no creator row is reported as what it is',
+    /came back with no creator row \(HTTP 200\)/.test(
+      S.creatorGateHTML({state:'no',status:200},{email:'a@b.c'},WALL)));
+
+  /* ---- the statement that fixes it -------------------------------------
+     Written by the same rules as the rest of this page's SQL: find the
+     schema, be safe to run twice, and refuse rather than guess whose row
+     this is. A reassignment that guessed would move somebody else's whole
+     graded record onto this account. */
+  var sql=S.creatorLinkSQL('edgedesksports',DOOR_UID);
+  chk('the statement names the row and the account, and nothing else',
+    sql.indexOf('edgedesksports')>=0&&sql.indexOf(DOOR_UID)>=0&&/set user_id = \$2/.test(sql));
+  chk('it finds the schema instead of assuming public',
+    /information_schema\.tables/.test(sql)&&sql.indexOf('public.')<0);
+  chk('it stops when the slug misses and when somebody else owns the row',
+    /no creator row with slug/.test(sql)&&/is owned by auth user/.test(sql));
+  chk('it re-opens a row a removal closed, without touching the record',
+    /removed_at = null/.test(sql)&&/account_status/.test(sql)
+      &&sql.indexOf('delete')<0&&sql.indexOf('projections')<0);
+  /* In RAISE, % is the placeholder and %% is a literal percent -- format()'s
+     %I and %L do not exist here, and one extra argument makes the whole
+     statement fail at runtime with "too many parameters specified for
+     RAISE". Which is a thing to find out from a test rather than from the
+     one person who ever runs this, on the day they cannot post a slate. */
+  function raiseArity(text){
+      var bad=[];
+      (String(text).match(/raise (?:exception|notice) [^\n]*/g)||[]).forEach(function(line){
+        var i=line.indexOf("'"),msg='',j=i+1;
+        while(j<line.length){
+          var ch=line.charAt(j);
+          if(ch==="'"){if(line.charAt(j+1)==="'"){msg+="'";j+=2;continue;}j++;break;}
+          msg+=ch;j++;
+        }
+        /* the argument list ends at the statement's own semicolon, not at the
+           end of the source line -- `raise exception '...'; end if;` shares one */
+        var rest=line.slice(j),cut='',inq=false;
+        for(var z=0;z<rest.length;z++){
+          var rc=rest.charAt(z);
+          if(rc==="'"){inq=!inq;cut+=rc;continue;}
+          if(rc===';'&&!inq)break;
+          cut+=rc;
+        }
+        rest=cut.trim().replace(/^,/,'');
+        var args=0,q=false,depth=0,seen=false;
+        for(var k=0;k<rest.length;k++){
+          var c=rest.charAt(k);
+          if(c==="'"){q=!q;seen=true;continue;}
+          if(q)continue;
+          if(c==='(')depth++;else if(c===')')depth--;
+          else if(c===','&&depth===0){args++;continue;}
+          if(c.trim())seen=true;
+        }
+        if(seen)args++;
+        var holes=(msg.replace(/%%/g,'').match(/%/g)||[]).length;
+        if(holes!==args)bad.push({line:line,holes:holes,args:args});
+      });
+      return bad;
+  }
+  /* the checker has to be able to fail, or this is a green light for nothing */
+  chk('the RAISE check catches a %% written where a placeholder was meant',
+    raiseArity("raise exception 'no creator row matched slug %% or name %%', 'a', 'b';").length===1
+      &&raiseArity("raise exception 'plain, no args';").length===0
+      &&raiseArity("raise notice 'one % here', x;").length===0);
+  chk('every RAISE in it gets exactly one argument per placeholder',
+    raiseArity(sql).length===0,{bad:raiseArity(sql)});
+  chk('a slug or an id carrying a quote cannot close the string it sits in',
+    S.creatorLinkSQL("o'brien",DOOR_UID).indexOf("o''brien")>=0);
+
+  /* and on the real page, not only in the helper: the member dashboard is
+     the room this account is actually in, so drive it and read what it says */
+  S.WALLC=null;S.META=null;
+  var vmem=node();
+  S.fetch=doorFetch('member','no');
+  await S.renderMemberDash(vmem,{signed_in:true,role:'member',email:'operator@example.com',
+    admin:true,entitled:true},{state:'no',status:404});
+  chk('the member dashboard carries the way back to the uploader, not just an invite box',
+    /Creator tools/.test(vmem.innerHTML)&&/id="ctRetry"/.test(vmem.innerHTML)
+      &&/creator dashboard/.test(vmem.innerHTML),
+    {has:vmem.innerHTML.indexOf('Creator tools'),len:vmem.innerHTML.length});
+  chk('and still offers the invite path it always did',
+    /id="ivTok"/.test(vmem.innerHTML)&&/id="ivCheck"/.test(vmem.innerHTML));
+
+  S.fetch=realFetchDoor;S.CREATOR_PROBE=null;
+  S.WALLC=null;S.META=null;
+  S.localStorage.removeItem('collective_session');
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);

@@ -747,6 +747,80 @@ function adminGrantSQL(uid){
     +'    using \'admin.user_ids\', \'["'+String(uid||'')+'"]\'::jsonb;\n'
     +'end $$;';
 }
+
+/* ---- attaching a creator row to the account that is signed in ----------
+   The one remedy for "this account has no creator dashboard" that is not
+   "sign in as somebody else". The page cannot write the creators table --
+   no browser session should be able to -- so it does what the rest of this
+   page does when the fix is server-side (adminGrantSQL above, addModelSQL
+   in the creator dashboard): hand over the exact statement, already filled
+   in, rather than a diagnosis and an afternoon.
+
+   It writes only what decides whether an account HAS creator tools: the
+   owning auth user, and an account status a removal may have moved off
+   'active' (collective_ingest reads creators as id, slug, display_name,
+   status, and refuses anything that is not active). The model, its numbers
+   and its record are not touched.
+
+   It refuses rather than guesses in both directions. An unknown slug
+   raises. A row already owned by a DIFFERENT auth user raises too, because
+   silently reassigning one moves a stranger's whole graded record onto this
+   account and neither of them can tell -- the same rule addModelSQL learned.
+   The status column is account_status, status or state depending on the
+   deployment and may be an enum, so it is discovered and written inside its
+   own block: failing to re-activate reports and carries on, because the
+   ownership write is the half that matters and losing it to an enum label
+   would be worse. */
+function creatorLinkSQL(slug,uid){
+  var sl=String(slug||'').replace(/'/g,"''");
+  var id=String(uid||'').replace(/'/g,"''");
+  return ''
+    +'-- Attach the "'+sl+'" creator row to this account and re-open its dashboard.\n'
+    +'-- Finds your schema and your status column itself. Safe to run twice.\n'
+    +'do $$\n'
+    +'declare\n'
+    +'  s   text;\n'
+    +'  st  text;\n'
+    +'  cid uuid;\n'
+    +'  own uuid;\n'
+    +'begin\n'
+    +'  select table_schema into s from information_schema.tables\n'
+    +'   where table_name = \'creators\' limit 1;\n'
+    +'  if s is null then raise exception \'no creators table in any schema\'; end if;\n\n'
+    +'  execute format(\'select id, user_id from %I.creators where slug = $1\', s)\n'
+    +'    into cid, own using \''+sl+'\';\n\n'
+    +'  if cid is null then\n'
+    +'    raise exception \'no creator row with slug % in %.creators\', \''+sl+'\', s;\n'
+    +'  end if;\n\n'
+    +'  -- Someone else already owns it. Reassigning here would hand their\n'
+    +'  -- record to this account silently, so this stops instead.\n'
+    +'  if own is not null and own <> \''+id+'\'::uuid then\n'
+    +'    raise exception \'% is owned by auth user % - reassign it deliberately, not from this button\', \''+sl+'\', own;\n'
+    +'  end if;\n\n'
+    +'  execute format(\'update %I.creators set user_id = $2 where id = $1\', s)\n'
+    +'    using cid, \''+id+'\'::uuid;\n\n'
+    +'  select column_name into st from information_schema.columns\n'
+    +'   where table_schema = s and table_name = \'creators\'\n'
+    +'     and column_name in (\'account_status\',\'status\',\'state\') limit 1;\n'
+    +'  if st is not null then\n'
+    +'    begin\n'
+    +'      execute format(\'update %I.creators set %I = \'\'active\'\' where id = $1\', s, st)\n'
+    +'        using cid;\n'
+    +'    exception when others then\n'
+    +'      raise notice \'owner set, but % could not be set to active (%) - set it by hand to whatever this deployment calls an active creator\', st, sqlerrm;\n'
+    +'    end;\n'
+    +'  end if;\n\n'
+    +'  -- The removal path stamps these three together; clearing them is what\n'
+    +'  -- makes a removed contributor a contributor again.\n'
+    +'  if exists (select 1 from information_schema.columns\n'
+    +'              where table_schema = s and table_name = \'creators\'\n'
+    +'                and column_name = \'removed_at\') then\n'
+    +'    execute format(\'update %I.creators set removed_at = null, removed_by = null, removal_mode = null where id = $1\', s)\n'
+    +'      using cid;\n'
+    +'  end if;\n\n'
+    +'  raise notice \'% now belongs to auth user % - reload the dashboard\', \''+sl+'\', \''+id+'\';\n'
+    +'end $$;\n';
+}
 function saveSession(s){try{localStorage.setItem('collective_session',JSON.stringify(s));}catch(e){}}
 /* Sign out revokes the refresh token at the auth server as well as
    forgetting it here: a token that only left localStorage could still mint
@@ -755,6 +829,9 @@ function saveSession(s){try{localStorage.setItem('collective_session',JSON.strin
 function clearSession(){
   var s=session();
   try{localStorage.removeItem('collective_session');}catch(e){}
+  /* Whether this account has creator tools was an answer about THAT session.
+     Carried into the next one it would open somebody else's dashboard. */
+  CREATOR_PROBE=null;
   if(s&&s.access_token){
     try{
       fetch(CFG.SB_URL+'/auth/v1/logout',{method:'POST',keepalive:true,
@@ -6803,7 +6880,51 @@ function edgedeskBoardHTML(){
    Everyone signs in the same way. The server (/v1/me) decides what this
    account is from the actual rows: creator, subscriber, or member. The
    client only uses the answer for layout; every paid or private number is
-   gated inside its own API response, never by hiding markup. */
+   gated inside its own API response, never by hiding markup.
+
+   The LABEL no longer picks the room on its own. `role` is derived from an
+   active creator row owned by this auth user; the uploader is served by
+   /v1/dashboard, which looks that same row up itself. Every way those two
+   can disagree ends on screen as the member dashboard -- which has no slate
+   uploader on it and no link to one, and there is no other way to post a
+   slate anywhere on this site. So a creator whose label went wrong was
+   locked out of the Collective by a word, with nothing on the page saying
+   why or offering a way back. The endpoint that serves the tools is asked
+   before the label is believed, and when it says there is genuinely no
+   creator here the member dashboard says so and hands over the remedy
+   instead of quietly dropping the section. */
+/* Does this account have creator tools? Asked of the thing that serves them.
+
+   'yes'     -- /v1/dashboard answered with a creator row.
+   'no'      -- it refused (403/404), or answered with no creator: this
+                account genuinely has none.
+   'unknown' -- anything else (a 500, a network failure). NEVER read as "not
+                a creator": an uploader that disappears when the server hiccups
+                is the bug this whole path exists to stop.
+
+   Remembered per session so a reader navigating back to the dashboard does
+   not ask twice; only a settled answer is cached, because re-asking is
+   exactly what should happen after a failure to ask. clearSession() drops
+   it, and the "Check again" button on the member dashboard forces it. */
+var CREATOR_PROBE=null;
+async function creatorProbe(force){
+  if(CREATOR_PROBE&&!force)return CREATOR_PROBE;
+  var p;
+  try{
+    var d=await api('/v1/dashboard',{auth:true});
+    p=(d&&d.creator)?{state:'yes'}:{state:'no',status:200};
+  }catch(e){
+    /* A dead session is not an answer about creators; it is a dead session,
+       and the caller signs out on it. */
+    if(e.status===401)throw e;
+    p=(e.status===403||e.status===404)
+      ?{state:'no',status:e.status}
+      :{state:'unknown',status:e.status||0,
+        message:(e&&e.message)||'The creator dashboard did not answer.'};
+  }
+  if(p.state!=='unknown')CREATOR_PROBE=p;
+  return p;
+}
 async function renderDashboard(view){
   var t=await token();
   if(!t){renderSignIn(view);return;}
@@ -6819,7 +6940,16 @@ async function renderDashboard(view){
   }
   if(!me.signed_in){clearSession();renderSignIn(view);return;}
   if(me.role==='creator')return renderCreatorDash(view,me);
-  return renderMemberDash(view,me);
+  /* The label says this is not a creator. Ask the uploader's own endpoint
+     before taking that away from somebody. */
+  var probe;
+  try{probe=await creatorProbe();}
+  catch(e2){
+    if(e2.status===401){clearSession();renderSignIn(view);return;}
+    probe={state:'unknown',status:e2.status||0,message:e2.message};
+  }
+  if(probe.state==='yes')return renderCreatorDash(view,me);
+  return renderMemberDash(view,me,probe);
 }
 
 function renderSignIn(view){
@@ -8415,8 +8545,95 @@ async function renderCreatorDash(view,me){
   }
 }
 
-/* ================= member / subscriber dashboard ================= */
-async function renderMemberDash(view,me){
+/* WHY THIS ACCOUNT HAS NO UPLOADER, in the server's own words.
+
+   The slate uploader is on the creator dashboard and nowhere else on this
+   site, so an account routed here cannot post a number at all. Silence about
+   that is the bug: a creator whose row and whose role label had drifted
+   apart got a page that behaved as though they had never had a model, with
+   no statement of what was checked and no way to check it again.
+
+   Three states, and the difference between them matters more than the
+   wording. 'no' is an ANSWER -- /v1/dashboard refused, so this account
+   really has no creator row, and the remedy is to attach one or to sign in
+   as the account that owns it. 'unknown' is a FAILURE TO ASK: a 500, a
+   dropped connection. Reading that as "not a creator" is exactly how a
+   working creator loses their uploader to a bad minute on the API, so it
+   says so and offers the ask again. No probe at all says the same plain
+   thing without inventing a cause.
+
+   For an admin it goes one step further, the way the rest of this page does
+   (adminGrantSQL, addModelSQL): the account's own auth id, a list of the
+   models actually on this wall, and the filled-in statement that attaches
+   one to this account. Nothing here writes anything -- the button prints
+   SQL for a person to read and run. */
+function creatorGateHTML(probe,me,wall){
+  var st=(probe&&probe.state)||'';
+  var head,body;
+  if(st!=='no'&&st!=='unknown'){
+    /* No probe reached this panel at all. Saying "the server refused" would
+       be a claim about something nobody asked, which is the same class of
+       mistake as the silence this section replaced. */
+    head='The slate uploader is on the creator dashboard.';
+    body='<p class="note" style="margin:6px 0 0">This page has not checked whether this account has one. '+
+      'Press <b>Check again</b> and it will ask.</p>';
+  }else if(st==='unknown'){
+    head='Could not tell whether this account has a creator dashboard.';
+    body='<p class="note" style="margin:6px 0 0">The creator dashboard did not answer'+
+      (probe&&probe.status?' ('+esc(String(probe.status))+')':'')+
+      (probe&&probe.message?': '+esc(probe.message):'.')+
+      ' Nothing is being hidden from you &mdash; this page could not ask. Press <b>Check again</b>; '+
+      'if it keeps failing, the API is down rather than your account.</p>';
+  }else{
+    head='The slate uploader is on the creator dashboard.';
+    body='<p class="note" style="margin:6px 0 0">This account'+((me&&me.email)?' ('+esc(me.email)+')':'')+
+      ' has no active creator row behind it, so the server opens the member dashboard instead. That is '+
+      'the whole reason there is no <b>Post a slate</b> panel on this page &mdash; the browser is not hiding '+
+      'one. <span class="mono">/v1/dashboard</span> was asked directly and came back with no creator row'+
+      (probe&&probe.status?' (HTTP '+esc(String(probe.status))+')':'')+'.</p>'+
+      '<p class="note" style="margin:6px 0 0">Two things put an account here: the model was created on a '+
+      'different email &mdash; sign out below and sign in with that one &mdash; or the creator row on this '+
+      'email is no longer active, which is what a removal leaves behind.</p>';
+  }
+  var admin='';
+  if(me&&me.admin&&st==='no'){
+    var uid=sessionUserId();
+    var seen={},opts='';
+    (wall||[]).forEach(function(r){
+      var sl=r&&r.creator_slug;
+      if(!sl||seen[sl])return;
+      seen[sl]=1;
+      opts+='<option value="'+esc(sl)+'">'+esc(r.creator_name||sl)+' &middot; '+esc(r.model_name||sl)+'</option>';
+    });
+    admin=opts
+      ? '<details style="margin-top:12px"><summary class="note">Attach one of these models to this account (admin)</summary>'+
+        '<p class="note" style="margin:8px 0 0">Whether an account has creator tools is decided by '+
+        '<span class="mono">creators.user_id</span> and an active status, and no browser session can write '+
+        'that table. This account is '+(uid?'<span class="mono">'+esc(uid)+'</span>':'<b>not readable from this session token</b>')+
+        '. Pick the model that is yours, run the statement on your database, then press <b>Check again</b>.</p>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+        '<select id="ctSlug" style="flex:1;min-width:220px">'+opts+'</select>'+
+        '<button class="btn" id="ctSql" type="button">Show the statement</button></div>'+
+        '<p class="note" style="margin:8px 0 0">It refuses rather than guesses: an unknown slug raises, and so '+
+        'does a row already owned by a different account &mdash; reassigning that would move somebody else&rsquo;s '+
+        'graded record onto this one.</p>'+
+        '<div id="ctSqlOut"></div></details>'
+      : '';
+  }
+  return '<div class="panel" style="max-width:640px">'+
+    '<b style="color:var(--text)">'+head+'</b>'+body+
+    '<div style="margin-top:12px"><button class="btn" id="ctRetry" type="button">Check again</button> '+
+    '<span class="note">Asks the creator dashboard again and opens it if it answers.</span></div>'+
+    admin+'<div id="ctOut"></div></div>';
+}
+
+/* ================= member / subscriber dashboard =================
+   `probe` is what /v1/dashboard said when it was asked whether this account
+   has creator tools (see creatorProbe). It is carried in rather than asked
+   again here so the one section that depends on it -- Creator tools, the
+   only route to the slate uploader from this page -- can say what the
+   server actually answered instead of implying there is nothing to find. */
+async function renderMemberDash(view,me,probe){
   /* first visit: a thirty second welcome, then straight into the product */
   if(!localStorage.getItem('mc_welcomed')){
     view.innerHTML='<div class="welcome"><h1>Welcome to the Model Collective</h1>'+
@@ -8427,7 +8644,7 @@ async function renderMemberDash(view,me){
       '<div class="panel"><span class="stepnum">03</span><b>Track the record</b><span class="note">Rankings and the full graded history, same rules for everyone.</span></div>'+
       '</div>'+
       '<button class="btn primary" id="wcGo" style="font-size:13.5px;padding:10px 22px">Enter the Collective</button></div>';
-    $('wcGo').onclick=function(){try{localStorage.setItem('mc_welcomed','1');}catch(e){}renderMemberDash(view,me);};
+    $('wcGo').onclick=function(){try{localStorage.setItem('mc_welcomed','1');}catch(e){}renderMemberDash(view,me,probe);};
     return;
   }
   view.innerHTML='<div class="emptybox">Loading your dashboard&hellip;</div>';
@@ -8496,9 +8713,15 @@ async function renderMemberDash(view,me){
     html+='<h2>Performance</h2><div class="panel"><p class="note" style="margin:0">Three ranked boards (win percentage, margin accuracy, calibration) with published minimums, and a side-by-side explorer for any two models.</p>'+
       '<p class="note" style="margin:10px 0 0"><a href="#rankings">Rankings &rarr;</a> &middot; <a href="#performance">Performance explorer &rarr;</a> &middot; <a href="#rules">Grading rules &rarr;</a></p></div>';
 
-    /* inline creator setup: an invited member sets up their model right
-       here and their creator dashboard opens without ever leaving the page */
-    html+='<h2>Set up my model</h2><div class="panel" style="max-width:640px">'+
+    /* CREATOR TOOLS. The slate uploader lives on the creator dashboard and
+       nowhere else on this site, so an account that lands here has no way to
+       post a number at all. Until now this page simply did not mention that:
+       the section was headed "Set up my model" and talked about invites, so
+       somebody who already HAS a model read a page that behaved as though
+       they did not. Say what was asked and what came back, offer the ask
+       again, and -- for an operator -- the statement that fixes it. */
+    html+='<h2 id="creatorSec">Creator tools</h2>'+creatorGateHTML(probe,me,wall)+
+      '<div class="panel" style="max-width:640px">'+
       '<p class="note" style="margin:0 0 6px">Creators join by invite. Paste your invite link or code below and set your model up right here; your creator dashboard (slate upload, record, profile) opens the moment it is created.</p>'+
       '<label>Invite link or code</label><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="ivTok" placeholder="join.html?t=mci_... or just the mci_ code" style="flex:1;min-width:220px"><button class="btn" id="ivCheck">Check invite</button></div>'+
       '<div id="ivForm"></div><div id="ivOut"></div>'+
@@ -8522,6 +8745,44 @@ async function renderMemberDash(view,me){
 
     view.innerHTML=html;
     $('soBtn').onclick=function(){clearSession();renderSignIn(view);};
+    /* ---- creator tools: ask again, and open the room if it answers ----
+       The probe's answer is cached for the session, so this forces it. A
+       'yes' goes back through renderDashboard rather than calling the
+       creator dashboard directly: one router decides which room this
+       account gets, and it is not this button. */
+    var ctR=$('ctRetry');
+    if(ctR)ctR.onclick=async function(){
+      var b=this,out=$('ctOut');
+      b.disabled=true;
+      if(out)out.innerHTML='<p class="note" style="margin:10px 0 0">Asking the creator dashboard&hellip;</p>';
+      var pr;
+      try{pr=await creatorProbe(true);}
+      catch(e){
+        if(e&&e.status===401){clearSession();renderSignIn(view);return;}
+        pr={state:'unknown',status:(e&&e.status)||0,message:(e&&e.message)||''};
+      }
+      if(pr.state==='yes'){
+        if(out)out.innerHTML='<p class="note" style="margin:10px 0 0">Found it. Opening your creator dashboard&hellip;</p>';
+        return renderDashboard(view);
+      }
+      b.disabled=false;
+      if(out)out.innerHTML='<p class="note" style="margin:10px 0 0">'+
+        (pr.state==='unknown'
+          ? 'Still no answer'+(pr.status?' ('+esc(String(pr.status))+')':'')+
+            '. That is the API, not this account.'
+          : 'Still no creator row on this account. Nothing changed; nothing was written.')+
+        ' <span class="note">Checked '+esc(new Date().toLocaleTimeString())+'.</span></p>';
+    };
+    var ctS=$('ctSql');
+    if(ctS)ctS.onclick=function(){
+      var sel=$('ctSlug'),slug=sel&&sel.value,uid=sessionUserId(),o=$('ctSqlOut');
+      if(!o)return;
+      if(!slug){o.innerHTML='<p class="note warn" style="margin:8px 0 0">Pick a model first.</p>';return;}
+      if(!uid){o.innerHTML='<p class="note warn" style="margin:8px 0 0">This session token carries no user id, '+
+        'so the statement cannot be filled in. Sign out and back in, then try again.</p>';return;}
+      o.innerHTML='<pre class="mono" style="font-size:11px;white-space:pre-wrap;margin:8px 0 0;'+
+        'background:var(--bg);padding:8px;border-radius:6px;overflow-x:auto">'+esc(creatorLinkSQL(slug,uid))+'</pre>';
+    };
     $('ivCheck').onclick=async function(){
       var mt=String($('ivTok').value).match(/mci_[A-Za-z0-9]{8,64}/);
       if(!mt){toast('Paste the invite link or the mci_ code from it');return;}
