@@ -1132,7 +1132,7 @@
     if (SEATS) return SEATS;
     var out = [], i, sd = 987654321;
     function r() { sd = (sd * 1103515245 + 12345) & 0x7fffffff; return sd / 0x7fffffff; }
-    for (i = 0; i < 3200; i++) out.push([r(), r(), r(), r()]);
+    for (i = 0; i < 7000; i++) out.push([r(), r(), r(), r()]);
     SEATS = out;
     return out;
   }
@@ -1284,8 +1284,23 @@
        same stadium for real, in perspective, and the two agree. */
     var line = cam.sy(FIELD.length + FIELD.endzone);
     var bowlTop = cam.sy(yFar + BOWL.endDeep, BOWL.high);
-    if (line > 5 && bowlTop < 2) {
-      var top = Math.max(-H * 0.26, line - Math.max(H * 0.20, Math.min(H * 0.30, line)));
+    /* WHOEVER DRAWS THE STAND, DRAWS ALL OF IT. From the play lens the real
+       bowl projects hundreds of pixels above the frame: what lands in the
+       picture is the thin bottom edge of it and a scatter of seats, and drawn
+       ON TOP of the backdrop that scatter is all you see — a careful building
+       covered over by its own confetti. So it is one or the other. */
+    var matte = line > 5 && bowlTop < 2;
+    if (matte) {
+      /* THE BUILDING FILLS WHATEVER IS ABOVE THE BACK LINE, and it is
+         PROPORTIONED to that, not to a fixed number of yards. Sized off a
+         constant the roofline mostly fell off the top of the frame and the
+         only tier left in the picture was eight pixels of it — which is why
+         a red-zone shot came out as a slab of dark with a few specks on it.
+
+         Anchored just above the frame instead: from your own thirty the whole
+         venue is a thin strip on the horizon, and from the ten it is a wall
+         of people, and both are the same drawing. */
+      var top = -H * 0.04;
       var band = line - top;
       var mid1 = top + band * 0.44;          /* lower rim / facade top   */
       var mid0 = top + band * 0.30;          /* upper deck front rail    */
@@ -1317,8 +1332,8 @@
 
       /* ── THE CROWD, in two decks with an aisle structure ───────────── */
       var sSeats = seats(), i2, q, decks = [
-        { y0: roofY + band * 0.16, y1: mid0, rows: 13, n: Math.round(W * band / 22) },
-        { y0: mid1, y1: line - band * 0.10, rows: 15, n: Math.round(W * band / 15) }
+        { y0: roofY + band * 0.15, y1: mid0, rows: 14, n: Math.round(W * band / 6) },
+        { y0: mid1, y1: line - band * 0.055, rows: 20, n: Math.round(W * band / 4) }
       ];
       decks.forEach(function (dk, di) {
         var h2 = dk.y1 - dk.y0;
@@ -1332,15 +1347,18 @@
           var aisle = Math.abs(((q[0] * 7) % 1) - 0.5) < 0.045;
           if (aisle) continue;
           var yy = dk.y0 + h2 * vv;
-          var szz = Math.max(1.2, band * 0.011 + q[2] * band * 0.006);
+          /* A PERSON IS ABOUT A FIFTIETH OF THE HEIGHT OF THE STAND HE IS IN,
+             and never smaller than a pixel and a half — under that a crowd
+             stops being people and becomes noise on the picture. */
+          var szz = Math.max(1.5, band * 0.0105 + q[2] * band * 0.005);
           var upp = q[2] < excite;
           var bb = upp ? Math.sin(tick * 7 + q[3] * 40) * szz * 0.8 : 0;
           var kk = q[3] < 0.17 ? 2 : q[3] < 0.30 ? 3 : q[2] < 0.62 ? 0 : 1;
           lists[kk].push(xx, yy - bb, szz * 0.9, szz * (upp ? 1.5 : 1.15));
         }
         var cols = [
-          'rgba(' + Math.round(120 * L.crowd + 30) + ',' + Math.round(126 * L.crowd + 34) + ',' + Math.round(146 * L.crowd + 44) + ',.88)',
-          'rgba(' + Math.round(196 * L.crowd + 34) + ',' + Math.round(202 * L.crowd + 38) + ',' + Math.round(216 * L.crowd + 48) + ',.92)',
+          'rgba(' + Math.round(120 * L.crowd + 44) + ',' + Math.round(126 * L.crowd + 50) + ',' + Math.round(146 * L.crowd + 62) + ',.95)',
+          'rgba(' + Math.round(210 * L.crowd + 44) + ',' + Math.round(214 * L.crowd + 48) + ',' + Math.round(226 * L.crowd + 58) + ',.97)',
           rgba(o.homeTint || o.homeColor || '#9aa6b8', 0.70 * L.crowd + 0.20),
           rgba(o.awayTint || o.awayColor || '#7d8ba0', 0.60 * L.crowd + 0.18)
         ];
@@ -1406,15 +1424,16 @@
       }
 
       /* ── THE VIDEOBOARD, over the tunnel ─────────────────────────── */
-      var vbw = Math.min(W * 0.40, band * 1.55), vbh = vbw * 0.30;
-      var vbx = W / 2 - vbw / 2, vby = mid0 - vbh * 0.62;
+      var vbw = Math.min(W * 0.38, band * 1.05), vbh = vbw * 0.31;
+      var vbx = W / 2 - vbw / 2;
+      var vby = clamp(mid0 - vbh * 0.62, top + band * 0.03, line - vbh - band * 0.16);
       if (vbh > 8) {
-        ctx.fillStyle = '#080b10';
-        roundRect(ctx, vbx - vbh * 0.10, vby - vbh * 0.10, vbw + vbh * 0.20, vbh + vbh * 0.20, vbh * 0.10);
+        ctx.fillStyle = shade(L.upper, -0.24);
+        roundRect(ctx, vbx - vbh * 0.12, vby - vbh * 0.12, vbw + vbh * 0.24, vbh + vbh * 0.24, vbh * 0.10);
         ctx.fill();
         var vg = ctx.createLinearGradient(0, vby, 0, vby + vbh);
-        vg.addColorStop(0, L.lights ? 'rgba(38,58,52,.99)' : 'rgba(28,40,36,.99)');
-        vg.addColorStop(1, L.lights ? 'rgba(18,30,26,.99)' : 'rgba(14,22,20,.99)');
+        vg.addColorStop(0, L.lights ? 'rgba(52,80,70,1)' : 'rgba(38,54,48,1)');
+        vg.addColorStop(1, L.lights ? 'rgba(24,42,36,1)' : 'rgba(20,30,26,1)');
         ctx.fillStyle = vg;
         ctx.fillRect(vbx, vby, vbw, vbh);
         /* the two club marks and the score between them, at the size a screen
@@ -1436,22 +1455,19 @@
           ctx.fillRect(W / 2 - vbw, vby - vbh, vbw * 2, vbh * 3);
         }
       }
-      ctx.restore();
-
       /* THE FIRST TEN ROWS ARE LIT. Everything a floodlight reaches is
          brighter than everything it does not, and the gradient between them
-         is what puts the stand INSIDE the building. */
-      var litH = band * 0.30;
+         is what puts the stand INSIDE the building rather than behind it. */
+      var litH = band * 0.32;
       var lg2 = ctx.createLinearGradient(0, line - litH, 0, line);
       lg2.addColorStop(0, 'rgba(255,244,214,0)');
-      lg2.addColorStop(1, L.lights ? 'rgba(255,240,200,.13)' : 'rgba(255,250,232,.09)');
+      lg2.addColorStop(1, L.lights ? 'rgba(255,238,196,.15)' : 'rgba(255,250,232,.10)');
       ctx.fillStyle = lg2;
       ctx.fillRect(0, line - litH, W, litH);
       ctx.restore();
-      ctx.save();
 
       /* the wall the crowd sits behind, and the tunnel out of it */
-      var wallH = Math.max(3, band * 0.11);
+      var wallH = Math.max(2.5, band * 0.055);
       ctx.fillStyle = L.wall;
       ctx.fillRect(0, line - wallH, W, wallH);
       ctx.fillStyle = 'rgba(0,0,0,.55)';
@@ -1462,6 +1478,7 @@
 
     /* ── THE FAR END: apron, wall, bowl ──────────────────────────────── */
     var fy = yFar, fd = yFar + BOWL.endDeep;
+    if (!matte) {
     ctx.fillStyle = L.upper;
     quad3(ctx, cam, [-70, fd, BOWL.high + 9], [hw + 70, fd, BOWL.high + 9],
                     [hw + 70, fd, 0], [-70, fd, 0]);
@@ -1484,9 +1501,10 @@
     quad3(ctx, cam, [hw / 2 - 4, fy, BOWL.wall * 0.86], [hw / 2 + 4, fy, BOWL.wall * 0.86],
                     [hw / 2 + 4, fy, 0], [hw / 2 - 4, fy, 0]);
     ctx.fill();
+    }
 
     /* ── THE SIDES ───────────────────────────────────────────────────── */
-    [-1, 1].forEach(function (side) {
+    if (!matte) [-1, 1].forEach(function (side) {
       var edge = side < 0 ? -BOWL.apron : hw + BOWL.apron;
       var out = side < 0 ? -BOWL.apron - BOWL.deep : hw + BOWL.apron + BOWL.deep;
       /* seating deck */
@@ -1619,8 +1637,8 @@
       }
     }
     /* the far end, then each side */
-    tier(-62, fd, hw + 62, fd, null, 620, 1400);
-    [-1, 1].forEach(function (sd2) {
+    if (!matte) tier(-62, fd, hw + 62, fd, null, 620, 1400);
+    if (!matte) [-1, 1].forEach(function (sd2) {
       var ox = sd2 < 0 ? -BOWL.apron - BOWL.deep : hw + BOWL.apron + BOWL.deep;
       tier(ox, yNear, ox, yFar, null, 1100, sd2 < 0 ? 300 : 2100);
     });

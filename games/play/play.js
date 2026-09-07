@@ -1299,6 +1299,12 @@
          theirs and offer the button that just moves the game on */
       var mine = !!game.pendingScore && game.pendingScore.side === me;
       shotWide(false);
+      /* ── AND THE CAMERA COMES BACK OUT OF THE END ZONE ─────────────────
+         The lens followed the score in, which is right — and then the try
+         was offered over a picture still framed on the back of the end zone
+         with half the screen off the side of the field. The try has its own
+         formation; show it. */
+      patLook(mine);
       drawerOpen('<div class="dr-grip"></div>'
         + '<div class="dr-head"><span class="dr-title">' + (mine ? 'Your touchdown' : 'Their touchdown') + '</span></div>'
         + (mine ? '<div class="dr-row"><button class="btn btn-go" id="drXP" type="button">Extra point</button>'
@@ -1338,6 +1344,36 @@
       defUnits: G.unitsOf(G.teamOf(game, sit.defense), game.tick) });
     readEl.hidden = true;
   }
+  /* THE TRY, LINED UP. A picture of the eleven who are about to take it,
+     from the same lens as every other snap. It is a preview — nothing here
+     can be snapped, and the engine settles the try when the button is
+     pressed exactly as it always did. */
+  function patLook(mine) {
+    if (!stage || !stage.lineUp) return;
+    var sit = G.situation(game);
+    var off = sit.offense, def = sit.defense;
+    var los = 85;                             /* the fifteen: a thirty-three yard kick */
+    var offT = G.teamOf(game, off), defT = G.teamOf(game, def);
+    var play = F.play('power') || F.play('inside_zone');
+    var form = (F.playForms(play.key, offT.offense) || [])[0] || play.forms[0];
+    stage.setUserSide(off === me ? 'off' : 'def');
+    stage.setArt(false);
+    stage.teams(kitFor(off === me ? 'me' : 'opp'), kitFor(off === me ? 'opp' : 'me'),
+      (off === me ? teams.me : teams.opp).name, (off === me ? teams.opp : teams.me).name,
+      off !== me);
+    try {
+      stage.lineUp({ play: play.key, formation: form, def: 'goal_line_d', los: los, preview: true,
+        firstDown: null, ballX: PT.FIELD.half, strong: 0,
+        env: G.prepare({ off: offT, def: defT, rand: game.aiRand || game.rand, tick: game.tick,
+          playKey: play.key, formKey: form, defCall: 'goal_line_d', sit: sit,
+          mem: game.mem[off], weather: game.weather }),
+        rand: game.rand,
+        offUnits: G.unitsOf(offT, game.tick), defUnits: G.unitsOf(defT, game.tick) });
+    } catch (_) {}
+    readEl.hidden = true;
+    ballX = PT.FIELD.half;
+  }
+
   function patForThem() {
     if (!game.pendingScore) return { type: 'pat' };
     var d = game.score[game.pendingScore.side] - game.score[G.other(game.pendingScore.side)];
