@@ -324,49 +324,61 @@
     $('pdSnap').onclick = doSnap;
     $('pdFlip').onclick = function () { SOUND.tap(); nextCall(); };
   }
-  function padRun() {
+  /* ── THE CONTROLS ────────────────────────────────────────────────────────
+     A stick on the left, one big round button on the right and a smaller one
+     above it. Two thumbs, no reading. Everything else that could be a button
+     — who to throw to — lives out on the field, on the man himself. */
+  function sticks(primary, secondary) {
     pad.classList.add('on');
     pad.innerHTML =
-      '<div class="pd-stick" id="pdStick"><div class="pd-knob" id="pdKnob"></div></div>'
+      '<div class="pd-stick" id="pdStick"><div class="pd-ring"></div><div class="pd-knob" id="pdKnob"></div></div>'
       + '<div class="pd-acts">'
-      + '<button class="pd-act" data-act="juke" type="button">Juke</button>'
-      + '<button class="pd-act pd-act-b" data-act="truck" type="button">Truck</button>'
+      + (secondary ? '<button class="pd-act pd-act-b" data-act="' + secondary[0] + '" type="button">'
+          + esc(secondary[1]) + '</button>' : '')
+      + '<button class="pd-act pd-act-a" data-act="' + primary[0] + '" type="button">'
+      + esc(primary[1]) + '</button>'
       + '</div>';
     wireStick(); wireActs();
   }
-  function padDefense() {
-    pad.classList.add('on');
-    pad.innerHTML =
-      '<div class="pd-stick" id="pdStick"><div class="pd-knob" id="pdKnob"></div></div>'
-      + '<div class="pd-acts">'
-      + '<button class="pd-act" data-act="switch" type="button">Switch</button>'
-      + '<button class="pd-act pd-act-b" data-act="dive" type="button">Tackle</button>'
-      + '</div>';
-    wireStick(); wireActs();
-  }
+  function padRun() { sticks(['truck', 'Truck'], ['juke', 'Juke']); }
+  function padDefense() { sticks(['dive', 'Tackle'], ['switch', 'Switch']); }
+  /* Dropping back you can still run: the stick and the scramble button stay
+     live while the throw badges sit over the receivers. */
+  function padPass() { sticks(['scramble', 'Scramble'], null); }
   function padReceivers(list) {
-    pad.classList.add('on');
-    pad.innerHTML = '<div class="pd-recv" id="pdRecv">' + list.map(function (r, i) {
-      return '<button class="pd-r" type="button" data-read="' + i + '">'
-        + '<b>' + esc(routeName(r.route)) + '</b><i>' + esc(slotName(r.slot)) + '</i></button>';
-    }).join('') + '</div><div class="pd-clock"><span id="pdBar"></span></div>';
-    Array.prototype.forEach.call(pad.querySelectorAll('[data-read]'), function (b) {
-      b.onclick = function () {
-        var i = +b.getAttribute('data-read');
-        SOUND.tap(); buzz('light');
-        stage.throwTo(i);
-        padClear();
-      };
-    });
-    var t0 = Date.now(), bar = $('pdBar');
+    padPass();
+    stage.showTargets(list);
+    var bar = document.createElement('div');
+    bar.className = 'pd-clock';
+    bar.innerHTML = '<span id="pdBar"></span>';
+    pad.appendChild(bar);
+    var t0 = Date.now(), el = $('pdBar');
     (function tickBar() {
-      if (!bar || !bar.parentNode) return;
+      if (!el || !el.parentNode) return;
       var u = Math.min(1, (Date.now() - t0) / 2600);
-      bar.style.width = (100 - u * 100) + '%';
-      bar.style.background = u > 0.7 ? '#e2664b' : u > 0.4 ? '#d9a441' : '#3fb883';
+      el.style.width = (100 - u * 100) + '%';
+      el.style.background = u > 0.7 ? '#e2664b' : u > 0.4 ? '#d9a441' : '#3fb883';
       if (u < 1) requestAnimationFrame(tickBar);
     })();
   }
+
+  /* a tap on the field is a throw, if it lands on a badge */
+  function wireFieldTaps() {
+    function at(e) {
+      var t = e.changedTouches ? e.changedTouches[0] : e;
+      var b = canvas.getBoundingClientRect();
+      var i = stage.hitTarget(t.clientX - b.left, t.clientY - b.top);
+      if (i >= 0) {
+        SOUND.tap(); buzz('light');
+        stage.throwTo(i);
+        padRun();
+        e.preventDefault();
+      }
+    }
+    canvas.addEventListener('touchstart', at, { passive: false });
+    canvas.addEventListener('mousedown', at);
+  }
+
   function slotName(s) {
     return { X: 'X wide', Z: 'Z wide', SL: 'Slot', SL2: 'Slot', TE: 'Tight end', RB: 'Back', FB: 'Back' }[s] || s;
   }
@@ -426,6 +438,7 @@
       b.onclick = function () {
         var a = b.getAttribute('data-act');
         if (a === 'switch') { stage.switchDefender(); SOUND.tap(); buzz('light'); return; }
+        if (a === 'scramble') { if (stage.action('scramble')) { SOUND.tap(); buzz('light'); padRun(); } return; }
         if (stage.action(a)) { SOUND.hit(); buzz('medium'); }
       };
     });
@@ -518,6 +531,7 @@
   function resolveNow(input) {
     var call = pendingCall || {};
     call.read = input.read; call.lane = input.lane; call.timing = input.timing;
+    call.scramble = !!input.scramble;
     var r = S.step(game, call);
     lastResult = r && r.play ? r.play : null;
     return lastResult;
@@ -773,10 +787,39 @@
       + (resumable ? 'Start a new game' : 'Kick off') + '</button>'
       + '<button class="btn btn-ghost" id="btnSet2" type="button">Settings</button>'
       + '<a class="btn btn-ghost" href="/games/gameday/">Back to Game Day</a></div>';
+    paintPreField();
     if ($('btnResume')) $('btnResume').onclick = function () { resumeGame(resumable); };
     $('btnStart').onclick = function () { S.clearSave(); newGame(); };
     $('btnSet2').onclick = settingsOverlay;
   }
+  /* the two teams, lined up behind the card. Same artist, same camera and
+     the same men who will take the first snap — it is not a picture of a
+     football game, it is the football game, standing still. */
+  function paintPreField() {
+    var LU = window.EDGridironLineup, cv = $('preField');
+    if (!LU || !cv || !teams.me) return;
+    function go() {
+      try {
+        LU.draw(cv, teams.me, 'faceoff', {
+          away: teams.opp,
+          theme: themeOf(teams.me.theme),
+          awayTheme: themeOf(teams.opp ? teams.opp.theme : null),
+          homeColor: themeOf(teams.me.theme).secondary || '#123326',
+          awayColor: themeOf(teams.opp ? teams.opp.theme : null).secondary || '#2a1a2f',
+          homeName: teams.me.abbr || '',
+          tags: false
+        });
+      } catch (_) {}
+    }
+    go();
+    if (window.requestAnimationFrame) window.requestAnimationFrame(go);
+    if (!cv.__wired) {
+      cv.__wired = 1;
+      if (window.ResizeObserver) { try { new window.ResizeObserver(go).observe(cv); } catch (_) {} }
+      window.addEventListener('resize', go);
+    }
+  }
+
   function defName(k) {
     var out = k;
     (FR && FR.DEFENSES ? FR.DEFENSES : []).forEach(function (d) { if (d.key === k) out = d.label; });
@@ -801,6 +844,7 @@
         onEnd: onEnd
       }
     });
+    wireFieldTaps();
   }
   function newGame() {
     game = S.build({ me: teams.me, opponent: teams.opp, home: teams.home !== false,

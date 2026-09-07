@@ -44,18 +44,37 @@ function current() {
 
 /* the next token: today's date, then a letter that advances if today's is
    already in play (a second bump on the same day is b, then c) */
+/* the suffix counts a..z, then aa..az, ba.., and so on. It used to add one
+   to the character code and stop thinking, so the twenty-seventh bump of a
+   single day produced "20260907{" — a token that is not what the pages are
+   stamped with and, worse, a '{' in a URL. Twenty-six deploys in a day is a
+   long day, but it happens. */
+function bumpSuffix(sfx) {
+  if (!sfx) return 'a';
+  const chars = sfx.split('');
+  let i = chars.length - 1;
+  while (i >= 0) {
+    if (chars[i] !== 'z') { chars[i] = String.fromCharCode(chars[i].charCodeAt(0) + 1); return chars.join(''); }
+    chars[i] = 'a';
+    i--;
+  }
+  return 'a' + chars.join('');
+}
 function next(explicit) {
   if (explicit) return explicit;
   const cur = current() || '';
   const base = today();
   if (cur.indexOf(base) !== 0) return base + 'a';
-  const letter = cur.slice(base.length) || 'a';
-  return base + String.fromCharCode(letter.charCodeAt(0) + 1);
+  const sfx = cur.slice(base.length);
+  return base + (/^[a-z]*$/.test(sfx) ? bumpSuffix(sfx) : 'a');
 }
 
 /* rewrite every local games asset URL to carry the token */
+/* anything after the '?' is replaced, whatever it is. The old pattern only
+   recognised a well-formed token, so once a bad one had been written the
+   stamper could no longer see it to fix it. */
 function stamp(html, v) {
-  return html.replace(/(["'])(\/games\/[^"'?]+\.(?:js|css))(\?v=[A-Za-z0-9._-]+)?\1/g,
+  return html.replace(/(["'])(\/games\/[^"'?]+\.(?:js|css))(\?[^"']*)?\1/g,
     (m, q, url) => q + url + '?v=' + v + q);
 }
 
@@ -71,4 +90,4 @@ if (require.main === module) {
   console.log('games assets stamped ' + v + ' in ' + changed + ' page(s)');
 }
 
-module.exports = { PAGES, current, next, stamp, today };
+module.exports = { PAGES, current, next, stamp, today, bumpSuffix };

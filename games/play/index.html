@@ -23,8 +23,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260907m">
-<link rel="stylesheet" href="/games/gridiron.css?v=20260907m">
+<link rel="stylesheet" href="/games/games.css?v=20260907c">
+<link rel="stylesheet" href="/games/gridiron.css?v=20260907c">
 </head>
 <body class="gd-body">
 
@@ -52,6 +52,8 @@
 </div>
 
 <main class="wrap" id="pre">
+  <!-- the first thing you see is a football field with two teams on it -->
+  <canvas id="preField" class="pre-field" aria-hidden="true"></canvas>
   <div class="sec" style="margin-top:18px"><div class="card" id="preCard">
     <div class="eyebrow">Game Day</div>
     <div class="sk" style="width:55%;margin:16px 0"></div>
@@ -61,20 +63,21 @@
 
 <div id="ovHost"></div>
 
-<script src="/games/lib/week.js?v=20260907m"></script>
-<script src="/games/lib/store.js?v=20260907m"></script>
-<script src="/games/lib/social.js?v=20260907m"></script>
-<script src="/games/lib/auth.js?v=20260907m"></script>
-<script src="/games/lib/franchise.js?v=20260907m"></script>
-<script src="/games/games.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/football.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/roster.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/engine.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/ai.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/autoplay.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/paint.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/stage.js?v=20260907m"></script>
-<script src="/games/lib/gridiron/session.js?v=20260907m"></script>
+<script src="/games/lib/week.js?v=20260907c"></script>
+<script src="/games/lib/store.js?v=20260907c"></script>
+<script src="/games/lib/social.js?v=20260907c"></script>
+<script src="/games/lib/auth.js?v=20260907c"></script>
+<script src="/games/lib/franchise.js?v=20260907c"></script>
+<script src="/games/games.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/football.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/roster.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/engine.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/ai.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/autoplay.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/paint.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/stage.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/lineup.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/session.js?v=20260907c"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old copy of a library for longer
    than it keeps this page, and a page built for the new engine then dies on
@@ -95,6 +98,6 @@
   try{console.warn('stale gridiron scripts: '+miss.join(', '));}catch(_){}
 })();
 </script>
-<script src="/games/play/play.js?v=20260907m"></script>
+<script src="/games/play/play.js?v=20260907c"></script>
 </body>
 </html>

@@ -487,9 +487,17 @@
     out.separation = Math.round(sep * 100) / 100;
 
     /* SACK, or out of the pocket */
-    if (pressured && playObj.concept !== 'screen' && playObj.concept !== 'quick') {
-      var pSack = clamp(0.64 - (qb.spd - 60) / 340 - (qb.iq - 60) / 500
-                        + (playObj.hold - 2.4) * 0.10, 0.08, 0.72);
+    /* HE TOOK OFF. The user pressed scramble, so the quarterback runs — but
+       breaking a pocket that has already caved in is how one gets buried, so
+       when he is pressured the rush still gets its say first. Same branch,
+       same numbers; the only difference is that the decision was his. */
+    var takeOff = !!ctx.userScramble;
+    if ((pressured || takeOff) && playObj.concept !== 'screen'
+        && (takeOff || playObj.concept !== 'quick')) {
+      var pSack = pressured
+        ? clamp(0.64 - (qb.spd - 60) / 340 - (qb.iq - 60) / 500
+                + (playObj.hold - 2.4) * 0.10, 0.08, 0.72)
+        : 0;
       if (rand() < pSack) {
         out.sack = true;
         out.yards = -Math.round(4 + expo(rand, 3.2));
@@ -500,7 +508,7 @@
         maybeInjure(off, qb.player, rand, 1.4);
         return out;
       }
-      if (rand() < clamp(0.14 + (qb.spd - 60) / 220, 0.03, 0.55)) {
+      if (takeOff || rand() < clamp(0.14 + (qb.spd - 60) / 220, 0.03, 0.55)) {
         out.scramble = true;
         out.yards = Math.max(-2, Math.round(expo(rand, 3.4 + (qb.spd - 60) / 14)));
         out.carrier = qb.player;
@@ -1015,7 +1023,8 @@
       /* what the hands did: which read, which lane, how quickly */
       userRead: call.read == null ? null : call.read,
       userLane: call.lane == null ? null : call.lane,
-      userTiming: call.timing == null ? null : call.timing
+      userTiming: call.timing == null ? null : call.timing,
+      userScramble: !!call.scramble
     });
     noteCall(g.mem[side], playObj.key, playObj.group);
     noteCall(g.defMem[def], r.def, 'def');

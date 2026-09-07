@@ -630,12 +630,33 @@ function repeat(playKey, defKey, n, extra, opts) {
     }
   });
 
-  /* the camera: two scales, and both of them sane */
-  const cam = PA.camera({ w: 390, h: 560, x: PA.FIELD.half, y: 30, zoomX: 12, zoomY: 14 });
-  eq('the middle of the field is the middle of the screen', Math.round(cam.sx(PA.FIELD.half)), 195);
+  /* THE CAMERA IS A CAMERA, NOT A BLUEPRINT. Every one of these is false for
+     an overhead diagram and true for a lens in the stand, which is the whole
+     difference the presentation turns on. */
+  const cam = PA.camera({ w: 390, h: 560, x: PA.FIELD.half, y: 30, px: 15, wide: 36 });
+  eq('the middle of the field is the middle of the screen', Math.round(cam.sx(PA.FIELD.half, 30)), 195);
   chk('downfield is up the screen', cam.sy(40) < cam.sy(30));
-  chk('the near side of the shot draws bigger', cam.depth(cam.h) > cam.depth(0));
-  chk('a yard across is compressed against a yard downfield', cam.zoomX < cam.zoomY);
+  chk('the shot is framed on what it is watching',
+    Math.abs(cam.sy(30) - cam.h * cam.anchor) < 0.5);
+  /* perspective, the thing a diagram has none of */
+  chk('a far man is drawn smaller than a near one', cam.scale(55) < cam.scale(20));
+  chk('and only about half the size, not a fifth — this is a long lens',
+    cam.scale(20) / cam.scale(55) > 1.3 && cam.scale(20) / cam.scale(55) < 2.6,
+    'ratio ' + (cam.scale(20) / cam.scale(55)).toFixed(2));
+  chk('the sidelines lean in towards each other with distance',
+    (cam.sx(PA.FIELD.width, 60) - cam.sx(0, 60)) < (cam.sx(PA.FIELD.width, 20) - cam.sx(0, 20)));
+  chk('the far sideline is still the same side of the screen as the near one',
+    cam.sx(0, 60) < cam.sx(PA.FIELD.width, 60) && cam.sx(0, 20) < cam.sx(PA.FIELD.width, 20));
+  chk('yard lines bunch up as they run away',
+    (cam.sy(30) - cam.sy(40)) > (cam.sy(60) - cam.sy(70)));
+  chk('a man standing up is drawn above his own feet', cam.sy(30, 2) < cam.sy(30, 0));
+  chk('nothing behind the lens turns inside out',
+    isFinite(cam.sy(-40)) && isFinite(cam.sx(0, -40)) && cam.sy(-40) > cam.sy(0));
+  /* paint on the grass flattens the further off it is — the near thirty is
+     a tall number, the far thirty a squashed one */
+  chk('ground paint flattens with distance',
+    cam.fore(70) / cam.lat(70) < cam.fore(30) / cam.lat(30),
+    'far ' + (cam.fore(70) / cam.lat(70)).toFixed(2) + ' vs near ' + (cam.fore(30) / cam.lat(30)).toFixed(2));
 
   /* the kits are never the same two colours */
   const home = PA.uniform({ primary: '#3fb883', secondary: '#123326', ink: '#06231a' }, false);
@@ -682,7 +703,10 @@ function repeat(playKey, defKey, n, extra, opts) {
   PA.field(fctx, cam, { tick: 1, homeColor: '#123326', awayColor: '#2a1a2f',
     homeName: 'HIGH PLAINS', awayName: 'FORGEMEN' });
   chk('the field draws its markings', fctx.calls.stroke > 30, fctx.calls.stroke);
-  chk('the field draws its turf and its end zones', fctx.calls.fillRect > 10, fctx.calls.fillRect);
+  /* the ground is trapezoids now, not rectangles: perspective has no rectangles */
+  chk('the field draws its turf, its markings and its end zones',
+    fctx.calls.fill > 20 && fctx.calls.stroke > 20,
+    'fill ' + fctx.calls.fill + ', stroke ' + fctx.calls.stroke);
   chk('the field carries the team names in the end zones', fctx.calls.fillText >= 2);
   chk('nothing in the field is NaN', fctx.bad.length === 0, fctx.bad[0]);
 
@@ -696,7 +720,7 @@ function repeat(playKey, defKey, n, extra, opts) {
 
   const mctx = recorder();
   PA.markers(mctx, cam, 30, 40);
-  chk('the line of scrimmage and the chains are drawn', mctx.calls.stroke === 2);
+  chk('the line of scrimmage and the chains are painted on the grass', mctx.calls.fill === 2);
 
   /* a recording 2D context: counts what was drawn and catches any NaN, which
      is the one way canvas fails silently */
@@ -716,6 +740,8 @@ function repeat(playKey, defKey, n, extra, opts) {
     c.fillRect = function () { num('fillRect', arguments); c.calls.fillRect++; };
     c.fillText = function () { num('fillText', arguments); c.calls.fillText++; };
     c.arc = function () { num('arc', arguments); c.calls.arc++; };
+    /* text has to be measurable: the artist fits club names to the end zone */
+    c.measureText = function (t) { return { width: String(t).length * 7 }; };
     c.createLinearGradient = function () { num('gradient', arguments); return grad(); };
     c.createRadialGradient = function () { num('gradient', arguments); return grad(); };
     function grad() {

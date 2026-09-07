@@ -32,41 +32,81 @@
   var FIELD = { width: 53.33, half: 26.665, length: 100, endzone: 10, hash: 20 };
 
   /* ── THE CAMERA ──────────────────────────────────────────────────────────
-     A window on the field: where it is looking, how close, and how hard the
-     ground is tilted away. `squash` under one is what makes the turf recede.  */
-  /* TWO ZOOMS, NOT ONE. A football field is fifty-three yards wide and a
-     phone is three hundred and ninety pixels across: drawn to scale, everybody
-     is a speck. So the width and the depth are scaled INDEPENDENTLY — which is
-     what a camera behind the end zone does to a real field, and why a
-     broadcast shot is legible where an overhead one is not.
+     A BROADCAST CAMERA, NOT A BLUEPRINT.
 
-       zoomX   pixels per yard ACROSS — set by how much width has to be in shot
-       zoomY   pixels per yard DEEP   — set by how much field, and how big a man
+     It stands in the stand behind the offence, `back` yards behind whatever
+     it is watching and `height` yards above the turf, tilted down at the
+     field. A point on the ground `u` yards in front of it lands at
 
-     Players are drawn at zoomY, so their size follows the depth of the shot.  */
+         sy = horizon + f · (height − z) / u
+         sx = w/2 + squeeze · f · (x − focusX) / u
+
+     which is an honest perspective divide, and it buys everything a diagram
+     cannot have: the far sideline leans in towards the near one, the yard
+     lines bunch as they run away, the numbers on the far thirty are smaller
+     than the ones on the near thirty, and a safety forty yards downfield is
+     half the size of the back carrying the ball at your feet.
+
+     `squeeze` is the one lie. A field is fifty-three yards across and a
+     phone is three hundred and ninety pixels; drawn honestly, either the
+     players are specks or the sidelines are off screen. So the horizontal
+     axis is squashed — an anamorphic lens — which keeps the men full size
+     while the width still fits. Every real broadcast lens does a gentler
+     version of the same thing.
+
+     Two knobs, and the stage turns them per shot:
+       wide   yards across the screen AT THE FOCUS (how tight the shot is)
+       px     pixels per yard of standing man AT THE FOCUS (how big he is)  */
   function camera(o) {
     o = o || {};
     var c = {
-      x: o.x == null ? FIELD.half : o.x,
+      x: o.x == null ? FIELD.half : o.x,        /* the point it is watching */
       y: o.y == null ? 25 : o.y,
-      zoomX: o.zoomX || 8,
-      zoomY: o.zoomY || 12,
+      /* A LONG LENS, NOT A FISHEYE. A broadcast camera is a long way off
+         with a long focal length: the far men are smaller than the near ones,
+         but only by about half, not by a factor of five. Standing it close to
+         the play instead turns a football field into a bowling alley. */
+      back: o.back == null ? 53 : o.back,       /* yards behind that point */
+      height: o.height == null ? 68 : o.height, /* yards above the turf */
+      px: o.px || 13,                           /* px per yard of man, at the focus */
+      wide: o.wide || 36,                       /* yards across, at the focus */
       w: o.w || 390, h: o.h || 300,
-      /* the line of scrimmage sits below the middle, so there is field ahead */
-      anchor: o.anchor == null ? 0.60 : o.anchor
+      anchor: o.anchor == null ? 0.60 : o.anchor,
+      near: 16                                  /* nothing may come closer */
     };
-    /* `zoom` is the depth scale: what a body is measured in */
+    /* focal length, in pixel·yards */
+    c.f = function () { return c.px * c.back; };
+    /* the anamorphic squash, kept inside honest bounds. Past about a third
+       either way the field stops reading as a field, so the shot gives up a
+       little of its intended width rather than distort. */
+    c.squeeze = function () {
+      var q = c.w / Math.max(1, c.wide * c.px);
+      return q < 0.62 ? 0.62 : q > 1.06 ? 1.06 : q;
+    };
+    /* where the ground runs out. Above this line is sky. */
+    c.horizon = function () { return c.h * c.anchor - c.px * c.height; };
+    /* how far in front of the lens a given yard line is */
+    c.u = function (y) { return Math.max(c.near, y - (c.y - c.back)); };
+    /* pixels per yard of HEIGHT at that depth — how big a man there is */
+    c.scale = function (y) { return c.f() / c.u(y); };
+    c.sx = function (x, y) { return c.w / 2 + c.squeeze() * c.f() * (x - c.x) / c.u(y); };
+    c.sy = function (y, z) { return c.horizon() + c.f() * (c.height - (z || 0)) / c.u(y); };
+    /* the depth at which the ground meets the bottom of the frame */
+    c.nearestY = function () {
+      var d = c.h - c.horizon();
+      return (d <= 0 ? c.near : Math.max(c.near, c.f() * c.height / d)) + (c.y - c.back);
+    };
+    /* `zoom` still means "the scale a body is measured in", for callers that
+       size a tick mark or a font off the shot rather than off a yard line */
     Object.defineProperty(c, 'zoom', {
-      get: function () { return c.zoomY; },
-      set: function (v) { c.zoomY = v; }
+      get: function () { return c.px; }, set: function (v) { c.px = v; }
     });
-    c.sx = function (x) { return c.w / 2 + (x - c.x) * c.zoomX; };
-    c.sy = function (y) { return c.h * c.anchor - (y - c.y) * c.zoomY; };
-    /* nearer the bottom of the screen is nearer the camera */
-    c.depth = function (sy) { return 0.86 + 0.22 * Math.max(0, Math.min(1, sy / c.h)); };
-    /* how many yards are in shot, each way */
-    c.wideYards = function () { return c.w / c.zoomX; };
-    c.deepYards = function () { return c.h / c.zoomY; };
+    /* pixels per yard ACROSS at that depth, and per yard DEEP — a thing
+       painted flat on the turf is stretched by the first and squashed by the
+       second, which is what makes a number look painted rather than stuck on */
+    c.lat = function (y) { return c.squeeze() * c.f() / c.u(y); };
+    c.fore = function (y) { var u = c.u(y); return c.f() * c.height / (u * u); };
+    c.wideYards = function () { return c.wide; };
     return c;
   }
 
@@ -140,10 +180,12 @@
        phase  seconds of animation, for the running cycle
        face   -1 .. 1 lateral facing, and `back` when running away from camera */
   function player(ctx, p, cam) {
-    var sx = cam.sx(p.x), sy = cam.sy(p.y);
-    if (sx < -60 || sx > cam.w + 60 || sy < -70 || sy > cam.h + 70) return;
+    var sx = cam.sx(p.x, p.y), sy = cam.sy(p.y);
+    if (sx < -90 || sx > cam.w + 90 || sy < -90 || sy > cam.h + 110) return;
     var b = build(p.pos), k = p.kit || uniform(null);
-    var u = cam.zoom * cam.depth(sy) * (p.scale || 1);      /* pixels per yard here */
+    /* HOW BIG HE IS IS HOW FAR AWAY HE IS. Nothing else. */
+    var u = cam.scale(p.y) * (p.scale || 1);                /* pixels per yard here */
+    if (u < 2.2) return;
     var H = BODY * b.h * u;                                  /* pixel height */
     var down = p.state === 'down';
     var run = p.state === 'run' || p.state === 'carry' || p.state === 'shed';
@@ -155,12 +197,15 @@
     ctx.save();
     ctx.translate(sx, sy);
 
+    /* how flat a circle drawn on the turf looks from here */
+    var squash = Math.max(0.16, Math.min(0.70, cam.fore(p.y) / Math.max(0.001, cam.lat(p.y))));
+
     /* the shadow stays on the ground whatever the body does */
     ctx.save();
-    ctx.scale(1, 0.36);
+    ctx.scale(1, squash);
     ctx.beginPath();
-    ctx.arc(0, 0, H * 0.30, 0, 6.2832);
-    ctx.fillStyle = 'rgba(0,0,0,.34)';
+    ctx.arc(0, 0, H * 0.26, 0, 6.2832);
+    ctx.fillStyle = 'rgba(0,0,0,.30)';
     ctx.fill();
     ctx.restore();
 
@@ -172,20 +217,20 @@
       ctx.rotate(lean * 0.28);
     }
 
-    var pw = H * 0.40 * b.w;          /* body half-width */
-    var padW = H * 0.345 * b.pads;    /* shoulder half-width */
-    var hipY = -H * 0.44;
-    var shoY = -H * 0.80;
+    var pw = H * 0.295 * b.w;         /* body half-width */
+    var padW = H * 0.262 * b.pads;    /* shoulder half-width */
+    var hipY = -H * 0.43;
+    var shoY = -H * 0.79;
     var headY = -H * 1.00;
 
     /* ── LEGS ──────────────────────────────────────────────────────────── */
     var swing = cyc * H * 0.20;
-    leg(ctx, -pw * 0.42, hipY, H, k, swing, u);
-    leg(ctx, pw * 0.42, hipY, H, k, -swing, u);
+    leg(ctx, -pw * 0.46, hipY, H, k, swing, u);
+    leg(ctx, pw * 0.46, hipY, H, k, -swing, u);
 
     /* ── PANTS ─────────────────────────────────────────────────────────── */
     ctx.fillStyle = k.pants;
-    roundRect(ctx, -pw * 0.74, hipY - H * 0.06, pw * 1.48, H * 0.26, H * 0.07);
+    roundRect(ctx, -pw * 0.86, hipY - H * 0.06, pw * 1.72, H * 0.25, H * 0.06);
     ctx.fill();
 
     /* ── TORSO / JERSEY ────────────────────────────────────────────────── */
@@ -222,17 +267,17 @@
 
     /* ── SHOULDER PADS ─────────────────────────────────────────────────── */
     ctx.fillStyle = k.jersey;
-    roundRect(ctx, -padW, shoY - H * 0.05, padW * 2, H * 0.17, H * 0.075);
+    roundRect(ctx, -padW, shoY - H * 0.045, padW * 2, H * 0.155, H * 0.065);
     ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,.40)';
     ctx.lineWidth = Math.max(0.8, H * 0.018);
     ctx.stroke();
     ctx.fillStyle = rgba(k.trim === '#ffffff' ? '#ffffff' : k.trim, 0.85);
-    roundRect(ctx, -padW, shoY - H * 0.05, padW * 2, H * 0.035, H * 0.02);
+    roundRect(ctx, -padW, shoY - H * 0.045, padW * 2, H * 0.032, H * 0.018);
     ctx.fill();
 
     /* ── HELMET ────────────────────────────────────────────────────────── */
-    var hr = H * 0.185;
+    var hr = H * 0.152;
     var hg = ctx.createRadialGradient(-hr * 0.35, headY - hr * 0.35, hr * 0.15, 0, headY, hr * 1.15);
     hg.addColorStop(0, shade(k.helmet, 0.35));
     hg.addColorStop(1, k.helmetDark);
@@ -262,25 +307,92 @@
       ctx.stroke();
     }
 
-    /* the ring at his feet: who you are steering, and who has the football */
+    ctx.restore();
+
+    /* ── THE RING AT HIS FEET ────────────────────────────────────────────
+       Who you are steering, and who has the football. Drawn after the body
+       and outside its lean so it stays flat on the grass, with his name
+       under it — the one label a football game needs mid-play. */
     if (p.sel || p.carry) {
       ctx.save();
-      ctx.scale(1, 0.36);
+      ctx.translate(sx, sy);
+      ctx.save();
+      ctx.scale(1, squash);
       ctx.beginPath();
-      ctx.arc(0, 0, H * 0.40, 0, 6.2832);
-      ctx.strokeStyle = p.carry ? 'rgba(255,255,255,.95)' : (p.selColor || '#f2c744');
-      ctx.lineWidth = Math.max(2, H * 0.065);
+      ctx.arc(0, 0, H * 0.44, 0, 6.2832);
+      ctx.strokeStyle = p.sel ? (p.selColor || 'rgba(84,240,158,.95)') : 'rgba(255,255,255,.92)';
+      ctx.lineWidth = Math.max(2, H * 0.07);
       ctx.stroke();
-      if (p.carry) {
+      if (p.carry && p.sel) {
         ctx.beginPath();
-        ctx.arc(0, 0, H * 0.40, 0, 6.2832);
-        ctx.strokeStyle = 'rgba(242,199,68,.75)';
-        ctx.lineWidth = Math.max(1, H * 0.03);
+        ctx.arc(0, 0, H * 0.60, 0, 6.2832);
+        ctx.strokeStyle = 'rgba(245,190,50,.55)';
+        ctx.lineWidth = Math.max(1, H * 0.035);
         ctx.stroke();
       }
       ctx.restore();
+      if (p.label && H > 26) {
+        var lf = Math.max(8, Math.round(H * 0.20));
+        ctx.font = '700 ' + lf + 'px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        var lw = ctx.measureText(p.label).width + lf * 0.9;
+        var ly = H * 0.44 * squash + lf * 0.85;
+        ctx.fillStyle = 'rgba(8,12,17,.80)';
+        roundRect(ctx, -lw / 2, ly - lf * 0.65, lw, lf * 1.3, lf * 0.5);
+        ctx.fill();
+        ctx.fillStyle = p.sel ? '#54f09e' : '#f5f7fa';
+        ctx.fillText(p.label, 0, ly);
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ── A TARGET BADGE ──────────────────────────────────────────────────────
+     The button you press to throw at a man, floating over the man himself
+     rather than parked in a row at the bottom of the screen. That is the
+     difference between reading the field and reading a menu.
+     Returns where it landed, so the page can turn a tap into a throw. */
+  function target(ctx, cam, p, letter, o) {
+    o = o || {};
+    var sx = cam.sx(p.x, p.y), sy = cam.sy(p.y);
+    var u = cam.scale(p.y);
+    var r = Math.max(13, Math.min(24, u * 0.72));
+    sx = Math.max(r + 2, Math.min(cam.w - r - 2, sx));
+    var cy = Math.max(r + 2, sy - BODY * u * 1.16 - r * 0.95);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(sx, cy + r * 0.86);
+    ctx.lineTo(sx - r * 0.34, cy + r * 0.4);
+    ctx.lineTo(sx + r * 0.34, cy + r * 0.4);
+    ctx.closePath();
+    ctx.fillStyle = o.hot ? 'rgba(84,240,158,.95)' : 'rgba(12,17,24,.88)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx, cy, r, 0, 6.2832);
+    ctx.fillStyle = o.hot ? 'rgba(84,240,158,.95)' : 'rgba(12,17,24,.88)';
+    ctx.fill();
+    ctx.strokeStyle = o.hot ? '#eafff4' : 'rgba(255,255,255,.72)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = o.hot ? '#06231a' : '#ffffff';
+    ctx.font = '800 ' + Math.round(r * 1.05) + 'px "Space Grotesk", Inter, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(letter), sx, cy + 0.5);
+    if (o.name) {
+      var nf = Math.max(8, Math.round(r * 0.50));
+      ctx.font = '700 ' + nf + 'px Inter, system-ui, sans-serif';
+      var nw = ctx.measureText(o.name).width + nf * 0.8;
+      /* a receiver on the far numbers has his badge on him but his name
+         pulled back inside the frame, because half a name is no name */
+      var nx = Math.max(nw / 2 + 3, Math.min(cam.w - nw / 2 - 3, sx));
+      ctx.fillStyle = 'rgba(8,12,17,.78)';
+      roundRect(ctx, nx - nw / 2, cy - r - nf * 1.55, nw, nf * 1.25, nf * 0.5);
+      ctx.fill();
+      ctx.fillStyle = '#dfe6ef';
+      ctx.fillText(o.name, nx, cy - r - nf * 0.92);
     }
     ctx.restore();
+    return { x: sx, y: cy, r: r * 1.7 };
   }
 
   function leg(ctx, dx, hipY, H, k, swing, u) {
@@ -288,13 +400,13 @@
     ctx.translate(dx, hipY);
     ctx.rotate(swing * 0.06);
     ctx.fillStyle = k.pants;
-    roundRect(ctx, -H * 0.075, 0, H * 0.15, H * 0.30, H * 0.06);
+    roundRect(ctx, -H * 0.060, 0, H * 0.12, H * 0.30, H * 0.05);
     ctx.fill();
     ctx.fillStyle = k.sock;
-    roundRect(ctx, -H * 0.065, H * 0.28, H * 0.13, H * 0.13, H * 0.05);
+    roundRect(ctx, -H * 0.052, H * 0.28, H * 0.104, H * 0.13, H * 0.04);
     ctx.fill();
     ctx.fillStyle = '#14181f';
-    roundRect(ctx, -H * 0.075, H * 0.39, H * 0.16, H * 0.06, H * 0.03);
+    roundRect(ctx, -H * 0.062, H * 0.39, H * 0.13, H * 0.055, H * 0.027);
     ctx.fill();
     ctx.restore();
   }
@@ -311,13 +423,13 @@
     else rot = side * (0.18 + cyc * 0.55);
     ctx.rotate(rot);
     ctx.fillStyle = k.sleeve;
-    roundRect(ctx, -H * 0.058, 0, H * 0.116, H * 0.22, H * 0.05);
+    roundRect(ctx, -H * 0.046, 0, H * 0.092, H * 0.215, H * 0.04);
     ctx.fill();
     ctx.fillStyle = rgba(k.trim, 0.75);
-    roundRect(ctx, -H * 0.058, H * 0.10, H * 0.116, H * 0.028, H * 0.014);
+    roundRect(ctx, -H * 0.046, H * 0.10, H * 0.092, H * 0.026, H * 0.013);
     ctx.fill();
     ctx.fillStyle = '#c8a487';
-    roundRect(ctx, -H * 0.05, H * 0.20, H * 0.10, H * 0.16, H * 0.045);
+    roundRect(ctx, -H * 0.040, H * 0.195, H * 0.080, H * 0.15, H * 0.038);
     ctx.fill();
     ctx.restore();
   }
@@ -335,9 +447,9 @@
 
   /* ── THE BALL ────────────────────────────────────────────────────────── */
   function ball(ctx, b, cam) {
-    var sx = cam.sx(b.x), sy = cam.sy(b.y);
-    var u = cam.zoom * cam.depth(sy);
-    var z = (b.z || 0) * u * 0.9;
+    var sx = cam.sx(b.x, b.y), sy = cam.sy(b.y);
+    var u = cam.scale(b.y);
+    var z = sy - cam.sy(b.y, b.z || 0);
     /* its shadow stays on the ground and shrinks as it climbs */
     ctx.save();
     ctx.translate(sx, sy);
@@ -368,137 +480,208 @@
   }
 
   /* ── THE FIELD ───────────────────────────────────────────────────────────
-     Turf, mow stripes, every marking a broadcast shows, both end zones in the
-     teams' own colours, and a stand of crowd behind the far one. */
+     Everything below the horizon: the turf and its mow stripes, both end
+     zones in their clubs' colours, every marking a broadcast shows, and the
+     midfield mark. All of it drawn on the ground plane, so all of it obeys
+     the perspective — the far thirty is narrower and its number is smaller
+     than the near thirty, which is the single cue that says "camera in a
+     stadium" rather than "diagram on a desk". */
   function field(ctx, cam, o) {
     o = o || {};
-    var W = cam.w, H = cam.h;
-    var left = cam.sx(0), right = cam.sx(FIELD.width);
+    var W = cam.w, H = cam.h, hz = cam.horizon();
+    var yFar = FIELD.length + FIELD.endzone + 4;
+    var yNear = Math.max(-FIELD.endzone - 6, cam.nearestY() - 1);
+    if (yNear >= yFar - 2) yNear = yFar - 2;
 
-    /* the sky and the stands, behind everything */
-    var topY = cam.sy(FIELD.length + FIELD.endzone);
-    if (topY > -40) {
-      var sg = ctx.createLinearGradient(0, Math.max(0, topY - H * 0.5), 0, topY);
-      sg.addColorStop(0, '#0a0e14');
-      sg.addColorStop(1, '#161d27');
+    /* a trapezoid of ground, in world yards */
+    function ground(x0, x1, ya, yb) {
+      ctx.beginPath();
+      ctx.moveTo(cam.sx(x0, ya), cam.sy(ya));
+      ctx.lineTo(cam.sx(x1, ya), cam.sy(ya));
+      ctx.lineTo(cam.sx(x1, yb), cam.sy(yb));
+      ctx.lineTo(cam.sx(x0, yb), cam.sy(yb));
+      ctx.closePath();
+    }
+    /* a line painted on the ground: straight on screen, because perspective
+       takes straight lines to straight lines */
+    function paint(x0, y0, x1, y1, color, yards) {
+      var a = Math.max(y0, yNear), b = Math.max(y1, yNear);
+      if (a > yFar && b > yFar) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(0.9, yards * cam.lat((a + b) / 2));
+      ctx.beginPath();
+      ctx.moveTo(cam.sx(x0, a), cam.sy(a));
+      ctx.lineTo(cam.sx(x1, b), cam.sy(b));
+      ctx.stroke();
+    }
+
+    /* ── THE SURROUND, and the stand beyond the far end line ───────────
+       With a lens this long the horizon is a long way off the top of the
+       frame, so most of the time the picture is all football — which is what
+       the reference looks like. The stand only comes into shot when you are
+       close enough to score for the back of the end zone to be visible. */
+    ctx.fillStyle = '#0b1119';
+    ctx.fillRect(0, 0, W, H);
+    var backLine = cam.sy(yFar);
+    if (backLine > 2) {
+      var sg = ctx.createLinearGradient(0, 0, 0, backLine);
+      sg.addColorStop(0, '#05080c');
+      sg.addColorStop(1, '#19222d');
       ctx.fillStyle = sg;
-      ctx.fillRect(0, 0, W, Math.max(0, topY));
-      crowd(ctx, 0, Math.max(0, topY - H * 0.30), W, Math.min(H * 0.30, topY), o.tick || 0);
+      ctx.fillRect(0, 0, W, backLine + 1);
+      crowd(ctx, 0, Math.max(0, backLine - H * 0.30), W, Math.min(H * 0.30, backLine), o.tick || 0);
     }
+    ctx.fillStyle = '#101a24';
+    ground(-9, FIELD.width + 9, yNear, yFar);
+    ctx.fill();
 
-    /* the turf, with mow stripes every five yards */
-    var y0 = cam.sy(FIELD.length + FIELD.endzone), y1 = cam.sy(-FIELD.endzone);
-    ctx.fillStyle = '#0d2417';
-    ctx.fillRect(0, Math.max(0, y0), W, Math.min(H, y1) - Math.max(0, y0));
+    /* ── TURF, with a mow stripe every five yards ──────────────────────── */
     var n;
-    for (n = -10; n < 110; n += 5) {
-      var a = cam.sy(n + 5), b2 = cam.sy(n);
-      if (b2 < -20 || a > H + 20) continue;
-      ctx.fillStyle = ((n + 10) / 5) % 2 === 0 ? '#15361f' : '#123019';
-      ctx.fillRect(Math.max(-40, left), a, Math.min(W + 80, right - left), b2 - a);
+    for (n = -FIELD.endzone - 5; n < FIELD.length + FIELD.endzone + 5; n += 5) {
+      var a2 = Math.max(n, yNear), b2 = Math.min(n + 5, yFar);
+      if (b2 <= a2) continue;
+      ctx.fillStyle = ((n + 100) / 5) % 2 === 0 ? '#16381f' : '#123018';
+      ground(0, FIELD.width, a2, b2);
+      ctx.fill();
     }
 
-    /* the end zones, in the two teams' colours */
-    endzone(ctx, cam, 100, 110, o.homeColor || '#123326', o.homeName || '', false);
-    endzone(ctx, cam, -10, 0, o.awayColor || '#2a1a2f', o.awayName || '', true);
+    /* ── END ZONES ─────────────────────────────────────────────────────── */
+    endzone(ctx, cam, 100, 110, o.homeColor || '#123326', o.homeName || '', false, yNear, yFar);
+    endzone(ctx, cam, -10, 0, o.awayColor || '#2a1a2f', o.awayName || '', true, yNear, yFar);
 
-    /* yard lines */
-    ctx.lineCap = 'butt';
+    /* ── THE MIDFIELD MARK ─────────────────────────────────────────────── */
+    midfield(ctx, cam, yNear, o.homeColor || '#3fb883');
+
+    /* ── YARD LINES ────────────────────────────────────────────────────── */
     for (n = 0; n <= 100; n += 5) {
-      var sy = cam.sy(n);
-      if (sy < -10 || sy > H + 10) continue;
+      if (n < yNear - 1) continue;
       var major = n % 10 === 0;
-      ctx.strokeStyle = major ? 'rgba(255,255,255,.52)' : 'rgba(255,255,255,.26)';
-      ctx.lineWidth = major ? 2.2 : 1.5;
-      ctx.beginPath(); ctx.moveTo(left, sy); ctx.lineTo(right, sy); ctx.stroke();
+      paint(0, n, FIELD.width, n, major ? 'rgba(255,255,255,.50)' : 'rgba(255,255,255,.26)',
+        major ? 0.24 : 0.16);
     }
-    /* goal lines and the back lines */
-    [0, 100].forEach(function (g2) {
-      var sy = cam.sy(g2);
-      if (sy < -10 || sy > H + 10) return;
-      ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 3.4;
-      ctx.beginPath(); ctx.moveTo(left, sy); ctx.lineTo(right, sy); ctx.stroke();
-    });
-    /* sidelines */
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(left, cam.sy(110)); ctx.lineTo(left, cam.sy(-10));
-    ctx.moveTo(right, cam.sy(110)); ctx.lineTo(right, cam.sy(-10)); ctx.stroke();
+    /* goal lines, heavier */
+    paint(0, 0, FIELD.width, 0, 'rgba(255,255,255,.92)', 0.34);
+    paint(0, 100, FIELD.width, 100, 'rgba(255,255,255,.92)', 0.34);
 
-    /* hash marks, every yard — thinned out when the camera is a long way off,
-       because a hundred of them is a ladder rather than a field */
-    ctx.strokeStyle = 'rgba(255,255,255,.30)'; ctx.lineWidth = 1.5;
-    var every = cam.zoom < 11 ? 5 : cam.zoom < 15 ? 2 : 1;
+    /* ── HASH MARKS ────────────────────────────────────────────────────── */
+    /* thinned out when the shot is wide, because ninety-eight of them read as
+       a ladder rather than as a field */
+    var every = cam.px < 10 ? 5 : cam.px < 14 ? 2 : 1;
     for (n = 1; n < 100; n++) {
-      if (n % 5 === 0) continue;
+      if (n % 5 === 0 || n < yNear) continue;
       if (every > 1 && n % every !== 0) continue;
-      var hy = cam.sy(n);
-      if (hy < -6 || hy > H + 6) continue;
-      var tick = cam.zoom * 0.55;
-      [FIELD.half - 6.17, FIELD.half + 6.17].forEach(function (hx) {
-        var x = cam.sx(hx);
-        ctx.beginPath(); ctx.moveTo(x - tick, hy); ctx.lineTo(x + tick, hy); ctx.stroke();
-      });
-      [cam.sx(1.5), cam.sx(FIELD.width - 1.5)].forEach(function (x) {
-        ctx.beginPath(); ctx.moveTo(x - tick, hy); ctx.lineTo(x + tick, hy); ctx.stroke();
-      });
+      var t = 0.42;
+      paint(FIELD.half - 6.17 - t, n, FIELD.half - 6.17 + t, n, 'rgba(255,255,255,.34)', 0.15);
+      paint(FIELD.half + 6.17 - t, n, FIELD.half + 6.17 + t, n, 'rgba(255,255,255,.34)', 0.15);
+      paint(1.1, n, 1.1 + t * 2, n, 'rgba(255,255,255,.26)', 0.15);
+      paint(FIELD.width - 1.1 - t * 2, n, FIELD.width - 1.1, n, 'rgba(255,255,255,.26)', 0.15);
     }
 
-    /* the numbers, upright, both sides, with the little direction arrow */
-    ctx.font = '800 ' + Math.round(cam.zoom * 1.9) + 'px "Space Grotesk", Inter, sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    /* ── SIDELINES ─────────────────────────────────────────────────────── */
+    ctx.strokeStyle = 'rgba(255,255,255,.60)';
+    [0, FIELD.width].forEach(function (sxw) {
+      var a3 = Math.max(-FIELD.endzone, yNear), b3 = FIELD.length + FIELD.endzone;
+      ctx.lineWidth = Math.max(1, 0.4 * cam.lat(a3));
+      ctx.beginPath();
+      ctx.moveTo(cam.sx(sxw, a3), cam.sy(a3));
+      ctx.lineTo(cam.sx(sxw, b3), cam.sy(b3));
+      ctx.stroke();
+    });
+
+    /* ── THE NUMBERS, painted flat on the turf ─────────────────────────── */
     for (n = 10; n <= 90; n += 10) {
-      var ny = cam.sy(n);
-      if (ny < -20 || ny > H + 20) continue;
-      var label = n <= 50 ? n : 100 - n;
-      ctx.fillStyle = 'rgba(255,255,255,.34)';
-      [cam.sx(8), cam.sx(FIELD.width - 8)].forEach(function (x, i) {
+      if (n < yNear + 1) continue;
+      var lat = cam.lat(n), fore = cam.fore(n);
+      if (lat < 2.2) continue;
+      var label = String(n <= 50 ? n : 100 - n);
+      ctx.fillStyle = 'rgba(255,255,255,.36)';
+      [9, FIELD.width - 9].forEach(function (wx, i) {
         ctx.save();
-        ctx.translate(x, ny);
-        ctx.scale(1, 0.86);
-        ctx.fillText(String(label), 0, 0);
+        ctx.translate(cam.sx(wx, n), cam.sy(n));
+        /* stretched across, squashed down the field: that is what paint on
+           grass looks like from a camera in the stand */
+        ctx.scale(1, Math.max(0.18, Math.min(1, fore / lat)));
+        ctx.font = '800 ' + Math.max(7, Math.round(lat * 2.1)) + 'px "Space Grotesk", Inter, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(label, 0, 0);
         if (n !== 50) {
+          var dir = n < 50 ? 1 : -1, ax = (i ? 1 : -1) * lat * 1.7;
           ctx.beginPath();
-          var dir = n < 50 ? 1 : -1, ax = (i ? 1 : -1) * cam.zoom * 1.5;
-          ctx.moveTo(ax, dir * cam.zoom * 0.55);
-          ctx.lineTo(ax + cam.zoom * 0.5, 0);
-          ctx.lineTo(ax, -dir * cam.zoom * 0.55);
+          ctx.moveTo(ax, dir * lat * 0.62);
+          ctx.lineTo(ax + lat * 0.55, 0);
+          ctx.lineTo(ax, -dir * lat * 0.62);
           ctx.closePath();
           ctx.fill();
         }
         ctx.restore();
       });
     }
-  }
 
-  function endzone(ctx, cam, from, to, color, name, flip) {
-    var a = cam.sy(to), b = cam.sy(from), H = cam.h;
-    if (b < -30 || a > H + 30) return;
-    var left = cam.sx(0), right = cam.sx(FIELD.width);
-    var g = ctx.createLinearGradient(0, a, 0, b);
-    g.addColorStop(0, shade(color, -0.25));
-    g.addColorStop(0.5, color);
-    g.addColorStop(1, shade(color, -0.25));
-    ctx.fillStyle = g;
-    ctx.fillRect(left, Math.min(a, b), right - left, Math.abs(b - a));
-    if (name) {
-      ctx.save();
-      ctx.translate((left + right) / 2, (a + b) / 2);
-      if (flip) ctx.rotate(Math.PI);
-      ctx.scale(1, 0.62);
-      ctx.font = '800 ' + Math.round(cam.zoom * 2.5) + 'px "Space Grotesk", Inter, sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255,255,255,.30)';
-      ctx.fillText(String(name).toUpperCase(), 0, 0);
-      ctx.restore();
-    }
-    /* pylons */
-    [0, FIELD.width].forEach(function (px) {
-      [from, to].forEach(function (py) {
-        var x = cam.sx(px), y = cam.sy(py);
+    /* ── PYLONS, which stand up off the ground ─────────────────────────── */
+    [0, FIELD.width].forEach(function (px2) {
+      [-10, 0, 100, 110].forEach(function (py) {
+        if (py < yNear) return;
+        var x = cam.sx(px2, py), y0 = cam.sy(py), y1 = cam.sy(py, 0.5);
+        var wdt = Math.max(1.6, cam.lat(py) * 0.13);
         ctx.fillStyle = '#f4a23a';
-        ctx.fillRect(x - 1.6, y - cam.zoom * 0.5, 3.2, cam.zoom * 0.5);
+        ctx.fillRect(x - wdt / 2, y1, wdt, Math.max(1.5, y0 - y1));
       });
     });
+  }
+
+  /* the club's mark at the fifty — an original EdgeDesk lozenge on grass */
+  function midfield(ctx, cam, yNear, color) {
+    if (50 < yNear + 3) return;
+    var lat = cam.lat(50), fore = cam.fore(50);
+    if (lat < 2.6) return;
+    ctx.save();
+    ctx.translate(cam.sx(FIELD.half, 50), cam.sy(50));
+    ctx.scale(1, Math.max(0.16, Math.min(1, fore / lat)));
+    var r = lat * 5.4;
+    ctx.globalAlpha = 0.20;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.5, lat * 0.45);
+    ctx.beginPath();
+    ctx.moveTo(0, -r); ctx.lineTo(r * 0.72, 0); ctx.lineTo(0, r); ctx.lineTo(-r * 0.72, 0);
+    ctx.closePath(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.5); ctx.lineTo(r * 0.36, 0); ctx.lineTo(0, r * 0.5); ctx.lineTo(-r * 0.36, 0);
+    ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+  }
+
+  function endzone(ctx, cam, from, to, color, name, flip, yNear, yFar) {
+    var a = Math.max(Math.min(from, to), yNear), b = Math.min(Math.max(from, to), yFar);
+    if (b <= a) return;
+    var g = ctx.createLinearGradient(0, cam.sy(b), 0, cam.sy(a));
+    g.addColorStop(0, shade(color, -0.30));
+    g.addColorStop(0.55, color);
+    g.addColorStop(1, shade(color, -0.22));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cam.sx(0, a), cam.sy(a));
+    ctx.lineTo(cam.sx(FIELD.width, a), cam.sy(a));
+    ctx.lineTo(cam.sx(FIELD.width, b), cam.sy(b));
+    ctx.lineTo(cam.sx(0, b), cam.sy(b));
+    ctx.closePath();
+    ctx.fill();
+    if (!name) return;
+    var mid = (a + b) / 2, lat = cam.lat(mid), fore = cam.fore(mid);
+    if (lat < 2) return;
+    ctx.save();
+    ctx.translate(cam.sx(FIELD.half, mid), cam.sy(mid));
+    ctx.scale(1, Math.max(0.14, Math.min(1, fore / lat)));
+    if (flip) ctx.rotate(Math.PI);
+    var txt = String(name).toUpperCase();
+    ctx.font = '800 ' + Math.max(7, Math.round(lat * 2.6)) + 'px "Space Grotesk", Inter, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    /* keep it inside the sidelines however long the club is called */
+    var fits = ctx.measureText(txt).width, room = FIELD.width * 0.82 * lat;
+    if (fits > room) ctx.scale(room / fits, 1);
+    ctx.fillStyle = 'rgba(255,255,255,.34)';
+    ctx.fillText(txt, 0, 0);
+    ctx.restore();
   }
 
   /* a band of crowd: cheap, static, and enough to say "stadium" */
@@ -531,17 +714,24 @@
     ctx.fillRect(x, y + h - 4, w, 4);
   }
 
-  /* ── MARKERS: the line of scrimmage and the chains ─────────────────────── */
+  /* ── MARKERS: the line of scrimmage and the chains ───────────────────────
+     Painted on the grass like the broadcast does it, so they lie down in
+     perspective with everything else instead of floating over the picture. */
   function markers(ctx, cam, los, firstDown) {
-    var left = cam.sx(-1.2), right = cam.sx(FIELD.width + 1.2);
-    function line(y, color, wdt) {
-      var sy = cam.sy(y);
-      if (sy < -8 || sy > cam.h + 8) return;
-      ctx.strokeStyle = color; ctx.lineWidth = wdt;
-      ctx.beginPath(); ctx.moveTo(left, sy); ctx.lineTo(right, sy); ctx.stroke();
+    function band(y, color) {
+      if (y == null || y > 100.5 || y < cam.nearestY() - 1) return;
+      var t = 0.22;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(cam.sx(-1.4, y - t), cam.sy(y - t));
+      ctx.lineTo(cam.sx(FIELD.width + 1.4, y - t), cam.sy(y - t));
+      ctx.lineTo(cam.sx(FIELD.width + 1.4, y + t), cam.sy(y + t));
+      ctx.lineTo(cam.sx(-1.4, y + t), cam.sy(y + t));
+      ctx.closePath();
+      ctx.fill();
     }
-    if (firstDown != null && firstDown <= 100) line(firstDown, 'rgba(242,199,68,.92)', 3.2);
-    line(los, 'rgba(92,157,255,.92)', 3.2);
+    band(firstDown, 'rgba(245,190,50,.80)');
+    band(los, 'rgba(74,142,255,.72)');
   }
 
   /* ── PLAY ART: routes, the run path and blitz arrows ──────────────────── */
@@ -551,11 +741,14 @@
     paths.forEach(function (p) {
       if (!p.pts || p.pts.length < 2) return;
       ctx.strokeStyle = p.color || 'rgba(255,255,255,.78)';
-      ctx.lineWidth = p.width || 2.4;
+      /* play art is a coach's line drawn on the grass, not a road marking:
+         it follows the perspective but stays a hairline */
+      var lw = (p.width || 2.4) * cam.lat(p.pts[0][1]) / 13;
+      ctx.lineWidth = lw < 1.4 ? 1.4 : lw > 4.2 ? 4.2 : lw;
       ctx.setLineDash(p.dash === false ? [] : [7, 5]);
       ctx.beginPath();
       p.pts.forEach(function (q, i) {
-        var x = cam.sx(q[0]), y = cam.sy(q[1]);
+        var x = cam.sx(q[0], q[1]), y = cam.sy(q[1]);
         if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
       });
       ctx.stroke();
@@ -565,8 +758,10 @@
     });
   }
   function arrowHead(ctx, cam, a, b, color) {
-    var x1 = cam.sx(a[0]), y1 = cam.sy(a[1]), x2 = cam.sx(b[0]), y2 = cam.sy(b[1]);
-    var ang = Math.atan2(y2 - y1, x2 - x1), s = 7;
+    var x1 = cam.sx(a[0], a[1]), y1 = cam.sy(a[1]);
+    var x2 = cam.sx(b[0], b[1]), y2 = cam.sy(b[1]);
+    var ang = Math.atan2(y2 - y1, x2 - x1);
+    var s = Math.max(4.5, Math.min(9, cam.lat(b[1]) * 0.55));
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(x2, y2);
@@ -578,7 +773,7 @@
   var API = {
     FIELD: FIELD, BODY: BODY, BUILD: BUILD,
     camera: camera, uniform: uniform, shade: shade, readable: readable, rgba: rgba,
-    player: player, ball: ball, field: field, markers: markers, art: art, roundRect: roundRect
+    player: player, target: target, ball: ball, field: field, markers: markers, art: art, roundRect: roundRect
   };
   root.EDGridironPaint = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

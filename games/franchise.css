@@ -733,3 +733,17 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .st-seat .pc-actions{margin-top:12px}
 .st-seat .pc-actions .btn{min-height:var(--tap)}
 .mk-sum .cp .v{color:var(--exp)}
+
+/* ── THE ELEVEN, ON A FIELD ───────────────────────────────────────────────
+   The roster page shows its starters standing in the positions they play,
+   in the club's own kit, drawn by the same artist as the game. A depth
+   chart is a table; this is a team. */
+.lineup{margin-top:14px;border-radius:14px;overflow:hidden;border:1px solid var(--line);
+  background:#0a0e13}
+.lu-tabs{display:flex;gap:6px;padding:8px 8px 0}
+.lu-t{flex:1 1 0;min-height:34px;border-radius:9px 9px 0 0;border:1px solid var(--line);
+  border-bottom:0;background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;
+  font:700 12.5px 'Space Grotesk',sans-serif;letter-spacing:.03em}
+.lu-t.on{background:rgba(63,184,131,.16);color:var(--text);border-color:rgba(63,184,131,.4)}
+.lu-field{display:block;width:100%;height:210px;background:#0a0e13}
+@media (min-width:720px){.lu-field{height:280px}}

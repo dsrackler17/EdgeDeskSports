@@ -239,6 +239,25 @@
     var events = opts.on || {};
     var flash = null;
     var shake = 0;
+    /* A MAN IS ABOUT A TWELFTH OF THE PICTURE TALL, on every phone. That one
+       number sets the whole scale of the shot; the lens geometry does the
+       rest. */
+    /* ── ONE KNOB: HOW WIDE THE SHOT IS ──────────────────────────────────
+       Everything else follows from it, which is what a zoom lens does.
+
+         px      how big a man is — set so the width asked for actually fits
+                 the screen without the picture being squashed sideways
+         height  how high the lens is — set so the SAME thirty-eight yards of
+                 depth are in frame whatever the shot and whatever the phone
+
+       Leaving the lens height fixed instead makes a short window (the drawer
+       is up, or the phone is small) show the whole stadium receding to a
+       point, which is exactly when a football game starts to look like a
+       bowling alley. */
+    function fitCamera() {
+      cam.px = clamp(cam.w / (0.88 * Math.max(12, cam.wide)), 7, 30);
+      cam.height = clamp(1.807 * cam.h / cam.px, 26, 170);
+    }
     var reduce = false;
     try { reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
 
@@ -250,11 +269,16 @@
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       cam.w = w; cam.h = h;
-      /* DEPTH IS MEASURED IN PIXELS PER YARD, NOT YARDS PER SCREEN. A man has
-         to be about the same size on a tall phone as on a short one; what a
-         taller window buys is more field, not bigger players. */
-      cam.zoomX = w / 32;
-      cam.zoomY = 14;
+      /* A MAN IS SIZED BY THE SCREEN, NOT BY THE YARD. On a tall window the
+         camera comes in so the picture is filled by football rather than by
+         empty turf; on a short one it backs off. Everything else — how far
+         away the far men are, how hard the sidelines lean in — falls out of
+         the perspective on its own. */
+      cam.anchor = 0.62;
+      fitCamera();
+      /* re-frame at once: a resize with a stale camera shows the wrong shot
+         until something moves, and between plays nothing does */
+      camFollow(0, true);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       draw();
     }
@@ -433,6 +457,15 @@
         if (events.onMove) events.onMove(kind);
         return true;
       }
+      /* break the pocket: the throw badges go away and he is a runner */
+      /* break the pocket. Like every other decision on this play it is put
+         to the engine, which may still let the rush get there first. */
+      if (kind === 'scramble') {
+        if (!director || director.kind !== 'pass' || director.decided) return false;
+        targets = null; targetBoxes = [];
+        director.decide(null, true);
+        return true;
+      }
       if (kind === 'dive' || kind === 'tackle') {
         a.dive = 0.42; a.state = 'tackle';
         return true;
@@ -441,10 +474,34 @@
     };
     /* the tap that throws it: the page hands back which read and how long */
     self.throwTo = function (idx) {
+      targets = null; targetBoxes = [];
       if (phase !== 'live' || !director || director.kind !== 'pass' || director.thrown) return null;
       return director.decide(idx);
     };
     self.snapNow = function () { if (phase === 'set') beginSnap(); };
+    /* ── TARGETS ─────────────────────────────────────────────────────────
+       The throw buttons live ON THE RECEIVERS, out on the grass, not in a
+       row along the bottom of the screen. You look at the field, see who is
+       open, and press him. That is the whole reason a badge beats a menu. */
+    var targets = null, targetBoxes = [];
+    var SLOT_LETTER = { X: 'X', Z: 'Z', SL: 'S', SL2: 'H', TE: 'T', RB: 'R', FB: 'F', WR: 'W' };
+    self.showTargets = function (list) {
+      targets = (list && list.length) ? list.map(function (r, i) {
+        return { id: r.id, letter: SLOT_LETTER[r.slot] || String(i + 1), name: r.name || '', idx: i };
+      }) : null;
+    };
+    self.clearTargets = function () { targets = null; targetBoxes = []; };
+    /* a tap in canvas coordinates: which receiver, if any */
+    self.hitTarget = function (px, py) {
+      var best = -1, bd = 1e9, i;
+      for (i = 0; i < targetBoxes.length; i++) {
+        var b = targetBoxes[i];
+        var d = Math.hypot(px - b.x, py - b.y);
+        if (d < b.r && d < bd) { bd = d; best = b.idx; }
+      }
+      return best;
+    };
+
     self.receivers = function () {
       return actors.filter(function (a) { return a.side === 'off' && a.job && a.job.kind === 'route'; })
         .map(function (a) { return { id: a.id, slot: a.slot, num: a.num, name: a.name, route: a.job.route }; });
@@ -493,11 +550,13 @@
 
     function passDirector() {
       var d = { kind: 'pass', thrown: false, decided: false, done: false, t0: 0 };
-      d.decide = function (idx) {
+      d.decide = function (idx, takeOff) {
         if (d.decided) return null;
         var held = t - 0.25;
         var timing = clamp(1 - (held - (play.hold || 2.4) * 0.55) / 2.0, 0, 1);
-        d.res = opts.resolve ? opts.resolve({ read: idx, timing: timing, lane: null }) : null;
+        d.res = opts.resolve
+          ? opts.resolve({ read: idx, timing: timing, lane: null, scramble: !!takeOff })
+          : null;
         result = d.res; d.decided = true;
         throwIt();
         return result;
@@ -685,6 +744,7 @@
       endPlay('touchdown');
     }
     function endPlay(kind) {
+      targets = null; targetBoxes = [];
       if (director) director.done = true;
       phase = 'dead'; dead = 0;
       if (events.onEnd) events.onEnd(kind, result);
@@ -932,7 +992,7 @@
     function camFollow(dt, snap) {
       var f = ball.holder || (ball.flight ? ball : byId['o_QB']);
       var tx = f ? f.x : ballX, ty = f ? f.y : los;
-      var wantX, wantY, wide, ppy;
+      var wantX, wantY, wide;
       var holding = phase === 'live' && ball.holder && ball.holder.slot === 'QB' && !ball.flight
         && play && play.type === 'pass';
       if (phase === 'set') {
@@ -940,19 +1000,22 @@
            the decision you are about to make */
         var lo = 1e9, hi = -1e9;
         actors.forEach(function (a) { if (a.x < lo) lo = a.x; if (a.x > hi) hi = a.x; });
-        wide = clamp(hi - lo + 8, 34, 56);
-        ppy = 11.5;
+        /* wide enough to read the look, tight enough that the men are men.
+           Past the mid forties everybody is a speck and the shot stops being
+           football. */
+        wide = clamp(hi - lo + 7, 32, 44);
         wantX = (lo + hi) / 2;
         wantY = los + 2;
       } else if (holding) {
-        /* while he is holding it the routes are the story: stay wide */
-        wide = 44; ppy = 12;
+        /* while he is holding it the routes are the story — but the story
+           starts at the line, not five yards past it, and a shot wide enough
+           to hold both sidelines makes everybody a speck */
+        wide = 37;
         wantX = ballX;
-        wantY = los + 5;
+        wantY = los + 2;
       } else {
         var breakaway = ball.holder && ball.holder.carry && Math.hypot(ball.holder.vx, ball.holder.vy) > 8.4;
-        wide = breakaway ? 26 : 32;
-        ppy = breakaway ? 17 : 15;
+        wide = breakaway ? 28 : 35;
         wantX = tx;
         wantY = ty + (phase === 'dead' ? 0.5 : 2.5);
       }
@@ -963,8 +1026,8 @@
       var kz = snap ? 1 : 1 - Math.pow(0.05, dt);
       cam.x += (wantX - cam.x) * k;
       cam.y += (wantY - cam.y) * k;
-      cam.zoomX += (cam.w / wide - cam.zoomX) * kz;
-      cam.zoomY += (ppy - cam.zoomY) * kz;
+      cam.wide += (wide - cam.wide) * kz;
+      fitCamera();
     }
 
     /* ── DRAW ────────────────────────────────────────────────────────────── */
@@ -982,11 +1045,31 @@
       if (phase === 'set' && showArt && artPaths) P.art(ctx, cam, artPaths);
       /* back to front, so the near men overlap the far ones — except whoever
          has the football, who is drawn last and is never buried in a pile */
+      /* ONE NAME ON THE SCREEN AT A TIME: the man you are steering. Whoever
+         has the football already wears a white ring, and two tags a yard
+         apart just cover each other up. */
+      actors.forEach(function (a) { a.label = (a.sel && userMode === 'play') ? a.name : null; });
       var sorted = actors.slice().sort(function (a, b) { return b.y - a.y; });
+      /* back to front, so the near men overlap the far ones — except the two
+         you must never lose in a pile: whoever has the football, and whoever
+         you are steering. They are drawn last, on top of everybody. */
       var carrier = ball.holder && ball.holder.carry ? ball.holder : null;
-      sorted.forEach(function (a) { if (a !== carrier) P.player(ctx, a, cam); });
+      var mine = userActor && userActor !== carrier ? userActor : null;
+      sorted.forEach(function (a) { if (a !== carrier && a !== mine) P.player(ctx, a, cam); });
+      if (mine) P.player(ctx, mine, cam);
       if (carrier) P.player(ctx, carrier, cam);
       if (!ball.holder || ball.flight) P.ball(ctx, ball, cam);
+      /* the throw buttons, over the men themselves */
+      targetBoxes = [];
+      if (targets && phase === 'live' && !ball.flight) {
+        targets.forEach(function (tg) {
+          var a = byId[tg.id];
+          if (!a || a.state === 'down') return;
+          var box = P.target(ctx, cam, a, tg.letter, { name: tg.name, hot: !!tg.hot });
+          box.idx = tg.idx;
+          targetBoxes.push(box);
+        });
+      }
       ctx.restore();
     }
     self.draw = draw;
