@@ -159,6 +159,9 @@ eq('an unconfigured client reports itself unavailable rather than guessing',
   eq('and a call against it fails cleanly instead of throwing', r.ok, false);
   eq('with a reason a page can render', r.error, 'not_configured');
   chk('and a sentence a person can read', typeof r.message === 'string' && r.message.length > 10);
+  /* the expired-session checks run last: they configure the client and stub
+     the gateway, so nothing synchronous above may still be depending on it */
+  await expiredSessionChecks();
   finish();
 })();
 
@@ -182,6 +185,66 @@ eq('and there is no user to name', S.user(), null);
   eq('the user id comes from the token, never from an argument', S.user().id, 'u1');
   MEM = {}; COOKIES = {};
 })();
+
+/* AN EXPIRED SESSION IS NOT A CREDENTIAL. Reported from a real device: tapping
+   "Found my franchise" answered `JWT expired`. The client had already decided
+   the player was anonymous — signedIn() was false and the call correctly
+   carried a device secret — but the transport read the session WITHOUT
+   checking its expiry and put the dead token in the Authorization header.
+   PostgREST rejects that at the gateway before the function runs, so every
+   Games call failed, not only founding, and the gateway's own words were what
+   the player read. */
+async function expiredSessionChecks() {
+  const tok = (secondsFromNow, sub) => 'h.' + Buffer.from(JSON.stringify(
+      { sub: sub || 'u1', email: 'a@b.c', exp: Math.floor(Date.now() / 1000) + secondsFromNow }))
+    .toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.s';
+  const realFetch = global.fetch;
+  let headers = null;
+  /* the gateway, behaving as PostgREST does: an expired bearer never reaches
+     the function; anything else does */
+  global.fetch = (url, o) => {
+    headers = o.headers;
+    const b = String(o.headers.authorization || '').replace('Bearer ', '');
+    let exp = null;
+    try { exp = JSON.parse(Buffer.from(b.split('.')[1], 'base64').toString()).exp; } catch (_) {}
+    if (exp && exp * 1000 < Date.now())
+      return Promise.resolve({ ok: false, status: 401,
+        text: () => Promise.resolve(JSON.stringify({ code: 'PGRST301', message: 'JWT expired' })) });
+    return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve('{"ok":true}') });
+  };
+  S.configure('https://example.supabase.co', 'anon-key-public');
+
+  {
+    MEM['edgedesk_session'] = JSON.stringify({ access_token: tok(-3600), refresh_token: 'r' });
+    eq('an expired session is not signed in', S.signedIn(), false);
+    eq('and it is not simply absent either — it lapsed, which is worth saying', S.expired(), true);
+    let r = await S.rpc('franchise_create', { p_secret: 'device' });
+    chk('the transport presents the anon key, never a token it has already called dead',
+      headers.authorization === 'Bearer anon-key-public');
+    chk('so an anonymous call reaches the function and founding works', r.ok === true, JSON.stringify(r));
+    chk('the refresh token is left where the terminal can still spend it',
+      !!(JSON.parse(MEM['edgedesk_session']).refresh_token));
+
+    MEM['edgedesk_session'] = JSON.stringify({ access_token: tok(3600) });
+    r = await S.rpc('franchise_home', {});
+    chk('a live session is still presented as the bearer',
+      headers.authorization === 'Bearer ' + JSON.parse(MEM['edgedesk_session']).access_token
+      && S.signedIn() === true && S.expired() === false);
+
+    /* and if the gateway ever does answer this way, it is not the player's
+       fault and it is not read to them in the gateway's words */
+    MEM = {}; COOKIES = {};
+    global.fetch = () => Promise.resolve({ ok: false, status: 401,
+      text: () => Promise.resolve(JSON.stringify({ code: 'PGRST301', message: 'JWT expired' })) });
+    r = await S.rpc('franchise_home', {});
+    chk('a JWT error is translated out of the gateway\'s words',
+      r.ok === false && !/JWT/i.test(r.message) && /sign-?in expired/i.test(r.message), r.message);
+    chk('and it says the game keeps going, because it does', /keeps going/.test(r.message));
+
+    global.fetch = realFetch;
+    MEM = {}; COOKIES = {};
+  }
+}
 
 (() => {
   const a = S.secret();

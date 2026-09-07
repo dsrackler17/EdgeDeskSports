@@ -29,8 +29,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260907c">
-<link rel="stylesheet" href="/games/franchise.css?v=20260907c">
+<link rel="stylesheet" href="/games/games.css?v=20260907e">
+<link rel="stylesheet" href="/games/franchise.css?v=20260907e">
 </head>
 <body>
 <div id="gh"></div>
@@ -104,7 +104,12 @@
        account) sees the HQ first, before any module loads */
     var owner=false;
     try{var ses=JSON.parse(localStorage.getItem('edgedesk_session')||'null');
-      var sub=ses&&ses.access_token?JSON.parse(atob(ses.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub:null;
+      /* the SAME rule the library uses: a token past its expiry is not a
+         signed-in account, so its cache key is the device's. Reading `sub`
+         without checking `exp` would paint an HQ hero for a lapsed session
+         that every call behind it then answers as anonymous. */
+      var clm=ses&&ses.access_token?JSON.parse(atob(ses.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))):null;
+      var sub=clm&&clm.sub&&!(clm.exp&&clm.exp*1000<Date.now())?clm.sub:null;
       var key=sub||'anon';
       owner=!!(o&&o.franchise&&o.franchise.snapshot&&o.franchise.user_id===key);}catch(_){owner=false;}
     if(owner){document.getElementById('heroNew').classList.add('hide');document.getElementById('heroHq').classList.remove('hide');}
@@ -267,19 +272,19 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260907c"></script>
-<script src="/games/lib/scoring.js?v=20260907c"></script>
-<script src="/games/lib/challenge.js?v=20260907c"></script>
-<script src="/games/lib/research_state.js?v=20260907c"></script>
-<script src="/games/lib/attribution.js?v=20260907c"></script>
-<script src="/games/lib/store.js?v=20260907c"></script>
-<script src="/games/lib/dynasty.js?v=20260907c"></script>
-<script src="/games/lib/drill.js?v=20260907c"></script>
-<script src="/games/lib/leaderboard.js?v=20260907c"></script>
-<script src="/games/lib/social.js?v=20260907c"></script>
-<script src="/games/lib/auth.js?v=20260907c"></script>
-<script src="/games/lib/franchise.js?v=20260907c"></script>
-<script src="/games/games.js?v=20260907c"></script>
+<script src="/games/lib/week.js?v=20260907e"></script>
+<script src="/games/lib/scoring.js?v=20260907e"></script>
+<script src="/games/lib/challenge.js?v=20260907e"></script>
+<script src="/games/lib/research_state.js?v=20260907e"></script>
+<script src="/games/lib/attribution.js?v=20260907e"></script>
+<script src="/games/lib/store.js?v=20260907e"></script>
+<script src="/games/lib/dynasty.js?v=20260907e"></script>
+<script src="/games/lib/drill.js?v=20260907e"></script>
+<script src="/games/lib/leaderboard.js?v=20260907e"></script>
+<script src="/games/lib/social.js?v=20260907e"></script>
+<script src="/games/lib/auth.js?v=20260907e"></script>
+<script src="/games/lib/franchise.js?v=20260907e"></script>
+<script src="/games/games.js?v=20260907e"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library

@@ -95,6 +95,7 @@ const TRADES = fs.readFileSync(G('trades/index.html'), 'utf8');
 const STAFF = fs.readFileSync(G('staff/index.html'), 'utf8');
 const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
 const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
+const SOCIALJS = fs.readFileSync(G('lib/social.js'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const H2H = fs.readFileSync(G('h2h/index.html'), 'utf8');
 const SQLTEST = fs.readFileSync(path.join(__dirname, 'sql', 'games_franchise.test.sql'), 'utf8');
@@ -2925,6 +2926,20 @@ fresh();
     /if \(!r\.status\) return true;\s*\n\s*return r\.status >= 500 \|\| r\.status === 404;/.test(FJS));
   has(README, 'waiting to sync', 'the README says what the jam looked like');
   has(README, 'never **ANSWERED**', 'and states the rule the queue now follows');
+
+  /* ═══ 29. A LAPSED SIGN-IN ═══════════════════════════════════════════════
+     Reported from a real device: founding answered `JWT expired`. One rule,
+     applied everywhere a token is read — a token past its expiry is not an
+     account. */
+  chk('the home page decides its hero on the same rule the library uses',
+    /clm\.exp&&clm\.exp\*1000<Date\.now\(\)/.test(HOME));
+  chk('and the transport never presents a token it has already called dead',
+    /function live\(\)/.test(SOCIALJS) && /var s = live\(\);/.test(SOCIALJS)
+    && !/var s = session\(\);\s*\n\s*var h = \{/.test(SOCIALJS));
+  chk('an expired session is kept, not cleared — the refresh token is the terminal\'s to spend',
+    /function live\(\)[\s\S]{0,240}return past\(claims\(s\)\) \? null : s;/.test(SOCIALJS)
+    && !/live[\s\S]{0,200}removeItem/.test(SOCIALJS));
+  has(README, 'JWT expired', 'the README records what the player actually saw');
 
   has(README, 'The game is **open to everyone**', 'the README states the age policy');
   has(README, 'nothing is collected', 'and that nothing is collected');
