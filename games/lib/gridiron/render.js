@@ -394,11 +394,18 @@
   function fieldSvg(o) {
     o = o || {};
     var parts = [], y, n, i;
-    var TOP = -10, BOT = 110;                     /* end zones included */
+    /* the end zones plus a margin of turf behind each one, so a touchdown
+       does not pan the camera into a black void behind the back line */
+    var TOP = -22, BOT = 122;
     function Y(yard) { return (110 - yard) * U; } /* absolute yard → svg y */
     parts.push('<rect x="' + (-60) + '" y="' + Y(BOT) + '" width="' + (W + 120) + '" height="'
-      + (BOT - TOP) * U + '" fill="#0e2618"/>');
+      + (BOT - TOP) * U + '" fill="#0c1d14"/>');
     parts.push('<rect x="0" y="' + Y(BOT) + '" width="' + W + '" height="' + (BOT - TOP) * U + '" fill="url(#turf)"/>');
+    /* the back lines, so the end zone reads as a box rather than an edge */
+    parts.push('<line x1="0" y1="' + Y(110) + '" x2="' + W + '" y2="' + Y(110)
+      + '" stroke="rgba(255,255,255,.55)" stroke-width="3"/>');
+    parts.push('<line x1="0" y1="' + Y(-10) + '" x2="' + W + '" y2="' + Y(-10)
+      + '" stroke="rgba(255,255,255,.55)" stroke-width="3"/>');
     /* the sidelines, so the edge of the field reads as an edge */
     parts.push('<line x1="0" y1="' + Y(BOT) + '" x2="0" y2="' + Y(TOP) + '" stroke="rgba(255,255,255,.35)" stroke-width="3"/>');
     parts.push('<line x1="' + W + '" y1="' + Y(BOT) + '" x2="' + W + '" y2="' + Y(TOP) + '" stroke="rgba(255,255,255,.35)" stroke-width="3"/>');
