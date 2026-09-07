@@ -1014,6 +1014,66 @@ shows one button; afterwards, the result.
 * **Coaching Staff** (`/games/staff`, Phase 8): four seats, what each coach
   is worth, what the next level costs, and the two curves that decide both.
 
+## Gridiron — the football, and what it promises
+
+`/games/play` is the playable game. Two modes, one engine, and one set of
+books: **Coach Mode** calls plays and `EDGridiron.resolve` settles the snap;
+**Play Mode** puts twenty-two men on the field in `games/lib/gridiron/live.js`
+and the play happens frame by frame, then `EDGridiron.adopt` books it through
+exactly the same rules, clock, drive and season. There is no second scoreboard
+anywhere: every screen — the halftime panel, the touchdown graphic, the final
+recap, the drive chart — reads `EDGridiron.boxScore`, which is a view of the
+engine's state rather than a tally of its own.
+
+**The stat model is NFL convention, stated once** in `engine.js` and asserted
+on every finished game:
+
+```
+a sack is not a pass attempt        it is a team passing loss
+team passing yards are NET          receiving yards minus sack yardage
+a passer's yards are GROSS          as a passer's always are
+a scramble is a rush                and so is a kneel
+team yards        = passYards + rushYards
+passYards         = passYardsGross - sackYards
+passYardsGross    = the sum of that team's receivers
+rushYards         = the sum of that team's carriers
+att               = comp + incompletions + interceptions
+```
+
+The box score column called **Sacks** is what the defence did; the figure
+beside it is what the offence allowed.
+
+**The intended shape of a game.** Four quarters of fifteen minutes — 3,600
+seconds — which the phone can shorten to Quick (8:00) or Blitz (5:00). Each
+snap costs the play itself plus, only when the clock kept running between
+snaps, about twenty-nine seconds of dead ball; that is what makes an
+incompletion, a trip out of bounds late, and a timeout worth something. A full
+game therefore runs to roughly **60 snaps and 10–12 possessions a side**, and
+lands near 21 points, 5.8 yards a play, 67% completions, a 5% sack rate and
+45% on third down. Every band in the harness is a rate, so the shorter
+quarters produce the same football in less of it.
+
+**Difficulty is decision quality, never ratings.** The four tiers in `ai.js`
+change how well the opposing coach reads the situation, how quickly he adapts,
+how wide his shortlist is, how well he disguises and whether he gets fourth
+down right. They do not touch a single player's card.
+
+**What keeps it honest.**
+
+* `tools/games/gridiron_invariants.js` — the things that cannot be true. Run
+  against a spread of games in `gridiron.test.js` on every commit, and against
+  every game in the harness.
+* `tools/games/gridiron_sim.test.js` — ten thousand games in two populations,
+  six schemes, five deliberately lopsided matchups, a Play Mode sample and a
+  determinism check, banded against real football and reporting the rate of
+  every statistical anomaly. `npm run games:sim` for the full run,
+  `npm run games:sim:quick` for the eight hundred CI runs on every push.
+
+**Determinism.** A game is its seed and its call list. The same seed, rosters,
+coaching, weather and preparation reproduce a game play for play, which is what
+makes ten thousand simulated seasons a test rather than an anecdote — and what
+lets a game in progress live in `localStorage` as twenty bytes of calls.
+
 ## The one rule, again
 
 **The franchise layer computes no price.** `game_board` is a published copy

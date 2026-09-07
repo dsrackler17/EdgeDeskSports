@@ -69,3 +69,22 @@ jobs:
 
       - name: Suites
         run: npm run games:test
+
+  # ── THE FOOTBALL ITSELF ────────────────────────────────────────────────────
+  # The suites above say the rules are the rules. This one says the SPORT is
+  # the sport: eight hundred games through both the resolver and Play Mode,
+  # every one of them checked against tools/games/gridiron_invariants.js, and
+  # the distributions banded against real football. It is the gate that would
+  # have caught a quarterback who never threw the ball.
+  simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Eight hundred games
+        run: npm run games:sim:quick

@@ -146,11 +146,13 @@
       away: atHome ? opp : me,
       user: atHome ? 'home' : 'away',
       difficulty: set.difficulty,
+      /* the day it is being played on, from the fixture */
+      weather: o.weather || null,
       quarterSeconds: LENGTHS[set.length] || LENGTHS.standard
     });
     g.meta = { user: atHome ? 'home' : 'away', seed: seed, week: o.week || 1, season: o.season || 1,
                opponentKey: o.opponentKey || null, home: atHome, length: set.length,
-               difficulty: set.difficulty };
+               difficulty: set.difficulty, weather: o.weather || null };
     g.calls = [];
     return g;
   }
@@ -216,6 +218,56 @@
   }
   function clearSave() { var s = store(); if (s) { try { s.removeItem(SAVE_KEY); } catch (_) {} } }
 
+  /* ── WHAT THIS DEVICE HAS DONE ───────────────────────────────────────────
+     A record, on the phone, for the standalone game. Not a season and not a
+     ledger: EdgeDesk XP is derived from committed artifacts and never
+     accumulated locally, which is the architectural rule the whole games
+     layer runs on — a franchise player's progression is Game Day's to award.
+     This is the smaller, honest thing a recap needs: how many of these you
+     have played, how many you have won, and whether you are on a run. */
+  var REC_KEY = 'ed_gridiron_record_v1';
+  function blankRecord() { return { games: 0, w: 0, l: 0, t: 0, streak: 0, best: 0, pf: 0, pa: 0 }; }
+  function readRecord() {
+    var s = store(), r = blankRecord(), k;
+    if (!s) return r;
+    try {
+      var raw = JSON.parse(s.getItem(REC_KEY) || '{}');
+      for (k in r) if (r.hasOwnProperty(k) && typeof raw[k] === 'number') r[k] = raw[k];
+    } catch (_) {}
+    return r;
+  }
+  /* called once, when a game finishes. Idempotent per game: the id of the
+     game that was last filed is kept beside the record, so a recap that is
+     re-rendered — or a page that comes back to a finished game — never counts
+     the same result twice. */
+  function fileResult(g, mySide) {
+    var s = store();
+    if (!g || !g.over) return readRecord();
+    var id = (g.meta && g.meta.seed) || g.seed;
+    var r = readRecord(), last = null;
+    if (s) { try { last = s.getItem(REC_KEY + ':last'); } catch (_) {} }
+    if (last != null && String(last) === String(id)) return r;
+    var them = mySide === 'home' ? 'away' : 'home';
+    var mine = g.score[mySide], theirs = g.score[them];
+    r.games++; r.pf += mine; r.pa += theirs;
+    if (mine > theirs) { r.w++; r.streak = r.streak >= 0 ? r.streak + 1 : 1; }
+    else if (mine < theirs) { r.l++; r.streak = r.streak <= 0 ? r.streak - 1 : -1; }
+    else { r.t++; r.streak = 0; }
+    if (r.streak > r.best) r.best = r.streak;
+    if (s) {
+      try { s.setItem(REC_KEY, JSON.stringify(r)); s.setItem(REC_KEY + ':last', String(id)); } catch (_) {}
+    }
+    return r;
+  }
+  function recordLine(r) {
+    if (!r || !r.games) return '';
+    var l = r.w + '–' + r.l + (r.t ? '–' + r.t : '') + ' on this device';
+    if (r.streak >= 2) l += ' · ' + r.streak + ' in a row';
+    else if (r.streak <= -2) l += ' · lost ' + Math.abs(r.streak) + ' straight';
+    if (r.games >= 3) l += ' · ' + Math.round(r.pf / r.games) + '–' + Math.round(r.pa / r.games) + ' a game';
+    return l;
+  }
+
   /* rebuild a game from its save and replay every call into it */
   function resume(rec, o) {
     if (!rec || !rec.meta) return null;
@@ -223,6 +275,7 @@
     var g = build({
       me: o.me, opponent: o.opponent, home: rec.meta.home, seed: rec.meta.seed,
       week: rec.meta.week, season: rec.meta.season, opponentKey: rec.meta.opponentKey,
+      weather: o.weather || rec.meta.weather || null,
       settings: { difficulty: rec.meta.difficulty, length: rec.meta.length }
     });
     g.meta = rec.meta;
@@ -255,7 +308,7 @@
     var out = {}, k;
     for (k in o) {
       if (!Object.prototype.hasOwnProperty.call(o, k)) continue;
-      if (WHO.indexOf(k) >= 0) { out[k] = o[k] && o[k].id ? o[k].id : null; continue; }
+      if (WHO.indexOf(k) >= 0) { out[k] = o[k] ? (o[k].uid || o[k].id || null) : null; continue; }
       if (k === 'notes') { out[k] = o[k]; continue; }
       if (o[k] && typeof o[k] === 'object') continue;
       out[k] = o[k];
@@ -265,9 +318,13 @@
   function withPlayers(g, o) {
     if (!o) return o;
     var i, k, seen = {};
+    /* THE ENGINE HOLDS `g.home` AND `g.away`; there has never been a
+       `g.teams`. Looking there found nobody, so every id restored from a save
+       resolved to null and a resumed Play Mode game came back with a box score
+       full of yards and no names on any of them. */
     ['home', 'away'].forEach(function (side) {
-      var t = g.teams && g.teams[side];
-      ((t && t.players) || []).forEach(function (p) { seen[p.id] = p; });
+      var t = g[side];
+      ((t && t.players) || []).forEach(function (p) { seen[p.uid || p.id] = p; });
     });
     for (i = 0; i < WHO.length; i++) {
       k = WHO[i];
@@ -361,7 +418,7 @@
     add(me.explosive - op.explosive >= 3, true, me.explosive + ' explosive plays to their ' + op.explosive + '.');
     add(op.explosive - me.explosive >= 3, false, 'They hit ' + op.explosive + ' explosive plays to your ' + me.explosive + '.');
     add(me.sacks > op.sacks + 1, true, 'Got home ' + me.sacks + ' times; they got ' + op.sacks + '.');
-    add(op.sacks > me.sacks + 1, false, 'Gave up ' + op.sacks + ' sacks.');
+    add(me.sacksAllowed >= 4, false, 'Gave up ' + me.sacksAllowed + ' sacks.');
     /* THE RED ZONE CUTS BOTH WAYS. It used to be read off a flag the box
        score never sets, so `undefined !== false` filed nought-for-three under
        "why you won". Half the trips ending in seven is the line. */
@@ -378,6 +435,78 @@
     var first = all.filter(function (r) { return r.good === won; });
     var rest = all.filter(function (r) { return r.good !== won; });
     return first.concat(rest).slice(0, 5).map(function (r) { return r.text; });
+  }
+
+  /* ── THE MATCHUP THAT DECIDED IT ─────────────────────────────────────────
+     One sentence naming two units and what happened between them, taken off
+     the same box score everything else reads. A recap that says "you lost"
+     teaches nothing; one that says your line could not block their edge
+     teaches the next game. */
+  function keyMatchup(g, mySide) {
+    var box = G.boxScore(g), me = box[mySide], op = box[mySide === 'home' ? 'away' : 'home'];
+    var myTeam = G.teamOf(g, mySide), opTeam = G.teamOf(g, G.other(mySide));
+    var lines = [];
+    function add(weight, text) { if (weight > 0) lines.push({ w: weight, t: text }); }
+    var theirRusher = (box.leaders[G.other(mySide)] || {}).defender;
+    var myRusher = (box.leaders[mySide] || {}).defender;
+    add(me.sacksAllowed >= 3 ? me.sacksAllowed : 0,
+      'Your line against their front: ' + me.sacksAllowed + ' sacks allowed'
+      + (theirRusher && theirRusher.sack ? ', ' + theirRusher.sack + ' of them to '
+          + theirRusher.position + ' ' + theirRusher.name : '') + '.');
+    add(me.sacks >= 3 ? me.sacks : 0,
+      'Your front against their protection: ' + me.sacks + ' sacks'
+      + (myRusher && myRusher.sack ? ', ' + myRusher.sack + ' from '
+          + myRusher.position + ' ' + myRusher.name : '') + '.');
+    add(Math.abs(me.ypc - op.ypc) >= 1.2 ? Math.abs(me.ypc - op.ypc) * 3 : 0,
+      me.ypc > op.ypc
+        ? 'Your run game against their box: ' + me.ypc + ' a carry to their ' + op.ypc + '.'
+        : 'Their run game against your box: ' + op.ypc + ' a carry to your ' + me.ypc + '.');
+    var wr = (box.leaders[mySide] || {}).receiver, theirWr = (box.leaders[G.other(mySide)] || {}).receiver;
+    add(wr && wr.recy >= 90 ? wr.recy / 20 : 0,
+      wr ? 'Your receivers against their coverage: ' + wr.position + ' ' + wr.name
+        + ' for ' + wr.recy + ' on ' + wr.rec + '.' : '');
+    add(theirWr && theirWr.recy >= 90 ? theirWr.recy / 20 : 0,
+      theirWr ? 'Their receivers against your coverage: ' + theirWr.position + ' ' + theirWr.name
+        + ' for ' + theirWr.recy + ' on ' + theirWr.rec + '.' : '');
+    lines.sort(function (a, b) { return b.w - a.w; });
+    return lines.length ? lines[0].t : null;
+  }
+
+  /* ── WHAT THE ADJUSTMENT DID ─────────────────────────────────────────────
+     The half is frozen at the whistle, so the second half can be compared
+     with the first and the halftime button can be told what it bought. This
+     is the sentence that makes the decision worth making again. */
+  function coachingImpact(g, mySide) {
+    var key = g.adjust && g.adjust[mySide];
+    if (!key || !g.halfBox) return null;
+    var a = G.adjustment(key);
+    if (!a) return null;
+    var h1 = g.halfBox[mySide], oh1 = g.halfBox[mySide === 'home' ? 'away' : 'home'];
+    var box = G.boxScore(g), full = box[mySide], oFull = box[mySide === 'home' ? 'away' : 'home'];
+    function d(k, a2, b2) { return (b2[k] || 0) - (a2[k] || 0); }
+    var second = {
+      yards: d('yards', h1, full), points: d('score', h1, full),
+      sacksAllowed: d('sacksAllowed', h1, full), sacks: d('sacks', h1, full),
+      rushYards: d('rushYards', h1, full),
+      oppRush: d('rushYards', oh1, oFull), oppPass: d('passYards', oh1, oFull),
+      oppPoints: d('score', oh1, oFull)
+    };
+    var line = a.name + ': ';
+    if (key === 'protect') {
+      line += h1.sacksAllowed + ' sacks allowed before the half, ' + second.sacksAllowed + ' after.';
+    } else if (key === 'outside') {
+      line += h1.rushYards + ' rushing in the first half, ' + second.rushYards + ' in the second.';
+    } else if (key === 'tempo') {
+      line += second.points + ' points in the second half to their ' + second.oppPoints
+        + ', on a faster clock.';
+    } else if (key === 'box') {
+      line += 'they ran for ' + oh1.rushYards + ' before the half and ' + second.oppRush + ' after.';
+    } else if (key === 'deep') {
+      line += 'they threw for ' + oh1.passYards + ' before the half and ' + second.oppPass + ' after.';
+    } else {
+      line += h1.sacks + ' sacks before the half, ' + second.sacks + ' after.';
+    }
+    return line;
   }
 
   /* the play that turned it: the biggest swing in the log */
@@ -400,7 +529,9 @@
     teamFromFranchise: teamFromFranchise, teamFromLeague: teamFromLeague,
     build: build, step: step, save: save, saved: saved, clearSave: clearSave, resume: resume,
     aiDefense: aiDefense, aiOffense: aiOffense, scoutRead: scoutRead, preSnap: preSnap,
-    why: why, reasons: reasons, turningPoint: turningPoint, record: record
+    why: why, reasons: reasons, turningPoint: turningPoint, record: record,
+    keyMatchup: keyMatchup, coachingImpact: coachingImpact,
+    readRecord: readRecord, fileResult: fileResult, recordLine: recordLine, REC_KEY: REC_KEY
   };
   root.EDGridironSession = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

@@ -85,7 +85,76 @@
     return { game: g, box: G.boxScore(g), score: { home: g.score.home, away: g.score.away } };
   }
 
-  var API = { callFor: callFor, playOut: playOut, simulate: simulate };
+  /* ── PLAY MODE, WITH NOBODY PLAYING ──────────────────────────────────────
+     The other half of the game, run headless. Coach Mode's football is
+     `resolve`; Play Mode's is twenty-two men on a field in live.js, and the
+     two must produce the same sport. Until this existed only the resolver was
+     ever measured, which is exactly how a quarterback who never threw the
+     ball shipped: ten thousand simulated games all went through a code path
+     no user on a phone was using.
+
+     Same door as a played snap: the simulation settles it, `adopt` books it.
+     The stage and the live simulation are resolved lazily so a page that
+     only loads the engine is not asked for them. */
+  function deps() {
+    var ST = root.EDGridironStage, LV = root.EDGridironLive;
+    if (!ST && typeof require === 'function') { try { ST = require('./stage.js'); } catch (_) { ST = null; } }
+    if (!LV && typeof require === 'function') { try { LV = require('./live.js'); } catch (_) { LV = null; } }
+    return ST && LV ? { ST: ST, LIVE: LV } : null;
+  }
+
+  /* one snap, played out on the grass, returned in the shape step() adopts */
+  function liveOutcome(g, call, d) {
+    var side = g.possession, def = G.other(side);
+    var offT = G.teamOf(g, side), defT = G.teamOf(g, def);
+    var playObj = F.play(call.play);
+    var formKey = call.formation || F.playForms(call.play, offT.offense)[0] || playObj.forms[0];
+    var parts = F.defParts(call.def || 'base_3');
+    var sit = G.situation(g);
+    var rand = g.rand;
+    var env = G.prepare({
+      off: offT, def: defT, rand: rand, tick: g.tick, playKey: call.play, formKey: formKey,
+      defCall: call.def || 'base_3', sit: sit, mem: g.mem[side], weather: g.weather
+    });
+    var los = g.ball, bx = 26.665;
+    var actors = d.ST.alignOffense(playObj, formKey, bx, los, G.unitsOf(offT, g.tick), {})
+      .concat(d.ST.alignDefense(parts, bx, los, 1, G.unitsOf(defT, g.tick), playObj, formKey, {}));
+    var sim = d.LIVE.Play({
+      actors: actors, playObj: playObj, parts: parts, formKey: formKey,
+      los: los, ballX: bx, env: env, rand: rand, userSide: 'def', userMode: 'play'
+    });
+    sim.snap();
+    var dt = 1 / 120, guard = 0;
+    while (!sim.outcome() && guard++ < 2400) sim.step(dt, {});
+    return sim.outcome();
+  }
+
+  function playOutLive(g, opts) {
+    opts = opts || {};
+    var d = deps();
+    if (!d) return playOut(g, opts);
+    var guard = 0;
+    while (!g.over && guard++ < 2000) {
+      var call = callFor(g, opts);
+      if (call.type === 'play' && G.situation(g).phase === 'play'
+          && call.play !== 'kneel' && call.play !== 'spike') {
+        call.outcome = liveOutcome(g, call, d);
+      }
+      var r = G.step(g, call);
+      if (!r.ok) break;
+      if (opts.each) opts.each(g, r);
+    }
+    return g;
+  }
+
+  function simulateLive(o) {
+    var g = G.createGame(o);
+    playOutLive(g, o);
+    return { game: g, box: G.boxScore(g), score: { home: g.score.home, away: g.score.away } };
+  }
+
+  var API = { callFor: callFor, playOut: playOut, simulate: simulate,
+              playOutLive: playOutLive, simulateLive: simulateLive };
   root.EDGridironAuto = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);
