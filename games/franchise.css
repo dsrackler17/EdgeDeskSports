@@ -733,3 +733,34 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .st-seat .pc-actions{margin-top:12px}
 .st-seat .pc-actions .btn{min-height:var(--tap)}
 .mk-sum .cp .v{color:var(--exp)}
+
+/* ── THE SEASONS OF THE YEAR AND THE PACK STORE (Phase 18) ────────────────
+   The season is decided by the server and only painted here. Two custom
+   properties carry it — an ink and a glow — so a season added on the server
+   arrives with colours rather than needing a new rule. */
+.ps-band{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:11px 13px;border-radius:12px;
+  background:linear-gradient(100deg,var(--ps-glow,#1a2c4d),transparent 78%);
+  border:1px solid color-mix(in srgb,var(--ps-ink,#7fb2ff) 34%,transparent)}
+.ps-band .ps-mark{flex:0 0 auto;width:26px;height:26px;color:var(--ps-ink,#7fb2ff)}
+.ps-band .ps-mark svg{width:100%;height:100%;display:block}
+.ps-band .ps-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ps-band .ps-t b{color:var(--ps-ink,#7fb2ff);font-size:14px;letter-spacing:.02em}
+.ps-band .ps-t small{color:var(--dim);font-size:12.5px}
+
+.ps-store .ps-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.ps-store .ps-row .k{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.ps-store .ps-row .v{color:var(--text);font-size:20px;font-weight:700;line-height:1.2}
+.ps-store .ps-row .v small{display:block;color:var(--dim);font-size:11.5px;font-weight:400;letter-spacing:0}
+
+/* the reveal: one card at a time, so three men arriving reads as a pack being
+   opened rather than a table of data. Nothing waits on it — the server has
+   already decided all three. */
+.ps-reveal .ps-card{animation:ps-in .42s cubic-bezier(.2,.8,.3,1) both}
+.ps-reveal .ps-card{box-shadow:0 0 0 1px color-mix(in srgb,var(--ps-ink,#7fb2ff) 22%,transparent),
+  0 10px 30px -18px var(--ps-ink,#7fb2ff)}
+@keyframes ps-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+/* a player who asked for less motion gets all three at once, in place */
+@media (prefers-reduced-motion:reduce){
+  .ps-reveal .ps-card{animation:none}
+}
+

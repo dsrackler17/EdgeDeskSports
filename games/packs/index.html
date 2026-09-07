@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260907g">
-<link rel="stylesheet" href="/games/franchise.css?v=20260907g">
+<link rel="stylesheet" href="/games/games.css?v=20260907i">
+<link rel="stylesheet" href="/games/franchise.css?v=20260907i">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260907g"></script>
-<script src="/games/lib/scoring.js?v=20260907g"></script>
-<script src="/games/lib/challenge.js?v=20260907g"></script>
-<script src="/games/lib/research_state.js?v=20260907g"></script>
-<script src="/games/lib/attribution.js?v=20260907g"></script>
-<script src="/games/lib/store.js?v=20260907g"></script>
-<script src="/games/lib/dynasty.js?v=20260907g"></script>
-<script src="/games/lib/social.js?v=20260907g"></script>
-<script src="/games/lib/auth.js?v=20260907g"></script>
-<script src="/games/lib/franchise.js?v=20260907g"></script>
-<script src="/games/games.js?v=20260907g"></script>
+<script src="/games/lib/week.js?v=20260907i"></script>
+<script src="/games/lib/scoring.js?v=20260907i"></script>
+<script src="/games/lib/challenge.js?v=20260907i"></script>
+<script src="/games/lib/research_state.js?v=20260907i"></script>
+<script src="/games/lib/attribution.js?v=20260907i"></script>
+<script src="/games/lib/store.js?v=20260907i"></script>
+<script src="/games/lib/dynasty.js?v=20260907i"></script>
+<script src="/games/lib/social.js?v=20260907i"></script>
+<script src="/games/lib/auth.js?v=20260907i"></script>
+<script src="/games/lib/franchise.js?v=20260907i"></script>
+<script src="/games/games.js?v=20260907i"></script>
 <script>
 /* STALE SCRIPT GUARD — the same belt every franchise page wears. */
 (function(){
@@ -113,6 +113,7 @@
     stage.className='card';
     stage.setAttribute('style',FR.themeVars(f.theme));
     stage.innerHTML='<div class="eyebrow">Rank &amp; Packs</div>'
+      +seasonBanner(b)
       +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
       +'<div><div class="hq-city">'+esc(f.city||'')+' · '+esc(f.abbr||'')+'</div>'
       +'<div class="hq-name">'+esc(f.name||'')+'</div>'
@@ -129,10 +130,50 @@
       +'</div>'
       +'<div class="ftp" style="margin-top:12px">A pack is drawn around <b>your own team</b>, so it is never junk and never a shortcut: '
       +'the floor is '+esc(FR.RANKS.floor_below)+' under your overall and the ceiling rises with the rank. '
-      +'<b>Earned by playing and by nothing else</b> — there is no pack for sale.</div>';
+      +'<b>No money, ever</b> — a rank pays a pack, and the store spends Team Credits you earned by playing.</div>';
   }
 
-  function packCard(p,b){
+  /* THE TIME OF YEAR, as the SERVER sees it. A browser clock is a thing a
+     player can change, and the class a man was signed in is on his record for
+     ever — so the key comes off the board and this only paints it. */
+  function seasonBanner(b){
+    var sv=b.season||{},k=sv.key||'',s=FR.packSeason(k);
+    if(!s)return '';
+    return '<div class="ps-band" data-season="'+esc(k)+'" style="'+esc(FR.packSeasonVars(k))+'">'
+      +'<span class="ps-mark" aria-hidden="true">'+seasonMark(s.mark)+'</span>'
+      +'<span class="ps-t"><b>'+esc(s.name)+'</b><small>'+esc(s.line)+'</small></span></div>';
+  }
+  function seasonMark(m){
+    var d={snow:'M12 2v20M4 7l16 10M20 7L4 17',
+           shoot:'M12 21V9M12 9c0-4 3-6 6-6 0 4-2 6-6 6zM12 13c0-3-2-5-5-5 0 3 2 5 5 5z',
+           sun:'M12 6a6 6 0 100 12 6 6 0 000-12zM12 1v2M12 21v2M3 12H1M23 12h-2M5 5L3.6 3.6M20.4 20.4L19 19M19 5l1.4-1.4M3.6 20.4L5 19',
+           leaf:'M4 20c8 2 16-4 16-16-8 0-16 4-16 12M4 20l6-6'};
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="'+(d[m]||d.leaf)+'"/></svg>';
+  }
+
+  /* THE STORE. Nothing here costs money: the only price is Team Credits, and
+     those come from playing. The price rises with every pack ever bought, so
+     a pile of credits cannot become an endless supply of rerolls. */
+  function storeCard(b){
+    var st=b.store||{},res=b.resources||{},price=st.price|0,have=res.team_credits|0,busy=(b.open||[]).length>0;
+    return '<div class="sec"><div class="sec-h"><h2>The pack store</h2><span class="m">'+esc(st.version||'')+'</span></div>'
+      +'<div class="card ps-store">'
+      +'<div class="ps-row"><div><div class="k">Next pack</div><div class="v">'+esc(price)+'<small>Team Credits</small></div></div>'
+      +'<div><div class="k">On hand</div><div class="v">'+esc(have)+'<small>earned by playing</small></div></div>'
+      +'<div><div class="k">Bought so far</div><div class="v">'+esc(st.bought|0)+'<small>+'+esc(FR.PACK_STORE.cost_step)+' each time</small></div></div></div>'
+      +'<div class="btn-row">'
+      +(busy?'<span class="ftp">Finish the pack on the table first — keep a man from it, or turn it down.</span>'
+        :have>=price?'<button class="btn btn-go" type="button" id="buyPack">Buy a pack · '+esc(price)+' TC</button>'
+        :'<span class="ftp">'+esc(price-have)+' more Team Credits and it is yours. A card is worth '
+          +esc(FR.ECONOMY.pick5_card.tc)+', a win '+esc(FR.ECONOMY.weekly_win.tc)+'.</span>')
+      +'</div>'
+      +'<div class="ftp">The price rises every time and never falls, so credits cannot buy an endless run of rerolls. '
+      +'A bought pack is drawn in <b>exactly the same band</b> as a rank pack — the reach comes from the rank you earned, '
+      +'never from what you spend — and it pays no Coach Points.</div>'
+      +'</div></div>';
+  }
+
+  function packCard(p,b,i){
     var top='<div class="pc-top"><span class="pc-pos">'+esc(p.position)+'</span><span class="pc-num">'+esc(p.age)+' yrs</span>'
       +(p.rarity?'<span class="pc-rar">'+esc(p.rarity)+'</span>':'')+'</div>';
     var body='<div class="pc-ovr"><b>'+esc(p.overall)+'</b><span>OVR</span></div>'
@@ -145,7 +186,11 @@
       +(full?'<span class="pc-line">Roster full — release a player on the <a href="/games/roster/">roster</a> to keep him.</span>'
             :'<button class="btn btn-go" type="button" data-keep="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'">Keep him</button>')
       +'</div>';
-    return '<div class="pc" data-player="'+esc(p.id)+'">'+top+body+acts+'</div>';
+    /* ONE AT A TIME. Three cards arriving together is a table of data; three
+       arriving in turn is a pack being opened. The delay is presentation and
+       nothing waits on it — every man is already on the server's record. */
+    return '<div class="pc ps-card" data-player="'+esc(p.id)+'" style="animation-delay:'+((i|0)*220)+'ms">'
+      +top+body+acts+'</div>';
   }
 
   function keptRow(p){
@@ -161,7 +206,8 @@
       '<div class="sec"><div class="sec-h"><h2>'+(open.length?'On the table':'Open a pack')+'</h2>'
       +'<span class="m">'+esc(FR.PACKS_VERSION)+'</span></div>'
       +(open.length
-        ? '<div class="pc-grid">'+open.map(function(p){return packCard(p,b);}).join('')+'</div>'
+        ? '<div class="pc-grid ps-reveal" style="'+esc(FR.packSeasonVars((b.season||{}).key))+'">'
+          +open.map(function(p,i){return packCard(p,b,i);}).join('')+'</div>'
           +'<div class="ftp" style="margin-top:10px">Keep <b>one</b>. The other two are passed over — they stay on your record as men you turned down. '
           +'If none of them is worth a place, <button class="lnk" type="button" id="passPack">turn the whole pack down</button> — '
           +'the rank is spent either way, but a pack can never block the ones behind it.</div>'
@@ -175,6 +221,7 @@
               +', a <a href="/games/price-it/">Price It</a> '+esc(FR.rankWeight('price_it'))
               +', a season seen out '+esc(FR.rankWeight('season_complete'))+'.</div></div>'))
       +'</div>'
+      +storeCard(b)
       +'<div class="sec"><div class="sec-h"><h2>Kept from packs</h2><span class="m">'+esc((b.kept||[]).length)+'</span></div><div class="card">'
       +((b.kept||[]).length?'<ul class="mk-hist">'+(b.kept||[]).map(keptRow).join('')+'</ul>'
         :'<div class="empty">Nobody yet.</div>')
@@ -193,6 +240,19 @@
         load(false);
       });
     });
+    var bb=$('buyPack');
+    if(bb)bb.addEventListener('click',function(){
+      if(BUSY)return; BUSY=true; bb.disabled=true; bb.textContent='Buying…';
+      FR.packBuy().then(function(r){
+        BUSY=false;
+        if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
+        var d=r.data||{};
+        G.track('pack_bought',{bought:d.bought,paid:d.paid,game_type:'franchise'});
+        G.toast('Pack bought — '+(d.paid|0)+' Team Credits');
+        G.paintFranchise();
+        load(false);
+      });
+    });
     var ob=$('openPack');
     if(ob)ob.addEventListener('click',function(){
       if(BUSY)return; BUSY=true; ob.disabled=true; ob.textContent='Opening…';
@@ -200,7 +260,8 @@
         BUSY=false;
         if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
         var d=r.data||{};
-        G.track('pack_opened',{rank:d.rank,low:(d.range||[])[0],high:(d.range||[])[1],team_overall:d.team_overall,game_type:'franchise'});
+        G.track('pack_opened',{rank:d.rank,low:(d.range||[])[0],high:(d.range||[])[1],team_overall:d.team_overall,
+          season:(d.season||{}).key||null,bought:!!d.bought,game_type:'franchise'});
         (d.achievements||[]).forEach(function(a){G.track('achievement_unlocked',{achievement:a,placement:'packs'});});
         G.paintFranchise();
         load(false);

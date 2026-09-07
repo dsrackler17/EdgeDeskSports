@@ -111,7 +111,11 @@
     'trade_offer', 'trade_accept', 'trade_decline', 'trade_withdraw',
     /* the coaching staff (Phase 8): the building seen, a coach hired,
        levelled and let go */
-    'staff_view', 'staff_hire', 'staff_promote', 'staff_fire'];
+    'staff_view', 'staff_hire', 'staff_promote', 'staff_fire',
+    /* the rank and the packs (Phase 11), and the store and the seasons of the
+       year (Phase 18): a pack seen, opened, kept, turned down, and bought
+       with credits that were earned by playing */
+    'packs_view', 'pack_opened', 'pack_kept', 'pack_passed', 'pack_bought'];
 
   var _level = null;
   function track(event, props) {

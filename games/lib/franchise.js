@@ -1343,6 +1343,52 @@
   }
   /* what one activity is worth toward the next rank */
   function rankWeight(kind) { return RANKS.weights[kind] || 0; }
+
+  /* ── THE SEASONS OF THE YEAR, AND THE STORE (Phase 18) ───────────────────
+     A pack opened in July should not look like one opened in January. Four
+     seasons, and THE SERVER decides which one it is — a browser clock is a
+     thing a player can change, and the class a man was signed in is part of
+     his record for ever. `packSeason()` is presentation only, and every
+     surface reads the season the SERVER put on the board.
+
+     THE SEASON CHANGES WHAT A PACK LOOKS LIKE AND WHAT ITS CLASS IS CALLED.
+     It does not change who is in it: the band, the odds and the positions are
+     identical in July and in January. The moment a season draws better men,
+     the best play is to stop playing until it comes round — and a game that
+     pays you to not play it is broken.
+
+     Pinned to the SQL by tools/games/franchise.test.js. */
+  var PACK_SEASON_VERSION = 'packseason_v1';
+  var PACK_SEASONS = [
+    { key: 'winter', name: 'Winter Meetings', months: [12, 1, 2],
+      line: 'Signed in the cold, between the seasons.', ink: '#7fb2ff', glow: '#1a2c4d', mark: 'snow' },
+    { key: 'spring', name: 'Spring Practice', months: [3, 4, 5],
+      line: 'Signed in shorts, with everything still to prove.', ink: '#79dba0', glow: '#16351f', mark: 'shoot' },
+    { key: 'summer', name: 'Summer Camp', months: [6, 7, 8],
+      line: 'Signed in the heat, when the two-a-days decide it.', ink: '#ffc76b', glow: '#3a2a12', mark: 'sun' },
+    { key: 'autumn', name: 'The Fall Slate', months: [9, 10, 11],
+      line: 'Signed with the season already running.', ink: '#ff8f6b', glow: '#3d1f16', mark: 'leaf' }
+  ];
+  /* the season by key — for rendering what the SERVER said, never for
+     deciding it. A key it does not know renders as nothing rather than
+     guessing, so a season added on the server cannot be mislabelled here. */
+  function packSeason(key) {
+    var i;
+    for (i = 0; i < PACK_SEASONS.length; i++) if (PACK_SEASONS[i].key === key) return PACK_SEASONS[i];
+    return null;
+  }
+  /* the CSS custom properties a seasonal card paints itself with */
+  function packSeasonVars(key) {
+    var s = packSeason(key);
+    return s ? '--ps-ink:' + s.ink + ';--ps-glow:' + s.glow : '';
+  }
+  var PACK_STORE_VERSION = 'packstore_v1';
+  var PACK_STORE = { currency: 'tc', cost_base: 250, cost_step: 150 };
+  /* what the next pack costs: 250, and 150 more every time. It never falls,
+     so credits cannot become an endless supply of rerolls. */
+  function packPrice(bought) {
+    return PACK_STORE.cost_base + PACK_STORE.cost_step * Math.max(0, bought | 0);
+  }
   /* "Rank 12 · 318 of 354" */
   function rankLine(rep) {
     rep = obj(rep);
@@ -1810,6 +1856,10 @@
   /* turn the whole pack down. The rank is spent either way — that is what
      makes it a decision — but a pack must never be able to block the rest. */
   function packPass() { return rpc('franchise_pack_pass', withSecret({})).then(moveThen); }
+  /* BUYING SENDS NOTHING BUT THE INTENT. No price, no count — the server
+     prices it from what this franchise has already bought and refuses it if
+     the credits are not there. Never queued: spending must see its answer. */
+  function packBuy() { return rpc('franchise_pack_buy', withSecret({})).then(moveThen); }
 
   /* THE DRIVES YOU CALL (Phase 13). Opening resolves nothing: it says how
      many possessions the game holds, what the four calls do, and every drive
@@ -2059,6 +2109,10 @@
     schema: schema, schemaGap: schemaGap,
     development: development, develop: develop,
     RANK_VERSION: RANK_VERSION, PACKS_VERSION: PACKS_VERSION, RANKS: RANKS,
+    PACK_SEASON_VERSION: PACK_SEASON_VERSION, PACK_SEASONS: PACK_SEASONS,
+    packSeason: packSeason, packSeasonVars: packSeasonVars,
+    PACK_STORE_VERSION: PACK_STORE_VERSION, PACK_STORE: PACK_STORE, packPrice: packPrice,
+    packBuy: packBuy,
     rankCost: rankCost, rankAt: rankAt, rankFor: rankFor, rankEdge: rankEdge,
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
