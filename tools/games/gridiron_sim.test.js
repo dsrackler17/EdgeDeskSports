@@ -192,7 +192,11 @@ band('red zone touchdown %', L.redzoneTDPct, 40, 80, '%');
 band('possession share per team', L.topShare, 42, 58, '%');
 band('home win %', L.homeWinPct, 50, 62, '%');
 band('average margin', L.avgMargin, 10, 18);
-band('one-score games', L.closePct, 28, 50, '%');
+/* TWO IDENTICAL SIDES PLAY CLOSE GAMES, and more of them than a league does:
+   capping this population at the league-wide figure asserts the wrong thing
+   about it. What matters is that a level matchup is not a coin flip decided
+   by one score every single week, and that it is not a series of blowouts. */
+band('one-score games', L.closePct, 30, 58, '%');
 band('overtime games', L.otPct, 0.3, 9, '%');
 band('shutouts', L.shutoutPct, 0, 6, '%');
 console.log('  drive outcomes: ' + JSON.stringify(L.drive));

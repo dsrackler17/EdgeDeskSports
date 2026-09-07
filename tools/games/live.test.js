@@ -261,5 +261,53 @@ console.log('\nPLAY MODE — the thumbs');
     coachRun(9).length > 0 && coachRun(9) !== coachRun(10));
 })();
 
+/* ── THE BLOCKING IS LEGIBLE ────────────────────────────────────────────
+   The engine has always known why a carry got four yards instead of one; the
+   picture did not, and neither did the player. These say that what the
+   simulation knows about the blocking actually comes back out of it — the
+   hole while the run is happening, and the man who won or lost the block once
+   it is over. A run play whose result is a number and nothing else is a run
+   play nobody learns anything from. */
+(() => {
+  let creases = 0, widths = 0, won = 0, blamed = 0, named = 0, n = 0, badW = 0, story = 0;
+  const RUNS = ['inside_zone', 'outside_zone', 'power', 'counter', 'stretch', 'toss', 'dive'];
+  for (let i = 0; i < 90; i++) {
+    const play = RUNS[i % RUNS.length];
+    const seen = [];
+    const r = record({
+      seed: 400 + i, play: play, form: F.play(play).forms[0], def: 'base_3',
+      script: (t, sim) => { const c = sim.crease(); if (c) seen.push(c); return { mx: 0, my: 1 }; }
+    });
+    n++;
+    if (seen.length) {
+      creases++; widths += seen[Math.floor(seen.length / 2)].w;
+      seen.forEach((c) => {
+        if (!(c.w > 0 && c.w <= 6.5) || !(c.x >= 0 && c.x <= 54) || !(c.open >= 0 && c.open <= 1)) badW++;
+      });
+    }
+    if (r.out.blockWon) won++;
+    if (r.out.blockBeat || r.out.blockFree) blamed++;
+    /* a carry of two is nobody's doing and gets no line; the ones with a
+       story in them are the ones that must tell it */
+    const y = r.out.yards;
+    if (y >= 4 || y <= 1) {
+      story++;
+      if ((r.out.notes || []).some(x => /held the point|beat the block|came free/.test(x))) named++;
+    }
+  }
+  chk('a run shows the hole the blocking made', creases >= n * 0.6, creases + '/' + n);
+  chk('and it is a hole rather than half the field', badW === 0, badW + ' out of bounds');
+  chk('a crease is the width of a gap, not of a formation',
+    widths / Math.max(1, creases) >= 2 && widths / Math.max(1, creases) <= 6.5,
+    (widths / Math.max(1, creases)).toFixed(2) + ' yards');
+  chk('the whistle names the block that decided it', won >= n * 0.5, won + '/' + n);
+  chk('and it names somebody when the run went nowhere', blamed >= n * 0.2, blamed + '/' + n);
+  chk('and a carry with a story in it says what the story was',
+    named >= story * 0.6, named + '/' + story);
+  /* it must never appear where there is no run to read */
+  const pass = record({ seed: 77, play: 'four_verts', form: 'gun', def: 'two_deep', script: holdIt });
+  chk('a pass play has no crease to show', pass.sim.crease() === null);
+})();
+
 console.log('  ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { console.log('\nFAILURES'); fails.forEach(f => console.log(f)); process.exit(1); }
