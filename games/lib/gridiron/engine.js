@@ -276,6 +276,169 @@
          + (form.boxPull * 2 - 1) + (parts.fit.key === 'aggressive' ? 0.5 : 0);
   }
 
+  /* ── THE ENVIRONMENT FOR A LIVE SNAP ─────────────────────────────────────
+     PLAY MODE asks the engine what the field is like, not what happens on it.
+
+     Everything here is a CAPACITY: how fast a man runs, how hard he is to
+     block, how long the protection holds, how much separation a route can
+     win, how hard a catch is, how likely a tackle sticks. The same ratings,
+     the same fatigue, the same scheme and halftime and home-field mods, and
+     the same recognition roll the deterministic resolver uses.
+
+     What it deliberately does NOT decide: the yards, the receiver, the lane,
+     the tackle point, whether or when the ball is thrown. Those come out of
+     the simulation and the user's thumbs. That separation is the whole point
+     of the mode — Coach Mode keeps `resolve`, Play Mode gets `prepare`. */
+  function prepare(ctx) {
+    var off = ctx.off, def = ctx.def, rand = ctx.rand;
+    var playObj = F.play(ctx.playKey), formKey = ctx.formKey || playObj.forms[0];
+    var parts = F.defParts(ctx.defCall || ctx.defKey);
+    var ou = unitsOf(off, ctx.tick), du = unitsOf(def, ctx.tick);
+    var sit = ctx.sit || {};
+    var mem = ctx.mem || newMemory();
+    var rec = recognition(off, def, formKey, playObj, mem, rand);
+    var box = boxCount(parts, formKey);
+    var edge = (off.mods.offense - def.mods.defense) * 0.01
+             + off.mods.execution - def.mods.execution * 0.5
+             + off.mods.home * 0.020;
+    /* how likely the pocket breaks, expressed as WHEN rather than WHETHER:
+       the same number the resolver reads as a probability becomes a clock. */
+    var pRush = passRush(ou, du, parts, playObj, 0, off.mods, def.mods);
+    var hold = playObj.hold || 2.4;
+
+    var env = {
+      version: ENGINE_VERSION,
+      playKey: playObj.key, formKey: formKey, defKey: parts.key,
+      parts: parts, box: Math.round(box * 10) / 10, edge: edge,
+      read: rec.read, readP: Math.round(rec.p * 100) / 100,
+      /* the defence's head start, in seconds: a front that read the play
+         moves on the snap, one that did not is a beat late */
+      reaction: clamp(0.42 - rec.p * 0.30, 0.06, 0.46),
+      /* the protection, as a stopwatch. Not "was he sacked" — "how long" */
+      pocket: clamp(hold * (1.55 - pRush * 1.15) + (off.mods.protect || 0) * 0.5, 0.75, 5.2),
+      rushPressure: pRush,
+      /* how much a route can win by, in yards, against this shell */
+      separation: clamp(0.9 + (ou.wr.rte - du.cb.cov) * 0.030 - parts.coverage.short * 2.2
+                        + edge * 1.6, 0.15, 3.2),
+      runFit: (def.mods.runFit || 0),
+      deepCover: (def.mods.deepCover || 0),
+      /* the outcome header, so a live play narrates and books exactly like a
+         resolved one. The simulation fills in the result fields. */
+      template: {
+        version: ENGINE_VERSION,
+        play: playObj.key, playName: playObj.name, group: playObj.group, type: playObj.type,
+        formation: formKey, def: parts.key, defName: parts.name,
+        front: parts.front.key, coverage: parts.coverage.key,
+        pressureCall: parts.pressure.key, fit: parts.fit.key,
+        box: Math.round(box * 10) / 10, read: rec.read, readP: Math.round(rec.p * 100) / 100,
+        yards: 0, touchdown: false, turnover: null, sack: false, pressure: false,
+        completion: null, incomplete: false, scramble: false, outOfBounds: false,
+        firstDown: false, airYards: 0, yac: 0, big: false, notes: [], tackler: null,
+        live: true
+      },
+      at: {}
+    };
+
+    /* ── EVERY MAN, AS NUMBERS THE SIMULATION CAN MOVE ────────────────────
+       Ratings are 30..99; these are yards per second, yards per second
+       squared and 0..1 competences. Fatigue is already inside the unit
+       averages, so a fourth-quarter line really is slower. */
+    function offMan(pl, pos) {
+      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62;
+      var spd = r.spd == null ? ov : r.spd;
+      return {
+        pid: pl && pl.id, pos: pos, ovr: ov,
+        spd: liveSpeed(pos, spd), acc: liveAccel(pos, r.elu == null ? ov : r.elu),
+        agi: unit(r.elu == null ? (r.rte == null ? ov : r.rte) : r.elu),
+        pwr: unit(r.pwr == null ? (r.str == null ? ov : r.str) : r.pwr),
+        hnd: unit(r.hnd == null ? ov : r.hnd),
+        rte: unit(r.rte == null ? ov : r.rte),
+        blk: unit(r.pbk == null ? (r.blk == null ? ov : r.blk) : r.pbk),
+        rbk: unit(r.rbk == null ? (r.blk == null ? ov : r.blk) : r.rbk),
+        arm: unit(r.arm == null ? ov : r.arm),
+        accy: unit(r.acc == null ? ov : r.acc),
+        iq: unit(r.iq == null ? ov : r.iq)
+      };
+    }
+    function defMan(pl, pos) {
+      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62;
+      var spd = r.spd == null ? ov : r.spd;
+      return {
+        pid: pl && pl.id, pos: pos, ovr: ov,
+        spd: liveSpeed(pos, spd), acc: liveAccel(pos, spd),
+        agi: unit(r.spd == null ? ov : r.spd),
+        tkl: unit(r.tkl == null ? (r.str == null ? ov : r.str) : r.tkl),
+        cov: unit(r.cov == null ? ov : r.cov),
+        rsh: unit(r.prs == null ? ov : r.prs),
+        shed: unit(r.rst == null ? (r.str == null ? ov : r.str) : r.rst),
+        bhk: unit(r.bhk == null ? ov : r.bhk),
+        iq: unit(r.iq == null ? ov : r.iq)
+      };
+    }
+    function put(pl, pos, side) {
+      if (!pl || !pl.id) return;
+      env.at[pl.id] = side === 'off' ? offMan(pl, pos) : defMan(pl, pos);
+    }
+    if (ou.qb.player) put(ou.qb.player, 'QB', 'off');
+    ['rb', 'wr', 'te', 'ol'].forEach(function (k) {
+      var pos = k.toUpperCase();
+      ((ou[k] && ou[k].players) || []).forEach(function (pl) { put(pl, pos, 'off'); });
+    });
+    ['dl', 'lb', 'cb', 's'].forEach(function (k) {
+      var pos = k === 's' ? 'S' : k.toUpperCase();
+      ((du[k] && du[k].players) || []).forEach(function (pl) { put(pl, pos, 'def'); });
+    });
+    /* the fallback for a man with no card: the unit average he came from */
+    env.fallback = {
+      off: { spd: liveSpeed('WR', ou.wr.spd), acc: liveAccel('WR', 62), agi: unit(62), pwr: unit(62),
+             hnd: unit(ou.wr.hnd), rte: unit(ou.wr.rte), blk: unit(ou.ol.pbk), rbk: unit(ou.ol.rbk),
+             arm: unit(ou.qb.arm), accy: unit(ou.qb.acc), iq: unit(ou.qb.iq) },
+      def: { spd: liveSpeed('LB', du.lb.spd), acc: liveAccel('LB', 62), agi: unit(62),
+             tkl: unit(du.lb.tkl), cov: unit(du.cb.cov), rsh: unit(du.dl.prs),
+             shed: unit(du.dl.rst), bhk: unit(du.s.bhk), iq: unit(du.lb.iq) }
+    };
+    return env;
+  }
+  /* a rating on the field: yards per second, and how fast he gets there */
+  function liveSpeed(pos, rating) {
+    var base = { WR: 9.3, CB: 9.2, S: 8.8, RB: 9.0, LB: 8.2, TE: 8.1, QB: 7.7,
+                 DL: 7.4, OL: 6.7, K: 7, P: 7 }[pos] || 8.2;
+    return base * (0.86 + 0.28 * clamp(rating || 60, 0, 100) / 100);
+  }
+  function liveAccel(pos, rating) {
+    var base = { WR: 26, CB: 26, S: 25, RB: 27, LB: 23, TE: 22, QB: 22,
+                 DL: 21, OL: 16, K: 18, P: 18 }[pos] || 23;
+    return base * (0.82 + 0.36 * clamp(rating || 60, 0, 100) / 100);
+  }
+  function unit(v) { return clamp(((v == null ? 62 : v) - 30) / 69, 0, 1); }
+
+  /* ── ADOPTING A LIVE OUTCOME ─────────────────────────────────────────────
+     The simulation decided what happened; the engine still owns the books.
+     This checks the shape and hands it to exactly the same stats, rules,
+     clock and drive code a resolved play goes through — which is why Play
+     Mode and Coach Mode produce one set of statistics and one season. */
+  function adopt(o, playObj, parts, formKey) {
+    var r = o || {};
+    r.version = ENGINE_VERSION;
+    r.live = true;
+    r.play = playObj.key; r.playName = playObj.name;
+    r.group = playObj.group; r.type = playObj.type;
+    r.formation = formKey;
+    r.def = parts.key; r.defName = parts.name;
+    r.front = parts.front.key; r.coverage = parts.coverage.key;
+    r.pressureCall = parts.pressure.key; r.fit = parts.fit.key;
+    r.yards = Math.round(clamp(+r.yards || 0, -99, 110));
+    r.notes = r.notes || [];
+    r.touchdown = !!r.touchdown;
+    r.sack = !!r.sack;
+    r.incomplete = !!r.incomplete;
+    r.scramble = !!r.scramble;
+    r.outOfBounds = !!r.outOfBounds;
+    r.big = r.yards >= 16;
+    if (r.turnover !== 'interception' && r.turnover !== 'fumble') r.turnover = null;
+    return r;
+  }
+
   /* ── RESOLVE ONE SNAP ────────────────────────────────────────────────────
      ctx: { off, def, playKey, formKey, defKey|defCall, sit, rand, mem }
      Returns the result object the state machine and the renderer both read. */
@@ -1016,16 +1179,21 @@
     var formKey = call.formation || F.playForms(playKey, offT.offense)[0] || playObj.forms[0];
     var sit = situation(g);
 
-    var r = resolve({
-      off: offT, def: defT, rand: g.rand, tick: g.tick,
-      playKey: playKey, formKey: formKey, defCall: call.def || 'base_3',
-      sit: sit, mem: g.mem[side],
-      /* what the hands did: which read, which lane, how quickly */
-      userRead: call.read == null ? null : call.read,
-      userLane: call.lane == null ? null : call.lane,
-      userTiming: call.timing == null ? null : call.timing,
-      userScramble: !!call.scramble
-    });
+    /* PLAY MODE hands in what actually happened out there; COACH MODE asks
+       the resolver. From here down the two are the same play: same stats,
+       same rules, same clock, same drive, same season. */
+    var r = call.outcome
+      ? adopt(call.outcome, playObj, F.defParts(call.def || 'base_3'), formKey)
+      : resolve({
+          off: offT, def: defT, rand: g.rand, tick: g.tick,
+          playKey: playKey, formKey: formKey, defCall: call.def || 'base_3',
+          sit: sit, mem: g.mem[side],
+          /* what the hands did: which read, which lane, how quickly */
+          userRead: call.read == null ? null : call.read,
+          userLane: call.lane == null ? null : call.lane,
+          userTiming: call.timing == null ? null : call.timing,
+          userScramble: !!call.scramble
+        });
     noteCall(g.mem[side], playObj.key, playObj.group);
     noteCall(g.defMem[def], r.def, 'def');
 
@@ -1238,7 +1406,7 @@
     ADJUSTMENTS: ADJUSTMENTS, adjustment: adjustment, applyAdjustment: applyAdjustment,
     newMemory: newMemory, tendency: tendency, noteCall: noteCall,
     recognition: recognition, boxCount: boxCount, passRush: passRush,
-    resolve: resolve, fieldGoal: fieldGoal, punt: punt, kickoff: kickoff,
+    resolve: resolve, prepare: prepare, adopt: adopt, fieldGoal: fieldGoal, punt: punt, kickoff: kickoff,
     createGame: createGame, step: step, situation: situation, secondsLeft: secondsLeft,
     clockLabel: clockLabel, boxScore: boxScore, playerOfGame: playerOfGame,
     other: other, teamOf: teamOf, toGoal: toGoal, narrate: narrate,

@@ -168,7 +168,8 @@
     switch (c.type) {
       case 'play': return { t: 'p', p: c.play, f: c.formation, d: c.def, m: c.tempo,
         r: c.read == null ? null : c.read, l: c.lane == null ? null : c.lane,
-        g: c.timing == null ? null : c.timing, sc: c.scramble ? 1 : 0 };
+        g: c.timing == null ? null : c.timing, sc: c.scramble ? 1 : 0,
+        o: c.outcome ? thinOutcome(c.outcome) : null };
       case 'two': return { t: '2', p: c.play, f: c.formation, d: c.def };
       case 'pat': return { t: 'x' };
       case 'punt': return { t: 'u' };
@@ -183,7 +184,8 @@
     switch (c.t) {
       case 'p': return { type: 'play', play: c.p, formation: c.f, def: c.d, tempo: c.m,
         read: c.r == null ? null : c.r, lane: c.l == null ? null : c.l,
-        timing: c.g == null ? null : c.g, scramble: !!c.sc };
+        timing: c.g == null ? null : c.g, scramble: !!c.sc,
+        outcome: c.o || null };
       case '2': return { type: 'two', play: c.p, formation: c.f, def: c.d };
       case 'x': return { type: 'pat' };
       case 'u': return { type: 'punt' };
@@ -235,9 +237,43 @@
 
   /* ── ONE STEP, WITH THE SAVE KEPT IN STEP ───────────────────────────────── */
   function step(g, call) {
+    if (call && call.outcome) call.outcome = withPlayers(g, call.outcome);
     var r = G.step(g, call);
     if (r.ok) { g.calls.push(compress(call)); save(g); }
     return r;
+  }
+
+  /* ── A LIVE OUTCOME, SAVED AND RESTORED ──────────────────────────────────
+     A Play Mode snap is settled out on the grass, so the call list has to
+     carry the result as well as the call: replaying the inputs is not enough
+     when the inputs were a thumb. Player cards do not survive a round trip
+     through storage, so they travel as ids and are looked up again on the way
+     back in — which keeps the box score naming the same men after a reload. */
+  var WHO = ['carrier', 'target', 'tackler', 'interceptor'];
+  function thinOutcome(o) {
+    if (!o) return null;
+    var out = {}, k;
+    for (k in o) {
+      if (!Object.prototype.hasOwnProperty.call(o, k)) continue;
+      if (WHO.indexOf(k) >= 0) { out[k] = o[k] && o[k].id ? o[k].id : null; continue; }
+      if (k === 'notes') { out[k] = o[k]; continue; }
+      if (o[k] && typeof o[k] === 'object') continue;
+      out[k] = o[k];
+    }
+    return out;
+  }
+  function withPlayers(g, o) {
+    if (!o) return o;
+    var i, k, seen = {};
+    ['home', 'away'].forEach(function (side) {
+      var t = g.teams && g.teams[side];
+      ((t && t.players) || []).forEach(function (p) { seen[p.id] = p; });
+    });
+    for (i = 0; i < WHO.length; i++) {
+      k = WHO[i];
+      if (typeof o[k] === 'string') o[k] = seen[o[k]] || null;
+    }
+    return o;
   }
 
   /* ── THE OPPOSING COACH, for whichever half of the call the user is not
