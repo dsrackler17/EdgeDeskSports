@@ -942,6 +942,7 @@ function marketLeague(){
 function marketBoardDirect(opts){
   var q=[];
   if(opts.days)q.push('days='+encodeURIComponent(opts.days));
+  if(opts.back)q.push('back='+encodeURIComponent(opts.back));
   if(opts.from)q.push('from='+encodeURIComponent(opts.from));
   if(opts.to)q.push('to='+encodeURIComponent(opts.to));
   if(opts.week)q.push('week='+encodeURIComponent(opts.week));
@@ -988,7 +989,25 @@ function marketBoard(opts){
        caps the window at 28 days and the limit at 200; ask for what the sport
        actually needs and let it clamp. */
     if(!opts.days&&!opts.from&&!opts.to)opts.days=(opts.league==='nfl')?10:24;
-    if(!opts.limit)opts.limit=(opts.league==='nfl')?40:120;
+    /* THE LOOK-BACK, which `days` never controlled: days widens the FUTURE
+       and the lower bound was a fixed 24 hours on the server. So a game fell
+       off the board one day after kickoff -- and the board is where this page
+       recovers a closing line for a finished game whose record carries none
+       (see fillCapturedCloses: "the board carries a close on any game still
+       inside its window"). Every model's graded record therefore shrank to
+       whatever finished in the last 24 hours, which is exactly what "the ATS
+       results reset daily and aren't cumulative" looks like from outside.
+
+       Eight days: a slate week runs Tuesday to Monday in college, so this
+       keeps a week's finished games -- and their closes -- for as long as the
+       site is still showing that week. Ignored by a server that has not
+       learned the parameter yet, and ignored by design when an explicit
+       from/to is given. */
+    if(!opts.back&&!opts.from&&!opts.to)opts.back=8;
+    /* The window now spans both directions, so the row cap has to cover it or
+       the finished half crowds out the upcoming half. 200 is the server's own
+       ceiling; the wall asks with books=0, so this is a list of summaries. */
+    if(!opts.limit)opts.limit=(opts.league==='nfl')?60:200;
     if(typeof MCOdds.leagueFor!=='function')return marketBoardDirect(opts);
     return MCOdds.board(opts).catch(function(){return null;});
   }catch(e){return Promise.resolve(null);}
