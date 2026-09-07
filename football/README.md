@@ -75,7 +75,8 @@ What IS validated out of sample:
 
 ```
 node football/tests.js           # exit 0 = green (69 checks incl. parity goldens)
-node football/cfb_p4/tests.js    # exit 0 = green (65 checks incl. parity goldens)
+node football/cfb_p4/tests.js    # exit 0 = green (92 checks incl. parity goldens)
+node football/health/health.test.js   # the line guard and the orientation rules
 ```
 
 ## Daily self-check & model health
@@ -97,6 +98,23 @@ market numbers — a gap beyond the hard bound (14 pts NFL / 21 pts CFB) is
 flagged as a probable data fault (bad join, sign flip, FCS absorbed as FBS),
 never presented as an edge. It also says loudly when the current season is
 about to leave the engines' `trained_through + 1` window and a retrain is due.
+
+**One row pointing the wrong way.** Two spread conventions are in circulation
+and they are exact negations — a home favourite is NEGATIVE to a book and
+POSITIVE as a margin. A table uniformly in the wrong one is caught on the
+board (a slate where every home team is a market dog is not a slate); a table
+that is *mostly* right and carries one backwards row was not caught anywhere.
+Wisconsin @ Notre Dame arrived that way and the guard reported a 41.7-point
+disagreement, which is true and useless. The guard now separates the two: a
+gap past the hard bound that **collapses when the market number is negated**
+is an orientation fault, reported under `*_lines_orientation` with both
+readings, and taken out of the slate's gap statistics so one backwards row
+does not also make the honest games look like a broken model. The board drops
+such a line rather than using it, and the game keeps its projection with no
+market number. It is never flipped: guessing a convention from values is what
+produced every board bug this project has had. The predicate is the engine's
+own (`EDCfbP4.market.orientationFault`), so the headless check and the browser
+cannot drift apart. Rules: `node football/health/health.test.js`.
 
 The run commits `football/health.json`. The app reads that record and nothing
 else: a clean run advances the Football module's freshness stamp (so the

@@ -142,30 +142,67 @@ function lineGuard(id, sportLabel, rows, lim) {
     check(id + '_market', sportLabel + ': market lines plausible', 'pass',
       rows.length ? rows.length + ' lines inside plausible bounds' : 'no market lines to test');
   }
+  /* ONE ROW POINTING THE WRONG WAY IS NOT A DISAGREEMENT.
+     A gap this big that COLLAPSES when the market number is negated is a row
+     stored in the opposite spread convention, not the model and the market
+     seeing a game differently. Reported as a 41.7-point gap it buried the one
+     fact that fixes it. So it is named on its own, and taken out of the
+     slate's gap statistics: a single backwards row must not also make the
+     honest games on the same slate look like a broken model.
+
+     Checked BEFORE the nothing-to-compare exit, so the orientation of the
+     lines is a check that always reports, the same as their plausibility. */
+  for (const g of gaps) {
+    g.orientation = E4.market.orientationFault(g.model, g.market,
+      { bound: lim.game, reconcile: lim.outlier });
+  }
+  const flipped = gaps.filter(g => g.orientation);
+  const sane = gaps.filter(g => !g.orientation);
+  const faultRows = flipped.map(g => ({ game: g.label, model: r2(g.model), market: r2(g.market),
+    gap: r2(g.orientation.gap), gap_if_negated: r2(g.orientation.gap_if_negated) }));
+  check(id + '_orientation', sportLabel + ': market lines point the right way',
+    flipped.length ? 'fail' : 'pass',
+    flipped.length
+      ? flipped.map(g => `${g.label}: model ${r2(g.model)} vs market ${r2(g.market)}`
+          + ` — gap ${r2(g.orientation.gap)} pts, but ${r2(g.orientation.gap_if_negated)} pts if the`
+          + ` market number is negated`).join('; ')
+        + ' — the source row is in the opposite spread convention'
+        + ' (a home favourite is a NEGATIVE home-side number here).'
+        + ' Dropped, never flipped: guessing a convention from values is not a fix.'
+      : (gaps.length ? gaps.length + ' joined line(s), none reconciled by negation'
+        : 'no market lines to test'));
+
   if (!gaps.length) {
     check(id, sportLabel + ': model vs market line guard', 'pass',
       'no market number joined to any upcoming game — nothing to compare');
-    return { compared: 0, median_gap: null, max_gap: null, outliers: [] };
+    return { compared: 0, median_gap: null, max_gap: null, outliers: [], orientation_faults: [] };
   }
-  const med = medianOf(gaps.map(g => g.gap));
-  const max = Math.max(...gaps.map(g => g.gap));
-  const outliers = gaps.filter(g => g.gap > lim.outlier)
+  if (!sane.length) {
+    check(id, sportLabel + ': model vs market line guard', 'warn',
+      'every joined line on this slate is an orientation fault — nothing left to compare');
+    return { compared: 0, median_gap: null, max_gap: null, outliers: [],
+      orientation_faults: faultRows };
+  }
+  const med = medianOf(sane.map(g => g.gap));
+  const max = Math.max(...sane.map(g => g.gap));
+  const outliers = sane.filter(g => g.gap > lim.outlier)
     .sort((a, b) => b.gap - a.gap).slice(0, 8)
     .map(g => ({ game: g.label, gap: r2(g.gap), model: r2(g.model), market: r2(g.market) }));
-  const broken = gaps.filter(g => g.gap > lim.game);
+  const broken = sane.filter(g => g.gap > lim.game);
   if (broken.length) {
     check(id, sportLabel + ': model vs market line guard', 'fail',
       broken.map(g => `${g.label} gap ${r2(g.gap)} pts (model ${r2(g.model)} vs market ${r2(g.market)})`).join('; ')
       + ` — beyond the ${lim.game}-pt hard bound; treat as a data fault, not an edge`);
   } else if (med > lim.median || outliers.length) {
     check(id, sportLabel + ': model vs market line guard', 'warn',
-      `median gap ${r2(med)} pts over ${gaps.length} games`
+      `median gap ${r2(med)} pts over ${sane.length} games`
       + (outliers.length ? `; ${outliers.length} game(s) beyond ${lim.outlier} pts` : ''));
   } else {
     check(id, sportLabel + ': model vs market line guard', 'pass',
-      `median gap ${r2(med)} pts over ${gaps.length} games, max ${r2(max)}`);
+      `median gap ${r2(med)} pts over ${sane.length} games, max ${r2(max)}`);
   }
-  return { compared: gaps.length, median_gap: r2(med), max_gap: r2(max), outliers };
+  return { compared: sane.length, median_gap: r2(med), max_gap: r2(max), outliers,
+    orientation_faults: faultRows };
 }
 
 /* --------------------------------------------------------- engine tests */
@@ -589,7 +626,10 @@ async function main() {
     projection_guard_last_run: now,
     projection_guard_last_status: st(!failIn(/^(nfl|p4)_projections$/)),
     line_guard_last_run: now,
-    line_guard_last_status: st(!failIn(/^(nfl|p4)_lines(_market|_src)?$/)),
+    /* the orientation check is part of the line guard: a ledger row that reads
+       green while one row points the wrong way is the failure mode this whole
+       check exists to stop */
+    line_guard_last_status: st(!failIn(/^(nfl|p4)_lines(_market|_src|_orientation)?$/)),
     row_count_line_guard: ((ln.nfl && ln.nfl.compared) || 0) + ((ln.p4 && ln.p4.compared) || 0)
   };
 
@@ -601,4 +641,10 @@ async function main() {
   process.exit(out.ok ? 0 : 2);
 }
 
-main().catch(e => { console.error('daily_check crashed before a report could be written:', e); process.exit(1); });
+/* the guards are pure and are tested on their own (football/health/health.test.js);
+   the run only happens when this file is the thing being run */
+module.exports = { lineGuard, medianOf, GUARD, checks };
+
+if (require.main === module) {
+  main().catch(e => { console.error('daily_check crashed before a report could be written:', e); process.exit(1); });
+}
