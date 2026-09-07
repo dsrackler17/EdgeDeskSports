@@ -101,7 +101,7 @@
        The engine rated every card it knows; anyone it does not know gets the
        unit average he came from, so a live play never divides by a blank. */
     actors.forEach(function (a) {
-      var e = (a.player && env.at[a.player.id]) || env.fallback[a.side];
+      var e = (a.player && env.at[a.player.uid || a.player.id]) || env.fallback[a.side];
       a.k = e;
       a.top = e.spd;
       a.accel = e.acc;

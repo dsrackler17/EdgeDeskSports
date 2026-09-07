@@ -125,7 +125,8 @@
     var best = [];
     for (i = 0; i < pool.length; i++) {
       p = pool[i];
-      s = scorePlay(p, sit, scheme, lean, { blitz: blitzRate, deep: deepRate, stack: stackRate }, T, o.mem);
+      s = scorePlay(p, sit, scheme, lean, { blitz: blitzRate, deep: deepRate, stack: stackRate },
+                    T, o.mem, team.mods);
       s += (rand() - 0.5) * T.noise * 2.2;
       best.push({ p: p, s: s });
     }
@@ -159,9 +160,23 @@
     return n / mem.recent.length;
   }
 
-  function scorePlay(p, sit, scheme, lean, seen, T, mem) {
+  function scorePlay(p, sit, scheme, lean, seen, T, mem, mods) {
     var s = 0;
     var isPass = p.type === 'pass';
+    /* ── THE HALFTIME ADJUSTMENT IS A CALL SHEET ─────────────────────────
+       "Attack the edge" that only makes outside runs gain more is half an
+       adjustment: a coach who decides to attack the edge also CALLS the
+       edge. Without this the modifier sat on plays nobody chose any more
+       often than before, and the button did almost nothing you could see. */
+    if (mods) {
+      if (mods.outsideRun && p.concept === 'outside') s += 2.8;
+      if (mods.insideRun && (p.concept === 'inside' || p.concept === 'gap')) s -= 2.0;
+      if (mods.shortRoutes) {
+        if (p.group === 'deep') s -= 2.4;
+        if (p.group === 'quick' || p.group === 'screen') s += 1.5;
+        if (p.hold && p.hold > 2.8) s -= 1.2;
+      }
+    }
     /* THE SCHEME IS AN IDENTITY, NOT A PREFERENCE. Weighted lightly, every
        coach converges on whatever the engine happens to reward and the six
        playbooks become one. Weighted like this, a Power Run team runs it,

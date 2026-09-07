@@ -294,6 +294,7 @@
 
   /* ── THE DRAWER ───────────────────────────────────────────────────────── */
   var offTab = 'suggested', defTab = 'suggested';
+  var tempo = 'normal';
   var OFF_TABS = [['suggested', 'Suggested'], ['run', 'Run'], ['pass', 'Pass'], ['pa', 'Play Action'], ['special', 'Special']];
   var DEF_TABS = [['suggested', 'Suggested'], ['man', 'Man'], ['zone', 'Zone'], ['blitz', 'Blitz'], ['run', 'Run D']];
 
@@ -376,7 +377,7 @@
         + '<i>' + esc(F.formation(fk).name) + ' · ' + esc(p.group === 'pa' ? 'Play action' : p.group) + '</i>'
         + '<em>' + esc(p.means) + '</em></span></button>';
     }).join('') + '</div>';
-    var extra = sit.down === 4 ? fourthRow(sit) : '';
+    var extra = (sit.down === 4 ? fourthRow(sit) : '') + tempoRow(sit);
     drawerOpen(head + body + extra + tipFor('call'));
     wireDrawer('off');
   }
@@ -405,6 +406,25 @@
     drawerOpen(head + body + tipFor('defense'));
     wireDrawer('def');
   }
+  /* ── THE CLOCK, AS A DECISION ────────────────────────────────────────────
+     Three buttons and no submenu. Huddling normally, going without one, or
+     letting it bleed to the play clock — each one changes the dead ball
+     between snaps, which is the only thing about a football clock a coach
+     controls. It is offered where it matters and marked when it matters. */
+  var TEMPOS = [['hurry', 'No huddle', 'More snaps, less clock'],
+                ['normal', 'Normal', 'Huddle up'],
+                ['grind', 'Chew clock', 'Bleed the play clock']];
+  function tempoRow(sit) {
+    var urge = sit.quarter >= 4 && sit.clock <= 360
+      ? (sit.diff < 0 ? 'hurry' : sit.diff > 0 ? 'grind' : null) : null;
+    return '<div class="dr-tempo">' + TEMPOS.map(function (t) {
+      return '<button type="button" data-tempo="' + t[0] + '"'
+        + ' aria-selected="' + (tempo === t[0]) + '"'
+        + (urge === t[0] ? ' class="urge"' : '') + '>'
+        + '<b>' + esc(t[1]) + '</b><i>' + esc(t[2]) + '</i></button>';
+    }).join('') + '</div>';
+  }
+
   function fourthRow(sit) {
     var ou = G.unitsOf(G.teamOf(game, sit.offense), game.tick);
     var k = G.fieldGoal(ou, null, sit.ball, function () { return 0.5; }, false);
@@ -427,10 +447,19 @@
     Array.prototype.forEach.call(drawer.querySelectorAll('[data-def]'), function (b) {
       b.onclick = function () { chooseDefense(b.getAttribute('data-def')); };
     });
+    Array.prototype.forEach.call(drawer.querySelectorAll('[data-tempo]'), function (b) {
+      b.onclick = function () {
+        tempo = b.getAttribute('data-tempo'); SOUND.tap();
+        if (side === 'off') showOffenseDrawer();
+      };
+    });
     if ($('drTO')) $('drTO').onclick = function () {
       if (game.timeouts[me] <= 0) { say('No timeouts left.'); return; }
-      S.step(game, { type: 'timeout', side: me });
-      SOUND.whistle(); paintScore(); say('Timeout, ' + teams.me.abbr + '.');
+      var r = S.step(game, { type: 'timeout', side: me });
+      SOUND.whistle(); paintScore();
+      /* WHAT IT BOUGHT, IN SECONDS. A timeout that says nothing back is a
+         button; one that says it saved twenty-nine seconds is a decision. */
+      say('Timeout, ' + teams.me.abbr + '.' + (r && r.saved ? ' ' + r.saved + ' seconds back.' : ''));
     };
     if ($('drPunt')) $('drPunt').onclick = function () { special({ type: 'punt' }); };
     if ($('drFG')) $('drFG').onclick = function () { special({ type: 'fieldgoal' }); };
@@ -586,7 +615,7 @@
     var sit = G.situation(game);
     var defKey = S.aiDefense(game);
     var ps = S.preSnap(game, key, formKey, defKey);
-    pendingCall = { type: 'play', play: key, formation: formKey, def: defKey, tempo: 'normal' };
+    pendingCall = { type: 'play', play: key, formation: formKey, def: defKey, tempo: tempo };
     lineUp(key, formKey, defKey, ps, sit);
     padSnap('Snap');
     seenTip('call');
@@ -622,7 +651,7 @@
     var env = G.prepare({
       off: offT, def: defT, rand: game.aiRand || game.rand, tick: game.tick,
       playKey: playKey, formKey: formKey, defCall: defKey,
-      sit: sit, mem: game.mem[sit.offense]
+      sit: sit, mem: game.mem[sit.offense], weather: game.weather
     });
     stage.lineUp({
       play: playKey, formation: formKey, def: defKey,
@@ -908,7 +937,7 @@
       firstDown: Math.min(100, sit.ball + sit.toGo), ballX: ballX, strong: 0,
       env: G.prepare({ off: G.teamOf(game, sit.offense), def: G.teamOf(game, sit.defense),
         rand: game.aiRand || game.rand, tick: game.tick, playKey: guess.key, formKey: gf,
-        defCall: 'base_3', sit: sit, mem: game.mem[sit.offense] }),
+        defCall: 'base_3', sit: sit, mem: game.mem[sit.offense], weather: game.weather }),
       rand: game.rand,
       offUnits: G.unitsOf(G.teamOf(game, sit.offense), game.tick),
       defUnits: G.unitsOf(G.teamOf(game, sit.defense), game.tick) });
@@ -988,11 +1017,18 @@
       + '<div class="cmp-note">Yards per play ' + esc(mine.ypp) + ' — ' + esc(theirs.ypp)
       + ' · Third down ' + esc(mine.third) + ' — ' + esc(theirs.third) + '</div>'
       + takeaway()
+      + leaderStrip(box)
       + '<h3>One adjustment</h3>'
       + '<div class="adjs">' + G.ADJUSTMENTS.map(function (a) {
           return '<button class="adj" type="button" data-adj="' + esc(a.key) + '">'
             + '<span class="ct">' + (a.side === 'off' ? 'Offence' : 'Defence') + '</span>'
-            + '<b>' + esc(a.name) + '</b><em>' + esc(a.means) + '</em></button>';
+            + '<b>' + esc(a.name) + '</b><em>' + esc(a.means) + '</em>'
+            /* THE TRADE, ON THE BUTTON. An adjustment with only an upside on
+               it is not a decision — it is a free upgrade, and the player
+               learns nothing from taking one. */
+            + '<span class="adj-t"><i class="up">' + esc(a.gain || '') + '</i>'
+            + '<i class="dn">' + esc(a.cost || '') + '</i></span>'
+            + '</button>';
         }).join('') + '</div>');
     Array.prototype.forEach.call(ovHost.querySelectorAll('[data-adj]'), function (b) {
       b.onclick = function () {
@@ -1025,6 +1061,46 @@
     return '<div class="tkw"><span>' + esc(head) + '</span>' + esc(pick.text) + '</div>';
   }
 
+  /* ── THE MEN, NAMED ───────────────────────────────────────────────────────
+     A box score is a wall of numbers about nobody. Four lines — who is
+     throwing it, who is carrying it, who is catching it and who is wrecking
+     it, on both sides — is how a viewer starts remembering a fictional
+     quarterback's name. Every figure comes off the same player stats the
+     engine books, so nothing here is a second tally. */
+  function pLine(p) {
+    if (!p) return null;
+    if (p.pa) return p.pc + '/' + p.pa + ', ' + p.py + ' yds'
+      + (p.ptd ? ', ' + p.ptd + ' TD' : '') + (p.pint ? ', ' + p.pint + ' INT' : '');
+    if (p.car && p.car >= p.rec) return p.car + ' car, ' + p.ry + ' yds' + (p.rtd ? ', ' + p.rtd + ' TD' : '');
+    if (p.rec) return p.rec + ' rec, ' + p.recy + ' yds' + (p.rectd ? ', ' + p.rectd + ' TD' : '');
+    var d = [];
+    if (p.tkl) d.push(p.tkl + ' tkl');
+    if (p.sack) d.push(p.sack + ' sack' + (p.sack === 1 ? '' : 's'));
+    if (p.tfl) d.push(p.tfl + ' TFL');
+    if (p.int) d.push(p.int + ' INT');
+    if (p.pd) d.push(p.pd + ' PD');
+    return d.join(', ') || null;
+  }
+  function leaderStrip(box) {
+    var them = G.other(me);
+    var mine = box.leaders[me] || {}, theirs = box.leaders[them] || {};
+    var rows = [['Passing', mine.passer, theirs.passer], ['Rushing', mine.rusher, theirs.rusher],
+                ['Receiving', mine.receiver, theirs.receiver], ['Defence', mine.defender, theirs.defender]];
+    var out = rows.map(function (r) {
+      var a = pLine(r[1]), b = pLine(r[2]);
+      if (!a && !b) return '';
+      return '<div class="ldr-r"><span class="lk">' + esc(r[0]) + '</span>'
+        + '<span class="la">' + (r[1] ? '<b>' + esc(r[1].position + ' ' + r[1].name) + '</b><i>'
+            + esc(a || '') + '</i>' : '<i>—</i>') + '</span>'
+        + '<span class="lb">' + (r[2] ? '<b>' + esc(r[2].position + ' ' + r[2].name) + '</b><i>'
+            + esc(b || '') + '</i>' : '<i>—</i>') + '</span></div>';
+    }).join('');
+    if (!out) return '';
+    return '<h3>Who is doing it</h3><div class="ldr">'
+      + '<div class="ldr-h"><span class="lk"></span><span class="la">' + esc(teams.me.abbr)
+      + '</span><span class="lb">' + esc(teams.opp.abbr) + '</span></div>' + out + '</div>';
+  }
+
   /* ── THE RECAP ────────────────────────────────────────────────────────── */
   function finalScreen() {
     S.clearSave();
@@ -1037,6 +1113,8 @@
     var box = G.boxScore(game), them = G.other(me), mine = box[me], theirs = box[them];
     var won = game.score[me] > game.score[them];
     var tp = S.turningPoint(game), potg = G.playerOfGame(game);
+    var topOff = G.topOffense(game, me), topDef = G.topDefense(game, me);
+    var matchup = S.keyMatchup(game, me), coaching = S.coachingImpact(game, me);
     /* THE LIST HAS TO AGREE WITH ITS OWN HEADING. Five bullets under "Why you
        won" that are all things that nearly lost it reads as a bug, so the
        ones that explain the result and the ones that ran against it are shown
@@ -1047,7 +1125,9 @@
     var rows = [['First downs', mine.firstDowns, theirs.firstDowns], ['Total yards', mine.yards, theirs.yards],
       ['Rushing', mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
       ['Passing', mine.comp + '/' + mine.att + ' · ' + mine.passYards, theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
-      ['Sacks', mine.sacks, theirs.sacks], ['Third down', mine.third, theirs.third],
+      ['Sacks', mine.sacks + ' (' + mine.sacksAllowed + ' allowed)',
+       theirs.sacks + ' (' + theirs.sacksAllowed + ' allowed)'],
+      ['Third down', mine.third, theirs.third],
       ['Fourth down', mine.fourth, theirs.fourth], ['Red zone', mine.redzone, theirs.redzone],
       ['Explosive plays', mine.explosive, theirs.explosive], ['Turnovers', mine.turnovers, theirs.turnovers],
       ['Field goals', mine.fg, theirs.fg], ['Possession', mins(mine.top), mins(theirs.top)]];
@@ -1072,11 +1152,28 @@
           againstIt, false)
       + (tp ? '<h3>Turning point</h3><div class="muted">Q' + tp.q + ' — ' + esc(tp.text) + '</div>' : '')
       + (potg ? '<h3>Player of the game</h3><div class="potg"><div><div class="pn">'
-          + esc(potg.position + ' ' + potg.name) + '</div><div class="pl">' + esc(statLine(potg)) + '</div></div></div>' : '')
+          + esc(potg.position + ' ' + potg.name)
+          + '<span class="pt">' + esc(potg.side === me ? teams.me.abbr : teams.opp.abbr) + '</span></div>'
+          + '<div class="pl">' + esc(statLine(potg)) + '</div></div></div>' : '')
+      /* THE TWO MEN WHO PLAYED THIS GAME FOR YOU, one on each side of the
+         ball. A single player of the game is often the opponent's; these two
+         are always yours, which is what makes a roster start to have names
+         in it. */
+      + ((topOff || topDef) ? '<h3>Your game</h3><div class="mine2">'
+          + (topOff ? '<div><span>Offence</span><b>' + esc(topOff.position + ' ' + topOff.name)
+              + '</b><i>' + esc(pLine(topOff) || '') + '</i></div>' : '')
+          + (topDef ? '<div><span>Defence</span><b>' + esc(topDef.position + ' ' + topDef.name)
+              + '</b><i>' + esc(pLine(topDef) || '') + '</i></div>' : '')
+          + '</div>' : '')
+      + (matchup ? '<h3>Key matchup</h3><div class="muted">' + esc(matchup) + '</div>' : '')
+      + (coaching ? '<h3>Coaching impact</h3><div class="muted">' + esc(coaching) + '</div>' : '')
+      + leaderStrip(box)
       + '<h3>Box score</h3><table class="box"><thead><tr><th>&nbsp;</th><th>' + esc(teams.me.abbr) + '</th><th>'
       + esc(teams.opp.abbr) + '</th></tr></thead><tbody>' + rows.map(function (r) {
         return '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>';
       }).join('') + '</tbody></table>'
+      + (game.weather && game.weather.note
+          ? '<h3>Conditions</h3><div class="muted">' + esc(game.weather.note) + '</div>' : '')
       + (injuries.length ? '<h3>Injuries</h3><div class="muted">' + injuries.map(function (i) {
           return esc(i.position + ' ' + i.name + ' — ' + i.kind); }).join('<br>') + '</div>' : '')
       + '<h3>Drives</h3><div class="drv">' + game.drives.map(function (d) {
@@ -1343,14 +1440,20 @@
     wireFieldTaps();
   }
   function newGame() {
+    /* THE WEATHER ON THE CARD IS THE WEATHER ON THE FIELD. The matchup page
+       has always named a sky, a temperature and a wind; the engine had never
+       heard of any of them, so a gale was a picture. It is worth about ten
+       yards of field goal range and the throw over the top — modest, and
+       real. */
     game = S.build({ me: teams.me, opponent: teams.opp, home: teams.home !== false,
-      week: teams.week || 1, season: teams.season || 1, opponentKey: teams.oppKey, settings: set });
+      week: teams.week || 1, season: teams.season || 1, opponentKey: teams.oppKey,
+      weather: cond(), settings: set });
     me = game.meta.user;
     startPlaying();
     if (GM && GM.track) GM.track('gridiron_game_started', { difficulty: set.difficulty, mode: set.mode });
   }
   function resumeGame(rec) {
-    game = S.resume(rec, { me: teams.me, opponent: teams.opp });
+    game = S.resume(rec, { me: teams.me, opponent: teams.opp, weather: cond() });
     if (!game) { newGame(); return; }
     me = game.meta.user;
     startPlaying();

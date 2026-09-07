@@ -243,6 +243,21 @@
 .dr-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 12px 12px}
 .dr-row.one{grid-template-columns:1fr}
 
+/* ── TEMPO ────────────────────────────────────────────────────────────────
+   Three states of one control, so it reads as a dial rather than as three
+   separate buttons. The one the situation is asking for wears a mark. */
+.dr-tempo{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 12px 12px}
+.dr-tempo button{display:flex;flex-direction:column;gap:1px;align-items:flex-start;
+  min-height:var(--tap);padding:7px 9px;border-radius:var(--r-md);
+  background:transparent;border:1px solid var(--line2);color:var(--dim);text-align:left}
+.dr-tempo button b{font:800 12.5px 'Space Grotesk',sans-serif;letter-spacing:.01em}
+.dr-tempo button i{font-style:normal;font-size:9.5px;line-height:1.25;color:var(--faint)}
+.dr-tempo button[aria-selected="true"]{border-color:var(--val);color:var(--text);
+  background:rgba(63,184,131,.10)}
+.dr-tempo button[aria-selected="true"] i{color:var(--dim)}
+.dr-tempo button.urge{border-color:var(--est)}
+.dr-tempo button.urge b::after{content:' ·';color:var(--est)}
+
 /* ── WHAT YOU PRESS TO PLAY vs WHAT YOU PRESS TO READ ─────────────────────
    A control that makes football happen and a control that opens a panel
    should not look the same. The first is bright, large and unmissable; the
@@ -351,6 +366,44 @@
 .adj .ct{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .adj b{font:700 14px 'Space Grotesk',sans-serif;line-height:1.15}
 .adj em{font-style:normal;font-size:11px;color:var(--dim);line-height:1.3}
+/* THE TRADE, UNDER THE NAME. One line up, one line down, both short enough
+   to read at arm's length while eighty thousand people are still standing. */
+.adj-t{display:flex;flex-direction:column;gap:1px;margin-top:auto;padding-top:6px}
+.adj-t i{font-style:normal;font-size:10px;line-height:1.25;display:flex;gap:5px}
+.adj-t i::before{font-weight:800;flex:none}
+.adj-t .up{color:var(--val)}
+.adj-t .up::before{content:'+'}
+.adj-t .dn{color:var(--neg)}
+.adj-t .dn::before{content:'\2212'}
+
+/* ── THE TWO MEN WHO PLAYED IT FOR YOU ────────────────────────────────────
+   One on each side of the ball, side by side, because a single player of the
+   game is often the other team's. */
+.mine2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.mine2>div{display:flex;flex-direction:column;gap:1px;padding:9px 10px;
+  border:1px solid var(--line2);border-radius:var(--r-md);background:var(--raised);min-width:0}
+.mine2 span{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.mine2 b{font:700 13.5px 'Space Grotesk',sans-serif;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mine2 i{font-style:normal;font-size:11px;color:var(--dim);line-height:1.3}
+.potg .pn .pt{margin-left:7px;font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.12em;
+  color:var(--faint);vertical-align:middle}
+
+/* ── WHO IS DOING IT ──────────────────────────────────────────────────────
+   Four rows, two clubs, and a name on every one of them. */
+.ldr{display:flex;flex-direction:column;gap:1px;margin-top:6px;
+  border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden}
+.ldr-h,.ldr-r{display:grid;grid-template-columns:64px 1fr 1fr;gap:8px;
+  padding:7px 10px;align-items:center}
+.ldr-h{background:rgba(255,255,255,.03)}
+.ldr-h .la,.ldr-h .lb{font:800 10px 'Space Grotesk',sans-serif;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--faint)}
+.ldr-r+.ldr-r{border-top:1px solid var(--line2)}
+.ldr .lk{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.ldr .la,.ldr .lb{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ldr .la b,.ldr .lb b{font:700 12.5px 'Space Grotesk',sans-serif;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldr .la i,.ldr .lb i{font-style:normal;font-size:10.5px;color:var(--dim)}
 .setrow .sl{flex:1;min-width:0}
 .setrow .sl b{display:block;font-size:14px;font-weight:600}
 .setrow .sl span{font-size:11.5px;color:var(--faint)}
