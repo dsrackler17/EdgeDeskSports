@@ -596,7 +596,31 @@
           var fa = actors[fi];
           if (fa.state === 'down') fa.fallT = (fa.fallT || 0) + dt;
           else fa.fallT = 0;
+          /* the same clock for a throw, so the arm has time to come through */
+          if (fa.state === 'throw') fa.throwT = (fa.throwT || 0) + dt;
+          else fa.throwT = 0;
         }
+      }
+      /* ── HOW HE IS GOING TO HAVE TO CATCH IT ───────────────────────────
+         Every completion played the same overhead reach because 'catch' was
+         one state. Where the ball actually is when it gets there decides it:
+         over his head, out to one side, or into his chest. */
+      if (ball && ball.flight && ball.flight.to) {
+        var rc = ball.flight.to;
+        var bz = ball.z || 0, bdx = ball.x - rc.x, bdy = ball.y - rc.y;
+        rc.catchKind = bz > 2.7 ? 'high'
+          : Math.abs(bdx) > 1.25 ? (bdx > 0 ? 'reachR' : 'reachL')
+          : bdy < -0.9 ? 'back' : 'chest';
+      }
+
+      /* ── SOMEBODY CELEBRATES ────────────────────────────────────────────
+         A touchdown ends with the scorer standing exactly as he was running.
+         Once the whistle has gone and the ball is in the end zone he puts his
+         arms up, which costs nothing and is the difference between a play
+         ending and a play being scored. */
+      if (phase === 'dead' && result && result.touchdown && dead > 0.25) {
+        var scorer = ball.holder || userActor;
+        if (scorer && scorer.state !== 'down') scorer.state = 'celebrate';
       }
       if (phase === 'dead') dead += dt;
       excite = Math.max(exciteFloor, excite - dt * 0.30);

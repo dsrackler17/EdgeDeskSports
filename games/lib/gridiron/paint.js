@@ -593,12 +593,26 @@
       upA = sd * -0.92; elA = sd * -0.30; squeeze = 0.70;
     } else if (state === 'shed') { upA = sd * -0.86; elA = sd * 0.50; squeeze = 0.78; }
     else if (state === 'tackle') { upA = sd * -0.98; elA = sd * -0.48; squeeze = 0.74; }
-    else if (state === 'catch') { upA = sd * -1.62; elA = sd * -0.30; }
+    else if (state === 'catch') {
+      /* CHEST, HANDS, OVERHEAD, OR REACHING FOR IT. One pose for every
+         completion made every completion look like the same completion. */
+      var ck = p.catchKind || 'chest';
+      if (ck === 'high') { upA = sd * -2.10; elA = sd * -0.16; squeeze = 1.02; }
+      else if (ck === 'back') { upA = sd * -1.86; elA = sd * -0.10; squeeze = 0.94; }
+      else if (ck === 'reachR') { upA = (sd > 0 ? -1.98 : -1.05) * sd; elA = sd * -0.20; }
+      else if (ck === 'reachL') { upA = (sd < 0 ? -1.98 : -1.05) * sd; elA = sd * -0.20; }
+      else { upA = sd * -1.28; elA = sd * -0.86; squeeze = 0.82; }
+    }
     else if (state === 'celebrate') { upA = sd * -2.35; elA = sd * -0.20; }
     else if (state === 'throw') {
-      /* the throwing arm cocks back over the shoulder; the other one points */
-      if (sd === (p.hand || 1)) { upA = sd * -2.45; elA = sd * -1.05; }
-      else { upA = sd * -0.95; elA = sd * -0.20; }
+      /* COCK, THROW, FOLLOW THROUGH. Held in the cocked pose the whole time
+         he was in it, the arm never actually threw anything — the ball simply
+         appeared in the air beside a man doing a statue. It comes over now. */
+      var tw = clamp((p.throwT == null ? 0.3 : p.throwT) / 0.34, 0, 1);
+      var arc = tw < 0.34 ? -2.45 + tw * 0.9 : -2.15 + (tw - 0.34) * 3.1;
+      if (sd === (p.hand || 1)) { upA = sd * arc; elA = sd * (-1.05 + tw * 1.35); }
+      else { upA = sd * (-0.95 + tw * 0.5); elA = sd * -0.20; }
+      squeeze = 0.88;
     } else if (p.carry) {
       /* the ball is tucked in one arm and the other one runs */
       if (sd === (p.hand || 1)) { upA = sd * -0.58; elA = sd * -1.25; }
@@ -1157,7 +1171,7 @@
   /* ── GOAL POSTS ──────────────────────────────────────────────────────────
      A real one, on the back line of the end zone, in the perspective. Uprights
      eighteen and a half feet apart, crossbar ten feet up. */
-  function goalposts(ctx, cam, y, color) {
+  function goalposts(ctx, cam, y, color, o) {
     if (y < cam.nearestY() - 1) return;
     var cx = FIELD.half, halfW = 3.08, bar = 3.33, up = 12;
     var lw = Math.max(1.2, cam.lat(y) * 0.24);
@@ -1182,6 +1196,27 @@
       ctx.stroke();
     });
     ctx.lineCap = 'butt';
+    /* THE RIBBONS, which are the only thing on a football field that tells you
+       what the wind is doing. Two of them, on the tops of the uprights,
+       streaming the way it blows and fluttering at the rate it blows. */
+    if (o && o.wind > 0.02) {
+      var t2 = o.tick || 0;
+      var flow = (o.windX >= 0 ? 1 : -1) * clamp(o.wind, 0, 1);
+      ctx.strokeStyle = 'rgba(240,224,120,.85)';
+      ctx.lineWidth = Math.max(0.9, cam.lat(y) * 0.10);
+      [-halfW, halfW].forEach(function (dx, i) {
+        var x0 = cam.sx(cx + dx, y), y0 = cam.sy(y, up);
+        var L2 = Math.max(4, cam.lat(y) * 1.5);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.quadraticCurveTo(
+          x0 + flow * L2 * 0.55,
+          y0 + Math.sin(t2 * 5.5 + i * 2.1) * L2 * 0.22,
+          x0 + flow * L2,
+          y0 + Math.sin(t2 * 5.5 + i * 2.1 + 0.9) * L2 * 0.30);
+        ctx.stroke();
+      });
+    }
   }
 
   /* ── THE SIDELINE ────────────────────────────────────────────────────────
@@ -1377,14 +1412,20 @@
        between the hashes is a shade browner than the rest of it. And no grass
        anywhere is one flat tone: a few hundred seeded specks give it a
        surface the eye reads as depth without ever being able to name why. */
-    var wearA = Math.max(yNear, 12), wearB = Math.min(yFar, 88);
+    var wearA = Math.max(yNear, 8), wearB = Math.min(yFar, 92);
     if (wearB > wearA) {
-      var wg = ctx.createLinearGradient(cam.sx(FIELD.half - 11, 50), 0, cam.sx(FIELD.half + 11, 50), 0);
-      wg.addColorStop(0, 'rgba(96,78,48,0)');
-      wg.addColorStop(0.5, 'rgba(96,78,48,.16)');
-      wg.addColorStop(1, 'rgba(96,78,48,0)');
+      /* IT HAS TO FALL OFF AT BOTH ENDS AS WELL AS BOTH SIDES. Faded across
+         and cut square top and bottom, the worn strip read as a rectangle
+         somebody had painted on the grass. A pool centred on midfield fades
+         everywhere at once. */
+      var wcx = cam.sx(FIELD.half, 50), wcy = cam.sy(50);
+      var wr = Math.max(cam.w, cam.h) * 0.62;
+      var wg = ctx.createRadialGradient(wcx, wcy, wr * 0.05, wcx, wcy, wr);
+      wg.addColorStop(0, 'rgba(104,84,52,.17)');
+      wg.addColorStop(0.55, 'rgba(104,84,52,.09)');
+      wg.addColorStop(1, 'rgba(104,84,52,0)');
       ctx.fillStyle = wg;
-      ground(FIELD.half - 11, FIELD.half + 11, wearA, wearB);
+      ground(FIELD.half - 12, FIELD.half + 12, wearA, wearB);
       ctx.fill();
     }
     /* TWO FILLS, NOT FOUR HUNDRED. Every speck setting its own fillStyle is
@@ -1485,8 +1526,10 @@
     }
 
     /* ── THE STICKS, at both ends ──────────────────────────────────────── */
-    goalposts(ctx, cam, 100, '#f2c744');
-    goalposts(ctx, cam, 0, '#f2c744');
+    var Wx = weatherOf(o.weather);
+    var wind = { tick: o.tick || 0, wind: Wx.wind, windX: 1 };
+    goalposts(ctx, cam, 100, '#f2c744', wind);
+    goalposts(ctx, cam, 0, '#f2c744', wind);
     sidelines(ctx, cam, o);
 
     /* ── PYLONS, which stand up off the ground ─────────────────────────── */

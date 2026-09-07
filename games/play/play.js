@@ -987,6 +987,7 @@
         ['Turnovers', mine.turnovers, theirs.turnovers]])
       + '<div class="cmp-note">Yards per play ' + esc(mine.ypp) + ' — ' + esc(theirs.ypp)
       + ' · Third down ' + esc(mine.third) + ' — ' + esc(theirs.third) + '</div>'
+      + takeaway()
       + '<h3>One adjustment</h3>'
       + '<div class="adjs">' + G.ADJUSTMENTS.map(function (a) {
           return '<button class="adj" type="button" data-adj="' + esc(a.key) + '">'
@@ -1003,6 +1004,21 @@
         nextCall();
       };
     });
+  }
+
+  /* ONE THING THAT IS DECIDING IT. A wall of numbers tells you what has
+     happened; a broadcast tells you the one that matters, and at half time
+     that is the sentence you actually act on. Taken from the same reasons the
+     postgame panel prints, worst-first if you are behind and best-first if
+     you are not. */
+  function takeaway() {
+    var them = G.other(me), box = G.boxScore(game);
+    var ahead = game.score[me] > game.score[them];
+    var all = S.why(box, me);
+    if (!all.length) return '';
+    var pick = all.filter(function (r) { return r.good !== ahead; })[0] || all[0];
+    return '<div class="tkw"><span>' + (ahead ? 'Watch' : 'The problem') + '</span>'
+      + esc(pick.text) + '</div>';
   }
 
   /* ── THE RECAP ────────────────────────────────────────────────────────── */
@@ -1178,6 +1194,28 @@
     return best;
   }
 
+  /* ── A CLUB'S MARK ───────────────────────────────────────────────────────
+     Nine original geometric devices, one per club, drawn as a watermark
+     inside the badge behind the abbreviation. Not a logo in the trademark
+     sense and not anybody else's — a gear, a horn, a wave, a peak: the shapes
+     a small town in this league would put on a helmet. */
+  var MARKS = {
+    gear:   'M12 3l2.1 1.6 2.6-.5.9 2.5 2.3 1.3-1 2.4 1 2.4-2.3 1.3-.9 2.5-2.6-.5L12 21l-2.1-1.6-2.6.5-.9-2.5L4.1 16l1-2.4-1-2.4 2.3-1.3.9-2.5 2.6.5zM12 9a3 3 0 100 6 3 3 0 000-6z',
+    bull:   'M3 7c2.6 0 4 1.6 4.6 3.4C8.9 9.4 10.3 9 12 9s3.1.4 4.4 1.4C17 8.6 18.4 7 21 7c0 5-2.6 7.4-5.2 7.4-.9 0-1.7-.2-2.3-.6l-.7 4.6h-1.6l-.7-4.6c-.6.4-1.4.6-2.3.6C5.6 14.4 3 12 3 7z',
+    spear:  'M12 2l3.4 6.2-2.1.6 1.9 3.4-1.7.5L12 22l-1.5-9.3-1.7-.5 1.9-3.4-2.1-.6z',
+    wing:   'M2 9c5 0 8.6 1.4 11 4.2C15.4 10.4 19 9 22 9c-1.2 4-4.4 6.6-10 8-5.6-1.4-8.8-4-10-8zM6 5c3.4.4 5.8 1.7 7.3 3.8C11 7.2 8.6 6 6 5.7z',
+    anchor: 'M11 3h2v3h2.4v2H13v9.3c2.4-.5 4-2.2 4.4-4.7l-1.7.4L18.9 9 22 13.3l-1.9-.4c-.6 4.2-3.9 6.9-8.1 7.1-4.2-.2-7.5-2.9-8.1-7.1L2 13.3 5.1 9l2.2 4-1.7-.4c.4 2.5 2 4.2 4.4 4.7V8H7.6V6H11z',
+    horn:   'M4 18c0-7 4.4-12 11-12 3 0 5 1 5 1s-2.6.6-4.4 2.4C13.4 11.6 13 15 13 18z M6.5 18a2.5 2.5 0 105 0 2.5 2.5 0 00-5 0z',
+    wave:   'M2 9c2.6-2.4 5.2-2.4 7.8 0s5.6 2.4 8.2 0l4-3.6v3.4l-4 3.6c-2.6 2.4-5.6 2.4-8.2 0S4.6 10 2 12.4zm0 6c2.6-2.4 5.2-2.4 7.8 0s5.6 2.4 8.2 0l4-3.6V15l-4 3.6c-2.6 2.4-5.6 2.4-8.2 0S4.6 16 2 18.4z',
+    shield: 'M12 2l8 3v7.2c0 4.6-3.2 8-8 9.8-4.8-1.8-8-5.2-8-9.8V5zm0 3.4L7 7.2v5c0 3.1 2 5.5 5 6.9 3-1.4 5-3.8 5-6.9v-5z',
+    peak:   'M2 20L9 6l3.4 6.6L14.6 9 22 20zm7-9.4L5.8 17h6.4z'
+  };
+  function clubMark(key) {
+    var d = MARKS[key] || MARKS.shield;
+    return '<svg class="mu-mark" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<path d="' + d + '"/></svg>';
+  }
+
   function pregame(resumable) {
     pre.hidden = false; gd.hidden = true;
     var opp = teams.opp, mine = teams.me, oppTeam = null;
@@ -1189,7 +1227,7 @@
     function side(t, kit, star, home) {
       return '<div class="mu-side">'
         + '<div class="mu-badge" style="--tc:' + esc(kit.primary || '#3fb883') + '">'
-        + esc((t.abbr || '???').slice(0, 3)) + '</div>'
+        + clubMark(t.logo) + '<span>' + esc((t.abbr || '???').slice(0, 3)) + '</span></div>'
         + '<div class="mu-name">' + esc(t.city || '') + '</div>'
         + '<div class="mu-club">' + esc(t.name || '') + '</div>'
         + '<div class="mu-ovr">' + esc(t.overall || 72) + ' <span>OVR</span></div>'
