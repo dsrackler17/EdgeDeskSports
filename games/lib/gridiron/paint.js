@@ -448,6 +448,12 @@
     var stanceW = gait === 'shuffle' ? 1.75
                 : gait === 'block' || gait === 'engaged' || gait === 'shed' ? 1.62
                 : threePt ? 1.55 : coil ? 1.35 : gait === 'tackle' ? 1.30 : 1.08;
+    /* A CUT IS A PLANT. The outside foot goes down hard and wide, the hips
+       drop over it, and for a third of a second he is not running — he is
+       changing direction. A body that slides sideways at the same stride is
+       the clearest tell that nothing on the field has any weight. */
+    if (p.move === 'juke' || p.move === 'spin') stanceW *= 1.55;
+    if (p.move === 'truck') stanceW *= 1.18;
     var pose = { threePt: threePt, gait: gait, H: H, skin: skin, lod: LOD };
 
     legOne(ctx, -hpW * 0.50 * stanceW, hipY, kneeY, ankY, thW, clW, k, -swing, lift, pose, true);
