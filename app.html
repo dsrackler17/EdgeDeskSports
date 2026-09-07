@@ -33270,6 +33270,46 @@ function fbP4LoadGuarded(force,signal){
    and flagged `stale` so the live guard and the board can treat it as
    stale market data rather than a model fault. */
 var FBP4_QUOTE_FRESH_MS=72*3600e3;
+/* ---- the model number a suspect line cannot have touched ---------------
+   Cached per game against the load stamp, exactly like fbP4ProjCached, so
+   the extra projection is paid once per game per load and only for games
+   that actually have a line to judge. */
+function fbP4FairNoMarket(u){
+  var gid=String(u.g.game_id),S=FB.p4;
+  if(!S._fnm||S._fnmAt!==S.loadedAt){S._fnm={};S._fnmAt=S.loadedAt;}
+  if(!S._fnm.hasOwnProperty(gid)){
+    var v=null;
+    try{
+      var p=window.EDCfbP4.projectGame(fbP4Request(u,{noMarket:true}));
+      if(p&&p.status==='PREDICTED'&&p.model&&isFinite(p.model.fair_spread))v=p.model.fair_spread;
+    }catch(_){}
+    S._fnm[gid]=v;
+  }
+  return S._fnm[gid];
+}
+/* ---- ONE ROW POINTING THE WRONG WAY -----------------------------------
+   fbP4SpreadSanity below catches a table that is UNIFORMLY inverted: every
+   home team a market dog is not a slate. It cannot catch a table that is
+   mostly right and carries one row the other way round, and that is the
+   case that actually happened — Wisconsin @ Notre Dame joined at −20.5
+   against a model that had the home side by 21.2, while the four other
+   games on the slate joined correctly. Nothing downstream could tell: the
+   gap simply came out at 41.7 points and the recommendation fired on it.
+
+   So each line is checked against the model on its own, by the ENGINE's
+   own predicate, and a row that only reconciles under negation is DROPPED.
+   Not flipped — flipping is guessing a convention from values, which is the
+   thing this whole section exists to refuse. The game keeps its projection
+   and loses its market number, which is the honest state for a line nobody
+   can vouch for. */
+function fbP4LineFault(u,spreadLine){
+  if(spreadLine==null||!isFinite(spreadLine))return null;
+  var M=window.EDCfbP4&&window.EDCfbP4.market;
+  if(!M||typeof M.orientationFault!=='function')return null;
+  var fair=fbP4FairNoMarket(u);
+  if(fair==null)return null;
+  return M.orientationFault(fair,spreadLine,{bound:21,reconcile:7});
+}
 function fbP4Market(u){
   var g=u.g,out={spread_line:null,total_line:null,quotes_h2h:null,book:null,as_of:null,stale:false};
   var hN=fbNorm(g.home_team),ev=null,k;
@@ -33296,6 +33336,15 @@ function fbP4Market(u){
   else if(line&&line.over_under!=null){out.total_line=+line.over_under;out.book=out.book||('cfb.lines · '+(line.provider||'consensus'));}
   else if(m&&m.total_line!=null){out.total_line=m.total_line;out.stale=out.spread_line==null?true:out.stale;out.book=out.book||'captured (stale)';out.as_of=out.as_of||m.at;}
   if(m&&m.quotes_h2h&&capFresh)out.quotes_h2h=m.quotes_h2h;
+  /* the last thing that happens to a spread line here is being asked whether
+     it points the right way. A row that only agrees with the model once it is
+     negated is dropped and named — see fbP4LineFault. */
+  var fault=fbP4LineFault(u,out.spread_line);
+  if(fault){
+    out.spread_fault=fault;
+    out.spread_line=null;
+    out.book=(out.book?out.book+' · ':'')+'spread dropped (opposite convention)';
+  }
   return out;
 }
 /* Schedule geometry for one side of one game, computed from the season
@@ -33376,8 +33425,14 @@ function fbP4AvailAsOf(){
   try{ var d=C.cfbAvailability(); return (d&&d.data&&(d.data.generated_at||null))||null; }catch(_){ return null; }
 }
 
-function fbP4Request(u){
+/* `opts.noMarket` builds the SAME request with no market number in it.
+   The fair spread does not depend on the market (the market only feeds the
+   gap, the cover and the blend), so this is how a model number is obtained
+   that a suspect line cannot have touched — which is what fbP4Market needs
+   to judge whether that line points the right way, without asking itself. */
+function fbP4Request(u,opts){
   var g=u.g,P=window.EDCfbP4Params;
+  var noMkt=!!(opts&&opts.noMarket);
   var V=(P.universe&&P.universe.venues)||{};
   var hk=fbP4Key(g.home_team),ak=fbP4Key(g.away_team);
   return {
@@ -33403,12 +33458,12 @@ function fbP4Request(u){
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,
-    market:fbP4Market(u),
+    market:noMkt?{}:fbP4Market(u),
     /* WHEN THE DATA WAS READ, not when the season started. The roster stamp
        used to be manufactured as <season>-08-01, which made a file fetched
        this week read as eight hundred hours stale and put a false "missing"
        on teams whose rosters were current. */
-    timestamps:{odds:(fbP4Market(u)||{}).as_of||null,
+    timestamps:{odds:noMkt?null:((fbP4Market(u)||{}).as_of||null),
       roster:FB.p4.rosterAsOf||null,
       injuries:fbP4AvailAsOf(),
       weather:(FB.p4.weather[g.game_id]||{}).as_of||null}
@@ -33746,9 +33801,35 @@ function fbP4LineSanity(){
   return fbP4SpreadSanity((FB.p4.up||[]).map(function(u){
     var m=fbP4Market(u);return m?m.spread_line:null;}));
 }
+/* every game on the board whose joined spread was dropped for pointing the
+   wrong way, so the operator is told which rows to fix rather than left to
+   wonder why a game has no market number */
+function fbP4LineFaults(){
+  var out=[];
+  (FB.p4.up||[]).forEach(function(u){
+    var m=fbP4Market(u);
+    if(m&&m.spread_fault)out.push({game:u.g.away_team+' @ '+u.g.home_team,fault:m.spread_fault});
+  });
+  return out;
+}
+function fbP4LineFaultHTML(){
+  var bad=fbP4LineFaults();
+  if(!bad.length)return '';
+  return '<div class="gd-modelnote" style="flex-basis:100%;border-left:3px solid var(--warn,#c8902a);padding-left:10px">'
+    +'<b>'+bad.length+' market line'+(bad.length===1?'':'s')+' dropped — opposite spread convention.</b> '
+    +bad.map(function(b){
+      var g1=Math.round(b.fault.gap*10)/10,g2=Math.round(b.fault.gap_if_negated*10)/10;
+      return fbEsc(b.game)+' joined at '+fbPts(b.fault.market)+' against a model of '+fbPts(b.fault.model)
+        +' — a '+g1+'-point gap that becomes '+g2+' if the number is negated';}).join('; ')
+    +'. That is a row stored the other way round in <span class="mono">cfb.lines</span>, not a disagreement '
+    +'about football. The spread is dropped rather than flipped — guessing which way round a row was meant '
+    +'to be is not a fix — so '+(bad.length===1?'that game keeps its projection and shows no market number'
+      :'those games keep their projections and show no market number')+'. '
+    +'Fixing the row at the source restores it.</div>';
+}
 function fbP4LineWarnHTML(){
   var bad=fbP4LineSanity();
-  if(!bad)return '';
+  if(!bad)return fbP4LineFaultHTML();
   var conv=fbP4LinesConv();
   return '<div class="gd-modelnote" style="flex-basis:100%;border-left:3px solid var(--bad,#e26044);padding-left:10px">'
     +'<b style="color:var(--bad,#e26044)">Market lines look inverted.</b> All '+bad.n
@@ -33766,7 +33847,13 @@ function fbP4LineWarnHTML(){
       : '<button class="btn ghost sm" onclick="fbP4SetLinesConv(\'betting\')">Read cfb.lines as betting (home favourite negative)</button>')
     +' <span class="ec mut">Changing this re-projects the whole board. Fixing the signs in '
     +'<span class="mono">cfb.lines</span> itself is the durable fix; this is the switch for a table that '
-    +'is consistent but opposite.</span></div></div>';
+    +'is consistent but opposite.</span></div></div>'
+    /* the two guards see different halves of the same problem: this one sees a
+       table that is uniformly the wrong way round, the other sees individual
+       rows big enough for the model to catch. A uniformly inverted table trips
+       both — the big lines are dropped, the small ones survive wrong — so both
+       are shown rather than one hiding the other. */
+    +fbP4LineFaultHTML();
 }
 /* ---- posting straight to the Collective's ingest API ------------------
    The download-and-open-the-dashboard route stays (it is the right default

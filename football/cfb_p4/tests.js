@@ -311,6 +311,36 @@
         pm2.unproven === !P.validation_summary.market.beats_closing_line);
     }
 
+    /* ---- ONE ROW POINTING THE WRONG WAY --------------------------------
+       Two spread conventions are exact negations of each other. A table that
+       is uniformly the wrong way round is caught by the board's slate-wide
+       check; a table that is mostly right and carries ONE backwards row is
+       not, and that is the case that reached the daily self-check as a
+       41.7-point "disagreement" on Wisconsin @ Notre Dame. */
+    var OF = E.market.orientationFault;
+    var wisc = OF(21.2, -20.5, { bound: 21, reconcile: 7 });
+    chk('orientation: a row that only agrees once negated is a FAULT', !!wisc);
+    chk('orientation: and it carries both readings, so the fix is obvious',
+      wisc && near(wisc.gap, 41.7, 1e-9) && near(wisc.gap_if_negated, 0.7, 1e-9),
+      wisc && [wisc.gap, wisc.gap_if_negated]);
+    chk('orientation: it REPORTS rather than flipping — no corrected number is offered',
+      wisc && wisc.market === -20.5 && !('corrected' in wisc) && !('flipped_line' in wisc));
+    chk('orientation: an honest single-digit disagreement is not a fault',
+      OF(3.0, 1.0, { bound: 21, reconcile: 7 }) === null);
+    chk('orientation: a disagreement inside the bound is never a fault, however it negates',
+      OF(10.0, -9.5, { bound: 21, reconcile: 7 }) === null);
+    chk('orientation: a big gap that negation does NOT reconcile stays a gap',
+      OF(30.0, -3.0, { bound: 21, reconcile: 7 }) === null,
+      JSON.stringify(OF(30.0, -3.0, { bound: 21, reconcile: 7 })));
+    chk('orientation: a missing market number is not a fault',
+      OF(21.2, null) === null && OF(null, -20.5) === null);
+    chk('orientation: two numbers already agreeing are never a fault',
+      OF(20.5, 20.5, { bound: 21, reconcile: 7 }) === null);
+    chk('orientation: the bound and the reconciliation window are both reported',
+      wisc && wisc.bound === 21 && wisc.reconcile === 7);
+    chk('orientation: and it says why, in words',
+      !!(wisc && /opposite spread convention/.test(wisc.basis) && /DROPPED/.test(wisc.basis)));
+
     /* gates */
     var future = E.projectGame(baseReq({ season: P.trained_through_season + 5 }));
     chk('a season beyond the trained window is BLOCKED, not guessed',

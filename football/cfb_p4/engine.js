@@ -1197,6 +1197,46 @@
     gap: function (modelNumber, marketNumber) {
       return (isNum(modelNumber) && isNum(marketNumber)) ? modelNumber - marketNumber : null;
     },
+    /* ONE ROW POINTING THE WRONG WAY.
+       Two spread conventions are in circulation and they are exact
+       negations: a home favourite is NEGATIVE to a book and POSITIVE as a
+       margin. A lines table in the wrong one is already guarded against
+       elsewhere — a slate on which EVERY home team is a market dog is not a
+       slate. What that guard cannot see is a table that is MOSTLY right and
+       carries one row the other way round, because a quote was captured
+       from the away side. Wisconsin @ Notre Dame arrived that way: the model
+       had the home side by 21.2, the joined number read −20.5, and the board
+       reported a 41.7-point disagreement. Nothing downstream could tell the
+       difference between that and a real edge.
+
+       The signature is arithmetic and it is specific. A disagreement this
+       big does not survive negating the market number; an orientation fault
+       collapses to nothing when you do. So: the gap must be beyond the bound
+       the caller already treats as a data fault, AND negating the market
+       must reconcile it to inside `reconcile`.
+
+       IT REPORTS. IT DOES NOT FLIP. Guessing a convention from values is
+       what produced every board bug this project has had, and a row that
+       reconciles under negation is still a row nobody can vouch for. The
+       caller drops it and says so; it never silently becomes an edge. */
+    orientationFault: function (modelNumber, marketNumber, opts) {
+      opts = opts || {};
+      if (!isNum(modelNumber) || !isNum(marketNumber)) return null;
+      var bound = isNum(opts.bound) ? opts.bound : 21;
+      var reconcile = isNum(opts.reconcile) ? opts.reconcile : 7;
+      var asIs = Math.abs(modelNumber - marketNumber);
+      var flipped = Math.abs(modelNumber + marketNumber);
+      if (!(asIs > bound) || !(flipped <= reconcile) || !(flipped < asIs)) return null;
+      return {
+        model: modelNumber, market: marketNumber,
+        gap: asIs, gap_if_negated: flipped, bound: bound, reconcile: reconcile,
+        basis: 'the joined market number disagrees with the model by ' + (Math.round(asIs * 10) / 10)
+          + ' points, and negating it reconciles them to ' + (Math.round(flipped * 10) / 10)
+          + '. That is one row stored in the opposite spread convention to the model, not a disagreement '
+          + 'about football. The number is DROPPED rather than flipped: a row nobody can vouch for is not '
+          + 'made trustworthy by guessing which way round it was meant to be.'
+      };
+    },
     blend: function (modelNumber, marketNumber, kind) {
       var P = params();
       var w = P && P.blend && P.blend[kind === 'total' ? 'market_total' : 'market_spread'];
