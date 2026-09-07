@@ -29,8 +29,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260907f">
-<link rel="stylesheet" href="/games/franchise.css?v=20260907f">
+<link rel="stylesheet" href="/games/games.css?v=20260907g">
+<link rel="stylesheet" href="/games/franchise.css?v=20260907g">
 </head>
 <body>
 <div id="gh"></div>
@@ -272,19 +272,19 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260907f"></script>
-<script src="/games/lib/scoring.js?v=20260907f"></script>
-<script src="/games/lib/challenge.js?v=20260907f"></script>
-<script src="/games/lib/research_state.js?v=20260907f"></script>
-<script src="/games/lib/attribution.js?v=20260907f"></script>
-<script src="/games/lib/store.js?v=20260907f"></script>
-<script src="/games/lib/dynasty.js?v=20260907f"></script>
-<script src="/games/lib/drill.js?v=20260907f"></script>
-<script src="/games/lib/leaderboard.js?v=20260907f"></script>
-<script src="/games/lib/social.js?v=20260907f"></script>
-<script src="/games/lib/auth.js?v=20260907f"></script>
-<script src="/games/lib/franchise.js?v=20260907f"></script>
-<script src="/games/games.js?v=20260907f"></script>
+<script src="/games/lib/week.js?v=20260907g"></script>
+<script src="/games/lib/scoring.js?v=20260907g"></script>
+<script src="/games/lib/challenge.js?v=20260907g"></script>
+<script src="/games/lib/research_state.js?v=20260907g"></script>
+<script src="/games/lib/attribution.js?v=20260907g"></script>
+<script src="/games/lib/store.js?v=20260907g"></script>
+<script src="/games/lib/dynasty.js?v=20260907g"></script>
+<script src="/games/lib/drill.js?v=20260907g"></script>
+<script src="/games/lib/leaderboard.js?v=20260907g"></script>
+<script src="/games/lib/social.js?v=20260907g"></script>
+<script src="/games/lib/auth.js?v=20260907g"></script>
+<script src="/games/lib/franchise.js?v=20260907g"></script>
+<script src="/games/games.js?v=20260907g"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -340,6 +340,14 @@
        the first thing not yet done today. */
     var rows=[],next=null,nextText=null,nextEarn=null;
     function row(done,text,href,earn,help){rows.push({done:done,text:text,href:href,earn:earn,help:help});if(!done&&!next){next=href;nextText=text;nextEarn=earn;}}
+    /* A PACK YOU HAVE EARNED COMES FIRST. It is the one objective that is a
+       reward rather than a chore, and it was invisible: the Packs room is not
+       in a phone's tab bar, so the moment the whole progression pays out was
+       reachable only from a footer link. Nothing here can be bought. */
+    var rep=snap.reputation||null;
+    if(rep&&(rep.packs|0)>0)
+      row(false,'Packs: '+(rep.packs|0)+' waiting','/games/packs/',
+        'three players, keep one','Earned by playing, never bought. Rank '+(rep.rank|0)+' reaches '+(rep.edge|0)+' above your team overall.');
     /* GAME DAY first: when Saturday's game is open it is the thing to do;
        between seasons, starting the next one is */
     if(ph&&ph.phase==='ready')row(false,'Game Day: play Week '+(ng.week|0)+' '+FR.matchupLine(ng),'/games/gameday/','+100 XP · +40 TC · a win +60 XP · +60 TC · +2 CP','Simulated from your roster, your scheme and this week’s preparation.');
@@ -410,6 +418,10 @@
       +'<div class="hq-cal"><span><b>'+G.esc(ss.label||'Season I')+'</b> · '+G.esc(ss.status==='preseason'?'preseason':ss.status==='complete'?'complete':'week '+((ss.week|0)+(ng?1:0))+' of '+(ss.weeks|0))+' · '+(ss.weeks|0)+' weeks'
       +(rv&&rv.name?' · rival <b>'+G.esc(rv.name)+'</b> '+G.esc((rv.wins|0)+'–'+(rv.losses|0)):'')
       +(lad.games?' · ladder <b>#'+G.esc(lad.rank)+'</b> '+G.esc(lad.rating):'')
+      /* the rank rides with the calendar: what the franchise has DONE, and how
+         far the next pack is. Reads from the record, so it cannot drift. */
+      +(rep?' · <a href="/games/packs/">rank <b>'+(rep.rank|0)+'</b></a> '+(rep.points|0)+'/'+(rep.next_at|0)
+        +((rep.packs|0)>0?' · <a href="/games/packs/"><b>Packs: '+(rep.packs|0)+' waiting</b></a>':''):'')
       +(mk.max?' · roster <b>'+G.esc(mk.active|0)+'</b> of '+G.esc(mk.max):'')+((mk.picks|0)>0?' · <b>'+G.esc(mk.picks)+'</b> pick'+((mk.picks|0)===1?'':'s'):'')
       +(chs.last?' · last challenge <b>'+G.esc(chs.last.result||'')+' '+G.esc((chs.last.score_for|0)+'–'+(chs.last.score_against|0))+'</b> vs '+G.esc((chs.last.them||{}).name||''):'')
       +((inj&&(inj.out|0)>0)?' · <b>'+G.esc(inj.out)+'</b> hurt':'')

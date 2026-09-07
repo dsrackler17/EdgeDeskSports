@@ -4582,6 +4582,12 @@ begin
                from public.franchise_opponents o where o.key = f.rival_key),
     -- franchise vs franchise: where I stand, and the last one played
     'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
+    -- WHAT TURNING UP IS WORTH, on the page a player actually opens. The rank
+    -- and the packs it owes were reachable only from /games/packs/, which on a
+    -- phone is not in the tab bar at all — so the one moment the whole
+    -- progression pays out was invisible to the player it was built for.
+    -- Derived, so this adds no write and cannot drift from the record.
+    'reputation', public.franchise_rank_report(f.id),
     'facilities', coalesce(f.facilities, '{}'::jsonb),
     -- the coaching staff (Phase 8): who is in the building, and what it cost
     'staff', (select jsonb_build_object(

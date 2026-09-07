@@ -2771,6 +2771,37 @@ The call goes out once more with the public key — which is exactly what the
 device secret already on it is for. The retry is the last word: an anonymous
 401 is a real refusal and is not asked twice.
 
+## Progression a player can actually see
+
+The rank and the packs it pays have existed since Phase 11 (`rank_v1`,
+`packs_v1`): you earn points by playing, the points buy ranks, and each rank
+owes a pack of three players to keep one from. None of it is purchasable.
+
+It was also, on a phone, **invisible**. The Packs room is `gh-only-wider`, so
+the tab bar carries HQ, Scout, Train, Game Day and Roster and nothing else —
+Packs, Staff, Development and Market live only in the footer. And
+`franchise_home` did not return the rank at all, so the HQ *could not* have
+shown it. The one moment the whole progression pays out was a footer link.
+
+So the home read model now carries it:
+
+```sql
+'reputation', public.franchise_rank_report(f.id),
+```
+
+It is **derived** — a `stable` function summing the activity log — so this adds
+no write and cannot drift from the record.
+
+On HQ:
+
+* **a pack you have earned is the first objective**, above Game Day, because it
+  is the one row that is a reward rather than a chore — *"Packs: 2 waiting ·
+  three players, keep one · Earned by playing, never bought"*;
+* **the rank rides on the calendar strip** beside the season and the ladder —
+  *"rank 3 · 42/60"* — so the distance to the next one is always on screen.
+
+Both link to the room that opens them, which is how a phone reaches it at all.
+
 ## The age gate
 
 The game is **open to everyone**, and nothing about it is gated: no game, no

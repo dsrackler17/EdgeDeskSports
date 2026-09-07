@@ -2945,6 +2945,25 @@ fresh();
     && !/(401|expired)[\s\S]{0,160}removeItem\(SESSION_KEY\)/.test(SOCIALJS));
   has(README, 'JWT expired', 'the README records what the player actually saw');
 
+  /* ═══ 30. PROGRESSION WHERE A PLAYER CAN SEE IT ══════════════════════════
+     The rank and the packs it owes existed from Phase 11 and were reachable
+     only from /games/packs/ — which is `gh-only-wider`, so on a phone it is
+     not in the tab bar at all. The one moment the whole progression pays out
+     was a footer link. */
+  chk('the home read model carries what turning up is worth',
+    /'reputation', public\.franchise_rank_report\(f\.id\)/.test(SQL));
+  chk('and it is DERIVED, so surfacing it adds no write and cannot drift',
+    /franchise_rank_report[\s\S]{0,400}language plpgsql stable/.test(SQL));
+  chk('HQ names a pack that has been earned, at the top, as a reward not a chore',
+    /rep&&\(rep\.packs\|0\)>0/.test(HOME) && /Packs: '\+\(rep\.packs\|0\)\+' waiting/.test(HOME)
+    && HOME.indexOf("row(false,'Packs:") < HOME.indexOf("'/games/gameday/','\+100 XP"));
+  chk('and says it was earned by playing rather than bought',
+    /Earned by playing, never bought/.test(HOME));
+  chk('the rank rides on HQ with the distance to the next one',
+    /rank <b>'\+\(rep\.rank\|0\)/.test(HOME) && /\(rep\.points\|0\)\+'\/'\+\(rep\.next_at\|0\)/.test(HOME));
+  chk('both lead to the room that opens them',
+    (HOME.match(/href="\/games\/packs\/"/g) || []).length >= 2);
+
   has(README, 'The game is **open to everyone**', 'the README states the age policy');
   has(README, 'nothing is collected', 'and that nothing is collected');
 
