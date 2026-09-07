@@ -109,7 +109,11 @@ try {
     throw new Error('short');
   }
   console.log('PASS | issue reports SQL | ' + passed + ' assertions against a real PostgreSQL');
-} catch (_) {
+} catch (e) {
+  /* A harness that swallows its own errors is a harness that reports green for
+     the wrong reason. Say what broke. */
+  if (!/^(apply|report|idempotent|suite|short)$/.test(String(e && e.message)))
+    console.error('harness error: ' + (e && e.stack || e));
   code = 1;
 } finally {
   drop();
