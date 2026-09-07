@@ -176,7 +176,31 @@ const goodSig = (t, body) => 't=' + t + ',v1=' + sign(body || BODY, SECRET, t);
     W.HANDLED.indexOf('charge.refunded') < 0 && W.HANDLED.indexOf('charge.dispute.created') < 0);
 
   /* ====================================================================== */
-  /* 5. THE DEPLOYED FILE KEEPS ITS DEPLOYMENT CONTRACT                     */
+  /* 5. A PAYING CUSTOMER IS NEVER WRITTEN IN WITH NO STATUS                */
+  /* ====================================================================== */
+  /* The first real checkout this webhook ever received created a row with
+     status null — and pgEntitled() reads a null status as "not entitled", so
+     the person who had just paid was locked out by the row recording their
+     payment. Refusing to INFER a status from a checkout is still right; the
+     answer is to go and ask Stripe for it. */
+  chk('a checkout still refuses to invent a status',
+    W.readEvent({ type: 'checkout.session.completed',
+      data: { object: { client_reference_id: 'u1', subscription: 'sub_1' } } }).status === null);
+  chk('but the handler reads the real one back from Stripe rather than leaving null',
+    /read\.kind === 'checkout'[\s\S]{0,240}fetchSubscription\(read\.subscription_id/.test(SRC));
+  chk('using the subscriptions endpoint', /api\.stripe\.com\/v1\/subscriptions\//.test(SRC));
+  chk('authenticated as ourselves, with the key from the environment',
+    /authorization: 'Bearer ' \+ secretKey/.test(SRC) &&
+    /fetchSubscription\(read\.subscription_id, Deno\.env\.get\('STRIPE_SECRET_KEY'\)\)/.test(SRC));
+  chk('and the period end from that lookup goes through the same reader',
+    /const pe = periodEnd\(live\)/.test(SRC));
+  chk('without the key it warns that the customer stays locked out, rather than guessing a status',
+    /locked out'\)/.test(SRC) && !/row\.status = 'active'/.test(SRC));
+  chk('the lookup never throws into the delivery — a Stripe outage must not lose the event',
+    /catch \(e\) \{[\s\S]{0,140}subscription lookup failed[\s\S]{0,60}return null/.test(SRC));
+
+  /* ====================================================================== */
+  /* 6. THE DEPLOYED FILE KEEPS ITS DEPLOYMENT CONTRACT                     */
   /* ====================================================================== */
   chk('it is one file with no relative imports, so the dashboard can bundle it',
     !/^\s*import\s.*from\s+['"]\.\./m.test(SRC));
