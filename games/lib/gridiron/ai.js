@@ -51,6 +51,23 @@
     /* the clock. Behind and late means throw; ahead and late means run. */
     if (sit.quarter >= 4 && sit.clock <= 300) p += sit.diff < 0 ? 0.22 : sit.diff > 3 ? -0.28 : 0;
     if (sit.twoMinute && sit.diff <= 0) p += 0.22;
+    /* two scores down with a quarter left is a passing game whatever the
+       playbook says; three scores up with a quarter left is not */
+    if (sit.quarter >= 4 && sit.diff <= -9) p += 0.12;
+    if (sit.quarter >= 4 && sit.diff >= 17) p -= 0.14;
+    /* ── WHAT IS ACTUALLY WORKING ──────────────────────────────────────
+       A coach who has run for six a carry all afternoon keeps running it,
+       and one who cannot block anybody stops trying. Small — a lean, not a
+       conversion — but it is the difference between an opponent calling
+       plays and an opponent watching the same game you are. */
+    if (mem && G && G.form) {
+      var runF = G.form(mem, 'run'), passF = G.form(mem, 'pass');
+      if (runF && passF) {
+        p += clamp((passF.ypp - runF.ypp) * 0.022, -0.12, 0.12);
+        p += clamp((passF.winRate - runF.winRate) * 0.18, -0.09, 0.09);
+      } else if (runF && runF.ypp >= 5.5) p -= 0.07;
+      else if (runF && runF.ypp <= 2.2) p += 0.07;
+    }
     return clamp(p, 0.08, 0.94);
   }
 
@@ -67,26 +84,53 @@
     var deepRate = rateOf(o.defMem, ['quarters', 'dime_prevent', 'two_deep', 'edge_contain']);
     var stackRate = rateOf(o.defMem, ['stack', 'pinch_run', 'goal_line_d']);
 
-    /* the situations that override taste */
-    if (sit.down === 4 || (sit.goalToGo && sit.toGo <= 1)) {
-      if (sit.toGo <= 1) return finish(o, 'qb_sneak', scheme, rand, T);
-    }
     if (o.kneel) return finish(o, 'kneel', scheme, rand, T);
     if (o.spike) return finish(o, 'spike', scheme, rand, T);
 
-    var best = [], i, gi, g, p, s;
+    /* SHORT YARDAGE. It used to be a QB sneak, every time, on every fourth
+       and one and every goal-to-go from the one — the same call from the same
+       formation for the whole season, which is not a coach, it is a macro.
+       The sneak is the best play on the board and it is not the only one. */
+    if (sit.toGo <= 1 && (sit.down >= 3 || sit.goalToGo)) {
+      var r0 = rand();
+      var sneak = 0.52 + (scheme.concepts && scheme.concepts.sneak ? 0.14 : 0)
+                - (sit.toGoal <= 1 ? 0.10 : 0);
+      if (r0 < sneak) return finish(o, 'qb_sneak', scheme, rand, T);
+      if (r0 < sneak + 0.30) return finish(o, rand() < 0.5 ? 'dive' : 'power', scheme, rand, T);
+      /* and sometimes they throw it, which is the only reason the sneak works */
+    }
+
+    /* ── RUN OR PASS FIRST, THEN WHICH ONE ─────────────────────────────────
+       The book holds thirty pass plays and fifteen runs, so scoring all
+       forty-five together and taking one of the best few handed the passing
+       game a two-to-one head start that had nothing to do with football:
+       every scheme in the game threw it seventy per cent of the time,
+       including the ones built to run it. A coach decides what KIND of play
+       this is — that is what `lean` has always meant — and then decides which
+       one. Now the tendency chart the defence reads is the tendency the
+       offence actually has. */
+    var wantPass = rand() < lean;
+    var pool = [], i, gi, g, p, s;
     for (gi = 0; gi < book.length; gi++) {
       g = book[gi];
       for (i = 0; i < g.plays.length; i++) {
         p = g.plays[i];
         if (p.key === 'kneel' || p.key === 'spike') continue;
-        s = scorePlay(p, sit, scheme, lean, { blitz: blitzRate, deep: deepRate, stack: stackRate }, T, o.mem);
-        s += (rand() - 0.5) * T.noise * 2.2;
-        best.push({ p: p, s: s });
+        if ((p.type === 'pass') !== wantPass) continue;
+        pool.push(p);
       }
     }
+    if (!pool.length) pool = [F.play(wantPass ? 'slant' : 'inside_zone')];
+
+    var best = [];
+    for (i = 0; i < pool.length; i++) {
+      p = pool[i];
+      s = scorePlay(p, sit, scheme, lean, { blitz: blitzRate, deep: deepRate, stack: stackRate }, T, o.mem);
+      s += (rand() - 0.5) * T.noise * 2.2;
+      best.push({ p: p, s: s });
+    }
     best.sort(function (a, b) { return b.s - a.s; });
-    var top = best.slice(0, Math.max(1, Math.round(1 + T.noise * 8)));
+    var top = best.slice(0, Math.max(1, Math.round(1 + T.noise * 6)));
     var chosen = top[Math.floor(rand() * top.length)].p;
     return finish(o, chosen.key, scheme, rand, T);
   }
@@ -244,6 +288,14 @@
     /* down and distance */
     if (sit.down === 3 && sit.toGo >= 7) s += parts.pressure.rush * 12 + parts.front.dbs * 0.7;
     if (sit.down === 3 && sit.toGo <= 2) s += parts.front.box * 0.9;
+    /* PLAY THE STICKS. On third down a defence is not defending the field,
+       it is defending the line to gain: what it gives up short of the marker
+       is free, and what it gives up past it is the drive. */
+    if (sit.down >= 3) {
+      var beyond = sit.toGo >= 7 ? (parts.coverage.deepMid + parts.coverage.deepOut + parts.coverage.intMid)
+                 : (parts.coverage.intMid + parts.coverage.intOut + parts.coverage.short * 0.5);
+      s -= beyond * 7.0;
+    }
     if (sit.down === 1 && parts.pressure.key !== 'none') s -= 1.4;
     if (sit.toGoal <= 12) s += parts.front.box * 0.6 - (parts.coverage.key === 'cover4' ? 1.2 : 0);
     /* protect the lead late */

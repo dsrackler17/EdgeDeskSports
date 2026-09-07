@@ -81,6 +81,21 @@
     var handoffAt = play.type === 'run' ? 0.62 : 0;
     var thrown = false, pressureSeen = false, handedOff = false;
     var notes = [];
+    var threwAway = false;
+    var bailAt = 0, bailKind = null, bailLane = null, thrownAt = null;
+    /* ── WHOSE QUARTERBACK IS THIS ────────────────────────────────────────
+       He belongs to the user only while the user is on offence with a thumb
+       on the screen. Every other snap — Coach Mode, and every snap the other
+       side has the ball — he is the simulation's, and he has to play like a
+       quarterback rather than stand there.
+
+       THE BUG THIS EXISTS TO KILL: `throwTo` used to be reachable from one
+       place, the user's tap. So a defensive series was eleven CPU men running
+       routes for a quarterback who never threw: he held it until the pocket
+       fell in and the play was booked a sack. Every time. That is where
+       0-for-0 passing came from, and the sack totals, and the hundred and
+       forty negative yards — all one missing decision. */
+    var autoQB = !manual || userSide === 'def';
 
     /* ── THE MEN, AS NUMBERS ──────────────────────────────────────────────
        The engine rated every card it knows; anyone it does not know gets the
@@ -160,7 +175,8 @@
       });
       covers.forEach(function (d, i) {
         if (isMan && routes[i]) { d.job = { kind: 'man', on: routes[i].id }; return; }
-        d.job = { kind: 'zone', x: d.x, y: d.y + zoneDepth(cov, d.pos), gap: d.x - ballX };
+        d.job = { kind: 'zone', x: d.x, y: d.y + zoneDepth(cov, d.pos), gap: d.x - ballX,
+                  width: zoneWidth(cov, d.pos) };
       });
       /* ── RUN FITS ──────────────────────────────────────────────────────
          Against a run the box does not chase the football; it fills. Every
@@ -181,6 +197,26 @@
           .sort(function (a, b) { return a.x - b.x; });
         fit(dl, 4.6, 1.1);
         fit(lb, 6.2, 3.4);
+
+        /* ── THE SECOND LEVEL ────────────────────────────────────────────
+           Five linemen against a four-man front leaves one free, and what he
+           does with himself is the whole run game: he climbs to the backer
+           filling the gap the ball is going to. Nobody was doing that. Every
+           carry in this simulation met an unblocked linebacker at the line of
+           scrimmage, which is why the live run game averaged two and a half
+           yards a pop no matter who was blocking and no matter who was
+           carrying it — the ratings had nothing to act on. */
+        var claimedD = {};
+        line.forEach(function (b) { if (b.job && b.job.on) claimedD[b.job.on] = 1; });
+        var free = line.filter(function (b) { return !b.job || !b.job.on; });
+        var backers = lb.filter(function (d) { return !claimedD[d.id] && !d.blitz; })
+          .sort(function (a, b) { return Math.abs(a.x - ballX) - Math.abs(b.x - ballX); });
+        free.forEach(function (b, i) {
+          var m = backers[i];
+          if (!m) return;
+          claimedD[m.id] = 1;
+          b.job = { kind: 'block', on: m.id, climb: true };
+        });
       }
       function fit(list, half, depth) {
         list.forEach(function (d, i) {
@@ -200,6 +236,16 @@
        the top of anything, and four verticals ran straight past him for
        twenty-seven yards a throw. A hard corner in cover two squats; a bail
        corner in three or four gets to the top of the numbers. */
+    /* HOW WIDE HIS ZONE IS. A deep third is a third of the field; a deep
+       half is half of it; quarters are quarters. It is the lateral distance
+       he is responsible for, which is what says whether the man running past
+       him is his problem. */
+    function zoneWidth(cov, pos) {
+      var k = cov.key;
+      if (pos === 'CB') return k === 'cover2' || k === 'tampa2' ? 9 : k === 'cover4' || k === 'cover6' ? 11 : 13;
+      if (pos === 'S') return k === 'cover2' || k === 'tampa2' ? 15 : k === 'cover4' || k === 'cover6' ? 12 : 17;
+      return 8;
+    }
     function zoneDepth(cov, pos) {
       var k = cov.key;
       if (pos === 'CB') return k === 'cover2' || k === 'tampa2' ? 4.5 : 13.0;
@@ -264,13 +310,7 @@
     })();
     self.targets = function () {
       if (phase !== 'live' || play.type !== 'pass' || thrown) return [];
-      return actors.filter(function (a) {
-        return a.side === 'off' && a.job && a.job.kind === 'route' && a.state !== 'down';
-      }).sort(function (a, b) {
-        var ra = ORDER[a.slot] == null ? 90 : ORDER[a.slot];
-        var rb = ORDER[b.slot] == null ? 90 : ORDER[b.slot];
-        return ra - rb;
-      }).map(function (a) {
+      return progression().map(function (a) {
         return { id: a.id, slot: a.slot, name: a.name, route: a.job.route, open: openness(a) };
       });
     };
@@ -427,9 +467,13 @@
           a.tx = ballX - 1.4; a.ty = los - 2.4; a.state = 'run'; return;
         case 'back': return backThink(a, j);
         case 'drop': return dropThink(a, j);
-        case 'scramble':
-          if (!a.steered) { a.tx = a.x + (a.hx > ballX ? 4 : -4); a.ty = a.y + 5; }
+        case 'scramble': {
+          if (!a.steered) {
+            var grass = daylight(a);
+            a.tx = grass.x; a.ty = grass.y;
+          }
           a.state = 'carry'; return;
+        }
         case 'fill': return fillThink(a, j);
         case 'watch':
           a.tx = a.x + (a.x > ballX ? 1.2 : -1.2); a.ty = a.y - 1.2; a.state = 'run'; return;
@@ -465,7 +509,19 @@
           if (d.side !== 'def' || d.state === 'down') return;
           room = Math.min(room, Math.hypot(d.x - px, d.y - py));
         });
-        var s = room + dy * 2.2 - Math.abs(i) * 0.10;
+        /* SPACE IS ONLY WORTH SO MUCH. Scoring the whole distance to the
+           nearest defender sent a ball carrier in the open field at the
+           emptiest part of the stadium rather than at the end zone — and
+           since the emptiest part is also the direction nobody has an angle
+           from, one completion in four went the distance. Six yards of room
+           is all a runner can use; past that he runs north like everybody
+           else and the pursuit gets its angle back. Inside the box nothing
+           changes, which is where this reading is doing its real work.
+
+           VISION IS A RATING. A back who sees it takes the lane the search
+           found; one who does not takes one next to it. */
+        var s = Math.min(room, 6.0) + dy * 2.2 - Math.abs(i) * 0.10
+              + (a.k.iq == null ? 0 : (1 - a.k.iq) * (rand() - 0.5) * 2.6);
         if (s > bs) { bs = s; best = { x: px, y: py }; }
       }
       return best || { x: a.x, y: a.y + 5 };
@@ -545,9 +601,17 @@
     function pursue(a, tgt) {
       var dx = tgt.x - a.x, dy = tgt.y - a.y;
       var gap = len(dx, dy);
-      var lead = clamp(gap / Math.max(3, a.top), 0, 0.9) * (0.35 + a.k.iq * 0.75);
+      var lead = clamp(gap / Math.max(3, a.top), 0, 1.2) * (0.35 + a.k.iq * 0.75);
       var px = tgt.x + tgt.vx * lead, py = tgt.y + tgt.vy * lead;
       a.tx = clamp(px, -4, FIELD.width + 4); a.ty = py;
+      /* HE LEAVES HIS FEET. A defender running alongside a ball carrier a
+         yard and a half away for forty yards is not a defence — the tackle
+         radius is 1.35 and nobody in pursuit was ever diving, so a receiver
+         who broke contain was gone. A dive is worth another three quarters
+         of a yard and costs him the play if he misses. */
+      if (gap < 2.1 && a.dive <= 0 && (a.diveAt || 0) < t) {
+        a.dive = 0.38; a.diveAt = t + 0.9;
+      }
       a.state = a.dive > 0 ? 'tackle' : 'run';
     }
 
@@ -578,18 +642,254 @@
       a.ty = clamp(set + heat.dy * 1.1, los - 9, set + 0.4);
       a.state = 'run';
       if (t > (play.hold || 2.4) * 0.55) a.state = 'throw';
+      decide(a);
+    }
+
+    /* ── THE PROGRESSION ─────────────────────────────────────────────────
+       The concept's own read order, resolved once: primary, second, and the
+       man the play leaves free if neither is there. `self.targets` shows the
+       user exactly this list, so the quarterback and the badges over the
+       receivers are reading the same football. */
+    function progression() {
+      return actors.filter(function (a) {
+        return a.side === 'off' && a.job && a.job.kind === 'route' && a.state !== 'down';
+      }).sort(function (a, b) {
+        var ra = ORDER[a.slot] == null ? 90 : ORDER[a.slot];
+        var rb = ORDER[b.slot] == null ? 90 : ORDER[b.slot];
+        return ra - rb;
+      });
+    }
+
+    /* HOW CLOSE THE RUSH IS, in [0,1]. One is a free rusher with his hands on
+       him; nought is a clean pocket. It is what turns a progression into a
+       decision, and it is the only thing that should ever hurry a throw. */
+    function heatOn(a) {
+      var worst = 0;
+      actors.forEach(function (d) {
+        if (d.side !== 'def' || d.state === 'down' || d.lock) return;
+        if (d.job && d.job.kind !== 'rush' && d.job.kind !== 'fill') return;
+        var g = dist(a, d);
+        if (g > 6) return;
+        worst = Math.max(worst, clamp((6 - g) / 4.6, 0, 1));
+      });
+      return worst;
+    }
+
+    /* ── THE DECISION ─────────────────────────────────────────────────────
+       Every tick the quarterback holds the ball, he asks one question: is
+       anybody open enough YET? What "enough" means falls as the play ages
+       and falls faster with a rusher in his face, which is the whole of
+       quarterback play in one line — a clean pocket waits for the throw it
+       wants, a dirty one takes the throw it can get.
+
+         AWARENESS  how fast he gets through the progression, and how long
+                    he will stand in it before he bails
+         ACCURACY   nothing here; it is priced in the flight of the ball
+         MOBILITY   whether bailing means running or throwing it away
+
+       He is allowed three endings other than a throw: he runs, he throws it
+       away, or he is caught. Only the third is a sack, which is why the sack
+       is now an outcome of the football rather than the absence of one. */
+    function decide(a) {
+      if (thrown || play.type !== 'pass' || !qb || qb.state === 'down') return;
+      if (qb.job && qb.job.kind === 'scramble') return;
+      var hold = play.hold || 2.4;
+      var iq = qb.k.iq, spd = qb.k.spd;
+      var heat = heatOn(qb);
+      var prog = progression();
+
+      /* THE USER'S QUARTERBACK IS THE USER'S. All he gets is the bail-out a
+         real one has: when he has been back far too long and somebody is on
+         him, he throws it away rather than eat a twelve-yard sack for a snap
+         nobody was ever going to make. Late enough that a player who is
+         actually playing never meets it. */
+      if (!autoQB) {
+        if (t > Math.max(3.6, hold + 2.1) && heat > 0.72) throwAway('nothing there');
+        return;
+      }
+
+      /* HE HAS TO BE SET. Nobody throws from the second step of a five-step
+         drop, and a quarterback who could was throwing before the rush had
+         left the line — which is the whole reason the pass rush in this game
+         was ornamental. */
+      var setAt = play.concept === 'quick' || play.concept === 'screen'
+        ? hold * 0.62 : hold * 0.80;
+      if (t < setAt) return;
+
+      /* ── HOW LONG HE HOLDS IT ─────────────────────────────────────────
+         The single number that decides whether a pass rush exists. He was
+         getting to the top of his drop at half the concept's hold time and
+         firing at the first man with a yard on him — median time to throw
+         one and eight tenths of a second, which no quarterback has ever
+         managed and which meant the rush arrived, on time, at an empty
+         pocket. He looks when the drop is finished and the route is there. */
+      var scanFrom = hold * 0.86;
+      var dwell = 0.52 - iq * 0.20;
+      var seen = t < scanFrom ? 1
+        : Math.min(prog.length, 1 + Math.floor((t - scanFrom) / dwell));
+
+      /* what "open" has to mean right now. Roughly three yards on rhythm,
+         less every tenth of a second after that, and much less with a man in
+         his face — which is why a hurried throw is a worse throw rather than
+         a rarer one. */
+      var need = clamp(0.42 - Math.max(0, t - hold) * 0.34 - heat * 0.38, 0.03, 0.42);
+
+      var best = null, bestV = -1, i, r, v;
+      for (i = 0; i < seen; i++) {
+        r = prog[i];
+        if (!r || r.state === 'down') continue;
+        /* a route that has not got there yet is not a throw, it is a guess */
+        if (t < (r.job.t || 2.0) * 0.95) continue;
+        /* WHERE HE WILL BE WHEN IT GETS THERE. Judging a window by where the
+           receiver is standing right now is what a bad quarterback does; it
+           is also what this file used to do, and it threw away every route
+           that was about to come open. Anticipation is an awareness rating,
+           so a limited passer sees less of the break than a good one. */
+        v = openAhead(r, iq) + (i === 0 ? 0.05 : 0) - i * 0.02;
+        /* THE DEEPER THE THROW, THE MORE ROOM HE NEEDS. Thirty-five yards in
+           the air is a decision with a safety in it; a five-yard hitch is
+           not. Without this the same window bought both, and one dropback in
+           twelve was a bomb that scored. */
+        v -= clamp((r.y - los - 12) * 0.011, 0, 0.18);
+        if (v > bestV) { bestV = v; best = r; }
+      }
+      if (best && bestV >= need) { throwTo(best.id); return; }
+
+      /* SOMEBODY HAS HIM. You cannot check it down and you cannot throw it
+         away with a hand on your arm: from here the front has earned
+         whatever happens, and what happens is a sack. */
+      if (heat > 0.86) { bailKind = null; return; }
+
+      /* A BAIL-OUT IS NOT INSTANT. Pulling it down, resetting the feet and
+         putting it in the third row takes about a quarter of a second, and
+         that quarter of a second is the whole race: without it a quarterback
+         who could always see the rush coming was never once sacked, which is
+         its own kind of broken. He commits, and then he has to survive long
+         enough to finish. */
+      if (bailKind) {
+        if (t < bailAt) return;
+        if (bailKind === 'run' && bailLane) {
+          qb.job = { kind: 'scramble' };
+          qb.carry = true; carrier = qb; ball.holder = qb;
+          qb.dx = bailLane.dx; qb.dy = bailLane.dy;
+          notes.push('Nothing open — he takes off.');
+          refreshUser();
+          if (events.onScramble) events.onScramble();
+        } else {
+          throwAway(bailKind === 'duress' ? 'under duress' : 'nobody open');
+        }
+        bailKind = null;
+        return;
+      }
+
+      /* ── HE HAS TO DO SOMETHING ────────────────────────────────────────
+         The pocket is going or gone. A mobile quarterback with grass in
+         front of him takes it; anyone else looks for the checkdown and
+         then for the sideline. */
+      var desperate = heat > 0.78 || t > hold + 1.10 + iq * 0.60;
+      if (!desperate) return;
+
+      var react = 0.32 - iq * 0.14;
+
+      /* RUN IT — and a quarterback who can run looks for this BEFORE he looks
+         for the checkdown, because that is what makes him different from one
+         who cannot. Mobility is the rating; the lane is the football. */
+      var mobile = spd > 8.05;
+      var lane = escapeLane();
+      if (lane && (mobile || heat > 0.80) && t > hold * 0.72) {
+        bailKind = 'run'; bailLane = lane; bailAt = t + react * 0.7;
+        return;
+      }
+
+      /* the checkdown: the deepest man who is actually open, not the nearest */
+      var check = null, cv = -1;
+      for (i = 0; i < prog.length; i++) {
+        r = prog[i];
+        if (!r || r.state === 'down') continue;
+        if (t < (r.job.t || 2.0) * 0.62) continue;
+        v = openAhead(r, iq) + clamp(r.y - los, 0, 14) * 0.006;
+        if (v > cv) { cv = v; check = r; }
+      }
+      if (check && cv >= clamp(0.26 - heat * 0.18, 0.06, 0.26)) { throwTo(check.id); return; }
+      /* throw it away, which costs a down and nothing else */
+      if (heat > 0.84 || t > hold + 2.1) {
+        bailKind = heat > 0.84 ? 'duress' : 'nobody';
+        bailAt = t + react;
+      }
+    }
+
+    /* HOW OPEN HE WILL BE WHEN THE BALL ARRIVES. The receiver and the man on
+       him are both walked forward by the time of flight; how much of that
+       the quarterback actually sees is his awareness. */
+    function openAhead(r, iq) {
+      var d0 = dist(qb, r);
+      var ahead = clamp(d0 / (17 + qb.k.arm * 12), 0.18, 1.4) * clamp(0.35 + iq * 0.9, 0.3, 1.15);
+      var px = r.x + r.vx * ahead, py = r.y + r.vy * ahead;
+      var near = 1e9;
+      actors.forEach(function (d) {
+        if (d.side !== 'def' || d.state === 'down') return;
+        if (d.job && d.job.kind === 'rush') return;
+        var dx = d.x + d.vx * ahead - px, dy = d.y + d.vy * ahead - py;
+        var g = Math.hypot(dx, dy);
+        if (g < near) near = g;
+      });
+      return clamp((near - 1.2) / 4.5, 0, 1);
+    }
+
+    /* WHERE HE COULD RUN, if anywhere: the widest gap in the front with room
+       in front of it. Returns null when he is surrounded, which is the
+       honest answer often enough to keep the sack real. */
+    function escapeLane() {
+      var best = null, bs = 2.3, i;
+      for (i = -4; i <= 4; i++) {
+        var ang = i * 0.35;
+        var dx = Math.sin(ang), dy = Math.cos(ang);
+        var px = clamp(qb.x + dx * 5, 1, FIELD.width - 1), py = qb.y + dy * 5;
+        var room = 1e9;
+        actors.forEach(function (d) {
+          if (d.side !== 'def' || d.state === 'down') return;
+          room = Math.min(room, Math.hypot(d.x - px, d.y - py));
+        });
+        var sc = room + dy * 1.1;
+        if (sc > bs) { bs = sc; best = { dx: dx, dy: dy }; }
+      }
+      return best;
+    }
+
+    /* HE PUT IT IN THE THIRD ROW. An attempt, an incompletion, a down gone,
+       and seven yards he did not lose — which is exactly the trade a real
+       quarterback makes and the reason a sack should be rare. */
+    function throwAway(why) {
+      if (thrown || outcome) return;
+      thrown = true; threwAway = true; thrownAt = t;
+      qb.state = 'throw'; qb.carry = false;
+      ball.holder = null; carrier = null;
+      airYards = 0;
+      notes.push('Threw it away — ' + why + '.');
+      if (events.onThrow) events.onThrow(null);
+      refreshUser();
+      finish('incomplete', null, null);
     }
 
     function manThink(a, j) {
       var m = byId[j.on];
       if (!m) { a.tx = a.x; a.ty = a.y + 4; a.state = 'run'; return; }
       if (carrier && carrier.carry) { pursue(a, carrier); return; }
-      /* HOW TIGHT HE TRAILS IS HIS COVERAGE RATING. A good corner sits on the
-         hip; a bad one gives the route its stem back. */
-      var trail = 1.5 - a.k.cov * 1.0 + (env.separation - 0.9) * 0.55;
+      /* HOW TIGHT HE TRAILS IS HIS COVERAGE RATING against how well the man
+         in front of him runs routes — which is exactly the number the engine
+         already computed for this matchup. A good corner sits on the hip; a
+         bad one gives the route its stem back.
+
+         IT USED TO BE A HALF-YARD, WHICH IS NOT COVERAGE — it is a piggyback.
+         Nothing downfield could be completed because the defender was always
+         nearer the ball than the receiver, so a live passing game went 40 per
+         cent for four yards a completion and every intermediate route was
+         "broken up". Real man coverage concedes a couple of yards; taking
+         them away is what a great corner is for. */
+      var trail = 0.80 + env.separation * 0.72 - a.k.cov * 1.10;
       var lead = 0.16 + a.k.cov * 0.20;
       a.tx = m.x + m.vx * lead;
-      a.ty = m.y + m.vy * lead + clamp(trail, 0.25, 2.4);
+      a.ty = m.y + m.vy * lead + clamp(trail, 0.45, 3.4);
       a.state = 'run';
       if (ball.flight) breakOnBall(a);
     }
@@ -597,14 +897,36 @@
     function zoneThink(a, j) {
       if (carrier && carrier.carry) { pursue(a, carrier); return; }
       if (ball.flight) { breakOnBall(a); return; }
-      /* he sits on his landmark and squeezes whoever comes into it */
-      var near = null, nd = 1e9;
+
+      /* ── NOBODY GETS BEHIND HIM ────────────────────────────────────────
+         The first rule of playing over the top, and this file did not have
+         it. A deep defender sat on a landmark seventeen yards downfield and
+         only "squeezed" a receiver who came within seven and a half yards of
+         it, so any route that ran past that landmark was simply uncovered
+         from there to the end zone — which is why a corner route out of a
+         single-back set was caught with the nearest defender twelve yards
+         away and walked in. He turns and carries the deepest man in his zone,
+         every time, and the throw over the top becomes a throw he has to be
+         beaten on rather than one nobody is defending. */
+      var deep = j.y - los > 9;
+      var width = deep ? (j.width || 13) : (j.width || 8);
+      var deepest = null, dy = -1e9, near = null, nd = 1e9, i;
       actors.forEach(function (r) {
-        if (r.side !== 'off' || !r.job || r.job.kind !== 'route') return;
+        if (r.side !== 'off' || !r.job || r.job.kind !== 'route' || r.state === 'down') return;
+        var lat = Math.abs(r.x - j.x);
         var d = Math.hypot(r.x - j.x, r.y - j.y);
         if (d < nd) { nd = d; near = r; }
+        if (lat <= width && r.y > dy) { dy = r.y; deepest = r; }
       });
-      if (near && nd < 7.5) {
+      if (deep && deepest && deepest.y > j.y - 4.0) {
+        /* he opens his hips and runs, keeping his cushion */
+        a.tx = deepest.x * 0.55 + j.x * 0.45;
+        a.ty = Math.max(deepest.y + 1.5, j.y);
+        a.state = 'run';
+        return;
+      }
+      /* otherwise he sits on his landmark and squeezes whoever comes into it */
+      if (near && nd < (deep ? 9.5 : 7.5)) {
         a.tx = near.x * 0.55 + j.x * 0.45;
         a.ty = Math.max(j.y - 1.5, near.y + 0.9);
       } else { a.tx = j.x; a.ty = j.y; }
@@ -614,9 +936,18 @@
     function breakOnBall(a) {
       var f = ball.flight;
       if (!f) return;
-      /* he has to see it first — ball-hawking decides how soon */
+      /* HE HAS TO SEE IT FIRST, AND SEEING IT TAKES A BEAT. Breaking on the
+         throw the frame it leaves the hand — from anywhere on the field —
+         made every defender a free safety and every throw contested. The
+         beat is his ball skills, and the distance he will even try from is
+         his ball skills too. */
+      if (f.t < 0.34 - a.k.bhk * 0.20) return;
       var d = Math.hypot(a.x - f.tx, a.y - f.ty);
-      if (d < 9 + a.k.bhk * 7) { a.tx = f.tx; a.ty = f.ty; a.state = 'run'; }
+      if (d > 5.5 + a.k.bhk * 6) return;
+      /* and he only leaves his man for a ball he can actually get to */
+      var canGet = (f.dur - f.t) * a.top + 1.2;
+      if (d > canGet) return;
+      a.tx = f.tx; a.ty = f.ty; a.state = 'run';
     }
 
     function pressureNear(a) {
@@ -690,10 +1021,38 @@
        free rusher is what actually creates pressure, not a dice roll. */
     function blocks(dt) {
       actors.forEach(function (b) {
-        if (b.side !== 'off' || !b.job || b.job.kind !== 'block') return;
+        if (b.side !== 'off' || !b.job) return;
+        var kind = b.job.kind;
+        if (kind !== 'block' && kind !== 'lead' && kind !== 'stalk' && kind !== 'protect') return;
         var d = b.job.on && byId[b.job.on];
+        /* ── THE MEN WHO WERE ONLY PRETENDING TO BLOCK ────────────────────
+           A fullback leading through the hole, a receiver stalking a corner
+           and a back kept in to protect all ran to the right place and then
+           stood next to their man without ever touching him: only a job of
+           kind `block` was ever considered here, so nobody they were sent
+           to block was ever engaged, and `contact` — which spares an engaged
+           defender — saw them all as free. That is most of why the live run
+           game averaged two and a half yards a carry: the linebacker the
+           fullback was sent to kick out made the tackle every single time. */
+        if ((!d || d.state === 'down') && kind !== 'block') {
+          var near = null, nd = ENGAGE + 0.45;
+          actors.forEach(function (r) {
+            if (r.side !== 'def' || r.lock || r.state === 'down') return;
+            var g = dist(b, r);
+            if (g < nd) { nd = g; near = r; }
+          });
+          if (near) { d = near; b.job.on = near.id; }
+        }
         if (!d || d.state === 'down') { release(b); return; }
         if (!b.lock) {
+          /* ── ONCE HE IS BEATEN, HE IS BEATEN ──────────────────────────
+             A blocker whose rep ran out simply latched onto the same rusher
+             again the next frame and got a brand new full-length rep for it,
+             over and over, for the whole snap. That is why a pocket in this
+             game never actually broke: a quarterback could stand in it for
+             eight seconds and the pass rush was decorative. A lineman can
+             recover once, badly, and after that the man is past him. */
+          if ((d.beat || 0) >= 2) return;
           if (dist(b, d) <= ENGAGE && !d.lock) {
             b.lock = d.id; d.lock = b.id;
             /* HOW LONG THIS ONE MAN CAN HOLD THIS ONE MAN, in seconds.
@@ -710,21 +1069,44 @@
                drawn ABOVE the pocket, not around it: draw them around it and
                the minimum of five lands at about half, and the quarterback is
                on his back on a three-step drop. */
+            /* A RUN BLOCK HAS TO OUTLAST THE HANDOFF. The ball is not in the
+               back's belly until six-tenths of a second after the snap and he
+               does not reach the crease for another half-second after that —
+               so a block drawn at three-quarters of a second was already over
+               when it mattered, and every carry met a shed lineman at the
+               line. Hold the point for about two seconds and the crease is a
+               real thing that blocking ratings open and widen. */
             b.rep = play.type === 'run'
-              ? clamp((0.95 + rand() * 0.80) * (0.85 + runEdge * 1.2), 0.35, 2.8)
-              : clamp(env.pocket * (1.15 + rand() * 0.75) * (0.85 + edge * 1.0), 0.55, 6.5);
+              ? clamp((1.55 + rand() * 1.15) * (0.85 + runEdge * 1.2), 0.7, 3.6)
+              : clamp(env.pocket * (0.86 + rand() * 0.70) * (0.85 + edge * 1.0), 0.45, 5.6);
+            if (d.beat) b.rep *= 0.32;
             d.rep = b.rep;
           }
           return;
         }
         b.rep -= dt;
         d.engaged = b.id; b.engaged = d.id;
-        /* the rusher walks him back a little either way */
-        var give = clamp((d.k.rsh + d.k.shed) * 0.5 - b.k.blk, -0.5, 0.6);
-        b.y += give * 0.55 * dt; d.y += give * 0.55 * dt;
+        /* ── THE BULL RUSH, AND WHICH WAY IT GOES ────────────────────────
+           A defender who is winning the rep drives the man in front of him
+           BACKWARDS — into the backfield, into the quarterback's lap. This
+           moved the pair the other way: a winning rusher retreated downfield
+           and the pocket got deeper the better the front was. It is why a
+           defensive line seven yards from a shotgun quarterback stayed seven
+           yards from him for the entire snap and a live game produced two
+           sacks a hundred dropbacks. Positive `give` is the rusher winning,
+           and the offence gives ground. */
+        var give = clamp((d.k.rsh + d.k.shed) * 0.5
+                         - (play.type === 'run' ? b.k.rbk : b.k.blk), -0.5, 0.6);
+        b.y -= give * 1.5 * dt; d.y -= give * 1.5 * dt;
         if (b.rep <= 0) {
           release(b);
-          d.stun = 0.05;
+          /* he beat the block, and he comes off it going somewhere */
+          d.stun = 0.10;
+          d.beat = (d.beat || 0) + 1;
+          if (qb && play.type === 'pass') {
+            var ex = qb.x - d.x, ey = qb.y - d.y, el = len(ex, ey) || 1;
+            d.vx += ex / el * 2.2; d.vy += ey / el * 2.2;
+          }
           if (!pressureSeen && play.type === 'pass') { pressureSeen = true; notes.push('The pocket broke down.'); }
         }
       });
@@ -816,7 +1198,7 @@
       else { var e = list[idx | 0]; tg = e && byId[e.id]; }
       if (!tg) return false;
 
-      thrown = true;
+      thrown = true; thrownAt = t;
       qb.state = 'throw'; qb.hold = 0.3;
       qb.carry = false;
       ball.holder = null;
@@ -845,10 +1227,12 @@
       var moving = len(qb.vx, qb.vy) / Math.max(1, qb.top);
       var early = tg.job && tg.job.t ? clamp((tg.job.t - t) / Math.max(0.6, tg.job.t), 0, 1) : 0;
       var err = (1 - qb.k.accy) * 1.5
-              + hurried * 1.5
+              + hurried * 1.05
               + moving * 0.9
-              + clamp(d0 - 12, 0, 30) * 0.045
-              + early * 1.6;
+              - (env.deepAcc || 0) * -1 * 0 /* weather is applied below, by band */
+              + clamp(d0 - 10, 0, 34) * 0.072
+              + early * 1.6
+              - (d0 > 18 ? (env.deepAcc || 0) : (env.shortAcc || 0)) * 4;
       err = clamp(err, 0.15, 5.5);
       var ang = rand() * Math.PI * 2, mag = err * (0.35 + rand() * 0.85);
       lx += Math.cos(ang) * mag; ly += Math.sin(ang) * mag;
@@ -913,11 +1297,12 @@
         if (g < bd) { bd = g; best = d; }
       });
 
-      /* the defender takes it if he is there and the receiver is not */
-      if (best && bd < CATCH && bd < recD - 0.15) {
+      /* the defender takes it if he is there and the receiver is not — and
+         "there" means a clear half-yard inside him, not a photo finish */
+      if (best && bd < CATCH && bd < recD - 0.55) {
         /* he still has to catch it, and defenders drop more than they keep */
-        var pInt = clamp(0.06 + best.k.bhk * 0.20 + (f.err - 1.6) * 0.05
-                         - rec.k.hnd * 0.06, 0.01, 0.38);
+        var pInt = clamp(0.10 + best.k.bhk * 0.24 + (f.err - 1.6) * 0.06
+                         - rec.k.hnd * 0.06, 0.01, 0.42);
         if (rand() < pInt) {
           notes.push('Thrown where he had no business going.');
           intercepted(best, f);
@@ -929,19 +1314,32 @@
       if (recD > CATCH) { incomplete(f, 'nobody there'); return; }
 
       var contested = best ? clamp(1 - bd / 2.6, 0, 1) : 0;
-      var pCatch = clamp(0.62 + rec.k.hnd * 0.42 - (f.err - 0.5) * 0.13 - contested * 0.40, 0.05, 0.98);
+      var pCatch = clamp(0.71 + rec.k.hnd * 0.30 - (f.err - 0.5) * 0.11 - contested * 0.38
+                         + (env.hands || 0), 0.05, 0.985);
       if (rand() > pCatch) {
-        if (best && bd < 1.4 && rand() < best.k.bhk * 0.07) { intercepted(best, f); return; }
+        if (best && bd < 1.5 && rand() < 0.03 + best.k.bhk * 0.11) { intercepted(best, f); return; }
         incomplete(f, contested > 0.5 ? 'contested' : 'off his hands');
         return;
       }
-      /* CAUGHT. And now he is a runner, which is the whole point. */
+      /* CAUGHT. And now he is a runner, which is the whole point — so he
+         stops running the route. He used to keep following the waypoints of
+         a concept that was already over, which is why every completion in
+         this game gained its air yards and half a yard more: the man with
+         the ball was still trying to finish a dig. */
       rec.carry = true; rec.state = 'carry';
+      rec.job = { kind: 'back' };
+      /* HE HAS TO CATCH IT AND TURN. A man who takes the ball at full stride
+         and keeps it is a man nobody catches: he was the fastest player on
+         the field before the throw and the coverage is a yard and a half
+         behind him. Planting to secure it is what gives the defender the
+         yard back, and it is why yards after the catch are a few and not
+         twenty. */
+      rec.vx *= 0.32; rec.vy *= 0.32;
       /* CATCH AND TURN. A defender in coverage is already inside a yard when
          the ball arrives; without this beat every underneath completion is a
          one-yard gain, because the tackle lands on the same frame as the
          catch. It is the time it takes to secure it and get north. */
-      rec.grace = 0.32;
+      rec.grace = 0.24;
       ball.holder = rec; carrier = rec;
       f.caught = true;
       caughtAt = ball.y;
@@ -999,6 +1397,7 @@
       if (kind === 'incomplete') {
         r.incomplete = true; r.completion = false; r.yards = 0;
         r.airYards = airYards;
+        r.threwAway = threwAway;
       } else if (kind === 'interception') {
         r.turnover = 'interception'; r.completion = false; r.incomplete = false;
         r.yards = 0; r.airYards = airYards;
@@ -1034,6 +1433,7 @@
       r.endY = c ? Math.round(c.y * 100) / 100 : los;
       r.big = r.yards >= 16;
       r.liveTime = Math.round(t * 100) / 100;
+      r.throwAt = thrownAt == null ? null : Math.round(thrownAt * 100) / 100;
       r.broke = (c && c.broke) || 0;
       outcome = r;
       if (events.onEnd) events.onEnd(kind, r);

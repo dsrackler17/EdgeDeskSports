@@ -41,11 +41,25 @@
     play_clock: 40
   };
 
-  /* how many seconds one snap costs, before tempo */
+  /* ── THE CLOCK ────────────────────────────────────────────────────────────
+     A snap costs two things: the PLAY, which is however long the football
+     took, and the DEAD BALL after it, which is only charged when the clock
+     kept running between snaps. Splitting them is the whole reason an
+     incompletion, a trip out of bounds and a timeout are worth anything —
+     each of them removes the dead ball and leaves the play.
+
+     `dead` is what the offence stands around for; tempo scales that and only
+     that, because no huddle makes a team line up faster, not run faster. */
   var CLOCK = {
-    run: 36, pass_complete: 34, pass_incomplete: 7, sack: 37, scramble: 36,
-    out_of_bounds: 8, kick: 12, change: 15, score: 20, spike: 3, kneel: 41,
-    hurry: 0.34, normal: 1, grind: 1.22
+    /* the play */
+    run: 7, pass_complete: 5, pass_incomplete: 7, sack: 8, scramble: 7,
+    out_of_bounds: 8, spike: 3, kneel: 2,
+    /* whistle to snap, with the clock running */
+    dead: 29, kneel_dead: 39,
+    /* whole events, which carry their own dead ball */
+    kick: 12, change: 15, score: 20,
+    /* tempo, applied to the dead ball */
+    hurry: 0.5, normal: 1, grind: 1.24
   };
 
   /* ── seeded randomness ─────────────────────────────────────────────────── */
@@ -92,6 +106,45 @@
     };
   }
 
+  /* ── WEATHER ──────────────────────────────────────────────────────────────
+     Modest on purpose. A wet ball is worth a couple of drops and the odd
+     fumble; a gale is worth about ten yards of field goal range and the deep
+     ball. Weather should change a decision, never decide a game — so every
+     term below is small, and a clear sixty-degree day is exactly zero, which
+     is what keeps a game with no weather in it identical to one before this
+     existed.
+
+       wind    field goal range and accuracy, and the throw over the top
+       rain    hands, ball security, and what a cut is worth underfoot
+       cold    a little off the hands and a little more off the legs  */
+  function weatherOf(w) {
+    w = w || {};
+    var kind = w.kind || w.weather || 'clear';
+    var wind = clamp(+w.wind || 0, 0, 45);
+    var temp = w.temp == null ? 62 : +w.temp;
+    var wet = kind === 'rain' ? 1 : kind === 'snow' ? 1.25 : 0;
+    var cold = clamp((44 - temp) / 44, 0, 1);
+    return {
+      kind: kind, wind: wind, temp: temp, sky: w.sky || null,
+      kickRange: -wind * 0.22 - cold * 2.6,
+      kickAcc: -(wind / 100) * 1.05 - cold * 0.10,
+      deepAcc: -(wind / 100) * 0.60 - wet * 0.07,
+      shortAcc: -wet * 0.04 - cold * 0.02,
+      hands: -wet * 0.055 - cold * 0.025,
+      fumble: wet * 0.006,
+      footing: -wet * 0.07,
+      stamina: 1 + cold * 0.12 + wet * 0.05,
+      /* the one line a broadcast would put on the screen */
+      note: wind >= 15 ? 'Wind ' + Math.round(wind) + ' mph — it will move a kick.'
+          : kind === 'rain' ? 'Wet ball. Expect it on the ground at some point.'
+          : kind === 'snow' ? 'Snow. Nobody is throwing it over the top today.'
+          : cold > 0.35 ? 'Cold. Hands and legs both go earlier.'
+          : null
+    };
+  }
+  var CLEAR = weatherOf(null);
+  function wxOf(g) { return (g && g.weather) || CLEAR; }
+
   /* ── A TEAM, as the engine holds one ────────────────────────────────────── */
   function makeTeam(t) {
     t = t || {};
@@ -130,7 +183,7 @@
       if (!R.available(p)) continue;
       if (positions && positions.indexOf(p.position) < 0) continue;
       if ((p.depth || 1) > (R.STARTERS[p.position] || 1)) continue;   /* only who is on the field */
-      d = (DRAIN[p.position] || 2) * (weight == null ? 1 : weight) * s;
+      d = (DRAIN[p.position] || 2) * (weight == null ? 1 : weight) * s * (team.wxStamina || 1);
       f[p.id] = clamp((f[p.id] == null ? 100 : f[p.id]) - d, 0, 100);
     }
     team._units = null;
@@ -206,7 +259,32 @@
     mem.groups[group] = (mem.groups[group] || 0) + 1;
     mem.total++;
   }
-  function newMemory() { return { recent: [], count: {}, groups: {}, total: 0 }; }
+  function newMemory() { return { recent: [], count: {}, groups: {}, total: 0, results: [] }; }
+  /* ── WHAT ACTUALLY WORKED ────────────────────────────────────────────────
+     A tendency chart says what a team likes; this says what it is getting.
+     Both coaches read it: the defence to take away what is hurting it, the
+     offence to keep doing what is working. It is the difference between an
+     opponent who calls plays and one who is watching the same game you are. */
+  function noteResult(mem, playObj, yards, sit) {
+    if (!mem) return;
+    var need = sit && sit.toGo ? sit.toGo : 10;
+    var down = sit && sit.down ? sit.down : 1;
+    var win = down >= 3 ? yards >= need
+            : down === 2 ? yards >= need * 0.6
+            : yards >= 4;
+    mem.results.push({ type: playObj.type, group: playObj.group, yards: yards, win: !!win });
+    if (mem.results.length > 20) mem.results.shift();
+  }
+  /* yards a play of this type has been getting, and how often it moved them */
+  function form(mem, type) {
+    if (!mem || !mem.results || !mem.results.length) return null;
+    var n = 0, y = 0, w = 0, i;
+    for (i = 0; i < mem.results.length; i++) {
+      if (mem.results[i].type !== type) continue;
+      n++; y += mem.results[i].yards; if (mem.results[i].win) w++;
+    }
+    return n >= 3 ? { n: n, ypp: y / n, winRate: w / n } : null;
+  }
   /* how well they have seen this coming, in [0, 0.4] */
   function tendency(mem, playKey, group) {
     if (!mem.total) return 0;
@@ -221,7 +299,7 @@
   /* ── THE PRE-SNAP READ ──────────────────────────────────────────────────
      What the defence knows before the ball moves: the formation's own tell,
      how repetitive the offence has been, and how much film was watched. */
-  function recognition(offTeam, defTeam, formKey, playObj, mem, rand) {
+  function recognition(offTeam, defTeam, formKey, playObj, mem, rand, sit) {
     var form = F.formation(formKey);
     var du = unitsOf(defTeam, -1);
     var iq = (du.lb.iq * 0.5 + du.s.iq * 0.5 - 60) / 100;      /* ±0.4 */
@@ -241,12 +319,27 @@
     }
     var predictable = runPlay ? (1 - passShare) : passShare;    /* 0 surprising, 1 obvious */
 
+    /* THE SITUATION IS A TENDENCY OF ITS OWN. Third and eight is a passing
+       down for everybody in the stadium and third and one is not, and a
+       defence that does not know that is not a defence — it is a coin. This
+       is what makes an obvious down an obvious down, and it is why an offence
+       that can run it on third and six is worth having. */
+    var expect = 0.5;
+    if (sit) {
+      if (sit.down >= 3) expect = sit.toGo >= 7 ? 0.82 : sit.toGo <= 2 ? 0.30 : 0.60;
+      else if (sit.down === 2) expect = sit.toGo >= 8 ? 0.62 : sit.toGo <= 3 ? 0.38 : 0.50;
+      if (sit.toGoal != null && sit.toGoal <= 3) expect = 0.32;
+    }
+    var situational = runPlay ? (1 - expect) : expect;
+
     var base = 0.15 + tellSays * 0.15 + iq * 0.35
              + (predictable - 0.5) * 0.80
+             + (situational - 0.5) * 0.80
              + tendency(mem, playObj.key, playObj.group) * 0.75
              + defTeam.mods.recognition * 0.5;
     var p = clamp(base, 0.02, 0.88);
-    return { p: p, read: rand() < p, tell: form.tell, passShare: passShare };
+    return { p: p, read: rand() < p, tell: form.tell, passShare: passShare,
+             expected: Math.round(expect * 100) / 100 };
   }
 
   /* ── THE TRENCHES ──────────────────────────────────────────────────────── */
@@ -296,7 +389,8 @@
     var ou = unitsOf(off, ctx.tick), du = unitsOf(def, ctx.tick);
     var sit = ctx.sit || {};
     var mem = ctx.mem || newMemory();
-    var rec = recognition(off, def, formKey, playObj, mem, rand);
+    var wx = ctx.weather || CLEAR;
+    var rec = recognition(off, def, formKey, playObj, mem, rand, sit);
     var box = boxCount(parts, formKey);
     var edge = (off.mods.offense - def.mods.defense) * 0.01
              + off.mods.execution - def.mods.execution * 0.5
@@ -315,13 +409,21 @@
          moves on the snap, one that did not is a beat late */
       reaction: clamp(0.42 - rec.p * 0.30, 0.06, 0.46),
       /* the protection, as a stopwatch. Not "was he sacked" — "how long" */
-      pocket: clamp(hold * (1.55 - pRush * 1.15) + (off.mods.protect || 0) * 0.5, 0.75, 5.2),
+      /* HOW LONG THE PROTECTION HOLDS, in seconds — and it has to be a number
+         a quarterback can actually run out of. At one and a half times the
+         play's own hold time the pocket outlasted every read on every snap
+         and a live game produced one sack a fortnight; a pocket is supposed
+         to be a clock the offence is racing. */
+      pocket: clamp(hold * (0.95 - pRush * 0.95) + (off.mods.protect || 0) * 0.45, 0.50, 3.6),
       rushPressure: pRush,
       /* how much a route can win by, in yards, against this shell */
       separation: clamp(0.9 + (ou.wr.rte - du.cb.cov) * 0.030 - parts.coverage.short * 2.2
                         + edge * 1.6, 0.15, 3.2),
       runFit: (def.mods.runFit || 0),
       deepCover: (def.mods.deepCover || 0),
+      /* the day, as the live simulation reads it */
+      weather: wx,
+      hands: wx.hands, footing: wx.footing, deepAcc: wx.deepAcc, fumble: wx.fumble,
       /* the outcome header, so a live play narrates and books exactly like a
          resolved one. The simulation fills in the result fields. */
       template: {
@@ -401,7 +503,12 @@
   }
   /* a rating on the field: yards per second, and how fast he gets there */
   function liveSpeed(pos, rating) {
-    var base = { WR: 9.3, CB: 9.2, S: 8.8, RB: 9.0, LB: 8.2, TE: 8.1, QB: 7.7,
+    /* A CORNER RUNS WITH A RECEIVER. Giving the secondary a tenth of a yard
+       a second less than the men they cover meant the fastest offensive
+       player on the field could not be caught by anybody once he was past
+       them, and a live game gave up a seventy-yard touchdown on one throw in
+       eight. Real cover men run; what separates them is the angle. */
+    var base = { WR: 9.3, CB: 9.3, S: 9.1, RB: 9.0, LB: 8.4, TE: 8.1, QB: 7.7,
                  DL: 7.4, OL: 6.7, K: 7, P: 7 }[pos] || 8.2;
     return base * (0.86 + 0.28 * clamp(rating || 60, 0, 100) / 100);
   }
@@ -449,7 +556,8 @@
     var ou = unitsOf(off, ctx.tick), du = unitsOf(def, ctx.tick);
     var sit = ctx.sit || {};
     var mem = ctx.mem || newMemory();
-    var rec = recognition(off, def, formKey, playObj, mem, rand);
+    var wx = ctx.weather || CLEAR;
+    var rec = recognition(off, def, formKey, playObj, mem, rand, sit);
     var oScheme = F.scheme(off.offense);
     var box = boxCount(parts, formKey);
 
@@ -479,13 +587,14 @@
       return out;
     }
 
-    if (playObj.type === 'run') return resolveRun(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge);
-    return resolvePass(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge);
+    if (playObj.type === 'run') return resolveRun(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge, wx);
+    return resolvePass(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge, wx);
   }
 
   /* ── RUN ────────────────────────────────────────────────────────────────── */
-  function resolveRun(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge) {
+  function resolveRun(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge, wx) {
     var rand = ctx.rand, off = ctx.off, def = ctx.def, sit = ctx.sit || {};
+    wx = wx || CLEAR;
     /* WHERE THE DEFENCE IS HEAVY. Drawn once per snap from the game's own
        seed, shown in the pre-snap alignment, and worth about a yard either
        way: run away from the strength and you have found something the box
@@ -531,21 +640,21 @@
 
     /* STUFFED. Getting a run stopped is mostly the front and the box, and it
        is the single biggest thing a defensive call can buy. */
-    var pStuff = clamp(0.252 - adv * 0.026 + (box - 7) * 0.030 + parts.fit.run * 0.9
+    var pStuff = clamp(0.268 - adv * 0.026 + (box - 7) * 0.030 + parts.fit.run * 0.9
                        + (rec.read ? 0.075 : -0.02) - (oScheme.concepts && oScheme.concepts[playObj.concept] ? 0.02 : 0)
                        - laneEdge * 0.045 + def.mods.runFit,
                        0.05, 0.52);
     /* BREAKING ONE. Vision and legs against pursuit and tackling. */
     var breakEdge = ((ou.rb.elu + ou.rb.spd) / 2 - (du.lb.spd * 0.45 + du.s.tkl * 0.35 + du.cb.tkl * 0.20)) / 100;
-    var pBig = clamp(playObj.boom + breakEdge * 0.30 + parts.fit.boom * 0.7
-                     + (box <= 6 ? 0.03 : 0) - (rec.read ? 0.03 : 0), 0.005, 0.45);
+    var pBig = clamp((playObj.boom + breakEdge * 0.30 + parts.fit.boom * 0.7
+                     + (box <= 6 ? 0.03 : 0) - (rec.read ? 0.03 : 0)) * (1 + wx.footing), 0.005, 0.45);
 
     var yards;
     if (rand() < pStuff) {
       yards = Math.round(-2.6 + rand() * 5.2);
       out.notes.push(box >= 7.8 ? 'They had the numbers in the box.' : 'Met in the hole.');
     } else {
-      yards = 1 + expo(rand, Math.max(1.4, mu * 0.84));
+      yards = 1 + expo(rand, Math.max(1.3, mu * 0.765));
       if (rand() < pBig) { yards += 4 + expo(rand, 11 + breakEdge * 16); out.big = true; }
       yards = Math.round(yards);
     }
@@ -558,7 +667,8 @@
 
     /* the ball on the ground */
     var pFum = clamp(0.0085 + (playObj.risk || 0) * 0.012 + (out.big ? 0.004 : 0)
-                     - (ou.rb.hnd - 60) / 4000 + (parts.fit.key === 'aggressive' ? 0.004 : 0), 0.001, 0.06);
+                     - (ou.rb.hnd - 60) / 4000 + (parts.fit.key === 'aggressive' ? 0.004 : 0)
+                     + wx.fumble, 0.001, 0.06);
     if (rand() < pFum) {
       out.turnover = 'fumble'; out.yards = Math.max(0, Math.round(yards * 0.7));
       out.notes.push('Ball is out.');
@@ -580,8 +690,9 @@
   }
 
   /* ── PASS ───────────────────────────────────────────────────────────────── */
-  function resolvePass(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge) {
+  function resolvePass(out, ctx, ou, du, parts, playObj, formKey, box, rec, oScheme, edge, wx) {
     var rand = ctx.rand, off = ctx.off, def = ctx.def, sit = ctx.sit || {}, mem = ctx.mem;
+    wx = wx || CLEAR;
     var qb = ou.qb, form = F.formation(formKey);
     var extraBlockers = (playObj.assign && playObj.assign.RB === 'block' ? 1 : 0)
                       + (playObj.assign && playObj.assign.TE === 'block' ? 0.7 : 0);
@@ -695,6 +806,7 @@
           - press * (0.92 + (band === 'deep' ? 0.5 : 0))
           + (playObj.risk || 0) * -0.5
           + (timing == null ? 0 : (timing - 0.5) * 0.28)
+          + (band === 'deep' ? wx.deepAcc : wx.shortAcc) * 3.2
           + off.mods.execution * 2;
     var pComp = clamp(logistic(z), 0.03, 0.965);
 
@@ -741,7 +853,7 @@
     /* CAUGHT. What happens next is separation, legs and tackling. */
     out.completion = true;
     var hands = target && target.slot === 'RB' ? ou.rb.hnd : target && target.slot === 'TE' ? ou.te.hnd : ou.wr.hnd;
-    if (rand() > clamp(0.90 + (hands - 62) / 260 - (pressured ? 0.02 : 0), 0.68, 0.985)) {
+    if (rand() > clamp(0.90 + (hands - 62) / 260 - (pressured ? 0.02 : 0) + wx.hands, 0.68, 0.985)) {
       out.completion = false; out.incomplete = true; out.drop = true; out.yards = 0;
       out.notes.push('Dropped. It was there.');
       return out;
@@ -766,7 +878,7 @@
     out.tackler = tacklerFor(du, rand, out.yards);
     out.outOfBounds = (target && target.zone === 'out') ? rand() < 0.42 : rand() < 0.13;
 
-    var pFum = clamp(0.0055 + (out.big ? 0.004 : 0) - (hands - 62) / 5000, 0.0008, 0.03);
+    var pFum = clamp(0.0055 + (out.big ? 0.004 : 0) - (hands - 62) / 5000 + wx.fumble, 0.0008, 0.03);
     if (rand() < pFum) { out.turnover = 'fumble'; out.notes.push('Punched out after the catch.'); }
 
     tire(off, ['OL', 'WR', 'QB', 'TE'], 1); tire(def, ['DL', 'CB', 'S', 'LB'], 1);
@@ -783,13 +895,14 @@
   }
 
   /* ── SPECIAL TEAMS ──────────────────────────────────────────────────────── */
-  function fieldGoal(ou, du, ball, rand, clutch) {
+  function fieldGoal(ou, du, ball, rand, clutch, wx) {
+    wx = wx || CLEAR;
     var dist = (100 - ball) + 17;                    /* end zone plus the hold */
     var leg = ou.k.pwr, acc = ou.k.acc, clu = ou.k.clu;
     /* out of range is out of range: a 70-yarder is not a coin flip */
-    var maxRange = 42 + leg * 0.36;
+    var maxRange = 42 + leg * 0.36 + wx.kickRange;
     var z = 1.95 - (dist - 25) * 0.090 + (acc - 62) / 22 + (leg - 62) / 34
-          + (clutch ? (clu - 62) / 40 : 0);
+          + (clutch ? (clu - 62) / 40 : 0) + wx.kickAcc * (1 + (dist - 30) / 40);
     var p = dist > maxRange ? clamp(logistic(z) * 0.25, 0.005, 0.30) : clamp(logistic(z), 0.02, 0.985);
     return { distance: Math.round(dist), good: rand() < p, p: Math.round(p * 100) / 100,
              range: Math.round(maxRange) };
@@ -820,6 +933,8 @@
     var seed = typeof opts.seed === 'number' ? opts.seed : R.hash(opts.seed || 'game');
     var home = makeTeam(opts.home), away = makeTeam(opts.away);
     home.mods.home = opts.neutral ? 0 : (opts.homeEdge == null ? 1.5 : opts.homeEdge);
+    var wx = weatherOf(opts.weather);
+    home.wxStamina = wx.stamina; away.wxStamina = wx.stamina;
     var cfg = {
       quarters: opts.quarters || RULES.quarters,
       quarterSeconds: opts.quarterSeconds || RULES.quarter_seconds,
@@ -852,24 +967,49 @@
       defMem: { home: newMemory(), away: newMemory() },
       stats: { home: newStats(), away: newStats() },
       players: {},
-      over: false, ot: 0, otPossessions: 0
+      over: false, ot: 0, otPossessions: 0,
+      clockStopped: true, deadCharged: 0, halfBox: null, weather: wx
     };
     return g;
   }
 
+  /* ── THE STAT MODEL, STATED ONCE ─────────────────────────────────────────
+     NFL CONVENTION, and nothing here mixes it with any other.
+
+       a sack is not a pass attempt      it is a team passing loss
+       team passing yards are NET        receiving yards minus sack yardage
+       a quarterback's passing yards     are GROSS, as a passer's always are
+       a scramble is a rush              carries, rushing yards, the lot
+       a kneel is a rush                 for whatever it loses
+
+     Which gives the two identities the sanity checks assert on every game:
+
+       team yards       = passYards + rushYards
+       passYards        = passYardsGross - sackYards
+       passYardsGross   = sum of every receiver's yards on that team
+       rushYards        = sum of every carrier's yards on that team
+       att              = comp + incompletions + ints          (sacks excluded)  */
   function newStats() {
-    return { plays: 0, yards: 0, passYards: 0, rushYards: 0, att: 0, comp: 0, sacks: 0,
+    return { plays: 0, yards: 0, passYards: 0, passYardsGross: 0, rushYards: 0,
+             att: 0, comp: 0, sacks: 0,
              sackYards: 0, carries: 0, ints: 0, fumblesLost: 0, firstDowns: 0,
              thirdAtt: 0, thirdConv: 0, fourthAtt: 0, fourthConv: 0,
              redzoneAtt: 0, redzoneTD: 0, explosive: 0, drives: 0, top: 0,
-             punts: 0, puntYards: 0, fgAtt: 0, fgMade: 0, pressures: 0, tacklesForLoss: 0 };
+             punts: 0, puntYards: 0, fgAtt: 0, fgMade: 0, pressures: 0, tacklesForLoss: 0,
+             passTD: 0, rushTD: 0, timeoutsUsed: 0 };
   }
-  function pstat(g, player) {
+  /* WHICH SIDE A MAN PLAYS FOR is part of his line. Without it the box score
+     is a bag of names nobody can add up, and no test can ever say that the
+     rushers' yards make the team's rushing total. */
+  function pstat(g, player, side) {
     if (!player) return null;
     var k = player.id;
     if (!g.players[k]) g.players[k] = { id: k, name: R.name(player), position: player.position,
+      side: side || null, first: player.first_name || '', last: player.last_name || '',
       pa: 0, pc: 0, py: 0, ptd: 0, pint: 0, car: 0, ry: 0, rtd: 0, rec: 0, recy: 0, rectd: 0,
-      tkl: 0, sack: 0, tfl: 0, int: 0, pd: 0, fg: 0, fga: 0, xp: 0, xpa: 0 };
+      tkl: 0, sack: 0, sackYards: 0, tfl: 0, int: 0, pd: 0, fg: 0, fga: 0, xp: 0, xpa: 0,
+      long: 0, longRush: 0, longRec: 0, targets: 0, drops: 0 };
+    if (side && !g.players[k].side) g.players[k].side = side;
     return g.players[k];
   }
 
@@ -908,12 +1048,18 @@
       var carry = -g.clock;
       if (g.quarter >= g.cfg.quarters) {
         g.clock = 0;
+        /* A DRIVE THAT THE CLOCK ENDS IS STILL A DRIVE. It used to be dropped
+           on the floor here — counted in the team's drive total, missing from
+           the drive list, its time of possession never credited — which is
+           why the two never agreed at the whistle. */
+        endDrive(g, 'clock', 0);
         /* AN OVERTIME PERIOD THAT RUNS OUT LEVEL BUYS ANOTHER ONE. Four is the
            limit: after that it is a tie, which is a real football result and
            a better one than a loop that never ends. */
         if (g.score.home === g.score.away && g.cfg.overtime && g.ot < 4) { startOT(g); return; }
         g.over = true; g.phase = 'final'; return;
       }
+      if (g.quarter === 2) { g.clock = 0; endDrive(g, 'clock', 0); }
       g.quarter++;
       g.clock = g.cfg.quarterSeconds - Math.min(carry, g.cfg.quarterSeconds - 1);
       if (g.quarter === 3) {
@@ -928,11 +1074,17 @@
     g.half = 2;
     g.phase = 'halftime';
     g.possession = other(g.secondHalfKick);
+    g.clockStopped = true; g.deadCharged = 0;
+    /* WHAT THE HALF ACTUALLY WAS, frozen the moment it ends. Every panel that
+       claims to show halftime reads this rather than recomputing one from a
+       box score that has since moved on. */
+    g.halfBox = snapshot(g);
     g.log.push({ kind: 'halftime', score: { home: g.score.home, away: g.score.away } });
     rest(g.home, 45); rest(g.away, 45);
     g.timeouts = { home: 3, away: 3 };
   }
   function startOT(g) {
+    endDrive(g, 'clock', 0);
     g.ot++; g.otPossessions = 0;
     g.quarter = g.cfg.quarters + g.ot;
     g.clock = RULES.ot_seconds;
@@ -948,7 +1100,8 @@
     g.toGo = Math.min(10, toGoal(g));
     g.phase = 'play';
     g.drive = { side: side, start: at, plays: 0, yards: 0, startClock: secondsLeft(g),
-                startQuarter: g.quarter, outcome: null, seconds: 0 };
+                startQuarter: g.quarter, startAtClock: g.clock, outcome: null, seconds: 0,
+                rz: false, index: g.drives.length + 1 };
     g.stats[side].drives++;
   }
   function endDrive(g, outcome, points) {
@@ -975,19 +1128,24 @@
                  score: { home: g.score.home, away: g.score.away },
                  quarter: g.quarter, clock: g.clock });
   }
+  /* THE TRY IS UNTIMED, AND THE CLOCK WAITS FOR IT. Running the score clock
+     here is how a touchdown that expired the quarter took its extra point
+     with it: `runClock` flipped the phase to halftime or final and the try
+     never happened, so a half ended 20–13 and came back 21–13 for no reason
+     anyone watching could see. The seconds are charged in `patStep`, after
+     the point is on the board. */
   function touchdown(g, side, res) {
     score(g, side, 6, 'touchdown');
     endDrive(g, 'td', 6);
-    g.pendingScore = { side: side };
+    g.pendingScore = { side: side, quarter: g.quarter, clock: g.clock };
     g.phase = 'pat';
-    runClock(g, CLOCK.score);
   }
   function afterKickoffSetup(g, kicking) {
     var k = kickoff(unitsOf(teamOf(g, kicking), g.tick), g.rand);
     var receiving = other(kicking);
     if (k.house) {
       score(g, receiving, 6, 'kick return');
-      g.pendingScore = { side: receiving };
+      g.pendingScore = { side: receiving, quarter: g.quarter, clock: g.clock };
       g.phase = 'pat';
       g.log.push({ kind: 'play', text: 'Taken all the way on the return.' });
       return;
@@ -1066,8 +1224,17 @@
       var s = call.side || g.possession;
       if (g.timeouts[s] <= 0) return { ok: false, reason: 'no timeouts' };
       g.timeouts[s]--;
-      g.log.push({ kind: 'timeout', side: s });
-      return { ok: true, event: 'timeout', state: situation(g) };
+      g.stats[s].timeoutsUsed++;
+      /* THE SECONDS COME BACK. The last snap charged the dead ball on the
+         assumption the clock kept running to the next one; calling time says
+         it did not, so the game gets them back. A timeout with nothing left
+         to save is still a timeout — it just does not buy anything. */
+      var back = Math.min(g.deadCharged || 0, g.cfg.quarterSeconds - g.clock);
+      if (back > 0) { g.clock += back; }
+      g.deadCharged = 0; g.clockStopped = true;
+      g.log.push({ kind: 'timeout', side: s, saved: Math.round(back),
+                   quarter: g.quarter, clock: g.clock });
+      return { ok: true, event: 'timeout', saved: Math.round(back), state: situation(g) };
     }
     if (call.type === 'punt') return puntStep(g);
     if (call.type === 'fieldgoal') return fgStep(g);
@@ -1088,7 +1255,7 @@
       var r = resolve({
         off: teamOf(g, side), def: teamOf(g, def), rand: g.rand, tick: g.tick,
         playKey: call.play || 'power', formKey: call.formation || 'goalline',
-        defCall: call.def || 'goal_line_d',
+        defCall: call.def || 'goal_line_d', weather: wxOf(g),
         sit: { down: 1, toGo: 3, ball: RULES.two_point_from }, mem: g.mem[side]
       });
       var good = r.yards >= 3 && !r.turnover;
@@ -1098,7 +1265,7 @@
     } else {
       var made = g.rand() < clamp(0.945 + (ou.k.acc - 62) / 700, 0.85, 0.995);
       if (made) score(g, side, 1, 'extra point');
-      var ks = pstat(g, ou.k.player); if (ks) { ks.xpa++; if (made) ks.xp++; }
+      var ks = pstat(g, ou.k.player, side); if (ks) { ks.xpa++; if (made) ks.xp++; }
       res = { ok: true, event: 'pat', good: made, state: null };
       g.log.push({ kind: 'pat', side: side, two: false, good: made });
     }
@@ -1107,9 +1274,18 @@
       g.otPossessions++;
       if (otDone(g)) { g.over = true; g.phase = 'final'; res.state = situation(g); return res; }
       g.phase = 'kickoff'; g.pendingKick = side;
-    } else if (g.over || (g.clock <= 0 && g.quarter >= g.cfg.quarters)) {
+      res.state = situation(g);
+      return res;
+    }
+    /* NOW the clock catches up with the touchdown. Whatever it runs into —
+       the end of the half, the end of the game — the points are already on
+       the board, which is the whole point of doing it in this order. */
+    g.phase = 'play';
+    runClock(g, CLOCK.score);
+    g.clockStopped = true; g.deadCharged = 0;
+    if (g.over || (g.clock <= 0 && g.quarter >= g.cfg.quarters)) {
       g.over = true; g.phase = 'final';
-    } else {
+    } else if (g.phase !== 'halftime') {
       g.phase = 'kickoff'; g.pendingKick = side;
     }
     res.state = situation(g);
@@ -1137,6 +1313,7 @@
     g.stats[side].punts++; g.stats[side].puntYards += p.gross;
     endDrive(g, 'punt', 0);
     runClock(g, CLOCK.kick);
+    g.clockStopped = true; g.deadCharged = 0;
     if (g.over) return { ok: true, event: 'punt', punt: p, state: situation(g) };
     var at = p.touchback ? 100 - RULES.touchback : 100 - p.at;
     g.log.push({ kind: 'punt', side: side, gross: p.gross, touchback: !!p.touchback });
@@ -1148,14 +1325,15 @@
   function fgStep(g) {
     var side = g.possession, t = teamOf(g, side), ou = unitsOf(t, g.tick);
     var clutch = g.quarter >= g.cfg.quarters && Math.abs(g.score.home - g.score.away) <= 3;
-    var k = fieldGoal(ou, unitsOf(teamOf(g, other(side)), g.tick), g.ball, g.rand, clutch);
+    var k = fieldGoal(ou, unitsOf(teamOf(g, other(side)), g.tick), g.ball, g.rand, clutch, wxOf(g));
     g.stats[side].fgAtt++;
-    var ks = pstat(g, ou.k.player); if (ks) ks.fga++;
+    var ks = pstat(g, ou.k.player, side); if (ks) ks.fga++;
     if (k.good) {
       g.stats[side].fgMade++; if (ks) ks.fg++;
       score(g, side, 3, 'field goal');
       endDrive(g, 'fg', 3);
       runClock(g, CLOCK.score);
+      g.clockStopped = true; g.deadCharged = 0;
       if (g.ot) {
         g.otPossessions++;
         if (otDone(g)) { g.over = true; g.phase = 'final'; return { ok: true, event: 'fieldgoal', fg: k, state: situation(g) }; }
@@ -1165,6 +1343,7 @@
     }
     endDrive(g, 'fg_miss', 0);
     runClock(g, CLOCK.kick);
+    g.clockStopped = true; g.deadCharged = 0;
     if (g.over || g.phase === 'halftime') return { ok: true, event: 'fieldgoal', fg: k, state: situation(g) };
     changePossession(g, clamp(100 - Math.max(g.ball, 80), 1, 99), 'missed field goal');
     return { ok: true, event: 'fieldgoal', fg: k, state: situation(g) };
@@ -1187,7 +1366,7 @@
       : resolve({
           off: offT, def: defT, rand: g.rand, tick: g.tick,
           playKey: playKey, formKey: formKey, defCall: call.def || 'base_3',
-          sit: sit, mem: g.mem[side],
+          sit: sit, mem: g.mem[side], weather: wxOf(g),
           /* what the hands did: which read, which lane, how quickly */
           userRead: call.read == null ? null : call.read,
           userLane: call.lane == null ? null : call.lane,
@@ -1196,43 +1375,56 @@
         });
     noteCall(g.mem[side], playObj.key, playObj.group);
     noteCall(g.defMem[def], r.def, 'def');
+    noteResult(g.mem[side], playObj, r.sack ? r.yards : (r.yards || 0), sit);
 
     var st = g.stats[side], dst = g.stats[def];
     st.plays++;
     if (g.drive) g.drive.plays++;
 
-    /* ── stats ─────────────────────────────────────────────────────────── */
+    /* ── stats ─────────────────────────────────────────────────────────────
+       See newStats() for the convention every line below keeps. */
     var ou = unitsOf(offT, g.tick);
-    var qbs = pstat(g, ou.qb.player);
+    var qbs = pstat(g, ou.qb.player, side);
     if (r.sack) {
-      st.sacks++; st.sackYards += -r.yards; dst.pressures++;
-      var sk = pstat(g, r.tackler); if (sk) { sk.sack++; sk.tkl++; }
+      /* NFL: the loss comes off the team's passing, never off the passer's,
+         and it is not an attempt. Booking it in neither place is what made
+         total yards disagree with rushing plus passing in most games. */
+      st.sacks++; st.sackYards += -r.yards; st.passYards += r.yards; dst.pressures++;
+      var sk = pstat(g, r.tackler, def); if (sk) { sk.sack++; sk.tkl++; sk.sackYards += -r.yards; }
+      if (qbs) qbs.sackYards += -r.yards;
     } else if (playObj.type === 'pass' && !r.scramble && playObj.concept !== 'spike') {
       st.att++; if (qbs) qbs.pa++;
+      var tgt = pstat(g, r.target, side);
+      if (tgt) tgt.targets++;
       if (r.completion) {
         st.comp++;
-        if (qbs) { qbs.pc++; qbs.py += r.yards; }
-        var rc = pstat(g, r.target);
-        if (rc) { rc.rec++; rc.recy += r.yards; }
-        st.passYards += r.yards;
+        if (qbs) { qbs.pc++; qbs.py += r.yards; if (r.yards > qbs.long) qbs.long = r.yards; }
+        if (tgt) { tgt.rec++; tgt.recy += r.yards; if (r.yards > tgt.longRec) tgt.longRec = r.yards; }
+        st.passYards += r.yards; st.passYardsGross += r.yards;
       } else if (r.turnover === 'interception') {
-        st.ints++; if (qbs) { qbs.pa = qbs.pa; qbs.pint++; }
-        var itc = pstat(g, r.interceptor); if (itc) itc.int++;
+        st.ints++; if (qbs) qbs.pint++;
+        var itc = pstat(g, r.interceptor, def); if (itc) itc.int++;
+      } else {
+        if (r.drop && tgt) tgt.drops++;
+        var pd = pstat(g, r.tackler, def); if (pd && !r.drop) pd.pd++;
       }
       if (r.pressure) dst.pressures++;
     } else if (playObj.type === 'run' || r.scramble) {
       st.carries++; st.rushYards += r.yards;
-      var cs = pstat(g, r.carrier);
-      if (cs) { cs.car++; cs.ry += r.yards; }
-      if (r.yards < 0) dst.tacklesForLoss++;
+      var cs = pstat(g, r.carrier, side);
+      if (cs) { cs.car++; cs.ry += r.yards; if (r.yards > cs.longRush) cs.longRush = r.yards; }
+      if (r.yards < 0) { dst.tacklesForLoss++; var tfl = pstat(g, r.tackler, def); if (tfl) tfl.tfl++; }
     }
-    var tk = pstat(g, r.tackler); if (tk && !r.sack) tk.tkl++;
+    var tk = pstat(g, r.tackler, def); if (tk && !r.sack) tk.tkl++;
     if (r.big) st.explosive++;
     st.yards += r.yards;
     if (g.drive) g.drive.yards += r.yards;
     if (g.down === 3) st.thirdAtt++;
     if (g.down === 4) st.fourthAtt++;
-    if (sit.redzone && g.down === 1) st.redzoneAtt++;
+    /* A RED ZONE TRIP IS A DRIVE, NOT A DOWN. Counting one per first down
+       inside the twenty gave teams two and three trips on the same drive and
+       a conversion rate nobody could reconcile with the drive chart. */
+    if (sit.redzone && g.drive && !g.drive.rz) { g.drive.rz = true; st.redzoneAtt++; }
 
     /* ── the rules ─────────────────────────────────────────────────────── */
     var startBall = g.ball;
@@ -1245,38 +1437,51 @@
       endDrive(g, 'safety', -2);
       runClock(g, CLOCK.run);
       r.safety = true;
+      g.clockStopped = true; g.deadCharged = 0;
       if (!g.over && g.phase !== 'halftime') {
         startDrive(g, def, RULES.safety_punt_from + 15);
         g.log.push({ kind: 'change', how: 'safety', side: def, at: g.ball });
       }
-      return finish(g, r, 'safety', startBall);
+      return finish(g, r, 'safety', startBall, side);
     }
 
     if (r.turnover) {
       var spot = r.turnover === 'interception'
         ? clamp(100 - (g.ball + r.airYards + Math.round(g.rand() * 8)), 1, 99)
         : clamp(100 - newBall, 1, 99);
-      dst.plays = dst.plays;
       if (r.turnover === 'fumble') { st.fumblesLost++; }
       endDrive(g, r.turnover, 0);
       runClock(g, CLOCK.change);
+      g.clockStopped = true; g.deadCharged = 0;
       if (!g.over && g.phase !== 'halftime') changePossession(g, spot, r.turnover);
-      return finish(g, r, r.turnover, startBall);
+      return finish(g, r, r.turnover, startBall, side);
     }
 
     if (newBall >= 100) {
       r.touchdown = true;
       r.yards = 100 - startBall;
-      if (playObj.type === 'run' || r.scramble) { var c2 = pstat(g, r.carrier); if (c2) c2.rtd++; }
-      else { var t2 = pstat(g, r.target); if (t2) t2.rectd++; if (qbs) qbs.ptd++; }
-      if (sit.redzone) st.redzoneTD++;
+      if (playObj.type === 'run' || r.scramble) {
+        var c2 = pstat(g, r.carrier, side); if (c2) c2.rtd++; st.rushTD++;
+      } else {
+        var t2 = pstat(g, r.target, side); if (t2) t2.rectd++;
+        if (qbs) qbs.ptd++; st.passTD++;
+      }
+      /* the trip is the drive's, so the touchdown that ends it is too */
+      if (g.drive && g.drive.rz) st.redzoneTD++;
+      /* THIRD DOWN CONVERTED IS THIRD DOWN CONVERTED. Scoring on it used to
+         count as neither a conversion nor a failure, which is how a team went
+         6/11 on third down having moved the chains eight times. */
+      if (g.down === 3) st.thirdConv++;
+      if (g.down === 4) st.fourthConv++;
       st.firstDowns++;
+      r.firstDown = true;
       touchdown(g, side, r);
-      return finish(g, r, 'touchdown', startBall);
+      return finish(g, r, 'touchdown', startBall, side);
     }
 
     g.ball = newBall;
     var gained = r.yards;
+    var startDown = g.down, startToGo = g.toGo;
     if (gained >= g.toGo) {
       if (g.down === 3) st.thirdConv++;
       if (g.down === 4) st.fourthConv++;
@@ -1289,33 +1494,58 @@
       if (g.down > 4) {
         endDrive(g, 'downs', 0);
         runClock(g, CLOCK.change);
+        g.clockStopped = true; g.deadCharged = 0;
         if (!g.over && g.phase !== 'halftime') changePossession(g, clamp(100 - g.ball, 1, 99), 'downs');
-        return finish(g, r, 'downs', startBall);
+        return finish(g, r, 'downs', startBall, side);
       }
     }
 
-    /* the clock */
+    /* ── THE CLOCK ──────────────────────────────────────────────────────────
+       The play, plus the dead ball after it if the clock kept running. What
+       stops it: an incompletion, a trip out of bounds late, a spike, and —
+       college rule — moving the chains inside two minutes. */
     var tempo = (call.tempo === 'hurry' ? CLOCK.hurry : call.tempo === 'grind' ? CLOCK.grind : CLOCK.normal)
               * (offT.mods.tempo == null ? 1 : offT.mods.tempo);
-    var secs;
-    if (playObj.concept === 'spike') secs = CLOCK.spike;
-    else if (playObj.concept === 'kneel') secs = CLOCK.kneel;
-    else if (r.sack) secs = CLOCK.sack * tempo;
-    else if (r.incomplete) secs = CLOCK.pass_incomplete;
-    else if (r.outOfBounds && (sit.twoMinute || g.quarter === g.cfg.quarters)) secs = CLOCK.out_of_bounds;
-    else if (playObj.type === 'run' || r.scramble) secs = CLOCK.run * tempo;
-    else secs = CLOCK.pass_complete * tempo;
-    runClock(g, Math.round(secs));
-    r.seconds = Math.round(secs);
+    var live, dead;
+    var lateOOB = r.outOfBounds && (sit.twoMinute || (g.quarter === g.cfg.quarters && g.clock <= 300));
+    if (playObj.concept === 'spike') { live = CLOCK.spike; dead = 0; }
+    else if (playObj.concept === 'kneel') { live = CLOCK.kneel; dead = CLOCK.kneel_dead; }
+    else {
+      live = r.sack ? CLOCK.sack
+           : r.incomplete ? CLOCK.pass_incomplete
+           : lateOOB ? CLOCK.out_of_bounds
+           : (playObj.type === 'run' || r.scramble) ? CLOCK.run
+           : CLOCK.pass_complete;
+      var stops = r.incomplete || lateOOB
+               || (r.firstDown && sit.twoMinute);
+      dead = stops ? 0 : CLOCK.dead * tempo;
+    }
+    var secs = Math.round(live + dead);
+    runClock(g, secs);
+    /* WHAT A TIMEOUT IS ACTUALLY BUYING: the dead ball this snap just spent.
+       Without this the button decremented a counter and nothing else, which
+       is not a decision — it is a label. */
+    g.deadCharged = Math.round(dead);
+    g.clockStopped = dead === 0;
+    r.seconds = secs;
+    r.down = startDown; r.toGo = startToGo;
 
-    return finish(g, r, event, startBall);
+    return finish(g, r, event, startBall, side);
   }
 
-  function finish(g, r, event, startBall) {
+  function finish(g, r, event, startBall, side) {
     r.startBall = startBall;
+    /* WHOSE PLAY IT WAS is the side that snapped it, not whoever has the ball
+       by the time the books close. Reading `g.possession` here filed every
+       interception, every fumble and every turnover on downs under the team
+       that received it — which is how the play-by-play and the turning point
+       both named the wrong club. */
+    r.side = side || r.side || g.possession;
     r.commentary = narrate(g, r);
-    g.plays.push({ q: g.quarter, clock: g.clock, side: r.side || g.possession,
+    g.plays.push({ q: g.quarter, clock: g.clock, side: r.side,
                    play: r.play, def: r.def, yards: r.yards, text: r.commentary,
+                   down: r.down == null ? null : r.down, toGo: r.toGo == null ? null : r.toGo,
+                   at: startBall, sack: !!r.sack, first: !!r.firstDown, big: !!r.big,
                    td: !!r.touchdown, to: r.turnover || null });
     return { ok: true, event: event, play: r, state: situation(g) };
   }
@@ -1363,40 +1593,123 @@
       var st = g.stats[s];
       return {
         score: g.score[s], plays: st.plays, yards: st.yards,
-        passYards: st.passYards, rushYards: st.rushYards,
-        att: st.att, comp: st.comp, sacks: st.sacks, ints: st.ints,
+        passYards: st.passYards, passYardsGross: st.passYardsGross, rushYards: st.rushYards,
+        att: st.att, comp: st.comp, sacks: st.sacks, sackYards: st.sackYards, ints: st.ints,
+        carries: st.carries,
         fumblesLost: st.fumblesLost, turnovers: st.ints + st.fumblesLost,
-        firstDowns: st.firstDowns,
+        firstDowns: st.firstDowns, timeoutsUsed: st.timeoutsUsed,
         third: st.thirdAtt ? st.thirdConv + '/' + st.thirdAtt : '0/0',
+        thirdAtt: st.thirdAtt, thirdConv: st.thirdConv,
         thirdPct: st.thirdAtt ? Math.round(100 * st.thirdConv / st.thirdAtt) : 0,
         fourth: st.fourthAtt ? st.fourthConv + '/' + st.fourthAtt : '0/0',
         redzone: st.redzoneAtt ? st.redzoneTD + '/' + st.redzoneAtt : '0/0',
+        redzoneAtt: st.redzoneAtt, redzoneTD: st.redzoneTD,
         explosive: st.explosive, top: st.top, drives: st.drives,
         punts: st.punts, fg: st.fgMade + '/' + st.fgAtt,
         ypp: st.plays ? Math.round(10 * st.yards / st.plays) / 10 : 0,
         ypc: st.carries ? Math.round(10 * st.rushYards / st.carries) / 10 : 0,
-        ypa: st.att ? Math.round(10 * st.passYards / st.att) / 10 : 0
+        ypa: st.att ? Math.round(10 * st.passYards / st.att) / 10 : 0,
+        compPct: st.att ? Math.round(100 * st.comp / st.att) : 0,
+        sackRate: (st.att + st.sacks) ? Math.round(1000 * st.sacks / (st.att + st.sacks)) / 10 : 0
       };
     }
     return { home: side('home'), away: side('away'), players: g.players,
              score: { home: g.score.home, away: g.score.away },
+             quarter: g.quarter, clock: g.clock, over: !!g.over, ot: g.ot || 0,
+             weather: g.weather || CLEAR,
+             leaders: { home: leaders(g, 'home'), away: leaders(g, 'away') },
              drives: g.drives, plays: g.plays, log: g.log,
+             scoring: scoringSummary(g),
              injuries: { home: g.home.injuries, away: g.away.injuries } };
   }
 
-  /* PLAYER OF THE GAME — the one line a result is remembered by. */
-  function playerOfGame(g, side) {
-    var best = null, bestScore = -1, k, p, s;
+  /* ── A FROZEN COPY ────────────────────────────────────────────────────────
+     What the game looked like at one moment, kept so that a panel claiming to
+     show halftime shows halftime rather than a live box score that has moved
+     on since. Nothing reads the live state to draw a past one. */
+  function snapshot(g) {
+    var b = boxScore(g);
+    return JSON.parse(JSON.stringify({
+      score: b.score, quarter: g.quarter, half: g.half,
+      home: b.home, away: b.away, leaders: b.leaders,
+      scoring: b.scoring, drives: b.drives
+    }));
+  }
+
+  /* ── WHO IS DOING IT ──────────────────────────────────────────────────────
+     The men a broadcast would put on the screen, per side, in the order it
+     would put them there. Every one of them is a real line out of the same
+     stats the box score prints — there is no second tally anywhere. */
+  function playersOf(g, side) {
+    var out = [], k;
     for (k in g.players) {
       if (!g.players.hasOwnProperty(k)) continue;
-      p = g.players[k];
-      s = p.py * 0.045 + p.ptd * 4 - p.pint * 3
-        + p.ry * 0.11 + p.rtd * 6
-        + p.recy * 0.11 + p.rectd * 6
-        + p.tkl * 0.7 + p.sack * 4 + p.int * 7 + p.fg * 3;
-      if (s > bestScore) { bestScore = s; best = p; }
+      if (g.players[k].side === side) out.push(g.players[k]);
+    }
+    return out;
+  }
+  function bestBy(list, score) {
+    var best = null, bs = -1e9, i, v;
+    for (i = 0; i < list.length; i++) {
+      v = score(list[i]);
+      if (v > bs) { bs = v; best = list[i]; }
+    }
+    return bs > 0 ? best : null;
+  }
+  function leaders(g, side) {
+    var ps = playersOf(g, side);
+    return {
+      passer: bestBy(ps, function (p) { return p.pa ? p.py + p.ptd * 20 - p.pint * 15 + 1 : 0; }),
+      rusher: bestBy(ps, function (p) { return p.car ? p.ry + p.rtd * 20 + 1 : 0; }),
+      receiver: bestBy(ps, function (p) { return p.rec ? p.recy + p.rectd * 20 + 1 : 0; }),
+      defender: bestBy(ps, function (p) { return p.sack * 9 + p.int * 12 + p.tfl * 4 + p.tkl * 1.1 + p.pd * 2; })
+    };
+  }
+
+  /* the scoring summary, straight off the score log — one row per score */
+  function scoringSummary(g) {
+    var out = [];
+    g.log.forEach(function (e) {
+      if (e.kind !== 'score') return;
+      out.push({ side: e.side, points: e.points, how: e.how, quarter: e.quarter,
+                 clock: e.clock, home: e.score.home, away: e.score.away });
+    });
+    return out;
+  }
+
+  /* PLAYER OF THE GAME — the one line a result is remembered by. Pass a side
+     to get that team's; pass nothing for the best man on the field. */
+  function pogScore(p) {
+    return p.py * 0.045 + p.ptd * 4 - p.pint * 3
+         + p.ry * 0.11 + p.rtd * 6
+         + p.recy * 0.11 + p.rectd * 6
+         + p.tkl * 0.7 + p.sack * 4 + p.int * 7 + p.tfl * 1.5 + p.fg * 3;
+  }
+  function playerOfGame(g, side) {
+    var list = side ? playersOf(g, side) : (function () {
+      var a = [], k;
+      for (k in g.players) if (g.players.hasOwnProperty(k)) a.push(g.players[k]);
+      return a;
+    })();
+    var best = null, bestScore = -1, i, v;
+    for (i = 0; i < list.length; i++) {
+      v = pogScore(list[i]);
+      if (v > bestScore) { bestScore = v; best = list[i]; }
     }
     return best;
+  }
+  /* the best man on each side of the ball, which is what a recap actually
+     wants: one who moved it and one who stopped it */
+  function topOffense(g, side) {
+    return bestBy(playersOf(g, side), function (p) {
+      return p.py * 0.045 + p.ptd * 4 - p.pint * 3 + p.ry * 0.11 + p.rtd * 6
+           + p.recy * 0.11 + p.rectd * 6;
+    });
+  }
+  function topDefense(g, side) {
+    return bestBy(playersOf(g, side), function (p) {
+      return p.sack * 6 + p.int * 9 + p.tfl * 3 + p.tkl * 0.9 + p.pd * 1.6;
+    });
   }
 
   var API = {
@@ -1405,10 +1718,14 @@
     mods: mods, makeTeam: makeTeam, unitsOf: unitsOf,
     ADJUSTMENTS: ADJUSTMENTS, adjustment: adjustment, applyAdjustment: applyAdjustment,
     newMemory: newMemory, tendency: tendency, noteCall: noteCall,
+    noteResult: noteResult, form: form,
     recognition: recognition, boxCount: boxCount, passRush: passRush,
     resolve: resolve, prepare: prepare, adopt: adopt, fieldGoal: fieldGoal, punt: punt, kickoff: kickoff,
     createGame: createGame, step: step, situation: situation, secondsLeft: secondsLeft,
-    clockLabel: clockLabel, boxScore: boxScore, playerOfGame: playerOfGame,
+    clockLabel: clockLabel, boxScore: boxScore, snapshot: snapshot,
+    playerOfGame: playerOfGame, playersOf: playersOf, leaders: leaders,
+    topOffense: topOffense, topDefense: topDefense, scoringSummary: scoringSummary,
+    weatherOf: weatherOf,
     other: other, teamOf: teamOf, toGoal: toGoal, narrate: narrate,
     freshness: freshness, startDrive: startDrive
   };
