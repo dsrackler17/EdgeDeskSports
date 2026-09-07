@@ -918,6 +918,39 @@ function repeat(playKey, defKey, n, extra, opts) {
   chk('the recap names a player of the game', !!potg && !!potg.name);
 })();
 
+/* ── THE CREASE IS DRAWN, AND QUIETLY ─────────────────────────────────────
+   The hole the blocking made goes on the grass while the run is happening.
+   A stub context records what the painter asks for, so this can say the two
+   things that matter without a canvas: that it draws something, and that it
+   is faint enough to be grass rather than a diagram over the football. */
+(function creaseIsDrawn() {
+  function stub() {
+    var calls = [], grad = { addColorStop: function (o, c) { calls.push('stop:' + c); } };
+    var ctx = new Proxy({}, {
+      get: function (t, k) {
+        if (k === 'createLinearGradient') return function () { calls.push('grad'); return grad; };
+        return function () { calls.push(String(k)); };
+      },
+      set: function (t, k, v) { calls.push('set ' + String(k) + '=' + v); return true; }
+    });
+    return { ctx: ctx, calls: calls };
+  }
+  var cam = { sx: function (x, y) { return 100 + x * 4 - y * 0.3; }, sy: function (y) { return 500 - y * 4; },
+              lat: function () { return 15; }, nearestY: function () { return 0; }, w: 390, h: 700 };
+  var a = stub();
+  PA.crease(a.ctx, cam, { x: 26, w: 4.2, y: 30, open: 0.7 });
+  chk('the crease is painted on the field', a.calls.indexOf('fill') >= 0 && a.calls.indexOf('stroke') >= 0);
+  var alphas = a.calls.join(' ').match(/rgba\(242,199,68,([0-9.]+)\)/g) || [];
+  var maxA = alphas.reduce(function (m, s2) {
+    return Math.max(m, parseFloat(s2.replace(/.*,([0-9.]+)\)/, '$1')));
+  }, 0);
+  chk('and it is grass, not a diagram over the football', maxA > 0 && maxA < 0.35, maxA);
+  var b = stub();
+  PA.crease(b.ctx, cam, null);
+  PA.crease(b.ctx, cam, { x: 26, w: 0, y: 30, open: 0 });
+  chk('and there is nothing there when there is no hole', b.calls.length === 0, b.calls.length);
+})();
+
 /* ── EVERY SCORING PATH ───────────────────────────────────────────────────
    Six ways the number changes, each one worth exactly what football says it
    is worth, each one landing on the board exactly once — and the transition
