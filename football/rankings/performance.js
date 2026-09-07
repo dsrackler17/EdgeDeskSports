@@ -26,6 +26,15 @@
       the full and the competitive-only aggregates are carried through, both are
       published, and the difference between them is a column.
 
+   4  IT DOES NOT THROW AWAY WEEK ONE. Every metric states the sample at which
+      it is worth full credit (min_n). That is a CREDIT LINE, not a gate: a team
+      holding a fraction of it is scored at that fraction, shrunk toward the
+      league mean, with the fraction published beside the number. Only below
+      CFG.SAMPLE.score_floor_fraction of the stated sample is a metric left
+      unscored for a team. Read as a hard cut it meant that in September, when
+      nobody has 150 plays yet, the layer returned null for all 136 teams and
+      the rankings could not move on a result they had already read.
+
    Runs in the browser (window.EDRankPerformance) and in node.
    ========================================================================== */
 (function (root, factory) {
@@ -195,7 +204,20 @@
     var vals = [], k;
     for (k in values) if (isNum(values[k])) vals.push(values[k]);
     var m = mean(vals), s = sd(vals);
-    return { mean: m, sd: s, n: vals.length, usable: !!(s > 0 && vals.length >= 12) };
+    var minTeams = (CFG.SAMPLE && CFG.SAMPLE.standardise_min_teams) || 12;
+    return { mean: m, sd: s, n: vals.length, usable: !!(s > 0 && vals.length >= minTeams) };
+  }
+
+  /* How much of a metric's stated sample this team actually has. Full credit at
+     min_n, proportional below it, and nothing at all below the floor — the
+     whole argument is in CFG.SAMPLE. */
+  function scoreFloor(metric) {
+    var f = (CFG.SAMPLE && CFG.SAMPLE.score_floor_fraction);
+    return metric.min_n * (isNum(f) ? f : 1);
+  }
+  function reliability(n, metric) {
+    if (!isNum(n) || !(metric.min_n > 0)) return 0;
+    return clamp(n / metric.min_n, 0, 1);
   }
 
   function composite(teamKeys, adjusted, metrics, side, opts) {
@@ -206,33 +228,49 @@
       var m = metrics[i], a = adjusted[m.id];
       if (!a || !a.available) { stats[m.id] = { usable: false, reason: (a && a.reason) || 'metric not adjusted' }; continue; }
       var src = a[side];
+      var floorN = scoreFloor(m);
       var vals = {};
       for (k = 0; k < teamKeys.length; k++) {
         var rec = src[teamKeys[k]];
-        if (!rec || !isNum(rec.adjusted) || !(rec.n >= m.min_n)) continue;
+        if (!rec || !isNum(rec.adjusted) || !(rec.n >= floorN)) continue;
         vals[teamKeys[k]] = rec.adjusted;
       }
       var st = standardise(vals);
       st.league = a.league;
-      st.reason = st.usable ? null : 'only ' + st.n + ' teams cleared the ' + m.min_n + ' minimum sample for ' + m.id + ' — too few to standardise against';
+      st.min_n = m.min_n;
+      st.score_floor = Math.round(floorN * 10) / 10;
+      st.reason = st.usable ? null : 'only ' + st.n + ' teams reached the ' + (Math.round(floorN * 10) / 10)
+        + ' scoring floor for ' + m.id + ' ('
+        + Math.round(CFG.SAMPLE.score_floor_fraction * 100) + '% of the ' + m.min_n
+        + ' it is worth full credit at) — too few to standardise against';
       stats[m.id] = st;
     }
     for (k = 0; k < teamKeys.length; k++) {
-      var key = teamKeys[k], zs = 0, ws = 0, used = [], missing = [];
+      var key = teamKeys[k], zs = 0, ws = 0, relSum = 0, used = [], missing = [];
       for (i = 0; i < metrics.length; i++) {
         var mm = metrics[i], aa = adjusted[mm.id], ss = stats[mm.id];
         if (!aa || !aa.available || !ss || !ss.usable) { missing.push({ id: mm.id, why: (ss && ss.reason) || 'metric unavailable' }); continue; }
         var r2 = aa[side][key];
         if (!r2 || !isNum(r2.adjusted)) { missing.push({ id: mm.id, why: 'this team has no ' + mm.id }); continue; }
-        if (!(r2.n >= mm.min_n)) { missing.push({ id: mm.id, why: 'sample of ' + Math.round(r2.n) + ' is below the ' + mm.min_n + ' this metric needs' }); continue; }
+        var fl = scoreFloor(mm);
+        if (!(r2.n >= fl)) {
+          missing.push({ id: mm.id, why: 'sample of ' + Math.round(r2.n) + ' is below the '
+            + (Math.round(fl * 10) / 10) + ' floor this metric needs before it means anything' });
+          continue;
+        }
+        var rel = reliability(r2.n, mm);
         var z = ((r2.adjusted - ss.mean) / ss.sd) * mm.dir;
         if (mm.regress > 0) z = z * (1 - mm.regress);      /* measured not to repeat -> mostly regressed away */
-        zs += z * mm.w; ws += mm.w;
+        z = z * rel;                                        /* a partial sample is shrunk toward the league mean, not thrown away */
+        zs += z * mm.w; ws += mm.w; relSum += rel * mm.w;
         used.push({ id: mm.id, raw: r2.raw, adjusted: r2.adjusted, delta: r2.delta,
-          n: Math.round(r2.n), z: z, w: mm.w, regressed: mm.regress || 0, league: aa.league });
+          n: Math.round(r2.n), z: z, w: mm.w, regressed: mm.regress || 0,
+          reliability: Math.round(rel * 1000) / 1000, full_credit_at: mm.min_n, league: aa.league });
       }
       out[key] = { z: ws > 0 ? zs / ws : null, used: used, missing: missing,
-        contract: metrics.length, scored: used.length };
+        contract: metrics.length, scored: used.length,
+        reliability: ws > 0 ? Math.round((relSum / ws) * 1000) / 1000 : null,
+        reliability_basis: CFG.SAMPLE && CFG.SAMPLE.reliability_basis };
     }
     return { teams: out, stats: stats };
   }
@@ -306,6 +344,23 @@
     }
     var netStat = standardise(netRaw);
 
+    /* THE SHRINK HAS TO SURVIVE THE SECOND STANDARDISATION.
+       net_z is re-standardised across the league so that ETSR's points-per-z
+       scalar has one well-defined unit. Re-standardising a set of already
+       shrunk numbers rescales them straight back to unit variance — which in
+       week one turned a team that hung 60 on somebody into a +4z season. So
+       the team's own sample reliability is re-applied AFTER the league z, and
+       it is the reliability of the two sides mixed on the same weights the net
+       itself uses. */
+    var netRel = {};
+    for (k2 = 0; k2 < teamKeys.length; k2++) {
+      var kr = teamKeys[k2];
+      var ro = off.teams[kr] && off.teams[kr].reliability, rd = def.teams[kr] && def.teams[kr].reliability;
+      netRel[kr] = (isNum(ro) && isNum(rd))
+        ? clamp(CFG.NET.offense_weight * ro + CFG.NET.defense_weight * rd, 0, 1)
+        : (isNum(ro) ? ro : (isNum(rd) ? rd : null));
+    }
+
     /* per-team sample facts the confidence and the gates read */
     var sample = {};
     for (i = 0; i < rows.length; i++) {
@@ -333,7 +388,9 @@
     for (k2 = 0; k2 < teamKeys.length; k2++) {
       var kk = teamKeys[k2];
       var so = off.teams[kk], sdd = def.teams[kk], sm2 = sample[kk] || { games: 0, fbs_games: 0, weighted_games: 0, plays: 0, competitive_plays: 0, garbage_plays: 0, off_plays: 0, def_plays: 0, opponents: {} };
-      var netZ = (netRaw[kk] != null && netStat.usable) ? (netRaw[kk] - netStat.mean) / netStat.sd : null;
+      var netZraw = (netRaw[kk] != null && netStat.usable) ? (netRaw[kk] - netStat.mean) / netStat.sd : null;
+      var netRelK = netRel[kk];
+      var netZ = (netZraw == null) ? null : netZraw * (isNum(netRelK) ? netRelK : 0);
       var sub = {};
       for (var sn in subs) {
         if (!Object.prototype.hasOwnProperty.call(subs, sn)) continue;
@@ -352,6 +409,9 @@
           used: sdd ? sdd.used : [], missing: sdd ? sdd.missing : [],
           scored: sdd ? sdd.scored : 0, contract: sdd ? sdd.contract : 0 },
         net_z: netZ, rating: toRating(netZ),
+        net_z_before_reliability: netZraw == null ? null : Math.round(netZraw * 1000) / 1000,
+        reliability: isNum(netRelK) ? Math.round(netRelK * 1000) / 1000 : null,
+        reliability_basis: CFG.SAMPLE.reliability_basis,
         sub_units: sub,
         sample: {
           games: sm2.games, fbs_games: sm2.fbs_games,
@@ -388,5 +448,6 @@
 
   return { SCHEMA: SCHEMA, build: build, adjust: adjust, gameRows: gameRows,
     composite: composite, standardise: standardise, toRating: toRating, field: field,
+    scoreFloor: scoreFloor, reliability: reliability,
     mean: mean, sd: sd, wmean: wmean, config: CFG };
 });

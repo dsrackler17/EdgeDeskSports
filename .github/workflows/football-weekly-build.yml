@@ -33,9 +33,14 @@ on:
         type: boolean
         required: false
         default: false
+  # IN SEASON THE BOARD RUNS DAILY. A twice-a-week cadence meant a Saturday
+  # result could sit unread for three days, and the feeds publish on their own
+  # schedule rather than ours — a daily pass picks each week up the morning
+  # after it happens instead of waiting for the next slot. Out of season the
+  # only thing that moves is the roster, so Tuesday is enough.
   schedule:
-    - cron: '40 9 * * 2'    # Tuesday — the week has settled and rosters have moved
-    - cron: '40 9 * * 0'    # Sunday  — Saturday's games have landed
+    - cron: '40 9 * 8-12,1 *'  # every morning, August through January
+    - cron: '40 9 * 2-7 2'     # Tuesdays only, February through July
   push:
     branches: [main]
     paths:
@@ -81,7 +86,11 @@ jobs:
         run: pip install --quiet pyarrow
 
       # Cache the raw feeds between runs: the play tables are ~55 MB a season
-      # and they do not change once a season is over.
+      # and they do not change once a season is over. THE SEASON IN PROGRESS IS
+      # NOT CACHED ACROSS RUNS — football/data/feed_cache.js refuses to serve it
+      # from a cache older than half an hour, because a rebuild that reads last
+      # week's copy of this week's football goes green, commits nothing, and
+      # freezes the rankings.
       - name: Cache raw football feeds
         uses: actions/cache@v4
         with:
@@ -128,10 +137,16 @@ jobs:
             if (r.anomalies.severe > 0) fail(r.anomalies.severe + ' severe anomalies');
             if (!r.performance_diagnostics.all_converged) fail('the opponent adjustment did not converge');
             if (r.market.is_input !== false) fail('the market is marked as an input, which it must never be');
+            const fresh = r.data_freshness || {};
+            if (!(fresh.completed_games > 0) && r.week_ordinal > 0)
+              fail('the board says ' + r.week_label + ' but this build read no completed game — the feed is stale');
             const reg = require('./football/validation/feature-status.json');
             const moved = reg.features.filter(f => f.may_move_lines);
             console.log('ok — ' + r.team_count + ' teams, ' + p.player_count + ' players, '
               + r.season + ' ' + r.week_label + ', ' + moved.length + ' validated feature(s)');
+            console.log('     read ' + fresh.completed_games + ' completed games ('
+              + fresh.team_games_read + ' team-games), rated ' + fresh.teams_with_a_performance_rating
+              + ' teams on the play this season has produced so far');
           "
 
       - name: Commit

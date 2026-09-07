@@ -118,7 +118,7 @@ deliberately, never as a way past a red build.
 
 | workflow | when | what it does |
 |---|---|---|
-| `football-weekly-build.yml` | Tue + Sun 09:40 UTC, on relevant pushes, manual | box → players → rankings → snapshot → tests → **one** commit |
+| `football-weekly-build.yml` | daily 09:40 UTC Aug–Jan (Tue only Feb–Jul), on relevant pushes, manual | box → players → rankings → snapshot → tests → **one** commit |
 | `football-validation.yml` | manual; monthly **report-only** | the feature walk-forward, and only writes the registry when a human passes `write: true` |
 
 **Why they are separate.** The weekly build must never recalibrate a weight.
@@ -156,7 +156,9 @@ and a backtest that re-reads it gets the numbers that existed then.
 | a team is missing | `anomalies` → `MISSING_TEAM`; usually a team-key mismatch against the schedule |
 | a unit reads blank | `talent.covered_units` — a roster that spells its ends `DL` has not lost them |
 | run defence says UNKNOWN | `run_defence_power.completeness` against `min_completeness` (0.40) |
-| the adjustment did not converge | `performance_diagnostics.metrics[].iterations` vs `OPPONENT.max_iterations` |
+| the adjustment did not converge | `performance_diagnostics.metrics[].iterations` vs `OPPONENT.max_iterations`. The publish gate **refuses to commit** on this, so a budget set too low freezes the board rather than degrading it |
+| the board did not move all week | `data_freshness` in `current.json` — if `completed_games` and `team_games_read` match last week's, the build read a stale cache, not a quiet week |
+| offence and defence read blank in September | `performance.reliability` and each metric's `used[].reliability`; below the scoring floor the metric is named in `missing[]` with the sample it had |
 | a metric is missing league-wide | `coverage` — a feed column failed its floor, which is the system working |
 | the build refuses to commit | severe anomalies; read them, fix the input, do not reach for `--allow-anomalies` |
 
@@ -166,7 +168,11 @@ and a backtest that re-reads it gets the numbers that existed then.
 
 **Add a metric.** Add it to `OFFENSE_METRICS` / `DEFENSE_METRICS` in
 `football/rankings/config.js` with `num`, `den`, `w`, `dir`, `min_n` and a
-`basis`. It must be countable from the team-game aggregate; if the counter does
+`basis`. `min_n` is the sample the metric is worth **full credit** at, not a
+gate: a team holding a fraction of it is scored at that fraction, its z shrunk
+toward the league mean, and the fraction published beside the number as
+`reliability`. Only below `SAMPLE.score_floor_fraction` of `min_n` is the
+metric left unscored for that team. It must be countable from the team-game aggregate; if the counter does
 not exist, add it to `blankTG()` in `football/players/build_players.js` (add
 fields, never repurpose them) and fan it into both the full and competitive
 twins. Then run `npm run cfb:test`.

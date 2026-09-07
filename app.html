@@ -37219,6 +37219,10 @@ function fbRkTeamHTML(key){
     +(t.prior.parts.note?(' — '+fbEsc(t.prior.parts.note)):'')+'</td></tr>'
     +'<tr><td>performance</td><td class="mono">'+fbRkPts(t.performance_points)+'</td>'
     +'<td class="mut" style="font-size:11px">opponent-adjusted play-level efficiency</td></tr>'
+    +((t.performance&&t.performance.reliability&&t.performance.reliability.net!=null)
+      ?('<tr><td>sample reliability</td><td class="mono">'+fbRkPct(t.performance.reliability.net)+'</td>'
+        +'<td class="mut" style="font-size:11px">'+fbEsc(t.performance.reliability.basis||'')+'</td></tr>')
+      :'')
     +'<tr><td>talent</td><td class="mono">'+fbRkPts(t.talent_points)+'</td>'
     +'<td class="mut" style="font-size:11px">roster ability, in points</td></tr>'
     +'<tr><td>home field</td><td class="mono">not included</td>'

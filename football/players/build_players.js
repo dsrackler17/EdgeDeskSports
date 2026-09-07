@@ -47,6 +47,7 @@ const CFG = require('./config.js');
 const EPIR = require('./epir.js');
 const UNITS = require('./units.js');
 const SCHEME = require('./scheme.js');
+const FEEDCACHE = require('../data/feed_cache.js');
 
 const DIR = __dirname;
 const REPO = path.join(DIR, '..', '..');
@@ -87,7 +88,9 @@ function digestOf(o) { return crypto.createHash('sha1').update(JSON.stringify(o)
 async function fetchText(url, cacheName) {
   if (CACHE && cacheName) {
     const p = path.join(CACHE, cacheName);
-    if (fs.existsSync(p) && fs.statSync(p).size > 0) return fs.readFileSync(p, 'utf8');
+    /* a finished season may be reused for ever; the season in progress may not
+       — see football/data/feed_cache.js */
+    if (FEEDCACHE.usable(p, cacheName, SEASON, 0)) return fs.readFileSync(p, 'utf8');
   }
   let last = null;
   for (let a = 0; a < 4; a++) {
