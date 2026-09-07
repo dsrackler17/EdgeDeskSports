@@ -155,7 +155,7 @@
 /* ── THE READ ─────────────────────────────────────────────────────────────
    What the defence is showing you, as a broadcast tag: a club-coloured rule,
    a name, and the one line under it that matters. */
-.gd-read{position:absolute;top:8px;left:8px;z-index:5;max-width:min(52%,215px);
+.gd-read{position:absolute;top:8px;left:8px;z-index:5;max-width:min(46%,205px);
   padding:6px 11px 7px 12px;border-radius:3px 10px 10px 3px;
   background:linear-gradient(90deg,rgba(9,13,19,.90),rgba(9,13,19,.72));
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -533,10 +533,10 @@
    teams standing on it, because the first second of looking at this should
    answer "what is this" with "a football game" and not with a paragraph. */
 #pre{position:relative;isolation:isolate;
-  /* A PHONE BROWSER PUTS ITS OWN TOOLBAR OVER THE BOTTOM OF THE PAGE, and the
-     button that starts the game was landing underneath it. Room to scroll the
-     last control clear of the chrome, and of the home indicator under that. */
-  padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  /* room under the last control for a phone browser's chrome and for the home
+     indicator beneath it — enough to clear them, not so much that the end of
+     the page is a field of nothing */
+  padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 
 /* ── THE MATCHUP ──────────────────────────────────────────────────────────
    A broadcast card, not an analytics dashboard. Two clubs, their colours,
@@ -614,6 +614,43 @@
 #preCard .btn-go{min-height:56px;font:800 18px 'Space Grotesk',sans-serif;letter-spacing:.02em;
   background:linear-gradient(180deg,#6ff0b4,#34b07e);border:0;color:#06231a;
   box-shadow:0 10px 30px rgba(49,168,119,.34),inset 0 -3px 0 rgba(0,0,0,.14)}
+
+/* ── THE ACTION THAT STARTS THE GAME IS ALWAYS ON SCREEN ──────────────────
+   This card is taller than a phone. When the only way to reach Kick off was
+   to scroll down to it, one bad touch handler was enough to make the game
+   unstartable — you arrived, the button was below the fold, the page would
+   not move, and that was the whole product.
+
+   So the primary action does not wait at the bottom of the card. It rides
+   the bottom of the viewport from the first paint and settles into its own
+   place only when the end of the card catches up with it. Reaching it never
+   depends on scrolling working. */
+.pre-go{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom));z-index:3;
+  display:flex;gap:8px;align-items:stretch;margin-top:18px}
+/* the card scrolls UNDER it, so it needs its own ground — a long fade, not a
+   hard edge that slices a sentence in half */
+.pre-go::before{content:'';position:absolute;inset:-44px -18px -18px;z-index:-1;
+  pointer-events:none;border-radius:0 0 var(--radius) var(--radius);
+  background:linear-gradient(180deg,rgba(11,15,20,0) 0%,rgba(11,15,20,.72) 30%,
+    rgba(11,15,20,.95) 54%,rgba(11,15,20,.97) 100%)}
+.pre-go .btn-go{flex:1 1 auto;min-width:0;flex-direction:column;gap:1px;line-height:1.12}
+.pre-go .btn-go i{display:block;max-width:100%;font:600 11px 'Inter',sans-serif;
+  font-style:normal;letter-spacing:.01em;opacity:.78;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* the square control beside it: same height, no label, one glyph */
+.btn-ico{flex:0 0 auto;width:56px;min-height:56px;padding:0;font-size:20px;line-height:1}
+.btn-ico[aria-pressed="true"]{color:var(--val);border-color:rgba(63,184,131,.45);
+  background:rgba(63,184,131,.10)}
+
+/* ── WHEN THE BROWSER WILL NOT GO FULLSCREEN ──────────────────────────────
+   Safari on iPhone has never let a web page take the screen, so the button
+   explains itself rather than appearing to do nothing. */
+.tip-p{margin:10px 0 0;font:400 14px 'Inter',sans-serif;line-height:1.55;color:var(--dim)}
+.tip-steps{margin:14px 0 0;padding:0 0 0 20px;color:var(--dim);
+  font:400 14px 'Inter',sans-serif;line-height:1.5}
+.tip-steps li{margin:7px 0}
+.tip-steps b{color:var(--text)}
 
 /* ── THE BIG EVENTS ───────────────────────────────────────────────────────
    FIRST DOWN. SACK. INTERCEPTED. One shape for every call: a club-coloured
