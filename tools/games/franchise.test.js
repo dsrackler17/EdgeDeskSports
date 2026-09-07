@@ -3042,6 +3042,11 @@ fresh();
     && /public\.franchise_rank_edge\(v_earned\)%'/.test(SQL)
     && /bool_and\(t\.hits = 1\)/.test(SQL));
 
+  has(README, '10,240 seasons', 'the README carries the definitive run');
+  has(README, '128 of 128', 'and that every franchise reached season 80');
+  has(README, '0 of 10,240', 'and that no season row lost a position');
+  has(README, 'looked like a finding and was not', 'and is honest about the number that did not hold up');
+
   has(README, 'The game is **open to everyone**', 'the README states the age policy');
   has(README, 'nothing is collected', 'and that nothing is collected');
 

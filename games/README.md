@@ -2687,6 +2687,69 @@ and conferences — including `dynasty_80`, "fielded a roster rated 80
 overall", which a franchise that only plays now peaks below at 74. That
 achievement is the one that says you actually built something.
 
+### The definitive run — 10,240 seasons on the finished build
+
+Everything above was found on smaller samples (26 franchises before the fixes,
+15 with the roster floor, 8 validating the lift). This is the whole thing, run
+once, on the build that carries both fixes: **128 franchises × 80 seasons =
+10,240 seasons**, four workers, 187 minutes.
+
+| | before | **10,240 seasons after** |
+| --- | --- | --- |
+| franchises measured | 26 | **128** |
+| bricked, could never play again | **10 (38.5%)** | **0** |
+| reached season 80 | 16 of 26 | **128 of 128** |
+| season rows with no quarterback | many | **0 of 10,240** |
+| season rows with no kicker | many | **0 of 10,240** |
+| any position empty | many | **0 of 10,240** |
+
+And the arc runs the right way, in every single franchise:
+
+| season | 1 | 10 | 20 | 40 | 60 | 80 |
+| --- | --- | --- | --- | --- | --- | --- |
+| team overall | 69.8 | 68.7 | **67.9** | 70.2 | 72.6 | **74.3** |
+| best player | 75.3 | 82.4 | 81.3 | 83.7 | 85.8 | **87.9** |
+| standing | 44 | 50 | 44 | 51 | 58 | **63** |
+| rank | 2.7 | 11.3 | 17.1 | 25.6 | 32.1 | **37.7** |
+
+**128 improved, 0 declined**, +4.52 overall on average. The dip to 67.9 at
+season 20 is the founding roster ageing out together; the climb after it is
+the franchise's own record starting to pay.
+
+The five schemes finish inside **0.4 overall of each other** (74.0 to 74.4),
+so eighty seasons of divergence never turns one identity into the right one.
+
+### One number that looked like a finding and was not
+
+`corr(team overall, wins) = 0.061` across all 10,240 seasons. Read alone that
+says a better roster does not win more games — which would be the same bug
+Phase 10 was built to fix.
+
+It is not. Two things say so.
+
+**The variance is tiny.** Franchises differ by about **1.4 overall** (standard
+deviation) while their win totals differ by 1.7 games. A 1.4-point difference
+genuinely should not move a record much, so a low correlation is what an
+honest game looks like here, not a broken one. Pooled into bands, the effect
+is there:
+
+| team overall | seasons | wins | standing |
+| --- | --- | --- | --- |
+| 63–64 | 17 | 3.65 | 29 |
+| 65–69 | 3,565 | 4.59 | 45 |
+| 70–74 | 5,927 | **4.82** | 55 |
+| 75–79 | 731 | 4.78 | **66** |
+
+**And the flatness at the top is the design, in its own words.** The slate is
+drawn around the standing: *"Climb and the schedule hardens; fall and it
+softens… WITHIN a season the clubs do not move, and a better roster beats
+them."* Improvement is paid in **standing** — 44 to 63 — not in record. A
+franchise that builds for eighty seasons plays harder opponents, not easier
+ones, which is the whole point of a climb.
+
+So the run found no third bug. It confirmed the two it was run to check, at
+five times the sample that found them.
+
 ### What made it fun for anyone
 
 Not a tutorial. The two bugs *were* the accessibility problem: a game that
