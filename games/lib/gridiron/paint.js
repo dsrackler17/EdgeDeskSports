@@ -235,10 +235,12 @@
     var vx = p.vx || 0, vy = p.vy || 0;
     var spd = Math.sqrt(vx * vx + vy * vy);
     var sn = clamp(spd / 9, 0, 1.2);
-    var fwd = p.side === 'def' ? -1 : 1;         /* the way his offence attacks */
-    var facingAway = back;
-    /* running the opposite way to the way he is looking */
-    var retreat = !facingAway && vy * fwd > 1.2;
+    /* RUNNING THE OPPOSITE WAY TO THE WAY HE IS LOOKING. Take it off the
+       facing rather than off the side of the ball he plays on: a corner
+       dropping into a zone and a corner chasing a post are both 'run' to the
+       simulation and have to look nothing alike. `back` means he is facing
+       away from the camera, which is up the field. */
+    var retreat = back ? vy < -1.2 : vy > 1.2;
     var lateral = Math.abs(vx) > Math.abs(vy) * 1.7 && sn > 0.18;
     var gait = st === 'block' || st === 'engaged' ? 'block'
              : st === 'tackle' ? 'tackle'

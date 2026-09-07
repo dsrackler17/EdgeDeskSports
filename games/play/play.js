@@ -261,8 +261,27 @@
   function drawerOpen(html) {
     drawer.innerHTML = html;
     drawer.classList.add('open');
+    coverField();
   }
-  function drawerClose() { drawer.classList.remove('open'); }
+  function drawerClose() { drawer.classList.remove('open'); coverField(); }
+  /* THE FOOTBALL GOES WHERE YOU CAN SEE IT. However much of the screen the
+     call sheet is taking, the camera frames the line of scrimmage into what
+     is left rather than behind it. Measured after the sheet has laid out. */
+  function coverField() {
+    if (!stage || !stage.setCover) return;
+    var run = function () {
+      var open = drawer.classList.contains('open');
+      var fr = fieldWrap.getBoundingClientRect();
+      /* MEASURED OFF THE LAYOUT, NOT OFF THE TRANSFORM. The sheet slides up
+         over a quarter of a second; asked where it was on the next frame it
+         truthfully answered "still off the bottom of the screen", so the
+         camera never moved. offsetHeight is where it is going to be. */
+      var h = window.innerHeight || fr.bottom;
+      var over = open ? Math.max(0, fr.bottom - (h - drawer.offsetHeight)) : 0;
+      stage.setCover(Math.min(over, fr.height * 0.74));
+    };
+    if (window.requestAnimationFrame) window.requestAnimationFrame(run); else run();
+  }
 
   function offensePlays(tab, sit) {
     var book = F.playbook(teams.me.offense), all = [];

@@ -292,6 +292,30 @@
     }
     /* seconds the loop is held open for a camera move that is not football */
     var glide = 0;
+    /* ── HOW MUCH OF THE PICTURE SOMETHING IS SITTING ON ─────────────────
+       The call sheet covers the bottom half of the screen, and the camera
+       went on framing the line of scrimmage at sixty per cent of the CANVAS
+       — which is behind it. You were choosing a play against a strip of empty
+       grass while the formation you were choosing against was under your
+       thumb. Tell the stage what is covered and it frames the football into
+       what is left. */
+    var coverBottom = 0;
+    function applyAnchor() {
+      var vis = Math.max(0.35, 1 - coverBottom / Math.max(1, cam.h));
+      /* the offence draws BETWEEN the camera and the line of scrimmage, so the
+         line has to sit high enough in what is left for both fronts to be in
+         the picture while the sheet is up */
+      cam.anchor = clamp(0.62 * vis - 0.04, 0.19, 0.62);
+    }
+    self.setCover = function (px) {
+      var v = Math.max(0, px || 0);
+      if (Math.abs(v - coverBottom) < 2) return;
+      coverBottom = v;
+      applyAnchor();
+      fitCamera();
+      camFollow(0, true);
+      draw();
+    };
     var reduce = false;
     try { reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
 
@@ -308,7 +332,7 @@
          empty turf; on a short one it backs off. Everything else — how far
          away the far men are, how hard the sidelines lean in — falls out of
          the perspective on its own. */
-      cam.anchor = 0.62;
+      applyAnchor();
       fitCamera();
       /* re-frame at once: a resize with a stale camera shows the wrong shot
          until something moves, and between plays nothing does */
@@ -615,6 +639,19 @@
         wide = clamp(hi - lo + 7, 32, los > 80 ? 38 : 44);
         wantX = (lo + hi) / 2;
         wantY = los + 2;
+      } else if (ball.flight) {
+        /* ── THE BALL IS IN THE AIR ──────────────────────────────────────
+           The story is no longer at the line, it is wherever the ball is
+           coming down, and the throw has to be watchable while it travels.
+           The lens eases out and slides up the field between the release and
+           the catch point, further and faster the deeper the throw is. */
+        var f = ball.flight;
+        var air = Math.max(0, f.ty - los);
+        var u = clamp(f.t / Math.max(0.15, f.dur), 0, 1);
+        var ease = u * u * (3 - 2 * u);
+        wide = clamp(36 + air * 0.32, 36, 50);
+        wantX = ballX + (f.tx - ballX) * ease * 0.8;
+        wantY = los + 2 + (f.ty - los - 2) * ease * 0.72;
       } else if (holding) {
         /* while he is holding it the routes are the story — but the story
            starts at the line, not five yards past it, and a shot wide enough
@@ -626,13 +663,22 @@
         var breakaway = ball.holder && ball.holder.carry && Math.hypot(ball.holder.vx, ball.holder.vy) > 8.4;
         wide = breakaway ? 28 : los > 80 ? 31 : 35;
         wantX = tx;
-        wantY = ty + (phase === 'dead' ? 0.5 : 2.5);
+        /* A SCORE IS FOLLOWED IN. Cutting the moment he crosses the line
+           leaves the whole celebration happening off the top of the picture,
+           so the lens carries on into the end zone with him for a beat. */
+        var scored = result && result.touchdown;
+        wantY = ty + (phase === 'dead' ? (scored ? 3.5 : 0.5) : 2.5);
       }
       /* never show more sideline than there is field */
       var halfW = wide / 2;
       wantX = clamp(wantX, halfW - 4, FIELD.width - halfW + 4);
-      var k = snap ? 1 : 1 - Math.pow(0.004, dt);
-      var kz = snap ? 1 : 1 - Math.pow(0.05, dt);
+      /* EASING, NOT TRACKING. A lens that arrives exactly where it was told
+         every frame is a spreadsheet cell following a number; a camera lags a
+         little and catches up. Zoom lags further than pan, because a shot
+         that changes width as fast as it changes aim is the thing that makes
+         people put the phone down. */
+      var k = snap ? 1 : 1 - Math.pow(0.010, dt);
+      var kz = snap ? 1 : 1 - Math.pow(0.14, dt);
       cam.x += (wantX - cam.x) * k;
       cam.y += (wantY - cam.y) * k;
       cam.wide += (wide - cam.wide) * kz;
