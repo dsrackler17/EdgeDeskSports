@@ -817,7 +817,13 @@
         if (p.big) crowdUp(0.7, 0.22);
       }
       resultCard(p);
-      milestone(p);
+      /* THE FOOTBALL DOES NOT STOP BECAUSE A CAPTION FAILED. Everything from
+         here to the end of this handler is what moves the game on — the
+         clock, the score, the next call — and the line above the numbers is
+         decoration. One of them threw once, inside this handler, and the game
+         stopped dead on the first snap: no next play, no clock, nothing to
+         press. Decoration gets a net; the game does not need one. */
+      try { milestone(p); } catch (e) { if (window.console) console.warn('milestone', e); }
       ballX = drift(ballX);
     }
     padClear();
@@ -863,7 +869,7 @@
      seen it on the result card of every carry, and now the game tells him
      what it adds up to, while it is still happening. */
   var milestoned = {};
-  var MARKS = [
+  var MILESTONES = [
     ['ry', 100, function (p) { return p.name + ' is over a hundred on the ground.'; }],
     ['recy', 100, function (p) { return p.name + ' has a hundred yards receiving.'; }],
     ['py', 300, function (p) { return p.name + ' is over three hundred through the air.'; }],
@@ -879,7 +885,7 @@
       if (line || !man) return;
       var st = game.players[man.uid || man.id];
       if (!st) return;
-      MARKS.forEach(function (m) {
+      MILESTONES.forEach(function (m) {
         if (line) return;
         var key = st.id + ':' + m[0];
         if (milestoned[key] || (st[m[0]] || 0) < m[1]) return;
