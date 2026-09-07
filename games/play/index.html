@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Play — Game Day | EdgeDesk Games</title>
+<meta name="description" content="Call the plays, read the coverage and play the game, possession by possession, on a real football field. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/play">
+<meta name="theme-color" content="#0b0d11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Game Day">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/games/play/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/games/play/icon-180.png">
+<link rel="icon" href="/games/play/icon.svg" type="image/svg+xml">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/play">
+<meta property="og:title" content="Play — EdgeDesk Game Day">
+<meta property="og:description" content="Call the plays, read the coverage, play the game.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260907h">
+<link rel="stylesheet" href="/games/gridiron.css?v=20260907h">
+</head>
+<body class="gd-body">
+
+<!-- GAME DAY ------------------------------------------------------------------
+     Three rows and nothing else: the scoreboard, the field, the call sheet.
+     The field is the product, so it gets every pixel the other two do not
+     need. There is no site navigation here on purpose — you are in a game. -->
+<div class="gd" id="gd" hidden>
+  <div class="sb" id="sb"></div>
+  <div class="gd-field" id="fieldWrap">
+    <div class="gr-stage" id="stage"></div>
+    <div class="gd-read" id="read" hidden></div>
+    <div class="gd-tools">
+      <button id="btnArt" type="button" aria-pressed="true" title="Play art" aria-label="Play art">◈</button>
+      <button id="btnSound" type="button" aria-pressed="true" title="Sound" aria-label="Sound">♪</button>
+      <button id="btnSet" type="button" title="Settings" aria-label="Settings">⚙</button>
+      <button id="btnExit" type="button" title="Leave the game" aria-label="Leave the game">✕</button>
+    </div>
+    <div class="gd-say" id="say" aria-live="polite"></div>
+  </div>
+  <div class="deck" id="deck"></div>
+</div>
+
+<main class="wrap" id="pre">
+  <div class="sec" style="margin-top:18px"><div class="card" id="preCard">
+    <div class="eyebrow">Game Day</div>
+    <div class="sk" style="width:55%;margin:16px 0"></div>
+    <div class="sk-label" style="text-align:left">Getting the teams ready</div>
+  </div></div>
+</main>
+
+<div id="ovHost"></div>
+
+<script src="/games/lib/week.js?v=20260907h"></script>
+<script src="/games/lib/store.js?v=20260907h"></script>
+<script src="/games/lib/social.js?v=20260907h"></script>
+<script src="/games/lib/auth.js?v=20260907h"></script>
+<script src="/games/lib/franchise.js?v=20260907h"></script>
+<script src="/games/games.js?v=20260907h"></script>
+<script src="/games/lib/gridiron/football.js?v=20260907h"></script>
+<script src="/games/lib/gridiron/roster.js?v=20260907h"></script>
+<script src="/games/lib/gridiron/engine.js?v=20260907h"></script>
+<script src="/games/lib/gridiron/ai.js?v=20260907h"></script>
+<script src="/games/lib/gridiron/autoplay.js?v=20260907h"></script>
+<script src="/games/lib/gridiron/render.js?v=20260907h"></script>
+<script src="/games/lib/gridiron/session.js?v=20260907h"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old copy of a library for longer
+   than it keeps this page, and a page built for the new engine then dies on
+   the first function the old copy lacks. The asset URLs carry a version token
+   so that should not happen; this is the belt for the braces. */
+(function(){
+  var need=['EDFootball.playbook','EDFootball.defParts','EDFootball.strongSide','EDRoster.units',
+    'EDGridiron.createGame','EDGridiron.step','EDGridiron.situation','EDGridiron.boxScore',
+    'EDGridironAI.callOffense','EDGridironAI.callDefense','EDGridironAuto.callFor',
+    'EDGridironRender.Renderer','EDGridironRender.choreograph',
+    'EDGridironSession.build','EDGridironSession.resume','EDGridironSession.preSnap'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('preCard');
+  if(host)host.innerHTML='<div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of the game than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div>';
+  try{console.warn('stale gridiron scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script src="/games/play/play.js?v=20260907h"></script>
+</body>
+</html>

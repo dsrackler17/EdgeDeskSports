@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260907g">
-<link rel="stylesheet" href="/games/franchise.css?v=20260907g">
+<link rel="stylesheet" href="/games/games.css?v=20260907h">
+<link rel="stylesheet" href="/games/franchise.css?v=20260907h">
 </head>
 <body>
 <div id="gh"></div>
@@ -40,6 +40,27 @@
        result, the box score, the player of the game, what it paid, and the
        one form that saves it all to an account. Every number here came from
        the server; nothing on this page decides a result. -->
+  <!-- PLAY IT. The weekly franchise game is settled on the server; this is
+       the football you play with your hands, and it works whether or not you
+       have founded anything. It is first on the page because Game Day is the
+       product. -->
+  <div class="sec" style="margin-top:18px">
+    <div class="card">
+      <div class="eyebrow">Play</div>
+      <h2 style="font-size:22px;margin-top:6px">Call it yourself.</h2>
+      <p style="color:var(--dim);font-size:14px;line-height:1.55;margin-top:8px">
+        A full football game on a real field: your playbook, their coverage, down and distance,
+        the clock, fourth downs and a box score. Read the front, take the right receiver,
+        and see what the call was worth.</p>
+      <div class="chips">
+        <span class="chip">Play or <b>Coach</b> mode</span>
+        <span class="chip">Rookie to <b>Legend</b></span>
+        <span class="chip">Picks up where you left it</span>
+      </div>
+      <div class="btn-row"><a class="btn btn-go" href="/games/play/">Play the game</a></div>
+    </div>
+  </div>
+
   <div class="sec" style="margin-top:18px">
     <div class="card" id="stage">
       <div class="eyebrow">Game Day</div>
@@ -54,17 +75,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260907g"></script>
-<script src="/games/lib/scoring.js?v=20260907g"></script>
-<script src="/games/lib/challenge.js?v=20260907g"></script>
-<script src="/games/lib/research_state.js?v=20260907g"></script>
-<script src="/games/lib/attribution.js?v=20260907g"></script>
-<script src="/games/lib/store.js?v=20260907g"></script>
-<script src="/games/lib/dynasty.js?v=20260907g"></script>
-<script src="/games/lib/social.js?v=20260907g"></script>
-<script src="/games/lib/auth.js?v=20260907g"></script>
-<script src="/games/lib/franchise.js?v=20260907g"></script>
-<script src="/games/games.js?v=20260907g"></script>
+<script src="/games/lib/week.js?v=20260907h"></script>
+<script src="/games/lib/scoring.js?v=20260907h"></script>
+<script src="/games/lib/challenge.js?v=20260907h"></script>
+<script src="/games/lib/research_state.js?v=20260907h"></script>
+<script src="/games/lib/attribution.js?v=20260907h"></script>
+<script src="/games/lib/store.js?v=20260907h"></script>
+<script src="/games/lib/dynasty.js?v=20260907h"></script>
+<script src="/games/lib/social.js?v=20260907h"></script>
+<script src="/games/lib/auth.js?v=20260907h"></script>
+<script src="/games/lib/franchise.js?v=20260907h"></script>
+<script src="/games/games.js?v=20260907h"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or franchise.js for
    longer than it keeps this page, and a page built for the new library then
@@ -122,7 +143,7 @@
       +'<div class="btn-row"><a class="btn btn-go btn-big" href="'+foundHref()+'" id="goFound">Found my franchise</a></div>'
       +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
     after.innerHTML=state==='not_deployed'
-      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      ?'<div class="sec"><div class="card"><div class="empty">Franchise services are temporarily unavailable, so nothing can be saved to your record right now.<br><a class="btn btn-go" style="margin-top:14px" href="/games/play/">Play a game anyway</a></div></div></div>'
       :h2hCard();
     var go=$('goFound');
     if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'gameday',game_type:'franchise'});});

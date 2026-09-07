@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260907g">
-<link rel="stylesheet" href="/games/franchise.css?v=20260907g">
+<link rel="stylesheet" href="/games/games.css?v=20260907h">
+<link rel="stylesheet" href="/games/franchise.css?v=20260907h">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260907g"></script>
-<script src="/games/lib/scoring.js?v=20260907g"></script>
-<script src="/games/lib/challenge.js?v=20260907g"></script>
-<script src="/games/lib/research_state.js?v=20260907g"></script>
-<script src="/games/lib/attribution.js?v=20260907g"></script>
-<script src="/games/lib/store.js?v=20260907g"></script>
-<script src="/games/lib/dynasty.js?v=20260907g"></script>
-<script src="/games/lib/social.js?v=20260907g"></script>
-<script src="/games/lib/auth.js?v=20260907g"></script>
-<script src="/games/lib/franchise.js?v=20260907g"></script>
-<script src="/games/games.js?v=20260907g"></script>
+<script src="/games/lib/week.js?v=20260907h"></script>
+<script src="/games/lib/scoring.js?v=20260907h"></script>
+<script src="/games/lib/challenge.js?v=20260907h"></script>
+<script src="/games/lib/research_state.js?v=20260907h"></script>
+<script src="/games/lib/attribution.js?v=20260907h"></script>
+<script src="/games/lib/store.js?v=20260907h"></script>
+<script src="/games/lib/dynasty.js?v=20260907h"></script>
+<script src="/games/lib/social.js?v=20260907h"></script>
+<script src="/games/lib/auth.js?v=20260907h"></script>
+<script src="/games/lib/franchise.js?v=20260907h"></script>
+<script src="/games/games.js?v=20260907h"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -109,7 +109,7 @@
       +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=market" id="goFound">Found my franchise</a></div>'
       +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
     rooms.innerHTML=state==='not_deployed'
-      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      ?'<div class="sec"><div class="card"><div class="empty">Franchise services are temporarily unavailable, so nothing can be saved to your record right now.<br><a class="btn btn-go" style="margin-top:14px" href="/games/play/">Play a game anyway</a></div></div></div>'
       :'';
     var go=$('goFound');
     if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'market',game_type:'franchise'});});

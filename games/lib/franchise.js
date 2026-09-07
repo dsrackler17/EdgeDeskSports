@@ -1632,7 +1632,7 @@
   function rpc(fn, args) {
     if (!S) return Promise.resolve({ ok: false, error: 'not_configured', message: 'The franchise layer is not configured in this build.' });
     return S.rpc(fn, args).then(function (r) {
-      if (!r.ok && r.status === 404) { _deployed = false; r.error = 'not_deployed'; r.message = 'The franchise layer has not been deployed yet.'; }
+      if (!r.ok && r.status === 404) { _deployed = false; r.error = 'not_deployed'; r.message = 'Franchise services are temporarily unavailable.'; }
       else if (r.ok) _deployed = true;
       return r;
     });
