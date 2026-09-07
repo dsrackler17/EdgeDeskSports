@@ -173,6 +173,54 @@ actionable signals only, since the whole board at every book would be tens of
 thousands of rows per run and the actionable set is exactly the population a
 book-behaviour study is about.
 
+### `issue_reports.sql` — how a user tells you something is broken
+The terminal has had a feedback form since it was written. It posted to
+`public.feedback`, and **no file here ever created that table** — the
+definition lived, if anywhere, in somebody's SQL editor history. The form's own
+error message said as much to the *customer*: "run feedback.sql if the table is
+missing". It could not have worked anyway: its textarea carried `id="fbBody"`,
+which is also the id of the football research board three thousand lines up in
+`app.html`, so the handler read the board, `.value` was undefined and `.trim()`
+threw before its own try/catch. The Submit button did nothing at all — no
+message, no request, nothing in the console. The one channel a first-time user
+had for saying the product was broken was itself broken, invisibly.
+
+This is the table that replaces it, and the client is `lib/edgedesk_report.js`,
+loaded by the landing page, the terminal, EdgeDesk Games and the 404 page.
+
+**Anyone may file one.** `anon` has insert. The most valuable report in this
+product is "I could not sign up", and it is filed by definition without a
+session; a reporting channel that requires an account cannot receive it. What
+`anon` may not do is claim to be somebody — the insert policy requires
+`user_id` to be null unless it equals `auth.uid()`.
+
+**Nobody reads anybody else's.** Select is the reporter's own rows plus
+`public.issue_report_admins`, an allowlist with RLS on and no client grants at
+all, asked through the security-definer `issue_report_is_admin()`. `anon` has
+no read policy, so an anonymous report is write-only from the browser that
+filed it — which is the price of letting anyone file one, and the right price.
+There is **no delete policy for anybody**, and updates are the operator's:
+status, severity, a note. A report is evidence, and even its author cannot
+rewrite it after filing.
+
+**No credential can be stored.** The client scrubs the URL and never reads a
+token into the payload, but the client is a browser. A check constraint refuses
+a body containing a three-segment base64url string, and a `page_url` still
+carrying `access_token=`, `refresh_token=` or `token_hash=`.
+
+If a legacy `public.feedback` exists, its rows are imported once, keyed on
+`legacy_feedback_id`, and the original table is left exactly where it is.
+
+Run it once in the SQL editor. Rows 1–12 of its report should each say `ok`;
+row 11 will say **CHECK THIS** if the allowlist is empty, which on a fresh
+project means adding yourself:
+`insert into public.issue_report_admins(user_id) values ('<your auth.users id>');`
+Triage lives in `admin.html` → **Problem reports**. Tested against a real
+PostgreSQL by `tools/app/issue_reports_sql.test.js` (`npm run issues:sql`),
+which applies this file unmodified, runs it twice to prove idempotency, and
+then attacks it as anon, as one reporter reaching for another's rows, as
+somebody promoting themselves to operator, and with a JWT pasted into the body.
+
 ### `games_social.sql` — Head-to-Head and Groups
 The social layer of EdgeDesk Games: challenges whose predictions are sealed
 until both players lock, private groups, Elo ratings and the settlement path

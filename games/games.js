@@ -541,7 +541,73 @@
       /* the operator read-out: what is connected right now. Linked from every
          page because a missing feed is otherwise invisible from the outside. */
       + '<a href="/games/status/">Status</a>'
+      /* One way to say something is broken, the same one the terminal and the
+         landing page offer. Games is where a first-time visitor actually is,
+         and until this link existed the only route to a human from here was
+         guessing an email address. */
+      + '<a href="#" data-ed-report>Report a problem</a>'
       + '</div></div></footer>';
+  }
+
+  /* THE SHARED LIBRARIES, LOADED ONCE, FROM HERE.
+     Eighteen pages under /games each list their own scripts. Adding three
+     more <script> tags to eighteen files is eighteen chances for one to be
+     missed, and the page that misses it is the page with the bug on it. So
+     the shared runtime — which every page already loads — pulls them in and
+     configures them from the same config.json the social layer uses. Either
+     every /games page can report a problem and finish a confirmation link, or
+     none can; there is no in-between to debug. */
+  var _shared = null;
+  function sharedLibs() {
+    if (_shared) return _shared;
+    var d = root.document;
+    _shared = new Promise(function (resolve) {
+      var srcs = ['/lib/edgedesk_auth.js?v=20260907b',
+                  '/lib/edgedesk_report.js?v=20260907b',
+                  '/lib/edgedesk_report_ui.js?v=20260907b'];
+      var left = srcs.length;
+      /* A library that will not load must not hang the page behind it. */
+      var done = function () { if (--left <= 0) resolve(); };
+      var give = setTimeout(function () { left = 1; done(); }, 6000);
+      srcs.forEach(function (src, i) {
+        var el = d.createElement('script');
+        el.src = src; el.async = false;        /* order matters: ui needs report */
+        if (i === 0) el.id = 'ed-shared-lib';
+        el.onload = done;
+        el.onerror = function () { try { console.warn('shared library did not load: ' + src); } catch (_) {} done(); };
+        (d.head || d.documentElement).appendChild(el);
+      });
+      void give;
+    }).then(function () {
+      return config().then(function (c) {
+        if (c && root.EDReport) root.EDReport.configure({
+          url: c.supabase_url, key: c.supabase_anon_key,
+          version: 'games-20260907b', surface: 'games' });
+        return c;
+      });
+    });
+    return _shared;
+  }
+
+  /* THE LINK FROM THE CONFIRMATION EMAIL, WHEN IT COMES BACK TO GAMES.
+     A player who founds a franchise here signs up here, and games/lib/auth.js
+     asks Supabase to send them back to /games/. Something has to spend that
+     link, or they land on the games home still anonymous, with the franchise
+     they just created sitting on an account they appear not to own — and with
+     an access token parked in the address bar. */
+  function consumeAuthLink() {
+    return sharedLibs().then(function (c) {
+      if (!root.EDAuth || !c) return null;
+      var pre = root.EDAuth.parse(root.location);
+      if (pre.kind === 'none') return null;
+      return root.EDAuth.consume({ url: c.supabase_url, key: c.supabase_anon_key })
+        .then(function (r) {
+          if (!r || !r.handled) return null;
+          if (r.ok) { toast('Email confirmed — you are signed in'); return r; }
+          toast(r.message || 'That link could not be used.');
+          return null;
+        });
+    }).catch(function () { return null; });
   }
 
   function mount(current) {
@@ -553,6 +619,7 @@
     /* every page mounts the chrome, so every page gets the gate on the one
        link that leaves the game */
     wireAgeGate();
+    try { sharedLibs(); } catch (_) {}
   }
 
   /* ── the social endpoint ──────────────────────────────────────────────────
@@ -789,7 +856,23 @@
        result wait on EDGames.franchiseReady rather than on config(). */
     paintFranchise();
     var ready = config();
+    /* RENEW A LAPSED SESSION BEFORE ANYTHING READS IDENTITY.
+       social.js will not present an expired token, so without this a player
+       who signed up inside Games and never opened the terminal became an
+       anonymous device about an hour later — and watched their own franchise
+       vanish from the HQ. The refresh token was in storage the whole time.
+       It is awaited rather than fired off, because FR.boot() decides which
+       identity the franchise belongs to and must not race it. */
     _franchiseReady = ready.then(function () {
+      /* A confirmation link is a brand-new session; spend it before anything
+         asks who this is, so the very first franchise read is already the
+         account's rather than the device's. */
+      return consumeAuthLink();
+    }).then(function (link) {
+      if (link && link.ok) return true;
+      return (AU && AU.ensure) ? AU.ensure().catch(function () { return false; }) : false;
+    }).then(function (renewed) {
+      if (renewed) { try { paintFranchise(); } catch (_) {} }
       if (!FR) return { state: 'anonymous' };
       return FR.boot().then(function (r) {
         paintFranchise(); notifyFranchise(r);

@@ -35,37 +35,74 @@ input:focus{outline:2px solid var(--accent);outline-offset:-1px}
     <div class="back"><a href="/index.html">&larr; Back to login</a></div>
   </div>
 </div>
+<script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script>
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 function msg(t,k){var m=document.getElementById('msg');if(!t){m.className='msg';return;}m.className='msg '+(k||'err');m.textContent=t;}
-/* Supabase sends the recovery token in the URL hash: #access_token=...&type=recovery */
-var accessToken=null;
-(function(){
-  var h=location.hash?location.hash.substring(1):'';
-  var p=new URLSearchParams(h);
-  accessToken=p.get('access_token');
-  var type=p.get('type');
-  var err=p.get('error_description')||p.get('error');
-  if(err){document.getElementById('content').innerHTML='<h1>Link problem</h1><p class="ld">'+err.replace(/\+/g,' ')+'</p><div class="back"><a href="/index.html">Back to login</a> · request a new reset link there.</div>';return;}
-  if(!accessToken||type!=='recovery'){
-    document.getElementById('content').innerHTML='<h1>Invalid or expired link</h1><p class="ld">This password-reset link is missing, invalid, or has expired. Request a new one from the login page.</p><div class="back"><a href="/index.html">Back to login</a></div>';
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function dead(head,body){
+  document.getElementById('content').innerHTML='<h1>'+esc(head)+'</h1><p class="ld">'+esc(body)+'</p>'+
+    '<div class="back"><a href="/index.html">Back to login</a> &middot; request a new reset link there.</div>';
+}
+
+/* THE RECOVERY LINK ARRIVES IN MORE THAN ONE SHAPE.
+   This page used to read exactly one — `#access_token=...&type=recovery` —
+   and answered "Invalid or expired link" to every other, including the
+   `?token_hash=...&type=recovery` form the current Supabase email templates
+   send. A customer with a perfectly good link was told it had expired, asked
+   for another, and got the same screen again. lib/edgedesk_auth.js knows all
+   of them; this page only decides what to show.
+
+   It also arrives with no parameters at all when index.html has already
+   spent the link and stored the session — which is the path the confirmation
+   handler uses to hand a recovery over here. */
+var accessToken=null, ready=false;
+(function boot(){
+  var stored=null;
+  try{stored=JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(_){}
+  var pre=window.EDAuth?EDAuth.parse(location):{kind:'none'};
+
+  if(pre.kind==='none'){
+    /* index.html consumed the link and forwarded here with the session in
+       storage. Anything else with no parameters is somebody who typed the
+       URL, and has nothing to reset. */
+    if(stored&&stored.access_token){accessToken=stored.access_token;ready=true;return;}
+    dead('Invalid or expired link','This password-reset link is missing, invalid, or has expired. Request a new one from the login page.');
+    return;
   }
+  if(pre.kind==='unfinishable'){
+    dead('Open this link in the browser you asked from','This reset link was issued for a different browser session. Request a new one from the login page and open it on this device.');
+    return;
+  }
+  document.getElementById('btn').disabled=true;
+  EDAuth.consume({url:SB_URL,key:SB_KEY}).then(function(r){
+    if(!r.handled){dead('Invalid or expired link','Request a new one from the login page.');return;}
+    if(!r.ok){dead('That link did not work',r.message||'Request a new one from the login page.');return;}
+    accessToken=r.session&&r.session.access_token;
+    if(!accessToken){dead('That link did not work','Request a new one from the login page.');return;}
+    ready=true;document.getElementById('btn').disabled=false;
+  });
 })();
+
 ['p1','p2'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();doReset();}});});
 async function doReset(){
   var p1=document.getElementById('p1').value,p2=document.getElementById('p2').value;
+  if(!ready){msg('Still checking your link — one moment.');return;}
   if(!p1||!p2){msg('Enter and confirm your new password.');return;}
   if(p1.length<6){msg('Password must be at least 6 characters.');return;}
   if(p1!==p2){msg('Passwords do not match.');return;}
   if(!accessToken){msg('Reset link is invalid or expired. Request a new one.');return;}
-  var btn=document.getElementById('btn');btn.disabled=true;var old=btn.textContent;btn.textContent='Updating…';
+  var btn=document.getElementById('btn');btn.disabled=true;var old=btn.textContent;btn.textContent='Updating\u2026';
   try{
     var r=await fetch(SB_URL+'/auth/v1/user',{method:'PUT',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+accessToken},body:JSON.stringify({password:p1})});
-    var d=await r.json();
-    if(!r.ok){msg(d.msg||d.error_description||d.error||'Could not reset password. The link may have expired — request a new one.');btn.disabled=false;btn.textContent=old;return;}
-    document.getElementById('content').innerHTML='<h1>Password updated</h1><p class="ld">Your password has been changed. You can now log in with your new password.</p><a class="btn" href="/index.html">Go to login</a>';
-  }catch(e){msg('Network error. Try again.');btn.disabled=false;btn.textContent=old;}
+    var d=null;try{d=await r.json();}catch(_){}
+    if(!r.ok){
+      msg(window.EDAuth?EDAuth.message(d,r.status,'signin'):'Could not reset password. The link may have expired — request a new one.');
+      btn.disabled=false;btn.textContent=old;return;
+    }
+    document.getElementById('content').innerHTML='<h1>Password updated</h1><p class="ld">Your password has been changed and you are signed in on this device.</p><a class="btn" href="/index.html">Continue</a>';
+  }catch(e){msg('Could not reach EdgeDesk. Check your connection and try again.');btn.disabled=false;btn.textContent=old;}
 }
 </script>
 </body></html>
