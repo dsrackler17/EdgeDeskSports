@@ -354,14 +354,20 @@
     add(me.ypc - op.ypc >= 0.8, true, me.ypc + ' yards a carry, to their ' + op.ypc + '.');
     add(op.ypc - me.ypc >= 0.8, false, 'They ran it at ' + op.ypc + ' a carry; you managed ' + me.ypc + '.');
     add(me.turnovers < op.turnovers, true, 'Won the turnover battle ' + op.turnovers + '–' + me.turnovers + '.');
-    add(me.turnovers > op.turnovers, false, 'Gave it away ' + me.turnovers + ' times to their ' + op.turnovers + '.');
+    add(me.turnovers > op.turnovers, false, 'Gave it away ' + me.turnovers
+      + (me.turnovers === 1 ? ' time' : ' times') + ' to their ' + op.turnovers + '.');
     add(me.thirdPct >= 45, true, 'Converted ' + me.third + ' on third down.');
     add(me.thirdPct < 30 && me.third !== '0/0', false, 'Third down was ' + me.third + '.');
     add(me.explosive - op.explosive >= 3, true, me.explosive + ' explosive plays to their ' + op.explosive + '.');
     add(op.explosive - me.explosive >= 3, false, 'They hit ' + op.explosive + ' explosive plays to your ' + me.explosive + '.');
     add(me.sacks > op.sacks + 1, true, 'Got home ' + me.sacks + ' times; they got ' + op.sacks + '.');
     add(op.sacks > me.sacks + 1, false, 'Gave up ' + op.sacks + ' sacks.');
-    add(me.redzone !== '0/0', me.redzoneGood !== false, 'Red zone: ' + me.redzone + '.');
+    /* THE RED ZONE CUTS BOTH WAYS. It used to be read off a flag the box
+       score never sets, so `undefined !== false` filed nought-for-three under
+       "why you won". Half the trips ending in seven is the line. */
+    var rz = String(me.redzone || '0/0').split('/');
+    var rzTd = parseInt(rz[0], 10) || 0, rzAtt = parseInt(rz[1], 10) || 0;
+    add(rzAtt > 0, rzTd / rzAtt >= 0.5, 'Red zone: ' + me.redzone + '.');
     add(me.top - op.top > 240, true, 'Held the ball for ' + Math.round(me.top / 60) + ' minutes.');
     add(op.top - me.top > 240, false, 'They held it for ' + Math.round(op.top / 60) + ' minutes.');
     return out;

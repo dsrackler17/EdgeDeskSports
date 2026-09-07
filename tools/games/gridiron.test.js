@@ -725,7 +725,7 @@ function repeat(playKey, defKey, n, extra, opts) {
   /* a recording 2D context: counts what was drawn and catches any NaN, which
      is the one way canvas fails silently */
   function recorder() {
-    const c = { calls: { fill: 0, stroke: 0, fillRect: 0, fillText: 0, arc: 0 }, bad: [] };
+    const c = { calls: { fill: 0, stroke: 0, fillRect: 0, fillText: 0, strokeText: 0, arc: 0 }, bad: [] };
     const num = (name, args) => {
       for (const a of args) {
         if (typeof a === 'number' && !isFinite(a)) { c.bad.push(name + ' got ' + a); return; }
@@ -739,6 +739,9 @@ function repeat(playKey, defKey, n, extra, opts) {
     c.stroke = function () { c.calls.stroke++; };
     c.fillRect = function () { num('fillRect', arguments); c.calls.fillRect++; };
     c.fillText = function () { num('fillText', arguments); c.calls.fillText++; };
+    /* the artist outlines the end-zone wordmark before filling it, so paint
+       on grass survives being seen from ninety yards */
+    c.strokeText = function () { num('strokeText', arguments); c.calls.strokeText++; };
     c.arc = function () { num('arc', arguments); c.calls.arc++; };
     /* text has to be measurable: the artist fits club names to the end zone */
     c.measureText = function (t) { return { width: String(t).length * 7 }; };
@@ -833,6 +836,30 @@ function repeat(playKey, defKey, n, extra, opts) {
   chk('every club plays differently', new Set(SE.TEAMS.map(t => t.offense + '/' + t.defense)).size >= 5);
   chk('every club has a scouting line', SE.TEAMS.every(t => t.blurb && t.blurb.length > 20));
   chk('every club names a real scheme', SE.TEAMS.every(t => !!FB.SCHEMES[t.offense]));
+
+  /* THE POSTGAME PANEL PUTS THESE UNDER "why you won" OR "what nearly cost
+     you", so which way each one points has to be right. Nought for three in
+     the red zone is not a reason anybody won a game. */
+  (function reasons() {
+    const box = side => ({
+      ypc: 3.0, turnovers: 0, thirdPct: 40, third: '4/10', explosive: 2, sacks: 1,
+      redzone: side, top: 900, firstDowns: 10, yards: 300
+    });
+    function flagFor(rz) {
+      const b = { home: box(rz), away: box('1/2') };
+      const hit = SE.why(b, 'home').filter(r => r.text.indexOf('Red zone') === 0);
+      return hit.length ? hit[0].good : null;
+    }
+    eq('nought for three in the red zone counts against you', flagFor('0/3'), false);
+    eq('one for three in the red zone counts against you', flagFor('1/3'), false);
+    eq('two for three in the red zone counts for you', flagFor('2/3'), true);
+    eq('never in the red zone is not a reason either way', flagFor('0/0'), null);
+    const one = SE.why({ home: Object.assign(box('1/2'), { turnovers: 1 }),
+                         away: Object.assign(box('1/2'), { turnovers: 0 }) }, 'home')
+      .filter(r => r.text.indexOf('Gave it away') === 0)[0];
+    chk('one turnover is a time, not times', one && /away 1 time to/.test(one.text),
+        one ? one.text : 'no line');
+  })();
 
   MEM = {};
   const s = SE.settings();

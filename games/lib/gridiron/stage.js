@@ -238,10 +238,23 @@
     var pendingAction = null, pendingThrow = null, pendingSwitch = false;
     var kits = { off: null, def: null };
     var names = { off: '', def: '' };
+    /* the clubs' own colours, kept apart from the kits: an end zone is
+       painted in the club's paint whether they are in white that week or not */
+    var paints = { off: null, def: null };
     var artPaths = null, showArt = true;
     var userSide = 'off', userActor = null, userMode = 'play';
     var steer = { x: 0, y: 0, on: false };
     var speedScale = 1;
+    /* HOW MANY OF THEM ARE ON THEIR FEET. It decays back to a murmur on its
+       own; the page shoves it up when something happens worth standing for. */
+    var excite = 0.10, exciteFloor = 0.10;
+    /* THE PLAY SHOT CANNOT SEE THE STADIUM, and that is not a bug. A lens
+       this long and this high looks down at the grass: the horizon sits seven
+       hundred pixels above the frame and the near sideline is off both edges,
+       so the bowl is genuinely behind the camera's shoulder. To show the
+       venue you have to put the camera in it — low and wide — which is what
+       a broadcast does between plays and never during one. */
+    var shot = 'play';
     var raf = null, lastMs = 0, acc = 0;
     var events = opts.on || {};
     var flash = null;
@@ -263,8 +276,15 @@
        bowling alley. */
     function fitCamera() {
       cam.px = clamp(cam.w / (0.88 * Math.max(12, cam.wide)), 7, 30);
-      cam.height = clamp(1.807 * cam.h / cam.px, 26, 170);
+      /* the play shot holds thirty-eight yards of depth and looks down hard;
+         the wide shot drops the lens until the horizon — and everything
+         standing on it — comes into frame */
+      cam.height = shot === 'wide'
+        ? clamp(cam.h * (cam.anchor - 0.12) / cam.px, 18, 200)
+        : clamp(1.807 * cam.h / cam.px, 26, 170);
     }
+    /* seconds the loop is held open for a camera move that is not football */
+    var glide = 0;
     var reduce = false;
     try { reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
 
@@ -295,12 +315,39 @@
     self.teams = function (offTheme, defTheme, offName, defName, offAway) {
       kits.off = P.uniform(offTheme, !!offAway);
       kits.def = P.uniform(defTheme, !offAway);
+      paints.off = offTheme || null; paints.def = defTheme || null;
       names.off = offName || ''; names.def = defName || '';
     };
     self.setArt = function (v) { showArt = !!v; };
     self.setSpeed = function (s) { speedScale = clamp(s || 1, 0.4, 4); };
     self.setUserSide = function (s) { userSide = s === 'def' ? 'def' : 'off'; };
     self.setMode = function (m) { userMode = m; };
+    /* time of day and weather: one call changes the turf, the stands, the
+       crowd, the sky and the grade together */
+    /* 'play' is football-first. 'wide' is the establishing shot: pregame,
+       kickoff, a touchdown, halftime and the final whistle. */
+    /* Changing the shot has to move the picture NOW: between plays nothing is
+       animating, so a lens change that waits for the next frame never arrives.
+       `snap` false glides instead, and holds the loop open long enough for the
+       move to finish — which is what a camera pulling out on a touchdown is. */
+    self.setShot = function (k, snap) {
+      var want = k === 'wide' ? 'wide' : 'play';
+      if (want === shot) return;
+      shot = want;
+      if (snap === false) { glide = 1.7; start(); return; }
+      camFollow(0, true);
+      draw();
+    };
+    self.shot = function () { return shot; };
+    self.setConditions = function (light, weather) {
+      if (light) opts.light = light;
+      if (weather) opts.weather = weather;
+    };
+    /* the crowd gets up. 0 is a murmur, 1 is a touchdown. */
+    self.crowd = function (level, floor) {
+      excite = clamp(Math.max(excite, level || 0), 0, 1);
+      if (floor != null) exciteFloor = clamp(floor, 0, 1);
+    };
     self.camera = cam;
     self.phase = function () { return phase; };
     self.userActor = function () { return userActor; };
@@ -477,7 +524,8 @@
          same thumbs give the same play on any device. */
       while (acc > 1 / 120 && steps < 8) { update(1 / 120); acc -= 1 / 120; steps++; }
       draw();
-      if (phase === 'dead' && dead > 1.4) stop();
+      if (glide > 0) glide -= dt;
+      if (phase === 'dead' && dead > 1.4 && glide <= 0) stop();
     }
 
     function update(dt) {
@@ -501,6 +549,7 @@
         }
       }
       if (phase === 'dead') dead += dt;
+      excite = Math.max(exciteFloor, excite - dt * 0.30);
       camFollow(dt);
     }
 
@@ -525,7 +574,15 @@
       var wantX, wantY, wide;
       var holding = phase === 'live' && ball.holder && ball.holder.slot === 'QB' && !ball.flight
         && play && play.type === 'pass';
-      if (phase === 'set') {
+      if (shot === 'wide') {
+        /* THE WHOLE PLACE, BUT STILL POINTED AT THE FOOTBALL. A pull-out that
+           always settles on midfield turns a touchdown into an aerial photo
+           of a stadium with something small happening in it, so the lens
+           follows the ball up the field as it goes. */
+        wide = 70;
+        wantX = FIELD.half;
+        wantY = clamp((los || 50) * 0.34 + 34, 34, 68);
+      } else if (phase === 'set') {
         /* back off far enough to show the whole formation: reading the look is
            the decision you are about to make */
         var lo = 1e9, hi = -1e9;
@@ -533,7 +590,10 @@
         /* wide enough to read the look, tight enough that the men are men.
            Past the mid forties everybody is a speck and the shot stops being
            football. */
-        wide = clamp(hi - lo + 7, 32, 44);
+        /* TIGHTER INSIDE THE TWENTY. There is less field left to show and
+           more at stake in it, so the lens comes in and the men get bigger —
+           which is what a broadcast does in the red zone too. */
+        wide = clamp(hi - lo + 7, 32, los > 80 ? 38 : 44);
         wantX = (lo + hi) / 2;
         wantY = los + 2;
       } else if (holding) {
@@ -545,7 +605,7 @@
         wantY = los + 2;
       } else {
         var breakaway = ball.holder && ball.holder.carry && Math.hypot(ball.holder.vx, ball.holder.vy) > 8.4;
-        wide = breakaway ? 28 : 35;
+        wide = breakaway ? 28 : los > 80 ? 31 : 35;
         wantX = tx;
         wantY = ty + (phase === 'dead' ? 0.5 : 2.5);
       }
@@ -561,6 +621,19 @@
     }
 
     /* ── DRAW ────────────────────────────────────────────────────────────── */
+    /* END ZONE PAINT. The deep colour goes on the grass; the loud one goes
+       on the letters. If a club's two colours are too close in brightness the
+       name would vanish into its own paint, so it gets white instead. */
+    function turfPaint(theme, fb) { return (theme && theme.secondary) || fb || '#123326'; }
+    function lum(c) { var v = P.hex ? P.hex(c) : null; return v ? (v[0] * 299 + v[1] * 587 + v[2] * 114) / 1000 : 0; }
+    function turfInk(theme) {
+      if (!theme || !theme.primary || !theme.secondary) return '#ffffff';
+      if (Math.abs(lum(theme.primary) - lum(theme.secondary)) < 78) return '#ffffff';
+      /* paint on grass is seen from ninety yards; it is mixed lighter than the
+         colour on the shirt so it still carries that far */
+      return lum(theme.primary) < 120 ? P.shade(theme.primary, 0.34) : theme.primary;
+    }
+
     function draw() {
       var w = cam.w, h = cam.h;
       ctx.save();
@@ -569,8 +642,15 @@
       }
       ctx.fillStyle = '#0a0e13';
       ctx.fillRect(-20, -20, w + 40, h + 40);
-      P.field(ctx, cam, { tick: tick, homeColor: opts.homeColor, awayColor: opts.awayColor,
-        homeName: names.off, awayName: names.def });
+      var scene = { tick: tick,
+        homeColor: turfPaint(paints.off, opts.homeColor),
+        awayColor: turfPaint(paints.def, opts.awayColor),
+        homeInk: turfInk(paints.off), awayInk: turfInk(paints.def),
+        homeTint: (paints.off && paints.off.primary) || null,
+        awayTint: (paints.def && paints.def.primary) || null,
+        homeName: names.off, awayName: names.def, firstDown: firstDown,
+        light: opts.light || 'day', weather: opts.weather || 'clear', excite: excite };
+      P.field(ctx, cam, scene);
       P.markers(ctx, cam, los, firstDown);
       if (phase === 'set' && showArt && artPaths) P.art(ctx, cam, artPaths);
       /* back to front, so the near men overlap the far ones — except whoever
@@ -589,6 +669,9 @@
       if (mine) P.player(ctx, mine, cam);
       if (carrier) P.player(ctx, carrier, cam);
       if (!ball.holder || ball.flight) P.ball(ctx, ball, cam);
+      /* distance is hazier as well as smaller: drawn over the men so a deep
+         safety sits back in the picture with the far stands */
+      P.atmosphere(ctx, cam, scene);
       /* the throw buttons, over the men themselves */
       targetBoxes = [];
       if (targets && sim && phase === 'live' && !ball.flight && !sim.thrown()) {
@@ -601,6 +684,7 @@
           targetBoxes.push(box);
         });
       }
+      P.conditions(ctx, cam, scene);
       ctx.restore();
     }
     self.draw = draw;

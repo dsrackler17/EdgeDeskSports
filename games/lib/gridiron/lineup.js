@@ -98,22 +98,49 @@
        The lens focuses on the NEAREST row, because that is the widest one:
        perspective spreads what is close to you, so a corner standing on the
        near numbers is the man who falls off the edge of the picture. */
-    var back = 53;
-    var wide = Math.max(24, (hiX - loX) + 11);
-    var px = clamp(w / (0.88 * wide), 6, 30);
-    var depth = clamp(hiY - loY, 2.5, 40);
-    var A = 0.64 * h * back * (back + depth) / depth;
-    var cam = P.camera({
-      w: w, h: h, x: (loX + hiX) / 2, y: loY,
-      back: back, px: px, wide: wide,
-      height: clamp(A / (px * back), 24, 190),
-      anchor: 0.80
-    });
+    var cam;
+    if (opts.shot === 'stadium') {
+      /* THE ESTABLISHING SHOT. The lens drops out of the sky and back behind
+         the near goal line until the horizon — and the bowl standing on it —
+         comes into frame. The play camera can never show this: it looks down
+         too hard, and the stands are behind its shoulder. */
+      var swide = Math.max(56, Math.min(90, w * 0.20));
+      var spx = clamp(w / (0.88 * swide), 6, 30);
+      cam = P.camera({
+        w: w, h: h, x: P.FIELD.half, y: opts.at == null ? 10 : opts.at,
+        back: 78, px: spx, wide: swide,
+        height: clamp(h * (0.55 - 0.12) / spx, 18, 220),
+        anchor: 0.55
+      });
+    } else {
+      /* FRAME THEM ALL. How wide the group is sets how big a man is drawn, and
+         how deep it is sets how high the lens goes, so eleven men spread over
+         four yards fill the picture just as eleven spread over twenty do.
+         The lens focuses on the NEAREST row, because that is the widest one:
+         perspective spreads what is close to you, so a corner standing on the
+         near numbers is the man who falls off the edge of the picture. */
+      var back = 53;
+      var wide = Math.max(24, (hiX - loX) + 11);
+      var px = clamp(w / (0.88 * wide), 6, 30);
+      var depth = clamp(hiY - loY, 2.5, 40);
+      var A = 0.64 * h * back * (back + depth) / depth;
+      cam = P.camera({
+        w: w, h: h, x: (loX + hiX) / 2, y: loY,
+        back: back, px: px, wide: wide,
+        height: clamp(A / (px * back), 24, 190),
+        anchor: 0.80
+      });
+    }
 
     ctx.clearRect(0, 0, w, h);
-    P.field(ctx, cam, { tick: 0, homeColor: opts.homeColor, awayColor: opts.awayColor,
-      homeName: opts.homeName || '', awayName: '' });
-    P.markers(ctx, cam, set.los, null);
+    var scene = { tick: opts.tick || 0, homeColor: opts.homeColor, awayColor: opts.awayColor,
+      homeInk: opts.homeInk, awayInk: opts.awayInk,
+      homeTint: opts.homeTint, awayTint: opts.awayTint,
+      homeName: opts.homeName || '', awayName: opts.awayName || '',
+      light: opts.light || 'day', weather: opts.weather || 'clear',
+      excite: opts.excite == null ? 0.22 : opts.excite };
+    P.field(ctx, cam, scene);
+    if (opts.shot !== 'stadium') P.markers(ctx, cam, set.los, null);
 
     var front = set.parts && set.parts.front ? set.parts.front.key : null;
     var boxes = [];
@@ -131,6 +158,7 @@
        stand a yard apart; their names do not fit in a yard. So each tag is
        placed under its man and then pushed down until it is clear of the
        ones already down — which is what a broadcast graphic does too. */
+    if (opts.shot === 'stadium') { P.atmosphere(ctx, cam, scene); P.conditions(ctx, cam, scene); }
     if (opts.tags === false) return boxes;
     var fs = clamp(h * 0.034, 8, 13);
     ctx.font = '800 ' + Math.round(fs) + 'px "Space Grotesk", Inter, sans-serif';
