@@ -5126,5 +5126,22 @@ begin
   perform pg_temp.ok('and a reward replayed after the pack was claimed still does not hand out another',
     public.franchise_rank_report(ofl) = ofrep2);
 
+  -- AND THE HOME READ MODEL CARRIES IT. The rank and the packs it owes were
+  -- only ever readable from the Packs room, which is not in a phone's tab bar,
+  -- so the moment the progression pays out was invisible on the page a player
+  -- actually opens.
+  perform pg_temp.as_anon();
+  v := public.franchise_home(SEC_OF);
+  perform pg_temp.ok('home carries the rank, its points and the packs it owes',
+    v ? 'reputation'
+    and (v->'reputation'->>'rank')::int = (ofrep2->>'rank')::int
+    and (v->'reputation'->>'points')::int = (ofrep2->>'points')::int
+    and (v->'reputation'->>'packs')::int = (ofrep2->>'packs')::int
+    and (v->'reputation'->>'next_at')::int > (v->'reputation'->>'points')::int,
+    (v->'reputation')::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and it agrees, key for key, with what the Packs room reads',
+    v->'reputation' = public.franchise_rank_report(ofl));
+
 end
 $test$;
