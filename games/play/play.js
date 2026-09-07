@@ -1118,12 +1118,17 @@
     var who = p.carrier ? FRname(p.carrier) : p.target ? FRname(p.target)
             : p.interceptor ? FRname(p.interceptor) : '';
     var line;
-    if (p.sack) line = 'Sacked for ' + p.yards;
+    /* PLAIN FOOTBALL ENGLISH. "-2-yard rush" is a spreadsheet cell; a run that
+       lost two yards lost two yards, and no gain is no gain. */
+    var y = p.yards == null ? 0 : p.yards;
+    if (p.sack) line = 'Sacked for ' + Math.abs(y);
     else if (p.turnover === 'interception') line = 'Intercepted';
     else if (p.turnover === 'fumble') line = 'Fumble';
     else if (p.incomplete) line = 'Incomplete';
-    else if (p.completion) line = p.yards + '-yard catch';
-    else line = p.yards + '-yard rush';
+    else if (y < 0) line = 'Lost ' + Math.abs(y) + (p.completion ? ' on the catch' : ' on the ground');
+    else if (y === 0) line = 'No gain';
+    else if (p.completion) line = y + '-yard catch';
+    else line = y + '-yard rush';
     /* ── THE REASON, AND THE MOST SPECIFIC ONE AVAILABLE ──────────────────
        "They had eight in the box" is true of the whole defence; "Wexler held
        the point" is true of the block the run went behind, and it is the one
