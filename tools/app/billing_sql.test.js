@@ -132,7 +132,13 @@ try {
       " user_id uuid not null references auth.users(id) on delete cascade, user_email text);" +
       "insert into public.billing_consents(user_id,user_email)" +
       " values ('11111111-1111-1111-1111-111111111111','old@x.co');" +
-      "create table public.subscriptions (user_id uuid primary key references auth.users(id), status text);"]);
+      "create table public.subscriptions (user_id uuid primary key references auth.users(id), status text);" +
+      /* A stripe_events left over from an earlier attempt at wiring the webhook.
+         This is the real shape that broke the first production run: create-table
+         no-ops, the index on created_at then dies on a column that was never
+         added, and the whole migration rolls back. */
+      "create table public.stripe_events (id text primary key, payload jsonb);" +
+      "insert into public.stripe_events(id,payload) values ('evt_old','{\"a\":1}');"]);
     const rep = psql(conn, ['-d', LEG, '-tA', '-F', '|', '-f', SCHEMA]);
     psql(conn, ['-d', LEG, '-v', 'ON_ERROR_STOP=1', '-q', '-f', WEBHOOK]);
     const bad = (rep.stdout || '').split('\n').filter((l) => /^\d+\|/.test(l) && !/\|ok/.test(l));
@@ -144,13 +150,22 @@ try {
     const kept = psql(conn, ['-d', LEG, '-tA', '-c',
       "select (select count(*) from public.billing_consents)::text || ',' ||" +
       " (select count(*) from information_schema.columns where table_name='billing_consents'" +
-      "   and column_name='offer_text')::text"]);
-    const [rows, col] = (kept.stdout || '').trim().split(',');
+      "   and column_name='offer_text')::text || ',' ||" +
+      " (select count(*) from public.stripe_events)::text || ',' ||" +
+      " (select count(*) from information_schema.columns where table_name='stripe_events'" +
+      "   and column_name in ('created_at','type','resolved','applied','note'))::text"]);
+    const [rows, col, evRows, evCols] = (kept.stdout || '').trim().split(',');
     if (rows !== '1' || col !== '1') {
       console.log('FAIL | billing SQL | legacy rows=' + rows + ' offer_text=' + col + ' (want 1,1)');
       throw new Error('legacy-rows');
     }
-    passed += 2;
+    /* The stripe_events half. Its absence is what took the first real run down. */
+    if (evRows !== '1' || evCols !== '5') {
+      console.log('FAIL | billing SQL | a hand-made stripe_events was not upgraded: rows=' +
+        evRows + ' (want 1), columns added=' + evCols + ' (want 5)');
+      throw new Error('legacy-rows');
+    }
+    passed += 4;
   } finally {
     psql(conn, ['-d', 'postgres', '-q', '-c', 'drop database if exists ' + LEG + ' (force)']);
   }

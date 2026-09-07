@@ -30,7 +30,7 @@
 -- Nothing here is reachable from a browser. RLS is on and no client role has
 -- any grant: the webhook writes with the service role, which bypasses RLS.
 --
--- Idempotent, additive, ends in a report. Rows 1-9 should each say ok.
+-- Idempotent, additive, ends in a report. Rows 1-10 should each say ok.
 -- Run it BEFORE deploying supabase/functions/stripe_webhook.
 -- ===========================================================================
 
@@ -50,6 +50,19 @@ create table if not exists public.stripe_events (
   payload        jsonb
 );
 
+-- EVERY COLUMN IS ADDED INDEPENDENTLY, INCLUDING THE ONES IN THE CREATE ABOVE.
+-- `create table if not exists` no-ops against a table that already exists, so a
+-- stripe_events made by hand during an earlier attempt at this keeps whatever
+-- shape it had — and the index below then dies on a column that was never
+-- added, rolling the whole file back. That is not hypothetical: it is exactly
+-- what happened on the first real run of this migration, and it is the same
+-- trap billing.sql already guards against.
+--
+-- `type` is added WITHOUT its NOT NULL here on purpose: an existing table may
+-- hold rows, and a NOT NULL with no default cannot be added to them. Fresh
+-- installs still get the constraint from the create above.
+alter table public.stripe_events add column if not exists type            text;
+alter table public.stripe_events add column if not exists created_at      timestamptz not null default now();
 alter table public.stripe_events add column if not exists stripe_created  timestamptz;
 alter table public.stripe_events add column if not exists customer_id     text;
 alter table public.stripe_events add column if not exists subscription_id text;
@@ -165,17 +178,23 @@ union all select 6, 'the unresolved view exists and is not client-readable',
                               where table_schema='public' and table_name='stripe_events_unresolved'
                                 and grantee in ('anon','authenticated'))
             then 'ok' else 'CHECK THIS' end
-union all select 7, 'stripe_user_by_email is security definer and closed to clients',
+union all select 7, 'stripe_events.id is text, so a Stripe evt_... id fits',
+       case when (select data_type from information_schema.columns
+                   where table_schema='public' and table_name='stripe_events' and column_name='id')
+            in ('text','character varying') then 'ok'
+            else 'CHECK THIS — an earlier stripe_events has a non-text id; Stripe event ids are strings '
+                 'like evt_1A2b3C. Rename that table out of the way and re-run this file.' end
+union all select 8, 'stripe_user_by_email is security definer and closed to clients',
        case when (select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
                    where n.nspname='public' and p.proname='stripe_user_by_email')
              and not exists (select 1 from information_schema.role_routine_grants
                               where routine_schema='public' and routine_name='stripe_user_by_email'
                                 and grantee in ('anon','authenticated'))
             then 'ok' else 'CHECK THIS' end
-union all select 8, 'hand-made subscription rows, for the record',
+union all select 9, 'hand-made subscription rows, for the record',
        'ok (' || (select count(*) from public.subscriptions where last_event_id is null)::text
               || ' rows never written by a webhook)'
-union all select 9, 'rows currently locking out an active subscriber',
+union all select 10, 'rows currently locking out an active subscriber',
        case when (select count(*) from public.subscriptions
                    where status in ('active','trialing') and current_period_end < now()) = 0
             then 'ok (none)'
