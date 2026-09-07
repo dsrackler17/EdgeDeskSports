@@ -1056,7 +1056,7 @@
        long shadows and the floodlights just coming on. */
     dusk: {
       sky: ['#243052', '#c4795e'], haze: 'rgba(186,140,116,',
-      turf: ['#2e7145', '#1d4b2d'], apron: '#33394a', wall: '#454358',
+      turf: ['#2e7145', '#1d4b2d'], apron: '#3c4356', wall: '#4d4b62',
       deck: ['#4b4356', '#332f40'], upper: '#221f2c',
       crowd: 0.86, paint: 0.86, grade: 'rgba(255,158,92,0.085)', lights: true,
       pool: 0.62, edge: 0.34
@@ -1065,7 +1065,7 @@
        the dark, and the whole building lit from its own roofline. */
     night: {
       sky: ['#03050a', '#0b1220'], haze: 'rgba(72,96,128,',
-      turf: ['#2f8a52', '#1b5232'], apron: '#171d25', wall: '#212832',
+      turf: ['#2f8a52', '#1b5232'], apron: '#28313d', wall: '#333d4c',
       deck: ['#2b3441', '#191f28'], upper: '#111620',
       crowd: 0.62, paint: 1.00, grade: 'rgba(126,166,255,0.045)', lights: true,
       pool: 0.88, edge: 0.42
@@ -1100,7 +1100,7 @@
     wall: 3.6,         /* how high the wall in front of the seats stands */
     deep: 30,          /* how far back the lower bowl reaches */
     high: 19,          /* and how high it climbs */
-    endApron: 9,       /* the same behind each end zone */
+    endApron: 4.5,     /* the same behind each end zone */
     endDeep: 40,
     /* ── AND THE REST OF THE BUILDING ─────────────────────────────────
        A single ring of seats nineteen yards high leaves two thirds of the
@@ -1282,7 +1282,11 @@
        back line, sized to whatever room is left above it. It is a backdrop
        and it is honest about being one; the establishing shot below draws the
        same stadium for real, in perspective, and the two agree. */
-    var line = cam.sy(FIELD.length + FIELD.endzone);
+    /* THE BUILDING STANDS WHERE THE SURFACE RUNS OUT, not on the back line.
+       Anchored to the paint it left the apron behind the end zone as a band
+       of unlit concrete between the last row of the crowd and the grass —
+       forty pixels of nothing in the middle of the picture. */
+    var line = cam.sy(FIELD.length + FIELD.endzone + BOWL.endApron);
     var bowlTop = cam.sy(yFar + BOWL.endDeep, BOWL.high);
     /* WHOEVER DRAWS THE STAND, DRAWS ALL OF IT. From the play lens the real
        bowl projects hundreds of pixels above the frame: what lands in the
