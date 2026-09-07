@@ -168,7 +168,7 @@
     switch (c.type) {
       case 'play': return { t: 'p', p: c.play, f: c.formation, d: c.def, m: c.tempo,
         r: c.read == null ? null : c.read, l: c.lane == null ? null : c.lane,
-        g: c.timing == null ? null : c.timing };
+        g: c.timing == null ? null : c.timing, sc: c.scramble ? 1 : 0 };
       case 'two': return { t: '2', p: c.play, f: c.formation, d: c.def };
       case 'pat': return { t: 'x' };
       case 'punt': return { t: 'u' };
@@ -183,7 +183,7 @@
     switch (c.t) {
       case 'p': return { type: 'play', play: c.p, formation: c.f, def: c.d, tempo: c.m,
         read: c.r == null ? null : c.r, lane: c.l == null ? null : c.l,
-        timing: c.g == null ? null : c.g };
+        timing: c.g == null ? null : c.g, scramble: !!c.sc };
       case '2': return { type: 'two', play: c.p, formation: c.f, def: c.d };
       case 'x': return { type: 'pat' };
       case 'u': return { type: 'punt' };

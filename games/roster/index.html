@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260907h">
-<link rel="stylesheet" href="/games/franchise.css?v=20260907h">
+<link rel="stylesheet" href="/games/games.css?v=20260907c">
+<link rel="stylesheet" href="/games/franchise.css?v=20260907c">
 </head>
 <body>
 <div id="gh"></div>
@@ -49,17 +49,23 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260907h"></script>
-<script src="/games/lib/scoring.js?v=20260907h"></script>
-<script src="/games/lib/challenge.js?v=20260907h"></script>
-<script src="/games/lib/research_state.js?v=20260907h"></script>
-<script src="/games/lib/attribution.js?v=20260907h"></script>
-<script src="/games/lib/store.js?v=20260907h"></script>
-<script src="/games/lib/dynasty.js?v=20260907h"></script>
-<script src="/games/lib/social.js?v=20260907h"></script>
-<script src="/games/lib/auth.js?v=20260907h"></script>
-<script src="/games/lib/franchise.js?v=20260907h"></script>
-<script src="/games/games.js?v=20260907h"></script>
+<script src="/games/lib/week.js?v=20260907c"></script>
+<script src="/games/lib/scoring.js?v=20260907c"></script>
+<script src="/games/lib/challenge.js?v=20260907c"></script>
+<script src="/games/lib/research_state.js?v=20260907c"></script>
+<script src="/games/lib/attribution.js?v=20260907c"></script>
+<script src="/games/lib/store.js?v=20260907c"></script>
+<script src="/games/lib/dynasty.js?v=20260907c"></script>
+<script src="/games/lib/social.js?v=20260907c"></script>
+<script src="/games/lib/auth.js?v=20260907c"></script>
+<script src="/games/lib/franchise.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/football.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/roster.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/engine.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/paint.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/stage.js?v=20260907c"></script>
+<script src="/games/lib/gridiron/lineup.js?v=20260907c"></script>
+<script src="/games/games.js?v=20260907c"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -167,6 +173,10 @@
       +(weak?' · Weakest: <b>'+esc(weak.name)+' '+esc(weak.value)+'</b>':'')+'</div></div></div>'
       +rate(rt)
       +injuryBlock(d)
+      +'<div class="lineup"><div class="lu-tabs">'
+      +'<button type="button" class="lu-t on" data-lu="offense">Offense</button>'
+      +'<button type="button" class="lu-t" data-lu="defense">Defense</button></div>'
+      +'<canvas id="luField" class="lu-field" aria-label="Your starting eleven, in the positions they line up in"></canvas></div>'
       +'<div class="ftp" style="margin-top:12px">Overall is the mean of a player’s four ratings. Team ratings weight the starters by position; '
       +'the depth chart decides who starts, and only a fit player is counted. Every number here was generated on the server and cannot be edited.</div>';
 
@@ -187,8 +197,48 @@
       +'<a href="/games/two-minute-drill/">run the drill</a>. The retired are in the <a href="/games/trophies/">Trophy Room</a>.</p></div></div>';
 
     wire();
+    paintLineup(f,'offense');
     if(fresh)G.track('roster_view',{players:d.players.length,overall:rt.overall,weakest:weak?weak.position:null});
   }
+  /* ── THE ELEVEN, ON A FIELD ─────────────────────────────────────────────
+     The same artist, the same camera and the same uniforms as the game
+     itself, so the roster page shows the men who actually take the snap
+     standing where they actually stand. */
+  var LU_SIDE='offense';
+  function themeObj(key){
+    var t=null;
+    (FR&&FR.THEMES?FR.THEMES:[]).forEach(function(x){if(x.key===key)t=x;});
+    return t||{primary:'#3fb883',secondary:'#123326',ink:'#06231a'};
+  }
+  function paintLineup(f,side){
+    var LU=window.EDGridironLineup, cv=document.getElementById('luField');
+    if(!LU||!cv||!f)return;
+    LU_SIDE=side||LU_SIDE;
+    var th=themeObj(f.theme);
+    var team={id:f.id,city:f.city,name:f.name,abbr:f.abbr,theme:f.theme,logo:f.logo,
+      offense:f.offense,defense:f.defense,overall:f.overall||f.rating_overall||74,
+      seed:(f.city||'')+(f.name||'')};
+    function go(){
+      try{LU.draw(cv,team,LU_SIDE,{theme:th,homeColor:th.secondary||'#123326',
+        awayColor:'#1b2430',homeName:f.abbr||''});}catch(e){}
+    }
+    go();
+    if(window.requestAnimationFrame)requestAnimationFrame(go);
+    if(!cv.__wired){
+      cv.__wired=1;
+      if(window.ResizeObserver){try{new ResizeObserver(go).observe(cv);}catch(e){}}
+      window.addEventListener('resize',go);
+    }
+    var tabs=document.querySelectorAll('.lu-t');
+    Array.prototype.forEach.call(tabs,function(b){
+      b.onclick=function(){
+        Array.prototype.forEach.call(tabs,function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        paintLineup(f,b.getAttribute('data-lu'));
+      };
+    });
+  }
+
   function wire(){
     groupsEl.addEventListener('click',function(e){
       var b=e.target.closest?e.target.closest('button[data-start]'):null;
