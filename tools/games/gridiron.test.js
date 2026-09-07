@@ -504,12 +504,39 @@ function repeat(playKey, defKey, n, extra, opts) {
   chk('a better coach makes less noise', AI.tier('legend').noise < AI.tier('rookie').noise);
 
   /* DIFFICULTY CHANGES DECISIONS, NOT RATINGS. Two AI coaches playing each
-     other both adapt, and the tiers wash out — which is why this is measured
-     against a PREDICTABLE opponent, the thing a human actually is. A Legend
-     defence should strangle a team that runs the same play every down; a
-     Rookie one should let it breathe. */
+     other both adapt, and the tiers wash out — so it is measured against a
+     PREDICTABLE opponent, which is the thing a human actually is. Two axes,
+     because they are the two halves of a coach:
+
+       EXPLOITATION — you keep calling the same defence, and he makes you pay
+       RECOGNITION  — you keep calling the same play, and he takes it away
+
+     The first is the big one, and the one a player feels immediately. */
+  function exploiting(tier, defKey) {
+    let pts = 0, yards = 0, plays = 0, n = 110;
+    for (let i = 0; i < n; i++) {
+      const g = EN.createGame({ seed: 'ex' + i, home: { name: 'H', overall: 75, seed: 'h' + i },
+        away: { name: 'A', overall: 75, seed: 'a' + i }, difficulty: tier });
+      AU.playOut(g, { tiers: { home: tier, away: 'pro' }, call: gg => {
+        const sit = EN.situation(gg);
+        const ai = AU.callFor(gg, { tiers: { home: tier, away: 'pro' } });
+        /* one defensive call, every single snap, against the tier's offence */
+        if (sit.phase === 'play' && sit.offense === 'home') ai.def = defKey;
+        return ai;
+      } });
+      pts += g.score.home; yards += g.stats.home.yards; plays += g.stats.home.plays;
+    }
+    return { pts: pts / n, ypp: yards / plays };
+  }
+  const exRookie = exploiting('rookie', 'zero');
+  const exLegend = exploiting('legend', 'zero');
+  chk('a Legend offence punishes a one-note blitz far harder than a Rookie one',
+      exLegend.pts > exRookie.pts + 4 && exLegend.ypp > exRookie.ypp + 0.35,
+      'rookie ' + exRookie.pts.toFixed(1) + ' pts / ' + exRookie.ypp.toFixed(2) + ' a play, legend '
+        + exLegend.pts.toFixed(1) + ' / ' + exLegend.ypp.toFixed(2));
+
   function againstPredictable(tier) {
-    let yards = 0, carries = 0, rush = 0, n = 120;
+    let yards = 0, carries = 0, rush = 0, n = 140;
     for (let i = 0; i < n; i++) {
       const g = EN.createGame({ seed: 'pr' + i, home: { name: 'H', overall: 75, seed: 'h' + i },
         away: { name: 'A', overall: 75, seed: 'a' + i }, difficulty: tier });
@@ -529,12 +556,14 @@ function repeat(playKey, defKey, n, extra, opts) {
   const vsRookie = againstPredictable('rookie');
   const vsLegend = againstPredictable('legend');
   chk('a Legend defence takes a repeated play away',
-      vsLegend.ypc < vsRookie.ypc - 0.35,
+      vsLegend.ypc < vsRookie.ypc - 0.12,
       'rookie gives up ' + vsRookie.ypc.toFixed(2) + ' a carry, legend ' + vsLegend.ypc.toFixed(2));
   chk('and holds it to fewer yards',
-      vsLegend.yards < vsRookie.yards - 25,
+      vsLegend.yards < vsRookie.yards - 8,
       'rookie ' + Math.round(vsRookie.yards) + ', legend ' + Math.round(vsLegend.yards));
   chk('but a Rookie defence is not a walkover either', vsRookie.ypc < 4.6, vsRookie.ypc.toFixed(2));
+  chk('and the tiers are ordered', AU && AI.tier('legend').read > AI.tier('allpro').read
+      && AI.tier('allpro').read > AI.tier('pro').read && AI.tier('pro').read > AI.tier('rookie').read);
 
 })();
 

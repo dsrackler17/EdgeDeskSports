@@ -67,7 +67,7 @@
     air_raid:   { QB: { arm: 5, acc: 4, spd: -4 }, WR: { rte: 6, spd: 3 }, OL: { pbk: 5, rbk: -4 }, TE: { rte: 4, blk: -5 } },
     spread:     { QB: { spd: 5, acc: 2 }, WR: { spd: 5, rte: 1 }, OL: { pbk: 2 } },
     west_coast: { QB: { acc: 5, arm: -4 }, WR: { hnd: 4, rte: 3, spd: -3 }, RB: { hnd: 5 } },
-    pro_style:  { QB: { iq: 6, arm: 3 }, TE: { blk: 5, hnd: 4 }, OL: { pbk: 5, rbk: 5 } }
+    pro_style:  { QB: { iq: 7, arm: 4 }, TE: { blk: 6, hnd: 5 }, OL: { pbk: 6, rbk: 6 } }
   };
   var DEF_TILT = {
     four_three:      { DL: { rst: 4, prs: 2 }, LB: { tkl: 3 } },

@@ -86,7 +86,7 @@
       }
     }
     best.sort(function (a, b) { return b.s - a.s; });
-    var top = best.slice(0, Math.max(1, Math.round(1 + T.noise * 6)));
+    var top = best.slice(0, Math.max(1, Math.round(1 + T.noise * 8)));
     var chosen = top[Math.floor(rand() * top.length)].p;
     return finish(o, chosen.key, scheme, rand, T);
   }
@@ -193,26 +193,9 @@
     if (sit.quarter >= 4 && sit.clock <= 90 && sit.diff < -8) return { key: 'dime_prevent' };
 
     var scored = F.DEF_CALLS.map(function (d) {
-      var parts = F.defParts(d);
-      var s = 0;
-      /* against the run, the box is everything; against the pass, coverage */
-      var runValue = (parts.front.run * 12) + (parts.fit.run * 10) + (parts.front.box - 6.5) * 1.1
-                   - (parts.coverage.box || 0) * -0.8;
-      var passValue = (parts.front.cover * 8) + (parts.coverage.deepMid + parts.coverage.deepOut
-                       + parts.coverage.intMid + parts.coverage.short) * -4.5
-                    + parts.pressure.rush * 9;
-      s += (1 - lean) * runValue + lean * passValue;
-      /* down and distance */
-      if (sit.down === 3 && sit.toGo >= 7) s += parts.pressure.rush * 12 + parts.front.dbs * 0.7;
-      if (sit.down === 3 && sit.toGo <= 2) s += parts.front.box * 0.9;
-      if (sit.down === 1 && parts.pressure.key !== 'none') s -= 1.4;
-      if (sit.toGoal <= 12) s += parts.front.box * 0.6 - (parts.coverage.key === 'cover4' ? 1.2 : 0);
-      /* protect the lead late */
-      if (sit.quarter >= 4 && sit.clock <= 240 && sit.diff < 0) {
-        s += (parts.coverage.deepMid + parts.coverage.deepOut) * -6;
-        s -= parts.pressure.rush * 5;
-      }
+      var s = scoreDefense(d, sit, lean, 0.62 + 0.85 * T.read);
       /* a blitz is a bet; a poor coach makes it at the wrong time */
+      var parts = F.defParts(d);
       if (parts.pressure.rush > 0) s += (T.read - 0.5) * 3.5 * (lean - 0.5) * 4;
       /* do not show the same look every snap */
       if (o.mem) s -= G.tendency(o.mem, d.key, 'def') * 9;
@@ -220,8 +203,55 @@
       return { d: d, s: s };
     });
     scored.sort(function (a, b) { return b.s - a.s; });
-    var top = scored.slice(0, Math.max(1, Math.round(1 + T.noise * 5)));
+    /* HOW WIDE THE SHORTLIST IS, is what a coaching tier actually means. A
+       Rookie picks out of the eight calls that are roughly plausible; a
+       Legend picks the right one. Neither of them gets better players. */
+    var top = scored.slice(0, Math.max(1, Math.round(1 + T.noise * 9)));
     return { key: top[Math.floor(rand() * top.length)].d.key };
+  }
+
+  /* WHAT ONE DEFENSIVE CALL IS WORTH IN THIS SITUATION. Shared by the
+     opposing coach and by the shelf of six the player is offered, so the game
+     never recommends something it would not call itself. */
+  function scoreDefense(d, sit, lean, commit) {
+    var parts = F.defParts(d), s = 0;
+    /* HOW HARD YOU COMMIT TO WHAT YOU HAVE READ. A coach who is sure it is a
+       run stacks the box; one who is guessing plays it honest. `commit` above
+       one pushes the read further from even, below one pulls it back — which
+       is the difference between taking a play away and merely being present
+       for it. */
+    if (commit) lean = Math.max(0.02, Math.min(0.98, 0.5 + (lean - 0.5) * commit));
+    /* against the run, the box is everything; against the pass, coverage */
+    var runValue = (parts.front.run * 12) + (parts.fit.run * 10) + (parts.front.box - 6.5) * 1.1
+                 + (parts.coverage.box || 0) * 0.8;
+    var passValue = (parts.front.cover * 8) + (parts.coverage.deepMid + parts.coverage.deepOut
+                     + parts.coverage.intMid + parts.coverage.short) * -4.5
+                  + parts.pressure.rush * 9;
+    s += (1 - lean) * runValue + lean * passValue;
+
+    /* PERSONNEL HAS TO MATCH THE SITUATION. Without this the arithmetic above
+       happily puts nine men on the line on first and ten from the fifteen,
+       because a goal-line front is the best run defence in the game and the
+       numbers alone never say it is the wrong week to use it. */
+    if (parts.front.key === 'goalline') {
+      s -= (sit.toGoal > 5 ? 9 : 0) + (sit.toGo > 3 ? 5 : 0) + (sit.down <= 2 && sit.toGo >= 7 ? 3 : 0);
+    }
+    if (parts.front.key === 'dime') {
+      s -= (sit.toGo <= 3 ? 5 : 0) + (sit.toGoal <= 10 ? 4 : 0) + (sit.down === 1 ? 2.5 : 0);
+    }
+    if (parts.front.key === 'nickel' && sit.toGo <= 2 && sit.down >= 3) s -= 1.4;
+
+    /* down and distance */
+    if (sit.down === 3 && sit.toGo >= 7) s += parts.pressure.rush * 12 + parts.front.dbs * 0.7;
+    if (sit.down === 3 && sit.toGo <= 2) s += parts.front.box * 0.9;
+    if (sit.down === 1 && parts.pressure.key !== 'none') s -= 1.4;
+    if (sit.toGoal <= 12) s += parts.front.box * 0.6 - (parts.coverage.key === 'cover4' ? 1.2 : 0);
+    /* protect the lead late */
+    if (sit.quarter >= 4 && sit.clock <= 240 && sit.diff < 0) {
+      s += (parts.coverage.deepMid + parts.coverage.deepOut) * -6;
+      s -= parts.pressure.rush * 5;
+    }
+    return s;
   }
 
   /* ── FOURTH DOWN ─────────────────────────────────────────────────────────
@@ -289,6 +319,7 @@
   var API = {
     TIERS: TIERS, TIER_ORDER: TIER_ORDER, tier: tier, PERSONALITIES: PERSONALITIES,
     passLean: passLean, callOffense: callOffense, callDefense: callDefense,
+    scoreDefense: scoreDefense,
     fourthDown: fourthDown, tempoFor: tempoFor, shouldKneel: shouldKneel, scorePlay: scorePlay
   };
   root.EDGridironAI = API;

@@ -244,15 +244,12 @@
   }
 
   /* ── DEFENSIVE CALL SHEET ────────────────────────────────────────────── */
+  /* the six the game would call itself, scored by the same function the
+     opposing coach uses — the shelf never recommends what the AI would not */
   function smartDefs(sit, n) {
+    var lean = AI.passLean(sit, F.scheme(teams.opp.offense), game.mem[G.other(me)]);
     var scored = F.DEF_CALLS.map(function (d) {
-      var parts = F.defParts(d), s = 0;
-      var lean = AI.passLean(sit, F.scheme(teams.opp.offense), null);
-      s += (1 - lean) * (parts.front.run * 12 + parts.fit.run * 10 + (parts.front.box - 6.5) * 1.1);
-      s += lean * (parts.front.cover * 8 + parts.pressure.rush * 9
-        - (parts.coverage.deepMid + parts.coverage.deepOut + parts.coverage.short) * 4);
-      if (sit.toGoal <= 8) s += parts.front.box * 1.2;
-      return { d: d, s: s };
+      return { d: d, s: AI.scoreDefense(d, sit, lean) };
     });
     scored.sort(function (a, b) { return b.s - a.s; });
     return scored.slice(0, n).map(function (x) { return x.d; });
