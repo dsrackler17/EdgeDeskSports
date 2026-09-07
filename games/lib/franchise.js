@@ -1916,6 +1916,28 @@
      no franchise: nothing to do, and the page says so. Resolves to the RPC
      result, or { ok:false, queued:true }. Every call is idempotent on the
      server, so a replay after a partial failure cannot double-credit. */
+  /* WHEN A FAILED CALL IS WORTH KEEPING. The queue is for a call the server
+     never ANSWERED. It is not a place to keep one the server has refused.
+
+     No status at all means the request never arrived — offline, timed out,
+     or this build has no endpoint configured. A 5xx means it arrived and the
+     server broke. A 404 means the layer is not deployed yet, and one day it
+     will be. All three are worth replaying.
+
+     Anything else is the server having read THIS call and said no, and the
+     same payload cannot get a different answer on the next boot. Keeping it
+     would jam the queue for the life of the account: measured before this
+     was written, a drill run offline and reconnected two days later — past
+     the day window a drill is honest inside — was retried on every boot for
+     ever, and the office read "1 reward waiting to sync" for ever with it. */
+  function retryable(r) {
+    if (!r.status) return true;
+    return r.status >= 500 || r.status === 404;
+  }
+  function queued(key) {
+    if (!ST) return false;
+    return ST.franchiseQueue().some(function (q) { return q.key === key; });
+  }
   function record(fn, args, key) {
     if (!hasFranchise()) return Promise.resolve({ ok: false, error: 'no_franchise', skipped: true });
     return rpc(fn, withSecret(args)).then(function (r) {
@@ -1924,11 +1946,13 @@
         if (r.data && r.data.totals) touchTotals(r.data.totals);
         return r;
       }
-      if (r.error === 'unreachable' || r.error === 'timeout' || (r.status && r.status >= 500)) {
+      if (retryable(r)) {
         if (ST) ST.queueFranchise({ key: key, fn: fn, args: args });
         return { ok: false, queued: true, error: r.error, message: r.message };
       }
-      return r;
+      var was = queued(key);
+      if (ST) ST.dequeueFranchise(key);
+      return { ok: false, dropped: was, error: r.error, message: r.message };
     });
   }
   /* keep the cached snapshot's resources current between home() calls */
@@ -1959,13 +1983,13 @@
   /* Replay whatever the server has not confirmed. Sequential, so a burst of
      replays cannot race each other; each one dequeues itself on success. */
   function sync() {
-    if (!hasFranchise() || !ST) return Promise.resolve({ replayed: 0 });
-    var q = ST.franchiseQueue(), i = 0, done = 0;
+    if (!hasFranchise() || !ST) return Promise.resolve({ replayed: 0, dropped: 0 });
+    var q = ST.franchiseQueue(), i = 0, done = 0, gone = 0;
     function step() {
-      if (i >= q.length) return Promise.resolve({ replayed: done });
+      if (i >= q.length) return Promise.resolve({ replayed: done, dropped: gone });
       var item = q[i++];
       return record(item.fn, item.args, item.key).then(function (r) {
-        if (r.ok) done++;
+        if (r.ok) done++; else if (r.dropped) gone++;
         return step();
       });
     }
@@ -1990,7 +2014,7 @@
         }
       }
       return next.then(function (h) {
-        return sync().then(function (s) { return { state: state(), home: h, synced: s.replayed, claimed: h !== r }; });
+        return sync().then(function (s) { return { state: state(), home: h, synced: s.replayed, dropped: s.dropped, claimed: h !== r }; });
       });
     });
   }

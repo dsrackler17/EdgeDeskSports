@@ -464,7 +464,7 @@ fresh();
     chk('sign-out removes the session', !MEM[AU.SESSION_KEY] && !S.signedIn());
     global.fetch = realFetch;
   })();
-}).then(() => {
+}).then(async () => {
   /* ═══ 8. THE PAGES, THE SHELL, THE COPY ═══════════════════════════════════ */
   [['front office', OFFICE, 'https://edgedesksports.com/games/franchise'],
    ['roster', ROSTER, 'https://edgedesksports.com/games/roster'],
@@ -2792,6 +2792,135 @@ fresh();
   chk('and the report proves the rule rather than the run',
     /select 36, 'the roster is '/.test(SQL)
     && /public\.franchise_rookie_lift\(9999, 100\) = 14/.test(SQL));
+
+  /* ═══ 28. RANKING UP OFFLINE ═════════════════════════════════════════════
+     The half of the Phase 12 ask that was described and never proved: you
+     can rank up with no server in reach, and connecting later gives you
+     exactly the rank you earned.
+
+     The rank is DERIVED — franchise_rank_report sums the activity log and
+     writes nothing — so there is no rank counter to synchronise. What has to
+     hold on the client is narrower and checkable: every reward earned
+     offline is kept, replayed once, and given up on when the server has
+     actually refused it. That last one was broken, and this is what found
+     it. */
+  chk('the football is never queued: a game has no result until the server rolls it',
+    !/record\('franchise_play_week'/.test(FJS) && !/record\('franchise_start_season'/.test(FJS)
+    && !/record\('franchise_offseason'/.test(FJS) && !/record\('franchise_upgrade'/.test(FJS)
+    && !/record\('franchise_pack_open'/.test(FJS));
+  chk('and the four things you can do with no server are the four that queue',
+    ['franchise_record_price_it', 'franchise_submit_pick5', 'franchise_record_drill', 'franchise_record_research']
+      .every(fn => FJS.indexOf("record('" + fn + "'") >= 0)
+    && (FJS.match(/\brecord\('franchise_/g) || []).length === 4);
+  chk('every one of them is worth something toward a rank',
+    ['price_it', 'pick5_card', 'drill_daily', 'research_open'].every(k => F.rankWeight(k) > 0));
+
+  await (async () => {
+    fresh();
+    const realUser = S.user, realRpc = S.rpc, realSigned = S.signedIn;
+    let answer = null, sent = [];
+    S.rpc = (fn, args) => { sent.push(fn); return Promise.resolve(typeof answer === 'function' ? answer(fn, args) : answer); };
+    S.user = () => ({ id: 'user-o', email: 'o@example.com', meta: {} });
+    S.signedIn = () => true;
+
+    const HOMEDATA = { franchise: { id: 'fo', name: 'Ferry', city: 'Sitka', abbr: 'SIT', logo: 'bolt', theme: 'slate' },
+      resources: { xp: 0, level: 1, scouting_points: 0, team_credits: 100, coach_points: 0 },
+      rating: { overall: 70 }, reputation: { version: 'rank_v1', points: 0, rank: 1, next_at: 15, packs: 1 } };
+    answer = { ok: true, data: HOMEDATA };
+    await F.home();
+
+    /* ── a week with no signal ───────────────────────────────────────────── */
+    answer = { ok: false, error: 'unreachable', message: 'Could not reach EdgeDesk Games.' };
+    await F.recordPriceIt('of1', -6.5);
+    await F.recordResearch('of2');
+    await F.recordDrill({ day: '2026-09-04', rounds: 10, correct: 8, total: 900 });
+    await F.submitPick5('2026-09-01', [{ game_id: 'of3', pick: 'home' }]);
+    eq('four rewards earned offline are four rewards kept', ST.franchiseQueue().length, 4);
+    chk('each under the key the server is idempotent on',
+      ST.franchiseQueue().map(q => q.key).sort().join('|')
+        === 'drill:2026-09-04|pick5:2026-09-01|price_it:of1|research:of2',
+      ST.franchiseQueue().map(q => q.key).join('|'));
+    await F.recordPriceIt('of1', -6.5);
+    await F.recordPriceIt('of1', -3);
+    eq('and pricing the same game again is still one queued reward', ST.franchiseQueue().length, 4);
+    chk('the queue is written down, so closing the tab does not lose the week',
+      JSON.parse(global.localStorage.getItem(ST.KEY)).franchise.queue.length === 4);
+
+    /* ── back in signal ──────────────────────────────────────────────────── */
+    let seen = [];
+    answer = (fn) => { seen.push(fn); return { ok: true, data: { ok: true, already: false, rewards: { xp: 15 },
+      totals: { xp: 60, level: 1, scouting_points: 0, team_credits: 100, coach_points: 0 } } }; };
+    let s = await F.sync();
+    chk('the next boot replays all four and drains the queue',
+      s.replayed === 4 && s.dropped === 0 && ST.franchiseQueue().length === 0 && seen.length === 4,
+      JSON.stringify(s) + ' sent ' + seen.join(','));
+
+    /* A LOST ANSWER. The server wrote the row and the reply never arrived, so
+       the browser queued a reward the server already holds. The replay must
+       still drain: "already" is a success, not a failure. */
+    answer = { ok: false, error: 'unreachable' };
+    await F.recordResearch('of9');
+    eq('a reward whose answer was lost is queued', ST.franchiseQueue().length, 1);
+    answer = { ok: true, data: { ok: true, already: true, rewards: { xp: 0 }, totals: HOMEDATA.resources } };
+    s = await F.sync();
+    chk('and the replay drains it — the server saying "already" is the same as saying yes',
+      s.replayed === 1 && s.dropped === 0 && ST.franchiseQueue().length === 0);
+
+    /* THE JAM, which is what this section was written for. A drill is honest
+       only on the day it was run. Run one offline and reconnect two days
+       later and the server refuses it for ever — and before this was fixed
+       the browser asked for ever, and the office read "1 reward waiting to
+       sync" for the life of the account. */
+    answer = { ok: false, error: 'unreachable' };
+    await F.recordDrill({ day: '2026-09-01', rounds: 10, correct: 8, total: 900 });
+    eq('a drill run offline is kept', ST.franchiseQueue().length, 1);
+    answer = { ok: false, status: 400, error: '22023', message: 'a drill is recorded on the day it was run' };
+    s = await F.sync();
+    chk('a refusal the server will never take back is given up on, and counted',
+      s.replayed === 0 && s.dropped === 1 && ST.franchiseQueue().length === 0, JSON.stringify(s));
+    s = await F.sync();
+    chk('and the boot after that has nothing left to ask for',
+      s.replayed === 0 && s.dropped === 0 && ST.franchiseQueue().length === 0);
+
+    /* THE RULE, not the list: keep it only while the server has not answered.
+       No status at all never arrived; a 5xx arrived and the server broke; a
+       404 is a layer that is not deployed yet. Everything else is an answer. */
+    const shapes = [
+      ['no status at all',   { ok: false, error: 'unreachable' },                  true],
+      ['a timeout',          { ok: false, error: 'timeout' },                      true],
+      ['no endpoint',        { ok: false, error: 'not_configured' },               true],
+      ['a 500',              { ok: false, status: 500, error: 'error' },           true],
+      ['a 503',              { ok: false, status: 503, error: 'error' },           true],
+      ['not deployed (404)', { ok: false, status: 404, error: 'PGRST202' },        true],
+      ['a refusal (400)',    { ok: false, status: 400, error: '22023' },           false],
+      ['not allowed (401)',  { ok: false, status: 401, error: 'error' },           false],
+      ['forbidden (403)',    { ok: false, status: 403, error: 'error' },           false],
+      ['a conflict (409)',   { ok: false, status: 409, error: '23505' },           false]
+    ];
+    for (const [label, ans, keep] of shapes) {
+      answer = { ok: true, data: HOMEDATA }; ST.reset(); await F.home();
+      answer = ans;
+      const r = await F.recordResearch('shape');
+      chk('kept only while the server has not answered — ' + label,
+        (ST.franchiseQueue().length === 1) === keep && (r.queued === true) === keep,
+        label + ' left ' + ST.franchiseQueue().length + ' queued');
+    }
+
+    /* AND THE RANK ITSELF IS NEVER THE CLIENT'S. It is read back, not kept. */
+    chk('the client asks for the rank and never adds one up',
+      FJS.indexOf("rpc('franchise_rank_board'") >= 0
+      && !/queueFranchise\(\s*\{\s*key:\s*.rank/.test(FJS)
+      && !/reputation\.points\s*\+=/.test(FJS));
+
+    S.user = realUser; S.rpc = realRpc; S.signedIn = realSigned;
+    fresh();
+  })();
+
+  has(FJS, 'function retryable(r)', 'the rule has a name in the source');
+  chk('and it is written as a rule, not a list of status codes',
+    /if \(!r\.status\) return true;\s*\n\s*return r\.status >= 500 \|\| r\.status === 404;/.test(FJS));
+  has(README, 'waiting to sync', 'the README says what the jam looked like');
+  has(README, 'never **ANSWERED**', 'and states the rule the queue now follows');
 
   has(README, 'The game is **open to everyone**', 'the README states the age policy');
   has(README, 'nothing is collected', 'and that nothing is collected');

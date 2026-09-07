@@ -2713,6 +2713,102 @@ for it:
   The stored shape is `{answer, at}` and the tests assert it holds nothing
   else.
 
+## Ranking up offline
+
+The half of the Phase 12 ask that was described and never proved: **rank up
+with no server in reach, and connect it later.** My standing position was that
+it already worked, because the rank is derived from activity and activity
+already queues. It did work — and measuring it found something that did not.
+
+### Why there is nothing to synchronise
+
+`franchise_rank_report` is a `stable` function. It sums the activity log with
+the published weights and writes nothing:
+
+```sql
+select coalesce(sum(coalesce((w->>a.kind)::int, 0)), 0) into v_points
+  from public.franchise_activity a where a.franchise_id = p_franchise;
+```
+
+No column on `franchises` holds a rank or a point total — only `rank_claimed`,
+which counts packs opened. So a rank cannot drift out of step with the record,
+because it **is** the record, read back. And `franchise_activity` carries
+
+```sql
+unique (franchise_id, kind, key)
+```
+
+on the exact `key` the browser's queue stores a call under. A reward replayed
+after a lost answer lands once, whatever the browser believes.
+
+Measured rather than argued: a week of playing with no signal — one Price It,
+one Pick 5 card, one drill, fourteen research opens — is **18 points, rank 2,
+two packs owed**. Sending the identical queue a second time writes **no second
+row**, pays **nothing**, and returns a **byte-identical** rank report. Replaying
+the same week **backwards** gives the same rank to the point. And the War Room's
+weekly XP cap (ten reads) does not cap the rank: the four reads past it earn no
+XP and still count, or a player who did more than the cap would have done it for
+nothing.
+
+### What the measurement actually found
+
+The four things you can do without a server — Price It, a Pick 5 card, the
+drill, a research open — are exactly the four the client queues, and each is
+worth rank points. The football is never queued, because a game has no result
+until the server rolls it.
+
+But a queued reward is only ever **dequeued on success**. So:
+
+> A drill is honest only on the day it was run — the server refuses one recorded
+> more than a day late. Run a drill offline on a Monday, reconnect on Thursday,
+> and the browser asked for it on **every boot, for ever**, and the front office
+> read **"1 reward waiting to sync"** for the life of the account.
+
+Reproduced before it was fixed, five boots in a row, queue length 1 every time.
+
+### The rule the queue now follows
+
+The queue is for a call the server never **ANSWERED**. It is not a place to
+keep one the server has refused.
+
+```js
+function retryable(r) {
+  if (!r.status) return true;
+  return r.status >= 500 || r.status === 404;
+}
+```
+
+No status at all means the request never arrived — offline, timed out, or no
+endpoint in this build. A 5xx means it arrived and the server broke. A 404 means
+the layer is not deployed yet, and one day it will be. All three are worth
+replaying. Everything else is the server having read *that* call and said no,
+and the same payload cannot get a different answer on the next boot.
+
+| the server said | kept | why |
+| --- | --- | --- |
+| nothing at all (offline) | **yes** | it never arrived |
+| nothing (timed out) | **yes** | it never arrived |
+| no endpoint configured | **yes** | it never arrived |
+| 500 / 503 | **yes** | it arrived and the server broke |
+| 404, not deployed | **yes** | it will be |
+| 400 — "recorded on the day it was run" | no | it read the call and refused |
+| 401 / 403 | no | the same payload gets the same answer |
+| 409 | no | the same payload gets the same answer |
+
+A refusal is **dropped and counted**, and `boot()` returns the count, so the
+player is told once — *"1 reward could not be recorded — too long offline"* —
+rather than being strung along by a badge that never clears. A reward silently
+not arriving is worse than a line of small print.
+
+One thing that had to keep working, and does: the server answering **`already:
+true`** is a success, not a failure. That is the lost-answer case — the server
+wrote the row and the reply went missing — and the replay has to drain the
+queue rather than jam on it.
+
+Held down by `tools/games/franchise.test.js` §28 (the whole offline week, every
+failure shape, and the jam itself) and `tools/games/sql/games_franchise.test.sql`
+§31 (the arithmetic, the uniqueness constraint, and the replay).
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on

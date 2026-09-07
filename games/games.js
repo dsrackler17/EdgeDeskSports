@@ -791,8 +791,16 @@
     var ready = config();
     _franchiseReady = ready.then(function () {
       if (!FR) return { state: 'anonymous' };
-      return FR.boot().then(function (r) { paintFranchise(); notifyFranchise(r); return r; })
-        .catch(function () { return { state: FR.state() }; });
+      return FR.boot().then(function (r) {
+        paintFranchise(); notifyFranchise(r);
+        /* A reward the server has refused for good is dropped from the queue
+           rather than asked for on every boot for ever. Say so once: it is
+           the player's reward, and it silently not arriving is worse than a
+           line of small print. */
+        if (r && r.dropped) toast(r.dropped + ' reward' + (r.dropped === 1 ? '' : 's')
+          + ' could not be recorded — too long offline.');
+        return r;
+      }).catch(function () { return { state: FR.state() }; });
     });
     return ready;
   }

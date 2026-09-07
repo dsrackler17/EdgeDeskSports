@@ -115,6 +115,10 @@ declare
   SEC_CB constant text := 'device-secret-bothsidesbothsidesboth1';
   -- the playbook
   pbf uuid; pb jsonb; pnt numeric; pstale numeric; pfresh numeric;
+  -- ranking up offline
+  ofl uuid; ofl2 uuid; ofrep jsonb; ofrep2 jsonb; ofrows integer; ofled integer; ofcap integer;
+  SEC_OF constant text := 'device-secret-offlineofflineoffline01';
+  SEC_O2 constant text := 'device-secret-offlineofflineoffline02';
   SEC_PB constant text := 'device-secret-playbookplaybookplay01';
   SEC_MN constant text := 'device-secret-momentmomentmomentmoment1';
   SEC_SN constant text := 'device-secret-snapsnapsnapsnapsnapsnap1';
@@ -4970,6 +4974,157 @@ begin
                where franchise_id = rfl and status = 'retired' and retired_season = 2),
     n || ' before, ' || (select count(*) from public.game_players
                           where franchise_id = rfl and status = 'active') || ' after');
+
+-- ═══ 31. RANKING UP OFFLINE ═══════════════════════════════════════════════
+-- The half of the Phase 12 ask that was described and never proved: you can
+-- rank up with no server in reach, and connecting later gives you exactly the
+-- rank you earned — no more, and no less.
+--
+-- The client half is held down by tools/games/franchise.test.js §28. This is
+-- the server half, and the reason the whole thing works is that there is no
+-- server half to synchronise. Three things carry it, and each is measured
+-- here rather than assumed:
+--
+--   the rank is DERIVED — franchise_rank_report sums the activity log and
+--   writes nothing, so there is no rank counter that could drift, be lost,
+--   or be replayed;
+--
+--   the activity log is UNIQUE on (franchise_id, kind, key), and `key` is the
+--   very thing the browser's queue stores a call under, so a reward replayed
+--   after a lost answer lands exactly once whatever the browser believes;
+--
+--   therefore a franchise's points are the published weights summed over its
+--   record. That equality IS the sync protocol. There is nothing else.
+  perform pg_temp.as_owner();
+  perform public.game_board_upsert((select jsonb_agg(jsonb_build_object(
+      'game_id', 'of' || i, 'slug', 'of' || i, 'season', 2026, 'week', 1,
+      'home_team', 'OH' || i, 'away_team', 'OA' || i,
+      'kickoff', (now() + interval '2 days')::text,
+      'edgedesk_spread', -7, 'market_spread', -7.5))
+    from generate_series(1, 24) i));
+
+  -- ── the rank is a read, not a record ────────────────────────────────────
+  perform pg_temp.ok('the rank report only reads: a STABLE function cannot have written one',
+    (select provolatile = 's' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'franchise_rank_report'));
+  perform pg_temp.ok('and no column anywhere stores a rank or a point total — only what was claimed',
+    not exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'franchises'
+                   and column_name in ('rank', 'rank_points', 'reputation', 'reputation_points'))
+    and exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'franchises' and column_name = 'rank_claimed'));
+  perform pg_temp.ok('a replayed reward cannot count twice, because the table will not hold it twice',
+    exists (select 1 from pg_constraint c join pg_class t on t.oid = c.conrelid
+             where t.relname = 'franchise_activity' and c.contype = 'u'
+               and (select array_agg(a.attname::text order by a.attname)
+                      from unnest(c.conkey) as u(att) join pg_attribute a
+                        on a.attrelid = c.conrelid and a.attnum = u.att)
+                   = array['franchise_id','key','kind']));
+
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Ferry', 'Sitka', 'SIT', 'bolt', 'slate', 'pro_style', 'zone', SEC_OF);
+  ofl := (v->'franchise'->>'id')::uuid;
+  perform pg_temp.as_owner();
+  ofrep := public.franchise_rank_report(ofl);
+  perform pg_temp.ok('founding is worth no rank points — a rank is what you did, not that you turned up',
+    (ofrep->>'points')::int = 0 and (ofrep->>'rank')::int = 1, ofrep::text);
+
+  -- ── a week away from signal, then the queue comes back ──────────────────
+  -- exactly what the browser replays: four kinds, then research until the
+  -- week's XP has long stopped, which is where the rank must keep going
+  perform pg_temp.as_anon();
+  perform public.franchise_record_price_it('of1', -6.5, SEC_OF);
+  perform public.franchise_submit_pick5(wk,
+    '[{"game_id":"of2","pick":"home"},{"game_id":"of3","pick":"away"},{"game_id":"of4","pick":"home"},
+      {"game_id":"of5","pick":"away"},{"game_id":"of6","pick":"home"}]'::jsonb, SEC_OF);
+  perform public.franchise_record_drill(public.games_day_key(now()), 10, 8, 900, null, SEC_OF);
+  for i in 7..20 loop
+    perform public.franchise_record_research('of' || i, SEC_OF);
+  end loop;
+
+  perform pg_temp.as_owner();
+  ofrep := public.franchise_rank_report(ofl);
+  -- 1 for the Price It, 2 for the card, 1 for the drill, 14 for the research
+  perform pg_temp.ok('a week of playing alone is worth eighteen points',
+    (ofrep->>'points')::int = 18, ofrep::text);
+  perform pg_temp.ok('and the report is nothing but the published weights over the record',
+    (ofrep->>'points')::int =
+      (select coalesce(sum(coalesce((public.franchise_ranks()->'weights'->>a.kind)::int, 0)), 0)
+         from public.franchise_activity a where a.franchise_id = ofl));
+  perform pg_temp.ok('eighteen points is rank two, and rank two owes two packs',
+    (ofrep->>'rank')::int = public.franchise_rank_for(18)
+    and (ofrep->>'rank')::int = 2 and (ofrep->>'packs')::int = 2, ofrep::text);
+
+  -- THE WEEKLY XP CAP IS NOT A RANK CAP. The War Room stops paying XP after
+  -- ten reads a week; the rank counts every one of them, or a player who did
+  -- more than the cap would have done it for nothing.
+  ofcap := (public.franchise_economy()->'research_open'->>'cap_per_week')::int;
+  perform pg_temp.ok('the week stopped paying XP and the rank did not stop counting',
+    (select count(*) from public.franchise_activity
+      where franchise_id = ofl and kind = 'research_open' and (detail->>'capped')::boolean) = 14 - ofcap
+    and (select count(*) from public.franchise_activity
+          where franchise_id = ofl and kind = 'research_open') = 14
+    and (select count(*) from public.franchise_ledger
+          where franchise_id = ofl and kind = 'research_open' and currency = 'xp') = ofcap,
+    'cap ' || ofcap);
+
+  -- ── the replay: the same queue, sent twice ──────────────────────────────
+  -- a lost answer means the browser still holds a reward the server already
+  -- wrote. Every one of these calls goes out again, byte for byte.
+  select count(*) into ofrows from public.franchise_activity where franchise_id = ofl;
+  select coalesce(sum(delta), 0) into ofled from public.franchise_ledger where franchise_id = ofl;
+  perform pg_temp.as_anon();
+  perform public.franchise_record_price_it('of1', -6.5, SEC_OF);
+  perform public.franchise_submit_pick5(wk,
+    '[{"game_id":"of2","pick":"home"},{"game_id":"of3","pick":"away"},{"game_id":"of4","pick":"home"},
+      {"game_id":"of5","pick":"away"},{"game_id":"of6","pick":"home"}]'::jsonb, SEC_OF);
+  perform public.franchise_record_drill(public.games_day_key(now()), 10, 8, 900, null, SEC_OF);
+  for i in 7..20 loop
+    perform public.franchise_record_research('of' || i, SEC_OF);
+  end loop;
+  perform pg_temp.as_owner();
+  ofrep2 := public.franchise_rank_report(ofl);
+  perform pg_temp.ok('replaying the whole queue writes no second row',
+    (select count(*) from public.franchise_activity where franchise_id = ofl) = ofrows,
+    ofrows || ' before, ' || (select count(*) from public.franchise_activity where franchise_id = ofl) || ' after');
+  perform pg_temp.ok('and pays nothing a second time',
+    (select coalesce(sum(delta), 0) from public.franchise_ledger where franchise_id = ofl) = ofled);
+  perform pg_temp.ok('so a replayed queue cannot buy a rank twice',
+    ofrep2 = ofrep, ofrep::text || ' then ' || ofrep2::text);
+
+  -- ── and the order the queue drains in cannot matter ─────────────────────
+  -- the browser replays whatever it holds, in whatever order it was stored;
+  -- a rank derived from a set can have no opinion about that
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Barge', 'Homer', 'HOM', 'bolt', 'slate', 'pro_style', 'zone', SEC_O2);
+  ofl2 := (v->'franchise'->>'id')::uuid;
+  for i in reverse 20..7 loop
+    perform public.franchise_record_research('of' || i, SEC_O2);
+  end loop;
+  perform public.franchise_record_drill(public.games_day_key(now()), 10, 8, 900, null, SEC_O2);
+  perform public.franchise_submit_pick5(wk,
+    '[{"game_id":"of6","pick":"home"},{"game_id":"of5","pick":"away"},{"game_id":"of4","pick":"home"},
+      {"game_id":"of3","pick":"away"},{"game_id":"of2","pick":"home"}]'::jsonb, SEC_O2);
+  perform public.franchise_record_price_it('of1', -6.5, SEC_O2);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the same week replayed backwards is the same rank, to the point',
+    public.franchise_rank_report(ofl2) - 'claimed' = ofrep - 'claimed',
+    public.franchise_rank_report(ofl2)::text);
+
+  -- ── what the rank then pays, offline or not ─────────────────────────────
+  perform pg_temp.as_anon();
+  perform public.franchise_pack_open(SEC_OF);
+  perform public.franchise_pack_pass(SEC_OF);
+  perform pg_temp.as_owner();
+  ofrep2 := public.franchise_rank_report(ofl);
+  perform pg_temp.ok('the two packs a week offline earned are there to open, and opening one spends one',
+    (ofrep2->>'claimed')::int = 1 and (ofrep2->>'packs')::int = 1
+    and (ofrep2->>'points')::int = (ofrep->>'points')::int, ofrep2::text);
+  perform pg_temp.as_anon();
+  perform public.franchise_record_price_it('of1', -6.5, SEC_OF);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and a reward replayed after the pack was claimed still does not hand out another',
+    public.franchise_rank_report(ofl) = ofrep2);
 
 end
 $test$;
