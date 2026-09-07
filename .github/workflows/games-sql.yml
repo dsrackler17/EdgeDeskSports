@@ -22,8 +22,10 @@ on:
       - 'tools/games/sql_security.test.js'
       - 'tools/games/franchise_sql.test.js'
       - 'supabase/issue_reports.sql'
+      - 'supabase/billing.sql'
       - 'tools/app/sql/**'
       - 'tools/app/issue_reports_sql.test.js'
+      - 'tools/app/billing_sql.test.js'
       - '.github/workflows/games-sql.yml'
   pull_request:
     paths:
@@ -33,8 +35,10 @@ on:
       - 'tools/games/sql_security.test.js'
       - 'tools/games/franchise_sql.test.js'
       - 'supabase/issue_reports.sql'
+      - 'supabase/billing.sql'
       - 'tools/app/sql/**'
       - 'tools/app/issue_reports_sql.test.js'
+      - 'tools/app/billing_sql.test.js'
 
 jobs:
   sql:
@@ -85,11 +89,19 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/app/issue_reports_sql.test.js | tee issues.log
 
+      # The signup path's floor: the consent write that gates checkout, and the
+      # subscriptions row that IS the product and no browser may write.
+      - name: Run the billing SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/app/billing_sql.test.js | tee billing.log
+
       # A skip here would mean the guarantee was never tested. On this job that
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          for f in sql.log franchise.log issues.log; do
+          for f in sql.log franchise.log issues.log billing.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
