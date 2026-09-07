@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-07T03:29:38.308Z",
-  "ok": false,
-  "last_ok_at": "2026-09-05T12:57:27.933Z",
+  "generated_at": "2026-09-07T15:09:46.167Z",
+  "ok": true,
+  "last_ok_at": "2026-09-07T15:09:46.167Z",
   "run": {
-    "trigger": "push",
+    "trigger": "schedule",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -28,8 +28,8 @@
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
-      "completed_in_feed": 96,
-      "absorbed": 96,
+      "completed_in_feed": 98,
+      "absorbed": 98,
       "data_through": "2026-09-06",
       "schedule_source": "cfbfastR-data schedules 2026"
     }
@@ -37,25 +37,17 @@
   "lines": {
     "nfl": {
       "compared": 16,
-      "median_gap": 2.05,
-      "max_gap": 5.57,
+      "median_gap": 2.43,
+      "max_gap": 5.6,
       "outliers": [],
       "orientation_faults": []
     },
     "p4": {
-      "compared": 3,
+      "compared": 2,
       "median_gap": 3.59,
-      "max_gap": 8.83,
+      "max_gap": 3.59,
       "outliers": [],
-      "orientation_faults": [
-        {
-          "game": "Wisconsin @ Notre Dame",
-          "model": 21.2,
-          "market": -20.5,
-          "gap": 41.7,
-          "gap_if_negated": 0.7
-        }
-      ]
+      "orientation_faults": []
     }
   },
   "checks": [
@@ -111,7 +103,7 @@
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 2.05 pts over 16 games, max 5.57"
+      "detail": "median gap 2.43 pts over 16 games, max 5.6"
     },
     {
       "id": "p4_season_window",
@@ -129,7 +121,7 @@
       "id": "p4_ingest",
       "label": "CFB P4: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "96/96 absorbed, data through 2026-09-06"
+      "detail": "98/98 absorbed, data through 2026-09-06"
     },
     {
       "id": "p4_roster",
@@ -153,48 +145,48 @@
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "4 of 30 upcoming games have a book number"
+      "detail": "2 of 30 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
       "label": "CFB P4: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 22/30"
+      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 21/30"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "4 lines inside plausible bounds"
+      "detail": "2 lines inside plausible bounds"
     },
     {
       "id": "p4_lines_orientation",
       "label": "CFB P4: market lines point the right way",
-      "status": "fail",
-      "detail": "Wisconsin @ Notre Dame: model 21.2 vs market -20.5 — gap 41.7 pts, but 0.7 pts if the market number is negated — the source row is in the opposite spread convention (a home favourite is a NEGATIVE home-side number here). Dropped, never flipped: guessing a convention from values is not a fix."
+      "status": "pass",
+      "detail": "2 joined line(s), none reconciled by negation"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 3.59 pts over 3 games, max 8.83"
+      "detail": "median gap 3.59 pts over 2 games, max 3.59"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-07T03:29:38.308Z",
-    "daily_check_last_status": "error",
-    "engine_tests_last_run": "2026-09-07T03:29:38.308Z",
+    "daily_check_last_run": "2026-09-07T15:09:46.167Z",
+    "daily_check_last_status": "ok",
+    "engine_tests_last_run": "2026-09-07T15:09:46.167Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-07T03:29:38.308Z",
+    "nfl_ingest_last_run": "2026-09-07T15:09:46.167Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-09-07T03:29:38.308Z",
+    "p4_ingest_last_run": "2026-09-07T15:09:46.167Z",
     "p4_ingest_last_status": "ok",
-    "row_count_p4_ingest": 96,
-    "projection_guard_last_run": "2026-09-07T03:29:38.308Z",
+    "row_count_p4_ingest": 98,
+    "projection_guard_last_run": "2026-09-07T15:09:46.167Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-07T03:29:38.308Z",
-    "line_guard_last_status": "error",
-    "row_count_line_guard": 19
+    "line_guard_last_run": "2026-09-07T15:09:46.167Z",
+    "line_guard_last_status": "ok",
+    "row_count_line_guard": 18
   }
 }
