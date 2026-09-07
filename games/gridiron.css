@@ -257,6 +257,10 @@
   min-width:0;white-space:nowrap;flex:0 1 auto;overflow:hidden}
 .dr-title b{font-weight:600;font-size:11px;color:var(--faint);letter-spacing:.05em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+/* THE FORMATION NAME IS THE FIRST THING TO GO. On a narrow phone with a tell
+   and a timeout button in the same row there is not room for all of it, and
+   half a word is worse than none. */
+@media(max-width:400px){.dr-title b{display:none}}
 .dr-sub{margin-left:auto;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
   color:var(--faint);font-weight:700}
 .dr-tell{margin-left:auto;font-size:10.5px;color:var(--dim);white-space:nowrap}
@@ -723,9 +727,11 @@
 .td-club{margin-top:7px;font:800 clamp(13px,4.2vw,18px) 'Space Grotesk',sans-serif;
   letter-spacing:.18em;text-transform:uppercase;color:var(--tc);line-height:1.2;
   text-shadow:0 2px 18px rgba(0,0,0,.8);animation:tdrise .5s .06s cubic-bezier(.16,1,.3,1) backwards}
-.td-who{margin-top:12px;font:700 14.5px Inter,system-ui,sans-serif;color:#eef3f8;
+.td-who{margin-top:12px;font:700 14.5px Inter,system-ui,sans-serif;color:#fff;
+  display:inline-flex;align-items:baseline;gap:8px;padding:5px 13px;border-radius:var(--r-pill);
+  background:rgba(6,10,14,.52);
   animation:tdrise .5s .14s cubic-bezier(.16,1,.3,1) backwards}
-.td-who i{font-style:normal;color:rgba(226,236,244,.62);font-weight:500}
+.td-who i{font-style:normal;color:rgba(222,233,242,.78);font-weight:500;font-size:13px}
 .td-score{margin-top:14px;display:inline-flex;align-items:center;gap:10px;
   padding:7px 15px;border-radius:var(--r-pill);
   background:rgba(6,10,14,.60);border:1px solid rgba(255,255,255,.14);
