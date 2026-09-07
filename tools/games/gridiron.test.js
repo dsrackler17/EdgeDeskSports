@@ -698,13 +698,29 @@ function repeat(playKey, defKey, n, extra, opts) {
   chk('a player is drawn from many parts, not one dot', ctxOne.calls.fill >= 8, ctxOne.calls.fill);
   chk('a player has a helmet', ctxOne.calls.arc + ctxOne.calls.ellipse >= 2,
       ctxOne.calls.arc + '/' + ctxOne.calls.ellipse);
-  /* and he is built like a man: shoulders about a quarter of him across and a
-     helmet about a sixth of him tall, not a bobblehead on a sack */
-  chk('a man is proportioned like one',
-      PA.SKELETON.helmR * 2 < 0.22 && PA.SKELETON.padHalf * 2 > 0.24
-        && PA.SKELETON.padHalf * 2 < 0.34,
-      'helmet ' + (PA.SKELETON.helmR * 2).toFixed(2) + ' shoulders '
-        + (PA.SKELETON.padHalf * 2).toFixed(2));
+  /* AND HE IS BUILT LIKE A FOOTBALL PLAYER, which is not the same shape as a
+     man: the pads are the widest thing on him and they are wider than a
+     man's shoulders, while the helmet stays about a sixth of him. Too narrow
+     across the top and he reads as a person in a jumper; too wide and he is
+     a cape. The helmet has to stay smaller than the pads or he is a
+     bobblehead, and taller than it is wide or it is a ball. */
+  const SKW = PA.SKELETON;
+  chk('a man is proportioned like a football player',
+      SKW.helmW * 2 < 0.26 && SKW.padHalf * 2 > 0.30 && SKW.padHalf * 2 < 0.46
+        && SKW.helmW * 2 < SKW.padHalf * 2 && SKW.helmH > SKW.helmW,
+      'helmet ' + (SKW.helmW * 2).toFixed(2) + 'x' + SKW.helmH.toFixed(2)
+        + ' shoulders ' + (SKW.padHalf * 2).toFixed(2));
+  /* every joint is in the right order, feet on the grass and crown at the top */
+  chk('the skeleton is in order',
+      SKW.ankle < SKW.knee && SKW.knee < SKW.hip && SKW.hip < SKW.waist
+        && SKW.waist < SKW.chest && SKW.chest < SKW.shoulder
+        && SKW.shoulder < SKW.head && SKW.head < 1,
+      JSON.stringify([SKW.knee, SKW.hip, SKW.chest, SKW.shoulder, SKW.head]));
+  /* the trenches have to look different from the flankers before any colour
+     or number arrives: a guard is wider across the pads than a corner */
+  chk('a lineman is not a corner',
+      PA.BUILD.OL.pads > PA.BUILD.CB.pads * 1.35 && PA.BUILD.CB.leg > PA.BUILD.OL.leg,
+      'OL pads ' + PA.BUILD.OL.pads + ' CB pads ' + PA.BUILD.CB.pads);
   chk('a player wears his number', ctxOne.calls.fillText >= 1);
 
   /* the field, the ball, the markers and the art all draw */

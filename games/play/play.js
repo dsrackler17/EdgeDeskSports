@@ -45,34 +45,135 @@
   var tipsSeen = {};
   try { tipsSeen = JSON.parse(localStorage.getItem('ed_gridiron_tips') || '{}'); } catch (_) {}
 
-  /* ── FEEDBACK ─────────────────────────────────────────────────────────── */
+  /* ── SOUND ───────────────────────────────────────────────────────────────
+     Every noise this game makes is SYNTHESISED HERE, from oscillators and
+     shaped noise, at the moment it is needed. Nothing is downloaded, nothing
+     is licensed and nothing is sampled from anywhere: a football hitting a
+     pair of hands is a filtered noise burst with a fast envelope, and a
+     stadium is two seconds of low-passed noise on a loop with its level moved
+     around. That is the whole kit.
+
+     It never starts on its own — a browser would refuse anyway — and the
+     switch in the corner of the field turns all of it off. */
   var actx = null;
-  function beep(freq, dur, type, gain) {
+  function ac() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return null; }
+    }
+    if (actx.state === 'suspended') { try { actx.resume(); } catch (_) {} }
+    return actx;
+  }
+  /* one tone: a shape, a pitch that can slide, and an envelope */
+  function tone(o) {
     if (!set.sound) return;
+    var c = ac(); if (!c) return;
     try {
-      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-      if (actx.state === 'suspended') actx.resume();
-      var o = actx.createOscillator(), g = actx.createGain();
-      o.type = type || 'sine'; o.frequency.value = freq;
-      g.gain.setValueAtTime(gain == null ? 0.05 : gain, actx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
-      o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
+      var t0 = c.currentTime + (o.at || 0);
+      var osc = c.createOscillator(), g = c.createGain();
+      osc.type = o.type || 'sine';
+      osc.frequency.setValueAtTime(o.f, t0);
+      if (o.f2) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.f2), t0 + o.d);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002, o.g == null ? 0.05 : o.g), t0 + (o.a || 0.008));
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.d);
+      var node = g;
+      if (o.lp) {
+        var f = c.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = o.lp;
+        g.connect(f); node = f;
+      }
+      osc.connect(g); node.connect(c.destination);
+      osc.start(t0); osc.stop(t0 + o.d + 0.02);
+    } catch (_) {}
+  }
+  /* one burst of shaped noise: contact, leather, a whistle's breath */
+  var NOISEBUF = null;
+  function noiseBuffer(c) {
+    if (NOISEBUF) return NOISEBUF;
+    var len = Math.floor(c.sampleRate * 1.0);
+    var b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+    /* THE PAGE OWNS NO DICE. Even noise comes off a seeded stream, so nothing
+       here can ever be mistaken for the game deciding something. */
+    var sd = 20260907, i;
+    for (i = 0; i < len; i++) { sd = (sd * 1103515245 + 12345) & 0x7fffffff; d[i] = sd / 0x7fffffff * 2 - 1; }
+    NOISEBUF = b;
+    return b;
+  }
+  function burst(o) {
+    if (!set.sound) return;
+    var c = ac(); if (!c) return;
+    try {
+      var t0 = c.currentTime + (o.at || 0);
+      var src = c.createBufferSource();
+      src.buffer = noiseBuffer(c);
+      src.playbackRate.value = o.rate || 1;
+      var f = c.createBiquadFilter();
+      f.type = o.filter || 'bandpass';
+      f.frequency.setValueAtTime(o.f, t0);
+      if (o.f2) f.frequency.exponentialRampToValueAtTime(Math.max(60, o.f2), t0 + o.d);
+      f.Q.value = o.q == null ? 1.1 : o.q;
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002, o.g == null ? 0.06 : o.g), t0 + (o.a || 0.005));
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.d);
+      src.connect(f); f.connect(g); g.connect(c.destination);
+      src.start(t0); src.stop(t0 + o.d + 0.02);
     } catch (_) {}
   }
   var SOUND = {
-    tap: function () { beep(520, 0.05, 'triangle', 0.03); },
-    snap: function () { beep(150, 0.10, 'square', 0.05); },
-    hit: function () { beep(85, 0.13, 'sawtooth', 0.06); },
-    whistle: function () { beep(1500, 0.13, 'sine', 0.035); },
-    first: function () { beep(700, 0.10, 'triangle', 0.045); setTimeout(function () { beep(960, 0.13, 'triangle', 0.045); }, 90); },
-    td: function () { [523, 659, 784, 1047].forEach(function (f, i) { setTimeout(function () { beep(f, 0.17, 'triangle', 0.055); }, i * 95); }); },
-    bad: function () { beep(210, 0.26, 'sawtooth', 0.055); setTimeout(function () { beep(140, 0.3, 'sawtooth', 0.05); }, 150); },
-    crowd: function () { beep(300, 0.5, 'sine', 0.02); },
+    tap: function () { tone({ f: 620, f2: 520, d: 0.045, type: 'triangle', g: 0.028 }); },
+    /* THE SNAP: leather in two hands and eleven men moving at once. A click
+       and a thump, forty milliseconds apart, which is what a snap sounds
+       like from twenty rows up. */
+    snap: function () {
+      burst({ f: 2600, f2: 900, d: 0.055, g: 0.05, q: 0.8 });
+      tone({ f: 120, f2: 62, d: 0.13, type: 'sine', g: 0.075 });
+    },
+    /* CONTACT: pads. Low, short, and with a crack of noise on the front. */
+    hit: function (hard) {
+      var v = hard ? 1.5 : 1;
+      burst({ f: 1500, f2: 320, d: 0.09 * v, g: 0.055 * v, q: 0.6 });
+      tone({ f: 92, f2: 46, d: 0.17 * v, type: 'sine', g: 0.085 * v, lp: 400 });
+    },
+    /* THE BALL INTO A PAIR OF HANDS */
+    catch_: function () { burst({ f: 3200, f2: 1400, d: 0.06, g: 0.042, q: 0.7 }); },
+    /* A FOOT THROUGH A FOOTBALL */
+    kick: function () {
+      burst({ f: 900, f2: 240, d: 0.07, g: 0.075, q: 0.5 });
+      tone({ f: 150, f2: 58, d: 0.20, type: 'sine', g: 0.10, lp: 500 });
+    },
+    /* A WHISTLE: two hard blasts with the breath in them */
+    whistle: function () {
+      [0, 0.13].forEach(function (at) {
+        tone({ f: 2350, d: 0.11, type: 'sine', g: 0.030, at: at });
+        tone({ f: 3120, d: 0.11, type: 'sine', g: 0.020, at: at });
+        burst({ f: 3000, d: 0.10, g: 0.014, q: 6, at: at });
+      });
+    },
+    /* THE MOVING CHAINS: a rising pair, bright and short */
+    first: function () {
+      tone({ f: 660, d: 0.10, type: 'triangle', g: 0.045 });
+      tone({ f: 990, d: 0.16, type: 'triangle', g: 0.045, at: 0.085 });
+      swell(0.5, 0.9);
+    },
+    /* SIX POINTS: a fanfare on top of a stadium standing up */
+    td: function () {
+      [523, 659, 784, 1047, 1319].forEach(function (f, i) {
+        tone({ f: f, d: 0.28, type: 'triangle', g: 0.050, at: i * 0.085 });
+        tone({ f: f / 2, d: 0.30, type: 'sine', g: 0.030, at: i * 0.085 });
+      });
+      swell(1, 2.4);
+    },
+    /* A TURNOVER: the sound of eighty thousand people sitting down */
+    bad: function () {
+      tone({ f: 300, f2: 96, d: 0.42, type: 'sawtooth', g: 0.055, lp: 900 });
+      tone({ f: 148, f2: 60, d: 0.5, type: 'sine', g: 0.045, at: 0.09 });
+      swell(0.85, 1.6);
+    },
+    crowd: function () { swell(0.7, 1.8); },
     /* THE ROOM TONE. Eighty thousand people are a band of noise, not a note:
        a loop of shaped noise through a bandpass, whose level is the same
-       number the crowd in the stands is drawn at. It never starts on its own
-       — the browser would refuse anyway — and it never plays with the sound
-       switched off. */
+       number the crowd in the stands is drawn at. */
     ambience: function (level) {
       if (!set.sound) { bedStop(); return; }
       bedStart();
@@ -80,25 +181,36 @@
       try {
         var v = Math.max(0, Math.min(1, level || 0));
         bed.gain.gain.setTargetAtTime(0.006 + v * 0.052, actx.currentTime, 0.45);
-        bed.filter.frequency.setTargetAtTime(380 + v * 520, actx.currentTime, 0.6);
+        bed.filter.frequency.setTargetAtTime(380 + v * 560, actx.currentTime, 0.6);
       } catch (_) {}
     },
     quiet: function () { bedStop(); }
   };
+  /* THE ROAR. A crowd does not step up a level, it surges and comes back
+     down; this rides the bed up and lets it fall over a couple of seconds. */
+  function swell(peak, secs) {
+    if (!set.sound) return;
+    bedStart();
+    if (!bed || !actx) return;
+    try {
+      var t0 = actx.currentTime;
+      bed.gain.gain.cancelScheduledValues(t0);
+      bed.gain.gain.setValueAtTime(Math.max(0.001, bed.gain.gain.value), t0);
+      bed.gain.gain.linearRampToValueAtTime(0.014 + peak * 0.085, t0 + 0.22);
+      bed.gain.gain.setTargetAtTime(0.010 + peak * 0.020, t0 + 0.22, (secs || 1.5) * 0.4);
+      bed.filter.frequency.setTargetAtTime(420 + peak * 900, t0, 0.2);
+    } catch (_) {}
+  }
   /* the crowd bed: built once, on the first gesture that is allowed to make
      sound, and left running with its level moved rather than restarted */
   var bed = null;
   function bedStart() {
     if (bed) return;
+    var c = ac(); if (!c) return;
     try {
-      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-      if (actx.state === 'suspended') actx.resume();
-      var len = Math.floor(actx.sampleRate * 2.0);
-      var buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
+      var len = Math.floor(c.sampleRate * 2.0);
+      var buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
       var last = 0, i, sd = 20260907;
-      /* THE PAGE OWNS NO DICE. Even noise for a crowd comes off a seeded
-         stream, so nothing here can ever be mistaken for the game deciding
-         something — and the bed sounds the same every kickoff. */
       function nz() { sd = (sd * 1103515245 + 12345) & 0x7fffffff; return sd / 0x7fffffff * 2 - 1; }
       for (i = 0; i < len; i++) {
         /* a one-pole low pass on white noise: closer to the weight of a crowd
@@ -106,25 +218,31 @@
         last = last * 0.86 + nz() * 0.14;
         d[i] = last * 3.2;
       }
-      var src = actx.createBufferSource();
+      var src = c.createBufferSource();
       src.buffer = buf; src.loop = true;
-      var flt = actx.createBiquadFilter();
+      var flt = c.createBiquadFilter();
       flt.type = 'bandpass'; flt.frequency.value = 420; flt.Q.value = 0.7;
-      var g = actx.createGain();
+      var g = c.createGain();
       g.gain.value = 0.008;
-      src.connect(flt); flt.connect(g); g.connect(actx.destination);
+      src.connect(flt); flt.connect(g); g.connect(c.destination);
       src.start();
       bed = { src: src, filter: flt, gain: g };
     } catch (_) { bed = null; }
   }
   function bedStop() {
-    if (!bed) return;
+    if (!bed || !actx) { bed = null; return; }
     try { bed.gain.gain.setTargetAtTime(0.0001, actx.currentTime, 0.3); bed.src.stop(actx.currentTime + 1.2); } catch (_) {}
     bed = null;
   }
+  /* ── HAPTICS ─────────────────────────────────────────────────────────────
+     Three weights and nothing else: a tap, a hit, a score. Feature-detected,
+     never relied on, and off with the switch. */
   function buzz(kind) {
     if (!set.haptics || !navigator.vibrate) return;
-    try { navigator.vibrate(kind === 'strong' ? [24, 40, 34] : kind === 'medium' ? 18 : 8); } catch (_) {}
+    try {
+      navigator.vibrate(kind === 'strong' ? [26, 40, 22, 40, 60]
+        : kind === 'medium' ? [18] : [8]);
+    } catch (_) {}
   }
 
   /* ── COLOURS ──────────────────────────────────────────────────────────── */
@@ -132,6 +250,18 @@
     var t = null;
     (FR && FR.THEMES ? FR.THEMES : []).forEach(function (x) { if (x.key === key) t = x; });
     return t || { primary: '#3fb883', secondary: '#123326', ink: '#06231a' };
+  }
+  /* THE PAINT ON TEN YARDS OF GRASS. A club's deep colour, carrying enough of
+     its loud one that the end zone is recognisably theirs from ninety yards
+     rather than a dark hole at the end of the field. Same rule the live stage
+     uses, so the poster and the game agree. */
+  function ezPaint(theme, fb) {
+    var deep = (theme && theme.secondary) || fb || '#123326';
+    var PP = window.EDGridironPaint;
+    if (!theme || !theme.primary || !PP || !PP.mix) return deep;
+    var m = PP.mix(deep, theme.primary, 0.30);
+    var v = PP.hex(m);
+    return (v[0] * 299 + v[1] * 587 + v[2] * 114) / 1000 < 34 ? PP.shade(m, 0.24) : m;
   }
   /* the colour a club paints its name in on its own end zone: the loud one,
      unless it is too close to the paint under it to be read from ninety
@@ -318,7 +448,7 @@
          camera never moved. offsetHeight is where it is going to be. */
       var h = window.innerHeight || fr.bottom;
       var over = open ? Math.max(0, fr.bottom - (h - drawer.offsetHeight)) : 0;
-      stage.setCover(Math.min(over, fr.height * 0.74));
+      stage.setCover(Math.min(over, fr.height * 0.54));
     };
     if (window.requestAnimationFrame) window.requestAnimationFrame(run); else run();
   }
@@ -794,14 +924,18 @@
            situation. */
         var scorer = game.pendingScore ? game.pendingScore.side : me;
         var mineTd = scorer === me;
-        SOUND.td(); buzz('strong'); crowdUp(1, 0.6);
+        SOUND.td(); buzz('strong'); crowdUp(1, 0.62);
         /* the camera pulls out onto the place, the way it does when a stadium
            has just stood up */
-        setTimeout(function () { shotWide(true, true); }, 380);
-        banner({ kind: 'td', eyebrow: 'Touchdown',
-          head: (mineTd ? teams.me : teams.opp).name || 'Touchdown',
-          sub: game.score.home + ' — ' + game.score.away,
-          color: mineTd ? myColor : theirColor, hold: 1900 });
+        setTimeout(function () { shotWide(true, true); }, 420);
+        scoreMoment({
+          club: (mineTd ? teams.me : teams.opp),
+          color: mineTd ? myColor : theirColor,
+          who: p.carrier ? FRname(p.carrier) : p.target ? FRname(p.target)
+            : p.interceptor ? FRname(p.interceptor) : '',
+          how: p.tdLine || tdLineOf(p),
+          mine: mineTd
+        });
       } else if (p.turnover) {
         SOUND.bad(); buzz('strong'); crowdUp(0.9, 0.3);
         banner({ kind: 'bad', head: p.turnover === 'fumble' ? 'Fumble' : 'Intercepted',
@@ -813,10 +947,11 @@
         SOUND.first(); buzz('medium'); crowdUp(0.55, 0.22);
         banner({ kind: 'first', head: 'First down', color: myColor, hold: 950 });
       } else {
-        SOUND.hit(); buzz('light');
+        SOUND.hit(!!p.big); buzz(p.big ? 'medium' : 'light');
         if (p.big) crowdUp(0.7, 0.22);
       }
-      resultCard(p);
+      setTimeout(function () { SOUND.whistle(); }, 230);
+      if (!p.touchdown) resultCard(p);
       milestone(p);
       ballX = drift(ballX);
     }
@@ -851,6 +986,41 @@
     setTimeout(function () { d.classList.add('out'); }, hold);
     setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, hold + 620);
     return d;
+  }
+
+  /* ── A TOUCHDOWN ─────────────────────────────────────────────────────────
+     Six points is the thing the whole game is for, and a small tag in the
+     corner of the screen is not what it feels like. The picture goes to the
+     club's colour, the word lands, the man who scored it is named and the
+     score changes under it — and then it is gone and you are lining up for
+     the try. Under two seconds. A celebration you cannot skip is a cutscene.
+
+     Everything here is presentation: the engine booked the six points before
+     any of it was drawn. */
+  function tdLineOf(p) {
+    if (!p) return '';
+    var y = p.yards == null ? null : p.yards;
+    if (p.turnover === 'interception') return 'Pick six';
+    if (p.completion) return (y != null ? y + '-yard ' : '') + 'catch';
+    if (y != null) return y + '-yard run';
+    return '';
+  }
+  function scoreMoment(o) {
+    var d = document.createElement('div');
+    d.className = 'td-hit' + (o.mine ? '' : ' them');
+    d.style.setProperty('--tc', o.color || '#4ede9f');
+    d.innerHTML =
+      '<div class="td-wash"></div>'
+      + '<div class="td-body">'
+      + '<div class="td-word">TOUCHDOWN</div>'
+      + '<div class="td-club">' + esc((o.club && (o.club.name || o.club.city)) || '') + '</div>'
+      + (o.who ? '<div class="td-who">' + esc(o.who) + (o.how ? ' <i>' + esc(o.how) + '</i>' : '') + '</div>' : '')
+      + '<div class="td-score"><span>' + esc(teams.me.abbr || '') + ' ' + game.score[me] + '</span>'
+      + '<b>&middot;</b><span>' + esc(teams.opp.abbr || '') + ' ' + game.score[G.other(me)] + '</span></div>'
+      + '</div>';
+    fieldWrap.appendChild(d);
+    setTimeout(function () { d.classList.add('out'); }, 1750);
+    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 2400);
   }
 
   /* ── THE MAN WHO IS DECIDING IT ──────────────────────────────────────────
@@ -957,27 +1127,118 @@
     if (on) crowdUp(0.5, 0.34); else crowdUp(0, 0.12);
   }
 
+  /* ── THE KICKOFF SEQUENCE ────────────────────────────────────────────────
+     What happens between pressing the button and the first snap of a drive.
+     A broadcast does not cut from a menu to a static field: it holds on the
+     building, puts the two clubs on the screen, comes down onto the grass,
+     and only then kicks the football.
+
+     Under six seconds, and one tap anywhere ends it. Nothing in here decides
+     a yard — the engine settles the kickoff the moment the scene finishes,
+     exactly as it did when the button did it directly. */
+  var kickSkip = null;
+  function runKickoff(sit, done) {
+    if (!stage || !stage.kickoff) { done(); return; }
+    busy = true;
+    var recv = sit.offense === me ? teams.me : teams.opp;
+    var kick = sit.offense === me ? teams.opp : teams.me;
+    var recvKit = kitFor(sit.offense === me ? 'me' : 'opp');
+    var kickKit = kitFor(sit.offense === me ? 'opp' : 'me');
+    var c = cond();
+    /* the kicking team is the offence on the field for this scene */
+    stage.teams(themeOf(kick.theme), themeOf(recv.theme),
+      kick.name || '', recv.name || '', sit.offense === me);
+    var card = document.createElement('div');
+    card.className = 'kick-in';
+    card.innerHTML =
+      '<div class="ki-top">' + esc(c.venue) + ' &middot; ' + esc(c.kick) + ' &middot; '
+        + esc(c.sky) + ' ' + esc(c.temp) + '&deg;</div>'
+      + '<div class="ki-grid">'
+      + '<div class="ki-side"><span class="ki-badge" style="--tc:' + esc(kickKit.primary || '#3fb883') + '">'
+        + esc((kick.abbr || '').slice(0, 3)) + '</span>'
+        + '<b>' + esc(kick.name || '') + '</b><i>Kicking off</i></div>'
+      + '<div class="ki-v">AT</div>'
+      + '<div class="ki-side"><span class="ki-badge" style="--tc:' + esc(recvKit.primary || '#3fb883') + '">'
+        + esc((recv.abbr || '').slice(0, 3)) + '</span>'
+        + '<b>' + esc(recv.name || '') + '</b><i>Receiving</i></div>'
+      + '</div>'
+      + '<div class="ki-skip">Tap to skip</div>';
+    fieldWrap.appendChild(card);
+    crowdUp(0.55, 0.34);
+    var over = false, timers = [];
+    function clearAll() { timers.forEach(clearTimeout); timers = []; }
+    function finish() {
+      if (over) return;
+      over = true; kickSkip = null; clearAll();
+      if (card.parentNode) card.parentNode.removeChild(card);
+      if (stage.skipKickoff) stage.skipKickoff();
+      shotWide(false);
+      busy = false;
+      done();
+    }
+    kickSkip = finish;
+    /* 1 · the building, and the two clubs on it */
+    timers.push(setTimeout(function () {
+      if (over) return;
+      card.classList.add('out');
+      /* 2 · down onto the grass, and the teams take the field */
+      say('The kick is coming.');
+      crowdUp(0.75, 0.40);
+      stage.kickoff({ from: 35, to: 8, returner: featuredName(recv),
+        dur: 3.2, onDone: function () { if (!over) { say(''); finish(); } } });
+      SOUND.crowd();
+    }, 1500));
+    timers.push(setTimeout(function () { if (!over) { SOUND.snap(); buzz('medium'); } }, 2450));
+    timers.push(setTimeout(finish, 6200));
+  }
+  function featuredName(team) {
+    var f = featured(team);
+    return f ? FRname(f) : '';
+  }
+
   /* ── WHOSE CALL IS IT ─────────────────────────────────────────────────── */
+  /* THE QUARTERS ARE A THING THAT HAPPENS. The clock rolling over from 0:00
+     in one quarter to 5:00 in the next with nothing said is the single most
+     "this is a prototype" beat in a football game. */
+  var shownQuarter = 1;
+  function quarterBreak(sit) {
+    if (!sit || sit.quarter === shownQuarter) return;
+    var was = shownQuarter;
+    shownQuarter = sit.quarter;
+    if (sit.phase === 'halftime' || was < 1) return;
+    var name = was === 1 ? 'End of the first quarter'
+      : was === 2 ? 'End of the first half'
+      : was === 3 ? 'End of the third quarter'
+      : was >= 4 ? 'End of regulation' : '';
+    if (!name) return;
+    SOUND.whistle();
+    banner({ kind: 'good', eyebrow: 'Q' + was, head: name,
+      sub: teams.me.abbr + ' ' + game.score[me] + '  \u00b7  ' + teams.opp.abbr + ' ' + game.score[G.other(me)],
+      color: kitFor('me').primary, hold: 1400 });
+  }
   function nextCall() {
     if (game.over) { finalScreen(); return; }
     var sit = G.situation(game);
     paintScore();
+    quarterBreak(sit);
     if (sit.phase === 'halftime') { halftimeScreen(); return; }
     if (sit.phase === 'kickoff') {
       padClear(); drawer.classList.remove('open');
       /* THE SHOT BEFORE THE FOOTBALL. A broadcast does not open on a patch of
-         grass: it opens on the building, full, lit, waiting. The play lens
-         cannot show that — it looks down too hard — so the kickoff is the one
-         moment the camera drops back and shows the place. */
+         grass: it opens on the building, full, lit, waiting. */
       readEl.hidden = true;
       shotWide(true);
       var recv = sit.offense === me ? teams.me : teams.opp;
+      var kicking = sit.offense === me ? teams.opp : teams.me;
       drawerOpen('<div class="dr-grip"></div>'
-        + '<div class="dr-head"><span class="dr-title">Kickoff</span>'
-        + '<span class="dr-sub">' + esc(recv.name || recv.abbr || '') + ' receive</span></div>'
+        + '<div class="dr-head"><span class="dr-title">Kickoff'
+        + '<b>' + esc(kicking.abbr || '') + ' kicks &middot; ' + esc(recv.abbr || '') + ' receive</b></span></div>'
         + '<div class="dr-row one">'
         + '<button class="btn btn-go" id="drKick" type="button">Kick off</button></div>');
-      $('drKick').onclick = function () { drawerClose(); shotWide(false); special({ type: 'kickoff' }); };
+      $('drKick').onclick = function () {
+        drawerClose();
+        runKickoff(sit, function () { special({ type: 'kickoff' }); });
+      };
       return;
     }
     if (sit.phase === 'pat') {
@@ -1218,7 +1479,25 @@
         + items.map(function (r) { return '<li>' + esc(r.text) + '</li>'; }).join('') + '</ul>';
     }
     var injuries = (game[me === 'home' ? 'home' : 'away'].injuries || []).filter(function (i) { return i.weeks > 0; });
-    overlay('<div class="eyebrow">Final</div>' + scoreHead(game.ot ? 'OT' : 'FT')
+    /* ── THE RESULT, BEFORE THE NUMBERS ──────────────────────────────────
+       A win should feel like one for a second before it turns into a table.
+       A loss gets the same shape and none of the noise: same graphic, muted
+       colour, no celebration — a result you can read and close. */
+    var recLine = rec && rec.games
+      ? rec.w + '\u2013' + rec.l + (rec.t ? '\u2013' + rec.t : '')
+      : '';
+    var hero = '<div class="fin-hero' + (won ? ' win' : level ? ' level' : ' loss') + '"'
+      + ' style="--tc:' + esc(kitFor('me').primary || '#3fb883') + '">'
+      + (won ? '<span class="fin-glow"></span>' : '')
+      + '<div class="fin-tag">Final' + (game.ot ? ' \u00b7 OT' : '') + '</div>'
+      + '<div class="fin-word">' + (won ? 'WIN' : level ? 'TIE' : 'LOSS') + '</div>'
+      + '<div class="fin-line">' + esc(title(teams.me)) + ' ' + game.score[me]
+      + ' \u00b7 ' + esc(title(teams.opp)) + ' ' + game.score[them] + '</div>'
+      + (recLine ? '<div class="fin-rec">Record <b>' + esc(recLine) + '</b>'
+          + (game.ot ? ' \u00b7 after overtime' : '') + '</div>' : '')
+      + '</div>';
+    if (won) { SOUND.td(); buzz('strong'); crowdUp(1, 0.5); }
+    overlay(hero + scoreHead(game.ot ? 'OT' : 'FT')
       + compare([['Total yards', mine.yards, theirs.yards],
         ['Rushing', mine.rushYards, theirs.rushYards,
           mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
@@ -1383,7 +1662,7 @@
      inside the badge behind the abbreviation. Not a logo in the trademark
      sense and not anybody else's — a gear, a horn, a wave, a peak: the shapes
      a small town in this league would put on a helmet. */
-  var MARKS = {
+  var CLUB_MARKS = {
     gear:   'M12 3l2.1 1.6 2.6-.5.9 2.5 2.3 1.3-1 2.4 1 2.4-2.3 1.3-.9 2.5-2.6-.5L12 21l-2.1-1.6-2.6.5-.9-2.5L4.1 16l1-2.4-1-2.4 2.3-1.3.9-2.5 2.6.5zM12 9a3 3 0 100 6 3 3 0 000-6z',
     bull:   'M3 7c2.6 0 4 1.6 4.6 3.4C8.9 9.4 10.3 9 12 9s3.1.4 4.4 1.4C17 8.6 18.4 7 21 7c0 5-2.6 7.4-5.2 7.4-.9 0-1.7-.2-2.3-.6l-.7 4.6h-1.6l-.7-4.6c-.6.4-1.4.6-2.3.6C5.6 14.4 3 12 3 7z',
     spear:  'M12 2l3.4 6.2-2.1.6 1.9 3.4-1.7.5L12 22l-1.5-9.3-1.7-.5 1.9-3.4-2.1-.6z',
@@ -1395,7 +1674,7 @@
     peak:   'M2 20L9 6l3.4 6.6L14.6 9 22 20zm7-9.4L5.8 17h6.4z'
   };
   function clubMark(key) {
-    var d = MARKS[key] || MARKS.shield;
+    var d = CLUB_MARKS[key] || CLUB_MARKS.shield;
     return '<svg class="mu-mark" viewBox="0 0 24 24" aria-hidden="true">'
       + '<path d="' + d + '"/></svg>';
   }
@@ -1469,8 +1748,8 @@
           away: teams.opp,
           theme: themeOf(teams.me.theme),
           awayTheme: themeOf(teams.opp ? teams.opp.theme : null),
-          homeColor: themeOf(teams.me.theme).secondary || '#123326',
-          awayColor: themeOf(teams.opp ? teams.opp.theme : null).secondary || '#2a1a2f',
+          homeColor: ezPaint(themeOf(teams.me.theme), '#123326'),
+          awayColor: ezPaint(themeOf(teams.opp ? teams.opp.theme : null), '#2a1a2f'),
           homeTint: themeOf(teams.me.theme).primary,
           awayTint: themeOf(teams.opp ? teams.opp.theme : null).primary,
           homeInk: ezInk(themeOf(teams.me.theme)),
@@ -1508,13 +1787,14 @@
       homeColor: kitFor('me').secondary || '#123326',
       awayColor: kitFor('opp').secondary || '#2a1a2f',
       on: {
-        onSnap: function () {},
+        onSnap: function () { SOUND.snap(); buzz('light'); },
         onHandoff: function () { buzz('light'); if (set.mode === 'play' && userHasBall()) padRun(); },
-        onThrow: function () { SOUND.tap(); },
-        onCatch: function () { SOUND.tap(); buzz('light'); if (set.mode === 'play' && userHasBall()) padRun(); },
+        onThrow: function () { SOUND.kick(); },
+        onCatch: function () { SOUND.catch_(); buzz('light'); crowdUp(0.42, 0.16); if (set.mode === 'play' && userHasBall()) padRun(); },
         onScramble: function () { if (set.mode === 'play' && userHasBall()) padRun(); },
-        onBreak: function () { SOUND.hit(); buzz('medium'); },
+        onBreak: function () { SOUND.hit(true); buzz('medium'); crowdUp(0.62, 0.20); },
         onIntercept: function () { SOUND.bad(); },
+        onKick: function () { SOUND.kick(); buzz('medium'); },
         onIncomplete: function () {},
         onMove: function () {},
         onEnd: onEnd
@@ -1595,6 +1875,9 @@
     };
     $('btnSet').onclick = settingsOverlay;
     $('btnExit').onclick = function () { location.href = '/games/gameday/'; };
+    /* TAP TO SKIP. Anywhere on the field, and only while a sequence is
+       actually running — it must never eat a tap meant for a receiver. */
+    fieldWrap.addEventListener('pointerdown', function () { if (kickSkip) kickSkip(); }, true);
     window.addEventListener('beforeunload', function () { if (game && !game.over) S.save(game); });
     /* no rubber-banding under the thumbs */
     document.addEventListener('touchmove', function (e) {

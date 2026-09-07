@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>player lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+ body{margin:0;background:#0a0e13;color:#cfe0d8;font:13px Inter,system-ui}
+ canvas{display:block;width:100%;height:auto}
+ h3{margin:14px 10px 4px;font:800 12px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;color:#7d8c96}
+</style></head><body>
+<h3 id="t1">home kit — states</h3><canvas id="c1" width="1600" height="420"></canvas>
+<h3>away kit — states</h3><canvas id="c2" width="1600" height="420"></canvas>
+<h3>builds, stance</h3><canvas id="c3" width="1600" height="420"></canvas>
+<h3>small (game scale)</h3><canvas id="c4" width="1600" height="300"></canvas>
+<script src="/games/lib/gridiron/paint.js"></script>
+<script>
+var P=window.EDGridironPaint;
+var STATES=[['stance','QB',0,0],['idle','WR',0,0],['run','RB',0,7.6],['run','WR',0,10.5],
+  ['run','CB',0,-6.4],['block','OL',0,0.6],['engaged','DL',0,-0.6],['tackle','LB',0,7],
+  ['throw','QB',0,0],['catch','WR',0,5],['carry','RB',2.5,7],['down','RB',0,0],
+  ['celebrate','WR',0,0],['shed','DL',0,2]];
+var BUILDS=['QB','RB','FB','WR','TE','OL','DL','LB','CB','S'];
+function shot(cv,list,kit,px,face){
+  var ctx=cv.getContext('2d');
+  ctx.fillStyle='#1d3a29';ctx.fillRect(0,0,cv.width,cv.height);
+  var n=list.length, step=cv.width/n;
+  var cam=P.camera({w:cv.width,h:cv.height,x:0,y:30,back:55,px:px,wide:cv.width/px,height:14,anchor:0.80});
+  ctx.font='700 15px Inter';ctx.textAlign='center';
+  list.forEach(function(s,i){
+    var x=step*(i+0.5);
+    // draw directly at a fixed screen slot by faking a camera per man
+    var c2=P.camera({w:cv.width,h:cv.height,x:0,y:30,back:55,px:px,wide:cv.width/px,height:14,anchor:0.78});
+    var worldX = (x - cv.width/2) / (c2.squeeze()*c2.f()/c2.u(30));
+    var p={x:worldX,y:30,pos:s[1],kit:kit,num:[7,12,24,55,88,91,33,66][i%8],state:s[0],phase:0.42,
+      face:face||'front',vx:s[2],vy:s[3],lean:0.1};
+    P.player(ctx,p,c2);
+    ctx.fillStyle='rgba(255,255,255,.72)';
+    ctx.fillText(s[1]+' · '+s[0], x, cv.height-14);
+  });
+}
+var home=P.uniform({primary:'#3fb883',secondary:'#123326',ink:'#06231a'},false);
+var away=P.uniform({primary:'#c0392b',secondary:'#2a1a1a',ink:'#fff'},true);
+shot(document.getElementById('c1'),STATES,home,42,'front');
+shot(document.getElementById('c2'),STATES,away,42,'back');
+shot(document.getElementById('c3'),BUILDS.map(function(b){return ['stance',b,0,0];}),home,42,'front');
+shot(document.getElementById('c4'),STATES.slice(0,10),home,13,'front');
+</script></body></html>
