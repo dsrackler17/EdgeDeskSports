@@ -14,6 +14,9 @@
 //    STRIPE_WEBHOOK_SECRET   whsec_...  from the endpoint you create in Stripe
 //    SB_URL                  https://<ref>.supabase.co
 //    SB_SERVICE_ROLE         the service_role key
+//    STRIPE_SECRET_KEY       sk_live_... — used ONLY to read back a subscription
+//                            after a checkout, so a paying customer is never
+//                            written in with a null status and locked out.
 //
 //  Run supabase/billing.sql and supabase/stripe_webhook.sql BEFORE deploying.
 // ============================================================
@@ -281,6 +284,38 @@ async function resolveUser(D, read) {
   return { user_id: null, how: 'unresolved' };
 }
 
+// ── asking Stripe what it actually thinks ─────────────────────────────────
+// A checkout event says a session completed; it does NOT say the subscription
+// is live, so this function refuses to infer one. That was right, and on its
+// own it was not enough: the row was created with a null status, and
+// pgEntitled() reads a null status as "not entitled" — so somebody who had just
+// paid was written into the database and locked out by it.
+//
+// The subscription event that carries the real status can arrive BEFORE the
+// checkout that names the customer, and a resend of it keeps its original
+// timestamp, so the ordering guard correctly refuses it. Waiting for an event
+// that has already been and gone is not a plan.
+//
+// So on a checkout we ask Stripe directly. One call, the authoritative answer,
+// no dependence on delivery order at all. Without STRIPE_SECRET_KEY it degrades
+// to the previous behaviour and says so, rather than guessing.
+async function fetchSubscription(subId, secretKey) {
+  if (!subId || !secretKey) return null;
+  try {
+    const r = await fetch('https://api.stripe.com/v1/subscriptions/' + encodeURIComponent(subId), {
+      headers: { authorization: 'Bearer ' + secretKey },
+    });
+    if (!r.ok) {
+      console.error('stripe_webhook: subscription lookup ' + r.status);
+      return null;
+    }
+    return await r.json();
+  } catch (e) {
+    console.error('stripe_webhook: subscription lookup failed', String(e));
+    return null;
+  }
+}
+
 async function handle(req) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'POST only' }), {
@@ -385,12 +420,27 @@ async function handle(req) {
                   last_event_at: stripeCreated, last_event_id: event.id };
     if (read.customer_id) row.stripe_customer_id = read.customer_id;
     if (read.subscription_id) row.stripe_subscription_id = read.subscription_id;
-    // Only ever write the fields this event actually carries. A checkout event
-    // knows nothing about status, and writing null over a real status would
-    // lock out somebody who just paid.
+    // Only ever write the fields this event actually carries. Writing a null
+    // over a real status would lock out somebody who is paying.
     if (read.status) row.status = read.status;
     if (read.current_period_end) row.current_period_end = read.current_period_end;
     if (read.cancel_at_period_end != null) row.cancel_at_period_end = read.cancel_at_period_end;
+
+    // A CHECKOUT LEAVES NO STATUS, AND A ROW WITH NO STATUS IS A LOCKED-OUT
+    // CUSTOMER. Ask Stripe for the subscription rather than hoping the event
+    // that carries it turns up in a helpful order.
+    if (read.kind === 'checkout' && read.subscription_id && !row.status) {
+      const live = await fetchSubscription(read.subscription_id, Deno.env.get('STRIPE_SECRET_KEY'));
+      if (live && live.status) {
+        row.status = live.status;
+        const pe = periodEnd(live);
+        if (pe) row.current_period_end = pe;
+        row.cancel_at_period_end = !!live.cancel_at_period_end;
+      } else {
+        console.warn('stripe_webhook: checkout for ' + read.subscription_id +
+          ' left no status — set STRIPE_SECRET_KEY, or the customer stays locked out');
+      }
+    }
 
     try {
       await D.upsert('subscriptions', [row], 'user_id');

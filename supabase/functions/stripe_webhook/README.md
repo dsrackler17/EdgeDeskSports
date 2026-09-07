@@ -44,6 +44,13 @@ Project Settings → Edge Functions → Secrets:
 | `SB_URL` | `https://iattxbkbufslbauoumga.supabase.co` |
 | `SB_SERVICE_ROLE` | the `service_role` key (Project Settings → API) |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…`, from step 4 — add it after creating the endpoint |
+| `STRIPE_SECRET_KEY` | `sk_live_…` — read-only use: after a checkout the function asks Stripe for the subscription's real status |
+
+`STRIPE_SECRET_KEY` is not optional in practice. A `checkout.session.completed`
+carries no status, and this function refuses to invent one — so without the key
+a paying customer is written in with `status = null`, which `pgEntitled()` reads
+as not entitled. They pay and are locked out by the very row recording it. That
+happened on the first real checkout this webhook received.
 
 `SB_SERVICE_ROLE` is what lets the function write `subscriptions` at all; RLS
 blocks every client role from writing it, on purpose. **This key must never
@@ -102,6 +109,23 @@ from public.stripe_events order by created_at desc limit 10;
 
 A test event lands `resolved = false` with *"no account matched this customer
 yet"* — that is correct, the fake customer has no account.
+
+Then check no live customer is stranded:
+
+```sql
+select user_id, status, current_period_end, last_event_id
+from public.subscriptions where status is null;
+```
+
+Any row there is somebody who reached checkout and cannot get in. It means
+`STRIPE_SECRET_KEY` was missing when their checkout arrived. Set it, then make
+any no-op edit to their subscription in Stripe — that fires a **fresh**
+`customer.subscription.updated` and the row corrects itself.
+
+**Do not "resend" the original event to fix this.** A resend keeps the event's
+original timestamp, and the ordering guard will correctly refuse it as older
+than what the row already reflects. A new edit makes a new event with a new
+timestamp; that is the one that lands.
 
 Then do a real one: sign up with an address you have never used, take the trial,
 and watch a row appear in `public.subscriptions` with `last_event_id` set. Any
