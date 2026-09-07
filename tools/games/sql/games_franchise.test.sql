@@ -2072,7 +2072,7 @@ begin
     b is not null and (b->'window'->>'number')::int = 1 and jsonb_array_length(b->'prospects') = 10 and jsonb_array_length(b->'agents') = 6 and (b->>'picks')::int = 2);
   perform pg_temp.as_owner();
   perform pg_temp.ok('the generator, the window and the prospect reader are reachable by no client role; the board and the four moves by both',
-    not has_function_privilege('anon', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'execute')
+    not has_function_privilege('anon', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_open_market(uuid, integer)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_prospect_json(public.game_players)', 'execute')
     and not has_function_privilege('anon', 'public.franchise_free_number(uuid, text, text)', 'execute')
@@ -4930,6 +4930,32 @@ begin
        from jsonb_array_elements(public.franchise_pool_plan()) pp));
   perform pg_temp.ok('and the roster is whole again rather than merely patched',
     (select count(*) from public.game_players where franchise_id = rfl and status = 'active') >= 38);
+
+  -- ── A ROOKIE ARRIVES AT WHAT THE FRANCHISE HAS BECOME ───────────────────
+  perform pg_temp.ok('reputation lifts a rookie, monotonically, and never past the cap',
+    public.franchise_rookie_lift(1, 0) = 0
+    and public.franchise_rookie_lift(40, 100) = 14
+    and public.franchise_rookie_lift(9999, 9999) = 14
+    and (select bool_and(public.franchise_rookie_lift(t.n, 50) <= public.franchise_rookie_lift(t.n + 1, 50))
+           from generate_series(1, 300) as t(n))
+    and (select bool_and(public.franchise_rookie_lift(20, t.n) <= public.franchise_rookie_lift(20, t.n + 1))
+           from generate_series(0, 200) as t(n))
+    and (select bool_and(public.franchise_rookie_lift(t.g, t.g) between 0 and 14)
+           from generate_series(-50, 400) as t(g)));
+  -- and it really reaches the man: a franchise with a record signs better
+  -- than one without, from the same seed
+  -- the id FIRST, then the row: a select whose snapshot predates the insert
+  -- the generator performs sees no row at all
+  perform pg_temp.as_owner();
+  update public.franchises set standing = 0 where id = rfl;
+  pid3 := public.franchise_generate_rookie(rfl, 'WR', 9, 2026, 'rookielift:same', 'test');
+  select overall into n from public.game_players where id = pid3;
+  update public.franchises set standing = 100 where id = rfl;
+  pid4 := public.franchise_generate_rookie(rfl, 'WR', 9, 2026, 'rookielift:same', 'test');
+  select overall into nn from public.game_players where id = pid4;
+  perform pg_temp.ok('the same seed signs a better man for a franchise with a record',
+    nn > n, n || ' with nothing behind it, ' || nn || ' with a hundred points of standing');
+  update public.franchises set standing = 0 where id = rfl;
 
   -- THE FLOOR IS A FLOOR, NOT A TARGET: a roster already at the plan does not
   -- grow every offseason, or a franchise would balloon over sixty seasons.

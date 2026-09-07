@@ -1115,7 +1115,7 @@ fresh();
   ['market_view', 'free_agent_signed', 'player_released', 'scouting_spent', 'player_scouted', 'draft_pick'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
   chk('the market cards stack on a phone and the actions meet the tap minimum', /\.pc-actions \.btn\{min-height:40px/.test(FCSS) && /\.mk-sum\{display:grid;grid-template-columns:repeat\(2,1fr\)/.test(FCSS));
   /* the SQL keeps its conventions on the new side */
-  ['franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'franchise_open_market(uuid, integer)', 'franchise_prospect_json(public.game_players)', 'franchise_free_number(uuid, text, text)']
+  ['franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer)', 'franchise_open_market(uuid, integer)', 'franchise_prospect_json(public.game_players)', 'franchise_free_number(uuid, text, text)']
     .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role', SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
   ['franchise_market()', 'franchise_market_board(text)', 'franchise_scout(uuid, text)', 'franchise_draft(uuid, text)', 'franchise_sign(uuid, text)', 'franchise_release(uuid, text)']
     .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated', SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
@@ -2154,10 +2154,12 @@ fresh();
   chk('and the old eight-argument generator is dropped, not left beside the new one',
     /drop function if exists public\.franchise_generate_player\(uuid, text, integer, integer, text, text, text, integer\);/.test(SQL)
     && SQL.indexOf('drop function if exists public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer);')
-       < SQL.indexOf('p_kind text default \'rookie\', p_class integer default null, p_target integer default null)'));
+       < SQL.indexOf('p_kind text default \'rookie\', p_class integer default null, p_target integer default null,'));
+  chk('and so is the nine-argument one, now that a rookie carries a lift',
+    /drop function if exists public\.franchise_generate_player\(uuid, text, integer, integer, text, text, text, integer, integer\);/.test(SQL));
   chk('nobody counts their own rank; the moves are open like every other',
     /revoke all on function public\.franchise_rank_report\(uuid\) from public, anon, authenticated;/.test(SQL)
-    && /revoke all on function public\.franchise_generate_player\(uuid, text, integer, integer, text, text, text, integer, integer\) from public, anon, authenticated;/.test(SQL));
+    && /revoke all on function public\.franchise_generate_player\(uuid, text, integer, integer, text, text, text, integer, integer, integer\) from public, anon, authenticated;/.test(SQL));
   ['franchise_ranks()', 'franchise_rank_cost(integer)', 'franchise_rank_at(integer)',
    'franchise_rank_for(integer)', 'franchise_rank_edge(integer)', 'franchise_pack_open(text)',
    'franchise_pack_keep(uuid, text)', 'franchise_rank_board(text)']

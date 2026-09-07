@@ -3560,11 +3560,50 @@ $$;
 -- founding backups, young, with room to grow. (Phase 5 generalised the
 -- body into franchise_generate_player, which also makes the draft class
 -- and the free agents; this is the rookie's door to it.)
+-- WHAT A FRANCHISE'S REPUTATION IS WORTH TO A ROOKIE (rookie_v2).
+--
+-- TEN THOUSAND SEASONS SAID THIS PLAINLY. A rookie's level was pegged to
+-- `lowest` — the WORST BACKUP IN A FOUNDING ROSTER — for ever, whatever the
+-- franchise had become. So a club fifty seasons deep signed exactly the
+-- calibre a club founded yesterday signed, every man on an eighty-season
+-- roster was an offseason rookie, and the team converged downward to the
+-- rookie pool:
+--
+--   season      1     3     5    10    20    40    60    80
+--   overall   69.7  70.4  68.9  66.1  62.1  61.9  62.1  62.2
+--   wins      5.73  5.53  4.20  4.67  3.87  4.13  3.60  4.60
+--
+-- A player who simply turned up and played got WORSE for eighty seasons and
+-- settled eight points below the team he was handed. That is the wrong curve
+-- for the person this game is easiest to lose: the one who does not know
+-- there is a front office.
+--
+-- So a rookie arrives at what the franchise's reputation commands, exactly
+-- as a coach has since Phase 12: a quarter of a point for every rank, one for
+-- every twelve points of standing, capped. Turning up raises the rank, and
+-- winning raises the standing, so the two things a passive player DOES are
+-- the two things that lift the men he signs. The cap is what stops the
+-- feedback loop — better rookies, better standing, better rookies — from
+-- running away.
+create or replace function public.franchise_rookie_lift(p_rank integer, p_standing integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select greatest(0, least(14,
+      floor(greatest(0, coalesce(p_rank, 1) - 1) * 0.25)::int
+    + floor(greatest(0, least(100, coalesce(p_standing, 0))) / 12.0)::int));
+$$;
+
 create or replace function public.franchise_generate_rookie(
   p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text)
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_lift integer;
 begin
-  return public.franchise_generate_player(p_franchise, p_pos, p_depth, p_season, p_seed, p_detail, 'rookie', null);
+  -- the reputation the franchise has actually earned, read on the server
+  select public.franchise_rookie_lift(
+           coalesce((public.franchise_rank_report(p_franchise)->>'rank')::int, 1),
+           coalesce((select standing from public.franchises where id = p_franchise), 0))
+    into v_lift;
+  return public.franchise_generate_player(p_franchise, p_pos, p_depth, p_season, p_seed, p_detail,
+           'rookie', null, null, v_lift);
 end;
 $$;
 
@@ -3577,9 +3616,11 @@ $$;
 -- argument form is dropped first — otherwise both would exist and a caller
 -- would silently keep the old one.
 drop function if exists public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer);
+drop function if exists public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer);
 create or replace function public.franchise_generate_player(
   p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text,
-  p_kind text default 'rookie', p_class integer default null, p_target integer default null)
+  p_kind text default 'rookie', p_class integer default null, p_target integer default null,
+  p_lift integer default 0)
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   first_names text[] := public.franchise_pool_first_names();
@@ -3604,7 +3645,9 @@ begin
     when p_target is not null then greatest(40, least(99, p_target))
     when p_kind = 'prospect'   then lowest - 7 + floor(random() * 11)::int - 5
     when p_kind = 'free_agent' then lowest + floor(random() * 11)::int - 1
-    else lowest - 4 + floor(random() * 7)::int - 3 end;
+    -- a rookie: a little under the founding backups, LIFTED by what this
+    -- franchise has become (rookie_v2)
+    else lowest - 4 + floor(random() * 7)::int - 3 + greatest(0, coalesce(p_lift, 0)) end;
   a := archetypes->p_pos;
   arch := a->(floor(random() * jsonb_array_length(a))::int);
   attrs := '{}'::jsonb;
@@ -8779,7 +8822,7 @@ revoke all on function public.franchise_pool_archetypes() from public, anon, aut
 revoke all on function public.franchise_pool_traits() from public, anon, authenticated;
 -- the draft and the market: the generator, the window opener and the
 -- prospect reader are the server's; the board and the four moves are open
-revoke all on function public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer) from public, anon, authenticated;
+revoke all on function public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer) from public, anon, authenticated;
 revoke all on function public.franchise_open_market(uuid, integer) from public, anon, authenticated;
 revoke all on function public.franchise_free_number(uuid, text, text) from public, anon, authenticated;
 revoke all on function public.franchise_prospect_json(public.game_players) from public, anon, authenticated;
@@ -8992,6 +9035,7 @@ revoke all on function public.franchise_game_drives(uuid, uuid) from public, ano
 grant execute on function public.franchise_career() to anon, authenticated;
 grant execute on function public.franchise_rank_coach_points(integer) to anon, authenticated;
 grant execute on function public.franchise_staff_hire_level(integer, integer) to anon, authenticated;
+grant execute on function public.franchise_rookie_lift(integer, integer) to anon, authenticated;
 grant execute on function public.franchise_rank_board(text) to anon, authenticated;
 revoke all on function public.franchise_rank_report(uuid) from public, anon, authenticated;
 grant execute on function public.franchise_league_gap(integer, integer) to anon, authenticated;
@@ -9134,7 +9178,7 @@ select 18, 'the market is ' || (public.franchise_market()->>'version') || ': sco
         and has_function_privilege('anon', 'public.franchise_sign(uuid, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_release(uuid, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_open_market(uuid, integer)', 'execute')
-        and not has_function_privilege('authenticated', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer)', 'execute')
     then 'ok' else 'CHECK THIS' end
 union all
 select 19, 'a prospect''s true ratings are read through the board only: the direct policy admits no prospect or free agent',
@@ -9560,7 +9604,7 @@ select 35, 'the playbook is ' || (public.franchise_plays()->>'version')
     then 'ok' else 'CHECK THIS' end
 union all
 select 36, 'the roster is ' || (public.franchise_offseason_version())
-        || ': every position is restocked to the plan, so a franchise cannot lose one and cannot be bricked by losing one',
+        || ': every position is restocked to the plan, a rookie arrives at what the franchise has become, and losing a position cannot brick a career',
   case when public.franchise_offseason_version() = 'offseason_v2'
         -- THE OFFSEASON WALKS THE PLAN, not only the positions that still
         -- have somebody standing. Ten thousand seasons found what the old
@@ -9595,6 +9639,28 @@ select 36, 'the roster is ' || (public.franchise_offseason_version())
         -- roster can never disagree about the shape of a team
         and (select sum(jsonb_array_length(pp->'targets'))
                from jsonb_array_elements(public.franchise_pool_plan()) pp) = 38
+        -- AND A ROOKIE ARRIVES AT WHAT THE FRANCHISE HAS BECOME. The level was
+        -- pegged to the worst backup in a FOUNDING roster for ever, so a club
+        -- fifty seasons deep signed what a club founded yesterday signed and
+        -- every team converged downward to the rookie pool: 69.7 overall at
+        -- season one, 62.2 at season eighty. Rank and standing lift it now,
+        -- which are exactly the two things a player who only plays moves.
+        and public.franchise_rookie_lift(1, 0) = 0
+        and public.franchise_rookie_lift(1, 100) = 8
+        and public.franchise_rookie_lift(40, 100) = 14
+        and public.franchise_rookie_lift(9999, 100) = 14
+        and (select bool_and(public.franchise_rookie_lift(t.n, 50) <= public.franchise_rookie_lift(t.n + 1, 50))
+               from generate_series(1, 300) as t(n))
+        and (select bool_and(public.franchise_rookie_lift(20, t.n) <= public.franchise_rookie_lift(20, t.n + 1))
+               from generate_series(0, 200) as t(n))
+        and (select bool_and(public.franchise_rookie_lift(t.n, t.n) between 0 and 14)
+               from generate_series(-50, 400) as t(n))
+        -- the lift is read on the SERVER, from the record, never handed in
+        and (select p.prosrc like '%public.franchise_rookie_lift(%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_generate_rookie')
+        and not has_function_privilege('anon',
+              'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer)', 'execute')
         -- the plan is the server's own; a client never needs it and cannot
         -- reach it, which is why the floor lives on the server too
         and not has_function_privilege('anon', 'public.franchise_pool_plan()', 'execute')
