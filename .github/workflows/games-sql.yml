@@ -1,4 +1,6 @@
-# EdgeDesk Games — the social layer's SQL, tested against a real PostgreSQL.
+# EdgeDesk — every RLS guarantee that a browser cannot be trusted to keep,
+# tested against a real PostgreSQL: the Games social layer, the franchise, and
+# problem reports (the one table `anon` may write to).
 #
 # supabase/games_social.sql is where Head-to-Head answer privacy actually lives:
 # a table no client role may select from, and a security-definer function that
@@ -7,7 +9,7 @@
 #
 # The suite SKIPS (and passes) on a machine without PostgreSQL, so `npm test`
 # stays green on a bare Node install. This workflow is where it must not skip.
-name: Games social SQL
+name: RLS against a real PostgreSQL
 
 on:
   workflow_dispatch:
@@ -19,6 +21,9 @@ on:
       - 'tools/games/sql/**'
       - 'tools/games/sql_security.test.js'
       - 'tools/games/franchise_sql.test.js'
+      - 'supabase/issue_reports.sql'
+      - 'tools/app/sql/**'
+      - 'tools/app/issue_reports_sql.test.js'
       - '.github/workflows/games-sql.yml'
   pull_request:
     paths:
@@ -27,6 +32,9 @@ on:
       - 'tools/games/sql/**'
       - 'tools/games/sql_security.test.js'
       - 'tools/games/franchise_sql.test.js'
+      - 'supabase/issue_reports.sql'
+      - 'tools/app/sql/**'
+      - 'tools/app/issue_reports_sql.test.js'
 
 jobs:
   sql:
@@ -67,11 +75,21 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/games/franchise_sql.test.js | tee franchise.log
 
+      # Problem reports: the one table `anon` may write to. That concession is
+      # only safe if an anonymous reporter cannot read anything back, nobody can
+      # file under another account's id, and no credential can be stored — which
+      # is what this proves, on the same real database.
+      - name: Run the problem-report SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/app/issue_reports_sql.test.js | tee issues.log
+
       # A skip here would mean the guarantee was never tested. On this job that
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          for f in sql.log franchise.log; do
+          for f in sql.log franchise.log issues.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
