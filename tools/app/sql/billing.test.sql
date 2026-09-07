@@ -150,6 +150,68 @@ begin
   reset role;
   perform pg_temp.ok('nor subscriptions', failed);
 
+  -- ── 7. THE WEBHOOK'S LEDGER ──────────────────────────────────────────────
+  -- Nothing here may be reachable from a browser: it holds raw Stripe payloads
+  -- and it is the thing that decides who has paid.
+  failed := false;
+  begin
+    perform set_config('request.jwt.claim.sub', ME::text, false);
+    set local role authenticated;
+    perform 1 from public.stripe_events;
+  exception when insufficient_privilege then failed := true; end;
+  reset role;
+  perform pg_temp.ok('a signed-in browser cannot read the Stripe event ledger', failed);
+
+  failed := false;
+  begin
+    perform set_config('request.jwt.claim.sub', ME::text, false);
+    set local role authenticated;
+    insert into public.stripe_events(id,type) values ('evt_forged','customer.subscription.updated');
+  exception when insufficient_privilege then failed := true; end;
+  reset role;
+  perform pg_temp.ok('nor forge a delivery into it', failed);
+
+  -- A retry lands on the same primary key rather than writing twice.
+  insert into public.stripe_events(id,type,stripe_created)
+    values ('evt_a','customer.subscription.updated', now())
+    on conflict (id) do nothing;
+  insert into public.stripe_events(id,type,stripe_created)
+    values ('evt_a','customer.subscription.updated', now())
+    on conflict (id) do nothing;
+  select count(*) into n from public.stripe_events where id = 'evt_a';
+  perform pg_temp.ok('a redelivered event is one row, not two', n = 1);
+
+  -- ── 8. NAMING A CUSTOMER BY EMAIL ────────────────────────────────────────
+  -- The webhook's last resort. It must never match an UNCONFIRMED account:
+  -- anybody can sign up as somebody else's address, and matching one would
+  -- hand that person's subscription to a stranger.
+  update auth.users set email_confirmed_at = now() where id = ME;
+  perform pg_temp.ok('a confirmed account is found by email',
+    public.stripe_user_by_email('me@x.co') = ME);
+  perform pg_temp.ok('and the match is case- and whitespace-insensitive',
+    public.stripe_user_by_email('  ME@X.CO ') = ME);
+
+  update auth.users set email_confirmed_at = null where id = OTHER;
+  perform pg_temp.ok('an UNCONFIRMED account is never matched — it is not proof of anything',
+    public.stripe_user_by_email('other@x.co') is null);
+  perform pg_temp.ok('an unknown address returns null rather than a guess',
+    public.stripe_user_by_email('nobody@nowhere.co') is null);
+
+  failed := false;
+  begin
+    perform set_config('request.jwt.claim.sub', ME::text, false);
+    set local role authenticated;
+    perform public.stripe_user_by_email('me@x.co');
+  exception when insufficient_privilege then failed := true; end;
+  reset role;
+  perform pg_temp.ok('and a browser cannot ask it whether an email has an account', failed);
+
+  -- ── 9. THE ORDERING GUARD EXISTS ON THE ROW ──────────────────────────────
+  select count(*) into n from information_schema.columns
+   where table_schema='public' and table_name='subscriptions'
+     and column_name in ('last_event_at','last_event_id');
+  perform pg_temp.ok('subscriptions carries the guard that stops an old event overwriting a new one', n = 2);
+
   raise notice 'ok   suite complete';
 end
 $test$;

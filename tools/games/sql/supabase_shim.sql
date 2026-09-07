@@ -16,6 +16,12 @@ create table if not exists auth.users (
   email text,
   raw_user_meta_data jsonb default '{}'::jsonb
 );
+-- Columns real Supabase has that something under test reads. `created_at` and
+-- `email_confirmed_at` are load-bearing for the Stripe webhook's last-resort
+-- identification: it matches a customer's email to an account ONLY when that
+-- account is confirmed, and takes the oldest when two share an address.
+alter table auth.users add column if not exists created_at         timestamptz not null default now();
+alter table auth.users add column if not exists email_confirmed_at timestamptz;
 
 create or replace function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;

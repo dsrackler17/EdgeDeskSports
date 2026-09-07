@@ -32,6 +32,10 @@ const cp = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
 const SCHEMA = path.join(ROOT, 'supabase', 'billing.sql');
+/* The webhook's ledger depends on billing.sql (it adds columns to
+   subscriptions), so the two are applied and tested together — which is also
+   the order an operator must run them in. */
+const WEBHOOK = path.join(ROOT, 'supabase', 'stripe_webhook.sql');
 const SHIM = path.join(ROOT, 'tools', 'games', 'sql', 'supabase_shim.sql');
 const SUITE = path.join(__dirname, 'sql', 'billing.test.sql');
 const DB = 'edgedesk_billing_sqltest';
@@ -70,7 +74,7 @@ let code = 0;
 try {
   psql(conn, ['-d', DB, '-q', '-c',
     "create schema if not exists auth; create extension if not exists pgcrypto;"]);
-  for (const f of [SHIM, SCHEMA]) {
+  for (const f of [SHIM, SCHEMA, WEBHOOK]) {
     const r = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', f]);
     if (r.status !== 0) {
       console.log('FAIL | billing SQL | ' + path.basename(f) + ' did not apply');
@@ -90,7 +94,9 @@ try {
     throw new Error('report');
   }
   /* Applying it twice must be indistinguishable from applying it once. */
+  psql(conn, ['-d', DB, '-tA', '-F', '|', '-f', WEBHOOK]);
   const twice = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', SCHEMA]);
+  psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', WEBHOOK]);
   if (twice.status !== 0) {
     console.log('FAIL | billing SQL | the file is not idempotent — a second run failed');
     console.error((twice.stderr || '').trim().split('\n').slice(0, 12).join('\n'));
@@ -105,7 +111,7 @@ try {
     console.error(out.split('\n').filter((l) => /FAIL|ERROR/.test(l)).slice(0, 8).join('\n'));
     throw new Error('suite');
   }
-  if (passed < 12) {
+  if (passed < 18) {
     console.log('FAIL | billing SQL | only ' + passed + ' assertions ran — the suite exited early');
     throw new Error('short');
   }
@@ -128,6 +134,7 @@ try {
       " values ('11111111-1111-1111-1111-111111111111','old@x.co');" +
       "create table public.subscriptions (user_id uuid primary key references auth.users(id), status text);"]);
     const rep = psql(conn, ['-d', LEG, '-tA', '-F', '|', '-f', SCHEMA]);
+    psql(conn, ['-d', LEG, '-v', 'ON_ERROR_STOP=1', '-q', '-f', WEBHOOK]);
     const bad = (rep.stdout || '').split('\n').filter((l) => /^\d+\|/.test(l) && !/\|ok/.test(l));
     if (bad.length) {
       console.log('FAIL | billing SQL | applying over a partial hand-made table left it incomplete');
