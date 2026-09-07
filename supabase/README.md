@@ -173,6 +173,45 @@ actionable signals only, since the whole board at every book would be tens of
 thousands of rows per run and the actionable set is exactly the population a
 book-behaviour study is about.
 
+### `billing.sql` — the three tables the signup path needs
+`billing_consents`, `referrals` and `subscriptions` have been referenced by
+`index.html` and `app.html` since they were written, and **no file here ever
+created any of them**. The landing page said so to the *customer*, on the
+checkout screen: "Run subscriptions.sql if this table is missing." That file
+does not exist in this repository either. This is it, under the names the code
+actually uses.
+
+The consent write is load-bearing. `confirmArl()` records the exact renewal
+terms shown on screen *before* sending anyone to Stripe and refuses to continue
+if it cannot — automatic-renewal law requires the record, so a consent that
+cannot be stored must never become a charge. That refusal is correct. What it
+meant with the table missing is that every signup reached the trial screen and
+stopped dead, with the account **already created**, and the customer reading it
+as a failed signup.
+
+* `billing_consents` — append-only. Owner-insert, owner-read, and no update or
+  delete policy for any client role: a consent record is evidence, and even its
+  author cannot rewrite it. Retain three years.
+* `referrals` — first-touch attribution, one row per account, keyed on
+  `user_id` because the page upserts with `on_conflict=user_id`.
+* `subscriptions` — **read-only to every client role.** That row *is* the
+  product; a browser that could write it could grant itself the terminal. The
+  Stripe webhook writes it under the service role, which bypasses RLS.
+
+**Safe over a dashboard-built project.** Every column is added with its own
+`add column if not exists` rather than relying on `create table if not exists`,
+which no-ops against a table somebody made by hand and would leave a partial
+shape intact — the migration would report success and the insert would go on
+failing. The repo has been bitten by exactly that before (see
+`close_v7_parity.sql`). Rows and existing values are untouched.
+
+Rows 1–14 of its report should each say `ok`. Tested against a real PostgreSQL
+by `tools/app/billing_sql.test.js` (`npm run billing:sql`), which applies the
+file twice, applies it again over a partial hand-made table holding rows, and
+then attacks the result — filing a consent under another account, rewriting or
+deleting one, reading another account's rows, and a browser trying to grant
+itself a subscription.
+
 ### `issue_reports.sql` — how a user tells you something is broken
 The terminal has had a feedback form since it was written. It posted to
 `public.feedback`, and **no file here ever created that table** — the
