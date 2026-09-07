@@ -241,6 +241,68 @@ async function expiredSessionChecks() {
       r.ok === false && !/JWT/i.test(r.message) && /sign-?in expired/i.test(r.message), r.message);
     chk('and it says the game keeps going, because it does', /keeps going/.test(r.message));
 
+    /* EVERY SHAPE OF A BEARER THE GATEWAY WILL NOT TAKE. Checking `exp`
+       before sending is only a guess about what the gateway accepts: it
+       cannot see a token this client got the shape of wrong, nor a device
+       clock that disagrees with the server's. A 401 is the answer, so the
+       call is made once more with the public key — which is what the device
+       secret already on it is for. */
+    const gate = (auth) => {
+      const b = String(auth || '').replace('Bearer ', '');
+      if (b === 'anon-key-public') return true;
+      let p = null;
+      try { p = JSON.parse(Buffer.from(b.split('.')[1], 'base64').toString()); } catch (_) { return false; }
+      if (!p || !p.sub) return false;
+      return !(p.exp && p.exp * 1000 < Date.now());
+    };
+    let sentHeaders = [];
+    global.fetch = (url, o) => {
+      sentHeaders.push(o.headers.authorization);
+      if (!gate(o.headers.authorization))
+        return Promise.resolve({ ok: false, status: 401,
+          text: () => Promise.resolve(JSON.stringify({ code: 'PGRST301', message: 'JWT expired' })) });
+      return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve('{"ok":true}') });
+    };
+    const noSub = 'h.' + Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }))
+      .toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.s';
+    const shapes = [
+      ['an expired token', tok(-3600)],
+      ['a token expiring inside the skew window', tok(5)],
+      ['a token this client cannot parse at all', 'not-a-jwt'],
+      ['a token carrying no subject', noSub]
+    ];
+    for (const [label, at] of shapes) {
+      MEM['edgedesk_session'] = JSON.stringify({ access_token: at, refresh_token: 'r' });
+      sentHeaders = [];
+      const x = await S.rpc('franchise_create', { p_secret: 'device' });
+      chk('a call still reaches the function with ' + label, x.ok === true,
+        JSON.stringify(x) + ' after ' + sentHeaders.length + ' attempt(s)');
+    }
+
+    /* the one no pre-check can catch: the token looks live to this client and
+       the server rejects it anyway — a clock that disagrees, or a rotated key */
+    MEM['edgedesk_session'] = JSON.stringify({ access_token: tok(3600, 'ghost') });
+    global.fetch = (url, o) => {
+      sentHeaders.push(o.headers.authorization);
+      if (String(o.headers.authorization) !== 'Bearer anon-key-public')
+        return Promise.resolve({ ok: false, status: 401,
+          text: () => Promise.resolve(JSON.stringify({ code: 'PGRST301', message: 'JWT expired' })) });
+      return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve('{"ok":true}') });
+    };
+    sentHeaders = [];
+    let x = await S.rpc('franchise_create', { p_secret: 'device' });
+    chk('a token the client believes but the server refuses recovers on one retry',
+      x.ok === true && sentHeaders.length === 2 && sentHeaders[1] === 'Bearer anon-key-public',
+      JSON.stringify(x) + ' after ' + sentHeaders.length);
+    chk('and the retry is the LAST word — an anonymous 401 is not asked twice', await (async () => {
+      global.fetch = (url, o) => { sentHeaders.push(o.headers.authorization);
+        return Promise.resolve({ ok: false, status: 401,
+          text: () => Promise.resolve(JSON.stringify({ code: 'PGRST301', message: 'JWT expired' })) }); };
+      sentHeaders = [];
+      const y = await S.rpc('franchise_create', { p_secret: 'device' });
+      return y.ok === false && sentHeaders.length === 2;
+    })());
+
     global.fetch = realFetch;
     MEM = {}; COOKIES = {};
   }

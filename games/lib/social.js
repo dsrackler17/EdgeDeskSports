@@ -57,7 +57,10 @@
       return (p && p.sub) ? p : null;
     } catch (_) { return null; }
   }
-  function past(p) { return !!(p && p.exp && (p.exp * 1000) < Date.now()); }
+  /* a token inside its last few seconds is treated as gone: it would expire in
+     flight, and the answer would be the gateway's rather than the game's */
+  var SKEW_MS = 30000;
+  function past(p) { return !!(p && p.exp && (p.exp * 1000) < (Date.now() + SKEW_MS)); }
 
   /* THE SESSION, ONLY WHILE ITS TOKEN IS STILL GOOD. Games never mints or
      refreshes a session — the terminal owns that — so a token past its expiry
@@ -74,7 +77,13 @@
      lapsed sign-in into a lost one. */
   function live() {
     var s = session();
-    return past(claims(s)) ? null : s;
+    if (!s || !s.access_token) return null;
+    var p = claims(s);
+    /* A TOKEN THIS CLIENT CANNOT READ IS NOT ONE IT MAY PRESENT. Returning the
+       session when `claims` came back null was the original bug all over
+       again: past(null) is false, so an unparseable token went out anyway. */
+    if (!p) return null;
+    return past(p) ? null : s;
   }
 
   /* a session is stored, and it has gone stale — distinct from never having
@@ -134,13 +143,18 @@
   /* Call a database function. Resolves to { ok, data } or { ok:false, error },
      never rejects — a page that has to try/catch around a social call ends up
      with half-rendered states. */
-  function rpc(fn, args) {
+  function rpc(fn, args) { return send(fn, args, false); }
+
+  /* `anon` sends the public key as the bearer even when a session is stored.
+     Checking a token before sending it is a guess about what the server will
+     accept; a 401 is the answer. */
+  function send(fn, args, anon) {
     if (!SB_KEY || typeof fetch !== 'function') {
       _available = false;
       return Promise.resolve({ ok: false, error: 'not_configured',
         message: 'The social layer is not configured in this build.' });
     }
-    var s = live();
+    var s = anon ? null : live();
     var h = {
       apikey: SB_KEY,
       authorization: 'Bearer ' + ((s && s.access_token) || SB_KEY),
@@ -153,6 +167,15 @@
         var data = null;
         try { data = body ? JSON.parse(body) : null; } catch (_) { data = body; }
         if (!r.ok) {
+          /* THE SERVER IS THE AUTHORITY ON ITS OWN CREDENTIAL. Reading `exp`
+             before sending is only ever a guess about what the gateway will
+             accept — it cannot see a clock that disagrees, a key rotated
+             underneath us, or a token shape this client got wrong. A 401 IS
+             the answer, and sending the same bearer again cannot change it.
+             So drop it and ask once more as an anonymous player: that is what
+             the device secret already on the call is for, and it is how
+             founding a franchise survives a sign-in that lapsed. */
+          if (r.status === 401 && !anon && s) return send(fn, args, true);
           _available = (r.status !== 404);   /* 404 = the function is not deployed */
           return { ok: false, status: r.status, error: pgCode(data),
             message: pgMessage(data, r.status) };
