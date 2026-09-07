@@ -695,7 +695,15 @@ function repeat(playKey, defKey, n, extra, opts) {
   PA.player(ctxOne, { x: PA.FIELD.half, y: 30, pos: 'QB', kit: home, num: 7, state: 'run',
     phase: 0.2, face: 'back' }, cam);
   chk('a player is drawn from many parts, not one dot', ctxOne.calls.fill >= 8, ctxOne.calls.fill);
-  chk('a player has a helmet', ctxOne.calls.arc >= 2, ctxOne.calls.arc);
+  chk('a player has a helmet', ctxOne.calls.arc + ctxOne.calls.ellipse >= 2,
+      ctxOne.calls.arc + '/' + ctxOne.calls.ellipse);
+  /* and he is built like a man: shoulders about a quarter of him across and a
+     helmet about a sixth of him tall, not a bobblehead on a sack */
+  chk('a man is proportioned like one',
+      PA.SKELETON.helmR * 2 < 0.22 && PA.SKELETON.padHalf * 2 > 0.24
+        && PA.SKELETON.padHalf * 2 < 0.34,
+      'helmet ' + (PA.SKELETON.helmR * 2).toFixed(2) + ' shoulders '
+        + (PA.SKELETON.padHalf * 2).toFixed(2));
   chk('a player wears his number', ctxOne.calls.fillText >= 1);
 
   /* the field, the ball, the markers and the art all draw */
@@ -725,7 +733,7 @@ function repeat(playKey, defKey, n, extra, opts) {
   /* a recording 2D context: counts what was drawn and catches any NaN, which
      is the one way canvas fails silently */
   function recorder() {
-    const c = { calls: { fill: 0, stroke: 0, fillRect: 0, fillText: 0, strokeText: 0, arc: 0 }, bad: [] };
+    const c = { calls: { fill: 0, stroke: 0, fillRect: 0, fillText: 0, strokeText: 0, arc: 0, ellipse: 0 }, bad: [] };
     const num = (name, args) => {
       for (const a of args) {
         if (typeof a === 'number' && !isFinite(a)) { c.bad.push(name + ' got ' + a); return; }
@@ -733,7 +741,10 @@ function repeat(playKey, defKey, n, extra, opts) {
     };
     const noop = name => function () { num(name, arguments); };
     ['save', 'restore', 'translate', 'rotate', 'scale', 'beginPath', 'moveTo', 'lineTo',
-     'closePath', 'arcTo', 'ellipse', 'setLineDash', 'clip', 'setTransform', 'rect']
+     'closePath', 'arcTo', 'ellipse', 'setLineDash', 'clip', 'setTransform', 'rect',
+     /* the figure is built out of curves now: a torso that tapers, a helmet
+        with a jaw on it and a facemask hung off the front of it */
+     'quadraticCurveTo', 'bezierCurveTo']
       .forEach(m => { c[m] = noop(m); });
     c.fill = function () { c.calls.fill++; };
     c.stroke = function () { c.calls.stroke++; };
@@ -743,6 +754,9 @@ function repeat(playKey, defKey, n, extra, opts) {
        on grass survives being seen from ninety yards */
     c.strokeText = function () { num('strokeText', arguments); c.calls.strokeText++; };
     c.arc = function () { num('arc', arguments); c.calls.arc++; };
+    /* the helmet is an ellipse with a jaw on it rather than a circle, so a
+       round part of a man can arrive either way */
+    c.ellipse = function () { num('ellipse', arguments); c.calls.ellipse++; };
     /* text has to be measurable: the artist fits club names to the end zone */
     c.measureText = function (t) { return { width: String(t).length * 7 }; };
     c.createLinearGradient = function () { num('gradient', arguments); return grad(); };

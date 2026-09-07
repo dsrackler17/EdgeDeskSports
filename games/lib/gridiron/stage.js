@@ -68,14 +68,18 @@
      test can count and the stage can walk onto the field. */
   function alignOffense(playObj, fk, bx, ly, units, kit) {
     var form = F.formation(fk), out = [], i;
-    var olNames = ['LT', 'LG', 'C', 'RG', 'RT'], olY = [-4.6, -2.3, 0, 2.3, 4.6];
+    /* SPLITS ARE FEET, NOT YARDS. Two and a bit yards between adjacent
+       linemen put the tackles nine yards apart and strung the whole front
+       across half the hashes; a real line is about six yards tackle to
+       tackle, which is what makes the trenches look like trenches. */
+    var olNames = ['LT', 'LG', 'C', 'RG', 'RT'], olY = [-3.0, -1.5, 0, 1.5, 3.0];
     var olPlayers = (units && units.ol && units.ol.players) || [];
     for (i = 0; i < 5; i++) {
       out.push(Actor({ id: 'o_' + olNames[i], side: 'off', pos: 'OL', slot: olNames[i],
         num: (olPlayers[i] && jersey(olPlayers[i], 70 + i)) || (70 + i),
         name: olPlayers[i] ? RO.shortName(olPlayers[i]) : '',
         player: olPlayers[i] || null,
-        x: clamp(bx + olY[i], 1, FIELD.width - 1), y: ly - 1.1,
+        x: clamp(bx + olY[i], 1, FIELD.width - 1), y: ly - 0.9,
         top: speedOf('OL', olPlayers[i] ? olPlayers[i].overall : 60), accel: 16, kit: kit }));
     }
     Object.keys(form.spots).forEach(function (slot) {
@@ -132,7 +136,10 @@
       out.push(Actor({ id: 'd_DL' + i, side: 'def', pos: 'DL', slot: 'DL' + i,
         num: dl[i] ? jersey(dl[i], 90 + i) : 90 + i, name: dl[i] ? RO.shortName(dl[i]) : '',
         player: dl[i] || null,
-        x: clamp(bx + dlY[i] + shade, 1, FIELD.width - 1), y: ly + 2.2,
+        /* a yard off the ball, not three: the neutral zone is the width of the
+           football, and a front seven parked two yards upfield of it made the
+           two lines look like they were playing different games */
+        x: clamp(bx + dlY[i] + shade, 1, FIELD.width - 1), y: ly + 1.0,
         top: speedOf('DL', dl[i] ? dl[i].overall : 65), accel: 20, kit: kit }));
     }
     var lbY = nLB >= 4 ? [-6.5, -2.2, 2.2, 6.5] : nLB === 3 ? [-5.2, 0, 5.2] : nLB === 2 ? [-3.4, 3.4] : [0];
@@ -548,6 +555,18 @@
           if (events.onEnd) events.onEnd(endKindOf(result), result);
         }
       }
+      /* ── HOW LONG HE HAS BEEN ON THE GROUND ─────────────────────────────
+         The simulation flips a man to 'down' on one tick and that is correct;
+         a body takes about a third of a second to actually get there. This is
+         the clock the renderer eases the fall over, and nothing but the
+         picture ever reads it. */
+      if (actors) {
+        for (var fi = 0; fi < actors.length; fi++) {
+          var fa = actors[fi];
+          if (fa.state === 'down') fa.fallT = (fa.fallT || 0) + dt;
+          else fa.fallT = 0;
+        }
+      }
       if (phase === 'dead') dead += dt;
       excite = Math.max(exciteFloor, excite - dt * 0.30);
       camFollow(dt);
@@ -620,6 +639,39 @@
       fitCamera();
     }
 
+    /* ── THE TRENCHES, SO YOU CAN SEE THEM ───────────────────────────────
+       A blocker and the man he is blocking converge on one coordinate and the
+       two of them draw on top of each other: the line of scrimmage turns into
+       a row of single bodies and you cannot tell who is winning. The
+       simulation is right to put them there — that IS what a block is — so the
+       fix belongs here, in the picture: hold the pair apart by a shoulder
+       each, along the line between them, and let whoever is winning the rep
+       stand the deeper of the two. Nothing below is read by the football. */
+    function engagementOffsets() {
+      var i, a;
+      for (i = 0; i < actors.length; i++) { actors[i].ox = 0; actors[i].oy = 0; }
+      for (i = 0; i < actors.length; i++) {
+        a = actors[i];
+        if (a.side !== 'off' || !a.lock) continue;
+        var d = null, j;
+        for (j = 0; j < actors.length; j++) if (actors[j].id === a.lock) { d = actors[j]; break; }
+        if (!d) continue;
+        var dx = d.x - a.x, dy = d.y - a.y, m = Math.hypot(dx, dy);
+        if (m < 0.001) { dx = 0; dy = 1; m = 1; }
+        dx /= m; dy /= m;
+        /* how the rep is going: the blocker still has time on the clock and is
+           driving, or he is out of it and being walked backwards */
+        var win = clamp((a.rep || 0) / 1.6, 0, 1) - 0.5;
+        var gap = 0.46 - m * 0.16;                    /* only ever pushes apart */
+        if (gap < 0) gap = 0;
+        a.ox = -dx * gap - dx * win * 0.30; a.oy = -dy * gap - dy * win * 0.30;
+        d.ox = dx * gap - dx * win * 0.30; d.oy = dy * gap - dy * win * 0.30;
+        /* and the arms go out toward the man, not down by his sides */
+        a.engageX = dx; a.engageY = dy;
+        d.engageX = -dx; d.engageY = -dy;
+      }
+    }
+
     /* ── DRAW ────────────────────────────────────────────────────────────── */
     /* END ZONE PAINT. The deep colour goes on the grass; the loud one goes
        on the letters. If a club's two colours are too close in brightness the
@@ -659,6 +711,7 @@
          has the football already wears a white ring, and two tags a yard
          apart just cover each other up. */
       actors.forEach(function (a) { a.label = (a.sel && userMode === 'play') ? a.name : null; });
+      engagementOffsets();
       var sorted = actors.slice().sort(function (a, b) { return b.y - a.y; });
       /* back to front, so the near men overlap the far ones — except the two
          you must never lose in a pile: whoever has the football, and whoever

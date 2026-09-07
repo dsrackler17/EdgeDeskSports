@@ -79,37 +79,37 @@
     i_form: {
       key: 'i_form', name: 'I-Formation', personnel: '21', tell: -0.75, boxPull: 0.9,
       means: 'Two backs, a tight end, everybody close. It says run before the snap.',
-      spots: { QB: [-1.5, 0], FB: [-4.5, 0], RB: [-7, 0], TE: [0, 7.5], X: [0, -22], Z: [0, 19] }
+      spots: { QB: [-2.4, 0], FB: [-5.0, 0], RB: [-7.2, 0], TE: [0, 4.4], X: [0, -19], Z: [0, 18] }
     },
     single: {
       key: 'single', name: 'Singleback', personnel: '11', tell: -0.2, boxPull: 0.55,
       means: 'One back, balanced personnel. It says nothing much, which is its own virtue.',
-      spots: { QB: [-1.5, 0], RB: [-6, -2.5], TE: [0, 7.5], X: [0, -22], SL: [0, 12], Z: [0, 20] }
+      spots: { QB: [-2.4, 0], RB: [-6.6, -1.8], TE: [0, 4.4], X: [0, -19], SL: [0, 10], Z: [0, 18] }
     },
     gun: {
       key: 'gun', name: 'Shotgun', personnel: '11', tell: 0.4, boxPull: 0.3,
       means: 'Quarterback off the line, receivers spread. It leans pass and keeps the run.',
-      spots: { QB: [-5.5, 0], RB: [-5.5, 3.5], TE: [0, 8], X: [0, -22], SL: [0, -13], Z: [0, 21] }
+      spots: { QB: [-6.0, 0], RB: [-6.0, 2.6], TE: [0, 4.8], X: [0, -19], SL: [0, -11], Z: [0, 19] }
     },
     trips: {
       key: 'trips', name: 'Trips', personnel: '11', tell: 0.55, boxPull: 0.2,
       means: 'Three to one side. It stresses the coverage before anybody moves.',
-      spots: { QB: [-5.5, 0], RB: [-5.5, -3.5], TE: [0, 11], X: [0, -22], SL: [0, 16], Z: [0, 21] }
+      spots: { QB: [-6.0, 0], RB: [-6.0, -2.6], TE: [0, 9.0], X: [0, -19], SL: [0, 13.5], Z: [0, 18.5] }
     },
     empty: {
       key: 'empty', name: 'Empty', personnel: '10', tell: 0.9, boxPull: 0.05,
       means: 'Five out, nobody in the backfield. Everyone in the stadium knows what this is.',
-      spots: { QB: [-5.5, 0], TE: [0, 9], X: [0, -22], SL: [0, -13], SL2: [0, 14], Z: [0, 21] }
+      spots: { QB: [-6.0, 0], TE: [0, 6.5], X: [0, -19], SL: [0, -11], SL2: [0, 11.5], Z: [0, 18.5] }
     },
     wildcat: {
       key: 'wildcat', name: 'Wildcat', personnel: '21', tell: -0.9, boxPull: 0.95,
       means: 'The ball to a back directly. No quarterback on the field, and they can see that.',
-      spots: { RB: [-5, 0], FB: [-3, -3], QB: [0, 18], TE: [0, 7.5], X: [0, -22], Z: [0, 13] }
+      spots: { RB: [-5.2, 0], FB: [-3.2, -2.6], QB: [0, 16], TE: [0, 4.4], X: [0, -19], Z: [0, 12] }
     },
     goalline: {
       key: 'goalline', name: 'Goal Line', personnel: '22', tell: -0.95, boxPull: 1,
       means: 'Two tight ends, two backs, and no interest in disguising it.',
-      spots: { QB: [-1.5, 0], FB: [-4, 0], RB: [-6.5, 0], TE: [0, 7.5], TE2: [0, -7.5], X: [0, -19] }
+      spots: { QB: [-2.4, 0], FB: [-4.4, 0], RB: [-6.8, 0], TE: [0, 4.4], TE2: [0, -4.4], X: [0, -16] }
     }
   };
   var FORMATION_ORDER = ['i_form', 'single', 'gun', 'trips', 'empty', 'wildcat', 'goalline'];
