@@ -809,27 +809,96 @@
   }
 
   /* ── PREGAME ──────────────────────────────────────────────────────────── */
+  /* ── CONDITIONS ──────────────────────────────────────────────────────────
+     A venue, a sky and a temperature, drawn once from the fixture so the same
+     game always kicks off in the same weather — and so the field, the crowd
+     and the lights all agree about what day it is. */
+  function conditions() {
+    var key = (teams.me.abbr || '') + (teams.opp.abbr || '') + (teams.week || 1) + (teams.season || 1);
+    var h = 2166136261, i;
+    for (i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+    var r = function (n) { h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h >>> 0) % n); };
+    var lights = ['day', 'day', 'dusk', 'night'];
+    var skies = [['clear', 'Clear'], ['clear', 'Clear'], ['cloudy', 'Overcast'],
+                 ['wind', 'Windy'], ['rain', 'Rain']];
+    var sky = skies[r(skies.length)];
+    var light = lights[r(lights.length)];
+    return {
+      light: light, weather: sky[0], sky: sky[1],
+      temp: 52 + r(34),
+      wind: 4 + r(14),
+      kick: light === 'night' ? '7:05 PM' : light === 'dusk' ? '4:25 PM' : '1:00 PM',
+      venue: (teams.home !== false ? (teams.me.name || 'Home') : (teams.opp.name || 'Away')) + ' Stadium'
+    };
+  }
+  var COND = null;
+  function cond() { if (!COND) COND = conditions(); return COND; }
+
+  /* a player's name, short enough for a card */
+  function FRname(p) {
+    if (!p) return '';
+    return (p.first_name ? p.first_name.charAt(0) + '. ' : '') + (p.last_name || '');
+  }
+
+  /* the man worth naming on each side, and why */
+  function featured(team) {
+    var t = G.makeTeam({ name: team.name, city: team.city, seed: team.seed || ((team.city || '') + (team.name || '')),
+      overall: team.overall || 72, offense: team.offense, defense: team.defense, players: team.players || null });
+    var best = null;
+    (t.players || []).forEach(function (p) {
+      if (['QB', 'RB', 'WR', 'TE'].indexOf(p.position) < 0) return;
+      if (!best || p.overall > best.overall) best = p;
+    });
+    return best;
+  }
+
   function pregame(resumable) {
     pre.hidden = false; gd.hidden = true;
     var opp = teams.opp, mine = teams.me, oppTeam = null;
     S.TEAMS.forEach(function (t) { if (t.abbr === opp.abbr) oppTeam = t; });
-    preCard.innerHTML = '<div class="eyebrow">Game Day</div>'
-      + '<div class="mu"><div class="mu-team">' + esc(title(mine)) + '</div><div class="mu-vs">VERSUS</div>'
-      + '<div class="mu-team">' + esc(title(opp)) + '</div>'
-      + '<div class="mu-when">' + esc(F.scheme(mine.offense).name) + ' against ' + esc(defName(opp.defense)) + '</div></div>'
-      + '<div class="chips"><span class="chip">Your offence <b>' + esc(F.scheme(mine.offense).name) + '</b></span>'
-      + '<span class="chip">Your defence <b>' + esc(defName(mine.defense)) + '</b></span>'
-      + '<span class="chip">Their offence <b>' + esc(F.scheme(opp.offense).name) + '</b></span>'
-      + '<span class="chip">Their defence <b>' + esc(defName(opp.defense)) + '</b></span></div>'
-      + (oppTeam ? '<h3 style="margin-top:18px;font-size:15px">The scouting report</h3>'
-          + '<p class="muted" style="margin-top:6px">' + esc(oppTeam.blurb) + '</p>'
-          + '<div class="chips"><span class="chip">Rated <b>' + oppTeam.overall + '</b></span>'
-          + '<span class="chip">Tendency confidence <b>low</b> — you have not played them yet</span></div>' : '')
+    var c = cond();
+    var myStar = featured(mine), theirStar = featured(opp);
+    var myK = kitFor('me'), theirK = kitFor('opp');
+
+    function side(t, kit, star, home) {
+      return '<div class="mu-side">'
+        + '<div class="mu-badge" style="--tc:' + esc(kit.primary || '#3fb883') + '">'
+        + esc((t.abbr || '???').slice(0, 3)) + '</div>'
+        + '<div class="mu-name">' + esc(t.city || '') + '</div>'
+        + '<div class="mu-club">' + esc(t.name || '') + '</div>'
+        + '<div class="mu-ovr">' + esc(t.overall || 72) + ' <span>OVR</span></div>'
+        + '<div class="mu-id">' + esc(F.scheme(t.offense).name) + '</div>'
+        + '<div class="mu-id dim">' + esc(defName(t.defense)) + '</div>'
+        + (star ? '<div class="mu-star"><b>' + esc(star.position) + ' ' + esc(FRname(star)) + '</b>'
+            + '<i>' + esc(star.overall) + ' OVR</i></div>' : '')
+        + '<div class="mu-ha">' + (home ? 'HOME' : 'AWAY') + '</div></div>';
+    }
+    var home = teams.home !== false;
+    preCard.innerHTML =
+      '<div class="mu-top"><span class="mu-eyebrow">Game Day</span>'
+      + '<span class="mu-week">Week ' + esc(teams.week || 1) + '</span></div>'
+      + '<div class="mu-venue">' + esc(c.venue) + '</div>'
+      + '<div class="mu-grid">'
+      + side(mine, myK, myStar, home)
+      + '<div class="mu-v"><span>VS</span></div>'
+      + side(opp, theirK, theirStar, !home)
+      + '</div>'
+      + '<div class="mu-strip">'
+      + '<div><i>Kickoff</i><b>' + esc(c.kick) + '</b></div>'
+      + '<div><i>Sky</i><b>' + esc(c.sky) + '</b></div>'
+      + '<div><i>Temp</i><b>' + esc(c.temp) + '&deg;F</b></div>'
+      + '<div><i>Wind</i><b>' + esc(c.wind) + ' mph</b></div>'
+      + '</div>'
+      + '<div class="mu-key"><span class="mu-kl">Key matchup</span>'
+      + '<b>' + esc(F.scheme(mine.offense).name) + '</b> against <b>' + esc(defName(opp.defense)) + '</b></div>'
+      + (oppTeam ? '<p class="mu-scout">' + esc(oppTeam.blurb) + '</p>'
+          + '<div class="mu-tags"><span>Rated ' + oppTeam.overall + '</span>'
+          + '<span>Tendencies: low confidence</span></div>' : '')
       + '<div class="btn-row">'
-      + (resumable ? '<button class="btn btn-go" id="btnResume" type="button">Resume — '
+      + (resumable ? '<button class="btn btn-go" id="btnResume" type="button">Resume &mdash; '
           + esc(resumable.show.home + ' ' + resumable.show.score.home + ', ' + resumable.show.away + ' '
             + resumable.show.score.away + ' · Q' + resumable.show.quarter) + '</button>' : '')
-      + '<button class="btn ' + (resumable ? '' : 'btn-go') + '" id="btnStart" type="button">'
+      + '<button class="btn ' + (resumable ? '' : 'btn-go') + ' btn-big" id="btnStart" type="button">'
       + (resumable ? 'Start a new game' : 'Kick off') + '</button>'
       + '<button class="btn btn-ghost" id="btnSet2" type="button">Settings</button>'
       + '<a class="btn btn-ghost" href="/games/gameday/">Back to Game Day</a></div>';
@@ -846,13 +915,16 @@
     if (!LU || !cv || !teams.me) return;
     function go() {
       try {
+        var c2 = cond();
         LU.draw(cv, teams.me, 'faceoff', {
+          shot: 'stadium', at: 22,
           away: teams.opp,
           theme: themeOf(teams.me.theme),
           awayTheme: themeOf(teams.opp ? teams.opp.theme : null),
           homeColor: themeOf(teams.me.theme).secondary || '#123326',
           awayColor: themeOf(teams.opp ? teams.opp.theme : null).secondary || '#2a1a2f',
-          homeName: teams.me.abbr || '',
+          homeName: teams.me.abbr || '', awayName: teams.opp ? (teams.opp.abbr || '') : '',
+          light: c2.light, weather: c2.weather, excite: 0.45,
           tags: false
         });
       } catch (_) {}

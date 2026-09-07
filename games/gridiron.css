@@ -336,3 +336,65 @@
 @media (min-width:720px){.pre-field{height:250px}}
 @media (max-height:620px){.pre-field{height:140px}}
 #pre .sec:first-of-type{margin-top:-26px !important}
+
+/* ── THE MATCHUP ──────────────────────────────────────────────────────────
+   A broadcast card, not an analytics dashboard. Two clubs, their colours,
+   what they do, who to watch, and the weather they are going to do it in. */
+.pre-field{display:block;width:100vw;margin-left:calc(50% - 50vw);height:min(42dvh,340px);
+  background:#05080c;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 62%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0%,#000 62%,transparent 100%)}
+#pre .sec:first-of-type{margin-top:-84px !important;position:relative;z-index:1}
+#pre #preCard{background:rgba(11,15,20,.90);backdrop-filter:blur(12px);
+  border-color:rgba(255,255,255,.10);box-shadow:0 18px 50px rgba(0,0,0,.55)}
+
+.mu-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.mu-eyebrow{font:800 10.5px 'Space Grotesk',sans-serif;letter-spacing:.20em;
+  text-transform:uppercase;color:var(--val)}
+.mu-week{font:700 10.5px 'Inter',sans-serif;letter-spacing:.12em;color:var(--faint);
+  text-transform:uppercase}
+
+.mu-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start}
+.mu-side{text-align:center;min-width:0}
+.mu-badge{width:46px;height:46px;margin:0 auto 8px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font:800 15px 'Space Grotesk',sans-serif;letter-spacing:.04em;color:#06120d;
+  background:var(--tc);box-shadow:0 6px 18px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.14) inset}
+.mu-name{font:600 11.5px 'Inter',sans-serif;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu-club{font:800 16px 'Space Grotesk',sans-serif;line-height:1.15;margin-top:1px;
+  overflow-wrap:anywhere}
+.mu-ovr{font:800 25px 'Space Grotesk',sans-serif;margin-top:6px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.mu-ovr span{font-size:10px;color:var(--faint);letter-spacing:.10em;margin-left:2px}
+.mu-id{font:600 11px 'Inter',sans-serif;color:var(--dim);margin-top:5px}
+.mu-id.dim{color:var(--faint);margin-top:1px}
+.mu-star{margin-top:9px;padding:6px 4px;border-radius:9px;background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.07)}
+.mu-star b{display:block;font:700 11.5px 'Inter',sans-serif;overflow-wrap:anywhere}
+.mu-star i{display:block;font-style:normal;font-size:10px;color:var(--faint);margin-top:1px}
+.mu-ha{margin-top:7px;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.16em;color:var(--faint)}
+.mu-v{align-self:center;padding-top:14px}
+.mu-v span{display:block;font:800 11px 'Space Grotesk',sans-serif;letter-spacing:.10em;
+  color:var(--faint);padding:5px 7px;border:1px solid var(--line);border-radius:8px}
+
+.mu-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:16px;
+  padding-top:13px;border-top:1px solid var(--line)}
+.mu-strip div{min-width:0;text-align:center}
+.mu-strip i{display:block;font-style:normal;font:700 8.5px 'Space Grotesk',sans-serif;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+.mu-strip b{display:block;font:700 11.5px 'Inter',sans-serif;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.mu-key{margin-top:14px;padding:11px 13px;border-radius:11px;
+  background:linear-gradient(90deg,rgba(63,184,131,.13),rgba(63,184,131,.03));
+  border:1px solid rgba(63,184,131,.22);font:500 13px 'Inter',sans-serif;color:var(--text)}
+.mu-kl{display:block;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--val);margin-bottom:4px}
+.mu-scout{margin:12px 0 0;font:400 13px 'Inter',sans-serif;line-height:1.55;color:var(--dim)}
+.mu-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.mu-tags span{font:600 10.5px 'Inter',sans-serif;color:var(--faint);
+  padding:4px 9px;border-radius:99px;border:1px solid var(--line)}
+@media (max-width:359px){.mu-club{font-size:14px}.mu-ovr{font-size:21px}}
+.mu-venue{text-align:center;margin:-6px 0 14px;font:700 11px 'Inter',sans-serif;
+  letter-spacing:.05em;color:var(--faint)}

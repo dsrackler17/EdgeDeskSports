@@ -242,6 +242,16 @@
     var userSide = 'off', userActor = null, userMode = 'play';
     var steer = { x: 0, y: 0, on: false };
     var speedScale = 1;
+    /* HOW MANY OF THEM ARE ON THEIR FEET. It decays back to a murmur on its
+       own; the page shoves it up when something happens worth standing for. */
+    var excite = 0.10, exciteFloor = 0.10;
+    /* THE PLAY SHOT CANNOT SEE THE STADIUM, and that is not a bug. A lens
+       this long and this high looks down at the grass: the horizon sits seven
+       hundred pixels above the frame and the near sideline is off both edges,
+       so the bowl is genuinely behind the camera's shoulder. To show the
+       venue you have to put the camera in it — low and wide — which is what
+       a broadcast does between plays and never during one. */
+    var shot = 'play';
     var raf = null, lastMs = 0, acc = 0;
     var events = opts.on || {};
     var flash = null;
@@ -263,7 +273,12 @@
        bowling alley. */
     function fitCamera() {
       cam.px = clamp(cam.w / (0.88 * Math.max(12, cam.wide)), 7, 30);
-      cam.height = clamp(1.807 * cam.h / cam.px, 26, 170);
+      /* the play shot holds thirty-eight yards of depth and looks down hard;
+         the wide shot drops the lens until the horizon — and everything
+         standing on it — comes into frame */
+      cam.height = shot === 'wide'
+        ? clamp(cam.h * (cam.anchor - 0.12) / cam.px, 18, 200)
+        : clamp(1.807 * cam.h / cam.px, 26, 170);
     }
     var reduce = false;
     try { reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
@@ -301,6 +316,21 @@
     self.setSpeed = function (s) { speedScale = clamp(s || 1, 0.4, 4); };
     self.setUserSide = function (s) { userSide = s === 'def' ? 'def' : 'off'; };
     self.setMode = function (m) { userMode = m; };
+    /* time of day and weather: one call changes the turf, the stands, the
+       crowd, the sky and the grade together */
+    /* 'play' is football-first. 'wide' is the establishing shot: pregame,
+       kickoff, a touchdown, halftime and the final whistle. */
+    self.setShot = function (k) { shot = k === 'wide' ? 'wide' : 'play'; };
+    self.shot = function () { return shot; };
+    self.setConditions = function (light, weather) {
+      if (light) opts.light = light;
+      if (weather) opts.weather = weather;
+    };
+    /* the crowd gets up. 0 is a murmur, 1 is a touchdown. */
+    self.crowd = function (level, floor) {
+      excite = clamp(Math.max(excite, level || 0), 0, 1);
+      if (floor != null) exciteFloor = clamp(floor, 0, 1);
+    };
     self.camera = cam;
     self.phase = function () { return phase; };
     self.userActor = function () { return userActor; };
@@ -501,6 +531,7 @@
         }
       }
       if (phase === 'dead') dead += dt;
+      excite = Math.max(exciteFloor, excite - dt * 0.30);
       camFollow(dt);
     }
 
@@ -525,7 +556,12 @@
       var wantX, wantY, wide;
       var holding = phase === 'live' && ball.holder && ball.holder.slot === 'QB' && !ball.flight
         && play && play.type === 'pass';
-      if (phase === 'set') {
+      if (shot === 'wide') {
+        /* the whole place, from the stand: midfield, both bowls, the lights */
+        wide = 70;
+        wantX = FIELD.half;
+        wantY = clamp((los || 50) * 0.35 + 34, 34, 62);
+      } else if (phase === 'set') {
         /* back off far enough to show the whole formation: reading the look is
            the decision you are about to make */
         var lo = 1e9, hi = -1e9;
@@ -569,8 +605,10 @@
       }
       ctx.fillStyle = '#0a0e13';
       ctx.fillRect(-20, -20, w + 40, h + 40);
-      P.field(ctx, cam, { tick: tick, homeColor: opts.homeColor, awayColor: opts.awayColor,
-        homeName: names.off, awayName: names.def });
+      var scene = { tick: tick, homeColor: opts.homeColor, awayColor: opts.awayColor,
+        homeName: names.off, awayName: names.def, firstDown: firstDown,
+        light: opts.light || 'day', weather: opts.weather || 'clear', excite: excite };
+      P.field(ctx, cam, scene);
       P.markers(ctx, cam, los, firstDown);
       if (phase === 'set' && showArt && artPaths) P.art(ctx, cam, artPaths);
       /* back to front, so the near men overlap the far ones — except whoever
@@ -589,6 +627,9 @@
       if (mine) P.player(ctx, mine, cam);
       if (carrier) P.player(ctx, carrier, cam);
       if (!ball.holder || ball.flight) P.ball(ctx, ball, cam);
+      /* distance is hazier as well as smaller: drawn over the men so a deep
+         safety sits back in the picture with the far stands */
+      P.atmosphere(ctx, cam, scene);
       /* the throw buttons, over the men themselves */
       targetBoxes = [];
       if (targets && sim && phase === 'live' && !ball.flight && !sim.thrown()) {
@@ -601,6 +642,7 @@
           targetBoxes.push(box);
         });
       }
+      P.conditions(ctx, cam, scene);
       ctx.restore();
     }
     self.draw = draw;
