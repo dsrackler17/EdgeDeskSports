@@ -371,10 +371,19 @@
   }
 
   /* ── THE TRENCHES ──────────────────────────────────────────────────────── */
-  function passRush(ou, du, parts, playObj, extraBlockers, offMods, defMods) {
+  /* HOW OUTGUNNED THE PROTECTION IS, in [0,1], from the trenches alone. It is
+     deliberately blind to the defensive CALL: a line that cannot block anybody
+     is a thing an offensive coordinator adapts to over a game, and a zero
+     blitz is a thing nobody adapts to in the half-second they have. */
+  function trenchGap(ou, du, extraBlockers, offMods) {
     var RUSH = 0.60 * du.dl.prs + 0.22 * du.dl.spd + 0.18 * du.lb.spd;
     var PROT = 0.76 * ou.ol.pbk + 0.12 * ou.ol.iq + 0.12 * ou.te.blk + (extraBlockers || 0) * 3.5
              + ((offMods && offMods.protect) || 0) * 4;
+    return { rush: RUSH, prot: PROT, deficit: clamp((RUSH - PROT) / 26, 0, 1) };
+  }
+  function passRush(ou, du, parts, playObj, extraBlockers, offMods, defMods) {
+    var tg = trenchGap(ou, du, extraBlockers, offMods);
+    var RUSH = tg.rush, PROT = tg.prot;
     var hold = playObj.hold || 2.4;
     /* A BLITZ IS A RACE AGAINST THE BALL. Six rushers are worth almost nothing
        against a slant and everything against a seven-step drop, so what the
@@ -811,14 +820,17 @@
          throwing a slant, but it is not impossible, and pricing it at zero
          is what forced the conversion rate elsewhere to be absurd. */
       var quickOut = playObj.concept === 'quick';
-      /* A QUARTERBACK WHO IS PRESSURED EVERY SNAP STARTS GETTING RID OF IT.
-         An offence behind a line that cannot block throws quicker — that is
-         what an offensive coordinator does about it — so the conversion from
-         pressure to sack falls as pressure becomes the norm. Without it the
-         two multiply and a mismatch reads as a broken game rather than a bad
-         day: the same cohort went from 21% of dropbacks to 24% for a five
-         point change in the base rate. */
-      var norm = clamp(1 - Math.max(0, pPressure - 0.34) * 0.90, 0.58, 1);
+      /* AN OFFENCE BEHIND A LINE THAT CANNOT BLOCK THROWS QUICKER. That is
+         what an offensive coordinator does about it, and without it the
+         pressure rate and the conversion rate simply multiply — a mismatch
+         reads as a broken game rather than a bad day, at nearly a quarter of
+         all dropbacks.
+
+         It reads the TRENCHES, not the call. Scaling it by total pressure
+         instead meant a zero blitz — the highest-pressure call in football —
+         bought its own discount, and taking a shot into one stopped being the
+         worst decision available. It is still the worst decision available. */
+      var norm = clamp(1 - trenchGap(ou, du, extraBlockers, off.mods).deficit * 0.62, 0.58, 1);
       var pSack = pressured
         ? clamp((0.53 - (qb.spd - 60) / 380 - (qb.iq - 60) / 420
                  + (playObj.hold - 2.4) * 0.085) * (quickOut ? 0.28 : 1) * norm, 0.02, 0.60)
