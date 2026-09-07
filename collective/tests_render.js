@@ -2177,6 +2177,61 @@ var S=sandbox;
     !/id="bdNoClose"/.test(vwc.innerHTML)&&/<b>3<\/b> settled/.test(vwc.innerHTML));
   S.fetch=realFetchNC;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
 
+  /* ---- the market window has to reach BACKWARDS too ----------------------
+     `days` widened only the future; the lower bound was a fixed 24 hours on
+     the read function. A finished game therefore fell off the board one day
+     after kickoff, and the board is where this page recovers a closing line
+     for a finished game whose record carries none — "the board carries a
+     close on any game still inside its window", in fillCapturedCloses.
+
+     So every model's graded record silently shrank to whatever finished in
+     the last 24 hours, and refilled the next day with a different set. That
+     is what was reported as "the ATS results reset daily and aren't
+     cumulative": the record was following the odds window, not results. */
+  {
+    /* the direct builder: the path taken when odds.js is older than the page */
+    /* the direct builder — the path taken when odds.js is older than the page */
+    var seen=[];
+    var realFetchMk=S.fetch;
+    S.fetch=function(u){seen.push(String(u));
+      return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({games:[]});}});};
+    S.marketBoardDirect({league:'ncaaf',days:24,back:8,limit:200});
+    chk('the direct board builder sends the look-back',
+      seen.length===1&&/[?&]back=8(&|$)/.test(seen[0])&&/[?&]days=24(&|$)/.test(seen[0]),
+      {url:seen[0]});
+    chk('and still sends everything it sent before',
+      /[?&]limit=200/.test(seen[0])&&/[?&]books=0/.test(seen[0]),{url:seen[0]});
+    S.fetch=realFetchMk;
+  }
+  {
+    /* and what the page actually ASKS for, through the real defaults */
+    var asked=null;
+    S.MCOdds={configure:function(){},injectCss:function(){},
+      leagueFor:function(x){return x;},
+      board:function(o){asked=o;return Promise.resolve(null);}};
+    S.window.MCOdds=S.MCOdds;
+    S.marketBoard({league:'ncaaf'});
+    chk('the page asks for a look-back, not just a look-ahead',
+      asked&&asked.back===8&&asked.days===24,{asked:asked});
+    chk('long enough to cover a slate week, so a week keeps its closes',
+      asked&&asked.back>=7,{back:asked&&asked.back});
+    /* a two-directional window holds more games than a one-directional one,
+       and a row cap that did not grow would drop the upcoming half */
+    chk('and raises the row cap so the finished half cannot crowd out the rest',
+      asked&&asked.limit===200,{limit:asked&&asked.limit});
+    asked=null;
+    S.marketBoard({league:'nfl'});
+    chk('the NFL asks on the same rule with its own numbers',
+      asked&&asked.back===8&&asked.days===10&&asked.limit===60,{asked:asked});
+    /* an explicit range is never second-guessed: a caller that named from/to
+       meant it, and a look-back bolted onto it would silently widen it */
+    asked=null;
+    S.marketBoard({league:'nfl',from:'2026-09-01T00:00:00Z',to:'2026-09-08T00:00:00Z'});
+    chk('an explicit from/to is left exactly as asked',
+      asked&&asked.back===undefined&&asked.days===undefined,{asked:asked});
+    delete S.MCOdds;delete S.window.MCOdds;
+  }
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
