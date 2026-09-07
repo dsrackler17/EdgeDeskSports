@@ -3208,6 +3208,10 @@ function pickLeadText(mr,kickoffIso){
   if(h<48)return 'posted '+Math.round(h)+'h before kickoff';
   return 'posted '+Math.round(h/24)+'d before kickoff';
 }
+/* Which week the WALL is looking at. null is the server's current slate,
+   which is what the front page should show almost always -- this exists for
+   the day the current week is over and the next one is already posted. */
+var WALL_WEEK=null;
 async function renderWall(view){
   loading(view,'Loading the wall&hellip;');
   var tok=ROUTE_TOKEN;
@@ -3218,7 +3222,8 @@ async function renderWall(view){
        of their codes, while asking /v1/games for the default sport only — so a
        college model sat in a list above an NFL slate. One sport at a time, and
        the games come from the same sport the rows do. */
-    var gq='?sport='+encodeURIComponent(sport.code)+'&season='+encodeURIComponent(sport.season||'');
+    var gq='?sport='+encodeURIComponent(sport.code)+'&season='+encodeURIComponent(sport.season||'')+
+      (WALL_WEEK?'&week='+WALL_WEEK:'');
     var results=await Promise.all([wallRows(),api('/v1/games'+gq,{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
     var allRows=results[0],board=results[1],act=results[2],mkt=results[3];
     /* the slate on screen, graded: a finished game the wire left blank gets
@@ -3361,13 +3366,28 @@ async function renderWall(view){
 
     var wallToken=++WALL_TOKEN;
     var settledNow=((board&&board.games)||[]).filter(function(g){return finalResult(g)!=null;}).length;
+    /* WHY A RECORD CAN BE SHORTER THAN THE SLATE. Every ATS grade on this site
+       is measured against the Collective's own captured closing line, and a
+       missing close is null, never invented — so a finished game with no
+       captured close cannot be graded, by the published rule, and simply does
+       not appear in anybody's record.
+
+       Silently, until now. The wall read "57 settled" beside a model showing
+       2-0-0, the two numbers were computed from different things, and nothing
+       said so. To a creator that reads as a record that resets: it moves as
+       odds coverage moves and never accumulates, and there is nothing on the
+       page to suggest the cause is the line rather than the grading. Counted
+       here and stated, because it is an operator's job to fix (the odds feed's
+       link and close steps) and nobody can start it without knowing. */
+    var noCloseNow=((board&&board.games)||[]).filter(function(g){
+      var f=finalResult(g);return f!=null&&f.closing_spread==null;}).length;
     /* LEVEL 1 FIRST. The answer — what the room thinks — sits above the
        terminal wall, computed from the same games and the same market the
        wall is about to draw. Nothing is fetched twice and nothing is hidden:
        the full board is still the next thing on the page. */
     var cc='';
     try{cc=commandCentreHTML(m,sport,rows,(board&&board.games)||[],mkt);}catch(e){cc='';}
-    var hd=sportSwitcherHTML(m)+cc+'<div class="bd">'+
+    var hd=sportSwitcherHTML(m)+weekStripHTML(sport.code,WALL_WEEK)+cc+'<div class="bd">'+
       '<div class="bd-hd"><span class="bd-title"><span class="bd-live"></span>LIVE MODEL WALL</span>'+
         '<span class="bd-clock" id="bdClock"></span></div>'+
       /* The model count and the active share are computed from the rows on
@@ -3389,6 +3409,11 @@ async function renderWall(view){
         '<span id="bdSettled" title="games with a final score in '+esc(sportCode)+' this season'+
           (m.counts.graded_games!=null?' \u2014 the Collective\u2019s own settled count across every sport is '+m.counts.graded_games:'')+
           '"><b>'+settledNow+'</b> settled <i class="allsports">'+esc(sportCode)+'</i></span>'+
+        (noCloseNow?'<span id="bdNoClose" style="color:var(--warn)" title="Every ATS grade is measured against the '+
+          'Collective\u2019s own captured closing line, and a missing close is never invented. These games are final '+
+          'but carry no captured close, so no model can be graded on them and they are in nobody\u2019s record. '+
+          'The odds feed\u2019s link and close steps fill this in."><b>'+noCloseNow+'</b> no close '+
+          '<i class="allsports">ungradeable</i></span>':'')+
       '</div>'+
       boards+'</div>'+
       boardLegendShort()+
@@ -3401,7 +3426,10 @@ async function renderWall(view){
             +'Other sports have '+allRows.length+' model'+(allRows.length===1?'':'s')+' \u2014 switch above.'
           : 'The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.')+
         '</div>'))return;
-      bindSportSwitcher(function(){renderWall(view);});
+      bindWeekStrip(function(w){WALL_WEEK=w;renderWall(view);});
+      /* a week number does not survive a sport change -- CFB week 18 is the
+         playoff's first round, NFL week 18 is the last regular-season Sunday */
+      bindSportSwitcher(function(){WALL_WEEK=null;renderWall(view);});
       bindIntro();
       boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
       return;
@@ -3483,7 +3511,8 @@ async function renderWall(view){
       '<div class="panel">'+activityRows(act&&act.rows,10)+'</div>'))return;
     boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
     $('wallsort').value=WALL_SORT;
-    bindSportSwitcher(function(){renderWall(view);});
+    bindWeekStrip(function(w){WALL_WEEK=w;renderWall(view);});
+    bindSportSwitcher(function(){WALL_WEEK=null;renderWall(view);});
     bindIntro();
     $('wallsort').onchange=function(){WALL_SORT=this.value;renderWall(view);};
     if($('wallq'))$('wallq').oninput=function(){
@@ -3961,6 +3990,35 @@ async function renderFormat(view){
 }
 
 /* ================= board ================= */
+/* ---- the week strip, written once ------------------------------------
+   The Board has had one since it was written; the Wall has not, and the Wall
+   is the front page. `currentWeek()` on the server keeps a week current until
+   36 hours after its last game, which is right while that game is still being
+   played and settled -- but it means the front page can sit on a slate with
+   one game left while the next week's numbers are already posted and
+   invisible. A creator who had just uploaded 29 week-2 games had to be told
+   to go to the Board and press W2 to find their own work.
+
+   So the same control, from the same calendar, on both. Held apart from the
+   sport switcher's markup by `data-w`: the switcher shares the .wk styling
+   and a handler bound to every .wk button would silently reset the week to
+   Current whenever somebody changed sport. */
+function weekStripHTML(code,sel){
+  var cal=weekCalendar(code);
+  var out='<div class="wk"><button class="'+(sel?'':'on')+'" data-w="">Current</button>';
+  for(var i=1;i<=cal.regular;i++)
+    out+='<button class="'+(sel===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
+  for(var pw=cal.regular+1;pw<=cal.max;pw++){
+    out+='<button class="'+(sel===pw?'on':'')+'" data-w="'+pw+'" title="'+esc(cal.names[pw]||('Week '+pw))+'">'
+      +esc((cal.names[pw]||('W'+pw)).replace(/^CFP /,'').split(' / ')[0])+'</button>';
+  }
+  return out+'</div>';
+}
+function bindWeekStrip(pick){
+  document.querySelectorAll('.wk button[data-w]').forEach(function(b){
+    b.onclick=function(){var w=b.getAttribute('data-w');pick(w?+w:null);};
+  });
+}
 var BOARD_WEEK=null;
 async function renderBoard(view){
   loading(view,'Loading the board&hellip;');
@@ -3972,14 +4030,7 @@ async function renderBoard(view){
     var both=await Promise.all([api('/v1/games'+q,{auth:true}),marketBoard()]);
     var d=both[0],mkt=both[1];
     try{await enrichFinals((d&&d.games)||[],sport.code,mkt,sport.season);}catch(e){}
-    var cal=weekCalendar(sport.code);
-    var wk=sportSwitcherHTML(m)+'<div class="wk"><button class="'+(BOARD_WEEK?'':'on')+'" data-w="">Current</button>';
-    for(var i=1;i<=cal.regular;i++)wk+='<button class="'+(BOARD_WEEK===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
-    for(var pw=cal.regular+1;pw<=cal.max;pw++){
-      wk+='<button class="'+(BOARD_WEEK===pw?'on':'')+'" data-w="'+pw+'" title="'+esc(cal.names[pw]||('Week '+pw))+'">'
-        +esc((cal.names[pw]||('W'+pw)).replace(/^CFP /,'').split(' / ')[0])+'</button>';
-    }
-    wk+='</div>';
+    var wk=sportSwitcherHTML(m)+weekStripHTML(sport.code,BOARD_WEEK);
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, once it is final, its grade. Pre-kickoff numbers and consensus are for subscribers. Finished games are the public record.</p>'+wk;
     var cards='';
     var boardSplit=splitGames(d.games||[]);
@@ -4106,9 +4157,7 @@ async function renderBoard(view){
     /* scoped to [data-w] on purpose: the sport switcher shares the .wk styling
        and would otherwise be caught by the week handler and silently reset the
        week to Current */
-    document.querySelectorAll('.wk button[data-w]').forEach(function(b){
-      b.onclick=function(){var w=b.getAttribute('data-w');BOARD_WEEK=w?+w:null;renderBoard(view);};
-    });
+    bindWeekStrip(function(w){BOARD_WEEK=w;renderBoard(view);});
     /* a week number does not survive a sport change — CFB week 18 is the
        playoff's first round, NFL week 18 is the last regular-season Sunday */
     bindSportSwitcher(function(){BOARD_WEEK=null;renderBoard(view);});

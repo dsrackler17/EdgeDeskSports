@@ -2040,6 +2040,143 @@ var S=sandbox;
   S.WALLC=null;S.META=null;
   S.localStorage.removeItem('collective_session');
 
+  /* ---- the front page can reach the week that has not happened yet -------
+     The server keeps a week "current" until 36 hours after its last game,
+     which is right while that game is still settling and wrong the moment the
+     next week's numbers are posted. The Board has always had a week strip;
+     the Wall, which is the front page, had none — so a creator who had just
+     uploaded 29 week-2 games saw a slate with one game left and no way to
+     reach their own work. These hold the strip on BOTH surfaces and hold the
+     one thing that makes it real: the request actually carries the week. */
+  var realFetchWk=S.fetch;
+  var wkAsked=[];
+  var W2GAME=G(99,'MISSOURI','KANSAS',null,null,null,[
+    M('edgedesksports','edgedesk-cfb','home',-4.6,-6.5,0.61)]);
+  W2GAME.week=2; W2GAME.kickoff_at='2026-09-12T00:00:00Z'; W2GAME.result=null;
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0){
+      wkAsked.push(u);
+      var w=/[?&]week=(\d+)/.exec(u);
+      if(w&&w[1]==='2')return reply({games:[W2GAME],week:2,entitled:true});
+      if(w)return reply({games:[],week:+w[1],entitled:true});
+      return reply({games:GAMES,week:1,entitled:true});
+    }
+    return realFetchWk(url);
+  };
+
+  chk('the week strip is written once and used by both surfaces',
+    typeof S.weekStripHTML==='function'&&typeof S.bindWeekStrip==='function');
+  {
+    var strip=S.weekStripHTML('CFB',null);
+    chk('with no week chosen, Current is the selected button',
+      /data-w=""[^>]*>Current/.test(strip)&&/class="on" data-w=""/.test(strip),{strip:strip.slice(0,160)});
+    var s2=S.weekStripHTML('CFB',2);
+    chk('choosing a week moves the highlight off Current onto it',
+      /class="on" data-w="2"/.test(s2)&&!/class="on" data-w=""/.test(s2),{strip:s2.slice(0,200)});
+    /* the sport switcher shares .wk styling; a handler bound to every .wk
+       button would reset the week to Current on every sport change */
+    chk('every button the week handler binds to carries data-w',
+      (s2.match(/<button/g)||[]).length===(s2.match(/data-w=/g)||[]).length);
+    chk('a college strip offers the college calendar, not the NFL one',
+      /Bowl|CFP|W15/.test(S.weekStripHTML('CFB',null))||
+      (S.weekStripHTML('CFB',null).match(/data-w="/g)||[]).length>
+      (S.weekStripHTML('NFL',null).match(/data-w="/g)||[]).length ||
+      S.weekStripHTML('CFB',null)!==S.weekStripHTML('NFL',null));
+  }
+
+  /* THE WALL. Default asks for no week at all — the front page follows the
+     server's current slate, and must not pin itself to a number. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;
+  S.location.hash='';
+  wkAsked.length=0;
+  var vw=node();
+  await S.renderWall(vw);
+  chk('the wall asks for the current slate, with no week pinned',
+    wkAsked.length>0&&!/[?&]week=/.test(wkAsked[0]),{asked:wkAsked.slice()});
+  chk('and it now carries the week strip the board has always had',
+    /class="wk"/.test(vw.innerHTML)&&/data-w="2"/.test(vw.innerHTML),
+    {has:vw.innerHTML.indexOf('class="wk"')});
+
+  /* Pick week 2: the request carries it, and the week 2 game is what draws. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=2;
+  wkAsked.length=0;
+  var vw2=node();
+  await S.renderWall(vw2);
+  chk('choosing a week sends it to the games feed',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);}),{asked:wkAsked.slice()});
+  chk('and the wall draws that week’s games, not the current one',
+    vw2.innerHTML.indexOf('KANSAS')>=0&&vw2.innerHTML.indexOf('FLORIDASTA')<0,
+    {kansas:vw2.innerHTML.indexOf('KANSAS'),fsu:vw2.innerHTML.indexOf('FLORIDASTA')});
+  chk('with the strip showing which week is being looked at',
+    /class="on" data-w="2"/.test(vw2.innerHTML));
+
+  /* THE BOARD still works through the same helper. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.BOARD_WEEK=2;
+  wkAsked.length=0;
+  S.location.hash='#board';
+  var vb=node();
+  await S.renderBoard(vb);
+  chk('the board still sends its own week through the shared strip',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);})&&/class="on" data-w="2"/.test(vb.innerHTML),
+    {asked:wkAsked.slice()});
+  S.BOARD_WEEK=null;S.WALL_WEEK=null;S.location.hash='';
+  S.fetch=realFetchWk;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
+
+  /* ---- a record cannot be shorter than the slate without saying why ------
+     Every ATS grade here is measured against the Collective's own captured
+     closing line, and a missing close is null, never invented. So a finished
+     game with no close is ungradeable BY THE RULE and appears in nobody's
+     record. The wall read "57 settled" next to a model showing 2-0-0 and said
+     nothing about the gap, which is what "the record resets daily and isn't
+     cumulative" actually looks like from outside. */
+  var realFetchNC=S.fetch;
+  function noCloseGames(n){
+    var out=[];
+    for(var i=0;i<n;i++){
+      var g=G(500+i,'AWAY'+i,'HOME'+i,31,17,null,[M('blerm','blerm-s-model','home',-7,-7,0.6)]);
+      g.result.closing_spread=null;g.result.closing_total=null;
+      out.push(g);
+    }
+    return out;
+  }
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;S.SETTLED_REC={};
+  var NC=noCloseGames(5);
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:NC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vnc=node();
+  await S.renderWall(vnc);
+  chk('a final game with no captured close is still counted as settled',
+    /<b>5<\/b> settled/.test(vnc.innerHTML),
+    {got:(/(<b>\d+<\/b> settled)/.exec(vnc.innerHTML)||[])[1]});
+  chk('and the wall says how many of them no model can be graded on',
+    /id="bdNoClose"/.test(vnc.innerHTML)&&/<b>5<\/b> no close/.test(vnc.innerHTML),
+    {got:vnc.innerHTML.indexOf('bdNoClose')});
+  chk('naming the rule rather than leaving it a mystery number',
+    /captured closing line/.test(vnc.innerHTML)&&/never invented/.test(vnc.innerHTML));
+  chk('and nobody is graded on them, so the count is not a cosmetic label',
+    S.rowGrade(NC[0],NC[0].models[0]).pick_result==null,
+    {grade:S.rowGrade(NC[0],NC[0].models[0])});
+
+  /* and it stays out of the way when there is nothing to report */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+  var WC=noCloseGames(3);WC.forEach(function(g){g.result.closing_spread=-7.5;});
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:WC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vwc=node();
+  await S.renderWall(vwc);
+  chk('a slate whose closes all landed shows no warning at all',
+    !/id="bdNoClose"/.test(vwc.innerHTML)&&/<b>3<\/b> settled/.test(vwc.innerHTML));
+  S.fetch=realFetchNC;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
