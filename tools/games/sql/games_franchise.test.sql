@@ -110,9 +110,15 @@ declare
   mnf uuid; mn jsonb; mstory jsonb; mdrv jsonb; nkey integer; sside text; scall text; scall2 text;
   -- both sides of the ball
   cbf uuid; cb jsonb; nposs integer; nsecs integer;
+  -- the roster floor
+  rfl uuid; SEC_RF constant text := 'device-secret-rosterfloorfloor0001';
   SEC_CB constant text := 'device-secret-bothsidesbothsidesboth1';
   -- the playbook
   pbf uuid; pb jsonb; pnt numeric; pstale numeric; pfresh numeric;
+  -- ranking up offline
+  ofl uuid; ofl2 uuid; ofrep jsonb; ofrep2 jsonb; ofrows integer; ofled integer; ofcap integer;
+  SEC_OF constant text := 'device-secret-offlineofflineoffline01';
+  SEC_O2 constant text := 'device-secret-offlineofflineoffline02';
   SEC_PB constant text := 'device-secret-playbookplaybookplay01';
   SEC_MN constant text := 'device-secret-momentmomentmomentmoment1';
   SEC_SN constant text := 'device-secret-snapsnapsnapsnapsnapsnap1';
@@ -1653,7 +1659,7 @@ begin
   exception when raise_exception then null;
   end;
   perform pg_temp.ok('the dry run left nothing behind',
-    rep->>'version' = 'offseason_v1'
+    rep->>'version' = 'offseason_v2'
     and (select offseason is null from public.franchise_seasons where franchise_id = fb and number = 1)
     and (select count(*) from public.game_players where franchise_id = fb and status = 'retired') = 0
     and (select count(*) from public.game_players where franchise_id = fb and status = 'active') = 38
@@ -1665,7 +1671,7 @@ begin
   select offseason into rep2 from public.franchise_seasons where franchise_id = fb and number = 1;
   perform pg_temp.ok('Season II opens on the offseason: the report is written on Season I, once, and home carries it without the player lines',
     (v->>'started')::boolean and (v->>'season_number')::int = 2 and rep2 is not null
-    and rep2->>'version' = 'offseason_v1' and (rep2->>'after_season')::int = 1 and (rep2->>'training')::int = 3
+    and rep2->>'version' = 'offseason_v2' and (rep2->>'after_season')::int = 1 and (rep2->>'training')::int = 3
     and v->'home'->'offseason'->'summary' = rep2->'summary' and v->'home'->'offseason' ? 'retired' and v->'home'->'offseason' ? 'rookies'
     and not (v->'home'->'offseason' ? 'players') and jsonb_array_length(rep2->'players') = 38
     and (select count(*) from public.franchise_activity where franchise_id = fb and kind = 'offseason' and key = '1') = 1);
@@ -2070,7 +2076,7 @@ begin
     b is not null and (b->'window'->>'number')::int = 1 and jsonb_array_length(b->'prospects') = 10 and jsonb_array_length(b->'agents') = 6 and (b->>'picks')::int = 2);
   perform pg_temp.as_owner();
   perform pg_temp.ok('the generator, the window and the prospect reader are reachable by no client role; the board and the four moves by both',
-    not has_function_privilege('anon', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'execute')
+    not has_function_privilege('anon', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_open_market(uuid, integer)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_prospect_json(public.game_players)', 'execute')
     and not has_function_privilege('anon', 'public.franchise_free_number(uuid, text, text)', 'execute')
@@ -4850,6 +4856,275 @@ begin
       'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute')
     and not has_function_privilege('authenticated',
       'public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text, text, integer)', 'execute'));
+
+-- ═══ 30. THE ROSTER FLOOR ═════════════════════════════════════════════════
+-- TEN THOUSAND SEASONS FOUND THIS, and it was the worst thing in the game.
+-- The offseason signed one rookie per man who retired at a position that
+-- STILL HAD SOMEBODY ACTIVE, because its outer loop read "select distinct
+-- position ... where status = 'active'". The moment the last quarterback
+-- retired, QB stopped appearing in that list and could never be signed
+-- again. Measured across fifteen franchises: fourteen had NO KICKER and NO
+-- PUNTER and nine had NO QUARTERBACK — and the first touchdown after that
+-- built a jsonb key out of a player who did not exist, threw "key must not
+-- be null", and killed the franchise for good. 38.5% of careers ended that
+-- way, the earliest at SEASON FIVE.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('the offseason is offseason_v2 and the plan is the floor',
+    public.franchise_offseason_version() = 'offseason_v2'
+    and (select sum(jsonb_array_length(pp->'targets'))
+           from jsonb_array_elements(public.franchise_pool_plan()) pp) = 38);
+
+  -- ── A GAME WITH NOBODY LEFT IS A BAD TEAM, NEVER A DEAD ONE ─────────────
+  perform pg_temp.ok('asked for a man who is not there, the lineup offers whoever is',
+    public.franchise_anybody('[]'::jsonb, 'QB', 1) is null
+    and public.franchise_anybody('[{"id":"x","position":"RB","overall":70,"depth":1}]'::jsonb, 'QB', 1)->>'id' = 'x'
+    and public.franchise_anybody('[{"id":"q","position":"QB","overall":60,"depth":1},
+                                   {"id":"r","position":"RB","overall":80,"depth":1}]'::jsonb, 'QB', 9)->>'id' = 'q');
+
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Floor', 'Bedrock', 'FLR', 'star', 'forest', 'pro_style', 'four_three', SEC_RF);
+  rfl := (v->'franchise'->>'id')::uuid;
+  perform public.franchise_start_season(SEC_RF);
+  perform pg_temp.as_owner();
+  -- take EVERY quarterback, kicker and punter off the board, the way sixty
+  -- seasons of retirements used to
+  update public.game_players set status = 'retired', retired_season = 1
+   where franchise_id = rfl and position in ('QB', 'K', 'P');
+  perform pg_temp.ok('a roster can be stripped of a whole position',
+    (select count(*) from public.game_players
+      where franchise_id = rfl and position in ('QB','K','P') and status = 'active') = 0);
+
+  update public.franchise_games set opens_at = now() - interval '1 hour'
+   where franchise_id = rfl and status = 'scheduled';
+  perform pg_temp.as_anon();
+  begin
+    v := public.franchise_play_week(SEC_RF);
+    caught := 'played';
+  exception when others then caught := SQLERRM; end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and a game with NO QUARTERBACK AT ALL is still played, not thrown',
+    caught = 'played', caught);
+  -- The FULL box invariant cannot hold here and should not be asked to:
+  -- box_adds_up() compares receptions against the QUARTERBACK'S completions,
+  -- and a roster with no quarterback has no line for them to live on. What
+  -- must still hold is that a real game was played and its own numbers agree.
+  perform pg_temp.ok('and the game it produced is a real one: quarters that sum to the final, nothing negative',
+    (select (g.box->'final'->>'for')::int is not null
+        and (select sum(q::int) from jsonb_array_elements_text(g.box->'quarters'->'for') q) = (g.box->'final'->>'for')::int
+        and (select sum(q::int) from jsonb_array_elements_text(g.box->'quarters'->'against') q) = (g.box->'final'->>'against')::int
+        and (g.box->'team'->'for'->>'points')::int = (g.box->'final'->>'for')::int
+        and (select coalesce(bool_and((p->'stats'->>'yds')::int >= 0), true)
+               from jsonb_array_elements(g.box->'players') p where p->'stats' ? 'yds')
+       from public.franchise_games g
+      where g.franchise_id = rfl and g.season_number = 1 and g.week = 1));
+
+  -- ── AND THE OFFSEASON SIGNS THEM BACK ───────────────────────────────────
+  perform public.franchise_offseason(rfl, 1);
+  perform pg_temp.ok('every position stripped is signed back to the plan',
+    (select bool_and(have >= want) from (
+       select pp->>'pos' as pos,
+              (select count(*) from public.game_players p
+                where p.franchise_id = rfl and p.position = pp->>'pos' and p.status = 'active') as have,
+              jsonb_array_length(pp->'targets') as want
+         from jsonb_array_elements(public.franchise_pool_plan()) pp) q),
+    (select string_agg(pp->>'pos' || ':' ||
+              (select count(*) from public.game_players p
+                where p.franchise_id = rfl and p.position = pp->>'pos' and p.status = 'active'), ' ')
+       from jsonb_array_elements(public.franchise_pool_plan()) pp));
+  perform pg_temp.ok('and the roster is whole again rather than merely patched',
+    (select count(*) from public.game_players where franchise_id = rfl and status = 'active') >= 38);
+
+  -- ── A ROOKIE ARRIVES AT WHAT THE FRANCHISE HAS BECOME ───────────────────
+  perform pg_temp.ok('reputation lifts a rookie, monotonically, and never past the cap',
+    public.franchise_rookie_lift(1, 0) = 0
+    and public.franchise_rookie_lift(40, 100) = 14
+    and public.franchise_rookie_lift(9999, 9999) = 14
+    and (select bool_and(public.franchise_rookie_lift(t.n, 50) <= public.franchise_rookie_lift(t.n + 1, 50))
+           from generate_series(1, 300) as t(n))
+    and (select bool_and(public.franchise_rookie_lift(20, t.n) <= public.franchise_rookie_lift(20, t.n + 1))
+           from generate_series(0, 200) as t(n))
+    and (select bool_and(public.franchise_rookie_lift(t.g, t.g) between 0 and 14)
+           from generate_series(-50, 400) as t(g)));
+  -- and it really reaches the man: a franchise with a record signs better
+  -- than one without, from the same seed
+  -- the id FIRST, then the row: a select whose snapshot predates the insert
+  -- the generator performs sees no row at all
+  perform pg_temp.as_owner();
+  update public.franchises set standing = 0 where id = rfl;
+  pid3 := public.franchise_generate_rookie(rfl, 'WR', 9, 2026, 'rookielift:same', 'test');
+  select overall into n from public.game_players where id = pid3;
+  update public.franchises set standing = 100 where id = rfl;
+  pid4 := public.franchise_generate_rookie(rfl, 'WR', 9, 2026, 'rookielift:same', 'test');
+  select overall into nn from public.game_players where id = pid4;
+  perform pg_temp.ok('the same seed signs a better man for a franchise with a record',
+    nn > n, n || ' with nothing behind it, ' || nn || ' with a hundred points of standing');
+  update public.franchises set standing = 0 where id = rfl;
+
+  -- THE FLOOR IS A FLOOR, NOT A TARGET: a roster already at the plan does not
+  -- grow every offseason, or a franchise would balloon over sixty seasons.
+  perform pg_temp.as_anon();
+  perform public.franchise_start_season(SEC_RF);
+  perform pg_temp.as_owner();
+  n := (select count(*) from public.game_players where franchise_id = rfl and status = 'active');
+  perform public.franchise_offseason(rfl, 2);
+  perform pg_temp.ok('an offseason on a full roster does not inflate it',
+    (select count(*) from public.game_players where franchise_id = rfl and status = 'active')
+      <= n + (select count(*) from public.game_players
+               where franchise_id = rfl and status = 'retired' and retired_season = 2),
+    n || ' before, ' || (select count(*) from public.game_players
+                          where franchise_id = rfl and status = 'active') || ' after');
+
+-- ═══ 31. RANKING UP OFFLINE ═══════════════════════════════════════════════
+-- The half of the Phase 12 ask that was described and never proved: you can
+-- rank up with no server in reach, and connecting later gives you exactly the
+-- rank you earned — no more, and no less.
+--
+-- The client half is held down by tools/games/franchise.test.js §28. This is
+-- the server half, and the reason the whole thing works is that there is no
+-- server half to synchronise. Three things carry it, and each is measured
+-- here rather than assumed:
+--
+--   the rank is DERIVED — franchise_rank_report sums the activity log and
+--   writes nothing, so there is no rank counter that could drift, be lost,
+--   or be replayed;
+--
+--   the activity log is UNIQUE on (franchise_id, kind, key), and `key` is the
+--   very thing the browser's queue stores a call under, so a reward replayed
+--   after a lost answer lands exactly once whatever the browser believes;
+--
+--   therefore a franchise's points are the published weights summed over its
+--   record. That equality IS the sync protocol. There is nothing else.
+  perform pg_temp.as_owner();
+  perform public.game_board_upsert((select jsonb_agg(jsonb_build_object(
+      'game_id', 'of' || i, 'slug', 'of' || i, 'season', 2026, 'week', 1,
+      'home_team', 'OH' || i, 'away_team', 'OA' || i,
+      'kickoff', (now() + interval '2 days')::text,
+      'edgedesk_spread', -7, 'market_spread', -7.5))
+    from generate_series(1, 24) i));
+
+  -- ── the rank is a read, not a record ────────────────────────────────────
+  perform pg_temp.ok('the rank report only reads: a STABLE function cannot have written one',
+    (select provolatile = 's' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'franchise_rank_report'));
+  perform pg_temp.ok('and no column anywhere stores a rank or a point total — only what was claimed',
+    not exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'franchises'
+                   and column_name in ('rank', 'rank_points', 'reputation', 'reputation_points'))
+    and exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'franchises' and column_name = 'rank_claimed'));
+  perform pg_temp.ok('a replayed reward cannot count twice, because the table will not hold it twice',
+    exists (select 1 from pg_constraint c join pg_class t on t.oid = c.conrelid
+             where t.relname = 'franchise_activity' and c.contype = 'u'
+               and (select array_agg(a.attname::text order by a.attname)
+                      from unnest(c.conkey) as u(att) join pg_attribute a
+                        on a.attrelid = c.conrelid and a.attnum = u.att)
+                   = array['franchise_id','key','kind']));
+
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Ferry', 'Sitka', 'SIT', 'bolt', 'slate', 'pro_style', 'zone', SEC_OF);
+  ofl := (v->'franchise'->>'id')::uuid;
+  perform pg_temp.as_owner();
+  ofrep := public.franchise_rank_report(ofl);
+  perform pg_temp.ok('founding is worth no rank points — a rank is what you did, not that you turned up',
+    (ofrep->>'points')::int = 0 and (ofrep->>'rank')::int = 1, ofrep::text);
+
+  -- ── a week away from signal, then the queue comes back ──────────────────
+  -- exactly what the browser replays: four kinds, then research until the
+  -- week's XP has long stopped, which is where the rank must keep going
+  perform pg_temp.as_anon();
+  perform public.franchise_record_price_it('of1', -6.5, SEC_OF);
+  perform public.franchise_submit_pick5(wk,
+    '[{"game_id":"of2","pick":"home"},{"game_id":"of3","pick":"away"},{"game_id":"of4","pick":"home"},
+      {"game_id":"of5","pick":"away"},{"game_id":"of6","pick":"home"}]'::jsonb, SEC_OF);
+  perform public.franchise_record_drill(public.games_day_key(now()), 10, 8, 900, null, SEC_OF);
+  for i in 7..20 loop
+    perform public.franchise_record_research('of' || i, SEC_OF);
+  end loop;
+
+  perform pg_temp.as_owner();
+  ofrep := public.franchise_rank_report(ofl);
+  -- 1 for the Price It, 2 for the card, 1 for the drill, 14 for the research
+  perform pg_temp.ok('a week of playing alone is worth eighteen points',
+    (ofrep->>'points')::int = 18, ofrep::text);
+  perform pg_temp.ok('and the report is nothing but the published weights over the record',
+    (ofrep->>'points')::int =
+      (select coalesce(sum(coalesce((public.franchise_ranks()->'weights'->>a.kind)::int, 0)), 0)
+         from public.franchise_activity a where a.franchise_id = ofl));
+  perform pg_temp.ok('eighteen points is rank two, and rank two owes two packs',
+    (ofrep->>'rank')::int = public.franchise_rank_for(18)
+    and (ofrep->>'rank')::int = 2 and (ofrep->>'packs')::int = 2, ofrep::text);
+
+  -- THE WEEKLY XP CAP IS NOT A RANK CAP. The War Room stops paying XP after
+  -- ten reads a week; the rank counts every one of them, or a player who did
+  -- more than the cap would have done it for nothing.
+  ofcap := (public.franchise_economy()->'research_open'->>'cap_per_week')::int;
+  perform pg_temp.ok('the week stopped paying XP and the rank did not stop counting',
+    (select count(*) from public.franchise_activity
+      where franchise_id = ofl and kind = 'research_open' and (detail->>'capped')::boolean) = 14 - ofcap
+    and (select count(*) from public.franchise_activity
+          where franchise_id = ofl and kind = 'research_open') = 14
+    and (select count(*) from public.franchise_ledger
+          where franchise_id = ofl and kind = 'research_open' and currency = 'xp') = ofcap,
+    'cap ' || ofcap);
+
+  -- ── the replay: the same queue, sent twice ──────────────────────────────
+  -- a lost answer means the browser still holds a reward the server already
+  -- wrote. Every one of these calls goes out again, byte for byte.
+  select count(*) into ofrows from public.franchise_activity where franchise_id = ofl;
+  select coalesce(sum(delta), 0) into ofled from public.franchise_ledger where franchise_id = ofl;
+  perform pg_temp.as_anon();
+  perform public.franchise_record_price_it('of1', -6.5, SEC_OF);
+  perform public.franchise_submit_pick5(wk,
+    '[{"game_id":"of2","pick":"home"},{"game_id":"of3","pick":"away"},{"game_id":"of4","pick":"home"},
+      {"game_id":"of5","pick":"away"},{"game_id":"of6","pick":"home"}]'::jsonb, SEC_OF);
+  perform public.franchise_record_drill(public.games_day_key(now()), 10, 8, 900, null, SEC_OF);
+  for i in 7..20 loop
+    perform public.franchise_record_research('of' || i, SEC_OF);
+  end loop;
+  perform pg_temp.as_owner();
+  ofrep2 := public.franchise_rank_report(ofl);
+  perform pg_temp.ok('replaying the whole queue writes no second row',
+    (select count(*) from public.franchise_activity where franchise_id = ofl) = ofrows,
+    ofrows || ' before, ' || (select count(*) from public.franchise_activity where franchise_id = ofl) || ' after');
+  perform pg_temp.ok('and pays nothing a second time',
+    (select coalesce(sum(delta), 0) from public.franchise_ledger where franchise_id = ofl) = ofled);
+  perform pg_temp.ok('so a replayed queue cannot buy a rank twice',
+    ofrep2 = ofrep, ofrep::text || ' then ' || ofrep2::text);
+
+  -- ── and the order the queue drains in cannot matter ─────────────────────
+  -- the browser replays whatever it holds, in whatever order it was stored;
+  -- a rank derived from a set can have no opinion about that
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Barge', 'Homer', 'HOM', 'bolt', 'slate', 'pro_style', 'zone', SEC_O2);
+  ofl2 := (v->'franchise'->>'id')::uuid;
+  for i in reverse 20..7 loop
+    perform public.franchise_record_research('of' || i, SEC_O2);
+  end loop;
+  perform public.franchise_record_drill(public.games_day_key(now()), 10, 8, 900, null, SEC_O2);
+  perform public.franchise_submit_pick5(wk,
+    '[{"game_id":"of6","pick":"home"},{"game_id":"of5","pick":"away"},{"game_id":"of4","pick":"home"},
+      {"game_id":"of3","pick":"away"},{"game_id":"of2","pick":"home"}]'::jsonb, SEC_O2);
+  perform public.franchise_record_price_it('of1', -6.5, SEC_O2);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the same week replayed backwards is the same rank, to the point',
+    public.franchise_rank_report(ofl2) - 'claimed' = ofrep - 'claimed',
+    public.franchise_rank_report(ofl2)::text);
+
+  -- ── what the rank then pays, offline or not ─────────────────────────────
+  perform pg_temp.as_anon();
+  perform public.franchise_pack_open(SEC_OF);
+  perform public.franchise_pack_pass(SEC_OF);
+  perform pg_temp.as_owner();
+  ofrep2 := public.franchise_rank_report(ofl);
+  perform pg_temp.ok('the two packs a week offline earned are there to open, and opening one spends one',
+    (ofrep2->>'claimed')::int = 1 and (ofrep2->>'packs')::int = 1
+    and (ofrep2->>'points')::int = (ofrep->>'points')::int, ofrep2::text);
+  perform pg_temp.as_anon();
+  perform public.franchise_record_price_it('of1', -6.5, SEC_OF);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and a reward replayed after the pack was claimed still does not hand out another',
+    public.franchise_rank_report(ofl) = ofrep2);
 
 end
 $test$;

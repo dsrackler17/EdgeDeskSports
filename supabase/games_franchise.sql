@@ -2129,6 +2129,24 @@ set search_path = pg_catalog, pg_temp as $$
   offset greatest(0, p_n - 1) limit 1;
 $$;
 
+-- ANYBODY STILL STANDING. A touchdown has to be credited to a player, and
+-- ten thousand seasons found franchises with NO QUARTERBACK AT ALL — every
+-- one retired and the offseason never signed another. The attribution then
+-- built a jsonb key out of a player who did not exist, the simulator threw
+-- "key must not be null", and THE FRANCHISE COULD NEVER PLAY AGAIN: nine of
+-- fifteen measured franchises were bricked this way, one as early as season
+-- five. franchise_offseason now keeps every position stocked so it cannot
+-- happen (offseason_v2) — and this is the belt for those braces. A thin
+-- roster is a bad team; it is never a dead one.
+create or replace function public.franchise_anybody(p_players jsonb, p_pos text, p_n integer)
+returns jsonb language sql immutable set search_path = public, pg_temp as $$
+  select coalesce(
+    public.franchise_nth(p_players, p_pos, p_n),
+    public.franchise_nth(p_players, p_pos, 1),
+    (select x from jsonb_array_elements(coalesce(p_players, '[]'::jsonb)) x
+      order by (x->>'overall')::int desc limit 1));
+$$;
+
 -- THE SIMULATOR. Reads the game, the roster, the opponent frozen on the
 -- game, this week's preparation and the starters' traits; plays it; returns
 -- the box. Writes nothing — franchise_play_game does the writing.
@@ -2206,7 +2224,10 @@ begin
          + 0.15 * (rt->'groups'->>'TE')::numeric)
     - (0.45 * (rt->'groups'->>'RB')::numeric + 0.55 * (rt->'groups'->>'OL')::numeric)));
   qb_share := public.franchise_qb_rush_share(f.offense);
-  passer := public.franchise_nth(ps, 'QB', 1); kicker := public.franchise_nth(ps, 'K', 1);
+  -- WHOEVER IS LEFT throws it and kicks it. A roster with no quarterback is
+  -- a bad team, not a dead one, and the score still has to land on a name or
+  -- the box stops adding up.
+  passer := public.franchise_anybody(ps, 'QB', 1); kicker := public.franchise_anybody(ps, 'K', 1);
 
   -- THE CLOCK (clock_v1). There is no set number of possessions any more:
   -- there are sixty minutes, and possessions are what fits inside them. A
@@ -2301,19 +2322,27 @@ begin
               r := r - rec_w[j];
               if r < 0 then scorer := public.franchise_nth(ps, rec_pos[j], rec_n[j]); exit; end if;
             end loop;
-            if scorer is null then scorer := public.franchise_nth(ps, 'WR', 1); end if;
+            if scorer is null then scorer := public.franchise_anybody(ps, 'WR', 1); end if;
             dist := 1 + floor(random() * 40)::int;
             desc_ := (passer->>'name') || ' to ' || (scorer->>'name') || ', ' || dist || '-yd TD pass';
-            tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rec_td":1}'::jsonb));
-            tally := tally || jsonb_build_object(passer->>'id', public.games_jsonb_sum(tally->(passer->>'id'), '{"pass_td":1}'::jsonb));
+            -- a score with nobody left to credit still plays out; it simply
+            -- goes on no line rather than killing the franchise
+            if scorer is not null then
+              tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rec_td":1}'::jsonb));
+            end if;
+            if passer is not null then
+              tally := tally || jsonb_build_object(passer->>'id', public.games_jsonb_sum(tally->(passer->>'id'), '{"pass_td":1}'::jsonb));
+            end if;
           else
             r := random();
             scorer := case when r < qb_share then passer when r < qb_share + (1 - qb_share) * 0.8 then public.franchise_nth(ps, 'RB', 1)
                            else public.franchise_nth(ps, 'RB', 2) end;
-            if scorer is null then scorer := public.franchise_nth(ps, 'RB', 1); end if;
+            if scorer is null then scorer := public.franchise_anybody(ps, 'RB', 1); end if;
             dist := 1 + floor(random() * 25)::int;
             desc_ := (scorer->>'name') || ', ' || dist || '-yd TD run';
-            tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rush_td":1}'::jsonb));
+            if scorer is not null then
+              tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rush_td":1}'::jsonb));
+            end if;
           end if;
           scoring := scoring || jsonb_build_object('q', q, 'side', 'for', 'type', 'TD', 'pts', 7, 'desc', desc_, 'for', pts_me, 'against', pts_op);
         elsif d->>'outcome' = 'fg' then
@@ -3000,20 +3029,26 @@ begin
         r := r - rec_w[j];
         if r < 0 then scorer := public.franchise_nth(p_ps, rec_pos[j], rec_n[j]); exit; end if;
       end loop;
-      if scorer is null then scorer := public.franchise_nth(p_ps, 'WR', 1); end if;
+      if scorer is null then scorer := public.franchise_anybody(p_ps, 'WR', 1); end if;
       dist := 1 + floor(random() * 40)::int;
       desc_ := (p_passer->>'name') || ' to ' || (scorer->>'name') || ', ' || dist || '-yd TD pass';
-      tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rec_td":1}'::jsonb));
-      tally := tally || jsonb_build_object(p_passer->>'id', public.games_jsonb_sum(tally->(p_passer->>'id'), '{"pass_td":1}'::jsonb));
+      if scorer is not null then
+        tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rec_td":1}'::jsonb));
+      end if;
+      if p_passer is not null then
+        tally := tally || jsonb_build_object(p_passer->>'id', public.games_jsonb_sum(tally->(p_passer->>'id'), '{"pass_td":1}'::jsonb));
+      end if;
     else
       r := random();
       scorer := case when r < p_qb_share then p_passer
                      when r < p_qb_share + (1 - p_qb_share) * 0.8 then public.franchise_nth(p_ps, 'RB', 1)
                      else public.franchise_nth(p_ps, 'RB', 2) end;
-      if scorer is null then scorer := public.franchise_nth(p_ps, 'RB', 1); end if;
+      if scorer is null then scorer := public.franchise_anybody(p_ps, 'RB', 1); end if;
       dist := 1 + floor(random() * 25)::int;
       desc_ := (scorer->>'name') || ', ' || dist || '-yd TD run';
-      tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rush_td":1}'::jsonb));
+      if scorer is not null then
+        tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rush_td":1}'::jsonb));
+      end if;
     end if;
     return jsonb_build_object('type', 'TD', 'pts', 7, 'desc', desc_, 'tally', tally);
   elsif p_d->>'outcome' = 'fg' then
@@ -3085,8 +3120,8 @@ begin
   b_late_def := b_cond + 0.5 * (trb->>'late_defense')::numeric + (stb->>'late_defense')::numeric;
   a_pass := public.franchise_pass_share(fa.offense); b_pass := public.franchise_pass_share(fb.offense);
   a_qb := public.franchise_qb_rush_share(fa.offense); b_qb := public.franchise_qb_rush_share(fb.offense);
-  a_passer := public.franchise_nth(psa, 'QB', 1); a_kicker := public.franchise_nth(psa, 'K', 1);
-  b_passer := public.franchise_nth(psb, 'QB', 1); b_kicker := public.franchise_nth(psb, 'K', 1);
+  a_passer := public.franchise_anybody(psa, 'QB', 1); a_kicker := public.franchise_anybody(psa, 'K', 1);
+  b_passer := public.franchise_anybody(psb, 'QB', 1); b_kicker := public.franchise_anybody(psb, 'K', 1);
 
   -- A CHALLENGE IS THE SAME FOOTBALL AS A SATURDAY, so it is played on the
   -- same clock (clock_v1) rather than a possession count of its own. Neither
@@ -3525,11 +3560,50 @@ $$;
 -- founding backups, young, with room to grow. (Phase 5 generalised the
 -- body into franchise_generate_player, which also makes the draft class
 -- and the free agents; this is the rookie's door to it.)
+-- WHAT A FRANCHISE'S REPUTATION IS WORTH TO A ROOKIE (rookie_v2).
+--
+-- TEN THOUSAND SEASONS SAID THIS PLAINLY. A rookie's level was pegged to
+-- `lowest` — the WORST BACKUP IN A FOUNDING ROSTER — for ever, whatever the
+-- franchise had become. So a club fifty seasons deep signed exactly the
+-- calibre a club founded yesterday signed, every man on an eighty-season
+-- roster was an offseason rookie, and the team converged downward to the
+-- rookie pool:
+--
+--   season      1     3     5    10    20    40    60    80
+--   overall   69.7  70.4  68.9  66.1  62.1  61.9  62.1  62.2
+--   wins      5.73  5.53  4.20  4.67  3.87  4.13  3.60  4.60
+--
+-- A player who simply turned up and played got WORSE for eighty seasons and
+-- settled eight points below the team he was handed. That is the wrong curve
+-- for the person this game is easiest to lose: the one who does not know
+-- there is a front office.
+--
+-- So a rookie arrives at what the franchise's reputation commands, exactly
+-- as a coach has since Phase 12: a quarter of a point for every rank, one for
+-- every twelve points of standing, capped. Turning up raises the rank, and
+-- winning raises the standing, so the two things a passive player DOES are
+-- the two things that lift the men he signs. The cap is what stops the
+-- feedback loop — better rookies, better standing, better rookies — from
+-- running away.
+create or replace function public.franchise_rookie_lift(p_rank integer, p_standing integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select greatest(0, least(14,
+      floor(greatest(0, coalesce(p_rank, 1) - 1) * 0.25)::int
+    + floor(greatest(0, least(100, coalesce(p_standing, 0))) / 12.0)::int));
+$$;
+
 create or replace function public.franchise_generate_rookie(
   p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text)
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_lift integer;
 begin
-  return public.franchise_generate_player(p_franchise, p_pos, p_depth, p_season, p_seed, p_detail, 'rookie', null);
+  -- the reputation the franchise has actually earned, read on the server
+  select public.franchise_rookie_lift(
+           coalesce((public.franchise_rank_report(p_franchise)->>'rank')::int, 1),
+           coalesce((select standing from public.franchises where id = p_franchise), 0))
+    into v_lift;
+  return public.franchise_generate_player(p_franchise, p_pos, p_depth, p_season, p_seed, p_detail,
+           'rookie', null, null, v_lift);
 end;
 $$;
 
@@ -3542,9 +3616,11 @@ $$;
 -- argument form is dropped first — otherwise both would exist and a caller
 -- would silently keep the old one.
 drop function if exists public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer);
+drop function if exists public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer);
 create or replace function public.franchise_generate_player(
   p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text,
-  p_kind text default 'rookie', p_class integer default null, p_target integer default null)
+  p_kind text default 'rookie', p_class integer default null, p_target integer default null,
+  p_lift integer default 0)
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   first_names text[] := public.franchise_pool_first_names();
@@ -3569,7 +3645,9 @@ begin
     when p_target is not null then greatest(40, least(99, p_target))
     when p_kind = 'prospect'   then lowest - 7 + floor(random() * 11)::int - 5
     when p_kind = 'free_agent' then lowest + floor(random() * 11)::int - 1
-    else lowest - 4 + floor(random() * 7)::int - 3 end;
+    -- a rookie: a little under the founding backups, LIFTED by what this
+    -- franchise has become (rookie_v2)
+    else lowest - 4 + floor(random() * 7)::int - 3 + greatest(0, coalesce(p_lift, 0)) end;
   a := archetypes->p_pos;
   arch := a->(floor(random() * jsonb_array_length(a))::int);
   attrs := '{}'::jsonb;
@@ -3656,6 +3734,14 @@ $$;
 
 -- THE OFFSEASON, after season p_from. Runs once; a second call returns the
 -- report already written.
+-- WHAT THE OFFSEASON IS, without running one. The report row needs the
+-- version and an offseason writes to the database, so the version is named
+-- here and read from there.
+create or replace function public.franchise_offseason_version()
+returns text language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select 'offseason_v2';
+$$;
+
 create or replace function public.franchise_offseason(p_franchise uuid, p_from integer)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare
@@ -3730,13 +3816,48 @@ begin
   -- ahead of a 66, and its team overall DECAYED from 74 to 67 while its
   -- roster got better. A preseason sorts by who is best now; a player who
   -- wants it otherwise still says so with franchise_set_starter().
-  for v_pos in select distinct position from public.game_players where franchise_id = p_franchise and status = 'active' loop
+  -- EVERY POSITION IN THE PLAN, not only the ones that still have a man
+  -- standing. This read "select distinct position ... where status = 'active'"
+  -- until ten thousand seasons showed what that means: an empty position is
+  -- invisible to it, so an empty position stays empty for ever.
+  for v_pos in
+    select pp->>'pos' from jsonb_array_elements(public.franchise_pool_plan()) pp
+    union
+    select distinct position from public.game_players
+     where franchise_id = p_franchise and status = 'active'
+  loop
     k2 := 0;
     for pl in select id from public.game_players where franchise_id = p_franchise and position = v_pos and status = 'active' order by overall desc, potential desc, id loop
       k2 := k2 + 1;
       update public.game_players set depth = k2 where id = pl.id;
     end loop;
-    for d in 1..(select count(*) from public.game_players where franchise_id = p_franchise and position = v_pos and status = 'retired' and retired_season = p_from) loop
+    -- EVERY POSITION IS RESTOCKED TO THE ROSTER PLAN, not merely replaced
+    -- one-for-one. Ten thousand seasons found what the old rule did: it
+    -- signed one rookie per man who retired AT A POSITION THAT STILL HAD
+    -- SOMEBODY ACTIVE, because the loop above it read
+    -- "select distinct position ... where status = 'active'". The moment the
+    -- last quarterback retired, QB stopped appearing in that list and could
+    -- never be signed again. Measured across fifteen franchises: fourteen
+    -- had NO KICKER and NO PUNTER, nine had NO QUARTERBACK, and the first
+    -- touchdown after that killed the game for good.
+    --
+    -- franchise_pool_plan() already says how many of each a roster carries —
+    -- it is what a founding roster is built from — so it is the floor here
+    -- too. A team may go deeper than the plan by drafting and signing; it can
+    -- no longer fall through it.
+    --
+    -- ONE HONEST CONSEQUENCE: a position left short by a TRADE is topped back
+    -- up at the next offseason too, so you cannot run a deliberately thin
+    -- roster. The replacement is a rookie, though — trading a good lineman
+    -- away still costs you the lineman, it just does not cost you the body.
+    -- Against a bug that ended 38.5% of careers, that is the right trade.
+    for d in 1..greatest(
+        (select count(*) from public.game_players
+          where franchise_id = p_franchise and position = v_pos
+            and status = 'retired' and retired_season = p_from),
+        (select coalesce(jsonb_array_length(pp->'targets'), 0)
+           from jsonb_array_elements(public.franchise_pool_plan()) pp
+          where pp->>'pos' = v_pos) - k2) loop
       k2 := k2 + 1;
       rid := public.franchise_generate_rookie(p_franchise, v_pos, k2, coalesce(v_real, public.games_season_of(now())),
                f.seed || ':rookie:' || p_from || ':' || v_pos || ':' || d, 'Signed after Season ' || public.games_roman(p_from));
@@ -3748,7 +3869,7 @@ begin
   -- the next window: a new draft class, new free agents, the picks renewed
   mk := public.franchise_open_market(p_franchise, p_from + 1);
 
-  report := jsonb_build_object('version', 'offseason_v1', 'after_season', p_from, 'training', training,
+  report := jsonb_build_object('version', public.franchise_offseason_version(), 'after_season', p_from, 'training', training,
     'players', players, 'retired', retired, 'rookies', rookies, 'market', mk,
     'summary', jsonb_build_object('improved', nimp, 'declined', ndec, 'retired', nret, 'signed', jsonb_array_length(rookies), 'biggest', big));
   update public.franchise_seasons set offseason = report where franchise_id = p_franchise and number = p_from;
@@ -8701,7 +8822,7 @@ revoke all on function public.franchise_pool_archetypes() from public, anon, aut
 revoke all on function public.franchise_pool_traits() from public, anon, authenticated;
 -- the draft and the market: the generator, the window opener and the
 -- prospect reader are the server's; the board and the four moves are open
-revoke all on function public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer) from public, anon, authenticated;
+revoke all on function public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer) from public, anon, authenticated;
 revoke all on function public.franchise_open_market(uuid, integer) from public, anon, authenticated;
 revoke all on function public.franchise_free_number(uuid, text, text) from public, anon, authenticated;
 revoke all on function public.franchise_prospect_json(public.game_players) from public, anon, authenticated;
@@ -8914,6 +9035,7 @@ revoke all on function public.franchise_game_drives(uuid, uuid) from public, ano
 grant execute on function public.franchise_career() to anon, authenticated;
 grant execute on function public.franchise_rank_coach_points(integer) to anon, authenticated;
 grant execute on function public.franchise_staff_hire_level(integer, integer) to anon, authenticated;
+grant execute on function public.franchise_rookie_lift(integer, integer) to anon, authenticated;
 grant execute on function public.franchise_rank_board(text) to anon, authenticated;
 revoke all on function public.franchise_rank_report(uuid) from public, anon, authenticated;
 grant execute on function public.franchise_league_gap(integer, integer) to anon, authenticated;
@@ -9056,7 +9178,7 @@ select 18, 'the market is ' || (public.franchise_market()->>'version') || ': sco
         and has_function_privilege('anon', 'public.franchise_sign(uuid, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_release(uuid, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_open_market(uuid, integer)', 'execute')
-        and not has_function_privilege('authenticated', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer)', 'execute')
     then 'ok' else 'CHECK THIS' end
 union all
 select 19, 'a prospect''s true ratings are read through the board only: the direct policy admits no prospect or free agent',
@@ -9479,5 +9601,111 @@ select 35, 'the playbook is ' || (public.franchise_plays()->>'version')
         and has_function_privilege('anon', 'public.franchise_plays()', 'execute')
         and has_function_privilege('anon', 'public.franchise_playbook(text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_play_allowed(text, text)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 36, 'the roster is ' || (public.franchise_offseason_version())
+        || ': every position is restocked to the plan, a rookie arrives at what the franchise has become, and losing a position cannot brick a career',
+  case when public.franchise_offseason_version() = 'offseason_v2'
+        -- THE OFFSEASON WALKS THE PLAN, not only the positions that still
+        -- have somebody standing. Ten thousand seasons found what the old
+        -- rule did: it read "select distinct position ... where status =
+        -- 'active'", so the moment the last quarterback retired the position
+        -- became invisible and could never be signed again. Fourteen of
+        -- fifteen measured franchises had no kicker and no punter, nine had
+        -- no quarterback, and 38.5% of them could never play again.
+        and (select p.prosrc like '%select pp->>''pos'' from jsonb_array_elements(public.franchise_pool_plan()) pp%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_offseason')
+        -- and it signs up to the plan's count rather than one-for-one
+        and (select p.prosrc like '%jsonb_array_length(pp->''targets'')%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_offseason')
+        -- THE BELT FOR THOSE BRACES. A score has to be credited to somebody,
+        -- and a jsonb key built from a player who does not exist threw
+        -- "key must not be null" and killed the franchise for good. A thin
+        -- roster is a bad team; it is never a dead one.
+        and (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_anybody') = 1
+        and public.franchise_anybody('[]'::jsonb, 'QB', 1) is null
+        and public.franchise_anybody('[{"id":"x","position":"RB","overall":70,"depth":1}]'::jsonb, 'QB', 1)->>'id' = 'x'
+        and public.franchise_anybody('[{"id":"q","position":"QB","overall":60,"depth":1},
+                                       {"id":"r","position":"RB","overall":80,"depth":1}]'::jsonb, 'QB', 9)->>'id' = 'q'
+        -- neither simulator may build a scoring key out of nobody
+        and (select bool_and(p.prosrc not like '%tally || jsonb_build_object(scorer->>''id''%'
+                          or p.prosrc like '%if scorer is not null then%')
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname in ('franchise_sim', 'franchise_sim_score_play'))
+        -- the plan is a published table, so the floor and the founding
+        -- roster can never disagree about the shape of a team
+        and (select sum(jsonb_array_length(pp->'targets'))
+               from jsonb_array_elements(public.franchise_pool_plan()) pp) = 38
+        -- AND A ROOKIE ARRIVES AT WHAT THE FRANCHISE HAS BECOME. The level was
+        -- pegged to the worst backup in a FOUNDING roster for ever, so a club
+        -- fifty seasons deep signed what a club founded yesterday signed and
+        -- every team converged downward to the rookie pool: 69.7 overall at
+        -- season one, 62.2 at season eighty. Rank and standing lift it now,
+        -- which are exactly the two things a player who only plays moves.
+        and public.franchise_rookie_lift(1, 0) = 0
+        and public.franchise_rookie_lift(1, 100) = 8
+        and public.franchise_rookie_lift(40, 100) = 14
+        and public.franchise_rookie_lift(9999, 100) = 14
+        and (select bool_and(public.franchise_rookie_lift(t.n, 50) <= public.franchise_rookie_lift(t.n + 1, 50))
+               from generate_series(1, 300) as t(n))
+        and (select bool_and(public.franchise_rookie_lift(20, t.n) <= public.franchise_rookie_lift(20, t.n + 1))
+               from generate_series(0, 200) as t(n))
+        and (select bool_and(public.franchise_rookie_lift(t.n, t.n) between 0 and 14)
+               from generate_series(-50, 400) as t(n))
+        -- the lift is read on the SERVER, from the record, never handed in
+        and (select p.prosrc like '%public.franchise_rookie_lift(%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_generate_rookie')
+        and not has_function_privilege('anon',
+              'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer, integer)', 'execute')
+        -- the plan is the server's own; a client never needs it and cannot
+        -- reach it, which is why the floor lives on the server too
+        and not has_function_privilege('anon', 'public.franchise_pool_plan()', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 37, 'the rank is derived from the record and a replayed reward cannot count twice, so a week played offline connects exactly as it was earned',
+  case when
+        -- THE RANK IS A READ, NOT A RECORD. franchise_rank_report sums the
+        -- activity log with the published weights and writes nothing, so
+        -- there is no rank counter to synchronise, drift or replay. If it
+        -- ever stopped being STABLE something started writing.
+        (select p.provolatile = 's' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public' and p.proname = 'franchise_rank_report')
+        -- and nothing anywhere stores a rank or a point total: only how many
+        -- packs have been claimed, which is what was SPENT, not what was won
+        and not exists (select 1 from information_schema.columns
+                         where table_schema = 'public' and table_name = 'franchises'
+                           and column_name in ('rank', 'rank_points', 'reputation', 'reputation_points'))
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'franchises'
+                       and column_name = 'rank_claimed')
+        -- THE ONE CONSTRAINT THE WHOLE OFFLINE STORY RESTS ON. The browser
+        -- queues a reward under (kind, key) and replays it when it can reach
+        -- the server again — including when the server already wrote the row
+        -- and only the answer went missing. Drop this and a lost answer pays
+        -- twice, and a rank is bought by a bad connection.
+        and exists (select 1 from pg_constraint c join pg_class t on t.oid = c.conrelid
+                     where t.relname = 'franchise_activity' and c.contype = 'u'
+                       and (select array_agg(a.attname::text order by a.attname)
+                              from unnest(c.conkey) as u(att) join pg_attribute a
+                                on a.attrelid = c.conrelid and a.attnum = u.att)
+                           = array['franchise_id','key','kind'])
+        -- every rank-bearing kind the client can earn with no server is a
+        -- kind the activity table will actually accept
+        and (select bool_and(pg_get_constraintdef(c.oid) like '%''' || k || '''%')
+               from pg_constraint c join pg_class t on t.oid = c.conrelid,
+                    unnest(array['price_it','pick5_card','drill_daily','research_open']) k
+              where t.relname = 'franchise_activity' and c.conname = 'franchise_activity_kind_check')
+        -- and each of them is worth something toward a rank, or playing
+        -- offline would be playing for nothing
+        and (select bool_and(((public.franchise_ranks()->'weights'->>k)::int) > 0)
+               from unnest(array['price_it','pick5_card','drill_daily','research_open']) k)
+        -- the rank curve never caps and never cheapens, at any depth
+        and public.franchise_rank_for(0) = 1 and public.franchise_rank_for(-99) = 1
+        and (select bool_and(public.franchise_rank_for(public.franchise_rank_at(t.n)) = t.n)
+               from generate_series(2, 200) as t(n))
     then 'ok' else 'CHECK THIS' end
 order by 1;

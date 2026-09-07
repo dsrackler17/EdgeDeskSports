@@ -781,6 +781,81 @@ chk('the Pick 5 page settles from the artifact’s finals, not from a guess',
 chk('and it grades against the line the card was picked at',
   PICK.indexOf('sel.market_spread') >= 0);
 
+/* ═══ THE AGE GATE ═════════════════════════════════════════════════════════
+   The game is open to everyone. The one door OUT of it — EdgeDesk's research
+   terminal, a betting-research product — is asked for once, and the answer is
+   remembered either way. These hold the policy:
+
+     1  nothing gates a game, a page or a score;
+     2  every link to the terminal goes through the gate, including ones a
+        page adds later, so a new link cannot quietly skip it;
+     3  a "no" is remembered and never asked again, and nothing about the
+        game changes;
+     4  nothing is collected — no name, no date of birth, no request. */
+(() => {
+  const STORE = fs.readFileSync(G('lib/store.js'), 'utf8');
+  const CSS = fs.readFileSync(G('games.css'), 'utf8');
+  const ST2 = require(path.join(ROOT, 'games', 'lib', 'store.js'));
+
+  eq('the terminal is 21+', /var AGE_MIN = (\d+);/.exec(JS) && /var AGE_MIN = (\d+);/.exec(JS)[1], '21');
+  chk('and the footer says so on every page', /21\+\./.test(JS) && /1-800-GAMBLER/.test(JS));
+
+  /* the store remembers one answer and nothing else */
+  ST2.reset();
+  eq('nobody has been asked yet', ST2.ageAnswer(), null);
+  eq('a yes is remembered', ST2.setAgeAnswer('yes') && ST2.ageAnswer(), 'yes');
+  eq('a no is remembered too', ST2.setAgeAnswer('no') && ST2.ageAnswer(), 'no');
+  eq('and anything else is ignored', ST2.setAgeAnswer('probably') && ST2.ageAnswer(), 'no');
+  chk('the answer carries a timestamp and nothing more', () => {
+    ST2.reset(); ST2.setAgeAnswer('yes');
+    const a = ST2.read().age;
+    return Object.keys(a).sort().join(',') === 'answer,at' && typeof a.at === 'string';
+  });
+  chk('the stored shape has no name, no date of birth and no identifier', () => {
+    ST2.reset(); ST2.setAgeAnswer('yes');
+    const j = JSON.stringify(ST2.read().age).toLowerCase();
+    return ['name', 'dob', 'birth', 'email', 'id'].every(k => j.indexOf(k) < 0);
+  });
+  chk('the store documents that the game is open to everyone',
+    /THE GAME IS OPEN TO EVERYONE/.test(STORE));
+
+  /* the gate itself */
+  chk('the gate is wired once per page, from mount, so no page can forget it',
+    /function mount\(current\)[\s\S]{0,900}?wireAgeGate\(\);/.test(JS));
+  chk('and it catches every anchor pointing at the terminal, delegated',
+    /d\.addEventListener\('click'[\s\S]{0,400}?href\.indexOf\(TERMINAL\) < 0\) return;/.test(JS));
+  chk('the programmatic opener is gated by the same check, not a second one',
+    /function openResearch\([\s\S]{0,300}?if \(!ageOk\(\)\) \{[\s\S]{0,120}?ifOfAge\(/.test(JS));
+  chk('a yes lets the link through untouched',
+    /if \(ageOk\(\)\) return;\s*\/\* already answered yes \*\//.test(JS));
+  chk('and it is asked ONCE: an answer already given short-circuits the dialog',
+    /if \(ageAsked\(\)\) \{ if \(onAnswer\) onAnswer\(ageOk\(\)\); return; \}/.test(JS));
+  chk('a no is told plainly that nothing about the game changes',
+    /Nothing changes about the game/.test(JS) && /We will not ask again/.test(JS));
+  chk('and it is never re-asked after a no',
+    /if \(ageAsked\(\)\) \{ toast\(/.test(JS));
+
+  /* it gates the terminal and NOTHING else */
+  ['price-it', 'pick-5', 'two-minute-drill', 'gameday', 'roster', 'trophies']
+    .forEach(room => chk('the ' + room + ' page is not gated', () => {
+      const html = fs.readFileSync(G(room + '/index.html'), 'utf8');
+      return html.indexOf('askAge') < 0 && html.indexOf('ageOk') < 0;
+    }));
+  chk('nothing asks on arrival: the gate is only reached from a terminal link',
+    !/wireAgeGate\(\)[\s\S]{0,80}askAge\(/.test(JS)
+    && (JS.match(/askAge\(/g) || []).length <= 3);
+
+  chk('every class the gate draws is defined in the stylesheet',
+    ['.age-gate', '.ag-card', '.ag-row', '.ag-eyebrow', '.ag-fine'].every(c => CSS.indexOf(c) >= 0));
+  chk('and it is a real dialog for a screen reader',
+    /_ageEl\.setAttribute\('role', 'dialog'\)/.test(JS)
+    && /aria-modal/.test(JS) && /aria-labelledby/.test(JS));
+  chk('the answer is recorded on the funnel, both ways',
+    /track\('age_gate_answered', \{ answer: answer/.test(JS) && /track\('age_gate_shown'/.test(JS));
+
+  ST2.reset();
+})();
+
 function finish() {
   console.log((fail ? 'FAIL' : 'PASS') + ' | edgedesk games | ' + pass + ' passed, ' + fail + ' failed');
   failures.forEach(f => console.log('  × ' + f));
