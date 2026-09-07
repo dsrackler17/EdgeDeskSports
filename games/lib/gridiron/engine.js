@@ -357,7 +357,7 @@
 
     var base = 0.15 + tellSays * 0.15 + iq * 0.35
              + (predictable - 0.5) * 0.80
-             + (situational - 0.5) * 0.80
+             + (situational - 0.5) * (0.30 + iq * 0.55)
              + tendency(mem, playObj.key, playObj.group) * 0.75
              + defTeam.mods.recognition * 0.5;
     var p = clamp(base, 0.02, 0.88);
@@ -377,7 +377,7 @@
        which is why the answer to a zero blitz is to throw it quickly and why
        taking a shot into one is the worst call in football. */
     var rushValue = clamp(0.50 + (hold - 2.0) * 0.46, 0.30, 1.65);
-    var p = 0.205 + (RUSH - PROT) * 0.0072 + parts.pressure.rush * rushValue + parts.coverage.rush
+    var p = 0.245 + (RUSH - PROT) * 0.0072 + parts.pressure.rush * rushValue + parts.coverage.rush
           + (hold - 2.4) * 0.100
           + ((defMods && defMods.rush) || 0);
     if (playObj.concept === 'screen') p = p * 0.18 - 0.02;      /* the rush is the point */
@@ -692,7 +692,7 @@
     out.outOfBounds = playObj.concept === 'outside' && rand() < 0.30;
 
     /* the ball on the ground */
-    var pFum = clamp(0.0085 + (playObj.risk || 0) * 0.012 + (out.big ? 0.004 : 0)
+    var pFum = clamp(0.0112 + (playObj.risk || 0) * 0.012 + (out.big ? 0.004 : 0)
                      - (ou.rb.hnd - 60) / 4000 + (parts.fit.key === 'aggressive' ? 0.004 : 0)
                      + wx.fumble, 0.001, 0.06);
     if (rand() < pFum) {
@@ -792,11 +792,23 @@
        when he is pressured the rush still gets its say first. Same branch,
        same numbers; the only difference is that the decision was his. */
     var takeOff = !!ctx.userScramble;
-    if ((pressured || takeOff) && playObj.concept !== 'screen'
-        && (takeOff || playObj.concept !== 'quick')) {
+    if ((pressured || takeOff) && playObj.concept !== 'screen') {
+      /* ── PRESSURE IS NOT A SACK ────────────────────────────────────────
+         A quarterback is pressured on about a third of his dropbacks and
+         sacked on roughly a fifth of those: pressure is mostly a worse
+         throw, not a loss of yardage. This used to convert at better than
+         three in five, which is fine on average — the quick game was
+         exempt, so the aggregate came out right — and catastrophic at the
+         edges: an overmatched line against an elite rush gave up a sack on
+         nearly one dropback in three, which is not a football game.
+
+         The quick game is no longer exempt. It is very hard to sack a man
+         throwing a slant, but it is not impossible, and pricing it at zero
+         is what forced the conversion rate elsewhere to be absurd. */
+      var quickOut = playObj.concept === 'quick';
       var pSack = pressured
-        ? clamp(0.64 - (qb.spd - 60) / 340 - (qb.iq - 60) / 500
-                + (playObj.hold - 2.4) * 0.10, 0.08, 0.72)
+        ? clamp((0.48 - (qb.spd - 60) / 380 - (qb.iq - 60) / 420
+                 + (playObj.hold - 2.4) * 0.085) * (quickOut ? 0.28 : 1), 0.02, 0.60)
         : 0;
       if (rand() < pSack) {
         out.sack = true;
@@ -808,7 +820,7 @@
         maybeInjure(off, qb.player, rand, 1.4);
         return out;
       }
-      if (takeOff || rand() < clamp(0.14 + (qb.spd - 60) / 220, 0.03, 0.55)) {
+      if (takeOff || (!quickOut && rand() < clamp(0.14 + (qb.spd - 60) / 220, 0.03, 0.55))) {
         out.scramble = true;
         out.yards = Math.max(-2, Math.round(expo(rand, 3.4 + (qb.spd - 60) / 14)));
         out.carrier = qb.player;
@@ -904,7 +916,7 @@
     out.tackler = tacklerFor(du, rand, out.yards);
     out.outOfBounds = (target && target.zone === 'out') ? rand() < 0.42 : rand() < 0.13;
 
-    var pFum = clamp(0.0055 + (out.big ? 0.004 : 0) - (hands - 62) / 5000 + wx.fumble, 0.0008, 0.03);
+    var pFum = clamp(0.0072 + (out.big ? 0.004 : 0) - (hands - 62) / 5000 + wx.fumble, 0.0008, 0.03);
     if (rand() < pFum) { out.turnover = 'fumble'; out.notes.push('Punched out after the catch.'); }
 
     tire(off, ['OL', 'WR', 'QB', 'TE'], 1); tire(def, ['DL', 'CB', 'S', 'LB'], 1);
@@ -912,12 +924,19 @@
     return out;
   }
 
+  /* A CATCH HAS A MAN IN IT. Ask for the tight end on a roster whose tight
+     ends are all hurt and this used to return null, and the completion was
+     booked to the team and to nobody — so the receivers stopped adding up to
+     the passing total and a touchdown belonged to no one. Whoever is
+     available catches it. */
   function targetPlayer(ou, target, rand) {
-    if (!target) return ou.wr.players[0] || null;
-    if (target.slot === 'RB') return ou.rb.players[0] || null;
-    if (target.slot === 'TE') return ou.te.players[0] || null;
+    function first(list) { return (list && list.length) ? list[0] : null; }
+    var anyone = function () { return first(ou.wr.players) || first(ou.te.players) || first(ou.rb.players); };
+    if (!target) return anyone();
+    if (target.slot === 'RB') return first(ou.rb.players) || anyone();
+    if (target.slot === 'TE') return first(ou.te.players) || anyone();
     var i = target.slot === 'X' ? 0 : target.slot === 'Z' ? 1 : target.slot === 'SL' ? 2 : 3;
-    return ou.wr.players[Math.min(i, Math.max(0, ou.wr.players.length - 1))] || null;
+    return ou.wr.players[Math.min(i, Math.max(0, ou.wr.players.length - 1))] || anyone();
   }
 
   /* ── SPECIAL TEAMS ──────────────────────────────────────────────────────── */
@@ -1426,6 +1445,17 @@
        See newStats() for the convention every line below keeps. */
     var ou = unitsOf(offT, g.tick);
     var qbs = pstat(g, ou.qb.player, side);
+    /* WHATEVER SETTLED THE SNAP, somebody caught it and somebody carried it.
+       A live outcome can arrive with an actor who has no player card behind
+       him; booking that to the team and to no man is how a box score stops
+       adding up. */
+    if (!r.target && (r.completion || r.turnover === 'interception')) {
+      r.target = targetPlayer(ou, null, g.rand);
+    }
+    if (!r.carrier && (playObj.type === 'run' || r.scramble)) {
+      r.carrier = (r.scramble ? ou.qb.player : null)
+        || (ou.rb.players && ou.rb.players[0]) || ou.qb.player || null;
+    }
     if (r.sack) {
       /* NFL: the loss comes off the team's passing, never off the passer's,
          and it is not an attempt. Booking it in neither place is what made
@@ -1532,6 +1562,9 @@
       g.down++;
       g.toGo = g.toGo - gained;
       if (g.down > 4) {
+        /* fourth down did not make it, so there is no fifth: the state the
+           game ends on has to be a state football has */
+        g.down = 4;
         endDrive(g, 'downs', 0);
         runClock(g, CLOCK.change);
         g.clockStopped = true; g.deadCharged = 0;

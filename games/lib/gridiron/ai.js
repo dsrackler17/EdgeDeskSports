@@ -131,7 +131,7 @@
       best.push({ p: p, s: s });
     }
     best.sort(function (a, b) { return b.s - a.s; });
-    var top = best.slice(0, Math.max(1, Math.round(1 + T.noise * 6)));
+    var top = best.slice(0, Math.max(1, Math.round(1 + T.noise * 7)));
     var chosen = top[Math.floor(rand() * top.length)].p;
     return finish(o, chosen.key, scheme, rand, T);
   }
@@ -213,9 +213,13 @@
     if (sit.quarter >= 4 && sit.clock <= 240 && sit.diff > 3 && p.type === 'run') s += 2.2;
 
     /* WHAT THEY HAVE BEEN DOING — this is the adapting bit */
-    s += T.adapt * (seen.blitz * (p.group === 'screen' ? 5.0 : p.group === 'quick' ? 3.2 : p.hold > 3 ? -3.4 : 0));
-    s += T.adapt * (seen.deep * (p.type === 'run' ? 2.6 : p.group === 'quick' ? 1.6 : p.group === 'deep' ? -2.8 : 0));
-    s += T.adapt * (seen.stack * (p.group === 'deep' ? 2.8 : p.group === 'pa' ? 3.0 : p.concept === 'inside' ? -2.6 : 0));
+    /* Scoring a run against a pass separately means these now decide WHICH
+       play rather than which kind, so they have to be worth more inside a
+       shelf than they were across the whole book. */
+    s += T.adapt * (seen.blitz * (p.group === 'screen' ? 7.4 : p.group === 'quick' ? 5.0
+                    : p.concept === 'draw' ? 3.4 : p.hold > 3 ? -5.0 : p.hold > 2.5 ? -2.2 : 0));
+    s += T.adapt * (seen.deep * (p.type === 'run' ? 3.2 : p.group === 'quick' ? 2.2 : p.group === 'deep' ? -3.4 : 0));
+    s += T.adapt * (seen.stack * (p.group === 'deep' ? 3.4 : p.group === 'pa' ? 3.6 : p.concept === 'inside' ? -3.2 : 0));
 
     /* do not become predictable yourself */
     if (mem) s -= G.tendency(mem, p.key, p.group) * 7.5;
@@ -309,7 +313,10 @@
     if (sit.down >= 3) {
       var beyond = sit.toGo >= 7 ? (parts.coverage.deepMid + parts.coverage.deepOut + parts.coverage.intMid)
                  : (parts.coverage.intMid + parts.coverage.intOut + parts.coverage.short * 0.5);
-      s -= beyond * 7.0;
+      /* only when a throw is what he is expecting. Playing the sticks against
+         a side that has run it on every down is how a good coach talks himself
+         into soft coverage on third and two. */
+      s -= beyond * 7.0 * lean;
     }
     if (sit.down === 1 && parts.pressure.key !== 'none') s -= 1.4;
     if (sit.toGoal <= 12) s += parts.front.box * 0.6 - (parts.coverage.key === 'cover4' ? 1.2 : 0);

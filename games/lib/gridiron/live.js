@@ -650,14 +650,26 @@
        man the play leaves free if neither is there. `self.targets` shows the
        user exactly this list, so the quarterback and the badges over the
        receivers are reading the same football. */
+    var progCache = null, progDown = -1;
     function progression() {
-      return actors.filter(function (a) {
+      /* MOBILE. This is asked for on every tick of a hundred-and-twenty-hertz
+         loop, and the answer only changes when somebody goes down — so it is
+         built once and rebuilt when that count moves. Sorting five actors two
+         hundred times a second is not free on a phone. */
+      var down = 0, i;
+      for (i = 0; i < actors.length; i++) {
+        if (actors[i].side === 'off' && actors[i].state === 'down') down++;
+      }
+      if (progCache && down === progDown) return progCache;
+      progDown = down;
+      progCache = actors.filter(function (a) {
         return a.side === 'off' && a.job && a.job.kind === 'route' && a.state !== 'down';
       }).sort(function (a, b) {
         var ra = ORDER[a.slot] == null ? 90 : ORDER[a.slot];
         var rb = ORDER[b.slot] == null ? 90 : ORDER[b.slot];
         return ra - rb;
       });
+      return progCache;
     }
 
     /* HOW CLOSE THE RUSH IS, in [0,1]. One is a free rusher with his hands on
@@ -690,9 +702,17 @@
        He is allowed three endings other than a throw: he runs, he throws it
        away, or he is caught. Only the third is a sack, which is why the sack
        is now an outcome of the football rather than the absence of one. */
+    var nextLook = 0;
     function decide(a) {
       if (thrown || play.type !== 'pass' || !qb || qb.state === 'down') return;
       if (qb.job && qb.job.kind === 'scramble') return;
+      /* HE LOOKS THIRTY TIMES A SECOND, not a hundred and twenty. A
+         quarterback's eyes are not a physics step, and re-reading every
+         receiver and every defender on every tick is the most expensive
+         thing in this file on a phone. The pending bail-out still fires on
+         its own clock. */
+      if (t < nextLook && !bailKind) return;
+      nextLook = t + 0.033;
       var hold = play.hold || 2.4;
       var iq = qb.k.iq, spd = qb.k.spd;
       var heat = heatOn(qb);

@@ -55,6 +55,7 @@ const AU = require(G('lib/gridiron/autoplay.js'));
 const PA = require(G('lib/gridiron/paint.js'));
 const SG = require(G('lib/gridiron/stage.js'));
 const SE = require(G('lib/gridiron/session.js'));
+const INV = require(path.join(__dirname, 'gridiron_invariants.js'));
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 function team(o) {
@@ -915,6 +916,40 @@ function repeat(playKey, defKey, n, extra, opts) {
   chk('the recap finds a turning point', !!tp && !!tp.text);
   const potg = EN.playerOfGame(r.game);
   chk('the recap names a player of the game', !!potg && !!potg.name);
+})();
+
+/* ── NOTHING IMPOSSIBLE ───────────────────────────────────────────────────
+   The full list lives in gridiron_invariants.js and the ten-thousand-game
+   harness runs it over every population. This runs it here too, on a small
+   spread of matchups and both modes, so a change that makes the engine
+   contradict itself fails in twenty seconds rather than in the nightly. */
+(function invariants() {
+  const SCH = ['power_run', 'spread', 'air_raid', 'west_coast', 'pro_style', 'option'];
+  const DEF = ['four_three', 'three_four', 'press_man', 'zone', 'blitz_heavy', 'bend_dont_break'];
+  let bad = [], n = 0;
+  for (let i = 0; i < 60; i++) {
+    const r = AU.simulate({
+      seed: 'INV' + i, difficulty: ['rookie', 'pro', 'allpro', 'legend'][i % 4],
+      weather: i % 3 === 0 ? { weather: 'rain', wind: 16, temp: 39 } : null,
+      home: { name: 'H', overall: 68 + (i * 7) % 20, offense: SCH[i % 6], defense: DEF[i % 6], seed: 'h' + i },
+      away: { name: 'A', overall: 68 + (i * 11) % 20, offense: SCH[(i + 3) % 6], defense: DEF[(i + 2) % 6], seed: 'a' + i }
+    });
+    n++;
+    bad = bad.concat(INV.check(EN, r.game, r.box).violations.map(v => 'sim ' + i + ': ' + v));
+  }
+  /* Play Mode is the path a person on a phone is using; it books through the
+     same engine, so it has to satisfy the same list. */
+  for (let i = 0; i < 4; i++) {
+    const r = AU.simulateLive({
+      seed: 'LIV' + i, difficulty: 'pro',
+      home: { name: 'H', overall: 75, offense: SCH[i % 6], defense: DEF[i % 6], seed: 'lh' + i },
+      away: { name: 'A', overall: 75, offense: SCH[(i + 2) % 6], defense: DEF[(i + 4) % 6], seed: 'la' + i }
+    });
+    n++;
+    bad = bad.concat(INV.check(EN, r.game, r.box).violations.map(v => 'live ' + i + ': ' + v));
+  }
+  chk(n + ' games, and not one of them contradicts itself', bad.length === 0,
+      bad.slice(0, 4).join(' | '));
 })();
 
 /* ── report ──────────────────────────────────────────────────────────────── */

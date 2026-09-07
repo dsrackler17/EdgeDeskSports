@@ -175,7 +175,12 @@
   /* THE UNITS the play resolver reads. One object, all numbers. */
   function units(players, fatigue) {
     var m = byPos(players || []);
-    var qb = (m.QB || [])[0] || null;
+    /* SOMEBODY HAS TO TAKE THE SNAP. Lose every quarterback on the roster and
+       a back or a receiver takes it, badly — which is what actually happens,
+       and which keeps the passing line attributable to a man rather than to
+       nobody. A team with no quarterback used to throw attempts that belonged
+       to no player, and the box score stopped adding up. */
+    var qb = (m.QB || [])[0] || (m.RB || [])[0] || (m.WR || [])[0] || (m.TE || [])[0] || null;
     return {
       qb: {
         arm: qb ? ratingOf(qb, 'arm') : 55, acc: qb ? ratingOf(qb, 'acc') : 55,
