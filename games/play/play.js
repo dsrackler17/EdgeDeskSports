@@ -1932,7 +1932,13 @@
     $('btnExit').onclick = function () { location.href = '/games/gameday/'; };
     /* TAP TO SKIP. Anywhere on the field, and only while a sequence is
        actually running — it must never eat a tap meant for a receiver. */
-    fieldWrap.addEventListener('pointerdown', function () { if (kickSkip) kickSkip(); }, true);
+    fieldWrap.addEventListener('pointerdown', function (e) {
+      if (!kickSkip) return;
+      /* the sound and settings controls are still live during a sequence, and
+         a tap meant for one of them is not a tap meant to skip it */
+      if (e.target && e.target.closest && e.target.closest('.gd-tools')) return;
+      kickSkip();
+    }, true);
     window.addEventListener('beforeunload', function () { if (game && !game.over) S.save(game); });
     /* no rubber-banding under the thumbs */
     document.addEventListener('touchmove', function (e) {
