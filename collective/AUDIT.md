@@ -68,6 +68,12 @@ depends on them, it is listed under *Verify on the server* rather than claimed.
 * `me.role`, `me.admin`, `d.entitled` from `/v1/me` and `/v1/games` are used
   for layout. Editing them in the browser changes which panels are drawn, not
   what the API returns.
+* `me.role` no longer decides on its own which dashboard opens (see §6). When
+  it does not say `creator`, the page asks `/v1/dashboard` — with the same
+  session token, and it is that endpoint's own answer that decides. Forging
+  `role` in the browser still buys nothing: every creator route is
+  authenticated in its own response, and a forged label only means the page
+  asks an endpoint that then refuses it.
 * localStorage holds the session tokens, the chosen sport, the intro-strip
   dismissal, a remembered column mapping and a "sports I plan to cover" note.
   None of these grant anything.
@@ -223,3 +229,46 @@ was whatever the person doing it remembered.
   `received_at`; the receipt says so and prints the device clock, labelled.
 * **Confidence intervals** on rankings are not provided by the API and are
   not fabricated; sample size is shown instead.
+
+## 6. Locked out of the uploader (September 2026)
+
+The slate uploader is on the creator dashboard and nowhere else on this site.
+`renderDashboard` chose that room on the strength of one word — `role` from
+`/v1/me` — while the uploader itself is served by `/v1/dashboard`, which looks
+up the creator row for the signed-in auth user independently. Anything that
+made those two disagree came out on screen as the member dashboard: no
+uploader, no link to one, no statement of what had been checked, and no way to
+ask again. A contributor in that state cannot post a number at all.
+
+They can disagree in ordinary ways. `role` and `isEntitled` both read
+`creators` filtered on `user_id` **and** `status = 'active'`, so a creator row
+owned by the email somebody else redeemed the invite on, or one whose status a
+removal moved off `active` (§4 keeps the row and stamps it), answers `member`
+while the model is still on the wall.
+
+* **The room is decided by the endpoint that serves it.** `role === 'creator'`
+  still short-circuits, so nothing extra is asked of an ordinary creator.
+  Otherwise `creatorProbe()` asks `/v1/dashboard` once and the creator
+  dashboard opens if it answers with a creator row.
+* **A failure to ask is not an answer.** 403/404 is `no`; anything else — a
+  500, a dropped connection — is `unknown`, is never cached, and is never
+  rendered as "not a creator". One bad minute on the API must not cost a
+  creator their uploader for the rest of the session.
+* **The member dashboard is no longer a dead end.** A *Creator tools* section
+  states what was asked and what came back, and offers *Check again*, which
+  forces the probe and opens the creator dashboard the moment it answers.
+* **For an admin, the remedy, filled in.** Whether an account has creator tools
+  is decided by `creators.user_id` and an active status, and no browser session
+  can write that table — so the page prints the statement, the way
+  `adminGrantSQL` and `addModelSQL` already do. It writes only the owning user
+  and the status, clears the removal stamps, and **raises rather than guesses**
+  when the slug misses or the row is already owned by a different account:
+  reassigning that would move a stranger's whole graded record onto this one.
+* **No gate moved.** The probe is the same request the creator dashboard makes
+  anyway, with the same token; the SQL is text on a page for a person to read
+  and run. Nothing here grants anything the server did not already grant.
+
+Covered in `collective/tests_render.js`: the router is driven against a server
+whose label and rows disagree, one that is simply down, and one whose session
+has expired, and the generated SQL is checked for schema discovery, for its two
+refusals, and for `RAISE` placeholder arity.
