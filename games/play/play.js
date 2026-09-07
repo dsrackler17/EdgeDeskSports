@@ -995,7 +995,13 @@
       }
       setTimeout(function () { SOUND.whistle(); }, 230);
       if (!p.touchdown) resultCard(p);
-      milestone(p);
+      /* THE FOOTBALL DOES NOT STOP BECAUSE A CAPTION FAILED. Everything from
+         here to the end of this handler is what moves the game on — the
+         clock, the score, the next call — and the line above the numbers is
+         decoration. One of them threw once, inside this handler, and the game
+         stopped dead on the first snap of every game: no next play, no clock,
+         nothing to press. Decoration gets a net; the game does not need one. */
+      try { milestone(p); } catch (e) { if (window.console) console.warn('milestone', e); }
       ballX = drift(ballX);
     }
     padClear();
