@@ -29,6 +29,7 @@ var html=fs.readFileSync(PAGE,'utf8');
 var re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi,m,blocks=[];
 while((m=re.exec(html))!==null)if(m[1].trim())blocks.push(m[1]);
 var CODE=blocks.join('\n;\n');
+var APPSRC=CODE;   /* the page's own source, for the builders that live inside a render fn */
 
 var pass=0,fail=0,fails=[];
 /* a thunk is evaluated here, in a try: an assertion must FAIL, never crash */
@@ -2230,6 +2231,57 @@ var S=sandbox;
     chk('an explicit from/to is left exactly as asked',
       asked&&asked.back===undefined&&asked.days===undefined,{asked:asked});
     delete S.MCOdds;delete S.window.MCOdds;
+  }
+
+  /* ---- the statement that adds a model for a second sport ---------------
+     The Collective's API exposes no model creation, so a creator who wants a
+     second sport gets a statement somebody runs. It lives inside
+     renderCreatorDash, which is why nothing had ever executed it: its miss
+     path -- the branch that fires when the creator row cannot be found, the
+     one moment it has something to say -- carried `%%` where placeholders
+     were meant and `%I`, which is format()'s and not RAISE's. One placeholder,
+     two arguments, and the whole statement dies with "too many parameters
+     specified for RAISE" instead of naming the creator it could not find. */
+  {
+    var src=(function(){
+      var i=APPSRC.indexOf('function addModelSQL(');
+      if(i<0)return null;
+      var j=APPSRC.indexOf('end $$;', i);
+      if(j<0)return null;
+      var k=APPSRC.indexOf('}', j);
+      return k<0?null:APPSRC.slice(i,k+1);
+    })();
+    chk('addModelSQL is found in the page', !!src);
+    if(src){
+      var mk=new Function('sportDef','esc',src+'\nreturn addModelSQL;')(S.sportDef,S.esc);
+      var sql=mk('blerm','blerm','NFL');
+      chk('it names the creator, the sport and a model slug for both',
+        sql.indexOf('blerm')>=0&&sql.indexOf('NFL')>=0&&/blerm-nfl/.test(sql),{sql:sql.slice(0,200)});
+      chk('every RAISE in it gets one argument per placeholder',
+        raiseArity(sql).length===0,{bad:raiseArity(sql)});
+      chk('and it no longer writes %% or %I where RAISE reads only %',
+        !/raise [^\n]*%%/.test(sql)&&!/raise [^\n]*%I/.test(sql),
+        {line:(/raise exception[^\n]*/.exec(sql)||[])[0]});
+      chk('it finds the schema rather than assuming public',
+        /information_schema\.tables/.test(sql)&&sql.indexOf('public.')<0);
+      chk('it stops instead of attaching the model to whoever it can find',
+        /no creator row matched/.test(sql)&&!/limit 1\s*\)\s*$/.test(sql));
+      chk('and it will not duplicate a model the creator already has',
+        /where not exists/.test(sql));
+    }
+  }
+
+  /* The panel around it must not hand a contributor instructions for a
+     database they do not have -- the schedule loader already learned this. */
+  {
+    var panel=APPSRC.slice(APPSRC.indexOf('"add one" next to a sport with no model'),
+                           APPSRC.indexOf('addModelClose'));
+    chk('the add-a-model panel asks who is looking before it answers',
+      /var isOp=!!\(me&&me\.admin\)/.test(panel),{panel:panel.slice(0,200)});
+    chk('a contributor is given the sentence to send, not a SQL editor',
+      /addModelAsk/.test(panel)&&/needs a/.test(panel));
+    chk('and the statement itself is only rendered for somebody who can run it',
+      /\(isOp\|\|!roleKnown\)/.test(panel));
   }
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});

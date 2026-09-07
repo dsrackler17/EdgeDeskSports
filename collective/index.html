@@ -7333,7 +7333,11 @@ async function renderCreatorDash(view,me){
         +'  -- No third guess. A model attached to the wrong creator shows up in\n'
         +'  -- someone else\'s dashboard, and they cannot tell it is not theirs.\n'
         +'  if cid is null then\n'
-        +'    raise exception \'no creator row matched slug %% or name %% - find yours with: select id, slug, display_name from '+'%I'+'.creators\', \''+creatorSlug+'\', \''+creatorName+'\';\n'
+        /* RAISE knows only %. %% is a LITERAL percent and %I is format()'s,
+           not RAISE's -- so this line had one placeholder and two arguments
+           and failed with "too many parameters specified for RAISE", in the
+           one branch that exists to explain what went wrong. */
+        +'    raise exception \'no creator row matched slug % or name % - find yours with: select id, slug, display_name from %.creators\', \''+creatorSlug+'\', \''+creatorName+'\', s;\n'
         +'  end if;\n\n'
         +'  execute format($f$\n'
         +'    insert into %I.models (creator_id, slug, name, sport_code, is_listed)\n'
@@ -7491,15 +7495,49 @@ async function renderCreatorDash(view,me){
           box.className='panel';box.style.marginTop='10px';
           a.closest('.panel').appendChild(box);
         }
+        /* WHOSE DATABASE IS IT. There is no endpoint for creating a model, so
+           the only way to add one is a statement run against the Collective's
+           own database -- which the OPERATOR runs and a contributor does not
+           have. Handing every creator "run this in your Supabase SQL editor"
+           is the same mistake the schedule loader already learned not to make:
+           a person who cannot act on the instruction reads it as the product
+           being broken, and the one thing they could actually do -- ask the
+           operator -- goes unsaid.
+
+           So an operator gets the statement, and everybody else gets the
+           sentence to send, which names the two things the operator needs and
+           nothing they would have to ask back for. An account whose role this
+           page could not read (an API too old for /v1/me) gets the request
+           text plus the statement behind a disclosure, because guessing wrong
+           in either direction dead-ends somebody. */
+        var isOp=!!(me&&me.admin), roleKnown=!!me;
+        var ask=c.slug+' needs a '+(sportLongName(code)||code)+' model on the Collective.';
+        var opBlock='<p class="note" style="margin:6px 0 8px">The Collective has no endpoint for '+
+          'creating a model, so this is the statement to run once in the Supabase SQL editor. It '+
+          'finds the right schema itself, and it will not duplicate a model that already exists.</p>';
         box.innerHTML='<b>Add a '+esc(sportLongName(code))+' model</b>'+
-          '<p class="note" style="margin:6px 0 8px">The Collective has no endpoint for creating a '+
-          'model, so this is the statement to run once in your Supabase SQL editor. It finds the '+
-          'right schema itself, and it will not duplicate a model that already exists.</p>'+
-          '<textarea id="addModelSql" readonly rows="10" class="sqlbox">'+esc(sql)+'</textarea>'+
+          (isOp?opBlock
+            :'<p class="note" style="margin:6px 0 8px">A model is created by the Collective\u2019s '+
+             'operator \u2014 there is no endpoint for it, so it is not something this page can do '+
+             'for you, and it is not something you have done wrong. Send them this and it takes '+
+             'them one statement:</p>'+
+             '<div class="copybox"><div class="val">'+esc(ask)+'</div>'+
+             '<button class="btn" id="addModelAsk">Copy</button></div>'+
+             '<p class="note" style="margin:8px 0 0">Your '+esc(sportLongName(code))+' slate will '+
+             'post the moment it exists. Nothing about the file needs to change.</p>'+
+             (roleKnown?''
+               :'<details style="margin-top:10px"><summary class="note">I run this Collective '+
+                '\u2014 show me the statement</summary>'+opBlock+'</details>'))+
+          ((isOp||!roleKnown)
+            ? '<textarea id="addModelSql" readonly rows="10" class="sqlbox">'+esc(sql)+'</textarea>'
+            : '')+
           '<div style="display:flex;gap:8px;margin-top:8px">'+
-          '<button class="btn" id="addModelCopy">Copy SQL</button>'+
+          ((isOp||!roleKnown)?'<button class="btn" id="addModelCopy">Copy SQL</button>':'')+
           '<button class="ghost" id="addModelClose">Close</button></div>';
-        $('addModelCopy').onclick=function(){
+        /* Both copy buttons are optional now -- an operator gets the SQL one,
+           a contributor gets the request one -- so neither is assumed. */
+        var cp=$('addModelCopy');
+        if(cp)cp.onclick=function(){
           var t=$('addModelSql');t.select();
           try{
             if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value);
@@ -7507,6 +7545,8 @@ async function renderCreatorDash(view,me){
             toast('SQL copied');
           }catch(e){toast('Select the text and copy it');}
         };
+        var ak=$('addModelAsk');
+        if(ak)ak.onclick=function(){copyText(ask,ak);};
         $('addModelClose').onclick=function(){box.remove();};
       };
     });
