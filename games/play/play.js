@@ -527,15 +527,23 @@
 
   /* a tap on the field is a throw, if it lands on a badge */
   function wireFieldTaps() {
+    /* A TAP IS ONE TAP. A touch screen fires touchstart and then a synthetic
+       mousedown for the same finger, and both were throwing the ball: the
+       simulation ignores the second one, but the sound and the buzz fired
+       twice and it read as a stutter. */
+    var lastTap = 0;
     function at(e) {
+      var now = Date.now();
+      if (now - lastTap < 400) return;
       var t = e.changedTouches ? e.changedTouches[0] : e;
       var b = canvas.getBoundingClientRect();
       var i = stage.hitTarget(t.clientX - b.left, t.clientY - b.top);
       if (i >= 0) {
+        lastTap = now;
         SOUND.tap(); buzz('light');
         stage.throwTo(i);
         padRun();
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
       }
     }
     canvas.addEventListener('touchstart', at, { passive: false });
@@ -552,9 +560,49 @@
       seam: 'Seam', post: 'Post', corner: 'Corner', deepcross: 'Deep cross', wheel: 'Wheel' }[r] || r;
   }
 
+  /* ── THE STICK ───────────────────────────────────────────────────────────
+     THE WINDOW LISTENERS ARE BOUND ONCE, FOR THE LIFE OF THE PAGE. They used
+     to be added inside `wireStick`, which the pad calls on every snap — so by
+     the fourth quarter a single thumb drag was running sixty identical move
+     handlers, every one of them measuring the same drag and steering the same
+     man. That is the definition of a control that gets less responsive the
+     longer you play, and on a phone it is felt. The pad is rebuilt every
+     snap; the listeners look up whatever knob is on the screen now. */
   var stickState = { id: null, cx: 0, cy: 0, r: 44 };
+  function stickMove(e) {
+    if (stickState.id == null) return;
+    var t = e.changedTouches ? stickTouch(e.changedTouches) : e;
+    if (!t) return;
+    var knob = $('pdKnob');
+    var dx = t.clientX - stickState.cx, dy = t.clientY - stickState.cy;
+    var m = Math.hypot(dx, dy), r = stickState.r;
+    var nx = dx / r, ny = dy / r;
+    if (m > r) { nx = dx / m; ny = dy / m; }
+    if (knob) knob.style.transform = 'translate(' + (nx * r * 0.55) + 'px,' + (ny * r * 0.55) + 'px)';
+    /* screen down is field backwards */
+    if (stage) stage.steer(nx, -ny);
+    if (e.cancelable) e.preventDefault();
+  }
+  function stickUp() {
+    if (stickState.id == null) return;
+    stickState.id = null;
+    var knob = $('pdKnob');
+    if (knob) knob.style.transform = '';
+    if (stage) stage.steer(0, 0);
+  }
+  function stickTouch(list) {
+    var i;
+    for (i = 0; i < list.length; i++) if (list[i].identifier === stickState.id) return list[i];
+    return null;
+  }
+  window.addEventListener('touchmove', stickMove, { passive: false });
+  window.addEventListener('touchend', stickUp);
+  window.addEventListener('touchcancel', stickUp);
+  window.addEventListener('mousemove', stickMove);
+  window.addEventListener('mouseup', stickUp);
+
   function wireStick() {
-    var el = $('pdStick'), knob = $('pdKnob');
+    var el = $('pdStick');
     if (!el) return;
     function down(e) {
       var t = e.changedTouches ? e.changedTouches[0] : e;
@@ -562,39 +610,11 @@
       stickState.id = e.changedTouches ? t.identifier : 'mouse';
       stickState.cx = b.left + b.width / 2; stickState.cy = b.top + b.height / 2;
       stickState.r = b.width / 2;
-      move(e);
-      e.preventDefault();
-    }
-    function move(e) {
-      if (stickState.id == null) return;
-      var t = e.changedTouches ? find(e.changedTouches) : e;
-      if (!t) return;
-      var dx = t.clientX - stickState.cx, dy = t.clientY - stickState.cy;
-      var m = Math.hypot(dx, dy), r = stickState.r;
-      var nx = dx / r, ny = dy / r;
-      if (m > r) { nx = dx / m; ny = dy / m; }
-      knob.style.transform = 'translate(' + (nx * r * 0.55) + 'px,' + (ny * r * 0.55) + 'px)';
-      /* screen down is field backwards */
-      if (stage) stage.steer(nx, -ny);
-      e.preventDefault();
-    }
-    function up(e) {
-      stickState.id = null;
-      knob.style.transform = '';
-      if (stage) stage.steer(0, 0);
-    }
-    function find(list) {
-      var i;
-      for (i = 0; i < list.length; i++) if (list[i].identifier === stickState.id) return list[i];
-      return null;
+      stickMove(e);
+      if (e.cancelable) e.preventDefault();
     }
     el.addEventListener('touchstart', down, { passive: false });
-    window.addEventListener('touchmove', move, { passive: false });
-    window.addEventListener('touchend', up);
-    window.addEventListener('touchcancel', up);
     el.addEventListener('mousedown', down);
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
   }
   function wireActs() {
     Array.prototype.forEach.call(pad.querySelectorAll('[data-act]'), function (b) {

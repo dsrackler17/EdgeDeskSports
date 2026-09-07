@@ -918,6 +918,129 @@ function repeat(playKey, defKey, n, extra, opts) {
   chk('the recap names a player of the game', !!potg && !!potg.name);
 })();
 
+/* ── EVERY SCORING PATH ───────────────────────────────────────────────────
+   Six ways the number changes, each one worth exactly what football says it
+   is worth, each one landing on the board exactly once — and the transition
+   that used to eat one: a touchdown as the quarter expires. Running the score
+   clock before the try flipped the phase to halftime or final and the extra
+   point simply never happened, so a half ended 20–13 and came back 21–13. */
+(function scoringPaths() {
+  function fresh(seed, opts) {
+    const g = EN.createGame(Object.assign({ seed: seed, home: { name: 'H', seed: 'h' },
+      away: { name: 'A', seed: 'a' } }, opts || {}));
+    let k = 0;
+    while (g.phase !== 'play' && !g.over && k++ < 20) EN.step(g, { type: 'kickoff' });
+    return g;
+  }
+  const WORTH = { touchdown: 6, 'kick return': 6, 'extra point': 1, 'two-point': 2,
+                  'field goal': 3, safety: 2 };
+
+  /* the touchdown and the extra point, one point each time */
+  const g1 = fresh('sp-td');
+  EN.startDrive(g1, 'home', 96);
+  let guard = 0;
+  while (g1.phase === 'play' && guard++ < 12) EN.step(g1, { type: 'play', play: 'qb_sneak', formation: 'goalline', def: 'goal_line_d' });
+  chk('a touchdown puts six on the board and asks for the try',
+      g1.score.home === 6 && g1.phase === 'pat' && !!g1.pendingScore, g1.score.home + '/' + g1.phase);
+  const before = g1.score.home;
+  EN.step(g1, { type: 'pat' });
+  chk('the extra point is worth one, and only one',
+      g1.score.home === before || g1.score.home === before + 1, g1.score.home);
+  chk('and the try is cleared once it is taken', !g1.pendingScore);
+
+  /* the two-point conversion */
+  const g2 = fresh('sp-two');
+  EN.startDrive(g2, 'home', 96);
+  guard = 0;
+  while (g2.phase === 'play' && guard++ < 12) EN.step(g2, { type: 'play', play: 'qb_sneak', formation: 'goalline', def: 'goal_line_d' });
+  const b2 = g2.score.home;
+  const two = EN.step(g2, { type: 'two', play: 'power', formation: 'goalline', def: 'goal_line_d' });
+  chk('a two-point conversion is worth two, or nothing',
+      g2.score.home === b2 + (two.good ? 2 : 0), g2.score.home - b2);
+
+  /* the safety */
+  const g3 = fresh('sp-safety');
+  EN.startDrive(g3, 'home', 1);
+  guard = 0;
+  while (g3.score.away === 0 && guard++ < 60 && !g3.over) {
+    if (EN.situation(g3).phase !== 'play') break;
+    EN.step(g3, { type: 'play', play: 'dive', formation: 'goalline', def: 'goal_line_d' });
+    if (g3.ball > 6) EN.startDrive(g3, 'home', 1);
+  }
+  chk('a safety is two to the other side', g3.score.away === 0 || g3.score.away === 2, g3.score.away);
+
+  /* every score in a hundred games is a legal one, counted once */
+  let bad = 0, tds = 0, tries = 0;
+  for (let i = 0; i < 100; i++) {
+    const r = AU.simulate({ seed: 'SP' + i, difficulty: 'pro',
+      home: { name: 'H', overall: 72 + i % 12, seed: 'h' + i },
+      away: { name: 'A', overall: 72 + (i * 5) % 12, seed: 'a' + i } });
+    let h = 0, a = 0;
+    r.game.log.forEach((e) => {
+      if (e.kind === 'pat') tries++;
+      if (e.kind !== 'score') return;
+      if (WORTH[e.how] !== e.points) bad++;
+      if (e.how === 'touchdown' || e.how === 'kick return') tds++;
+      if (e.side === 'home') h += e.points; else a += e.points;
+    });
+    if (h !== r.score.home || a !== r.score.away) bad++;
+  }
+  eq('a hundred games and every score is worth what it is worth', bad, 0);
+  eq('and every touchdown got its try — including the ones the clock ended', tries, tds);
+
+  /* the transition itself: a touchdown with seconds left in the half */
+  const g4 = fresh('sp-half');
+  g4.quarter = 2; g4.clock = 400;
+  EN.startDrive(g4, 'home', 99);
+  guard = 0;
+  while (g4.phase === 'play' && guard++ < 10) {
+    EN.step(g4, { type: 'play', play: 'qb_sneak', formation: 'goalline', def: 'goal_line_d' });
+    if (g4.phase === 'play' && g4.down > 1) EN.startDrive(g4, 'home', 99);
+    g4.clock = 400;
+  }
+  chk('a touchdown puts the try on the board before the clock gets a say',
+      g4.phase === 'pat' && g4.score.home === 6, g4.phase + '/' + g4.score.home);
+  /* now the score clock has to cross the half, with the try still owed */
+  g4.clock = 15;
+  const patRes = EN.step(g4, { type: 'pat' });
+  chk('the try is taken even though it ends the half', patRes.event === 'pat');
+  chk('and the point is on the board before the half arrives',
+      g4.score.home === 6 || g4.score.home === 7, g4.score.home);
+  chk('the half then arrives', g4.phase === 'halftime' || g4.over, g4.phase);
+  chk('nothing is left pending when it does', !g4.pendingScore);
+  chk('and the half froze what the half actually was',
+      !!g4.halfBox && g4.halfBox.score.home === g4.score.home,
+      JSON.stringify(g4.halfBox && g4.halfBox.score));
+})();
+
+/* ── DIFFICULTY IS NOT A CHEAT ────────────────────────────────────────────
+   The one promise the difficulty ladder makes: every tier plays the same
+   football with the same men. What changes is how well the coach reads the
+   situation, how fast he adapts, how wide his shortlist is and whether he
+   gets fourth down right. If a tier could touch a rating, a hard game would
+   stop being a football game and start being an arithmetic apology. */
+(function difficultyIsHonest() {
+  const seen = {};
+  ['rookie', 'pro', 'allpro', 'legend'].forEach((d) => {
+    const g = EN.createGame({ seed: 'fair', difficulty: d,
+      home: { name: 'H', overall: 76, offense: 'pro_style', defense: 'four_three', seed: 'fh' },
+      away: { name: 'A', overall: 74, offense: 'spread', defense: 'zone', seed: 'fa' } });
+    seen[d] = ['home', 'away'].map(side => g[side].players.map(p =>
+      p.position + p.depth + ':' + p.overall + ':' + JSON.stringify(p.ratings)).join('|')).join('#');
+  });
+  chk('every difficulty gets the same eighty men, rated the same',
+      seen.rookie === seen.pro && seen.pro === seen.allpro && seen.allpro === seen.legend);
+  const T = AI.TIERS;
+  chk('what a tier changes is judgement, and nothing else',
+      Object.keys(T.legend).every(k => ['key', 'name', 'means'].indexOf(k) >= 0
+        || typeof T.legend[k] === 'number'),
+      Object.keys(T.legend).join(','));
+  chk('and the ladder is ordered on every dial it does change',
+      T.legend.read > T.allpro.read && T.allpro.read > T.pro.read && T.pro.read > T.rookie.read
+      && T.legend.adapt > T.rookie.adapt && T.legend.noise < T.rookie.noise
+      && T.legend.disguise > T.rookie.disguise && T.legend.fourth > T.rookie.fourth);
+})();
+
 /* ── NOTHING IMPOSSIBLE ───────────────────────────────────────────────────
    The full list lives in gridiron_invariants.js and the ten-thousand-game
    harness runs it over every population. This runs it here too, on a small
