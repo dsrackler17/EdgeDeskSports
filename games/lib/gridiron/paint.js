@@ -1068,7 +1068,7 @@
       turf: ['#2f8a52', '#1b5232'], apron: '#171d25', wall: '#212832',
       deck: ['#2b3441', '#191f28'], upper: '#111620',
       crowd: 0.62, paint: 1.00, grade: 'rgba(126,166,255,0.045)', lights: true,
-      pool: 1.00, edge: 0.62
+      pool: 0.88, edge: 0.42
     }
   };
   var WEATHER = {
@@ -1546,7 +1546,7 @@
         var u0 = (bi2 + 0.20) / nb, u1 = (bi2 + 0.80) / nb;
         var bx0 = x0 + (x1 - x0) * u0, by0 = y0 + (y1 - y0) * u0;
         var bx1 = x0 + (x1 - x0) * u1, by1 = y0 + (y1 - y0) * u1;
-        ctx.fillStyle = L.lights ? 'rgba(255,236,190,.55)' : 'rgba(212,228,244,.28)';
+        ctx.fillStyle = L.lights ? 'rgba(255,232,178,.40)' : 'rgba(206,222,240,.24)';
         quad3(ctx, cam, [bx0, by0, zB - BOWL.facade * 0.32], [bx1, by1, zB - BOWL.facade * 0.32],
                         [bx1, by1, zA + BOWL.facade * 0.28], [bx0, by0, zA + BOWL.facade * 0.28]);
         ctx.fill();

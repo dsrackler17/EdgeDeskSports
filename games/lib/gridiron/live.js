@@ -63,7 +63,10 @@
     var self = {};
     var actors = o.actors, play = o.playObj, parts = o.parts;
     /* A play with no environment can stand on the field but must never snap:
-       the between-calls preview lines eleven men up and never says hut. */
+       the between-calls preview lines eleven men up and never says hut. It
+       has to REFUSE, not merely be asked politely — a stale timer or a second
+       thumb is exactly the thing that asks. */
+    var preview = !o.env || !!o.preview;
     var env = o.env || BLANK_ENV;
     var rand = o.rand || Math.random;
     var los = o.los, ballX = o.ballX == null ? FIELD.half : o.ballX;
@@ -260,7 +263,7 @@
 
     /* ── THE SNAP ─────────────────────────────────────────────────────────── */
     self.snap = function () {
-      if (phase !== 'set') return false;
+      if (phase !== 'set' || preview) return false;
       phase = 'live'; t = 0;
       ball.holder = qb;
       if (qb) { qb.carry = play.type !== 'pass'; }

@@ -769,7 +769,7 @@
     lineUp(key, formKey, defKey, ps, sit);
     padSnap('Snap');
     seenTip('call');
-    if (set.mode === 'coach') setTimeout(doSnap, 700);
+    autoSnap();
   }
   function chooseDefense(defKey) {
     if (busy) return;
@@ -783,8 +783,22 @@
     lineUp(call.play, call.formation, defKey, ps, sit);
     padSnap('Snap');
     seenTip('defense');
-    if (set.mode === 'coach') setTimeout(doSnap, 700);
+    autoSnap();
   }
+  /* ── THE SNAP THAT MAKES ITSELF ──────────────────────────────────────────
+     In Coach mode you pick the call and the ball is snapped for you. The
+     timer that does it has to be CANCELLED the moment anything else happens,
+     because a play can be over inside its seven hundred milliseconds — and a
+     stale one then says hut over the eleven men the page had already lined up
+     for the NEXT down. */
+  var autoT = null;
+  function cancelAuto() { if (autoT) { clearTimeout(autoT); autoT = null; } }
+  function autoSnap() {
+    cancelAuto();
+    if (set.mode !== 'coach') return;
+    autoT = setTimeout(function () { autoT = null; doSnap(); }, 700);
+  }
+
   function lineUp(playKey, formKey, defKey, ps, sit) {
     var offT = G.teamOf(game, sit.offense), defT = G.teamOf(game, sit.defense);
     stage.setUserSide(sit.offense === me ? 'off' : 'def');
@@ -818,6 +832,7 @@
     say('');
   }
   function doSnap() {
+    cancelAuto();
     if (busy || stage.phase() !== 'set') return;
     busy = true;
     readEl.hidden = true;
@@ -828,7 +843,12 @@
     var sit = G.situation(game);
     var mine = sit.offense === me;
     padClear();
-    stage.snapNow();
+    /* THE GAME MUST NEVER BE ABLE TO STOP. This holds the controls shut until
+       the whistle, so a second tap cannot snap the same ball twice — which
+       means a snap that could not happen has to give the lock back, and a
+       whistle that never comes has to be one anyway. */
+    if (!stage.snapNow()) { busy = false; nextCall(); return; }
+    armWhistle();
     if (set.mode === 'coach' || !mine) {
       if (!mine && set.mode === 'play') padDefense();
       return;
@@ -843,6 +863,28 @@
       seenTip('read');
     }
   }
+
+  /* ── THE WHISTLE THAT ALWAYS COMES ───────────────────────────────────────
+     The simulation blows a play dead after twelve seconds of its own clock
+     and cannot run forever. But a lock is not a play: if anything at all goes
+     wrong between the tap and the result — a frame loop stopped by a phone
+     locking, a stage that never reported back — the game would sit on the
+     same down for ever with no way out but a reload. So the page keeps its
+     own watch on the snap it is holding, and the whistle goes either way. */
+  var whistleT = null;
+  function armWhistle() {
+    clearWhistle();
+    whistleT = setTimeout(function () {
+      whistleT = null;
+      if (!busy) return;
+      try { if (stage && stage.stop) stage.stop(); } catch (_) {}
+      busy = false;
+      say('');
+      paintScore();
+      nextCall();
+    }, 22000);
+  }
+  function clearWhistle() { if (whistleT) { clearTimeout(whistleT); whistleT = null; } }
 
   /* the clock on the pocket: not a deadline, a warning */
   function rushBar() {
@@ -911,6 +953,7 @@
   }
 
   function onEnd(kind, res) {
+    clearWhistle();
     /* the simulation settled it; the engine books it, and only now do down,
        distance, clock and the season move */
     var p = (set.mode === 'play' && res && res.live) ? commit(res) : commitCoach();
@@ -1139,6 +1182,9 @@
   var kickSkip = null;
   function runKickoff(sit, done) {
     if (!stage || !stage.kickoff) { done(); return; }
+    /* one sequence at a time: a second tap on the button must not leave two
+       of them running their own timers over the same field */
+    if (kickSkip) { kickSkip(); return; }
     busy = true;
     var recv = sit.offense === me ? teams.me : teams.opp;
     var kick = sit.offense === me ? teams.opp : teams.me;
@@ -1217,6 +1263,7 @@
       color: kitFor('me').primary, hold: 1400 });
   }
   function nextCall() {
+    cancelAuto();
     if (game.over) { finalScreen(); return; }
     var sit = G.situation(game);
     paintScore();
@@ -1273,7 +1320,10 @@
     stage.teams(kitFor(sit.offense === me ? 'me' : 'opp'), kitFor(sit.offense === me ? 'opp' : 'me'),
       (sit.offense === me ? teams.me : teams.opp).name, (sit.offense === me ? teams.opp : teams.me).name,
       sit.offense !== me);
-    stage.lineUp({ play: guess.key, formation: gf, def: 'base_3', los: sit.ball,
+    /* THE ELEVEN WHO ARE JUST STANDING THERE. Between calls the field is not
+       empty — it holds the look the page guesses you will see — but that
+       formation is a picture and must never be snappable, whatever asks. */
+    stage.lineUp({ play: guess.key, formation: gf, def: 'base_3', los: sit.ball, preview: true,
       firstDown: Math.min(100, sit.ball + sit.toGo), ballX: ballX, strong: 0,
       env: G.prepare({ off: G.teamOf(game, sit.offense), def: G.teamOf(game, sit.defense),
         rand: game.aiRand || game.rand, tick: game.tick, playKey: guess.key, formKey: gf,

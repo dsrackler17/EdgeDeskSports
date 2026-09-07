@@ -498,7 +498,8 @@
          contact, the football and the result. */
       sim = LIVE.Play({
         actors: actors, playObj: play, parts: defParts, formKey: formKey,
-        los: los, ballX: ballX, env: o.env, rand: o.rand || Math.random,
+        los: los, ballX: ballX, env: o.env, preview: !!o.preview,
+        rand: o.rand || Math.random,
         userSide: userSide, userMode: userMode,
         events: {
           onSnap: null,
@@ -704,7 +705,11 @@
       targets = false; targetBoxes = [];
       return true;
     };
-    self.snapNow = function () { if (phase === 'set') beginSnap(); };
+    /* AND IT SAYS WHETHER IT ACTUALLY SNAPPED. A caller that locks its own
+       controls on the way in has to know whether the ball moved, or a snap
+       that could not happen leaves the game holding a lock nobody will ever
+       release. */
+    self.snapNow = function () { return phase === 'set' ? beginSnap() : false; };
     /* ── TARGETS ─────────────────────────────────────────────────────────
        The throw buttons live ON THE RECEIVERS, out on the grass, not in a
        row along the bottom of the screen. You look at the field, see who is
@@ -741,14 +746,14 @@
        thumbs and the elapsed time, and draws whatever comes back. It does
        not know how a tackle is decided and it must not. */
     function beginSnap() {
-      if (!sim) return;
+      if (!sim) return false;
       var pi;
       for (pi = 0; pi < actors.length; pi++) {
         actors[pi].ox = 0; actors[pi].oy = 0;
         actors[pi].vx = 0; actors[pi].vy = 0;
         actors[pi].move = null;
       }
-      if (!sim.snap()) return;
+      if (!sim.snap()) return false;
       phase = 'live'; t = 0;
       /* THE SNAP HAS TO LAND. A kick in the lens and a handful of turf off
          the line, on the frame the ball moves. */
@@ -756,6 +761,7 @@
       puff(ballX, los, 0.34);
       if (events.onSnap) events.onSnap();
       start();
+      return true;
     }
 
     /* ── THE LOOP ────────────────────────────────────────────────────────── */
@@ -957,7 +963,7 @@
            drops, which is what makes a long run feel fast. */
         wide = breakaway ? 24 : redzone ? 26 : 29;
         back = breakaway ? 58 : 68;
-        kfWant = breakaway ? 1.98 : redzone ? 1.74 : 1.80;
+        kfWant = breakaway ? 2.32 : redzone ? 2.02 : 2.10;
         wantX = tx;
         /* A SCORE IS FOLLOWED IN. Cutting the moment he crosses the line
            leaves the whole celebration happening off the top of the picture,
@@ -975,7 +981,11 @@
          makes people put the phone down. */
       var k = snap ? 1 : 1 - Math.pow(0.010, dt);
       var kz = snap ? 1 : 1 - Math.pow(0.14, dt);
-      var kb = snap ? 1 : 1 - Math.pow(0.26, dt);
+      /* THE DOLLY IS SLOWER THAN THE PAN AND FASTER THAN IT WAS. A shot
+         that is still framed for the pre-snap look half a second after the
+         snap is a shot that shows you forty yards of empty grass while the
+         run happens at the bottom of it. */
+      var kb = snap ? 1 : 1 - Math.pow(0.06, dt);
       cam.x += (wantX - cam.x) * k;
       cam.y += (wantY - cam.y) * k;
       cam.wide += (wide - cam.wide) * kz;
