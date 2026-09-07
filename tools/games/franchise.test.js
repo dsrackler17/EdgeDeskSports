@@ -2768,6 +2768,34 @@ fresh();
   has(README, 'playbook_v1', 'the README documents the playbook');
   has(README, 'a formation that lies', 'and what a trick play actually needs');
 
+  /* ═══ 27. TEN THOUSAND SEASONS ═══════════════════════════════════════════
+     The measurement that found two things no smaller one had: careers that
+     ended permanently, and an arc that ran the wrong way for the player who
+     only plays. */
+  eq('the offseason restocks to the plan', F.OFFSEASON_VERSION, 'offseason_v2');
+  has(README, '38.5%', 'the README says how many careers ended');
+  has(README, 'never play again', 'and what a bricked franchise actually is');
+  has(README, 'rookie_v2', 'and names the rookie fix');
+  chk('the roster floor is the same table a founding roster is built from',
+    /jsonb_array_elements\(public\.franchise_pool_plan\(\)\) pp/.test(SQL));
+  chk('and a score can never be keyed on a player who is not there',
+    /create or replace function public\.franchise_anybody/.test(SQL)
+    && /if scorer is not null then/.test(SQL));
+
+  /* the reputation lift, mirrored and pinned */
+  chk('the client is not asked to compute the lift: it is the server\'s own',
+    !/rookie_lift/i.test(FJS));
+  chk('the lift is capped at both ends and rises with both inputs',
+    /greatest\(0, least\(14,/.test(SQL)
+    && /floor\(greatest\(0, coalesce\(p_rank, 1\) - 1\) \* 0\.25\)::int/.test(SQL)
+    && /floor\(greatest\(0, least\(100, coalesce\(p_standing, 0\)\)\) \/ 12\.0\)::int/.test(SQL));
+  chk('and the report proves the rule rather than the run',
+    /select 36, 'the roster is '/.test(SQL)
+    && /public\.franchise_rookie_lift\(9999, 100\) = 14/.test(SQL));
+
+  has(README, 'The game is **open to everyone**', 'the README states the age policy');
+  has(README, 'nothing is collected', 'and that nothing is collected');
+
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });
 

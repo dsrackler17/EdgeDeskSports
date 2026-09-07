@@ -2567,6 +2567,152 @@ its own formation's tell, no scheme carries every set, and what the defense
 is about to line up in is reachable by no client role — seeing their answer
 before you commit would be the whole game.
 
+## Ten thousand seasons
+
+Everything above was measured. This is what happened when the game was left
+to run — franchises playing through the **public moves**, the same doors a
+player uses, for eighty seasons each — and it found two things that no
+smaller measurement had.
+
+### One — 38.5% of careers ended, permanently
+
+Not "the team got bad". **The franchise could never play again.** Every
+attempt to play the next game threw, for ever.
+
+| | |
+| --- | --- |
+| franchises measured | 26 |
+| bricked before season 80 | **10 (38.5%)** |
+| earliest death | **season 5** |
+
+The cause was one line in `franchise_offseason`. It signed one rookie per man
+who retired at a position that **still had somebody active**, because its
+outer loop read:
+
+```sql
+for v_pos in select distinct position from public.game_players
+              where franchise_id = p_franchise and status = 'active'
+```
+
+The moment the last quarterback retired, `QB` stopped appearing in that list
+and could never be signed again. Across fifteen franchises:
+
+| position | franchises with none | average available |
+| --- | --- | --- |
+| **K** | 14 of 15 | 0.1 |
+| **P** | 14 of 15 | 0.1 |
+| **QB** | 9 of 15 | 0.8 |
+
+The thin positions — the ones a roster carries one or two of — empty out
+almost universally, and nothing ever refilled them.
+
+Then the kill: `franchise_sim` credits a touchdown by building a JSON key out
+of the scorer's id. With nobody at the position that id is null, jsonb throws
+`argument 1: key must not be null`, and the game dies. Not that game — every
+game after it.
+
+**Two fixes, and the game needs both.**
+
+*The floor* (`offseason_v2`): the offseason now walks `franchise_pool_plan()`
+— the same table a founding roster is built from, eleven positions summing to
+38 — and signs **up to it** rather than one-for-one. An empty position is now
+the loudest thing in the loop rather than an invisible one.
+
+*The belt* (`franchise_anybody`): a score has to land on a name. Asked for a
+man who is not there, the lineup offers the next at that position, then the
+best player left, and skips the tally rather than keying it on nobody. **A
+thin roster is a bad team; it is never a dead one.**
+
+| | before | after |
+| --- | --- | --- |
+| careers reaching season 80 | 61.5% | **100%** |
+| rosters missing a position | 14 of 15 | **0** |
+
+One honest consequence: a position left short by a **trade** is topped up too,
+so you cannot run a deliberately thin roster. The replacement is a rookie, so
+trading a good lineman away still costs you the lineman — it just no longer
+costs you the body.
+
+### Two — just playing made you worse
+
+With careers no longer dying, the arc underneath was visible, and it ran the
+wrong way:
+
+| season | 1 | 3 | 5 | 10 | 20 | 40 | 60 | 80 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| team overall | 69.7 | 70.4 | 68.9 | 66.1 | 62.1 | 61.9 | 62.1 | **62.2** |
+| wins | 5.73 | 5.53 | 4.20 | 4.67 | 3.87 | 4.13 | 3.60 | 4.60 |
+| standing | 46 | 54 | 55 | 46 | 29 | 28 | 27 | **27** |
+
+A player who simply turned up and played got **worse for eighty seasons** and
+settled eight points below the team he was handed.
+
+It was not that replacements were worse than the men they replaced — rookies
+signed at **55.1** against retirements leaving at **53.2**. The pool itself
+was the ceiling: a rookie's level was pegged to `lowest`, the **worst backup
+in a founding roster**, for ever, whatever the franchise had become. By season
+eighty every man on the roster was an offseason rookie (608 of 608), so every
+team converged downward to that pool.
+
+So a rookie now arrives at what the franchise's **reputation** commands
+(`rookie_v2`), exactly as a coach has since Phase 12: a quarter of a point per
+rank, one per twelve points of standing, capped at fourteen. Turning up raises
+the rank and winning raises the standing — the two things a passive player
+actually does are the two things that lift the men he signs. The cap is what
+stops the loop (better rookies → better standing → better rookies) running
+away.
+
+| season | 1 | 3 | 5 | 10 | 20 | 30 | 40 | 60 | 80 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| team overall | 69.8 | 70.4 | 69.4 | 68.5 | 68.6 | 69.8 | 70.5 | 73.0 | **74.1** |
+| best player | 74.9 | 78.4 | 81.6 | 80.8 | 82.9 | 83.9 | 83.5 | 86.5 | **89.0** |
+| standing | 45 | 56 | 58 | 54 | 47 | 45 | 57 | 60 | **63** |
+
+Instead of decaying to 62, a franchise dips slightly around season ten and
+then **climbs to 74**, with its best player going 75 → 89. Wins hold near
+4.8 of 8 throughout, which is the league doing its job: `league_v1` draws
+opponents around your rating, so getting better means playing better teams.
+The standing and the rank are what measure the climb.
+
+### Two things the run did NOT find, and I am not fixing
+
+**Coach Points pile up to 851 unspent.** That is my *harness*, not a player:
+the bot only calls "play" and never reads the HQ, which already carries a
+"Staff: seats to fill" line the moment you have the points for one. There is
+no fault here to fix.
+
+**A pure-play franchise earns 11 of the 45 achievements and then plateaus.**
+Also correct. The other 34 are behind the front office, the draft, friends
+and conferences — including `dynasty_80`, "fielded a roster rated 80
+overall", which a franchise that only plays now peaks below at 74. That
+achievement is the one that says you actually built something.
+
+### What made it fun for anyone
+
+Not a tutorial. The two bugs *were* the accessibility problem: a game that
+ends 38.5% of careers without explanation, and makes you worse for the one
+thing a newcomer knows how to do, is not fun for anybody — and it is worst
+for the player who does not yet know there is a front office. Both are gone.
+
+## The age gate
+
+The game is **open to everyone**, and nothing about it is gated: no game, no
+page, no score, no franchise, and nothing is asked on arrival.
+
+What is gated is the one door **out** of the game. EdgeDesk's research
+terminal is a betting-research product and carries a 21+ line in every footer
+on this site. So it is asked for exactly once, at the moment somebody reaches
+for it:
+
+* one delegated listener catches **every** link to the terminal, including
+  ones a page adds later, so a new link cannot quietly skip the gate;
+* the programmatic opener goes through the same check, not a second one;
+* a **no** is remembered, never asked twice, and changes nothing about the
+  game — the dialog says so in those words;
+* **nothing is collected**: no name, no date of birth, nothing sent anywhere.
+  The stored shape is `{answer, at}` and the tests assert it holds nothing
+  else.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on
@@ -2580,6 +2726,6 @@ simulator, the offseason, the market, the conference, injuries, the bowl,
 trades and the staff are each versioned (`sim_v4`, `offseason_v2`,
 `market_v1`, `conference_v1`, `injury_v1`, `bowl_v1`, `trade_v1`,
 `staff_v2`, `scouting_v1`, `development_v1`, `league_v1`, `rank_v1`, `packs_v1`,
-`career_v1`, `snap_v1`, `moment_v1`, `clock_v1`, `defense_v1`, `playbook_v1`) so a retuned one is a new version and old boxes, old reports,
+`career_v1`, `snap_v1`, `moment_v1`, `clock_v1`, `defense_v1`, `playbook_v1`, `rookie_v2`) so a retuned one is a new version and old boxes, old reports,
 old classes, old tables, old deals and old coaches stay true to the rules
 they were played under.
