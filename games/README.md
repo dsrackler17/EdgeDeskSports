@@ -2739,6 +2739,38 @@ And the gateway's words are no longer read out to a player: a `JWT` error
 becomes *"Your sign-in expired. Sign in again to save what you play — the game
 keeps going either way."*
 
+### Checking the token was still a guess
+
+That rule fixed the reported case and left three it could not see, because
+reading `exp` before sending is only ever a **guess** about what the gateway
+will accept:
+
+| the stored token | with the expiry check alone | now |
+| --- | --- | --- |
+| expired | founds | founds |
+| expiring inside 30 seconds | founds | founds |
+| **unparseable** | **`JWT expired`** | founds |
+| **no `sub` claim** | **`JWT expired`** | founds |
+| **looks live, server says no** | **`JWT expired`** | founds |
+
+The first two the check catches. The next two it does not: `claims()` returns
+null for a token it cannot read, and `past(null)` is false — so the dead token
+went out anyway, which was the original bug wearing a different coat. The last
+one **no** pre-check can catch: a device clock that disagrees with the server's,
+or a key rotated underneath us, produces a token this client believes and the
+gateway refuses.
+
+So the client stopped guessing. **A 401 is the answer**, and the same bearer
+cannot get a different one:
+
+```js
+if (r.status === 401 && !anon && s) return send(fn, args, true);
+```
+
+The call goes out once more with the public key — which is exactly what the
+device secret already on it is for. The retry is the last word: an anonymous
+401 is a real refusal and is not asked twice.
+
 ## The age gate
 
 The game is **open to everyone**, and nothing about it is gated: no game, no

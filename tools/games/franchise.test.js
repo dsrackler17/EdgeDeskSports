@@ -2934,11 +2934,15 @@ fresh();
   chk('the home page decides its hero on the same rule the library uses',
     /clm\.exp&&clm\.exp\*1000<Date\.now\(\)/.test(HOME));
   chk('and the transport never presents a token it has already called dead',
-    /function live\(\)/.test(SOCIALJS) && /var s = live\(\);/.test(SOCIALJS)
+    /function live\(\)/.test(SOCIALJS) && /var s = anon \? null : live\(\);/.test(SOCIALJS)
     && !/var s = session\(\);\s*\n\s*var h = \{/.test(SOCIALJS));
+  chk('a token this client cannot read is not one it may present either',
+    /function live\(\)[\s\S]{0,400}if \(!p\) return null;/.test(SOCIALJS));
+  chk('and a 401 ends the guessing: one retry with the public key, never two',
+    /if \(r\.status === 401 && !anon && s\) return send\(fn, args, true\);/.test(SOCIALJS));
   chk('an expired session is kept, not cleared — the refresh token is the terminal\'s to spend',
-    /function live\(\)[\s\S]{0,240}return past\(claims\(s\)\) \? null : s;/.test(SOCIALJS)
-    && !/live[\s\S]{0,200}removeItem/.test(SOCIALJS));
+    !/live[\s\S]{0,200}removeItem/.test(SOCIALJS)
+    && !/(401|expired)[\s\S]{0,160}removeItem\(SESSION_KEY\)/.test(SOCIALJS));
   has(README, 'JWT expired', 'the README records what the player actually saw');
 
   has(README, 'The game is **open to everyone**', 'the README states the age policy');
