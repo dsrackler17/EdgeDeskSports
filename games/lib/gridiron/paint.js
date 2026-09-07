@@ -386,11 +386,15 @@
       /* a receiver on the far numbers has his badge on him but his name
          pulled back inside the frame, because half a name is no name */
       var nx = Math.max(nw / 2 + 3, Math.min(cam.w - nw / 2 - 3, sx));
-      ctx.fillStyle = 'rgba(8,12,17,.78)';
-      roundRect(ctx, nx - nw / 2, cy - r - nf * 1.55, nw, nf * 1.25, nf * 0.5);
-      ctx.fill();
-      ctx.fillStyle = '#dfe6ef';
-      ctx.fillText(o.name, nx, cy - r - nf * 0.92);
+      /* A CAPTION, NOT A CHIP. Three solid black pills over the field make the
+         picture UI; the same three names set light over the grass, with just
+         enough shadow to be read, leave the football first. */
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(6,10,14,.72)';
+      ctx.lineWidth = nf * 0.42;
+      ctx.strokeText(o.name, nx, cy - r - nf * 0.72);
+      ctx.fillStyle = 'rgba(233,240,248,.88)';
+      ctx.fillText(o.name, nx, cy - r - nf * 0.72);
     }
     ctx.restore();
     return { x: sx, y: cy, r: r * 1.7 };
@@ -487,19 +491,19 @@
   var LIGHT = {
     day: {
       sky: ['#5f7d9c', '#8fa9bf'], haze: 'rgba(150,175,196,',
-      turf: ['#1e5130', '#1a4629'], apron: '#2b3a46', wall: '#39485a',
+      turf: ['#276139', '#194226'], apron: '#2b3a46', wall: '#39485a',
       deck: ['#46566a', '#33404f'], upper: '#232e3c',
       crowd: 1.00, paint: 0.90, grade: null, lights: false
     },
     dusk: {
       sky: ['#2c3550', '#7a5a63'], haze: 'rgba(150,124,120,',
-      turf: ['#1b4a2c', '#173f25'], apron: '#2a3038', wall: '#3a3a46',
+      turf: ['#225a33', '#153a22'], apron: '#2a3038', wall: '#3a3a46',
       deck: ['#454150', '#2f2d3a'], upper: '#20202c',
       crowd: 0.82, paint: 0.82, grade: 'rgba(255,150,90,0.07)', lights: true
     },
     night: {
       sky: ['#05070d', '#0c1220'], haze: 'rgba(70,90,120,',
-      turf: ['#1d5733', '#17482a'], apron: '#1b2129', wall: '#242c37',
+      turf: ['#256a3d', '#154226'], apron: '#1b2129', wall: '#242c37',
       deck: ['#2a3240', '#1a2029'], upper: '#12171f',
       crowd: 0.60, paint: 1.00, grade: 'rgba(120,160,255,0.05)', lights: true
     }
@@ -559,15 +563,46 @@
   /* one bank of seats: `edge` gives the inner and outer rails in world space
      as functions of the position along the stand */
   function bank(ctx, cam, o) {
-    var L = o.light, n = o.count || 260, i, s = seats();
+    /* HOW MANY PEOPLE DEPENDS ON HOW BIG THE STAND IS ON SCREEN. A fixed
+       count fills a distant bowl and leaves a close one as a bare grey slab,
+       which is what the far stand looked like from inside the red zone. */
+    var L = o.light, i, s = seats();
+    var area = Math.abs((o.bottom - o.top)) * cam.w;
+    var n = clamp(Math.round(area / 21), 140, 1900);
+    if (o.count) n = clamp(Math.round(n * (o.count / 600)), 120, 2200);
     var g = ctx.createLinearGradient(0, o.top, 0, o.bottom);
     g.addColorStop(0, L.deck[1]);
-    g.addColorStop(1, L.deck[0]);
+    g.addColorStop(0.55, L.deck[0]);
+    g.addColorStop(1, shade(L.deck[0], -0.18));
     ctx.fillStyle = g;
     ctx.fill();                       /* the caller left the deck path ready */
 
     var excite = o.excite || 0, tick = o.tick || 0;
-    for (i = 0; i < n; i++) {
+    /* MOST OF A STAND IS OFF THE EDGE OF THE PICTURE. Spreading a fixed budget
+       of people evenly over the whole deck put nearly all of them outside the
+       frame and left the visible sliver a bare grey slab — which is exactly
+       what the far bowl looked like from the red zone. So keep drawing
+       candidates until enough of them have actually landed on screen.
+
+       And ONE FILL PER COLOUR, NOT PER PERSON: eighty thousand fillStyle
+       changes are eighty thousand canvas state changes, and that — not the
+       rectangles — is what made the establishing shot cost thirty-five
+       milliseconds a frame. Each seat goes into the path of its colour
+       bucket, and each bucket is filled once. */
+    var BUCKETS = 14, bucket = [], bi;
+    for (bi = 0; bi < BUCKETS; bi++) bucket.push(null);
+    function bucketOf(k) {
+      if (!bucket[k]) { bucket[k] = []; }
+      return bucket[k];
+    }
+
+    var drawn = 0, tries = 0, cap = n * 7;
+    for (i = 0; drawn < n && tries < cap; i++, tries++) {
+      /* AND GIVE UP ON A STAND THAT IS NOT IN THE PICTURE. From the play lens
+         the side bowls are entirely off the edge of the frame; without this
+         the search for somewhere to put them costs forty thousand rejected
+         candidates a frame, every frame, for nothing. */
+      if (tries === 260 && drawn < 3) break;
       var d = s[(i + (o.offset || 0)) % s.length];
       /* PEOPLE SIT IN ROWS. Scattered uniformly they read as confetti; snapped
          to fourteen tiers with a little slop they read as a stand. */
@@ -578,6 +613,7 @@
       if (pt.y < o.yNear) continue;
       var sx = cam.sx(pt.x, pt.y), sy = cam.sy(pt.y, pt.z);
       if (sx < -8 || sx > cam.w + 8 || sy < -8 || sy > cam.h + 8) continue;
+      drawn++;
       /* a seat is about a third of a yard across; the floor keeps the far
          rows from disappearing into single sub-pixel specks that read as
          stars rather than as eighty thousand people */
@@ -585,12 +621,27 @@
       /* the ones on their feet bounce; the rest are a texture */
       var up = d[2] < excite;
       var bob = up ? Math.sin(tick * 7 + d[3] * 40) * sz * 0.9 : 0;
-      var lum = (0.42 + d[2] * 0.52) * L.crowd;
-      ctx.fillStyle = d[3] < 0.30 && o.tint
-        ? rgba(o.tint, (0.30 + d[2] * 0.45) * L.crowd)
-        : 'rgba(' + Math.round(150 * lum + 40) + ',' + Math.round(155 * lum + 42)
-          + ',' + Math.round(170 * lum + 48) + ',' + (0.55 + d[2] * 0.4) + ')';
-      ctx.fillRect(sx - sz / 2, sy - sz - bob, sz * 0.86, sz * (up ? 1.45 : 1.1));
+      /* which shade of the crowd he is, and whether he is wearing a club */
+      var band = d[2] < 0.34 ? 0 : d[2] < 0.67 ? 1 : 2;
+      var key = d[3] < 0.20 ? 9 + band : d[3] < 0.32 ? 12 + (band > 1 ? 1 : band) : band * 3 + (up ? 1 : 0);
+      bucketOf(key).push(sx - sz / 2, sy - sz - bob, sz * 0.86, sz * (up ? 1.45 : 1.1), d[2]);
+    }
+    /* A CROWD IS MOSTLY DARK. Eighty thousand coats read as one deep mass
+       with faces and shirts catching the light out of it — paint them all
+       bright and the stand turns into television static, which is what the
+       first pass looked like. A third of them wear one club or the other. */
+    for (bi = 0; bi < BUCKETS; bi++) {
+      var list = bucket[bi];
+      if (!list || !list.length) continue;
+      var mid = list[4];                        /* the first seat sets the shade */
+      var lum = (0.16 + mid * 0.62) * L.crowd;
+      ctx.fillStyle = bi >= 12 ? rgba(o.tint2 || '#9aa6b8', (0.26 + mid * 0.44) * L.crowd)
+        : bi >= 9 ? rgba(o.tint || '#9aa6b8', (0.26 + mid * 0.44) * L.crowd)
+        : 'rgba(' + Math.round(158 * lum + 26) + ',' + Math.round(162 * lum + 29)
+          + ',' + Math.round(178 * lum + 36) + ',' + (0.42 + mid * 0.46) + ')';
+      ctx.beginPath();
+      for (i = 0; i < list.length; i += 5) ctx.rect(list[i], list[i + 1], list[i + 2], list[i + 3]);
+      ctx.fill();
     }
   }
 
@@ -608,6 +659,88 @@
     ctx.fillStyle = sg;
     ctx.fillRect(0, 0, W, H);
 
+    /* ── WHAT THE LIGHTS DO TO THE SKY ─────────────────────────────────
+       A lit stadium at dusk does not sit under a clean gradient: it throws
+       enough light back up that the air above the rim glows and the sky
+       nearest the roofline is the brightest part of it. Drawn before any of
+       the structure, so the bowl paints over whatever of it is not sky. */
+    if (L.lights) {
+      var rimY = cam.sy(yFar + BOWL.endDeep, BOWL.high + 9);
+      if (rimY > 0 && rimY < H) {
+        /* it hugs the rim: light thrown up off a bowl falls away fast, and a
+           band half the picture tall stops being a glow and becomes fog */
+        var top0 = Math.max(0, rimY - H * 0.30);
+        var gl = ctx.createLinearGradient(0, top0, 0, rimY);
+        gl.addColorStop(0, L.haze + '0)');
+        gl.addColorStop(0.5, L.haze + '0.13)');
+        gl.addColorStop(1, L.haze + '0.34)');
+        ctx.fillStyle = gl;
+        ctx.fillRect(0, top0, W, rimY - top0);
+        /* and the masts bloom over the corners, where they stand */
+        [0.12, 0.88].forEach(function (fx) {
+          var r0 = W * 0.46;
+          var bl = ctx.createRadialGradient(W * fx, rimY - H * 0.02, 2, W * fx, rimY - H * 0.02, r0);
+          bl.addColorStop(0, 'rgba(255,247,220,.30)');
+          bl.addColorStop(0.45, 'rgba(255,247,220,.09)');
+          bl.addColorStop(1, 'rgba(255,247,220,0)');
+          ctx.fillStyle = bl;
+          ctx.fillRect(0, Math.max(0, rimY - r0), W, r0 + 4);
+        });
+      }
+    }
+
+    /* ── THE FAR STAND, WHEN THE LENS CANNOT REACH IT ────────────────────
+       From the play camera the real bowl is off the top of the frame: the
+       ground beyond the back line projects to negative screen y, and raising
+       it only pushes it further up. Everything above the end line is sky, and
+       a flat band of sky is exactly what "the field floats in empty space"
+       looks like.
+
+       So where the geometry cannot go, a backdrop does: a stand painted in
+       screen space, anchored to the back line, sized to whatever room is
+       left. It is a matte painting and it is honest about being one — the
+       wide shot below draws the same stadium for real. */
+    var line = cam.sy(FIELD.length + FIELD.endzone);
+    /* ONLY WHERE THE REAL ONE CANNOT BE SEEN. From the wide shot the bowl IS
+       in frame, and painting the matte over it laid a hard horizontal seam
+       across the real stand. If the top of the far bowl projects inside the
+       picture, the geometry has it covered and the backdrop stands down. */
+    var bowlTop = cam.sy(yFar + BOWL.endDeep, BOWL.high);
+    if (line > 6 && bowlTop < 0) {
+      var top = Math.max(0, line - Math.min(H * 0.42, line));
+      var band = line - top;
+      var bg = ctx.createLinearGradient(0, top, 0, line);
+      bg.addColorStop(0, L.upper);
+      bg.addColorStop(0.35, L.deck[1]);
+      bg.addColorStop(1, L.deck[0]);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, top, W, band);
+      /* the roofline, and the vomitories punched through it */
+      ctx.fillStyle = L.upper;
+      ctx.fillRect(0, top, W, Math.max(2, band * 0.14));
+      var sSeats = seats(), i2, drawn2 = 0;
+      for (i2 = 0; i2 < 2600 && drawn2 < Math.round(W * band / 26); i2++) {
+        var q = sSeats[i2 % sSeats.length];
+        var rows = 16;
+        var vv = (Math.floor(q[1] * rows) + 0.3 + q[2] * 0.4) / rows;
+        var yy = top + band * (0.18 + vv * 0.78);
+        var xx = q[0] * W;
+        var szz = 1.6 + q[2] * 1.4;
+        var upp = q[2] < excite;
+        var bb = upp ? Math.sin(tick * 7 + q[3] * 40) * szz * 0.8 : 0;
+        var lm = (0.42 + q[2] * 0.52) * L.crowd;
+        ctx.fillStyle = q[3] < 0.28 && o.homeColor
+          ? rgba(o.homeColor, (0.30 + q[2] * 0.45) * L.crowd)
+          : 'rgba(' + Math.round(150 * lm + 40) + ',' + Math.round(155 * lm + 42)
+            + ',' + Math.round(170 * lm + 48) + ',' + (0.5 + q[2] * 0.4) + ')';
+        ctx.fillRect(xx, yy - bb, szz * 0.85, szz * (upp ? 1.4 : 1.1));
+        drawn2++;
+      }
+      /* the wall the crowd sits behind */
+      ctx.fillStyle = L.wall;
+      ctx.fillRect(0, line - Math.max(3, band * 0.10), W, Math.max(3, band * 0.10));
+    }
+
     /* ── THE FAR END: apron, wall, bowl ──────────────────────────────── */
     var fy = yFar, fd = yFar + BOWL.endDeep;
     ctx.fillStyle = L.upper;
@@ -617,7 +750,7 @@
     quad3(ctx, cam, [-46, fy, BOWL.wall], [hw + 46, fy, BOWL.wall],
                     [hw + 62, fd, BOWL.high], [-62, fd, BOWL.high]);
     bank(ctx, cam, { light: L, tick: tick, excite: excite, count: 420, offset: 0,
-      top: cam.sy(fd, BOWL.high), bottom: cam.sy(fy, BOWL.wall), yNear: yNear, tint: o.homeColor,
+      top: cam.sy(fd, BOWL.high), bottom: cam.sy(fy, BOWL.wall), yNear: yNear, tint: o.homeTint || o.homeColor, tint2: o.awayTint || o.awayColor,
       at: function (t, u) {
         return { x: -46 + t * (hw + 92) + (t - 0.5) * u * 32,
                  y: fy + u * BOWL.endDeep,
@@ -643,7 +776,7 @@
       bank(ctx, cam, { light: L, tick: tick, excite: excite, count: 900,
         offset: side < 0 ? 500 : 900,
         top: cam.sy(yFar, BOWL.high), bottom: cam.sy(yNear, BOWL.wall),
-        yNear: yNear, tint: o.homeColor,
+        yNear: yNear, tint: o.homeTint || o.homeColor, tint2: o.awayTint || o.awayColor,
         at: function (t, u) {
           return { x: edge + u * (out - edge),
                    y: yNear + t * (yFar - yNear),
@@ -826,11 +959,15 @@
      instead of in front of them. */
   function atmosphere(ctx, cam, o) {
     var L = lightOf(o.light), W = cam.w, H = cam.h;
-    var fade = cam.sy(cam.y + 4);
+    /* HAZE IS DISTANCE, NOT HEIGHT ON THE SCREEN. Fading everything above the
+       line of scrimmage washed the end zone thirty yards away into a pink rug
+       — the club's paint disappeared under it. Only what is a long way past
+       the shot gets any, and much less of it. */
+    var fade = cam.sy(cam.y + 30);
     if (fade < 2) return;
     var g = ctx.createLinearGradient(0, 0, 0, fade);
-    g.addColorStop(0, L.haze + '0.38)');
-    g.addColorStop(0.55, L.haze + '0.13)');
+    g.addColorStop(0, L.haze + '0.26)');
+    g.addColorStop(0.55, L.haze + '0.08)');
     g.addColorStop(1, L.haze + '0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, fade);
@@ -918,9 +1055,31 @@
       ctx.fill();
     }
 
+    /* ── THE LIGHT ON IT ───────────────────────────────────────────────
+       A field lit evenly from edge to edge is a texture; a field lit from a
+       ring of masts is a place. The middle of the picture takes the light and
+       the corners fall away from it, which is the single cheapest thing that
+       makes flat green look like grass under a stadium. */
+    var midY = (Math.max(yNear, 0) + Math.min(yFar, 100)) / 2;
+    var cx = cam.sx(FIELD.half, midY), cy = cam.sy(midY);
+    var rad = Math.max(W, H) * 0.86;
+    var pool = ctx.createRadialGradient(cx, cy * 0.92, rad * 0.10, cx, cy * 0.92, rad);
+    pool.addColorStop(0, 'rgba(255,251,232,.085)');
+    pool.addColorStop(0.42, 'rgba(255,248,225,.025)');
+    pool.addColorStop(0.78, 'rgba(0,0,0,.08)');
+    pool.addColorStop(1, 'rgba(0,0,0,.22)');
+    ctx.fillStyle = pool;
+    ground(-14, FIELD.width + 14, yNear, yFar);
+    ctx.fill();
+
     /* ── END ZONES ─────────────────────────────────────────────────────── */
-    endzone(ctx, cam, 100, 110, o.homeColor || '#123326', o.homeName || '', false, yNear, yFar);
-    endzone(ctx, cam, -10, 0, o.awayColor || '#2a1a2f', o.awayName || '', true, yNear, yFar);
+    /* THE FAR END ZONE BELONGS TO THE MEN DEFENDING IT. You drive toward
+       their paint, not your own — and from this lens that block of colour is
+       the top third of every picture the game shows. */
+    endzone(ctx, cam, 100, 110, o.awayColor || '#2a1a2f', o.awayName || '', false,
+      yNear, yFar, o.awayInk);
+    endzone(ctx, cam, -10, 0, o.homeColor || '#123326', o.homeName || '', true,
+      yNear, yFar, o.homeInk);
 
     /* ── THE MIDFIELD MARK ─────────────────────────────────────────────── */
     midfield(ctx, cam, yNear, o.homeColor || '#3fb883');
@@ -1029,35 +1188,106 @@
     ctx.restore();
   }
 
-  function endzone(ctx, cam, from, to, color, name, flip, yNear, yFar) {
+  /* ── AN END ZONE, PAINTED ────────────────────────────────────────────────
+     Ten yards of the club's own colour with its name across it, the way a
+     groundsman lays it down: a deep base, a mown chevron through it so it is
+     not a flat slab of paint, a bright wordmark, and the heavy white border
+     that closes the field. From the play camera this block fills the top
+     third of the picture, so what it looks like IS what the game looks like.
+     `ink` is the colour the name is painted in; it has to survive being seen
+     from ninety yards away, so it is the loud one. */
+  function endzone(ctx, cam, from, to, color, name, flip, yNear, yFar, ink) {
     var a = Math.max(Math.min(from, to), yNear), b = Math.min(Math.max(from, to), yFar);
     if (b <= a) return;
+    function quad(x0, x1, ya, yb) {
+      ctx.beginPath();
+      ctx.moveTo(cam.sx(x0, ya), cam.sy(ya));
+      ctx.lineTo(cam.sx(x1, ya), cam.sy(ya));
+      ctx.lineTo(cam.sx(x1, yb), cam.sy(yb));
+      ctx.lineTo(cam.sx(x0, yb), cam.sy(yb));
+      ctx.closePath();
+    }
+    /* the base coat: lit from the near edge, falling away to the back line */
+    /* Only ever DARKER, never nearer white: mixing paint toward white takes
+       the colour out of it, and ten yards of desaturated club colour is a rug,
+       not an end zone. */
     var g = ctx.createLinearGradient(0, cam.sy(b), 0, cam.sy(a));
-    g.addColorStop(0, shade(color, -0.30));
+    g.addColorStop(0, shade(color, -0.36));
     g.addColorStop(0.55, color);
-    g.addColorStop(1, shade(color, -0.22));
+    g.addColorStop(1, shade(color, -0.18));
     ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(cam.sx(0, a), cam.sy(a));
-    ctx.lineTo(cam.sx(FIELD.width, a), cam.sy(a));
-    ctx.lineTo(cam.sx(FIELD.width, b), cam.sy(b));
-    ctx.lineTo(cam.sx(0, b), cam.sy(b));
-    ctx.closePath();
+    quad(0, FIELD.width, a, b);
     ctx.fill();
+
+    /* THE MOW. Paint on grass is still grass: the roller leaves the same
+       two-yard bands here it leaves on the field, and without them ten yards
+       of one colour reads as a printed rectangle. */
+    ctx.save();
+    ctx.beginPath();
+    quad(0, FIELD.width, a, b);
+    ctx.clip();
+    var lo = Math.min(from, to), s2;
+    for (s2 = 0; s2 < 5; s2++) {
+      var ya = lo + s2 * 2, yb = ya + 1;
+      if (yb <= a || ya >= b) continue;
+      ctx.fillStyle = 'rgba(255,255,255,.035)';
+      quad(0, FIELD.width, Math.max(ya, a), Math.min(yb, b));
+      ctx.fill();
+    }
+    ctx.restore();
+
+    /* GRAIN. A perfectly even fill is printed; grass is not. A few hundred
+       specks of light and dark, seeded so they never crawl between frames,
+       are the difference between paint and a swatch. */
+    var y0 = cam.sy(b), y1 = cam.sy(a);
+    /* and only as much of it as there is end zone to see: from the far end of
+       a wide shot this block is thirty pixels tall and three hundred specks
+       of grain in it are three hundred draws nobody can make out */
+    var grains = clamp(Math.round(Math.abs(y1 - y0) * 1.1), 0, 240);
+    ctx.save();
+    ctx.beginPath();
+    quad(0, FIELD.width, a, b);
+    ctx.clip();
+    var sp = seats(), k2;
+    for (k2 = 0; k2 < grains; k2++) {
+      var q2 = sp[(k2 * 7 + 11) % sp.length];
+      var gy = y0 + (y1 - y0) * q2[1];
+      var gw = cam.w;
+      ctx.fillStyle = q2[3] < 0.5 ? 'rgba(255,255,255,.030)' : 'rgba(0,0,0,.045)';
+      ctx.fillRect(q2[0] * gw, gy, 1.6 + q2[2] * 2.6, 1.1 + q2[2] * 1.3);
+    }
+    ctx.restore();
+
+    /* the white border the field is closed with: back line and both edges */
+    var back = flip ? lo : lo + 10;
+    ctx.strokeStyle = 'rgba(255,255,255,.85)';
+    ctx.lineWidth = Math.max(1.2, 0.30 * cam.lat(back));
+    if (back >= yNear && back <= yFar) {
+      ctx.beginPath();
+      ctx.moveTo(cam.sx(0, back), cam.sy(back));
+      ctx.lineTo(cam.sx(FIELD.width, back), cam.sy(back));
+      ctx.stroke();
+    }
+
     if (!name) return;
     var mid = (a + b) / 2, lat = cam.lat(mid), fore = cam.fore(mid);
-    if (lat < 2) return;
+    if (lat < 1.6) return;
     ctx.save();
     ctx.translate(cam.sx(FIELD.half, mid), cam.sy(mid));
     ctx.scale(1, Math.max(0.14, Math.min(1, fore / lat)));
     if (flip) ctx.rotate(Math.PI);
     var txt = String(name).toUpperCase();
-    ctx.font = '800 ' + Math.max(7, Math.round(lat * 2.6)) + 'px "Space Grotesk", Inter, sans-serif';
+    ctx.font = '800 ' + Math.max(7, Math.round(lat * 3.0)) + 'px "Space Grotesk", Inter, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     /* keep it inside the sidelines however long the club is called */
-    var fits = ctx.measureText(txt).width, room = FIELD.width * 0.82 * lat;
+    var fits = ctx.measureText(txt).width, room = FIELD.width * 0.80 * lat;
     if (fits > room) ctx.scale(room / fits, 1);
-    ctx.fillStyle = 'rgba(255,255,255,.34)';
+    /* letters this far away need an edge or they dissolve into the paint */
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(8,14,12,.45)';
+    ctx.lineWidth = Math.max(1.2, lat * 0.30);
+    ctx.strokeText(txt, 0, 0);
+    ctx.fillStyle = rgba(ink || '#ffffff', 0.94);
     ctx.fillText(txt, 0, 0);
     ctx.restore();
   }
@@ -1088,12 +1318,27 @@
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     paths.forEach(function (p) {
       if (!p.pts || p.pts.length < 2) return;
-      ctx.strokeStyle = p.color || 'rgba(255,255,255,.78)';
+      var first = p.pts[0], last = p.pts[p.pts.length - 1];
+      var x0 = cam.sx(first[0], first[1]), y0 = cam.sy(first[1]);
+      var x1 = cam.sx(last[0], last[1]), y1 = cam.sy(last[1]);
+      /* A LINE THAT FADES IS A BROADCAST; A LINE THAT DOES NOT IS A DIAGRAM.
+         Play art belongs to the man it comes out of, so it is brightest at his
+         feet and gone by the end of the route — which is also honest, because
+         where he ends up has not happened yet. */
+      var col = p.color || '#ffffff';
+      var grad;
+      try {
+        grad = ctx.createLinearGradient(x0, y0, x1, y1);
+        grad.addColorStop(0, rgba(col, 0.62));
+        grad.addColorStop(0.55, rgba(col, 0.34));
+        grad.addColorStop(1, rgba(col, 0.10));
+        ctx.strokeStyle = grad;
+      } catch (_) { ctx.strokeStyle = rgba(col, 0.40); }
       /* play art is a coach's line drawn on the grass, not a road marking:
          it follows the perspective but stays a hairline */
-      var lw = (p.width || 2.4) * cam.lat(p.pts[0][1]) / 13;
-      ctx.lineWidth = lw < 1.4 ? 1.4 : lw > 4.2 ? 4.2 : lw;
-      ctx.setLineDash(p.dash === false ? [] : [7, 5]);
+      var lw = (p.width || 2.4) * cam.lat(first[1]) / 15;
+      ctx.lineWidth = lw < 1.1 ? 1.1 : lw > 3.2 ? 3.2 : lw;
+      ctx.setLineDash(p.dash === false ? [] : [5, 6]);
       ctx.beginPath();
       p.pts.forEach(function (q, i) {
         var x = cam.sx(q[0], q[1]), y = cam.sy(q[1]);
@@ -1101,15 +1346,14 @@
       });
       ctx.stroke();
       ctx.setLineDash([]);
-      var last = p.pts[p.pts.length - 1], prev = p.pts[p.pts.length - 2];
-      if (p.arrow !== false) arrowHead(ctx, cam, prev, last, p.color || 'rgba(255,255,255,.85)');
+      if (p.arrow !== false) arrowHead(ctx, cam, p.pts[p.pts.length - 2], last, rgba(col, 0.30));
     });
   }
   function arrowHead(ctx, cam, a, b, color) {
     var x1 = cam.sx(a[0], a[1]), y1 = cam.sy(a[1]);
     var x2 = cam.sx(b[0], b[1]), y2 = cam.sy(b[1]);
     var ang = Math.atan2(y2 - y1, x2 - x1);
-    var s = Math.max(4.5, Math.min(9, cam.lat(b[1]) * 0.55));
+    var s = Math.max(3.2, Math.min(6.5, cam.lat(b[1]) * 0.40));
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(x2, y2);
@@ -1120,7 +1364,7 @@
 
   var API = {
     FIELD: FIELD, BODY: BODY, BUILD: BUILD,
-    camera: camera, uniform: uniform, shade: shade, readable: readable, rgba: rgba,
+    camera: camera, uniform: uniform, shade: shade, readable: readable, rgba: rgba, hex: hex,
     player: player, target: target, ball: ball,
     stadium: stadium, goalposts: goalposts, sidelines: sidelines,
     atmosphere: atmosphere, conditions: conditions, LIGHT: LIGHT, WEATHER: WEATHER, field: field, markers: markers, art: art, roundRect: roundRect

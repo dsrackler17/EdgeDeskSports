@@ -67,8 +67,61 @@
     first: function () { beep(700, 0.10, 'triangle', 0.045); setTimeout(function () { beep(960, 0.13, 'triangle', 0.045); }, 90); },
     td: function () { [523, 659, 784, 1047].forEach(function (f, i) { setTimeout(function () { beep(f, 0.17, 'triangle', 0.055); }, i * 95); }); },
     bad: function () { beep(210, 0.26, 'sawtooth', 0.055); setTimeout(function () { beep(140, 0.3, 'sawtooth', 0.05); }, 150); },
-    crowd: function () { beep(300, 0.5, 'sine', 0.02); }
+    crowd: function () { beep(300, 0.5, 'sine', 0.02); },
+    /* THE ROOM TONE. Eighty thousand people are a band of noise, not a note:
+       a loop of shaped noise through a bandpass, whose level is the same
+       number the crowd in the stands is drawn at. It never starts on its own
+       — the browser would refuse anyway — and it never plays with the sound
+       switched off. */
+    ambience: function (level) {
+      if (!set.sound) { bedStop(); return; }
+      bedStart();
+      if (!bed) return;
+      try {
+        var v = Math.max(0, Math.min(1, level || 0));
+        bed.gain.gain.setTargetAtTime(0.006 + v * 0.052, actx.currentTime, 0.45);
+        bed.filter.frequency.setTargetAtTime(380 + v * 520, actx.currentTime, 0.6);
+      } catch (_) {}
+    },
+    quiet: function () { bedStop(); }
   };
+  /* the crowd bed: built once, on the first gesture that is allowed to make
+     sound, and left running with its level moved rather than restarted */
+  var bed = null;
+  function bedStart() {
+    if (bed) return;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      var len = Math.floor(actx.sampleRate * 2.0);
+      var buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
+      var last = 0, i, sd = 20260907;
+      /* THE PAGE OWNS NO DICE. Even noise for a crowd comes off a seeded
+         stream, so nothing here can ever be mistaken for the game deciding
+         something — and the bed sounds the same every kickoff. */
+      function nz() { sd = (sd * 1103515245 + 12345) & 0x7fffffff; return sd / 0x7fffffff * 2 - 1; }
+      for (i = 0; i < len; i++) {
+        /* a one-pole low pass on white noise: closer to the weight of a crowd
+           than white noise, which is rain */
+        last = last * 0.86 + nz() * 0.14;
+        d[i] = last * 3.2;
+      }
+      var src = actx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      var flt = actx.createBiquadFilter();
+      flt.type = 'bandpass'; flt.frequency.value = 420; flt.Q.value = 0.7;
+      var g = actx.createGain();
+      g.gain.value = 0.008;
+      src.connect(flt); flt.connect(g); g.connect(actx.destination);
+      src.start();
+      bed = { src: src, filter: flt, gain: g };
+    } catch (_) { bed = null; }
+  }
+  function bedStop() {
+    if (!bed) return;
+    try { bed.gain.gain.setTargetAtTime(0.0001, actx.currentTime, 0.3); bed.src.stop(actx.currentTime + 1.2); } catch (_) {}
+    bed = null;
+  }
   function buzz(kind) {
     if (!set.haptics || !navigator.vibrate) return;
     try { navigator.vibrate(kind === 'strong' ? [24, 40, 34] : kind === 'medium' ? 18 : 8); } catch (_) {}
@@ -79,6 +132,17 @@
     var t = null;
     (FR && FR.THEMES ? FR.THEMES : []).forEach(function (x) { if (x.key === key) t = x; });
     return t || { primary: '#3fb883', secondary: '#123326', ink: '#06231a' };
+  }
+  /* the colour a club paints its name in on its own end zone: the loud one,
+     unless it is too close to the paint under it to be read from ninety
+     yards, in which case white */
+  function ezInk(t) {
+    if (!t || !t.primary || !t.secondary) return '#ffffff';
+    var P2 = window.EDGridironPaint;
+    if (!P2 || !P2.hex) return '#ffffff';
+    function lum(c) { var v = P2.hex(c); return (v[0] * 299 + v[1] * 587 + v[2] * 114) / 1000; }
+    if (Math.abs(lum(t.primary) - lum(t.secondary)) < 78) return '#ffffff';
+    return lum(t.primary) < 120 ? P2.shade(t.primary, 0.34) : t.primary;
   }
   function kitFor(side) {
     var mine = themeOf(teams.me.theme), theirs = themeOf(teams.opp.theme);
@@ -101,15 +165,30 @@
       : sit.phase === 'kickoff' ? '<b>Kickoff</b>'
       : sit.phase === 'pat' ? '<b>After the touchdown</b>'
       : sit.phase === 'halftime' ? '<b>Halftime</b>' : '<b>Final</b>';
+    /* A SCOREBOARD WITHOUT COLOUR IS A TABLE. Each side wears its own rule so
+       you know whose number you are reading before you have read it. */
+    function bar(side) {
+      return '<span class="sb-bar" style="background:'
+        + esc(kitFor(side === me ? 'me' : 'opp').primary || '#3fb883') + '"></span>';
+    }
+    /* the number that just changed is the one worth looking at */
+    var pop = { home: '', away: '' };
+    if (lastShown.home != null && game.score.home !== lastShown.home) pop.home = ' hit';
+    if (lastShown.away != null && game.score.away !== lastShown.away) pop.away = ' hit';
+    lastShown.home = game.score.home; lastShown.away = game.score.away;
     sb.innerHTML =
       '<div class="sb-row">'
-      + '<div class="sb-team">' + (poss === 'home' ? '<span class="sb-poss"></span>' : '')
-        + '<span class="sb-ab">' + esc(h.abbr) + '</span><span class="sb-pts mono">' + game.score.home + '</span></div>'
+      + '<div class="sb-team">' + bar('home') + (poss === 'home' ? '<span class="sb-poss"></span>' : '')
+        + '<span class="sb-ab">' + esc(h.abbr) + '</span><span class="sb-pts mono' + pop.home + '">'
+        + game.score.home + '</span></div>'
       + '<div class="sb-mid"><div class="sb-clock">' + G.clockLabel(game) + '</div><div class="sb-q">' + q + '</div></div>'
-      + '<div class="sb-team right">' + (poss === 'away' ? '<span class="sb-poss left"></span>' : '')
-        + '<span class="sb-ab">' + esc(a.abbr) + '</span><span class="sb-pts mono">' + game.score.away + '</span></div>'
+      + '<div class="sb-team right">' + bar('away') + (poss === 'away' ? '<span class="sb-poss left"></span>' : '')
+        + '<span class="sb-ab">' + esc(a.abbr) + '</span><span class="sb-pts mono' + pop.away + '">'
+        + game.score.away + '</span></div>'
       + '</div><div class="sb-dd">' + tos('home') + dd + tos('away') + '</div>';
   }
+  /* what the scoreboard last showed, so a change can be seen happening */
+  var lastShown = { home: null, away: null };
   function say(text, big) {
     sayEl.className = 'gd-say' + (big ? ' big' : '');
     sayEl.innerHTML = esc(text || '');
@@ -487,6 +566,8 @@
     });
     var look = stage.look();
     readEl.hidden = false;
+    /* the rule down its left is the colour of the men who are in it */
+    readEl.style.setProperty('--acc', kitFor(sit.offense === me ? 'opp' : 'me').primary || '#3fb883');
     readEl.innerHTML = '<b>' + esc(look.name) + '</b>' + esc(Math.round(ps.box) + ' in the box · ' + look.coverage
       + (look.blitz ? ' · pressure' : ''));
     say('');
@@ -496,6 +577,8 @@
     busy = true;
     readEl.hidden = true;
     SOUND.snap(); buzz('light');
+    /* the place leans in on the snap and settles again on the whistle */
+    crowdUp(0.30, 0.20);
     seenTip('snap');
     var sit = G.situation(game);
     var mine = sit.offense === me;
@@ -542,9 +625,19 @@
     var sit = G.situation(game);
     if (r.event === 'punt') { SOUND.whistle(); say('Punt — ' + r.punt.gross + ' yards' + (r.punt.touchback ? ', touchback.' : '.')); }
     else if (r.event === 'fieldgoal') {
-      if (r.fg.good) { SOUND.td(); buzz('strong'); bigFlash('GOOD', 'good'); }
-      else { SOUND.bad(); buzz('medium'); bigFlash('NO GOOD', 'bad'); }
-      say(r.fg.distance + '-yard field goal is ' + (r.fg.good ? 'good.' : 'wide.'));
+      /* three points is a scoring moment and gets the same graphic a
+         touchdown does, with the distance as the line worth reading */
+      var kicking = sit.offense === me ? 'opp' : 'me';   /* possession has flipped */
+      if (r.fg.good) {
+        SOUND.td(); buzz('strong'); crowdUp(0.8, 0.34);
+        banner({ kind: 'good', eyebrow: 'Field goal', head: 'It is good',
+          sub: r.fg.distance + ' yards · ' + game.score.home + ' — ' + game.score.away,
+          color: kitFor(kicking).primary, hold: 1400 });
+      } else {
+        SOUND.bad(); buzz('medium'); crowdUp(0.6, 0.24);
+        banner({ kind: 'bad', eyebrow: 'Field goal', head: 'No good',
+          sub: r.fg.distance + ' yards', hold: 1300 });
+      }
     } else if (r.event === 'kickoff') say('Kickoff.');
     paintScore();
     setTimeout(function () { busy = false; nextCall(); }, 850);
@@ -577,18 +670,44 @@
        distance, clock and the season move */
     var p = (set.mode === 'play' && res && res.live) ? commit(res) : commitCoach();
     if (p) {
-      if (p.sack) { SOUND.bad(); buzz('medium'); bigFlash('SACK', 'bad'); }
-      else if (p.turnover === 'interception') { SOUND.bad(); buzz('strong'); bigFlash('INTERCEPTED', 'bad'); }
-      else if (p.turnover === 'fumble') { SOUND.bad(); buzz('strong'); bigFlash('FUMBLE', 'bad'); }
-      else if (p.touchdown) { SOUND.td(); buzz('strong'); bigFlash('TOUCHDOWN', 'td'); }
-      else if (p.firstDown) { SOUND.first(); buzz('medium'); bigFlash('FIRST DOWN', 'first'); }
-      else { SOUND.hit(); buzz('light'); }
-      say(p.commentary, p.touchdown || !!p.turnover);
+      var myColor = kitFor('me').primary || '#3fb883';
+      var theirColor = kitFor('opp').primary || '#e2664b';
+      if (p.touchdown) {
+        /* WHO SCORED IS NOT WHO HAS THE BALL NOW. Possession has already
+           flipped by the time the whistle books it, so ask the engine which
+           side the pending score belongs to rather than guessing from the
+           situation. */
+        var scorer = game.pendingScore ? game.pendingScore.side : me;
+        var mineTd = scorer === me;
+        SOUND.td(); buzz('strong'); crowdUp(1, 0.6);
+        /* the camera pulls out onto the place, the way it does when a stadium
+           has just stood up */
+        setTimeout(function () { shotWide(true, true); }, 380);
+        banner({ kind: 'td', eyebrow: 'Touchdown',
+          head: (mineTd ? teams.me : teams.opp).name || 'Touchdown',
+          sub: game.score.home + ' — ' + game.score.away,
+          color: mineTd ? myColor : theirColor, hold: 1900 });
+      } else if (p.turnover) {
+        SOUND.bad(); buzz('strong'); crowdUp(0.9, 0.3);
+        banner({ kind: 'bad', head: p.turnover === 'fumble' ? 'Fumble' : 'Intercepted',
+          sub: p.interceptor ? FRname(p.interceptor) : '', hold: 1500 });
+      } else if (p.sack) {
+        SOUND.bad(); buzz('medium'); crowdUp(0.75, 0.24);
+        banner({ kind: 'bad', head: 'Sack', sub: p.tackler ? FRname(p.tackler) : '', hold: 1150 });
+      } else if (p.firstDown) {
+        SOUND.first(); buzz('medium'); crowdUp(0.55, 0.22);
+        banner({ kind: 'first', head: 'First down', color: myColor, hold: 950 });
+      } else {
+        SOUND.hit(); buzz('light');
+        if (p.big) crowdUp(0.7, 0.22);
+      }
+      resultCard(p);
       ballX = drift(ballX);
     }
     padClear();
     paintScore();
-    var wait = set.speed === 'instant' ? 260 : (p && (p.touchdown || p.turnover)) ? 1500 : 900;
+    var wait = set.speed === 'instant' ? 260
+      : (p && p.touchdown) ? 2200 : (p && p.turnover) ? 1500 : 900;
     setTimeout(function () { busy = false; nextCall(); }, wait);
   }
   /* THE BALL IS SPOTTED BETWEEN THE HASHES, and it wanders like a real one.
@@ -600,13 +719,68 @@
     var t = x + (r - 0.5) * 8;
     return Math.max(h - hash, Math.min(h + hash, t));
   }
-  function bigFlash(text, kind) {
+  /* ── BROADCAST GRAPHICS ──────────────────────────────────────────────────
+     One banner, one shape, one set of rules. A coloured rule in the club's
+     own colour, a headline, and — where there is one worth reading — the
+     football reason underneath. It arrives, it holds, it goes. */
+  function banner(o) {
     var d = document.createElement('div');
-    d.className = 'fx fx-' + kind;
-    d.textContent = text;
+    d.className = 'bnr' + (o.kind ? ' bnr-' + o.kind : '');
+    if (o.color) d.style.setProperty('--bc', o.color);
+    d.innerHTML = (o.eyebrow ? '<i>' + esc(o.eyebrow) + '</i>' : '')
+      + '<b>' + esc(o.head) + '</b>'
+      + (o.sub ? '<span>' + esc(o.sub) + '</span>' : '');
     fieldWrap.appendChild(d);
-    setTimeout(function () { d.classList.add('out'); }, 1000);
-    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1700);
+    var hold = o.hold || 1150;
+    setTimeout(function () { d.classList.add('out'); }, hold);
+    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, hold + 620);
+    return d;
+  }
+
+  /* THE RESULT, in the shape a broadcast uses: who, what, and why. */
+  function resultCard(p) {
+    if (!p) return;
+    var who = p.carrier ? FRname(p.carrier) : p.target ? FRname(p.target)
+            : p.interceptor ? FRname(p.interceptor) : '';
+    var line;
+    if (p.sack) line = 'Sacked for ' + p.yards;
+    else if (p.turnover === 'interception') line = 'Intercepted';
+    else if (p.turnover === 'fumble') line = 'Fumble';
+    else if (p.incomplete) line = 'Incomplete';
+    else if (p.completion) line = p.yards + '-yard catch';
+    else line = p.yards + '-yard rush';
+    /* the reason: the engine already says it, after the dash */
+    var why = '';
+    var c = String(p.commentary || '');
+    var cut = c.indexOf(' — ');
+    if (cut > 0) why = c.slice(cut + 3);
+    else if (p.notes && p.notes.length) why = p.notes[p.notes.length - 1];
+    var d = document.createElement('div');
+    d.className = 'res' + (p.big ? ' res-big' : '');
+    d.innerHTML = (who ? '<b>' + esc(who) + '</b>' : '')
+      + '<span>' + esc(line) + '</span>'
+      + (why ? '<i>' + esc(why.replace(/^[a-z]/, function (m) { return m.toUpperCase(); })) + '</i>' : '')
+      + (p.big ? '<em>Explosive play</em>' : '');
+    fieldWrap.appendChild(d);
+    setTimeout(function () { d.classList.add('out'); }, 1700);
+    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 2300);
+  }
+
+  /* THE CROWD, SEEN AND HEARD, FROM ONE NUMBER. Anything that lifts the
+     stands lifts the noise with them; nothing sets one without the other. */
+  function crowdUp(level, floor) {
+    if (stage) stage.crowd(level, floor);
+    SOUND.ambience(Math.max(level || 0, floor == null ? 0.18 : floor));
+  }
+
+  /* THE ESTABLISHING SHOT. One switch: the lens drops out of the sky and
+     back until the horizon — and eighty thousand people standing on it — come
+     into frame. Used where a broadcast would use it and nowhere else: the
+     kickoff, a touchdown, the half, the final whistle. */
+  function shotWide(on, glide) {
+    if (!stage || !stage.setShot) return;
+    stage.setShot(on ? 'wide' : 'play', glide ? false : true);
+    if (on) crowdUp(0.5, 0.34); else crowdUp(0, 0.12);
   }
 
   /* ── WHOSE CALL IS IT ─────────────────────────────────────────────────── */
@@ -617,9 +791,19 @@
     if (sit.phase === 'halftime') { halftimeScreen(); return; }
     if (sit.phase === 'kickoff') {
       padClear(); drawer.classList.remove('open');
-      drawerOpen('<div class="dr-grip"></div><div class="dr-row one">'
+      /* THE SHOT BEFORE THE FOOTBALL. A broadcast does not open on a patch of
+         grass: it opens on the building, full, lit, waiting. The play lens
+         cannot show that — it looks down too hard — so the kickoff is the one
+         moment the camera drops back and shows the place. */
+      readEl.hidden = true;
+      shotWide(true);
+      var recv = sit.offense === me ? teams.me : teams.opp;
+      drawerOpen('<div class="dr-grip"></div>'
+        + '<div class="dr-head"><span class="dr-title">Kickoff</span>'
+        + '<span class="dr-sub">' + esc(recv.name || recv.abbr || '') + ' receive</span></div>'
+        + '<div class="dr-row one">'
         + '<button class="btn btn-go" id="drKick" type="button">Kick off</button></div>');
-      $('drKick').onclick = function () { drawerClose(); special({ type: 'kickoff' }); };
+      $('drKick').onclick = function () { drawerClose(); shotWide(false); special({ type: 'kickoff' }); };
       return;
     }
     if (sit.phase === 'pat') {
@@ -627,6 +811,7 @@
          a redraw can land on the far side of that; treat a missing one as
          theirs and offer the button that just moves the game on */
       var mine = !!game.pendingScore && game.pendingScore.side === me;
+      shotWide(false);
       drawerOpen('<div class="dr-grip"></div>'
         + '<div class="dr-head"><span class="dr-title">' + (mine ? 'Your touchdown' : 'Their touchdown') + '</span></div>'
         + (mine ? '<div class="dr-row"><button class="btn btn-go" id="drXP" type="button">Extra point</button>'
@@ -643,6 +828,7 @@
       return;
     }
     if (sit.phase !== 'play') return;
+    shotWide(false);
     if (sit.offense === me) showOffenseDrawer(); else showDefenseDrawer();
     /* keep somebody on the field between calls */
     var guess = offensePlays('suggested', sit)[0] || F.play('inside_zone');
@@ -670,20 +856,72 @@
       ? { type: 'two', play: 'power', formation: 'goalline', def: 'goal_line_d' } : { type: 'pat' };
   }
 
+  /* ── THE PANELS ──────────────────────────────────────────────────────────
+     Halftime and the final whistle are the two moments a broadcast stops
+     showing football and shows a graphic instead — so they get the graphic a
+     broadcast would use, not a form: the two clubs across the top under their
+     own colours, and the numbers as bars you can read at arm's length rather
+     than as a column of digits you have to compare by eye. */
+  function scoreHead(label) {
+    var them = G.other(me);
+    function side(t, sc, key, right) {
+      var col = kitFor(key === me ? 'me' : 'opp').primary || '#3fb883';
+      var win = sc > game.score[key === me ? them : me];
+      return '<div class="ph-side' + (right ? ' right' : '') + '">'
+        + '<span class="ph-bar" style="background:' + esc(col) + '"></span>'
+        + '<span class="ph-t"><b>' + esc(t.abbr || '') + '</b><i>' + esc(t.name || '') + '</i></span>'
+        + '<span class="ph-p' + (win ? ' win' : '') + '">' + sc + '</span></div>';
+    }
+    return '<div class="ph">' + side(teams.me, game.score[me], me, false)
+      + '<span class="ph-mid">' + esc(label) + '</span>'
+      + side(teams.opp, game.score[them], them, true) + '</div>';
+  }
+  /* one line of the comparison: a label, both numbers, and a rule split
+     between them in the two clubs' colours */
+  function compare(rows) {
+    var mc = kitFor('me').primary || '#3fb883', tc = kitFor('opp').primary || '#e2664b';
+    return '<div class="cmp">' + rows.map(function (r) {
+      /* a team can finish a half with negative yards — six sacks will do it —
+         and a bar cannot be a negative length, so the split is taken on what
+         each side actually gained */
+      var a = Math.max(0, Number(r[1]) || 0), b = Math.max(0, Number(r[2]) || 0), tot = a + b;
+      var pct = tot > 0 ? Math.round(a / tot * 100) : 50;
+      pct = pct < 0 ? 0 : pct > 100 ? 100 : pct;
+      /* nothing to nothing is not a lead for either of them: half a green bar
+         and half a red one would say it was */
+      var rule = tot === 0
+        ? '<span class="cb tie"></span>'
+        : '<span class="cb"><i style="width:' + pct + '%;background:' + esc(mc) + '"></i>'
+          + '<i style="width:' + (100 - pct) + '%;background:' + esc(tc) + '"></i></span>';
+      return '<div class="cmp-r"><span class="cl">' + esc(r[3] == null ? r[1] : r[3]) + '</span>'
+        + '<span class="ck">' + esc(r[0]) + '</span>'
+        + '<span class="cr">' + esc(r[4] == null ? r[2] : r[4]) + '</span>'
+        + rule + '</div>';
+    }).join('') + '</div>';
+  }
+
   /* ── HALFTIME ─────────────────────────────────────────────────────────── */
   function halftimeScreen() {
+    shotWide(true);
     var box = G.boxScore(game), mine = box[me], theirs = box[G.other(me)];
     var rows = [['Total yards', mine.yards, theirs.yards], ['Yards per play', mine.ypp, theirs.ypp],
       ['Rushing', mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
       ['Passing', mine.comp + '/' + mine.att + ' · ' + mine.passYards, theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
       ['Third down', mine.third, theirs.third], ['Explosive plays', mine.explosive, theirs.explosive],
       ['Sacks', mine.sacks, theirs.sacks], ['Turnovers', mine.turnovers, theirs.turnovers]];
-    overlay('<div class="eyebrow">Halftime</div><h2>' + esc(teams.me.abbr) + ' ' + game.score[me] + ' · '
-      + esc(teams.opp.abbr) + ' ' + game.score[G.other(me)] + '</h2>'
-      + '<table class="box"><thead><tr><th>&nbsp;</th><th>' + esc(teams.me.abbr) + '</th><th>' + esc(teams.opp.abbr)
-      + '</th></tr></thead><tbody>' + rows.map(function (r) {
-        return '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>';
-      }).join('') + '</tbody></table><h3>One adjustment</h3>'
+    overlay('<div class="eyebrow">Halftime</div>' + scoreHead('HT')
+      + compare([['Total yards', mine.yards, theirs.yards],
+        ['Rushing', mine.rushYards, theirs.rushYards,
+          mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
+        ['Passing', mine.passYards, theirs.passYards,
+          mine.comp + '/' + mine.att + ' · ' + mine.passYards,
+          theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
+        ['Explosive plays', mine.explosive, theirs.explosive],
+        ['Sacks', mine.sacks, theirs.sacks],
+        ['Turnovers', mine.turnovers, theirs.turnovers]])
+      + '<div class="cmp-note">Yards per play ' + esc(mine.ypp) + ' — ' + esc(theirs.ypp)
+      + ' · Third down ' + esc(mine.third) + ' — ' + esc(theirs.third) + '</div>'
+      + '<h3>One adjustment</h3>'
       + '<div class="adjs">' + G.ADJUSTMENTS.map(function (a) {
           return '<button class="adj" type="button" data-adj="' + esc(a.key) + '">'
             + '<span class="ct">' + (a.side === 'off' ? 'Offence' : 'Defence') + '</span>'
@@ -704,10 +942,22 @@
   /* ── THE RECAP ────────────────────────────────────────────────────────── */
   function finalScreen() {
     S.clearSave();
-    if (stage) stage.stop();
+    /* the last thing the game shows is the place it was played in */
+    shotWide(true);
+    crowdUp(0.55, 0.45);
+    /* the loop is about to stop, so re-frame once by hand or the last frame
+       on the screen is the one from the play that ended the game */
+    if (stage) { stage.stop(); if (stage.resize) stage.resize(); }
     var box = G.boxScore(game), them = G.other(me), mine = box[me], theirs = box[them];
     var won = game.score[me] > game.score[them];
-    var tp = S.turningPoint(game), potg = G.playerOfGame(game), reasons = S.reasons(box, me, won);
+    var tp = S.turningPoint(game), potg = G.playerOfGame(game);
+    /* THE LIST HAS TO AGREE WITH ITS OWN HEADING. Five bullets under "Why you
+       won" that are all things that nearly lost it reads as a bug, so the
+       ones that explain the result and the ones that ran against it are shown
+       under separate heads. */
+    var allWhy = S.why(box, me), level = game.score[me] === game.score[them];
+    var forIt = allWhy.filter(function (r) { return r.good === won && !level; }).slice(0, 4);
+    var againstIt = allWhy.filter(function (r) { return forIt.indexOf(r) < 0; }).slice(0, 4);
     var rows = [['First downs', mine.firstDowns, theirs.firstDowns], ['Total yards', mine.yards, theirs.yards],
       ['Rushing', mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
       ['Passing', mine.comp + '/' + mine.att + ' · ' + mine.passYards, theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
@@ -715,15 +965,25 @@
       ['Fourth down', mine.fourth, theirs.fourth], ['Red zone', mine.redzone, theirs.redzone],
       ['Explosive plays', mine.explosive, theirs.explosive], ['Turnovers', mine.turnovers, theirs.turnovers],
       ['Field goals', mine.fg, theirs.fg], ['Possession', mins(mine.top), mins(theirs.top)]];
+    function list(head, items, good) {
+      if (!items.length) return '';
+      return '<h3>' + esc(head) + '</h3><ul class="why' + (good ? '' : ' bad') + '">'
+        + items.map(function (r) { return '<li>' + esc(r.text) + '</li>'; }).join('') + '</ul>';
+    }
     var injuries = (game[me === 'home' ? 'home' : 'away'].injuries || []).filter(function (i) { return i.weeks > 0; });
-    overlay('<div class="eyebrow">Final</div>'
-      + '<div class="final"><div><div class="t">' + esc(title(teams.me)) + '</div>'
-      + '<div class="p' + (won ? ' win' : '') + '">' + game.score[me] + '</div></div>'
-      + '<div class="sb-q">' + (game.ot ? 'OT' : 'FT') + '</div>'
-      + '<div><div class="t">' + esc(title(teams.opp)) + '</div>'
-      + '<div class="p' + (!won && game.score[them] > game.score[me] ? ' win' : '') + '">' + game.score[them] + '</div></div></div>'
-      + (reasons.length ? '<h3>' + (won ? 'Why you won' : game.score[me] === game.score[them] ? 'How it finished level' : 'Why you lost')
-          + '</h3><ul class="why">' + reasons.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>' : '')
+    overlay('<div class="eyebrow">Final</div>' + scoreHead(game.ot ? 'OT' : 'FT')
+      + compare([['Total yards', mine.yards, theirs.yards],
+        ['Rushing', mine.rushYards, theirs.rushYards,
+          mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
+        ['Passing', mine.passYards, theirs.passYards,
+          mine.comp + '/' + mine.att + ' · ' + mine.passYards,
+          theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
+        ['First downs', mine.firstDowns, theirs.firstDowns],
+        ['Explosive plays', mine.explosive, theirs.explosive],
+        ['Turnovers', mine.turnovers, theirs.turnovers]])
+      + list(won ? 'Why you won' : level ? 'How it finished level' : 'Why you lost', forIt, true)
+      + list(level ? 'The other side of it' : won ? 'What nearly cost you' : 'What kept you in it',
+          againstIt, false)
       + (tp ? '<h3>Turning point</h3><div class="muted">Q' + tp.q + ' — ' + esc(tp.text) + '</div>' : '')
       + (potg ? '<h3>Player of the game</h3><div class="potg"><div><div class="pn">'
           + esc(potg.position + ' ' + potg.name) + '</div><div class="pl">' + esc(statLine(potg)) + '</div></div></div>' : '')
@@ -923,6 +1183,10 @@
           awayTheme: themeOf(teams.opp ? teams.opp.theme : null),
           homeColor: themeOf(teams.me.theme).secondary || '#123326',
           awayColor: themeOf(teams.opp ? teams.opp.theme : null).secondary || '#2a1a2f',
+          homeTint: themeOf(teams.me.theme).primary,
+          awayTint: themeOf(teams.opp ? teams.opp.theme : null).primary,
+          homeInk: ezInk(themeOf(teams.me.theme)),
+          awayInk: ezInk(themeOf(teams.opp ? teams.opp.theme : null)),
           homeName: teams.me.abbr || '', awayName: teams.opp ? (teams.opp.abbr || '') : '',
           light: c2.light, weather: c2.weather, excite: 0.45,
           tags: false
@@ -946,8 +1210,13 @@
 
   /* ── STARTING ─────────────────────────────────────────────────────────── */
   function makeStage() {
+    var c0 = cond();
     stage = ST.Stage(canvas, {
-
+      /* THE GAME IS PLAYED IN THE WEATHER THE CARD PROMISED. The matchup
+         page names a 7:05 kickoff under an overcast sky and then the field
+         came up at one in the afternoon in clear sun, because nothing ever
+         handed the fixture's conditions to the stage. */
+      light: c0.light, weather: c0.weather,
       homeColor: kitFor('me').secondary || '#123326',
       awayColor: kitFor('opp').secondary || '#2a1a2f',
       on: {
@@ -1025,7 +1294,10 @@
     $('btnArt').onclick = function () {
       set.art = !set.art; S.saveSettings(set); if (stage) stage.setArt(set.art); syncTools(); SOUND.tap();
     };
-    $('btnSound').onclick = function () { set.sound = !set.sound; S.saveSettings(set); syncTools(); };
+    $('btnSound').onclick = function () {
+      set.sound = !set.sound; S.saveSettings(set); syncTools();
+      if (set.sound) SOUND.ambience(0.2); else SOUND.quiet();
+    };
     $('btnSet').onclick = settingsOverlay;
     $('btnExit').onclick = function () { location.href = '/games/gameday/'; };
     window.addEventListener('beforeunload', function () { if (game && !game.over) S.save(game); });

@@ -134,6 +134,8 @@
 
     ctx.clearRect(0, 0, w, h);
     var scene = { tick: opts.tick || 0, homeColor: opts.homeColor, awayColor: opts.awayColor,
+      homeInk: opts.homeInk, awayInk: opts.awayInk,
+      homeTint: opts.homeTint, awayTint: opts.awayTint,
       homeName: opts.homeName || '', awayName: opts.awayName || '',
       light: opts.light || 'day', weather: opts.weather || 'clear',
       excite: opts.excite == null ? 0.22 : opts.excite };

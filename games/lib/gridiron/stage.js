@@ -238,6 +238,9 @@
     var pendingAction = null, pendingThrow = null, pendingSwitch = false;
     var kits = { off: null, def: null };
     var names = { off: '', def: '' };
+    /* the clubs' own colours, kept apart from the kits: an end zone is
+       painted in the club's paint whether they are in white that week or not */
+    var paints = { off: null, def: null };
     var artPaths = null, showArt = true;
     var userSide = 'off', userActor = null, userMode = 'play';
     var steer = { x: 0, y: 0, on: false };
@@ -280,6 +283,8 @@
         ? clamp(cam.h * (cam.anchor - 0.12) / cam.px, 18, 200)
         : clamp(1.807 * cam.h / cam.px, 26, 170);
     }
+    /* seconds the loop is held open for a camera move that is not football */
+    var glide = 0;
     var reduce = false;
     try { reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
 
@@ -310,6 +315,7 @@
     self.teams = function (offTheme, defTheme, offName, defName, offAway) {
       kits.off = P.uniform(offTheme, !!offAway);
       kits.def = P.uniform(defTheme, !offAway);
+      paints.off = offTheme || null; paints.def = defTheme || null;
       names.off = offName || ''; names.def = defName || '';
     };
     self.setArt = function (v) { showArt = !!v; };
@@ -320,7 +326,18 @@
        crowd, the sky and the grade together */
     /* 'play' is football-first. 'wide' is the establishing shot: pregame,
        kickoff, a touchdown, halftime and the final whistle. */
-    self.setShot = function (k) { shot = k === 'wide' ? 'wide' : 'play'; };
+    /* Changing the shot has to move the picture NOW: between plays nothing is
+       animating, so a lens change that waits for the next frame never arrives.
+       `snap` false glides instead, and holds the loop open long enough for the
+       move to finish — which is what a camera pulling out on a touchdown is. */
+    self.setShot = function (k, snap) {
+      var want = k === 'wide' ? 'wide' : 'play';
+      if (want === shot) return;
+      shot = want;
+      if (snap === false) { glide = 1.7; start(); return; }
+      camFollow(0, true);
+      draw();
+    };
     self.shot = function () { return shot; };
     self.setConditions = function (light, weather) {
       if (light) opts.light = light;
@@ -507,7 +524,8 @@
          same thumbs give the same play on any device. */
       while (acc > 1 / 120 && steps < 8) { update(1 / 120); acc -= 1 / 120; steps++; }
       draw();
-      if (phase === 'dead' && dead > 1.4) stop();
+      if (glide > 0) glide -= dt;
+      if (phase === 'dead' && dead > 1.4 && glide <= 0) stop();
     }
 
     function update(dt) {
@@ -557,10 +575,13 @@
       var holding = phase === 'live' && ball.holder && ball.holder.slot === 'QB' && !ball.flight
         && play && play.type === 'pass';
       if (shot === 'wide') {
-        /* the whole place, from the stand: midfield, both bowls, the lights */
+        /* THE WHOLE PLACE, BUT STILL POINTED AT THE FOOTBALL. A pull-out that
+           always settles on midfield turns a touchdown into an aerial photo
+           of a stadium with something small happening in it, so the lens
+           follows the ball up the field as it goes. */
         wide = 70;
         wantX = FIELD.half;
-        wantY = clamp((los || 50) * 0.35 + 34, 34, 62);
+        wantY = clamp((los || 50) * 0.34 + 34, 34, 68);
       } else if (phase === 'set') {
         /* back off far enough to show the whole formation: reading the look is
            the decision you are about to make */
@@ -569,7 +590,10 @@
         /* wide enough to read the look, tight enough that the men are men.
            Past the mid forties everybody is a speck and the shot stops being
            football. */
-        wide = clamp(hi - lo + 7, 32, 44);
+        /* TIGHTER INSIDE THE TWENTY. There is less field left to show and
+           more at stake in it, so the lens comes in and the men get bigger —
+           which is what a broadcast does in the red zone too. */
+        wide = clamp(hi - lo + 7, 32, los > 80 ? 38 : 44);
         wantX = (lo + hi) / 2;
         wantY = los + 2;
       } else if (holding) {
@@ -581,7 +605,7 @@
         wantY = los + 2;
       } else {
         var breakaway = ball.holder && ball.holder.carry && Math.hypot(ball.holder.vx, ball.holder.vy) > 8.4;
-        wide = breakaway ? 28 : 35;
+        wide = breakaway ? 28 : los > 80 ? 31 : 35;
         wantX = tx;
         wantY = ty + (phase === 'dead' ? 0.5 : 2.5);
       }
@@ -597,6 +621,19 @@
     }
 
     /* ── DRAW ────────────────────────────────────────────────────────────── */
+    /* END ZONE PAINT. The deep colour goes on the grass; the loud one goes
+       on the letters. If a club's two colours are too close in brightness the
+       name would vanish into its own paint, so it gets white instead. */
+    function turfPaint(theme, fb) { return (theme && theme.secondary) || fb || '#123326'; }
+    function lum(c) { var v = P.hex ? P.hex(c) : null; return v ? (v[0] * 299 + v[1] * 587 + v[2] * 114) / 1000 : 0; }
+    function turfInk(theme) {
+      if (!theme || !theme.primary || !theme.secondary) return '#ffffff';
+      if (Math.abs(lum(theme.primary) - lum(theme.secondary)) < 78) return '#ffffff';
+      /* paint on grass is seen from ninety yards; it is mixed lighter than the
+         colour on the shirt so it still carries that far */
+      return lum(theme.primary) < 120 ? P.shade(theme.primary, 0.34) : theme.primary;
+    }
+
     function draw() {
       var w = cam.w, h = cam.h;
       ctx.save();
@@ -605,7 +642,12 @@
       }
       ctx.fillStyle = '#0a0e13';
       ctx.fillRect(-20, -20, w + 40, h + 40);
-      var scene = { tick: tick, homeColor: opts.homeColor, awayColor: opts.awayColor,
+      var scene = { tick: tick,
+        homeColor: turfPaint(paints.off, opts.homeColor),
+        awayColor: turfPaint(paints.def, opts.awayColor),
+        homeInk: turfInk(paints.off), awayInk: turfInk(paints.def),
+        homeTint: (paints.off && paints.off.primary) || null,
+        awayTint: (paints.def && paints.def.primary) || null,
         homeName: names.off, awayName: names.def, firstDown: firstDown,
         light: opts.light || 'day', weather: opts.weather || 'clear', excite: excite };
       P.field(ctx, cam, scene);
