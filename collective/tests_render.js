@@ -2123,6 +2123,60 @@ var S=sandbox;
   S.BOARD_WEEK=null;S.WALL_WEEK=null;S.location.hash='';
   S.fetch=realFetchWk;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
 
+  /* ---- a record cannot be shorter than the slate without saying why ------
+     Every ATS grade here is measured against the Collective's own captured
+     closing line, and a missing close is null, never invented. So a finished
+     game with no close is ungradeable BY THE RULE and appears in nobody's
+     record. The wall read "57 settled" next to a model showing 2-0-0 and said
+     nothing about the gap, which is what "the record resets daily and isn't
+     cumulative" actually looks like from outside. */
+  var realFetchNC=S.fetch;
+  function noCloseGames(n){
+    var out=[];
+    for(var i=0;i<n;i++){
+      var g=G(500+i,'AWAY'+i,'HOME'+i,31,17,null,[M('blerm','blerm-s-model','home',-7,-7,0.6)]);
+      g.result.closing_spread=null;g.result.closing_total=null;
+      out.push(g);
+    }
+    return out;
+  }
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;S.SETTLED_REC={};
+  var NC=noCloseGames(5);
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:NC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vnc=node();
+  await S.renderWall(vnc);
+  chk('a final game with no captured close is still counted as settled',
+    /<b>5<\/b> settled/.test(vnc.innerHTML),
+    {got:(/(<b>\d+<\/b> settled)/.exec(vnc.innerHTML)||[])[1]});
+  chk('and the wall says how many of them no model can be graded on',
+    /id="bdNoClose"/.test(vnc.innerHTML)&&/<b>5<\/b> no close/.test(vnc.innerHTML),
+    {got:vnc.innerHTML.indexOf('bdNoClose')});
+  chk('naming the rule rather than leaving it a mystery number',
+    /captured closing line/.test(vnc.innerHTML)&&/never invented/.test(vnc.innerHTML));
+  chk('and nobody is graded on them, so the count is not a cosmetic label',
+    S.rowGrade(NC[0],NC[0].models[0]).pick_result==null,
+    {grade:S.rowGrade(NC[0],NC[0].models[0])});
+
+  /* and it stays out of the way when there is nothing to report */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+  var WC=noCloseGames(3);WC.forEach(function(g){g.result.closing_spread=-7.5;});
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:WC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vwc=node();
+  await S.renderWall(vwc);
+  chk('a slate whose closes all landed shows no warning at all',
+    !/id="bdNoClose"/.test(vwc.innerHTML)&&/<b>3<\/b> settled/.test(vwc.innerHTML));
+  S.fetch=realFetchNC;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);

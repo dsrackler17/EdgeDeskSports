@@ -3366,6 +3366,21 @@ async function renderWall(view){
 
     var wallToken=++WALL_TOKEN;
     var settledNow=((board&&board.games)||[]).filter(function(g){return finalResult(g)!=null;}).length;
+    /* WHY A RECORD CAN BE SHORTER THAN THE SLATE. Every ATS grade on this site
+       is measured against the Collective's own captured closing line, and a
+       missing close is null, never invented — so a finished game with no
+       captured close cannot be graded, by the published rule, and simply does
+       not appear in anybody's record.
+
+       Silently, until now. The wall read "57 settled" beside a model showing
+       2-0-0, the two numbers were computed from different things, and nothing
+       said so. To a creator that reads as a record that resets: it moves as
+       odds coverage moves and never accumulates, and there is nothing on the
+       page to suggest the cause is the line rather than the grading. Counted
+       here and stated, because it is an operator's job to fix (the odds feed's
+       link and close steps) and nobody can start it without knowing. */
+    var noCloseNow=((board&&board.games)||[]).filter(function(g){
+      var f=finalResult(g);return f!=null&&f.closing_spread==null;}).length;
     /* LEVEL 1 FIRST. The answer — what the room thinks — sits above the
        terminal wall, computed from the same games and the same market the
        wall is about to draw. Nothing is fetched twice and nothing is hidden:
@@ -3394,6 +3409,11 @@ async function renderWall(view){
         '<span id="bdSettled" title="games with a final score in '+esc(sportCode)+' this season'+
           (m.counts.graded_games!=null?' \u2014 the Collective\u2019s own settled count across every sport is '+m.counts.graded_games:'')+
           '"><b>'+settledNow+'</b> settled <i class="allsports">'+esc(sportCode)+'</i></span>'+
+        (noCloseNow?'<span id="bdNoClose" style="color:var(--warn)" title="Every ATS grade is measured against the '+
+          'Collective\u2019s own captured closing line, and a missing close is never invented. These games are final '+
+          'but carry no captured close, so no model can be graded on them and they are in nobody\u2019s record. '+
+          'The odds feed\u2019s link and close steps fill this in."><b>'+noCloseNow+'</b> no close '+
+          '<i class="allsports">ungradeable</i></span>':'')+
       '</div>'+
       boards+'</div>'+
       boardLegendShort()+
