@@ -811,9 +811,17 @@
          throwing a slant, but it is not impossible, and pricing it at zero
          is what forced the conversion rate elsewhere to be absurd. */
       var quickOut = playObj.concept === 'quick';
+      /* A QUARTERBACK WHO IS PRESSURED EVERY SNAP STARTS GETTING RID OF IT.
+         An offence behind a line that cannot block throws quicker — that is
+         what an offensive coordinator does about it — so the conversion from
+         pressure to sack falls as pressure becomes the norm. Without it the
+         two multiply and a mismatch reads as a broken game rather than a bad
+         day: the same cohort went from 21% of dropbacks to 24% for a five
+         point change in the base rate. */
+      var norm = clamp(1 - Math.max(0, pPressure - 0.34) * 0.90, 0.58, 1);
       var pSack = pressured
-        ? clamp((0.48 - (qb.spd - 60) / 380 - (qb.iq - 60) / 420
-                 + (playObj.hold - 2.4) * 0.085) * (quickOut ? 0.28 : 1), 0.02, 0.60)
+        ? clamp((0.53 - (qb.spd - 60) / 380 - (qb.iq - 60) / 420
+                 + (playObj.hold - 2.4) * 0.085) * (quickOut ? 0.28 : 1) * norm, 0.02, 0.60)
         : 0;
       if (rand() < pSack) {
         out.sack = true;
