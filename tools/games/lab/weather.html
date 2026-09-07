@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><title>conditions lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;800&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#06090d;color:#cfe0d8;font:12px Inter}
+ .row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+ figure{margin:0;position:relative}
+ canvas{display:block;width:100%;height:auto;background:#000}
+ figcaption{position:absolute;left:6px;top:6px;font:800 10px 'Space Grotesk';letter-spacing:.12em;
+   text-transform:uppercase;color:#fff;text-shadow:0 2px 8px #000}</style></head><body>
+<div class="row" id="row"></div>
+<script src="/games/lib/gridiron/paint.js"></script>
+<script>
+var P=window.EDGridironPaint;
+var COMBOS=[['day','clear'],['day','cloudy'],['dusk','clear'],['night','clear'],
+            ['night','rain'],['dusk','wind'],['day','rain'],['night','cloudy']];
+var row=document.getElementById('row');
+COMBOS.forEach(function(c){
+  var f=document.createElement('figure');
+  var cv=document.createElement('canvas'); cv.width=393*2; cv.height=560*2;
+  var cap=document.createElement('figcaption'); cap.textContent=c[0]+' / '+c[1];
+  f.appendChild(cv); f.appendChild(cap); row.appendChild(f);
+  var ctx=cv.getContext('2d'); ctx.setTransform(2,0,0,2,0,0);
+  var cam=P.camera({w:393,h:560,x:26.6,y:32,back:74,px:13,wide:32,height:1.45*560/13,anchor:.66});
+  var scene={tick:2.2,homeColor:'#1c4a30',awayColor:'#57231f',homeInk:'#8ff0c0',awayInk:'#ffb4a0',
+    homeTint:'#3fb883',awayTint:'#c0392b',homeName:'HIGH PLAINS',awayName:'FORGEMEN',
+    light:c[0],weather:c[1],excite:0.5,firstDown:38,los:30};
+  P.field(ctx,cam,scene); P.markers(ctx,cam,30,38);
+  var kh=P.uniform({primary:'#3fb883',secondary:'#123326'},false);
+  var ka=P.uniform({primary:'#c0392b',secondary:'#2a1a1a'},true);
+  for(var i=0;i<5;i++){P.player(ctx,{x:20+i*3.3,y:29,pos:'OL',kit:kh,num:70+i,state:'stance',phase:0,face:'back'},cam);}
+  for(i=0;i<4;i++){P.player(ctx,{x:21+i*4,y:31.3,pos:'DL',kit:ka,num:90+i,state:'stance',phase:0,face:'front'},cam);}
+  P.player(ctx,{x:26.6,y:25,pos:'QB',kit:kh,num:7,state:'stance',phase:0,face:'back'},cam);
+  P.player(ctx,{x:26.6,y:22,pos:'RB',kit:kh,num:24,state:'stance',phase:0,face:'back'},cam);
+  P.atmosphere(ctx,cam,scene); P.conditions(ctx,cam,scene);
+});
+</script></body></html>

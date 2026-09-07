@@ -167,21 +167,34 @@ comment on table public.referrals is
 -- Written by the Stripe webhook (service role), read by the browser to decide
 -- what the paywall does. THE BROWSER MAY ONLY READ, and only its own row: a
 -- client that could write this could grant itself the product.
+--
+-- `price_id` is what the row was sold under, and it is also how a row that was
+-- NEVER SOLD says so. `price_id = 'owner_comp'` with `status = 'active'` is
+-- full access granted here rather than bought through Stripe — the owner's own
+-- account, and anything else comped the same way. Such a row has no
+-- stripe_customer_id and no stripe_subscription_id, and both being null is
+-- correct rather than incomplete: nothing was purchased, so there is nothing
+-- for Stripe to have an id for. The paywall in app.html, the checkout in
+-- index.html and the webhook all read this column and treat that pair as paid;
+-- without it a comp is indistinguishable from an ordinary subscription and the
+-- one account that can never be charged gets walked into a payment screen.
 create table if not exists public.subscriptions (
   user_id                uuid        primary key references auth.users(id) on delete cascade,
   created_at             timestamptz not null default now(),
   updated_at             timestamptz not null default now(),
   status                 text,
+  price_id               text,
   current_period_end     timestamptz,
   cancel_at_period_end   boolean     not null default false,
   stripe_customer_id     text,
   stripe_subscription_id text
 );
 
--- and the paywall's four columns, whatever shape the table arrived in
+-- and the paywall's columns, whatever shape the table arrived in
 alter table public.subscriptions add column if not exists created_at             timestamptz not null default now();
 alter table public.subscriptions add column if not exists updated_at             timestamptz not null default now();
 alter table public.subscriptions add column if not exists status                 text;
+alter table public.subscriptions add column if not exists price_id               text;
 alter table public.subscriptions add column if not exists current_period_end     timestamptz;
 alter table public.subscriptions add column if not exists cancel_at_period_end   boolean not null default false;
 alter table public.subscriptions add column if not exists stripe_customer_id     text;
@@ -205,9 +218,12 @@ revoke insert, update, delete on public.subscriptions from anon, authenticated;
 revoke all on public.subscriptions from anon;
 
 comment on table public.subscriptions is
-  'Stripe subscription state, one row per account. Written only by the Stripe '
-  'webhook under the service role; every client role has read-only access to '
-  'its own row. The paywall in app.html reads this.';
+  'Subscription state, one row per account. Written only by the Stripe webhook '
+  'under the service role, or by hand for a comp; every client role has '
+  'read-only access to its own row. The paywall in app.html reads this. '
+  'price_id = ''owner_comp'' with status = ''active'' is access granted here '
+  'rather than bought: no Stripe ids, never expires, and the webhook refuses '
+  'to write over it.';
 
 -- ── report ─────────────────────────────────────────────────────────────────
 select 1 as row, 'billing_consents exists' as check,
@@ -247,7 +263,7 @@ union all select 10, 'subscriptions exists',
 union all select 11, 'subscriptions has the columns the paywall reads',
        case when (select count(*) from information_schema.columns
                    where table_schema='public' and table_name='subscriptions'
-                     and column_name in ('status','current_period_end','cancel_at_period_end','stripe_customer_id')) = 4
+                     and column_name in ('status','price_id','current_period_end','cancel_at_period_end','stripe_customer_id')) = 5
             then 'ok' else 'CHECK THIS' end
 union all select 12, 'subscriptions RLS is on',
        case when (select relrowsecurity from pg_class where oid='public.subscriptions'::regclass) then 'ok' else 'CHECK THIS' end

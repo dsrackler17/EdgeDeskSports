@@ -158,6 +158,11 @@
     if (opts.books === undefined) opts.books = false;
     var q = [];
     if (opts.days) q.push('days=' + encodeURIComponent(opts.days));
+    /* the look-back. `days` only ever widened the future, and a fixed 24-hour
+       lower bound on the server dropped a game off the board a day after
+       kickoff — taking its closing line, and every record graded on it, with
+       it. A server that does not know this parameter ignores it. */
+    if (opts.back) q.push('back=' + encodeURIComponent(opts.back));
     if (opts.from) q.push('from=' + encodeURIComponent(opts.from));
     if (opts.to) q.push('to=' + encodeURIComponent(opts.to));
     if (opts.week) q.push('week=' + encodeURIComponent(opts.week));

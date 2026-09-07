@@ -309,15 +309,51 @@ console.log('\nPLAY MODE — the thumbs');
   chk('a pass play has no crease to show', pass.sim.crease() === null);
 })();
 
+/* ── THE FORMATION THAT IS ONLY A PICTURE ─────────────────────────────────
+   Between calls the page lines eleven men up so the field is never empty.
+   That formation is a picture: it has no call behind it, and a second thumb
+   or a stale timer must not be able to say hut over it. The refusal belongs
+   in the simulation, because the simulation is the only thing that can be
+   sure — and it has to REPORT the refusal, so whatever locked the controls
+   on the way in gets the lock back. */
+(() => {
+  const g = freshGame(9);
+  const side = g.possession;
+  const offT = G.teamOf(g, side), defT = G.teamOf(g, G.other(side));
+  const playObj = F.play('inside_zone'), parts = F.defParts('base_3');
+  const env = G.prepare({
+    off: offT, def: defT, rand: mulberry(11), tick: g.tick, playKey: 'inside_zone',
+    formKey: 'single', defCall: 'base_3', sit: G.situation(g), mem: g.mem[side]
+  });
+  const spots = () => ST.alignOffense(playObj, 'single', 26.665, 25, G.unitsOf(offT, g.tick), {})
+    .concat(ST.alignDefense(parts, 26.665, 25, 1, G.unitsOf(defT, g.tick), playObj, 'single', {}));
+  const base = { playObj: playObj, parts: parts, formKey: 'single', los: 25, ballX: 26.665,
+    rand: mulberry(11), userSide: 'off', userMode: 'play' };
+
+  const shown = LIVE.Play(Object.assign({}, base, { actors: spots(), env: env, preview: true }));
+  chk('a preview formation refuses the snap', shown.snap() === false);
+  shown.step(1 / 120, {});
+  chk('and stays a picture when it is stepped', shown.outcome() === null);
+  chk('and refuses an input that asks for one', shown.snap() === false);
+
+  const blank = LIVE.Play(Object.assign({}, base, { actors: spots(), rand: mulberry(11) }));
+  chk('a formation with no environment refuses too', blank.snap() === false);
+
+  const real = LIVE.Play(Object.assign({}, base, { actors: spots(), env: env }));
+  chk('a real call says hut', real.snap() === true);
+  chk('and only once', real.snap() === false);
+})();
+
 /* ── ONE NAME, ONE THING ──────────────────────────────────────────────────
    play.js is a single closure two thousand lines long, and `var` does not
    care: declaring the same name twice at module scope silently gives the
-   whole file whichever one is assigned last. That shipped — a table of player
-   milestones called MARKS, and eleven hundred lines later a table of club
-   badges called MARKS. The second won, `MARKS.forEach` threw on the first
-   snap of every game, and because it threw inside the whistle handler the
-   game stopped dead: no next play, no clock, nothing. Every test passed and
-   the simulation was perfect. Only a browser found it.
+   whole file whichever one is assigned last. That shipped: a table of player
+   milestones called MARKS, and eleven hundred lines later the table of club
+   badges that had always been called MARKS. The second won, `MARKS.forEach`
+   threw on the first snap of every game, and because it threw inside the
+   whistle handler the game stopped dead — no next play, no clock, nothing to
+   press. Every test passed and the simulation was perfect. Only a browser
+   found it, and the badges are CLUB_MARKS now.
 
    Two lines of guard against an entire class of that. */
 (() => {

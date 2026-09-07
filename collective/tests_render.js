@@ -1820,6 +1820,418 @@ var S=sandbox;
 
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 
+  /* ---- the door: which room a signed-in account gets --------------------
+     The regression this covers is a lockout, not a wrong pixel. The slate
+     uploader lives on the creator dashboard and nowhere else on this site,
+     and the router used to hand out that room on the strength of the `role`
+     word alone. `role` is computed from an active creator row owned by the
+     signed-in auth user; the uploader is served by /v1/dashboard, which
+     looks the same row up itself. Any drift between them -- a row owned by
+     the email somebody else redeemed the invite on, a status a removal
+     moved off 'active', an older /v1/me -- came out as the member
+     dashboard: no uploader, no explanation, no way back. So: drive the real
+     router against a server whose label and whose rows disagree, and against
+     one that is simply broken, and assert on the room and on the way out. */
+  var realFetchDoor=S.fetch;
+  var doorAsked=[];
+  function refuse(status,message){
+    return Promise.resolve({ok:false,status:status,json:function(){
+      return Promise.resolve({error:{code:'x',message:message}});}});
+  }
+  function doorFetch(role,answer){
+    return function(url,opts){
+      var u=String(url);
+      doorAsked.push(u);
+      if(u.indexOf('/v1/me')>=0)
+        return reply({signed_in:true,role:role,email:'operator@example.com',admin:true,entitled:true});
+      if(u.indexOf('/v1/dashboard')>=0){
+        if(answer==='yes')return reply({creator:{slug:'edgedesksports',display_name:'EdgedeskSports'},models:[]});
+        if(answer==='down')return refuse(500,'briefly unreachable');
+        return refuse(404,'no creator on this account');
+      }
+      return realFetchDoor(url,opts);
+    };
+  }
+  /* a session whose token carries a real-looking auth user id, because the
+     admin remedy is filled in from it */
+  var DOOR_UID='11111111-2222-3333-4444-555555555555';
+  S.localStorage.setItem('collective_session',JSON.stringify({
+    access_token:'x.'+Buffer.from(JSON.stringify({sub:DOOR_UID})).toString('base64')+'.y',
+    refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+  S.localStorage.setItem('mc_welcomed','1');
+  chk('the page can read its own account id out of the session token',
+    S.sessionUserId()===DOOR_UID,{got:S.sessionUserId()});
+
+  var realCreator=S.renderCreatorDash,realMember=S.renderMemberDash,room=null,gotProbe=null;
+  S.renderCreatorDash=function(){room='creator';return Promise.resolve();};
+  S.renderMemberDash=function(v,me,probe){room='member';gotProbe=probe;return Promise.resolve();};
+
+  /* the label agrees: nothing changes, and the creator endpoint is not
+     asked twice for an answer the label already gave */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('creator','no');
+  await S.renderDashboard(node());
+  chk('a creator labelled a creator still goes straight to the creator dashboard',
+    room==='creator'&&!doorAsked.some(function(u){return u.indexOf('/v1/dashboard')>=0;}),
+    {room:room,asked:doorAsked});
+
+  /* the label says member, the rows say creator: the rows win */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('member','yes');
+  await S.renderDashboard(node());
+  chk('a creator the label calls a member still gets the uploader',
+    room==='creator',{room:room,asked:doorAsked});
+
+  /* really not a creator: the member dashboard, and the probe travels with
+     it so the page can say what was asked */
+  S.CREATOR_PROBE=null;room=null;gotProbe=null;doorAsked.length=0;S.fetch=doorFetch('member','no');
+  await S.renderDashboard(node());
+  chk('an account with no creator row gets the member dashboard, told why',
+    room==='member'&&gotProbe&&gotProbe.state==='no'&&gotProbe.status===404,{room:room,probe:gotProbe});
+  /* and the answer is remembered, so navigating back does not re-ask */
+  doorAsked.length=0;
+  await S.renderDashboard(node());
+  chk('a settled "no" is asked once per session, not on every visit',
+    !doorAsked.some(function(u){return u.indexOf('/v1/dashboard')>=0;}),{asked:doorAsked});
+
+  /* the API is having a bad minute. This is the case that must NOT read as
+     "not a creator" and must NOT be cached, or one 500 costs a creator
+     their uploader for the rest of the session. */
+  S.CREATOR_PROBE=null;room=null;gotProbe=null;doorAsked.length=0;S.fetch=doorFetch('member','down');
+  await S.renderDashboard(node());
+  chk('a broken creator endpoint is reported as unknown, never as "not a creator"',
+    room==='member'&&gotProbe&&gotProbe.state==='unknown'&&gotProbe.status===500,{room:room,probe:gotProbe});
+  chk('and an unknown is never cached, so the next visit asks again',
+    S.CREATOR_PROBE===null,{cached:S.CREATOR_PROBE});
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('member','yes');
+  await S.renderDashboard(node());
+  chk('so the creator whose API hiccuped gets their dashboard back on the next look',
+    room==='creator',{room:room});
+
+  /* a dead session is a dead session, not an answer about creators */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;
+  S.fetch=function(url){var u=String(url);
+    if(u.indexOf('/v1/me')>=0)return reply({signed_in:true,role:'member',email:'a@b.c'});
+    if(u.indexOf('/v1/dashboard')>=0)return refuse(401,'expired');
+    return realFetchDoor(url);};
+  await S.renderDashboard(node());
+  chk('a 401 from the creator endpoint signs out instead of being filed as "no creator"',
+    room===null&&S.CREATOR_PROBE===null&&!S.localStorage.getItem('collective_session'),
+    {room:room,cached:S.CREATOR_PROBE});
+
+  S.renderCreatorDash=realCreator;S.renderMemberDash=realMember;
+  /* the 401 case above signed this session out, and the admin remedy is
+     filled in from the token, so sign back in before reading the panel */
+  S.localStorage.setItem('collective_session',JSON.stringify({
+    access_token:'x.'+Buffer.from(JSON.stringify({sub:DOOR_UID})).toString('base64')+'.y',
+    refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+
+  /* ---- the way out, on the page itself ---------------------------------
+     The panel is the whole point: an account that cannot post has to be
+     told what was asked, what came back, and how to ask again. */
+  var gateNo=S.creatorGateHTML({state:'no',status:404},{email:'operator@example.com',admin:false},WALL);
+  chk('the member dashboard says where the uploader is and that it was actually asked for',
+    /creator dashboard/.test(gateNo)&&/v1\/dashboard/.test(gateNo)&&/404/.test(gateNo)
+      &&gateNo.indexOf('operator@example.com')>=0,{html:gateNo.slice(0,400)});
+  chk('and offers the ask again, so the page is not a dead end',
+    /id="ctRetry"/.test(gateNo));
+  var gateDown=S.creatorGateHTML({state:'unknown',status:500,message:'briefly unreachable'},{email:'operator@example.com'},WALL);
+  chk('a failure to ask reads as a failure to ask, not as a verdict',
+    /could not ask/i.test(gateDown)&&/500/.test(gateDown)&&!/no active creator row/.test(gateDown),
+    {html:gateDown.slice(0,400)});
+  chk('a non-admin is not handed database instructions for a database they do not run',
+    !/ctSql/.test(gateNo)&&!/ctSlug/.test(gateNo));
+  var gateAdmin=S.creatorGateHTML({state:'no',status:404},{email:'operator@example.com',admin:true},WALL);
+  chk('an admin gets their own account id and the models actually on this wall',
+    /id="ctSql"/.test(gateAdmin)&&gateAdmin.indexOf(DOOR_UID)>=0
+      &&gateAdmin.indexOf('value="edgedesksports"')>=0,{html:gateAdmin.slice(0,600)});
+  chk('an admin whose API is merely down is told to retry, not to edit the database',
+    !/ctSql/.test(S.creatorGateHTML({state:'unknown',status:500},{admin:true},WALL)));
+  /* A panel drawn with no probe behind it must not report a refusal nobody
+     asked for -- that is the same mistake as the silence it replaced. */
+  var gateNone=S.creatorGateHTML(null,{email:'operator@example.com',admin:true},WALL);
+  chk('with nothing asked, the panel says so and asks rather than inventing a verdict',
+    /has not checked/.test(gateNone)&&/id="ctRetry"/.test(gateNone)
+      &&!/came back with no creator row/.test(gateNone)&&!/ctSql/.test(gateNone),{html:gateNone.slice(0,400)});
+  /* a 200 carrying no creator is not a refusal, and must not be described as
+     one -- "refused (200)" is the kind of sentence that sends somebody
+     hunting for a permissions problem that is not there */
+  chk('a 200 with no creator row is reported as what it is',
+    /came back with no creator row \(HTTP 200\)/.test(
+      S.creatorGateHTML({state:'no',status:200},{email:'a@b.c'},WALL)));
+
+  /* ---- the statement that fixes it -------------------------------------
+     Written by the same rules as the rest of this page's SQL: find the
+     schema, be safe to run twice, and refuse rather than guess whose row
+     this is. A reassignment that guessed would move somebody else's whole
+     graded record onto this account. */
+  var sql=S.creatorLinkSQL('edgedesksports',DOOR_UID);
+  chk('the statement names the row and the account, and nothing else',
+    sql.indexOf('edgedesksports')>=0&&sql.indexOf(DOOR_UID)>=0&&/set user_id = \$2/.test(sql));
+  chk('it finds the schema instead of assuming public',
+    /information_schema\.tables/.test(sql)&&sql.indexOf('public.')<0);
+  chk('it stops when the slug misses and when somebody else owns the row',
+    /no creator row with slug/.test(sql)&&/is owned by auth user/.test(sql));
+  chk('it re-opens a row a removal closed, without touching the record',
+    /removed_at = null/.test(sql)&&/account_status/.test(sql)
+      &&sql.indexOf('delete')<0&&sql.indexOf('projections')<0);
+  /* In RAISE, % is the placeholder and %% is a literal percent -- format()'s
+     %I and %L do not exist here, and one extra argument makes the whole
+     statement fail at runtime with "too many parameters specified for
+     RAISE". Which is a thing to find out from a test rather than from the
+     one person who ever runs this, on the day they cannot post a slate. */
+  function raiseArity(text){
+      var bad=[];
+      (String(text).match(/raise (?:exception|notice) [^\n]*/g)||[]).forEach(function(line){
+        var i=line.indexOf("'"),msg='',j=i+1;
+        while(j<line.length){
+          var ch=line.charAt(j);
+          if(ch==="'"){if(line.charAt(j+1)==="'"){msg+="'";j+=2;continue;}j++;break;}
+          msg+=ch;j++;
+        }
+        /* the argument list ends at the statement's own semicolon, not at the
+           end of the source line -- `raise exception '...'; end if;` shares one */
+        var rest=line.slice(j),cut='',inq=false;
+        for(var z=0;z<rest.length;z++){
+          var rc=rest.charAt(z);
+          if(rc==="'"){inq=!inq;cut+=rc;continue;}
+          if(rc===';'&&!inq)break;
+          cut+=rc;
+        }
+        rest=cut.trim().replace(/^,/,'');
+        var args=0,q=false,depth=0,seen=false;
+        for(var k=0;k<rest.length;k++){
+          var c=rest.charAt(k);
+          if(c==="'"){q=!q;seen=true;continue;}
+          if(q)continue;
+          if(c==='(')depth++;else if(c===')')depth--;
+          else if(c===','&&depth===0){args++;continue;}
+          if(c.trim())seen=true;
+        }
+        if(seen)args++;
+        var holes=(msg.replace(/%%/g,'').match(/%/g)||[]).length;
+        if(holes!==args)bad.push({line:line,holes:holes,args:args});
+      });
+      return bad;
+  }
+  /* the checker has to be able to fail, or this is a green light for nothing */
+  chk('the RAISE check catches a %% written where a placeholder was meant',
+    raiseArity("raise exception 'no creator row matched slug %% or name %%', 'a', 'b';").length===1
+      &&raiseArity("raise exception 'plain, no args';").length===0
+      &&raiseArity("raise notice 'one % here', x;").length===0);
+  chk('every RAISE in it gets exactly one argument per placeholder',
+    raiseArity(sql).length===0,{bad:raiseArity(sql)});
+  chk('a slug or an id carrying a quote cannot close the string it sits in',
+    S.creatorLinkSQL("o'brien",DOOR_UID).indexOf("o''brien")>=0);
+
+  /* and on the real page, not only in the helper: the member dashboard is
+     the room this account is actually in, so drive it and read what it says */
+  S.WALLC=null;S.META=null;
+  var vmem=node();
+  S.fetch=doorFetch('member','no');
+  await S.renderMemberDash(vmem,{signed_in:true,role:'member',email:'operator@example.com',
+    admin:true,entitled:true},{state:'no',status:404});
+  chk('the member dashboard carries the way back to the uploader, not just an invite box',
+    /Creator tools/.test(vmem.innerHTML)&&/id="ctRetry"/.test(vmem.innerHTML)
+      &&/creator dashboard/.test(vmem.innerHTML),
+    {has:vmem.innerHTML.indexOf('Creator tools'),len:vmem.innerHTML.length});
+  chk('and still offers the invite path it always did',
+    /id="ivTok"/.test(vmem.innerHTML)&&/id="ivCheck"/.test(vmem.innerHTML));
+
+  S.fetch=realFetchDoor;S.CREATOR_PROBE=null;
+  S.WALLC=null;S.META=null;
+  S.localStorage.removeItem('collective_session');
+
+  /* ---- the front page can reach the week that has not happened yet -------
+     The server keeps a week "current" until 36 hours after its last game,
+     which is right while that game is still settling and wrong the moment the
+     next week's numbers are posted. The Board has always had a week strip;
+     the Wall, which is the front page, had none — so a creator who had just
+     uploaded 29 week-2 games saw a slate with one game left and no way to
+     reach their own work. These hold the strip on BOTH surfaces and hold the
+     one thing that makes it real: the request actually carries the week. */
+  var realFetchWk=S.fetch;
+  var wkAsked=[];
+  var W2GAME=G(99,'MISSOURI','KANSAS',null,null,null,[
+    M('edgedesksports','edgedesk-cfb','home',-4.6,-6.5,0.61)]);
+  W2GAME.week=2; W2GAME.kickoff_at='2026-09-12T00:00:00Z'; W2GAME.result=null;
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0){
+      wkAsked.push(u);
+      var w=/[?&]week=(\d+)/.exec(u);
+      if(w&&w[1]==='2')return reply({games:[W2GAME],week:2,entitled:true});
+      if(w)return reply({games:[],week:+w[1],entitled:true});
+      return reply({games:GAMES,week:1,entitled:true});
+    }
+    return realFetchWk(url);
+  };
+
+  chk('the week strip is written once and used by both surfaces',
+    typeof S.weekStripHTML==='function'&&typeof S.bindWeekStrip==='function');
+  {
+    var strip=S.weekStripHTML('CFB',null);
+    chk('with no week chosen, Current is the selected button',
+      /data-w=""[^>]*>Current/.test(strip)&&/class="on" data-w=""/.test(strip),{strip:strip.slice(0,160)});
+    var s2=S.weekStripHTML('CFB',2);
+    chk('choosing a week moves the highlight off Current onto it',
+      /class="on" data-w="2"/.test(s2)&&!/class="on" data-w=""/.test(s2),{strip:s2.slice(0,200)});
+    /* the sport switcher shares .wk styling; a handler bound to every .wk
+       button would reset the week to Current on every sport change */
+    chk('every button the week handler binds to carries data-w',
+      (s2.match(/<button/g)||[]).length===(s2.match(/data-w=/g)||[]).length);
+    chk('a college strip offers the college calendar, not the NFL one',
+      /Bowl|CFP|W15/.test(S.weekStripHTML('CFB',null))||
+      (S.weekStripHTML('CFB',null).match(/data-w="/g)||[]).length>
+      (S.weekStripHTML('NFL',null).match(/data-w="/g)||[]).length ||
+      S.weekStripHTML('CFB',null)!==S.weekStripHTML('NFL',null));
+  }
+
+  /* THE WALL. Default asks for no week at all — the front page follows the
+     server's current slate, and must not pin itself to a number. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;
+  S.location.hash='';
+  wkAsked.length=0;
+  var vw=node();
+  await S.renderWall(vw);
+  chk('the wall asks for the current slate, with no week pinned',
+    wkAsked.length>0&&!/[?&]week=/.test(wkAsked[0]),{asked:wkAsked.slice()});
+  chk('and it now carries the week strip the board has always had',
+    /class="wk"/.test(vw.innerHTML)&&/data-w="2"/.test(vw.innerHTML),
+    {has:vw.innerHTML.indexOf('class="wk"')});
+
+  /* Pick week 2: the request carries it, and the week 2 game is what draws. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=2;
+  wkAsked.length=0;
+  var vw2=node();
+  await S.renderWall(vw2);
+  chk('choosing a week sends it to the games feed',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);}),{asked:wkAsked.slice()});
+  chk('and the wall draws that week’s games, not the current one',
+    vw2.innerHTML.indexOf('KANSAS')>=0&&vw2.innerHTML.indexOf('FLORIDASTA')<0,
+    {kansas:vw2.innerHTML.indexOf('KANSAS'),fsu:vw2.innerHTML.indexOf('FLORIDASTA')});
+  chk('with the strip showing which week is being looked at',
+    /class="on" data-w="2"/.test(vw2.innerHTML));
+
+  /* THE BOARD still works through the same helper. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.BOARD_WEEK=2;
+  wkAsked.length=0;
+  S.location.hash='#board';
+  var vb=node();
+  await S.renderBoard(vb);
+  chk('the board still sends its own week through the shared strip',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);})&&/class="on" data-w="2"/.test(vb.innerHTML),
+    {asked:wkAsked.slice()});
+  S.BOARD_WEEK=null;S.WALL_WEEK=null;S.location.hash='';
+  S.fetch=realFetchWk;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
+
+  /* ---- a record cannot be shorter than the slate without saying why ------
+     Every ATS grade here is measured against the Collective's own captured
+     closing line, and a missing close is null, never invented. So a finished
+     game with no close is ungradeable BY THE RULE and appears in nobody's
+     record. The wall read "57 settled" next to a model showing 2-0-0 and said
+     nothing about the gap, which is what "the record resets daily and isn't
+     cumulative" actually looks like from outside. */
+  var realFetchNC=S.fetch;
+  function noCloseGames(n){
+    var out=[];
+    for(var i=0;i<n;i++){
+      var g=G(500+i,'AWAY'+i,'HOME'+i,31,17,null,[M('blerm','blerm-s-model','home',-7,-7,0.6)]);
+      g.result.closing_spread=null;g.result.closing_total=null;
+      out.push(g);
+    }
+    return out;
+  }
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;S.SETTLED_REC={};
+  var NC=noCloseGames(5);
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:NC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vnc=node();
+  await S.renderWall(vnc);
+  chk('a final game with no captured close is still counted as settled',
+    /<b>5<\/b> settled/.test(vnc.innerHTML),
+    {got:(/(<b>\d+<\/b> settled)/.exec(vnc.innerHTML)||[])[1]});
+  chk('and the wall says how many of them no model can be graded on',
+    /id="bdNoClose"/.test(vnc.innerHTML)&&/<b>5<\/b> no close/.test(vnc.innerHTML),
+    {got:vnc.innerHTML.indexOf('bdNoClose')});
+  chk('naming the rule rather than leaving it a mystery number',
+    /captured closing line/.test(vnc.innerHTML)&&/never invented/.test(vnc.innerHTML));
+  chk('and nobody is graded on them, so the count is not a cosmetic label',
+    S.rowGrade(NC[0],NC[0].models[0]).pick_result==null,
+    {grade:S.rowGrade(NC[0],NC[0].models[0])});
+
+  /* and it stays out of the way when there is nothing to report */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+  var WC=noCloseGames(3);WC.forEach(function(g){g.result.closing_spread=-7.5;});
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:WC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vwc=node();
+  await S.renderWall(vwc);
+  chk('a slate whose closes all landed shows no warning at all',
+    !/id="bdNoClose"/.test(vwc.innerHTML)&&/<b>3<\/b> settled/.test(vwc.innerHTML));
+  S.fetch=realFetchNC;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+
+  /* ---- the market window has to reach BACKWARDS too ----------------------
+     `days` widened only the future; the lower bound was a fixed 24 hours on
+     the read function. A finished game therefore fell off the board one day
+     after kickoff, and the board is where this page recovers a closing line
+     for a finished game whose record carries none — "the board carries a
+     close on any game still inside its window", in fillCapturedCloses.
+
+     So every model's graded record silently shrank to whatever finished in
+     the last 24 hours, and refilled the next day with a different set. That
+     is what was reported as "the ATS results reset daily and aren't
+     cumulative": the record was following the odds window, not results. */
+  {
+    /* the direct builder: the path taken when odds.js is older than the page */
+    /* the direct builder — the path taken when odds.js is older than the page */
+    var seen=[];
+    var realFetchMk=S.fetch;
+    S.fetch=function(u){seen.push(String(u));
+      return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({games:[]});}});};
+    S.marketBoardDirect({league:'ncaaf',days:24,back:8,limit:200});
+    chk('the direct board builder sends the look-back',
+      seen.length===1&&/[?&]back=8(&|$)/.test(seen[0])&&/[?&]days=24(&|$)/.test(seen[0]),
+      {url:seen[0]});
+    chk('and still sends everything it sent before',
+      /[?&]limit=200/.test(seen[0])&&/[?&]books=0/.test(seen[0]),{url:seen[0]});
+    S.fetch=realFetchMk;
+  }
+  {
+    /* and what the page actually ASKS for, through the real defaults */
+    var asked=null;
+    S.MCOdds={configure:function(){},injectCss:function(){},
+      leagueFor:function(x){return x;},
+      board:function(o){asked=o;return Promise.resolve(null);}};
+    S.window.MCOdds=S.MCOdds;
+    S.marketBoard({league:'ncaaf'});
+    chk('the page asks for a look-back, not just a look-ahead',
+      asked&&asked.back===8&&asked.days===24,{asked:asked});
+    chk('long enough to cover a slate week, so a week keeps its closes',
+      asked&&asked.back>=7,{back:asked&&asked.back});
+    /* a two-directional window holds more games than a one-directional one,
+       and a row cap that did not grow would drop the upcoming half */
+    chk('and raises the row cap so the finished half cannot crowd out the rest',
+      asked&&asked.limit===200,{limit:asked&&asked.limit});
+    asked=null;
+    S.marketBoard({league:'nfl'});
+    chk('the NFL asks on the same rule with its own numbers',
+      asked&&asked.back===8&&asked.days===10&&asked.limit===60,{asked:asked});
+    /* an explicit range is never second-guessed: a caller that named from/to
+       meant it, and a look-back bolted onto it would silently widen it */
+    asked=null;
+    S.marketBoard({league:'nfl',from:'2026-09-01T00:00:00Z',to:'2026-09-08T00:00:00Z'});
+    chk('an explicit from/to is left exactly as asked',
+      asked&&asked.back===undefined&&asked.days===undefined,{asked:asked});
+    delete S.MCOdds;delete S.window.MCOdds;
+  }
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
