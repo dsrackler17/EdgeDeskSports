@@ -345,21 +345,10 @@
   /* Dropping back you can still run: the stick and the scramble button stay
      live while the throw badges sit over the receivers. */
   function padPass() { sticks(['scramble', 'Scramble'], null); }
-  function padReceivers(list) {
-    padPass();
-    stage.showTargets(list);
-    var bar = document.createElement('div');
-    bar.className = 'pd-clock';
-    bar.innerHTML = '<span id="pdBar"></span>';
-    pad.appendChild(bar);
-    var t0 = Date.now(), el = $('pdBar');
-    (function tickBar() {
-      if (!el || !el.parentNode) return;
-      var u = Math.min(1, (Date.now() - t0) / 2600);
-      el.style.width = (100 - u * 100) + '%';
-      el.style.background = u > 0.7 ? '#e2664b' : u > 0.4 ? '#d9a441' : '#3fb883';
-      if (u < 1) requestAnimationFrame(tickBar);
-    })();
+  /* whether the ball is in a hand this user is steering */
+  function userHasBall() {
+    var sit = game ? G.situation(game) : null;
+    return !!sit && sit.offense === me;
   }
 
   /* a tap on the field is a throw, if it lands on a badge */
@@ -481,10 +470,19 @@
       sit.offense !== me);
     stage.setArt(set.art);
     stage.setSpeed(S.SPEEDS[set.speed] === 99 ? 3.2 : (S.SPEEDS[set.speed] || 1.4) * 0.72);
+    /* WHAT THE ENGINE KNOWS, HANDED OVER BEFORE THE SNAP. Ratings, fatigue,
+       scheme, halftime adjustments, how long the protection holds, how much
+       separation the routes can win — capacities, not outcomes. What happens
+       is then decided out on the grass. */
+    var env = G.prepare({
+      off: offT, def: defT, rand: game.aiRand || game.rand, tick: game.tick,
+      playKey: playKey, formKey: formKey, defCall: defKey,
+      sit: sit, mem: game.mem[sit.offense]
+    });
     stage.lineUp({
       play: playKey, formation: formKey, def: defKey,
       los: sit.ball, firstDown: Math.min(100, sit.ball + sit.toGo), ballX: ballX,
-      strong: ps ? ps.strong : 0,
+      strong: ps ? ps.strong : 0, env: env, rand: game.rand,
       offUnits: G.unitsOf(offT, game.tick), defUnits: G.unitsOf(defT, game.tick)
     });
     var look = stage.look();
@@ -505,13 +503,38 @@
     stage.snapNow();
     if (set.mode === 'coach' || !mine) {
       if (!mine && set.mode === 'play') padDefense();
-    } else if (F.play(pendingCall.play).type === 'pass') {
-      var rs = stage.receivers();
-      if (rs.length) { padReceivers(rs.slice(0, 4)); seenTip('read'); }
-    } else {
-      padRun(); seenTip('run');
+      return;
+    }
+    /* On a pass the badges go up over the receivers and the stick stays live
+       so he can climb the pocket or take off. On a run there is nothing to
+       steer until the ball is in the back's belly — `onHandoff` does that. */
+    if (F.play(pendingCall.play).type === 'pass') {
+      padPass();
+      stage.showTargets(true);
+      rushBar();
+      seenTip('read');
     }
   }
+
+  /* the clock on the pocket: not a deadline, a warning */
+  function rushBar() {
+    var old = pad.querySelector('.pd-clock');
+    if (old) old.parentNode.removeChild(old);
+    var bar = document.createElement('div');
+    bar.className = 'pd-clock';
+    bar.innerHTML = '<span id="pdBar"></span>';
+    pad.appendChild(bar);
+    var t0 = Date.now(), el = $('pdBar');
+    var hold = (F.play(pendingCall.play).hold || 2.4) * 1000;
+    (function tick() {
+      if (!el || !el.parentNode) return;
+      var u = Math.min(1, (Date.now() - t0) / hold);
+      el.style.width = (100 - u * 100) + '%';
+      el.style.background = u > 0.75 ? '#e2664b' : u > 0.45 ? '#d9a441' : '#3fb883';
+      if (u < 1) requestAnimationFrame(tick);
+    })();
+  }
+
   function special(call) {
     if (busy) return;
     busy = true; drawerClose(); padClear();
@@ -528,16 +551,31 @@
   }
 
   /* ── THE STAGE'S CALLBACKS ────────────────────────────────────────────── */
-  function resolveNow(input) {
+  /* ── THE WHISTLE ─────────────────────────────────────────────────────────
+     The simulation says what happened; the session books it. Same stats,
+     same clock, same drive, same season as a play the resolver settled. */
+  function commit(outcome) {
     var call = pendingCall || {};
-    call.read = input.read; call.lane = input.lane; call.timing = input.timing;
-    call.scramble = !!input.scramble;
+    call.outcome = outcome;
     var r = S.step(game, call);
     lastResult = r && r.play ? r.play : null;
     return lastResult;
   }
+  /* COACH MODE IS UNCHANGED. No outcome goes in, so the engine settles the
+     snap with the same deterministic resolver it always has; the play you
+     watched was the picture, and the resolver is the record. */
+  function commitCoach() {
+    var call = pendingCall || {};
+    if (call.outcome) delete call.outcome;
+    var r = S.step(game, call);
+    lastResult = r && r.play ? r.play : null;
+    return lastResult;
+  }
+
   function onEnd(kind, res) {
-    var p = res || lastResult;
+    /* the simulation settled it; the engine books it, and only now do down,
+       distance, clock and the season move */
+    var p = (set.mode === 'play' && res && res.live) ? commit(res) : commitCoach();
     if (p) {
       if (p.sack) { SOUND.bad(); buzz('medium'); bigFlash('SACK', 'bad'); }
       else if (p.turnover === 'interception') { SOUND.bad(); buzz('strong'); bigFlash('INTERCEPTED', 'bad'); }
@@ -585,7 +623,10 @@
       return;
     }
     if (sit.phase === 'pat') {
-      var mine = game.pendingScore.side === me;
+      /* the engine clears the pending score the moment the try is taken, and
+         a redraw can land on the far side of that; treat a missing one as
+         theirs and offer the button that just moves the game on */
+      var mine = !!game.pendingScore && game.pendingScore.side === me;
       drawerOpen('<div class="dr-grip"></div>'
         + '<div class="dr-head"><span class="dr-title">' + (mine ? 'Your touchdown' : 'Their touchdown') + '</span></div>'
         + (mine ? '<div class="dr-row"><button class="btn btn-go" id="drXP" type="button">Extra point</button>'
@@ -613,11 +654,16 @@
       sit.offense !== me);
     stage.lineUp({ play: guess.key, formation: gf, def: 'base_3', los: sit.ball,
       firstDown: Math.min(100, sit.ball + sit.toGo), ballX: ballX, strong: 0,
+      env: G.prepare({ off: G.teamOf(game, sit.offense), def: G.teamOf(game, sit.defense),
+        rand: game.aiRand || game.rand, tick: game.tick, playKey: guess.key, formKey: gf,
+        defCall: 'base_3', sit: sit, mem: game.mem[sit.offense] }),
+      rand: game.rand,
       offUnits: G.unitsOf(G.teamOf(game, sit.offense), game.tick),
       defUnits: G.unitsOf(G.teamOf(game, sit.defense), game.tick) });
     readEl.hidden = true;
   }
   function patForThem() {
+    if (!game.pendingScore) return { type: 'pat' };
     var d = game.score[game.pendingScore.side] - game.score[G.other(game.pendingScore.side)];
     var late = game.quarter >= game.cfg.quarters;
     return (late && (d === -2 || d === -5 || d === 1 || d === -10))
@@ -829,15 +875,16 @@
   /* ── STARTING ─────────────────────────────────────────────────────────── */
   function makeStage() {
     stage = ST.Stage(canvas, {
-      resolve: resolveNow,
+
       homeColor: kitFor('me').secondary || '#123326',
       awayColor: kitFor('opp').secondary || '#2a1a2f',
       on: {
         onSnap: function () {},
-        onHandoff: function () { buzz('light'); },
+        onHandoff: function () { buzz('light'); if (set.mode === 'play' && userHasBall()) padRun(); },
         onThrow: function () { SOUND.tap(); },
-        onCatch: function () { SOUND.tap(); buzz('light'); if (set.mode === 'play') padRun(); },
-        onScramble: function () { if (set.mode === 'play') padRun(); },
+        onCatch: function () { SOUND.tap(); buzz('light'); if (set.mode === 'play' && userHasBall()) padRun(); },
+        onScramble: function () { if (set.mode === 'play' && userHasBall()) padRun(); },
+        onBreak: function () { SOUND.hit(); buzz('medium'); },
         onIntercept: function () { SOUND.bad(); },
         onIncomplete: function () {},
         onMove: function () {},
