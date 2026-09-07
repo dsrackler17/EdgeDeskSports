@@ -2916,6 +2916,10 @@ fresh();
     fresh();
   })();
 
+  chk('and the deploy-time report carries the constraint the whole thing rests on',
+    /select 37, 'the rank is derived from the record/.test(SQL)
+    && /t\.relname = 'franchise_activity' and c\.contype = 'u'/.test(SQL)
+    && /p\.provolatile = 's'[\s\S]{0,200}proname = 'franchise_rank_report'/.test(SQL));
   has(FJS, 'function retryable(r)', 'the rule has a name in the source');
   chk('and it is written as a rule, not a list of status codes',
     /if \(!r\.status\) return true;\s*\n\s*return r\.status >= 500 \|\| r\.status === 404;/.test(FJS));

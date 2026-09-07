@@ -2809,6 +2809,11 @@ Held down by `tools/games/franchise.test.js` §28 (the whole offline week, every
 failure shape, and the jam itself) and `tools/games/sql/games_franchise.test.sql`
 §31 (the arithmetic, the uniqueness constraint, and the replay).
 
+And by **report row 37**, so a bad deploy says so out loud: the rank report is
+still `stable`, no column holds a rank, and `franchise_activity` still carries
+its uniqueness constraint. Drop that constraint and a lost answer pays twice —
+a rank bought by a bad connection.
+
 ## Not built yet, on purpose
 
 Nothing on the roadmap. What is deliberately absent: a fairness check on

@@ -9665,4 +9665,47 @@ select 36, 'the roster is ' || (public.franchise_offseason_version())
         -- reach it, which is why the floor lives on the server too
         and not has_function_privilege('anon', 'public.franchise_pool_plan()', 'execute')
     then 'ok' else 'CHECK THIS' end
+union all
+select 37, 'the rank is derived from the record and a replayed reward cannot count twice, so a week played offline connects exactly as it was earned',
+  case when
+        -- THE RANK IS A READ, NOT A RECORD. franchise_rank_report sums the
+        -- activity log with the published weights and writes nothing, so
+        -- there is no rank counter to synchronise, drift or replay. If it
+        -- ever stopped being STABLE something started writing.
+        (select p.provolatile = 's' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public' and p.proname = 'franchise_rank_report')
+        -- and nothing anywhere stores a rank or a point total: only how many
+        -- packs have been claimed, which is what was SPENT, not what was won
+        and not exists (select 1 from information_schema.columns
+                         where table_schema = 'public' and table_name = 'franchises'
+                           and column_name in ('rank', 'rank_points', 'reputation', 'reputation_points'))
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'franchises'
+                       and column_name = 'rank_claimed')
+        -- THE ONE CONSTRAINT THE WHOLE OFFLINE STORY RESTS ON. The browser
+        -- queues a reward under (kind, key) and replays it when it can reach
+        -- the server again — including when the server already wrote the row
+        -- and only the answer went missing. Drop this and a lost answer pays
+        -- twice, and a rank is bought by a bad connection.
+        and exists (select 1 from pg_constraint c join pg_class t on t.oid = c.conrelid
+                     where t.relname = 'franchise_activity' and c.contype = 'u'
+                       and (select array_agg(a.attname::text order by a.attname)
+                              from unnest(c.conkey) as u(att) join pg_attribute a
+                                on a.attrelid = c.conrelid and a.attnum = u.att)
+                           = array['franchise_id','key','kind'])
+        -- every rank-bearing kind the client can earn with no server is a
+        -- kind the activity table will actually accept
+        and (select bool_and(pg_get_constraintdef(c.oid) like '%''' || k || '''%')
+               from pg_constraint c join pg_class t on t.oid = c.conrelid,
+                    unnest(array['price_it','pick5_card','drill_daily','research_open']) k
+              where t.relname = 'franchise_activity' and c.conname = 'franchise_activity_kind_check')
+        -- and each of them is worth something toward a rank, or playing
+        -- offline would be playing for nothing
+        and (select bool_and(((public.franchise_ranks()->'weights'->>k)::int) > 0)
+               from unnest(array['price_it','pick5_card','drill_daily','research_open']) k)
+        -- the rank curve never caps and never cheapens, at any depth
+        and public.franchise_rank_for(0) = 1 and public.franchise_rank_for(-99) = 1
+        and (select bool_and(public.franchise_rank_for(public.franchise_rank_at(t.n)) = t.n)
+               from generate_series(2, 200) as t(n))
+    then 'ok' else 'CHECK THIS' end
 order by 1;
