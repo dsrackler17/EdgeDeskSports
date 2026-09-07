@@ -2040,6 +2040,89 @@ var S=sandbox;
   S.WALLC=null;S.META=null;
   S.localStorage.removeItem('collective_session');
 
+  /* ---- the front page can reach the week that has not happened yet -------
+     The server keeps a week "current" until 36 hours after its last game,
+     which is right while that game is still settling and wrong the moment the
+     next week's numbers are posted. The Board has always had a week strip;
+     the Wall, which is the front page, had none — so a creator who had just
+     uploaded 29 week-2 games saw a slate with one game left and no way to
+     reach their own work. These hold the strip on BOTH surfaces and hold the
+     one thing that makes it real: the request actually carries the week. */
+  var realFetchWk=S.fetch;
+  var wkAsked=[];
+  var W2GAME=G(99,'MISSOURI','KANSAS',null,null,null,[
+    M('edgedesksports','edgedesk-cfb','home',-4.6,-6.5,0.61)]);
+  W2GAME.week=2; W2GAME.kickoff_at='2026-09-12T00:00:00Z'; W2GAME.result=null;
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0){
+      wkAsked.push(u);
+      var w=/[?&]week=(\d+)/.exec(u);
+      if(w&&w[1]==='2')return reply({games:[W2GAME],week:2,entitled:true});
+      if(w)return reply({games:[],week:+w[1],entitled:true});
+      return reply({games:GAMES,week:1,entitled:true});
+    }
+    return realFetchWk(url);
+  };
+
+  chk('the week strip is written once and used by both surfaces',
+    typeof S.weekStripHTML==='function'&&typeof S.bindWeekStrip==='function');
+  {
+    var strip=S.weekStripHTML('CFB',null);
+    chk('with no week chosen, Current is the selected button',
+      /data-w=""[^>]*>Current/.test(strip)&&/class="on" data-w=""/.test(strip),{strip:strip.slice(0,160)});
+    var s2=S.weekStripHTML('CFB',2);
+    chk('choosing a week moves the highlight off Current onto it',
+      /class="on" data-w="2"/.test(s2)&&!/class="on" data-w=""/.test(s2),{strip:s2.slice(0,200)});
+    /* the sport switcher shares .wk styling; a handler bound to every .wk
+       button would reset the week to Current on every sport change */
+    chk('every button the week handler binds to carries data-w',
+      (s2.match(/<button/g)||[]).length===(s2.match(/data-w=/g)||[]).length);
+    chk('a college strip offers the college calendar, not the NFL one',
+      /Bowl|CFP|W15/.test(S.weekStripHTML('CFB',null))||
+      (S.weekStripHTML('CFB',null).match(/data-w="/g)||[]).length>
+      (S.weekStripHTML('NFL',null).match(/data-w="/g)||[]).length ||
+      S.weekStripHTML('CFB',null)!==S.weekStripHTML('NFL',null));
+  }
+
+  /* THE WALL. Default asks for no week at all — the front page follows the
+     server's current slate, and must not pin itself to a number. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;
+  S.location.hash='';
+  wkAsked.length=0;
+  var vw=node();
+  await S.renderWall(vw);
+  chk('the wall asks for the current slate, with no week pinned',
+    wkAsked.length>0&&!/[?&]week=/.test(wkAsked[0]),{asked:wkAsked.slice()});
+  chk('and it now carries the week strip the board has always had',
+    /class="wk"/.test(vw.innerHTML)&&/data-w="2"/.test(vw.innerHTML),
+    {has:vw.innerHTML.indexOf('class="wk"')});
+
+  /* Pick week 2: the request carries it, and the week 2 game is what draws. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=2;
+  wkAsked.length=0;
+  var vw2=node();
+  await S.renderWall(vw2);
+  chk('choosing a week sends it to the games feed',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);}),{asked:wkAsked.slice()});
+  chk('and the wall draws that week’s games, not the current one',
+    vw2.innerHTML.indexOf('KANSAS')>=0&&vw2.innerHTML.indexOf('FLORIDASTA')<0,
+    {kansas:vw2.innerHTML.indexOf('KANSAS'),fsu:vw2.innerHTML.indexOf('FLORIDASTA')});
+  chk('with the strip showing which week is being looked at',
+    /class="on" data-w="2"/.test(vw2.innerHTML));
+
+  /* THE BOARD still works through the same helper. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.BOARD_WEEK=2;
+  wkAsked.length=0;
+  S.location.hash='#board';
+  var vb=node();
+  await S.renderBoard(vb);
+  chk('the board still sends its own week through the shared strip',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);})&&/class="on" data-w="2"/.test(vb.innerHTML),
+    {asked:wkAsked.slice()});
+  S.BOARD_WEEK=null;S.WALL_WEEK=null;S.location.hash='';
+  S.fetch=realFetchWk;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
