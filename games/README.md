@@ -2694,6 +2694,51 @@ ends 38.5% of careers without explanation, and makes you worse for the one
 thing a newcomer knows how to do, is not fun for anybody — and it is worst
 for the player who does not yet know there is a front office. Both are gone.
 
+## A lapsed sign-in
+
+Reported from a real device: tapping **Found my franchise** answered
+
+> `JWT expired`
+
+in the gateway's own words. It was worse than it looked. Every Games call was
+failing, not only founding.
+
+The client had already worked out that the player was anonymous — `signedIn()`
+was false, and the call correctly carried a device secret, which is exactly the
+path a player with no account uses. But the transport read the stored session
+**without checking its expiry** and put the dead token in the `Authorization`
+header. PostgREST rejects that at the gateway, before the function runs. A
+well-formed anonymous call was killed by a credential the client itself had
+already decided not to trust.
+
+One rule now, everywhere a token is read:
+
+```js
+function live() {
+  var s = session();
+  return past(claims(s)) ? null : s;
+}
+```
+
+**A token past its expiry is not an account.** `user()`, `signedIn()`, the
+transport, and the home page's pre-paint hero all ask the same question. The
+home page mattered too: reading `sub` without reading `exp` painted an HQ hero
+for a lapsed session that every call behind it then denied.
+
+Two things it deliberately does **not** do:
+
+* **it does not clear the session.** The refresh token inside it is the
+  research terminal's to spend — Games has never minted or refreshed one — and
+  throwing it away would turn a lapsed sign-in into a lost one;
+* **it does not stop the game.** An expired session falls back to the device
+  secret, which is a real identity with a real franchise behind it. `expired()`
+  names the state so a surface can say so, because "your session lapsed" and
+  "you have never signed in" are different things to be told.
+
+And the gateway's words are no longer read out to a player: a `JWT` error
+becomes *"Your sign-in expired. Sign in again to save what you play — the game
+keeps going either way."*
+
 ## The age gate
 
 The game is **open to everyone**, and nothing about it is gated: no game, no

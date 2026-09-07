@@ -48,17 +48,45 @@
     catch (_) { return null; }
   }
 
-  /* The signed-in user, decoded from the access token the terminal already
-     stores. Read-only: Games never mints or refreshes a session. */
-  function user() {
-    var s = session();
+  /* the access token's own claims — read from the token, never from whatever
+     `expires_at` the stored envelope happens to say */
+  function claims(s) {
     if (!s || !s.access_token) return null;
     try {
       var p = JSON.parse(root.atob(s.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      if (!p || !p.sub) return null;
-      if (p.exp && (p.exp * 1000) < Date.now()) return null;   /* expired is not signed in */
-      return { id: p.sub, email: p.email, meta: p.user_metadata || {} };
+      return (p && p.sub) ? p : null;
     } catch (_) { return null; }
+  }
+  function past(p) { return !!(p && p.exp && (p.exp * 1000) < Date.now()); }
+
+  /* THE SESSION, ONLY WHILE ITS TOKEN IS STILL GOOD. Games never mints or
+     refreshes a session — the terminal owns that — so a token past its expiry
+     is not one Games may present.
+
+     Sending it anyway is worse than sending nothing. PostgREST rejects the
+     whole request at the gateway with "JWT expired" BEFORE the function runs,
+     so every call dies: a player the client has already decided is anonymous
+     could not even found a franchise with a device secret, and the raw
+     gateway error was what they read. Reproduced on a real device.
+
+     An expired session is left in storage rather than cleared. The refresh
+     token in it is the terminal's to spend, and throwing it away would turn a
+     lapsed sign-in into a lost one. */
+  function live() {
+    var s = session();
+    return past(claims(s)) ? null : s;
+  }
+
+  /* a session is stored, and it has gone stale — distinct from never having
+     signed in, and the difference is worth saying out loud to a player whose
+     franchise is sitting on an account they still own */
+  function expired() { return !!(session() && past(claims(session()))); }
+
+  /* The signed-in user, decoded from the access token the terminal already
+     stores. Read-only. */
+  function user() {
+    var p = claims(live());
+    return p ? { id: p.sub, email: p.email, meta: p.user_metadata || {} } : null;
   }
 
   function signedIn() { return !!user(); }
@@ -112,7 +140,7 @@
       return Promise.resolve({ ok: false, error: 'not_configured',
         message: 'The social layer is not configured in this build.' });
     }
-    var s = session();
+    var s = live();
     var h = {
       apikey: SB_KEY,
       authorization: 'Bearer ' + ((s && s.access_token) || SB_KEY),
@@ -146,6 +174,10 @@
      a status code. */
   function pgMessage(d, status) {
     var m = d && (d.message || d.details);
+    /* The gateway's own errors were not written for a player. "JWT expired"
+       in particular is a session that lapsed, not anything they did. */
+    if (m && /^jwt\b/i.test(String(m)))
+      return 'Your sign-in expired. Sign in again to save what you play — the game keeps going either way.';
     if (m) return String(m).replace(/^ERROR:\s*/, '');
     if (status === 404) return 'The social layer has not been deployed yet.';
     if (status === 401 || status === 403) return 'You are not allowed to do that.';
@@ -262,7 +294,7 @@
     SB_URL: SB_URL, SESSION_KEY: SESSION_KEY, SECRET_KEY: SECRET_KEY, MODES: MODES,
     PHASE_LABEL: PHASE_LABEL,
     configure: configure, available: available, rpc: rpc,
-    session: session, user: user, signedIn: signedIn, displayName: displayName, secret: secret,
+    session: session, user: user, signedIn: signedIn, expired: expired, displayName: displayName, secret: secret,
     createChallenge: createChallenge, submitChallenge: submitChallenge,
     viewChallenge: viewChallenge, claimChallenge: claimChallenge,
     createGroup: createGroup, previewGroup: previewGroup,
