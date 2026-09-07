@@ -70,6 +70,13 @@ const HANDLED = [
   'invoice.payment_succeeded',
 ];
 
+// ── rows Stripe does not own ──────────────────────────────────────────────
+// `price_id = 'owner_comp'` is full access granted inside this database and
+// never bought: no Stripe customer, no Stripe subscription, nothing for an
+// event to be about. The same list, under the same name, gates the paywall in
+// app.html and the checkout in index.html; keep the three in step.
+const COMP_PRICE_IDS = ['owner_comp'];
+
 // ── signature ─────────────────────────────────────────────────────────────
 // Stripe sends: Stripe-Signature: t=<unix>,v1=<hex>[,v1=<hex>]
 // signed payload is `${t}.${rawBody}` and the digest is HMAC-SHA256 hex.
@@ -408,10 +415,26 @@ async function handle(req) {
   // overwrite a newer one.
   let existing = null;
   try {
-    const rows = await D.get('subscriptions?select=last_event_at,status&user_id=eq.' +
+    const rows = await D.get('subscriptions?select=last_event_at,status,price_id&user_id=eq.' +
       encodeURIComponent(who.user_id) + '&limit=1');
     existing = (rows && rows[0]) || null;
   } catch (e) { console.error('stripe_webhook: read existing failed', String(e)); }
+
+  // A COMPED ROW IS NOT STRIPE'S TO WRITE. `price_id = 'owner_comp'` is access
+  // granted in this database, never bought — there is no Stripe subscription
+  // behind it, so no Stripe event describes it. If one ever arrives carrying
+  // this user_id (a customer id reused across products, a test event, a
+  // payment link fired at the wrong account), applying it would set the row's
+  // status from something Stripe knows about and revoke access that Stripe
+  // never granted. Acknowledged with 200 so Stripe stops retrying: refusing
+  // this write is the correct outcome, not a failure to be redelivered.
+  if (existing && COMP_PRICE_IDS.indexOf(String(existing.price_id || '')) >= 0) {
+    console.log('stripe_webhook: ignoring ' + event.type + ' for comped user ' + who.user_id +
+      ' (price_id ' + existing.price_id + ')');
+    return new Response(JSON.stringify({ ok: true, ignored: 'comped_subscription' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    });
+  }
 
   const fresh = shouldApply(existing && existing.last_event_at, stripeCreated);
 

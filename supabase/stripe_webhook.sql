@@ -90,6 +90,10 @@ comment on table public.stripe_events is
 -- out-of-order delivery cannot resurrect a cancelled subscription.
 alter table public.subscriptions add column if not exists last_event_at  timestamptz;
 alter table public.subscriptions add column if not exists last_event_id  text;
+-- Also added by billing.sql, which is meant to run first. Repeated here so this
+-- file stands on its own: the report below reads price_id, and the webhook
+-- refuses to write over a row carrying 'owner_comp'.
+alter table public.subscriptions add column if not exists price_id       text;
 
 -- ── naming a customer we only know by email ────────────────────────────────
 -- The webhook's last-resort identification. Deliberately a database function
@@ -194,11 +198,17 @@ union all select 8, 'stripe_user_by_email is security definer and closed to clie
 union all select 9, 'hand-made subscription rows, for the record',
        'ok (' || (select count(*) from public.subscriptions where last_event_id is null)::text
               || ' rows never written by a webhook)'
+-- A COMPED ROW IS NEVER REFUSED, whatever its period end says, so it must not
+-- be counted here: pgEntitled() returns true on price_id = 'owner_comp' before
+-- it looks at a date at all. Counting one would report a lockout that is not
+-- happening, and send somebody looking for a bug in the paywall.
 union all select 10, 'rows currently locking out an active subscriber',
        case when (select count(*) from public.subscriptions
-                   where status in ('active','trialing') and current_period_end < now()) = 0
+                   where status in ('active','trialing') and current_period_end < now()
+                     and coalesce(price_id,'') <> 'owner_comp') = 0
             then 'ok (none)'
             else 'CHECK THIS — ' || (select count(*) from public.subscriptions
-                   where status in ('active','trialing') and current_period_end < now())::text
+                   where status in ('active','trialing') and current_period_end < now()
+                     and coalesce(price_id,'') <> 'owner_comp')::text
               || ' active rows have a past period end and are being refused by the paywall' end
 order by row;
