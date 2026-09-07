@@ -378,6 +378,13 @@
        thumb. Tell the stage what is covered and it frames the football into
        what is left. */
     var coverBottom = 0;
+    /* WHERE THE FOOTBALL SITS IN THE PICTURE, and it is not the same for
+       every shot. Before the snap it sits low, because the offence draws
+       BETWEEN the camera and the line and needs room underneath. Once
+       somebody is carrying it, it comes up: a runner belongs at three fifths
+       of the frame with the field he is running into above him, not at three
+       quarters with forty yards of empty grass over his head. */
+    var anchorBias = 0.70;
     function applyAnchor() {
       var vis = Math.max(0.30, 1 - coverBottom / Math.max(1, cam.h));
       /* THE ESTABLISHING SHOT IS A COMPOSITION AND KEEPS ITS FRAMING. Pulling
@@ -389,7 +396,7 @@
          the horizon is the part of the field the play happens in, so the
          lower it sits the more of that there is — and the offence draws
          BETWEEN the camera and the line, so it needs room underneath too. */
-      cam.anchor = clamp(0.70 * vis - 0.02, 0.30, 0.70);
+      cam.anchor = clamp(anchorBias * vis - 0.02, 0.28, 0.72);
     }
     self.setCover = function (px) {
       var v = Math.max(0, px || 0);
@@ -498,7 +505,8 @@
          contact, the football and the result. */
       sim = LIVE.Play({
         actors: actors, playObj: play, parts: defParts, formKey: formKey,
-        los: los, ballX: ballX, env: o.env, rand: o.rand || Math.random,
+        los: los, ballX: ballX, env: o.env, preview: !!o.preview,
+        rand: o.rand || Math.random,
         userSide: userSide, userMode: userMode,
         events: {
           onSnap: null,
@@ -704,7 +712,11 @@
       targets = false; targetBoxes = [];
       return true;
     };
-    self.snapNow = function () { if (phase === 'set') beginSnap(); };
+    /* AND IT SAYS WHETHER IT ACTUALLY SNAPPED. A caller that locks its own
+       controls on the way in has to know whether the ball moved, or a snap
+       that could not happen leaves the game holding a lock nobody will ever
+       release. */
+    self.snapNow = function () { return phase === 'set' ? beginSnap() : false; };
     /* ── TARGETS ─────────────────────────────────────────────────────────
        The throw buttons live ON THE RECEIVERS, out on the grass, not in a
        row along the bottom of the screen. You look at the field, see who is
@@ -741,14 +753,14 @@
        thumbs and the elapsed time, and draws whatever comes back. It does
        not know how a tackle is decided and it must not. */
     function beginSnap() {
-      if (!sim) return;
+      if (!sim) return false;
       var pi;
       for (pi = 0; pi < actors.length; pi++) {
         actors[pi].ox = 0; actors[pi].oy = 0;
         actors[pi].vx = 0; actors[pi].vy = 0;
         actors[pi].move = null;
       }
-      if (!sim.snap()) return;
+      if (!sim.snap()) return false;
       phase = 'live'; t = 0;
       /* THE SNAP HAS TO LAND. A kick in the lens and a handful of turf off
          the line, on the frame the ball moves. */
@@ -756,6 +768,7 @@
       puff(ballX, los, 0.34);
       if (events.onSnap) events.onSnap();
       start();
+      return true;
     }
 
     /* ── THE LOOP ────────────────────────────────────────────────────────── */
@@ -882,7 +895,7 @@
     function camFollow(dt, snap) {
       var f = ball.holder || (ball.flight ? ball : byId['o_QB']);
       var tx = f ? f.x : ballX, ty = f ? f.y : los;
-      var wantX, wantY, wide, back, kfWant = 1.45;
+      var wantX, wantY, wide, back, kfWant = 1.45, abWant = 0.70;
       var holding = phase === 'live' && ball.holder && ball.holder.slot === 'QB' && !ball.flight
         && play && play.type === 'pass';
       var redzone = los > 78;
@@ -911,7 +924,7 @@
            always settles on midfield turns a touchdown into an aerial photo
            of a stadium with something small happening in it, so the lens
            follows the ball up the field as it goes. */
-        wide = 74; back = 96; kfWant = 1.30;
+        wide = 74; back = 96; kfWant = 1.30; abWant = 0.70;
         wantX = FIELD.half;
         wantY = clamp((los || 50) * 0.34 + 30, 30, 66);
       } else if (phase === 'set') {
@@ -923,7 +936,7 @@
         var lo = 1e9, hi = -1e9;
         actors.forEach(function (a) { if (a.x < lo) lo = a.x; if (a.x > hi) hi = a.x; });
         wide = clamp(hi - lo + 5, 27, redzone ? 32 : 36);
-        back = 74; kfWant = redzone ? 1.62 : 1.42;
+        back = 74; kfWant = redzone ? 1.62 : 1.42; abWant = 0.70;
         wantX = (lo + hi) / 2;
         wantY = los + 2.2;
       } else if (ball.flight) {
@@ -941,13 +954,14 @@
         wide = clamp(31 + air * 0.28, 31, 44);
         back = clamp(70 + air * 1.5, 70, 128);
         kfWant = clamp(1.60 - air * 0.010, 1.34, 1.60);
+        abWant = 0.66;
         wantX = ballX + (fl.tx - ballX) * ease * 0.82;
         wantY = los + 2 + (fl.ty - los - 2) * ease * 0.74;
       } else if (holding) {
         /* while he is holding it the routes are the story — but the story
            starts at the line, not five yards past it, and a shot wide enough
            to hold both sidelines makes everybody a speck */
-        wide = 32; back = 78; kfWant = 1.52;
+        wide = 32; back = 78; kfWant = 1.52; abWant = 0.68;
         wantX = ballX * 0.35 + tx * 0.65;
         wantY = los + 2.6;
       } else {
@@ -957,13 +971,19 @@
            drops, which is what makes a long run feel fast. */
         wide = breakaway ? 24 : redzone ? 26 : 29;
         back = breakaway ? 58 : 68;
-        kfWant = breakaway ? 1.98 : redzone ? 1.74 : 1.80;
+        kfWant = breakaway ? 2.32 : redzone ? 2.02 : 2.10;
+        abWant = phase === 'dead' ? 0.66 : 0.58;
         wantX = tx;
         /* A SCORE IS FOLLOWED IN. Cutting the moment he crosses the line
            leaves the whole celebration happening off the top of the picture,
            so the lens carries on into the end zone with him for a beat. */
         var scored = result && result.touchdown;
-        wantY = ty + (phase === 'dead' ? (scored ? 3.2 : 0.5) : 2.6);
+        /* THE RUNNER SITS HIGH IN THE FRAME AND THE FIELD HE IS RUNNING INTO
+           SITS ABOVE HIM. The lens looks a few yards BEHIND him rather than
+           in front, which is what puts him at three fifths of the picture
+           with the play in front of him instead of at three quarters with
+           forty yards of empty grass over his head. */
+        wantY = ty + (phase === 'dead' ? (scored ? 3.2 : 0.5) : 0.6);
       }
       /* never show more sideline than there is field */
       var halfW = wide / 2;
@@ -975,12 +995,20 @@
          makes people put the phone down. */
       var k = snap ? 1 : 1 - Math.pow(0.010, dt);
       var kz = snap ? 1 : 1 - Math.pow(0.14, dt);
-      var kb = snap ? 1 : 1 - Math.pow(0.26, dt);
+      /* THE DOLLY IS SLOWER THAN THE PAN AND FASTER THAN IT WAS. A shot
+         that is still framed for the pre-snap look half a second after the
+         snap is a shot that shows you forty yards of empty grass while the
+         run happens at the bottom of it. */
+      var kb = snap ? 1 : 1 - Math.pow(0.06, dt);
       cam.x += (wantX - cam.x) * k;
       cam.y += (wantY - cam.y) * k;
       cam.wide += (wide - cam.wide) * kz;
       cam.back += (back - cam.back) * kb;
       kf += (kfWant - kf) * kb;
+      if (shot !== 'wide' && Math.abs(anchorBias - abWant) > 0.001) {
+        anchorBias += (abWant - anchorBias) * kb;
+        applyAnchor();
+      }
       fitCamera();
     }
 

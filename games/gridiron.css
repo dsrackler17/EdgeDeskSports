@@ -143,9 +143,9 @@
 
 /* ── THE TOOLS ────────────────────────────────────────────────────────────
    Four small controls that must never compete with the game. */
-.gd-tools{position:absolute;top:8px;right:8px;display:flex;gap:5px;z-index:5;opacity:.72}
+.gd-tools{position:absolute;top:8px;right:8px;display:flex;gap:5px;z-index:5;opacity:.9}
 .gd-tools button{width:30px;height:30px;border-radius:50%;
-  border:1px solid rgba(255,255,255,.10);background:rgba(8,12,17,.52);
+  border:1px solid rgba(255,255,255,.14);background:rgba(8,12,17,.72);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   color:#a9b6c4;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
   transition:transform .12s,color .12s}
@@ -155,14 +155,16 @@
 /* ── THE READ ─────────────────────────────────────────────────────────────
    What the defence is showing you, as a broadcast tag: a club-coloured rule,
    a name, and the one line under it that matters. */
-.gd-read{position:absolute;top:8px;left:8px;z-index:5;max-width:56%;
+.gd-read{position:absolute;top:8px;left:8px;z-index:5;max-width:min(52%,215px);
   padding:6px 11px 7px 12px;border-radius:3px 10px 10px 3px;
   background:linear-gradient(90deg,rgba(9,13,19,.90),rgba(9,13,19,.72));
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-left:3px solid var(--gr-def);
   animation:readin .3s cubic-bezier(.16,1,.3,1)}
-.gd-read b{color:#fff;display:block;font:800 13px 'Space Grotesk',sans-serif;letter-spacing:.005em}
-.gd-read i{font-style:normal;display:block;font-size:10.5px;color:#93a1b1;margin-top:1px;letter-spacing:.02em}
+.gd-read b{color:#fff;display:block;font:800 13px 'Space Grotesk',sans-serif;letter-spacing:.005em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-read i{font-style:normal;display:block;font-size:10.5px;color:#93a1b1;margin-top:1px;letter-spacing:.02em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @keyframes readin{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
 
 /* ── THE PLAY CLOCK ───────────────────────────────────────────────────────
@@ -252,9 +254,13 @@
 .dr-grip{width:36px;height:4px;border-radius:3px;background:rgba(255,255,255,.20);margin:7px auto 2px}
 .dr-head{display:flex;align-items:center;gap:8px;padding:3px 13px 7px}
 .dr-title{font:800 13.5px 'Space Grotesk',sans-serif;color:#fff;display:flex;gap:7px;align-items:baseline;
-  min-width:0}
+  min-width:0;white-space:nowrap;flex:0 1 auto;overflow:hidden}
 .dr-title b{font-weight:600;font-size:11px;color:var(--faint);letter-spacing:.05em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+/* THE FORMATION NAME IS THE FIRST THING TO GO. On a narrow phone with a tell
+   and a timeout button in the same row there is not room for all of it, and
+   half a word is worse than none. */
+@media(max-width:400px){.dr-title b{display:none}}
 .dr-sub{margin-left:auto;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
   color:var(--faint);font-weight:700}
 .dr-tell{margin-left:auto;font-size:10.5px;color:var(--dim);white-space:nowrap}
@@ -721,9 +727,11 @@
 .td-club{margin-top:7px;font:800 clamp(13px,4.2vw,18px) 'Space Grotesk',sans-serif;
   letter-spacing:.18em;text-transform:uppercase;color:var(--tc);line-height:1.2;
   text-shadow:0 2px 18px rgba(0,0,0,.8);animation:tdrise .5s .06s cubic-bezier(.16,1,.3,1) backwards}
-.td-who{margin-top:12px;font:700 14.5px Inter,system-ui,sans-serif;color:#eef3f8;
+.td-who{margin-top:12px;font:700 14.5px Inter,system-ui,sans-serif;color:#fff;
+  display:inline-flex;align-items:baseline;gap:8px;padding:5px 13px;border-radius:var(--r-pill);
+  background:rgba(6,10,14,.52);
   animation:tdrise .5s .14s cubic-bezier(.16,1,.3,1) backwards}
-.td-who i{font-style:normal;color:rgba(226,236,244,.62);font-weight:500}
+.td-who i{font-style:normal;color:rgba(222,233,242,.78);font-weight:500;font-size:13px}
 .td-score{margin-top:14px;display:inline-flex;align-items:center;gap:10px;
   padding:7px 15px;border-radius:var(--r-pill);
   background:rgba(6,10,14,.60);border:1px solid rgba(255,255,255,.14);

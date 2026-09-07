@@ -769,7 +769,7 @@
     lineUp(key, formKey, defKey, ps, sit);
     padSnap('Snap');
     seenTip('call');
-    if (set.mode === 'coach') setTimeout(doSnap, 700);
+    autoSnap();
   }
   function chooseDefense(defKey) {
     if (busy) return;
@@ -783,8 +783,22 @@
     lineUp(call.play, call.formation, defKey, ps, sit);
     padSnap('Snap');
     seenTip('defense');
-    if (set.mode === 'coach') setTimeout(doSnap, 700);
+    autoSnap();
   }
+  /* ── THE SNAP THAT MAKES ITSELF ──────────────────────────────────────────
+     In Coach mode you pick the call and the ball is snapped for you. The
+     timer that does it has to be CANCELLED the moment anything else happens,
+     because a play can be over inside its seven hundred milliseconds — and a
+     stale one then says hut over the eleven men the page had already lined up
+     for the NEXT down. */
+  var autoT = null;
+  function cancelAuto() { if (autoT) { clearTimeout(autoT); autoT = null; } }
+  function autoSnap() {
+    cancelAuto();
+    if (set.mode !== 'coach') return;
+    autoT = setTimeout(function () { autoT = null; doSnap(); }, 700);
+  }
+
   function lineUp(playKey, formKey, defKey, ps, sit) {
     var offT = G.teamOf(game, sit.offense), defT = G.teamOf(game, sit.defense);
     stage.setUserSide(sit.offense === me ? 'off' : 'def');
@@ -818,6 +832,7 @@
     say('');
   }
   function doSnap() {
+    cancelAuto();
     if (busy || stage.phase() !== 'set') return;
     busy = true;
     readEl.hidden = true;
@@ -828,7 +843,12 @@
     var sit = G.situation(game);
     var mine = sit.offense === me;
     padClear();
-    stage.snapNow();
+    /* THE GAME MUST NEVER BE ABLE TO STOP. This holds the controls shut until
+       the whistle, so a second tap cannot snap the same ball twice — which
+       means a snap that could not happen has to give the lock back, and a
+       whistle that never comes has to be one anyway. */
+    if (!stage.snapNow()) { busy = false; nextCall(); return; }
+    armWhistle();
     if (set.mode === 'coach' || !mine) {
       if (!mine && set.mode === 'play') padDefense();
       return;
@@ -843,6 +863,28 @@
       seenTip('read');
     }
   }
+
+  /* ── THE WHISTLE THAT ALWAYS COMES ───────────────────────────────────────
+     The simulation blows a play dead after twelve seconds of its own clock
+     and cannot run forever. But a lock is not a play: if anything at all goes
+     wrong between the tap and the result — a frame loop stopped by a phone
+     locking, a stage that never reported back — the game would sit on the
+     same down for ever with no way out but a reload. So the page keeps its
+     own watch on the snap it is holding, and the whistle goes either way. */
+  var whistleT = null;
+  function armWhistle() {
+    clearWhistle();
+    whistleT = setTimeout(function () {
+      whistleT = null;
+      if (!busy) return;
+      try { if (stage && stage.stop) stage.stop(); } catch (_) {}
+      busy = false;
+      say('');
+      paintScore();
+      nextCall();
+    }, 22000);
+  }
+  function clearWhistle() { if (whistleT) { clearTimeout(whistleT); whistleT = null; } }
 
   /* the clock on the pocket: not a deadline, a warning */
   function rushBar() {
@@ -911,6 +953,7 @@
   }
 
   function onEnd(kind, res) {
+    clearWhistle();
     /* the simulation settled it; the engine books it, and only now do down,
        distance, clock and the season move */
     var p = (set.mode === 'play' && res && res.live) ? commit(res) : commitCoach();
@@ -1075,12 +1118,17 @@
     var who = p.carrier ? FRname(p.carrier) : p.target ? FRname(p.target)
             : p.interceptor ? FRname(p.interceptor) : '';
     var line;
-    if (p.sack) line = 'Sacked for ' + p.yards;
+    /* PLAIN FOOTBALL ENGLISH. "-2-yard rush" is a spreadsheet cell; a run that
+       lost two yards lost two yards, and no gain is no gain. */
+    var y = p.yards == null ? 0 : p.yards;
+    if (p.sack) line = 'Sacked for ' + Math.abs(y);
     else if (p.turnover === 'interception') line = 'Intercepted';
     else if (p.turnover === 'fumble') line = 'Fumble';
     else if (p.incomplete) line = 'Incomplete';
-    else if (p.completion) line = p.yards + '-yard catch';
-    else line = p.yards + '-yard rush';
+    else if (y < 0) line = 'Lost ' + Math.abs(y) + (p.completion ? ' on the catch' : ' on the ground');
+    else if (y === 0) line = 'No gain';
+    else if (p.completion) line = y + '-yard catch';
+    else line = y + '-yard rush';
     /* ── THE REASON, AND THE MOST SPECIFIC ONE AVAILABLE ──────────────────
        "They had eight in the box" is true of the whole defence; "Wexler held
        the point" is true of the block the run went behind, and it is the one
@@ -1139,6 +1187,9 @@
   var kickSkip = null;
   function runKickoff(sit, done) {
     if (!stage || !stage.kickoff) { done(); return; }
+    /* one sequence at a time: a second tap on the button must not leave two
+       of them running their own timers over the same field */
+    if (kickSkip) { kickSkip(); return; }
     busy = true;
     var recv = sit.offense === me ? teams.me : teams.opp;
     var kick = sit.offense === me ? teams.opp : teams.me;
@@ -1217,6 +1268,7 @@
       color: kitFor('me').primary, hold: 1400 });
   }
   function nextCall() {
+    cancelAuto();
     if (game.over) { finalScreen(); return; }
     var sit = G.situation(game);
     paintScore();
@@ -1247,6 +1299,12 @@
          theirs and offer the button that just moves the game on */
       var mine = !!game.pendingScore && game.pendingScore.side === me;
       shotWide(false);
+      /* ── AND THE CAMERA COMES BACK OUT OF THE END ZONE ─────────────────
+         The lens followed the score in, which is right — and then the try
+         was offered over a picture still framed on the back of the end zone
+         with half the screen off the side of the field. The try has its own
+         formation; show it. */
+      patLook(mine);
       drawerOpen('<div class="dr-grip"></div>'
         + '<div class="dr-head"><span class="dr-title">' + (mine ? 'Your touchdown' : 'Their touchdown') + '</span></div>'
         + (mine ? '<div class="dr-row"><button class="btn btn-go" id="drXP" type="button">Extra point</button>'
@@ -1273,7 +1331,10 @@
     stage.teams(kitFor(sit.offense === me ? 'me' : 'opp'), kitFor(sit.offense === me ? 'opp' : 'me'),
       (sit.offense === me ? teams.me : teams.opp).name, (sit.offense === me ? teams.opp : teams.me).name,
       sit.offense !== me);
-    stage.lineUp({ play: guess.key, formation: gf, def: 'base_3', los: sit.ball,
+    /* THE ELEVEN WHO ARE JUST STANDING THERE. Between calls the field is not
+       empty — it holds the look the page guesses you will see — but that
+       formation is a picture and must never be snappable, whatever asks. */
+    stage.lineUp({ play: guess.key, formation: gf, def: 'base_3', los: sit.ball, preview: true,
       firstDown: Math.min(100, sit.ball + sit.toGo), ballX: ballX, strong: 0,
       env: G.prepare({ off: G.teamOf(game, sit.offense), def: G.teamOf(game, sit.defense),
         rand: game.aiRand || game.rand, tick: game.tick, playKey: guess.key, formKey: gf,
@@ -1283,6 +1344,36 @@
       defUnits: G.unitsOf(G.teamOf(game, sit.defense), game.tick) });
     readEl.hidden = true;
   }
+  /* THE TRY, LINED UP. A picture of the eleven who are about to take it,
+     from the same lens as every other snap. It is a preview — nothing here
+     can be snapped, and the engine settles the try when the button is
+     pressed exactly as it always did. */
+  function patLook(mine) {
+    if (!stage || !stage.lineUp) return;
+    var sit = G.situation(game);
+    var off = sit.offense, def = sit.defense;
+    var los = 85;                             /* the fifteen: a thirty-three yard kick */
+    var offT = G.teamOf(game, off), defT = G.teamOf(game, def);
+    var play = F.play('power') || F.play('inside_zone');
+    var form = (F.playForms(play.key, offT.offense) || [])[0] || play.forms[0];
+    stage.setUserSide(off === me ? 'off' : 'def');
+    stage.setArt(false);
+    stage.teams(kitFor(off === me ? 'me' : 'opp'), kitFor(off === me ? 'opp' : 'me'),
+      (off === me ? teams.me : teams.opp).name, (off === me ? teams.opp : teams.me).name,
+      off !== me);
+    try {
+      stage.lineUp({ play: play.key, formation: form, def: 'goal_line_d', los: los, preview: true,
+        firstDown: null, ballX: PT.FIELD.half, strong: 0,
+        env: G.prepare({ off: offT, def: defT, rand: game.aiRand || game.rand, tick: game.tick,
+          playKey: play.key, formKey: form, defCall: 'goal_line_d', sit: sit,
+          mem: game.mem[off], weather: game.weather }),
+        rand: game.rand,
+        offUnits: G.unitsOf(offT, game.tick), defUnits: G.unitsOf(defT, game.tick) });
+    } catch (_) {}
+    readEl.hidden = true;
+    ballX = PT.FIELD.half;
+  }
+
   function patForThem() {
     if (!game.pendingScore) return { type: 'pat' };
     var d = game.score[game.pendingScore.side] - game.score[G.other(game.pendingScore.side)];
@@ -1877,7 +1968,13 @@
     $('btnExit').onclick = function () { location.href = '/games/gameday/'; };
     /* TAP TO SKIP. Anywhere on the field, and only while a sequence is
        actually running — it must never eat a tap meant for a receiver. */
-    fieldWrap.addEventListener('pointerdown', function () { if (kickSkip) kickSkip(); }, true);
+    fieldWrap.addEventListener('pointerdown', function (e) {
+      if (!kickSkip) return;
+      /* the sound and settings controls are still live during a sequence, and
+         a tap meant for one of them is not a tap meant to skip it */
+      if (e.target && e.target.closest && e.target.closest('.gd-tools')) return;
+      kickSkip();
+    }, true);
     window.addEventListener('beforeunload', function () { if (game && !game.over) S.save(game); });
     /* no rubber-banding under the thumbs */
     document.addEventListener('touchmove', function (e) {

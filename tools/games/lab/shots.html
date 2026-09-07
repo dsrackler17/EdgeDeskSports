@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset="utf-8"><title>shot lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;800&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#06090d;color:#cfe0d8;font:12px Inter}
+ /* two columns, so each canvas is drawn near the size a phone draws it:
+    a page that shrinks the picture by half is a page that lies about how
+    dense a crowd is */
+ .row{display:grid;grid-template-columns:repeat(2,393px);gap:4px;justify-content:start}
+ figure{margin:0;position:relative}canvas{display:block;width:393px;height:700px;background:#000}
+ figcaption{position:absolute;left:6px;top:6px;font:800 10px 'Space Grotesk';letter-spacing:.12em;
+   text-transform:uppercase;color:#fff;text-shadow:0 2px 8px #000}</style></head><body>
+<div class="row" id="row"></div>
+<script src="/games/lib/gridiron/paint.js"></script>
+<script>
+/* THE SHOT LAB. The same lens the stage builds, at the spots on the field a
+   game actually reaches — your own twenty, midfield, the red zone, the goal
+   line — so a composition can be judged without playing to it. */
+var P=window.EDGridironPaint;
+var SPOTS=[['own 20',20,1.42],['midfield',50,1.42],['red zone',84,1.62],['goal line',96,1.62],
+           ['run @ 40',40,2.10],['breakaway @ 70',70,2.32],['deep ball',35,1.40],['try @ 15',85,1.62]];
+var row=document.getElementById('row');
+SPOTS.forEach(function(sp){
+  var f=document.createElement('figure');
+  var W=393,H=700, cv=document.createElement('canvas'); cv.width=W*2; cv.height=H*2;
+  var cap=document.createElement('figcaption'); cap.textContent=sp[0];
+  f.appendChild(cv); f.appendChild(cap); row.appendChild(f);
+  var ctx=cv.getContext('2d'); ctx.setTransform(2,0,0,2,0,0);
+  var los=sp[1], kf=sp[2], anchor=0.68, wide=32, back=74;
+  var px=Math.max(7,Math.min(30, W/(0.88*wide)));
+  var cam=P.camera({w:W,h:H,x:26.6,y:los+2,back:back,px:px,wide:wide,
+    height:kf*H/px, anchor:anchor});
+  var scene={tick:2.2,homeColor:'#1c4a30',awayColor:'#57231f',homeInk:'#8ff0c0',awayInk:'#ffb4a0',
+    homeTint:'#3fb883',awayTint:'#c0392b',homeName:'HIGH PLAINS',awayName:'FORGEMEN',
+    light:'night',weather:'clear',excite:0.55,firstDown:Math.min(100,los+10),los:los};
+  P.field(ctx,cam,scene); P.markers(ctx,cam,los,Math.min(100,los+10));
+  var kh=P.uniform({primary:'#3fb883',secondary:'#123326'},false);
+  var ka=P.uniform({primary:'#c0392b',secondary:'#2a1a1a'},true);
+  for(var i=0;i<5;i++)P.player(ctx,{x:20+i*3.3,y:los-0.9,pos:'OL',kit:kh,num:70+i,state:'stance',phase:0,face:'back'},cam);
+  for(i=0;i<4;i++)P.player(ctx,{x:21+i*4,y:los+0.6,pos:'DL',kit:ka,num:90+i,state:'stance',phase:0,face:'front'},cam);
+  P.player(ctx,{x:26.6,y:los-5,pos:'QB',kit:kh,num:7,state:'stance',phase:0,face:'back'},cam);
+  P.atmosphere(ctx,cam,scene); P.conditions(ctx,cam,scene);
+});
+</script></body></html>
