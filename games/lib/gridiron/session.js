@@ -218,6 +218,56 @@
   }
   function clearSave() { var s = store(); if (s) { try { s.removeItem(SAVE_KEY); } catch (_) {} } }
 
+  /* ── WHAT THIS DEVICE HAS DONE ───────────────────────────────────────────
+     A record, on the phone, for the standalone game. Not a season and not a
+     ledger: EdgeDesk XP is derived from committed artifacts and never
+     accumulated locally, which is the architectural rule the whole games
+     layer runs on — a franchise player's progression is Game Day's to award.
+     This is the smaller, honest thing a recap needs: how many of these you
+     have played, how many you have won, and whether you are on a run. */
+  var REC_KEY = 'ed_gridiron_record_v1';
+  function blankRecord() { return { games: 0, w: 0, l: 0, t: 0, streak: 0, best: 0, pf: 0, pa: 0 }; }
+  function readRecord() {
+    var s = store(), r = blankRecord(), k;
+    if (!s) return r;
+    try {
+      var raw = JSON.parse(s.getItem(REC_KEY) || '{}');
+      for (k in r) if (r.hasOwnProperty(k) && typeof raw[k] === 'number') r[k] = raw[k];
+    } catch (_) {}
+    return r;
+  }
+  /* called once, when a game finishes. Idempotent per game: the id of the
+     game that was last filed is kept beside the record, so a recap that is
+     re-rendered — or a page that comes back to a finished game — never counts
+     the same result twice. */
+  function fileResult(g, mySide) {
+    var s = store();
+    if (!g || !g.over) return readRecord();
+    var id = (g.meta && g.meta.seed) || g.seed;
+    var r = readRecord(), last = null;
+    if (s) { try { last = s.getItem(REC_KEY + ':last'); } catch (_) {} }
+    if (last != null && String(last) === String(id)) return r;
+    var them = mySide === 'home' ? 'away' : 'home';
+    var mine = g.score[mySide], theirs = g.score[them];
+    r.games++; r.pf += mine; r.pa += theirs;
+    if (mine > theirs) { r.w++; r.streak = r.streak >= 0 ? r.streak + 1 : 1; }
+    else if (mine < theirs) { r.l++; r.streak = r.streak <= 0 ? r.streak - 1 : -1; }
+    else { r.t++; r.streak = 0; }
+    if (r.streak > r.best) r.best = r.streak;
+    if (s) {
+      try { s.setItem(REC_KEY, JSON.stringify(r)); s.setItem(REC_KEY + ':last', String(id)); } catch (_) {}
+    }
+    return r;
+  }
+  function recordLine(r) {
+    if (!r || !r.games) return '';
+    var l = r.w + '–' + r.l + (r.t ? '–' + r.t : '') + ' on this device';
+    if (r.streak >= 2) l += ' · ' + r.streak + ' in a row';
+    else if (r.streak <= -2) l += ' · lost ' + Math.abs(r.streak) + ' straight';
+    if (r.games >= 3) l += ' · ' + Math.round(r.pf / r.games) + '–' + Math.round(r.pa / r.games) + ' a game';
+    return l;
+  }
+
   /* rebuild a game from its save and replay every call into it */
   function resume(rec, o) {
     if (!rec || !rec.meta) return null;
@@ -480,7 +530,8 @@
     build: build, step: step, save: save, saved: saved, clearSave: clearSave, resume: resume,
     aiDefense: aiDefense, aiOffense: aiOffense, scoutRead: scoutRead, preSnap: preSnap,
     why: why, reasons: reasons, turningPoint: turningPoint, record: record,
-    keyMatchup: keyMatchup, coachingImpact: coachingImpact
+    keyMatchup: keyMatchup, coachingImpact: coachingImpact,
+    readRecord: readRecord, fileResult: fileResult, recordLine: recordLine, REC_KEY: REC_KEY
   };
   root.EDGridironSession = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

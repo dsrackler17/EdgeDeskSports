@@ -817,6 +817,7 @@
         if (p.big) crowdUp(0.7, 0.22);
       }
       resultCard(p);
+      milestone(p);
       ballX = drift(ballX);
     }
     padClear();
@@ -850,6 +851,52 @@
     setTimeout(function () { d.classList.add('out'); }, hold);
     setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, hold + 620);
     return d;
+  }
+
+  /* ── THE MAN WHO IS DECIDING IT ──────────────────────────────────────────
+     One line, once, when somebody crosses the number a broadcast would put on
+     the screen. Not a popup and not a feed — the same say() strip the rest of
+     the game talks through, and each man says his piece at most once, so a
+     hundred-yard back is a moment rather than a ticker.
+
+     This is the whole of "make the player remember a name": he has already
+     seen it on the result card of every carry, and now the game tells him
+     what it adds up to, while it is still happening. */
+  var milestoned = {};
+  var MARKS = [
+    ['ry', 100, function (p) { return p.name + ' is over a hundred on the ground.'; }],
+    ['recy', 100, function (p) { return p.name + ' has a hundred yards receiving.'; }],
+    ['py', 300, function (p) { return p.name + ' is over three hundred through the air.'; }],
+    ['sack', 2, function (p) { return p.name + ' has ' + p.sack + ' sacks. He is wrecking this.'; }],
+    ['int', 2, function (p) { return p.name + ' has picked off two.'; }],
+    ['tkl', 10, function (p) { return p.name + ' is everywhere — ' + p.tkl + ' tackles.'; }]
+  ];
+  function milestone(p) {
+    if (!game) return;
+    var who = p.carrier || p.target || p.tackler || p.interceptor;
+    var line = null;
+    [who, p.tackler, p.interceptor].forEach(function (man) {
+      if (line || !man) return;
+      var st = game.players[man.uid || man.id];
+      if (!st) return;
+      MARKS.forEach(function (m) {
+        if (line) return;
+        var key = st.id + ':' + m[0];
+        if (milestoned[key] || (st[m[0]] || 0) < m[1]) return;
+        milestoned[key] = 1;
+        line = (st.side === me ? '' : (teams.opp.abbr || 'They') + ' — ') + m[2](st);
+      });
+    });
+    /* two touchdowns from one man is the other line worth saying */
+    if (!line && who) {
+      var w = game.players[who.uid || who.id];
+      var tds = w ? (w.rtd + w.rectd) : 0;
+      if (w && tds >= 2 && !milestoned[w.id + ':td' + tds]) {
+        milestoned[w.id + ':td' + tds] = 1;
+        line = (w.side === me ? '' : (teams.opp.abbr || 'They') + ' — ') + w.name + ' has ' + tds + ' touchdowns.';
+      }
+    }
+    if (line) say(line);
   }
 
   /* THE RESULT, in the shape a broadcast uses: who, what, and why. */
@@ -1134,6 +1181,8 @@
     var won = game.score[me] > game.score[them];
     var tp = S.turningPoint(game), potg = G.playerOfGame(game);
     var topOff = G.topOffense(game, me), topDef = G.topDefense(game, me);
+    /* filed once, on this device, and never twice for the same game */
+    var rec = S.fileResult(game, me);
     var matchup = S.keyMatchup(game, me), coaching = S.coachingImpact(game, me);
     /* THE LIST HAS TO AGREE WITH ITS OWN HEADING. Five bullets under "Why you
        won" that are all things that nearly lost it reads as a bug, so the
@@ -1194,6 +1243,8 @@
       }).join('') + '</tbody></table>'
       + (game.weather && game.weather.note
           ? '<h3>Conditions</h3><div class="muted">' + esc(game.weather.note) + '</div>' : '')
+      + (rec && rec.games ? '<h3>Your record</h3><div class="muted">' + esc(S.recordLine(rec))
+          + '</div>' : '')
       + (injuries.length ? '<h3>Injuries</h3><div class="muted">' + injuries.map(function (i) {
           return esc(i.position + ' ' + i.name + ' — ' + i.kind); }).join('<br>') + '</div>' : '')
       + '<h3>Drives</h3><div class="drv">' + game.drives.map(function (d) {
@@ -1480,6 +1531,7 @@
     if (game.over) finalScreen();
   }
   function startPlaying() {
+    milestoned = {};
     pre.hidden = true; gd.hidden = false;
     makeStage();
     syncTools(); paintScore(); say('');
