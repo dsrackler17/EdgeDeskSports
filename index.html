@@ -2474,14 +2474,35 @@ async function confirmArl(){
         billing_period:BILLING_PERIOD,trial_days:TRIAL_DAYS,offer_text:offer,consent_version:CONSENT_VERSION,
         user_agent:navigator.userAgent.slice(0,300)}, attrPayload())])});
     if(!r.ok){
-      var t=await r.text();
+      /* THE ACCOUNT IS ALREADY MADE BY THE TIME ANYONE REACHES THIS SCREEN, and
+         that is the first thing a stopped customer needs to hear. This branch
+         used to read "Run subscriptions.sql if this table is missing" — a
+         migration instruction, shown to a paying customer, on the one screen
+         where they have just handed over their consent and are expecting to be
+         charged. It told them nothing they could act on and left them assuming
+         the signup had failed, when in fact they were signed in the whole time.
+
+         The block itself is correct and stays: automatic-renewal law requires
+         the consent record, so if it cannot be written we must not send anyone
+         to checkout. What changes is that the customer is told where they
+         actually stand and given two ways out, and the operator gets the
+         status and body in the console instead of the customer getting it on
+         screen. */
+      var t=''; try{ t=await r.text(); }catch(_){}
+      try{ console.error('billing_consents write failed', r.status, String(t).slice(0,300)); }catch(_){}
       msg.className='auth-msg err';
-      msg.textContent='Could not record your consent, so checkout was stopped. ('+r.status+') Run subscriptions.sql if this table is missing.';
+      msg.innerHTML='<b>Your account is created and you are signed in</b> \u2014 but we could not record your renewal consent, '+
+        'so we stopped before taking any payment. <b>Nothing has been charged.</b> '+
+        'Email <a href="mailto:'+'support@edgedesksports.com?subject='+encodeURIComponent('Trial blocked at consent step')+'" style="color:var(--obs);font-weight:700">support@edgedesksports.com</a> '+
+        'and we will finish it by hand, or '+
+        '<button type="button" data-ed-report="Payment or billing" style="color:var(--obs);background:none;border:none;padding:0;font:inherit;font-weight:700;cursor:pointer;text-decoration:underline">report a problem</button>.';
       btn.disabled=false; btn.textContent=old; return;
     }
   }catch(e){
+    try{ console.error('billing_consents write threw', e); }catch(_){}
     msg.className='auth-msg err';
-    msg.textContent='Network error recording consent. Checkout stopped.';
+    msg.innerHTML='<b>Your account is created and you are signed in.</b> We could not reach EdgeDesk to record your renewal consent, '+
+      'so we stopped before taking any payment \u2014 <b>nothing has been charged.</b> Check your connection and try again.';
     btn.disabled=false; btn.textContent=old; return;
   }
 

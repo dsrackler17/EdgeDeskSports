@@ -204,7 +204,17 @@ function tok(claims) {
   chk('a bad password is a sentence', /at least 6/i.test(A.message({ msg: 'Password should be at least 6 characters' }, 422, 'signup')));
   chk('a wrong password says what to do next', /Forgot password/i.test(A.message({ error_description: 'Invalid login credentials' }, 400, 'signin')));
   chk('an unconfirmed email points at the inbox', /inbox/i.test(A.message({ msg: 'Email not confirmed' }, 400, 'signin')));
-  chk('a rate limit is not dressed up as a password problem', /Too many/i.test(A.message({}, 429, 'signin')));
+  /* A 429 IS NOT ONE THING. A real signup was refused for an email-send quota
+     and told "wait a minute and try again" — an hourly limit, so the retry
+     could not succeed, and the account may already have existed. */
+  chk('a plain request flood says so', /Too many attempts from this connection/i.test(A.message({}, 429, 'signin')));
+  const quota = A.message({ msg: 'Email rate limit exceeded' }, 429, 'signup');
+  chk('an email quota is not reported as the visitor trying too hard', !/Too many attempts/i.test(quota));
+  chk('it names the real cause', /email service is at its limit/i.test(quota));
+  chk('and points at the thing that actually works — logging in', /try logging in/i.test(quota));
+  chk('and at a human, because the account may exist either way', /support@edgedesksports\.com/.test(quota));
+  chk('a per-address cooldown quotes the real wait, not a guess',
+    /wait 54 seconds/i.test(A.message({ msg: 'For security purposes, you can only request this after 54 seconds.' }, 429, 'signup')));
   chk('a 5xx says nothing was changed', /Nothing was changed/i.test(A.message({}, 503, 'signup')));
   chk('an unrecognised error gets an honest generic, not a database string',
     A.message({ msg: 'pq: relation "x" does not exist' }, 400, 'signup') === 'Could not create the account. Please try again.');
@@ -313,6 +323,24 @@ has(GAMESJS, 'data-ed-report', 'every Games page gets the link through the share
 has(GAMESJS, 'function sharedLibs', 'and loads the shared libraries once rather than per page');
 has(ADMIN, 'issue_reports?select=', 'the operator screen reads the real table');
 has(ADMIN, 'Problem reports', 'and is reachable as its own tab');
+
+/* NO MIGRATION FILENAME IS EVER SHOWN TO A CUSTOMER, ANYWHERE.
+   app.html told them to "run feedback.sql"; index.html told them to "run
+   subscriptions.sql" on the checkout consent screen — the one place a paying
+   customer is stopped mid-purchase. Both were unactionable, and both left the
+   person believing their signup had failed when the account already existed. */
+chk('the checkout screen names no migration file to the customer',
+  !/(textContent|innerHTML)\s*=[^;]*subscriptions\.sql/.test(LANDING));
+chk('a stopped checkout leads with the fact that the account exists',
+  /Your account is created and you are signed in/.test(LANDING));
+chk('and says plainly that no money moved',
+  /[Nn]othing has been charged/.test(LANDING));
+chk('and offers a human and the reporter rather than a status code',
+  /data-ed-report="Payment or billing"/.test(LANDING) && /support@edgedesksports\.com\?subject=/.test(LANDING));
+chk('while the operator still gets the status and body, in the console',
+  /console\.error\('billing_consents write failed', r\.status/.test(LANDING));
+chk('and the consent block itself still stops checkout, because renewal law needs the record',
+  /billing_consents[\s\S]{0,2000}?btn\.disabled=false; btn\.textContent=old; return;/.test(LANDING));
 
 /* THE DEAD BUTTON IS GONE, AND SO IS WHAT MADE IT DEAD. */
 eq('the id collision that killed the old feedback form is gone',
