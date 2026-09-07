@@ -50,6 +50,7 @@ const { execFileSync } = require('child_process');
 
 const B = require('../players/build_players.js');
 const EPIR = require('../players/epir.js');
+const FEEDCACHE = require('./feed_cache.js');
 
 const DIR = __dirname;
 const OUT = path.join(DIR, 'box');
@@ -93,7 +94,9 @@ const GATES = {
 async function fetchBuf(url, cacheName) {
   if (CACHE && cacheName) {
     const p = path.join(CACHE, cacheName);
-    if (fs.existsSync(p) && fs.statSync(p).size > 64) return fs.readFileSync(p);
+    /* a finished season may be reused for ever; the season in progress may not
+       — see football/data/feed_cache.js */
+    if (FEEDCACHE.usable(p, cacheName, SEASON, 64)) return fs.readFileSync(p);
   }
   let last = null;
   for (let a = 0; a < 4; a++) {

@@ -79,13 +79,14 @@ function close(name, a, b, tol) { ok(name, a != null && Math.abs(a - b) <= (tol 
 /* ---------------------------------------------------------------- */
 /* 3. OPPONENT ADJUSTMENT — converges, and is stored three ways      */
 /* ---------------------------------------------------------------- */
-function fakeGames(n, strong) {
+function fakeGames(n, strong, weeks) {
   /* a round-robin-ish schedule so the adjustment has something to solve */
   const out = [];
   const teams = [];
+  const K = weeks == null ? 6 : weeks;
   for (let i = 0; i < n; i++) teams.push('t' + i);
   for (let i = 0; i < n; i++) {
-    for (let k = 1; k <= 6; k++) {
+    for (let k = 1; k <= K; k++) {
       const j = (i + k) % n;
       const a = B.blankTG();
       const skill = (strong[teams[i]] || 0) - (strong[teams[j]] || 0);
@@ -124,6 +125,166 @@ function fakeGames(n, strong) {
   /* circular inflation guard */
   ok('opponent: every pass pulls toward the mean, which bounds the feedback loop',
     CFG.OPPONENT.shrink_per_iteration > 0 && CFG.OPPONENT.shrink_per_iteration < 1);
+})();
+
+/* ---------------------------------------------------------------- */
+/* 3b. SAMPLE RELIABILITY — week one is football too                 */
+/*                                                                    */
+/* min_n is the sample a metric is worth FULL CREDIT at, never a gate. */
+/* Read as a gate it emptied the entire performance layer every        */
+/* September: seventy plays is less than a hundred and fifty, so every */
+/* team was dropped from every metric, offence and defence came back   */
+/* null for all of them, and the board could not move on results it    */
+/* had already read.                                                   */
+/* ---------------------------------------------------------------- */
+(function sampleReliability() {
+  const m = CFG.OFFENSE_METRICS[0];                       /* success_rate, min_n 150 */
+  ok('sample: the scoring floor is a stated fraction of the full-credit sample',
+    CFG.SAMPLE.score_floor_fraction > 0 && CFG.SAMPLE.score_floor_fraction < 1);
+  close('sample: and the floor is that fraction of min_n',
+    PERF.scoreFloor(m), m.min_n * CFG.SAMPLE.score_floor_fraction, 1e-9);
+  close('sample: the full sample is worth full credit', PERF.reliability(m.min_n, m), 1, 1e-9);
+  close('sample: a bigger sample is never worth more than full credit',
+    PERF.reliability(m.min_n * 4, m), 1, 1e-9);
+  close('sample: half a sample is worth half', PERF.reliability(m.min_n / 2, m), 0.5, 1e-9);
+  eq('sample: no sample is worth nothing', PERF.reliability(0, m), 0);
+
+  ok('sample: ONE game of football, even against a non-FBS opponent, clears the floor',
+    70 * CFG.NON_FBS.game_weight >= PERF.scoreFloor(m),
+    'one discounted game is ' + (70 * CFG.NON_FBS.game_weight) + ', floor is ' + PERF.scoreFloor(m));
+
+  /* the whole regression, end to end: one week played, a rating produced */
+  const strong = {};
+  for (let i = 0; i < 24; i++) strong['t' + i] = (12 - i) / 12;
+  const fbs = {};
+  for (let i = 0; i < 24; i++) fbs['t' + i] = true;
+  const oneWeek = PERF.build(fakeGames(24, strong, 1), { fbs });
+  const rated = Object.keys(oneWeek.teams).filter(k => oneWeek.teams[k].net_z != null);
+  ok('sample: after ONE week the performance layer rates the league, not nobody',
+    rated.length >= 20, 'only ' + rated.length + ' of 24 teams got a rating');
+  ok('sample: and it still knows who is good',
+    oneWeek.teams.t0.net_z > oneWeek.teams.t23.net_z);
+  ok('sample: every rated team publishes the reliability its number was shrunk by',
+    rated.every(k => oneWeek.teams[k].reliability > 0 && oneWeek.teams[k].reliability <= 1));
+
+  /* the shrink has to survive the second standardisation, or it is decorative */
+  const partial = rated.filter(k => oneWeek.teams[k].reliability < 0.999);
+  ok('sample: a week-one sample IS partially reliable, not fully', partial.length > 0);
+  const moved = partial.filter(k => Math.abs(oneWeek.teams[k].net_z_before_reliability) > 0.05);
+  ok('sample: and the shrink survives the league re-standardisation',
+    moved.length > 0 && moved.every(k => Math.abs(oneWeek.teams[k].net_z)
+      < Math.abs(oneWeek.teams[k].net_z_before_reliability)),
+    'a re-standardised z would rescale the shrink straight back out');
+  ok('sample: a thin sample is shrunk TOWARD the league mean, never past it',
+    partial.every(k => oneWeek.teams[k].net_z * oneWeek.teams[k].net_z_before_reliability >= 0));
+
+  /* a full season must not be penalised for having been measured properly */
+  const full = PERF.build(fakeGames(24, strong, 6), { fbs });
+  ok('sample: a full sample reaches full credit and is not shrunk at all',
+    full.teams.t0.reliability > 0.99, 'got ' + full.teams.t0.reliability);
+  ok('sample: so a full-season number is published exactly as it was measured',
+    Math.abs(full.teams.t0.net_z - full.teams.t0.net_z_before_reliability) < 0.01,
+    'shrunk ' + full.teams.t0.net_z_before_reliability + ' to ' + full.teams.t0.net_z);
+
+  /* the publish gate refuses a build whose adjustment stopped early, so the
+     iteration budget has to cover the slowest metric in the contract on the
+     thinnest sample of the year — or the weekly job simply never commits */
+  ok('sample: the opponent adjustment converges on a single week of football',
+    oneWeek.diagnostics.all_converged === true,
+    (oneWeek.diagnostics.metrics.filter(d => d.available !== false && !d.converged)
+      .map(d => d.metric + ' moved ' + d.final_movement + ' in ' + d.iterations).join('; ')));
+  ok('sample: and on a full season',
+    full.diagnostics.all_converged === true);
+})();
+
+/* ---------------------------------------------------------------- */
+/* 3c. FEED FRESHNESS — a weekly rebuild has to read this week        */
+/*                                                                    */
+/* The raw feeds are cached between runs because a finished season is  */
+/* tens of megabytes that will never change again. The season IN       */
+/* PROGRESS is the entire point of the rebuild. Serving that one out   */
+/* of the previous run's cache is how a scheduled job goes green every */
+/* week while republishing last week's rankings: the build succeeds,   */
+/* the commit is empty, and nothing on the board ever moves.           */
+/* ---------------------------------------------------------------- */
+(function feedFreshness() {
+  const FC = require('../data/feed_cache.js');
+  const os = require('os');
+
+  eq('freshness: the season of a feed is read from its name', FC.seasonOf('pstats_2026.csv'), 2026);
+  eq('freshness: parquet and gz names too', FC.seasonOf('player_box_2025.parquet'), 2025);
+  eq('freshness: a whole-history file carries no season', FC.seasonOf('cfb_line_odds.csv.gz'), null);
+
+  ok('freshness: a FINISHED season is permanent', FC.isVolatile('pstats_2025.csv', 2026) === false);
+  ok('freshness: the season being built is volatile', FC.isVolatile('pstats_2026.csv', 2026) === true);
+  ok('freshness: a future season is volatile too', FC.isVolatile('pstats_2027.csv', 2026) === true);
+  ok('freshness: a whole-history file that grows every week is volatile',
+    FC.isVolatile('cfb_line_odds.csv.gz', 2026) === true);
+  ok('freshness: with no season stated, assume the worst',
+    FC.isVolatile('pstats_2025.csv', null) === true);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edfeed-'));
+  try {
+    const stale = path.join(dir, 'pstats_2026.csv');
+    fs.writeFileSync(stale, 'x'.repeat(4096));
+    const old = Date.now() - (FC.ttlMs() + 60000);
+    fs.utimesSync(stale, old / 1000, old / 1000);
+    ok('freshness: a stale in-progress feed is REFETCHED, not reused',
+      FC.usable(stale, 'pstats_2026.csv', 2026, 64) === false);
+
+    const now = Date.now();
+    fs.utimesSync(stale, now / 1000, now / 1000);
+    ok('freshness: one just downloaded is shared across the build’s processes',
+      FC.usable(stale, 'pstats_2026.csv', 2026, 64) === true);
+
+    const done = path.join(dir, 'pstats_2024.csv');
+    fs.writeFileSync(done, 'x'.repeat(4096));
+    fs.utimesSync(done, old / 1000, old / 1000);
+    ok('freshness: a finished season is reused however old the file is',
+      FC.usable(done, 'pstats_2024.csv', 2026, 64) === true);
+
+    ok('freshness: a truncated cache file is never served',
+      FC.usable(path.join(dir, 'nope_2024.csv'), 'nope_2024.csv', 2026, 64) === false);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+
+  /* and the fetchers must actually ask it — a cache read that skips this
+     module is the bug this section exists to stop coming back */
+  for (const f of ['../data/build_box.js', '../players/build_players.js', './build_rankings.js']) {
+    const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+    ok('freshness: ' + f.replace(/^.*\//, '') + ' decides cache reuse through feed_cache',
+      /FEEDCACHE\.usable\(/.test(src) && !/fs\.existsSync\((?:p|cached)\)\s*(?:&&|\))/.test(src));
+  }
+})();
+
+/* ---------------------------------------------------------------- */
+/* 3d. THE BUILD SAYS WHAT IT READ                                    */
+/* ---------------------------------------------------------------- */
+(function freshnessStamp() {
+  const f = BR.dataFreshness(
+    { games: [
+      { completed: true, home_points: 21, start_date: '2026-09-05T23:00:00Z' },
+      { completed: true, home_points: 3, start_date: '2026-08-29T16:00:00Z' },
+      { completed: false, home_points: null, start_date: '2026-09-12T16:00:00Z' }
+    ] },
+    { teamGames: new Map([['a', 1], ['b', 2], ['c', 3]]) },
+    { teams: { x: { net_z: 0.4 }, y: { net_z: null }, z: { net_z: -1.1 } } });
+  eq('freshness stamp: only completed games are counted', f.completed_games, 2);
+  eq('freshness stamp: the latest kickoff read is the latest COMPLETED one',
+    f.latest_completed_kickoff, '2026-09-05T23:00:00Z');
+  eq('freshness stamp: team-games are counted whether the loader hands back a map or an array',
+    f.team_games_read, 3);
+  eq('freshness stamp: and how many teams that was enough to rate',
+    f.teams_with_a_performance_rating, 2);
+  ok('freshness stamp: with nothing read it says nothing, rather than nothing at all',
+    BR.dataFreshness(null, null, null).completed_games === 0);
+
+  /* the shipped dataset has to carry it — the weekly job's publish gate reads
+     this field to catch a build that read a stale cache */
+  const cur = JSON.parse(fs.readFileSync(path.join(__dirname, 'current.json'), 'utf8'));
+  ok('freshness stamp: the shipped rankings carry it', !!cur.data_freshness);
+  ok('freshness stamp: and a board past week zero read at least one completed game',
+    cur.week_ordinal === 0 || cur.data_freshness.completed_games > 0,
+    cur.week_label + ' on ' + cur.data_freshness.completed_games + ' completed games');
 })();
 
 /* ---------------------------------------------------------------- */

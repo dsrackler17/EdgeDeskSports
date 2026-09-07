@@ -43,6 +43,7 @@ const CFG = require('./config.js');
 const PERF = require('./performance.js');
 const TAL = require('./talent.js');
 const ETSR = require('./etsr.js');
+const FEEDCACHE = require('../data/feed_cache.js');
 
 const DIR = __dirname;
 const PLAYERS_DIR = path.join(DIR, '..', 'players');
@@ -123,7 +124,9 @@ async function marketPower(season, sched, cacheDir) {
   const TEAMS = 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/teams/teams_colors_logos.csv';
   async function get(url, name) {
     const cached = cacheDir ? path.join(cacheDir, name) : null;
-    if (cached && fs.existsSync(cached)) return fs.readFileSync(cached);
+    /* the line archive is one whole-history file that grows every week, so it
+       is volatile by name and never served from a stale cache */
+    if (cached && FEEDCACHE.usable(cached, name, season, 64)) return fs.readFileSync(cached);
     const r = await fetch(url);
     if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + name);
     const buf = Buffer.from(await r.arrayBuffer());
@@ -454,8 +457,12 @@ async function main() {
         run_offense: p.sub_units.run_offense.rating, pass_offense: p.sub_units.pass_offense.rating,
         run_defense: p.sub_units.run_defense.rating, pass_defense: p.sub_units.pass_defense.rating,
         opponent_delta: r3(oppDeltas.length ? mean(oppDeltas) : null),
-        offense_detail: { used: p.offense.used, missing: p.offense.missing, scored: p.offense.scored, contract: p.offense.contract },
-        defense_detail: { used: p.defense.used, missing: p.defense.missing, scored: p.defense.scored, contract: p.defense.contract },
+        reliability: { net: p.reliability, offense: p.offense.reliability, defense: p.defense.reliability,
+          net_z_before_reliability: p.net_z_before_reliability, basis: p.reliability_basis },
+        offense_detail: { used: p.offense.used, missing: p.offense.missing, scored: p.offense.scored,
+          contract: p.offense.contract, reliability: p.offense.reliability },
+        defense_detail: { used: p.defense.used, missing: p.defense.missing, scored: p.defense.scored,
+          contract: p.defense.contract, reliability: p.defense.reliability },
         sub_units: p.sub_units, sample: p.sample
       } : { rating: null, available: false, reason: 'this team has produced no attributed play this season' },
       depth: { rating: t.depth_quality, basis: 'position-value weighted depth quality behind the projected starters' },
@@ -528,6 +535,10 @@ async function main() {
       note: 'this season’s talent is read from the committed player artifact; earlier seasons are reconstructed here from the same modules so the prior-season chain exists at all'
     },
     team_count: Object.keys(teams).length,
+    /* WHAT THIS BUILD ACTUALLY READ. A weekly rebuild that is quietly reading
+       a cached copy of last week's feed succeeds, commits nothing and freezes
+       the board; these four numbers are how that is seen rather than assumed. */
+    data_freshness: dataFreshness(sched[cur], play[cur], perf),
     carryover: finalSlope,
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
@@ -594,6 +605,34 @@ async function main() {
   printTop(teams, 15);
   log(`\ndone — ${Object.keys(teams).length} teams, season ${cur} ${week.label}`);
   return 0;
+}
+
+/* the play loader hands back a Map of team-games in one place and an array in
+   another; both are a count here */
+function countOf(c) {
+  if (!c) return 0;
+  if (typeof c.size === 'number') return c.size;
+  if (typeof c.length === 'number') return c.length;
+  return 0;
+}
+
+/* What the current season's feeds contained when this build read them. */
+function dataFreshness(sched, play, perf) {
+  let completed = 0, latest = null;
+  for (const g of (sched && sched.games) || []) {
+    if (!g.completed || g.home_points == null) continue;
+    completed++;
+    if (g.start_date && (latest == null || g.start_date > latest)) latest = g.start_date;
+  }
+  const rated = perf && perf.teams
+    ? Object.keys(perf.teams).filter(k => perf.teams[k].net_z != null).length : 0;
+  return {
+    completed_games: completed,
+    latest_completed_kickoff: latest,
+    team_games_read: countOf(play && play.teamGames),
+    teams_with_a_performance_rating: rated,
+    basis: 'the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it.'
+  };
 }
 
 function frontReturningFromSummary(summary) {
@@ -706,7 +745,7 @@ function writeIfChanged(file, text) {
 
 module.exports = { main, weekOrdinal, weekLabel, resolveWeek, measureSlope, marketPower,
   seasonPlayerLayer, seasonEtsr, attachContinuity, frontReturning, latestSnapshotBefore,
-  missingSnapshotCheck, POSTSEASON_OFFSET };
+  missingSnapshotCheck, dataFreshness, POSTSEASON_OFFSET };
 
 if (require.main === module) {
   main().then(c => process.exit(c)).catch(e => { console.error('RANKINGS BUILD FAILED:', e && e.stack || e); process.exit(1); });

@@ -142,10 +142,10 @@
    * OPPONENT ADJUSTMENT                                                 *
    * ------------------------------------------------------------------ */
   var OPPONENT = {
-    max_iterations: 800,
+    max_iterations: 2500,
     tolerance: 1e-6,
     tolerance_is_relative: true,
-    convergence_basis: 'the 2% pull toward the mean on every pass is what makes this a contraction, and it is also what makes it a SLOW one — the tail decays like 0.98^k, so a success rate needs roughly 430 passes to settle. The bar is set at one part in a million of the metric’s own league mean, which is three orders of magnitude finer than anything this system publishes, and the iteration count and final movement ship with the dataset so a build that stopped early is visible rather than assumed.',
+    convergence_basis: 'the 2% pull toward the mean on every pass is what makes this a contraction, and it is also what makes it a SLOW one — the tail decays like 0.98^k, so a success rate needs roughly 430 passes to settle and a rate whose league mean is small — a turnover rate near 0.015 — needs well past a thousand, because the bar it is being held to is relative to that small mean. The budget is set above what the slowest metric in the contract actually needs rather than at a round number: a build that stops early publishes `converged: false`, and the weekly job REFUSES TO COMMIT on it, so an iteration budget set too low does not degrade the rankings, it freezes them. The bar is set at one part in a million of the metric’s own league mean, which is three orders of magnitude finer than anything this system publishes, and the iteration count and final movement ship with the dataset so a build that stopped early is visible rather than assumed.',
     tolerance_basis: 'the tolerance is RELATIVE to the metric’s own league mean. A success rate lives near 0.42 and yards per carry near 4.5; one absolute epsilon cannot mean the same thing to both, and using one would declare convergence on the second while still moving on the first.',
     basis: 'a fixed point: each side of every game is the denominator-weighted mean of (what it did − how far the other side is from league average at allowing it). Iterated to convergence rather than to a round number of passes, and the iteration count and final movement ship with the dataset.',
     /* Circular inflation guard. Without it, two teams that only play each other
@@ -154,6 +154,35 @@
     shrink_basis: 'each pass pulls every rating 2% back toward the league mean. It costs almost nothing at convergence and it bounds the feedback loop that lets an isolated pair of teams inflate each other.',
     fcs_pooled_key: '__nonfbs__',
     fcs_basis: 'every non-FBS opponent shares ONE pooled identity that is solved for like any other team, so beating an FCS side is worth what the data says it is worth rather than a number somebody chose.'
+  };
+
+  /* ------------------------------------------------------------------ *
+   * SAMPLE RELIABILITY                                                  *
+   *                                                                     *
+   * Every metric above states min_n: the sample at which its rate stops  *
+   * being mostly noise. Reading that as a HARD cut is what kept the      *
+   * whole performance layer dark for the first weeks of a season. In     *
+   * week one an FBS team has run about seventy plays, seventy is less    *
+   * than a hundred and fifty, so EVERY team was dropped from EVERY       *
+   * metric, offence and defence came back null for all 136 of them, and  *
+   * the board could not move on results it had already read. The         *
+   * rankings sat on talent and last season and called it a rating.       *
+   *                                                                     *
+   * A half sample is not nothing and it is not a full measurement. The   *
+   * honest treatment is the one every other layer here already uses:     *
+   * SHRINK IT TOWARD THE LEAGUE MEAN in proportion to how much of the    *
+   * stated sample exists, publish the fraction next to the number, and   *
+   * let confidence and the ETSR ramp carry the rest of the doubt.        *
+   *                                                                     *
+   * Nothing about min_n changes. It stops being a gate and becomes what  *
+   * it always was: the sample at which a metric is worth full credit.    *
+   * ------------------------------------------------------------------ */
+  var SAMPLE = {
+    score_floor_fraction: 0.20,
+    floor_basis: 'below a fifth of a metric’s stated sample the metric is still not scored for that team. The fifth is not taste: ONE GAME of football must reach the board, and one game against a non-FBS opponent — seventy plays at the 0.45 game weight — lands at 0.21 of a 150-play sample. Set any higher and half the league is dark every September; set lower and a four-play red-zone sample gets a number whose only job is to be shrunk to nothing.',
+    reliability_basis: 'reliability = min(1, n / min_n). A team holding half the stated sample carries half its z, and reaches full credit exactly at min_n. The shrink is toward the league mean — the direction a thin sample should be pulled — and every scored metric ships its own reliability and the sample it was measured on.',
+    standardise_min_teams: 12,
+    standardise_basis: 'the league standardisation runs over every team above the scoring floor. Fewer teams than this and there is no population to standardise against, so the metric is declared unusable rather than standardised against a handful.'
   };
 
   /* ------------------------------------------------------------------ *
@@ -491,6 +520,7 @@
     NET: NET,
     OPPONENT: OPPONENT,
     RECENCY: RECENCY,
+    SAMPLE: SAMPLE,
     NON_FBS: NON_FBS,
     PRIORS: PRIORS,
     CARRYOVER: CARRYOVER,
