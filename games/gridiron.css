@@ -48,199 +48,253 @@
 }
 .gd-body{overscroll-behavior:none;touch-action:manipulation}
 
-/* ── SCOREBOARD ───────────────────────────────────────────────────────────── */
-/* ONE SLIM BAR. The reference gives the scoreboard about a twentieth of the
-   screen and the football the rest; anything the HUD takes is football you
-   cannot see. */
+/* ── THE SCORE BUG ────────────────────────────────────────────────────────
+   What a broadcast puts across the top of a football game: two clubs in
+   their own colour, the score in figures you can read at arm's length, the
+   clock and the quarter between them, and the down, the distance and the
+   spot on a rule underneath. Slim on purpose — everything the bug takes is
+   football you cannot see. */
 .sb{
-  flex:0 0 auto;background:linear-gradient(180deg,#151922,#10131a);
-  border-bottom:1px solid var(--line);padding:5px 12px 6px;
-  padding-top:calc(5px + env(safe-area-inset-top));
+  flex:0 0 auto;position:relative;z-index:8;
+  background:linear-gradient(180deg,#12161e 0%,#0c1017 100%);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+  padding:4px 10px 0;
+  padding-top:calc(4px + env(safe-area-inset-top));
 }
-.sb-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
-.sb-team{display:flex;align-items:center;gap:7px;min-width:0}
+.sb::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(63,184,131,.55),transparent)}
+.sb-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px}
+.sb-team{display:flex;align-items:center;gap:8px;min-width:0}
 .sb-team.right{flex-direction:row-reverse}
-.sb-ab{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;letter-spacing:.05em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-pts{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:23px;line-height:1;
-  font-variant-numeric:tabular-nums}
-/* the club's own rule beside its abbreviation, and the number moving when it
-   changes: a scoreboard should show a score arriving, not just holding */
-.sb-bar{width:3px;height:19px;border-radius:2px;flex:0 0 auto;display:block}
-.sb-pts.hit{animation:sbpop .5s cubic-bezier(.2,1.5,.4,1)}
-@keyframes sbpop{0%{transform:scale(1)}30%{transform:scale(1.34);color:#fff}100%{transform:scale(1)}}
-@media(prefers-reduced-motion:reduce){.sb-pts.hit{animation:none}}
-.sb-mid{text-align:center;min-width:96px}
-.sb-clock{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;line-height:1.05;
-  font-variant-numeric:tabular-nums;color:var(--text)}
-.sb-q{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--faint);text-transform:uppercase}
-.sb-dd{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:2px;
-  font-size:11.5px;color:var(--dim);flex-wrap:wrap}
-.sb-dd b{color:var(--text);font-weight:700}
+.sb-ab{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.09em;
+  color:#e9edf4;white-space:nowrap;text-transform:uppercase}
+.sb-pts{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:25px;line-height:1;
+  color:#fff;font-variant-numeric:tabular-nums}
+.sb-team{justify-content:flex-start}
+.sb-team.right{justify-content:flex-start}
+/* the club's colour, as a solid block behind the badge rather than a hairline */
+.sb-bar{width:5px;height:22px;border-radius:2px;flex:0 0 auto;display:block;
+  box-shadow:0 0 10px -1px currentColor}
+.sb-pts.hit{animation:sbpop .55s cubic-bezier(.2,1.5,.4,1)}
+@keyframes sbpop{0%{transform:scale(1)}30%{transform:scale(1.30);color:var(--val)}100%{transform:scale(1)}}
+.sb-mid{text-align:center;min-width:92px;padding:0 2px}
+.sb-clock{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;line-height:1;
+  color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.sb-q{font-size:8.5px;font-weight:800;letter-spacing:.18em;color:var(--faint);text-transform:uppercase;
+  margin-top:3px}
+/* the strip under it: timeouts, down and distance, and the spot */
+.sb-dd{display:flex;align-items:center;justify-content:center;gap:10px;
+  margin:4px -10px 0;padding:4px 12px 5px;font-size:12px;color:var(--dim);
+  border-top:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.22)}
+.sb-dd b{color:#fff;font-weight:800;font-family:'Space Grotesk',sans-serif;letter-spacing:.01em}
+.sb-dd span{letter-spacing:.02em}
 .sb-dd .on{color:var(--val)}
 .sb-poss{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;
-  border-left:7px solid var(--val);display:inline-block}
+  border-left:7px solid var(--val);flex:0 0 auto;filter:drop-shadow(0 0 5px rgba(63,184,131,.6))}
 .sb-poss.left{border-left:0;border-right:7px solid var(--val)}
 .sb-to{display:inline-flex;gap:3px;vertical-align:middle}
-.sb-to i{width:6px;height:6px;border-radius:50%;background:var(--line2);display:block}
-.sb-to i.on{background:var(--val)}
+.sb-to i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.16);display:block}
+.sb-to i.on{background:var(--val);box-shadow:0 0 6px rgba(63,184,131,.55)}
 
 /* ── THE FIELD ────────────────────────────────────────────────────────────
    A canvas, and nothing on top of it that does not have to be there. The
-   field is the product: everything else is pinned to an edge. */
+   field is the product: everything else is pinned to an edge and gets out of
+   the way the moment it is not needed. */
 .gd-field{
-  flex:1 1 auto;position:relative;min-height:52dvh;background:#0a0e13;overflow:hidden;
+  flex:1 1 auto;position:relative;min-height:52dvh;background:#080b10;overflow:hidden;
   touch-action:none;
 }
 .fld{position:absolute;inset:0;width:100%;height:100%;display:block}
 
-.fx{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);
-  font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:clamp(26px,8.5vw,44px);
-  letter-spacing:.03em;color:#fff;text-shadow:0 4px 26px rgba(0,0,0,.85),0 0 40px rgba(0,0,0,.5);
-  pointer-events:none;animation:fxpop .34s cubic-bezier(.2,1.5,.4,1);z-index:6;white-space:nowrap}
-.fx.out{opacity:0;transform:translate(-50%,-64%) scale(1.06);transition:opacity .55s,transform .55s}
-.fx-td{color:#4ede9f}
-.fx-good{color:#4ede9f}
-.fx-first{color:#f2c744;font-size:clamp(20px,6.2vw,32px)}
-.fx-bad{color:#ff7a5c}
-@keyframes fxpop{from{transform:translate(-50%,-50%) scale(.55);opacity:0}
-  to{transform:translate(-50%,-50%) scale(1);opacity:1}}
-@media(prefers-reduced-motion:reduce){.fx{animation:none}}
+/* ── THE BIG CALL ─────────────────────────────────────────────────────────
+   FIRST DOWN. SACK. TOUCHDOWN. It arrives on a band, holds for less than a
+   second and leaves — a broadcast graphic, not a modal. */
+.fx{position:absolute;left:0;right:0;top:26%;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:'Space Grotesk',sans-serif;font-weight:800;
+  font-size:clamp(23px,7.4vw,38px);letter-spacing:.06em;color:#fff;
+  text-shadow:0 3px 22px rgba(0,0,0,.9),0 0 44px rgba(0,0,0,.6);
+  pointer-events:none;z-index:6;white-space:nowrap;
+  animation:fxband .38s cubic-bezier(.16,1,.3,1)}
+.fx::before{content:'';position:absolute;left:0;right:0;top:50%;height:2.6em;
+  transform:translateY(-50%) scaleX(1);
+  background:linear-gradient(90deg,transparent,rgba(6,10,14,.80) 14%,rgba(6,10,14,.80) 86%,transparent);
+  z-index:-1;animation:fxwipe .34s cubic-bezier(.16,1,.3,1)}
+.fx.out{opacity:0;transform:translateY(-14px);transition:opacity .5s,transform .5s}
+.fx-td{color:#5df0a8}
+.fx-good{color:#5df0a8}
+.fx-first{color:#f7d24d;font-size:clamp(20px,6.2vw,31px)}
+.fx-bad{color:#ff8467}
+@keyframes fxband{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes fxwipe{from{transform:translateY(-50%) scaleX(.1);opacity:0}to{transform:translateY(-50%) scaleX(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.fx,.fx::before{animation:none}}
 
-/* the play-by-play line, over the bottom of the field */
-.gd-say{position:absolute;left:50%;top:52px;transform:translateX(-50%);
-  max-width:88%;padding:7px 14px;border-radius:var(--r-md);
-  background:rgba(8,11,15,.78);border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(8px);text-align:center;
-  font-size:13px;line-height:1.35;color:var(--text);pointer-events:none;z-index:3;
-  opacity:0;transition:opacity .18s}
-.gd-say:not(:empty){opacity:1}
-.gd-say.big{font-weight:700;color:#fff;font-size:14.5px;border-color:rgba(63,184,131,.5)}
+/* ── THE STRAP ────────────────────────────────────────────────────────────
+   The one line of commentary a broadcast puts along the bottom of the
+   picture. Never a pill in the middle of the field. */
+.gd-say{position:absolute;left:0;right:0;bottom:0;z-index:5;
+  padding:7px 14px calc(7px + env(safe-area-inset-bottom));
+  font-size:13px;font-weight:600;letter-spacing:.01em;color:#dfe7ef;text-align:center;
+  background:linear-gradient(180deg,rgba(6,10,14,0),rgba(6,10,14,.86) 46%,rgba(6,10,14,.94));
+  opacity:0;transform:translateY(8px);transition:opacity .22s,transform .22s;pointer-events:none}
+.gd-say:not(:empty){opacity:1;transform:none}
+.gd-say.big{font-weight:800;color:#fff;font-size:15px;font-family:'Space Grotesk',sans-serif}
 
-/* the top-corner clusters */
-.gd-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5}
-.gd-tools button{min-width:34px;min-height:34px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.14);
-  background:rgba(8,11,15,.62);color:var(--dim);font-size:13px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
-.gd-tools button[aria-pressed="true"]{color:var(--val);border-color:rgba(63,184,131,.55)}
-/* WHAT THEY ARE IN. A broadcast tag, not a dialog: an accent rule, a name,
-   and the shape under it — small enough that the football stays first. */
-.gd-read{position:absolute;top:7px;left:7px;z-index:5;
-  background:linear-gradient(90deg,rgba(8,11,15,.80),rgba(8,11,15,.52));
-  border-left:3px solid var(--acc,#3fb883);border-radius:3px var(--r-sm) var(--r-sm) 3px;
-  padding:4px 10px 5px 8px;font-size:10px;letter-spacing:.02em;
-  color:rgba(207,224,216,.72);max-width:50%;backdrop-filter:blur(7px)}
-.gd-read b{color:#fff;display:block;font-size:11.5px;letter-spacing:.01em;
-  font-family:'Space Grotesk',sans-serif}
+/* ── THE TOOLS ────────────────────────────────────────────────────────────
+   Four small controls that must never compete with the game. */
+.gd-tools{position:absolute;top:8px;right:8px;display:flex;gap:5px;z-index:5;opacity:.72}
+.gd-tools button{width:30px;height:30px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.10);background:rgba(8,12,17,.52);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  color:#a9b6c4;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
+  transition:transform .12s,color .12s}
+.gd-tools button:active{transform:scale(.9)}
+.gd-tools button[aria-pressed="true"]{color:var(--val);border-color:rgba(63,184,131,.42)}
+
+/* ── THE READ ─────────────────────────────────────────────────────────────
+   What the defence is showing you, as a broadcast tag: a club-coloured rule,
+   a name, and the one line under it that matters. */
+.gd-read{position:absolute;top:8px;left:8px;z-index:5;max-width:56%;
+  padding:6px 11px 7px 12px;border-radius:3px 10px 10px 3px;
+  background:linear-gradient(90deg,rgba(9,13,19,.90),rgba(9,13,19,.72));
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-left:3px solid var(--gr-def);
+  animation:readin .3s cubic-bezier(.16,1,.3,1)}
+.gd-read b{color:#fff;display:block;font:800 13px 'Space Grotesk',sans-serif;letter-spacing:.005em}
+.gd-read i{font-style:normal;display:block;font-size:10.5px;color:#93a1b1;margin-top:1px;letter-spacing:.02em}
+@keyframes readin{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+
+/* ── THE PLAY CLOCK ───────────────────────────────────────────────────────
+   A rule that drains along the top of the field. No box, no chrome. */
+.pd-clock{position:absolute;left:0;right:0;top:0;height:3px;z-index:5;
+  background:rgba(255,255,255,.07);overflow:hidden}
+.pd-clock span{display:block;height:100%;width:100%;
+  background:linear-gradient(90deg,#3fb883,#7ee8b8);
+  box-shadow:0 0 10px rgba(63,184,131,.55);
+  transform-origin:left center}
+.pd-clock.warn span{background:linear-gradient(90deg,#e2664b,#f2a24b);
+  box-shadow:0 0 10px rgba(226,102,75,.6)}
 
 /* ── THE THUMBS ───────────────────────────────────────────────────────────
-   Everything you touch during a play lives over the field, at the edges,
-   where a thumb already is. Nothing is small. */
+   A stick on the left, one big round button on the right and a smaller one
+   above it. Two thumbs, no reading. */
 .pad{position:absolute;inset:0;z-index:4;pointer-events:none}
 .pad.on>*{pointer-events:auto}
 
-.pd-stick{position:absolute;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));
-  width:118px;height:118px;border-radius:50%;
-  background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.10),rgba(255,255,255,.03) 60%,transparent 72%);
-  border:1.5px solid rgba(255,255,255,.20);touch-action:none}
-.pd-ring{position:absolute;left:50%;top:50%;width:74px;height:74px;margin:-37px 0 0 -37px;
-  border-radius:50%;border:1px solid rgba(255,255,255,.13);pointer-events:none}
-.pd-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;
-  border-radius:50%;background:rgba(233,237,244,.88);box-shadow:0 3px 14px rgba(0,0,0,.5);
-  transition:transform .05s linear}
-.pd-acts{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));
-  display:flex;flex-direction:column;gap:9px;align-items:flex-end}
-/* ROUND, AND SIZED FOR A THUMB. One big primary, one smaller above it —
-   the shape says "press me now", where a rectangle says "read me first". */
+.pd-stick{position:absolute;left:16px;bottom:calc(20px + env(safe-area-inset-bottom));
+  width:118px;height:118px;touch-action:none}
+.pd-ring{position:absolute;left:50%;top:50%;width:82px;height:82px;margin:-41px 0 0 -41px;
+  border-radius:50%;border:1.5px solid rgba(255,255,255,.16);background:rgba(8,12,17,.20);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.pd-knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;
+  border-radius:50%;background:radial-gradient(circle at 34% 30%,#ffffff,#c9d4de);
+  box-shadow:0 3px 14px rgba(0,0,0,.5);transition:transform .06s linear}
+
+.pd-acts{position:absolute;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:flex-end;gap:11px}
 .pd-act{display:flex;align-items:center;justify-content:center;text-align:center;
-  border-radius:50%;border:1.5px solid rgba(255,255,255,.24);
-  background:rgba(16,22,30,.80);color:#fff;font:800 14px 'Space Grotesk',sans-serif;
-  letter-spacing:.02em;cursor:pointer;backdrop-filter:blur(7px);padding:0;
-  box-shadow:0 5px 18px rgba(0,0,0,.42)}
-.pd-act:active{transform:scale(.93)}
-.pd-act-a{width:88px;height:88px;font-size:16px;
-  background:radial-gradient(circle at 50% 38%,rgba(88,236,158,.95),rgba(40,164,111,.92));
-  color:#04241a;border-color:rgba(126,247,183,.85);
-  box-shadow:0 7px 24px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.16) inset}
-.pd-act-b{width:62px;height:62px;font-size:13px;margin-right:12px}
+  border-radius:50%;font-family:'Space Grotesk',sans-serif;font-weight:800;
+  transition:transform .1s;letter-spacing:.01em;
+  -webkit-tap-highlight-color:transparent}
+.pd-act:active{transform:scale(.92)}
+.pd-act-a{width:86px;height:86px;font-size:15.5px;color:#06231a;
+  background:radial-gradient(circle at 36% 28%,#6ff0b4,#31a877);
+  border:0;box-shadow:0 6px 22px rgba(49,168,119,.42),inset 0 -3px 0 rgba(0,0,0,.16)}
+.pd-act-b{width:60px;height:60px;font-size:12.5px;margin-right:11px;color:#e9edf4;
+  background:rgba(14,19,26,.72);border:1.5px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 
 .pd-snap{position:absolute;left:50%;transform:translateX(-50%);
-  bottom:calc(18px + env(safe-area-inset-bottom));
-  min-width:190px;min-height:58px;border-radius:var(--r-xl);border:0;
-  background:linear-gradient(180deg,#4ede9f,#2ea16f);color:#04241a;
-  font:800 19px 'Space Grotesk',sans-serif;letter-spacing:.06em;cursor:pointer;
-  box-shadow:0 8px 26px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.14) inset}
-.pd-snap:active{transform:translateX(-50%) scale(.97)}
-.pd-flip{position:absolute;right:14px;bottom:calc(24px + env(safe-area-inset-bottom));
-  min-height:44px;padding:0 14px;border-radius:var(--r-md);border:1px solid rgba(255,255,255,.2);
-  background:rgba(20,26,34,.8);color:var(--dim);font:700 13px 'Inter',sans-serif;cursor:pointer}
+  bottom:calc(22px + env(safe-area-inset-bottom));
+  min-width:min(280px,66vw);min-height:58px;border-radius:var(--r-pill);border:0;
+  font:800 19px 'Space Grotesk',sans-serif;letter-spacing:.03em;color:#06231a;
+  background:linear-gradient(180deg,#6ff0b4,#34b07e);
+  box-shadow:0 8px 26px rgba(49,168,119,.40),inset 0 -3px 0 rgba(0,0,0,.14);
+  -webkit-tap-highlight-color:transparent}
+.pd-snap:active{transform:translateX(-50%) scale(.975)}
+.pd-flip{position:absolute;right:16px;bottom:calc(28px + env(safe-area-inset-bottom));
+  min-height:44px;padding:0 15px;border-radius:var(--r-pill);
+  border:1px solid rgba(255,255,255,.14);background:rgba(12,17,23,.72);color:#b8c4d1;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  font:700 12.5px 'Space Grotesk',sans-serif}
 
-/* the receivers: one tap, and the bar says the rush is coming */
 .pd-recv{position:absolute;left:10px;right:10px;bottom:calc(26px + env(safe-area-inset-bottom));
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:7px}
-.pd-r{min-height:calc(var(--tap) + 12px);border-radius:var(--r-lg);border:1.5px solid rgba(255,255,255,.22);
-  background:rgba(15,20,27,.86);color:#fff;cursor:pointer;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:2px;backdrop-filter:blur(6px);padding:4px}
+  display:grid;grid-auto-flow:column;gap:8px}
+.pd-r{min-height:calc(var(--tap) + 10px);border-radius:var(--r-lg);
+  border:1.5px solid rgba(255,255,255,.20);background:rgba(10,15,20,.72);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  color:#e9edf4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
 .pd-r b{font:800 14px 'Space Grotesk',sans-serif;line-height:1.05}
 .pd-r i{font-style:normal;font-size:10px;color:var(--dim);letter-spacing:.04em}
 .pd-r:active{transform:scale(.95);border-color:var(--val)}
-/* the rush clock rides under the scoreboard, where a play clock belongs */
-.pd-clock{position:absolute;left:0;right:0;top:0;
-  height:4px;background:rgba(255,255,255,.10);overflow:hidden}
-.pd-clock span{display:block;height:100%;width:100%;background:#3fb883;border-radius:3px}
 
-/* ── THE DRAWER ───────────────────────────────────────────────────────────
-   The call sheet slides up over the field, three plays at a time, and gets
-   out of the way the moment you have picked one. */
+/* ── THE CALL SHEET ───────────────────────────────────────────────────────
+   A drawer, not an app screen. It slides up over the bottom of the field,
+   shows the plays three or four at a time, and gets out of the way the moment
+   you have picked one. It must never take more of the picture than the
+   football does — you are choosing a play AGAINST a look, and the look is on
+   the field behind it. */
 .drawer{
   position:fixed;left:0;right:0;bottom:0;z-index:30;
-  background:linear-gradient(180deg,#161b23,#10141b);
-  border-top:1px solid var(--line2);border-radius:var(--r-xl) var(--r-xl) 0 0;
-  box-shadow:0 -12px 40px rgba(0,0,0,.55);
-  transform:translateY(102%);transition:transform .26s cubic-bezier(.2,.9,.3,1);
-  max-height:62dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(20,25,33,.97),rgba(11,15,21,.99));
+  backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);
+  border-top:1px solid rgba(255,255,255,.09);border-radius:20px 20px 0 0;
+  box-shadow:0 -18px 50px rgba(0,0,0,.62);
+  transform:translateY(102%);transition:transform .28s cubic-bezier(.16,1,.3,1);
+  max-height:46dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
 }
+.drawer::before{content:'';position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(63,184,131,.5),transparent)}
 .drawer.open{transform:none}
 @media(prefers-reduced-motion:reduce){.drawer{transition:none}}
-.dr-grip{width:38px;height:4px;border-radius:3px;background:rgba(255,255,255,.22);margin:8px auto 4px}
-.dr-head{display:flex;align-items:center;gap:8px;padding:4px 14px 8px}
-.dr-title{font:700 14px 'Space Grotesk',sans-serif;color:#fff;display:flex;gap:8px;align-items:baseline}
-.dr-title b{font-weight:500;font-size:11.5px;color:var(--faint);letter-spacing:.04em}
-.dr-sub{margin-left:auto;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--faint);font-weight:600}
-.dr-tell{margin-left:auto;font-size:11px;color:var(--dim);white-space:nowrap}
-.dr-x{min-height:34px;padding:0 11px;border-radius:var(--r-sm);border:1px solid var(--line2);
-  background:var(--cell);color:var(--dim);font:700 11.5px 'Inter',sans-serif;cursor:pointer}
-.dr-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:0 14px 8px}
+.dr-grip{width:36px;height:4px;border-radius:3px;background:rgba(255,255,255,.20);margin:7px auto 2px}
+.dr-head{display:flex;align-items:center;gap:8px;padding:3px 13px 7px}
+.dr-title{font:800 13.5px 'Space Grotesk',sans-serif;color:#fff;display:flex;gap:7px;align-items:baseline;
+  min-width:0}
+.dr-title b{font-weight:600;font-size:11px;color:var(--faint);letter-spacing:.05em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.dr-sub{margin-left:auto;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);font-weight:700}
+.dr-tell{margin-left:auto;font-size:10.5px;color:var(--dim);white-space:nowrap}
+.dr-x{min-height:30px;padding:0 11px;border-radius:var(--r-pill);
+  border:1px solid rgba(255,255,255,.13);background:transparent;color:var(--faint);
+  font:700 11px 'Space Grotesk',sans-serif;letter-spacing:.04em;margin-left:auto;flex:0 0 auto}
+
+/* the groups, as a scrolling rail of chips */
+.dr-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:0 13px 7px}
 .dr-tabs::-webkit-scrollbar{display:none}
-.dr-tabs button{flex:0 0 auto;min-height:calc(var(--tap) - 12px);padding:0 13px;border-radius:var(--r-pill);
-  border:1px solid var(--line2);background:var(--cell);color:var(--dim);
-  font:700 12px 'Inter',sans-serif;white-space:nowrap;cursor:pointer}
+.dr-tabs button{flex:0 0 auto;min-height:30px;padding:0 13px;border-radius:var(--r-pill);
+  border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--dim);
+  font:700 12px 'Space Grotesk',sans-serif;letter-spacing:.02em;white-space:nowrap}
 .dr-tabs button[aria-selected="true"]{background:var(--val);border-color:var(--val);color:#06231a}
 
-.dr-list{display:flex;flex-direction:column;gap:8px;padding:2px 12px 10px}
-/* ONE RADIUS, ONE TOUCH TARGET. Every card in the sheet is the same shape and
-   the same height to a thumb; only the accent tells them apart. */
-.dr-play{display:flex;align-items:center;gap:12px;text-align:left;width:100%;
-  min-height:76px;padding:9px 12px;border-radius:var(--r-lg);border:1px solid var(--line2);
-  background:var(--raised);color:var(--text);cursor:pointer;
-  transition:border-color .12s,transform .09s}
-.dr-play:active{transform:scale(.985);border-color:var(--val)}
-/* the recommendation carries the accent down its edge and says what it is for */
-.dr-play.dr-top{border-color:rgba(63,184,131,.55);
-  background:linear-gradient(90deg,rgba(63,184,131,.10),var(--raised) 42%);
-  box-shadow:inset 3px 0 0 var(--val)}
-.pdiag{flex:0 0 auto;width:88px;height:58px;background:rgba(9,24,16,.85);
-  border:1px solid var(--line);border-radius:var(--r-sm)}
-.dr-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
-.dr-txt u{text-decoration:none;font:800 9.5px 'Space Grotesk',sans-serif;
-  letter-spacing:.16em;text-transform:uppercase;color:var(--val);margin-bottom:2px}
-.dr-txt b{font:700 15.5px 'Space Grotesk',sans-serif;line-height:1.15}
-.dr-txt i{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.09em;
+/* ── ONE PLAY ─────────────────────────────────────────────────────────────
+   A diagram, a name, the formation it comes from and ONE line about why you
+   would call it. Small enough that four of them are on the screen at once. */
+.dr-list{display:flex;flex-direction:column;gap:6px;padding:1px 11px 9px}
+.dr-play{display:flex;align-items:center;gap:11px;text-align:left;width:100%;
+  padding:8px 11px 8px 8px;border-radius:13px;
+  border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.028);
+  color:var(--text);transition:transform .1s,border-color .12s,background .12s;
+  -webkit-tap-highlight-color:transparent}
+.dr-play:active{transform:scale(.985);border-color:var(--val);background:rgba(63,184,131,.10)}
+.dr-play.dr-top{border-color:rgba(63,184,131,.42);background:rgba(63,184,131,.07)}
+.dr-play.dr-top .dr-txt b{color:#fff}
+.pdiag{flex:0 0 auto;width:66px;height:44px;background:rgba(8,20,14,.85);
+  border:1px solid rgba(255,255,255,.06);border-radius:8px;overflow:hidden}
+.dr-txt{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 auto}
+.dr-txt u{text-decoration:none;font:800 8.5px 'Space Grotesk',sans-serif;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--val)}
+.dr-txt b{font:800 14.5px 'Space Grotesk',sans-serif;line-height:1.15;color:#eef3f8;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dr-txt i{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.1em;
   text-transform:uppercase;color:var(--faint)}
-.dr-txt em{font-style:normal;font-size:11.5px;color:var(--dim);line-height:1.3}
-.dr-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 12px 12px}
+.dr-txt em{font-style:normal;font-size:11px;color:var(--dim);line-height:1.32;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.dr-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:1px 11px 11px}
 .dr-row.one{grid-template-columns:1fr}
 
 /* ── TEMPO ────────────────────────────────────────────────────────────────
@@ -272,88 +326,100 @@
 .dr-x{color:var(--faint)}
 
 /* ── overlays: halftime, postgame, settings, tutorial ─────────────────────── */
-/* THE PLACE STAYS BEHIND THE PANEL. At the half and the final whistle the
-   camera is on the stadium; a flat scrim over it throws that away, so the
-   wash is lightest at the top where the bowl is and closes down over the
-   panel where the reading happens. */
+/* ── BROADCAST PANELS ─────────────────────────────────────────────────────
+   Halftime and the final whistle are the two moments a broadcast stops
+   showing football and shows a GRAPHIC. So they get a graphic: the two clubs
+   across the top under their own colour, the score in figures you can read
+   from the back of the room, and the numbers as bars rather than as a column
+   of digits you have to compare by eye. The stadium stays behind it. */
 .ov{position:fixed;inset:0;z-index:60;
-  background:linear-gradient(180deg,rgba(6,8,11,.34),rgba(6,8,11,.74) 34%,rgba(6,8,11,.88));
-  backdrop-filter:blur(3px);
-  display:flex;align-items:flex-end;justify-content:center;padding:0}
-.ov-in{width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;background:var(--panel);
-  border:1px solid var(--line);border-radius:var(--r-xl) var(--r-xl) 0 0;padding:18px 16px;
-  padding-bottom:calc(18px + env(safe-area-inset-bottom));
-  animation:ovup .28s cubic-bezier(.2,.9,.3,1)}
-@media(min-width:640px){.ov{align-items:center}.ov-in{border-radius:var(--r-xl)}}
-@keyframes ovup{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
-@media(prefers-reduced-motion:reduce){.ov-in{animation:none}}
-.ov h2{font-size:22px;margin-bottom:4px}
-.ov h3{font-size:15px;margin:16px 0 8px}
+  display:flex;align-items:flex-end;justify-content:center;
+  background:radial-gradient(110% 70% at 50% 20%,rgba(6,10,14,.62),rgba(4,7,10,.90));
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  animation:ovin .28s ease-out}
+@keyframes ovin{from{opacity:0}to{opacity:1}}
+.ov-in{width:100%;max-width:560px;max-height:94dvh;overflow-y:auto;
+  background:linear-gradient(180deg,rgba(21,26,34,.985),rgba(11,15,21,.99));
+  border:1px solid rgba(255,255,255,.09);border-top-width:0;
+  border-radius:22px 22px 0 0;padding:0 16px 18px;
+  box-shadow:0 -22px 60px rgba(0,0,0,.7);
+  animation:ovup .34s cubic-bezier(.16,1,.3,1)}
+@keyframes ovup{from{transform:translateY(26px);opacity:0}to{transform:none;opacity:1}}
+@media(min-width:640px){.ov{align-items:center}.ov-in{border-radius:22px;border-top-width:1px}}
+.ov h2{font-size:21px;margin-bottom:4px}
+.ov h3{font:800 10.5px 'Space Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--faint);margin:18px 0 8px}
+.ov .eyebrow{padding-top:16px}
 
-/* ── THE BROADCAST PANELS: halftime and the final whistle ─────────────────
-   The two clubs across the top under their own rules, then the numbers as
-   bars rather than as a column of digits. Read at arm's length. */
+/* ── THE SCORE, ACROSS THE TOP ────────────────────────────────────────── */
 .ph{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;
-  margin:10px 0 14px}
-.ph-side{display:flex;align-items:center;gap:9px;min-width:0}
+  margin:10px -16px 4px;padding:14px 16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),transparent);
+  border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.ph-side{display:flex;align-items:center;gap:10px;min-width:0}
 .ph-side.right{flex-direction:row-reverse;text-align:right}
-.ph-bar{width:4px;align-self:stretch;border-radius:2px;flex:0 0 auto;min-height:40px}
+.ph-bar{width:5px;align-self:stretch;border-radius:3px;flex:0 0 auto;min-height:44px;
+  box-shadow:0 0 14px -2px currentColor}
 .ph-t{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 auto}
-.ph-t b{font:700 15px 'Space Grotesk',sans-serif;letter-spacing:.05em}
+.ph-t b{font:800 15px 'Space Grotesk',sans-serif;letter-spacing:.07em;color:#fff}
 .ph-t i{font-style:normal;font-size:10.5px;color:var(--faint);white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
-.ph-p{font:700 38px 'Space Grotesk',sans-serif;line-height:1;font-variant-numeric:tabular-nums;
-  color:var(--dim)}
+.ph-p{font:800 40px 'Space Grotesk',sans-serif;line-height:1;font-variant-numeric:tabular-nums;
+  color:#7f8b99;flex:0 0 auto}
 .ph-p.win{color:#fff}
-.ph-mid{align-self:center;font:700 10px 'Space Grotesk',sans-serif;letter-spacing:.14em;
-  color:var(--faint);border:1px solid var(--line2);border-radius:var(--r-pill);padding:3px 9px}
+.ph-mid{align-self:center;font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.20em;
+  color:var(--faint);padding:5px 9px;border:1px solid rgba(255,255,255,.10);border-radius:var(--r-pill)}
 
-.cmp{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+/* ── THE COMPARISON ───────────────────────────────────────────────────── */
+.cmp{display:flex;flex-direction:column;gap:11px;margin-top:8px}
 .cmp-r{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:baseline}
-.cmp-r .ck{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
-  white-space:nowrap}
-.cmp-r .cl,.cmp-r .cr{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text);
+.cmp-r .ck{font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);grid-column:2;text-align:center;white-space:nowrap}
+.cmp-r .cl,.cmp-r .cr{font-family:'JetBrains Mono',monospace;font-size:13px;color:#e9edf4;
   font-variant-numeric:tabular-nums}
 .cmp-r .cr{text-align:right}
-.cmp-r .cb{grid-column:1 / -1;display:flex;gap:2px;height:4px;border-radius:3px;overflow:hidden;
-  background:var(--line)}
-.cmp-r .cb i{display:block;height:100%;opacity:.85;min-width:0}
-.cmp-r .cb.tie{background:var(--line2)}
-.cmp-note{margin-top:12px;font-size:11.5px;color:var(--faint);text-align:center}
-/* the one thing deciding it, said in a sentence */
-.tkw{margin-top:14px;padding:10px 12px;border-radius:var(--r-md);
-  background:rgba(63,184,131,.08);border:1px solid rgba(63,184,131,.28);
-  font-size:13.5px;line-height:1.45;color:var(--text)}
-.tkw span{display:block;font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.16em;
+.cmp-r .cb{grid-column:1 / -1;display:flex;gap:3px;height:5px;border-radius:3px;overflow:hidden;
+  background:rgba(255,255,255,.05)}
+.cmp-r .cb i{display:block;height:100%;opacity:.92;min-width:0;border-radius:3px}
+.cmp-r .cb.tie{background:rgba(255,255,255,.09)}
+.cmp-note{margin-top:12px;font-size:11.5px;color:var(--faint);text-align:center;
+  font-variant-numeric:tabular-nums}
+
+/* ── THE ONE THING THAT IS DECIDING IT ────────────────────────────────── */
+.tkw{margin-top:14px;padding:11px 13px;border-radius:13px;
+  background:linear-gradient(90deg,rgba(63,184,131,.13),rgba(63,184,131,.03));
+  border:1px solid rgba(63,184,131,.24);font-size:13.5px;line-height:1.5;color:#e2eae5}
+.tkw span{display:block;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.18em;
   text-transform:uppercase;color:var(--val);margin-bottom:3px}
 
+/* ── THE FINAL ────────────────────────────────────────────────────────── */
 .final{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;
-  padding:12px 0 6px;text-align:center}
-.final .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px}
-.final .p{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:40px;line-height:1;
-  font-variant-numeric:tabular-nums}
+  margin:12px 0 4px;text-align:center}
+.final .t{font:800 15px 'Space Grotesk',sans-serif;letter-spacing:.05em}
+.final .p{font:800 42px 'Space Grotesk',sans-serif;line-height:1;font-variant-numeric:tabular-nums}
 .final .win{color:var(--val)}
 
 .box{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
-.box th,.box td{padding:6px 4px;border-bottom:1px solid var(--line)}
-.box thead th{font-size:10.5px;color:var(--dim);font-weight:700;text-align:right}
+.box th,.box td{padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.box thead th{font-size:10px;color:var(--dim);font-weight:800;text-align:right;
+  letter-spacing:.08em;text-transform:uppercase}
 .box thead th:first-child{text-align:left}
 .box tbody th{font-weight:500;color:var(--faint);text-align:left;white-space:nowrap}
 .box td{text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
 .box td.lead{color:var(--val)}
 
 .why{list-style:none;padding:0;margin:8px 0 0}
-.why li{position:relative;padding-left:16px;font-size:13.5px;line-height:1.5;color:var(--text);margin-bottom:5px}
+.why li{position:relative;padding-left:17px;font-size:13.5px;line-height:1.5;color:var(--text);
+  margin-bottom:6px}
 .why li:before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;
   background:var(--val)}
-/* the ones that ran the other way get the other colour, so the list and its
-   heading never disagree */
 .why.bad li{color:var(--dim)}
 .why.bad li:before{background:var(--gr-def)}
 
-.potg{display:flex;gap:12px;align-items:center;background:var(--cell);border:1px solid var(--line);
-  border-radius:var(--r-md);padding:12px;margin-top:10px}
-.potg .pn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px}
+.potg{display:flex;gap:13px;align-items:center;
+  background:linear-gradient(90deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:12px 14px;margin-top:8px}
+.potg .pn{font:800 16px 'Space Grotesk',sans-serif;color:#fff}
 .potg .pl{font-size:12.5px;color:var(--dim);font-family:'JetBrains Mono',monospace}
 
 .setrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -426,19 +492,6 @@
 .drv .sc{color:var(--val)}
 .drv .to{color:var(--neg)}
 
-/* a small top-right control cluster over the field */
-.gd-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:4}
-.gd-tools button{min-width:36px;min-height:36px;border-radius:var(--r-sm);border:1px solid var(--line2);
-  background:rgba(11,13,17,.72);color:var(--dim);font-size:14px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center}
-.gd-tools button[aria-pressed="true"]{color:var(--val);border-color:var(--val-dim)}
-
-/* the pre-snap defensive read, top-left */
-.gd-read{position:absolute;top:7px;left:7px;z-index:4;
-  background:linear-gradient(90deg,rgba(11,13,17,.82),rgba(11,13,17,.54));
-  border-left:3px solid var(--acc,#3fb883);border-radius:3px var(--r-sm) var(--r-sm) 3px;
-  padding:4px 10px 5px 8px;font-size:10px;color:rgba(207,224,216,.72);max-width:48%}
-.gd-read b{color:var(--text);display:block;font-size:11.5px;font-family:'Space Grotesk',sans-serif}
 
 /* ── wider than a phone ───────────────────────────────────────────────────
    The field goes beside the call sheet rather than above it, on a grid so
@@ -474,13 +527,6 @@
    teams standing on it, because the first second of looking at this should
    answer "what is this" with "a football game" and not with a paragraph. */
 #pre{position:relative;isolation:isolate}
-.pre-field{display:block;width:100vw;margin-left:calc(50% - 50vw);height:190px;
-  background:#0a0e13;
-  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 58%,transparent 99%);
-  mask-image:linear-gradient(180deg,#000 0%,#000 58%,transparent 99%)}
-@media (min-width:720px){.pre-field{height:250px}}
-@media (max-height:620px){.pre-field{height:140px}}
-#pre .sec:first-of-type{margin-top:-26px !important}
 
 /* ── THE MATCHUP ──────────────────────────────────────────────────────────
    A broadcast card, not an analytics dashboard. Two clubs, their colours,
@@ -501,17 +547,23 @@
 
 .mu-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start}
 .mu-side{text-align:center;min-width:0}
-.mu-badge{position:relative;width:52px;height:52px;margin:0 auto 9px;border-radius:var(--r-lg);
+.mu-badge{position:relative;width:64px;height:64px;margin:0 auto 10px;border-radius:18px;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
-  font:800 15px 'Space Grotesk',sans-serif;letter-spacing:.04em;color:#06120d;
-  background:var(--tc);box-shadow:0 6px 18px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.14) inset}
+  font:800 18px 'Space Grotesk',sans-serif;letter-spacing:.04em;color:#06120d;
+  background:var(--tc);
+  box-shadow:0 12px 34px -8px var(--tc),0 4px 16px rgba(0,0,0,.5),
+    0 0 0 1px rgba(255,255,255,.16) inset,0 -3px 0 rgba(0,0,0,.16) inset;
+  animation:mubadge .55s cubic-bezier(.2,1.35,.4,1) backwards}
+.mu-grid .mu-side:last-child .mu-badge{animation-delay:.10s}
+@keyframes mubadge{from{opacity:0;transform:translateY(16px) scale(.82)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.mu-badge{animation:none}}
 /* the club's own device, behind its initials rather than instead of them */
 .mu-mark{position:absolute;inset:-14%;width:128%;height:128%;fill:rgba(6,18,13,.26)}
 .mu-badge span{position:relative}
 .mu-name{font:600 11.5px 'Inter',sans-serif;color:var(--dim);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mu-club{font:800 16px 'Space Grotesk',sans-serif;line-height:1.15;margin-top:1px;
-  overflow-wrap:anywhere}
+.mu-club{font:800 17px 'Space Grotesk',sans-serif;line-height:1.12;margin-top:1px;
+  overflow-wrap:anywhere;color:#fff}
 .mu-ovr{font:800 25px 'Space Grotesk',sans-serif;margin-top:6px;line-height:1;
   font-variant-numeric:tabular-nums}
 .mu-ovr span{font-size:10px;color:var(--faint);letter-spacing:.10em;margin-left:2px}
@@ -523,8 +575,9 @@
 .mu-star i{display:block;font-style:normal;font-size:10px;color:var(--faint);margin-top:1px}
 .mu-ha{margin-top:7px;font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.16em;color:var(--faint)}
 .mu-v{align-self:center;padding-top:14px}
-.mu-v span{display:block;font:800 11px 'Space Grotesk',sans-serif;letter-spacing:.10em;
-  color:var(--faint);padding:5px 7px;border:1px solid var(--line);border-radius:var(--r-sm)}
+.mu-v span{display:block;font:800 10px 'Space Grotesk',sans-serif;letter-spacing:.16em;
+  color:var(--faint);padding:6px 8px;border:1px solid rgba(255,255,255,.11);
+  border-radius:var(--r-pill);background:rgba(255,255,255,.03)}
 
 .mu-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:16px;
   padding-top:13px;border-top:1px solid var(--line)}
@@ -544,53 +597,171 @@
 .mu-tags span{font:600 10.5px 'Inter',sans-serif;color:var(--faint);
   padding:4px 9px;border-radius:var(--r-pill);border:1px solid var(--line)}
 @media (max-width:359px){.mu-club{font-size:14px}.mu-ovr{font-size:21px}}
-.mu-venue{text-align:center;margin:-6px 0 14px;font:700 11px 'Inter',sans-serif;
-  letter-spacing:.05em;color:var(--faint)}
+.mu-venue{text-align:center;margin:-4px 0 16px;font:700 10.5px 'Space Grotesk',sans-serif;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+/* THE BUTTON THAT STARTS A FOOTBALL GAME should not look like the button that
+   opens the settings panel. */
+#preCard .btn-go{min-height:56px;font:800 18px 'Space Grotesk',sans-serif;letter-spacing:.02em;
+  background:linear-gradient(180deg,#6ff0b4,#34b07e);border:0;color:#06231a;
+  box-shadow:0 10px 30px rgba(49,168,119,.34),inset 0 -3px 0 rgba(0,0,0,.14)}
 
-/* ── BROADCAST GRAPHICS ───────────────────────────────────────────────────
-   One shape for every call: a rule in the club's colour, a headline, and the
-   football reason under it. It arrives from the left like a lower third. */
-.bnr{position:absolute;left:14px;top:24%;z-index:7;pointer-events:none;
-  max-width:78%;
-  padding:9px 16px 9px 15px;border-left:4px solid var(--bc,#4ede9f);
-  background:linear-gradient(90deg,rgba(8,11,15,.94),rgba(8,11,15,.62));
-  backdrop-filter:blur(10px);border-radius:0 var(--r-md) var(--r-md) 0;
-  box-shadow:0 10px 34px rgba(0,0,0,.55);
-  animation:bnrin .30s cubic-bezier(.2,1.2,.35,1)}
-.bnr i{display:block;font-style:normal;font:800 9.5px 'Space Grotesk',sans-serif;
+/* ── THE BIG EVENTS ───────────────────────────────────────────────────────
+   FIRST DOWN. SACK. INTERCEPTED. One shape for every call: a club-coloured
+   rule, a headline, and the football reason under it. It arrives from the
+   left like a lower third, holds for under a second and a half, and goes.
+   It sits ABOVE the middle of the picture on purpose — the football is
+   usually below it, and a graphic that covers the play is a graphic that
+   was designed without watching one. */
+.bnr{position:absolute;left:12px;top:16%;z-index:7;pointer-events:none;max-width:74%;
+  padding:8px 15px 9px 14px;border-left:4px solid var(--bc,#4ede9f);
+  background:linear-gradient(90deg,rgba(7,10,14,.95),rgba(7,10,14,.58));
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:0 12px 12px 0;
+  box-shadow:0 12px 34px rgba(0,0,0,.55);
+  animation:bnrin .28s cubic-bezier(.16,1,.3,1)}
+.bnr i{display:block;font-style:normal;font:800 9px 'Space Grotesk',sans-serif;
   letter-spacing:.20em;text-transform:uppercase;color:var(--bc,#4ede9f);margin-bottom:2px}
-/* a long club name has to wrap rather than run off the edge of the phone */
-.bnr b{display:block;font:800 clamp(19px,6.2vw,30px) 'Space Grotesk',sans-serif;
-  letter-spacing:.01em;color:#fff;line-height:1.1;overflow-wrap:break-word}
-.bnr span{display:block;margin-top:3px;font:600 12.5px 'Inter',sans-serif;color:var(--dim);
+.bnr b{display:block;font:800 clamp(18px,5.8vw,27px) 'Space Grotesk',sans-serif;
+  letter-spacing:.01em;color:#fff;line-height:1.08;overflow-wrap:break-word}
+.bnr span{display:block;margin-top:3px;font:600 12px 'Inter',sans-serif;color:#a3b0bd;
   font-variant-numeric:tabular-nums}
 .bnr-td{--bc:#4ede9f}
 .bnr-first{--bc:#f2c744}
 .bnr-good{--bc:#4ede9f}
 .bnr-bad{--bc:#ff7a5c}
-.bnr-bad b{color:#ffb9a6}
-.bnr.out{opacity:0;transform:translateX(-14px);transition:opacity .5s,transform .5s}
-@keyframes bnrin{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+.bnr-bad b{color:#ffc4b4}
+.bnr.out{opacity:0;transform:translateX(-16px);transition:opacity .42s,transform .42s}
+@keyframes bnrin{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.bnr{animation:none}}
 
-/* the result of the snap: who, what, and why */
-.res{position:absolute;left:50%;transform:translateX(-50%);
-  bottom:calc(14px + env(safe-area-inset-bottom));z-index:6;pointer-events:none;
-  max-width:86%;padding:8px 15px;border-radius:var(--r-md);text-align:center;
-  background:rgba(8,11,15,.86);border:1px solid rgba(255,255,255,.10);
-  backdrop-filter:blur(9px);box-shadow:0 8px 26px rgba(0,0,0,.5);
-  animation:resin .26s ease-out}
-.res b{display:block;font:800 13px 'Space Grotesk',sans-serif;letter-spacing:.05em;
-  text-transform:uppercase;color:#fff}
-.res span{display:block;font:700 15px 'Inter',sans-serif;color:var(--val);margin-top:1px}
-.res i{display:block;font-style:normal;font:400 12px 'Inter',sans-serif;color:var(--dim);
-  margin-top:3px;line-height:1.4}
-.res em{display:inline-block;margin-top:6px;font-style:normal;
-  font:800 9px 'Space Grotesk',sans-serif;letter-spacing:.16em;color:#f2c744;
-  padding:3px 8px;border-radius:var(--r-pill);border:1px solid rgba(242,199,68,.4)}
-.res-big span{color:#f2c744}
-.res.out{opacity:0;transition:opacity .55s}
-@keyframes resin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translateX(-50%)}}
+/* ── THE RESULT OF THE SNAP ───────────────────────────────────────────────
+   Who, what, and the one reason it happened — as the strap a broadcast lays
+   along the bottom of the picture, not as a card parked in the middle of the
+   field. It is gone before the next call is made. */
+.res{position:absolute;left:10px;right:10px;
+  bottom:calc(10px + env(safe-area-inset-bottom));z-index:6;pointer-events:none;
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 10px;
+  padding:8px 13px;border-radius:12px;
+  background:linear-gradient(90deg,rgba(8,11,15,.93),rgba(8,11,15,.80));
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.09);border-left:3px solid var(--val);
+  box-shadow:0 10px 30px rgba(0,0,0,.55);
+  animation:resin .24s cubic-bezier(.16,1,.3,1)}
+.res b{font:800 12.5px 'Space Grotesk',sans-serif;letter-spacing:.02em;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42vw}
+.res span{font:700 13px Inter,system-ui,sans-serif;color:var(--val);
+  white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.res i{grid-column:1 / -1;font-style:normal;font:400 11.5px Inter,system-ui,sans-serif;
+  color:var(--dim);line-height:1.3;min-width:0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.res em{font-style:normal;font:800 8.5px 'Space Grotesk',sans-serif;letter-spacing:.14em;
+  color:#08110c;background:#f2c744;padding:3px 7px;border-radius:var(--r-pill);white-space:nowrap}
+.res-big{border-left-color:#f2c744}
+.res-big span{color:#f7d24d}
+.res.out{opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+@keyframes resin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.bnr,.res{animation:none}}
 
 /* the pad sits above the result card when both are up */
 .pad .pd-acts{bottom:calc(16px + env(safe-area-inset-bottom))}
+
+/* ── THE KICKOFF ──────────────────────────────────────────────────────────
+   The card that sits over the establishing shot while the building is on the
+   screen: who is kicking, who is receiving, where and in what weather. It
+   arrives, it holds for a beat and it wipes off as the camera comes down onto
+   the grass. Anything longer than this is a loading screen. */
+.kick-in{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% 42%,rgba(6,10,14,.30),rgba(6,10,14,.80));
+  animation:kiin .42s cubic-bezier(.16,1,.3,1)}
+.kick-in.out{opacity:0;transform:scale(1.04);transition:opacity .5s ease,transform .5s ease}
+.ki-top{font:700 10.5px 'Space Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;
+  color:#9fb0bf;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+.ki-grid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;
+  width:min(360px,90%)}
+.ki-side{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-width:0}
+.ki-side b{font:800 15px 'Space Grotesk',sans-serif;color:#fff;line-height:1.15;
+  text-shadow:0 2px 14px rgba(0,0,0,.9)}
+.ki-side i{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:#8ea0b0}
+.ki-badge{display:flex;align-items:center;justify-content:center;
+  width:58px;height:58px;border-radius:16px;background:var(--tc,#3fb883);
+  font:800 17px 'Space Grotesk',sans-serif;letter-spacing:.02em;color:#06231a;
+  box-shadow:0 10px 30px -6px var(--tc,#3fb883),inset 0 -3px 0 rgba(0,0,0,.18);
+  animation:kibadge .5s cubic-bezier(.2,1.4,.4,1) backwards}
+.ki-grid .ki-side:last-child .ki-badge{animation-delay:.09s}
+.ki-v{font:800 11px 'Space Grotesk',sans-serif;letter-spacing:.22em;color:#6d7d8c}
+.ki-skip{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom));
+  font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(190,205,218,.55);
+  animation:kifade 1.6s ease-in-out infinite}
+@keyframes kiin{from{opacity:0}to{opacity:1}}
+@keyframes kibadge{from{opacity:0;transform:translateY(14px) scale(.8)}to{opacity:1;transform:none}}
+@keyframes kifade{0%,100%{opacity:.4}50%{opacity:.85}}
+@media(prefers-reduced-motion:reduce){.kick-in,.ki-badge,.ki-skip{animation:none}}
+
+/* ── SIX POINTS ───────────────────────────────────────────────────────────
+   The one moment the picture is allowed to belong to the graphic instead of
+   to the football. A wash of the scoring club's colour, the word, the man,
+   and the score changing under it. Under two seconds, then it is gone and
+   you are lining up for the try. */
+.td-hit{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden;
+  display:flex;align-items:center;justify-content:center}
+.td-wash{position:absolute;inset:0;
+  background:radial-gradient(120% 80% at 50% 50%,
+    color-mix(in srgb,var(--tc) 26%,transparent),
+    rgba(6,10,14,.82) 78%);
+  animation:tdwash .5s cubic-bezier(.16,1,.3,1)}
+@supports not (background:color-mix(in srgb,red 50%,blue)){
+  .td-wash{background:radial-gradient(120% 80% at 50% 50%,rgba(6,10,14,.35),rgba(6,10,14,.86) 78%)}
+}
+.td-body{position:relative;text-align:center;padding:0 18px}
+.td-word{font:800 clamp(30px,10.5vw,54px) 'Space Grotesk',sans-serif;letter-spacing:.02em;
+  color:#fff;line-height:1;text-shadow:0 6px 34px rgba(0,0,0,.85);
+  animation:tdword .46s cubic-bezier(.14,1.5,.35,1)}
+.td-club{margin-top:7px;font:800 clamp(13px,4.2vw,18px) 'Space Grotesk',sans-serif;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--tc);line-height:1.2;
+  text-shadow:0 2px 18px rgba(0,0,0,.8);animation:tdrise .5s .06s cubic-bezier(.16,1,.3,1) backwards}
+.td-who{margin-top:12px;font:700 14.5px Inter,system-ui,sans-serif;color:#eef3f8;
+  animation:tdrise .5s .14s cubic-bezier(.16,1,.3,1) backwards}
+.td-who i{font-style:normal;color:rgba(226,236,244,.62);font-weight:500}
+.td-score{margin-top:14px;display:inline-flex;align-items:center;gap:10px;
+  padding:7px 15px;border-radius:var(--r-pill);
+  background:rgba(6,10,14,.60);border:1px solid rgba(255,255,255,.14);
+  font:800 15px 'Space Grotesk',sans-serif;color:#fff;font-variant-numeric:tabular-nums;
+  animation:tdrise .5s .22s cubic-bezier(.16,1,.3,1) backwards}
+.td-score b{color:rgba(255,255,255,.35);font-weight:800}
+.td-hit.out{opacity:0;transition:opacity .6s ease}
+@keyframes tdwash{from{opacity:0}to{opacity:1}}
+@keyframes tdword{from{opacity:0;transform:scale(.72)}to{opacity:1;transform:none}}
+@keyframes tdrise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+  .td-wash,.td-word,.td-club,.td-who,.td-score{animation:none}
+}
+
+/* ── THE RESULT ───────────────────────────────────────────────────────────
+   The first thing the final screen says, before it becomes a table of
+   numbers. A win gets a glow behind it and nothing else; a loss gets the
+   same shape in a muted colour, because a scoreline you have to scroll past
+   an animation to read is a game gloating at you. */
+.fin-hero{position:relative;margin:0 -16px 2px;padding:26px 18px 20px;text-align:center;overflow:hidden;
+  border-bottom:1px solid rgba(255,255,255,.07)}
+.fin-glow{position:absolute;left:50%;top:-40%;width:180%;height:180%;transform:translateX(-50%);
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--tc) 34%,transparent),transparent 72%);
+  pointer-events:none;animation:finglow .8s ease-out}
+@supports not (background:color-mix(in srgb,red 50%,blue)){.fin-glow{background:radial-gradient(closest-side,rgba(63,184,131,.26),transparent 72%)}}
+.fin-word{position:relative;font:800 clamp(34px,12vw,58px) 'Space Grotesk',sans-serif;
+  letter-spacing:.06em;line-height:1;color:#fff;text-shadow:0 5px 30px rgba(0,0,0,.6);
+  animation:finword .5s cubic-bezier(.14,1.45,.35,1)}
+.fin-hero.win .fin-word{color:var(--tc)}
+.fin-hero.loss .fin-word{color:#8e9aa8}
+.fin-hero.level .fin-word{color:#c9d3de}
+.fin-line{position:relative;margin-top:9px;font:700 14px 'Inter',sans-serif;color:#e5ecf3;
+  font-variant-numeric:tabular-nums}
+.fin-rec{position:relative;margin-top:6px;font:600 11.5px 'Inter',sans-serif;color:var(--faint);
+  letter-spacing:.04em}
+.fin-rec b{color:#cfd9e4;font-weight:800}
+@keyframes finglow{from{opacity:0;transform:translateX(-50%) scale(.7)}to{opacity:1;transform:translateX(-50%)}}
+@keyframes finword{from{opacity:0;transform:scale(.78)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.fin-glow,.fin-word{animation:none}}
+.fin-tag{position:relative;font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--faint);margin-bottom:8px}

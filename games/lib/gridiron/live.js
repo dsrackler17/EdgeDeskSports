@@ -1026,9 +1026,21 @@
         a.vx -= a.vx * 1.8 * dt; a.vy -= a.vy * 1.8 * dt;
         a.x = clamp(a.x + a.vx * dt, -3, FIELD.width + 3);
         a.y += a.vy * dt;
-        if (sp > 0.6) a.face = a.vx > 0.8 ? 'right' : a.vx < -0.8 ? 'left'
+        /* WHICH WAY HE IS LOOKING is the way he is going, and it must not
+           flicker: a receiver running a slight angle downfield is still
+           running downfield, and a man whose shoulders flip side to side
+           twice a second reads as a sprite, not as an athlete. */
+        if (sp > 0.6) a.face = a.vx > 2.4 ? 'right' : a.vx < -2.4 ? 'left'
           : (a.vy > 0) === (a.side === 'off') ? 'back' : 'front';
-        a.lean = clamp(a.vx * 0.05, -0.4, 0.4);
+        /* LEAN IS MOMENTUM, and momentum is the CHANGE in speed rather than
+           the speed. A back planting his foot to cut leans into the cut
+           hardest at the moment he is slowest through it, which is exactly
+           what the difference between this tick and the last one measures.
+           Nothing reads it but the artist. */
+        var latA = (a.vx - (a.pvx == null ? a.vx : a.pvx)) / Math.max(dt, 0.001);
+        a.pvx = a.vx;
+        a.lean = clamp(a.lean * 0.80 + (clamp(latA * 0.014, -0.5, 0.5) + a.vx * 0.028) * 0.20,
+          -0.45, 0.45);
       });
     }
 
