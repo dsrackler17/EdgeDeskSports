@@ -2274,14 +2274,28 @@ var S=sandbox;
   /* The panel around it must not hand a contributor instructions for a
      database they do not have -- the schedule loader already learned this. */
   {
-    var panel=APPSRC.slice(APPSRC.indexOf('"add one" next to a sport with no model'),
-                           APPSRC.indexOf('addModelClose'));
+    var pi=APPSRC.indexOf('"add one" next to a sport with no model');
+    var panel=APPSRC.slice(pi, APPSRC.indexOf('function renderSetEdge', pi)>pi
+      ? APPSRC.indexOf('function renderSetEdge', pi) : pi+9000);
     chk('the add-a-model panel asks who is looking before it answers',
       /var isOp=!!\(me&&me\.admin\)/.test(panel),{panel:panel.slice(0,200)});
     chk('a contributor is given the sentence to send, not a SQL editor',
       /addModelAsk/.test(panel)&&/needs a/.test(panel));
     chk('and the statement itself is only rendered for somebody who can run it',
       /\(isOp\|\|!roleKnown\)/.test(panel));
+    /* Self-serve is tried FIRST, so the common case never involves a human. */
+    chk('it offers to create the model itself before asking anyone',
+      /addModelGo/.test(panel)&&/'\/v1\/models'/.test(panel)&&/fn:'collective_join'/.test(panel),
+      {panel:panel.slice(0,300)});
+    chk('and sends the sport it is being opened for, not a guess',
+      /body:\{sport:code/.test(panel));
+    /* A backend without the route is the ONLY thing that falls back. Any
+       other failure is a real answer, and "ask your operator" printed over
+       the top of it would hide the reason. */
+    chk('only a missing route falls back to asking a human',
+      /e\.status===404/.test(panel)&&/fallbackHTML\(/.test(panel));
+    chk('every other failure is shown as itself',
+      /errbox[^]*e\.message/.test(panel),{panel:panel.slice(panel.indexOf('catch(e)'),panel.indexOf('catch(e)')+400)});
   }
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});

@@ -7515,7 +7515,14 @@ async function renderCreatorDash(view,me){
         var opBlock='<p class="note" style="margin:6px 0 8px">The Collective has no endpoint for '+
           'creating a model, so this is the statement to run once in the Supabase SQL editor. It '+
           'finds the right schema itself, and it will not duplicate a model that already exists.</p>';
-        box.innerHTML='<b>Add a '+esc(sportLongName(code))+' model</b>'+
+        /* SELF-SERVE FIRST. collective_join can create a model for the
+           signed-in creator (POST /v1/models); redeem_invite has been able to
+           since it was written, it just only ever fired once. Offered
+           optimistically because the page cannot know whether that route is
+           deployed on this backend, and a 404 falls back to exactly what this
+           panel said before -- so this is never worse than asking somebody. */
+        function fallbackHTML(why){
+          return (why?'<p class="note warn" style="margin:6px 0 8px">'+esc(why)+'</p>':'')+
           (isOp?opBlock
             :'<p class="note" style="margin:6px 0 8px">A model is created by the Collective\u2019s '+
              'operator \u2014 there is no endpoint for it, so it is not something this page can do '+
@@ -7534,20 +7541,60 @@ async function renderCreatorDash(view,me){
           '<div style="display:flex;gap:8px;margin-top:8px">'+
           ((isOp||!roleKnown)?'<button class="btn" id="addModelCopy">Copy SQL</button>':'')+
           '<button class="ghost" id="addModelClose">Close</button></div>';
-        /* Both copy buttons are optional now -- an operator gets the SQL one,
-           a contributor gets the request one -- so neither is assumed. */
-        var cp=$('addModelCopy');
-        if(cp)cp.onclick=function(){
-          var t=$('addModelSql');t.select();
+        }
+        function wireFallback(){
+          /* Both copy buttons are optional -- an operator gets the SQL one, a
+             contributor gets the request one -- so neither is assumed. */
+          var cp=$('addModelCopy');
+          if(cp)cp.onclick=function(){
+            var t=$('addModelSql');t.select();
+            try{
+              if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value);
+              else document.execCommand('copy');
+              toast('SQL copied');
+            }catch(e){toast('Select the text and copy it');}
+          };
+          var ak=$('addModelAsk');
+          if(ak)ak.onclick=function(){copyText(ask,ak);};
+          wireClose();
+        }
+        function wireClose(){var cb=$('addModelClose');if(cb)cb.onclick=function(){box.remove();};}
+        var head='<b>Add a '+esc(sportLongName(code))+' model</b>';
+        var defName=(c.display_name||c.slug)+' '+code;
+        box.innerHTML=head+
+          '<p class="note" style="margin:6px 0 8px">A slate is attached to a model, and the '+
+          'Collective resolves its games in that model\u2019s sport \u2014 so a '+
+          esc(sportLongName(code))+' slate needs a '+esc(sportLongName(code))+' model to attach '+
+          'to. Name it and it exists; your file does not change.</p>'+
+          '<label>Model name</label><input id="addModelName" maxlength="60" value="'+esc(defName)+'">'+
+          '<div style="display:flex;gap:8px;margin-top:10px">'+
+          '<button class="btn primary" id="addModelGo">Create my '+esc(code)+' model</button>'+
+          '<button class="ghost" id="addModelClose">Close</button></div>'+
+          '<div id="addModelOut"></div>';
+        wireClose();
+        $('addModelGo').onclick=async function(){
+          var b=this,out=$('addModelOut');
+          b.disabled=true;
+          out.innerHTML='<p class="note" style="margin:8px 0 0">Creating&hellip;</p>';
           try{
-            if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value);
-            else document.execCommand('copy');
-            toast('SQL copied');
-          }catch(e){toast('Select the text and copy it');}
+            var r=await api('/v1/models',{method:'POST',auth:true,fn:'collective_join',
+              headers:{'content-type':'application/json'},
+              body:{sport:code,model_name:($('addModelName').value||'').trim()}});
+            var mn=(r&&r.model&&r.model.model_name)||defName;
+            toast(r&&r.already?mn+' already existed':mn+' created');
+            box.remove();
+            renderCreatorDash(view,me);
+          }catch(e){
+            /* A backend without the route is the ONLY case that falls back:
+               every other failure is a real answer and saying "ask your
+               operator" over the top of it would hide it. */
+            if(e&&e.status===404){box.innerHTML=head+fallbackHTML(
+              'Self-serve model creation is not deployed on this backend yet, so this still '+
+              'takes one action from the operator.');wireFallback();return;}
+            out.innerHTML='<div class="errbox" style="margin-top:8px">'+esc(e.message||'Could not create it.')+'</div>';
+            b.disabled=false;
+          }
         };
-        var ak=$('addModelAsk');
-        if(ak)ak.onclick=function(){copyText(ask,ak);};
-        $('addModelClose').onclick=function(){box.remove();};
       };
     });
 
