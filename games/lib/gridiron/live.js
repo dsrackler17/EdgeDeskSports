@@ -436,9 +436,11 @@
       if (a.react > 0) { a.react -= dt; if (a.side === 'def') { a.tx = a.x; a.ty = a.y; return; } }
       if (a.state === 'down' || a.state === 'celebrate') return;
 
-      /* the man in your thumb goes where you point, full stop */
+      /* the man in your thumb goes where you point */
       if (a === user && a.steered && a.drive > 0.08) {
-        a.tx = a.x + a.dx * 8; a.ty = a.y + a.dy * 8;
+        var aim = a.carry ? lane(a) : null;
+        if (aim) { a.tx = aim.x; a.ty = aim.y; }
+        else { a.tx = a.x + a.dx * 8; a.ty = a.y + a.dy * 8; }
         a.state = a.carry ? 'carry' : 'run';
         return;
       }
@@ -506,6 +508,70 @@
     /* where the grass is: sample a fan of angles and take the one with the
        most room before the nearest defender. It is crude and it is enough to
        make an AI back look like he is reading blocks. */
+    /* ── THE THUMB PICKS THE DIRECTION; THE MAN PICKS THE CREASE ──────────
+       A ball carrier steered straight at his own centre's back used to run
+       straight into it, because the stick was read as a heading and handed
+       to the legs unedited. That is not what a stick means in a football
+       game and it is not what a back does: you tell him where you want to
+       go and he finds the seam nearest to it, because he can see the man in
+       front of him and you, holding a phone, largely cannot.
+
+       It cost the user the game. Steering the ball INTO the line was worth
+       1.77 yards a carry against 2.04 for letting go of the stick entirely,
+       and 2.90 against 4.02 on outside zone — the game punished you for
+       playing it. A control that is worse than no control is not a control.
+
+       So: a narrow cone around the thumb, his own blockers counted as the
+       bodies they are, and a real cost for every degree away from where you
+       pointed, so this bends him around a lineman and never overrules him.
+       In open grass — nobody within reach — it does nothing at all and he
+       goes exactly where you say. */
+    var LANE_CONE = 0.145;                 /* ~8.3 degrees per step, 3 each way */
+    function lane(a) {
+      /* open field: no edit. The cone exists to get him through traffic. */
+      var tight = false;
+      for (var q = 0; q < actors.length; q++) {
+        var o = actors[q];
+        if (o === a || o.state === 'down') continue;
+        if (Math.abs(o.x - a.x) > 4.5) continue;
+        var ahead = (o.y - a.y) * (a.side === 'off' ? 1 : -1);
+        if (ahead > -0.5 && ahead < 4.5) { tight = true; break; }
+      }
+      if (!tight) return { x: a.x + a.dx * 8, y: a.y + a.dy * 8 };
+
+      var base = Math.atan2(a.dx, a.dy);
+      var best = null, bs = -1e9, i;
+      for (i = -3; i <= 3; i++) {
+        var ang = base + i * LANE_CONE;
+        var dx = Math.sin(ang), dy = Math.cos(ang);
+        var px = clamp(a.x + dx * 6, 0.5, FIELD.width - 0.5), py = a.y + dy * 6;
+        var room = 1e9;
+        for (var w = 0; w < actors.length; w++) {
+          var m = actors[w];
+          if (m === a || m.state === 'down') continue;
+          /* HIS OWN MEN ARE BODIES TOO. A hole is a hole whoever is standing
+             in it, and running up the back of your own centre is the single
+             most common way this game threw a carry away. A blocker is worth
+             less than a tackler in the way — you can run off his hip — but he
+             is not worth nothing. */
+          var w8 = m.side === a.side ? 0.62 : 1;
+          room = Math.min(room, Math.hypot(m.x - px, m.y - py) / w8);
+        }
+        /* THE SAME SIX YARDS THE AI BACK IS ALLOWED TO SEE. Searching a
+           shorter, meaner cone than `daylight` meant the man under a thumb
+           read the field worse than the man running himself, which is the
+           bug this whole function exists to fix. Only the cone differs now:
+           he looks where you are pointing, and he looks as well as he can. */
+        /* and the end zone is still that way. Scoring room alone let the
+           cone walk him sideways out of a crease he was already in, which
+           is a lateral yard bought with a downfield one. */
+        var fwd = (py - a.y) * (a.side === 'off' ? 1 : -1) / 6;
+        var sc = Math.min(room, 6.0) + fwd * 1.9 - Math.abs(i) * 0.62;
+        if (sc > bs) { bs = sc; best = { x: px, y: py }; }
+      }
+      return best || { x: a.x + a.dx * 8, y: a.y + a.dy * 8 };
+    }
+
     function daylight(a) {
       var best = null, bs = -1e9, i;
       for (i = -4; i <= 4; i++) {
@@ -556,6 +622,8 @@
       a.tx = j.x; a.ty = j.y; a.state = 'run';
     }
 
+    /* the one lineman who has climbed to the second level this snap */
+    var climber = null;
     function blockThink(a, j) {
       var d = j.on && byId[j.on];
       if (!d || d.state === 'down') {
@@ -572,6 +640,32 @@
         if (loose) { a.tx = loose.x; a.ty = loose.y - 0.3; a.job.on = loose.id; }
         else { a.tx = a.x; a.ty = play.type === 'pass' && qb ? qb.y + 1.6 : a.y + 0.8; }
         return;
+      }
+      /* ── SOMEBODY HAS TO BLOCK THE LINEBACKER ─────────────────────────
+         Five linemen against four down men means one of them is standing
+         over a pile with nothing to do while the man who actually makes the
+         tackle waits four yards behind it. Nobody ever climbed: a lineman
+         only went looking for work if his own man was on the floor, which
+         never happens, so the second level was unblocked on every snap of
+         the game. That is why a back who beat the line still had three
+         linebackers waiting and 2,700 carries produced no run over ten
+         yards. A man whose block is already being made by somebody else
+         goes and finds the next one. */
+      if (play.type === 'run' && !a.lock && d.lock && d.lock !== a.id
+          && (!climber || climber === a.id)) {
+        var up = null, ud = 8.0;
+        actors.forEach(function (r) {
+          if (r.side !== 'def' || r.lock || r.state === 'down') return;
+          if (r.y < los - 0.5) return;                    /* behind the line is not the second level */
+          var g = Math.hypot(r.x - a.x, r.y - a.y);
+          if (g < ud) { ud = g; up = r; }
+        });
+        /* ONE OF THEM GOES, NOT ALL OF THEM. Five linemen against four down
+           men leaves exactly one spare, and letting every blocker whose man
+           was covered release to the second level put a hat on every
+           linebacker in the building — worth nearly two yards a carry on its
+           own, and it turned the middle of a defence into an empty room. */
+        if (up) { climber = a.id; a.job.on = up.id; a.climb = up.id; d = up; }
       }
       var qx = qb ? qb.x : ballX, qy = qb ? qb.y : los - 4;
       if (play.type === 'run') {
@@ -609,8 +703,32 @@
     function pursue(a, tgt) {
       var dx = tgt.x - a.x, dy = tgt.y - a.y;
       var gap = len(dx, dy);
-      var lead = clamp(gap / Math.max(3, a.top), 0, 1.2) * (0.35 + a.k.iq * 0.75);
-      var px = tgt.x + tgt.vx * lead, py = tgt.y + tgt.vy * lead;
+      /* ── THE DEEPER HE IS, THE FURTHER AHEAD HE AIMS ──────────────────
+         A yard and a fifth of lead is right for a linebacker filling a hole
+         and hopeless for the last man in the picture: a safety fifteen yards
+         off needs to run at a spot ten yards downfield of the back, not at
+         the back. Capped where it was, he took a flat angle, got beaten
+         across his own face, and every run that cleared the second level
+         went to the house — the long runs in this game averaged fifty yards
+         because nobody was ever in front of the ball again. */
+      var lead = clamp(gap / Math.max(3, a.top), 0, 3.2) * (0.35 + a.k.iq * 0.75);
+      /* ── HE TAKES THE ANGLE HE READS, NOT THE ONE THAT IS THERE ────────
+         Every defender was solving the intercept exactly, every frame, for
+         the whole snap. Eleven men who never take a false step are not a
+         defence, they are a net, and no back gets outside a net. This is one
+         wrong step, held long enough to matter and re-taken twice a second,
+         and how wrong it is comes off his instincts. A great back beating a
+         slow linebacker to the edge is this number. */
+      if (a.missAt == null || t > a.missAt) {
+        a.missAt = t + 0.45;
+        a.miss = (rand() - 0.5) * 2 * (1 - a.k.iq * 0.72) * 0.85;
+      }
+      /* AND IT ONLY COSTS HIM UP CLOSE. A false step at the point of attack
+         is the play; the same step with fifteen yards to work in is one he
+         corrects on the run. Left flat, this turned every defence into
+         scenery and outside zone averaged eighteen yards a carry. */
+      var slip = (a.miss || 0) * clamp(4.0 / Math.max(2.4, gap), 0, 1);
+      var px = tgt.x + tgt.vx * lead + slip, py = tgt.y + tgt.vy * lead;
       a.tx = clamp(px, -4, FIELD.width + 4); a.ty = py;
       /* HE LEAVES HIS FEET. A defender running alongside a ball carrier a
          yard and a half away for forty yards is not a defence — the tackle
@@ -1024,7 +1142,32 @@
           var ax = ux * a.accel * slow, ay = uy * a.accel * slow;
           a.vx += ax * dt; a.vy += ay * dt;
         }
+        /* ── IN YOUR HANDS HE PLANTS AND CUTS ─────────────────────────────
+           Turning was momentum and nothing else: to go left while running
+           right he had to accelerate through his own velocity, which at a
+           back's numbers is most of a second. On a phone that is an age, and
+           it is the whole of "it is almost impossible to control the guy" —
+           you point, and three-quarters of a second later he begins to agree
+           with you. A man changing direction plants a foot and throws the old
+           direction away. It costs him speed, because that is what a cut
+           costs, and it happens when you ask rather than eventually. */
+        if (a === user && a.steered && a.drive > 0.08) {
+          var usp = len(a.vx, a.vy);
+          if (usp > 1.2) {
+            var dot = (a.vx * a.dx + a.vy * a.dy) / usp;
+            if (dot < 0.86) {
+              var k = clamp((0.86 - dot) * (0.55 + a.k.agi * 0.75) * 4.4 * dt, 0, 0.55);
+              a.vx -= a.vx * k; a.vy -= a.vy * k;
+            }
+          }
+        }
         var sp = len(a.vx, a.vy), top = a.top * slow;
+        /* ── AND HOW HARD YOU PUSH IS HOW HARD HE RUNS ────────────────────
+           The stick's magnitude was measured, stored and then thrown away —
+           every touch, however light, was a sprint. Easing off is how you
+           set a cut up and how you pick a hole at a speed you can still
+           change your mind at; the rim of the ring is the whole horse. */
+        if (a === user && a.steered && a.drive > 0.08) top *= 0.64 + a.drive * 0.36;
         if (sp > top && sp > 0) { a.vx = a.vx / sp * top; a.vy = a.vy / sp * top; }
         a.vx -= a.vx * 1.8 * dt; a.vy -= a.vy * 1.8 * dt;
         a.x = clamp(a.x + a.vx * dt, -3, FIELD.width + 3);
@@ -1064,8 +1207,18 @@
           if (carrier && (a === carrier || b === carrier) && a.side !== b.side) continue;
           dx = b.x - a.x; dy = b.y - a.y;
           d = len(dx, dy);
-          if (d > 1.20 || d < 0.0001) continue;
-          push = (1.20 - d) / 2;
+          /* ── HE RUNS OFF HIS OWN MAN'S HIP ────────────────────────────
+             Everybody keeps a yard and a fifth of room, which is a wide
+             berth for two men brushing past each other and an impossible
+             one inside a run. The linemen line up a yard and a half apart,
+             so an A gap held open at 1.20 from BOTH sides is narrower than
+             the back trying to get through it — which is most of why the
+             interior run game averaged a yard and three quarters and never
+             once broke. Between a carrier and his own blockers it is a
+             shoulder, not a corridor. */
+          var room = (carrier && (a === carrier || b === carrier) && a.side === b.side) ? 0.88 : 1.20;
+          if (d > room || d < 0.0001) continue;
+          push = (room - d) / 2;
           dx /= d; dy /= d;
           var wa = a.lock ? 0.35 : 1, wb = b.lock ? 0.35 : 1;
           a.x -= dx * push * wa; a.y -= dy * push * wa;
@@ -1138,6 +1291,14 @@
             b.rep = play.type === 'run'
               ? clamp((1.55 + rand() * 1.15) * (0.85 + runEdge * 1.2), 0.7, 3.6)
               : clamp(env.pocket * (0.86 + rand() * 0.70) * (0.85 + edge * 1.0), 0.45, 5.6);
+            /* ── BUT BLOCKING A LINEBACKER IN SPACE IS NOT BLOCKING A
+                  TACKLE ON THE BALL ────────────────────────────────────
+               A lineman who climbs is giving up thirty pounds of leverage to
+               a man with a running start and room to pick a side. He gets in
+               the way and he buys the back a beat; he does not erase him. At
+               a full-length rep the climb alone was worth nearly two yards a
+               carry and the second level simply stopped existing. */
+            if (b.climb === d.id) b.rep *= 0.44;
             if (d.beat) b.rep *= 0.32;
             d.rep = b.rep;
           }
@@ -1190,14 +1351,21 @@
       var c = carrier;
       if (c.grace > 0) return;
       actors.forEach(function (d) {
-        if (d.side === c.side || d.state === 'down' || d.lock) return;
+        if (d.side === c.side || d.state === 'down') return;
+        /* ── A BLOCKED MAN IS NOT AN ABSENT MAN, BUT HE IS NEARLY ONE ─────
+           An engaged defender could make no tackle at all, at any range, so
+           getting a hand on a linebacker deleted him — which is why sending
+           linemen to the second level was worth nearly two yards a carry. He
+           can still get an arm out at a back running INTO him. Only into him:
+           his reach is an arm and not a tackle, and it is mostly air. */
         var g = dist(d, c);
-        if (g > TACKLE + (d.dive > 0 ? 0.75 : 0)) return;
+        var reach = d.lock ? 0 : TACKLE + (d.dive > 0 ? 0.75 : 0);
+        if (g > reach) return;
         /* HE GETS ANOTHER GO. Bodies stay within a yard of each other for a
            long time in football; a man who misses once and then jogs alongside
            for the rest of the run is not a defence, he is scenery. */
         if (d.tryAt > t) return;
-        d.tryAt = t + 0.55;
+        d.tryAt = t + (d.lock ? 1.05 : 0.55);
         resolveTackle(d, c);
       });
     }
@@ -1210,16 +1378,28 @@
       var square = sp > 0.5 ? clamp((vx * ax + vy * ay) / (sp * ad), -1, 1) : 0.6;
       var closing = len(d.vx - c.vx, d.vy - c.vy);
 
-      /* MOST TACKLES STICK. A broken tackle is an event, not a coin flip:
-         start high, and let the runner, the angle and the user's thumb take
-         chunks out of it. */
-      var p = 0.86
+      /* ── A TACKLE IS AN ANGLE BEFORE IT IS A RATING ────────────────────
+         A linebacker who filled the hole and met him square brings him down.
+         The same man chasing from behind and reaching gets a hand on a jersey
+         and a fistful of air, and a back at full speed running through a
+         defender who is standing still runs through him.
+
+         This used to be a flat 0.86 with the angle worth a tenth either way,
+         which made every contact a tackle: 2,700 carries produced NOT ONE run
+         of ten yards, at every aiming point on the field, whether a person was
+         steering or not. A run game with no ceiling is not a run game, and
+         there is nothing for a thumb to be good at.
+
+         So the angle carries it. Square in the hole is still most of the way
+         to certain; a chase from behind is a real chance he is gone. */
+      var p = 0.868 + square * 0.07
             + (d.k.tkl - (c.k.pwr * 0.50 + c.k.agi * 0.50)) * 0.42
-            + square * 0.10
-            - clamp(sp - closing, -3, 3) * 0.025
+            - clamp(sp - closing, -3, 3) * 0.030
             + (env.runFit || 0) * 0.3;
       if (d.dive > 0) p += 0.06;
       if (d.stun > 0) p -= 0.30;
+      /* reaching past the man who is holding you */
+      if (d.lock) p -= 0.66;
       /* THE USER'S MOVE. This is the whole reason the buttons exist. */
       if (c.move === 'juke' || c.move === 'spin') p -= 0.13 + c.k.agi * 0.30;
       if (c.move === 'truck') p -= 0.09 + c.k.pwr * 0.26;
@@ -1231,7 +1411,11 @@
       });
       p += Math.min(0.10, help * 0.05);
 
-      if (rand() < clamp(p, 0.04, 0.97)) {
+      /* AND NOTHING IS A CERTAINTY. At 0.97 the first man to arrive ended the
+         play on ninety-six carries in a hundred, which made the whole run
+         game one coin flip at the line: lose it and you have two yards, win
+         it and nobody was ever within fifteen yards of you again. */
+      if (rand() < clamp(p, 0.06, 0.93)) {
         down(c, d);
         return;
       }

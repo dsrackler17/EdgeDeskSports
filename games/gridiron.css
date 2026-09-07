@@ -184,8 +184,14 @@
 .pad{position:absolute;inset:0;z-index:4;pointer-events:none}
 .pad.on>*{pointer-events:auto}
 
+/* the ring rides home when you let go, and stops dead when it is under a
+   thumb — an animated joystick is a joystick that lags */
 .pd-stick{position:absolute;left:16px;bottom:calc(20px + env(safe-area-inset-bottom));
-  width:118px;height:118px;touch-action:none}
+  width:118px;height:118px;touch-action:none;
+  transition:left .18s cubic-bezier(.16,1,.3,1),bottom .18s cubic-bezier(.16,1,.3,1),opacity .18s}
+.pd-stick.free{transition:opacity .12s}
+.pd-stick.free .pd-ring{border-color:rgba(255,255,255,.30);background:rgba(8,12,17,.34)}
+@media(prefers-reduced-motion:reduce){.pd-stick{transition:none}}
 .pd-ring{position:absolute;left:50%;top:50%;width:82px;height:82px;margin:-41px 0 0 -41px;
   border-radius:50%;border:1.5px solid rgba(255,255,255,.16);background:rgba(8,12,17,.20);
   backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}

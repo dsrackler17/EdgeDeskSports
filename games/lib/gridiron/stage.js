@@ -555,7 +555,14 @@
       });
       if (play.type === 'run') {
         var lane = play.concept === 'outside' ? 5.5 : play.concept === 'gap' ? 2.6 : 0.9;
-        var side = (opts.lanePreview || 1);
+        /* ── AND IT POINTS WHERE THE PLAY ACTUALLY GOES ──────────────────
+           This read `opts.lanePreview`, which is set nowhere in the game, so
+           every run ever drawn pointed RIGHT — including a gap scheme, whose
+           back aims a yard and a bit LEFT of the ball, because that is where
+           live.js meshes him. A diagram that disagrees with the football is
+           worse than no diagram: it is the game telling you to run at a
+           lineman and then taking the yards off you for doing it. */
+        var side = play.concept === 'gap' ? -1 : 1;
         out.push({ pts: [[ballX, los - 4], [ballX + lane * side * 0.6, los - 0.5],
                          [ballX + lane * side, los + 3], [ballX + lane * side * 1.1, los + 6.5]],
                    color: 'rgba(242,199,68,.9)', width: 2.8 });
