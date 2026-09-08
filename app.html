@@ -22490,7 +22490,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        is actually going to be on it. */
     if (!whyLines.length) whyLines.push(v === 'PASS' ? 'EdgeDesk does not see enough value at the current price.'
       : s.odds ? 'EdgeDesk’s current research favors this number.'
-      : ctx.research_follows ? 'There is no number to favor yet — no book has posted this game. EdgeDesk’s research on the matchup is above.'
+      : ctx.research_follows ? 'No book has posted this game, so there is no price for EdgeDesk to have an opinion about. Its research on the matchup is above.'
       : 'There is no number to favor yet — no book has posted this game.');
     var risk = (s.biggest_risk && s.biggest_risk.text) || (s.watch && s.watch.text) || 'The price could move before kickoff.';
     var change = (s.change_trigger && s.change_trigger.text) || 'A worse price would change the call.';
@@ -22766,12 +22766,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         volatility_discriminates: p.outcome_range.volatility_discriminates === false ? false : null,
         note: txt(p.outcome_range.note) };
     }
+    var ml = null;
+    if (p.moneyline && txt(p.moneyline.home_odds) && txt(p.moneyline.away_odds)) {
+      ml = { home: txt(p.moneyline.home) || 'Home', away: txt(p.moneyline.away) || 'Away',
+        home_odds: txt(p.moneyline.home_odds), away_odds: txt(p.moneyline.away_odds),
+        note: txt(p.moneyline.note) };
+    }
     return { priced: true,
       fair_spread_text: txt(p.fair_spread_text), favourite: txt(p.favourite), underdog: txt(p.underdog),
-      margin: txt(p.margin), total: txt(p.total),
+      margin: txt(p.margin), total: txt(p.total), moneyline: ml,
       score: sc, score_absent_reason: txt(p.score_absent_reason),
       win_prob: wp, outcome_range: rg,
       confidence_pct: num(p.confidence_pct), inputs_reached_pct: num(p.inputs_reached_pct),
+      /* A MODEL THAT PUBLISHES NO CONFIDENCE SCORE SAYS SO. The tile is never
+         filled with a number nobody computed. */
+      confidence_absent_reason: txt(p.confidence_absent_reason),
+      sample_games: num(p.sample_games),
       status: txt(p.status), status_note: txt(p.status_note),
       engine: txt(p.engine), validation: txt(p.validation) };
   }
@@ -22780,12 +22790,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function marketOf(m) {
     if (!m) return null;
     if (!m.available) {
-      return { available: false, model: txt(m.model),
+      return { available: false, model: txt(m.model), total_model: txt(m.total_model),
         headline: txt(m.headline) || 'No sportsbook spread is currently joined to this game.',
         note: txt(m.note) };
     }
     return { available: true, model: txt(m.model), market: txt(m.market),
       difference: txt(m.difference), total_model: txt(m.total_model), total_market: txt(m.total_market),
+      total_difference: txt(m.total_difference), reference: txt(m.reference),
       book: txt(m.book), capture_age: txt(m.capture_age), stale: !!m.stale,
       classification: txt(m.classification), classification_note: txt(m.classification_note),
       note: txt(m.note) };
@@ -22836,8 +22847,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t, favours: txt(d.favours) } : null;
       }).filter(Boolean).slice(0, 6);
-      drivers = { rows: drows, basis: txt(r.drivers.basis), excluded: txt(r.drivers.excluded), empty: txt(r.drivers.empty) };
-      if (!drows.length && !drivers.empty && !drivers.excluded) drivers = null;
+      var trows = (Array.isArray(r.drivers.total_rows) ? r.drivers.total_rows : []).map(function (d) {
+        var t = txt(d && d.text);
+        return t ? { points: txt(d.points), points_n: num(d.points_n), text: t } : null;
+      }).filter(Boolean).slice(0, 6);
+      drivers = { rows: drows, total_rows: trows, basis: txt(r.drivers.basis),
+        excluded: txt(r.drivers.excluded), empty: txt(r.drivers.empty) };
+      if (!drows.length && !trows.length && !drivers.empty && !drivers.excluded) drivers = null;
     }
     var advantages = null;
     if (r.advantages) {
@@ -22868,6 +22884,30 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         }).filter(Boolean).slice(0, 5),
         note: txt(r.roster.note) };
     }
+    /* PANELS are the sport-specific blocks — the NFL brief's quarterback,
+       injury and situation sections. They are a GENERIC shape on purpose: a
+       two-column table plus its reads, so a sport can add a section without
+       a renderer of its own and without a second copy of this layout. */
+    var panels = (Array.isArray(r.panels) ? r.panels : []).map(function (x) {
+      var t = txt(x && x.title);
+      if (!t) return null;
+      var rows = (Array.isArray(x.rows) ? x.rows : []).map(function (y) {
+        var k = txt(y && y.k);
+        if (!k) return null;
+        var v = txt(y.v);
+        /* a row about the GAME rather than about a team spans both columns —
+           printing "not on file" opposite a stadium name is a fact about the
+           layout, not about the data. */
+        if (y.span && v != null) return { k: k, note: txt(y.note), v: v, span: true };
+        var a = txt(y.a), hh = txt(y.h);
+        return (a == null && hh == null) ? null : { k: k, note: txt(y.note), a: a, h: hh };
+      }).filter(Boolean).slice(0, 14);
+      var reads = txtList(x.reads, 6);
+      if (!rows.length && !reads.length) return null;
+      var c = x.cols || [];
+      return { title: t, note: txt(x.note), cols: [txt(c[0]) || 'Away', txt(c[1]) || 'Home'],
+        rows: rows, reads: reads };
+    }).filter(Boolean).slice(0, 6);
     var cases = null;
     if (r.cases) {
       function side(c) {
@@ -22907,6 +22947,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       advantages: advantages,
       matchups: matchups,
       matchups_note: matchupsNote,
+      panels: panels,
       roster: roster,
       cases: cases,
       uncertainty: uncertainty,
@@ -22997,15 +23038,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
     /* `v` is markup and is inserted raw; `sub` is text and tile() escapes it.
        Escaping the subtitle here as well printed "Florida A&amp;M". */
+    if (p.total) h += tile('EdgeDesk fair total', esc(p.total), 'the model\u2019s own total, before any book is consulted');
     if (p.win_prob) h += tile('Win probability',
       esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%', p.win_prob.away + ' ' + p.win_prob.away_pct + '%');
+    if (p.moneyline) h += tile('Fair moneyline',
+      esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds), p.moneyline.away + ' ' + p.moneyline.away_odds);
     if (p.outcome_range) h += tile('Outcome range',
       esc(p.outcome_range.p10) + ' → ' + esc(p.outcome_range.p90),
       [p.outcome_range.median ? 'median ' + p.outcome_range.median : null,
        p.outcome_range.sigma ? 'sigma ' + p.outcome_range.sigma : null,
-       p.outcome_range.basis_team ? p.outcome_range.basis_team + '’s perspective' : null].filter(Boolean).join(' · '));
+       p.outcome_range.basis_team ? 'from ' + p.outcome_range.basis_team : null].filter(Boolean).join(' · '));
     if (p.confidence_pct != null) h += tile('Data confidence', p.confidence_pct + '%',
       p.inputs_reached_pct != null ? p.inputs_reached_pct + '% of the model’s inputs reached it' : null);
+    else if (p.confidence_absent_reason) h += tile('Data confidence',
+      '<span class="edb-nodata">not published</span>', p.confidence_absent_reason, 'wide');
     if (p.status) h += tile('Model status', esc(p.status), null);
     h += '</div>';
     /* the score tile already carries the absent reason as its subtitle, so
@@ -23039,7 +23085,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (!mk.available) {
       return resSec('Market check')
         + '<div class="edb-nomkt"><p><b>' + esc(mk.headline) + '</b></p>'
-        + (mk.model ? '<p>EdgeDesk fair spread: <b>' + esc(mk.model) + '</b>.</p>' : '')
+        + (mk.model ? '<p>EdgeDesk fair spread: <b>' + esc(mk.model) + '</b>'
+          + (mk.total_model ? ' · fair total <b>' + esc(mk.total_model) + '</b>' : '') + '.</p>' : '')
         + (mk.note ? '<p>' + esc(mk.note) + '</p>' : '') + '</div>';
     }
     var h = resSec('Market check') + '<div class="edb-mkt">';
@@ -23050,7 +23097,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h += box('EdgeDesk', mk.model || '—', mk.total_model ? 'total ' + mk.total_model : null);
     h += box('Market', mk.market || '—', [mk.book, mk.capture_age, mk.stale ? 'stale' : null].filter(Boolean).join(' · ') || null);
     h += box('Difference', mk.difference || '—', mk.classification || null);
+    if (mk.total_model || mk.total_market) {
+      h += box('EdgeDesk total', mk.total_model || '—', null);
+      h += box('Market total', mk.total_market || '—', mk.total_difference ? mk.total_difference + ' apart' : null);
+    }
     h += '</div>';
+    if (mk.reference) h += '<p class="edb-secnote">' + esc(mk.reference) + '</p>';
     if (mk.classification_note) h += '<p class="edb-secnote">' + esc(mk.classification_note) + '</p>';
     if (mk.note) h += '<p class="edb-secnote">' + esc(mk.note) + '</p>';
     return h;
@@ -23089,6 +23141,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
             + '<span class="t">' + esc(d.text) + '</span></div>';
         }).join('') + '</div>';
       } else if (res.drivers.empty) h += '<p class="edb-secnote">' + esc(res.drivers.empty) + '</p>';
+      if (res.drivers.total_rows && res.drivers.total_rows.length) {
+        h += '<div class="edb-h">And behind the total</div><div class="edb-drv">'
+          + res.drivers.total_rows.map(function (d) {
+            var pn = d.points_n == null ? 0 : d.points_n;
+            return '<div class="edb-d"><span class="p ' + (pn >= 0 ? 'pos' : 'neg') + '">' + esc(d.points || '') + '</span>'
+              + '<span class="b"></span><span class="t">' + esc(d.text) + '</span></div>';
+          }).join('') + '</div>';
+      }
       if (res.drivers.excluded) h += '<p class="edb-secnote">' + esc(res.drivers.excluded) + '</p>';
     }
     /* ---- 3. the head-to-head. THE PIECE THE BRIEF EXISTS FOR. ---- */
@@ -23154,6 +23214,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           + '<p class="mp">' + esc(m.read) + '</p></div>';
       }).join('') + '</div>';
     }
+    /* ---- the sport's own sections: quarterback, injuries, situation ---- */
+    (res.panels || []).forEach(function (pn) {
+      h += resSec(pn.title, pn.note);
+      if (pn.rows.length) {
+        h += '<div class="edb-tblwrap"><table class="edb-tbl"><thead><tr><th></th><th>'
+          + esc(pn.cols[0]) + '</th><th>' + esc(pn.cols[1]) + '</th></tr></thead><tbody>';
+        pn.rows.forEach(function (x) {
+          h += '<tr><th scope="row">' + esc(x.k) + (x.note ? '<span class="n">' + esc(x.note) + '</span>' : '') + '</th>'
+            + (x.span ? '<td colspan="2">' + esc(x.v) + '</td>'
+              : '<td>' + (x.a ? esc(x.a) : '<span class="edb-nodata">not on file</span>') + '</td>'
+                + '<td>' + (x.h ? esc(x.h) : '<span class="edb-nodata">not on file</span>') + '</td>') + '</tr>';
+        });
+        h += '</tbody></table></div>';
+      }
+      if (pn.reads.length) h += '<ul class="edb-why">' + pn.reads.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+    });
     /* ---- 6. roster construction ---- */
     if (res.roster && res.roster.rows.length) {
       h += resSec('Roster construction and continuity', res.roster.note);
@@ -23630,15 +23706,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      Definitions come from CONCEPTS so the app, the brief and the share page
      cannot drift apart. */
   var HOWTO_KEYS = ['verdict', 'price_limit', 'edgedesk_comparison', 'benchmark_book', 'book_count', 'price_age'];
-  function howToReadHTML() {
-    var items = HOWTO_KEYS.map(function (k) {
+  /* A GLOSSARY EXPLAINS THE PAGE IT IS ON. Defining "price limit" and
+     "benchmark book" under a brief that carries no price and no verdict put
+     betting vocabulary on a research document that never uses it, which is
+     the framing this layer exists to keep off the page. With no captured
+     price the list keeps only the terms the page actually uses. */
+  var HOWTO_KEYS_NO_PRICE = ['edgedesk_comparison'];
+  function howToReadHTML(hasPrice) {
+    var items = (hasPrice === false ? HOWTO_KEYS_NO_PRICE : HOWTO_KEYS).map(function (k) {
       var c = CONCEPTS[k === 'price_limit' ? 'price_limit' : k];
       if (!c) return '';
       return '<dt>' + esc(c.short) + '</dt><dd>' + esc(c.simple) + (c.guard ? ' <i>' + esc(c.guard) + '</i>' : '') + '</dd>';
     }).join('');
     if (!items) return '';
     return '<details class="edb-howto"><summary>How to read this brief</summary><dl>' + items
-      + '<dt>What this is not</dt><dd>EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins, and a call is never a promise. 21+. Gamble responsibly — 1-800-GAMBLER.</dd>'
+      + '<dt>What this is not</dt><dd>' + (hasPrice === false
+        ? 'EdgeDesk research is not a prediction of who wins and not a bet. No sportsbook price is joined to this game, so nothing on this page is a call on one.'
+        : 'EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins, and a call is never a promise.')
+      + ' 21+. Gamble responsibly — 1-800-GAMBLER.</dd>'
       + '</dl></details>';
   }
 
@@ -23689,7 +23774,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           h += '<div class="edb-h edb-sec">EdgeDesk’s market call</div>'
             + '<p class="edb-nomkt">' + esc(noVerdictSentence(pub.research)) + '</p>';
         } else {
-          h += '<div class="edb-h edb-sec">The EdgeDesk call</div>';
+          /* THE PRIMARY PRODUCT IS THE RESEARCH ABOVE. On a brief that carries
+             research the market verdict is a section of it, headed as one —
+             the page no longer opens on the word "call". */
+          h += '<div class="edb-h edb-sec">' + (pub.research ? 'EdgeDesk’s market call' : 'The EdgeDesk call') + '</div>';
           h += '<p class="edb-lede">' + esc(b.lede) + '</p>';
           h += briefCardHTML(pc, { numbered: false, showEvent: false, hideAnswer: true });
         }
@@ -23698,7 +23786,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* On a slate or a rankings page the research still sits under the call. */
     if (snap.report_type === 'SLATE' || snap.report_type === 'RANKINGS') h += researchHTML(pub.research);
     if (opts.grades) h += briefResultsHTML(opts.grades);
-    if (snap.report_type !== 'RANKINGS') h += howToReadHTML();
+    if (snap.report_type !== 'RANKINGS') {
+      var anyPrice = (pub.cards || []).some(function (pc) { return !!(pc.brief && pc.brief.call && pc.brief.call.odds); });
+      h += howToReadHTML(anyPrice || !pub.research);
+    }
     /* A rankings brief has no price to check, so it does not claim to have
        checked one — it stamps the build the numbers came from instead. */
     h += '<footer class="edb-ft">' + (snap.report_type === 'RANKINGS' ? '' : '<div class="edb-h">EdgeDesk data check</div><p><b>' + esc(ds.status || 'Current') + '</b>'
@@ -23729,13 +23820,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if (p.score) h += '<p><strong>Projected score:</strong> ' + esc(p.score.away.team) + ' ' + esc(p.score.away.points)
         + ', ' + esc(p.score.home.team) + ' ' + esc(p.score.home.points) + '.' + (p.score.note ? ' ' + esc(p.score.note) : '') + '</p>';
       else if (p.score_absent_reason) h += '<p><strong>Projected score:</strong> not published — ' + esc(p.score_absent_reason) + '</p>';
+      if (p.total) h += '<p>EdgeDesk fair total: ' + esc(p.total) + '.</p>';
       if (p.win_prob) h += '<p>Win probability: ' + esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%, ' + esc(p.win_prob.away) + ' ' + p.win_prob.away_pct + '%.</p>';
+      if (p.moneyline) h += '<p>Fair moneyline: ' + esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds)
+        + ', ' + esc(p.moneyline.away) + ' ' + esc(p.moneyline.away_odds) + '. ' + esc(p.moneyline.note || '') + '</p>';
       if (p.outcome_range) h += '<p>Outcome range ' + esc(p.outcome_range.p10) + ' to ' + esc(p.outcome_range.p90)
         + (p.outcome_range.sigma ? ', sigma ' + esc(p.outcome_range.sigma) : '')
         + (p.outcome_range.basis_team ? ', from ' + esc(p.outcome_range.basis_team) + '\u2019s perspective' : '') + '.</p>';
       if (p.confidence_pct != null) h += '<p>Data confidence ' + p.confidence_pct + '%'
         + (p.inputs_reached_pct != null ? ' · ' + p.inputs_reached_pct + '% of the model\u2019s inputs reached it' : '')
         + (p.status ? ' · model status ' + esc(p.status) : '') + '.</p>';
+      else if (p.confidence_absent_reason) h += '<p>Data confidence: not published. ' + esc(p.confidence_absent_reason)
+        + (p.status ? ' Model status ' + esc(p.status) + '.' : '') + '</p>';
       if (p.validation) h += '<p><em>' + esc(p.validation) + '</em></p>';
     } else if (p) {
       h += '<h3>EdgeDesk projection</h3><p>EdgeDesk has not priced this matchup yet'
@@ -23747,6 +23843,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (res.drivers && res.drivers.rows.length) {
       h += '<h3>Why EdgeDesk prices it here</h3><ul>'
         + res.drivers.rows.map(function (d) { return '<li>' + esc(d.points || '') + ' — ' + esc(d.text) + '</li>'; }).join('') + '</ul>';
+      if (res.drivers.total_rows && res.drivers.total_rows.length) {
+        h += '<h4>And behind the total</h4><ul>'
+          + res.drivers.total_rows.map(function (d) { return '<li>' + esc(d.points || '') + ' — ' + esc(d.text) + '</li>'; }).join('') + '</ul>';
+      }
       if (res.drivers.excluded) h += '<p><em>' + esc(res.drivers.excluded) + '</em></p>';
     }
     function cmsTable(cols, rowsOf) {
@@ -23796,6 +23896,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         + (res.matchups_note ? '<p>' + esc(res.matchups_note) + '</p>' : '')
         + res.matchups.map(function (m) { return '<h4>' + esc(m.title) + '</h4><p>' + esc(m.read) + '</p>'; }).join('');
     }
+    (res.panels || []).forEach(function (pn) {
+      h += '<h3>' + esc(pn.title) + '</h3>' + (pn.note ? '<p>' + esc(pn.note) + '</p>' : '');
+      if (pn.rows.length) h += cmsTable(pn.cols, function () {
+        return pn.rows.map(function (x) {
+          return x.span
+            ? '<tr><th>' + esc(x.k) + '</th><td colspan="2">' + esc(x.v) + '</td></tr>'
+            : '<tr><th>' + esc(x.k) + '</th><td>' + esc(x.a || 'not on file') + '</td><td>' + esc(x.h || 'not on file') + '</td></tr>';
+        }).join('');
+      });
+      if (pn.reads.length) h += '<ul>' + pn.reads.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+    });
     if (res.roster) {
       h += '<h3>Roster construction and continuity</h3>';
       if (res.roster.highlights.length) h += '<ul>' + res.roster.highlights.map(function (x) { return '<li>' + esc(x.text) + '</li>'; }).join('') + '</ul>';
@@ -23824,11 +23935,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (mk) {
       h += '<h3>Market check</h3>';
       if (!mk.available) h += '<p>' + esc(mk.headline) + '</p>'
-        + (mk.model ? '<p>EdgeDesk fair spread: ' + esc(mk.model) + '.</p>' : '')
+        + (mk.model ? '<p>EdgeDesk fair spread: ' + esc(mk.model) + (mk.total_model ? ' · fair total ' + esc(mk.total_model) : '') + '.</p>' : '')
         + (mk.note ? '<p>' + esc(mk.note) + '</p>' : '');
       else h += '<p>EdgeDesk ' + esc(mk.model || '—') + ' · market ' + esc(mk.market || '—')
         + (mk.difference ? ' · difference ' + esc(mk.difference) : '')
         + (mk.book ? ' · ' + esc(mk.book) : '') + (mk.capture_age ? ' · ' + esc(mk.capture_age) : '') + '.</p>'
+        + ((mk.total_model || mk.total_market) ? '<p>EdgeDesk total ' + esc(mk.total_model || '—') + ' · market total ' + esc(mk.total_market || '—')
+          + (mk.total_difference ? ' · ' + esc(mk.total_difference) + ' apart' : '') + '.</p>' : '')
+        + (mk.reference ? '<p>' + esc(mk.reference) + '</p>' : '')
         + (mk.classification_note ? '<p>' + esc(mk.classification_note) + '</p>' : '');
     }
     if (res.state) h += '<h3>Research state</h3><p><strong>' + esc(res.state.label) + '</strong>'
@@ -23874,7 +23988,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var b = pc.brief, pl = b.plain || null, s = '';
       var call = callLine(b, pl);
       if (numbered) s += '<h2>#' + pc.rank + ' ' + esc(call) + (b.event_label ? ' — ' + esc(b.event_label) : '') + '</h2>';
-      else { s += '<h2>The EdgeDesk call</h2><p><strong>' + esc(call) + '</strong></p>'; }
+      else { s += '<h2>' + (pub.research ? 'EdgeDesk’s market call' : 'The EdgeDesk call') + '</h2><p><strong>' + esc(call) + '</strong></p>'; }
       if (pl && pl.status_line) s += '<p><em>' + esc(pl.status_line) + ((pl.answer && numbered) ? ' ' + esc(pl.answer) : '') + '</em></p>';
       if (pl && pl.ticket) s += '<p>At the sportsbook: ' + esc(pl.ticket) + (b.call.odds ? ' · ' + esc(b.call.odds) : '') + (b.call.book ? ' · ' + esc(b.call.book) : '') + '</p>';
       if (pl && pl.price_limit && pl.price_limit.value) s += '<p><strong>' + esc(pl.price_limit.label) + ': ' + esc(pl.price_limit.value) + '</strong> ' + esc(pl.price_limit.sentence) + '</p>';
@@ -23934,7 +24048,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var b = pc.brief, pl = b.plain || null;
       var call = callLine(b, pl);
       if (numbered) L.push('#' + pc.rank + '  ' + call + (b.event_label ? '  —  ' + b.event_label : ''));
-      else { L.push('THE EDGEDESK CALL'); L.push(call); }
+      else { L.push(pub.research ? 'EDGEDESK’S MARKET CALL' : 'THE EDGEDESK CALL'); L.push(call); }
       if (pl && pl.status_line) L.push(pl.status_line + ((pl.answer && numbered) ? ' ' + pl.answer : ''));
       if (pl && pl.ticket) L.push('At the sportsbook: ' + pl.ticket + (b.call.odds ? ' · ' + b.call.odds : '') + (b.call.book ? ' · ' + b.call.book : ''));
       if (pl && pl.price_limit && pl.price_limit.value) { L.push((pl.price_limit.label + ': ' + pl.price_limit.value).toUpperCase()); L.push(pl.price_limit.sentence); }
@@ -24024,13 +24138,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         L.push('  Fair spread: ' + (rp.fair_spread_text || '—'));
         if (rp.score) L.push('  Projected score: ' + rp.score.away.team + ' ' + rp.score.away.points + ', ' + rp.score.home.team + ' ' + rp.score.home.points);
         else { L.push('  Projected score: not published'); if (rp.score_absent_reason) L.push('    ' + rp.score_absent_reason); }
+        if (rp.total) L.push('  Fair total: ' + rp.total);
         if (rp.win_prob) L.push('  Win probability: ' + rp.win_prob.home + ' ' + rp.win_prob.home_pct + '%, ' + rp.win_prob.away + ' ' + rp.win_prob.away_pct + '%');
+        if (rp.moneyline) L.push('  Fair moneyline: ' + rp.moneyline.home + ' ' + rp.moneyline.home_odds + ', ' + rp.moneyline.away + ' ' + rp.moneyline.away_odds);
         if (rp.outcome_range) L.push('  Outcome range: ' + rp.outcome_range.p10 + ' to ' + rp.outcome_range.p90
           + (rp.outcome_range.median ? ', median ' + rp.outcome_range.median : '')
           + (rp.outcome_range.sigma ? ', sigma ' + rp.outcome_range.sigma : '')
-          + (rp.outcome_range.basis_team ? ' (' + rp.outcome_range.basis_team + '\u2019s perspective)' : ''));
+          + (rp.outcome_range.basis_team ? ' (from the perspective of ' + rp.outcome_range.basis_team + ')' : ''));
         if (rp.confidence_pct != null) L.push('  Data confidence: ' + rp.confidence_pct + '%'
           + (rp.inputs_reached_pct != null ? ', ' + rp.inputs_reached_pct + '% of inputs reached the model' : ''));
+        else if (rp.confidence_absent_reason) { L.push('  Data confidence: not published'); L.push('    ' + rp.confidence_absent_reason); }
         if (rp.status) L.push('  Model status: ' + rp.status);
         if (rp.validation) L.push('  ' + rp.validation);
       } else if (rp) {
@@ -24043,12 +24160,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if (res.drivers && res.drivers.rows.length) {
         L.push(''); L.push('WHY EDGEDESK PRICES IT HERE');
         res.drivers.rows.forEach(function (d) { L.push('  ' + pad(d.points || '', 8) + d.text); });
+        if (res.drivers.total_rows && res.drivers.total_rows.length) {
+          L.push(''); L.push('  AND BEHIND THE TOTAL');
+          res.drivers.total_rows.forEach(function (d) { L.push('  ' + pad(d.points || '', 8) + d.text); });
+        }
         if (res.drivers.excluded) L.push('  ' + res.drivers.excluded);
       }
       function textTable(cols, rows) {
         L.push('');
-        L.push(pad('', 30) + pad(cols[0], 24) + cols[1]);
-        rows.forEach(function (x) { L.push(pad(x.k, 30) + pad(x.a, 24) + x.h); });
+        L.push(pad('', 38) + pad(cols[0], 26) + cols[1]);
+        rows.forEach(function (x) { L.push(pad(x.k, 38) + pad(x.a, 26) + x.h); });
       }
       if (res.compare) {
         L.push(''); L.push('TEAM RESEARCH HEAD-TO-HEAD');
@@ -24091,6 +24212,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         if (res.matchups_note) L.push(res.matchups_note);
         res.matchups.forEach(function (m) { L.push(''); L.push('  ' + m.title); L.push('    ' + m.read); });
       }
+      (res.panels || []).forEach(function (pn) {
+        L.push(''); L.push(pn.title.toUpperCase());
+        if (pn.note) L.push(pn.note);
+        if (pn.rows.length) textTable(pn.cols, pn.rows.map(function (x) {
+          return x.span ? { k: x.k, a: x.v, h: '' } : { k: x.k, a: x.a || 'not on file', h: x.h || 'not on file' };
+        }));
+        if (pn.reads.length) { L.push(''); pn.reads.forEach(function (t) { L.push('  · ' + t); }); }
+      });
       if (res.roster) {
         L.push(''); L.push('ROSTER CONSTRUCTION AND CONTINUITY');
         res.roster.highlights.forEach(function (x) { L.push('  · ' + x.text); });
@@ -24123,12 +24252,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         L.push(''); L.push('MARKET CHECK');
         if (!rmk.available) {
           L.push('  ' + rmk.headline);
-          if (rmk.model) L.push('  EdgeDesk fair spread: ' + rmk.model);
+          if (rmk.model) L.push('  EdgeDesk fair spread: ' + rmk.model + (rmk.total_model ? ' · fair total ' + rmk.total_model : ''));
           if (rmk.note) L.push('  ' + rmk.note);
         } else {
           L.push('  EdgeDesk  ' + (rmk.model || '—'));
           L.push('  Market    ' + (rmk.market || '—') + (rmk.book ? '  (' + rmk.book + (rmk.capture_age ? ', ' + rmk.capture_age : '') + ')' : ''));
           if (rmk.difference) L.push('  Difference ' + rmk.difference);
+          if (rmk.total_model || rmk.total_market) L.push('  Totals    EdgeDesk ' + (rmk.total_model || '—') + ' · market ' + (rmk.total_market || '—')
+            + (rmk.total_difference ? ' · ' + rmk.total_difference + ' apart' : ''));
+          if (rmk.reference) L.push('  ' + rmk.reference);
           if (rmk.classification_note) L.push('  ' + rmk.classification_note);
         }
       }
@@ -30710,7 +30842,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return P.simpleFromPacket({
       game:{matchup:(q.away||'')+' @ '+(q.home||''), sport:q.sport_label||null, sport_key:q.sport_key||null, commence:q.t?new Date(q.t).toISOString():null, away:q.away||null, home:q.home||null, event_id:q.event_id||null},
       market:null, prices:{}, edge:{}, confirmation:{}, timing:{}, price_sensitivity:{},
-      deterministic:{verdict:'PASS', display_verdict:'WAIT', is_wait:true, wait_reason:'EdgeDesk has no priced market on file for this game yet. A brief needs a captured price before it can carry a call.', reasons_for:[], reasons_against:[], falsifiers:[]}
+      /* A BRIEF DOES NOT NEED A PRICE. This reason used to say it did, which
+         was the sentence that turned a research document into a page about a
+         missing quote. What a captured price is needed for is the VERDICT. */
+      deterministic:{verdict:'PASS', display_verdict:'WAIT', is_wait:true, wait_reason:'EdgeDesk has no priced market on file for this game yet, so there is no verdict to publish on one. The research on the matchup does not depend on it.', reasons_for:[], reasons_against:[], falsifiers:[]}
     },{stale_limit_min:staleLimit()});
   }
 
@@ -30728,10 +30863,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      than a placeholder. */
   function researchFor(q, first){
     try{
-      var build=window.fbBriefGame||window.fbBriefResearch;
-      if(!build) return null;
       var key=String((q&&q.sport_key)||(first&&first.game&&first.game.sport_key)||'');
-      if(key.indexOf('americanfootball_ncaaf')!==0) return null;
+      /* BOTH football codes carry a research brief. The college builder reads
+         the rankings artifact and the Power 4 model; the NFL builder reads the
+         NFL rating state and the NFL model. Neither consults a sportsbook to
+         decide whether it has anything to say. */
+      var build=key.indexOf('americanfootball_nfl')===0
+        ? (window.fbNflBriefGame||window.fbNflBriefResearch)
+        : (key.indexOf('americanfootball_ncaaf')===0 ? (window.fbBriefGame||window.fbBriefResearch) : null);
+      if(!build) return null;
       var home=(q&&q.home)||(first&&first.game&&first.game.home)||null;
       var away=(q&&q.away)||(first&&first.game&&first.game.away)||null;
       if(!home||!away) return null;
@@ -30777,6 +30917,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       h0.classList.add('open');
       return window.fbRkEnsure().then(function(){ show(gameSnapshot(cards, q, preset)); },
                                      function(){ show(gameSnapshot(cards, q, preset)); });
+    }
+    /* AN NFL BRIEF IS MOSTLY RESEARCH TOO, so it waits for the rating state
+       rather than drawing the market half and filling the rest in afterwards.
+       If the load fails the brief still renders, with the market half it
+       always had. */
+    if(String(q.sport_key||'').indexOf('americanfootball_nfl')===0 && window.fbNflEnsure
+       && !(window.FB&&FB.nfl&&FB.nfl.state&&(FB.nfl.up||[]).length)){
+      var hN=host();
+      hN.innerHTML='<div class="brief-card">'+barHTML(null)+'<div class="brief-note">Loading EdgeDesk’s NFL ratings…</div></div>';
+      hN.classList.add('open');
+      return window.fbNflEnsure().then(function(){ show(gameSnapshot(cards, q, preset)); },
+                                      function(){ show(gameSnapshot(cards, q, preset)); });
     }
     show(gameSnapshot(cards, q, preset));
   }
@@ -38416,6 +38568,12 @@ function fbRkRank(t,cat){
    back to the market-only page this work exists to replace. */
 window.fbBriefGame=fbBriefGame;
 window.fbBriefResearch=fbBriefResearch;
+/* the NFL matchup payload, by the same contract: one builder, reachable
+   from outside this IIFE, consumed by every renderer that draws an NFL game. */
+window.fbNflBriefGame=fbNflBriefGame;
+window.fbNflEnsure=fbNflEnsure;
+window.fbNflBriefResearch=fbNflBriefResearch;
+window.fbNflRanks=fbNflRanks;
 window.fbBriefRankings=fbBriefRankings;
 window.fbRkEnsure=fbRkEnsure;
 window.fbRkTab=function(t){FB.rk.tab=t;FB.rk.team=null;window.renderFootball();};
@@ -38964,7 +39122,8 @@ function fbBrRosterHighlights(rows,awayName,homeName){
    national rank can produce an advantage: rank is the one scale on which
    "QB room" and "run defence" are comparable, and claiming an edge over a
    team the board never rated would be inventing the other half of it. */
-function fbBrAdvantages(rows,awayName,homeName,A,H){
+function fbBrAdvantages(rows,awayName,homeName,A,H,scaleWord){
+  scaleWord=scaleWord||'national';
   var away=[],home=[];
   rows.forEach(function(r){
     if(!r.edge||r.edge.side==='even'||r.edge.rank_gap==null||r.edge.rank_gap===0)return;
@@ -38973,7 +39132,7 @@ function fbBrAdvantages(rows,awayName,homeName,A,H){
     (r.edge.side==='h'?home:away).push({k:r.k,rank_gap:r.edge.rank_gap,gap:r.edge.gap,
       lead:lead,trail:trail,lead_cell:L.v+(L.rank?' · '+L.rank:''),trail_cell:T.v+(T.rank?' · '+T.rank:''),
       text:lead+' '+L.v+(L.rank?' ('+L.rank+')':'')+' vs '+trail+' '+T.v+(T.rank?' ('+T.rank+')':'')
-        +' — '+r.edge.rank_gap+' place'+(r.edge.rank_gap===1?'':'s')+' on the national board.'});
+        +' — '+r.edge.rank_gap+' place'+(r.edge.rank_gap===1?'':'s')+' on the '+scaleWord+' board.'});
   });
   function top(a){ return a.sort(function(x,y){ return y.rank_gap-x.rank_gap; }).slice(0,5); }
   /* A HALF-RATED MATCHUP STILL HAS RESEARCH IN IT. Where the opponent is not
@@ -39308,7 +39467,7 @@ function fbBriefGame(q){
     if(dA!=null||dH!=null) rows.push({k:'Δ national rank, this week',a:dA==null?null:fbBrDelta(dA),h:dH==null?null:fbBrDelta(dH),note:'differenced from last week’s committed snapshot'});
 
     /* ---- 4-6. ADVANTAGES, MATCHUPS, ROSTER CONSTRUCTION ---- */
-    var advantages=fbBrAdvantages(allRows,awayName,homeName,A,H);
+    var advantages=fbBrAdvantages(allRows,awayName,homeName,A,H,'national');
     var matchups=fbBrMatchups(A,H,awayName,homeName);
     var rosterRows=fbBrRosterRows(A,H);
     var roster={cols:[awayName||'Away',homeName||'Home'],rows:rosterRows,
@@ -39430,6 +39589,790 @@ function fbBrStateNote(label,p,mk){
   if(label==='RESEARCH') return 'EdgeDesk and the market are close enough that there is nothing unusual to report.';
   if(label==='AWAITING DATA') return 'The projection engine has not produced a number for this game yet.';
   return null;
+}
+/* ═══ THE NFL MATCHUP RESEARCH PAYLOAD ═════════════════════════════════════
+   THE SAME RULE AS THE COLLEGE BRIEF: a sportsbook price is one SECTION of a
+   research document, not its premise. Everything below is computed without
+   consulting a book — the projection, the two teams' opponent-adjusted
+   ratings, the pass and run matchups, the trench numbers, the quarterback
+   situation, the injury report, the situation and the uncertainty — and a
+   missing price removes the model-versus-market comparison and nothing else.
+
+   IT BUILDS NO MODEL. Every number is read from something that already owns
+   it: the ratings are `FB.nfl.state`, the engine's own mutable rating state;
+   the projection is the SAME window.EDFootball.predictGame call the game card
+   makes, through the same fbPredict cache; the drivers are the engine's own
+   additive terms; the outcome range is the engine's own learned margin PMF;
+   the quarterback identity is the roster registry; the injuries are the
+   league's filed report as EDCARD loaded it; the situation is the schedule
+   row. Nothing on this page is estimated, re-fitted or re-derived.
+
+   WHAT THE NFL LAYER DOES NOT HAVE, it says. There are no NFL position-group
+   ratings — no OL, WR, LB or secondary grade — because this repo's player
+   layer is college-only. The trench and coverage sections therefore report
+   the trench and coverage facts the NFL model DOES carry (sack rates taken
+   and generated, EPA allowed by phase, explosive rates), and name the grades
+   it does not.
+   ═════════════════════════════════════════════════════════════════════════ */
+/* every rating the NFL state carries, with the direction that makes a number
+   GOOD. Direction is a fact about the metric, not about a fitted weight: EPA
+   allowed is better when it is lower, sacks taken are better when they are
+   fewer, and a pass rate is a tendency that is neither. */
+var FB_NFL_METRICS=[
+  ['net_epa','Net EPA per play','Team strength',1,'epa','offence EPA per play minus defence EPA allowed per play — the engine’s own net_epa half'],
+  ['pts_for','Points scored','Team strength',1,'pts',null],
+  ['pts_against','Points allowed','Team strength',-1,'pts',null],
+  ['off_epa_play','Offence · EPA per play','Offence',1,'epa',null],
+  ['pass_epa_db','Pass offence · EPA per dropback','Offence',1,'epa',null],
+  ['rush_epa_att','Run offence · EPA per carry','Offence',1,'epa',null],
+  ['expl_pass','Explosive pass rate','Offence',1,'rate','20+ yard pass plays per attempt'],
+  ['expl_rush','Explosive run rate','Offence',1,'rate','10+ yard runs per carry'],
+  ['def_epa_play','Defence · EPA allowed per play','Defence',-1,'epa',null],
+  ['def_pass_epa_db','Pass defence · EPA allowed per dropback','Defence',-1,'epa',null],
+  ['def_rush_epa_att','Run defence · EPA allowed per carry','Defence',-1,'epa',null],
+  ['def_expl_pass','Explosive passes allowed','Defence',-1,'rate',null],
+  ['def_expl_rush','Explosive runs allowed','Defence',-1,'rate',null],
+  ['sack_rate_all','Sacks taken per dropback','Trenches',-1,'rate','pass protection — the only offensive-line number the NFL model carries'],
+  ['sack_rate_made','Sacks generated per dropback','Trenches',1,'rate','pass rush — the only defensive-front number the NFL model carries'],
+  ['pass_rate','Pass rate','Tendency and pace',0,'rate','how often they throw. A tendency, not a quality, so no side is marked ahead'],
+  ['plays','Plays per game','Tendency and pace',0,'plays','pace. A tendency, not a quality']
+];
+/* "the 49ers’ pass offence", not "the 49ers’s". */
+function fbNflPoss(n){ n=String(n||''); return n+(/s$/i.test(n)?'’':'’s'); }
+/* one metric off the engine's rating state. `net_epa` is the engine's own
+   combination and is computed here exactly as gameFeatures() computes it. */
+function fbNflMetric(r,key){
+  if(!r) return null;
+  var v=(key==='net_epa')?(r.off_epa_play-r.def_epa_play):r[key];
+  return (v==null||!isFinite(v))?null:v;
+}
+/* THE LEAGUE RANK IS THE ORDER OF THE THIRTY-TWO RATINGS THE ENGINE HOLDS —
+   a sort of numbers that already exist, not a new ranking system. Cached
+   against the state object so a board refresh recomputes it and nothing else
+   does. */
+function fbNflRanks(){
+  var S=FB.nfl, st=S&&S.state;
+  if(!st||!st.team) return null;
+  if(S._rk&&S._rkFor===st) return S._rk;
+  var codes=[],k;
+  for(k in st.team){ if(st.team.hasOwnProperty(k)&&FB_CODE_NAMES[k]) codes.push(k); }
+  var out={n:codes.length,by:{}};
+  FB_NFL_METRICS.forEach(function(m){
+    if(!m[3]) return;                       /* a tendency has no better end */
+    var rows=[];
+    codes.forEach(function(c){ var v=fbNflMetric(st.team[c],m[0]); if(v!=null) rows.push([c,v]); });
+    rows.sort(function(a,b){ return m[3]>0?(b[1]-a[1]):(a[1]-b[1]); });
+    var r={};
+    rows.forEach(function(row,i){ r[row[0]]=i+1; });
+    out.by[m[0]]={rank:r,of:rows.length};
+  });
+  S._rk=out; S._rkFor=st;
+  return out;
+}
+function fbNflFmt(v,kind){
+  if(v==null||!isFinite(v)) return null;
+  var s=v>=0?'+':'−', a=Math.abs(v);
+  if(kind==='rate') return s+(a*100).toFixed(1)+' pp';
+  if(kind==='pts') return s+a.toFixed(2);
+  if(kind==='plays') return s+a.toFixed(1);
+  return s+a.toFixed(3);
+}
+/* one side of one comparison row, with the league rank the sort produced. */
+function fbNflSide(code,m,RK){
+  var st=FB.nfl.state, r=st&&st.team&&st.team[code];
+  if(!r) return {v:null,n:null,rank:null,rank_n:null,note:'this team is not in EdgeDesk’s NFL rating state'};
+  var v=fbNflMetric(r,m[0]);
+  if(v==null) return {v:null,n:null,rank:null,rank_n:null,note:'no rating published for this category'};
+  var rk=RK&&RK.by[m[0]]?RK.by[m[0]].rank[code]:null;
+  var of=RK&&RK.by[m[0]]?RK.by[m[0]].of:null;
+  return {v:fbNflFmt(v,m[4]),n:v,
+    rank:rk?('#'+rk+(of?' of '+of:'')):null, rank_n:rk||null,
+    note:m[3]?null:'tendency, not a quality'};
+}
+function fbNflCmpRow(aCode,hCode,m,RK){
+  var a=fbNflSide(aCode,m,RK), h=fbNflSide(hCode,m,RK), edge=null;
+  if(m[3]&&a.n!=null&&h.n!=null){
+    var d=(h.n-a.n)*m[3];                   /* direction-corrected: >0 = home */
+    edge={side:Math.abs(h.n-a.n)<1e-12?'even':(d>0?'h':'a'),
+      gap:Math.abs(h.n-a.n),
+      rank_gap:(a.rank_n!=null&&h.rank_n!=null)?Math.abs(a.rank_n-h.rank_n):null};
+  }
+  return {cat:m[0],k:m[1],note:m[5],a:a,h:h,edge:edge};
+}
+/* THE MATCHUPS, COMBINED THE WAY THE ENGINE COMBINES THEM. `pass_matchup`
+   and `rush_matchup` in the total model are literally an offence's rating
+   PLUS the opposing defence's allowed rating, and `sack_env` is sacks taken
+   plus sacks generated. One direction of each of those sums is one matchup,
+   so the number under each pairing is the engine's own arithmetic rather
+   than a comparison invented for this page. */
+var FB_NFL_MATCHUPS=[
+  ['a','pass_epa_db','h','def_pass_epa_db','pass offence','pass defence','epa','off',
+    'EPA per dropback above the league mean once the opposing pass defence is added in — the engine’s own pass_matchup half'],
+  ['h','pass_epa_db','a','def_pass_epa_db','pass offence','pass defence','epa','off',null],
+  ['a','rush_epa_att','h','def_rush_epa_att','run offence','run defence','epa','off',
+    'EPA per carry above the league mean with the opposing run defence added in — the engine’s own rush_matchup half'],
+  ['h','rush_epa_att','a','def_rush_epa_att','run offence','run defence','epa','off',null],
+  ['a','sack_rate_all','h','sack_rate_made','pass protection','pass rush','rate','def',
+    'sacks taken plus sacks generated — the engine’s own sack_env half. A higher number is more sacks, so it runs AGAINST the offence'],
+  ['h','sack_rate_all','a','sack_rate_made','pass protection','pass rush','rate','def',null],
+  ['a','expl_pass','h','def_expl_pass','explosive passing','explosive passes allowed','rate','off',null],
+  ['h','expl_pass','a','def_expl_pass','explosive passing','explosive passes allowed','rate','off',null],
+  ['a','expl_rush','h','def_expl_rush','explosive running','explosive runs allowed','rate','off',null],
+  ['h','expl_rush','a','def_expl_rush','explosive running','explosive runs allowed','rate','off',null]
+];
+function fbNflMatchups(aCode,hCode,aName,hName,RK){
+  var st=FB.nfl.state, out=[], partial=false;
+  function cell(code,key,kind){
+    var r=st&&st.team&&st.team[code], v=r?fbNflMetric(r,key):null;
+    var rk=RK&&RK.by[key]?RK.by[key].rank[code]:null, of=RK&&RK.by[key]?RK.by[key].of:null;
+    return {n:v,v:fbNflFmt(v,kind),rank:rk?('#'+rk+(of?' of '+of:'')):null,rank_n:rk||null};
+  }
+  FB_NFL_MATCHUPS.forEach(function(m){
+    var attCode=m[0]==='a'?aCode:hCode, defCode=m[2]==='a'?aCode:hCode;
+    var attName=m[0]==='a'?aName:hName, defName=m[2]==='a'?aName:hName;
+    var att=cell(attCode,m[1],m[6]), def=cell(defCode,m[3],m[6]);
+    if(att.n==null&&def.n==null) return;
+    var read,net=null;
+    if(att.n!=null&&def.n!=null){
+      net=att.n+def.n;                       /* the engine's own combination */
+      var favours=m[7]==='off'?(net>0?attName:defName):(net>0?defName:attName);
+      read=fbNflPoss(attName)+' '+m[4]+' rates '+att.v+(att.rank?' ('+att.rank+')':'')
+        +' and '+fbNflPoss(defName)+' '+m[5]+' rates '+def.v+(def.rank?' ('+def.rank+')':'')+'. '
+        +'Added the way the model adds them, this pairing sits '+fbNflFmt(net,m[6])
+        +' from the league mean, which favours '+favours+'.';
+    } else {
+      partial=true;
+      var have=att.n!=null?{n:attName,l:m[4],c:att}:{n:defName,l:m[5],c:def};
+      var gap=att.n!=null?{n:defName,l:m[5]}:{n:attName,l:m[4]};
+      read=fbNflPoss(have.n)+' '+have.l+' rates '+have.c.v+(have.c.rank?' ('+have.c.rank+')':'')
+        +'. '+fbNflPoss(gap.n)+' '+gap.l+' rating is not populated, so the pairing cannot be combined.';
+    }
+    out.push({title:attName+' '+m[4]+' vs '+defName+' '+m[5],
+      att:{team:attName,label:m[4],v:att.v,rank:att.rank,note:null},
+      def:{team:defName,label:m[5],v:def.v,rank:def.rank,note:null},
+      complete:att.n!=null&&def.n!=null, net:net, read:read});
+  });
+  out.note='Every rating here is opponent-adjusted and printed as a deviation from the league mean, and each pairing is summed the way the engine’s own total model sums it. A pairing describes the two units’ ratings; it does not predict what they produce on the day.'
+    +(partial?' Where one half is unpopulated the row still prints, with the half EdgeDesk has and the half it does not.':'');
+  return out;
+}
+/* THE QUARTERBACK. Identity from the roster registry, value from the learned
+   QB layer, and — the part that matters — whether anybody has actually
+   confirmed who is starting. An unconfirmed starter is NOT the last known
+   one, and the model does not quietly assume it is: with no id the QB term
+   contributes exactly zero points, which is a different statement from "this
+   quarterback is league average", and the panel says so. */
+function fbNflQbPanel(g,aName,hName,contrib){
+  var ctx=null;
+  try{ ctx=window.fbGameQbContext(g); }catch(_){ ctx=null; }
+  if(!ctx) return null;
+  var st=FB.nfl.state;
+  function side(s,name,qbId,team){
+    var learned=s.learned, adj=null;
+    try{ if(st&&qbId) adj=window.EDFootball.nfl.qbAdjust(st,team,qbId); }catch(_){ adj=null; }
+    return {name:name,
+      status:s.confirmed?'STARTER CONFIRMED':'STARTER NOT CONFIRMED',
+      qb:s.starter?s.starter.name:'not named — nobody has confirmed a starter',
+      room:(s.room||[]).map(function(q){return q.name;}),
+      roster:s.confirmed?(s.onRoster===true?'on the active roster':(s.onRoster===false?('rostered by '+s.starter.team):'id not in the roster registry')):'nothing to check until a starter is named',
+      learned:learned?(learned.n+' learned starts'):(s.confirmed?'no learned value yet — the layer’s prior stands in':'no starter to look up'),
+      adjust:adj==null
+        ?'0.0 — an absence, not an average'
+        :((adj>0?'+':'−')+Math.abs(adj).toFixed(3)+' rating units against this team’s own QB baseline')};
+  }
+  var away=side(ctx.away,aName,g.away_qb_id,g.away_team);
+  var home=side(ctx.home,hName,g.home_qb_id,g.home_team);
+  var qbPts=null;
+  (contrib||[]).forEach(function(t){ if(t.key==='qb_adj_diff') qbPts=t.points; });
+  var reads=[];
+  if(qbPts!=null) reads.push('The quarterback difference is worth '+fbPts(qbPts)+' points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.');
+  [[away,aName],[home,hName]].forEach(function(pair){
+    var s=pair[0];
+    if(s.status==='STARTER CONFIRMED') return;
+    reads.push(fbNflPoss(pair[1])+' starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for '+pair[1]
+      +' contributes exactly zero points, which is not the same as saying the position is league average. Its active room is '
+      +(s.room.length?s.room.join(', '):'not loaded')+'.');
+  });
+  if(away.status==='STARTER CONFIRMED'&&home.status==='STARTER CONFIRMED')
+    reads.push('Both starters are confirmed by the schedule feed, so the quarterback term is priced from the learned value of the two players actually named.');
+  reads.push('The learned QB layer is identity-keyed and value-only: it says how a quarterback has played, never how he is feeling, and it knows nothing about a start nobody has announced.');
+  return {title:'Quarterback',
+    note:'Identity from the roster registry ('+(ctx.source||'not loaded in this session')+'); value from the model’s learned QB layer.',
+    cols:[aName,hName],
+    rows:[{k:'Confirmation',a:away.status,h:home.status,note:'from the schedule feed’s own starter id'},
+      {k:'Quarterback',a:away.qb,h:home.qb,note:null},
+      {k:'Roster check',a:away.roster,h:home.roster,note:null},
+      {k:'Learned sample',a:away.learned,h:home.learned,note:'starts the QB layer has actually absorbed'},
+      {k:'Model adjustment',a:away.adjust,h:home.adjust,
+        note:'this quarterback against his own team’s QB baseline. With no confirmed starter the term contributes nothing, which is not a claim that the position is league average'},
+      {k:'Active room',a:away.room.join(', ')||'roster registry not loaded',h:home.room.join(', ')||'roster registry not loaded',note:'who is rostered at the position — identity only'}],
+    reads:reads};
+}
+/* THE INJURY REPORT. The league files one and nflverse publishes it; the
+   card layer already loads it, so this reads THAT and never a second copy.
+   A team with no rows is "no report filed yet" — never a clean bill of
+   health — and a report EdgeDesk has not got is stated as not got. */
+var FB_NFL_INJ_ORDER=['Out','Doubtful','Questionable','Limited','Unknown'];
+function fbNflInjuryPanel(aName,hName,aCode,hCode){
+  var av=null;
+  try{
+    av=window.EDCARD&&window.EDCARD.availabilityFor
+      ?window.EDCARD.availabilityFor({e:{sport_key:'americanfootball_nfl',home_team:hName,away_team:aName}}):null;
+  }catch(_){ av=null; }
+  var rows=[],reads=[],note;
+  if(!av){
+    note='EdgeDesk has not loaded an NFL injury report in this session.';
+    reads.push('No availability data reached this brief. That is a gap in what EdgeDesk knows, not a statement that both teams are healthy — nobody here is being carried as available.');
+    return {title:'Injuries and availability',note:note,cols:[aName,hName],rows:[],reads:reads,
+      missing:['NFL injury report — not loaded in this session.']};
+  }
+  if(av.status!=='ON_FILE'){
+    note=av.reason||'the league report for this season is not published yet.';
+    reads.push('The official report is not on file, so no player on either roster is carried as available OR as out. Unknown is unknown.');
+    return {title:'Injuries and availability',note:'NFL injury report — '+note,cols:[aName,hName],rows:[],reads:reads,
+      missing:['NFL injury report — '+note]};
+  }
+  function bucket(side){
+    var b={};FB_NFL_INJ_ORDER.forEach(function(s){b[s]=[];});
+    (side&&side.players||[]).forEach(function(p){
+      var s=String(p.status||'').trim();
+      var key=FB_NFL_INJ_ORDER.indexOf(s)>=0?s:(p.practice?'Limited':'Unknown');
+      b[key].push(p.name+(p.position?' ('+p.position+')':''));
+    });
+    return b;
+  }
+  var A=bucket(av.teams&&av.teams.away), H=bucket(av.teams&&av.teams.home);
+  FB_NFL_INJ_ORDER.forEach(function(s){
+    if(!A[s].length&&!H[s].length) return;
+    function cell(list){
+      if(!list.length) return null;
+      return list.length+(list.length>3?(': '+list.slice(0,3).join(', ')+' +'+(list.length-3)+' more'):(': '+list.join(', ')));
+    }
+    rows.push({k:s,a:cell(A[s]),h:cell(H[s]),note:null});
+  });
+  var aFiled=av.teams&&av.teams.away&&av.teams.away.filed, hFiled=av.teams&&av.teams.home&&av.teams.home.filed;
+  rows.push({k:'Report filed',a:aFiled?'yes':'no report filed for this week',h:hFiled?'yes':'no report filed for this week',
+    note:'a team with no rows has not filed, which is not the same as having nobody listed'});
+  note='The league’s own report as nflverse published it'+(av.week!=null?(', week '+av.week):'')+'.';
+  var miss=[];
+  if(!aFiled) miss.push(aName+' has no rows in the latest filed report — carried as unknown, never as healthy.');
+  if(!hFiled) miss.push(hName+' has no rows in the latest filed report — carried as unknown, never as healthy.');
+  reads.push('EdgeDesk’s NFL projection prices no injury term: the report is research context here and moves no number in the spread or total above.');
+  if(miss.length) reads.push(miss.join(' '));
+  return {title:'Injuries and availability',note:note,cols:[aName,hName],rows:rows,reads:reads,missing:miss};
+}
+/* THE SITUATION, and what the model actually pays for it. Rest, a short week,
+   a bye, a dome, the surface and the division are all real inputs to the
+   context model, so each one is shown WITH the points the engine assigned it
+   — and a factor the engine does not price says so instead of being given a
+   number a writer would assume was ours. */
+function fbNflSituationPanel(g,aName,hName,ctxTerms,feats){
+  var rows=[],reads=[];
+  function pts(key){
+    var v=null;(ctxTerms||[]).forEach(function(t){ if(t.key===key) v=t.points; });
+    return v==null?null:fbPts(v)+' pts';
+  }
+  var hr=fbNum(g.home_rest), ar=fbNum(g.away_rest);
+  var dome=(String(g.roof)==='dome'||String(g.roof)==='closed');
+  rows.push({k:'Rest days',a:ar==null?null:String(ar),h:hr==null?null:String(hr),
+    note:'the engine prices the DIFFERENCE, at '+(pts('rest_diff')||'no weight in this fit')});
+  rows.push({k:'Short week',a:(ar!=null&&ar<=5)?'yes':(ar==null?null:'no'),h:(hr!=null&&hr<=5)?'yes':(hr==null?null:'no'),
+    note:'away '+(pts('away_short')||'—')+' · home '+(pts('home_short')||'—')});
+  rows.push({k:'Off a bye',a:(ar!=null&&ar>=12)?'yes':(ar==null?null:'no'),h:(hr!=null&&hr>=12)?'yes':(hr==null?null:'no'),
+    note:'away '+(pts('away_off_bye')||'—')+' · home '+(pts('home_off_bye')||'—')});
+  /* these are facts about the GAME, not about a team, so they span the two
+     columns rather than printing "not on file" in the away half. */
+  var venue=[dome?'indoors':'outdoors',g.surface?String(g.surface):null].filter(Boolean).join(' · ');
+  rows.push({k:'Venue',v:(g.stadium?g.stadium+' · ':'')+(venue||'not on file'),span:true,
+    note:'dome '+(pts('is_dome')||'—')+' · grass '+(pts('grass')||'—')});
+  var t=fbNum(g.temp), w=fbNum(g.wind);
+  rows.push({k:'Weather at kickoff',span:true,
+    v:dome?'indoors — weather is not a factor'
+      :((t!=null||w!=null)?[t!=null?t+'°F':null,w!=null?w+' mph wind':null].filter(Boolean).join(' · ')
+        :'no forecast reached this game — the total model used its neutral defaults'),
+    note:dome?null:'temperature and wind enter the TOTAL model only, never the spread'});
+  rows.push({k:'Division game',v:g.div_game?'yes':'no',span:true,note:pts('div_game')||'no weight in this fit'});
+  if(g.week!=null) rows.push({k:'Week',v:String(g.week),span:true,note:'the model leans less on the trained prior as the season runs'});
+  reads.push('Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.');
+  if(!dome&&t==null&&w==null) reads.push('No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.');
+  var known=feats&&feats.known!=null?feats.known:null;
+  /* newState() stamps every seeded team with 99, so `known` is a sentinel and
+     not a game count. What it can honestly say is whether BOTH teams came out
+     of the trained fit; how much of THIS season is in the ratings is the
+     board's own absorbed count. */
+  if(known!=null&&known<99)
+    reads.push('One of these teams is not in the trained rating seeds and has been rated from '+known+' absorbed game'+(known===1?'':'s')+' only. Read the projection as provisional.');
+  reads.push('The ratings behind this projection are the trained seeds plus '+((FB.nfl.absorbed)||0)+' absorbed '+(FB.nfl.curSeason||'')+' game'+(((FB.nfl.absorbed)||0)===1?'':'s')+'; early in a season that means the prior is still carrying most of the weight.');
+  return {title:'Situation',note:'From the schedule row and the engine’s context model.',cols:[aName,hName],rows:rows,reads:reads};
+}
+/* the engine's feature names, in football. Nothing is renamed to sound
+   better: each label names the quantity the fitted term multiplies. */
+var FB_NFL_DRIVER_LABELS={
+  baseline:'Model baseline — home field and the league constant',
+  net_pts:'Points scored and allowed, opponent-adjusted',
+  net_epa:'Net EPA per play',
+  net_pass:'Net passing EPA',
+  net_rush:'Net rushing EPA',
+  qb_adj_diff:'Quarterback adjustment',
+  rest_diff:'Rest difference',
+  div_game:'Division game',
+  home_short:'Home team on a short week',
+  away_short:'Away team on a short week',
+  home_off_bye:'Home team off a bye',
+  away_off_bye:'Away team off a bye',
+  week_frac:'Point in the season',
+  is_dome:'Indoors',
+  grass:'Grass surface',
+  off_epa_sum:'Both offences, EPA per play',
+  def_epa_sum:'Both defences, EPA allowed per play',
+  pass_matchup:'Passing matchup, both directions',
+  rush_matchup:'Running matchup, both directions',
+  expl_sum:'Explosive plays, both directions',
+  sack_env:'Sack environment',
+  pace_sum:'Combined pace',
+  pts_env:'Combined scoring ratings',
+  temp_c:'Temperature',
+  wind_o:'Wind'
+};
+function fbNflDrivers(contrib,homeName,awayName){
+  if(!contrib) return null;
+  function rows(list,cap){
+    /* a term that rounds to "by 0.0 points" is noise on the page and is not
+         a driver of anything — it is dropped rather than printed as zero. */
+    return (list||[]).filter(function(t){ return t.points!=null&&isFinite(t.points)&&(t.key==='baseline'||Math.abs(t.points)>=0.05); })
+      .sort(function(x,y){ return Math.abs(y.points)-Math.abs(x.points); })
+      .slice(0,cap)
+      .map(function(t){
+        return {points:fbPts(t.points),points_n:t.points,
+          text:(t.label||FB_NFL_DRIVER_LABELS[t.key]||String(t.key).replace(/_/g,' '))
+            +(t.key==='baseline'?'':' — '+(t.points>0?homeName:awayName)+' by '+Math.abs(t.points).toFixed(1)+' points'),
+          favours:t.points>0?homeName:awayName};
+      });
+  }
+  /* the spread number is TWO fitted models added together, so it carries two
+     intercepts. They are named apart rather than printed twice as the same
+     line, and neither is merged away: the published points have to add back
+     up to the projected spread exactly. */
+  function tag(list,label){
+    return (list||[]).map(function(t){
+      return t.key==='baseline'?{key:t.key,points:t.points,label:label}:t;
+    });
+  }
+  var spread=rows(tag(contrib.spread,'Model baseline — the team-strength model’s constant')
+    .concat(tag(contrib.ctx,'Model baseline — the context model’s constant, home field included')),9);
+  var total=rows(contrib.total||[],6);
+  return {rows:spread,total_rows:total,
+    basis:'Both NFL models are linear, so these ARE the model: each line is a fitted weight times the feature it multiplies, from '+homeName+'’s perspective, and they add up to the projected spread exactly.',
+    excluded:'No position-group grade, no coaching input and no injury term appears here, because the NFL model prices none of them. What is below the projection is research context and moves no number in it.',
+    empty:spread.length?null:'The engine published no driver breakdown for this projection.'};
+}
+/* the two football cases, each bullet mapped to a measured state */
+function fbNflCases(o){
+  var m=o.p&&o.p.model, forFav=[], forDog=[], favName, dogName;
+  if(m&&m.fair_spread!=null){ favName=m.fair_spread>=0?o.homeName:o.awayName; dogName=m.fair_spread>=0?o.awayName:o.homeName; }
+  else return null;
+  (o.drivers&&o.drivers.rows||[]).forEach(function(d){
+    if(d.points_n==null||Math.abs(d.points_n)<0.2||/baseline/i.test(d.text)) return;
+    (d.favours===favName?forFav:forDog).push(d.text+' ('+d.points+' pts).');
+  });
+  (o.advantages&&(favName===o.homeName?o.advantages.home:o.advantages.away)||[]).slice(0,3)
+    .forEach(function(a){ forFav.push(a.k+': '+a.text); });
+  (o.advantages&&(dogName===o.homeName?o.advantages.home:o.advantages.away)||[]).slice(0,3)
+    .forEach(function(a){ forDog.push(a.k+': '+a.text); });
+  (o.matchups||[]).forEach(function(x){
+    if(!x.complete||x.net==null) return;
+    if(/pass offence|run offence/.test(x.title)&&Math.abs(x.net)>0.05){
+      var who=x.title.indexOf(favName)===0?favName:dogName;
+      if(who===favName&&x.net>0) forFav.push(x.title+': the pairing sits '+fbNflFmt(x.net,'epa')+' from the league mean.');
+      if(who===dogName&&x.net>0) forDog.push(x.title+': the pairing sits '+fbNflFmt(x.net,'epa')+' from the league mean.');
+    }
+  });
+  if(o.projection&&o.projection.outcome_range){
+    var r=o.projection.outcome_range;
+    forDog.push('The outcome range runs '+r.p10+' to '+r.p90+' for '+r.basis_team
+      +', off the engine’s own learned margin distribution. A projection of '+(o.projection.margin?('about '+o.projection.margin+' points'):'this size')+' still loses outright often.');
+  }
+  if(o.qb&&/NOT CONFIRMED/.test(JSON.stringify(o.qb.rows||[])))
+    forDog.push('At least one starting quarterback is unconfirmed, and the model prices an unconfirmed starter at zero rather than guessing. The number is less settled than it looks.');
+  if(!forFav.length&&!forDog.length) return null;
+  return {favourite:{team:favName,heading:'Why '+favName+' can pull away',bullets:forFav.slice(0,5)},
+    underdog:{team:dogName,heading:'Why '+dogName+' can keep it close',bullets:forDog.slice(0,5)},
+    note:'Football cases assembled from measured states — a fitted driver, a rating gap, a combined matchup or the model’s own range. Neither side is a bet and neither is advice.'};
+}
+/* what could break the number, and what is not measured at all */
+function fbNflUncertainty(o){
+  var items=[],unmeasured=[],p=o.p;
+  var known=(p&&p.features&&p.features.known!=null)?p.features.known:null;
+  if(o.qb){
+    (o.qb.rows||[]).forEach(function(r){
+      if(r.k!=='Confirmation') return;
+      [[r.a,o.awayName],[r.h,o.homeName]].forEach(function(pair){
+        if(pair[0]==='STARTER NOT CONFIRMED')
+          items.push({sev:'HIGH',label:pair[1]+' — starting quarterback unknown',
+            text:'No confirmed starter id for '+pair[1]+'. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.',widening:null});
+      });
+    });
+  }
+  (o.injuries&&o.injuries.missing||[]).forEach(function(t){
+    items.push({sev:'HIGH',label:'availability not on file',text:t,widening:null});
+  });
+  if(known!=null&&known<99)
+    items.push({sev:known<4?'HIGH':'MEDIUM',label:'a team outside the trained seeds',
+      text:'One of these rating states is not in the trained fit and rests on '+known+' absorbed game'+(known===1?'':'s')+' alone. That is a prior with very little evidence on it.',widening:null});
+  var absorbed=(FB.nfl&&FB.nfl.absorbed)||0;
+  if(absorbed<48)
+    items.push({sev:absorbed<16?'HIGH':'MEDIUM',label:'early-season sample',
+      text:'Only '+absorbed+' game'+(absorbed===1?'':'s')+' of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.',widening:null});
+  ((p&&p.data_quality&&p.data_quality.warnings)||[]).forEach(function(w){
+    items.push({sev:'MEDIUM',label:'data quality',text:String(w),widening:null});
+  });
+  var dome=o.g&&(String(o.g.roof)==='dome'||String(o.g.roof)==='closed');
+  if(!dome&&fbNum(o.g&&o.g.temp)==null&&fbNum(o.g&&o.g.wind)==null)
+    items.push({sev:'LOW',label:'weather not supplied',
+      text:'No forecast reached this game, so the total model used its neutral temperature and zero wind. Those defaults are a missing input, not a mild day.',widening:null});
+  var V=null; try{ V=window.EDFootball.meta().validation; }catch(_){}
+  if(V&&V.nfl) items.push({sev:'HIGH',label:'the model does not beat the closing line',
+    text:'Out of sample 2016–2025 this model’s spread MAE is '+V.nfl.spread_mae_model+' against the closing market’s '+V.nfl.spread_mae_closing_market
+      +'. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.',widening:null});
+  unmeasured=[
+    {item:'Offensive-line, receiver, linebacker and secondary grades',
+      why:'EdgeDesk’s position-group player layer is college-only. There is no NFL unit grade in this repo, so the trench and coverage sections report the trench and coverage facts the NFL model does carry — sacks taken, sacks generated, EPA allowed by phase, explosive rates — and claim nothing beyond them.'},
+    {item:'Special teams',why:'the NFL rating state carries no special-teams feature at all. It is absent from the projection and from every comparison above.'},
+    {item:'Coaching, scheme and play-calling tendency',why:'no public feed for it is wired into this model; a new coordinator changes a team in ways these ratings only learn after the fact.'},
+    {item:'Snap counts and personnel packages',why:'not present in the public team-week feed this model reads.'},
+    {item:'Individual player grades',why:'the NFL layer rates TEAMS and quarterbacks. No other individual player carries a rating here.'}
+  ];
+  if(o.injuries&&!(o.injuries.rows||[]).length)
+    unmeasured.push({item:'Who is actually available',why:o.injuries.note||'the injury report did not reach this brief.'});
+  var order={HIGH:0,MEDIUM:1,LOW:2};
+  items.sort(function(x,y){ return order[x.sev]-order[y.sev]; });
+  var seen={},out=[];
+  items.forEach(function(i){ var k=i.label+'|'+i.text; if(seen[k])return; seen[k]=1; out.push(i); });
+  return {items:out.slice(0,14),unmeasured:unmeasured.slice(0,12),
+    note:'Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in.'};
+}
+/* WHERE THIS GAME STANDS, and nothing more. The label describes the state of
+   EdgeDesk's MODEL-VERSUS-MARKET research; it is not a verdict on a bet and
+   it is not a statement about whether the matchup is worth reading about.
+   The bounds are the ones the engine already uses: its own 2-point research
+   threshold and the board's NFL guard bound. */
+function fbNflResearchState(p,mkt){
+  if(!p||p.status!=='PREDICTED')
+    return {label:'NOT PRICED',note:'The game model has not produced a number for this matchup.'};
+  if(!mkt||mkt.spread_line==null)
+    return {label:'NO MARKET',note:'No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.'};
+  var gap=p.market&&p.market.spread_gap!=null?Math.abs(p.market.spread_gap):null;
+  if(gap==null) return {label:'NO MARKET',note:'A market number is on file but it could not be compared with EdgeDesk’s.'};
+  var guard=(window.FB_GUARD&&FB_GUARD.nfl&&FB_GUARD.nfl.game)||14;
+  if(gap>guard) return {label:'DATA FAULT',
+    note:'EdgeDesk and the market are '+gap.toFixed(1)+' points apart, past the '+guard+'-point guard bound. A gap that size is a signal about EdgeDesk’s inputs, not about the game.'};
+  if(gap>=2) return {label:'INVESTIGATE',
+    note:'EdgeDesk differs from the market by '+gap.toFixed(1)+' points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.'};
+  return {label:'AGREEMENT',
+    note:'EdgeDesk and the market are '+gap.toFixed(1)+' points apart, inside the 2-point research threshold. There is nothing unusual to report.'};
+}
+/* the header facts: when, where, what kind of game */
+function fbNflGameHead(g,u,aDisp,hDisp,q){
+  var kick=null;
+  try{ kick=u&&u.t?new Date(u.t).toISOString():(g.gameday?String(g.gameday):null); }catch(_){ kick=null; }
+  if(!kick&&q&&q.t){ try{ kick=new Date(q.t).toISOString(); }catch(_){} }
+  var dome=(String(g.roof)==='dome'||String(g.roof)==='closed');
+  return {away:aDisp,home:hDisp,title:aDisp+' at '+hDisp,
+    when:fbBrWhen(kick),kickoff:kick,
+    venue:g.stadium||null,neutral:false,
+    week:g.week!=null?('Week '+g.week):null,
+    season:g.season!=null?String(g.season):null,
+    conference_line:[dome?'indoors':'outdoors', g.surface?String(g.surface):null,
+      g.div_game?'division game':null].filter(Boolean).join(' · ')||null};
+}
+/* the lede: two to four sentences, every one of them a fact already on this
+   page, assembled from the largest measured differences. No filler. */
+function fbNflLede(o,RK,aCode,hCode){
+  var L=[],st=FB.nfl.state, aN=o.awayName, hN=o.homeName;
+  function m(code,key){ return fbNflMetric(st&&st.team&&st.team[code],key); }
+  function rk(code,key){ return RK&&RK.by[key]?RK.by[key].rank[code]:null; }
+  var ao=m(aCode,'off_epa_play'), ho=m(hCode,'off_epa_play');
+  var ad=m(aCode,'def_epa_play'), hd=m(hCode,'def_epa_play');
+  if(ao!=null&&ho!=null&&ad!=null&&hd!=null){
+    var offLead=ho>=ao?hN:aN, defLead=hd<=ad?hN:aN;
+    L.push(offLead+' carries the stronger EdgeDesk offensive profile'
+      +(rk(offLead===hN?hCode:aCode,'off_epa_play')?(' (#'+rk(offLead===hN?hCode:aCode,'off_epa_play')+' in EPA per play)'):'')
+      +(defLead===offLead
+        ? ' and the better defensive rating with it, so the ratings point the same way on both sides of the ball.'
+        : ', while '+defLead+' owns the more favourable defensive matchup'
+          +(rk(defLead===hN?hCode:aCode,'def_epa_play')?(' (#'+rk(defLead===hN?hCode:aCode,'def_epa_play')+' in EPA allowed per play)'):'')+'.'));
+  } else if(ao!=null||ho!=null){
+    L.push((ao!=null?aN:hN)+' carries a full EdgeDesk NFL rating; the other side is not in the rating state, so the comparison is one-sided by construction.');
+  }
+  if(o.projection&&o.projection.priced){
+    var mg=+o.projection.margin;
+    L.push('EdgeDesk’s independent projection makes it '+o.projection.fair_spread_text
+      +(o.projection.total?(' with a fair total of '+o.projection.total):'')
+      +(mg<=3?' — approximately a one-score game':(mg<=7?' — inside a touchdown':''))
+      +', before any sportsbook number is consulted.');
+  } else if(o.projection){
+    L.push('EdgeDesk has not priced this matchup — '+o.projection.absent_reason+'. The team, matchup and personnel research below is unaffected by that and stands on its own.');
+  }
+  var big=(o.matchups||[]).filter(function(x){ return x.complete&&x.net!=null; })
+    .sort(function(x,y){ return Math.abs(y.net)-Math.abs(x.net); })[0];
+  if(big) L.push('The widest measured matchup on the board is '+big.title
+    +', which sits '+fbNflFmt(big.net,'epa')+' from the league mean once the two ratings are combined the way the model combines them.');
+  var unconfirmed=[];
+  ((o.qb&&o.qb.rows)||[]).forEach(function(r){
+    if(r.k!=='Confirmation') return;
+    if(r.a==='STARTER NOT CONFIRMED') unconfirmed.push(aN);
+    if(r.h==='STARTER NOT CONFIRMED') unconfirmed.push(hN);
+  });
+  if(unconfirmed.length) L.push('The largest uncertainty is quarterback information: '
+    +unconfirmed.join(' and ')+(unconfirmed.length>1?' have':' has')+' no confirmed starter on file, which materially affects how much confidence the exact number deserves.');
+  else if(o.injuries&&(o.injuries.missing||[]).length) L.push('The largest uncertainty is availability: '+o.injuries.missing[0]);
+  return L.slice(0,4);
+}
+/* find the schedule row for a matchup, from the board the NFL module already
+   loaded. Names, codes and either order all resolve. */
+function fbNflFindGame(home,away){
+  var S=FB.nfl;
+  if(!S) return null;
+  /* FB_NFL_NAMES lives in THIS scope, not on window — reaching for it through
+     window returned undefined, every lookup fell through to the raw display
+     name, fbNflTeamCode() rejected it, and the builder returned null for
+     every game. The names are read directly. */
+  function code(x){
+    try{ return fbNflTeamCode(FB_NFL_NAMES[x]||x); }catch(_){ return null; }
+  }
+  var hc=code(home), ac=code(away);
+  if(!hc||!ac) return null;
+  var hit=null;
+  [].concat(S.up||[],S.games||[]).forEach(function(u){
+    if(hit||!u||!u.g) return;
+    if(u.g.home_team===hc&&u.g.away_team===ac) hit={u:u,flipped:false};
+    else if(u.g.home_team===ac&&u.g.away_team===hc) hit={u:u,flipped:true};
+  });
+  return hit;
+}
+/* ═══ ONE PAYLOAD, EVERY NFL RENDERER ═════════════════════════════════════
+   The game modal, the publisher brief, the TNF/SNF/MNF presets, the print
+   page and the share card all read THIS. None of them does its own
+   arithmetic, and `market` is a field on it that is allowed to be null.
+   ═════════════════════════════════════════════════════════════════════════ */
+function fbNflBriefGame(q){
+  try{
+    if(!q) return null;
+    var S=FB.nfl;
+    var homeName=q.home||'', awayName=q.away||'';
+    var hit=fbNflFindGame(homeName,awayName);
+    if(!hit) return null;
+    var g=hit.u.g, u=hit.u;
+    /* the brief may have been opened from the other side of the matchup; the
+       schedule row is the model's frame of reference and stays that way. */
+    var hCode=g.home_team, aCode=g.away_team;
+    var hDisp=FB_CODE_NAMES[hCode]||hCode, aDisp=FB_CODE_NAMES[aCode]||aCode;
+    var M=null; try{ M=fbNflMarketFor(g,u.t); }catch(_){ M=null; }
+    var mkt=(M&&M.mkt)||{};
+    var p=null;
+    try{ p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season)); }catch(_){ p=null; }
+    var priced=!!(p&&p.status==='PREDICTED');
+    var RK=fbNflRanks();
+    var meta=null; try{ meta=window.EDFootball.meta(); }catch(_){}
+    var notes=[], missing=[], score=null, headline=null;
+
+    /* ---- 1. THE PROJECTION. Published whenever the model produced one, and
+         never gated on whether a book has posted. ---- */
+    var projection;
+    if(priced){
+      var m=p.model;
+      var sc=fbGxScore({fair_total:m.fair_total,fair_spread:m.fair_spread});
+      var favHome=m.fair_spread>=0;
+      var hwp=m.home_win_prob==null?null:Math.round(m.home_win_prob*100);
+      var R=p.outcome_range;
+      var scoreAbsent=null;
+      if(!sc){
+        scoreAbsent=(m.fair_total==null)
+          ? 'No fair total published — EdgeDesk can price the side but cannot responsibly split it into a projected score.'
+          : 'The projected margin is wider than the projected total, so splitting it would put a negative number on one side. EdgeDesk publishes neither half rather than a score that could not have happened.';
+        missing.push('No projected score: '+scoreAbsent.charAt(0).toLowerCase()+scoreAbsent.slice(1));
+      }
+      projection={
+        priced:true,
+        fair_spread:m.fair_spread,
+        fair_spread_text:fbBrLine(hDisp,m.fair_spread),
+        favourite:favHome?hDisp:aDisp, underdog:favHome?aDisp:hDisp,
+        margin:Math.abs(m.fair_spread).toFixed(1),
+        total:m.fair_total==null?null:m.fair_total.toFixed(1),
+        score:sc?{away:{team:aDisp,points:String(sc.away)},home:{team:hDisp,points:String(sc.home)},
+          note:'Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score.'}:null,
+        score_absent_reason:scoreAbsent,
+        win_prob:hwp==null?null:{home:hDisp,away:aDisp,home_pct:hwp,away_pct:100-hwp,
+          favourite:hwp>=50?hDisp:aDisp,favourite_pct:Math.max(hwp,100-hwp)},
+        moneyline:(m.fair_home_ml!=null&&m.fair_away_ml!=null)?{
+          home:hDisp,away:aDisp,
+          home_odds:(m.fair_home_ml>0?'+':'')+m.fair_home_ml,
+          away_odds:(m.fair_away_ml>0?'+':'')+m.fair_away_ml,
+          note:'EdgeDesk’s own fair price, with no margin in it. It is not a quote and nobody offers it.'}:null,
+        outcome_range:R?{basis_team:hDisp,
+          p10:fbPts(R.q['0.1']),median:fbPts(R.q['0.5']),p90:fbPts(R.q['0.9']),
+          sigma:R.sigma==null?null:(+R.sigma).toFixed(1),
+          note:'Quoted from the perspective of '+hDisp+', off the engine’s own learned margin distribution ('
+            +(R.basis==='margin_pmf_by_spread'?'conditioned on this spread, so real key-number mass is kept':'the pooled residual table, because this spread sits outside the conditioned range')
+            +'). Eight results in ten land inside p10–p90.'}:null,
+        /* THE NFL MODEL PUBLISHES NO SINGLE CONFIDENCE SCORE. Inventing a
+           percentage to fill the tile is the one thing this brief must never
+           do, so the tile states what the model DOES publish about how much
+           it knows: the width of its own outcome range, and the sample the
+           ratings rest on. */
+        confidence_pct:null,
+        confidence_absent_reason:'The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through '
+          +((meta&&meta.nfl&&meta.nfl.trained_through)||'the last trained season')+', plus '+((FB.nfl.absorbed)||0)+' absorbed '+(FB.nfl.curSeason||'')+' game'+(((FB.nfl.absorbed)||0)===1?'':'s')+'.',
+        sample_games:(FB.nfl.absorbed==null?null:FB.nfl.absorbed),
+        seeded:!!(p.features&&p.features.known!=null&&p.features.known>=99),
+        status:null,status_note:null,
+        engine:'EdgeDesk NFL game model'+(p.model_version?' '+p.model_version:''),
+        validation:'UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet.'
+      };
+      var stt=fbNflResearchState(p,mkt);
+      projection.status=stt.label; projection.status_note=stt.note;
+    } else {
+      projection={priced:false,
+        absent_reason:(p&&p.status)
+          ? (String(p.status).replace(/_/g,' ').toLowerCase()+': '+((p.reason||'')+((p.missing&&p.missing.length)?(' ('+p.missing.join(', ')+')'):''))).replace(/:\s*$/,'')
+          : 'the game model has not produced a number for this matchup',
+        note:'EdgeDesk has not priced this matchup. The team ratings, matchups, quarterback and injury research below come from the rating state and the league’s own report, and do not depend on the game model.'};
+    }
+
+    /* ---- 2. WHY EDGEDESK PRICES IT HERE ---- */
+    var drivers=priced?fbNflDrivers(p.contributions,hDisp,aDisp):null;
+
+    /* ---- 3. THE TEAMS, HEAD TO HEAD ---- */
+    var groupOrder=['Team strength','Offence','Defence','Trenches','Tendency and pace'];
+    var byGroup={};
+    FB_NFL_METRICS.forEach(function(mm){
+      var row=fbNflCmpRow(aCode,hCode,mm,RK);
+      if(row.a.v==null&&row.h.v==null&&!row.a.note&&!row.h.note) return;
+      (byGroup[mm[2]]=byGroup[mm[2]]||[]).push(row);
+    });
+    var groups=groupOrder.filter(function(t){ return byGroup[t]&&byGroup[t].length; })
+      .map(function(t){ return {title:t,rows:byGroup[t]}; });
+    var allRows=[]; groups.forEach(function(gp){ gp.rows.forEach(function(r){ allRows.push(r); }); });
+    var st=FB.nfl.state;
+    var compare={cols:[aDisp,hDisp],groups:groups,
+      one_sided_team:(st&&st.team&&!st.team[aCode]&&st.team[hCode])?aDisp:((st&&st.team&&!st.team[hCode]&&st.team[aCode])?hDisp:null),
+      one_sided_note:null};
+    if(compare.one_sided_team) compare.one_sided_note=compare.one_sided_team+' is not in EdgeDesk’s NFL rating state, so its column is empty by construction. Every metric EdgeDesk does hold for the other side is still shown.';
+
+    /* ---- 4-6. ADVANTAGES, MATCHUPS, PANELS ---- */
+    var advantages=fbBrAdvantages(allRows,aDisp,hDisp,st&&st.team&&st.team[aCode],st&&st.team&&st.team[hCode],'league');
+    advantages.note='An advantage is only claimed where BOTH teams carry a league rank in that category — the rank is the one scale on which a pass defence and a run offence are comparable. A tendency (pass rate, pace) is never an advantage in either direction.';
+    var matchups=fbNflMatchups(aCode,hCode,aDisp,hDisp,RK);
+    var qb=fbNflQbPanel(g,aDisp,hDisp,priced?(p.contributions&&p.contributions.spread):null);
+    var injuries=fbNflInjuryPanel(aDisp,hDisp,aCode,hCode);
+    var situation=fbNflSituationPanel(g,aDisp,hDisp,priced?(p.contributions&&p.contributions.ctx):null,priced?p.features:null);
+    var panels=[qb,injuries,situation].filter(Boolean);
+
+    /* ---- 7-8. CASES AND UNCERTAINTY ---- */
+    var ctxObj={p:priced?p:null,g:g,awayName:aDisp,homeName:hDisp,projection:projection,
+      drivers:drivers,advantages:advantages,matchups:matchups,qb:qb,injuries:injuries,compare:compare};
+    var cases=fbNflCases(ctxObj);
+    var uncertainty=fbNflUncertainty(ctxObj);
+
+    /* ---- 9. THE MARKET. LAST, OPTIONAL, AND NOTHING ABOVE IT READS IT. ---- */
+    var market;
+    /* A BOOK NUMBER IS REPORTED WHENEVER ONE EXISTS. Gating it on the MODEL
+       having priced the game would have hidden the one fact a reader can
+       still check — and the block is careful to print it as the BOOK's
+       number, with EdgeDesk publishing none of its own beside it. */
+    if(mkt&&(mkt.spread_line!=null||mkt.total_line!=null)){
+      var ageH=null;
+      if(mkt.at){ var ms=Date.parse(mkt.at); if(isFinite(ms)) ageH=Math.max(0,Math.round((Date.now()-ms)/3600e3)); }
+      var bk=mkt.spread_book||mkt.total_book||(M&&M.src)||null;
+      market={available:true,
+        model:priced?fbBrLine(hDisp,p.model.fair_spread):null,
+        market:mkt.spread_line==null?null:fbBrLine(hDisp,mkt.spread_line),
+        difference:(priced&&p.market.spread_gap!=null)?(Math.abs(p.market.spread_gap).toFixed(1)+' points'):null,
+        total_model:(priced&&p.model.fair_total!=null)?p.model.fair_total.toFixed(1):null,
+        total_market:mkt.total_line==null?null:(+mkt.total_line).toFixed(1),
+        total_difference:(priced&&p.market.total_gap!=null)?(Math.abs(p.market.total_gap).toFixed(1)+' points'):null,
+        book:bk,capture_age:ageH==null?null:(ageH+' hour'+(ageH===1?'':'s')+' old'),
+        stale:false,
+        classification:priced?projection.status:'NOT PRICED',
+        classification_note:priced?projection.status_note:'EdgeDesk has not priced this matchup, so there is nothing to compare the book’s number against.',
+        reference:(M&&M.src==='nflverse reference')?'These are nflverse consensus reference numbers, not a live bettable quote.':null,
+        note:priced
+          ? 'EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close.'
+          : 'This is the BOOK’s number. EdgeDesk publishes none of its own for this game, and a sportsbook’s line is never adopted as EdgeDesk’s projection to fill the gap.'};
+    } else {
+      market={available:false,
+        model:priced?fbBrLine(hDisp,p.model.fair_spread):null,
+        total_model:priced&&p.model.fair_total!=null?p.model.fair_total.toFixed(1):null,
+        headline:'No sportsbook spread is currently joined to this game.',
+        note:priced
+          ? 'There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else.'
+          : 'There is no market number and no model number for this game yet. The team and matchup research above is read from the rating state and does not depend on either.'};
+    }
+    var state=priced
+      ? {label:projection.status,note:projection.status_note,
+         scope:'This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching.'}
+      : {label:'NOT PRICED',note:'EdgeDesk has not priced this matchup — '+projection.absent_reason+'.',
+         scope:'This describes the state of the game model only. The team, matchup, quarterback and injury research above is unaffected.'};
+
+    /* ---- the legacy prose fields, so the flat renderer still works ---- */
+    var flat=allRows.map(function(r){
+      return {k:r.k,a:r.a.v==null?null:(r.a.v+(r.a.rank?'  '+r.a.rank:'')),
+        h:r.h.v==null?null:(r.h.v+(r.h.rank?'  '+r.h.rank:'')),note:r.note};
+    });
+    if(priced){
+      if(projection.score){
+        score=projection.score;
+        var hp=+score.home.points, ap=+score.away.points;
+        headline='EdgeDesk projects '+(hp>=ap?hDisp+' '+hp+', '+aDisp+' '+ap:aDisp+' '+ap+', '+hDisp+' '+hp)+'.';
+      }
+      notes.push('EdgeDesk’s line is '+projection.fair_spread_text+' with a fair total of '+(projection.total||'—')+', before any book is consulted.');
+      if(projection.win_prob) notes.push(hDisp+' wins '+projection.win_prob.home_pct+'% of the time in EdgeDesk’s distribution, '+aDisp+' '+projection.win_prob.away_pct+'%.');
+      if(!market.available) notes.push('No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.');
+    }
+    if(!headline){
+      var na=fbNflMetric(st&&st.team&&st.team[aCode],'net_epa'), nh=fbNflMetric(st&&st.team&&st.team[hCode],'net_epa');
+      if(na!=null&&nh!=null){
+        var lead=nh>=na?hDisp:aDisp;
+        headline='On net EPA per play, '+lead+' is the better-rated team of the two before home field, rest or the quarterback matchup.';
+      } else headline='EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.';
+    }
+    var lede=fbNflLede(ctxObj,RK,aCode,hCode);
+    return {
+      kind:'NFL_GAME',
+      game:fbNflGameHead(g,u,aDisp,hDisp,q),
+      lede:lede,
+      projection:projection,
+      drivers:drivers,
+      compare:compare,
+      advantages:advantages,
+      matchups:matchups,
+      panels:panels,
+      cases:cases,
+      uncertainty:uncertainty,
+      market:market,
+      headline:headline,state:state,score:score,
+      table:{cols:[aDisp,hDisp],rows:flat},
+      notes:notes,missing:missing,
+      priced_label:'PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.',
+      context_label:'RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.',
+      source:'Ratings: EdgeDesk’s NFL rating state — trained seeds through '+((meta&&meta.nfl&&meta.nfl.trained_through)||'?')
+        +' plus '+((FB.nfl.absorbed)||0)+' absorbed '+(FB.nfl.curSeason||'')+' games, opponent-adjusted from the public nflverse team-week feed. '
+        +'Projection: the same '+((meta&&meta.model_version)||'EdgeDesk')+' call the game card makes. Nothing on this page was computed in your browser twice.'
+    };
+  }catch(_){ return null; }
+}
+function fbNflBriefResearch(q){ return fbNflBriefGame(q); }
+/* THE BRIEF LAYER WAITS FOR THE BOARD, exactly as the college brief waits for
+   the rankings artifact. Without the rating state and the schedule row there
+   is no NFL research to carry, and an NFL brief that quietly fell back to the
+   market-only page is the whole failure this work exists to remove. Already
+   loaded resolves immediately; a load in flight is joined rather than
+   restarted; a failure resolves anyway so the brief still draws. */
+function fbNflEnsure(){
+  if(FB.nfl&&FB.nfl.state&&(FB.nfl.up||[]).length) return Promise.resolve(true);
+  if(FB.loading) return FB.loading.then(function(){return true;},function(){return false;});
+  try{ var p=window.loadFootball(false); return (p&&p.then)?p.then(function(){return true;},function(){return false;}):Promise.resolve(true); }
+  catch(_){ return Promise.resolve(false); }
 }
 /* ═══ THE WEEK'S RANKINGS, AS A PAGE A PUBLISHER CAN PRINT ═════════════════
    The same board, laid out for someone who is going to read it once and

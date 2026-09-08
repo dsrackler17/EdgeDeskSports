@@ -114,6 +114,70 @@ function boot(opts) {
   return { win: win, module: src.module, rest: src.rest, app: src.app, stubbed: stubbed, error: error, root: root };
 }
 
+/* The committed NFL/CFB engine and its trained parameters, into the same
+   context — the two files fbEnsure() fetches in a browser. window.EDFootball
+   is what fbPredict() calls, so a test that loads this is exercising the real
+   projection path rather than a stand-in. */
+function loadNflEngine(win, root) {
+  root = root || ROOT;
+  vm.runInContext(fs.readFileSync(path.join(root, 'football', 'params.js'), 'utf8'), win, { filename: 'football/params.js' });
+  win.module = { exports: {} };
+  vm.runInContext(fs.readFileSync(path.join(root, 'football', 'engine.js'), 'utf8'), win, { filename: 'football/engine.js' });
+  delete win.module;
+  if (!win.EDFootball || !win.EDFootballParams) throw new Error('the football engine loaded but its globals are missing');
+  return win.EDFootball;
+}
+
+/* Put ONE NFL game on the board, exactly as fbLoadNfl() leaves it: a schedule
+   row in FB.nfl.up and a fresh rating state from the shipped seeds. NOTHING
+   IS PROJECTED HERE — fbNflBriefGame() calls fbPredict() itself, through the
+   module's own fbNflGameReq() and fbNflMarketFor(), so the wiring under test
+   is the wiring the browser runs. `market` joins a captured quote the way
+   fbNflMarketFor reads one; omit it for a game no book has posted. */
+function stageNflGame(win, opts) {
+  const S = win.FB.nfl;
+  const g = {
+    game_id: opts.game_id || 'NFLTEST1', season: opts.season || 2026,
+    week: opts.week == null ? 1 : opts.week, game_type: 'REG',
+    gameday: (opts.start_date || '2026-09-10T00:35:00.000Z').slice(0, 10),
+    home_team: opts.home, away_team: opts.away,
+    home_score: null, away_score: null,
+    home_rest: opts.home_rest == null ? 7 : opts.home_rest,
+    away_rest: opts.away_rest == null ? 7 : opts.away_rest,
+    roof: opts.roof || 'outdoors', surface: opts.surface || 'grass',
+    div_game: opts.div_game == null ? 1 : opts.div_game,
+    temp: opts.temp == null ? null : opts.temp, wind: opts.wind == null ? null : opts.wind,
+    stadium: opts.stadium || 'Test Stadium',
+    home_qb_id: opts.home_qb_id === undefined ? null : opts.home_qb_id,
+    away_qb_id: opts.away_qb_id === undefined ? null : opts.away_qb_id,
+    home_qb_name: opts.home_qb_name || null, away_qb_name: opts.away_qb_name || null,
+    /* the nflverse consensus columns the schedule row itself carries — the
+       second of the two market paths fbNflMarketFor() reads. */
+    spread_line: opts.spread_line == null ? null : opts.spread_line,
+    total_line: opts.total_line == null ? null : opts.total_line,
+    home_moneyline: opts.home_moneyline == null ? null : opts.home_moneyline,
+    away_moneyline: opts.away_moneyline == null ? null : opts.away_moneyline
+  };
+  const u = { g: g, t: Date.parse(opts.start_date || '2026-09-10T00:35:00.000Z'), week: g.week, done: false };
+  if (!S.state) S.state = win.EDFootball.nfl.newState();
+  S.curSeason = g.season;
+  S.up = [u];
+  S.games = [u];
+  S.sig = {};
+  win.FB._pred = {};                       /* fbPredict caches per game+market */
+  if (opts.market) {
+    /* the shape fbNflMarketFor() matches on: FULL display names, not codes.
+       FB_CODE_NAMES is module-scoped, so the map is passed in by the caller
+       or read off the booted module's own probe. */
+    S.sig['t:' + g.game_id] = Object.assign({
+      home: (opts.names || {})[g.home_team] || g.home_team,
+      away: (opts.names || {})[g.away_team] || g.away_team,
+      t: new Date(u.t).toISOString()
+    }, opts.market);
+  }
+  return u;
+}
+
 /* The committed Power 4 engine and its trained parameters, into the same
    context — the two files fbP4Ensure() fetches in a browser. */
 function loadEngine(win, root) {
@@ -164,4 +228,4 @@ function stageGame(win, opts) {
   return u;
 }
 
-module.exports = { ROOT, boot, loadEngine, stageGame, moduleSource, stubWindow, stubElement };
+module.exports = { ROOT, boot, loadEngine, stageGame, loadNflEngine, stageNflGame, moduleSource, stubWindow, stubElement };

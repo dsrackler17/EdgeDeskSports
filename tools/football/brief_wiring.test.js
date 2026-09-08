@@ -110,7 +110,8 @@ if (typeof win.fbBriefResearch === 'function' && win.FB && win.FB.rk) {
 
 /* ═══ 5. the callers name exactly these symbols ══════════════════════════ */
 section('5. the brief layer asks for the names the module exports');
-[['researchFor', /var build=window\.fbBriefGame\|\|window\.fbBriefResearch;/],
+[['researchFor (college)', /window\.fbBriefGame\|\|window\.fbBriefResearch/],
+ ['researchFor (NFL)', /window\.fbNflBriefGame\|\|window\.fbNflBriefResearch/],
  ['openGame', /window\.fbRkEnsure && !\(window\.FB&&FB\.rk&&FB\.rk\.data\)/],
  ['openRankings', /window\.fbBriefRankings\?window\.fbBriefRankings\(/]].forEach(function (pair) {
   ok(pair[1].test(REST), pair[0] + ' reaches across the boundary by the exported name');
