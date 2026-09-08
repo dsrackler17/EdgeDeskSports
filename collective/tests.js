@@ -582,14 +582,16 @@ if (typeof sandbox.teamKey === 'function') {
     })());
   chk('two models in one sport count once',
     S.creatorSports([{ sport: 'NFL' }, { sport: 'NFL' }]).length === 1);
-  chk('a declared sport is marked as not yet posted',
-    (function () {
-      var c = S.creatorSports([{ sport: 'NFL' }], ['CFB']);
-      var cfb = c.filter(function (x) { return x.family === 'CFB'; })[0];
-      return c.length === 2 && cfb && cfb.posted === false;
-    })());
-  chk('declaring a sport you already post for does not duplicate it',
-    S.creatorSports([{ sport: 'NFL' }], ['NFL']).length === 1);
+  /* What a creator covers has ONE source now: their models. It used to take a
+     second, browser-local list of "sports I plan to cover", which existed only
+     because covering a new sport meant asking somebody to create a model. A
+     tick creates the model, so a planned sport and a covered sport are the same
+     thing — and what a creator sees no longer depends on which browser they
+     opened the dashboard in. */
+  chk('there is no second, browser-local source of covered sports',
+    S.creatorSports([{ sport: 'NFL' }], ['CFB']).length === 1
+    && typeof S.declaredSports === 'undefined',
+    { len: S.creatorSports([{ sport: 'NFL' }], ['CFB']).length });
   chk('a creator with no models covers nothing',
     S.creatorSports([]).length === 0 && S.creatorSports(null).length === 0);
 
@@ -636,6 +638,64 @@ if (typeof sandbox.teamKey === 'function') {
   chk('a model registered under NCAAF still carries a CFB file',
     S.sportFamily('NCAAF') === S.sportFamily('CFB'),
     'the server may name the sport either way; the family is what matches');
+
+  /* ---- the sport decides which model a slate goes under ----------------
+     THE BUG. collective_ingest chose the model from the envelope's `model`
+     field alone: name nothing, own exactly one model, and whatever sport the
+     slate said it was, it was filed under that one model. A contributor with a
+     college model posting an NFL slate had every NFL game looked up in the
+     COLLEGE schedule and every row came back unmatched. The dashboard's answer
+     was to tell them to ask the operator for a model.
+
+     The rule now, on both sides: the sport decides, a model in a different
+     sport never wins, and a sport with no model gets one. */
+  chk('a CFB-only account posting an NFL slate is told to create an NFL model, not to use the CFB one',
+    (function () {
+      var r = S.slateModelForSport([{ model_slug: 'me-p4', sport: 'NCAAF' }], 'NFL');
+      return r.create === 'NFL' && !r.model;
+    })());
+  chk('and the same account posting a CFB slate uses the model it already has',
+    (function () {
+      var r = S.slateModelForSport([{ model_slug: 'me-p4', sport: 'NCAAF' }], 'CFB');
+      return r.model && r.model.model_slug === 'me-p4';
+    })(),
+    'the server spells it NCAAF and the file says CFB: one sport, one model');
+  chk('every alias of a sport reaches the same model, so no alias can make a second one',
+    ['CFB', 'NCAAF', 'ncaaf', 'College Football', 'CFB-P4'].every(function (code) {
+      var r = S.slateModelForSport([{ model_slug: 'me-p4', sport: 'NCAAF' }], code);
+      return r.model && r.model.model_slug === 'me-p4';
+    }));
+  chk('an account with both models sends each slate to its own',
+    (function () {
+      var ms = [{ model_slug: 'me-nfl', sport: 'NFL' }, { model_slug: 'me-p4', sport: 'NCAAF' }];
+      return S.slateModelForSport(ms, 'NFL').model.model_slug === 'me-nfl'
+        && S.slateModelForSport(ms, 'CFB').model.model_slug === 'me-p4';
+    })());
+  chk('picking the WRONG sport\u2019s model in the box does not override the file',
+    (function () {
+      var ms = [{ model_slug: 'me-nfl', sport: 'NFL' }, { model_slug: 'me-p4', sport: 'NCAAF' }];
+      return S.slateModelForSport(ms, 'NFL', 'me-p4').model.model_slug === 'me-nfl';
+    })(),
+    'posting NFL rows under a college model quarantines every one of them');
+  chk('but a choice between two models in the RIGHT sport is honoured',
+    (function () {
+      var ms = [{ model_slug: 'nfl-a', sport: 'NFL' }, { model_slug: 'nfl-b', sport: 'NFL' }];
+      return S.slateModelForSport(ms, 'NFL', 'nfl-b').model.model_slug === 'nfl-b';
+    })());
+  chk('and two models in one sport with no choice made is asked about, never guessed',
+    (function () {
+      var ms = [{ model_slug: 'nfl-a', sport: 'NFL' }, { model_slug: 'nfl-b', sport: 'NFL' }];
+      var r = S.slateModelForSport(ms, 'NFL');
+      return !r.model && r.ambiguous && r.ambiguous.length === 2;
+    })());
+  chk('an account with nothing at all gets a model for whatever it posts',
+    S.slateModelForSport([], 'NFL').create === 'NFL'
+    && S.slateModelForSport(null, 'CFB').create === 'CFB');
+  chk('a slate with no sport at all is never filed under a guess',
+    (function () {
+      var r = S.slateModelForSport([{ model_slug: 'me-nfl', sport: 'NFL' }], '');
+      return !r.model && !r.create;
+    })());
 
   /* ---- the server owns the sport vocabulary --------------------------- */
   chk('a detected sport is translated into the code THIS server uses',

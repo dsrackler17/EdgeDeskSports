@@ -2233,69 +2233,256 @@ var S=sandbox;
     delete S.MCOdds;delete S.window.MCOdds;
   }
 
-  /* ---- the statement that adds a model for a second sport ---------------
-     The Collective's API exposes no model creation, so a creator who wants a
-     second sport gets a statement somebody runs. It lives inside
-     renderCreatorDash, which is why nothing had ever executed it: its miss
-     path -- the branch that fires when the creator row cannot be found, the
-     one moment it has something to say -- carried `%%` where placeholders
-     were meant and `%I`, which is format()'s and not RAISE's. One placeholder,
-     two arguments, and the whole statement dies with "too many parameters
-     specified for RAISE" instead of naming the creator it could not find. */
+  /* ---- THE WHOLE PATH, DRIVEN --------------------------------------------
+     Reading the source proves the branch exists. This drives it: the real
+     ensureModelForSport and the real renderCreatorDash, against a stubbed
+     backend, so the trace the fix is about is executed rather than asserted.
+
+       contributor selects NFL -> the signed-in account is resolved from the
+       session token -> NFL is normalised -> the contributor's NFL model is
+       get-or-created -> it comes back and the dashboard shows it
+
+     Three backends are driven, because a deployment may be any of them: the
+     database routine installed, the routine absent with collective_join
+     carrying the route, and neither. */
   {
-    var src=(function(){
-      var i=APPSRC.indexOf('function addModelSQL(');
-      if(i<0)return null;
-      var j=APPSRC.indexOf('end $$;', i);
-      if(j<0)return null;
-      var k=APPSRC.indexOf('}', j);
-      return k<0?null:APPSRC.slice(i,k+1);
-    })();
-    chk('addModelSQL is found in the page', !!src);
-    if(src){
-      var mk=new Function('sportDef','esc',src+'\nreturn addModelSQL;')(S.sportDef,S.esc);
-      var sql=mk('blerm','blerm','NFL');
-      chk('it names the creator, the sport and a model slug for both',
-        sql.indexOf('blerm')>=0&&sql.indexOf('NFL')>=0&&/blerm-nfl/.test(sql),{sql:sql.slice(0,200)});
-      chk('every RAISE in it gets one argument per placeholder',
-        raiseArity(sql).length===0,{bad:raiseArity(sql)});
-      chk('and it no longer writes %% or %I where RAISE reads only %',
-        !/raise [^\n]*%%/.test(sql)&&!/raise [^\n]*%I/.test(sql),
-        {line:(/raise exception[^\n]*/.exec(sql)||[])[0]});
-      chk('it finds the schema rather than assuming public',
-        /information_schema\.tables/.test(sql)&&sql.indexOf('public.')<0);
-      chk('it stops instead of attaching the model to whoever it can find',
-        /no creator row matched/.test(sql)&&!/limit 1\s*\)\s*$/.test(sql));
-      chk('and it will not duplicate a model the creator already has',
-        /where not exists/.test(sql));
+    var realF=S.fetch, seen=[];
+    /* A signed-in session, because the whole point is that the account comes
+       from the token and never from the request body. */
+    S.localStorage.setItem('collective_session',JSON.stringify({
+      access_token:'x.'+Buffer.from(JSON.stringify({sub:'aaaaaaaa-1111-2222-3333-444444444444'})).toString('base64')+'.y',
+      refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+    function stub(mode){
+      return function(url,opts){
+        var u=String(url),body=null;
+        try{body=opts&&opts.body?JSON.parse(opts.body):null;}catch(_){}
+        seen.push({url:u,method:(opts&&opts.method)||'GET',body:body,
+          auth:(opts&&opts.headers&&(opts.headers.authorization||opts.headers.Authorization))||null});
+        if(u.indexOf('/rest/v1/rpc/collective_model_ensure')>=0){
+          if(mode==='no-rpc'||mode==='none')return Promise.resolve({ok:false,status:404,
+            json:function(){return Promise.resolve({code:'PGRST202',
+              message:'Could not find the function public.collective_model_ensure'});}});
+          if(mode==='refused')return Promise.resolve({ok:true,status:200,
+            json:function(){return Promise.resolve({ok:false,code:'no_creator',
+              message:'This account has no active contributor profile, so there is nothing to add a model to.'});}});
+          return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({
+            ok:true,created:true,already:false,
+            model:{model_slug:'blizzard-performance-nfl',model_name:'Blizzard Performance NFL',sport:'NFL'}});}});
+        }
+        if(u.indexOf('/collective_join/v1/models')>=0){
+          if(mode==='none')return Promise.resolve({ok:false,status:404,
+            json:function(){return Promise.resolve({error:{code:'not_found',message:'No such route'}});}});
+          return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({
+            already:false,model:{model_slug:'bp-nfl-via-fn',model_name:'BP NFL',sport:'NFL'}});}});
+        }
+        return realF(url,opts);
+      };
     }
+
+    /* 1. THE DATABASE ROUTINE. The path a migrated project takes. */
+    S.fetch=stub('rpc');seen.length=0;
+    var made=await S.ensureModelForSport('NFL');
+    chk('selecting NFL creates an NFL model and hands it straight back',
+      made&&made.model_slug==='blizzard-performance-nfl'&&made.sport==='NFL'&&made.created===true,
+      made);
+    chk('it went to the database routine first',
+      seen.length===1&&/\/rest\/v1\/rpc\/collective_model_ensure$/.test(seen[0].url)
+      &&seen[0].method==='POST', seen.map(function(x){return x.url;}));
+    chk('it sent only the sport',
+      seen[0].body&&seen[0].body.p_sport==='NFL'&&Object.keys(seen[0].body).length===1,
+      seen[0].body);
+    chk('and NOTHING in the request names a creator, an account or a user',
+      !/creator|user_id|"sub"/i.test(JSON.stringify(seen[0].body)), seen[0].body);
+    chk('the signed-in account travels as the session token, which is what the database reads',
+      /^Bearer /.test(seen[0].auth||''), seen[0].auth);
+    S.fetch=stub('rpc');seen.length=0;
+    await S.ensureModelForSport('NFL','My NFL Model');
+    chk('a name the contributor typed is passed through when they gave one',
+      seen[0].body.p_model_name==='My NFL Model', seen[0].body);
+
+    /* Idempotent: asking again is not an error and does not read as one. */
+    S.fetch=function(url,opts){
+      var u=String(url);
+      if(u.indexOf('collective_model_ensure')>=0)return Promise.resolve({ok:true,status:200,
+        json:function(){return Promise.resolve({ok:true,created:false,already:true,
+          model:{model_slug:'blizzard-performance-nfl',model_name:'Blizzard Performance NFL',sport:'NFL'}});}});
+      return realF(url,opts);
+    };
+    var again=await S.ensureModelForSport('NFL');
+    chk('asking a second time returns the same model and says it already existed',
+      again.model_slug==='blizzard-performance-nfl'&&again.created===false, again);
+
+    /* 2. THE ROUTINE IS NOT INSTALLED. Falls through to the edge function
+       rather than stopping, because a contributor must not carry the cost of
+       which half of the backend is deployed. */
+    S.fetch=stub('no-rpc');seen.length=0;
+    var viaFn=await S.ensureModelForSport('NFL');
+    chk('with the database routine absent it falls through to the API and still succeeds',
+      viaFn.model_slug==='bp-nfl-via-fn'&&viaFn.via==='collective_join', viaFn);
+    chk('and it tried the database first, then the API — in that order',
+      seen.length===2&&/collective_model_ensure/.test(seen[0].url)
+      &&/collective_join\/v1\/models/.test(seen[1].url), seen.map(function(x){return x.url;}));
+
+    /* 3. NEITHER DOOR. The error must be the real one, and must never describe
+       itself as a normal step somebody else performs. */
+    S.fetch=stub('none');seen.length=0;
+    var threw=null;
+    try{await S.ensureModelForSport('NFL');}catch(e){threw=e;}
+    chk('with neither door open it throws rather than pretending', !!threw);
+    chk('and names both things it tried, and the file that installs one',
+      threw&&/collective_model_ensure is not installed/.test(threw.message)
+      &&/collective_join has no \/v1\/models route/.test(threw.message)
+      &&/collective_model_autocreate\.sql/.test(threw.message), threw&&threw.message);
+    chk('and does not tell the contributor to ask anybody',
+      threw&&!/operator|administrator|ask (your|the|somebody|someone)|contact/i.test(threw.message),
+      threw&&threw.message);
+
+    /* 4. A REAL REFUSAL IS NOT RETRIED. A removed contributor gets the
+       database's own answer, not a second attempt that hides it. */
+    S.fetch=stub('refused');seen.length=0;
+    var refused=null;
+    try{await S.ensureModelForSport('NFL');}catch(e){refused=e;}
+    chk('a refusal from the database is reported as itself',
+      refused&&refused.code==='no_creator'&&/no active contributor profile/.test(refused.message),
+      refused&&refused.message);
+    chk('and is NOT retried against the API, which would hide it',
+      seen.length===1, seen.map(function(x){return x.url;}));
+
+    S.fetch=realF;
   }
 
-  /* The panel around it must not hand a contributor instructions for a
-     database they do not have -- the schedule loader already learned this. */
+  /* ---- COVERING A SECOND SPORT IS THE CONTRIBUTOR'S OWN ACTION ----------
+     What used to be here: a `do $$ ... $$` statement generated for a creator
+     who wanted a second sport, and a panel that asked whether the reader was
+     the operator before deciding whether to show it to them or hand them a
+     sentence to send to somebody who could run it. Both are gone. A model is
+     created by the person who wants it, in one call, and these hold the two
+     things that must never come back: an operator in the path, and a page that
+     describes its own failure as a normal manual step. */
   {
-    var pi=APPSRC.indexOf('"add one" next to a sport with no model');
-    var panel=APPSRC.slice(pi, APPSRC.indexOf('function renderSetEdge', pi)>pi
-      ? APPSRC.indexOf('function renderSetEdge', pi) : pi+9000);
-    chk('the add-a-model panel asks who is looking before it answers',
-      /var isOp=!!\(me&&me\.admin\)/.test(panel),{panel:panel.slice(0,200)});
-    chk('a contributor is given the sentence to send, not a SQL editor',
-      /addModelAsk/.test(panel)&&/needs a/.test(panel));
-    chk('and the statement itself is only rendered for somebody who can run it',
-      /\(isOp\|\|!roleKnown\)/.test(panel));
-    /* Self-serve is tried FIRST, so the common case never involves a human. */
-    chk('it offers to create the model itself before asking anyone',
-      /addModelGo/.test(panel)&&/'\/v1\/models'/.test(panel)&&/fn:'collective_join'/.test(panel),
-      {panel:panel.slice(0,300)});
-    chk('and sends the sport it is being opened for, not a guess',
-      /body:\{sport:code/.test(panel));
-    /* A backend without the route is the ONLY thing that falls back. Any
-       other failure is a real answer, and "ask your operator" printed over
-       the top of it would hide the reason. */
-    chk('only a missing route falls back to asking a human',
-      /e\.status===404/.test(panel)&&/fallbackHTML\(/.test(panel));
-    chk('every other failure is shown as itself',
-      /errbox[^]*e\.message/.test(panel),{panel:panel.slice(panel.indexOf('catch(e)'),panel.indexOf('catch(e)')+400)});
+    chk('the page no longer generates SQL for a creator who wants a sport',
+      APPSRC.indexOf('function addModelSQL')<0
+      && !/insert into %I\.models/.test(APPSRC), 'addModelSQL is retired');
+
+    /* THE SENTENCE THAT STARTED THIS. Nowhere on the contributor's dashboard
+       may the answer to "I want to post NFL" be somebody else. */
+    var dead=[
+      'Self-serve model creation is not deployed',
+      'needs a NFL model',
+      'is created by the Collective\u2019s operator',
+      'takes them one statement',
+      'it takes them one statement'
+    ];
+    dead.forEach(function(t){
+      chk('the dashboard no longer says: "'+t+'"', APPSRC.indexOf(t)<0, {found:t});
+    });
+    /* Asked of what a READER can see. The comments in the page describe the
+       behaviour this replaced, and they should: the point is that the words
+       are no longer on screen, not that the history is unmentionable. */
+    var SHOWN=APPSRC.replace(/\/\*[\s\S]*?\*\//g,' ').replace(/^[ \t]*\/\/[^\n]*/gm,' ');
+    chk('and nothing a contributor is SHOWN tells them to ask an operator for a model',
+      !/operator[^.]{0,80}model/i.test(SHOWN)&&!/model[^.]{0,60}the operator/i.test(SHOWN),
+      (SHOWN.match(/[^.]{0,90}operator[^.]{0,90}/gi)||[]).slice(0,4));
+
+    /* ONE FUNCTION, and every path goes through it. */
+    var fn=(function(){
+      var i=APPSRC.indexOf('async function ensureModelForSport(');
+      return i<0?null:APPSRC.slice(i,i+3400);
+    })();
+    chk('there is one get-or-create in the page', !!fn);
+    if(fn){
+      chk('it asks the DATABASE routine first, which is the source of truth',
+        /dbrpc\('collective_model_ensure'/.test(fn));
+      chk('and falls back to the API only when that routine is not installed',
+        /if\(!e\.notInstalled\)throw e/.test(fn)&&/fn:'collective_join'/.test(fn));
+      chk('a refusal from the database is never retried as if it were a 404',
+        fn.indexOf("out.ok===false")>=0&&fn.indexOf('e.code=out.code;throw e')>=0);
+      chk('with BOTH doors shut it names the two things it tried and the file that installs one',
+        /collective_model_ensure is not installed/.test(fn)
+        &&/collective_join has no \/v1\/models route/.test(fn)
+        &&/collective_model_autocreate\.sql/.test(fn));
+      chk('and even then it never suggests asking a person',
+        !/operator|administrator|ask (your|the|somebody|someone)/i.test(fn),
+        fn.slice(fn.indexOf('Both doors'), fn.indexOf('Both doors')+400));
+      chk('it sends the sport it was asked for, never a guess',
+        /var body=\{p_sport:sport\}/.test(fn));
+      chk('the signed-in account is carried by its token, and is never an argument',
+        !/creator|user_id|p_creator/.test(fn), fn.slice(0,300));
+    }
+
+    /* THE THREE ENTRY POINTS ON THIS PAGE, each reaching that one function. */
+    var dash=APPSRC.slice(APPSRC.indexOf('async function renderCreatorDash'));
+    chk('ticking a sport creates the model',
+      /data-plan[\s\S]{0,1200}coverSport\(code,null/.test(dash),
+      dash.slice(dash.indexOf("querySelectorAll('[data-plan]')"), dash.indexOf("querySelectorAll('[data-plan]')")+700));
+    chk('naming one yourself creates the same model the same way',
+      /addModelGo[\s\S]{0,400}coverSport\(code,\(\$\('addModelName'\)\.value/.test(dash));
+    chk('and posting a slate for a sport with no model creates it on the way past',
+      /if\(pick\.create\)\{[\s\S]{0,400}await ensureModelForSport\(pick\.create\)/.test(dash));
+    chk('all three go through the one function and none of them writes a model row itself',
+      (dash.match(/ensureModelForSport\(/g)||[]).length>=2
+      && dash.indexOf("api('/v1/models'")<0, 'no second creation path in the dashboard');
+
+    /* WHAT A FAILURE LOOKS LIKE. The brief: show the actual backend error
+       rather than pretending this is an expected manual process. */
+    chk('a creation failure renders the backend\u2019s own message',
+      /function modelErrHTML\(e\)\{[\s\S]{0,200}e&&e\.message/.test(dash));
+    chk('and a failed tick puts the box back rather than leaving a lie on screen',
+      /cb\.checked=false;cb\.disabled=false/.test(dash));
+    chk('a slate whose model could not be created posts nothing and says why',
+      /Nothing was posted\. Your[\s\S]{0,200}could not be created/.test(dash));
+
+    /* THE PICKER. The disabled option was the bug in one line of markup. */
+    var picker=(function(){
+      var i=APPSRC.indexOf('function sportPickerOptions(');
+      if(i<0)return null;
+      var j=APPSRC.indexOf("return out.join('');", i);
+      return j<0?null:APPSRC.slice(i,j);
+    })();
+    chk('the sport picker exists', !!picker);
+    if(picker){
+      chk('no sport is offered as a disabled row any more',
+        picker.indexOf('disabled')<0, picker.slice(0,400));
+      chk('a sport with no model says what will happen instead of "no model yet"',
+        /your model is created when you post/.test(picker)
+        && picker.indexOf('no model yet')<0);
+    }
+
+    /* ORDER MATTERS. The pre-flight is where a sport the backend does not carry
+       at all is caught. Creating a model for such a sport and THEN refusing to
+       post would leave a row behind for a slate that never went anywhere. */
+    var send=(function(){
+      var i=dash.indexOf('async function slateSend(');
+      return i<0?null:dash.slice(i,i+9000);
+    })();
+    chk('slateSend is found', !!send);
+    if(send){
+      chk('nothing is created until the backend has been asked about the schedule',
+        send.indexOf('await slatePreflight(')>0
+        && send.indexOf('await ensureModelForSport(') > send.indexOf('await slatePreflight('),
+        { preflight: send.indexOf('await slatePreflight('), create: send.indexOf('await ensureModelForSport(') });
+      chk('and the envelope is filed under the resolved model\u2019s OWN sport, so the two cannot disagree',
+        /if\(selModel&&selModel\.sport\)env\.sport=selModel\.sport/.test(send));
+    }
+
+    /* The picker row for a sport with no model carries no model slug, so the
+       sport has to come from the row itself or an unstamped file would be
+       posted as whatever model happens to be first on the account. */
+    chk('the picker\u2019s own sport is read when its row has no model yet',
+      /if\(opt&&!opt\.value&&opt\.getAttribute\('data-sport'\)\)return opt\.getAttribute\('data-sport'\)/
+        .test(APPSRC));
+
+    /* The pre-flight used to stop a slate for want of a model. */
+    chk('the pre-flight no longer refuses a slate for want of a model',
+      APPSRC.indexOf("level:'no-model'")<0 && APPSRC.indexOf("p.level==='no-model'")<0);
+    chk('but still stops for the things only the backend can fix',
+      APPSRC.indexOf("level:'no-sport'")>0 && APPSRC.indexOf("level:'no-games'")>0);
+
+    /* The browser-only "sports I plan to cover" note existed only because a
+       tick could not do anything. */
+    chk('the browser-only planned-sports note is gone with the reason for it',
+      APPSRC.indexOf('mc_sports_planned')<0 && APPSRC.indexOf('function declaredSports')<0
+      && APPSRC.indexOf('private note in this browser')<0);
   }
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});

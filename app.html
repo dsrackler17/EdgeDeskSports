@@ -34045,9 +34045,10 @@ async function fbP4ResolveModel(key){
   else if(college.length>1)out.error='This account has '+college.length+' college models ('
     +college.map(function(m){return m.model;}).join(', ')+'). Post those from the dashboard so the right one is chosen.';
   else if(models.length===1&&models[0].sport==null)out.model=models[0].model;
-  else out.error='No college-football model on this account. The Collective files a slate under a model, '
-    +'and resolves its games in that model\u2019s sport, so a college slate needs a college model. '
-    +'Models found: '+(models.map(function(m){return m.model+' ('+(m.sport||'no sport')+')';}).join(', ')||'none');
+  /* Same as the NFL resolver above: a missing college model is something the
+     ingest fixes on the way past, not a reason to refuse the slate. The
+     envelope carries "sport":"CFB" and the model is created with the post. */
+  else out.model=null;
   FBP4_MODEL_CACHE=out;
   return out;
 }
@@ -34131,7 +34132,8 @@ window.fbP4ApiRetract=async function(){
     return;
   }
   if(who.error){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
-  var env={model:who.model,season:FB.p4.season};
+  var env={season:FB.p4.season,sport:'CFB'};
+  if(who.model)env.model=who.model;
   /* Scope the retract to the week on screen when the board is a single
      week: the endpoint would otherwise consider the whole season, which is
      a far larger blast radius than the operator is looking at. */
@@ -34143,8 +34145,17 @@ window.fbP4ApiRetract=async function(){
   try{res=await fbP4Ingest('/v1/projections/retract',key,env);}
   catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
   if(res.status===404){
-    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">The deployed ingest API predates retract. '
-      +'Paste the updated <span class="mono">collective_ingest</span> bundle in the Supabase dashboard, then retry.</span>');
+    /* TWO DIFFERENT 404s NOW. A deployment that predates retract answers with
+       the routes it does know, in details.known; the current one answers 404
+       when this account has no model in the sport being retracted from, and
+       that message is the useful one. Reporting the second as the first sent
+       an operator to paste a bundle they had already pasted. */
+    var re4=(res.body&&res.body.error)||{};
+    var routeGone=!!(re4.details&&re4.details.known);
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+(routeGone
+      ? 'The deployed ingest API predates retract. '
+        +'Paste the updated <span class="mono">collective_ingest</span> bundle in the Supabase dashboard, then retry.'
+      : fbEsc(re4.message||'Nothing was found to retract.'))+'</span>');
     return;
   }
   if(!res.ok){
@@ -34292,8 +34303,13 @@ async function fbNflResolveModel(key){
   if(nfl.length===1)out.model=nfl[0].model;
   else if(nfl.length>1)out.error='This account has '+nfl.length+' NFL models ('
     +nfl.map(function(m){return m.model;}).join(', ')+'). Post those from the dashboard so the right one is chosen.';
-  else out.error='No NFL model on this account. Models found: '
-    +(models.map(function(m){return m.model+' ('+(m.sport||'no sport')+')';}).join(', ')||'none');
+  /* NO NFL MODEL IS NOT AN ERROR ANY MORE. This used to stop the sync dead and
+     print a list of the models the account did have, which read as "the
+     Collective will not take my slate" and could only be fixed by somebody with
+     database access. collective_ingest creates the model for the envelope's
+     sport now, so the right move is to send the sport and let it: `model` is
+     left unset and fbNflSyncEnv puts "sport":"NFL" on the envelope. */
+  else out.model=null;
   FBNFL_MODEL_CACHE=out;
   return out;
 }
@@ -34369,7 +34385,13 @@ window.fbNflApiSync=async function(){
   }
   if(who.error){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
 
-  var env={season:FB.nfl.curSeason,data_origin:'live',model:who.model,rows:built.rows};
+  /* THE SPORT IS ON THE ENVELOPE, always. It is what lets collective_ingest
+     resolve this slate against the NFL schedule -- and, when this account has
+     no NFL model yet, create one with the submission instead of refusing it.
+     `model` is sent only when there is one to name: sending it empty would
+     read as naming a model that does not exist. */
+  var env={season:FB.nfl.curSeason,data_origin:'live',sport:'NFL',rows:built.rows};
+  if(who.model)env.model=who.model;
   var wks={},wkOne=null,wkN=0;
   built.rows.forEach(function(r){if(r.week!=null&&!wks[r.week]){wks[r.week]=1;wkOne=+r.week;wkN++;}});
   if(wkN===1)env.week=wkOne;
@@ -34439,7 +34461,11 @@ window.fbP4ApiSync=async function(){
   if(who.error){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
   var built=fbP4WireRows();
   if(!built.rows.length){fbP4PostOut('<span class="ec mut">Nothing to post: no game on the board produced a projection.</span>');return;}
-  var env={season:FB.p4.season,data_origin:'live',model:who.model,rows:built.rows};
+  /* See the NFL sync above: the sport travels with the slate so it is matched
+     against the college schedule, and a first college slate creates the model
+     it is filed under rather than being turned away. */
+  var env={season:FB.p4.season,data_origin:'live',sport:'CFB',rows:built.rows};
+  if(who.model)env.model=who.model;
   var wks={},wkOne=null,wkN=0;
   (FB.p4.up||[]).forEach(function(u){var w=u.g&&u.g.week;if(w!=null&&!wks[w]){wks[w]=1;wkOne=+w;wkN++;}});
   if(wkN===1)env.week=wkOne;
@@ -34509,7 +34535,11 @@ window.fbP4ApiPost=async function(live){
     return;
   }
   if(who.error){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
-  var env={season:FB.p4.season,data_origin:'live',model:who.model,rows:built.rows};
+  /* See the NFL sync above: the sport travels with the slate so it is matched
+     against the college schedule, and a first college slate creates the model
+     it is filed under rather than being turned away. */
+  var env={season:FB.p4.season,data_origin:'live',sport:'CFB',rows:built.rows};
+  if(who.model)env.model=who.model;
   var wk=built.rows[0].week;
   if(wk!=null&&built.rows.every(function(r){return r.week===wk;}))env.week=wk;
   fbP4PostOut('<span class="ec mut">'+(live?'Posting':'Checking')+' '+built.rows.length+' game'

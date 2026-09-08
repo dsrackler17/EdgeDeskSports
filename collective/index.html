@@ -152,7 +152,6 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
   letter-spacing:.06em;padding:2px 8px;border-radius:999px;
   border:1px solid var(--border);color:var(--dim);background:var(--surface2)}
 .sportchips .sc.live{color:var(--text);border-color:var(--accent)}
-.sportchips .sc.off{opacity:.55}
 /* The sport cards. Laid out as a grid rather than inline-flex: a fixed
    min-width with nowrap text was pushing the label clean outside the border on
    a narrow column. The grid gives each card a real track, the text wraps
@@ -724,8 +723,14 @@ function sessionUserId(){
   }catch(e){return null;}
 }
 /* The statement that grants it, filled in. Written the way the rest of this
-   page writes SQL for a creator (see addModelSQL): find the schema rather
-   than assume `public`, and be safe to run twice. */
+   page writes SQL when the fix is genuinely somebody else's (see
+   creatorLinkSQL): find the schema rather than assume `public`, and be safe to
+   run twice.
+
+   Admin is one of the two things left on this page that a browser must not be
+   able to grant itself. Creating a MODEL is no longer one of them -- see
+   ensureModelForSport() -- because nothing about a contributor's own model is
+   a privilege decision. */
 function adminGrantSQL(uid){
   return ''
     +'-- Put this account on the Collective admin list.\n'
@@ -751,10 +756,12 @@ function adminGrantSQL(uid){
 /* ---- attaching a creator row to the account that is signed in ----------
    The one remedy for "this account has no creator dashboard" that is not
    "sign in as somebody else". The page cannot write the creators table --
-   no browser session should be able to -- so it does what the rest of this
-   page does when the fix is server-side (adminGrantSQL above, addModelSQL
-   in the creator dashboard): hand over the exact statement, already filled
-   in, rather than a diagnosis and an afternoon.
+   no browser session should be able to -- so it does what this page does for
+   the two remaining cases where the fix really is somebody else's
+   (adminGrantSQL above): hand over the exact statement, already filled in,
+   rather than a diagnosis and an afternoon. WHICH ACCOUNT owns a creator row
+   is a privilege decision; which sports that creator covers is not, and is
+   self-serve.
 
    It writes only what decides whether an account HAS creator tools: the
    owning auth user, and an account status a removal may have moved off
@@ -765,7 +772,7 @@ function adminGrantSQL(uid){
    It refuses rather than guesses in both directions. An unknown slug
    raises. A row already owned by a DIFFERENT auth user raises too, because
    silently reassigning one moves a stranger's whole graded record onto this
-   account and neither of them can tell -- the same rule addModelSQL learned.
+   account and neither of them can tell.
    The status column is account_status, status or state depending on the
    deployment and may be an enum, so it is discovered and written inside its
    own block: failing to re-activate reports and carries on, because the
@@ -900,6 +907,104 @@ async function api(path,opts){
 }
 var META=null;
 async function meta(){if(META)return META;META=await api('/v1/meta');LOCK_MIN=lockMinutes(META);return META;}
+
+/* ================= the database's own door =================================
+   Some things this page needs are not endpoints on collective_public: they are
+   SECURITY DEFINER routines called over PostgREST with the signed-in member's
+   OWN token, exactly as collective/admin.html already calls the member-removal
+   routines. The acting account is auth.uid() inside the database and there is
+   no argument for it, so nothing this page sends can claim to be somebody else.
+   The anon key is the apikey every Supabase client sends; it grants nothing on
+   its own.
+
+   The REST base is derived from the SAME resolved API base the rest of this
+   page uses, so the ?api= guard covers it too and a local override still
+   reaches a local database. */
+function restBase(){
+  var b=String(API||CFG.API||'').replace(/\/+$/,'').replace(/\/functions\/v1$/,'');
+  return (b||CFG.SB_URL)+'/rest/v1';
+}
+async function dbrpc(fn,args){
+  var t=await token();
+  var h={apikey:CFG.SB_ANON,'content-type':'application/json'};
+  if(t)h['authorization']='Bearer '+t;
+  var r=await fetch(restBase()+'/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args||{})});
+  var d=null;try{d=await r.json();}catch(e){}
+  if(!r.ok){
+    var e2=new Error((d&&(d.message||d.hint))||('Request failed ('+r.status+')'));
+    e2.status=r.status;e2.code=d&&d.code;
+    /* PGRST202/203: the routine is not in the schema cache, which on this
+       project means the migration has not been run. That is a different fact
+       from "it refused you", and only the caller knows whether there is
+       another door to try. */
+    if(r.status===404||(d&&(d.code==='PGRST202'||d.code==='PGRST203')))e2.notInstalled=true;
+    throw e2;
+  }
+  return d;
+}
+
+/* ================= one model per sport, on demand =========================
+   A slate is attached to a MODEL and the Collective resolves its games in that
+   model's sport, so posting a sport you have no model for needs the model
+   first. That used to be somebody else's job: the page printed a SQL statement
+   for an operator and told the contributor to go and ask for one. Their own
+   file was fine; their own account was fine; the product simply stopped.
+
+   It is one call now, and every path on this page goes through THIS function —
+   the sport picker, the slate upload, the "cover this sport" tick. Idempotent
+   by construction, so calling it before every post is correct rather than
+   wasteful: asking twice returns the same model.
+
+   TWO DOORS, tried in that order, because a deployment may have either:
+
+     1. public.collective_model_ensure — the database routine installed by
+        supabase/collective_model_autocreate.sql. This is the source of truth:
+        it normalises the sport, serialises on (creator, sport) and inserts on
+        conflict do nothing, so two tabs cannot make two models.
+     2. POST /v1/models on collective_join — the same capability if that
+        function carries it.
+
+   If NEITHER exists the error says exactly that, in the words the backend
+   used. It does not say "ask your operator": that sentence is how this bug
+   survived, and a contributor reading it has no way to tell a missing
+   migration from a refusal. */
+async function ensureModelForSport(code,name){
+  var sport=String(code||'').trim();
+  if(!sport)throw new Error('No sport to create a model for.');
+  var body={p_sport:sport};
+  if(name)body.p_model_name=String(name).slice(0,60);
+  var first=null;
+  try{
+    var out=await dbrpc('collective_model_ensure',body);
+    if(out&&out.ok===false){
+      var e=new Error(out.message||'The model could not be created.');
+      e.code=out.code;throw e;                 /* a real refusal: never retried */
+    }
+    if(out&&out.model)return {model_slug:out.model.model_slug,model_name:out.model.model_name,
+      sport:out.model.sport,created:!!out.created,via:'database'};
+    throw new Error('The database answered without a model.');
+  }catch(e){
+    if(!e.notInstalled)throw e;
+    first=e;
+  }
+  try{
+    var r=await api('/v1/models',{method:'POST',auth:true,fn:'collective_join',
+      headers:{'content-type':'application/json'},
+      body:{sport:sport,model_name:name||''}});
+    if(r&&r.model)return {model_slug:r.model.model_slug,model_name:r.model.model_name,
+      sport:r.model.sport,created:!r.already,via:'collective_join'};
+    throw new Error('The API answered without a model.');
+  }catch(e2){
+    if(e2.status!==404)throw e2;
+    /* Both doors are shut. Say which, and say the one thing that opens them,
+       rather than describing this as a normal step somebody else performs. */
+    var msg='This backend cannot create a model yet: the database routine '+
+      'collective_model_ensure is not installed ('+(first&&first.message||'not found')+
+      ') and collective_join has no /v1/models route. Running '+
+      'supabase/collective_model_autocreate.sql on the project installs it.';
+    var e3=new Error(msg);e3.notInstalled=true;e3.status=404;throw e3;
+  }
+}
 
 /* ================= market odds =================
    One entry point for every surface on this page. The components live in
@@ -5554,6 +5659,34 @@ function sportLongName(code){
   var d=sportDef(code);
   return d.long||String(code||'');
 }
+/* WHICH MODEL A SLATE GOES UNDER, decided from the SPORT.
+
+   The browser's half of the rule collective_ingest applies on the server: the
+   sport decides, and a model in a DIFFERENT sport never wins, because a slate
+   resolved against the wrong sport's schedule matches nothing at all. Given the
+   account's models and the sport this slate is, it answers with one of three
+   things and never guesses between them:
+
+     {model}      post under this one
+     {create}     the account has no model for this sport — make one
+     {ambiguous}  several models in this sport; only the creator can choose
+
+   Pure, and top-level rather than buried in the dashboard renderer, so
+   collective/tests.js holds it directly. The caller does the creating.
+   `pickedSlug` is the picker's own choice and is honoured whenever it is a
+   model in the right sport — a creator with two NFL models keeps their choice. */
+function slateModelForSport(models,sportCode,pickedSlug){
+  var fam=sportFamily(sportCode);
+  if(!fam)return {ambiguous:[],reason:'no-sport'};
+  var inSport=(models||[]).filter(function(m){return sportFamily(m.sport)===fam;});
+  if(pickedSlug){
+    var picked=inSport.filter(function(m){return m.model_slug===pickedSlug;})[0];
+    if(picked)return {model:picked};
+  }
+  if(inSport.length===1)return {model:inSport[0]};
+  if(inSport.length>1)return {ambiguous:inSport,reason:'several'};
+  return {create:sportCode};
+}
 /* The server owns the vocabulary, so a sport detected from a file has to be
    translated into whichever code THIS server uses before it is sent. Detecting
    "college football" and posting the literal string CFB to a server that calls
@@ -5825,45 +5958,32 @@ function teamSimilarity(a,b){
    and be invisible on the public profile it was meant to appear on. Deriving it
    is not a compromise here; it is the more truthful answer.
 
-   `declared` is the optional second source: sports the creator has told THIS
-   browser they intend to cover. They render dimmed and are never presented as
-   a record. */
-function creatorSports(models,declared){
-  var out=[],seen={},i,f;
+   THERE IS NO SECOND SOURCE. This used to take a list of sports the creator
+   had told THIS BROWSER they planned to cover, rendered dimmed and marked
+   "soon", because covering a sport meant asking somebody to create a model and
+   there was nothing else the tick could do. A tick creates the model now, so a
+   planned sport and a covered sport are the same thing and the private note
+   is gone — with it goes the only place on this page where what a creator saw
+   depended on which browser they opened it in. */
+function creatorSports(models){
+  var out=[],seen={},f;
   (models||[]).forEach(function(mo){
     if(!mo||!mo.sport)return;
     f=sportFamily(mo.sport);
     if(seen[f])return;
     seen[f]=1;out.push({family:f,code:mo.sport,posted:true});
   });
-  (declared||[]).forEach(function(code){
-    f=sportFamily(code);
-    if(seen[f])return;
-    seen[f]=1;out.push({family:f,code:code,posted:false});
-  });
   out.sort(function(a,b){return (sportDef(a.family).order||99)-(sportDef(b.family).order||99);});
   return out;
 }
-/* Sports a creator has told THIS BROWSER they plan to cover. It is a planning
-   note, not a public claim: /v1/dashboard/profile has nowhere to put it, so it
-   never leaves this device and never appears on the public profile. The
-   dashboard says so where it is offered. */
-var MC_PLAN_KEY='mc_sports_planned';
-function declaredSports(slug){
-  try{
-    var all=JSON.parse(localStorage.getItem(MC_PLAN_KEY)||'{}');
-    var v=all[slug||''];
-    return (v&&v.length)?v:[];
-  }catch(e){return [];}
-}
-function setDeclaredSports(slug,codes){
-  try{
-    var all=JSON.parse(localStorage.getItem(MC_PLAN_KEY)||'{}');
-    all[slug||'']=codes||[];
-    localStorage.setItem(MC_PLAN_KEY,JSON.stringify(all));
-  }catch(e){}
-}
 
+/* Every chip here is a sport this creator HAS a model for, because that is now
+   the only way one gets into the list. There used to be a second, dimmed kind
+   marked "soon" for a sport declared in the browser and never posted — the
+   workaround for not being able to create a model. It cannot occur any more,
+   so it is not rendered any more: a chip on a public profile that could mean
+   either "covered" or "intends to" is worth less than one that means one
+   thing. */
 function sportChipsHTML(list,meta2){
   if(!list||!list.length)return '';
   var live={};
@@ -5872,9 +5992,8 @@ function sportChipsHTML(list,meta2){
   });
   return '<div class="sportchips">'+list.map(function(x){
     var d=sportDef(x.family);
-    var cls='sc'+(live[x.family]?' live':'')+(x.posted?'':' off');
-    return '<span class="'+cls+'" title="'+esc((d.long||x.code)+(x.posted?'':' \u2014 declared, nothing posted yet'))+'">'+
-      esc(d.family?d.name:x.code)+(x.posted?'':' \u00b7 soon')+'</span>';
+    return '<span class="sc'+(live[x.family]?' live':'')+'" title="'+esc(d.long||x.code)+'">'+
+      esc(d.family?d.name:x.code)+'</span>';
   }).join('')+'</div>';
 }
 
@@ -7131,9 +7250,9 @@ async function renderCreatorDash(view,me){
 
          A creator thinks in sports, not in model slugs: "post my college
          slate", not "post under edgedesk-p4". So the picker lists every sport
-         the Collective carries, shows the model that will actually receive the
-         slate, and — for a sport with no model yet — says so RIGHT HERE, where
-         the choice is made, instead of in a warning further down. Uploading a
+         the Collective carries and shows the model that will actually receive
+         the slate. EVERY row is selectable: a sport with no model says its
+         model is created when you post, which is what happens. Uploading a
          college file auto-selects the college row, so the creator never has to
          notice that the box still said NFL. */
       '<div style="min-width:230px"><label>Post as</label><select id="slModel">'+
@@ -7182,7 +7301,7 @@ async function renderCreatorDash(view,me){
       var have={};(d.models||[]).forEach(function(mo){if(mo.sport)have[sportFamily(mo.sport)]=1;});
       sportList(mMeta).forEach(function(sp){
         if(sp.in_season&&!have[sportFamily(sp.code)])
-          att.push({lvl:'dim',t:'No model for '+esc(sportLongName(sp.code)||sp.code)+', which is in season. A slate for it needs a model of its own.',fix:'sportsSec',fixT:'Sports you cover'});
+          att.push({lvl:'dim',t:esc(sportLongName(sp.code)||sp.code)+' is in season and you are not covering it yet. Tick it and your model exists \u2014 or just upload a '+esc(sportLongName(sp.code)||sp.code)+' slate and it is created as you post.',fix:'sportsSec',fixT:'Sports you cover'});
       });
     })();
     html+='<h2>What needs attention</h2>';
@@ -7287,82 +7406,20 @@ async function renderCreatorDash(view,me){
       '<span><div class="k">Model numbers posted</div><div class="v">'+postedN+'</div></span>'+
       (nextK?'<span><div class="k">Next kickoff</div><div class="v" style="font-size:13px">'+kickoffFmt(nextK)+'</div></span>':'')+
       '</div><p class="note" style="margin:10px 0 0"><a href="#board">Open the board &rarr;</a> &middot; <a href="#models">All models &rarr;</a> &middot; <a href="#rankings">Rankings &rarr;</a></p></div>';
-    /* ADD A MODEL FOR A SPORT.
-
-       There is no endpoint for this — the whole API exposes no model creation —
-       so the honest "with ease" is to hand over the exact statement, already
-       filled in with this creator's slug and the sport's code, rather than
-       leave someone to work out a schema they have never seen. The column
-       names come from the live database: models(slug, name, sport_code), and
-       the table lives in whichever schema this deployment uses, so the SQL
-       finds it instead of assuming `public`. */
-    function addModelSQL(creatorSlug,creatorName,sportCode){
-      var d2=sportDef(sportCode);
-      var long=d2.long||sportCode;
-      var mslug=creatorSlug+'-'+String(sportCode).toLowerCase().replace(/[^a-z0-9]+/g,'');
-      var mname=creatorName+' '+long;
-      /* Finds the creator by slug, then by display name, and then STOPS.
-         It used to fall back to "whoever owns a model already" -- which on a
-         shared Collective is not a fallback, it is a cross-account write: a
-         new creator whose slug lookup missed would silently attach their
-         model to the oldest account in the table, and then see a stranger's
-         model in their own dashboard. There is no safe guess about whose
-         account a row belongs to, so a miss now raises and says exactly how
-         to find the right id. */
-      return ''
-        +'-- Add a '+long+' model for '+creatorName+'.\n'
-        +'-- Finds your schema and your creator row itself. Safe to run twice.\n'
-        +'do $$\n'
-        +'declare\n'
-        +'  s text;\n'
-        +'  cid uuid;\n'
-        +'  who text;\n'
-        +'begin\n'
-        +'  select table_schema into s\n'
-        +'    from information_schema.tables\n'
-        +'   where table_name = \'models\' limit 1;\n'
-        +'  if s is null then raise exception \'no models table in any schema\'; end if;\n\n'
-        +'  -- 1. by slug\n'
-        +'  execute format(\'select id from %I.creators where slug = $1\', s)\n'
-        +'    into cid using \''+creatorSlug+'\';\n\n'
-        +'  -- 2. by display name\n'
-        +'  if cid is null then\n'
-        +'    execute format(\'select id from %I.creators where display_name = $1\', s)\n'
-        +'      into cid using \''+creatorName+'\';\n'
-        +'  end if;\n\n'
-        +'  -- No third guess. A model attached to the wrong creator shows up in\n'
-        +'  -- someone else\'s dashboard, and they cannot tell it is not theirs.\n'
-        +'  if cid is null then\n'
-        /* RAISE knows only %. %% is a LITERAL percent and %I is format()'s,
-           not RAISE's -- so this line had one placeholder and two arguments
-           and failed with "too many parameters specified for RAISE", in the
-           one branch that exists to explain what went wrong. */
-        +'    raise exception \'no creator row matched slug % or name % - find yours with: select id, slug, display_name from %.creators\', \''+creatorSlug+'\', \''+creatorName+'\', s;\n'
-        +'  end if;\n\n'
-        +'  execute format($f$\n'
-        +'    insert into %I.models (creator_id, slug, name, sport_code, is_listed)\n'
-        +'    select $1, $2, $3, $4, true\n'
-        +'     where not exists (\n'
-        +'       select 1 from %I.models\n'
-        +'        where creator_id = $1 and upper(sport_code) = upper($4))\n'
-        +'  $f$, s, s) using cid, \''+mslug+'\', \''+mname+'\', \''+sportCode+'\';\n\n'
-        +'  -- Say whose account received it. A silent success is how the wrong\n'
-        +'  -- creator ends up owning a model without anyone noticing.\n'
-        +'  execute format(\'select slug from %I.creators where id = $1\', s)\n'
-        +'    into who using cid;\n'
-        +'  raise notice \'added % for creator % - reload the dashboard\', \''+mname+'\', who;\n'
-        +'end $$;\n';
-    }
-
-    /* ---- what this creator covers ------------------------------------- */
+    /* ---- what this creator covers -------------------------------------
+       A TICK IS AN ACTION, not a note. This grid used to offer a checkbox that
+       wrote to localStorage and a link that printed a SQL statement, because
+       covering a new sport meant asking somebody with database access to make
+       a model. Ticking a sport creates the model now, on this account, in one
+       call — so the box being checked and the sport being coverable are the
+       same fact rather than two that could disagree. */
     (function(){
-      var covered=creatorSports(d.models,declaredSports(c.slug));
+      var covered=creatorSports(d.models);
       var offered=sportList(mMeta).slice().sort(function(a,b){
         return (sportDef(a.code).order||99)-(sportDef(b.code).order||99);
       });
       var have={};(d.models||[]).forEach(function(mo){
         if(mo.sport)have[sportFamily(mo.sport)]=mo.model_name||mo.model_slug;});
-      var planned={};declaredSports(c.slug).forEach(function(x){planned[sportFamily(x)]=1;});
       html+='<h2 id="sportsSec">Sports you cover</h2><div class="panel">'+
         sportChipsHTML(covered,mMeta)+
         '<div class="sportgrid">'+
@@ -7375,26 +7432,21 @@ async function renderCreatorDash(view,me){
              unwinding that cascade. */
           return '<div class="sportpick'+(posted?' posted':'')+'">'+
             '<input type="checkbox" data-plan="'+esc(sp.code)+'"'+
-            (posted||planned[f]?' checked':'')+(posted?' disabled':'')+'>'+
+            (posted?' checked disabled':'')+'>'+
             '<span class="sp-txt">'+
               '<span class="sp-name">'+esc(d2.long||sp.code)+'</span>'+
               '<span class="sp-sub">'+(posted?esc(have[f])
-                :'no model yet \u00b7 <a href="#" class="sp-add" data-addmodel="'+esc(sp.code)+'">add one</a>')+
+                :'tick to cover it \u00b7 <a href="#" class="sp-add" data-addmodel="'+esc(sp.code)+'">name it yourself</a>')+
               '</span>'+
             '</span>'+
             '</div>';
         }).join('')+'</div>'+
-        '<p class="note" style="margin:10px 0 0">A sport appears on your public profile once you '+
-        'have a model for it &mdash; that is what visitors see, and it cannot go stale. Ticking one '+
-        'you have not posted for yet is a private note in this browser; it is not sent anywhere and '+
-        'nobody else can see it.</p>'+
-        (Object.keys(have).length<offered.length
-          ? '<p class="note" style="margin:8px 0 0;border-left:2px solid var(--warn);padding-left:8px">'
-            +'A slate is attached to a model, and the Collective resolves its games in that '
-            +'<b>model\'s</b> sport. To post for a sport you have no model for, that model has to '
-            +'exist first &mdash; otherwise the slate is looked up in the wrong sport\'s schedule '
-            +'and every game comes back unmatched.</p>'
-          : '')+
+        '<div id="sportsOut"></div>'+
+        '<p class="note" style="margin:10px 0 0">Ticking a sport creates your model for it and it '+
+        'appears on your public profile straight away. A slate is attached to a model and the '+
+        'Collective resolves its games in that <b>model&rsquo;s</b> sport, so this is also what '+
+        'lets a slate for that sport be matched against the right schedule. You can post the '+
+        'moment it exists; nothing about your file changes.</p>'+
         '</div>';
     })();
 
@@ -7482,86 +7534,68 @@ async function renderCreatorDash(view,me){
         toast('Profile saved');
       }catch(e){toast(e.message);}
     };
-    /* "add one" next to a sport with no model: show the statement, ready to
-       paste into the SQL editor, with a copy button. */
+    /* COVERING A NEW SPORT, in one action, by the person who wants it.
+
+       What used to be here: a panel that asked whether the reader was the
+       operator, printed a `do $$ ... $$` statement for them if so, and handed
+       everybody else a sentence to send to somebody who could run it. It was a
+       careful, well-written dead end. A contributor whose file was correct and
+       whose account was correct was told the next step was not theirs.
+
+       ensureModelForSport() is the whole of it now, and it is the same call
+       the tick in the sports grid and the slate upload both make. A failure
+       shows the reason the backend actually gave. */
+    function paintModelOut(box,html){ if(box)box.innerHTML=html; }
+    function modelErrHTML(e){
+      return '<div class="errbox" style="margin-top:8px">'+
+        esc((e&&e.message)||'The model could not be created.')+'</div>';
+    }
+    async function coverSport(code,name,out){
+      paintModelOut(out,'<p class="note" style="margin:8px 0 0">Creating your '+
+        esc(sportLongName(code)||code)+' model&hellip;</p>');
+      var made=await ensureModelForSport(code,name);
+      toast(made.created?made.model_name+' created':made.model_name+' already existed');
+      /* Straight back to the server for the truth. The dashboard re-renders
+         from /v1/dashboard, so the new model appears in the sport grid, in the
+         picker, in "My models" and on the public profile from one source —
+         never from a record this page invented client-side. */
+      await renderCreatorDash(view,me);
+    }
+
+    /* A tick IS the action. */
+    document.querySelectorAll('[data-plan]').forEach(function(cb){
+      cb.onchange=async function(){
+        var code=cb.getAttribute('data-plan');
+        if(!cb.checked){
+          /* Unticking cannot mean "delete my model": a model carries a record.
+             Say so, and put the box back. */
+          cb.checked=true;
+          toast('A model with a record is not removed from here. Ask an admin to close it.');
+          return;
+        }
+        cb.disabled=true;
+        try{ await coverSport(code,null,$('sportsOut')); }
+        catch(e){
+          cb.checked=false;cb.disabled=false;
+          paintModelOut($('sportsOut'),modelErrHTML(e));
+        }
+      };
+    });
+
+    /* "name it yourself" — the same creation, with the name as an input rather
+       than derived. Nothing else about it differs. */
     document.querySelectorAll('[data-addmodel]').forEach(function(a){
       a.onclick=function(ev){
         ev.preventDefault();ev.stopPropagation();
         var code=a.getAttribute('data-addmodel');
-        var sql=addModelSQL(c.slug,c.display_name||c.slug,code);
         var box=$('addModelBox');
         if(!box){
           box=document.createElement('div');box.id='addModelBox';
           box.className='panel';box.style.marginTop='10px';
           a.closest('.panel').appendChild(box);
         }
-        /* WHOSE DATABASE IS IT. There is no endpoint for creating a model, so
-           the only way to add one is a statement run against the Collective's
-           own database -- which the OPERATOR runs and a contributor does not
-           have. Handing every creator "run this in your Supabase SQL editor"
-           is the same mistake the schedule loader already learned not to make:
-           a person who cannot act on the instruction reads it as the product
-           being broken, and the one thing they could actually do -- ask the
-           operator -- goes unsaid.
-
-           So an operator gets the statement, and everybody else gets the
-           sentence to send, which names the two things the operator needs and
-           nothing they would have to ask back for. An account whose role this
-           page could not read (an API too old for /v1/me) gets the request
-           text plus the statement behind a disclosure, because guessing wrong
-           in either direction dead-ends somebody. */
-        var isOp=!!(me&&me.admin), roleKnown=!!me;
-        var ask=c.slug+' needs a '+(sportLongName(code)||code)+' model on the Collective.';
-        var opBlock='<p class="note" style="margin:6px 0 8px">The Collective has no endpoint for '+
-          'creating a model, so this is the statement to run once in the Supabase SQL editor. It '+
-          'finds the right schema itself, and it will not duplicate a model that already exists.</p>';
-        /* SELF-SERVE FIRST. collective_join can create a model for the
-           signed-in creator (POST /v1/models); redeem_invite has been able to
-           since it was written, it just only ever fired once. Offered
-           optimistically because the page cannot know whether that route is
-           deployed on this backend, and a 404 falls back to exactly what this
-           panel said before -- so this is never worse than asking somebody. */
-        function fallbackHTML(why){
-          return (why?'<p class="note warn" style="margin:6px 0 8px">'+esc(why)+'</p>':'')+
-          (isOp?opBlock
-            :'<p class="note" style="margin:6px 0 8px">A model is created by the Collective\u2019s '+
-             'operator \u2014 there is no endpoint for it, so it is not something this page can do '+
-             'for you, and it is not something you have done wrong. Send them this and it takes '+
-             'them one statement:</p>'+
-             '<div class="copybox"><div class="val">'+esc(ask)+'</div>'+
-             '<button class="btn" id="addModelAsk">Copy</button></div>'+
-             '<p class="note" style="margin:8px 0 0">Your '+esc(sportLongName(code))+' slate will '+
-             'post the moment it exists. Nothing about the file needs to change.</p>'+
-             (roleKnown?''
-               :'<details style="margin-top:10px"><summary class="note">I run this Collective '+
-                '\u2014 show me the statement</summary>'+opBlock+'</details>'))+
-          ((isOp||!roleKnown)
-            ? '<textarea id="addModelSql" readonly rows="10" class="sqlbox">'+esc(sql)+'</textarea>'
-            : '')+
-          '<div style="display:flex;gap:8px;margin-top:8px">'+
-          ((isOp||!roleKnown)?'<button class="btn" id="addModelCopy">Copy SQL</button>':'')+
-          '<button class="ghost" id="addModelClose">Close</button></div>';
-        }
-        function wireFallback(){
-          /* Both copy buttons are optional -- an operator gets the SQL one, a
-             contributor gets the request one -- so neither is assumed. */
-          var cp=$('addModelCopy');
-          if(cp)cp.onclick=function(){
-            var t=$('addModelSql');t.select();
-            try{
-              if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value);
-              else document.execCommand('copy');
-              toast('SQL copied');
-            }catch(e){toast('Select the text and copy it');}
-          };
-          var ak=$('addModelAsk');
-          if(ak)ak.onclick=function(){copyText(ask,ak);};
-          wireClose();
-        }
-        function wireClose(){var cb=$('addModelClose');if(cb)cb.onclick=function(){box.remove();};}
-        var head='<b>Add a '+esc(sportLongName(code))+' model</b>';
         var defName=(c.display_name||c.slug)+' '+code;
-        box.innerHTML=head+
+        box.innerHTML='<b>Add a '+esc(sportLongName(code))+' model</b>'+
           '<p class="note" style="margin:6px 0 8px">A slate is attached to a model, and the '+
           'Collective resolves its games in that model\u2019s sport \u2014 so a '+
           esc(sportLongName(code))+' slate needs a '+esc(sportLongName(code))+' model to attach '+
@@ -7571,41 +7605,17 @@ async function renderCreatorDash(view,me){
           '<button class="btn primary" id="addModelGo">Create my '+esc(code)+' model</button>'+
           '<button class="ghost" id="addModelClose">Close</button></div>'+
           '<div id="addModelOut"></div>';
-        wireClose();
+        $('addModelClose').onclick=function(){box.remove();};
         $('addModelGo').onclick=async function(){
-          var b=this,out=$('addModelOut');
-          b.disabled=true;
-          out.innerHTML='<p class="note" style="margin:8px 0 0">Creating&hellip;</p>';
-          try{
-            var r=await api('/v1/models',{method:'POST',auth:true,fn:'collective_join',
-              headers:{'content-type':'application/json'},
-              body:{sport:code,model_name:($('addModelName').value||'').trim()}});
-            var mn=(r&&r.model&&r.model.model_name)||defName;
-            toast(r&&r.already?mn+' already existed':mn+' created');
-            box.remove();
-            renderCreatorDash(view,me);
-          }catch(e){
-            /* A backend without the route is the ONLY case that falls back:
-               every other failure is a real answer and saying "ask your
-               operator" over the top of it would hide it. */
-            if(e&&e.status===404){box.innerHTML=head+fallbackHTML(
-              'Self-serve model creation is not deployed on this backend yet, so this still '+
-              'takes one action from the operator.');wireFallback();return;}
-            out.innerHTML='<div class="errbox" style="margin-top:8px">'+esc(e.message||'Could not create it.')+'</div>';
+          var b=this;b.disabled=true;
+          try{ await coverSport(code,($('addModelName').value||'').trim(),$('addModelOut')); }
+          catch(e){
+            /* EVERY failure is shown as itself. There is no branch here that
+               reinterprets one as a normal manual process. */
+            paintModelOut($('addModelOut'),modelErrHTML(e));
             b.disabled=false;
           }
         };
-      };
-    });
-
-    document.querySelectorAll('[data-plan]').forEach(function(cb){
-      cb.onchange=function(){
-        var picked=[];
-        document.querySelectorAll('[data-plan]').forEach(function(x){
-          if(x.checked&&!x.disabled)picked.push(x.getAttribute('data-plan'));
-        });
-        setDeclaredSports(c.slug,picked);
-        toast('Saved in this browser');
       };
     });
     $('soBtn').onclick=function(){clearSession();renderDashboard(view);};
@@ -7621,9 +7631,13 @@ async function renderCreatorDash(view,me){
        college conferences is college football — and the picker is the fallback.
        slateSportMismatch() is what lets the UI say so out loud instead of
        posting the wrong thing quietly. */
-    /* Every sport the Collective offers, each bound to this creator's model for
-       it when one exists. A sport with no model is offered but disabled, so the
-       gap is visible rather than inferred from an absence. */
+    /* EVERY SPORT IS POSTABLE. A sport with no model used to render as a
+       DISABLED option reading "no model yet", which is the whole bug in one
+       line of markup: the picker showed the creator the thing they wanted and
+       then refused to let them pick it. The model is created when they post
+       now, so the option is selectable and says so. The value is empty for
+       those, and slateModelForSport() below is what turns an empty value into
+       a real model. */
     function sportPickerOptions(dash,meta2){
       var models=(dash&&dash.models)||[];
       var byFam={};
@@ -7633,33 +7647,35 @@ async function renderCreatorDash(view,me){
       });
       var out=offered.map(function(sp){
         var f=sportFamily(sp.code),mo=byFam[f],def=sportDef(sp.code);
-        if(mo)return '<option value="'+esc(mo.model_slug)+'" data-fam="'+esc(f)+'">'+
+        if(mo)return '<option value="'+esc(mo.model_slug)+'" data-fam="'+esc(f)+'" data-sport="'+esc(sp.code)+'">'+
           esc(def.long||sp.code)+' \u2014 '+esc(mo.model_name||mo.model_slug)+'</option>';
-        return '<option value="" disabled data-fam="'+esc(f)+'">'+
-          esc(def.long||sp.code)+' \u2014 no model yet</option>';
+        return '<option value="" data-fam="'+esc(f)+'" data-sport="'+esc(sp.code)+'">'+
+          esc(def.long||sp.code)+' \u2014 your model is created when you post</option>';
       });
       /* a model for a sport the server no longer lists still has to be postable */
       models.forEach(function(mo){
         var f=sportFamily(mo.sport);
         if(offered.some(function(sp){return sportFamily(sp.code)===f;}))return;
-        out.push('<option value="'+esc(mo.model_slug)+'" data-fam="'+esc(f)+'">'+
+        out.push('<option value="'+esc(mo.model_slug)+'" data-fam="'+esc(f)+'" data-sport="'+esc(mo.sport||'')+'">'+
           esc(mo.model_name||mo.model_slug)+(mo.sport?' \u00b7 '+esc(mo.sport):'')+'</option>');
       });
       return out.join('');
     }
-    /* Point the picker at the sport the FILE is, when a model for it exists. */
+    /* Point the picker at the sport the FILE is. Every option is selectable, so
+       there is no longer a second pass for "the row exists but is disabled". */
     function slateAutoSelectModel(){
       var sel=$('slModel'),fam=sportFamily(slateSportFromFile()||'');
       if(!sel||!fam)return null;
       var opts=sel.options,i;
       for(i=0;i<opts.length;i++){
-        if(opts[i].getAttribute('data-fam')===fam&&!opts[i].disabled){
-          if(sel.value!==opts[i].value)sel.value=opts[i].value;
-          return {ok:true,label:opts[i].textContent};
+        if(opts[i].getAttribute('data-fam')===fam){
+          if(sel.value!==opts[i].value)sel.selectedIndex=i;
+          /* No model for it yet is a fact worth stating, not a refusal: it is
+             created on post. `willCreate` is what lets the strip say which. */
+          return {ok:true,label:opts[i].textContent,willCreate:!opts[i].value,
+            sport:opts[i].getAttribute('data-sport')||''};
         }
       }
-      for(i=0;i<opts.length;i++)
-        if(opts[i].getAttribute('data-fam')===fam)return {ok:false,label:opts[i].textContent};
       return null;
     }
 
@@ -7667,9 +7683,16 @@ async function renderCreatorDash(view,me){
       return slateDetectSport(SLATE.cols,SLATE.rows);
     }
     function slateSportCode(){
-      var m=slateSelectedModel(d);
       var detected=slateSportFromFile();
       if(detected)return serverSportCode(mMeta,detected);
+      /* THE PICKER IS A SPORT, not only a model. An option for a sport with no
+         model yet carries no model slug, so slateSelectedModel() falls through
+         to the first model on the account — which would post a picked-NFL slate
+         as CFB purely because the file did not stamp its own sport. data-sport
+         is what that row actually means, and it is read before the fallback. */
+      var sel=$('slModel'),opt=sel&&sel.selectedIndex>=0?sel.options[sel.selectedIndex]:null;
+      if(opt&&!opt.value&&opt.getAttribute('data-sport'))return opt.getAttribute('data-sport');
+      var m=slateSelectedModel(d);
       return (m&&m.sport)||currentSport(mMeta).code||'NFL';
     }
     /* the picked model says one sport and the file says another */
@@ -7925,17 +7948,19 @@ async function renderCreatorDash(view,me){
          picker, rather than in a receipt afterwards. */
       /* The picker is now per sport and auto-follows the file, so the common
          case deserves a confirmation rather than a warning. */
-      if(SLATE.autoPick&&SLATE.autoPick.ok){
+      if(SLATE.autoPick&&SLATE.autoPick.willCreate){
+        /* The first slate in a new sport. This used to be the warning that
+           ended the upload; it is now a statement of what is about to happen. */
+        msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--pos);padding-left:8px">'+
+          '<b style="color:var(--pos)">This is a '+esc(sportLongName(slateSportFromFile()))+
+          ' file</b> and your account has no '+esc(sportLongName(slateSportFromFile()))+
+          ' model yet, so one is created when you post &mdash; and this slate is attached to it '+
+          'and matched against the '+esc(sportLongName(slateSportFromFile()))+
+          ' schedule. Nothing about your file needs to change.</p>';
+      }else if(SLATE.autoPick&&SLATE.autoPick.ok){
         msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--pos);padding-left:8px">'+
           '<b style="color:var(--pos)">Posting as '+esc(SLATE.autoPick.label)+'</b> &mdash; '+
           'chosen from the file, not from whatever the box was last set to.</p>';
-      }else if(SLATE.autoPick&&!SLATE.autoPick.ok){
-        msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
-          '<b style="color:var(--warn)">'+esc(SLATE.autoPick.label)+'</b> &mdash; this is a '+
-          esc(sportLongName(slateSportFromFile()))+' file and your account has no model for it yet. '+
-          'A slate is attached to a model and the Collective resolves its games in that '+
-          'model\'s sport, so posting it under another sport\'s model matches it against the '+
-          'wrong schedule.</p>';
       }
       var mm=(SLATE.autoPick?null:slateSportMismatch());
       if(mm){
@@ -8134,25 +8159,23 @@ async function renderCreatorDash(view,me){
       var fam=sportFamily(sportCode);
       var known=(mMeta&&mMeta.sports)||[];
 
-      /* Does the ACCOUNT have a model for this sport?
+      /* THE ACCOUNT'S MODEL FOR THIS SPORT IS NO LONGER A PRE-FLIGHT QUESTION.
 
-         This is the one the receipts kept hiding. A submission is attached to a
-         model, and the server resolves its games in that MODEL'S sport — the
-         sibling ingest function does exactly this, reading
-         auth.models[0]?.sport_code ?? "NFL". So a college slate attached to an
-         NFL model is looked up in the NFL schedule, and every row comes back
-         unknown_team_home no matter how the teams are spelled. The proof is
-         that "TCU" — three characters, no accent, no truncation, present in the
-         backend's own CFB schedule — failed against itself.
+         It used to be the first thing checked and a hard stop: a submission is
+         attached to a model and the server resolves its games in that MODEL'S
+         sport, so a college slate attached to an NFL model was looked up in the
+         NFL schedule and every row came back unknown_team_home whatever the
+         team names said. The proof was "TCU" — three characters, no accent, no
+         truncation, present in the backend's own CFB schedule — failing against
+         itself.
 
-         No spelling fix reaches this. It needs a model of the right sport on
-         the account, so say that instead of letting another slate quarantine. */
-      var models=(d&&d.models)||[];
-      if(models.length&&!models.some(function(m){return sportFamily(m.sport)===fam;})){
-        return {level:'no-model',sport:sportCode,
-          have:models.map(function(m){
-            return (m.model_name||m.display_name||m.model_slug)+' ('+(m.sport||'?')+')';})};
-      }
+         That is still true and still matters; what changed is the remedy. The
+         model for this sport is created on the way past (slateSend, above, and
+         collective_ingest on the server), so the answer to "you have no model
+         for this" is now "you do", and blocking here would be stopping a slate
+         over a condition that resolves itself two lines later. What remains
+         below are the checks a creator or an operator still has to act on: a
+         sport the backend does not carry, and a schedule it has not ingested. */
       var listed=known.some(function(x){return sportFamily(x.code)===fam;});
       if(known.length&&!listed){
         return {level:'no-sport',sport:sportCode,
@@ -8202,16 +8225,7 @@ async function renderCreatorDash(view,me){
     function slatePreflightHTML(p){
       if(!p)return '';
       var head,body;
-      if(p.level==='no-model'){
-        head='Your account has no '+esc(p.sport)+' model for this slate to belong to.';
-        body='You have '+(p.have.length?'<span class="mono">'+p.have.map(esc).join('</span>, <span class="mono">')+'</span>':'no models')+
-          '. A submission is attached to a model, and the Collective resolves a slate\'s games in '+
-          'that <b>model\'s</b> sport &mdash; so a college slate attached to an NFL model is looked up '+
-          'in the NFL schedule and every row comes back <span class="mono">unknown_team_home</span>, '+
-          'whatever the team names say. No change to this file or its spellings can reach that. '+
-          'Add a '+esc(p.sport)+' model on your account (or set the existing model\'s sport to '+
-          esc(p.sport)+') and post again.';
-      }else if(p.level==='no-sport'){
+      if(p.level==='no-sport'){
         head='Your Collective backend does not list '+esc(p.sport)+' as a sport.';
         body='It lists '+(p.listed.length?'<span class="mono">'+p.listed.map(esc).join('</span>, <span class="mono">')+'</span>':'nothing')+
           '. Every row would be saved but matched against nothing, which is what "quarantined" means. '+
@@ -8406,29 +8420,30 @@ async function renderCreatorDash(view,me){
           'Map <b>your spread</b> or <b>market line</b> in the column mapping, run the check again, then post.</div>';
         $('slGo').disabled=true;return;
       }
-      /* The sport MUST follow the model the creator picked, not whichever
-         model happens to be first on the account. Sending model=<my CFB
-         model> with sport=NFL matches the rows against the wrong schedule
-         and every game comes back rejected or quarantined — which is exactly
-         what a creator with an NFL model and a CFB model hits the first time
-         they post a college slate. */
-      var selModel=slateSelectedModel(d);
-      /* The file wins over the picker when the two disagree — see
-         slateSportCode(). Posting a college slate as NFL matches it against the
-         wrong schedule and quarantines every game. */
+      /* THE SPORT DECIDES, and it is settled before anything else.
+
+         The file wins over the picker when the two disagree — see
+         slateSportCode() — because a college slate posted as NFL is matched
+         against the wrong schedule and every game quarantines. */
+      var slSport=slateSportCode();
       var env={
-        sport:slateSportCode(),
+        sport:slSport,
         season:+$('slSeason').value,
         data_origin:$('slOrigin').value,
         rows:sendRows,dry_run:dry
       };
       if($('slWeek').value)env.week=+$('slWeek').value;
-      if($('slModel'))env.model=$('slModel').value;
 
       /* Ask the server whether it can match this BEFORE handing it 90 rows to
          quarantine. A real post is stopped and the reason shown; the dry run
          reports it and carries on, because diagnosing is what a dry run is
-         for. `slPreflightOK` is the creator's explicit override. */
+         for. `slPreflightOK` is the creator's explicit override.
+
+         THE MODEL IS RESOLVED AFTER THIS, ON PURPOSE. The pre-flight is where a
+         sport the backend does not carry at all is caught, and creating a model
+         for such a sport and then refusing to post would leave a row behind for
+         a slate that never went anywhere. Nothing is created until the schedule
+         has been asked about. */
       $('slOut').innerHTML='<p class="note">Checking your backend&rsquo;s schedule&hellip;</p>';
       var pf=null,pfHtml='';
       try{pf=await slatePreflight(env.sport,env.season,env.week);}catch(e){pf=null;}
@@ -8436,8 +8451,8 @@ async function renderCreatorDash(view,me){
         pfHtml=slatePreflightHTML(pf);
         /* A slate that is merely short a few games still posts the rest —
            blocking that would strand twenty good games over ten the backend
-           has not ingested. Everything else (wrong sport, wrong model, no
-           schedule at all) is a real stop. */
+           has not ingested. Everything else (a sport the backend does not
+           carry, no schedule at all) is a real stop. */
         var blocking=(pf.level!=='games-missing');
         if(!dry&&blocking){
           $('slOut').innerHTML=slatePreflightHTML(pf)+
@@ -8449,6 +8464,52 @@ async function renderCreatorDash(view,me){
           return;
         }
       }
+
+      /* THE MODEL FOLLOWS THE SPORT, and is created if this is the creator's
+         first slate in it.
+
+         Before this, a sport the account had no model for was a dead stop with
+         a message about asking somebody to make one. It is now one call on the
+         way past — the same get-or-create the sport grid and the ingest use.
+         Idempotent, so running it on every post, dry run included, is correct
+         rather than wasteful: asking twice returns the same model.
+
+         A dry run creates it too, deliberately. Its whole job is to answer
+         "would this post", and the honest answer differs depending on whether
+         the model exists. An empty model has no projections, no grades and no
+         rank, so nothing about the record changes by its existing. */
+      var pick=slateModelForSport(d.models,env.sport,$('slModel')?$('slModel').value:null);
+      if(pick.ambiguous){
+        $('slOut').innerHTML=pfHtml+'<div class="errbox">You have '+pick.ambiguous.length+' '+
+          esc(sportLongName(env.sport)||env.sport)+' models. Choose the one this slate belongs '+
+          'to under <b>Post as</b>, then post again. Nothing was posted.</div>';
+        return;
+      }
+      var selModel=pick.model||null;
+      if(pick.create){
+        $('slOut').innerHTML=pfHtml+'<p class="note">Creating your '+
+          esc(sportLongName(pick.create)||pick.create)+' model&hellip;</p>';
+        try{
+          var made=await ensureModelForSport(pick.create);
+          selModel={model_slug:made.model_slug,model_name:made.model_name,sport:made.sport};
+          /* Keep this render in step with the server without a full reload: the
+             receipt, the revision scan and the picker all read d.models. The
+             next renderCreatorDash re-reads it from /v1/dashboard regardless,
+             so this is a shortcut and never a second source. */
+          d.models.push(selModel);
+          var selEl=$('slModel');
+          if(selEl){selEl.innerHTML=sportPickerOptions(d,mMeta);selEl.value=made.model_slug;}
+        }catch(e){
+          $('slOut').innerHTML=pfHtml+'<div class="errbox">Nothing was posted. Your '+
+            esc(sportLongName(pick.create)||pick.create)+' model could not be created: '+
+            esc((e&&e.message)||'unknown error')+'</div>';
+          return;
+        }
+      }
+      /* The model's own sport is what the store is told, so the envelope and
+         the row it is filed under can never disagree. */
+      if(selModel&&selModel.sport)env.sport=selModel.sport;
+      if(selModel&&selModel.model_slug)env.model=selModel.model_slug;
 
       /* Send the schedule its own spellings. The pre-flight has just fetched the
          game list; use it as the dictionary rather than hoping the backend
@@ -8717,8 +8778,8 @@ async function renderCreatorDash(view,me){
    says so and offers the ask again. No probe at all says the same plain
    thing without inventing a cause.
 
-   For an admin it goes one step further, the way the rest of this page does
-   (adminGrantSQL, addModelSQL): the account's own auth id, a list of the
+   For an admin it goes one step further, the way this page does for the fixes
+   that are genuinely an operator's (adminGrantSQL): the account's own auth id, a list of the
    models actually on this wall, and the filled-in statement that attaches
    one to this account. Nothing here writes anything -- the button prints
    SQL for a person to read and run. */

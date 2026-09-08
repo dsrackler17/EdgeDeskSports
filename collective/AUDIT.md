@@ -41,7 +41,20 @@ depends on them, it is listed under *Verify on the server* rather than claimed.
   `billing.enabled` config, never from the request.
 * **Ingest pins identity to the key.** The envelope's `model` and `sport` are
   overwritten with the key's own creator/model (`pKey`, `envelope`), so a key
-  can only ever write its own creator's model whatever the body claims.
+  can only ever write its own creator's model whatever the body claims. The
+  envelope's `sport` now *chooses* which of that creator's models — and
+  creates one when they have none for it (`resolveModel`, `getOrCreateModel`)
+  — but the creator is still read from the key and never from the body, so
+  auto-creation cannot grow a model on somebody else's account.
+* **Self-serve models derive the account from the session, not the request.**
+  `public.collective_model_ensure(sport, name)`
+  (`supabase/collective_model_autocreate.sql`) resolves the creator from
+  `auth.uid()` and **takes no creator argument**, so nothing the page sends can
+  claim to be somebody else. `anon` is revoked; the creator-taking function
+  underneath it (`collective.get_or_create_model`) is service-role only and
+  revoked from `authenticated`; neither `anon` nor `authenticated` has any
+  grant on `collective.models` or `collective.creators`. No RLS policy was
+  dropped or disabled to make this work.
 * **API keys are hashed.** Only `sha256(raw)` is stored (`newApiKey`), the
   raw key is returned once, lookups are by prefix and compared with a
   constant-time function, and "no such key" and "wrong secret" return the same
