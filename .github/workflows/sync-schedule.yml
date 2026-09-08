@@ -8,10 +8,23 @@ name: Sync the Collective schedule
 # Daily rather than weekly on purpose: a week is not loaded all at once.
 # Kickoffs get set, non-conference games get added, and a creator posting on
 # Tuesday for a Saturday slate needs the games that appeared on Wednesday.
-# Nothing is rewritten, so a day where nothing changed costs one request.
+#
+# It is IDEMPOTENT, which is what makes running it on a schedule safe rather
+# than merely convenient: a fixture already held is not offered again, and a
+# fixture whose facts already agree produces no write. A day on which nothing
+# changed costs a handful of reads and writes nothing at all. The weeks it
+# looks at are the current one and the two after it, and "current" is the same
+# resolver the site shows Current with -- so the week creators are about to
+# post for is always one of them.
 on:
   schedule:
+    # Twice a day, not once. A kickoff moved for television is announced
+    # during the afternoon and a once-a-morning job carries the old time until
+    # the next one -- which, on a Friday, is a Saturday slate that locks
+    # submissions at the wrong minute. Both runs are the same idempotent
+    # sync: a day on which nothing changed writes nothing.
     - cron: '20 9 * * *'
+    - cron: '20 21 * * *'
   workflow_dispatch:
     inputs:
       sport:
@@ -54,12 +67,27 @@ jobs:
       - name: Matching logic must pass before it is allowed to write
         run: node tools/collective/sync_schedule.test.js
 
+      # WHICH WEEKS THIS JOB LOOKS AT is decided by the same resolver the site
+      # decides Current with. It used to be a private copy carrying the same
+      # 36-hour-lookback defect the server had, so a daily run loaded the week
+      # that was already over and the week being played, and never the week
+      # creators were about to post for.
+      - name: The week resolution must pass before it is allowed to write
+        run: node tools/collective/week_resolution.test.js
+
       - name: Prove the source is live before anything is written
         run: node tools/collective/sync_schedule.js --verify || true
 
       - name: Sync
         env:
           COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+          # A fixture that MOVED is updated in place, by id, through the same
+          # service-role door settle-finals already writes through. Without
+          # these the run still loads missing games and still reports what
+          # moved; it simply cannot write the two columns (kickoff_at, status)
+          # an update consists of.
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
         run: |
           ARGS=""
           # A scheduled run loads. A manual run loads only when asked, so the

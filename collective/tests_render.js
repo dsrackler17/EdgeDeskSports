@@ -204,6 +204,13 @@ sandbox.scrollTo=function(){};sandbox.scrollY=0;
 sandbox.requestAnimationFrame=function(){return 0;};
 sandbox.alert=function(){};sandbox.confirm=function(){return false;};
 vm.createContext(sandbox);
+/* The page loads week.js by <script src> before its own inline block, and it
+   is where "which week is current" is decided. A sandbox that skipped it
+   would be driving the page's fallback path -- the pre-fix behaviour -- and
+   reporting green about it. So it is loaded here the way the browser loads
+   it, first, into the same context. */
+try{vm.runInContext(fs.readFileSync(path.join(__dirname,'week.js'),'utf8'),sandbox,{timeout:20000});}
+catch(e){console.log('[boot week.js] '+e.message);}
 try{vm.runInContext(CODE,sandbox,{timeout:20000});}
 catch(e){console.log('[boot] '+e.message);}
 
@@ -350,7 +357,7 @@ var S=sandbox;
      is below the 20 minimum" — a threshold this page no longer applies.
      It leaked because every model in the fixture posted games, so the
      page's own list was never empty and the server's was never reached. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;
   RANKINGS.unranked=[
     {creator_slug:'jadedbettor-murse2-0',model_name:'NFL Math Madness',
      reason:'0 graded games is below the 20 minimum'},
@@ -398,7 +405,7 @@ var S=sandbox;
   chk('the standings no longer claim the boards keep a minimum',
     !/boards above keep their minimums/.test(un)
       && !/has posted two games has not earned a rank/.test(un));
-  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;
   /* The whole standings table is the page's own grading. Printing a record
      with no marker under a rules page that promises every one is marked is
      the kind of quiet claim this site cannot afford. */
@@ -461,7 +468,7 @@ var S=sandbox;
      Everything above is the page standing in for a settlement run that is
      behind. When the run is NOT behind, its grades are the record and the
      page must show them untouched and unmarked. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   GAMES.length=3;
   GAMES[0].models[0].grade={pick_result:'loss',margin_error:9.9,brier:0.99};
   S.location.hash='#board';
@@ -482,7 +489,7 @@ var S=sandbox;
   GAMES[0].models[0].grade=null;
 
   /* ---- a finished game the Collective captured no close for ------------ */
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   var noClose=G(9,'A','B',30,20,null,[M('blerm','blerm-s-model','home',-12.5,null,0.8)]);
   chk('no captured close means no win, no loss, and no push',
     function(){
@@ -497,7 +504,7 @@ var S=sandbox;
     });
 
   /* ---- the API being unreachable must not blank the page --------------- */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var realFetch=S.fetch;
   S.fetch=function(u){
     if(String(u).indexOf('/v1/games')>=0)
@@ -519,7 +526,7 @@ var S=sandbox;
       return Promise.resolve({ok:false,status:503,json:function(){return Promise.resolve({});}});
     return realFetch(u);
   };
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   var r4=node();
   await S.renderRankings(r4);
   chk('the rankings endpoint being down is no longer an error page',
@@ -530,7 +537,7 @@ var S=sandbox;
   /* ---- the directory sorts the record it is SHOWING -------------------
      Sorting on the server's record while displaying the page's meant "sort
      by Win %" did nothing at all to a column full of numbers. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   S.location.hash='';
   S.WALL_SORT='win_pct';
   var v4=node();
@@ -552,7 +559,7 @@ var S=sandbox;
      A finished game the Collective captured no closing line for has no
      against-the-spread result for anybody. The old strip mapped anything
      that was not a win or a loss to 'p' and drew a push nobody got. */
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   var noClosePerf=G(77,'NOCLOSE','OPPO',31,10,null,[
     M('blizzard-performance','cfb-model',null,-9,null,null)]);
   GAMES.push(noClosePerf);
@@ -601,7 +608,7 @@ var S=sandbox;
      failed repaint was forever: it had already agreed it had drawn this
      state and never looked again, and the reader sat in front of an error
      box until they reloaded the page. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;
   S.location.hash='';
   await S.liveTick();
@@ -644,7 +651,7 @@ var S=sandbox;
      liveRoute() was checked only on the way in. Two requests happen after
      that, and in them a reader can open the dashboard — a view holding a
      half-mapped slate nobody has saved. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;
   S.location.hash='';
   await S.liveTick();
@@ -735,7 +742,7 @@ var S=sandbox;
       return mid>before&&S.ROUTE_TOKEN>mid;
     });
   /* end to end: a board render caught mid-flight by a route change */
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   S.location.hash='#board';
   var vB=node();
   var flight=S.renderBoard(vB);
@@ -747,7 +754,7 @@ var S=sandbox;
   S.location.hash='';
 
   /* ---- the scroll restore must not yank a reader who moved ------------- */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;S.LIVE_TICKS=0;
   var scrolls=[];
   S.scrollTo=function(x,y){scrolls.push(y);S.scrollY=y;};
@@ -770,7 +777,7 @@ var S=sandbox;
   /* ---- a week that failed to load must not be cached as a season ------
      One missing week is a hole in every record computed from the sweep, and
      caching it makes the hole permanent for the whole session. */
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   var realFetch3=S.fetch;
   S.fetch=function(u){
     if(/[?&]week=2/.test(String(u)))
@@ -786,18 +793,18 @@ var S=sandbox;
     Object.keys(S.SEASON_GAMES).length===0,
     'a short record all day, and the reader never finds out why');
   S.fetch=realFetch3;
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   var full=await S.seasonGames('CFB',2026);
   chk('and a complete sweep is remembered',
     full.length>0 && Object.keys(S.SEASON_GAMES).length===1);
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
 
   /* ---- a stale server row must not stand in for a whole board ---------
      inSport keeps a row whose sport it cannot resolve, deliberately: an
      unlabelled model is the server's omission and hiding it is worse. But
      one such row used to suppress the board this page computed for the
      sport the reader is actually on. */
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   RANKINGS.thresholds={min_graded_games:2,min_coverage_pct:60};
   RANKINGS.boards.win_pct=[{rank:1,creator_slug:'ghost',creator_name:'Ghost Analytics',
     model_name:'Ghost NFL Model',value:0.62,graded:41}];
@@ -818,7 +825,7 @@ var S=sandbox;
     {board:winBoard.slice(0,400)});
 
   /* ---- and nobody is ranked and unranked at once ---------------------- */
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   RANKINGS.thresholds={min_graded_games:20,min_coverage_pct:60};
   /* a model name with no apostrophe: esc() would turn one into &#39; and
      the search would pass whatever the code did */
@@ -852,14 +859,14 @@ var S=sandbox;
       return both.slice(un).indexOf('EdgeDesk Model')<0;
     });
   RANKINGS.boards.win_pct=[];
-  S.SEASON_GAMES={};S.LOCALREC={};S.location.hash='';
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.location.hash='';
 
   /* ---- the sweep must not stop at one week -----------------------------
      The week-less payload names the current week, and that is what bounds
      the sweep. When it does not, the games it returned still do — reading
      one week and calling it a season would quietly build every record on
      this site out of a single slate. */
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   var realFetch4=S.fetch;
   function wkGame(n){
     var g=G(900+n,'A'+n,'B'+n,24,17,-3.5,[M('blerm','blerm-s-model','home',-6,-3.5,0.6)]);
@@ -874,20 +881,25 @@ var S=sandbox;
     return reply({games:[wkGame(3)],entitled:true});
   };
   var swept=await S.seasonGames('CFB',2026);
+  /* From week ZERO, not week one. College football plays a Week 0 and a sweep
+     that started at 1 dropped every game in it out of every record on this
+     site; an absent week 0 costs one empty response and nothing else. So the
+     head payload's own games still bound the sweep -- that is what this
+     guards -- and the floor is 0. */
   chk('a payload that names no week is bounded by the games it returned',
-    swept.length===3
-      && [1,2,3].every(function(w){
+    swept.length===4
+      && [0,1,2,3].every(function(w){
            return swept.some(function(g){return g.week===w;});
          }),
     {weeks:swept.map(function(g){return g.week;})});
   S.fetch=realFetch4;
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
 
   /* ---- THE REPORTED BUG, exactly as reported --------------------------
      The wire returns result:null on games that finished the day before.
      No FINAL chip on the board, 0 settled on the wall, every record zero —
      and no grader could fix it, because a grader cannot invent a score. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
   var BLANK=GAMES.map(function(g){
     var c=JSON.parse(JSON.stringify(g));
     c.result=null;                       /* what the API actually returns */
@@ -980,7 +992,7 @@ var S=sandbox;
       return r.closing_spread===-7.5 && gr.pick_result==='loss';
     },
     {close:(S.finalResult(withClose[0])||{}).closing_spread});
-  S.ESPN_DAYS={};S.SEASON_GAMES={};S.LOCALREC={};S.CLOSING={};
+  S.ESPN_DAYS={};S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.CLOSING={};
 
   /* ---- THE SECOND HALF OF THE SAME BUG --------------------------------
      The board is a FORWARD window — odds.js says so itself: "a game that
@@ -1068,7 +1080,7 @@ var S=sandbox;
   chk('the board answers first and costs no extra request',
     askedAnyway===0 && S.finalResult(onBoard[0]).closing_spread===-7.5,
     {asked:askedAnyway});
-  S.ESPN_DAYS={};S.SEASON_GAMES={};S.LOCALREC={};S.CLOSING={};
+  S.ESPN_DAYS={};S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.CLOSING={};
 
   /* ---- the market page -------------------------------------------------
      It fetched whatever league the sport switcher said and then described it
@@ -1103,7 +1115,7 @@ var S=sandbox;
     marketCard:function(g){return '<div class="mco-card" data-ev="'+g.event_id+'">'+
       g.away+' @ '+g.home+'</div>';}
   };
-  S.SEASON_GAMES={};S.LOCALREC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
   S.location.hash='#market';
   var vM=node();
   await S.renderMarket(vM);
@@ -1172,7 +1184,7 @@ var S=sandbox;
       && S.espnLeague('NCAAF')==='college-football'   /* alias folds to CFB */
       && S.espnLeague('QUIDDITCH')===null,
     'an unknown sport asks nobody for a score rather than guessing a league');
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
   S.localStorage.setItem('mc_sport','NFL');
   WALL.push(NFLWALL[0]);WALL.push(NFLWALL[1]);
   S.location.hash='#rankings';
@@ -1229,13 +1241,13 @@ var S=sandbox;
     'groups=80 is the FBS group; it means nothing to an NFL scoreboard');
   WALL.pop();WALL.pop();
   S.localStorage.setItem('mc_sport','CFB');
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
   S.location.hash='';
 
   /* ---- an empty board must not break its own card ---------------------
      Rendered with NO games at all, so the empty message is actually on the
      page — asserting it against a board that filled passes for free. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var realFetch7=S.fetch;
   S.fetch=function(u){
     if(String(u).indexOf('/v1/games')>=0)
@@ -1252,7 +1264,7 @@ var S=sandbox;
   chk('and its message wraps instead of forcing a scrollbar',
     /white-space:normal[^>]*>\s*No finished games yet/.test(emptyHtml),
     {cell:(/<td[^>]*>\s*No finished games yet[^<]*/.exec(emptyHtml)||[])[0]});
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
 
   /* ---- THE MODEL'S OWN PAGE -------------------------------------------
      Never driven by this suite, and it was broken in the way that matters
@@ -1265,7 +1277,7 @@ var S=sandbox;
 
      The stub returns exactly that state: record null, recent_graded [],
      coverage []. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};
   S.location.hash='#/model/blerm/blerm-s-model';
   var vMod=node();
   await S.renderModel(vMod,'blerm','blerm-s-model');
@@ -1296,7 +1308,7 @@ var S=sandbox;
   chk('a record the page graded itself still says so',
     /class="pgrade"/.test(mod),
     'a settled record and one computed here are different claims');
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 
   /* ---- THE REPORTED BUG, second half ----------------------------------
      The profile above was driven with an EMPTY server coverage list, which
@@ -1315,7 +1327,7 @@ var S=sandbox;
 
      Same page, same model, the only difference being what the server says
      about coverage. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
   MODEL_COVERAGE=[{season:2026,week:1,games_submitted:35,games_available:59},
                   {season:2026,week:2,games_submitted:0,games_available:47}];
   var realFetchC=S.fetch;
@@ -1366,11 +1378,20 @@ var S=sandbox;
   chk('and it is graded against the captured close, so it has a record',
     /-7\.5/.test(cov)&&/-38\.5/.test(cov)&&/>WIN<|>LOSS</.test(cov),
     {ats:(/Against the spread[\s\S]{0,200}/.exec(cov)||[])[0]});
+  /* Addressing a week by number is how a season is read at all: the sweep
+     fetches the weeks BEFORE the current one, and resolving which week is
+     current can look forward past a finished slate. What must never happen is
+     the page fetching a week it is already holding -- the coverage table names
+     2026 W1, W1 is the payload in hand, and asking for it again, once per
+     coverage row, behind a sweep that already returned it, is the re-fetch
+     this guards. Nor may any week be asked for twice. */
   chk('the current season is not re-fetched week by week behind the sweep',
-    coverageWeekAsked.length===0,
+    coverageWeekAsked.filter(function(u){return /[?&]week=1(&|$)/.test(u);}).length===0
+      && coverageWeekAsked.length===Object.keys(coverageWeekAsked.reduce(
+           function(a,u){a[u]=1;return a;},{})).length,
     {asked:coverageWeekAsked});
   MODEL_COVERAGE=[];
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
   S.location.hash='';
 
   /* ---- and when the sweep is the thing that fails ----------------------
@@ -1380,7 +1401,7 @@ var S=sandbox;
      set gets the same grading pass every other surface on this site gets,
      rather than being the one path where a finished game is left ungraded
      because of where it happened to be read from. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
   MODEL_COVERAGE=[{season:2026,week:1,games_submitted:35,games_available:59}];
   var realFetchS=S.fetch;
   S.fetch=function(u){
@@ -1425,14 +1446,14 @@ var S=sandbox;
       &&/>WIN<|>LOSS</.test(fall)&&/-7\.5/.test(fall),
     {rows:(fall.match(/data-res="[a-z]*"/g)||[])});
   MODEL_COVERAGE=[];
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
   S.location.hash='';
 
   /* ---- getting there ---------------------------------------------------
      The rankings named every model and linked to none of them: a row went
      to the CREATOR, who may run several models, so the one number a reader
      had just clicked led to a page that did not show its picks. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var rLink=node();
   await S.renderRankings(rLink);
   var lnk=rLink.innerHTML;
@@ -1478,7 +1499,7 @@ var S=sandbox;
      received before the lock. The +n beside the pick says how many earlier
      numbers it replaced, so a creator who re-uploaded a corrected slate can
      see on the wall that the new number is the one that counts. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
   var mv=node();
   await S.renderWall(mv);
   chk('a model that posted once carries no revision marker',
@@ -1486,7 +1507,7 @@ var S=sandbox;
     'the marker must mean something, so it cannot be on every row');
   /* the exact case from the report: a slate posted, then re-posted twice */
   GAMES[0].models[0].movement_n=3;
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var mv2=node();
   await S.renderWall(mv2);
   chk('a re-posted game shows how many further submissions arrived',
@@ -1513,7 +1534,7 @@ var S=sandbox;
     })());
   /* a single submission is not a revision, and 0/absent must not print +-1 */
   GAMES[0].models[0].movement_n=1;
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var mv3=node();
   await S.renderWall(mv3);
   chk('one submission is not reported as a revision',
@@ -1537,7 +1558,7 @@ var S=sandbox;
     M('blerm','blerm-s-model','away',-29.5,-28.5,null)]);
   openGame.kickoff_at='2099-01-01T00:00:00Z';
   GAMES.push(openGame);
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var mv4=node();
   await S.renderWall(mv4);
   var blk=(function(){
@@ -1568,7 +1589,7 @@ var S=sandbox;
   /* ---- the answer layer sits above the wall ---------------------------
      A first-time reader gets the summary strip and the room before the
      terminal table, and the strip counts only what is on the page. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
   var open2=G(5,'UMASS','RUTGERS',null,null,null,[
     M('mustbemoose','edgedesk-cfb-p4','home',-36.5,-28.5,0.98),
     M('blerm','blerm-s-model','away',-29.5,-28.5,null)]);
@@ -1629,7 +1650,7 @@ var S=sandbox;
      The stub returns exactly that state: the two games settled 0-0 with a
      server grade on every row, a server record of graded:2 / 0-0-0 for
      every model, and a recent_graded log of two 0-0 rows. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
   function placeholderGames(){
     return GAMES.map(function(g){
       var c=JSON.parse(JSON.stringify(g));
@@ -1708,7 +1729,7 @@ var S=sandbox;
     {ml:(/Outright \(ML\)[\s\S]{0,80}/.exec(ph)||[])[0]});
 
   /* the wall, which printed 0-0-0 against every model from the same records */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
   S.location.hash='';
   var vWPH=node();
   await S.renderWall(vWPH);
@@ -1724,7 +1745,7 @@ var S=sandbox;
     !/<b>[45]<\/b> settled/.test(wallPH));
 
   /* the rankings, whose server boards are built on the same settlement */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
   S.location.hash='#rankings';
   var vRPH=node();
   await S.renderRankings(vRPH);
@@ -1734,7 +1755,7 @@ var S=sandbox;
     {zeroes:(rankPH.match(/0-0-0/g)||[]).length});
 
   S.fetch=realFetchPH;
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.location.hash='';
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.location.hash='';
 
   /* ---- THE COMMITTED SETTLEMENT RECORD -----------------------------------
      The hourly settle job now writes collective/settled/<SPORT>_<season>.json
@@ -1743,7 +1764,7 @@ var S=sandbox;
      the record in hand, a season whose wire carries no results at all is
      fully graded without a single feed call, and a 0-0 placeholder the
      server settled is replaced by the record's real final. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
   var RECORD={schema:'edgedesk_collective_settled_v1',sport:'CFB',season:2026,generated_at:'2026-09-05T02:00:00Z',
     rule:'x',games:{
       '1':{label:'NORTHCAROL @ TCU',home:'TCU',away:'NORTHCAROL',week:1,kickoff_at:'2026-08-29T16:00:00Z',
@@ -1803,10 +1824,10 @@ var S=sandbox;
     S.seasonOfKickoff('2026-08-29T16:00:00Z')===2026&&S.seasonOfKickoff('2027-01-10T00:00:00Z')===2026
       &&S.seasonOfKickoff('2026-05-01T00:00:00Z')===2025&&S.seasonOfKickoff(null)===null&&S.seasonOfKickoff('x')===null);
   S.fetch=realFetchRec;
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
 
   /* ---- the model page says who it is before what it did ---------------- */
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var vm=node();
   await S.renderModel(vm,'blerm','blerm-s-model');
   chk('the model page opens with the profile facts, then the record, then behaviour',
@@ -1819,7 +1840,7 @@ var S=sandbox;
   chk('behaviour states its sample and is labelled as computed on this page',
     /n=3/.test(vm.innerHTML) && /Behaviour, not performance/.test(vm.innerHTML));
 
-  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 
   /* ---- the door: which room a signed-in account gets --------------------
      The regression this covers is a lockout, not a wrong pixel. The slate
@@ -2088,7 +2109,7 @@ var S=sandbox;
 
   /* THE WALL. Default asks for no week at all — the front page follows the
      server's current slate, and must not pin itself to a number. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;
   S.location.hash='';
   wkAsked.length=0;
   var vw=node();
@@ -2100,7 +2121,7 @@ var S=sandbox;
     {has:vw.innerHTML.indexOf('class="wk"')});
 
   /* Pick week 2: the request carries it, and the week 2 game is what draws. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=2;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=2;
   wkAsked.length=0;
   var vw2=node();
   await S.renderWall(vw2);
@@ -2113,7 +2134,7 @@ var S=sandbox;
     /class="on" data-w="2"/.test(vw2.innerHTML));
 
   /* THE BOARD still works through the same helper. */
-  S.SEASON_GAMES={};S.LOCALREC={};S.BOARD_WEEK=2;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.BOARD_WEEK=2;
   wkAsked.length=0;
   S.location.hash='#board';
   var vb=node();
@@ -2122,7 +2143,7 @@ var S=sandbox;
     wkAsked.some(function(u){return /[?&]week=2/.test(u);})&&/class="on" data-w="2"/.test(vb.innerHTML),
     {asked:wkAsked.slice()});
   S.BOARD_WEEK=null;S.WALL_WEEK=null;S.location.hash='';
-  S.fetch=realFetchWk;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
+  S.fetch=realFetchWk;S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;
 
   /* ---- a record cannot be shorter than the slate without saying why ------
      Every ATS grade here is measured against the Collective's own captured
@@ -2141,7 +2162,7 @@ var S=sandbox;
     }
     return out;
   }
-  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;S.SETTLED_REC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;S.SETTLED_REC={};
   var NC=noCloseGames(5);
   S.fetch=function(url){
     var u=String(url);
@@ -2164,7 +2185,7 @@ var S=sandbox;
     {grade:S.rowGrade(NC[0],NC[0].models[0])});
 
   /* and it stays out of the way when there is nothing to report */
-  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
   var WC=noCloseGames(3);WC.forEach(function(g){g.result.closing_spread=-7.5;});
   S.fetch=function(url){
     var u=String(url);
@@ -2176,7 +2197,7 @@ var S=sandbox;
   await S.renderWall(vwc);
   chk('a slate whose closes all landed shows no warning at all',
     !/id="bdNoClose"/.test(vwc.innerHTML)&&/<b>3<\/b> settled/.test(vwc.innerHTML));
-  S.fetch=realFetchNC;S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+  S.fetch=realFetchNC;S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
 
   /* ---- the market window has to reach BACKWARDS too ----------------------
      `days` widened only the future; the lower bound was a fixed 24 hours on

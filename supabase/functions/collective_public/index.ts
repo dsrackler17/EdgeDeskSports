@@ -696,16 +696,138 @@ function seasonParam(raw: string | null, fallback: number | undefined): number {
   return s === "" ? Number(fallback) : Number(s);
 }
 
-// The current slate week: the week of the next game to kick off (with a
-// 36 hour grace so a week stays current through its Monday night game),
-// else the last week that has games.
+/* ==== CURRENT-WEEK RESOLVER — mirror of collective/week.js ================
+   WHAT THIS REPLACED, AND WHY. Current used to be "the week of the earliest
+   game kicking off at or after now minus 36 hours". The grace existed so a
+   week stayed current through its Monday night game, but it was applied to
+   the EARLIEST game found rather than to the week's LAST one — so any game
+   played inside the last 36 hours pinned Current to its week. A Monday night
+   college game (SMU @ Florida State, Sep 7) kept /v1/games, and therefore the
+   Collective's whole front page, on the finished Week 1 slate all through
+   Sep 8, with Week 2 loaded and invisible.
+
+   It was also the wrong question. A week is not current because of a clock
+   offset. It is current because it still has football left in it.
+
+   THE RULE: Current is the earliest week that still has a game to be played;
+   when no week does, the last week that has games. Nothing here derives a
+   week from a date — it reads the week the schedule provider stated, which is
+   the only thing that survives Week 0, Thursday games, Tuesday games,
+   conference championships, bowls and four playoff rounds.
+
+   The block between the markers is a LINE-FOR-LINE mirror of the same
+   functions in collective/week.js, which this bundle cannot import because
+   the dashboard bundles one folder. tools/collective/week_resolution.test.js
+   extracts it and runs both against the same table of cases, so the two
+   cannot drift into being two competing answers.
+
+   ---8<--- MIRROR OF collective/week.js — KEEP IN STEP ---8<--- */
+const IN_PLAY_MS = 8 * 3600 * 1000;
+
+interface WeekGame {
+  week: number | null;
+  kickoff_at?: string | null;
+  status?: string | null;
+  home_score?: number | null;
+  away_score?: number | null;
+  result?: { home_score?: number | null; away_score?: number | null } | null;
+}
+
+function weekMs(v: string | null | undefined): number {
+  if (v == null || v === "") return NaN;
+  const t = new Date(v).getTime();
+  return isFinite(t) ? t : NaN;
+}
+
+function hasFinal(g: WeekGame): boolean {
+  if (!g) return false;
+  const r = g.result;
+  if (r && r.home_score != null && r.away_score != null) return true;
+  if (g.home_score != null && g.away_score != null) return true;
+  return String(g.status ?? "").toLowerCase() === "final";
+}
+
+function gameState(g: WeekGame, now: number): string {
+  if (!g) return "void";
+  const st = String(g.status ?? "").toLowerCase();
+  if (st === "canceled" || st === "cancelled") return "void";
+  if (hasFinal(g)) return "final";
+  const k = weekMs(g.kickoff_at);
+  if (st === "postponed") return (isFinite(k) && k > now) ? "upcoming" : "void";
+  if (!isFinite(k)) return "upcoming";
+  if (k > now) return "upcoming";
+  if (now - k < IN_PLAY_MS) return "live";
+  return "stale";
+}
+
+function isPending(g: WeekGame, now: number): boolean {
+  const s = gameState(g, now);
+  return s === "upcoming" || s === "live";
+}
+
+function weekOf(g: WeekGame): number | null {
+  if (!g || g.week == null) return null;
+  const w = Number(g.week);
+  return (isFinite(w) && Math.floor(w) === w && w >= 0) ? w : null;
+}
+
+function weekNumbers(games: WeekGame[]): number[] {
+  const seen: Record<number, boolean> = {};
+  const out: number[] = [];
+  (games || []).forEach((g) => {
+    const w = weekOf(g);
+    if (w == null || seen[w]) return;
+    seen[w] = true; out.push(w);
+  });
+  return out.sort((a, b) => a - b);
+}
+
+function weekIsActive(games: WeekGame[], week: number, now: number): boolean {
+  const w = Number(week);
+  return (games || []).some((g) => weekOf(g) === w && isPending(g, now));
+}
+
+function firstActiveWeek(games: WeekGame[], now: number): number | null {
+  const weeks = weekNumbers(games);
+  for (const w of weeks) if (weekIsActive(games, w, now)) return w;
+  return null;
+}
+/* ---8<--- END MIRROR ---8<--- */
+
+/* How many weeks past the first candidate to read before trusting the answer.
+   The SQL below narrows to the earliest week that CAN still have football in
+   it, and the rule above then decides on the real rows — reading a few weeks
+   rather than one so a filter that is merely close cannot decide by itself. */
+const WEEK_LOOKAHEAD = 3;
+
+/* The current slate week, by the rule above, in at most three small reads. */
 async function currentWeek(sport: string, season: number): Promise<number | null> {
-  const grace = new Date(Date.now() - 36 * 3600e3).toISOString();
-  const next = await viewGet<{ week: number | null }>("game_detail",
-    `select=week&sport=eq.${sport}&season=eq.${season}&kickoff_at=gte.${encodeURIComponent(grace)}&week=not.is.null&order=kickoff_at.asc&limit=1`);
-  if (next[0]?.week != null) return next[0].week;
+  const now = Date.now();
+  const floor = new Date(now - IN_PLAY_MS).toISOString();
+  /* The earliest week that can still have a game to be played. Every filter
+     here is implied by isPending(), so this can only be at or before the
+     answer — never past it, which is what makes reading forward from it safe.
+     A game already scored, already marked final, or canceled is not pending;
+     nor is one whose kickoff is further back than the in-play window. */
+  const cand = await viewGet<{ week: number | null }>("game_detail",
+    `select=week&sport=eq.${sport}&season=eq.${season}&week=not.is.null` +
+    `&home_score=is.null&status=not.in.(final,canceled,cancelled)` +
+    `&kickoff_at=gte.${encodeURIComponent(floor)}&order=week.asc&limit=1`);
+  const from = cand[0]?.week;
+  if (from != null) {
+    const rows = await viewGet<WeekGame>("game_detail",
+      `select=week,kickoff_at,status,home_score,away_score` +
+      `&sport=eq.${sport}&season=eq.${season}` +
+      `&week=gte.${from}&week=lte.${from + WEEK_LOOKAHEAD}&order=week.asc`);
+    const w = firstActiveWeek(rows, now);
+    if (w != null) return w;
+  }
+  /* Nothing left to play anywhere: the season is over, or the schedule has
+     not been loaded past it. The last week that HAS games is the answer, by
+     week number rather than by kickoff — a bowl moved into January is still
+     that week's game. */
   const last = await viewGet<{ week: number | null }>("game_detail",
-    `select=week&sport=eq.${sport}&season=eq.${season}&week=not.is.null&order=kickoff_at.desc&limit=1`);
+    `select=week&sport=eq.${sport}&season=eq.${season}&week=not.is.null&order=week.desc&limit=1`);
   return last[0]?.week ?? null;
 }
 

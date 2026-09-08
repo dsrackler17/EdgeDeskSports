@@ -2750,6 +2750,42 @@ async function mcGet(path,tok){
     return await r.json();
   }catch(e){clearTimeout(tm);throw e;}
 }
+/* WHICH WEEK IS CURRENT, from the Collective's own resolver -- the same file
+   /collective/ decides it with, so this tab and that site can never be
+   showing two different slates. Entirely optional: without it the tab asks
+   for the week-less board exactly as it did before, which is the behaviour
+   this is an improvement on rather than a dependency of. */
+function mcWeekReady(){
+  if(window.MCWeek)return Promise.resolve(window.MCWeek);
+  return new Promise(function(res){
+    var el=document.createElement('script');
+    el.src='/collective/week.js';el.async=true;
+    el.onload=function(){res(window.MCWeek||null);};
+    el.onerror=function(){res(null);};
+    /* a script that never loads must not hold the board. A real browser fires
+       onload or onerror; this is for the case neither ever comes. */
+    setTimeout(function(){res(window.MCWeek||null);},1500);
+    document.head.appendChild(el);
+  });
+}
+/* THE SLATE THIS TAB SHOULD SHOW. /v1/games with no week asks the server
+   which week is current, and the server's answer kept a finished Monday
+   night game as "current" for another full day -- so this tab led with a
+   completed slate while the next week's was already loaded. The resolver
+   rolls that answer forward when the week it names has no football left in
+   it, by the Collective's own rule, and costs one extra request only on the
+   days it is actually needed. */
+function mcSlate(sp,tok){
+  var q=function(w){
+    return mcGet('/v1/games?sport='+encodeURIComponent(sp.code)+
+      '&season='+encodeURIComponent(sp.season==null?'':sp.season)+
+      (w==null?'':'&week='+encodeURIComponent(w)),tok);
+  };
+  if(!window.MCWeek||typeof MCWeek.resolveCurrentSlate!=='function')return q(null);
+  return MCWeek.resolveCurrentSlate({
+    fetchWeek:function(w){return q(w).catch(function(){return null;});}
+  }).then(function(r){return r.payload;});
+}
 /* The market, from the Collective's own odds components -- the same file
    /collective/ renders its prices from, so a line shown here is the line
    shown there. Entirely optional: if it does not load, the board simply has
@@ -2774,10 +2810,13 @@ async function mcLoad(){
   MC.sports=(meta&&meta.sports)||[];
   var wallP=mcGet('/v1/wall').then(function(d){return (d&&d.rows)||[];})
     .catch(function(){MC.failed.wall=true;return [];});
+  /* the week resolver, before the boards it decides. It is a local file and
+     it has its own 3s deadline, so the worst case is the board this tab
+     always had. */
+  await mcWeekReady();
   var boardsP=MC.sports.length
     ? Promise.all(MC.sports.map(function(sp){
-        return mcGet('/v1/games?sport='+encodeURIComponent(sp.code)
-            +'&season='+encodeURIComponent(sp.season==null?'':sp.season),tok)
+        return mcSlate(sp,tok)
           .then(function(d){
             /* tag the sport we asked for: a payload built before games
                carried one would otherwise be unlabelled in a mixed list */

@@ -121,6 +121,16 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .wk{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
 .wk button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:11.5px;padding:4px 9px;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .wk button.on{color:var(--text);border-color:var(--accent)}
+/* Which numbered week Current is standing on. Subtle on purpose: Current is
+   still the button, and this only says where it landed — so a reader can see
+   that Current and W2 are the same slate without W2 being pressed. */
+.wk button .wknow{font-style:normal;color:var(--accent);margin-left:5px;opacity:.9}
+.wk button.res{border-color:var(--accent);border-style:dashed}
+/* The slate a surface is actually showing, said once, above it. */
+.slatetag{display:block;margin:-4px 0 12px;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.slatetag b{color:var(--text);font-weight:600}
+.slatetag .hist{color:var(--warn)}
 /* The sport switcher. Same family as .wk — mono, small, bordered — but it sits
    a level above the week picker in the hierarchy, so it reads as a tab strip:
    a little taller, a filled active state, and an underline that ties the
@@ -523,6 +533,10 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
 <!-- The odds components. One file, shared by this page, the embed and the
      admin console, so a price rendered in two places is the same price. -->
 <script src="odds.js"></script>
+<!-- Which week is CURRENT. One rule, shared by this page and the schedule
+     sync, so the slate a reader is shown and the slate that gets loaded can
+     never be two different answers to the same question. -->
+<script src="week.js"></script>
 <script>
 "use strict";
 /* ================= config ================= */
@@ -2876,18 +2890,27 @@ var SEASON_GAMES={};
 async function seasonGames(sport,season){
   var key=sport+'|'+season;
   if(SEASON_GAMES[key])return SEASON_GAMES[key];
-  var head=await api('/v1/games?sport='+encodeURIComponent(sport)+'&season='+encodeURIComponent(season),{auth:true});
+  /* The CURRENT week bounds the sweep, and it is the resolved one -- the
+     same answer the wall and the board are drawing. Before this the bound
+     came from whatever the week-less call happened to return, so on a day
+     the wire was a week behind, the last completed week was left out of
+     every record computed here. */
+  var slate=await currentSlate(sport,season);
+  if(slate.from==='error'&&slate.error)throw slate.error;
+  var head=slate.payload;
   var games=(head&&head.games)||[],missed=0;
-  var cur=(head&&head.week!=null)?head.week:null;
-  /* The week-less payload names the current week, which is what bounds the
-     sweep. When it does not, the games it returned still do — and reading
-     one week and calling it a season would quietly build every record out
-     of a single slate. */
+  var cur=slate.week;
+  /* No resolved week and no payload is not a season to sweep; the games in
+     hand still name their own weeks, and reading one week and calling it a
+     season would quietly build every record out of a single slate. */
   if(cur==null){
     games.forEach(function(g){if(g&&g.week!=null&&(cur==null||g.week>cur))cur=g.week;});
   }
-  if(cur!=null&&cur>1){
-    var weeks=[];for(var w=1;w<cur;w++)weeks.push(w);
+  if(cur!=null&&cur>0){
+    /* From ZERO. College football plays a Week 0, and a sweep that started
+       at 1 dropped every game in it out of every record on this site. An
+       absent week 0 costs one cached empty response. */
+    var weeks=[];for(var w=0;w<cur;w++)weeks.push(w);
     var pages=await Promise.all(weeks.map(function(wk2){
       return api('/v1/games?sport='+encodeURIComponent(sport)+'&season='+encodeURIComponent(season)+'&week='+wk2,{auth:true})
         .catch(function(){return null;});
@@ -2994,14 +3017,32 @@ function slateOrder(games,kickField){
     var t=new Date((g&&g[kickField||'kickoff_at'])||0).getTime();
     return isFinite(t)?t:0;
   }
-  function done(g){
-    return finalResult(g)!=null||(kick(g)>0&&kick(g)<now);
+  /* THREE BANDS, not two. A game in progress used to be sorted with the
+     finished ones -- it has a kickoff in the past and no final yet -- so the
+     one game actually being played sat underneath every game that had not
+     started. Live leads, then what is about to start, then what is over.
+
+     The band comes from the shared rule (collective/week.js) so "live" means
+     the same thing here as it does when Current is being decided: kicked off,
+     inside the in-play window, no final on file. A game that kicked off long
+     ago and was never settled is not live, and is not allowed to lead the
+     wall on the strength of a settlement that never landed. */
+  function band(g){
+    if(finalResult(g)!=null)return 2;
+    if(window.MCWeek&&typeof MCWeek.gameState==='function'){
+      var st=MCWeek.gameState({status:g&&g.status,result:g&&g.result,
+        kickoff_at:(g&&g[kickField||'kickoff_at'])||null},now);
+      if(st==='live')return 0;
+      if(st==='upcoming')return 1;
+      return 2;
+    }
+    return (kick(g)>0&&kick(g)<now)?2:1;
   }
   return (games||[]).slice().sort(function(a,b){
-    var da=done(a)?1:0,db=done(b)?1:0;
-    if(da!==db)return da-db;                 /* upcoming first */
-    return da?kick(b)-kick(a)               /* finished: newest first */
-             :kick(a)-kick(b);              /* upcoming: soonest first */
+    var ba=band(a),bb=band(b);
+    if(ba!==bb)return ba-bb;
+    return ba===2?kick(b)-kick(a)            /* finished: newest first */
+                 :kick(a)-kick(b);           /* live and upcoming: soonest first */
   });
 }
 /* One stable key for a game across the wall and the board. The board's games
@@ -3268,30 +3309,56 @@ function bindIntro(){
 /* The summary strip and the room, for one slate. Counts come from the rows
    on screen and the public wall rows, so a signed-out reader gets true
    counts and no locked number. */
-function commandCentreHTML(m,sport,rows,games,mkt){
+function commandCentreHTML(m,sport,rows,games,mkt,week){
+  /* EVERY NUMBER HERE IS THIS SLATE'S. `games` is one week -- the week the
+     caller resolved and asked for by number -- so projections, coverage and
+     disagreements are counted from it and cannot be inflated by a previous
+     week's rows. The two counts that are NOT per-slate say so in their own
+     labels rather than being quietly read as this week's: the model roster
+     is the sport's, and "updated" is a seven day window by definition. */
   var all=games||[];
+  if(week!=null){
+    /* A caller that hands over a mixed set gets the week it asked for, not a
+       silent overcount: the guard is cheap and the failure it prevents --
+       Week 1 numbers under a Week 2 heading -- is the whole complaint. */
+    all=all.filter(function(g){return g&&(g.week==null||Number(g.week)===Number(week));});
+  }
   var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
   var proj=0,covered=0,lockedGames=0,divided=0,anyOpen=false;
   var weekAgo=Date.now()-7*86400000,updated=0;
   rows.forEach(function(r){var t=r.last_submission_at?new Date(r.last_submission_at).getTime():NaN;if(isFinite(t)&&t>=weekAgo)updated++;});
-  var sums=[];
+  var sums=[],onSlate={};
   all.forEach(function(g){
     var x=gameSummary(g,mkt);if(!x)return;
     sums.push(x);
-    var n=(g.models||[]).filter(function(mr){return mr&&!mr.late;}).length;
-    proj+=n;if(n)covered++;
+    var live=(g.models||[]).filter(function(mr){return mr&&!mr.late;});
+    live.forEach(function(mr){onSlate[mr.creator_slug+'/'+mr.model_slug]=1;});
+    proj+=live.length;if(live.length)covered++;
     if(x.locked&&!x.final)lockedGames++;
     if(!x.locked)anyOpen=true;
     if(x.sigma!=null&&x.sigma>=SPLIT_MIN_SIGMA&&!x.final)divided++;
   });
+  /* Models with a counting number ON THIS SLATE, not models on the roster.
+     The roster stays beside it as the denominator, so a week nobody has
+     posted yet reads 0 of 4 rather than 4 -- which is what it used to read,
+     from last week's rows, under this week's heading. */
+  var slateModels=Object.keys(onSlate).length;
   var long=sportLongName(sport.code)||sport.code;
-  var st=function(k,v,cls){return '<div class="st"><div class="k">'+k+'</div><div class="v'+(cls?' '+cls:'')+'">'+v+'</div></div>';};
+  var wname=week!=null?weekLabel(sport.code,week):'';
+  var st=function(k,v,cls,t){return '<div class="st"'+(t?' title="'+esc(t)+'"':'')+'><div class="k">'+k+'</div><div class="v'+(cls?' '+cls:'')+'">'+v+'</div></div>';};
+  var onThis=wname?('on '+wname):'on this slate';
   var stats='<div class="cc-stats">'+
-    st('Active models',activeN+'<small>of '+rows.length+'</small>')+
-    st('Projections on the slate',proj)+
-    st('Games covered',covered+'<small>of '+all.length+'</small>')+
-    st('Models updated · 7d',updated)+
-    (anyOpen?st('Major disagreements',divided,divided?'warn':''):st('Major disagreements','member view','lock'))+
+    st('Active models',slateModels+'<small>of '+activeN+' active</small>','',
+      'Models with a counting number '+onThis+', of the active contributors in '+long+'.')+
+    st('Projections on the slate',proj,'',
+      'Counting projections '+onThis+'. Numbers received after the lock are stored but not counted here.')+
+    st('Games covered',covered+'<small>of '+all.length+'</small>','',
+      'Games '+onThis+' with at least one counting projection, of the games on it. A game with no submission is still on the slate.')+
+    st('Models updated · 7d',updated,'',
+      'Models whose most recent submission — in any week — landed in the last seven days. A rolling window, not this week\u2019s count.')+
+    (anyOpen?st('Major disagreements',divided,divided?'warn':'',
+      'Upcoming games '+onThis+' where the submitted lines are '+SPLIT_MIN_SIGMA+' points apart or more.')
+      :st('Major disagreements','member view','lock'))+
     '</div>';
   var room=roomHighlights(all,mkt);
   var roomHtml;
@@ -3302,14 +3369,18 @@ function commandCentreHTML(m,sport,rows,games,mkt){
       'Pre-kickoff numbers and the consensus are a member view. The finished record, every profile and the rankings are public, because the record is the proof. '+
       '<a href="#dashboard">Sign in</a> or <a href="#about">read what a membership is</a>.</div>';
   }else if(!all.length){
-    roomHtml='<div class="emptybox">No '+esc(long)+' slate is loaded for '+esc(String(sport.season||''))+' yet. The room appears here the moment games are scheduled and models post them.</div>';
+    roomHtml='<div class="emptybox">No '+esc(long)+' slate is loaded for '+esc(String(sport.season||''))+
+      (wname?' '+esc(wname):'')+' yet. The room appears here the moment games are scheduled and models post them.</div>';
   }else{
-    roomHtml='<div class="emptybox">No upcoming '+esc(long)+' game has two or more model numbers yet, so there is no room to describe. The full wall below shows every game and every number.</div>';
+    roomHtml='<div class="emptybox">No upcoming '+esc(long)+(wname?' '+esc(wname):'')+
+      ' game has two or more model numbers yet, so there is no room to describe. The full wall below shows every game and every number.</div>';
   }
   var splits=anyOpen?splitsTableHTML(all,mkt,5):'';
   return introHTML()+
-    '<div class="cc"><div class="cc-hd"><h2>'+esc(long)+' · this slate</h2><span class="sub">counted from the rows on this page</span></div>'+stats+
-    '<div class="cc-hd" style="margin-top:14px"><h2>What the room is saying</h2><span class="sub">what the models are doing — not a recommendation</span></div>'+roomHtml+
+    '<div class="cc"><div class="cc-hd"><h2>'+esc(long)+(wname?' · '+esc(wname):' · this slate')+'</h2>'+
+      '<span class="sub">counted from '+(wname?esc(wname)+' only':'the rows on this page')+'</span></div>'+stats+
+    '<div class="cc-hd" style="margin-top:14px"><h2>What the room is saying</h2><span class="sub">'+
+      (wname?esc(wname)+' — ':'')+'what the models are doing — not a recommendation</span></div>'+roomHtml+
     (splits?'<div class="cc-hd" style="margin-top:14px"><h2>Model splits</h2><span class="sub">the games the models disagree on most</span></div>'+splits:'')+
     '<p class="cc-note">Collective line is the median of the submitted lines and Market is the Collective’s own captured consensus. '+
     'A gap between the two is a research question, not an edge. The full terminal wall, every model’s number, is below.</p></div>';
@@ -3332,9 +3403,124 @@ function pickLeadText(mr,kickoffIso){
   if(h<48)return 'posted '+Math.round(h)+'h before kickoff';
   return 'posted '+Math.round(h/24)+'d before kickoff';
 }
-/* Which week the WALL is looking at. null is the server's current slate,
-   which is what the front page should show almost always -- this exists for
-   the day the current week is over and the next one is already posted. */
+/* ================= WHICH WEEK IS CURRENT =================================
+   THE BUG THIS ANSWERS. The Collective's college front page led with SMU @
+   Florida State, final, from the Monday night before, while the Week 2 slate
+   it was supposed to be showing sat one request away. Nothing on this page
+   had ever decided which week was current: it asked /v1/games with no week
+   and rendered whatever came back, and the server's answer was the week of
+   the earliest game kicking off within the last 36 hours -- so one completed
+   Monday game held the whole front page on a finished slate for another day.
+
+   Current is decided HERE now, by collective/week.js, which states the rule
+   once for this page, for the schedule sync and (mirrored) for the edge
+   function: the earliest week that still has a game to be played, else the
+   last week that has games. The server's own answer is the starting point and
+   is never thrown away -- it is only rolled forward when its week is finished
+   and a later one exists. When that happens is exactly when this page used to
+   be wrong, and it is the only time an extra request is made.
+
+   Every surface then asks for its week BY NUMBER. That is the other half of
+   the fix: the wall, the board, the counts and the room all name the week
+   they mean, so none of them can be showing "whatever rows happened to be
+   loaded last", and Week 1 rows cannot arrive inside a Week 2 count. */
+var SLATE_CACHE={};
+var SLATE_TTL=90000;   /* one resolution serves the wall and the board */
+function slateKey(sport,season){return String(sport)+'|'+String(season==null?'':season);}
+function fetchSlate(sport,season,week){
+  return api('/v1/games?sport='+encodeURIComponent(sport)+
+    '&season='+encodeURIComponent(season==null?'':season)+
+    (week==null?'':'&week='+encodeURIComponent(week)),{auth:true});
+}
+/* Current, for one sport and season. Cached briefly because the wall and the
+   board each ask, and the answer cannot change between two renders a second
+   apart. A failure returns a null week rather than a guess: the caller shows
+   the empty state it already had, and the next render tries again. */
+async function currentSlate(sport,season){
+  var key=slateKey(sport,season),hit=SLATE_CACHE[key];
+  if(hit&&(Date.now()-hit.at)<SLATE_TTL)return hit;
+  var out;
+  try{
+    if(window.MCWeek&&typeof MCWeek.resolveCurrentSlate==='function'){
+      var cal=weekCalendar(sport);
+      var r=await MCWeek.resolveCurrentSlate({
+        fetchWeek:function(w){return fetchSlate(sport,season,w);},
+        maxWeek:(cal&&cal.max)||null});
+      out={week:r.week,payload:r.payload,games:r.games||[],resolved:true,from:r.from};
+    }else{
+      /* week.js did not load. The page still works, on the wire's own answer
+         -- the state it was in before this existed, and nothing worse. */
+      var d=await fetchSlate(sport,season,null);
+      out={week:(d&&d.week!=null)?d.week:null,payload:d,games:(d&&d.games)||[],
+           resolved:false,from:'server'};
+    }
+  }catch(e){
+    /* The error is carried, not swallowed: the wall has always survived a
+       board it could not load and still should, but the Board itself and the
+       season sweep have to be able to say what went wrong instead of
+       rendering an empty slate as though the schedule were empty. */
+    out={week:null,payload:null,games:[],resolved:false,from:'error',error:e};
+  }
+  out.at=Date.now();
+  /* A failure is never cached. Remembering one for ninety seconds turns a
+     blip into a minute and a half of an empty board that retries nothing. */
+  if(out.from!=='error')SLATE_CACHE[key]=out;
+  return out;
+}
+/* The slate a surface should draw. Two week numbers come back and they are
+   different questions:
+
+     .week      the week ON SCREEN -- the one the reader picked, or Current
+     .current   what Current resolves to, whatever is on screen
+
+   A surface needs both. Showing Week 1 is only honest if the page can also
+   say that Week 1 is history and Current is Week 2, and marking the week
+   strip needs to know where Current landed even while the reader is looking
+   somewhere else. Resolving Current costs nothing on the second and every
+   later call: it is the same cached answer the first render already paid
+   for. */
+async function slateFor(sport,week){
+  var cur=await currentSlate(sport.code,sport.season);
+  if(week==null){
+    return {week:cur.week,current:cur.week,payload:cur.payload,games:cur.games,
+            resolved:true,from:cur.from,error:cur.error};
+  }
+  var d=await fetchSlate(sport.code,sport.season,week).catch(function(){return null;});
+  return {week:Number(week),current:cur.week,payload:d,games:(d&&d.games)||[],
+          resolved:false,from:'picked'};
+}
+/* What to call a week on screen. The postseason rounds have names and the
+   sport registry already holds them, so Current landing on CFB week 18 says
+   "CFP First Round" rather than "Week 18". */
+function weekLabel(code,week){
+  if(week==null)return '';
+  var cal=weekCalendar(code);
+  var named=cal&&cal.names&&cal.names[week];
+  return named||('Week '+week);
+}
+/* WHICH SLATE AM I LOOKING AT. One line, above the board, naming the sport,
+   the season and the week actually on screen -- COLLEGE FOOTBALL · 2026 ·
+   WEEK 2. It exists because the page spent a day showing a finished slate
+   under a heading that said Current and nothing anywhere contradicted it.
+   A reader who has pressed a numbered week is told that it is history, so
+   "why is last week on my screen" has an answer on the screen. */
+function slateTagHTML(sport,picked,resolved){
+  var w=(picked==null?resolved:picked);
+  if(w==null)return '';
+  var name=(sportLongName(sport.code)||sport.code).toUpperCase();
+  return '<span class="slatetag">'+esc(name)+' &middot; '+esc(String(sport.season||''))+
+    ' &middot; <b>'+esc(weekLabel(sport.code,w).toUpperCase())+'</b>'+
+    (picked==null
+      ? ' <span class="note" style="text-transform:none;letter-spacing:0">— the active slate</span>'
+      : (resolved!=null&&picked!==resolved
+          ? ' <span class="hist" style="text-transform:none;letter-spacing:0">— history. Current is '+esc(weekLabel(sport.code,resolved))+'.</span>'
+          : ' <span class="note" style="text-transform:none;letter-spacing:0">— the active slate</span>'))+
+    '</span>';
+}
+
+/* Which week the WALL is looking at. null is Current, resolved above, which
+   is what the front page should show almost always -- a number here is a
+   reader who pressed W1 and wants the history. */
 var WALL_WEEK=null;
 async function renderWall(view){
   loading(view,'Loading the wall&hellip;');
@@ -3345,11 +3531,18 @@ async function renderWall(view){
     /* The wall used to aggregate every sport at once and label itself with all
        of their codes, while asking /v1/games for the default sport only — so a
        college model sat in a list above an NFL slate. One sport at a time, and
-       the games come from the same sport the rows do. */
-    var gq='?sport='+encodeURIComponent(sport.code)+'&season='+encodeURIComponent(sport.season||'')+
-      (WALL_WEEK?'&week='+WALL_WEEK:'');
-    var results=await Promise.all([wallRows(),api('/v1/games'+gq,{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
-    var allRows=results[0],board=results[1],act=results[2],mkt=results[3];
+       the games come from the same sport the rows do.
+
+       And ONE WEEK at a time, named. WALL_WEEK null means Current, which
+       slateFor() resolves rather than leaves to whatever the wire answers;
+       everything below — the counts, the room, the terminal wall — is
+       computed from that one slate, so no row from another week can reach
+       any of them. */
+    var results=await Promise.all([wallRows(),slateFor(sport,WALL_WEEK),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
+    var allRows=results[0],slate=results[1],act=results[2],mkt=results[3];
+    var board=slate.payload;
+    var SLATE_WEEK=slate.week;        /* the week on screen */
+    var CURRENT_WEEK=slate.current;   /* where Current landed, wherever we are */
     /* the slate on screen, graded: a finished game the wire left blank gets
        its score before a single row is drawn */
     try{await enrichFinals((board&&board.games)||[],sport.code,mkt,sport.season);}catch(e){}
@@ -3486,7 +3679,9 @@ async function renderWall(view){
       }
       boards+='<div class="gamebd">'+hd+lines+'</div>';
     });
-    if(!boards)boards='<div class="gb-empty">No '+esc(sportLongName(sport.code)||sport.code)+' games are scheduled for '+esc(String(sport.season||''))+' yet. The slate loads here the moment the schedule carries them.</div>';
+    if(!boards)boards='<div class="gb-empty">No '+esc(sportLongName(sport.code)||sport.code)+' games are scheduled for '+
+      esc(String(sport.season||''))+(SLATE_WEEK!=null?' '+esc(weekLabel(sport.code,SLATE_WEEK)):'')+
+      ' yet. The slate loads here the moment the schedule carries them.</div>';
 
     var wallToken=++WALL_TOKEN;
     var settledNow=((board&&board.games)||[]).filter(function(g){return finalResult(g)!=null;}).length;
@@ -3510,8 +3705,9 @@ async function renderWall(view){
        wall is about to draw. Nothing is fetched twice and nothing is hidden:
        the full board is still the next thing on the page. */
     var cc='';
-    try{cc=commandCentreHTML(m,sport,rows,(board&&board.games)||[],mkt);}catch(e){cc='';}
-    var hd=sportSwitcherHTML(m)+weekStripHTML(sport.code,WALL_WEEK)+cc+'<div class="bd">'+
+    try{cc=commandCentreHTML(m,sport,rows,(board&&board.games)||[],mkt,SLATE_WEEK);}catch(e){cc='';}
+    var hd=sportSwitcherHTML(m)+weekStripHTML(sport.code,WALL_WEEK,CURRENT_WEEK)+
+      slateTagHTML(sport,WALL_WEEK,CURRENT_WEEK)+cc+'<div class="bd">'+
       '<div class="bd-hd"><span class="bd-title"><span class="bd-live"></span>LIVE MODEL WALL</span>'+
         '<span class="bd-clock" id="bdClock"></span></div>'+
       /* The model count and the active share are computed from the rows on
@@ -4127,16 +4323,45 @@ async function renderFormat(view){
    sport switcher's markup by `data-w`: the switcher shares the .wk styling
    and a handler bound to every .wk button would silently reset the week to
    Current whenever somebody changed sport. */
-function weekStripHTML(code,sel){
+function weekStripHTML(code,sel,resolved){
   var cal=weekCalendar(code);
-  var out='<div class="wk"><button class="'+(sel?'':'on')+'" data-w="">Current</button>';
-  for(var i=1;i<=cal.regular;i++)
-    out+='<button class="'+(sel===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
+  var now=(sel==null?resolved:sel);
+  /* CURRENT KEEPS ITS NAME. It is the useful button — the one a reader who
+     does not follow the calendar presses — so it is never renamed to the week
+     it resolved to. It SAYS which week that is instead, and the numbered
+     button for that week is marked as the same slate, so W2 stays
+     independently clickable and pressing it is visibly not a different
+     dataset. */
+  var curT=resolved!=null
+    ? 'The active slate. Right now that is '+weekLabel(code,resolved)+'.'
+    : 'The active slate.';
+  var out='<div class="wk"><button class="'+(sel==null?'on':'')+'" data-w="" title="'+esc(curT)+'">Current'+
+    (sel==null&&resolved!=null?' <i class="wknow">'+esc(shortWeekLabel(code,resolved))+'</i>':'')+'</button>';
+  /* Week 0 is a real college football week, so the sports that play one offer
+     it. A sport that does not never shows the button at all, and a week 0 that
+     somehow arrives for one of those is still reachable. */
+  var lo=(cal.week0||now===0||sel===0)?0:1;
+  /* The dashed mark says "Current lands here" and is only worth saying about
+     a week the reader has NOT pressed: a selected week already carries the
+     selected state, and stacking a second border on it says nothing. */
+  var cls=function(w){return sel===w?'on':((resolved===w)?'res':'');};
+  for(var i=lo;i<=cal.regular;i++)
+    out+='<button class="'+cls(i)+'" data-w="'+i+'"'+
+      (resolved===i?' title="Current resolves to this week"':'')+'>W'+i+'</button>';
   for(var pw=cal.regular+1;pw<=cal.max;pw++){
-    out+='<button class="'+(sel===pw?'on':'')+'" data-w="'+pw+'" title="'+esc(cal.names[pw]||('Week '+pw))+'">'
+    out+='<button class="'+cls(pw)+'" data-w="'+pw+'" title="'+esc(cal.names[pw]||('Week '+pw))+(resolved===pw?' — Current resolves here':'')+'">'
       +esc((cal.names[pw]||('W'+pw)).replace(/^CFP /,'').split(' / ')[0])+'</button>';
   }
   return out+'</div>';
+}
+/* The week, short enough to sit inside a button. A named postseason round is
+   abbreviated the same way its own button is. */
+function shortWeekLabel(code,week){
+  if(week==null)return '';
+  var cal=weekCalendar(code);
+  var named=cal&&cal.names&&cal.names[week];
+  if(named)return named.replace(/^CFP /,'').split(' / ')[0];
+  return 'W'+week;
 }
 function bindWeekStrip(pick){
   document.querySelectorAll('.wk button[data-w]').forEach(function(b){
@@ -4150,11 +4375,17 @@ async function renderBoard(view){
   try{
     var m=await meta();
     var sport=currentSport(m);
-    var q='?sport='+encodeURIComponent(sport.code)+'&season='+sport.season+(BOARD_WEEK?'&week='+BOARD_WEEK:'');
-    var both=await Promise.all([api('/v1/games'+q,{auth:true}),marketBoard()]);
-    var d=both[0],mkt=both[1];
+    /* Same resolver as the wall, from the same cache: the two surfaces cannot
+       disagree about which week is current, and pressing W1 here asks for
+       week 1 by number rather than hoping the wire still has it. */
+    var both=await Promise.all([slateFor(sport,BOARD_WEEK),marketBoard()]);
+    var slate=both[0],mkt=both[1];
+    if(slate.from==='error'&&slate.error)throw slate.error;
+    var d=slate.payload||{games:[]};
+    var BOARD_SHOWN=slate.week;
     try{await enrichFinals((d&&d.games)||[],sport.code,mkt,sport.season);}catch(e){}
-    var wk=sportSwitcherHTML(m)+weekStripHTML(sport.code,BOARD_WEEK);
+    var wk=sportSwitcherHTML(m)+weekStripHTML(sport.code,BOARD_WEEK,slate.current)+
+      slateTagHTML(sport,BOARD_WEEK,slate.current);
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, once it is final, its grade. Pre-kickoff numbers and consensus are for subscribers. Finished games are the public record.</p>'+wk;
     var cards='';
     var boardSplit=splitGames(d.games||[]);
@@ -4275,7 +4506,8 @@ async function renderBoard(view){
         (mg?'<div class="note" style="margin-top:6px"><a href="#market/'+esc(mg.event_id)+'">Full market, every book, line movement &rarr;</a></div>':'')+
         '</div>';
     });
-    if(!cards)cards='<div class="emptybox">No '+esc(sportLongName(sport.code)||sport.code)+' games are on this slate yet'+(BOARD_WEEK?' for Week '+esc(BOARD_WEEK):'')+'. Games appear the moment the schedule carries them.</div>';
+    if(!cards)cards='<div class="emptybox">No '+esc(sportLongName(sport.code)||sport.code)+' games are on this slate yet'+
+      (BOARD_SHOWN!=null?' for '+esc(weekLabel(sport.code,BOARD_SHOWN)):'')+'. Games appear the moment the schedule carries them.</div>';
     var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month'+(m.pricing.annual_cents>0?' or '+cents(m.pricing.annual_cents)+' a year':'')+'. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
     if(!paint(view,tok,head+sub+cards))return;
     /* scoped to [data-w] on purpose: the sport switcher shares the .wk styling
@@ -5533,6 +5765,11 @@ var SPORTS=[
 
   { family:'CFB', name:'CFB', long:'College Football', order:2,
     aliases:['CFB','NCAAF','CFB-P4','COLLEGE','NCAA FOOTBALL','COLLEGE FOOTBALL'],
+    /* College football opens with a WEEK 0 -- a handful of games the Saturday
+       before week one, and they count. The NFL has no such thing, so this is
+       a per-sport fact and lives here with the rest of them rather than as a
+       branch in the week picker, the uploader and the strip. */
+    week0:true,
     unit:'week', regular:15, max:20,
     rounds:{16:'Conference Championships',17:'Bowl Season',18:'CFP First Round',
             19:'CFP Quarterfinal',20:'CFP Semifinal / National Championship'},
@@ -5551,7 +5788,7 @@ var SPORTS=[
    answer: the week picker then offers only "Read it from my file", and
    slateSend already omits the week when the box is empty. */
 var SPORT_FALLBACK={ family:null, name:'?', long:'', order:99, aliases:[],
-  unit:'date', regular:0, max:0, rounds:{}, seasonSpan:1, detect:{} };
+  unit:'date', regular:0, max:0, rounds:{}, week0:false, seasonSpan:1, detect:{} };
 
 function sportDef(code){
   var want=String(code||'').toUpperCase().trim(),i,j;
@@ -5641,7 +5878,7 @@ function sportFromModelString(text){
 /* the week shape for a sport, straight off the registry */
 function weekCalendar(code){
   var d=sportDef(code);
-  return {regular:d.regular,max:d.max,names:d.rounds};
+  return {regular:d.regular,max:d.max,names:d.rounds,week0:!!d.week0};
 }
 /* Which FAMILY of sport a code belongs to, independent of what the server
    happens to call it. An unknown code is its own family, so two unknown sports
@@ -5701,7 +5938,7 @@ function serverSportCode(meta,family){
 function weekOptions(sel,code){
   var cal=weekCalendar(code);
   var out='<option value="">Read it from my file</option>';
-  for(var w=1;w<=cal.max;w++){
+  for(var w=(cal.week0?0:1);w<=cal.max;w++){
     out+='<option value="'+w+'"'+(String(sel)===String(w)?' selected':'')+'>'+
       (cal.names[w]||('Week '+w))+'</option>';
   }
@@ -5716,7 +5953,10 @@ function slateDetectWeek(rows,colIndex){
   var counts={},best=null,bestN=0;
   for(var r=1;r<rows.length;r++){
     var v=parseInt(String((rows[r]||[])[colIndex]||'').replace(/[^0-9]/g,''),10);
-    if(!isFinite(v)||v<1||v>22)continue;
+    /* zero is a week. College football plays one, and a file saying so was
+       read as a file that said nothing -- so a correct Week 0 slate detected
+       no week at all and posted against whichever week the backend guessed. */
+    if(!isFinite(v)||v<0||v>22)continue;
     counts[v]=(counts[v]||0)+1;
     if(counts[v]>bestN){bestN=counts[v];best=v;}
   }
@@ -9109,7 +9349,7 @@ function liveFingerprint(games){
 /* Everything on this page that counts games is cached for the session, so a
    redraw that did not drop these would repaint the same stale numbers. */
 function bustLiveCaches(){
-  META=null;WALLC=null;SEASON_GAMES={};LOCALREC={};
+  META=null;WALLC=null;SEASON_GAMES={};LOCALREC={};SLATE_CACHE={};
 }
 async function liveTick(){
   if(LIVE_BUSY||!liveRoute())return;
@@ -9125,9 +9365,20 @@ async function liveTick(){
   try{
     var m=await meta();
     var sp=currentSport(m);
-    var d=await api('/v1/games?sport='+encodeURIComponent(sp.code)+
-      '&season='+encodeURIComponent(sp.season||''),{auth:true});
-    var fp=liveFingerprint(d&&d.games);
+    /* THE RESOLVED slate, not the wire's week-less answer. The tick used to
+       fingerprint whatever /v1/games returned with no week -- which is the
+       server's own idea of current, and the whole reason this page now
+       resolves its own. On a day the server was a week behind, the tick
+       watched a finished slate that could not change, so nothing on the
+       front page ever refreshed itself while the week actually being played
+       moved underneath it.
+
+       The resolution cache is dropped first so the tick genuinely looks;
+       the answer is then cached for the redraw immediately below, so a tick
+       that finds a change costs one resolution and not two. */
+    SLATE_CACHE={};
+    var slate=await currentSlate(sp.code,sp.season);
+    var fp='w'+String(slate.week)+'|'+liveFingerprint(slate.games);
     /* The market is deliberately kept OUT of the fingerprint everywhere else:
        prices move constantly, and a page that redrew every time a book shaded
        a total would be unusable. But on the market page those prices are the
@@ -9152,6 +9403,9 @@ async function liveTick(){
     var y=0;try{y=window.scrollY||0;}catch(e){}
     var was=location.hash;
     bustLiveCaches();
+    /* the resolution this tick has just paid for is still the truth a second
+       later, so the redraw below reads it rather than asking again */
+    SLATE_CACHE[slateKey(sp.code,sp.season)]=slate;
     LIVE_QUIET=true;
     try{await route();}finally{LIVE_QUIET=false;}
     /* Only now. Recording the new fingerprint BEFORE the redraw meant one

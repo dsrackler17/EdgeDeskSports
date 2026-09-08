@@ -140,6 +140,33 @@ chk('the kickoff is the instant the source stated, not a local wall clock',
 chk('the week is a number, because the schedule is keyed on it',
   function () { return Y.gamePayload([{ home_team: 'A', away_team: 'B', start_date: 'x' }], '3')[0].week === 3; });
 
+/* ---- running it twice must not double the schedule --------------------
+   The job is scheduled twice a day and can be dispatched by hand on top of
+   that, so "safe to run repeatedly" is a property it has to actually have
+   rather than a sentence in its header. The deeper cases -- a kickoff that
+   moved, a settled game the feed restates, the postseason addressing -- are
+   in tools/collective/week_resolution.test.js, which the same workflow runs
+   before this job is allowed to write. */
+chk('the same feed run against its own result offers nothing the second time',
+  function () {
+    var loaded = Y.gamePayload(Y.missingFrom(HAVE, FEED), 1).map(function (p) {
+      return { home: p.home, away: p.away, week: p.week, kickoff_at: p.kickoff };
+    }).concat(HAVE);
+    return Y.missingFrom(loaded, FEED).length === 0;
+  },
+  { second: Y.missingFrom(Y.gamePayload(Y.missingFrom(HAVE, FEED), 1).map(function (p) {
+      return { home: p.home, away: p.away }; }).concat(HAVE), FEED)
+      .map(function (r) { return r.away_team + ' @ ' + r.home_team; }) });
+chk('and a schedule that already agrees produces no update either',
+  function () {
+    var held = FEED.map(function (f, i) {
+      return { game_id: 'g' + i, home: f.home_team, away: f.away_team, week: 1,
+               kickoff_at: f.start_date, status: 'scheduled' };
+    });
+    return Y.updatesFor(held, FEED).length === 0;
+  },
+  'a day on which nothing changed has to cost nothing');
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));

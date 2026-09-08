@@ -17,6 +17,8 @@ on:
       - 'index.html'
       - 'collective/index.html'
       - 'collective/embed.js'
+      - 'collective/week.js'
+      - 'collective/odds.js'
       - 'collective/admin.html'
       # The page's own suites now RUN here, so a change to one of them has to
       # be able to trigger the job that runs it. Without these two lines a PR
@@ -53,6 +55,8 @@ on:
       - 'index.html'
       - 'collective/index.html'
       - 'collective/embed.js'
+      - 'collective/week.js'
+      - 'collective/odds.js'
       - 'collective/admin.html'
       # The page's own suites now RUN here, so a change to one of them has to
       # be able to trigger the job that runs it. Without these two lines a PR
@@ -262,6 +266,16 @@ jobs:
 
       - name: Schedule matching
         run: node tools/collective/sync_schedule.test.js
+
+      # WHICH WEEK IS CURRENT. The Collective's College Football page led with
+      # a finished Monday night game for a full day while the next week's
+      # slate sat one request away: "current" meant a 36-hour clock offset
+      # rather than "still has football in it". This holds the rule, the page
+      # that draws from it, the edge function that mirrors it (extracted from
+      # the bundle and run against the same cases, so the two cannot drift)
+      # and the schedule sync that decides which weeks to load.
+      - name: Current resolves to the week that still has football in it
+        run: node tools/collective/week_resolution.test.js
 
       - name: Settle matching
         run: node tools/collective/settle_finals.test.js

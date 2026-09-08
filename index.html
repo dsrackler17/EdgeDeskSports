@@ -3838,11 +3838,48 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
       if(btn)btn.disabled=false;
       pickView();paint();
     }
+    /* WHICH WEEK IS ON THE SLATE. /v1/games with no week asks the server which
+       week is current, and the server's answer kept a finished Monday night
+       game current for another full day -- so this panel, whose entire job is
+       to prove there is a slate tonight, advertised a completed one. The
+       Collective's own resolver (collective/week.js, the same file its site
+       loads) rolls that answer forward when the week it names has no football
+       left in it. Best effort by construction: the script is loaded lazily
+       with its own deadline, and without it this asks exactly what it asked
+       before. */
+    /* Started here rather than awaited: this panel must never be able to sit
+       on a script that does not arrive. It is a same-origin static file and
+       the /v1/meta round trip below is a network request, so in practice it
+       is in hand long before the board is asked for -- and on the occasion it
+       is not, slateFor() asks the week-less question this panel asked before
+       any of this existed. The Collective's own site does not rely on the
+       race: it loads week.js with a plain <script src> tag. */
+    function weekReady(){
+      if(window.MCWeek)return;
+      try{
+        var el=document.createElement('script');
+        el.src='/collective/week.js';el.async=true;
+        document.head.appendChild(el);
+      }catch(e){}
+    }
+    function slateFor(sp){
+      var q=function(w){
+        return get('/v1/games?sport='+encodeURIComponent(sp.code)+
+          '&season='+encodeURIComponent(sp.season==null?'':sp.season)+
+          (w==null?'':'&week='+encodeURIComponent(w)));
+      };
+      if(!window.MCWeek||typeof MCWeek.resolveCurrentSlate!=='function')return q(null);
+      return MCWeek.resolveCurrentSlate({
+        fetchWeek:function(w){return q(w).catch(function(){return null;});}
+      }).then(function(r){return r.payload;});
+    }
+
     /* NOTHING MAY SIT ON "LOADING" INDEFINITELY. Every request below has its
        own timeout and its own catch, and the screen still gets a deadline of
        its own: a promise that never settles for a reason nobody anticipated
        is the failure this panel must not be able to have. */
     var wd=setTimeout(function(){S.failed.timeout=true;finish();},12000);
+    weekReady();
     get('/v1/meta').catch(function(){S.failed.meta=true;return null;})
       .then(function(meta){
         S.sports=(meta&&meta.sports)||[];
@@ -3850,8 +3887,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
           .catch(function(){S.failed.wall=true;return [];});
         var boardsP=S.sports.length
           ? Promise.all(S.sports.map(function(sp){
-              return get('/v1/games?sport='+encodeURIComponent(sp.code)
-                  +'&season='+encodeURIComponent(sp.season==null?'':sp.season))
+              return slateFor(sp)
                 .then(function(d){
                   /* tag the sport we asked for: a payload built before games
                      carried one would otherwise be unlabelled in a mixed list */

@@ -511,9 +511,26 @@ if (typeof sandbox.teamKey === 'function') {
     })());
   chk('a known sport still gets its full week list',
     (function () {
+      /* 22: "read it from my file", then week 0 through week 20. College
+         football plays a WEEK 0 and a picker that started at 1 could not
+         express it, so a correct Week 0 slate had no week to be posted
+         under. The NFL, which has no week 0, still starts at 1. */
       var o = S.weekOptions(null, 'CFB');
-      return (o.match(/<option/g) || []).length === 21 && /Bowl Season/.test(o);
+      return (o.match(/<option/g) || []).length === 22 && /Bowl Season/.test(o)
+        && /<option value="0"/.test(o);
+    })(),
+    { n: (S.weekOptions(null, 'CFB').match(/<option/g) || []).length });
+  chk('and a sport with no week 0 is not offered one',
+    (function () {
+      var o = S.weekOptions(null, 'NFL');
+      return !/<option value="0"/.test(o) && /<option value="1"/.test(o);
     })());
+  chk('a Week 0 slate is detected as week 0, not as no week at all',
+    (function () {
+      var rows = [['week'], ['0'], ['0'], ['0']];
+      return S.slateDetectWeek(rows, 0) === 0 && S.slateDetectWeek([['week'], ['2']], 0) === 2;
+    })(),
+    'college football plays a week 0 and a file that says so has to be read');
   chk('two unknown sports do not merge into one family',
     S.sportFamily('KABADDI') !== S.sportFamily('SEPAKTAKRAW'));
   chk('display names come from the registry, not from the server',
