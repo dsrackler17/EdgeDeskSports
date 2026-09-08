@@ -136,6 +136,30 @@ const SQL = fs.readFileSync(SQL_PATH, 'utf8');
    including mid-slate. A diagnostic that could change something is not one,
    so the rule is checked rather than trusted. */
 {
+  /* THE RULE THIS FILE BROKE, checked for the WHOLE FOLDER.
+
+     supabase/README.md: "each .sql file is written to be run by hand in the
+     Supabase SQL editor". The editor sends raw SQL to the server -- it does
+     not run psql, so a psql meta-command is not a convenience that degrades,
+     it is a hard `syntax error at or near "\"` on line one, before anything
+     else in the file is read.
+
+     collective_nfl_readiness.sql shipped with a backslash-set line and this
+     suite passed it, because the suite ran the file with `psql -f`, which
+     handles meta-commands. The test and the deployment target disagreed about
+     what "running this file" means, so the one thing a user would hit first
+     was the one thing nothing checked. Both halves are fixed: this static rule
+     covers every file in the folder, and the live layer below now sends the
+     file the way the editor does. */
+  for (const f of fs.readdirSync(path.join(ROOT, 'supabase')).filter((x) => x.endsWith('.sql'))) {
+    const body = fs.readFileSync(path.join(ROOT, 'supabase', f), 'utf8');
+    const meta = body.split('\n')
+      .map((l, i) => ({ n: i + 1, l }))
+      .filter((x) => x.l.trimStart().startsWith('\\'));
+    chk(`supabase/${f} has no psql meta-command — the SQL editor cannot run one`,
+      meta.length === 0, meta.slice(0, 3));
+  }
+
   const RD = fs.readFileSync(
     path.join(ROOT, 'supabase', 'collective_nfl_readiness.sql'), 'utf8');
   /* Comments carry the repair statements on purpose, commented out, so the
@@ -313,8 +337,39 @@ chk('the suite actually ran its assertions', asserted >= 55, asserted);
 {
   const fRead = stage(path.join(ROOT, 'supabase', 'collective_nfl_readiness.sql'));
 
-  const dry = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
-  chk('the readiness file runs against a real postgres', dry.status === 0, dry.out.slice(-900));
+  /* AS THE SQL EDITOR SENDS IT: one raw string, in one round trip, with no
+     meta-command handling anywhere. `psql -f` would read the file itself and
+     quietly honour anything psql-specific in it -- which is exactly how a
+     backslash-set line shipped and passed. This is the deployment model. */
+  const asEditor = (db, file) => {
+    const sqlText = fs.readFileSync(file, 'utf8');
+    const tmp = path.join(HOME, 'editor.sql');
+    fs.writeFileSync(tmp, sqlText);
+    if (asPostgres) cp.execSync(`chmod a+r ${tmp}`);
+    /* The invocation lives in its own SCRIPT FILE rather than inline.
+       run() wraps a command in `su postgres -c "..."` with DOUBLE quotes, so
+       an inline `$(cat file)` or `$SQL` is expanded by the OUTER shell before
+       su runs -- psql then receives an empty query, exits 0, and prints
+       nothing, which is indistinguishable from a file that produced no report.
+       A script file is read by the inner shell only, so the file's own quotes
+       and dollars are its business. */
+    const sh = path.join(HOME, 'as_editor.sh');
+    fs.writeFileSync(sh,
+      '#!/bin/sh\n' +
+      'SQL=$(cat "$1")\n' +
+      `exec ${BIN}/psql -h /tmp -p ${PORT} -d "$2" -c "$SQL" 2>&1\n`);
+    if (asPostgres) cp.execSync(`chmod a+rx ${sh}`);
+    try {
+      const out = run(`sh ${sh} ${tmp} ${db}`);
+      return { status: 0, out };
+    } catch (e) {
+      return { status: 1, out: String((e.stdout || '') + (e.stderr || '') + e.message) };
+    }
+  };
+
+  const dry = asEditor('cma', fRead);
+  chk('the readiness file runs the way the SQL editor sends it — one raw string',
+    dry.status === 0 && !/syntax error/i.test(dry.out), dry.out.slice(-900));
   chk('and it reports on every link in the chain', okRows(dry.out) + badRows(dry.out) >= 6,
     { ok: okRows(dry.out), bad: badRows(dry.out) });
   chk('with no schedule loaded it says SO, and says it is not the model or the file',
@@ -326,7 +381,7 @@ chk('the suite actually ran its assertions', asserted >= 55, asserted);
 
   /* Load a schedule with games still ahead of kickoff and every row turns ok. */
   psql(`-d cma -q -c "insert into collective.games (sport_code, season, week, kickoff_at, home_team, away_team) select 'NFL', 2026, 3, now() + interval '4 days', 'BUF', 'NYJ' from generate_series(1,16)"`);
-  const wet = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  const wet = asEditor('cma', fRead);
   chk('with a schedule ahead of kickoff every row reads ok',
     wet.status === 0 && badRows(wet.out) === 0, wet.out.slice(-1200));
   chk('and it counts what is still postable, not just what exists',
@@ -335,21 +390,21 @@ chk('the suite actually ran its assertions', asserted >= 55, asserted);
   /* Every game in the past is a different failure and gets a different answer:
      the schedule is loaded, and a slate posted now still has nothing to hit. */
   psql(`-d cma -q -c "update collective.games set kickoff_at = now() - interval '3 days' where sport_code='NFL'"`);
-  const past = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  const past = asEditor('cma', fRead);
   chk('a schedule that has entirely kicked off is called out separately',
     /0 still ahead of kickoff/.test(past.out) && /has nothing ahead/.test(past.out),
     past.out.slice(-700));
 
   /* A sport the server does not list can never resolve, whatever model it has. */
   psql(`-d cma -q -c "update collective.sports set active=false where code='NFL'"`);
-  const gone = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  const gone = asEditor('cma', fRead);
   chk('a sport the server does not carry is named as unresolvable',
     /IS NOT ONE OF THEM/.test(gone.out), gone.out.slice(-700));
   psql(`-d cma -q -c "update collective.sports set active=true where code='NFL'"`);
 
   /* And it must not have written anything while doing all that. */
   const before = psql(`-d cma -tA -c "select count(*) from collective.models"`).out.trim();
-  psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  asEditor('cma', fRead);
   const after = psql(`-d cma -tA -c "select count(*) from collective.models"`).out.trim();
   chk('running it changed no rows', before === after, { before, after });
 }

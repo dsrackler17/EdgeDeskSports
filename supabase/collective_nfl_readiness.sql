@@ -36,7 +36,13 @@
 -- fix.
 -- ===========================================================================
 
-\set ON_ERROR_STOP on
+-- NO psql META-COMMANDS IN THIS FILE. It is pasted into the Supabase SQL
+-- editor, like every other file in this folder, and the editor sends raw SQL
+-- to the server. A backslash-set line is psql's own syntax, not SQL, and the
+-- server answers with a syntax error at the backslash. Nothing else in this
+-- folder carries one. It is not needed here either: this is one temp table,
+-- one temp helper, one DO block and one select, and the DO block already
+-- returns early on anything it cannot read.
 
 create temp table if not exists nfl_report (n serial, step text, outcome text, detail text);
 truncate nfl_report;
