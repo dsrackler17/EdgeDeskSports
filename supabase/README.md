@@ -385,6 +385,51 @@ which applies this file unmodified, runs it twice to prove idempotency, and
 then attacks it as anon, as one reporter reaching for another's rows, as
 somebody promoting themselves to operator, and with a JWT pasted into the body.
 
+### `site_articles.sql` — the publication state of the public research pages
+EdgeDesk is served as static files, so the article a reader and a crawler see
+is a committed page under `/articles/` built by
+`tools/articles/build_articles.js`. This table holds the DECISION — draft /
+ready / published / archived, the auto-publish switch, the timestamps — so the
+operator can make it from a browser and the next pipeline run honours it. A row
+here never renders anything. `anon` selects published rows and nothing else;
+writes go through a security-definer admin predicate over
+`site_article_admins`, which is seeded from `issue_report_admins` where that
+table exists rather than starting a second operator allowlist.
+
+That carry-over is **dynamic SQL**, and the reason is worth reading before
+anybody writes another guarded backfill: a plain `insert … select … where
+to_regclass('public.issue_report_admins') is not null` does not work. The guard
+is a runtime test and the table name is resolved by the PARSER, so on a project
+that had never applied `issue_reports.sql` the whole file stopped at that
+statement and the article system could not be installed at all. Report rows
+1–12 should each say `ok`; row 12 says CHECK THIS until you add yourself.
+
+### `community_posts.sql` — member posts, and who may publish one
+Anyone with an EdgeDesk account may WRITE; only an entitled subscriber may
+PUBLISH without an editor reading the post first. That is a statement about a
+VALUE in a column, which no RLS policy can express — so it is a trigger,
+`community_posts_guard()`, which rewrites the status it was handed. A free
+account asking to publish lands as `pending`; so does any post, from any
+account, carrying a phrase from `community_banned_terms` (one list, mirrored in
+`tools/articles/community.js`, held together by
+`tools/articles/community.test.js`).
+
+Member posts are a **separate table from `site_articles` on purpose**: an
+EdgeDesk research article is generated from the model and checked so nothing on
+it can read as a pick, and no check can make a person's writing into the
+model's view of a game. Two tables makes the separation structural — the
+research sitemap builder reads `site_articles` and literally cannot see a
+member post.
+
+Nobody may delete a post, including its author: `removed` takes it off the site
+and the record of what was said survives. Run it after `billing.sql` (it reads
+`subscriptions` for entitlement) and `site_articles.sql` (it reuses that
+operator allowlist). Report rows 1–12 should each say `ok`. Applied and
+attacked on a real PostgreSQL by `tools/articles/community_sql.test.js`
+(`npm run articles:sql`), which runs it twice, then comes at it as anon, as a
+free account, as a subscriber, as one member reaching for another's queued
+post, and as somebody publishing six times in a day.
+
 ### `games_social.sql` — Head-to-Head and Groups
 The social layer of EdgeDesk Games: challenges whose predictions are sealed
 until both players lock, private groups, Elo ratings and the settlement path

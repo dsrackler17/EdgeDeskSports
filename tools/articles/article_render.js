@@ -28,7 +28,7 @@
 
   var SITE = 'https://edgedesksports.com';
   var ORG = 'EdgeDesk Sports';
-  var CSS_HREF = '/articles/articles.css?v=1';
+  var CSS_HREF = '/articles/articles.css?v=2';
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -110,6 +110,7 @@
       + tab('/articles', 'All research')
       + tab('/articles/college-football', 'College football')
       + tab('/articles/nfl', 'NFL')
+      + tab('/articles/community', 'Members')
       + '</nav>'
       + '<a class="ah-cta" href="/app.html#research/football">Research terminal</a>'
       + '</header>';
@@ -119,7 +120,8 @@
       + '<p class="af-line"><b>Research, not picks.</b> EdgeDesk publishes what its model sees, how confident it is, and what it could not measure. Nothing on this site is betting advice, a wager or a recommendation.</p>'
       + '<nav class="af-nav" aria-label="Site">'
       + '<a href="/articles">Research articles</a><a href="/articles/college-football">College football</a>'
-      + '<a href="/articles/nfl">NFL</a><a href="/app.html#research/football">Research terminal</a>'
+      + '<a href="/articles/nfl">NFL</a><a href="/articles/community">Member posts</a>'
+      + '<a href="/app.html#research/football">Research terminal</a>'
       + '<a href="/games">EdgeDesk Games</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a></nav>'
       + '<p class="af-legal">21+. Gamble responsibly — 1-800-GAMBLER. © ' + new Date().getUTCFullYear() + ' ' + esc(ORG) + '.</p>'
@@ -634,6 +636,18 @@
     h += '<header class="a-hubhead"><h1 class="a-h1">' + esc(o.h1) + '</h1>'
       + '<p class="a-standfirst">' + esc(o.standfirst) + '</p>'
       + '<p class="a-hubcount">' + recs.length + ' published ' + (recs.length === 1 ? 'article' : 'articles') + '</p></header>';
+
+    /* THE ONE PLACE A MEMBER STARTS WRITING. It sits above the filters rather
+       than in the footer because a call to action nobody sees is not one, and
+       it says in the same breath that a member post is a different thing from
+       what the rest of this page is — the separation has to be legible before
+       somebody clicks, not after they have written. */
+    h += '<div class="a-writebar">'
+      + '<p><b>Got a read of your own?</b> Anyone with an EdgeDesk account can write for the member section. '
+      + 'Member posts are the author’s own view, kept separate from EdgeDesk’s model research.</p>'
+      + '<a class="a-ctabtn" href="/articles/write">Write a post</a>'
+      + '<a class="a-sharebtn" href="/articles/community">Read member posts</a>'
+      + '</div>';
 
     /* the sport filter — three real links, so each is a crawlable URL */
     h += '<nav class="a-filters" aria-label="Filter by sport">';

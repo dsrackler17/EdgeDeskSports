@@ -83,6 +83,7 @@ thead th{border-top:0;font-size:10px;letter-spacing:.08em;text-transform:upperca
 .pill.archived{color:var(--faint)}
 .pill.frozen{color:var(--mdl);border-color:rgba(155,140,255,.45)}
 .pill.pending{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.tabbtn.on{background:var(--surface2);border:1px solid var(--accent);color:var(--text)}
 .acts{display:flex;gap:5px;flex-wrap:wrap}
 .matchup{font-weight:600}
 .sub{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:2px}
@@ -126,6 +127,12 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
 
 <main class="wrap" style="padding-bottom:60px">
 
+  <div class="toolbar" style="margin-top:16px">
+    <button class="btn sm tabbtn on" data-tab="research">Research articles</button>
+    <button class="btn sm tabbtn ghost" data-tab="community">Member posts <span id="cQueueCount"></span></button>
+  </div>
+
+  <section id="tab-research">
   <h2>Publishing</h2>
   <div class="card">
     <label class="switch"><input type="checkbox" id="autoPub"> <span><b>Auto publish</b> — publish an article automatically once its research passes every publication check</span></label>
@@ -167,6 +174,42 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
       <b>6.</b> Before kickoff the pipeline re-reads the research; a changed projection moves <code class="mono">updated_at</code>, an unchanged one moves nothing. After kickoff the record <b>freezes</b>.
     </p>
   </div>
+  </section>
+
+  <!-- MEMBER POSTS ------------------------------------------------------
+       A member post is not research and is never treated as one: it lives in
+       its own table, renders in its own section, and carries a member-post
+       label wherever it appears. What this queue decides is only whether it
+       is public.
+
+       Most posts never reach here. An entitled subscriber publishes straight
+       through, and the queue holds two kinds of post: everything written by a
+       free account, and anything — from any account — that used a phrase
+       EdgeDesk does not print. The second kind arrives with the phrase named
+       on the row, so the decision is a reading rather than a hunt. -->
+  <section id="tab-community" class="hide">
+    <h2>Member posts awaiting a decision</h2>
+    <p class="lede">
+      Anyone with an EdgeDesk account can write. Subscribers publish straight through; free accounts queue here, and so
+      does any post that used recommendation language — the phrase it tripped on is shown on the row.
+      Approving publishes it at <code class="mono">/articles/community/&lt;slug&gt;</code> immediately: member posts are
+      rendered live rather than built, so there is no pipeline run to wait for.
+    </p>
+    <div class="toolbar">
+      <select id="cFilter">
+        <option value="pending" selected>Waiting for a decision</option>
+        <option value="published">Published</option>
+        <option value="rejected">Rejected</option>
+        <option value="removed">Removed</option>
+        <option value="">Everything</option>
+      </select>
+      <button class="btn sm ghost" id="cReload">Reload</button>
+      <span class="sp"></span>
+      <span class="stat" id="cCounts"></span>
+    </div>
+    <div class="card" style="padding:6px 12px 12px"><div id="cList"><p class="lede" style="margin:14px 0">Loading…</p></div></div>
+    <div class="msg" id="cMsg"></div>
+  </section>
 </main>
 </div>
 
@@ -185,6 +228,7 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
      about serving. -->
 <script src="/tools/articles/article_model.js"></script>
 <script src="/tools/articles/article_render.js"></script>
+<script src="/tools/articles/community.js"></script>
 <script>
 const SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
@@ -223,7 +267,7 @@ function showApp(){
   document.getElementById('gate').classList.add('hide');
   document.getElementById('app').classList.remove('hide');
   document.getElementById('who').textContent=userEmail()||'';
-  loadSettings();load();
+  loadSettings();load();refreshQueueCount();
 }
 function gateOut(){localStorage.removeItem('edgedesk_session');showGate();}
 document.getElementById('gBtn').onclick=async function(){
@@ -440,6 +484,129 @@ document.getElementById('autoPub').onchange=async function(){
     msg('setMsg',String(e&&e.message||e),'err');
   }finally{ this.disabled=false; }
 };
+
+/* ======================================================================== */
+/* MEMBER POSTS                                                             */
+/* ======================================================================== */
+const CM=(window.EDART&&window.EDART.community)||null;
+const CCOLS='id,slug,title,body,sport,article_slug,author_name,author_id,status,published_at,created_at,updated_at,flagged_terms,moderation_note';
+let CROWS=[];
+
+document.querySelectorAll('.tabbtn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tabbtn').forEach(x=>{x.classList.toggle('on',x===b);x.classList.toggle('ghost',x!==b);});
+    document.getElementById('tab-research').classList.toggle('hide',b.dataset.tab!=='research');
+    document.getElementById('tab-community').classList.toggle('hide',b.dataset.tab!=='community');
+    if(b.dataset.tab==='community')loadCommunity();
+  };
+});
+document.getElementById('cReload').onclick=loadCommunity;
+document.getElementById('cFilter').onchange=loadCommunity;
+
+async function loadCommunity(){
+  msg('cMsg','');
+  const f=document.getElementById('cFilter').value;
+  document.getElementById('cList').innerHTML='<p class="lede" style="margin:14px 0">Loading…</p>';
+  try{
+    CROWS=await sbSelect('community_posts?select='+CCOLS
+      +(f?'&status=eq.'+encodeURIComponent(f):'')+'&order=created_at.desc&limit=200');
+  }catch(e){
+    document.getElementById('cList').innerHTML='<p class="lede" style="margin:14px 0">'
+      +esc(String(e.message||e))+'</p>';
+    msg('cMsg','If this says 404 the member-post table is not installed yet — run supabase/community_posts.sql.','info');
+    return;
+  }
+  renderCommunity();
+}
+
+/* the count on the tab is the operator's actual workload, so it is the number
+   of posts WAITING rather than the number in the current filter */
+async function refreshQueueCount(){
+  try{
+    const r=await sbSelect('community_posts?select=id&status=eq.pending&limit=200');
+    const n=(r||[]).length;
+    document.getElementById('cQueueCount').textContent=n?(' · '+n):'';
+  }catch(e){ document.getElementById('cQueueCount').textContent=''; }
+}
+
+function renderCommunity(){
+  const rows=CROWS;
+  document.getElementById('cCounts').innerHTML=
+    '<span><b>'+rows.length+'</b> shown</span>'
+    +'<span><b>'+rows.filter(r=>r.status==='pending').length+'</b> waiting</span>'
+    +'<span><b>'+rows.filter(r=>(r.flagged_terms||[]).length).length+'</b> flagged</span>';
+  if(!rows.length){
+    document.getElementById('cList').innerHTML='<p class="lede" style="margin:14px 0">Nothing here. '
+      +'A subscriber\u2019s clean post never reaches this queue \u2014 it publishes straight through.</p>';
+    return;
+  }
+  let h='<table><thead><tr><th>Post</th><th>Author</th><th>Filed</th><th>State</th><th></th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    const flags=(r.flagged_terms||[]);
+    h+='<tr>'
+      +'<td><div class="matchup">'+esc(r.title)+'</div>'
+        +'<div class="sub">'+esc(r.slug)+(r.sport?' \u00b7 '+esc(r.sport):'')
+        +(r.article_slug?' \u00b7 on '+esc(r.article_slug):'')+'</div>'
+        +(flags.length?'<div class="checkfail">flagged: '+flags.map(esc).join(', ')+'</div>':'')+'</td>'
+      +'<td>'+esc(r.author_name)+'</td>'
+      +'<td class="mono" style="font-size:11px;color:var(--faint)">'+esc(fmt(r.created_at))+'</td>'
+      +'<td><span class="pill '+esc(r.status==='published'?'published':r.status==='pending'?'pending':'draft')+'">'
+        +esc(r.status)+'</span></td>'
+      +'<td><div class="acts">'
+        +'<button class="btn sm ghost" data-cact="read" data-id="'+esc(r.id)+'">Read</button>'
+        +(r.status!=='published'?'<button class="btn sm good" data-cact="approve" data-id="'+esc(r.id)+'">Approve</button>':'')
+        +(r.status==='published'?'<a class="btn sm ghost" href="/articles/community/'+esc(r.slug)+'" target="_blank" rel="noopener">Open</a>':'')
+        +(r.status==='published'?'<button class="btn sm ghost" data-cact="unpublish" data-id="'+esc(r.id)+'">Unpublish</button>':'')
+        +(r.status!=='rejected'?'<button class="btn sm danger" data-cact="reject" data-id="'+esc(r.id)+'">Reject</button>':'')
+      +'</div></td></tr>';
+  });
+  document.getElementById('cList').innerHTML=h+'</tbody></table>';
+  document.querySelectorAll('#cList [data-cact]').forEach(b=>{ b.onclick=()=>cAct(b.dataset.cact,b.dataset.id,b); });
+}
+
+async function cAct(what,id,btn){
+  const row=CROWS.filter(r=>r.id===id)[0];
+  if(!row)return;
+  if(what==='read')return cRead(row);
+  btn.disabled=true; msg('cMsg','');
+  const next=what==='approve'?'published':what==='unpublish'?'pending':'rejected';
+  if(next==='rejected'&&!confirm('Reject \u201c'+row.title+'\u201d? The author keeps the text and can see the decision; the post never goes public.')){
+    btn.disabled=false; return;
+  }
+  try{
+    await sbWrite('community_posts?id=eq.'+encodeURIComponent(id),'PATCH',{status:next});
+    msg('cMsg',next==='published'
+      ? 'Published. It is live at /articles/community/'+row.slug+' now \u2014 member posts render live, there is no build to wait for.'
+      : next==='pending' ? 'Unpublished. It is back in the queue and off the public site.'
+      : 'Rejected. The author can see the decision on their own posts.','ok');
+    await loadCommunity(); refreshQueueCount();
+  }catch(e){ msg('cMsg',String(e&&e.message||e),'err'); }
+  finally{ btn.disabled=false; }
+}
+
+/* Read it before deciding on it. Rendered through the SAME body renderer the
+   public page uses, so what is approved is what will appear \u2014 escaped
+   text, paragraphs, and links that are links. */
+function cRead(row){
+  document.getElementById('pvTitle').textContent=row.title+' \u2014 '+row.author_name;
+  const open=document.getElementById('pvOpen');
+  open.href='/articles/community/'+row.slug;
+  open.classList.toggle('hide',row.status!=='published');
+  const body=CM?CM.bodyHTML(row.body):esc(row.body);
+  const flags=(row.flagged_terms||[]);
+  document.getElementById('pvFrame').srcdoc=
+    '<!doctype html><html><head><meta charset="utf-8">'
+    +'<link rel="stylesheet" href="/articles/articles.css?v=2"></head>'
+    +'<body class="a-body"><main class="a-wrap"><article class="a-article">'
+    +(flags.length?'<p class="a-warn"><b>Flagged:</b> '+flags.map(esc).join(', ')
+      +'. This post reached the queue because of that, whatever the account.</p>':'')
+    +'<div class="a-eyebrow"><span class="a-membertag">Member post</span></div>'
+    +'<h1 class="a-h1">'+esc(row.title)+'</h1>'
+    +'<div class="a-byline"><span>By '+esc(row.author_name)+'</span><span>'+esc(row.status)+'</span></div>'
+    +'<div class="a-postbody">'+body+'</div>'
+    +'</article></main></body></html>';
+  dlg.showModal();
+}
 
 /* ---- boot ---------------------------------------------------------------- */
 if(token())showApp(); else showGate();

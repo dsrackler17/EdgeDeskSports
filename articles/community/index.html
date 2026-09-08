@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Member posts | EdgeDesk</title>
+<meta name="description" content="Posts written by EdgeDesk members. Not EdgeDesk research and not betting advice.">
+<meta name="theme-color" content="#0d0f13">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/articles/articles.css?v=2">
+<!-- ===========================================================================
+     MEMBER POSTS — the reading surface.
+
+     WHY THIS PAGE IS RENDERED IN THE BROWSER while every research article is a
+     committed file: a member presses Publish and expects to see their post,
+     not to wait for a build. Research articles are static because they must be
+     crawlable; member posts are noindex by design, so there is nothing for a
+     static build to buy here and a live read is simply the honest shape.
+
+     IT IS NOT THE RESEARCH FEED, and every surface says so. The label is on
+     the section, on each card and on each post, because a reader who arrives
+     from a shared link has seen none of the others.
+
+     Nothing on this page trusts a post's text. Bodies are escaped and
+     rendered by EDART.community.bodyHTML(), which turns blank lines into
+     paragraphs and bare links into anchors and treats everything else as the
+     text it is. There is no markdown and no HTML passthrough: one member
+     running script in another member's session is the failure mode a
+     community page has, and the only reliable defence is not to have the
+     feature.
+     =========================================================================== -->
+</head>
+<body class="a-body">
+
+<header class="ah">
+  <a class="ah-brand" href="/"><span class="ah-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="ah-nav" aria-label="Research sections">
+    <a class="ah-tab" href="/articles">All research</a>
+    <a class="ah-tab" href="/articles/college-football">College football</a>
+    <a class="ah-tab" href="/articles/nfl">NFL</a>
+    <a class="ah-tab on" href="/articles/community">Members</a>
+  </nav>
+  <a class="ah-cta" href="/articles/write">Write a post</a>
+</header>
+
+<main class="a-wrap hub" id="main">
+  <div id="view">
+    <p class="a-nodata" style="margin:40px 0">Loading member posts…</p>
+  </div>
+</main>
+
+<footer class="af">
+  <p class="af-line"><b>Member posts are not EdgeDesk research.</b> They are written by people with EdgeDesk accounts and represent their own views. EdgeDesk's model research lives at <a href="/articles">/articles</a>. Nothing on this site is betting advice, a wager or a recommendation.</p>
+  <nav class="af-nav" aria-label="Site">
+    <a href="/articles">Research articles</a><a href="/articles/college-football">College football</a>
+    <a href="/articles/nfl">NFL</a><a href="/articles/community">Member posts</a>
+    <a href="/app.html#research/football">Research terminal</a><a href="/games">EdgeDesk Games</a>
+    <a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a>
+  </nav>
+  <p class="af-legal">21+. Gamble responsibly — 1-800-GAMBLER. © <span id="yr"></span> EdgeDesk Sports.</p>
+</footer>
+
+<script src="/tools/articles/community.js?v=1"></script>
+<script>
+(function () {
+  'use strict';
+  var C = window.EDART && window.EDART.community;
+  var SB_URL = 'https://iattxbkbufslbauoumga.supabase.co';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
+  var COLS = 'id,slug,title,body,sport,article_slug,author_name,published_at,updated_at,status';
+
+  document.getElementById('yr').textContent = new Date().getUTCFullYear();
+
+  function esc(s) { return C ? C.esc(s) : String(s == null ? '' : s); }
+  function session() { try { return JSON.parse(localStorage.getItem('edgedesk_session') || 'null'); } catch (e) { return null; } }
+  function token() { var s = session(); return s && s.access_token; }
+  function headers() {
+    var h = { apikey: SB_KEY, 'content-type': 'application/json' };
+    if (token()) h.Authorization = 'Bearer ' + token();
+    return h;
+  }
+  function get(q) {
+    return fetch(SB_URL + '/rest/v1/' + q, { headers: headers() }).then(function (r) {
+      if (!r.ok) throw new Error('read ' + r.status);
+      return r.json();
+    });
+  }
+  function when(t) {
+    var d = t ? Date.parse(t) : NaN;
+    if (!isFinite(d)) return '';
+    try {
+      return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(d));
+    } catch (_) { return new Date(d).toISOString().slice(0, 10); }
+  }
+  /* The label, drawn identically wherever a member post appears. It is not
+     decoration: somebody arriving on a shared link has seen no other page. */
+  function memberTag() {
+    return '<span class="a-membertag" title="Written by an EdgeDesk member, not by the model">Member post</span>';
+  }
+
+  /* ---- the slug this page was asked for -------------------------------- */
+  /* /articles/community/<slug> is rewritten to ?p=<slug> by 404.html, because
+     a static host cannot serve a per-post document. Both forms work. */
+  function wantedSlug() {
+    var q = new URLSearchParams(location.search).get('p');
+    if (q) return q;
+    var parts = location.pathname.split('/').filter(Boolean);
+    return (parts[0] === 'articles' && parts[1] === 'community' && parts[2]) ? decodeURIComponent(parts[2]) : null;
+  }
+
+  function render(html) { document.getElementById('view').innerHTML = html; }
+
+  /* ---- one post --------------------------------------------------------- */
+  function showPost(slug) {
+    get('community_posts?select=' + COLS + '&slug=eq.' + encodeURIComponent(slug) + '&limit=1')
+      .then(function (rows) {
+        var p = rows && rows[0];
+        if (!p) {
+          render('<article class="a-article"><nav class="a-crumbs"><a href="/articles">Research</a> <span>›</span> '
+            + '<a href="/articles/community">Member posts</a></nav>'
+            + '<h1 class="a-h1">This post is not available</h1>'
+            + '<p class="a-standfirst">It may be waiting for an editor, it may have been withdrawn by its author, '
+            + 'or the link may be wrong. <a href="/articles/community">Every published member post is here</a>.</p>'
+            + '</article>');
+          return;
+        }
+        document.title = p.title + ' | EdgeDesk member post';
+        var pending = p.status !== 'published';
+        var h = '<article class="a-article">';
+        h += '<nav class="a-crumbs" aria-label="Breadcrumb"><a href="/articles">Research</a> <span>›</span> '
+          + '<a href="/articles/community">Member posts</a> <span>›</span> '
+          + '<span aria-current="page">' + esc(p.title) + '</span></nav>';
+        if (pending) {
+          h += '<p class="a-warn">This is your own post and it is <b>' + esc(p.status) + '</b>. '
+            + 'Only you can see it at this address until an EdgeDesk editor approves it.</p>';
+        }
+        h += '<header class="a-hero">';
+        h += '<div class="a-eyebrow">' + memberTag()
+          + (p.sport ? '<span class="a-conf">' + esc(p.sport === 'NFL' ? 'NFL' : 'College football') + '</span>' : '')
+          + '</div>';
+        h += '<h1 class="a-h1">' + esc(p.title) + '</h1>';
+        h += '<div class="a-byline"><span>By ' + esc(p.author_name) + '</span>'
+          + (p.published_at ? '<span>' + esc(when(p.published_at)) + '</span>' : '')
+          + '<span>' + (C ? C.readingMinutes(p.body) : 1) + ' min read</span></div>';
+        h += '</header>';
+        h += '<div class="a-memberwarn">Written by an EdgeDesk member. This is the author’s own view — it is not '
+          + 'EdgeDesk’s model research, not reviewed for accuracy, and not betting advice. '
+          + '<a href="/articles">EdgeDesk’s own research on this week’s games is here</a>.</div>';
+        h += '<div class="a-postbody">' + (C ? C.bodyHTML(p.body) : esc(p.body)) + '</div>';
+        if (p.article_slug) {
+          h += '<div class="a-cta"><p class="a-ctaline">EdgeDesk’s own research on this matchup</p>'
+            + '<a class="a-ctabtn" href="/articles/' + esc(p.article_slug) + '">Read the model’s read</a></div>';
+        }
+        h += '<div class="a-cta"><p class="a-ctaline">Research the matchup. Then price it.</p>'
+          + '<a class="a-ctabtn" href="/app.html#research/football">Open full EdgeDesk research</a>'
+          + '<nav class="a-ctalinks"><a href="/articles/community">More member posts</a>'
+          + '<a href="/articles">EdgeDesk research articles</a>'
+          + '<a href="/articles/write">Write your own</a></nav></div>';
+        h += '<p class="a-source">Member posts are moderated but not fact-checked. '
+          + 'If something here is wrong or breaks the rules, <a href="#" data-ed-report="A member post">report it</a>. '
+          + '21+. Gamble responsibly — 1-800-GAMBLER.</p>';
+        h += '</article>';
+        render(h);
+      })
+      .catch(function (e) {
+        render('<p class="a-warn">Member posts could not be loaded (' + esc(e.message) + '). '
+          + 'EdgeDesk’s <a href="/articles">research articles</a> are unaffected — they are static pages.</p>');
+      });
+  }
+
+  /* ---- the feed --------------------------------------------------------- */
+  function card(p) {
+    var body = C ? C.excerptOf(p.body, 200) : '';
+    return '<article class="a-cardart"><a class="a-cardlink" href="/articles/community/' + esc(p.slug) + '">'
+      + '<div class="a-cardtop">' + memberTag()
+      + (p.sport ? '<span class="a-cardsport">' + esc(p.sport) + '</span>' : '') + '</div>'
+      + '<h3 class="a-cardh">' + esc(p.title) + '</h3>'
+      + '<p class="a-cardsum">' + esc(body) + '</p>'
+      + '<div class="a-cardmeta"><span>' + esc(p.author_name) + '</span>'
+      + '<span>' + esc(when(p.published_at)) + '</span>'
+      + (p.status !== 'published' ? '<span class="a-status">' + esc(p.status) + '</span>' : '')
+      + '</div></a></article>';
+  }
+  function showFeed() {
+    var signedIn = !!token();
+    get('community_posts?select=' + COLS + '&status=eq.published&order=published_at.desc&limit=60')
+      .then(function (rows) {
+        var pub = (rows || []).filter(function (p) { return p.status === 'published'; });
+        var h = '<header class="a-hubhead">';
+        h += '<h1 class="a-h1">Member posts</h1>';
+        h += '<p class="a-standfirst">Writing by people with EdgeDesk accounts. These are their own views, '
+          + 'not EdgeDesk’s model research — that lives at <a href="/articles">/articles</a> and is generated '
+          + 'from the model, not written by anyone.</p>';
+        h += '<p class="a-hubcount">' + pub.length + ' published post' + (pub.length === 1 ? '' : 's') + '</p>';
+        h += '<p style="margin-top:14px"><a class="a-ctabtn" href="/articles/write">Write a post</a></p>';
+        h += '</header>';
+        h += '<nav class="a-filters" aria-label="Sections">'
+          + '<a class="a-filter" href="/articles">EdgeDesk research</a>'
+          + '<a class="a-filter on" href="/articles/community">Member posts</a></nav>';
+        h += '<div id="mine"></div>';
+        h += pub.length
+          ? '<div class="a-list" style="display:grid">' + pub.map(card).join('') + '</div>'
+          : '<p class="a-nodata">No member post is published yet. '
+            + (signedIn ? '<a href="/articles/write">Write the first one</a>.' : '<a href="/articles/write">Sign in and write the first one</a>.')
+            + '</p>';
+        h += '<section class="a-about"><h2 class="a-h2">What belongs here</h2>'
+          + '<p>Show your reasoning. What did you see in the matchup, and what would change your mind? '
+          + 'EdgeDesk publishes research rather than picks, and that applies to member posts too: '
+          + 'a post that reads as a recommendation — a best bet, a lock, a stake size — is held for an editor '
+          + 'rather than published, and the composer tells you which phrase did it before you submit.</p>'
+          + '<p><b>Who can post.</b> Anyone with an EdgeDesk account can write. Posts from subscribers go live '
+          + 'immediately; posts from free accounts are read by an EdgeDesk editor first. Either way you keep '
+          + 'your draft and it appears under your own name.</p>'
+          + '<p><a class="a-ctabtn" href="/articles/write">Write a post</a></p></section>';
+        render(h);
+        if (signedIn) showMine();
+      })
+      .catch(function (e) {
+        render('<p class="a-warn">Member posts could not be loaded (' + esc(e.message) + '). '
+          + 'EdgeDesk’s <a href="/articles">research articles</a> are unaffected — they are static pages.</p>');
+      });
+  }
+  /* A signed-in reader's own posts, in whatever state. RLS returns these to
+     their author and to nobody else, so a queued post is never a post that
+     silently vanished. */
+  function showMine() {
+    get('community_posts?select=' + COLS + '&status=neq.published&order=updated_at.desc&limit=20')
+      .then(function (rows) {
+        if (!rows || !rows.length) return;
+        var el = document.getElementById('mine');
+        if (!el) return;
+        el.innerHTML = '<h2 class="a-h2">Your posts, not yet public</h2>'
+          + '<p class="a-secnote">Only you can see these. A post marked <b>pending</b> is with an EdgeDesk editor.</p>'
+          + '<div class="a-list" style="display:grid">' + rows.map(card).join('') + '</div>';
+      })
+      .catch(function () { /* signed out, or the read is not permitted: show nothing */ });
+  }
+
+  var slug = wantedSlug();
+  if (slug) showPost(slug); else showFeed();
+})();
+</script>
+<script src="/lib/edgedesk_report.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
+<script>
+try { window.EDReport.configure({
+  url: 'https://iattxbkbufslbauoumga.supabase.co',
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8',
+  version: 'community', surface: 'member-posts' }); } catch (e) {}
+</script>
+</body>
+</html>

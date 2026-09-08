@@ -55,12 +55,26 @@ const QUIET = !!arg('quiet', false);
 const NOW = arg('now', null) ? new Date(arg('now', null)).toISOString() : new Date().toISOString();
 function log(...a) { if (!QUIET) console.log(...a); }
 
-/* Directories this build owns and may therefore delete. Anything else under
-   /articles (articles.css, data/) is left exactly where it is. */
+/* Directories this build owns and may therefore delete.
+   
+   IT IS A DENY LIST FOR A REASON, AND THE REASON IS A BUG THIS ALREADY HAD.
+   The build removes the directories it owns before writing, so an article
+   that was unpublished leaves nothing behind for a crawler to keep finding.
+   The first version of that rule was "every directory under /articles except
+   data" — which quietly deleted /articles/community/ and /articles/write/,
+   the hand-maintained member-post pages, the first time it ran after they
+   were added. Nothing failed; the pages were simply gone.
+
+   So the set of things this build must not touch is named here, once, and
+   tools/articles/community.test.js asserts each one survives a build. A
+   directory added under /articles in future has to be added to this list or
+   it will be deleted, and that is the trade: an explicit list somebody must
+   maintain, rather than an implicit rule that eats work silently. */
+const NOT_OURS = ['data', 'community', 'write'];
 function ownedDirs() {
   if (!fs.existsSync(OUT)) return [];
   return fs.readdirSync(OUT, { withFileTypes: true })
-    .filter(d => d.isDirectory() && d.name !== 'data')
+    .filter(d => d.isDirectory() && NOT_OURS.indexOf(d.name) < 0)
     .map(d => path.join(OUT, d.name));
 }
 function write(file, body) {
@@ -211,4 +225,4 @@ if (require.main === module) {
   try { build(); process.exit(0); }
   catch (e) { console.error('build failed: ' + (e && e.message || e)); process.exit(1); }
 }
-module.exports = { build, articleSitemap, sitemapIndex, OUT };
+module.exports = { build, articleSitemap, sitemapIndex, OUT, NOT_OURS };

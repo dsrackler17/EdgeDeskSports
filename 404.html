@@ -32,6 +32,15 @@
     if(p[1]==='h2h'){location.replace('/games/h2h/?c='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
     if(p[1]==='groups'){location.replace('/games/groups/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
   }
+  /* A member post: /articles/community/{slug} -> the one page that can render
+     it. A static host has no per-post document to serve, and these pages are
+     noindex by design, so the query form is the canonical one and this keeps
+     the link somebody pasted into a group chat working. */
+  if(p[0]==='articles'&&p[1]==='community'&&p[2]){
+    location.replace('/articles/community/?p='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+  if(p[0]==='articles'&&p[1]==='community'){location.replace('/articles/community/');return;}
+  if(p[0]==='articles'&&p[1]==='write'){location.replace('/articles/write/');return;}
+
   /* the War Room, the Drill, the Roster and the Front Office are single
      pages: anything deeper lands on the page itself rather than on the games
      home */
