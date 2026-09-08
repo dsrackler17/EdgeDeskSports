@@ -63,7 +63,21 @@ jobs:
       # A generator that has stopped agreeing with the research is worse than
       # one that did not run.
       - name: The article system must pass before it publishes
-        run: node tools/articles/articles.test.js
+        run: |
+          node tools/articles/articles.test.js
+          node tools/articles/sync.test.js
+
+      # WHAT THE OPERATOR PUBLISHED FROM A BROWSER, first. Publication is
+      # decided in the article manager and on the game brief, and written to
+      # public.site_articles; the page is a committed file built from the
+      # store. This is the only thing that joins them, and it runs before the
+      # refresh so a just-published article is refreshed and built in the same
+      # pass rather than waiting three hours for the next one.
+      #
+      # No secret: it reads through the anon key every page ships, and RLS
+      # returns published rows and nothing else.
+      - name: Pull what was published from a browser
+        run: node tools/articles/sync.js --write
 
       - name: Refresh every article record from the research
         run: |
