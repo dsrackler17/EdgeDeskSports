@@ -803,6 +803,7 @@ function repeat(playKey, defKey, n, extra, opts) {
   const js = fs.readFileSync(G('play/play.js'), 'utf8');
   const css = fs.readFileSync(G('gridiron.css'), 'utf8');
   const sw = fs.readFileSync(G('play/sw.js'), 'utf8');
+  const stage = fs.readFileSync(G('lib/gridiron/stage.js'), 'utf8');
   const man = JSON.parse(fs.readFileSync(G('play/manifest.webmanifest'), 'utf8'));
 
   ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'paint.js', 'stage.js', 'session.js']
@@ -883,6 +884,36 @@ function repeat(playKey, defKey, n, extra, opts) {
       js.indexOf('FULL.standalone()') > 0 && js.indexOf('display-mode:standalone') > 0);
   chk('the tools row still fits five controls beside the read tag',
       /\.gd-read\{[^}]*max-width:min\(4[0-9]%/.test(css.replace(/\s+/g, '')));
+
+  /* ── THE STICK IS WHERE YOUR THUMB IS ─────────────────────────────────
+     It was a fixed ring 118 pixels across that answered only a touch which
+     STARTED inside it. On a phone, in the middle of a play, that is a control
+     you have to look down and aim for — and if you miss it nothing happens
+     at all. The whole bottom-left of the field is the stick now: it comes to
+     the thumb, it goes home when you let go, and it still yields to a
+     receiver badge and to every button that was already there. */
+  /* the run lane the game DRAWS has to be the one the football runs. It read
+     an option nobody sets, so every run pointed right — while a gap scheme's
+     back meshes a yard and a bit to the left. */
+  chk('the drawn run lane follows the concept, not a hard-coded side',
+      /var side = play\.concept === 'gap' \? -1 : 1;/.test(stage)
+      && stage.indexOf('(opts.lanePreview ||') < 0);
+
+  has(js, 'function floatStick', 'the stick can come to the thumb');
+  has(js, 'function stickGrabbable', 'and it knows where a thumb may take hold');
+  chk('a badge over a receiver is a throw, not a joystick',
+      /function stickGrabbable[\s\S]{0,700}?hitTarget/.test(js));
+  chk('and a button is a button',
+      /function floatStick[\s\S]{0,500}?closest\('\.pd-act/.test(js));
+  chk('it only takes hold where a thumb actually reaches',
+      /function stickGrabbable[\s\S]{0,700}?width \* 0\.\d/.test(js));
+  has(js, 'function stickHome', 'and it goes home when you let go');
+  chk('which is what letting go does',
+      /function stickUp\(\)[\s\S]{0,320}?stickHome\(\)/.test(js));
+  chk('the ring rides home rather than teleporting',
+      /\.pd-stick\{[^}]*transition:/.test(css.replace(/\s+/g, ' ')));
+  chk('and stops dead while it is under a thumb',
+      css.indexOf('.pd-stick.free') > 0);
 
   has(js, 'navigator.vibrate', 'haptics are wired');
   has(js, 'AudioContext', 'sound is synthesised rather than downloaded');

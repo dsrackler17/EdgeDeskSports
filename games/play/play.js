@@ -718,6 +718,7 @@
     stickState.id = null;
     var knob = $('pdKnob');
     if (knob) knob.style.transform = '';
+    stickHome();
     if (stage) stage.steer(0, 0);
   }
   function stickTouch(list) {
@@ -731,21 +732,72 @@
   window.addEventListener('mousemove', stickMove);
   window.addEventListener('mouseup', stickUp);
 
+  /* ── THE STICK IS WHERE YOUR THUMB IS ─────────────────────────────────
+     A fixed ring 118 pixels across that only answers a touch which STARTED
+     inside it is a control you have to look down and aim for, in the middle
+     of a play, on a device you are holding in two hands. Miss it and nothing
+     happens at all — no feedback, no man moving, just a play going past you.
+     That is most of "it is almost impossible to control the guy".
+
+     So the whole bottom-left of the field is the stick. Put a thumb down
+     anywhere in it and the ring comes to the thumb; drag from there. It
+     goes home when you let go, so it is still a thing you can see and learn.
+
+     It yields to everything that was already there: a receiver badge is a
+     throw, a button is a button, and the ring itself still works the old
+     way for anyone who aims at it. */
+  function stickGrabbable(t) {
+    if (!$('pdStick') || !stage) return false;
+    var b = fieldWrap.getBoundingClientRect();
+    var lx = t.clientX - b.left, ly = t.clientY - b.top;
+    if (lx < 0 || ly < 0 || lx > b.width || ly > b.height) return false;
+    if (lx > b.width * 0.62 || ly < b.height * 0.34) return false;
+    /* a badge over a receiver is a throw, not a joystick */
+    var c = canvas.getBoundingClientRect();
+    if (stage.hitTarget(t.clientX - c.left, t.clientY - c.top) >= 0) return false;
+    return true;
+  }
+  function stickAt(e, t, cx, cy, r) {
+    stickState.id = e.changedTouches ? t.identifier : 'mouse';
+    stickState.cx = cx; stickState.cy = cy; stickState.r = r;
+    stickMove(e);
+    if (e.cancelable) e.preventDefault();
+  }
+  function stickHome() {
+    var el = $('pdStick');
+    if (!el) return;
+    el.classList.remove('free');
+    el.style.left = ''; el.style.bottom = '';
+  }
   function wireStick() {
     var el = $('pdStick');
     if (!el) return;
     function down(e) {
       var t = e.changedTouches ? e.changedTouches[0] : e;
       var b = el.getBoundingClientRect();
-      stickState.id = e.changedTouches ? t.identifier : 'mouse';
-      stickState.cx = b.left + b.width / 2; stickState.cy = b.top + b.height / 2;
-      stickState.r = b.width / 2;
-      stickMove(e);
-      if (e.cancelable) e.preventDefault();
+      stickAt(e, t, b.left + b.width / 2, b.top + b.height / 2, b.width / 2);
     }
     el.addEventListener('touchstart', down, { passive: false });
     el.addEventListener('mousedown', down);
   }
+  /* bound once, for the life of the page, like the drag listeners above */
+  function floatStick(e) {
+    if (gd.hidden || stickState.id != null) return;
+    if (e.target && e.target.closest
+      && e.target.closest('.pd-act, .pd-snap, .pd-flip, .gd-tools, .drawer, .ov')) return;
+    var t = e.changedTouches ? e.changedTouches[0] : e;
+    if (!stickGrabbable(t)) return;
+    var el = $('pdStick'), host = fieldWrap.getBoundingClientRect();
+    var w = el.offsetWidth || 118, h = el.offsetHeight || 118;
+    var cx = Math.min(Math.max(t.clientX, host.left + w / 2 + 2), host.right - w / 2 - 2);
+    var cy = Math.min(Math.max(t.clientY, host.top + h / 2 + 2), host.bottom - h / 2 - 2);
+    el.classList.add('free');
+    el.style.left = (cx - host.left - w / 2) + 'px';
+    el.style.bottom = (host.bottom - cy - h / 2) + 'px';
+    stickAt(e, t, cx, cy, w / 2);
+  }
+  fieldWrap.addEventListener('touchstart', floatStick, { passive: false });
+  fieldWrap.addEventListener('mousedown', floatStick);
   function wireActs() {
     Array.prototype.forEach.call(pad.querySelectorAll('[data-act]'), function (b) {
       b.onclick = function () {

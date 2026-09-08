@@ -344,6 +344,91 @@ console.log('\nPLAY MODE — the thumbs');
   chk('and only once', real.snap() === false);
 })();
 
+/* ── CAN YOU ACTUALLY RUN THE BALL? ───────────────────────────────────────
+   These are the numbers a person on a phone was complaining about, and they
+   were right. Steering the man was WORSE than letting go of the stick — 1.77
+   yards a carry against 2.04 on inside zone, 2.90 against 4.02 on outside
+   zone — because the thumb was read as a heading and handed to the legs
+   unedited, and the back lines up directly behind his own centre. Push
+   forward and he ran into the centre's back.
+
+   And nothing had a ceiling. Four hundred and twenty carries with a thumb on
+   the stick, against every front the AI calls, produced a longest run of
+   EIGHT YARDS. Not one carry in the game reached ten, at any aiming point on
+   the field, with or without a person steering. There was nothing to be good
+   at. */
+(() => {
+  /* fixed seeds: these are a deterministic property of the football, not a
+     sample that can get unlucky */
+  const N = 200;
+  function carries(script) {
+    const out = [];
+    for (let i = 0; i < N; i++) {
+      const g = freshGame(700 + i);
+      const play = ['inside_zone', 'power', 'outside_zone'][i % 3];
+      const form = play === 'outside_zone' ? 'gun' : 'i_form';
+      out.push(record({ game: g, seed: 900 + i, play: play, form: form,
+                        def: 'base_3', script: script }).out.yards);
+    }
+    return out;
+  }
+  const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const loose = carries(null);
+  const held = carries(forward);
+  chk('a thumb on the stick is not worse than no thumb at all',
+    mean(held) > mean(loose) - 0.9,
+    'steering ' + Math.round(mean(held) * 100) / 100 + ' vs letting go ' + Math.round(mean(loose) * 100) / 100);
+  chk('the run game has a ceiling a person can reach',
+    Math.max.apply(null, held) >= 11,
+    'longest of ' + N + ' carries into a stacked box was ' + Math.max.apply(null, held));
+  chk('and a floor that is still football',
+    mean(held) > 1.9 && mean(held) < 7,
+    Math.round(mean(held) * 100) / 100 + ' yards a carry');
+  chk('running into your own centre is not the only thing forward means',
+    held.filter(y => y >= 5).length / N > 0.10,
+    Math.round(held.filter(y => y >= 5).length / N * 100) + '% of carries reached 5 yards');
+})();
+
+/* ── HE TURNS WHEN YOU ASK HIM TO ─────────────────────────────────────────
+   Changing direction used to be pure momentum: to go left while running
+   right he had to accelerate through his own velocity, most of a second at a
+   back's numbers. Half the time you asked for a cut he was tackled before he
+   ever made it. A man plants a foot and throws the old direction away; it
+   costs him speed, which is what a cut costs. */
+(() => {
+  let turned = 0, tried = 0;
+  for (let i = 0; i < 40; i++) {
+    const g = freshGame(800 + i);
+    let flipped = null, got = false;
+    record({ game: g, seed: 950 + i, play: 'outside_zone', form: 'gun', def: 'base_3',
+      script: (t, sim) => {
+        const c = sim.carrier();
+        if (c && c.carry && flipped == null && c.vx > 5) flipped = t;
+        if (flipped != null && c && c.vx < 0) got = true;
+        return flipped == null ? { mx: 0.92, my: 0.39 } : { mx: -0.92, my: 0.39 };
+      } });
+    if (flipped != null) { tried++; if (got) turned++; }
+  }
+  chk('a hard cut lands more often than not',
+    tried > 8 && turned / tried > 0.7,
+    turned + ' of ' + tried + ' cuts came round');
+})();
+
+/* ── THE STICK IS A THROTTLE, NOT A SWITCH ────────────────────────────────
+   Its magnitude was measured, stored on the actor as `drive`, and then never
+   read by anything: every touch, however light, was a full sprint. Easing off
+   is how a cut is set up and how a hole is picked at a speed you can still
+   change your mind at. */
+(() => {
+  const far = record({ seed: 41, play: 'outside_zone', form: 'gun', def: 'base_3',
+    script: () => ({ mx: 0, my: 1 }) });
+  const easy = record({ seed: 41, play: 'outside_zone', form: 'gun', def: 'base_3',
+    script: () => ({ mx: 0, my: 0.28 }) });
+  chk('a light touch and a full push are not the same run',
+    far.out.yards !== easy.out.yards || Math.abs(far.t - easy.t) > 0.05,
+    far.out.yards + ' yards vs ' + easy.out.yards);
+})();
+
 /* ── ONE NAME, ONE THING ──────────────────────────────────────────────────
    play.js is a single closure two thousand lines long, and `var` does not
    care: declaring the same name twice at module scope silently gives the
