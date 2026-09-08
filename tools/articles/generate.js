@@ -60,37 +60,25 @@ function log(...a) { if (!QUIET) console.log(...a); }
    full display names, which is what a headline and a slug are made of. The
    payload is therefore the source for names and the schedule row for
    everything else, rather than a second name table maintained here. */
+/* The slate row and the research payload describe the same game, and where
+   both carry a field they agree — the payload reads it off the same row. The
+   payload is the source here, with the row filling the two things it cannot
+   know from the game block alone, so a record built in the terminal from the
+   payload ALONE is identical to this one. */
 function gameMetaFor(entry, research) {
-  const g = research.game || {};
-  return {
-    sport: entry.sport,
-    game_id: entry.game_id,
-    home: g.home || entry.home,
-    away: g.away || entry.away,
-    /* the short, commonly-spoken form, used ONLY for the alias URL */
-    home_short: shortName(g.home || entry.home, entry.sport),
-    away_short: shortName(g.away || entry.away, entry.sport),
-    kickoff: entry.kickoff,
-    venue: entry.venue,
-    neutral_site: !!entry.neutral_site,
-    conference_line: g.conference_line || null,
-    week: entry.week,
-    season: entry.season
-  };
+  const m = MODEL.gameMetaFrom(research, entry.sport,
+    { game_id: entry.game_id, kickoff: entry.kickoff, home: entry.home, away: entry.away });
+  if (m.venue == null) m.venue = entry.venue;
+  if (m.week == null) m.week = entry.week;
+  if (m.season == null) m.season = entry.season;
+  if (!m.neutral_site && entry.neutral_site) m.neutral_site = true;
+  return m;
 }
-/* "New England Patriots" -> "Patriots", and ONLY for a professional club.
-   A nickname is a real second name in the NFL and people search for it; a
-   college programme is named for its institution, so the same rule there
-   produces "Arizona State" -> "State" and an alias URL of `state-vs-m-2026`.
-   So the shortening is scoped to the league where the convention exists,
-   rather than guessed from the shape of a name. */
-function shortName(name, sport) {
-  if (String(sport || '').toUpperCase() !== 'NFL') return null;
-  const parts = String(name || '').trim().split(/\s+/);
-  if (parts.length < 2) return null;
-  const last = parts[parts.length - 1];
-  return /^[A-Za-z]{4,}$/.test(last) ? last : null;
-}
+/* The shortening rule lives in article_model.js, because the research
+   terminal builds records too and an alias that depended on which door built
+   the record would be a second URL appearing and disappearing under a
+   reader. */
+const shortName = MODEL.shortName;
 
 async function main() {
   const store = STORE;

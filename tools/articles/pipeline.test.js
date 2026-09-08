@@ -72,6 +72,32 @@ has(APP, "r.market==='totals'", 'and a total row the same way');
 has(APP, 'out.spread_line=-(+r.point)', 'and the sign convention a replayed quote must honour');
 
 /* ======================================================================== */
+section('1b. PUBLISHING A BRIEF AS AN ARTICLE — the wiring, statically');
+/* ======================================================================== */
+/* The research terminal can turn the brief on screen into a public article.
+   What must be true of that path is that it is the SAME path: the same
+   research payload, the same model, the same checks, one record. */
+has(APP, 'EDBRIEF.publishArticle()', 'the brief bar offers Publish as article');
+chk('only on a game brief, and only for an operator',
+  /snap\.report_type==='GAME'&&window\.edIsOwner&&window\.edIsOwner\(\)/.test(APP),
+  'a slate or rankings brief is not one matchup, and a customer has no article to publish');
+chk('the handler re-reads the research payload rather than scraping the rendered brief',
+  APP.indexOf('window.fbNflBriefGame&&window.fbNflBriefGame(rq)') > 0
+  && APP.indexOf('window.fbBriefGame&&window.fbBriefGame(rq)') > 0);
+has(APP, 'A.model.gameMetaFrom(research, sport)', 'and reads the game meta through the shared reader');
+has(APP, 'A.model.publishable(rec)', 'the publication checks run before Publish is offered');
+has(APP, 'article:A.model.compact(out)', 'and the row carries the whole record, research included');
+chk('it refuses to file an article the pipeline could not address',
+  APP.indexOf('it has no id to file an article under') > 0,
+  'without the schedule row id the next pipeline run would create a second record');
+chk('nothing in the handler recomputes a projection',
+  !/fair_spread\s*=[^=]|projectGame\(|fbPredict\(/.test(
+    APP.slice(APP.indexOf('function publishArticle'), APP.indexOf('window.EDBRIEF={'))));
+/* both game heads carry what a record is keyed on */
+['game_id:(g&&g.game_id!=null)?String(g.game_id):null', 'game_id:g.game_id!=null?String(g.game_id):null']
+  .forEach(x => has(APP, x, 'a brief payload carries its schedule row id'));
+
+/* ======================================================================== */
 section('2. BOOTING THE RESEARCH TERMINAL, HEADLESS');
 /* ======================================================================== */
 (async function () {
@@ -141,6 +167,23 @@ section('2. BOOTING THE RESEARCH TERMINAL, HEADLESS');
     if (p.total) has(html, p.total, rec.slug + ': the fair total reaches the HTML');
     if (p.status) has(html, RENDER.esc(p.status), rec.slug + ': the model status reaches the HTML');
     if (p.confidence_pct != null) has(html, p.confidence_pct + '%', rec.slug + ': the confidence reaches the HTML');
+
+    /* ONE RECORD, TWO DOORS. The pipeline builds its meta from the slate row
+       and the payload; the research terminal has only the payload. If those
+       two disagree the same game gets two records — two slugs, two URLs, and
+       an article that appears twice. */
+    const fromBriefAlone = MODEL.build(research, MODEL.gameMetaFrom(research, entry.sport),
+      { now: rec.published_at, status: 'published', published_at: rec.published_at,
+        market_source: host.marketSourceFor(entry.sport, entry.game_id) });
+    eq(rec.slug + ': the terminal and the pipeline build the same id', fromBriefAlone.id, built.id);
+    eq(rec.slug + ': the same slug', fromBriefAlone.slug, built.slug);
+    eq(rec.slug + ': the same canonical URL', fromBriefAlone.canonical_url, built.canonical_url);
+    eq(rec.slug + ': the same alias set', JSON.stringify(fromBriefAlone.aliases), JSON.stringify(built.aliases));
+    eq(rec.slug + ': the same fair spread', fromBriefAlone.fair_spread_text, built.fair_spread_text);
+    eq(rec.slug + ': the same model status', fromBriefAlone.model_status, built.model_status);
+    chk(rec.slug + ': and the same record, field for field',
+      JSON.stringify(MODEL.compact(fromBriefAlone)) === JSON.stringify(MODEL.compact(built)),
+      'a record that differs by which door built it is two records');
 
     /* the two things the article must never do with a payload */
     chk(rec.slug + ': no projected score without a published total',

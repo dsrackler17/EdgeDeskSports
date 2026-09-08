@@ -20696,6 +20696,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .brief-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:8px}
 .brief-bar .sp{flex:1}
 .brief-bar select.dcard-btn{appearance:none;-webkit-appearance:none}
+/* Publish-as-article panel: it sits between the toolbar and the brief because
+   it is a decision about the brief, and a decision that appears below the
+   thing it is about gets scrolled past. */
+.brief-pub:empty{display:none}
+.brief-pubcard{border:1px solid var(--border);border-radius:12px;background:var(--bg);padding:13px 15px;margin:0 0 10px}
+.brief-pubhead{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:8px}
+.brief-pubmeta{font-size:13.5px;line-height:1.6}
+.brief-pubmeta .mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--dim)}
+.brief-pubok{font-size:13px;color:var(--pos);margin:10px 0 0}
+.brief-pubfail{font-size:13px;line-height:1.6;color:var(--text);background:rgba(217,154,43,.09);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 12px;margin:10px 0 0}
+.brief-pubfail ul{margin:6px 0 0;padding-left:18px}
+.brief-pubfail li{margin:3px 0}
+.brief-pubfail .mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:var(--warn)}
+.brief-pubnote{font-size:12px;color:var(--faint);line-height:1.6;margin:10px 0 0}
+.brief-pubnote .mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px}
+.brief-pubacts{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0}
 .brief-note{font-size:12px;color:var(--dim);margin:8px 2px;line-height:1.5}
 .brief-share{margin:8px 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:12.5px;word-break:break-all;line-height:1.5}
 .brief-share a{color:var(--accent)}
@@ -31011,6 +31027,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'<button class="dcard-btn" onclick="EDBRIEF.openQA()" title="Could a reader with no betting vocabulary act on this?">Reader check</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.refresh()">Refresh from current data</button>'
         +(snap.report_type==='GAME'?'<button class="dcard-btn" onclick="EDBRIEF.polish()">Polish copy</button>':'')
+        /* PUBLISH THIS BRIEF AS A PUBLIC ARTICLE. Operator only, and only on a
+           game brief: /articles publishes one matchup per page, and a slate or
+           a rankings brief is not one. The article is built from the SAME
+           research payload this brief was drawn from — see publishArticle(). */
+        +((snap.report_type==='GAME'&&window.edIsOwner&&window.edIsOwner())
+          ?'<button class="dcard-btn" onclick="EDBRIEF.publishArticle()" title="Turn this brief into a public article at /articles">Publish as article</button>':'')
         +(snap.report_type==='RANKINGS'?'<span class="sp"></span><select class="dcard-btn" onchange="EDBRIEF.openRankings(this.value)">'
           +[10,25,40].map(function(n){ return '<option value="'+n+'"'+((snap.public&&snap.public.rankings&&snap.public.rankings.rows.length===n)?' selected':'')+'>Top '+n+'</option>'; }).join('')+'</select>':'')
         +(snap.report_type==='SLATE'&&snap.preset==='CFB'?'<span class="sp"></span><select class="dcard-btn" onchange="EDBRIEF.openCfbSlate(this.value)"><option value="top"'+(snap.internal.slate.mode==='top'?' selected':'')+'>Top decisions</option><option value="all"'+(snap.internal.slate.mode==='all'?' selected':'')+'>All actionable games</option></select>':'')
@@ -31018,7 +31040,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'</div>';
   }
   function show(snap, note){
-    BR.snap=snap; BR.shared=null;
+    BR.snap=snap; BR.shared=null; BR.pub=null;
     var h=host();
     var body=snap?P.briefHTML(snap):'';
     var v=snap&&snap.version_no>1?'<div class="brief-note">Version '+snap.version_no+' · generated '+esc(P.fmtStamp(snap.generated_at))+'. Earlier versions are unchanged; a shared link always shows the version it was shared from.</div>':'';
@@ -31256,7 +31278,160 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h2.classList.add('open');
   }
 
+  /* ═══ PUBLISH A BRIEF AS A PUBLIC ARTICLE ══════════════════════════════════
+     The brief and the article are the same research seen twice: the brief is
+     it laid out for somebody who already knows the product, the article is it
+     laid out for somebody arriving from a search result. So this does NOT
+     turn the rendered brief into a page — it re-reads the payload the brief
+     was built from and hands it to the same article model the pipeline uses.
+     Nothing is recomputed and no second projection exists.
+
+     WHY THE PAGE DOES NOT APPEAR INSTANTLY. /articles is committed static
+     HTML, which is what makes it crawlable without an account. This writes
+     the article RECORD and its publication state; the next pipeline run
+     renders it. The panel says so rather than implying otherwise.
+     ═══════════════════════════════════════════════════════════════════════ */
+  var ART_LIBS=['/tools/articles/article_model.js','/tools/articles/article_render.js'];
+  function articleLibs(){
+    if(window.EDART&&window.EDART.model&&window.EDART.render) return Promise.resolve(window.EDART);
+    return Promise.all(ART_LIBS.map(function(src){
+      return new Promise(function(res,rej){
+        var el=document.querySelector('script[data-art="'+src+'"]');
+        if(el&&el.getAttribute('data-ok'))return res();
+        var t=document.createElement('script');
+        t.src=src; t.setAttribute('data-art',src);
+        t.onload=function(){ t.setAttribute('data-ok','1'); res(); };
+        t.onerror=function(){ rej(new Error('could not load '+src)); };
+        document.head.appendChild(t);
+      });
+    })).then(function(){
+      if(!(window.EDART&&window.EDART.model&&window.EDART.render))
+        throw new Error('the article modules loaded but their globals are missing');
+      return window.EDART;
+    });
+  }
+  function pubBox(){
+    var c=$id('briefHost'); if(!c) return null;
+    var b=$id('briefPub');
+    if(!b){ b=document.createElement('div'); b.id='briefPub'; b.className='brief-pub no-print';
+      var card=c.querySelector('.brief-card');
+      var bar=card?card.querySelector('.brief-bar'):null;
+      if(bar&&bar.parentNode) bar.parentNode.insertBefore(b, bar.nextSibling); else if(card) card.appendChild(b);
+    }
+    return b;
+  }
+  function pubSay(html){ var b=pubBox(); if(b) b.innerHTML=html; }
+  function publishArticle(){
+    var src=BR.source;
+    if(!src||src.kind!=='game'||!src.q){
+      return pubSay('<div class="brief-note">Only a single game brief becomes an article — /articles publishes one matchup per page.</div>');
+    }
+    pubSay('<div class="brief-note">Building the article from this brief’s research…</div>');
+    articleLibs().then(function(A){
+      var q=src.q||{};
+      var isNfl=String(q.sport_key||'').indexOf('americanfootball_nfl')===0;
+      var sport=isNfl?'NFL':'CFB';
+      var rq={home:q.home,away:q.away,t:q.t};
+      var research=null;
+      try{ research=isNfl?(window.fbNflBriefGame&&window.fbNflBriefGame(rq))
+                         :(window.fbBriefGame&&window.fbBriefGame(rq)); }catch(_){ research=null; }
+      if(!research){
+        return pubSay('<div class="brief-note">EdgeDesk has no research payload for this game right now, so there is nothing to publish. Open the '
+          +(isNfl?'NFL':'Power 4')+' board once so the ratings and the slate are loaded, then try again.</div>');
+      }
+      var meta=A.model.gameMetaFrom(research, sport);
+      if(!meta.game_id){
+        return pubSay('<div class="brief-note">This game is not on the loaded schedule, so it has no id to file an article under — and an article without one would be a second record for the same matchup the next time the pipeline runs. Open the '
+          +(isNfl?'NFL':'Power 4')+' board and reopen the brief.</div>');
+      }
+      var rec;
+      try{ rec=A.model.build(research, meta, {status:'draft'}); }
+      catch(e){ return pubSay('<div class="brief-note">The article could not be built: '+esc(e&&e.message||String(e))+'</div>'); }
+      BR.pub={rec:rec, A:A};
+      var v=A.model.publishable(rec);
+      var h='<div class="brief-pubcard">';
+      h+='<div class="brief-pubhead">Publish as article</div>';
+      h+='<div class="brief-pubmeta"><b>'+esc(rec.title)+'</b><br>'
+        +'<span class="mono">/articles/'+esc(rec.slug)+'</span>'
+        +(rec.fair_spread_text?' · '+esc(rec.fair_spread_text):'')
+        +(rec.model_status?' · '+esc(rec.model_status):'')
+        +(rec.confidence!=null?' · '+esc(rec.confidence)+'% confidence':'')+'</div>';
+      if(!v.ok){
+        h+='<div class="brief-pubfail"><b>'+v.failed.length+' publication check'
+          +(v.failed.length===1?'':'s')+' failed.</b> The article is not published; nothing incomplete goes out under EdgeDesk’s name.<ul>'
+          +v.failed.map(function(f){ return '<li><span class="mono">'+esc(f.id)+'</span> — '+esc(f.why)+'</li>'; }).join('')
+          +'</ul></div>';
+        h+='<div class="brief-pubacts"><button class="dcard-btn" onclick="EDBRIEF.previewArticle()">Preview anyway</button>'
+          +'<button class="dcard-btn" onclick="EDBRIEF.publishClose()">Close</button></div>';
+      } else {
+        h+='<div class="brief-pubok">Every publication check passes.</div>';
+        h+='<div class="brief-pubacts">'
+          +'<button class="dcard-btn" onclick="EDBRIEF.previewArticle()">Preview</button>'
+          +'<button class="dcard-btn" onclick="EDBRIEF.commitArticle(\'published\')">Publish</button>'
+          +'<button class="dcard-btn" onclick="EDBRIEF.commitArticle(\'ready\')">Save as draft</button>'
+          +'<button class="dcard-btn" onclick="EDBRIEF.publishClose()">Close</button></div>';
+        h+='<div class="brief-pubnote">/articles is committed static HTML, which is what lets a search engine read it with no account. '
+          +'Publishing records the decision; the next article build writes the page and adds it to the sitemap.</div>';
+      }
+      h+='</div>';
+      pubSay(h);
+    }, function(e){
+      pubSay('<div class="brief-note">The article modules would not load ('+esc(e&&e.message||String(e))+'), so nothing was built.</div>');
+    });
+  }
+  function previewArticle(){
+    if(!BR.pub) return;
+    var w=window.open('','_blank');
+    if(!w) return pubSay('<div class="brief-note">The preview was blocked by the browser’s pop-up setting.</div>');
+    w.document.write(BR.pub.A.render.articlePage(BR.pub.rec,{noindex:true}));
+    w.document.close();
+  }
+  function publishClose(){ var b=$id('briefPub'); if(b) b.innerHTML=''; }
+  function commitArticle(status){
+    if(!BR.pub) return;
+    var A=BR.pub.A, rec=BR.pub.rec;
+    var sess=(typeof edSession==='function')?edSession():null;
+    if(!sess||!sess.access_token) return pubSay('<div class="brief-note">Sign in to publish.</div>');
+    var now=new Date().toISOString();
+    var out=(status==='published')?A.model.publish(rec, now):Object.assign({},rec,{status:'ready',updated_at:now});
+    /* The row carries the WHOLE compact record — research payload included —
+       because the static build renders from that record and a row holding
+       only the rendered half could not be rebuilt from. */
+    var row={id:out.id,game_id:out.game_id,sport:out.sport,slug:out.slug,title:out.title,
+      seo_title:out.seo_title,seo_description:out.seo_description,excerpt:out.excerpt,
+      article:A.model.compact(out),
+      home_team:out.home_team,away_team:out.away_team,game_time:out.game_time,
+      published_at:out.published_at||null,generated_at:out.generated_at||null,
+      model_version:out.model_version,model_status:out.model_status,confidence:out.confidence,
+      hero_image:out.hero_image,canonical_url:out.canonical_url,status:out.status};
+    pubSay('<div class="brief-note">Saving…</div>');
+    fetch(SB_URL+'/rest/v1/site_articles?on_conflict=id',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+sess.access_token,'content-type':'application/json',
+        prefer:'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify([row])})
+      .then(function(r){ return r.ok?null:r.text().then(function(t){ throw new Error(t.slice(0,220)||('write '+r.status)); }); })
+      .then(function(){
+        pubSay('<div class="brief-pubcard"><div class="brief-pubok">'
+          +(status==='published'?'Published.':'Saved as a draft.')+'</div>'
+          +'<div class="brief-pubnote">'
+          +(status==='published'
+            ? 'The next article build writes <span class="mono">/articles/'+esc(rec.slug)+'</span> and adds it to the sitemap. It is in <a href="/admin/articles" target="_blank" rel="noopener">the article manager</a> now.'
+            : 'It is in <a href="/admin/articles" target="_blank" rel="noopener">the article manager</a>, not on the site.')
+          +'</div><div class="brief-pubacts"><button class="dcard-btn" onclick="EDBRIEF.publishClose()">Close</button></div></div>');
+      })
+      .catch(function(e){
+        var m=String(e&&e.message||e);
+        pubSay('<div class="brief-pubcard"><div class="brief-pubfail">Nothing was saved: '+esc(m)+'</div>'
+          +(/does not exist|PGRST205|42P01/.test(m)
+            ? '<div class="brief-pubnote">The article table is not installed on this project yet — run <span class="mono">supabase/site_articles.sql</span>.</div>':'')
+          +'<div class="brief-pubacts"><button class="dcard-btn" onclick="EDBRIEF.publishArticle()">Try again</button>'
+          +'<button class="dcard-btn" onclick="EDBRIEF.publishClose()">Close</button></div></div>');
+      });
+  }
+
   window.EDBRIEF={
+    publishArticle:publishArticle, previewArticle:previewArticle,
+    commitArticle:commitArticle, publishClose:publishClose,
     openCard:openCard, openGame:openGame, openPrimetime:openPrimetime, openCfbSlate:openCfbSlate, openSlate:openSlate,
     openRankings:openRankings,
     openQA:openQA, qaHTML:qaHTML,
@@ -39199,6 +39374,14 @@ function fbBrGameHead(q,pr,awayName,homeName,A,H){
     neutral:!!(g&&g.neutral_site),
     week:(g&&g.week!=null)?('Week '+g.week):null,
     season:(g&&g.season!=null)?String(g.season):(FB.rk.data?String(FB.rk.data.season):null),
+    /* THE SCHEDULE ROW'S OWN IDENTIFIERS, carried so a brief and the article
+       pipeline address the SAME article rather than two. `week` and `season`
+       above are display strings ("Week 2"); an article record wants the
+       numbers, and parsing a label back into one is how a record ends up
+       differing depending on which door built it. */
+    game_id:(g&&g.game_id!=null)?String(g.game_id):null,
+    week_no:(g&&g.week!=null)?+g.week:null,
+    season_no:(g&&g.season!=null)?+g.season:(FB.rk.data&&FB.rk.data.season!=null?+FB.rk.data.season:null),
     conference_line:confLine,
     away_conference:aConf,home_conference:hConf};
 }
@@ -40091,6 +40274,10 @@ function fbNflGameHead(g,u,aDisp,hDisp,q){
     venue:g.stadium||null,neutral:false,
     week:g.week!=null?('Week '+g.week):null,
     season:g.season!=null?String(g.season):null,
+    /* see fbBrGameHead: the identifiers an article record is keyed on */
+    game_id:g.game_id!=null?String(g.game_id):null,
+    week_no:g.week!=null?+g.week:null,
+    season_no:g.season!=null?+g.season:null,
     conference_line:[dome?'indoors':'outdoors', g.surface?String(g.surface):null,
       g.div_game?'division game':null].filter(Boolean).join(' · ')||null};
 }

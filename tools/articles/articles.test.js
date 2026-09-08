@@ -580,9 +580,23 @@ section('16. THE STORE');
   chk('the lead-time window is stated', idx.settings.auto_publish_min_lead_minutes > 0 && idx.settings.auto_publish_max_lead_days > 0);
   chk('the manifest carries no research payload',
     JSON.stringify(idx).indexOf('"projection"') < 0, 'the manifest is meant to stay small');
-  chk('the manifest is newest-published-first',
-    idx.articles.every((a, i) => i === 0
-      || (Date.parse(idx.articles[i - 1].published_at || 0) || 0) >= (Date.parse(a.published_at || 0) || 0)));
+  /* The manifest holds drafts as well as published articles, so it sorts on
+     the date each row actually has: published_at where there is one, and
+     updated_at otherwise. Asserting on published_at alone passed only while
+     the store happened to contain nothing but published records — a test that
+     is true of the fixture rather than of the code. */
+  const key = a => (Date.parse(a.published_at || a.updated_at || 0) || 0);
+  chk('the manifest is newest-first',
+    idx.articles.every((a, i) => i === 0 || key(idx.articles[i - 1]) >= key(a)),
+    idx.articles.slice(0, 3).map(a => (a.published_at || a.updated_at) + ' ' + a.slug).join(' | '));
+  /* and what the hub actually reads: among PUBLISHED rows, newest first */
+  const pub = idx.articles.filter(a => a.status === 'published');
+  chk('and published articles are in publication order',
+    pub.every((a, i) => i === 0
+      || (Date.parse(pub[i - 1].published_at || 0) || 0) >= (Date.parse(a.published_at || 0) || 0)),
+    pub.map(a => a.published_at + ' ' + a.slug).join(' | '));
+  chk('every published row in the manifest carries a publication date',
+    pub.every(a => !!a.published_at), pub.filter(a => !a.published_at).map(a => a.slug).join(', '));
   const taken = STORE.takenSlugs(RECORDS);
   chk('every slug in the store maps to its own record',
     RECORDS.every(r => taken[r.slug] === r.id));

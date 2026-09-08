@@ -46,6 +46,7 @@ estimate and no "approximately".
 | `tools/articles/article_render.js` | article record → crawlable HTML: the article page, the alias page and the hubs, with the head, the OpenGraph tags and the JSON-LD. Same file in Node and in the browser, so the operator's preview cannot differ from the build. |
 | `tools/articles/store.js` | the record store, the manifest and the captured-quote snapshots. |
 | `tools/articles/generate.js` | the CLI that creates and refreshes records. |
+| `tools/articles/sync.js` | pulls what an operator published from a browser into the committed store, so the build can render it. |
 | `tools/articles/build_articles.js` | the CLI that writes `/articles/**`, the hubs and `sitemap-articles.xml`. |
 | `articles/articles.css` | the one stylesheet every public article page loads. |
 | `admin/articles/index.html` | the operator's manager: preview, publish, unpublish, regenerate, archive, auto-publish — and the member-post moderation queue. |
@@ -58,6 +59,7 @@ estimate and no "approximately".
 ## Running it
 
 ```bash
+npm run articles:sync         # pull what was published from a browser into the store
 npm run articles:generate     # refresh every record from the committed cache
 npm run articles:refresh      # …allowing the two public schedule feeds to download
 npm run articles:build        # render every PUBLISHED record to static HTML
@@ -78,6 +80,41 @@ The scheduled job is `.github/workflows/publish-articles.yml`. It runs the
 suite, refreshes every record, holds them against the research they came from,
 builds the pages and commits. No secret: the two schedule feeds are the same
 public, keyless ones the board reads.
+
+## Publishing from the research terminal
+
+A game brief in the terminal carries a **Publish as article** button (operator
+only, game briefs only). It does not turn the rendered brief into a page — it
+re-reads the research payload the brief was built from and hands it to the
+same `article_model.js` the pipeline uses, so nothing is recomputed and no
+second projection exists.
+
+**One record, two doors.** The pipeline builds an article's game meta from the
+slate row plus the payload; the terminal has only the payload. Both go through
+`MODEL.gameMetaFrom()`, and `tools/articles/pipeline.test.js` asserts against
+live research that the two produce a byte-identical record — same id, same
+slug, same alias. A record that differed by which door built it would be two
+records for one game: two URLs, and an article that appears twice.
+
+That is why both brief payloads carry `game_id`, `week_no` and `season_no`.
+Without the schedule row's own id there is nothing to key the record on, and
+the button says so rather than filing an article the next pipeline run would
+duplicate.
+
+**The page does not appear instantly, and the panel says so.** `/articles` is
+committed static HTML — that is what lets a search engine read it with no
+account. Publishing writes the record and its publication state to
+`site_articles`; `sync.js` pulls it into the store on the next pipeline run and
+`build_articles.js` writes the page. The scheduled job runs every three hours,
+and `workflow_dispatch` runs it now.
+
+```
+   game brief  ──Publish──▶  site_articles  ──sync.js──▶  articles/data/records/
+                                                                   │
+                                                          build_articles.js
+                                                                   ▼
+                                                          /articles/<slug>/
+```
 
 ## What the system refuses to do
 

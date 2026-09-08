@@ -592,6 +592,45 @@
     return full;
   }
 
+  /* "New England Patriots" -> "Patriots", and ONLY for a professional club.
+     A nickname is a real second name in the NFL and people search for it; a
+     college programme is named for its institution, so the same rule there
+     produces "Arizona State" -> "State" and an alias URL of `state-vs-m-2026`.
+     So the shortening is scoped to the league where the convention exists.
+
+     It lives HERE rather than in the generator because the research terminal
+     builds records too, and an alias that depended on which door built the
+     record would be a second URL appearing and disappearing under a reader. */
+  function shortName(name, sport) {
+    if (String(sport == null ? '' : sport).toUpperCase() !== 'NFL') return null;
+    var parts = String(name == null ? '' : name).trim().split(/\s+/);
+    if (parts.length < 2) return null;
+    var last = parts[parts.length - 1];
+    return /^[A-Za-z]{4,}$/.test(last) ? last : null;
+  }
+
+  /* The game meta an article record is built from, read off the research
+     payload's own game block. ONE reader, so a record built in the terminal
+     and a record built by the pipeline are the same record — same id, same
+     slug, same alias — rather than two rows for one game. */
+  function gameMetaFrom(research, sport, extra) {
+    var g = (research && research.game) || {};
+    var e = extra || {};
+    var home = txt(g.home) || txt(e.home);
+    var away = txt(g.away) || txt(e.away);
+    return {
+      sport: String(sport || '').toUpperCase(),
+      game_id: txt(g.game_id) || txt(e.game_id),
+      home: home, away: away,
+      home_short: shortName(home, sport), away_short: shortName(away, sport),
+      kickoff: txt(g.kickoff) || txt(e.kickoff),
+      venue: txt(g.venue),
+      neutral_site: !!g.neutral,
+      conference_line: txt(g.conference_line),
+      week: num(g.week_no), season: num(g.season_no)
+    };
+  }
+
   /* Internal links, every article, crawlable and named for what they are. */
   function internalLinks(S) {
     var links = [
@@ -770,6 +809,7 @@
     teamSlug: teamSlug, slugFor: slugFor, uniqueSlug: uniqueSlug, aliasFor: aliasFor,
     headlineFor: headlineFor, seoTitleFor: seoTitleFor, seoDescriptionFor: seoDescriptionFor,
     build: build, articleFor: articleFor, compact: compact, hydrate: hydrate,
+    shortName: shortName, gameMetaFrom: gameMetaFrom,
     checks: checks, publishable: publishable, flattenText: flattenText,
     publish: publish, unpublish: unpublish, archive: archive,
     isFrozen: isFrozen, refresh: refresh, bottomLine: bottomLine

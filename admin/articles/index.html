@@ -416,7 +416,7 @@ async function act(what,id,btn){
       await upsert(Object.assign({},rec,{status:'archived'}));
       msg('listMsg','Archived.','ok');
     } else if(what==='regenerate'){
-      await upsert(Object.assign({},rec,{status:rec.status,regenerate_requested_at:new Date().toISOString()}));
+      await upsert(Object.assign({},rec,{regenerate_requested_at:new Date().toISOString()}));
       msg('listMsg','Flagged for regeneration. The next pipeline run re-reads the research for this game.'
         +(row&&row.frozen?' Note: this game has kicked off, so the record is frozen and will not change.':''),'ok');
     }
@@ -426,13 +426,17 @@ async function act(what,id,btn){
   }finally{ btn.disabled=false; }
 }
 
-/* One upsert, one shape. The row carries the structured record, never HTML. */
+/* One upsert, one shape. The row carries the structured record, never HTML.
+   THE WHOLE COMPACT RECORD, research payload included: tools/articles/sync.js
+   pulls published rows back into the committed store and the static build
+   renders from them, so a row holding only the rendered half could not be
+   rebuilt from — and re-deriving the numbers from anywhere else would be the
+   second source of truth this system exists to refuse. */
 async function upsert(rec){
   const row={
     id:rec.id,game_id:rec.game_id,sport:rec.sport,slug:rec.slug,title:rec.title,
     seo_title:rec.seo_title,seo_description:rec.seo_description,excerpt:rec.excerpt,
-    article:{article:rec.article,aliases:rec.aliases||[],sport_slug:rec.sport_slug,
-      regenerate_requested_at:rec.regenerate_requested_at||null},
+    article:(MODEL&&MODEL.compact)?MODEL.compact(rec):rec,
     home_team:rec.home_team,away_team:rec.away_team,game_time:rec.game_time,
     published_at:rec.published_at||null,generated_at:rec.generated_at||null,
     model_version:rec.model_version,model_status:rec.model_status,confidence:rec.confidence,

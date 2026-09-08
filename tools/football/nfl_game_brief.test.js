@@ -319,7 +319,13 @@ section('the published drivers add back up to the number they explain');
 /* ═══ TNF / SNF / MNF are labels, not different maths ══════════════════ */
 section('the primetime presets are presentation, not a second research path');
 (function () {
-  const tnf = brief({ game_id: 'T1', home: 'LA', away: 'SF', stadium: 'SoFi Stadium', preset: 'TNF' });
+  /* THE SAME GAME, briefed twice. This used to stage a second game_id and
+     assert the payloads matched byte for byte, which held only while the
+     payload carried no identifier: the brief now reports the schedule row's
+     own game_id, so two ids are two games and the check would be comparing
+     the wrong thing. What it is FOR — a primetime preset is presentation and
+     not a second research path — is only expressible on one game. */
+  const tnf = brief({ game_id: 'B1', home: 'LA', away: 'SF', stadium: 'SoFi Stadium', preset: 'TNF' });
   function strip(r) { const c = JSON.parse(JSON.stringify(r)); return c; }
   eq(JSON.stringify(strip(tnf.research)), JSON.stringify(strip(B.research)),
     'a TNF brief and a plain brief on the same game carry a byte-identical payload');
