@@ -445,7 +445,20 @@ const PICK = fs.readFileSync(G('pick-5/index.html'), 'utf8');
 const CSS = fs.readFileSync(G('games.css'), 'utf8');
 const JS = fs.readFileSync(G('games.js'), 'utf8');
 const NOTFOUND = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
-const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+/* THE SITEMAP IS AN INDEX. sitemap.xml stopped being one urlset when the
+   research articles arrived: they are added and refreshed continuously and
+   would have churned the same file the standing pages live in, so the primary
+   sitemap now points at sitemap-pages.xml and sitemap-articles.xml. What
+   Games needs from it is unchanged — its routes must be IN the sitemap set —
+   so the set is what these checks read, and the index is checked separately
+   below so this can never pass over a broken one. */
+const SITEMAP_INDEX = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+const SITEMAP_CHILDREN = (SITEMAP_INDEX.match(/<loc>([^<]+)<\/loc>/g) || [])
+  .map(m => m.replace(/<\/?loc>/g, '').replace('https://edgedesksports.com/', ''))
+  .filter(f => /^sitemap[\w-]*\.xml$/.test(f));
+const SITEMAP = SITEMAP_INDEX + SITEMAP_CHILDREN
+  .map(f => { try { return fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch (_) { return ''; } })
+  .join('\n');
 const ROBOTS = fs.readFileSync(path.join(ROOT, 'robots.txt'), 'utf8');
 const PAGES = [['games home', HOME], ['price it', PRICE], ['pick 5', PICK]];
 
@@ -510,6 +523,9 @@ has(HOME, '<title>EdgeDesk Games | Free Football Prediction Games</title>',
 });
 chk('the sitemap does not enumerate individual matchups',
   SITEMAP.indexOf('?g=') < 0 && !/price-it\/[a-z]+-/.test(SITEMAP));
+chk('the primary sitemap is an index that resolves to real files',
+  SITEMAP_CHILDREN.length >= 2 && SITEMAP_CHILDREN.every(f => fs.existsSync(path.join(ROOT, f))),
+  'children: ' + SITEMAP_CHILDREN.join(', '));
 has(ROBOTS, 'Allow: /games', 'robots.txt admits crawlers to Games');
 has(ROBOTS, 'Sitemap: https://edgedesksports.com/sitemap.xml', 'robots.txt points at the sitemap');
 has(NOTFOUND, "p[0]==='games'", 'the static host routes /games/* share links');

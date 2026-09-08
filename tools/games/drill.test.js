@@ -227,7 +227,10 @@ const PAGE = fs.readFileSync(G('two-minute-drill/index.html'), 'utf8');
 const DCSS = fs.existsSync(G('two-minute-drill/drill.css')) ? fs.readFileSync(G('two-minute-drill/drill.css'), 'utf8') : '';
 const CSS = fs.readFileSync(G('games.css'), 'utf8');
 const JS = fs.readFileSync(G('games.js'), 'utf8');
-const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+/* The sitemap is an INDEX (sitemap.xml -> sitemap-pages.xml +
+   sitemap-articles.xml). What this file asserts is unchanged — the route must
+   be in the sitemap — so it reads the whole SET through the one resolver. */
+const SITEMAP = require(path.join(ROOT, 'tools', 'sitemap_set.js')).text(ROOT);
 const NOTFOUND = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
 
 has(PAGE, '<link rel="canonical" href="https://edgedesksports.com/games/two-minute-drill">', 'the Drill declares its canonical URL');

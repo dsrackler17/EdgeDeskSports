@@ -1,0 +1,99 @@
+# EdgeDesk — refresh and publish the research articles.
+#
+# The research already exists: the terminal prices every game on the board.
+# This turns that into public, indexable pages, and it does it by ASKING the
+# terminal rather than by modelling anything itself — tools/articles/ boots
+# the real football module out of app.html and calls the same
+# fbBriefGame() / fbNflBriefGame() a browser calls. No number on a published
+# page was computed by this job.
+#
+# WHAT A RUN DOES
+#   1. refresh every game on the board into an article record. An unchanged
+#      projection produces no change, so a quiet week is a quiet commit.
+#   2. auto-publish anything that passes every publication check, IF the
+#      operator has turned auto-publish on. Malformed, thin or incomplete
+#      research is held as `ready` and the failing check is recorded.
+#   3. render every PUBLISHED record to static HTML, rebuild the hubs and
+#      rewrite sitemap-articles.xml. Drafts produce no page and no sitemap
+#      line, ever.
+#   4. commit, so every publication and every correction is a diff.
+#
+# NO SECRETS. The two schedule feeds are public and keyless, the same ones
+# the board itself reads.
+name: Publish research articles
+
+on:
+  schedule:
+    # Ten past every third hour: often enough that a projection that moves
+    # before kickoff reaches the page the same morning, rare enough that the
+    # repository is not rewritten on the hour for nothing.
+    - cron: '10 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      auto_publish:
+        description: 'Publish everything that passes its checks, regardless of the stored setting'
+        type: boolean
+        default: false
+      limit:
+        description: 'Only refresh the first N games on the board (0 = all)'
+        type: string
+        default: '0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-articles
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The article system must pass before it is allowed to write a page.
+      # A generator that has stopped agreeing with the research is worse than
+      # one that did not run.
+      - name: The article system must pass before it publishes
+        run: node tools/articles/articles.test.js
+
+      - name: Refresh every article record from the research
+        run: |
+          node tools/articles/generate.js --network \
+            ${{ (github.event.inputs.auto_publish == 'true') && '--auto' || '' }} \
+            ${{ (github.event.inputs.limit != '' && github.event.inputs.limit != '0') && format('--limit {0}', github.event.inputs.limit) || '' }}
+
+      # The live half of the suite, now that the feeds are warm: it holds the
+      # records against the terminal they came from.
+      - name: Hold the records against the research they came from
+        run: node tools/articles/pipeline.test.js
+
+      - name: Build the public pages, the hubs and the sitemap
+        run: node tools/articles/build_articles.js
+
+      - name: Publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add articles sitemap.xml sitemap-articles.xml
+          if git diff --cached --quiet; then
+            echo 'no article changed — nothing to publish'
+            exit 0
+          fi
+          git commit -m 'articles: refresh research articles from the model'
+          # a concurrent push to main loses the race politely, not the work
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the articles after 4 attempts'
+          exit 1

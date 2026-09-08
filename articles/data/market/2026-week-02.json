@@ -1,0 +1,49 @@
+{
+  "schema": "edgedesk_article_market_snapshot_v1",
+  "season": 2026,
+  "source": "Captured book quotes as they stood in the EdgeDesk game briefs published 2026-09-08. Replayed here so a headless build can join the same sportsbook number the terminal joined; the live capture (Supabase `signals`) is behind an account and a build server has no session for it.",
+  "note": "These are SPORTSBOOK numbers, not EdgeDesk numbers, and every article that uses one says so and names the book. Nothing here is an EdgeDesk projection, and no line in this file is read by any model: the engine has already priced the game before the market section is assembled.",
+  "quotes": [
+    {
+      "sport": "CFB",
+      "game_id": "401856678",
+      "home": "Kansas",
+      "away": "Missouri",
+      "kickoff": "2026-09-12T00:00:00.000Z",
+      "captured_at": "2026-09-08T12:05:00.000Z",
+      "spread": { "selection": "Kansas", "point": 5.5, "book": "FanDuel" },
+      "from": "EdgeDesk College Football Brief — Missouri at Kansas, published 2026-09-08T17:08Z"
+    },
+    {
+      "sport": "CFB",
+      "game_id": "401858214",
+      "home": "Boston College",
+      "away": "Rutgers",
+      "kickoff": "2026-09-11T23:30:00.000Z",
+      "captured_at": "2026-09-08T12:05:00.000Z",
+      "spread": { "selection": "Boston College", "point": -3.0, "book": "BetOnline.ag" },
+      "from": "EdgeDesk College Football Brief — Rutgers at Boston College, published 2026-09-08T17:08Z"
+    },
+    {
+      "sport": "CFB",
+      "game_id": "401858220",
+      "home": "Virginia",
+      "away": "Norfolk State",
+      "kickoff": "2026-09-11T23:00:00.000Z",
+      "captured_at": "2026-09-08T12:05:00.000Z",
+      "spread": { "selection": "Virginia", "point": -43.5, "book": "Hard Rock Bet" },
+      "from": "EdgeDesk College Football Brief — Norfolk State at Virginia, published 2026-09-08T17:07Z"
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_01_NE_SEA",
+      "home": "Seattle Seahawks",
+      "away": "New England Patriots",
+      "kickoff": "2026-09-10T00:20:00.000Z",
+      "captured_at": "2026-09-03T15:03:00.000Z",
+      "spread": { "selection": "Seattle Seahawks", "point": -1.0, "book": "Nordic Bet" },
+      "total": { "point": 43.5, "book": "Nordic Bet" },
+      "from": "EdgeDesk NFL Brief — New England Patriots at Seattle Seahawks, published 2026-09-08T18:03Z"
+    }
+  ]
+}

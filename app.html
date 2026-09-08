@@ -34696,6 +34696,15 @@ function fbP4LoadGuarded(force,signal){
   return Promise.all([fbP4Load(force,signal),edr]).then(done,function(e){done();throw e;});
 }
 
+/* THE POWER 4 BOARD'S OWN LOADER, reachable from outside this IIFE for the
+   same reason the brief builders are. fbBriefGame() reads FB.p4.up, and
+   nothing outside the render path could fill it — so the article generator
+   (tools/articles/) had no way to reach the research it exists to publish
+   without booting the board the UI boots. This exports the loader and
+   changes no line of it: same feeds, same engine, same slate. */
+window.fbP4Load=fbP4Load;
+window.fbP4Ensure=fbP4Ensure;
+
 /* Joins the FRESHEST real number, in this order: a live captured quote,
    the cfb.lines book consensus once the capture has gone stale (offseason
    quotes sit for weeks and a 200-hour-old price is not a market), and a

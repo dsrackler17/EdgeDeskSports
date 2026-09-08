@@ -935,7 +935,8 @@ function repeat(playKey, defKey, n, extra, opts) {
   /* the doors into it */
   has(fs.readFileSync(G('gameday/index.html'), 'utf8'), '/games/play/', 'Game Day links to the game');
   has(fs.readFileSync(G('games.js'), 'utf8'), '/games/play/', 'every footer links to the game');
-  has(fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8'), '/games/play', 'the sitemap lists the game');
+  /* the sitemap is an index; the route must be in the SET it names */
+  has(require(path.join(ROOT, 'tools', 'sitemap_set.js')).text(ROOT), '/games/play', 'the sitemap lists the game');
 
   /* the modules keep the repository's conventions */
   ['football.js', 'roster.js', 'engine.js', 'ai.js', 'autoplay.js', 'paint.js', 'stage.js', 'session.js'].forEach(f => {

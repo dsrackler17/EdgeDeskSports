@@ -371,7 +371,10 @@ const CSS = fs.readFileSync(G('games.css'), 'utf8');
 const SOC = fs.readFileSync(G('lib/social.js'), 'utf8');
 const SQL = fs.readFileSync(path.join(ROOT, 'supabase', 'games_social.sql'), 'utf8');
 const NOTFOUND = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
-const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+/* The sitemap is an INDEX (sitemap.xml -> sitemap-pages.xml +
+   sitemap-articles.xml). What this file asserts is unchanged — the route must
+   be in the sitemap — so it reads the whole SET through the one resolver. */
+const SITEMAP = require(path.join(ROOT, 'tools', 'sitemap_set.js')).text(ROOT);
 const SOCIAL_PAGES = [['head-to-head', H2H], ['groups', GRP]];
 
 /* ── 3. no page renders an answer the server withheld ──────────────────── */
