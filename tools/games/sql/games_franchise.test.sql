@@ -4061,6 +4061,19 @@ begin
   v := public.franchise_create('Callers', 'Steepwater', 'CLR', 'bolt', 'crimson', 'air_raid', 'four_three', SEC_SN);
   snf := (v->'franchise'->>'id')::uuid;
   perform public.franchise_start_season(SEC_SN);
+  -- THE WEEK HAS TO BE OPEN BEFORE A GAME IN IT CAN BE. A franchise week opens
+  -- on its own Saturday at 07:00 UTC, so a season started on any other day
+  -- schedules week 1 in the future and franchise_game_open() refuses it —
+  -- correctly. Without this the suite passed at the weekend and failed from
+  -- Monday, which is the worst kind of red: nothing changed and the build
+  -- broke anyway. Only WEEK 1 is opened, never `status = 'scheduled'`: opening
+  -- the whole season would also open week 2, and the check that a finished
+  -- game cannot be re-called for a better one would then pass for the wrong
+  -- reason.
+  perform pg_temp.as_owner();
+  update public.franchise_games set opens_at = now() - interval '1 hour'
+   where franchise_id = snf and season_number = 1 and week = 1;
+  perform pg_temp.as_anon();
 
   -- SINCE PHASE 15 YOU CALL BOTH SIDES, so a test that calls a play has to
   -- follow whose ball it is. This helper answers with a real call for the
@@ -4318,6 +4331,19 @@ begin
   v := public.franchise_create('Moments', 'Ridgeline', 'MMT', 'star', 'forest', 'pro_style', 'four_three', SEC_MN);
   mnf := (v->'franchise'->>'id')::uuid;
   perform public.franchise_start_season(SEC_MN);
+  -- THE WEEK HAS TO BE OPEN BEFORE A GAME IN IT CAN BE. A franchise week opens
+  -- on its own Saturday at 07:00 UTC, so a season started on any other day
+  -- schedules week 1 in the future and franchise_game_open() refuses it —
+  -- correctly. Without this the suite passed at the weekend and failed from
+  -- Monday, which is the worst kind of red: nothing changed and the build
+  -- broke anyway. Only WEEK 1 is opened, never `status = 'scheduled'`: opening
+  -- the whole season would also open week 2, and the check that a finished
+  -- game cannot be re-called for a better one would then pass for the wrong
+  -- reason.
+  perform pg_temp.as_owner();
+  update public.franchise_games set opens_at = now() - interval '1 hour'
+   where franchise_id = mnf and season_number = 1 and week = 1;
+  perform pg_temp.as_anon();
   perform pg_temp.as_owner();
   select id into gid from public.franchise_games
    where franchise_id = mnf and season_number = 1 and week = 1;
@@ -4607,6 +4633,19 @@ begin
   v := public.franchise_create('Callers', 'Halden', 'CBS', 'bolt', 'crimson', 'pro_style', 'four_three', SEC_CB);
   cbf := (v->'franchise'->>'id')::uuid;
   perform public.franchise_start_season(SEC_CB);
+  -- THE WEEK HAS TO BE OPEN BEFORE A GAME IN IT CAN BE. A franchise week opens
+  -- on its own Saturday at 07:00 UTC, so a season started on any other day
+  -- schedules week 1 in the future and franchise_game_open() refuses it —
+  -- correctly. Without this the suite passed at the weekend and failed from
+  -- Monday, which is the worst kind of red: nothing changed and the build
+  -- broke anyway. Only WEEK 1 is opened, never `status = 'scheduled'`: opening
+  -- the whole season would also open week 2, and the check that a finished
+  -- game cannot be re-called for a better one would then pass for the wrong
+  -- reason.
+  perform pg_temp.as_owner();
+  update public.franchise_games set opens_at = now() - interval '1 hour'
+   where franchise_id = cbf and season_number = 1 and week = 1;
+  perform pg_temp.as_anon();
   cb := public.franchise_game_open(SEC_CB);
   perform pg_temp.as_owner();
   nposs := (cb->>'possessions')::int;
@@ -4798,6 +4837,19 @@ begin
   v := public.franchise_create('Playbook', 'Marlow', 'PBK', 'star', 'forest', 'power_run', 'four_three', SEC_PB);
   pbf := (v->'franchise'->>'id')::uuid;
   perform public.franchise_start_season(SEC_PB);
+  -- THE WEEK HAS TO BE OPEN BEFORE A GAME IN IT CAN BE. A franchise week opens
+  -- on its own Saturday at 07:00 UTC, so a season started on any other day
+  -- schedules week 1 in the future and franchise_game_open() refuses it —
+  -- correctly. Without this the suite passed at the weekend and failed from
+  -- Monday, which is the worst kind of red: nothing changed and the build
+  -- broke anyway. Only WEEK 1 is opened, never `status = 'scheduled'`: opening
+  -- the whole season would also open week 2, and the check that a finished
+  -- game cannot be re-called for a better one would then pass for the wrong
+  -- reason.
+  perform pg_temp.as_owner();
+  update public.franchise_games set opens_at = now() - interval '1 hour'
+   where franchise_id = pbf and season_number = 1 and week = 1;
+  perform pg_temp.as_anon();
   -- a play from a set this franchise does not carry is refused
   begin
     perform public.franchise_game_call('deep_shot', SEC_PB);

@@ -343,6 +343,28 @@ section('12. THE MIGRATION FOLLOWS THE HOUSE RULES');
   chk('no client role may delete a post',
     !/create policy[^;]*community_posts[^;]*for delete/i.test(SQL));
   has(SQL, 'community_posts_guard()', 'publishing is decided by a trigger');
+  /* RUN OUT OF ORDER, IT HAS TO SAY SO. A CREATE POLICY expression is resolved
+     when the policy is created, so a missing site_article_is_admin() does not
+     degrade — it stops the file with a bare `42883: function ... does not
+     exist`, which names what is missing and nothing about what to do. That is
+     exactly what a real install hit. */
+  chk('it checks its dependencies before it needs them',
+    /do \$preflight\$/.test(SQL) && SQL.indexOf('to_regproc(\'public.site_article_is_admin\')') > 0);
+  has(SQL, 'Run supabase/site_articles.sql first', 'and names the file to run first');
+  has(SQL, 'Run supabase/billing.sql first', 'and the one before that');
+  chk('the preflight runs before the first policy that needs the predicate',
+    SQL.indexOf('$preflight$') < SQL.indexOf('site_article_is_admin()') ||
+    SQL.indexOf('$preflight$') < SQL.indexOf('create policy'),
+    'a check after the statement it protects is not a check');
+  /* and the ordering trap inside site_articles.sql itself: the admin function
+     must be created BEFORE anything that could abort the transaction */
+  (function () {
+    const SA = fs.readFileSync(path.join(ROOT, 'supabase', 'site_articles.sql'), 'utf8');
+    chk('site_articles.sql cannot abort before it creates its admin predicate',
+      SA.indexOf('issue_report_admins') < 0
+      || /if to_regclass\('public\.issue_report_admins'\) is not null then/.test(SA),
+      'the carry-over must be guarded, or the rollback takes the function with it');
+  })();
   chk('and OLD is only read on an update',
     (function () {
       const fn = SQL.slice(SQL.indexOf('function public.community_posts_guard'), SQL.indexOf('drop trigger if exists community_posts_guard_t'));
