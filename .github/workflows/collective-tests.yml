@@ -179,6 +179,13 @@ jobs:
       - name: The rankings panel shows unranked as unranked and research as research
         run: node tools/football/rankings_ui.test.js
 
+      # The printable press briefs. This holds the two rules the generator
+      # RESTATES from app.html — which status a game gets and how a projected
+      # score is split — against the page they were copied from, so the printed
+      # document and the screen cannot say different things about the same game.
+      - name: The press briefs cannot drift from the board they print
+        run: node tools/football/press_brief.test.js
+
       # The product hierarchy the chrome claims: Research first and default,
       # Edges beside it, Faults reachable without a tab of its own.
       - name: The navigation says what the product is
