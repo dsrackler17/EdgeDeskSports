@@ -27,7 +27,6 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
@@ -37,14 +36,13 @@ function ok(cond, what) { checks++; if (cond) return; failures++; console.error(
 function eq(a, b, what) { ok(a === b, what + ' (got ' + JSON.stringify(a) + ', wanted ' + JSON.stringify(b) + ')'); }
 function section(t) { console.log('\n' + t); }
 
-/* ---- the football module, sliced out of the page ------------------------ */
-const marker = 'ADDED: FOOTBALL ENGINE module';
-const mi = APP.indexOf(marker);
-if (mi < 0) { console.error('app.html no longer carries the football engine module marker'); process.exit(1); }
-const mStart = APP.lastIndexOf('<script', mi);
-const mEnd = APP.indexOf('</script>', mi);
-const MODULE = APP.slice(APP.indexOf('>', mStart) + 1, mEnd);
-const REST = APP.slice(0, mStart) + APP.slice(mEnd);
+/* ---- the football module, sliced out of the page ------------------------
+   The slicing and the stub DOM live in _module.js so that every football
+   test runs the SAME real module rather than each keeping its own copy of
+   the harness. */
+const M = require('./_module.js');
+const SRC = M.moduleSource(ROOT);
+const MODULE = SRC.module, REST = SRC.rest;
 
 /* ═══ 1. it really is a closed scope ═════════════════════════════════════ */
 section('1. the football engine is a closed scope, so reaching in needs an export');
@@ -66,66 +64,14 @@ ok(referencedOutside.size > 0, 'the page does reach across the boundary, so this
 
 /* ═══ 3. RUN IT. This is the check the source-level suite could not make ══ */
 section('3. the module runs and puts the brief layer\'s entry points on window');
-function el() {
-  const e = {
-    style: {}, dataset: {}, children: [],
-    classList: { add() {}, remove() {}, contains() { return false; }, toggle() {} },
-    appendChild() {}, removeChild() {}, remove() {}, setAttribute() {}, removeAttribute() {},
-    getAttribute() { return null; }, addEventListener() {}, removeEventListener() {},
-    querySelector() { return null; }, querySelectorAll() { return []; }, closest() { return null; },
-    insertAdjacentHTML() {}, focus() {}, click() {}, scrollIntoView() {}
-  };
-  Object.defineProperty(e, 'innerHTML', { get() { return ''; }, set() {} });
-  Object.defineProperty(e, 'textContent', { get() { return ''; }, set() {} });
-  return e;
-}
-const doc = {
-  readyState: 'complete', body: el(), head: el(), documentElement: el(), cookie: '', title: '',
-  createElement: el, createTextNode: el, getElementById: () => null,
-  querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {},
-  location: { hash: '#research/football', href: 'https://edgedesksports.com/app.html' }
-};
-const win = {
-  document: doc, location: doc.location, navigator: { userAgent: 'node', language: 'en-US' },
-  localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-  sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-  addEventListener() {}, removeEventListener() {},
-  matchMedia: () => ({ matches: false, addEventListener() {}, addListener() {} }),
-  fetch: () => Promise.reject(new Error('this harness does no network')),
-  setTimeout, clearTimeout, setInterval: () => 0, clearInterval, requestAnimationFrame: () => 0,
-  console, Math, JSON, Date, RegExp, Intl, URL, URLSearchParams, Promise,
-  crypto: require('crypto').webcrypto, TextEncoder, TextDecoder,
-  btoa: s => Buffer.from(s, 'binary').toString('base64'), atob: s => Buffer.from(s, 'base64').toString('binary'),
-  Blob: class {}, File: class {}, FileReader: class {}, Worker: class {},
-  performance: { now: () => Date.now() }, structuredClone: v => JSON.parse(JSON.stringify(v)),
-  Uint8Array, Int8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, ArrayBuffer, DataView,
-  Map, Set, WeakMap, WeakSet, Symbol, Proxy, Reflect, Error, TypeError, RangeError,
-  isFinite, isNaN, parseInt, parseFloat, encodeURIComponent, decodeURIComponent,
-  /* page-level globals from earlier <script> blocks */
-  SB_URL: 'https://example.invalid', SB_KEY: 'stub', SB_ANON: 'stub', RESEARCH_MODULES: {},
-  supabase: { createClient: () => ({ auth: { getSession: async () => ({ data: { session: null } }), onAuthStateChange() { return { data: { subscription: { unsubscribe() {} } } } } }, from: () => ({ select: () => ({}) }) }) }
-};
-win.window = win; win.self = win; win.globalThis = win;
-const ctx = vm.createContext(win);
-/* Anything else the page defines elsewhere gets an empty stub and the module
-   is re-run: what is under test is whether the export statements execute, not
-   whether a stub can be a browser. */
-let threw = null, stubbed = [];
-for (let i = 0; i < 40; i++) {
-  threw = null;
-  try { vm.runInContext(MODULE, ctx, { filename: 'app.html#football-module' }); break; }
-  catch (e) {
-    threw = e;
-    const m = /^(\w[\w$]*) is not defined$/.exec(e.message || '');
-    if (!m) break;
-    win[m[1]] = {}; stubbed.push(m[1]);
-  }
-}
-if (stubbed.length) console.log('  (stubbed page globals: ' + stubbed.join(', ') + ')');
-ok(!threw, 'the module runs to completion' + (threw ? ' — threw: ' + (threw.message || threw) : ''));
+const BOOT = M.boot({ root: ROOT });
+if (BOOT.stubbed.length) console.log('  (stubbed page globals: ' + BOOT.stubbed.join(', ') + ')');
+ok(!BOOT.error, 'the module runs to completion' + (BOOT.error ? ' — threw: ' + (BOOT.error.message || BOOT.error) : ''));
+const win = BOOT.win;
 
 /* the three the brief layer names, and two that already worked, as controls */
-[['fbBriefResearch', 'the game research builder'],
+[['fbBriefGame', 'the canonical matchup research payload'],
+ ['fbBriefResearch', 'the game research builder'],
  ['fbBriefRankings', 'the week\'s rankings builder'],
  ['fbRkEnsure', 'the rankings artifact loader'],
  ['fbRkTab', 'the rankings tab switch (control — this one always worked)'],
@@ -136,8 +82,6 @@ ok(!threw, 'the module runs to completion' + (threw ? ' — threw: ' + (threw.me
 /* ═══ 4. and they work when called the way EDBRIEF calls them ════════════ */
 section('4. called through window, on the committed artifact, they return real work');
 if (typeof win.fbBriefResearch === 'function' && win.FB && win.FB.rk) {
-  win.FB.rk.data = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'rankings', 'current.json'), 'utf8'));
-
   const res = win.fbBriefResearch({ home: 'Miami', away: 'Florida A&M' });
   ok(!!res, 'a half-rated matchup returns a research block rather than null');
   if (res) {
@@ -166,7 +110,7 @@ if (typeof win.fbBriefResearch === 'function' && win.FB && win.FB.rk) {
 
 /* ═══ 5. the callers name exactly these symbols ══════════════════════════ */
 section('5. the brief layer asks for the names the module exports');
-[['researchFor', /if\(!window\.fbBriefResearch\) return null;/],
+[['researchFor', /var build=window\.fbBriefGame\|\|window\.fbBriefResearch;/],
  ['openGame', /window\.fbRkEnsure && !\(window\.FB&&FB\.rk&&FB\.rk\.data\)/],
  ['openRankings', /window\.fbBriefRankings\?window\.fbBriefRankings\(/]].forEach(function (pair) {
   ok(pair[1].test(REST), pair[0] + ' reaches across the boundary by the exported name');

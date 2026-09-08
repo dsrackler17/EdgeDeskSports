@@ -28,7 +28,6 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 const assert = require('assert');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -46,36 +45,25 @@ function ok(cond, what) {
 function eq(a, b, what) { ok(a === b, what + ' (got ' + JSON.stringify(a) + ', wanted ' + JSON.stringify(b) + ')'); }
 function section(t) { console.log('\n' + t); }
 
-/* ---- run the app's own functions, not a copy of them --------------------- */
-function grab(name, kind) {
-  const pat = kind === 'var' ? new RegExp('^var ' + name + '\\s*=', 'm') : new RegExp('^function ' + name + '\\s*\\(', 'm');
-  const m = pat.exec(APP);
-  if (!m) throw new Error('app.html no longer declares ' + name + ' at top level');
-  const i = m.index;
-  let d = 0, inS = null, started = false;
-  let j = kind === 'var' ? APP.indexOf('=', i) + 1 : APP.indexOf('{', i);
-  for (; j < APP.length; j++) {
-    const c = APP[j];
-    if (inS) { if (c === '\\') { j++; continue; } if (c === inS) inS = null; continue; }
-    if (c === '"' || c === "'" || c === '`') { inS = c; continue; }
-    if (c === '/' && APP[j + 1] === '*') { j = APP.indexOf('*/', j) + 1; continue; }
-    if (c === '/' && APP[j + 1] === '/') { j = APP.indexOf('\n', j); continue; }
-    if ('([{'.indexOf(c) >= 0) { d++; started = true; }
-    else if (')]}'.indexOf(c) >= 0) { d--; if (kind !== 'var' && started && d === 0) return APP.slice(i, j + 1); }
-    else if (kind === 'var' && c === ';' && d === 0) return APP.slice(i, j + 1);
-  }
-  throw new Error('unterminated ' + name);
-}
-const VARS = ['FBRK_TABS', 'FBRK_FIELD', 'FB_BRIEF_ROWS', 'FB_BRIEF_RK_CELLS'];
-const FNS = ['fbBrNorm', 'fbBrIndex', 'fbBrTeam', 'fbBrCell', 'fbBrGaps', 'fbBrProjection',
-  'fbBriefResearch', 'fbBrPct', 'fbBrDelta', 'fbBrStateNote', 'fbBriefRankings', 'fbBrWhyPhrase',
-  'fbRkVal', 'fbRkCatMove', 'fbRkN', 'fbRkPts', 'fbRkPct', 'fbGxScore', 'fbP4StatusFor', 'fbP4Line', 'fbPts', 'fbEsc'];
-const box = { console, Math, JSON, String, Number, Array, Object, isFinite, parseFloat, Date, RegExp };
-box.window = box;
-box.FB = { rk: { data: null }, p4: { up: [], _proj: null } };
-box.FB_GUARD = { p4: { game: 21 } };
-vm.createContext(box);
-vm.runInContext(VARS.map(v => grab(v, 'var')).concat(FNS.map(f => grab(f))).join('\n'), box, { filename: 'app.html' });
+/* ---- RUN THE APP'S OWN MODULE, not a copy of its functions ---------------
+   This suite used to pull each function out of app.html by name and run the
+   text in a flat sandbox. That sandbox passed every check here on builders
+   that were unreachable in a browser, because nothing had exported them —
+   see tools/football/brief_wiring.test.js for the whole story. It now boots
+   the REAL IIFE through the shared harness and reaches the builders through
+   `window`, exactly as the brief layer does. The handful of names below the
+   export surface (the field map, the row list, the score split) come back on
+   __FBTEST, a probe the harness appends INSIDE the module for tests only. */
+const M = require('./_module.js');
+const BOOT = M.boot({ probe: ['FBRK_TABS', 'FBRK_FIELD', 'FB_BRIEF_ROWS', 'FB_BRIEF_RK_CELLS', 'FB_BR_GROUPS',
+  'fbBrNorm', 'fbBrTeam', 'fbBrCell', 'fbBrGaps', 'fbBrPct', 'fbBrDelta', 'fbBrStateNote', 'fbBrWhyPhrase',
+  'fbRkVal', 'fbRkCatMove', 'fbRkN', 'fbRkPts', 'fbRkPct', 'fbGxScore', 'fbP4StatusFor', 'fbP4Line', 'fbPts'] });
+if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
+const box = Object.assign({}, BOOT.win.__FBTEST);
+box.fbBriefResearch = BOOT.win.fbBriefResearch;
+box.fbBriefGame = BOOT.win.fbBriefGame;
+box.fbBriefRankings = BOOT.win.fbBriefRankings;
+box.FB = BOOT.win.FB;
 box.FB.rk.data = CUR;
 
 /* ═══ 1. a price that is not on file is never printed ═════════════════════ */
