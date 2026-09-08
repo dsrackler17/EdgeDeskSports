@@ -127,6 +127,18 @@ jobs:
       - name: Member removal is admin-only, ordered, atomic and audited
         run: node tools/collective/member_removal_sql.test.js
 
+      # SELF-SERVE MODELS. A contributor gets a model for a sport by asking for
+      # one -- there is no operator step. Both halves run here because the
+      # guarantee spans them: the database decides that two simultaneous
+      # requests make ONE model, and the ingest decides that an NFL slate is
+      # resolved against the NFL schedule and not whichever model the account
+      # happened to have. Neither is provable from the other.
+      - name: A contributor can cover a new sport without asking anyone
+        run: node tools/collective/model_autocreate_sql.test.js
+
+      - name: A slate finds its own model, and its own sport's schedule
+        run: node tools/collective/ingest_model_resolution.test.js
+
       # Reads the real functions out of app.html rather than a copy, so it
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective

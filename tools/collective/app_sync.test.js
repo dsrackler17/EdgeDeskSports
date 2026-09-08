@@ -122,10 +122,11 @@ global.fetch = function (url, init) {
   const route = String(url).replace(/^.*collective_ingest/, '');
   let body = null;
   try { body = init && init.body ? JSON.parse(init.body) : null; } catch (_) {}
-  LOG.reqs.push({ route, confirm: !!(body && body.confirm) });
+  LOG.reqs.push({ route, confirm: !!(body && body.confirm), body: body });
   if (route === '/v1/me') return reply(200, {
     creator: { slug: 'edgedesk' }, key: { kind: 'live' },
-    models: [{ model: 'edgedesk-nfl', sport: 'NFL' }, { model: 'edgedesk-cfb', sport: 'CFB' }]
+    models: SERVER.models,
+    creates_models: true,
   });
   if (route === '/v1/projections/dry-run') return reply(200, { rejected: 0, rows: [] });
   if (route === '/v1/projections/retract') {
@@ -156,7 +157,10 @@ function setup(o) {
   SERVER = {
     preview: o.preview || { would_remove: 12, games: [{ game_id: 'g1', label: 'A @ B' }] },
     retract: o.retract || refuseAppendOnly,
-    post: o.post || { resolved: 12, first: 0, movement: 12 }
+    post: o.post || { resolved: 12, first: 0, movement: 12 },
+    /* WHICH MODELS THE ACCOUNT HAS. The interesting case is none: an operator
+       whose Collective account has never carried this sport. */
+    models: o.models || [{ model: 'edgedesk-nfl', sport: 'NFL' }, { model: 'edgedesk-cfb', sport: 'CFB' }]
   };
   keyStore = { edgedesk_collective_key: KEY };
   global.FB_RETRACT_BLOCKED = null;
@@ -200,6 +204,65 @@ chk('a Power 4 board reaches the Collective the same way',
   { posts: posts(), said: OUT.fbp4PostOut.slice(0, 300) });
 chk('with the same receipt', /The wall shows THIS slate now/.test(OUT.fbp4PostOut),
   { said: OUT.fbp4PostOut.slice(0, 300) });
+
+/* ---- THE SPORT TRAVELS WITH THE SLATE ---------------------------------
+   A submission is filed under a MODEL and the Collective resolves its games in
+   that model's sport, so a slate that does not say what sport it is can only
+   be resolved by whichever model the ingest happens to pick. Both boards now
+   state it, which is also what lets the ingest create the model when this
+   account has never posted that sport. */
+const sent = (r) => (LOG.reqs.filter((x) => x.route === r).pop() || {}).body || {};
+
+setup({ answers: [true] });
+await window.fbNflApiSync();
+chk('the NFL sync says the slate is NFL', sent('/v1/projections').sport === 'NFL',
+  sent('/v1/projections'));
+chk('and the dry run says the same, so the two cannot disagree',
+  sent('/v1/projections/dry-run').sport === 'NFL', sent('/v1/projections/dry-run'));
+
+setup({ answers: [true] });
+await window.fbP4ApiSync();
+chk('the Power 4 sync says the slate is CFB', sent('/v1/projections').sport === 'CFB',
+  sent('/v1/projections'));
+
+/* ---- an account that has never carried this sport ---------------------
+   THIS USED TO BE THE END OF THE ROAD. The resolver read /v1/me, found no
+   model for the sport, and printed "No NFL model on this account. Models
+   found: ..." — a refusal an operator could only fix through the database.
+   collective_ingest creates the model for the envelope's sport now, so the
+   right behaviour is to post and let it. */
+setup({ answers: [true], models: [{ model: 'edgedesk-cfb', sport: 'CFB' }] });
+await window.fbNflApiSync();
+chk('an NFL slate from an account with only a CFB model still posts',
+  posts() === 1, { posts: posts(), said: OUT.fbnflPostOut.slice(0, 300) });
+chk('it is not refused with a list of the models the account does have',
+  !/No NFL model on this account/.test(OUT.fbnflPostOut), { said: OUT.fbnflPostOut.slice(0, 300) });
+chk('and it does NOT name the college model, which would file it under the wrong sport',
+  sent('/v1/projections').model === undefined && sent('/v1/projections').sport === 'NFL',
+  sent('/v1/projections'));
+
+setup({ answers: [true], models: [{ model: 'edgedesk-nfl', sport: 'NFL' }] });
+await window.fbP4ApiSync();
+chk('a college slate from an account with only an NFL model still posts',
+  posts() === 1 && !/No college-football model/.test(OUT.fbp4PostOut),
+  { posts: posts(), said: OUT.fbp4PostOut.slice(0, 300) });
+chk('and it does not name the NFL model either',
+  sent('/v1/projections').model === undefined && sent('/v1/projections').sport === 'CFB',
+  sent('/v1/projections'));
+
+setup({ answers: [true], models: [] });
+await window.fbNflApiSync();
+chk('an account with no models at all posts, and the model is created with the slate',
+  posts() === 1 && sent('/v1/projections').sport === 'NFL', { posts: posts() });
+
+/* Several models in ONE sport is a real ambiguity and is still refused: the
+   operator has to say which record this slate belongs to. */
+setup({ answers: [true], models: [
+  { model: 'nfl-a', sport: 'NFL' }, { model: 'nfl-b', sport: 'NFL' }] });
+await window.fbNflApiSync();
+chk('but two NFL models with no choice made still stops and names both',
+  posts() === 0 && /nfl-a/.test(OUT.fbnflPostOut) && /nfl-b/.test(OUT.fbnflPostOut),
+  { posts: posts(), said: OUT.fbnflPostOut.slice(0, 300) });
 
 /* ---- the operator can still say no ------------------------------------- */
 setup({ answers: [false] });

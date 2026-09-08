@@ -60,6 +60,32 @@ language sql stable set search_path = collective, public as $$
   select value from collective.config where key = p_key;
 $$;
 
+-- ---- the sport vocabulary --------------------------------------------------
+-- The SERVER owns which code names a sport: collective/index.html detects
+-- "college football" from a file and then posts whichever code THIS list
+-- carries. Deliberately seeded with NCAAF rather than CFB, so anything that
+-- assumes the two are spelled the same fails here.
+create table if not exists collective.sports (
+  code   text primary key,
+  name   text not null,
+  active boolean not null default true
+);
+insert into collective.sports (code, name, active) values
+  ('NFL', 'Football', true),
+  ('NCAAF', 'College Football', true)
+on conflict (code) do nothing;
+
+create table if not exists collective.sport_seasons (
+  sport_code text not null references collective.sports(code),
+  season     integer not null,
+  starts_on  date,
+  ends_on    date,
+  primary key (sport_code, season)
+);
+insert into collective.sport_seasons (sport_code, season) values
+  ('NFL', 2026), ('NCAAF', 2026)
+on conflict do nothing;
+
 -- ---- identity --------------------------------------------------------------
 create table if not exists collective.creators (
   id uuid primary key default gen_random_uuid(),

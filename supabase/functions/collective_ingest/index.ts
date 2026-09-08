@@ -696,49 +696,292 @@ async function authenticate(req: Request): Promise<KeyIdentity | Response> {
   return { key_id: String(match.id), kind: parsed.kind, creator, models };
 }
 
-/** Which model this envelope is for. One model on the account needs no
- *  choice; several do, and guessing would silently file a slate under the
- *  wrong record. */
-function pickModel(
-  models: ModelRow[],
+/**
+ * ONE SPORT, ONE FAMILY. Every spelling that means the same sport collapses to
+ * the same key, so a slate detected as "college football", a key typed NCAAF
+ * and a model stored as CFB-P4 are one thing and not three.
+ *
+ * This map is the same one in three places on purpose, and they are changed
+ * together: collective.sport_aliases (supabase/collective_model_autocreate.sql),
+ * the SPORTS registry in collective/index.html, and here. The database is the
+ * authority -- it is what the unique index is built on -- and this copy exists
+ * because an edge function bundles no imports and must be able to MATCH a sport
+ * without a round trip. It never decides what gets stored: creation goes
+ * through the database function, which canonicalises for itself.
+ *
+ * An unknown code is its own family. Two sports nobody has heard of must never
+ * silently become one.
+ */
+const SPORT_ALIASES: Record<string, string> = {
+  NFL: "NFL",
+  NATIONALFOOTBALLLEAGUE: "NFL",
+  PROFOOTBALL: "NFL",
+  NFLFOOTBALL: "NFL",
+  AMERICANFOOTBALLNFL: "NFL",
+  CFB: "CFB",
+  NCAAF: "CFB",
+  CFBP4: "CFB",
+  COLLEGE: "CFB",
+  NCAAFOOTBALL: "CFB",
+  COLLEGEFOOTBALL: "CFB",
+  NCAAFB: "CFB",
+  CFP: "CFB",
+  AMERICANFOOTBALLNCAAF: "CFB",
+};
+
+function sportFamily(code: unknown): string | null {
+  const k = String(code ?? "").toUpperCase().replace(/[^A-Z0-9]+/g, "");
+  if (!k) return null;
+  return SPORT_ALIASES[k] ?? k;
+}
+
+interface CreatedModel {
+  model_id: string;
+  model_slug: string;
+  model_name: string;
+  sport: string;
+  created: boolean;
+}
+
+/**
+ * GET-OR-CREATE, and the only way this function ever makes a model.
+ *
+ * The work is done by collective.get_or_create_model, installed by
+ * supabase/collective_model_autocreate.sql: it normalises the sport, serialises
+ * on (creator, sport) with an advisory lock, inserts on conflict do nothing and
+ * reads the row back, so two submissions arriving at the same instant get the
+ * same model rather than two. That function is the single source of truth --
+ * the dashboard reaches the same logic through public.collective_model_ensure.
+ *
+ * THE FALLBACK, and why it is not a second source of truth. On a database where
+ * the migration has not been pasted yet the RPC answers 404, and refusing here
+ * would put a contributor's first slate in a new sport back where this whole
+ * change found it: waiting on somebody with database access. So the row is
+ * written directly instead, with the same deterministic slug, and a duplicate
+ * is treated as the caller getting what they asked for and re-read. It is the
+ * weaker path -- it leans on the models table's own uniqueness rather than on
+ * an index this function can see -- and it exists only until the file is run.
+ */
+async function getOrCreateModel(
+  creator: CreatorRow,
+  sport: string,
+  trace: string,
+): Promise<CreatedModel> {
+  try {
+    const rows = await rpc<CreatedModel[] | CreatedModel | null>("get_or_create_model", {
+      p_creator_id: creator.id,
+      p_sport: sport,
+      p_model_name: null,
+    });
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (row && row.model_slug) return row;
+    throw new Error("get_or_create_model returned no row");
+  } catch (e) {
+    const missing = e instanceof RpcError &&
+      (e.status === 404 || /PGRST202|PGRST203|could not find the function/i.test(e.body));
+    if (!missing) throw e;
+    console.error(
+      `collective_ingest[${trace}]: collective.get_or_create_model is not installed ` +
+        `(run supabase/collective_model_autocreate.sql); creating the model directly.`,
+    );
+  }
+
+  const code = String(sport).toUpperCase().trim();
+  const slug = `${creator.slug}-${code.toLowerCase().replace(/[^a-z0-9]+/g, "")}`;
+  const name = `${creator.display_name || creator.slug} ${code}`.slice(0, 60);
+  try {
+    const made = await tableWrite("models", "POST", "", [{
+      creator_id: creator.id,
+      slug,
+      name,
+      sport_code: code,
+      is_listed: true,
+    }]) as { id?: string; slug?: string; name?: string; sport_code?: string }[] | null;
+    const row = Array.isArray(made) ? made[0] : null;
+    if (row?.slug) {
+      return {
+        model_id: String(row.id ?? ""),
+        model_slug: row.slug,
+        model_name: row.name ?? name,
+        sport: row.sport_code ?? code,
+        created: true,
+      };
+    }
+  } catch (e) {
+    // Losing a race is the caller getting what they asked for, not a failure.
+    const msg = String((e as Error)?.message ?? e);
+    if (!/duplicate key|23505|already exists|conflict/i.test(msg)) throw e;
+  }
+  const back = await viewGet<ModelRow>(
+    "models",
+    `select=id,slug,name,sport_code&creator_id=eq.${encodeURIComponent(creator.id)}` +
+      `&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+  );
+  if (!back[0]) throw new Error(`the ${code} model could not be created`);
+  return {
+    model_id: back[0].id,
+    model_slug: back[0].slug,
+    model_name: back[0].name,
+    sport: back[0].sport_code,
+    created: false,
+  };
+}
+
+interface ResolvedModel {
+  model: ModelRow;
+  created: boolean;
+  /** Said out loud in the response when the envelope's model and its sport
+   *  disagreed and the sport won. Never silent. */
+  note?: string;
+}
+
+/**
+ * WHICH MODEL THIS ENVELOPE IS FOR — and the sport decides.
+ *
+ * This used to be pickModel(), which looked only at `model` and, when nothing
+ * was named and the account had exactly one model, used it whatever sport the
+ * slate said it was. A contributor with a college model posting an NFL slate
+ * therefore had every NFL game looked up in the college schedule and every row
+ * came back unmatched, with nothing anywhere saying why. That is the bug this
+ * whole change is about, and it is fixed here rather than in the uploader:
+ *
+ *   * the sport is normalised first, so NCAAF and CFB reach one answer;
+ *   * the model is chosen from the models IN THAT SPORT;
+ *   * a sport the account has no model for gets one, on the spot;
+ *   * naming a model in a DIFFERENT sport does not win, because it cannot be
+ *     right -- every row would quarantine -- and the response says so.
+ *
+ * An account with several models in the same sport is still asked which one:
+ * that is a real ambiguity and guessing would file a slate under the wrong
+ * record.
+ */
+async function resolveModel(
+  auth: KeyIdentity,
   wanted: unknown,
-): { model: ModelRow } | { error: Response } {
-  if (models.length === 0) {
+  wantedSport: unknown,
+  allowCreate: boolean,
+  trace: string,
+): Promise<ResolvedModel | { error: Response }> {
+  const models = auth.models;
+  const named = typeof wanted === "string" && wanted
+    ? models.find((m) => m.slug === wanted) ?? null
+    : null;
+  if (typeof wanted === "string" && wanted && !named) {
     return {
       error: err(
-        "not_found",
-        "This account has no model yet. Create one from the dashboard before submitting.",
-        404,
+        "invalid_payload",
+        `No model named "${wanted}" on this account. Available: ${
+          models.map((m) => m.slug).join(", ") || "none yet"
+        }.`,
+        422,
       ),
     };
   }
-  if (typeof wanted === "string" && wanted) {
-    const found = models.find((m) => m.slug === wanted);
-    if (!found) {
+
+  const fam = sportFamily(wantedSport);
+
+  // No sport on the envelope: the only thing to go on is the model, named or
+  // singular. This is the one case that can still refuse, and what it asks for
+  // is one word from the caller -- never an action from somebody else.
+  if (!fam) {
+    if (named) return { model: named, created: false };
+    if (models.length === 1) return { model: models[0], created: false };
+    if (models.length === 0) {
       return {
         error: err(
           "invalid_payload",
-          `No model named "${wanted}" on this account. Available: ${
-            models.map((m) => m.slug).join(", ")
-          }.`,
+          'This envelope does not say which sport it is for, and this account has no model yet. ' +
+            'Add "sport" (for example "sport": "NFL") and the model for it is created with this ' +
+            "submission.",
           422,
         ),
       };
     }
-    return { model: found };
-  }
-  if (models.length > 1) {
     return {
       error: err(
         "invalid_payload",
-        `This account has several models; set "model" to one of: ${
+        `This account has several models; set "sport", or set "model" to one of: ${
           models.map((m) => m.slug).join(", ")
         }.`,
         422,
       ),
     };
   }
-  return { model: models[0] };
+
+  if (named && sportFamily(named.sport_code) === fam) {
+    return { model: named, created: false };
+  }
+
+  const inSport = models.filter((m) => sportFamily(m.sport_code) === fam);
+  const switched = named
+    ? `This slate says sport "${String(wantedSport)}" and "${named.slug}" is a ${named.sport_code} ` +
+      `model, so it was filed under this account's ${fam} model instead. A ${fam} slate under a ` +
+      `${named.sport_code} model is looked up in the wrong schedule and every game comes back unmatched.`
+    : undefined;
+
+  if (inSport.length === 1) {
+    return { model: inSport[0], created: false, note: switched };
+  }
+  if (inSport.length > 1) {
+    return {
+      error: err(
+        "invalid_payload",
+        `This account has several ${fam} models; set "model" to one of: ${
+          inSport.map((m) => m.slug).join(", ")
+        }.`,
+        422,
+      ),
+    };
+  }
+
+  // Nothing for this sport yet. That is not a refusal any more.
+  if (!allowCreate) {
+    return {
+      error: err(
+        "not_found",
+        `This account has no ${fam} model, so there is nothing filed under one to retract. ` +
+          `Models on this account: ${models.map((m) => `${m.slug} (${m.sport_code})`).join(", ") || "none"}.`,
+        404,
+      ),
+    };
+  }
+  let made: CreatedModel;
+  try {
+    made = await getOrCreateModel(auth.creator, String(wantedSport), trace);
+  } catch (e) {
+    if (e instanceof RpcError) {
+      console.error(`collective_ingest[${trace}] get_or_create_model rpc failure:`, e.message, e.body);
+    } else {
+      console.error(`collective_ingest[${trace}] get_or_create_model failure:`, e);
+    }
+    return {
+      error: err(
+        "server_error",
+        `This account has no ${fam} model and one could not be created. Nothing was saved; ` +
+          "the reason is in details.",
+        500,
+        dbDetail(e, trace, "get_or_create_model"),
+      ),
+    };
+  }
+  const model: ModelRow = {
+    id: made.model_id,
+    slug: made.model_slug,
+    name: made.model_name,
+    sport_code: made.sport,
+  };
+  // So the rest of this request, and anything that reads auth.models after it,
+  // sees the model that now exists.
+  if (!models.some((m) => m.slug === model.slug)) models.push(model);
+  return {
+    model,
+    created: made.created,
+    note: switched ??
+      (made.created
+        ? `This account had no ${fam} model, so "${model.name}" was created for it. ` +
+          "Nothing about your file needs to change."
+        : undefined),
+  };
 }
 
 /**
@@ -866,6 +1109,14 @@ Deno.serve(async (req) => {
         })),
         submit_to: "/v1/projections",
         dry_run_to: "/v1/projections/dry-run",
+        // A slate for a sport with no model here is not a refusal: send it with
+        // its sport and the model is created with the submission. Scripts built
+        // off this endpoint used to stop when the sport they wanted was absent.
+        creates_models: true,
+        sport_note:
+          'Post a slate for any sport by putting it on the envelope ("sport": "NFL"). ' +
+          "If this account has no model for that sport, one is created with the submission " +
+          "and the slate is resolved against that sport's schedule.",
         note: auth.kind === "test"
           ? "This is a test key. Slates sent with it are stored separately and never graded or ranked."
           : "Your latest submission per game received before the lock (30 minutes before kickoff) is the one that counts; earlier ones are stored as movement.",
@@ -880,7 +1131,8 @@ Deno.serve(async (req) => {
       // silently, since the response never said which sport it answered for.
       // ?model=<slug> names one; the first model is only the fallback when
       // none is asked for, and the sport is now stated in the response.
-      const wanted = new URL(req.url).searchParams.get("model");
+      const params = new URL(req.url).searchParams;
+      const wanted = params.get("model");
       let sportModel: ModelRow | null = auth.models[0] ?? null;
       if (wanted) {
         const found = auth.models.find((m) => m.slug === wanted);
@@ -895,7 +1147,19 @@ Deno.serve(async (req) => {
         }
         sportModel = found;
       }
-      const sport = sportModel?.sport_code ?? "NFL";
+      // ?sport= addresses the market by SPORT, which is how a caller thinks
+      // about it and how every other route on this function now works. It
+      // needs no model at all: the market for a sport exists whether or not
+      // this account has posted it yet, and a script asking "what is the NFL
+      // market" should not have to own an NFL model first to find out.
+      const askedSport = params.get("sport");
+      const askedFam = sportFamily(askedSport);
+      if (askedFam) {
+        sportModel = auth.models.find((m) => sportFamily(m.sport_code) === askedFam) ?? null;
+      }
+      const sport = askedSport && askedFam
+        ? (sportModel?.sport_code ?? askedSport)
+        : (sportModel?.sport_code ?? "NFL");
       const snap = await marketSnapshot(sport);
       if (!snap) {
         return json({
@@ -941,7 +1205,10 @@ Deno.serve(async (req) => {
       if (auth.kind !== "live") {
         return err("forbidden", "Retract needs a live key: test keys cannot touch the record.", 403);
       }
-      const pickedR = pickModel(auth.models, rbody.model);
+      // Retract resolves by sport like everything else, but it never CREATES:
+      // there is nothing filed under a model that does not exist, and making
+      // one here would answer "remove my rows" by adding a row.
+      const pickedR = await resolveModel(auth, rbody.model, rbody.sport, false, trace);
       if ("error" in pickedR) return pickedR.error;
       const modelR = pickedR.model;
 
@@ -1147,7 +1414,10 @@ Deno.serve(async (req) => {
       return err("invalid_payload", `${rows.length} rows exceeds the ${MAX_ROWS} row maximum.`, 422);
     }
 
-    const picked = pickModel(auth.models, body.model);
+    // THE SPORT DECIDES WHICH MODEL. A slate that says NFL is filed under this
+    // account's NFL model, which is created here if this is their first one --
+    // no operator, no second visit, no message telling them to ask somebody.
+    const picked = await resolveModel(auth, body.model, body.sport, true, trace);
     if ("error" in picked) return picked.error;
     const model = picked.model;
 
@@ -1251,6 +1521,11 @@ Deno.serve(async (req) => {
     out.sport = model.sport_code;
     out.kind = auth.kind;
     out.trace = trace;
+    // A model that appeared because of this submission, or a model the sport
+    // overrode, is stated on the receipt. Something that changed which record a
+    // slate lands in is never left for the creator to notice on the board.
+    out.model_created = picked.created;
+    if (picked.note) out.model_note = picked.note;
     if (dry) {
       out.dry_run = true;
       out.submission_id = null;

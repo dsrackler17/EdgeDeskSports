@@ -59,6 +59,68 @@ with the rule's wording corrected — paste as `index.ts` for the function
 (`collective/index.html`, `app.html`) already states and enforces the rule and
 collapses the games feed to the counting row.
 
+### `collective_model_autocreate.sql` — a contributor covers their own sports
+A slate is attached to a **model** and the Collective resolves that slate's
+games in that model's sport. The API exposed no model creation at all, so a
+contributor with a CFB model who wanted to post NFL had nothing to attach it to
+— and the dashboard said so out loud: *"self-serve model creation is not
+deployed on this backend yet"*, followed by a sentence to send to the operator.
+Worse, if they posted anyway, `collective_ingest` picked their only model and
+the NFL rows were looked up in the **college** schedule, so every game came back
+unmatched with nothing saying why.
+
+This installs the capability in the database, for the same reason
+`collective_member_removal.sql` did: `collective_join`, `collective_public` and
+`collective_admin` are deployed from the dashboard and are not in this
+repository, so a fix inside one of them could not be reviewed, tested, or relied
+on by the other two.
+
+* `collective.get_or_create_model(creator, sport, name)` — **the** single source
+  of truth. Normalises the sport, takes a transaction-scoped advisory lock on
+  (creator, sport), inserts `on conflict do nothing` and reads the row back.
+  Service role only; `anon` and `authenticated` are revoked.
+* `public.collective_model_ensure(sport, name)` — the door a signed-in
+  contributor's browser knocks on. The creator is `auth.uid()`'s own and **there
+  is no argument for it**, so nothing the page sends can claim to be somebody
+  else. `authenticated` has execute; `anon` is revoked.
+* `public.collective_my_models()` — read your own models back. Yours only, same
+  rule, no argument.
+* `collective.sport_aliases` + `sport_family()` / `sport_canonical()` — the same
+  alias map `collective/index.html`'s `SPORTS` registry carries, so NFL / "pro
+  football" and CFB / NCAAF / "college football" / CFB-P4 cannot become two
+  models each. The **server** still owns the vocabulary: a family is written
+  back in whichever code this deployment's `sports` table uses.
+* a unique index on `(creator, sport_family(sport))`, which is what makes two
+  simultaneous submissions produce one model rather than two. Where the sport
+  column is an **enum** the index is `(creator, sport)` instead and the report
+  says so — casting an enum to text is `STABLE`, not `IMMUTABLE`, so PostgreSQL
+  will not index the expression; the guarantee narrows to the labels the server
+  itself declared, which is all such a column can hold.
+
+**RLS is not touched.** No policy is dropped or disabled and no client role is
+granted anything on a table; both public doors are `SECURITY DEFINER` with a
+pinned `search_path`. **Nothing existing is rewritten**: every model keeps its
+id, slug, name and sport, so every projection, grade and record still points at
+the same row.
+
+Column names are **discovered** — `collective/admin.html` reads `sport` where
+`collective_ingest` reads `sport_code`, and both shapes exist in the wild — and
+the report says which it bound to. Report rows 0–5 should each say `ok`. Run it
+once in the SQL editor, like every other file here.
+
+Tested against a real PostgreSQL by `tools/collective/model_autocreate_sql.test.js`
+(`npm run collective:sql`), which applies the file three times, uses it, and
+attacks it: as `anon`, as one contributor reaching for another's account, with a
+removed creator, with every spelling of one sport, and with **eight connections
+released at the same wall-clock instant** all asking for the same missing model.
+The other half — the sport deciding which model a slate goes under, and a slate
+resolving against that sport's schedule — is
+`tools/collective/ingest_model_resolution.test.js`, which drives the deployed
+`collective_ingest` bundle. Pair it with the ingest bundle in
+`functions/collective_ingest/index.ts`: that function calls
+`get_or_create_model` and, on a database where this file has not been run yet,
+writes the row directly so a contributor is still never blocked.
+
 ### `collective_member_removal.sql` — removing a contributor, safely
 Until this file there was no way to remove somebody from the Collective except
 by hand in the SQL editor: no preview, no deletion order, no rollback, no audit
