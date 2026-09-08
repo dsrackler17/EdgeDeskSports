@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_box_enrichment_manifest_v1",
- "generated_at": "2026-09-08T13:52:04.646Z",
+ "generated_at": "2026-09-08T14:19:08.047Z",
  "seasons": {
   "2023": {
    "available": true,
@@ -8,12 +8,16 @@
    "rows": 57239,
    "team_games": 1822,
    "players": 9562,
+   "special_teams_team_game_rows": 1820,
    "usable_columns": [
     "hurries",
     "interceptions",
     "punting",
     "field_goals",
-    "qbr"
+    "qbr",
+    "extra_points",
+    "kick_returns",
+    "punt_returns"
    ],
    "failed_columns": [
     "tackles",
@@ -29,6 +33,7 @@
    "rows": 78993,
    "team_games": 1930,
    "players": 12473,
+   "special_teams_team_game_rows": 1929,
    "usable_columns": [
     "tackles",
     "solo_tackles",
@@ -39,7 +44,10 @@
     "interceptions",
     "punting",
     "field_goals",
-    "qbr"
+    "qbr",
+    "extra_points",
+    "kick_returns",
+    "punt_returns"
    ],
    "failed_columns": []
   },
@@ -49,6 +57,7 @@
    "rows": 80496,
    "team_games": 1916,
    "players": 12755,
+   "special_teams_team_game_rows": 1914,
    "usable_columns": [
     "tackles",
     "solo_tackles",
@@ -59,7 +68,10 @@
     "interceptions",
     "punting",
     "field_goals",
-    "qbr"
+    "qbr",
+    "extra_points",
+    "kick_returns",
+    "punt_returns"
    ],
    "failed_columns": []
   },
@@ -69,6 +81,7 @@
    "rows": 7059,
    "team_games": 194,
    "players": 5678,
+   "special_teams_team_game_rows": 192,
    "usable_columns": [
     "tackles",
     "solo_tackles",
@@ -77,7 +90,10 @@
     "passes_defended",
     "hurries",
     "punting",
-    "field_goals"
+    "field_goals",
+    "extra_points",
+    "kick_returns",
+    "punt_returns"
    ],
    "failed_columns": [
     "interceptions",
@@ -136,6 +152,21 @@
    "field": "qbr_games",
    "per_team_game_min": 0.5,
    "basis": "one rated quarterback per team-game is the most there can be"
+  },
+  "extra_points": {
+   "field": "xp_att",
+   "per_team_game_min": 1.5,
+   "basis": "an FBS team attempts three to four extra points a game"
+  },
+  "kick_returns": {
+   "field": "kr",
+   "per_team_game_min": 0.7,
+   "basis": "an FBS team returns one to two kickoffs a game in the touchback era. Below this the column is not being filled in."
+  },
+  "punt_returns": {
+   "field": "pr",
+   "per_team_game_min": 0.7,
+   "basis": "an FBS team returns one to two punts a game"
   }
  },
  "correction": "football/players/config.js previously asserted that tackles, tackles for loss, run stops, pressures short of a sack and punting were not observed in any public feed. They are, in this one, keyed on the same athlete id. That contract has been corrected rather than left standing.",
@@ -143,6 +174,8 @@
   "The defensive columns are only usable from 2024 onward — earlier seasons are measured, fail their gate, and are declared missing.",
   "MISSED TACKLES are still not carried anywhere public, so a tackling-efficiency measure remains impossible.",
   "A hurry is ESPN’s own charting judgement, not a tracked event, so it is a pressure PROXY and is labelled one.",
-  "The box has no snap counts. Appearances are participation evidence; they are not snaps and are never called snaps."
+  "The box has no snap counts. Appearances are participation evidence; they are not snaps and are never called snaps.",
+  "KICKOFF placement and hang time are absent, so kickoff touchbacks cannot be separated from punting touchbacks and a kickoff unit is rated only on the returns it allowed.",
+  "A BLOCKED PUNT is not an attributed event in either feed. Only a blocked FIELD GOAL is, and it comes from the play table rather than from here."
  ]
 }

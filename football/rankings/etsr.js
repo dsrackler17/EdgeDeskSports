@@ -383,7 +383,7 @@
   /* ---------------------------------------------------------------------
      MOVEMENT — differenced, never narrated by a model
      --------------------------------------------------------------------- */
-  function movement(now, prev) {
+  function movement(now, prev, prevMeta) {
     if (!prev) {
       return { available: false,
         reason: 'no earlier snapshot for this team, so nothing can be differenced. This is the first week it was rated.' };
@@ -394,6 +394,7 @@
       ['performance', 'performance.rating', 'performance'],
       ['offense', 'performance.offense', 'offense'],
       ['defense', 'performance.defense', 'defense'],
+      ['special_teams', 'performance.special_teams', 'special teams'],
       ['run_offense', 'performance.run_offense', 'run offense'],
       ['pass_offense', 'performance.pass_offense', 'pass offense'],
       ['run_defense', 'run_defence_power.score', 'run defense'],
@@ -412,14 +413,41 @@
     drivers.sort(function (x, y) { return Math.abs(y.delta) - Math.abs(x.delta); });
     var etsrNow = num(get(now, 'etsr')), etsrPrev = num(get(prev, 'etsr'));
     var rankNow = num(get(now, 'rank')), rankPrev = num(get(prev, 'rank'));
+    /* per-category movement, so every column on the board can show a Δ week
+       rather than only the overall one */
+    var cats = {}, ci;
+    for (ci = 0; ci < CFG.RANKINGS.length; ci++) {
+      var cat = CFG.RANKINGS[ci].id;
+      var nowR = now.ranks && now.ranks[cat];
+      var prevR = (prev.cat && prev.cat[cat]) ? { value: prev.cat[cat][0], rank: prev.cat[cat][1] }
+        : (prev.ranks && prev.ranks[cat]) || null;
+      if (!nowR || !prevR) continue;
+      var nv = num(nowR.value), pv = num(prevR.value);
+      var nr = num(nowR.rank), pr = num(prevR.rank);
+      if (!isNum(nv) && !isNum(nr)) continue;
+      cats[cat] = {
+        value: { from: r2(pv), to: r2(nv), delta: (isNum(nv) && isNum(pv)) ? r2(nv - pv) : null },
+        rank: { from: pr, to: nr, delta: (isNum(nr) && isNum(pr)) ? (pr - nr) : null }
+      };
+    }
     return {
       available: true,
+      /* WHICH week this is a delta against. A Δ over a two-week gap must not
+         be read as a Δ over one, so the comparison week ships with it. */
+      compared_against: prevMeta ? {
+        season: prevMeta.season, week_ordinal: prevMeta.week_ordinal,
+        week_label: prevMeta.week_label || null,
+        weeks_between: (prevMeta.current_ordinal != null && prevMeta.week_ordinal != null
+          && prevMeta.season === prevMeta.current_season)
+          ? (prevMeta.current_ordinal - prevMeta.week_ordinal) : null
+      } : null,
       etsr: { from: r2(etsrPrev), to: r2(etsrNow),
         delta: (isNum(etsrNow) && isNum(etsrPrev)) ? r2(etsrNow - etsrPrev) : null },
       rank: { from: rankPrev, to: rankNow,
         delta: (isNum(rankNow) && isNum(rankPrev)) ? (rankPrev - rankNow) : null },
+      categories: cats,
       drivers: drivers,
-      basis: CFG.MOVEMENT.basis
+      basis: CFG.MOVEMENT.basis + ' ' + CFG.HISTORY.delta_basis
     };
   }
 
@@ -491,7 +519,7 @@
   /* ---------------------------------------------------------------------
      STABILITY AND ANOMALIES  —  these FAIL a build
      --------------------------------------------------------------------- */
-  function stability(nowTeams, prevTeams) {
+  function stability(nowTeams, prevTeams, opts) {
     if (!prevTeams) return { available: false, reason: 'no earlier snapshot to compare against' };
     var shifts = [], ratingShifts = [], big = 0, n = 0, k;
     for (k in nowTeams) {
@@ -509,8 +537,34 @@
     if (isNum(meanShift) && meanShift > S.max_mean_rank_shift) failures.push('mean rank shift ' + r2(meanShift) + ' exceeds ' + S.max_mean_rank_shift);
     if (isNum(shareBig) && shareBig > S.max_share_moving_15) failures.push(Math.round(shareBig * 100) + '% of teams moved 15+ places, above the ' + Math.round(S.max_share_moving_15 * 100) + '% bound');
     if (isNum(maxRating) && maxRating > S.max_rating_shift_points) failures.push('largest ETSR move ' + r2(maxRating) + ' exceeds ' + S.max_rating_shift_points);
+
+    /* IS THIS A LIKE-FOR-LIKE COMPARISON? Two boards mixed differently — the
+       preseason against week one, most obviously — re-rank because the model
+       said they would, not because anything broke. */
+    var wShifts = [];
+    for (k in nowTeams) {
+      if (!Object.prototype.hasOwnProperty.call(nowTeams, k)) continue;
+      var an = num(get(nowTeams[k], 'weights.performance'));
+      var bn = prevTeams[k] ? num(get(prevTeams[k], 'weights.performance')) : null;
+      if (isNum(an) && isNum(bn)) wShifts.push(Math.abs(an - bn));
+    }
+    var meanW = wShifts.length ? mean(wShifts) : null;
+    var reconstructed = !!(opts && opts.previous_reconstructed);
+    var notComparable = [];
+    if (isNum(meanW) && meanW > S.comparable_weight_shift) {
+      notComparable.push('the mean weight on this season moved ' + r3(meanW)
+        + ' between the two boards, past the ' + S.comparable_weight_shift
+        + ' bound — they were mixed differently, so this is not a week-to-week comparison');
+    }
+    if (reconstructed) notComparable.push(S.reconstruction_note);
     return { available: true, mean_rank_shift: r2(meanShift), share_moving_15: r3(shareBig),
-      max_rating_shift: r2(maxRating), teams_compared: n, failures: failures, basis: S.basis };
+      max_rating_shift: r2(maxRating), teams_compared: n,
+      mean_prior_weight_shift: r3(meanW),
+      comparable: notComparable.length === 0,
+      not_comparable_because: notComparable,
+      failures: failures,
+      fails_build: notComparable.length === 0 && failures.length > 0,
+      basis: S.basis + ' ' + S.comparable_basis };
   }
 
   function anomalies(teams, prevTeams, opts) {
@@ -537,8 +591,22 @@
         }
         var pt = prev.talent && prev.talent.rating;
         if (isNum(tr) && isNum(pt) && (pt - tr) > T.talent_drop_points) {
-          out.push({ id: 'TALENT_COLLAPSE', severity: 'severe', team: k,
-            detail: 'talent fell ' + r2(pt - tr) + ' points in one week. Talent is not allowed to react to a result.' });
+          /* WHOSE TALENT, MEASURED WHEN? Talent comes from the committed
+             player artifact, and a rebuilt player artifact moves it for
+             reasons that have nothing to do with a result — a roster sync, a
+             newly rateable player, a position spelling corrected. Comparing
+             across two different ones and calling the difference a collapse
+             would fail the build every time the player job lands between two
+             rankings runs, which freezes the board. It still fires; across
+             different artifacts it fires as a WARNING, naming both. */
+          var sameLayer = opts.player_artifact == null || opts.previous_player_artifact == null
+            || opts.player_artifact === opts.previous_player_artifact;
+          out.push({ id: 'TALENT_COLLAPSE', severity: sameLayer ? 'severe' : 'warn', team: k,
+            detail: 'talent fell ' + r2(pt - tr) + ' points in one week. Talent is not allowed to react to a result.'
+              + (sameLayer ? ''
+                : ' Reported as a WARNING rather than a failure: the two boards stood on DIFFERENT player artifacts ('
+                  + opts.previous_player_artifact + ' -> ' + opts.player_artifact
+                  + '), so this is the player layer being rebuilt, not talent reacting to a result.') });
         }
       }
       if (t.duplicate_games && t.duplicate_games.length) {
@@ -564,7 +632,15 @@
       }
     }
     if (opts.stability && opts.stability.failures && opts.stability.failures.length) {
-      out.push({ id: 'STABILITY', severity: 'severe', team: null, detail: opts.stability.failures.join('; ') });
+      /* a stability breach only FAILS the build when the two boards were
+         comparable. When they were not, it is still reported — loudly — but as
+         a warning, with the reason the comparison is not like-for-like */
+      out.push({ id: 'STABILITY',
+        severity: opts.stability.comparable === false ? 'warn' : 'severe', team: null,
+        detail: opts.stability.failures.join('; ')
+          + (opts.stability.comparable === false
+            ? ' — reported as a WARNING rather than a failure because ' + (opts.stability.not_comparable_because || []).join('; ')
+            : '') });
     }
     if (opts.missing_snapshot) out.push({ id: 'MISSING_SNAPSHOT', severity: 'severe', team: null, detail: opts.missing_snapshot });
     return { list: out, severe: out.filter(function (a) { return a.severity === 'severe'; }).length,
