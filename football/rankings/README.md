@@ -252,3 +252,46 @@ volumes against the most recent completed season's. A season in progress
 publishes in pieces — a game lands, then the punter's line lands — so a ratio
 below one is the feed still filling in, not football that did not happen. It
 moves no rating; it is why some teams have no special-teams number yet.
+
+## The press briefs
+
+`tools/football/press_brief.js` turns the committed artifacts into two printable
+PDFs. It computes nothing: the slate comes from `football/cfb_p4/export_csv.js`,
+everything else from `current.json`, `health.json` and `history.json`.
+
+```
+npm run cfb:brief                        # both briefs, upcoming slate
+npm run cfb:brief -- --tz America/Chicago # kickoffs in Central instead of Eastern
+npm run cfb:brief -- --slate board.csv    # use the board's own CSV (raw) export
+```
+
+| document | pages | who reads it |
+|---|---|---|
+| `edgedesk_rankings_brief_<season>_wk<N>.pdf` | 3 | the publisher: top 25 with Δ week, how the ranking is built, why #1 is #1, the first team out, the most talent outside the 25, risers and fallers, and the leader board for all 19 categories |
+| `edgedesk_press_brief_<season>_wk<N>.pdf` | ~23 | the writer covering a game: every game with a projected score, model line, win probability, confidence and status, then a note per game with the drivers, the counterargument and what was not measured |
+
+**The status and the score are the website's own rules, copied.** `statusFor()`
+and `projectedScore()` reproduce `fbP4StatusFor` and `fbGxScore` from
+`app.html`, thresholds included, so the printed page and the screen cannot say
+different things about the same game.
+`tools/football/press_brief.test.js` reads both functions back out of `app.html`
+and fails if either drifts.
+
+Three things the briefs will not do:
+
+* **Publish a score it cannot split.** A projected score is the model's fair
+  total split by its fair spread. Sixteen of this week's forty-nine games have
+  no published total, and each says so instead of halving a number that is not
+  there. (The first proof of this document printed "Florida A&M −25.1" from
+  exactly that input.)
+* **Print an empty column.** With no market number joined to any game, the
+  market and gap columns are dropped and the reason is stated, rather than
+  printing forty-nine em-dashes.
+* **Hide a selection rule.** Every spotlight prints the rule that chose it —
+  "the team ranked 26th", "largest gap between talent rank and overall rank" —
+  so nothing on the page is editorial judgement wearing the clothes of a
+  measurement.
+
+Kickoffs are printed in one stated zone (`--tz`, default Eastern) because a
+printed page has no reader whose local time it could use. The generated files
+are build output and are git-ignored: regenerate them, do not commit them.
