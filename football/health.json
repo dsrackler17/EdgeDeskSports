@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-08T13:47:36.026Z",
+  "generated_at": "2026-09-08T18:01:58.345Z",
   "ok": true,
-  "last_ok_at": "2026-09-08T13:47:36.026Z",
+  "last_ok_at": "2026-09-08T18:01:58.345Z",
   "run": {
-    "trigger": "schedule",
+    "trigger": "push",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -37,7 +37,7 @@
   "lines": {
     "nfl": {
       "compared": 17,
-      "median_gap": 2.25,
+      "median_gap": 2.43,
       "max_gap": 5.6,
       "outliers": [],
       "orientation_faults": []
@@ -55,7 +55,7 @@
       "id": "engine_tests_nfl",
       "label": "engine test suite football/tests.js (incl. python-parity goldens)",
       "status": "pass",
-      "detail": "ALL GREEN 69 passed, 0 failed"
+      "detail": "ALL GREEN 75 passed, 0 failed"
     },
     {
       "id": "engine_tests_p4",
@@ -103,7 +103,7 @@
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 2.25 pts over 17 games, max 5.6"
+      "detail": "median gap 2.43 pts over 17 games, max 5.6"
     },
     {
       "id": "p4_season_window",
@@ -173,19 +173,19 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-08T13:47:36.026Z",
+    "daily_check_last_run": "2026-09-08T18:01:58.345Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-08T13:47:36.026Z",
+    "engine_tests_last_run": "2026-09-08T18:01:58.345Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-08T13:47:36.026Z",
+    "nfl_ingest_last_run": "2026-09-08T18:01:58.345Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-09-08T13:47:36.026Z",
+    "p4_ingest_last_run": "2026-09-08T18:01:58.345Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 98,
-    "projection_guard_last_run": "2026-09-08T13:47:36.026Z",
+    "projection_guard_last_run": "2026-09-08T18:01:58.345Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-08T13:47:36.026Z",
+    "line_guard_last_run": "2026-09-08T18:01:58.345Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 18
   }
