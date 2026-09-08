@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Article manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE OPERATOR'S ARTICLE MANAGER.
+
+     WHAT IT CAN DO AND WHAT IT DELIBERATELY CANNOT.
+     EdgeDesk is served as static files, so the page a reader sees is a
+     committed file under /articles/ built by tools/articles/build_articles.js.
+     This screen therefore owns the DECISION, not the rendering:
+
+       PREVIEW      renders the stored record through the SAME renderer the
+                    static build uses (/tools/articles/article_render.js), so
+                    a preview cannot look like something the build will not
+                    produce.
+       PUBLISH      writes status=published to public.site_articles. The next
+       UNPUBLISH    pipeline run reads that and writes (or removes) the page.
+       ARCHIVE
+       REGENERATE   flags the record so the next run re-reads the research for
+                    it, instead of leaving it as it was.
+       AUTO PUBLISH one switch, stored server-side, honoured by the pipeline.
+
+     GENERATING an article needs the football engine, the ratings artifact and
+     two schedule feeds — that is the research terminal's job and it runs
+     headlessly in tools/articles/generate.js. This screen never re-derives a
+     projection, and there is no code path here that could: it reads records
+     and writes publication state.
+
+     NOTHING PRIVILEGED IS EXPOSED. Reads and writes carry the operator's own
+     bearer token; RLS in supabase/site_articles.sql decides. A signed-in
+     account that is not on the allowlist sees published rows only — the same
+     thing anonymous sees — rather than an error it could learn from. The
+     service role never touches this page.
+     =========================================================================== -->
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--mdl:#9b8cff}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+a{color:var(--accent);text-decoration:none}
+header{border-bottom:1px solid var(--border);background:rgba(13,15,19,.94);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
+.hd{display:flex;align-items:center;gap:10px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px}
+.logo .mk{width:10px;height:16px;background:linear-gradient(180deg,var(--accent),#7db0ff);border-radius:2px;transform:skewX(-12deg)}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}
+.who{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:20px 0 4px;font-weight:600}
+.lede{color:var(--dim);font-size:13px;margin:0 0 14px;line-height:1.6}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.btn{background:var(--accent);color:#06122b;border:none;border-radius:9px;font-family:inherit;font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:6px 10px;font-size:11.5px}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn.good{background:var(--pos);color:#06210f}
+.btn.danger{background:transparent;color:var(--neg);border:1px solid rgba(226,96,68,.4)}
+input,select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif}
+.msg{font-size:12.5px;border-radius:8px;padding:9px 12px;margin-top:10px;font-family:'JetBrains Mono',monospace;display:none;white-space:pre-wrap}
+.msg.err{display:block;color:var(--neg);background:rgba(226,96,68,.08);border:1px solid rgba(226,96,68,.3)}
+.msg.ok{display:block;color:var(--pos);background:rgba(47,180,124,.07);border:1px solid rgba(47,180,124,.3)}
+.msg.info{display:block;color:var(--dim);background:var(--surface2);border:1px solid var(--border)}
+.gate{max-width:380px;margin:60px auto;text-align:center}
+.gate h1{font-size:22px;font-weight:800;margin-bottom:6px}
+.gate input{width:100%;margin-bottom:9px}
+.hide{display:none!important}
+.note{font-size:11.5px;color:var(--faint);margin-top:8px;line-height:1.6}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.stat{display:flex;gap:14px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:10px}
+.stat b{color:var(--text)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 8px;border-top:1px solid var(--border);vertical-align:top}
+thead th{border-top:0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.pill{display:inline-block;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--border);border-radius:5px;padding:2px 7px;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.pill.published{color:var(--pos);border-color:rgba(47,180,124,.45)}
+.pill.ready{color:var(--accent);border-color:rgba(77,141,255,.45)}
+.pill.draft{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.pill.archived{color:var(--faint)}
+.pill.frozen{color:var(--mdl);border-color:rgba(155,140,255,.45)}
+.pill.pending{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.acts{display:flex;gap:5px;flex-wrap:wrap}
+.matchup{font-weight:600}
+.sub{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.switch{display:flex;align-items:center;gap:10px;font-size:13.5px}
+.switch input{width:18px;height:18px}
+dialog{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:14px;
+  width:min(960px,94vw);height:min(88vh,900px);padding:0;overflow:hidden}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+.dlg-hd{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.dlg-hd .t{font-weight:700;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pvFrame{width:100%;height:calc(100% - 50px);border:0;background:#0d0f13}
+.checkfail{color:var(--warn);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:3px}
+@media(max-width:720px){
+  thead{display:none}
+  tr{display:block;border-top:1px solid var(--border);padding:8px 0}
+  td{display:block;border:0;padding:3px 0}
+}
+</style>
+</head>
+<body>
+
+<!-- ---- gate ------------------------------------------------------------- -->
+<div id="gate" class="gate hide">
+  <h1>EdgeDesk article manager</h1>
+  <p class="lede">Operator sign-in. Publication state is decided here; the pages themselves are built from the repository.</p>
+  <input id="gEmail" type="email" placeholder="email" autocomplete="username">
+  <input id="gPass" type="password" placeholder="password" autocomplete="current-password">
+  <button class="btn" id="gBtn" style="width:100%">Sign in</button>
+  <div class="msg" id="gMsg"></div>
+</div>
+
+<div id="app" class="hide">
+<header><div class="wrap hd">
+  <span class="logo"><span class="mk"></span>EdgeDesk</span>
+  <span class="tag">Articles</span>
+  <span class="sp"></span>
+  <span class="who" id="who"></span>
+  <a class="btn sm ghost" href="/articles" target="_blank" rel="noopener">View site</a>
+  <button class="btn sm ghost" id="logout">Sign out</button>
+</div></header>
+
+<main class="wrap" style="padding-bottom:60px">
+
+  <h2>Publishing</h2>
+  <div class="card">
+    <label class="switch"><input type="checkbox" id="autoPub"> <span><b>Auto publish</b> — publish an article automatically once its research passes every publication check</span></label>
+    <p class="note" id="autoNote">Auto publish never publishes malformed, thin or incomplete research: an article is only eligible when every check below passes and kickoff is inside the lead-time window. Everything else is held as <b>ready</b> and the failing check is named on the row.</p>
+    <div class="msg" id="setMsg"></div>
+  </div>
+
+  <h2>Articles</h2>
+  <p class="lede">
+    Records come from the committed store (<code class="mono">articles/data/index.json</code>) and, where this account can read it, the live publication table. Generating and refreshing an article is the research pipeline’s job — <code class="mono">node tools/articles/generate.js</code> — because it needs the football engine and two schedule feeds. What this screen changes is whether an article is published; the next pipeline run writes or removes the page.
+  </p>
+  <div class="toolbar">
+    <select id="fSport"><option value="">All sports</option><option value="CFB">College football</option><option value="NFL">NFL</option></select>
+    <select id="fStatus">
+      <option value="">Any state</option>
+      <option value="published">Published</option>
+      <option value="ready">Ready</option>
+      <option value="draft">Draft</option>
+      <option value="archived">Archived</option>
+    </select>
+    <button class="btn sm ghost" id="reload">Reload</button>
+    <span class="sp"></span>
+    <span class="stat" id="counts"></span>
+  </div>
+  <div class="card" style="padding:6px 12px 12px">
+    <div id="list"><p class="lede" style="margin:14px 0">Loading…</p></div>
+  </div>
+  <div class="msg" id="listMsg"></div>
+
+  <h2>How an article gets published</h2>
+  <div class="card">
+    <p class="lede" style="margin:0">
+      <b>1.</b> The research already exists — the terminal prices the game.<br>
+      <b>2.</b> <code class="mono">node tools/articles/generate.js</code> reads that research through the same
+      <code class="mono">fbBriefGame()</code> / <code class="mono">fbNflBriefGame()</code> the terminal calls, and writes a record. Nothing is re-modelled.<br>
+      <b>3.</b> The record runs the publication checks. Passing them makes it <b>ready</b>; failing one keeps it a <b>draft</b> and names the check.<br>
+      <b>4.</b> You preview it, then publish — or leave Auto publish on and it publishes itself once it is ready.<br>
+      <b>5.</b> <code class="mono">node tools/articles/build_articles.js</code> writes the static page, the hubs and the sitemap. Published articles only.<br>
+      <b>6.</b> Before kickoff the pipeline re-reads the research; a changed projection moves <code class="mono">updated_at</code>, an unchanged one moves nothing. After kickoff the record <b>freezes</b>.
+    </p>
+  </div>
+</main>
+</div>
+
+<dialog id="pv">
+  <div class="dlg-hd">
+    <span class="t" id="pvTitle"></span>
+    <a class="btn sm ghost" id="pvOpen" target="_blank" rel="noopener">Open live</a>
+    <button class="btn sm ghost" id="pvClose">Close</button>
+  </div>
+  <iframe id="pvFrame" title="Article preview" sandbox="allow-same-origin"></iframe>
+</dialog>
+
+<!-- THE SAME two modules the static build uses. Not a copy: a copy is a thing
+     that drifts, and a preview that drifts from the build is worse than no
+     preview. /tools/ is disallowed to crawlers, which is about indexing, not
+     about serving. -->
+<script src="/tools/articles/article_model.js"></script>
+<script src="/tools/articles/article_render.js"></script>
+<script>
+const SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+const MODEL=(window.EDART&&window.EDART.model)||null;
+const RENDER=(window.EDART&&window.EDART.render)||null;
+
+/* ---- session, shared with the rest of the operator surface --------------- */
+function session(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
+function token(){const s=session();return s&&s.access_token;}
+function userEmail(){const s=session();return s&&s.user&&s.user.email;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function msg(id,t,kind){const m=document.getElementById(id);if(!t){m.className='msg';m.textContent='';return;}m.className='msg '+(kind||'err');m.textContent=t;}
+
+function authHeaders(extra){
+  const h={apikey:SB_KEY,'Content-Type':'application/json'};
+  if(token())h.Authorization='Bearer '+token();
+  return Object.assign(h,extra||{});
+}
+async function sbSelect(q){
+  const r=await fetch(SB_URL+'/rest/v1/'+q,{headers:authHeaders()});
+  if(r.status===401){gateOut();throw new Error('session expired');}
+  if(!r.ok)throw new Error('read '+r.status+' '+(await r.text()).slice(0,160));
+  return r.json();
+}
+async function sbWrite(path,method,body,prefer){
+  const r=await fetch(SB_URL+'/rest/v1/'+path,{method:method,headers:authHeaders(prefer?{Prefer:prefer}:null),
+    body:body?JSON.stringify(body):undefined});
+  if(r.status===401){gateOut();throw new Error('session expired');}
+  if(!r.ok)throw new Error((await r.text()).slice(0,220)||('write '+r.status));
+  return r;
+}
+
+/* ---- gate ---------------------------------------------------------------- */
+function showGate(){document.getElementById('gate').classList.remove('hide');document.getElementById('app').classList.add('hide');}
+function showApp(){
+  document.getElementById('gate').classList.add('hide');
+  document.getElementById('app').classList.remove('hide');
+  document.getElementById('who').textContent=userEmail()||'';
+  loadSettings();load();
+}
+function gateOut(){localStorage.removeItem('edgedesk_session');showGate();}
+document.getElementById('gBtn').onclick=async function(){
+  const email=document.getElementById('gEmail').value.trim(),pass=document.getElementById('gPass').value;
+  if(!email||!pass){msg('gMsg','Enter email and password.');return;}
+  this.disabled=true;
+  try{
+    const r=await fetch(SB_URL+'/auth/v1/token?grant_type=password',
+      {method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({email:email,password:pass})});
+    const d=await r.json();
+    if(!r.ok||!d.access_token){msg('gMsg',d.msg||d.error_description||'Login failed.');this.disabled=false;return;}
+    localStorage.setItem('edgedesk_session',JSON.stringify(d));showApp();
+  }catch(e){msg('gMsg','Network error.');this.disabled=false;}
+};
+document.getElementById('logout').onclick=gateOut;
+
+/* ---- state --------------------------------------------------------------- */
+let ROWS=[];          /* merged view: committed record + live publication state */
+let MANIFEST=null;
+let LIVE_OK=false;    /* did the publication table answer for this account?    */
+const RECORD_CACHE=Object.create(null);
+
+/* THE MERGE. The repository is where a record's CONTENT comes from — it is
+   what the build reads and what the page was made of. The table is where its
+   publication STATE comes from when it can be reached, because that is the
+   half an operator changes from a phone. Where they disagree about state the
+   table wins and the row says so, so the operator is never looking at a
+   publish they made an hour ago and reading it as not having happened. */
+async function load(){
+  msg('listMsg','');
+  document.getElementById('list').innerHTML='<p class="lede" style="margin:14px 0">Loading…</p>';
+  try{ MANIFEST=await (await fetch('/articles/data/index.json?t='+Date.now())).json(); }
+  catch(e){ MANIFEST={articles:[],counts:{},settings:{}}; }
+
+  let live=[];
+  LIVE_OK=false;
+  try{
+    live=await sbSelect('site_articles?select=id,slug,status,published_at,updated_at,frozen,canonical_url&order=game_time.asc&limit=500');
+    LIVE_OK=true;
+  }catch(e){ /* not reachable, or this account reads published rows only */ }
+
+  const liveById=Object.create(null);
+  live.forEach(r=>{liveById[r.id]=r;});
+
+  ROWS=(MANIFEST.articles||[]).map(a=>{
+    const l=liveById[a.id]||null;
+    return Object.assign({},a,{
+      live:l,
+      state:(l&&l.status)||a.status,
+      state_source:(l&&l.status&&l.status!==a.status)?'live':'repo',
+      built:a.status==='published'
+    });
+  });
+  /* a row that exists live but not in the committed store yet */
+  live.forEach(r=>{ if(!ROWS.some(x=>x.id===r.id)) ROWS.push({
+    id:r.id,slug:r.slug,title:r.slug,status:'(not in the store)',state:r.status,
+    state_source:'live',live:r,built:false,sport:'',game_time:null}); });
+
+  render();
+}
+document.getElementById('reload').onclick=load;
+document.getElementById('fSport').onchange=render;
+document.getElementById('fStatus').onchange=render;
+
+function fmt(t){ if(!t)return '—'; const d=new Date(t); return isFinite(+d)?d.toISOString().replace('T',' ').slice(0,16)+'Z':'—'; }
+
+function render(){
+  const sp=document.getElementById('fSport').value, st=document.getElementById('fStatus').value;
+  const rows=ROWS.filter(r=>(!sp||r.sport===sp)&&(!st||r.state===st))
+    .sort((a,b)=>(Date.parse(a.game_time||0)||0)-(Date.parse(b.game_time||0)||0));
+  const c=(MANIFEST&&MANIFEST.counts)||{};
+  document.getElementById('counts').innerHTML=
+    '<span><b>'+(c.total||ROWS.length)+'</b> records</span>'
+    +'<span><b>'+ROWS.filter(r=>r.state==='published').length+'</b> published</span>'
+    +'<span><b>'+ROWS.filter(r=>r.state==='ready').length+'</b> ready</span>'
+    +'<span><b>'+ROWS.filter(r=>r.state==='draft').length+'</b> draft</span>'
+    +'<span>'+(LIVE_OK?'live table connected':'live table unavailable — showing the committed store')+'</span>';
+
+  if(!rows.length){
+    document.getElementById('list').innerHTML='<p class="lede" style="margin:14px 0">No article record matches. Run <code class="mono">node tools/articles/generate.js</code> to build records from the current slate.</p>';
+    return;
+  }
+  let h='<table><thead><tr><th>Matchup</th><th>Kickoff</th><th>Model</th><th>State</th><th>Published</th><th>Updated</th><th></th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    const frozen=r.frozen||(r.live&&r.live.frozen);
+    h+='<tr>'
+      +'<td><div class="matchup">'+esc((r.away_team||'')+' at '+(r.home_team||''))+'</div>'
+        +'<div class="sub">'+esc(r.slug||r.id)+(r.sport?' · '+esc(r.sport):'')+'</div></td>'
+      +'<td class="mono" style="font-size:11.5px;color:var(--dim)">'+esc(fmt(r.game_time))+'</td>'
+      +'<td>'+(r.fair_spread_text?'<div class="mono" style="font-size:12px">'+esc(r.fair_spread_text)+'</div>':'')
+        +'<div class="sub">'+esc(r.model_status||'—')+(r.confidence!=null?' · '+esc(r.confidence)+'%':'')+'</div></td>'
+      +'<td><span class="pill '+esc(r.state)+'">'+esc(r.state)+'</span>'
+        +(frozen?' <span class="pill frozen">frozen</span>':'')
+        +(r.state_source==='live'&&r.state!==r.status?'<div class="sub">repo says '+esc(r.status)+' — the next build applies this</div>':'')
+        +'</td>'
+      +'<td class="mono" style="font-size:11px;color:var(--faint)">'+esc(fmt(r.published_at||(r.live&&r.live.published_at)))+'</td>'
+      +'<td class="mono" style="font-size:11px;color:var(--faint)">'+esc(fmt(r.updated_at||(r.live&&r.live.updated_at)))+'</td>'
+      +'<td><div class="acts">'
+        +'<button class="btn sm ghost" data-act="preview" data-id="'+esc(r.id)+'">Preview</button>'
+        +(r.state==='published'
+          ?'<a class="btn sm ghost" href="/articles/'+esc(r.slug)+'" target="_blank" rel="noopener">Open</a>'
+           +'<button class="btn sm ghost" data-act="unpublish" data-id="'+esc(r.id)+'">Unpublish</button>'
+          :'<button class="btn sm good" data-act="publish" data-id="'+esc(r.id)+'">Publish</button>')
+        +'<button class="btn sm ghost" data-act="regenerate" data-id="'+esc(r.id)+'">Regenerate</button>'
+        +(r.state==='archived'?'':'<button class="btn sm danger" data-act="archive" data-id="'+esc(r.id)+'">Archive</button>')
+      +'</div></td></tr>';
+  });
+  document.getElementById('list').innerHTML=h+'</tbody></table>';
+  document.querySelectorAll('#list [data-act]').forEach(b=>{ b.onclick=()=>act(b.dataset.act,b.dataset.id,b); });
+}
+
+/* ---- the record itself, for preview and for a publish that needs a payload */
+async function recordFor(id){
+  if(RECORD_CACHE[id])return RECORD_CACHE[id];
+  const r=await fetch('/articles/data/records/'+encodeURIComponent(id)+'.json?t='+Date.now());
+  if(!r.ok)throw new Error('the committed record for '+id+' is not in this deployment yet');
+  const j=await r.json();
+  RECORD_CACHE[id]=j;
+  return j;
+}
+
+async function act(what,id,btn){
+  const row=ROWS.filter(r=>r.id===id)[0];
+  btn.disabled=true;
+  msg('listMsg','');
+  try{
+    if(what==='preview')return await preview(id);
+    const rec=await recordFor(id);
+
+    if(what==='publish'){
+      /* the SAME checks the pipeline runs, in the browser, before the state
+         is written — so a publish that the build would refuse is refused
+         here, where somebody can read why */
+      const v=MODEL?MODEL.publishable(rec):{ok:true,failed:[]};
+      if(!v.ok){
+        msg('listMsg','Not published — this record fails '+v.failed.length+' publication check(s):\n'
+          +v.failed.map(f=>'  · '+f.id+': '+f.why).join('\n'),'err');
+        return;
+      }
+      await upsert(Object.assign({},rec,{status:'published',published_at:rec.published_at||new Date().toISOString()}));
+      msg('listMsg','Published. The next build writes /articles/'+rec.slug+'.','ok');
+    } else if(what==='unpublish'){
+      await upsert(Object.assign({},rec,{status:'draft'}));
+      msg('listMsg','Unpublished. The next build removes the page and drops it from the sitemap.','ok');
+    } else if(what==='archive'){
+      await upsert(Object.assign({},rec,{status:'archived'}));
+      msg('listMsg','Archived.','ok');
+    } else if(what==='regenerate'){
+      await upsert(Object.assign({},rec,{status:rec.status,regenerate_requested_at:new Date().toISOString()}));
+      msg('listMsg','Flagged for regeneration. The next pipeline run re-reads the research for this game.'
+        +(row&&row.frozen?' Note: this game has kicked off, so the record is frozen and will not change.':''),'ok');
+    }
+    await load();
+  }catch(e){
+    msg('listMsg',String(e&&e.message||e),'err');
+  }finally{ btn.disabled=false; }
+}
+
+/* One upsert, one shape. The row carries the structured record, never HTML. */
+async function upsert(rec){
+  const row={
+    id:rec.id,game_id:rec.game_id,sport:rec.sport,slug:rec.slug,title:rec.title,
+    seo_title:rec.seo_title,seo_description:rec.seo_description,excerpt:rec.excerpt,
+    article:{article:rec.article,aliases:rec.aliases||[],sport_slug:rec.sport_slug,
+      regenerate_requested_at:rec.regenerate_requested_at||null},
+    home_team:rec.home_team,away_team:rec.away_team,game_time:rec.game_time,
+    published_at:rec.published_at||null,generated_at:rec.generated_at||null,
+    model_version:rec.model_version,model_status:rec.model_status,confidence:rec.confidence,
+    hero_image:rec.hero_image,canonical_url:rec.canonical_url,status:rec.status
+  };
+  await sbWrite('site_articles?on_conflict=id','POST',[row],'resolution=merge-duplicates,return=minimal');
+}
+
+/* ---- preview ------------------------------------------------------------- */
+const dlg=document.getElementById('pv');
+document.getElementById('pvClose').onclick=()=>dlg.close();
+async function preview(id){
+  const rec=await recordFor(id);
+  if(!RENDER){msg('listMsg','The article renderer did not load, so nothing is previewed rather than something approximate.','err');return;}
+  document.getElementById('pvTitle').textContent=rec.title;
+  const open=document.getElementById('pvOpen');
+  open.href='/articles/'+rec.slug;
+  open.classList.toggle('hide',rec.status!=='published');
+  /* rendered with noindex, exactly as a preview build would render it */
+  document.getElementById('pvFrame').srcdoc=RENDER.articlePage(rec,{noindex:rec.status!=='published'});
+  dlg.showModal();
+}
+
+/* ---- settings ------------------------------------------------------------ */
+async function loadSettings(){
+  const box=document.getElementById('autoPub');
+  try{
+    const rows=await sbSelect('site_article_settings?select=auto_publish,auto_publish_min_lead_minutes,auto_publish_max_lead_days&id=eq.1');
+    const s=rows&&rows[0];
+    if(s){
+      box.checked=!!s.auto_publish;
+      document.getElementById('autoNote').innerHTML=
+        'Auto publish never publishes malformed, thin or incomplete research: an article is only eligible when every publication check passes and kickoff is between <b>'
+        +esc(s.auto_publish_min_lead_minutes)+' minutes</b> and <b>'+esc(s.auto_publish_max_lead_days)
+        +' days</b> away. Everything else is held as <b>ready</b> and the failing check is named on the row.';
+    }
+  }catch(e){
+    box.disabled=true;
+    msg('setMsg','The publishing settings table is not reachable from this account. The committed setting in articles/data/index.json is what the pipeline will use.','info');
+  }
+}
+document.getElementById('autoPub').onchange=async function(){
+  this.disabled=true;
+  try{
+    await sbWrite('site_article_settings?id=eq.1','PATCH',{auto_publish:this.checked});
+    msg('setMsg','Auto publish is '+(this.checked?'ON':'OFF')+'. The next pipeline run honours it.','ok');
+  }catch(e){
+    this.checked=!this.checked;
+    msg('setMsg',String(e&&e.message||e),'err');
+  }finally{ this.disabled=false; }
+};
+
+/* ---- boot ---------------------------------------------------------------- */
+if(token())showApp(); else showGate();
+</script>
+</body>
+</html>

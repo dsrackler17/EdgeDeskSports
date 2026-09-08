@@ -106,8 +106,9 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
    vanished below 1080px — invisible on every phone and tablet, which is most
    of the traffic. It stays in the bar at every width; the marketing anchors
    are what collapse. */
-@media(max-width:1080px){.nav-in .nlink[href="/games/"]{display:inline-flex}}
-@media(max-width:560px){.nav-in .nlink[href="/games/"]{padding-left:0;padding-right:6px;font-size:13px}}
+@media(max-width:1080px){.nav-in .nlink[href="/games/"],.nav-in .nlink[href="/articles"]{display:inline-flex}}
+@media(max-width:560px){.nav-in .nlink[href="/games/"],.nav-in .nlink[href="/articles"]{padding-left:0;padding-right:6px;font-size:13px}}
+@media(max-width:430px){.nav-in .nlink[href="/articles"]{display:none}}
 @media(max-width:900px){.navprice{display:none}}
 @media(max-width:560px){
   .nav-in{gap:7px;padding:11px 0}
@@ -998,6 +999,11 @@ section.band.lp-quiet{padding:56px 0}
     <!-- EdgeDesk Games: the free, public, no-account front door. A link only —
          Games is its own acquisition product and the traffic it wants is
          Games -> EdgeDesk, not the other way round. -->
+    <!-- The research articles: the public, crawlable half of the terminal.
+         One matchup per page, EdgeDesk's own number and the reasoning behind
+         it, no account. It is where search traffic lands and the link out of
+         every article comes back here. -->
+    <a class="nlink" href="/articles">Research</a>
     <a class="nlink" href="/games/">Games</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
     <span class="navprice">7 days free</span>
@@ -1969,6 +1975,7 @@ section.band.lp-quiet{padding:56px 0}
       <div class="rg">Responsible gambling</div>
       <div>21+ &middot; 1-800-GAMBLER &middot; ncpgambling.org</div>
       <div style="margin-top:10px"><a href="#steps">How it works</a> &middot; <a href="#evidence">Evidence</a> &middot; <a href="#record">Live record</a> &middot; <a href="#pricing">Pricing</a></div>
+      <div style="margin-top:8px"><a href="/articles">Research articles</a> &middot; <a href="/articles/college-football">College football</a> &middot; <a href="/articles/nfl">NFL</a> &middot; <a href="/games/">Games</a></div>
       <div style="margin-top:8px"><a href="/terms.html">Terms</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/disclaimer.html">Disclaimer</a></div>
       <div style="margin-top:10px"><a href="#" data-ed-report style="font-weight:700">Report a problem</a> &middot; Support: <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a></div>
       <div style="margin-top:10px;color:var(--faint)">&copy; <span id="yr"></span> Rackler Tech Ventures LLC &middot; 2013 89th St, Lubbock, TX 79423</div>

@@ -417,7 +417,10 @@ const CSS = fs.readFileSync(G('games.css'), 'utf8');
 const JS = fs.readFileSync(G('games.js'), 'utf8');
 const RULES = fs.readFileSync(G('lib/dynasty.js'), 'utf8');
 const STORE = fs.readFileSync(G('lib/store.js'), 'utf8');
-const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+/* The sitemap is an INDEX (sitemap.xml -> sitemap-pages.xml +
+   sitemap-articles.xml). What this file asserts is unchanged — the route must
+   be in the sitemap — so it reads the whole SET through the one resolver. */
+const SITEMAP = require(path.join(ROOT, 'tools', 'sitemap_set.js')).text(ROOT);
 const NOTFOUND = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 
