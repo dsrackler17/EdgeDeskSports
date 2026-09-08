@@ -17,6 +17,22 @@ the Supabase SQL editor, and every one of them follows the same three rules.
 3. **It ends in a report.** The last statement is a `select` whose rows each say
    `ok` or `CHECK THIS`. A migration you cannot verify from its own output is a
    migration you have to trust, and the point of these files is not having to.
+4. **No psql meta-commands.** Not one, not even a leading
+   `\set ON_ERROR_STOP on`. These files are pasted into the **SQL editor**,
+   which sends raw SQL to the server — it does not run psql. A backslash
+   command there is not a convenience that degrades; it is a hard
+   `syntax error at or near "\"` on its own line, before anything else in the
+   file is read, so the whole paste does nothing and the message points at a
+   character rather than at a cause.
+
+   `collective_nfl_readiness.sql` shipped with one and the suite passed it,
+   because the suite ran the file with `psql -f` — which reads the file itself
+   and honours meta-commands. The test and the deployment target disagreed
+   about what "running this file" means, so the first thing a user hits was the
+   one thing nothing checked. `tools/collective/model_autocreate_sql.test.js`
+   now asserts the rule for **every** file in this folder, and runs the
+   readiness file the way the editor sends it: one raw string, one round trip,
+   no meta-command handling anywhere.
 
 The edge functions in `functions/` are pasted the same way: one file per
 function, **zero imports**, because the dashboard bundles only the folder you
