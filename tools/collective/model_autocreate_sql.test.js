@@ -130,6 +130,41 @@ const SQL = fs.readFileSync(SQL_PATH, 'utf8');
     !/\b(insert into|update|delete from)\s+auth\./i.test(stripped));
 }
 
+/* ═══ THE READINESS DIAGNOSTIC IS READ-ONLY ═══════════════════════════════
+   supabase/collective_nfl_readiness.sql answers "can this Collective take an
+   NFL slate every week", and it is meant to be run on production at any time,
+   including mid-slate. A diagnostic that could change something is not one,
+   so the rule is checked rather than trusted. */
+{
+  const RD = fs.readFileSync(
+    path.join(ROOT, 'supabase', 'collective_nfl_readiness.sql'), 'utf8');
+  /* Comments carry the repair statements on purpose, commented out, so the
+     check is on what actually executes. */
+  const live = RD.replace(/^--[^\n]*$/gm, ' ');
+
+  chk('the readiness file writes nothing at all',
+    !/\b(insert\s+into|update\s+|delete\s+from|alter\s+table|drop\s+|truncate)\s+(?!nfl_report)/i.test(
+      live.replace(/create temp table[^;]*;/i, ' ')),
+    (live.match(/\b(insert into|update |delete from|alter table|drop |truncate)[^\n]{0,60}/gi) || [])
+      .filter((x) => !/nfl_report/i.test(x)));
+  chk('it creates nothing but its own temp report and helper',
+    (live.match(/create\s+(or replace\s+)?(temp\s+)?(table|index|function)\b/gi) || []).length === 2
+    && /create temp table if not exists nfl_report/i.test(live)
+    && /create or replace function pg_temp\.nfl_col/i.test(live),
+    (live.match(/create[^\n]{0,60}/gi) || []));
+  chk('it grants and revokes nothing',
+    !/\bgrant\b|\brevoke\b/i.test(live));
+  chk('and every repair it points at is commented out, not run',
+    /^--\s+insert into collective\.sports/m.test(RD)
+    && !/^\s*insert into collective\.sports/m.test(RD));
+  chk('it ends in a report whose rows say ok or CHECK THIS',
+    /'ok'/.test(RD) && /'CHECK THIS'/.test(RD)
+    && RD.lastIndexOf('nfl_report order by n') > RD.lastIndexOf('$do$;'));
+  chk('and it names the schedule as the cause an index cannot reach',
+    /THE SCHEDULE FOR THAT WEEK IS NOT LOADED/.test(RD)
+    && /sync_schedule\.js/.test(RD));
+}
+
 /* ═══ LIVE ════════════════════════════════════════════════════════════════ */
 function findPgBin() {
   const cands = ['pg_ctl'].concat(
@@ -268,6 +303,55 @@ chk('the suite actually ran its assertions', asserted >= 55, asserted);
   const bad = psql(`-d cma_enum -tA -c "select model_slug from collective.get_or_create_model((select id from collective.creators where slug='enum-desk'),'WNBA',null)"`);
   chk('a sport the enum does not carry fails LOUDLY rather than storing something wrong',
     bad.status !== 0 && /invalid input value for enum|WNBA/.test(bad.out), bad.out.slice(-300));
+}
+
+/* ═══ THE READINESS DIAGNOSTIC, RUN FOR REAL ══════════════════════════════
+   It is only worth having if it names the right link. The database it runs
+   against here has the migration, a creator and a model -- and NO schedule,
+   which is the state that produces "thirty rows posted, thirty quarantined"
+   and the one an index can do nothing about. */
+{
+  const fRead = stage(path.join(ROOT, 'supabase', 'collective_nfl_readiness.sql'));
+
+  const dry = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  chk('the readiness file runs against a real postgres', dry.status === 0, dry.out.slice(-900));
+  chk('and it reports on every link in the chain', okRows(dry.out) + badRows(dry.out) >= 6,
+    { ok: okRows(dry.out), bad: badRows(dry.out) });
+  chk('with no schedule loaded it says SO, and says it is not the model or the file',
+    /NOTHING IS LOADED/.test(dry.out) && /no game to attach to/.test(dry.out), dry.out.slice(-700));
+  chk('and points at the loader rather than at hand-written SQL',
+    /sync_schedule\.js/.test(dry.out), dry.out.slice(-400));
+  chk('the index it found is the FULL expression form, and it says which',
+    /sport_family/.test(dry.out) && /two SPELLINGS of one sport/.test(dry.out), dry.out.slice(-1600));
+
+  /* Load a schedule with games still ahead of kickoff and every row turns ok. */
+  psql(`-d cma -q -c "insert into collective.games (sport_code, season, week, kickoff_at, home_team, away_team) select 'NFL', 2026, 3, now() + interval '4 days', 'BUF', 'NYJ' from generate_series(1,16)"`);
+  const wet = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  chk('with a schedule ahead of kickoff every row reads ok',
+    wet.status === 0 && badRows(wet.out) === 0, wet.out.slice(-1200));
+  chk('and it counts what is still postable, not just what exists',
+    /still ahead of kickoff/.test(wet.out) && /Games per week/.test(wet.out), wet.out.slice(-700));
+
+  /* Every game in the past is a different failure and gets a different answer:
+     the schedule is loaded, and a slate posted now still has nothing to hit. */
+  psql(`-d cma -q -c "update collective.games set kickoff_at = now() - interval '3 days' where sport_code='NFL'"`);
+  const past = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  chk('a schedule that has entirely kicked off is called out separately',
+    /0 still ahead of kickoff/.test(past.out) && /has nothing ahead/.test(past.out),
+    past.out.slice(-700));
+
+  /* A sport the server does not list can never resolve, whatever model it has. */
+  psql(`-d cma -q -c "update collective.sports set active=false where code='NFL'"`);
+  const gone = psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  chk('a sport the server does not carry is named as unresolvable',
+    /IS NOT ONE OF THEM/.test(gone.out), gone.out.slice(-700));
+  psql(`-d cma -q -c "update collective.sports set active=true where code='NFL'"`);
+
+  /* And it must not have written anything while doing all that. */
+  const before = psql(`-d cma -tA -c "select count(*) from collective.models"`).out.trim();
+  psql(`-d cma -v ON_ERROR_STOP=1 -f ${fRead}`);
+  const after = psql(`-d cma -tA -c "select count(*) from collective.models"`).out.trim();
+  chk('running it changed no rows', before === after, { before, after });
 }
 
 /* ═══ H: TWO SIMULTANEOUS CREATIONS MAKE ONE MODEL ════════════════════════

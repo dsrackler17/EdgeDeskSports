@@ -125,6 +125,49 @@ resolving against that sport's schedule — is
 `get_or_create_model` and, on a database where this file has not been run yet,
 writes the row directly so a contributor is still never blocked.
 
+### `collective_nfl_readiness.sql` — can this Collective take a slate, weekly?
+**Read-only.** Safe on production, any time, including mid-slate: it creates a
+temp report and a temp helper and touches nothing else. The repairs it points at
+are commented out at the bottom, so running it can never be the thing that
+changed something.
+
+It exists because the obvious suspect for a failed upload is the wrong one. When
+thirty rows post and thirty quarantine, there are four possible causes and only
+one of them is anything an index could touch:
+
+1. the contributor has no model for the sport — fixed, it is created on the way past
+2. two models in one sport, so nothing can choose — what the unique index stops
+3. the server does not list the sport at all — a slate for it can never resolve
+4. **the schedule for that week is not loaded** — no game to attach to
+
+Four is the one that recurs, and no index can reach it. This names which link is
+broken instead of leaving it to be inferred from a receipt full of quarantined
+rows: the index and what it is actually built on, the sport vocabulary and how
+your code normalises through it, who covers the sport, any duplicate that would
+block the index, the loaded schedule broken down per week **and how much of it
+is still ahead of kickoff**, and the team count.
+
+Set `p_sport` at the top (default `NFL`). Column names are discovered, so it
+reads whatever shape the deployment has. Rows should each say `ok`; a
+`CHECK THIS` names the fix. The schedule repair is deliberately **not** SQL —
+games come from the feed, and loading them by hand is how a slate ends up
+attached to a fixture nobody checked:
+
+```bash
+node tools/collective/sync_schedule.js --sport NFL            # dry run
+node tools/collective/sync_schedule.js --sport NFL --commit   # load it
+```
+
+The **Sync the Collective schedule** workflow does every sport daily at 09:20
+UTC. It needs `COLLECTIVE_ADMIN_REFRESH_TOKEN` as a repository secret; without
+it the job warns and loads nothing, which looks exactly like a working sync that
+had nothing to do.
+
+Exercised against a real PostgreSQL by
+`tools/collective/model_autocreate_sql.test.js` — with no schedule, with one
+ahead of kickoff, with one entirely in the past, and with the sport delisted —
+and checked for writing nothing while it does it.
+
 ### `collective_member_removal.sql` — removing a contributor, safely
 Until this file there was no way to remove somebody from the Collective except
 by hand in the SQL editor: no preview, no deletion order, no rollback, no audit
