@@ -322,7 +322,7 @@ section('the wiring: the builder is exported and the brief layer asks for it');
 eq(typeof win.fbBriefGame, 'function', 'window.fbBriefGame is reachable from outside the football IIFE');
 eq(typeof win.fbBriefResearch, 'function', 'and the name the brief layer has always used still resolves');
 ok(APP.indexOf('window.fbBriefGame=fbBriefGame;') > 0, 'the export line exists in the shipped file');
-ok(/var build=window\.fbBriefGame\|\|window\.fbBriefResearch;/.test(APP),
+ok(/window\.fbBriefGame\|\|window\.fbBriefResearch/.test(APP),
   'EDBRIEF.researchFor() reaches the canonical builder by its exported name');
 ok(/research:researchFor\(q, first\)/.test(APP), 'and every CFB game snapshot is offered that research');
 (function () {

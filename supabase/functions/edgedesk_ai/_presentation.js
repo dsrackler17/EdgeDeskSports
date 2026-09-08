@@ -1515,7 +1515,7 @@
        is actually going to be on it. */
     if (!whyLines.length) whyLines.push(v === 'PASS' ? 'EdgeDesk does not see enough value at the current price.'
       : s.odds ? 'EdgeDesk’s current research favors this number.'
-      : ctx.research_follows ? 'There is no number to favor yet — no book has posted this game. EdgeDesk’s research on the matchup is above.'
+      : ctx.research_follows ? 'No book has posted this game, so there is no price for EdgeDesk to have an opinion about. Its research on the matchup is above.'
       : 'There is no number to favor yet — no book has posted this game.');
     var risk = (s.biggest_risk && s.biggest_risk.text) || (s.watch && s.watch.text) || 'The price could move before kickoff.';
     var change = (s.change_trigger && s.change_trigger.text) || 'A worse price would change the call.';
@@ -1791,12 +1791,22 @@
         volatility_discriminates: p.outcome_range.volatility_discriminates === false ? false : null,
         note: txt(p.outcome_range.note) };
     }
+    var ml = null;
+    if (p.moneyline && txt(p.moneyline.home_odds) && txt(p.moneyline.away_odds)) {
+      ml = { home: txt(p.moneyline.home) || 'Home', away: txt(p.moneyline.away) || 'Away',
+        home_odds: txt(p.moneyline.home_odds), away_odds: txt(p.moneyline.away_odds),
+        note: txt(p.moneyline.note) };
+    }
     return { priced: true,
       fair_spread_text: txt(p.fair_spread_text), favourite: txt(p.favourite), underdog: txt(p.underdog),
-      margin: txt(p.margin), total: txt(p.total),
+      margin: txt(p.margin), total: txt(p.total), moneyline: ml,
       score: sc, score_absent_reason: txt(p.score_absent_reason),
       win_prob: wp, outcome_range: rg,
       confidence_pct: num(p.confidence_pct), inputs_reached_pct: num(p.inputs_reached_pct),
+      /* A MODEL THAT PUBLISHES NO CONFIDENCE SCORE SAYS SO. The tile is never
+         filled with a number nobody computed. */
+      confidence_absent_reason: txt(p.confidence_absent_reason),
+      sample_games: num(p.sample_games),
       status: txt(p.status), status_note: txt(p.status_note),
       engine: txt(p.engine), validation: txt(p.validation) };
   }
@@ -1805,12 +1815,13 @@
   function marketOf(m) {
     if (!m) return null;
     if (!m.available) {
-      return { available: false, model: txt(m.model),
+      return { available: false, model: txt(m.model), total_model: txt(m.total_model),
         headline: txt(m.headline) || 'No sportsbook spread is currently joined to this game.',
         note: txt(m.note) };
     }
     return { available: true, model: txt(m.model), market: txt(m.market),
       difference: txt(m.difference), total_model: txt(m.total_model), total_market: txt(m.total_market),
+      total_difference: txt(m.total_difference), reference: txt(m.reference),
       book: txt(m.book), capture_age: txt(m.capture_age), stale: !!m.stale,
       classification: txt(m.classification), classification_note: txt(m.classification_note),
       note: txt(m.note) };
@@ -1861,8 +1872,13 @@
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t, favours: txt(d.favours) } : null;
       }).filter(Boolean).slice(0, 6);
-      drivers = { rows: drows, basis: txt(r.drivers.basis), excluded: txt(r.drivers.excluded), empty: txt(r.drivers.empty) };
-      if (!drows.length && !drivers.empty && !drivers.excluded) drivers = null;
+      var trows = (Array.isArray(r.drivers.total_rows) ? r.drivers.total_rows : []).map(function (d) {
+        var t = txt(d && d.text);
+        return t ? { points: txt(d.points), points_n: num(d.points_n), text: t } : null;
+      }).filter(Boolean).slice(0, 6);
+      drivers = { rows: drows, total_rows: trows, basis: txt(r.drivers.basis),
+        excluded: txt(r.drivers.excluded), empty: txt(r.drivers.empty) };
+      if (!drows.length && !trows.length && !drivers.empty && !drivers.excluded) drivers = null;
     }
     var advantages = null;
     if (r.advantages) {
@@ -1893,6 +1909,30 @@
         }).filter(Boolean).slice(0, 5),
         note: txt(r.roster.note) };
     }
+    /* PANELS are the sport-specific blocks — the NFL brief's quarterback,
+       injury and situation sections. They are a GENERIC shape on purpose: a
+       two-column table plus its reads, so a sport can add a section without
+       a renderer of its own and without a second copy of this layout. */
+    var panels = (Array.isArray(r.panels) ? r.panels : []).map(function (x) {
+      var t = txt(x && x.title);
+      if (!t) return null;
+      var rows = (Array.isArray(x.rows) ? x.rows : []).map(function (y) {
+        var k = txt(y && y.k);
+        if (!k) return null;
+        var v = txt(y.v);
+        /* a row about the GAME rather than about a team spans both columns —
+           printing "not on file" opposite a stadium name is a fact about the
+           layout, not about the data. */
+        if (y.span && v != null) return { k: k, note: txt(y.note), v: v, span: true };
+        var a = txt(y.a), hh = txt(y.h);
+        return (a == null && hh == null) ? null : { k: k, note: txt(y.note), a: a, h: hh };
+      }).filter(Boolean).slice(0, 14);
+      var reads = txtList(x.reads, 6);
+      if (!rows.length && !reads.length) return null;
+      var c = x.cols || [];
+      return { title: t, note: txt(x.note), cols: [txt(c[0]) || 'Away', txt(c[1]) || 'Home'],
+        rows: rows, reads: reads };
+    }).filter(Boolean).slice(0, 6);
     var cases = null;
     if (r.cases) {
       function side(c) {
@@ -1932,6 +1972,7 @@
       advantages: advantages,
       matchups: matchups,
       matchups_note: matchupsNote,
+      panels: panels,
       roster: roster,
       cases: cases,
       uncertainty: uncertainty,
@@ -2022,15 +2063,20 @@
     }
     /* `v` is markup and is inserted raw; `sub` is text and tile() escapes it.
        Escaping the subtitle here as well printed "Florida A&amp;M". */
+    if (p.total) h += tile('EdgeDesk fair total', esc(p.total), 'the model\u2019s own total, before any book is consulted');
     if (p.win_prob) h += tile('Win probability',
       esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%', p.win_prob.away + ' ' + p.win_prob.away_pct + '%');
+    if (p.moneyline) h += tile('Fair moneyline',
+      esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds), p.moneyline.away + ' ' + p.moneyline.away_odds);
     if (p.outcome_range) h += tile('Outcome range',
       esc(p.outcome_range.p10) + ' → ' + esc(p.outcome_range.p90),
       [p.outcome_range.median ? 'median ' + p.outcome_range.median : null,
        p.outcome_range.sigma ? 'sigma ' + p.outcome_range.sigma : null,
-       p.outcome_range.basis_team ? p.outcome_range.basis_team + '’s perspective' : null].filter(Boolean).join(' · '));
+       p.outcome_range.basis_team ? 'from ' + p.outcome_range.basis_team : null].filter(Boolean).join(' · '));
     if (p.confidence_pct != null) h += tile('Data confidence', p.confidence_pct + '%',
       p.inputs_reached_pct != null ? p.inputs_reached_pct + '% of the model’s inputs reached it' : null);
+    else if (p.confidence_absent_reason) h += tile('Data confidence',
+      '<span class="edb-nodata">not published</span>', p.confidence_absent_reason, 'wide');
     if (p.status) h += tile('Model status', esc(p.status), null);
     h += '</div>';
     /* the score tile already carries the absent reason as its subtitle, so
@@ -2064,7 +2110,8 @@
     if (!mk.available) {
       return resSec('Market check')
         + '<div class="edb-nomkt"><p><b>' + esc(mk.headline) + '</b></p>'
-        + (mk.model ? '<p>EdgeDesk fair spread: <b>' + esc(mk.model) + '</b>.</p>' : '')
+        + (mk.model ? '<p>EdgeDesk fair spread: <b>' + esc(mk.model) + '</b>'
+          + (mk.total_model ? ' · fair total <b>' + esc(mk.total_model) + '</b>' : '') + '.</p>' : '')
         + (mk.note ? '<p>' + esc(mk.note) + '</p>' : '') + '</div>';
     }
     var h = resSec('Market check') + '<div class="edb-mkt">';
@@ -2075,7 +2122,12 @@
     h += box('EdgeDesk', mk.model || '—', mk.total_model ? 'total ' + mk.total_model : null);
     h += box('Market', mk.market || '—', [mk.book, mk.capture_age, mk.stale ? 'stale' : null].filter(Boolean).join(' · ') || null);
     h += box('Difference', mk.difference || '—', mk.classification || null);
+    if (mk.total_model || mk.total_market) {
+      h += box('EdgeDesk total', mk.total_model || '—', null);
+      h += box('Market total', mk.total_market || '—', mk.total_difference ? mk.total_difference + ' apart' : null);
+    }
     h += '</div>';
+    if (mk.reference) h += '<p class="edb-secnote">' + esc(mk.reference) + '</p>';
     if (mk.classification_note) h += '<p class="edb-secnote">' + esc(mk.classification_note) + '</p>';
     if (mk.note) h += '<p class="edb-secnote">' + esc(mk.note) + '</p>';
     return h;
@@ -2114,6 +2166,14 @@
             + '<span class="t">' + esc(d.text) + '</span></div>';
         }).join('') + '</div>';
       } else if (res.drivers.empty) h += '<p class="edb-secnote">' + esc(res.drivers.empty) + '</p>';
+      if (res.drivers.total_rows && res.drivers.total_rows.length) {
+        h += '<div class="edb-h">And behind the total</div><div class="edb-drv">'
+          + res.drivers.total_rows.map(function (d) {
+            var pn = d.points_n == null ? 0 : d.points_n;
+            return '<div class="edb-d"><span class="p ' + (pn >= 0 ? 'pos' : 'neg') + '">' + esc(d.points || '') + '</span>'
+              + '<span class="b"></span><span class="t">' + esc(d.text) + '</span></div>';
+          }).join('') + '</div>';
+      }
       if (res.drivers.excluded) h += '<p class="edb-secnote">' + esc(res.drivers.excluded) + '</p>';
     }
     /* ---- 3. the head-to-head. THE PIECE THE BRIEF EXISTS FOR. ---- */
@@ -2179,6 +2239,22 @@
           + '<p class="mp">' + esc(m.read) + '</p></div>';
       }).join('') + '</div>';
     }
+    /* ---- the sport's own sections: quarterback, injuries, situation ---- */
+    (res.panels || []).forEach(function (pn) {
+      h += resSec(pn.title, pn.note);
+      if (pn.rows.length) {
+        h += '<div class="edb-tblwrap"><table class="edb-tbl"><thead><tr><th></th><th>'
+          + esc(pn.cols[0]) + '</th><th>' + esc(pn.cols[1]) + '</th></tr></thead><tbody>';
+        pn.rows.forEach(function (x) {
+          h += '<tr><th scope="row">' + esc(x.k) + (x.note ? '<span class="n">' + esc(x.note) + '</span>' : '') + '</th>'
+            + (x.span ? '<td colspan="2">' + esc(x.v) + '</td>'
+              : '<td>' + (x.a ? esc(x.a) : '<span class="edb-nodata">not on file</span>') + '</td>'
+                + '<td>' + (x.h ? esc(x.h) : '<span class="edb-nodata">not on file</span>') + '</td>') + '</tr>';
+        });
+        h += '</tbody></table></div>';
+      }
+      if (pn.reads.length) h += '<ul class="edb-why">' + pn.reads.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+    });
     /* ---- 6. roster construction ---- */
     if (res.roster && res.roster.rows.length) {
       h += resSec('Roster construction and continuity', res.roster.note);
@@ -2655,15 +2731,24 @@
      Definitions come from CONCEPTS so the app, the brief and the share page
      cannot drift apart. */
   var HOWTO_KEYS = ['verdict', 'price_limit', 'edgedesk_comparison', 'benchmark_book', 'book_count', 'price_age'];
-  function howToReadHTML() {
-    var items = HOWTO_KEYS.map(function (k) {
+  /* A GLOSSARY EXPLAINS THE PAGE IT IS ON. Defining "price limit" and
+     "benchmark book" under a brief that carries no price and no verdict put
+     betting vocabulary on a research document that never uses it, which is
+     the framing this layer exists to keep off the page. With no captured
+     price the list keeps only the terms the page actually uses. */
+  var HOWTO_KEYS_NO_PRICE = ['edgedesk_comparison'];
+  function howToReadHTML(hasPrice) {
+    var items = (hasPrice === false ? HOWTO_KEYS_NO_PRICE : HOWTO_KEYS).map(function (k) {
       var c = CONCEPTS[k === 'price_limit' ? 'price_limit' : k];
       if (!c) return '';
       return '<dt>' + esc(c.short) + '</dt><dd>' + esc(c.simple) + (c.guard ? ' <i>' + esc(c.guard) + '</i>' : '') + '</dd>';
     }).join('');
     if (!items) return '';
     return '<details class="edb-howto"><summary>How to read this brief</summary><dl>' + items
-      + '<dt>What this is not</dt><dd>EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins, and a call is never a promise. 21+. Gamble responsibly — 1-800-GAMBLER.</dd>'
+      + '<dt>What this is not</dt><dd>' + (hasPrice === false
+        ? 'EdgeDesk research is not a prediction of who wins and not a bet. No sportsbook price is joined to this game, so nothing on this page is a call on one.'
+        : 'EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins, and a call is never a promise.')
+      + ' 21+. Gamble responsibly — 1-800-GAMBLER.</dd>'
       + '</dl></details>';
   }
 
@@ -2714,7 +2799,10 @@
           h += '<div class="edb-h edb-sec">EdgeDesk’s market call</div>'
             + '<p class="edb-nomkt">' + esc(noVerdictSentence(pub.research)) + '</p>';
         } else {
-          h += '<div class="edb-h edb-sec">The EdgeDesk call</div>';
+          /* THE PRIMARY PRODUCT IS THE RESEARCH ABOVE. On a brief that carries
+             research the market verdict is a section of it, headed as one —
+             the page no longer opens on the word "call". */
+          h += '<div class="edb-h edb-sec">' + (pub.research ? 'EdgeDesk’s market call' : 'The EdgeDesk call') + '</div>';
           h += '<p class="edb-lede">' + esc(b.lede) + '</p>';
           h += briefCardHTML(pc, { numbered: false, showEvent: false, hideAnswer: true });
         }
@@ -2723,7 +2811,10 @@
     /* On a slate or a rankings page the research still sits under the call. */
     if (snap.report_type === 'SLATE' || snap.report_type === 'RANKINGS') h += researchHTML(pub.research);
     if (opts.grades) h += briefResultsHTML(opts.grades);
-    if (snap.report_type !== 'RANKINGS') h += howToReadHTML();
+    if (snap.report_type !== 'RANKINGS') {
+      var anyPrice = (pub.cards || []).some(function (pc) { return !!(pc.brief && pc.brief.call && pc.brief.call.odds); });
+      h += howToReadHTML(anyPrice || !pub.research);
+    }
     /* A rankings brief has no price to check, so it does not claim to have
        checked one — it stamps the build the numbers came from instead. */
     h += '<footer class="edb-ft">' + (snap.report_type === 'RANKINGS' ? '' : '<div class="edb-h">EdgeDesk data check</div><p><b>' + esc(ds.status || 'Current') + '</b>'
@@ -2754,13 +2845,18 @@
       if (p.score) h += '<p><strong>Projected score:</strong> ' + esc(p.score.away.team) + ' ' + esc(p.score.away.points)
         + ', ' + esc(p.score.home.team) + ' ' + esc(p.score.home.points) + '.' + (p.score.note ? ' ' + esc(p.score.note) : '') + '</p>';
       else if (p.score_absent_reason) h += '<p><strong>Projected score:</strong> not published — ' + esc(p.score_absent_reason) + '</p>';
+      if (p.total) h += '<p>EdgeDesk fair total: ' + esc(p.total) + '.</p>';
       if (p.win_prob) h += '<p>Win probability: ' + esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%, ' + esc(p.win_prob.away) + ' ' + p.win_prob.away_pct + '%.</p>';
+      if (p.moneyline) h += '<p>Fair moneyline: ' + esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds)
+        + ', ' + esc(p.moneyline.away) + ' ' + esc(p.moneyline.away_odds) + '. ' + esc(p.moneyline.note || '') + '</p>';
       if (p.outcome_range) h += '<p>Outcome range ' + esc(p.outcome_range.p10) + ' to ' + esc(p.outcome_range.p90)
         + (p.outcome_range.sigma ? ', sigma ' + esc(p.outcome_range.sigma) : '')
         + (p.outcome_range.basis_team ? ', from ' + esc(p.outcome_range.basis_team) + '\u2019s perspective' : '') + '.</p>';
       if (p.confidence_pct != null) h += '<p>Data confidence ' + p.confidence_pct + '%'
         + (p.inputs_reached_pct != null ? ' · ' + p.inputs_reached_pct + '% of the model\u2019s inputs reached it' : '')
         + (p.status ? ' · model status ' + esc(p.status) : '') + '.</p>';
+      else if (p.confidence_absent_reason) h += '<p>Data confidence: not published. ' + esc(p.confidence_absent_reason)
+        + (p.status ? ' Model status ' + esc(p.status) + '.' : '') + '</p>';
       if (p.validation) h += '<p><em>' + esc(p.validation) + '</em></p>';
     } else if (p) {
       h += '<h3>EdgeDesk projection</h3><p>EdgeDesk has not priced this matchup yet'
@@ -2772,6 +2868,10 @@
     if (res.drivers && res.drivers.rows.length) {
       h += '<h3>Why EdgeDesk prices it here</h3><ul>'
         + res.drivers.rows.map(function (d) { return '<li>' + esc(d.points || '') + ' — ' + esc(d.text) + '</li>'; }).join('') + '</ul>';
+      if (res.drivers.total_rows && res.drivers.total_rows.length) {
+        h += '<h4>And behind the total</h4><ul>'
+          + res.drivers.total_rows.map(function (d) { return '<li>' + esc(d.points || '') + ' — ' + esc(d.text) + '</li>'; }).join('') + '</ul>';
+      }
       if (res.drivers.excluded) h += '<p><em>' + esc(res.drivers.excluded) + '</em></p>';
     }
     function cmsTable(cols, rowsOf) {
@@ -2821,6 +2921,17 @@
         + (res.matchups_note ? '<p>' + esc(res.matchups_note) + '</p>' : '')
         + res.matchups.map(function (m) { return '<h4>' + esc(m.title) + '</h4><p>' + esc(m.read) + '</p>'; }).join('');
     }
+    (res.panels || []).forEach(function (pn) {
+      h += '<h3>' + esc(pn.title) + '</h3>' + (pn.note ? '<p>' + esc(pn.note) + '</p>' : '');
+      if (pn.rows.length) h += cmsTable(pn.cols, function () {
+        return pn.rows.map(function (x) {
+          return x.span
+            ? '<tr><th>' + esc(x.k) + '</th><td colspan="2">' + esc(x.v) + '</td></tr>'
+            : '<tr><th>' + esc(x.k) + '</th><td>' + esc(x.a || 'not on file') + '</td><td>' + esc(x.h || 'not on file') + '</td></tr>';
+        }).join('');
+      });
+      if (pn.reads.length) h += '<ul>' + pn.reads.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+    });
     if (res.roster) {
       h += '<h3>Roster construction and continuity</h3>';
       if (res.roster.highlights.length) h += '<ul>' + res.roster.highlights.map(function (x) { return '<li>' + esc(x.text) + '</li>'; }).join('') + '</ul>';
@@ -2849,11 +2960,14 @@
     if (mk) {
       h += '<h3>Market check</h3>';
       if (!mk.available) h += '<p>' + esc(mk.headline) + '</p>'
-        + (mk.model ? '<p>EdgeDesk fair spread: ' + esc(mk.model) + '.</p>' : '')
+        + (mk.model ? '<p>EdgeDesk fair spread: ' + esc(mk.model) + (mk.total_model ? ' · fair total ' + esc(mk.total_model) : '') + '.</p>' : '')
         + (mk.note ? '<p>' + esc(mk.note) + '</p>' : '');
       else h += '<p>EdgeDesk ' + esc(mk.model || '—') + ' · market ' + esc(mk.market || '—')
         + (mk.difference ? ' · difference ' + esc(mk.difference) : '')
         + (mk.book ? ' · ' + esc(mk.book) : '') + (mk.capture_age ? ' · ' + esc(mk.capture_age) : '') + '.</p>'
+        + ((mk.total_model || mk.total_market) ? '<p>EdgeDesk total ' + esc(mk.total_model || '—') + ' · market total ' + esc(mk.total_market || '—')
+          + (mk.total_difference ? ' · ' + esc(mk.total_difference) + ' apart' : '') + '.</p>' : '')
+        + (mk.reference ? '<p>' + esc(mk.reference) + '</p>' : '')
         + (mk.classification_note ? '<p>' + esc(mk.classification_note) + '</p>' : '');
     }
     if (res.state) h += '<h3>Research state</h3><p><strong>' + esc(res.state.label) + '</strong>'
@@ -2899,7 +3013,7 @@
       var b = pc.brief, pl = b.plain || null, s = '';
       var call = callLine(b, pl);
       if (numbered) s += '<h2>#' + pc.rank + ' ' + esc(call) + (b.event_label ? ' — ' + esc(b.event_label) : '') + '</h2>';
-      else { s += '<h2>The EdgeDesk call</h2><p><strong>' + esc(call) + '</strong></p>'; }
+      else { s += '<h2>' + (pub.research ? 'EdgeDesk’s market call' : 'The EdgeDesk call') + '</h2><p><strong>' + esc(call) + '</strong></p>'; }
       if (pl && pl.status_line) s += '<p><em>' + esc(pl.status_line) + ((pl.answer && numbered) ? ' ' + esc(pl.answer) : '') + '</em></p>';
       if (pl && pl.ticket) s += '<p>At the sportsbook: ' + esc(pl.ticket) + (b.call.odds ? ' · ' + esc(b.call.odds) : '') + (b.call.book ? ' · ' + esc(b.call.book) : '') + '</p>';
       if (pl && pl.price_limit && pl.price_limit.value) s += '<p><strong>' + esc(pl.price_limit.label) + ': ' + esc(pl.price_limit.value) + '</strong> ' + esc(pl.price_limit.sentence) + '</p>';
@@ -2959,7 +3073,7 @@
       var b = pc.brief, pl = b.plain || null;
       var call = callLine(b, pl);
       if (numbered) L.push('#' + pc.rank + '  ' + call + (b.event_label ? '  —  ' + b.event_label : ''));
-      else { L.push('THE EDGEDESK CALL'); L.push(call); }
+      else { L.push(pub.research ? 'EDGEDESK’S MARKET CALL' : 'THE EDGEDESK CALL'); L.push(call); }
       if (pl && pl.status_line) L.push(pl.status_line + ((pl.answer && numbered) ? ' ' + pl.answer : ''));
       if (pl && pl.ticket) L.push('At the sportsbook: ' + pl.ticket + (b.call.odds ? ' · ' + b.call.odds : '') + (b.call.book ? ' · ' + b.call.book : ''));
       if (pl && pl.price_limit && pl.price_limit.value) { L.push((pl.price_limit.label + ': ' + pl.price_limit.value).toUpperCase()); L.push(pl.price_limit.sentence); }
@@ -3049,13 +3163,16 @@
         L.push('  Fair spread: ' + (rp.fair_spread_text || '—'));
         if (rp.score) L.push('  Projected score: ' + rp.score.away.team + ' ' + rp.score.away.points + ', ' + rp.score.home.team + ' ' + rp.score.home.points);
         else { L.push('  Projected score: not published'); if (rp.score_absent_reason) L.push('    ' + rp.score_absent_reason); }
+        if (rp.total) L.push('  Fair total: ' + rp.total);
         if (rp.win_prob) L.push('  Win probability: ' + rp.win_prob.home + ' ' + rp.win_prob.home_pct + '%, ' + rp.win_prob.away + ' ' + rp.win_prob.away_pct + '%');
+        if (rp.moneyline) L.push('  Fair moneyline: ' + rp.moneyline.home + ' ' + rp.moneyline.home_odds + ', ' + rp.moneyline.away + ' ' + rp.moneyline.away_odds);
         if (rp.outcome_range) L.push('  Outcome range: ' + rp.outcome_range.p10 + ' to ' + rp.outcome_range.p90
           + (rp.outcome_range.median ? ', median ' + rp.outcome_range.median : '')
           + (rp.outcome_range.sigma ? ', sigma ' + rp.outcome_range.sigma : '')
-          + (rp.outcome_range.basis_team ? ' (' + rp.outcome_range.basis_team + '\u2019s perspective)' : ''));
+          + (rp.outcome_range.basis_team ? ' (from the perspective of ' + rp.outcome_range.basis_team + ')' : ''));
         if (rp.confidence_pct != null) L.push('  Data confidence: ' + rp.confidence_pct + '%'
           + (rp.inputs_reached_pct != null ? ', ' + rp.inputs_reached_pct + '% of inputs reached the model' : ''));
+        else if (rp.confidence_absent_reason) { L.push('  Data confidence: not published'); L.push('    ' + rp.confidence_absent_reason); }
         if (rp.status) L.push('  Model status: ' + rp.status);
         if (rp.validation) L.push('  ' + rp.validation);
       } else if (rp) {
@@ -3068,12 +3185,16 @@
       if (res.drivers && res.drivers.rows.length) {
         L.push(''); L.push('WHY EDGEDESK PRICES IT HERE');
         res.drivers.rows.forEach(function (d) { L.push('  ' + pad(d.points || '', 8) + d.text); });
+        if (res.drivers.total_rows && res.drivers.total_rows.length) {
+          L.push(''); L.push('  AND BEHIND THE TOTAL');
+          res.drivers.total_rows.forEach(function (d) { L.push('  ' + pad(d.points || '', 8) + d.text); });
+        }
         if (res.drivers.excluded) L.push('  ' + res.drivers.excluded);
       }
       function textTable(cols, rows) {
         L.push('');
-        L.push(pad('', 30) + pad(cols[0], 24) + cols[1]);
-        rows.forEach(function (x) { L.push(pad(x.k, 30) + pad(x.a, 24) + x.h); });
+        L.push(pad('', 38) + pad(cols[0], 26) + cols[1]);
+        rows.forEach(function (x) { L.push(pad(x.k, 38) + pad(x.a, 26) + x.h); });
       }
       if (res.compare) {
         L.push(''); L.push('TEAM RESEARCH HEAD-TO-HEAD');
@@ -3116,6 +3237,14 @@
         if (res.matchups_note) L.push(res.matchups_note);
         res.matchups.forEach(function (m) { L.push(''); L.push('  ' + m.title); L.push('    ' + m.read); });
       }
+      (res.panels || []).forEach(function (pn) {
+        L.push(''); L.push(pn.title.toUpperCase());
+        if (pn.note) L.push(pn.note);
+        if (pn.rows.length) textTable(pn.cols, pn.rows.map(function (x) {
+          return x.span ? { k: x.k, a: x.v, h: '' } : { k: x.k, a: x.a || 'not on file', h: x.h || 'not on file' };
+        }));
+        if (pn.reads.length) { L.push(''); pn.reads.forEach(function (t) { L.push('  · ' + t); }); }
+      });
       if (res.roster) {
         L.push(''); L.push('ROSTER CONSTRUCTION AND CONTINUITY');
         res.roster.highlights.forEach(function (x) { L.push('  · ' + x.text); });
@@ -3148,12 +3277,15 @@
         L.push(''); L.push('MARKET CHECK');
         if (!rmk.available) {
           L.push('  ' + rmk.headline);
-          if (rmk.model) L.push('  EdgeDesk fair spread: ' + rmk.model);
+          if (rmk.model) L.push('  EdgeDesk fair spread: ' + rmk.model + (rmk.total_model ? ' · fair total ' + rmk.total_model : ''));
           if (rmk.note) L.push('  ' + rmk.note);
         } else {
           L.push('  EdgeDesk  ' + (rmk.model || '—'));
           L.push('  Market    ' + (rmk.market || '—') + (rmk.book ? '  (' + rmk.book + (rmk.capture_age ? ', ' + rmk.capture_age : '') + ')' : ''));
           if (rmk.difference) L.push('  Difference ' + rmk.difference);
+          if (rmk.total_model || rmk.total_market) L.push('  Totals    EdgeDesk ' + (rmk.total_model || '—') + ' · market ' + (rmk.total_market || '—')
+            + (rmk.total_difference ? ' · ' + rmk.total_difference + ' apart' : ''));
+          if (rmk.reference) L.push('  ' + rmk.reference);
           if (rmk.classification_note) L.push('  ' + rmk.classification_note);
         }
       }

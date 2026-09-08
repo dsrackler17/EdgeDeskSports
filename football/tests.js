@@ -222,6 +222,31 @@
     chk('predictGame components present', isFinite(full.components.koerner_spread)
       && isFinite(full.components.sharp_total));
     chk('predictGame cover probs present', !!full.cover && !!full.over);
+    /* THE PUBLISHED DRIVERS ARE THE MODEL, NOT A STORY ABOUT IT. Both NFL
+       models are linear, so the per-feature products the engine already
+       computes ARE its contributions — and they must add back up to the
+       number it published, or the brief that prints them is lying about
+       where the number came from. */
+    (function () {
+      var c = full.contributions;
+      chk('predictGame publishes the additive spread terms', !!c && c.spread.length === P.nfl.spread_feats.length + 1
+        && c.ctx.length === P.nfl.ctx_feats.length + 1);
+      chk('predictGame publishes the additive total terms', !!c && c.total.length === P.nfl.total_feats.length + 1);
+      function sum(a) { var s = 0, i; for (i = 0; i < a.length; i++) s += a[i].points; return s; }
+      var sS = c ? sum(c.spread.concat(c.ctx)) : NaN, sT = c ? sum(c.total) : NaN;
+      chk('spread contributions reconcile to the fair spread', Math.abs(sS - full.model.fair_spread) < 1e-9,
+        { sum: sS, fair: full.model.fair_spread });
+      chk('total contributions reconcile to the fair total', Math.abs(sT - full.model.fair_total) < 1e-9,
+        { sum: sT, fair: full.model.fair_total });
+      var r = full.outcome_range;
+      chk('predictGame publishes an outcome range off its own learned PMF', !!r
+        && (r.basis === 'margin_pmf_by_spread' || r.basis === 'pooled_residual')
+        && r.q['0.1'] <= r.q['0.5'] && r.q['0.5'] <= r.q['0.9'], r);
+      /* a spread outside the conditioned table falls back, and says so */
+      var far = E.dist.marginQuantiles('nfl', 40, [0.1, 0.5, 0.9]);
+      chk('a fair spread past the conditioned table falls back to the pooled residual',
+        !!far && far.basis === 'pooled_residual' && far.q['0.5'] > 20, far);
+    })();
     var full2 = E.predictGame({ sport: 'nfl', state: nst,
       game: { home: 'KC', away: 'BUF', week: 10 },
       market: { spread_line: -3.5, total_line: 47.5 },
