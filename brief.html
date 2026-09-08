@@ -1718,9 +1718,12 @@ a.pg-btn{text-decoration:none;display:inline-block}
     var v = s.verdict;
     var pl = s.plain || {};
     var whyLines = (s.why || []).map(function (w) { return w.text; });
+    /* "below" is a promise about the page. It is only made when the research
+       is actually going to be on it. */
     if (!whyLines.length) whyLines.push(v === 'PASS' ? 'EdgeDesk does not see enough value at the current price.'
       : s.odds ? 'EdgeDesk’s current research favors this number.'
-      : 'There is no number to favor yet — no book has posted this game. EdgeDesk’s research on the matchup is below.');
+      : ctx.research_follows ? 'There is no number to favor yet — no book has posted this game. EdgeDesk’s research on the matchup is below.'
+      : 'There is no number to favor yet — no book has posted this game.');
     var risk = (s.biggest_risk && s.biggest_risk.text) || (s.watch && s.watch.text) || 'The price could move before kickoff.';
     var change = (s.change_trigger && s.change_trigger.text) || 'A worse price would change the call.';
     var goodTo = s.playable_to || {};

@@ -195,6 +195,14 @@ jobs:
       - name: A brief carries the research, and never carries a null
         run: node tools/football/brief_research.test.js
 
+      # The suite above extracted those builders by name and ran them in a flat
+      # sandbox — they passed while being completely unreachable in a browser,
+      # because app.html's football engine is an IIFE and they had no
+      # `window.fbX = fbX` line. This one EXECUTES the module and calls them
+      # through window, the way the brief layer does.
+      - name: The brief layer can actually reach the football module
+        run: node tools/football/brief_wiring.test.js
+
       # The product hierarchy the chrome claims: Research first and default,
       # Edges beside it, Faults reachable without a tab of its own.
       - name: The navigation says what the product is
