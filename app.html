@@ -20786,6 +20786,44 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .edrec-res.win{color:var(--pos)}.edrec-res.loss{color:var(--neg)}.edrec-res.push{color:var(--warn)}.edrec-res.pend{color:var(--faint)}
 .edb-resnote{font-size:12.5px!important;color:var(--dim)!important;margin-top:8px!important}
 @media(max-width:480px){.edb{padding:16px 14px 14px;border-radius:12px}.edb-title{font-size:19px}.edb-verdict{font-size:19px}.edb-sel{font-size:17px}.edb-pick{padding:13px 13px}.edb-cmp-r .k{flex:1 1 100%;min-width:0}.edb-cmp-r b{font-size:19px}}
+/* ---- research + rankings: the part of a brief that is not a price ------- */
+.edb-res{margin-top:4px}
+.edb-proj{border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:10px 0 4px;background:rgba(255,255,255,.02)}
+.edb-proj>.k{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.edb-projline{display:flex;gap:22px;flex-wrap:wrap;margin-top:6px}
+.edb-sc{display:flex;align-items:baseline;gap:8px}
+.edb-sc i{font-style:normal;font-size:14.5px;color:var(--text);font-weight:600}
+.edb-sc b{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:26px;font-weight:800;letter-spacing:-.01em}
+.edb-projnote{margin:7px 0 0!important;font-size:12.5px!important;color:var(--dim)!important;line-height:1.5}
+.edb-resstate{margin:10px 0 0;font-size:14px;line-height:1.55}
+.edb-resstate b{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}
+.edb-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0 2px;border:1px solid var(--border);border-radius:10px}
+.edb-tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.edb-tbl th,.edb-tbl td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:baseline;white-space:nowrap}
+.edb-tbl tbody tr:last-child th,.edb-tbl tbody tr:last-child td{border-bottom:none}
+.edb-tbl thead th{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.edb-tbl tbody th{font-weight:600;color:var(--dim);font-size:13px}
+.edb-tbl tbody th .n{display:block;font-weight:400;font-size:11.5px;color:var(--faint);white-space:normal;max-width:220px}
+.edb-tbl td{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:var(--text)}
+.edb-tbl td.num{text-align:right}
+.edb-tbl td .n{font-family:inherit;font-weight:400;color:var(--faint);margin-left:5px;font-size:11.5px}
+.edb-tbl td.tm{font-family:inherit;font-weight:400}
+.edb-tbl td.tm b{font-weight:700}
+.edb-tbl td.tm .n{display:inline;margin-left:6px}
+.edb-tbl td.rk{color:var(--dim);text-align:right;width:1%}
+.edb-tbl td.mv.up{color:var(--pos)}
+.edb-tbl td.mv.down{color:var(--neg)}
+.edb-nodata{font-family:'Inter',system-ui,sans-serif;font-weight:400;color:var(--faint);font-style:italic;font-size:12.5px}
+.edb-miss li{color:var(--dim)}
+.edb-ressrc{margin:10px 0 0!important;font-size:12px!important;color:var(--faint)!important;line-height:1.5}
+.edb-rksub{margin:2px 0 0;font-size:14px;color:var(--dim);line-height:1.55}
+.edb-rksec{margin:12px 0 0}
+.edb-rksec h3{margin:0 0 4px;font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+.edb-rksec p{margin:0;font-size:14.5px;line-height:1.55}
+.edb-rkfoot{border-top:1px solid var(--border);margin-top:18px;padding-top:10px}
+.edb-rkfoot p{margin:0 0 4px;font-size:12.5px;color:var(--dim);line-height:1.55}
+.edb-nomkt{margin:10px 0 0;font-size:14px;line-height:1.6;color:var(--dim);border-left:2px solid var(--border);padding-left:12px}
+@media(max-width:480px){.edb-sc b{font-size:22px}.edb-tbl th,.edb-tbl td{padding:7px 9px;font-size:12.5px}}
 @media print{
   html,body{background:#fff;color:#111}
   .edb{background:#fff;color:#111;border-color:#ccc;box-shadow:none;border-radius:0;padding:0}
@@ -20801,6 +20839,31 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   .edb-howto:not([open])>dl{display:block!important}
   .edb-kicker{color:#1a4fb4}
   .dc-bet .edb-verdict{color:#157a4f}.dc-lean .edb-verdict{color:#9a6a12}.dc-wait .edb-verdict{color:#5b4ec7}.dc-pass .edb-verdict{color:#555}.dc-failed .edb-verdict{color:#b3391f}
+  .edb-proj,.edb-tblwrap{border-color:#ccc!important;background:#fff!important;break-inside:avoid}
+  .edb-tbl th,.edb-tbl td{border-bottom-color:#ddd!important}
+  .edb-tbl tbody th,.edb-tbl thead th,.edb-tbl td.rk,.edb-tbl td .n,.edb-tbl tbody th .n,.edb-proj>.k,.edb-projnote,.edb-ressrc,.edb-rksub,.edb-rkfoot p,.edb-miss li{color:#555!important}
+  .edb-tbl td,.edb-sc i,.edb-sc b,.edb-resstate,.edb-rksec h3,.edb-rksec p{color:#111!important}
+  .edb-tbl td.mv.up{color:#157a4f!important}.edb-tbl td.mv.down{color:#b3391f!important}
+  .edb-nodata{color:#777!important}
+  .edb-rkfoot{border-top-color:#ccc!important}
+  .edb-rktbl{font-size:11px!important}
+  .edb-rktbl tr{break-inside:avoid}
+  .edb-rksec{break-inside:avoid}
+  /* A PRINTED TABLE IS NOT A SCROLL CONTAINER. On screen the comparison
+     scrolls sideways on a narrow phone; on paper there is nowhere to scroll
+     to, so the container opens up, the cells wrap, and the table is allowed
+     to break across pages with its header repeating — otherwise a 25-row
+     Top 25 refuses to split and leaves the first page blank. */
+  .edb-tblwrap{display:contents}
+  .edb-tbl{break-inside:auto;font-size:10.5px}
+  .edb-tbl thead{display:table-header-group}
+  .edb-tbl tfoot{display:table-footer-group}
+  .edb-tbl tr{break-inside:avoid;break-after:auto}
+  .edb-tbl th,.edb-tbl td{white-space:normal;padding:4px 6px}
+  .edb-tbl tbody th .n{max-width:none}
+  .edb-rktbl{font-size:9.5px}
+  .edb-rktbl td.tm .n{display:block;margin-left:0}
+  .edb-nomkt{color:#333!important;border-left-color:#ccc!important}
   .pg-top,.pg-actions,.no-print{display:none!important}
 }
 /*__EDB_CSS_END__*/
@@ -22294,7 +22357,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     SNF: { title: 'EdgeDesk Game Brief', kicker: 'Sunday Night Football' },
     MNF: { title: 'EdgeDesk Game Brief', kicker: 'Monday Night Football' },
     CFB: { title: 'EdgeDesk College Football Brief', kicker: 'College Football' },
-    SLATE: { title: 'EdgeDesk Slate Brief', kicker: null }
+    SLATE: { title: 'EdgeDesk Slate Brief', kicker: null },
+    RANKINGS: { title: 'EdgeDesk College Football Rankings', kicker: null }
   };
   function dataCheck(simple) {
     var s = simple || {};
@@ -22324,7 +22388,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var v = s.verdict;
     var pl = s.plain || {};
     var whyLines = (s.why || []).map(function (w) { return w.text; });
-    if (!whyLines.length) whyLines.push(v === 'PASS' ? 'EdgeDesk does not see enough value at the current price.' : 'EdgeDesk’s current research favors this number.');
+    if (!whyLines.length) whyLines.push(v === 'PASS' ? 'EdgeDesk does not see enough value at the current price.'
+      : s.odds ? 'EdgeDesk’s current research favors this number.'
+      : 'There is no number to favor yet — no book has posted this game. EdgeDesk’s research on the matchup is below.');
     var risk = (s.biggest_risk && s.biggest_risk.text) || (s.watch && s.watch.text) || 'The price could move before kickoff.';
     var change = (s.change_trigger && s.change_trigger.text) || 'A worse price would change the call.';
     var goodTo = s.playable_to || {};
@@ -22338,12 +22404,23 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        points" does not — it is a description, not a name. */
     var totalish = /^(totals?)$/i.test(String(s.market || '')) || /^(More|Fewer) than /.test(bet);
     var betMid = totalish ? bet.charAt(0).toLowerCase() + bet.slice(1) : bet;
+    /* A PRICE THAT IS NOT ON FILE IS NOT A PRICE. Concatenating ' at ' +
+       s.odds unguarded published the literal word "null" in the lede of every
+       unpriced game — "EdgeDesk is not ready to call this bet at null". The
+       clause is dropped instead. The absent price is then STATED, in the
+       branch below, rather than papered over: a brief on a game no book has
+       posted is a research brief, and it says so in its first sentence. */
+    var atOdds = s.odds ? ' at ' + s.odds : '';
     var lede;
     if (s.suppressed) lede = 'EdgeDesk is withholding a call on this game until a problem with its own data is fixed.';
     else if (!s.available) lede = 'EdgeDesk has no call on file for this game.';
-    else if (v === 'BET') lede = 'EdgeDesk’s research favors ' + betMid + ' at ' + s.odds + '.' + (goodTo.limit_odds ? ' The price stays good enough down to ' + goodTo.limit_odds + '.' : '');
-    else if (v === 'LEAN') lede = 'EdgeDesk leans toward ' + betMid + ' at ' + s.odds + ', with caveats.' + (goodTo.limit_odds ? ' The price stays good enough down to ' + goodTo.limit_odds + '.' : '');
-    else if (v === 'WAIT') lede = 'EdgeDesk is not ready to call ' + betMid + ' at ' + s.odds + '. ' + (pl.answer || 'Something still has to be confirmed.');
+    else if (v === 'BET') lede = 'EdgeDesk’s research favors ' + betMid + atOdds + '.' + (goodTo.limit_odds ? ' The price stays good enough down to ' + goodTo.limit_odds + '.' : '');
+    else if (v === 'LEAN') lede = 'EdgeDesk leans toward ' + betMid + atOdds + ', with caveats.' + (goodTo.limit_odds ? ' The price stays good enough down to ' + goodTo.limit_odds + '.' : '');
+    else if (v === 'WAIT') lede = s.odds
+      ? 'EdgeDesk is not ready to call ' + betMid + ' at ' + s.odds + '. ' + (pl.answer || 'Something still has to be confirmed.')
+      : (ctx.research_follows
+        ? 'No sportsbook has posted a price on this game yet, so EdgeDesk has no bet to call. What follows is EdgeDesk’s own read on the matchup — the projection, the ratings behind it and how much of it is settled.'
+        : 'No sportsbook has posted a price on this game yet, so EdgeDesk has no bet to call. ' + (pl.answer || 'Nothing is published in its place.'));
     else lede = 'At ' + (s.odds || 'the current price') + ', EdgeDesk passes on ' + betMid + '.' + (goodTo.kind === 'NEEDS' ? ' It would take ' + goodTo.limit_odds + ' or better to change that.' : '');
     return {
       version: VERSION,
@@ -22483,16 +22560,183 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      `refresh` returns a NEW snapshot with a higher version; the old one is
      untouched, and every public price carries its capture timestamp. */
   function worst(a, b, order) { return order.indexOf(a) >= order.indexOf(b) ? a : b; }
+  /* ======================================================================
+     THE RESEARCH THAT IS NOT A PRICE
+
+     A brief used to be a market object: a verdict, a number, a book. On a
+     game no sportsbook had posted, every one of those fields was empty and
+     the page said so six different ways — and printed the word "null" where
+     the price belonged. But EdgeDesk always had something to say about that
+     game. It had a projection, two team ratings, a unit-by-unit read and an
+     honest account of what it could not measure yet.
+
+     These two normalisers let a board hand that read in. THEY DERIVE
+     NOTHING. Every number arrives already formatted by the one canonical
+     build; this decides only where it sits on the page and refuses to print
+     anything it was not given. A field that is absent stays absent — "not
+     measured" and "measured zero" are different sentences and neither is
+     allowed to impersonate the other.
+     ====================================================================== */
+  function txt(v) {
+    if (v == null) return null;
+    var t = String(v).trim();
+    /* A stringified null is the bug this whole block exists to stop. */
+    return (t && t !== 'null' && t !== 'undefined' && t !== 'NaN') ? t : null;
+  }
+  function txtList(a, cap) {
+    return (Array.isArray(a) ? a : []).map(txt).filter(Boolean).slice(0, cap || 12);
+  }
+  function sectionList(a, cap) {
+    return (Array.isArray(a) ? a : []).map(function (x) {
+      var h = txt(x && x.h), b = txt(x && x.p);
+      return (h || b) ? { h: h, p: b } : null;
+    }).filter(Boolean).slice(0, cap || 10);
+  }
+  function researchBlock(r) {
+    if (!r) return null;
+    var score = null;
+    if (r.score && r.score.home && r.score.away && txt(r.score.home.points) != null && txt(r.score.away.points) != null) {
+      score = {
+        away: { team: txt(r.score.away.team) || 'Away', points: txt(r.score.away.points) },
+        home: { team: txt(r.score.home.team) || 'Home', points: txt(r.score.home.points) },
+        note: txt(r.score.note)
+      };
+    }
+    var table = null;
+    if (r.table && Array.isArray(r.table.rows)) {
+      var rows = r.table.rows.map(function (x) {
+        var k = txt(x && x.k);
+        if (!k) return null;
+        return { k: k, a: txt(x.a), h: txt(x.h), note: txt(x.note) };
+      }).filter(Boolean);
+      if (rows.length) {
+        var c = r.table.cols || [];
+        table = { cols: [txt(c[0]) || 'Away', txt(c[1]) || 'Home'], rows: rows.slice(0, 30) };
+      }
+    }
+    var out = {
+      headline: txt(r.headline),
+      state: (r.state && txt(r.state.label)) ? { label: txt(r.state.label), note: txt(r.state.note) } : null,
+      score: score,
+      table: table,
+      notes: txtList(r.notes, 6),
+      missing: txtList(r.missing, 10),
+      source: txt(r.source)
+    };
+    return (out.headline || out.state || out.score || out.table || out.notes.length || out.missing.length) ? out : null;
+  }
+  function rankingsBlock(r) {
+    if (!r) return null;
+    var rows = (Array.isArray(r.rows) ? r.rows : []).map(function (x) {
+      var team = txt(x && x.team);
+      if (!team) return null;
+      return {
+        rank: txt(x.rank), team: team, conf: txt(x.conf),
+        delta: txt(x.delta), delta_dir: x.delta_dir === 'up' ? 'up' : x.delta_dir === 'down' ? 'down' : null,
+        cells: (Array.isArray(x.cells) ? x.cells : []).map(function (c) {
+          return { v: txt(c && c.v), rank: txt(c && c.rank) };
+        }).slice(0, 10)
+      };
+    }).filter(Boolean);
+    var out = {
+      headline: txt(r.headline), subhead: txt(r.subhead),
+      columns: txtList(r.columns, 12),
+      rows: rows.slice(0, 40),
+      method: sectionList(r.method, 8),
+      spotlights: sectionList(r.spotlights, 8),
+      movers: sectionList(r.movers, 8),
+      missing: txtList(r.missing, 12),
+      footer: txtList(r.footer, 6),
+      source: txt(r.source)
+    };
+    return (out.rows.length || out.method.length || out.spotlights.length) ? out : null;
+  }
+  /* ---- and the way each one reads on the page --------------------------- */
+  function researchHTML(res) {
+    if (!res) return '';
+    var h = '<section class="edb-res">';
+    h += '<div class="edb-h edb-sec">The EdgeDesk research</div>';
+    if (res.headline) h += '<p class="edb-lede">' + esc(res.headline) + '</p>';
+    if (res.score) {
+      h += '<div class="edb-proj"><div class="k">Projected score</div><div class="edb-projline">'
+        + '<span class="edb-sc"><i>' + esc(res.score.away.team) + '</i><b>' + esc(res.score.away.points) + '</b></span>'
+        + '<span class="edb-sc"><i>' + esc(res.score.home.team) + '</i><b>' + esc(res.score.home.points) + '</b></span></div>'
+        + (res.score.note ? '<p class="edb-projnote">' + esc(res.score.note) + '</p>' : '') + '</div>';
+    }
+    if (res.state) h += '<p class="edb-resstate"><b>' + esc(res.state.label) + '</b>' + (res.state.note ? ' — ' + esc(res.state.note) : '') + '</p>';
+    if (res.table) {
+      h += '<div class="edb-tblwrap"><table class="edb-tbl"><thead><tr><th></th><th>' + esc(res.table.cols[0]) + '</th><th>' + esc(res.table.cols[1]) + '</th></tr></thead><tbody>';
+      res.table.rows.forEach(function (x) {
+        h += '<tr><th scope="row">' + esc(x.k) + (x.note ? '<span class="n">' + esc(x.note) + '</span>' : '') + '</th>'
+          + '<td>' + (x.a ? esc(x.a) : '<span class="edb-nodata">not measured</span>') + '</td>'
+          + '<td>' + (x.h ? esc(x.h) : '<span class="edb-nodata">not measured</span>') + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+    }
+    if (res.notes.length) h += '<ul class="edb-why">' + res.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+    if (res.missing.length) {
+      h += '<div class="edb-h">What EdgeDesk could not measure</div><ul class="edb-why edb-miss">'
+        + res.missing.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+    }
+    if (res.source) h += '<p class="edb-ressrc">' + esc(res.source) + '</p>';
+    return h + '</section>';
+  }
+  function rankingsHTML(rk) {
+    if (!rk) return '';
+    var h = '<section class="edb-rk">';
+    if (rk.headline) h += '<p class="edb-lede">' + esc(rk.headline) + '</p>';
+    if (rk.subhead) h += '<p class="edb-rksub">' + esc(rk.subhead) + '</p>';
+    if (rk.rows.length) {
+      h += '<div class="edb-tblwrap"><table class="edb-tbl edb-rktbl"><thead><tr>'
+        + rk.columns.map(function (c, i) { return '<th' + (i ? ' class="num"' : '') + '>' + esc(c) + '</th>'; }).join('')
+        + '</tr></thead><tbody>';
+      rk.rows.forEach(function (r) {
+        h += '<tr><td class="rk">' + esc(r.rank || '') + '</td>'
+          + '<td class="tm"><b>' + esc(r.team) + '</b>' + (r.conf ? '<span class="n">' + esc(r.conf) + '</span>' : '') + '</td>';
+        r.cells.forEach(function (c) {
+          h += '<td class="num">' + (c.v ? esc(c.v) : '<span class="edb-nodata">—</span>')
+            + (c.rank ? '<span class="n">' + esc(c.rank) + '</span>' : '') + '</td>';
+        });
+        h += '<td class="num mv' + (r.delta_dir ? ' ' + r.delta_dir : '') + '">' + (r.delta ? esc(r.delta) : '') + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+    }
+    function secs(list, heading) {
+      if (!list.length) return '';
+      var out = heading ? '<div class="edb-h edb-sec">' + esc(heading) + '</div>' : '';
+      list.forEach(function (x) {
+        out += '<div class="edb-rksec">' + (x.h ? '<h3>' + esc(x.h) + '</h3>' : '') + (x.p ? '<p>' + esc(x.p) + '</p>' : '') + '</div>';
+      });
+      return out;
+    }
+    h += secs(rk.method, 'How EdgeDesk ranks teams');
+    h += secs(rk.movers, 'What moved this week');
+    h += secs(rk.spotlights, null);
+    if (rk.missing.length) {
+      h += '<div class="edb-h edb-sec">What is missing, and why</div><ul class="edb-why edb-miss">'
+        + rk.missing.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+    }
+    if (rk.footer.length) h += '<div class="edb-rkfoot">' + rk.footer.map(function (n) { return '<p>' + esc(n) + '</p>'; }).join('') + '</div>';
+    if (rk.source) h += '<p class="edb-ressrc">' + esc(rk.source) + '</p>';
+    return h + '</section>';
+  }
   function snapshot(o) {
     o = o || {};
     var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
     var cards = (o.cards || []).map(function (c) { return JSON.parse(JSON.stringify(c)); });
-    var preset = PRESETS[o.preset] ? o.preset : (o.report_type === 'SLATE' ? 'SLATE' : 'GAME');
-    var reportType = o.report_type === 'SLATE' ? 'SLATE' : 'GAME';
+    var preset = PRESETS[o.preset] ? o.preset : (o.report_type === 'SLATE' ? 'SLATE' : o.report_type === 'RANKINGS' ? 'RANKINGS' : 'GAME');
+    var reportType = o.report_type === 'SLATE' ? 'SLATE' : o.report_type === 'RANKINGS' ? 'RANKINGS' : 'GAME';
     var sl = reportType === 'SLATE' ? slate(cards, { mode: o.mode, max: o.max }) : null;
     var primary = reportType === 'SLATE' ? (sl.picks.concat(sl.watch)) : cards.slice(0, 1);
+    /* THE RESEARCH TRAVELS WITH THE BRIEF. A game with no posted price used to
+       produce a page of empty market boilerplate. The caller hands in the read
+       its own board already computed — the projection, the ratings, what is
+       still missing — and it is frozen into the snapshot like everything else,
+       so a shared or reprinted brief shows the numbers it was published with.
+       NOTHING IS DERIVED HERE: this block only carries and renders. */
+    var research = researchBlock(o.research);
     var pubCards = (reportType === 'SLATE' ? sl.picks : cards.slice(0, 1)).map(function (c, i) {
-      return { rank: i + 1, brief: publisher(c, { preset: preset, event_label: c.game && c.game.away && c.game.home ? c.game.away + ' at ' + c.game.home : (c.game && c.game.matchup) || null, when_label: c.game && c.game.commence ? whenLabel(c.game.commence, o.tz) : null, sport_label: o.sport_label || (c.game && c.game.sport_label) || null }) };
+      return { rank: i + 1, brief: publisher(c, { preset: preset, research_follows: !!research, event_label: c.game && c.game.away && c.game.home ? c.game.away + ' at ' + c.game.home : (c.game && c.game.matchup) || null, when_label: c.game && c.game.commence ? whenLabel(c.game.commence, o.tz) : null, sport_label: o.sport_label || (c.game && c.game.sport_label) || null }) };
     });
     var watchCards = reportType === 'SLATE' ? sl.watch.map(function (c, i) {
       return { rank: i + 1, brief: publisher(c, { preset: preset, event_label: c.game && c.game.away && c.game.home ? c.game.away + ' at ' + c.game.home : (c.game && c.game.matchup) || null, when_label: c.game && c.game.commence ? whenLabel(c.game.commence, o.tz) : null, sport_label: o.sport_label || null }) };
@@ -22541,6 +22785,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         cards: pubCards,
         watch: watchCards,
         slate: sl ? { headline: sl.headline, no_bet: sl.no_bet, counts: sl.counts, mode: sl.mode, max: sl.max, best_price_to_watch: sl.best_price_to_watch } : null,
+        research: research,
+        rankings: rankingsBlock(o.rankings),
         data_status: publicDataStatus(fresh, integ, prices)
       },
       internal: { cards: cards, slate: sl },
@@ -22572,7 +22818,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       sport: snap.sport, sport_label: snap.sport_label, title: snap.title, kicker: snap.kicker, event_label: snap.event_label,
       when_label: snap.when_label, generated_at: snap.generated_at, event_ids: snap.event_ids,
       freshness_status: snap.freshness_status, integrity_status: snap.integrity_status,
-      cards: snap.public.cards, watch: snap.public.watch, slate: snap.public.slate, data_status: snap.public.data_status
+      cards: snap.public.cards, watch: snap.public.watch, slate: snap.public.slate,
+      research: snap.public.research, rankings: snap.public.rankings, data_status: snap.public.data_status
     };
   }
   function whenLabel(iso, tz) {
@@ -22881,19 +23128,34 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         var bp = sl.best_price_to_watch;
         h += '<div class="edb-h edb-sec">The one to keep an eye on</div><p class="edb-bpw"><b>' + esc(bp.selection || '') + '</b>' + (bp.odds ? ' at ' + esc(bp.odds) : '') + (bp.limit ? ' · ' + esc(bp.limit) : '') + (bp.text ? '. ' + esc(bp.text) : '') + '</p>';
       }
+    } else if (snap.report_type === 'RANKINGS') {
+      h += rankingsHTML(pub.rankings);
     } else {
       cards.forEach(function (pc) {
         var b = pc.brief;
         h += '<div class="edb-h edb-sec">The EdgeDesk call</div>';
         h += '<p class="edb-lede">' + esc(b.lede) + '</p>';
-        h += briefCardHTML(pc, { numbered: false, showEvent: false, hideAnswer: true });
+        /* A CARD WITH NO PRICE IS SIX HEADINGS EACH SAYING "there is no
+           price": price limit not set, no comparison price, no market read,
+           nothing to judge. It filled a page and told a writer nothing. When
+           the brief carries research instead, the market half collapses to
+           the one sentence that is actually news. */
+        if (pub.research && !(b.call && b.call.odds)) {
+          h += '<p class="edb-nomkt">EdgeDesk’s verdicts compare a posted price against its own number. No book has posted this game, so there is no price to compare and no verdict on it — not a lean, not a pass. The moment a price is captured this brief carries the comparison; until then what stands is the research below.</p>';
+        } else {
+          h += briefCardHTML(pc, { numbered: false, showEvent: false, hideAnswer: true });
+        }
       });
     }
+    /* The research sits under the call, on every report that carries one. */
+    h += researchHTML(pub.research);
     if (opts.grades) h += briefResultsHTML(opts.grades);
-    h += howToReadHTML();
-    h += '<footer class="edb-ft"><div class="edb-h">EdgeDesk data check</div><p><b>' + esc(ds.status || 'Current') + '</b>'
-      + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>'
-      + (ds.prices && ds.prices.length > 1 ? '<ul class="edb-prices">' + ds.prices.map(function (p) { return '<li>' + esc(p.selection || '') + (p.odds ? ' ' + esc(p.odds) : '') + (p.book ? ' · ' + esc(p.book) : '') + (p.captured_at ? ' · captured ' + esc(fmtStamp(p.captured_at)) : '') + '</li>'; }).join('') + '</ul>' : '')
+    if (snap.report_type !== 'RANKINGS') h += howToReadHTML();
+    /* A rankings brief has no price to check, so it does not claim to have
+       checked one — it stamps the build the numbers came from instead. */
+    h += '<footer class="edb-ft">' + (snap.report_type === 'RANKINGS' ? '' : '<div class="edb-h">EdgeDesk data check</div><p><b>' + esc(ds.status || 'Current') + '</b>'
+      + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>')
+      + (snap.report_type !== 'RANKINGS' && ds.prices && ds.prices.length > 1 ? '<ul class="edb-prices">' + ds.prices.map(function (p) { return '<li>' + esc(p.selection || '') + (p.odds ? ' ' + esc(p.odds) : '') + (p.book ? ' · ' + esc(p.book) : '') + (p.captured_at ? ' · captured ' + esc(fmtStamp(p.captured_at)) : '') + '</li>'; }).join('') + '</ul>' : '')
       + '<p class="edb-gen">Generated ' + esc(fmtStamp(snap.generated_at)) + (snap.version_no > 1 ? ' · version ' + snap.version_no : '') + '</p>'
       + '<p class="edb-powered">Powered by EdgeDesk Sports</p></footer>';
     return h + '</article>';
@@ -22903,6 +23165,52 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (ms == null) return String(iso || '');
     try { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(ms)) + ' ET'; }
     catch (e) { return new Date(ms).toISOString(); }
+  }
+  /* The same two blocks again with no classes on them, for a CMS paste. */
+  function researchCms(res) {
+    if (!res) return '';
+    var h = '<h2>The EdgeDesk research</h2>';
+    if (res.headline) h += '<p>' + esc(res.headline) + '</p>';
+    if (res.score) h += '<p><strong>Projected score:</strong> ' + esc(res.score.away.team) + ' ' + esc(res.score.away.points)
+      + ', ' + esc(res.score.home.team) + ' ' + esc(res.score.home.points) + '.' + (res.score.note ? ' ' + esc(res.score.note) : '') + '</p>';
+    if (res.state) h += '<p><strong>' + esc(res.state.label) + '</strong>' + (res.state.note ? ' — ' + esc(res.state.note) : '') + '</p>';
+    if (res.table) {
+      h += '<table><thead><tr><th></th><th>' + esc(res.table.cols[0]) + '</th><th>' + esc(res.table.cols[1]) + '</th></tr></thead><tbody>';
+      res.table.rows.forEach(function (x) {
+        h += '<tr><th>' + esc(x.k) + '</th><td>' + esc(x.a || 'not measured') + '</td><td>' + esc(x.h || 'not measured') + '</td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    if (res.notes.length) h += '<ul>' + res.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+    if (res.missing.length) h += '<h3>What EdgeDesk could not measure</h3><ul>' + res.missing.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+    if (res.source) h += '<p><em>' + esc(res.source) + '</em></p>';
+    return h;
+  }
+  function rankingsCms(rk) {
+    if (!rk) return '';
+    var h = '';
+    if (rk.headline) h += '<p>' + esc(rk.headline) + '</p>';
+    if (rk.subhead) h += '<p>' + esc(rk.subhead) + '</p>';
+    if (rk.rows.length) {
+      h += '<table><thead><tr>' + rk.columns.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>';
+      rk.rows.forEach(function (r) {
+        h += '<tr><td>' + esc(r.rank || '') + '</td><td>' + esc(r.team) + (r.conf ? ' (' + esc(r.conf) + ')' : '') + '</td>'
+          + r.cells.map(function (c) { return '<td>' + esc(c.v || '—') + (c.rank ? ' ' + esc(c.rank) : '') + '</td>'; }).join('')
+          + '<td>' + esc(r.delta || '') + '</td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    function secs(list, heading) {
+      if (!list.length) return '';
+      var out = heading ? '<h2>' + esc(heading) + '</h2>' : '';
+      list.forEach(function (x) { out += (x.h ? '<h3>' + esc(x.h) + '</h3>' : '') + (x.p ? '<p>' + esc(x.p) + '</p>' : ''); });
+      return out;
+    }
+    h += secs(rk.method, 'How EdgeDesk ranks teams') + secs(rk.movers, 'What moved this week') + secs(rk.spotlights, null);
+    if (rk.missing.length) h += '<h2>What is missing, and why</h2><ul>' + rk.missing.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+    if (rk.footer.length) h += rk.footer.map(function (n) { return '<p>' + esc(n) + '</p>'; }).join('');
+    if (rk.source) h += '<p><em>' + esc(rk.source) + '</em></p>';
+    return h;
   }
   /* Clean semantic HTML for a CMS paste: headings, paragraphs, lists, no classes. */
   function briefCmsHTML(snap) {
@@ -22942,14 +23250,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if (pub.slate && pub.slate.no_bet) h += '<p>EdgeDesk looked at every game on this slate and did not find a price worth betting. That is a real answer, not a gap. The closest calls are below, labelled for what they are.</p>';
       (pub.cards || []).forEach(function (pc) { h += pick(pc, true); });
       if ((pub.watch || []).length) { h += '<h2>' + (pub.slate && pub.slate.no_bet ? 'Strongest research (not bets)' : 'Also on the board') + '</h2>'; pub.watch.forEach(function (pc) { h += pick(pc, true); }); }
+    } else if (snap.report_type === 'RANKINGS') {
+      h += rankingsCms(pub.rankings);
     } else {
       (pub.cards || []).forEach(function (pc) { h += pick(pc, false); });
     }
-    h += '<h3>EdgeDesk data check</h3><p>' + esc(ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>';
-    h += '<p><em>EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins. 21+. Gamble responsibly — 1-800-GAMBLER.</em></p>';
+    h += researchCms(pub.research);
+    if (snap.report_type !== 'RANKINGS') h += '<h3>EdgeDesk data check</h3><p>' + esc(ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>';
+    h += '<p><em>' + (snap.report_type === 'RANKINGS'
+      ? 'EdgeDesk rates teams from its own play-by-play and roster data. It is independent of the AP and Coaches polls and does not vote in either.'
+      : 'EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins.') + ' 21+. Gamble responsibly — 1-800-GAMBLER.</em></p>';
     h += '<p><em>Powered by EdgeDesk Sports</em></p>';
     return h;
   }
+  function pad(v, n) { var t = String(v == null ? '' : v); return t.length >= n ? t + '  ' : t + new Array(n - t.length + 1).join(' '); }
   /* Article-ready plain text. */
   function briefText(snap, opts) {
     opts = opts || {};
@@ -23000,10 +23314,55 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     } else {
       (pub.cards || []).forEach(function (pc) { pick(pc, false); });
     }
-    L.push('EDGEDESK DATA CHECK');
-    L.push((ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + fmtStamp(ds.price_captured_at) : ''));
+    if (snap.report_type === 'RANKINGS') {
+      var rk = pub.rankings;
+      if (rk) {
+        if (rk.headline) { L.push(rk.headline); L.push(''); }
+        if (rk.subhead) { L.push(rk.subhead); L.push(''); }
+        rk.rows.forEach(function (r) {
+          L.push([r.rank, r.team + (r.conf ? ' (' + r.conf + ')' : '')]
+            .concat(r.cells.map(function (c) { return (c.v || '—') + (c.rank ? ' ' + c.rank : ''); }))
+            .concat(r.delta ? [r.delta] : []).join('  '));
+        });
+        function tsec(list, heading) {
+          if (!list.length) return;
+          L.push('');
+          if (heading) { L.push(heading.toUpperCase()); L.push(''); }
+          list.forEach(function (x) { if (x.h) L.push(x.h.toUpperCase()); if (x.p) L.push(x.p); L.push(''); });
+        }
+        tsec(rk.method, 'How EdgeDesk ranks teams');
+        tsec(rk.movers, 'What moved this week');
+        tsec(rk.spotlights, null);
+        if (rk.missing.length) { L.push('WHAT IS MISSING, AND WHY'); rk.missing.forEach(function (n) { L.push('  · ' + n); }); L.push(''); }
+        rk.footer.forEach(function (n) { L.push(n); });
+        if (rk.source) L.push(rk.source);
+        L.push('');
+      }
+    }
+    var res = pub.research;
+    if (res) {
+      L.push('THE EDGEDESK RESEARCH');
+      if (res.headline) L.push(res.headline);
+      if (res.score) L.push('Projected score: ' + res.score.away.team + ' ' + res.score.away.points + ', ' + res.score.home.team + ' ' + res.score.home.points + '.' + (res.score.note ? ' ' + res.score.note : ''));
+      if (res.state) L.push(res.state.label + (res.state.note ? ' — ' + res.state.note : ''));
+      if (res.table) {
+        L.push('');
+        L.push(pad('', 26) + pad(res.table.cols[0], 20) + res.table.cols[1]);
+        res.table.rows.forEach(function (x) { L.push(pad(x.k, 26) + pad(x.a || 'not measured', 20) + (x.h || 'not measured')); });
+      }
+      if (res.notes.length) { L.push(''); res.notes.forEach(function (n, i) { L.push((i + 1) + '. ' + n); }); }
+      if (res.missing.length) { L.push(''); L.push('WHAT EDGEDESK COULD NOT MEASURE'); res.missing.forEach(function (n) { L.push('  · ' + n); }); }
+      if (res.source) { L.push(''); L.push(res.source); }
+      L.push('');
+    }
+    if (snap.report_type !== 'RANKINGS') {
+      L.push('EDGEDESK DATA CHECK');
+      L.push((ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + fmtStamp(ds.price_captured_at) : ''));
+    }
     if (opts.grades) { var rt = briefResultsText(opts.grades); if (rt) L.push(rt); }
-    L.push(''); L.push('EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins. 21+. Gamble responsibly — 1-800-GAMBLER.');
+    L.push(''); L.push(snap.report_type === 'RANKINGS'
+      ? 'EdgeDesk rates teams from its own play-by-play and roster data. It is independent of the AP and Coaches polls and does not vote in either. 21+. Gamble responsibly — 1-800-GAMBLER.'
+      : 'EdgeDesk judges the price on offer against the rest of the betting market. It does not predict who wins. 21+. Gamble responsibly — 1-800-GAMBLER.');
     L.push(''); L.push('Powered by EdgeDesk Sports');
     return L.join('\n');
   }
@@ -23357,6 +23716,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     snapshot: snapshot, refresh: refresh, publicPayload: publicPayload,
     whenLabel: whenLabel, etParts: etParts, primetime: primetime, fmtStamp: fmtStamp,
     cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText,
+    researchBlock: researchBlock, rankingsBlock: rankingsBlock, researchHTML: researchHTML, rankingsHTML: rankingsHTML,
     americanToDec: americanToDec, parseAmerican: parseAmerican, probToAmerican: probToAmerican, centsOf: centsOf, centsBetween: centsBetween,
     normResult: normResult, normTeam: normTeam, sideOf: sideOf, outcomeFromScore: outcomeFromScore, gradePick: gradePick, resultText: resultText, outcomeOf: outcomeOf,
     marketKeyOf: marketKeyOf, parseSelectionLabel: parseSelectionLabel, priceFields: priceFields, gradeKey: gradeKey,
@@ -29569,10 +29929,26 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     },{stale_limit_min:staleLimit()});
   }
 
+  /* THE RESEARCH THAT COMES WITH THE GAME. A football brief carries
+     EdgeDesk's own read whether or not a book has posted a price — see
+     fbBriefResearch(). A non-football game, or a board that has not loaded
+     its rankings yet, simply gets nothing here rather than a placeholder. */
+  function researchFor(q, first){
+    try{
+      if(!window.fbBriefResearch) return null;
+      var key=String((q&&q.sport_key)||(first&&first.game&&first.game.sport_key)||'');
+      if(key.indexOf('americanfootball_ncaaf')!==0) return null;
+      var home=(q&&q.home)||(first&&first.game&&first.game.home)||null;
+      var away=(q&&q.away)||(first&&first.game&&first.game.away)||null;
+      if(!home||!away) return null;
+      return window.fbBriefResearch({home:home, away:away});
+    }catch(_){ return null; }
+  }
   function gameSnapshot(cards, q, preset){
     var first=cards[0];
     var kick=q&&q.t?q.t:(first&&first.game&&first.game.commence?Date.parse(first.game.commence):null);
     return P.snapshot({
+      research:researchFor(q, first),
       cards:cards, report_type:'GAME', preset:preset||'GAME',
       sport:(first&&first.game&&first.game.sport_key)||(q&&q.sport_key)||null,
       sport_label:(first&&first.game&&first.game.sport_label)||(q&&q.sport_label)||null,
@@ -29597,7 +29973,38 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var cards=rows.length?cardsForRows(rows):[unpricedCard(q)];
     BR.source={kind:'game', q:q};
     var preset=q.preset||(rows.length?presetFor(rows[0]):(String(q.sport_key||'').indexOf('americanfootball_ncaaf')===0?'CFB':'GAME'));
+    /* A COLLEGE GAME'S BRIEF IS MOSTLY RESEARCH, so it waits for the rankings
+       artifact rather than drawing an empty market page and filling it in
+       afterwards. The wait is one cached fetch; if it fails the brief still
+       renders, with the market half it always had. */
+    if(String(q.sport_key||'').indexOf('americanfootball_ncaaf')===0 && window.fbRkEnsure && !(window.FB&&FB.rk&&FB.rk.data)){
+      var h0=host();
+      h0.innerHTML='<div class="brief-card">'+barHTML(null)+'<div class="brief-note">Loading EdgeDesk’s team ratings…</div></div>';
+      h0.classList.add('open');
+      return window.fbRkEnsure().then(function(){ show(gameSnapshot(cards, q, preset)); },
+                                     function(){ show(gameSnapshot(cards, q, preset)); });
+    }
     show(gameSnapshot(cards, q, preset));
+  }
+  /* ---- the week's rankings, as a brief ---------------------------------- */
+  function openRankings(top){
+    BR.source={kind:'rankings', top:+top||25};
+    function draw(){
+      var rk=window.fbBriefRankings?window.fbBriefRankings({top:BR.source.top}):null;
+      if(!rk) return show(null,'EdgeDesk’s rankings artifact is not loaded, so there is nothing to print. Open the Research → Football → rankings board once and try again.');
+      var D=window.FB&&FB.rk&&FB.rk.data;
+      show(P.snapshot({cards:[], report_type:'RANKINGS', preset:'RANKINGS', rankings:rk,
+        sport:'americanfootball_ncaaf', sport_label:'College Football',
+        event_label:D?(D.season+' '+D.week_label):null,
+        when_label:D&&D.data_as_of?('Through '+String(D.data_as_of).slice(0,10)):null}));
+    }
+    if(window.fbRkEnsure && !(window.FB&&FB.rk&&FB.rk.data)){
+      var h1=host();
+      h1.innerHTML='<div class="brief-card">'+barHTML(null)+'<div class="brief-note">Loading EdgeDesk’s rankings…</div></div>';
+      h1.classList.add('open');
+      return window.fbRkEnsure().then(draw, function(){ show(null,'The rankings artifact would not load, so nothing is printed in its place.'); });
+    }
+    draw();
   }
   function openPrimetime(kind){
     var nfl=pool().filter(function(e){ return String(e.sport_key||'').indexOf('americanfootball_nfl')===0; });
@@ -29658,6 +30065,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'<button class="dcard-btn" onclick="EDBRIEF.openQA()" title="Could a reader with no betting vocabulary act on this?">Reader check</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.refresh()">Refresh from current data</button>'
         +(snap.report_type==='GAME'?'<button class="dcard-btn" onclick="EDBRIEF.polish()">Polish copy</button>':'')
+        +(snap.report_type==='RANKINGS'?'<span class="sp"></span><select class="dcard-btn" onchange="EDBRIEF.openRankings(this.value)">'
+          +[10,25,40].map(function(n){ return '<option value="'+n+'"'+((snap.public&&snap.public.rankings&&snap.public.rankings.rows.length===n)?' selected':'')+'>Top '+n+'</option>'; }).join('')+'</select>':'')
         +(snap.report_type==='SLATE'&&snap.preset==='CFB'?'<span class="sp"></span><select class="dcard-btn" onchange="EDBRIEF.openCfbSlate(this.value)"><option value="top"'+(snap.internal.slate.mode==='top'?' selected':'')+'>Top decisions</option><option value="all"'+(snap.internal.slate.mode==='all'?' selected':'')+'>All actionable games</option></select>':'')
         :'')
       +'</div>';
@@ -29690,6 +30099,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   function refresh(){
     var s=BR.snap, src=BR.source; if(!s||!src) return;
+    if(src.kind==='rankings') return openRankings(src.top);
     var cards=[];
     if(src.kind==='card'||src.kind==='game'||src.kind==='primetime'){
       var q=src.q||{event_id:src.event_id};
@@ -29902,6 +30312,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   window.EDBRIEF={
     openCard:openCard, openGame:openGame, openPrimetime:openPrimetime, openCfbSlate:openCfbSlate, openSlate:openSlate,
+    openRankings:openRankings,
     openQA:openQA, qaHTML:qaHTML,
     openRecord:openRecord, loadRecord:loadRecord, recordHTML:recordHTML,
     openAvailability:openAvailability, availabilityDebugHTML:availabilityDebugHTML, loadAvailabilityDebug:loadAvailabilityDebug,
@@ -29919,6 +30330,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'SNF\')">Sunday Night Football</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'MNF\')">Monday Night Football</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.openCfbSlate(\'top\',3)">College Football brief</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.openRankings(25)">CFB rankings brief</button>'
         +(where==='edges'?'<button class="dcard-btn" onclick="EDBRIEF.openSlate(null,\'top\',3)">Slate brief</button>':'')
         +'<button class="dcard-btn" onclick="EDBRIEF.openRecord()" title="How BET, LEAN and WAIT have graded against the close">Verdict calibration</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.openAvailability()" title="Coverage, unresolved reports and failed sources">Availability data</button>'
@@ -34792,8 +35204,15 @@ function fbGxState(p){
    says so rather than halving a number it does not have. */
 function fbGxScore(m){
   if(m.fair_total==null||m.fair_spread==null)return null;
-  return {home:Math.round((m.fair_total+m.fair_spread)/2),
-          away:Math.round((m.fair_total-m.fair_spread)/2)};
+  var home=Math.round((m.fair_total+m.fair_spread)/2),
+      away=Math.round((m.fair_total-m.fair_spread)/2);
+  /* A PROJECTED MARGIN WIDER THAN THE PROJECTED TOTAL puts a negative number
+     on one side of the score. Football does not do that. Where the two parts
+     of the projection disagree that badly, EdgeDesk publishes neither half
+     and the caller says why — a score line nobody could have watched is
+     worse than no score line. */
+  if(home<0||away<0)return null;
+  return {home:home,away:away};
 }
 
 /* ── THE SUMMARY ────────────────────────────────────────────────────────
@@ -37241,12 +37660,38 @@ function fbRkRender(host){
 
   if(FB.rk.team)return void(host.innerHTML=h+fbRkTeamHTML(FB.rk.team));
 
+  h+=fbRkBriefBar(D);
   h+=fbRkPipeline(D);
   h+=fbRkCoverage(D);
   h+=fbRkTabs();
   h+=(FB.rk.tab==='overall')?fbRkTop25(D):'';
   h+=fbRkTable(D);
   host.innerHTML=h;
+}
+
+/* ---- the button that turns this screen into a page you can hand someone ----
+   The board is a research tool; a brief is what a publisher prints. This puts
+   the second one an inch from the first, because "where do I print this" had
+   no answer on the screen where the question gets asked.
+
+   It opens the SAME EDBRIEF overlay every other brief uses, so the rankings
+   brief copies, shares and prints exactly like a game brief does — and it is
+   built from this artifact, so it can never show a different Top 25 than the
+   table three inches below it. */
+function fbRkBriefBar(D){
+  var wk=D.season+' '+D.week_label;
+  return '<div class="pq-sec">Publish this week</div>'
+    +'<div class="pq-filters" style="align-items:center">'
+    +'<button class="btn sm" onclick="EDBRIEF.openRankings(25)">Rankings brief — '+fbEsc(wk)+'</button>'
+    +'<button class="btn ghost sm" onclick="EDBRIEF.openRankings(10)">Top 10</button>'
+    +'<button class="btn ghost sm" onclick="EDBRIEF.openRankings(40)">Top 40</button>'
+    +'</div>'
+    +'<div class="pq-note">Opens a printable page: the Top 25 with ETSR, talent, offence, defence and special teams under each team, '
+    +'how EdgeDesk ranks, what moved since '
+    +fbEsc((function(){var t,k;for(k in D.teams){t=D.teams[k];if(t&&t.movement&&t.movement.available&&t.movement.compared_against)return t.movement.compared_against.week_label;}return 'the last snapshot';})())
+    +', and an itemised account of what is not covered yet. '
+    +'From there: <b>Print / Save PDF</b>, <b>Copy for CMS</b> or <b>Share brief</b>. '
+    +'Every number is read from this build — the brief cannot disagree with the table below it.</div>';
 }
 
 /* ---- §33 the pipeline health strip ----
@@ -37394,6 +37839,327 @@ function fbRkCatMove(t,cat){
   if(cat==='overall')return m.rank?m.rank.delta:null;
   var c=m.categories&&m.categories[cat];
   return c&&c.rank?c.rank.delta:null;
+}
+/* ═══ WHAT A BRIEF SAYS WHEN NOBODY HAS POSTED A PRICE ═════════════════════
+   A brief used to be a market object. Open one on a game no sportsbook had
+   priced and every field came back empty — and the lede printed the word
+   "null" where the price belonged.
+
+   But EdgeDesk was never silent on that game. It had a projected score, two
+   team ratings, nineteen ranked components underneath them, a confidence on
+   each and a written reason for every number it did NOT have. All of it was
+   already on the board; none of it reached the page a writer prints.
+
+   These builders hand that read to the brief. THEY DERIVE NOTHING. Every
+   rating is read out of football/rankings/current.json exactly as the board
+   reads it — through the same FBRK_FIELD map, so the brief and the table can
+   never disagree about what "Special teams" means — and the projection comes
+   from the same EDCfbP4 call the game card makes. There is one rankings
+   system and this is not a second one: it is a different sheet of paper.
+
+   A CATEGORY WITH NO RATING PRINTS "not measured", never a zero and never a
+   dash standing in for a fact. Where the build wrote down WHY a rating is
+   missing, that sentence is carried through to the writer verbatim.
+   ═════════════════════════════════════════════════════════════════════════ */
+function fbBrNorm(s){
+  try{ s=String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,''); }catch(_){ s=String(s==null?'':s); }
+  return s.toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+/* name → team record. Indexed on the artifact's own key AND on the printed
+   team name, with and without "&" spelled out, because the board says
+   "Texas A&M" and the file says `texasam`. A name that matches nothing is
+   reported as unmatched rather than guessed at. */
+function fbBrIndex(){
+  var D=FB.rk.data; if(!D||!D.teams) return null;
+  if(FB.rk._ix&&FB.rk._ixFor===D) return FB.rk._ix;
+  var ix={};
+  function put(k,t){ k=fbBrNorm(k); if(k&&!ix[k]) ix[k]=t; }
+  for(var k in D.teams){ if(!D.teams.hasOwnProperty(k))continue;
+    var t=D.teams[k];
+    put(k,t); put(t.team,t);
+    put(String(t.team||'').replace(/&/g,'and'),t);
+    put(String(t.team||'').replace(/&/g,''),t);
+    put(String(t.team||'').replace(/\bState\b/g,'St'),t);
+  }
+  FB.rk._ix=ix; FB.rk._ixFor=D;
+  return ix;
+}
+function fbBrTeam(name){
+  var ix=fbBrIndex(); if(!ix) return null;
+  var n=fbBrNorm(name);
+  return ix[n]||ix[n.replace(/^the/,'')]||null;
+}
+/* one comparison cell: the rating as the board prints it, then its national
+   rank. A rated-but-unranked team says so — that is the confidence gate
+   doing its job, and it is not the same as having no rating. */
+function fbBrCell(t,cat){
+  if(!t) return null;
+  var v=fbRkVal(t,cat);
+  if(v==null) return null;
+  var r=t.ranks&&t.ranks[cat];
+  var txt=(cat==='overall')?fbRkPts(v):fbRkN(v);
+  if(r&&r.rank!=null) return txt+'  #'+r.rank;
+  return txt+'  unranked';
+}
+/* every reason the build gave for a number this brief cannot print. */
+function fbBrGaps(t,cats){
+  var out=[],seen={};
+  if(!t) return out;
+  cats.forEach(function(c){
+    var r=t.ranks&&t.ranks[c[0]];
+    var v=fbRkVal(t,c[0]);
+    var why=r&&r.reason?String(r.reason):null;
+    if(v!=null&&!(r&&r.unranked)) return;
+    var line=t.team+' — '+c[1].toLowerCase()+': '+(why||(v==null?'no rating was published for this category.':'rated but held out of the national rank.'));
+    if(!seen[line]){ seen[line]=1; out.push(line); }
+  });
+  return out;
+}
+/* the upcoming-game row and its projection, from the same place the game
+   card reads them. Nothing is re-projected for the brief. */
+function fbBrProjection(home,away){
+  var S=FB.p4; if(!S||!S.up||!S.up.length) return null;
+  var hn=fbBrNorm(home), an=fbBrNorm(away), hit=null;
+  S.up.forEach(function(u){
+    if(hit) return;
+    var uh=fbBrNorm(u.g.home_team), ua=fbBrNorm(u.g.away_team);
+    if((uh===hn&&ua===an)||(uh===an&&ua===hn)) hit=u;
+  });
+  if(!hit) return null;
+  var p=S._proj&&S._proj[String(hit.g.game_id)];
+  if(!p){ try{ p=window.EDCfbP4.projectGame(fbP4Request(hit)); }catch(_){ p=null; } }
+  return p?{u:hit,p:p,flipped:fbBrNorm(hit.g.home_team)!==hn}:null;
+}
+var FB_BRIEF_ROWS=[['overall','ETSR (overall)'],['talent','Talent'],['performance','Performance'],
+  ['offense','Offense'],['defense','Defense'],['special_teams','Special teams'],
+  ['run_offense','Run offense'],['pass_offense','Pass offense'],
+  ['run_defense','Run defense'],['pass_defense','Pass defense'],
+  ['qb','QB room'],['ol','Offensive line'],['wr','Receivers'],['rb','Running backs'],
+  ['dl','Defensive line'],['lb','Linebackers'],['secondary','Secondary'],
+  ['depth','Depth'],['continuity','Continuity']];
+
+function fbBriefResearch(q){
+  try{
+    var D=FB.rk.data;
+    if(!D||!q) return null;
+    var homeName=q.home||'', awayName=q.away||'';
+    var H=fbBrTeam(homeName), A=fbBrTeam(awayName);
+    var pr=fbBrProjection(homeName,awayName);
+    var notes=[], missing=[], score=null, state=null, headline=null;
+
+    if(pr&&pr.p&&pr.p.status==='PREDICTED'){
+      var m=pr.p.model, mk=pr.p.market||{}, sc=fbGxScore(m);
+      /* the board's own labels for where this game stands. */
+      var st=fbP4StatusFor(pr.p,mk);
+      state={label:st.t,note:fbBrStateNote(st.t,pr.p,mk)};
+      if(sc){
+        /* the projection is keyed to the SCHEDULE's home team; if the brief
+           was opened from the other side, the sides swap with it. */
+        var hp=pr.flipped?sc.away:sc.home, ap=pr.flipped?sc.home:sc.away;
+        score={home:{team:homeName,points:String(hp)},away:{team:awayName,points:String(ap)},
+          note:'Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score.'};
+        headline='EdgeDesk projects '+(hp>=ap?homeName+' '+hp+', '+awayName+' '+ap:awayName+' '+ap+', '+homeName+' '+hp)+'.';
+      } else if(m&&m.fair_total==null){
+        missing.push('No projected score: EdgeDesk has a margin for this game but no total, and a score line cannot be split without one.');
+      } else if(m){
+        missing.push('No projected score: the projected margin is wider than the projected total, so splitting it would put a negative number on one side. EdgeDesk publishes neither rather than a score that cannot happen.');
+      }
+      if(m&&m.fair_spread!=null){
+        notes.push('EdgeDesk’s line is '+fbP4Line(pr.u.g.home_team,m.fair_spread)+' on a neutral read of the two teams, before any book is consulted.'
+          +(m.fair_total!=null?' Projected total '+m.fair_total.toFixed(1)+'.':''));
+      }
+      if(m&&m.home_win_prob!=null){
+        var hw=Math.round((pr.flipped?1-m.home_win_prob:m.home_win_prob)*100);
+        notes.push(homeName+' wins '+hw+'% of the time in EdgeDesk’s simulation, '+awayName+' '+(100-hw)+'%.');
+      }
+      if(m&&m.p10_margin!=null&&m.p90_margin!=null){
+        notes.push('Eight games in ten land between '+fbPts(m.p10_margin)+' and '+fbPts(m.p90_margin)+' for '+pr.u.g.home_team+'. A single result inside that band tells you nothing new about either team.');
+      }
+      if(mk&&mk.spread_line!=null){
+        notes.push('The market has '+fbP4Line(pr.u.g.home_team,mk.spread_line)+(mk.book?' at '+mk.book:'')
+          +(mk.spread_gap!=null?', '+Math.abs(mk.spread_gap).toFixed(1)+' points from EdgeDesk’s number.':'.'));
+      }
+    } else if(pr&&pr.p){
+      state={label:String(pr.p.status||'NO PROJECTION'),note:pr.p.reason||(pr.p.missing||[]).join(', ')||null};
+    } else {
+      state={label:'NOT ON THE PROJECTION BOARD',note:'This game is not in EdgeDesk’s upcoming Power 4 slate, so there is no projected score or line for it. The team ratings below still stand.'};
+    }
+
+    /* the ratings themselves, side by side. */
+    var rows=FB_BRIEF_ROWS.map(function(c){
+      var note=null;
+      if(c[0]==='overall') note='points vs an average FBS team, neutral field';
+      return {k:c[1],a:fbBrCell(A,c[0]),h:fbBrCell(H,c[0]),note:note};
+    });
+    rows.push({k:'Confidence',a:fbBrPct(A),h:fbBrPct(H),
+      note:'how much EdgeDesk knows, not how good the team is'});
+    var dA=A?fbRkCatMove(A,'overall'):null, dH=H?fbRkCatMove(H,'overall'):null;
+    if(dA!=null||dH!=null) rows.push({k:'Δ national rank, this week',a:dA==null?null:fbBrDelta(dA),h:dH==null?null:fbBrDelta(dH),note:'differenced from last week’s committed snapshot'});
+
+    if(!H) missing.push(homeName+' is not one of the '+(D.team_count||138)+' FBS programmes EdgeDesk rates, so it carries no team rating. Nothing is estimated in its place.');
+    if(!A) missing.push(awayName+' is not one of the '+(D.team_count||138)+' FBS programmes EdgeDesk rates, so it carries no team rating. Nothing is estimated in its place.');
+    missing=missing.concat(fbBrGaps(H,FB_BRIEF_ROWS)).concat(fbBrGaps(A,FB_BRIEF_ROWS));
+
+    if(!headline){
+      if(H&&A&&H.etsr!=null&&A.etsr!=null){
+        var gap=Math.abs(H.etsr-A.etsr), lead=H.etsr>=A.etsr?H.team:A.team;
+        headline='On neutral-field ratings alone, '+lead+' is '+gap.toFixed(1)+' points the better team — before home field, travel or rest.';
+      } else if(H||A){
+        headline='EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.';
+      }
+    }
+    return {headline:headline,state:state,score:score,
+      table:{cols:[awayName||'Away',homeName||'Home'],rows:rows},
+      notes:notes,missing:missing,
+      source:'Ratings: football/rankings/current.json — '+D.season+' '+D.week_label+', built '+String(D.generated_at||'').slice(0,10)
+        +'. Every rating is read from that one committed build; nothing on this page was computed in your browser.'};
+  }catch(_){ return null; }
+}
+function fbBrPct(t){ var v=t&&t.confidence&&t.confidence.value; return (v==null||!isFinite(v))?null:fbRkPct(v); }
+function fbBrDelta(d){ return d>0?('up '+d):d<0?('down '+Math.abs(d)):'no change'; }
+function fbBrStateNote(label,p,mk){
+  if(label==='NO MARKET') return 'No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.';
+  if(label==='THIN DATA') return 'EdgeDesk has a projection but not enough confidence behind it to weigh against a price.';
+  if(label==='STALE QUOTE') return 'The last captured price is old enough that the comparison would be misleading.';
+  if(label==='DATA FAULT') return 'EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.';
+  if(label==='INVESTIGATE') return 'EdgeDesk and the market disagree by enough to be worth a second look before anything is published.';
+  if(label==='RESEARCH') return 'EdgeDesk and the market are close enough that there is nothing unusual to report.';
+  if(label==='AWAITING DATA') return 'The projection engine has not produced a number for this game yet.';
+  return null;
+}
+/* ═══ THE WEEK'S RANKINGS, AS A PAGE A PUBLISHER CAN PRINT ═════════════════
+   The same board, laid out for someone who is going to read it once and
+   write about it — the Top 25 with the components underneath each team, how
+   the ranking is built, what moved, and an itemised account of what is not
+   covered yet and why.
+
+   EVERY LINE COMES OFF THE COMMITTED ARTIFACT. The table is the board's own
+   ranks. "How EdgeDesk ranks teams" is current.json's own `notes` array,
+   verbatim. A spotlight is that team's `why` block — the strengths and
+   weaknesses the BUILD selected from component ranks — not a sentence
+   written here about a team. The movers are the build's own `movement`
+   deltas. Coverage comes from pipeline_health. No poll is consulted, no
+   number is recomputed and no language model writes any of it.
+   ═════════════════════════════════════════════════════════════════════════ */
+var FB_BRIEF_RK_CELLS=[['overall','ETSR'],['talent','TALENT'],['offense','OFFENSE'],
+  ['defense','DEFENSE'],['special_teams','SPECIAL TEAMS']];
+
+function fbBriefRankings(opts){
+  opts=opts||{};
+  var D=FB.rk.data; if(!D||!D.teams) return null;
+  var top=+opts.top||25;
+  var ranked=[];
+  for(var k in D.teams){ if(!D.teams.hasOwnProperty(k))continue;
+    var t=D.teams[k]; if(t&&t.rank!=null) ranked.push(t); }
+  ranked.sort(function(a,b){ return a.rank-b.rank; });
+
+  var rows=ranked.slice(0,top).map(function(t){
+    var d=fbRkCatMove(t,'overall');
+    return {rank:'#'+t.rank,team:t.team,conf:t.conference||null,
+      cells:FB_BRIEF_RK_CELLS.map(function(c){
+        var v=fbRkVal(t,c[0]); var r=t.ranks&&t.ranks[c[0]];
+        if(v==null) return {v:null,rank:null};
+        return {v:(c[0]==='overall')?fbRkPts(v):fbRkN(v), rank:(r&&r.rank!=null)?('#'+r.rank):null};
+      }).concat([{v:fbBrPct(t),rank:null}]),
+      delta:d==null?null:(d>0?'▲ '+d:d<0?'▼ '+Math.abs(d):'—'),
+      delta_dir:d>0?'up':d<0?'down':null};
+  });
+
+  /* how it ranks — the file's own statement of method, not a paraphrase */
+  var method=(D.notes||[]).map(function(n){ return {h:null,p:n}; });
+
+  /* WHAT MOVED, INSIDE THE SET THIS BRIEF PRINTS. Across the whole board the
+     biggest movers are teams crossing the confidence gate for the first time
+     — a team going 92nd-to-52nd because it now has a rating at all is a fact
+     about EdgeDesk's sample, not about the football. A Top 25 page reports
+     the Top 25's movement, and the bound is printed with it. */
+  var printed=ranked.slice(0,top).filter(function(t){ return fbRkCatMove(t,'overall')!=null; });
+  var up=printed.slice().sort(function(a,b){ return fbRkCatMove(b,'overall')-fbRkCatMove(a,'overall'); });
+  var movers=[];
+  var cmp=ranked.length&&ranked[0].movement&&ranked[0].movement.compared_against;
+  var risers=up.filter(function(t){ return fbRkCatMove(t,'overall')>0; }).slice(0,3);
+  var fallers=up.slice().reverse().filter(function(t){ return fbRkCatMove(t,'overall')<0; }).slice(0,3);
+  if(risers.length) movers.push({h:'Up the most',p:risers.map(function(t){
+      return t.team+' +'+fbRkCatMove(t,'overall')+' to #'+t.rank; }).join(' · ')
+      +(cmp?' — against '+cmp.week_label+'.':'.')});
+  if(fallers.length) movers.push({h:'Down the most',p:fallers.map(function(t){
+      return t.team+' '+fbRkCatMove(t,'overall')+' to #'+t.rank; }).join(' · ')+'.'});
+  if(movers.length) movers.push({h:null,p:'Movement is measured inside the printed Top '+top+' only. Across the whole board the largest swings belong to teams crossing the confidence gate for the first time, which is a fact about EdgeDesk’s sample rather than about the football.'});
+  else movers.push({h:null,p:'No team in the printed Top '+top+' changed national rank'+(cmp?' against '+cmp.week_label:'')+'.'});
+
+  /* spotlights — WHICH teams is a stated rule, and the words are the build's */
+  var spots=[];
+  function spot(t,why){
+    if(!t||!t.why) return;
+    var s=(t.why.strengths||[]).slice(0,3).map(fbBrWhyPhrase).filter(Boolean);
+    var w=(t.why.weaknesses||[]).slice(0,2).map(fbBrWhyPhrase).filter(Boolean);
+    if(!s.length&&!w.length) return;
+    spots.push({h:'Why '+t.team+' is #'+t.rank,
+      p:[why,
+         s.length?'Its best components: '+s.join('; ')+'.':null,
+         w.length?(s.length?'What holds it back: ':'What holds it back, and there is nothing on the other side of the ledger: ')+w.join('; ')+'.':null,
+         'Confidence '+(fbBrPct(t)||'not published')+'.'].filter(Boolean).join(' ')});
+  }
+  if(ranked[0]) spot(ranked[0],'The board’s top team.');
+  var riser=risers.length?risers[0]:null;
+  if(riser&&riser!==ranked[0]) spot(riser,'The biggest riser inside the Top '+top+' this week, '+fbRkCatMove(riser,'overall')+' places.');
+  var gapT=null,gapV=-1;
+  ranked.slice(0,top).forEach(function(t){
+    var a=t.ranks&&t.ranks.talent, b=t.ranks&&t.ranks.performance;
+    if(!a||!b||a.rank==null||b.rank==null) return;
+    var g=Math.abs(a.rank-b.rank); if(g>gapV){ gapV=g; gapT=t; }
+  });
+  if(gapT&&gapT!==ranked[0]&&gapT!==riser) spot(gapT,'The widest gap in the Top '+top+' between what a roster is and how it has played — talent '
+    +'#'+gapT.ranks.talent.rank+', performance #'+gapT.ranks.performance.rank+'.');
+  if(spots.length) spots.push({h:'How '+(spots.length===1?'this team was':'these teams were')+' chosen',
+    p:'The top-ranked team, the biggest riser inside the printed set, and the team in the Top '+top+' with the widest gap between its talent rank and its performance rank — '
+      +'fewer than three appear when one team answers to more than one of those. '
+      +'The rule is fixed, so the same board always produces the same names, and the sentences under each are assembled from that team’s own component ranks rather than written about it.'});
+
+  /* what is missing — pipeline_health, by name and with the build's reason */
+  var H=D.pipeline_health||{}, miss=[];
+  var byCat=H.by_category||{};
+  /* ONLY THE CATEGORIES THIS BOARD RANKS. pipeline_health also reports on
+     internal categories the rankings never publish (EDGE has no separate
+     national rank; availability is an input, not a rating), and listing
+     "availability: 138 of 138 have no rating" as a coverage gap would be
+     true of a column nobody is looking for. */
+  FBRK_TABS.forEach(function(tab){
+    var x=byCat[tab[0]];
+    if(!x||!x.no_rating) return;
+    var n=H.fbs_teams_expected||((x.rated||0)+(x.no_rating||0));
+    miss.push((x.label||tab[1])+': '+(x.rated||0)+' of '+n+' FBS teams are rated and '+(x.ranked||0)+' of those are ranked. '
+      +x.no_rating+' carry no rating yet'
+      +(x.unranked_low_confidence?', and '+x.unranked_low_confidence+' are rated but held out of the national rank by the confidence gate':'')+'.');
+  });
+  var ga=H.genuinely_unavailable||[];
+  if(ga.length) miss.push(ga.length+' team'+(ga.length===1?'':'s')+' are named individually in football/rankings/health.json with the reason each one was given — a gap here is a lookup, not an investigation.');
+  var stf=H.special_teams_feed_density;
+  if(stf&&stf.available&&stf.mean_ratio!=null){
+    miss.push('The public kicking feed is running at '+Math.round(stf.mean_ratio*100)+'% of '+(stf.reference_season||'last season')+'’s density per team-game — that, and not a change in method, is why special teams covers fewer teams than offence or defence.');
+  }
+
+  var footer=['EdgeDesk’s rankings are computed from its own play-by-play and roster data. They are independent of the AP and Coaches polls, EdgeDesk does not vote in either, and no poll is an input to any number here.'];
+  if(H.teams_processed!=null) footer.push(H.teams_processed+' FBS teams processed'
+    +(byCat.overall?', '+byCat.overall.ranked+' ranked and '+(byCat.overall.unranked_low_confidence||0)+' held out of the rank by the confidence gate':'')+'.');
+  footer.push('Research tool only — not betting advice. 21+.');
+
+  return {
+    headline:'EdgeDesk College Football Top '+top+' — '+D.season+' '+D.week_label+'.',
+    subhead:'ETSR is points against an average FBS team on a neutral field. A team is ranked only once EdgeDesk is confident enough in its own evidence; the rest are rated but unranked, and say so. '
+      +'A dash in the table means EdgeDesk published no rating in that category for that team — not a zero and not an average; the reasons are itemised at the end. '
+      +'CONF is how much EdgeDesk knows about a team, not how good it is.',
+    columns:['#','TEAM'].concat(FB_BRIEF_RK_CELLS.map(function(c){return c[1];})).concat(['CONF','Δ WK']),
+    rows:rows,method:method,movers:movers,spotlights:spots,missing:miss,footer:footer,
+    source:'football/rankings/current.json · schema '+(D.schema_version||'')+' · content generated '+String(D.generated_at||'').slice(0,10)
+      +(H.last_rankings_build?' · last build '+String(H.last_rankings_build).slice(0,10):'')+'.'
+  };
+}
+function fbBrWhyPhrase(x){
+  if(!x||!x.label) return null;
+  /* the build already cased these ("QB room", "WR / TE", "Pass offense"), so
+     they are printed as written rather than folded and re-capitalised. */
+  return x.label+' #'+x.rank+(x.of?' of '+x.of+' ranked':'');
 }
 function fbRkTabs(){
   return '<div class="pq-sec">National rankings</div><div class="pq-filters">'

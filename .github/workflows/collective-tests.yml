@@ -186,6 +186,15 @@ jobs:
       - name: The press briefs cannot drift from the board they print
         run: node tools/football/press_brief.test.js
 
+      # A brief on a game nobody has priced used to publish the word "null"
+      # where the price belonged, and none of the ratings the board already
+      # held. This runs the app's own research builders against the committed
+      # artifact: the brief's numbers must BE the board's numbers, an unrated
+      # category must read "not measured", and no verdict branch may print a
+      # price that is not on file.
+      - name: A brief carries the research, and never carries a null
+        run: node tools/football/brief_research.test.js
+
       # The product hierarchy the chrome claims: Research first and default,
       # Edges beside it, Faults reachable without a tab of its own.
       - name: The navigation says what the product is
