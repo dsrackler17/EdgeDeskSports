@@ -1,6 +1,8 @@
 # EdgeDesk — every RLS guarantee that a browser cannot be trusted to keep,
-# tested against a real PostgreSQL: the Games social layer, the franchise, and
-# problem reports (the one table `anon` may write to).
+# tested against a real PostgreSQL: the Games social layer, the franchise,
+# problem reports (the one table `anon` may write to), and member posts (where
+# who may PUBLISH is a value in a column, so no policy can express it and a
+# trigger has to).
 #
 # supabase/games_social.sql is where Head-to-Head answer privacy actually lives:
 # a table no client role may select from, and a security-definer function that
@@ -27,6 +29,10 @@ on:
       - 'tools/app/sql/**'
       - 'tools/app/issue_reports_sql.test.js'
       - 'tools/app/billing_sql.test.js'
+      - 'supabase/site_articles.sql'
+      - 'supabase/community_posts.sql'
+      - 'tools/articles/sql/**'
+      - 'tools/articles/community_sql.test.js'
       - '.github/workflows/games-sql.yml'
   pull_request:
     paths:
@@ -41,6 +47,10 @@ on:
       - 'tools/app/sql/**'
       - 'tools/app/issue_reports_sql.test.js'
       - 'tools/app/billing_sql.test.js'
+      - 'supabase/site_articles.sql'
+      - 'supabase/community_posts.sql'
+      - 'tools/articles/sql/**'
+      - 'tools/articles/community_sql.test.js'
 
 jobs:
   sql:
@@ -99,11 +109,23 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/app/billing_sql.test.js | tee billing.log
 
+      # Member posts. Anyone with an account may WRITE; only an entitled
+      # subscriber may PUBLISH without an editor reading the post first. That
+      # is a statement about a value rather than about a row, so it lives in a
+      # trigger — and this is where the trigger is actually attacked, as anon,
+      # as a free account, as a subscriber, and as one member reaching for
+      # another's queued post.
+      - name: Run the member-post SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/articles/community_sql.test.js | tee community.log
+
       # A skip here would mean the guarantee was never tested. On this job that
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          for f in sql.log franchise.log issues.log billing.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1

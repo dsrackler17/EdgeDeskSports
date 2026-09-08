@@ -545,9 +545,19 @@ section('15. THE DATABASE CONTRACT');
   has(S, 'alter table public.site_articles enable row level security', 'RLS is on');
   chk('anon may read published rows only',
     /create policy "articles public read"[\s\S]{0,200}using \(status = 'published'\)/.test(S));
-  chk('anon is granted select and nothing else',
-    /grant select on public\.site_articles to anon;/.test(S)
-    && !/grant[^;]*(insert|update|delete)[^;]*to anon/i.test(S));
+  /* THE POLICY SET IS WHAT STOPS anon WRITING, not the grant. Supabase issues
+     table-level DML to anon and authenticated as a default privilege on the
+     public schema and relies on RLS to decide what either may touch, so an
+     assertion about the absence of a grant would be false on every real
+     deployment. (It was also matching the migration's own comment explaining
+     exactly that, which is the kind of test that passes until somebody writes
+     a sentence.) What must hold is that no policy lets anon do anything but
+     read a published row. */
+  chk('anon is granted select', /grant select on public\.site_articles to anon;/.test(S));
+  chk('and no policy lets anon write',
+    !/create policy[^;]*on public\.site_articles\s+for (insert|update|delete)[^;]*to [^;]*anon/i.test(S));
+  chk('the migration checks that itself, in its own report',
+    /anon has no policy that writes/.test(S));
   has(S, 'public.site_article_is_admin()', 'writes go through an admin predicate');
   has(S, 'security definer', 'which is security definer');
   has(S, 'set search_path = public, pg_temp', 'with a pinned search path');

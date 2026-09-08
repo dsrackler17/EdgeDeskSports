@@ -134,11 +134,24 @@ revoke all on public.site_article_admins from anon, authenticated;
 
 -- Reuse the operator allowlist that already exists rather than building a
 -- second one: anybody who triages problem reports is already the operator.
-insert into public.site_article_admins (user_id, note)
-select a.user_id, 'carried over from issue_report_admins'
-from public.issue_report_admins a
-where to_regclass('public.issue_report_admins') is not null
-on conflict (user_id) do nothing;
+--
+-- IT HAS TO BE DYNAMIC SQL. The obvious form — a plain insert…select with
+-- `where to_regclass('public.issue_report_admins') is not null` — does not
+-- work, and does not fail in a way anybody would predict: the guard is a
+-- RUNTIME test, and the table name is resolved by the PARSER before any of it
+-- runs. On a project that has not applied issue_reports.sql the whole file
+-- stopped dead at this statement with `relation "public.issue_report_admins"
+-- does not exist`, which is to say the article system could not be installed
+-- at all unless an unrelated migration happened to have been run first.
+do $$
+begin
+  if to_regclass('public.issue_report_admins') is not null then
+    execute 'insert into public.site_article_admins (user_id, note)
+             select a.user_id, ''carried over from issue_report_admins''
+             from public.issue_report_admins a
+             on conflict (user_id) do nothing';
+  end if;
+end $$;
 
 create or replace function public.site_article_is_admin()
 returns boolean
@@ -240,10 +253,18 @@ union all select 3, 'RLS on site_article_settings',
 union all select 4, 'anon reads published only',
   case when exists (select 1 from pg_policies where tablename = 'site_articles'
       and policyname = 'articles public read' and qual like '%published%') then 'ok' else 'CHECK THIS' end
-union all select 5, 'anon cannot write',
-  case when not exists (select 1 from information_schema.role_table_grants
-      where table_schema = 'public' and table_name = 'site_articles'
-        and grantee = 'anon' and privilege_type in ('INSERT','UPDATE','DELETE')) then 'ok' else 'CHECK THIS' end
+-- WHAT STOPS anon WRITING IS THE POLICY SET, NOT THE GRANT. Supabase issues
+-- `grant select, insert, update, delete on tables to anon, authenticated` as
+-- a DEFAULT PRIVILEGE on the public schema and relies on row level security
+-- to decide what either role may actually touch. A check that looked for the
+-- absence of the grant therefore reported CHECK THIS on every correctly
+-- configured project — a migration report that cries wolf is worse than none,
+-- because the row nobody believes is the row that matters. What must be true
+-- is that no policy admits anon to anything but a published-row select.
+union all select 5, 'anon has no policy that writes',
+  case when not exists (select 1 from pg_policies
+      where tablename = 'site_articles' and cmd <> 'SELECT'
+        and ('anon' = any(roles) or 'public' = any(roles))) then 'ok' else 'CHECK THIS' end
 union all select 6, 'slug is unique',
   case when exists (select 1 from pg_indexes where tablename = 'site_articles'
       and indexname = 'site_articles_slug_uk') then 'ok' else 'CHECK THIS' end

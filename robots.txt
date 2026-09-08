@@ -15,6 +15,14 @@ User-agent: *
 Allow: /
 Allow: /articles
 Allow: /articles/
+
+# Member posts and the composer are NOT disallowed, on purpose. Both carry
+# `noindex` in their own head, and a crawler that is blocked from fetching a
+# page cannot read the noindex on it — a disallowed URL can still end up in the
+# index, listed with no content at all. Allowing the crawl is what makes the
+# noindex land. They appear in no sitemap either way, and member posts are
+# written by members rather than by EdgeDesk, which is why they are kept out of
+# search while the research articles are put in it.
 Allow: /games
 Allow: /games/
 Disallow: /articles/_preview/

@@ -48,8 +48,12 @@ estimate and no "approximately".
 | `tools/articles/generate.js` | the CLI that creates and refreshes records. |
 | `tools/articles/build_articles.js` | the CLI that writes `/articles/**`, the hubs and `sitemap-articles.xml`. |
 | `articles/articles.css` | the one stylesheet every public article page loads. |
-| `admin/articles/index.html` | the operator's manager: preview, publish, unpublish, regenerate, archive, auto-publish. |
+| `admin/articles/index.html` | the operator's manager: preview, publish, unpublish, regenerate, archive, auto-publish — and the member-post moderation queue. |
 | `supabase/site_articles.sql` | the publication-state table and its RLS. Optional: the pipeline works keylessly from the committed store. |
+| `tools/articles/community.js` | member posts: the slug rule, the phrase list, the safe body renderer, the validator. Loads in Node **and** in a browser. |
+| `articles/community/index.html` | the member-post feed and reader. Client-rendered, noindex. |
+| `articles/write/index.html` | the composer. |
+| `supabase/community_posts.sql` | the member-post table, its RLS, and the trigger that decides who may publish. |
 
 ## Running it
 
@@ -153,3 +157,93 @@ Drafts, previews and short alias URLs are in no sitemap.
 An article page is complete before any JavaScript runs. The only script on it
 is the copy-link button, and the X and Facebook share links are plain anchors
 that work without it.
+
+
+---
+
+# Member posts
+
+A second, separate thing living under the same `/articles/` roof, and the
+separation is the point.
+
+|  | EdgeDesk research | Member posts |
+| --- | --- | --- |
+| Written by | the model | a person with an EdgeDesk account |
+| Lives at | `/articles/<slug>` | `/articles/community/<slug>` |
+| Is | a committed static file | a row, rendered in the browser |
+| Search | `index,follow`, in the sitemap | `noindex`, in no sitemap |
+| Table | `site_articles` | `community_posts` |
+| Checked for | every integrity rule above | a phrase list, and a human |
+
+They are different tables on purpose. The research builder reads
+`site_articles` and cannot see a member post, so no member post can reach the
+research feed, the research sitemap or an indexed page by mistake — that is a
+structural fact rather than a filter somebody has to remember.
+
+## Who may post, and what happens when they do
+
+**Anyone with an EdgeDesk account may write.** What differs is what pressing
+Publish does:
+
+* an **entitled subscriber** — active, trialing, comped, or past-due inside
+  Stripe's retry window — publishes straight through;
+* **everyone else** lands as `pending` and an EdgeDesk editor reads it first;
+* **any** post carrying a phrase from the list is queued regardless of account.
+
+That rule is a **trigger** (`community_posts_guard()`), not a policy and not a
+browser check. An RLS policy can say which rows you may update; it cannot say
+which *value* you may put in a column, and "a free account may set status to
+anything except published" is a statement about a value. So the trigger
+rewrites the status it was handed, and the composer's copy of the rule exists
+only to tell a writer what will happen before they spend twenty minutes on a
+post.
+
+The composer asks `community_can_publish()` on load and says, in one sentence
+at the top of the form, which of the two it will be.
+
+## The phrase list
+
+`BANNED_TERMS` in `tools/articles/community.js` and
+`public.community_banned_terms` in the migration are **one list in two
+places**, and `tools/articles/community.test.js` fails if they drift — the
+composer must not promise something the database will not honour. Each host
+adds its own word boundary (`\b` in JavaScript, `\y` in PostgreSQL, where
+`\b` is a backspace), which is why the list itself carries none.
+
+**It is a guardrail, not a filter.** Anyone determined to post a pick can
+write around a list of phrases and this one does not claim to stop them. What
+holds the line is structural: an unentitled account cannot publish at all
+without an editor, every post carries its author, five published posts a day
+is the ceiling, and anything published can be removed. The list catches the
+careless case and, in the composer, explains itself.
+
+## A body is text
+
+A post body is escaped first and is never markup. Blank lines become
+paragraphs; bare `http(s)` links become anchors with
+`rel="nofollow ugc noopener"`; everything else stays the text it is. There is
+no markdown, no HTML passthrough and no embed, because one member running
+script in another member's session is the failure mode a community page has
+and the only reliable defence is not to offer the feature.
+
+## Moderating
+
+`/admin/articles` → **Member posts**. The queue defaults to what needs a
+decision and shows the phrase that queued each post. Approving publishes it
+immediately — member posts render live, so unlike a research article there is
+no pipeline run to wait for.
+
+Nobody can delete a post, including its author and including you. `removed`
+takes it off the site; the record of what was said survives.
+
+## Running the tests
+
+```bash
+node tools/articles/community.test.js        # offline: the two lists, escaping, validation
+node tools/articles/community_sql.test.js    # the trigger, attacked on a real PostgreSQL
+npm run articles:sql                         # the same
+```
+
+The SQL suite skips (and passes) with no PostgreSQL reachable, so `npm test`
+stays green on a bare Node install. `.github/workflows/games-sql.yml` is where
+it must not skip.

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Write a post | EdgeDesk</title>
+<meta name="description" content="Write a post for the EdgeDesk member section.">
+<meta name="theme-color" content="#0d0f13">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/articles/articles.css?v=2">
+<!-- ===========================================================================
+     THE COMPOSER.
+
+     IT TELLS YOU WHAT WILL HAPPEN BEFORE YOU WRITE. The first thing this page
+     does after sign-in is ask the database whether this account publishes
+     straight through, and say so at the top of the form. Somebody who spends
+     twenty minutes on a post and only then learns it goes to a queue has been
+     treated badly by the product, and the fix costs one round trip.
+
+     THE CHECKS HERE ARE A COURTESY, NOT A GATE. Every rule this page applies
+     is applied again by supabase/community_posts.sql, where it actually
+     counts — a browser is not a place where a rule can be enforced. What the
+     browser can do that the database cannot is tell a writer WHICH sentence
+     is the problem and why, before they submit, instead of returning an
+     error after.
+     =========================================================================== -->
+</head>
+<body class="a-body">
+
+<header class="ah">
+  <a class="ah-brand" href="/"><span class="ah-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="ah-nav" aria-label="Research sections">
+    <a class="ah-tab" href="/articles">All research</a>
+    <a class="ah-tab" href="/articles/community">Member posts</a>
+  </nav>
+  <span class="ah-cta" id="who" style="background:transparent;color:var(--dim);font-weight:500"></span>
+</header>
+
+<main class="a-wrap" id="main">
+
+  <!-- signed out -->
+  <section id="gate" class="a-sec" hidden>
+    <h1 class="a-h1">Write for the EdgeDesk member section</h1>
+    <p class="a-standfirst">Anyone with an EdgeDesk account can write. Subscribers publish straight through;
+      free accounts are read by an editor first. Either way the post appears under your own name.</p>
+    <div class="a-composer">
+      <label class="a-flabel" for="gEmail">Email</label>
+      <input class="a-input" id="gEmail" type="email" autocomplete="username" placeholder="you@example.com">
+      <label class="a-flabel" for="gPass">Password</label>
+      <input class="a-input" id="gPass" type="password" autocomplete="current-password" placeholder="Your EdgeDesk password">
+      <div class="a-frow"><button class="a-ctabtn" id="gBtn" type="button">Sign in</button>
+        <a class="a-sharebtn" href="/#pricing">Create an account</a></div>
+      <p class="a-fmsg" id="gMsg" hidden></p>
+      <p class="a-fnote">This is the same EdgeDesk account you use for the research terminal.</p>
+    </div>
+  </section>
+
+  <!-- signed in -->
+  <section id="app" class="a-sec" hidden>
+    <nav class="a-crumbs" aria-label="Breadcrumb"><a href="/articles">Research</a> <span>›</span>
+      <a href="/articles/community">Member posts</a> <span>›</span>
+      <span aria-current="page">Write</span></nav>
+    <h1 class="a-h1">Write a post</h1>
+    <p class="a-standfirst">Show your reasoning: what you saw in the matchup, and what would change your mind.
+      EdgeDesk publishes research rather than picks, and that applies here too.</p>
+
+    <p class="a-route" id="route"></p>
+
+    <div class="a-composer">
+      <label class="a-flabel" for="fName">Post as</label>
+      <input class="a-input" id="fName" maxlength="40" placeholder="The name readers will see">
+      <p class="a-fnote">Shown on every post you write. Not your email.</p>
+
+      <label class="a-flabel" for="fTitle">Headline</label>
+      <input class="a-input" id="fTitle" maxlength="140" placeholder="What is this post about?">
+      <p class="a-fnote"><span id="cTitle">0</span> / 140</p>
+
+      <div class="a-frow">
+        <div style="flex:1;min-width:160px">
+          <label class="a-flabel" for="fSport">Sport</label>
+          <select class="a-input" id="fSport">
+            <option value="">Not specific to one</option>
+            <option value="CFB">College football</option>
+            <option value="NFL">NFL</option>
+          </select>
+        </div>
+        <div style="flex:2;min-width:220px">
+          <label class="a-flabel" for="fArticle">About an EdgeDesk matchup? (optional)</label>
+          <select class="a-input" id="fArticle"><option value="">No particular game</option></select>
+        </div>
+      </div>
+
+      <label class="a-flabel" for="fBody">Your post</label>
+      <textarea class="a-input a-textarea" id="fBody" rows="18"
+        placeholder="Blank lines make paragraphs. Links become links. No HTML, no markdown &mdash; just write."></textarea>
+      <p class="a-fnote"><span id="cBody">0</span> characters · <span id="cWords">0</span> words ·
+        <span id="cRead">1</span> min read · at least 200 characters</p>
+
+      <div id="flags"></div>
+      <p class="a-fmsg" id="msg" hidden></p>
+
+      <div class="a-frow" style="margin-top:14px">
+        <button class="a-ctabtn" id="bPublish" type="button">Publish</button>
+        <button class="a-sharebtn" id="bDraft" type="button">Save as draft</button>
+        <a class="a-sharebtn" href="/articles/community">Cancel</a>
+      </div>
+      <p class="a-fnote" id="legal">By posting you confirm this is your own writing, that it is not betting advice,
+        and that you accept the <a href="/terms.html">terms</a>. You can withdraw a post at any time. 21+.</p>
+    </div>
+
+    <section class="a-sec">
+      <h2 class="a-h2">What gets held back</h2>
+      <p class="a-secnote">EdgeDesk does not print recommendation language, and a post carrying it is queued for an
+        editor rather than published — whatever your account. The composer names the phrase as you type so you can
+        rewrite it rather than discover it later.</p>
+      <ul class="a-bul a-dim" id="rules"></ul>
+    </section>
+  </section>
+</main>
+
+<footer class="af">
+  <p class="af-line"><b>Member posts are not EdgeDesk research.</b> EdgeDesk's model research lives at
+    <a href="/articles">/articles</a> and is generated from the model, not written by anyone.</p>
+  <nav class="af-nav" aria-label="Site">
+    <a href="/articles">Research articles</a><a href="/articles/community">Member posts</a>
+    <a href="/app.html#research/football">Research terminal</a>
+    <a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a>
+  </nav>
+  <p class="af-legal">21+. Gamble responsibly — 1-800-GAMBLER.</p>
+</footer>
+
+<script src="/tools/articles/community.js?v=1"></script>
+<script>
+(function () {
+  'use strict';
+  var C = window.EDART.community;
+  var SB_URL = 'https://iattxbkbufslbauoumga.supabase.co';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = C.esc;
+
+  function session() { try { return JSON.parse(localStorage.getItem('edgedesk_session') || 'null'); } catch (e) { return null; } }
+  function token() { var s = session(); return s && s.access_token; }
+  function email() { var s = session(); return s && s.user && s.user.email; }
+  function headers(extra) {
+    var h = { apikey: SB_KEY, 'content-type': 'application/json' };
+    if (token()) h.Authorization = 'Bearer ' + token();
+    if (extra) for (var k in extra) h[k] = extra[k];
+    return h;
+  }
+  function say(id, text, kind) {
+    var el = $(id);
+    if (!text) { el.hidden = true; el.textContent = ''; return; }
+    el.hidden = false; el.className = 'a-fmsg ' + (kind || 'bad'); el.textContent = text;
+  }
+
+  /* ---- sign in ---------------------------------------------------------- */
+  function showGate() { $('gate').hidden = false; $('app').hidden = true; }
+  function showApp() {
+    $('gate').hidden = true; $('app').hidden = false;
+    $('who').textContent = email() || '';
+    var last = '';
+    try { last = localStorage.getItem('edgedesk_post_name') || ''; } catch (_) {}
+    $('fName').value = last || String(email() || '').split('@')[0];
+    loadRoute(); loadArticles(); recount();
+  }
+  $('gBtn').onclick = function () {
+    var e = $('gEmail').value.trim(), p = $('gPass').value;
+    if (!e || !p) { say('gMsg', 'Enter your email and password.'); return; }
+    this.disabled = true;
+    fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { 'content-type': 'application/json', apikey: SB_KEY },
+      body: JSON.stringify({ email: e, password: p })
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (x) {
+        if (!x.ok || !x.d.access_token) { say('gMsg', x.d.msg || x.d.error_description || 'Sign-in failed.'); $('gBtn').disabled = false; return; }
+        localStorage.setItem('edgedesk_session', JSON.stringify(x.d));
+        showApp();
+      }).catch(function () { say('gMsg', 'Network error.'); $('gBtn').disabled = false; });
+  };
+
+  /* ---- what pressing Publish will do, asked before anything is written --- */
+  var CAN_PUBLISH = false;
+  function loadRoute() {
+    $('route').className = 'a-route';
+    $('route').textContent = 'Checking your account…';
+    fetch(SB_URL + '/rest/v1/rpc/community_can_publish', { method: 'POST', headers: headers(), body: '{}' })
+      .then(function (r) { return r.ok ? r.json() : false; })
+      .then(function (v) {
+        CAN_PUBLISH = v === true;
+        $('route').className = 'a-route ' + (CAN_PUBLISH ? 'live' : 'queued');
+        $('route').textContent = CAN_PUBLISH
+          ? 'Your subscription publishes straight through — this post goes live the moment you press Publish.'
+          : 'Free accounts are read by an EdgeDesk editor before a post goes public. Press Publish and it joins the queue; you keep the draft and it appears once it is approved.';
+        $('bPublish').textContent = CAN_PUBLISH ? 'Publish' : 'Submit for review';
+      })
+      .catch(function () {
+        /* The database decides either way. If we could not ask, say so rather
+           than promising the wrong thing. */
+        CAN_PUBLISH = false;
+        $('route').className = 'a-route queued';
+        $('route').textContent = 'Could not check your subscription just now. Your post will be submitted, and EdgeDesk will publish it immediately if your account is entitled.';
+      });
+  }
+
+  /* ---- the matchups a post can be attached to --------------------------- */
+  function loadArticles() {
+    fetch('/articles/data/index.json').then(function (r) { return r.json(); }).then(function (idx) {
+      var pub = (idx.articles || []).filter(function (a) { return a.status === 'published'; });
+      if (!pub.length) return;
+      var sel = $('fArticle');
+      pub.forEach(function (a) {
+        var o = document.createElement('option');
+        o.value = a.slug; o.textContent = a.away_team + ' at ' + a.home_team + ' (' + a.sport + ')';
+        sel.appendChild(o);
+      });
+    }).catch(function () { /* the picker is optional; a post needs no game */ });
+  }
+
+  /* ---- live counting and the wordlist ----------------------------------- */
+  function recount() {
+    var t = $('fTitle').value, b = $('fBody').value;
+    $('cTitle').textContent = t.length;
+    $('cBody').textContent = b.length;
+    $('cWords').textContent = C.words(b);
+    $('cRead').textContent = C.readingMinutes(b);
+    var hits = C.scan(t + '\n' + b).hits;
+    $('flags').innerHTML = hits.length
+      ? '<div class="a-warn"><b>' + hits.length + ' phrase' + (hits.length === 1 ? '' : 's')
+        + ' EdgeDesk does not print.</b> A post carrying one is held for an editor rather than published.'
+        + '<ul class="a-bul">' + hits.map(function (h) {
+            return '<li><b>“' + esc(h.term) + '”</b> — ' + esc(h.why) + '</li>';
+          }).join('') + '</ul></div>'
+      : '';
+  }
+  ['fTitle', 'fBody'].forEach(function (id) { $(id).addEventListener('input', recount); });
+
+  /* ---- submit ----------------------------------------------------------- */
+  function submit(status) {
+    say('msg', '');
+    var post = {
+      author_name: $('fName').value.trim(),
+      title: $('fTitle').value.trim(),
+      body: $('fBody').value.trim(),
+      sport: $('fSport').value || null,
+      article_slug: $('fArticle').value || null
+    };
+    var v = C.validate(post);
+    if (!v.ok) {
+      say('msg', v.errors.map(function (e) { return '• ' + e.why; }).join('\n'));
+      return;
+    }
+    try { localStorage.setItem('edgedesk_post_name', post.author_name); } catch (_) {}
+
+    /* The id is minted here so the slug can carry a suffix without a round
+       trip; the database still owns uniqueness. */
+    var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+          var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    post.id = id;
+    post.slug = C.slugFor(post.title, id);
+    post.status = status;
+
+    $('bPublish').disabled = true; $('bDraft').disabled = true;
+    fetch(SB_URL + '/rest/v1/community_posts', {
+      method: 'POST',
+      headers: headers({ Prefer: 'return=representation' }),
+      body: JSON.stringify([post])
+    }).then(function (r) {
+      return r.text().then(function (t) { return { ok: r.ok, status: r.status, t: t }; });
+    }).then(function (x) {
+      $('bPublish').disabled = false; $('bDraft').disabled = false;
+      if (!x.ok) {
+        say('msg', x.status === 401
+          ? 'Your session has expired. Sign in again and your text is still in the box.'
+          : ('EdgeDesk could not save the post: ' + x.t.slice(0, 220)));
+        return;
+      }
+      var row = null;
+      try { row = JSON.parse(x.t)[0]; } catch (_) {}
+      var landed = (row && row.status) || status;
+      if (landed === 'published') {
+        location.href = '/articles/community/' + encodeURIComponent(row ? row.slug : post.slug);
+        return;
+      }
+      /* THE SERVER DECIDED, AND IT MAY NOT HAVE DECIDED WHAT THE BUTTON SAID.
+         A subscriber whose post tripped the wordlist asked to publish and got
+         a queue, and they are told exactly that rather than left to notice. */
+      say('msg', landed === 'pending'
+        ? (CAN_PUBLISH
+          ? 'Submitted. Your post used a phrase EdgeDesk does not print, so an editor will read it before it goes public. It is saved and you can see it in your posts.'
+          : 'Submitted for review. An EdgeDesk editor will read it before it goes public — you can see it in your posts meanwhile.')
+        : 'Saved as a draft. Nobody else can see it.', 'ok');
+      $('fTitle').value = ''; $('fBody').value = ''; recount();
+    }).catch(function (e) {
+      $('bPublish').disabled = false; $('bDraft').disabled = false;
+      say('msg', 'Network error — nothing was saved, and your text is still in the box.');
+      void e;
+    });
+  }
+  $('bPublish').onclick = function () { submit('published'); };
+  $('bDraft').onclick = function () { submit('draft'); };
+
+  /* the rules, listed from the one list that defines them */
+  $('rules').innerHTML = C.BANNED_TERMS.map(function (t) {
+    return '<li><code>' + esc(String(t[0]).replace(/\(\?:/g, '(').replace(/\\/g, '')) + '</code> — ' + esc(t[1]) + '</li>';
+  }).join('');
+
+  if (token()) showApp(); else showGate();
+})();
+</script>
+</body>
+</html>

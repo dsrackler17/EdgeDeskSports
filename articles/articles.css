@@ -294,3 +294,53 @@ a{color:var(--accent)}
   .a-dpts{min-width:50px;font-size:14px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ============================================================================
+   MEMBER POSTS — the community section.
+
+   Deliberately NOT styled like a research article. The research pages open on
+   a model snapshot in mono type; a member post opens on a person's name and a
+   label saying whose view it is. A reader arriving from a shared link should
+   be able to tell the two apart before reading a word, so the label is the
+   loudest thing above the headline rather than a footnote under it.
+   ========================================================================== */
+.a-membertag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;
+  text-transform:uppercase;font-weight:700;color:var(--mdl);background:rgba(155,140,255,.12);
+  border:1px solid rgba(155,140,255,.35);border-radius:6px;padding:3px 8px}
+.a-memberwarn{border:1px solid rgba(155,140,255,.3);background:rgba(155,140,255,.07);
+  border-radius:12px;padding:13px 16px;margin:0 0 22px;font-size:13.5px;line-height:1.6;color:var(--dim)}
+.a-memberwarn a{color:var(--accent)}
+.a-postbody{font-size:17px;line-height:1.72}
+.a-postbody p{margin:0 0 17px}
+.a-postbody a{overflow-wrap:anywhere}
+
+/* ---- the composer -------------------------------------------------------- */
+.a-composer{border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  padding:18px 20px 20px;margin:14px 0 0}
+.a-flabel{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--faint);font-weight:600;margin:16px 0 6px}
+.a-flabel:first-child{margin-top:0}
+.a-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:10px;padding:11px 13px;font:inherit;font-size:15px}
+.a-input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.a-textarea{resize:vertical;min-height:280px;line-height:1.65;font-size:16px}
+.a-frow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px}
+.a-fnote{font-size:11.5px;color:var(--faint);margin:6px 0 0;line-height:1.55}
+.a-fmsg{font-size:13px;line-height:1.6;border-radius:10px;padding:11px 13px;margin:12px 0 0;
+  white-space:pre-wrap;font-family:var(--mono)}
+.a-fmsg.bad{color:var(--neg);background:rgba(226,96,68,.08);border:1px solid rgba(226,96,68,.3)}
+.a-fmsg.ok{color:var(--pos);background:rgba(47,180,124,.07);border:1px solid rgba(47,180,124,.3)}
+/* what pressing Publish will actually do, said before anything is written */
+.a-route{font-size:13.5px;line-height:1.6;border-radius:11px;padding:12px 15px;margin:16px 0 0;
+  border:1px solid var(--border);background:var(--surface);color:var(--dim)}
+.a-route.live{border-color:rgba(47,180,124,.4);background:rgba(47,180,124,.07);color:var(--text)}
+.a-route.queued{border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07);color:var(--text)}
+.a-about code,.a-bul code{font-family:var(--mono);font-size:12px;color:var(--warn);
+  background:var(--surface2);border-radius:5px;padding:1px 5px}
+
+/* ---- the write button on the research hub -------------------------------- */
+.a-writebar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  padding:15px 18px;margin:0 0 22px}
+.a-writebar p{margin:0;font-size:13.5px;line-height:1.55;color:var(--dim);flex:1;min-width:220px}
+.a-writebar b{color:var(--text)}
