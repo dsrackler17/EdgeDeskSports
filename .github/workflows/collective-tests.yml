@@ -168,6 +168,14 @@ jobs:
       - name: The rankings and the enrichment obey their own rules
         run: node football/rankings/rankings.test.js
 
+      # The CHAIN, not the rules: a game goes final, both teams' season
+      # statistics move, every rating rebuilds, the ranks re-sort, the weekly
+      # snapshot is written and the next week differences against the right
+      # one. It runs on a synthetic league, so it holds on a Tuesday in June
+      # as well as on a Saturday in September.
+      - name: The rankings pipeline updates end to end when a game goes final
+        run: node football/rankings/pipeline.test.js
+
       - name: The rankings panel shows unranked as unranked and research as research
         run: node tools/football/rankings_ui.test.js
 
