@@ -120,10 +120,18 @@ function weekLabel(seasonType, week, notes) {
   return 'Week ' + week;
 }
 /* The point in the season this build represents: the latest completed game. */
+/* A game is FINAL when a feed this pipeline reads says it was played. The
+   schedule feed says so with a score; the box feed says so by carrying both
+   teams' lines. `finalSource` is set by reconcileFinality() and is why the
+   board no longer waits on the slower of the two. */
+function isFinal(g) {
+  if (!g.completed) return false;
+  return g.home_points != null || !!g.final_source;
+}
 function resolveWeek(sched) {
   let best = null;
   for (const g of sched.games) {
-    if (!g.completed || g.home_points == null) continue;
+    if (!isFinal(g)) continue;
     const ord = weekOrdinal(g.season_type, g.week);
     if (best == null || ord > best.ordinal) {
       best = { ordinal: ord, week: g.week, season_type: g.season_type || 'regular',
@@ -406,11 +414,40 @@ async function main() {
     log(`  backfill: rebuilding as of week ordinal ${THROUGH_ORD} — ${droppedGames} later completed game(s) and ${droppedTeamGames} later team-game(s) removed`);
   }
 
+  /* ---- WHICH GAMES ACTUALLY HAPPENED ----
+     Two feeds, two publication schedules, and the schedule is not always the
+     faster one. A game the ESPN box carries for BOTH teams is a game that was
+     played, whatever the schedule feed still says about it; the build takes
+     that as evidence, says where the finality came from, and never invents a
+     score it was not given. */
+  const boxes = {}, finality = {};
+  for (const y of seasons) boxes[y] = readJson(path.join(BOX_DIR, `${y}.json`), null);
+  for (const y of seasons) {
+    finality[y] = reconcileFinality(sched[y], boxes[y]);
+    if (finality[y].confirmed_by_box.length) {
+      log(`  ${y}: ${finality[y].confirmed_by_box.length} game(s) the box says were played and the schedule feed still calls unplayed:`);
+      for (const g of finality[y].confirmed_by_box.slice(0, 6)) log(`      ${g.game_id}  ${g.away} @ ${g.home}  (${g.start_date || 'no kickoff time'})`);
+    }
+  }
+
+  /* ---- and the team-games that exist ONLY in the box ---- */
+  const boxOnly = {};
+  for (const y of seasons) {
+    const weekByGame = {};
+    for (const g of sched[y].games) weekByGame[String(g.game_id)] = g.week;
+    boxOnly[y] = SPECIAL.boxOnlyTeamGames(play[y].teamGames, boxes[y],
+      { blankTG: B.blankTG, blankST: B.blankST, week_by_game: weekByGame });
+    for (const row of boxOnly[y].rows) play[y].teamGames.set(row.game_id + '|' + row.team, row);
+    if (boxOnly[y].rows.length) {
+      log(`  ${y}: ${boxOnly[y].rows.length} team-game(s) added from the box alone — a kicking line and no scrimmage plays`);
+    }
+  }
+
   const allKicks = [];
   for (const y of seasons) play[y].teamGames.forEach(tg => allKicks.push(tg));
   const stReports = {};
   for (const y of seasons) {
-    const boxY = readJson(path.join(BOX_DIR, `${y}.json`), null);
+    const boxY = boxes[y];
     stReports[y] = SPECIAL.attach(play[y].teamGames, boxY, { kick_source: allKicks });
     const r = stReports[y];
     log(`  ${y}: special teams — ${r.box_joined}/${r.team_games} team-games joined the box`
@@ -628,7 +665,7 @@ async function main() {
     /* WHAT THIS BUILD ACTUALLY READ. A weekly rebuild that is quietly reading
        a cached copy of last week's feed succeeds, commits nothing and freezes
        the board; these four numbers are how that is seen rather than assumed. */
-    data_freshness: dataFreshness(sched[cur], play[cur], perf),
+    data_freshness: dataFreshness(sched[cur], play[cur], perf, finality[cur]),
     carryover: finalSlope,
     centre: built.centre, centre_basis: built.centre_basis,
     market: market.available
@@ -777,12 +814,58 @@ function countOf(c) {
   return 0;
 }
 
+/* --------------------------------------------------------------------------
+   FINALITY, RECONCILED ACROSS THE FEEDS THIS PIPELINE ALREADY READS.
+
+   SMU beat Florida State 27-24 on 7 September 2026. The next day the cfbfastR
+   schedule still carried the game as `completed=FALSE` with null points and
+   its play table had not one row for it, while the ESPN player box already
+   carried eighty rows across both teams. Reading the schedule as the sole
+   authority on "has this been played" put a team that had played a game on the
+   board as a team that had not.
+
+   A game the box carries for BOTH sides was played. That is taken as
+   finality — and nothing else is taken from it. No score is reconstructed from
+   a box score: the points stay null, they are not a rating input, and
+   inventing them would be exactly the kind of fabrication this pipeline
+   refuses everywhere else.
+   -------------------------------------------------------------------------- */
+function reconcileFinality(sched, box) {
+  const out = { confirmed_by_box: [], box_available: !!(box && box.team_games),
+    schedule_final: 0, basis: null };
+  if (!sched || !sched.games) return out;
+  for (const g of sched.games) if (g.completed && g.home_points != null) out.schedule_final++;
+  if (!out.box_available) {
+    out.basis = 'no box artifact with per-team-game rows was available, so finality rests on the schedule feed alone';
+    return out;
+  }
+  const sides = {};
+  for (const key of Object.keys(box.team_games)) {
+    const cut = key.indexOf('|');
+    if (cut < 0) continue;
+    const gid = key.slice(0, cut);
+    (sides[gid] = sides[gid] || new Set()).add(key.slice(cut + 1));
+  }
+  for (const g of sched.games) {
+    if (g.completed && g.home_points != null) continue;
+    const both = sides[String(g.game_id)];
+    if (!both || both.size < 2) continue;
+    g.completed = true;
+    g.final_source = 'espn_player_box';
+    out.confirmed_by_box.push({ game_id: String(g.game_id), home: g.home_name || g.home,
+      away: g.away_name || g.away, week: g.week, start_date: g.start_date || null,
+      note: 'the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication.' });
+  }
+  out.basis = 'a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was.';
+  return out;
+}
+
 /* What the current season's feeds contained when this build read them. */
-function dataFreshness(sched, play, perf) {
+function dataFreshness(sched, play, perf, finality) {
   let completed = 0, latest = null;
   const ids = [];
   for (const g of (sched && sched.games) || []) {
-    if (!g.completed || g.home_points == null) continue;
+    if (!isFinal(g)) continue;
     completed++;
     ids.push(String(g.game_id));
     if (g.start_date && (latest == null || g.start_date > latest)) latest = g.start_date;
@@ -798,6 +881,12 @@ function dataFreshness(sched, play, perf) {
        this, so "is there new football" is answered by identity rather than by
        arithmetic that a coincidence can defeat. */
     completed_games_digest: crypto.createHash('sha1').update(ids.sort().join(',')).digest('hex').slice(0, 16),
+    finality: finality ? {
+      schedule_final: finality.schedule_final,
+      confirmed_by_box_alone: finality.confirmed_by_box.length,
+      games: finality.confirmed_by_box,
+      basis: finality.basis
+    } : null,
     team_games_read: countOf(play && play.teamGames),
     teams_with_a_performance_rating: rated,
     basis: 'the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it.'
@@ -896,14 +985,24 @@ function pipelineHealth(a) {
     if (!t.special_teams || t.special_teams.rating == null) miss.push('special_teams');
     if (!miss.length) continue;
     const reasons = [];
-    if (t.performance.offense == null) {
+    /* WHY A TEAM THAT PLAYED HAS NO OFFENCE. "No metric cleared its floor" is
+       true and useless when the real answer is that the play table has not
+       published the game yet. Say the real answer. */
+    const smp = t.performance.sample || {};
+    const playless = smp.games_played > 0 && !(smp.games > 0);
+    if (playless) {
+      reasons.push('this team has played ' + smp.games_played + ' game(s) and the play table has published none of them'
+        + ' — the game is confirmed final by the ESPN box, which carries a kicking line and no scrimmage plays.'
+        + ' Offence, defence and every sub-unit wait on the play feed; nothing about them is estimated in the meantime.');
+    }
+    if (!playless && t.performance.offense == null) {
       reasons.push('offense: ' + (t.performance.available === false
         ? t.performance.reason
         : 'no offensive metric cleared its observation floor — '
           + ((t.performance.offense_detail && t.performance.offense_detail.missing) || [])
             .slice(0, 3).map(m => m.id + ' (' + m.why + ')').join('; ')));
     }
-    if (t.performance.defense == null) {
+    if (!playless && t.performance.defense == null) {
       reasons.push('defense: ' + (t.performance.available === false
         ? t.performance.reason
         : 'no defensive metric cleared its observation floor — '
@@ -913,7 +1012,11 @@ function pipelineHealth(a) {
     if (!t.special_teams || t.special_teams.rating == null) {
       reasons.push('special teams: ' + ((t.special_teams && t.special_teams.reason) || 'no special-teams record'));
     }
-    gaps.push({ team: t.team || k, key: k, games: t.performance.sample ? t.performance.sample.games : 0,
+    if (!reasons.length) reasons.push('no rating in ' + miss.join(', ') + ' and no reason was recorded — investigate');
+    gaps.push({ team: t.team || k, key: k,
+      games_played: smp.games_played == null ? 0 : smp.games_played,
+      games_in_the_play_table: smp.games == null ? 0 : smp.games,
+      box_only_games: smp.box_only_games == null ? 0 : smp.box_only_games,
       missing: miss, reason: reasons.join(' | ') });
   }
 
@@ -1048,7 +1151,7 @@ function missingSnapshotCheck(season, ordinal, sched) {
     .map(f => f.match(/^(\d{4})-w(\d{2})\.json$/)).filter(Boolean)
     .filter(m => +m[1] === season).map(m => +m[2]));
   const completed = new Set();
-  for (const g of sched.games) if (g.completed && g.home_points != null) completed.add(weekOrdinal(g.season_type, g.week));
+  for (const g of sched.games) if (isFinal(g)) completed.add(weekOrdinal(g.season_type, g.week));
   const gaps = [...completed].filter(o => o < ordinal && !have.has(o)).sort((a, b) => a - b);
   /* only weeks AFTER the first snapshot on file count as gaps: the system did
      not exist before then, and demanding history it never had is a false alarm */
@@ -1111,8 +1214,8 @@ function writeIfChanged(file, text) {
   return true;
 }
 
-module.exports = { main, weekOrdinal, weekLabel, resolveWeek, measureSlope, marketPower,
-  specialTeamsFeedDensity,
+module.exports = { main, weekOrdinal, weekLabel, resolveWeek, isFinal, reconcileFinality,
+  measureSlope, marketPower, specialTeamsFeedDensity,
   seasonPlayerLayer, seasonEtsr, attachContinuity, frontReturning, latestSnapshotBefore,
   loadSnapshots, pipelineHealth, missingSnapshotCheck, dataFreshness, POSTSEASON_OFFSET,
   SNAP_DIR: OUT_SNAP, HEALTH_FILE: OUT_HEALTH, HISTORY_FILE: OUT_HIST };

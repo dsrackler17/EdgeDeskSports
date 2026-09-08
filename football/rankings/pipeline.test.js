@@ -574,14 +574,18 @@ function board(teamGames, opts) {
   const health = { last_rankings_build: new Date().toISOString() };
 
   return Promise.all([
-    REFRESH.check({ schedule: sched, current: cur, health }),
-    REFRESH.check({ schedule: sched, current: null, health: null }),
-    REFRESH.check({ schedule: sched, health,
+    REFRESH.check({ schedule: sched, current: cur, health, box: { team_games: null, source: 'none' } }),
+    REFRESH.check({ schedule: sched, current: null, health: null, box: { team_games: null, source: 'none' } }),
+    REFRESH.check({ schedule: sched, health, box: { team_games: null, source: 'none' },
       current: Object.assign({}, cur, { data_freshness: { completed_games: 1, completed_games_digest: 'deadbeefdeadbeef' } }) }),
-    REFRESH.check({ schedule: sched, current: cur,
+    REFRESH.check({ schedule: sched, current: cur, box: { team_games: null, source: 'none' },
       health: { last_rankings_build: '2020-01-01T00:00:00.000Z' } }),
-    REFRESH.check({ schedule: sched, health,
-      current: Object.assign({}, cur, { data_freshness: { completed_games: 2 } }) })
+    REFRESH.check({ schedule: sched, health, box: { team_games: null, source: 'none' },
+      current: Object.assign({}, cur, { data_freshness: { completed_games: 2 } }) }),
+    /* the box confirms a third game the schedule still calls unplayed: the
+       detector must notice it exactly as it notices a schedule final */
+    REFRESH.check({ schedule: JSON.parse(JSON.stringify(sched)), health, current: cur,
+      box: { source: 'test', team_games: { 'c|1': 1, 'c|2': 1 } } })
   ]).then(function (r) {
     ok('refresh: the same set of FINAL games and a fresh build means no rebuild', r[0].rebuild === false, r[0].reason);
     ok('refresh: no published board means rebuild', r[1].rebuild === true);
@@ -591,7 +595,124 @@ function board(teamGames, opts) {
     ok('refresh: a board with no digest means rebuild rather than a guess', r[4].rebuild === true, r[4].reason);
     ok('refresh: it fails toward rebuilding, never toward skipping',
       [r[1], r[2], r[3], r[4]].every(x => x.rebuild === true));
+    ok('refresh: a game the BOX alone says was played triggers a rebuild',
+      r[5].rebuild === true && r[5].feed.confirmed_by_box_alone === 1, r[5].reason);
+    ok('refresh: and it names which game the box confirmed',
+      r[5].feed.box_only_games.join(',') === 'c');
+    ok('refresh: it reports where its box evidence came from',
+      typeof r[5].feed.box_source === 'string' && r[5].feed.box_source.length > 0);
   });
+})();
+
+/* ================================================================== */
+/* FINALITY — A GAME IS FINAL WHEN A FEED SAYS IT WAS PLAYED           */
+/* ------------------------------------------------------------------ */
+/* SMU beat Florida State 27-24 on 7 September 2026. The next day the  */
+/* cfbfastR schedule still carried it as completed=FALSE with null     */
+/* points and its play table had no rows for it, while the ESPN box    */
+/* already carried eighty rows across both teams. Reading the schedule */
+/* alone put a team that had played on the board as one that had not.  */
+/* ================================================================== */
+(function finality() {
+  const sched = { games: [
+    { game_id: 'played', week: 1, season_type: 'regular', completed: true, home_points: 27, away_points: 24,
+      home: 'h1', away: 'a1', home_name: 'Home One', away_name: 'Away One', start_date: '2026-08-30T00:00:00Z' },
+    { game_id: 'boxonly', week: 1, season_type: 'regular', completed: false, home_points: null, away_points: null,
+      home: 'h2', away: 'a2', home_name: 'Florida State', away_name: 'SMU', start_date: '2026-09-07T23:30:00Z' },
+    { game_id: 'future', week: 3, season_type: 'regular', completed: false, home_points: null, away_points: null,
+      home: 'h3', away: 'a3', home_name: 'Home Three', away_name: 'Away Three', start_date: '2026-09-19T00:00:00Z' }
+  ] };
+  const box = { team_game_columns: ['fg_made', 'fg_att', 'xp_made', 'xp_att', 'punts', 'punt_yds',
+    'punts_in20', 'touchbacks', 'kr', 'kr_yds', 'kr_td', 'pr', 'pr_yds', 'pr_td'],
+    team_games: {
+      'boxonly|h2': [1, 2, 3, 3, 4, 170, 1, 0, 2, 44, 0, 1, 6, 0],
+      'boxonly|a2': [2, 3, 3, 3, 1, 49, 0, 0, 1, 25, 0, 3, 7, 0],
+      /* one side only — not a game, and must not be read as one */
+      'halfgame|h9': [0, 0, 1, 1, 5, 200, 1, 0, 0, 0, 0, 0, 0, 0]
+    } };
+
+  const rec = BR.reconcileFinality(sched, box);
+  eq('finality: the box confirms the game the schedule had not published', rec.confirmed_by_box.length, 1);
+  eq('finality: and names it', rec.confirmed_by_box[0].game_id, 'boxonly');
+  ok('finality: the game is now FINAL', BR.isFinal(sched.games[1]));
+  eq('finality: with the source recorded', sched.games[1].final_source, 'espn_player_box');
+  ok('finality: THE SCORE IS NOT INVENTED from the box',
+    sched.games[1].home_points === null && sched.games[1].away_points === null,
+    'a score reconstructed from a box score would be a fabrication');
+  ok('finality: and the record says so', /fabrication/.test(rec.confirmed_by_box[0].note));
+  ok('finality: a future game is untouched', !BR.isFinal(sched.games[2]));
+  ok('finality: ONE side in the box is not a game',
+    !sched.games.some(g => g.game_id === 'halfgame'));
+
+  /* the week now resolves to the week that game was played in */
+  const wk = BR.resolveWeek(sched);
+  eq('finality: the board advances to the week the box-confirmed game was in', wk.ordinal, 1);
+
+  /* with no box, finality rests on the schedule and says so */
+  const sched2 = JSON.parse(JSON.stringify(sched));
+  for (const g of sched2.games) { delete g.final_source; }
+  sched2.games[1].completed = false;
+  const rec2 = BR.reconcileFinality(sched2, null);
+  eq('finality: with no box the schedule stands alone', rec2.confirmed_by_box.length, 0);
+  ok('finality: and it says that is what happened', /schedule feed alone/.test(rec2.basis));
+  ok('finality: the game stays unplayed rather than being guessed at', !BR.isFinal(sched2.games[1]));
+
+  /* the box-only team-games, and what they are allowed to move */
+  const existing = [{ game_id: 'played', week: 1, team: 'h1', opp: 'a1',
+    off: B.blankTG(), comp: null, garbage_plays: 0, st: B.blankST() }];
+  const made = SPECIAL.boxOnlyTeamGames(existing, box,
+    { blankTG: B.blankTG, blankST: B.blankST, week_by_game: { boxonly: 1 } });
+  eq('finality: both sides of the box-only game become team-games', made.rows.length, 2);
+  ok('finality: each knows its opponent',
+    made.rows.every(r => r.opp && r.opp !== r.team));
+  ok('finality: and is flagged as carrying no play evidence',
+    made.rows.every(r => r.play_evidence === false));
+  ok('finality: a one-sided box game produces nothing',
+    !made.rows.some(r => r.game_id === 'halfgame'));
+  ok('finality: a game the play table already has is not duplicated',
+    !made.rows.some(r => r.game_id === 'played'));
+
+  /* end to end: a team whose only game is box-only */
+  const FBS2 = { h2: true, a2: true };
+  for (const k of TEAMS) FBS2[k] = true;
+  const games = league(2).concat(made.rows);
+  SPECIAL.attach(games, box, { kick_source: games });
+  const perf = PERF.build(games, { fbs: FBS2 });
+  const smu = perf.teams.a2;
+  ok('finality: the team is ON the board', !!smu);
+  eq('finality: it has PLAYED one game', smu.sample.games_played, 1);
+  eq('finality: the play table has published none of it', smu.sample.games, 0);
+  eq('finality: and the box alone accounts for it', smu.sample.box_only_games, 1);
+  ok('finality: the two counts are explained side by side',
+    /game\(s\) played;/.test(smu.sample.games_basis));
+  eq('finality: it earns NO offence rating — there are no scrimmage plays', smu.offense.rating, null);
+  eq('finality: and no defence rating', smu.defense.rating, null);
+  eq('finality: and adds nothing to the FBS-equivalent games ETSR ramps on', smu.sample.fbs_equivalent_games, 0);
+  ok('finality: but its KICKING is rated, because that is what the box carries',
+    (smu.special_teams.used || []).length > 0,
+    'used: ' + (smu.special_teams.used || []).map(u => u.id).join(','));
+  ok('finality: field goals are NOT scored from the box — the box has no distances',
+    (smu.special_teams.missing || []).some(m => m.id === 'st_fg_over_expected'));
+  ok('finality: and the attempts the box saw are still reported rather than shown as zero',
+    smu.sample.special_teams.fg_attempts_in_box > smu.sample.special_teams.fg_attempts
+    && /no distances/.test(smu.sample.special_teams.fg_basis),
+    JSON.stringify(smu.sample.special_teams));
+
+  /* the real artifact, if the season has one of these */
+  const f = path.join(__dirname, 'current.json');
+  if (fs.existsSync(f)) {
+    const D = JSON.parse(fs.readFileSync(f, 'utf8'));
+    const fin = D.data_freshness && D.data_freshness.finality;
+    ok('finality: the published board records how each game was confirmed final', !!fin && !!fin.basis);
+    ok('finality: and lists any game the box alone confirmed',
+      !!fin && Array.isArray(fin.games)
+      && fin.games.length === fin.confirmed_by_box_alone);
+    ok('finality: every FBS team that has played a game says so on the board',
+      Object.keys(D.teams).every(k => {
+        const s = D.teams[k].performance && D.teams[k].performance.sample;
+        return !s || s.games_played != null;
+      }));
+  }
 })();
 
 /* ================================================================== */

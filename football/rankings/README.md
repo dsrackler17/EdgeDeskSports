@@ -162,6 +162,48 @@ placement and hang time (so kickoff touchbacks cannot be separated from punting
 ones), blocked punts as an attributed event, the snapper and the holder, and
 which personnel were on the field for a kick.
 
+## Which games are final
+
+Two feeds, two publication schedules, and **the schedule is not always the
+faster one**. SMU beat Florida State 27-24 on 7 September 2026. The next day
+the cfbfastR schedule still carried the game as `completed=FALSE` with null
+points and its play table had not one row for it, while the ESPN player box
+already carried eighty rows across both teams. Reading the schedule as the
+sole authority on "has this been played" put a team that had played a game on
+the board as a team that had not.
+
+A game the box carries for **both** sides was played. `reconcileFinality()`
+takes that as finality, records `final_source: 'espn_player_box'`, and lists
+every such game in `data_freshness.finality`. One side in the box is not a
+game and is not read as one.
+
+**No score is reconstructed from a box score.** The points stay null. They are
+not a rating input, and inventing them would be exactly the fabrication this
+pipeline refuses everywhere else.
+
+Such a game produces a team-game with `play_evidence: false`: a real kicking
+line and no scrimmage plays. So the team's counts are kept apart —
+
+| | what it means |
+|---|---|
+| `sample.games_played` | games this team has played, on any feed's evidence |
+| `sample.games` | games the play table has published |
+| `sample.box_only_games` | the difference, and why |
+
+— and only `games` prices the performance evidence, drives the ETSR ramp and
+feeds the confidence. A box-only game therefore gives a team a special-teams
+rating and an honest game count, and gives it **no** offence, defence or
+sub-unit rating, because there are no plays to rate. `refresh.js` applies the
+same rule, so a box-only final triggers a rebuild on the two-hourly pass
+instead of waiting for the daily one.
+
+Field goals are the one kicking component a box-only game cannot supply:
+place kicking is rated over expectation **by distance** and the box carries no
+distances. The attempts it did see ship as
+`sample.special_teams.fg_attempts_in_box` beside the play table's count, so
+"three attempts, two made, and we cannot tell you from where" is on the record
+rather than a silent zero.
+
 ## Weekly history
 
 `snapshots/{season}-w{ordinal}.json` is the record: every ranking category's

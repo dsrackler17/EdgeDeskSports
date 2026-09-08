@@ -352,6 +352,12 @@ function blankST() {
     fg_over_expected: null,  /* filled once the league distance curve is fitted */
     /* joined from the ESPN player box */
     xp_made: null, xp_att: null,
+    /* the box's own field-goal counts, carried for the RECORD and read by no
+       metric. Place kicking is rated over expectation by DISTANCE, and the box
+       has no distances — so when the play table has not published a game these
+       say "three attempts, two made, and we cannot tell you from where", which
+       is a better answer than a silent zero. */
+    fg_att_box: null, fg_made_box: null,
     punts: null, punt_yds: null, punts_in20: null, punt_touchbacks: null,
     kr: null, kr_yds: null, pr: null, pr_yds: null,
     /* the opponent's own box row in the same game — this team's coverage */

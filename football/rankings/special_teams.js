@@ -196,6 +196,8 @@
       report.box_joined++;
       tg.st.box_joined = true;
       tg.st.xp_made = col(row, 'xp_made'); tg.st.xp_att = col(row, 'xp_att');
+      /* for the record only — no metric reads these. See blankST(). */
+      tg.st.fg_att_box = col(row, 'fg_att'); tg.st.fg_made_box = col(row, 'fg_made');
       tg.st.punts = col(row, 'punts'); tg.st.punt_yds = col(row, 'punt_yds');
       tg.st.punts_in20 = col(row, 'punts_in20'); tg.st.punt_touchbacks = col(row, 'touchbacks');
       tg.st.kr = col(row, 'kr'); tg.st.kr_yds = col(row, 'kr_yds');
@@ -245,6 +247,86 @@
     };
   }
 
+  /* ---------------------------------------------------------------------
+     3. GAMES THE BOX HAS AND THE PLAY TABLE DOES NOT
+     Two feeds, two publication schedules. SMU beat Florida State 27-24 on
+     7 September 2026; the ESPN box carried both teams' lines that night, and
+     the cfbfastR schedule still said `completed=FALSE` with null points the
+     next day while its play table had not a single row for the game. The
+     pipeline read the schedule alone, concluded SMU had not played, and said
+     so on the board — which was simply false.
+
+     A team-game the box carries is a team-game that happened. It has no
+     scrimmage plays, so it produces NO offence, defence or sub-unit rating
+     and must not raise the weight this season's performance carries in ETSR —
+     but it is real football, it has a real kicking line, and the team has
+     played a game. `play_evidence: false` is what the rest of the pipeline
+     reads to keep those two facts apart.
+     --------------------------------------------------------------------- */
+  function boxOnlyTeamGames(teamGames, box, opts) {
+    opts = opts || {};
+    var blankTG = opts.blankTG, blankST = opts.blankST;
+    var out = { rows: [], games: [], available: false, reason: null };
+    if (!box || !box.team_games) {
+      out.reason = 'no box artifact with per-team-game rows, so no game can be confirmed from it';
+      return out;
+    }
+    if (typeof blankTG !== 'function' || typeof blankST !== 'function') {
+      out.reason = 'the caller did not supply the team-game constructors, so no row can be built';
+      return out;
+    }
+    out.available = true;
+
+    var have = {};
+    var list = [];
+    if (teamGames && typeof teamGames.forEach === 'function' && !Array.isArray(teamGames)) {
+      teamGames.forEach(function (tg) { list.push(tg); });
+    } else list = teamGames || [];
+    for (var i = 0; i < list.length; i++) have[list[i].game_id + '|' + list[i].team] = 1;
+
+    /* pair the box's own rows by game id, so each side knows its opponent */
+    var sides = {};
+    for (var key in box.team_games) {
+      if (!Object.prototype.hasOwnProperty.call(box.team_games, key)) continue;
+      var cut = key.indexOf('|');
+      if (cut < 0) continue;
+      var gid = key.slice(0, cut), team = key.slice(cut + 1);
+      (sides[gid] = sides[gid] || []).push(team);
+    }
+    var weekOf = opts.week_by_game || {};
+    var gids = Object.keys(sides).sort();
+    for (var g = 0; g < gids.length; g++) {
+      var gid2 = gids[g], teams = sides[gid2];
+      /* ONE side is not a game. Both rows must be present before this is read
+         as evidence that the game was played. */
+      if (teams.length < 2) continue;
+      for (var t = 0; t < teams.length; t++) {
+        if (have[gid2 + '|' + teams[t]]) continue;
+        var opp = null;
+        for (var o = 0; o < teams.length; o++) if (teams[o] !== teams[t]) { opp = teams[o]; break; }
+        if (!opp) continue;
+        out.rows.push({
+          game_id: gid2, week: weekOf[gid2] == null ? null : weekOf[gid2],
+          team: teams[t], opp: opp,
+          off: blankTG(), comp: null, garbage_plays: 0, st: blankST(),
+          /* THE WHOLE POINT OF THIS ROW */
+          play_evidence: false,
+          evidence: 'the ESPN player box carries both teams for this game; the play table has not published it. This row exists so the game COUNTS and its kicking line is rated. It supplies no scrimmage play, so it produces no offence, defence or sub-unit rating and adds nothing to the weight this season carries in ETSR.'
+        });
+      }
+      if (out.games.indexOf(gid2) < 0 && out.rows.length) {
+        var added = false;
+        for (var r2 = 0; r2 < out.rows.length; r2++) if (out.rows[r2].game_id === gid2) added = true;
+        if (added) out.games.push(gid2);
+      }
+    }
+    out.reason = out.rows.length
+      ? out.rows.length + ' team-game(s) across ' + out.games.length + ' game(s) are in the box feed but not in the play table'
+      : 'every game the box carries is already in the play table';
+    return out;
+  }
+
   return { SCHEMA: SCHEMA, fitFgCurve: fitFgCurve, expectedMake: expectedMake,
-    bucketOf: bucketOf, attach: attach, provenance: provenance, config: CFG };
+    bucketOf: bucketOf, attach: attach, provenance: provenance,
+    boxOnlyTeamGames: boxOnlyTeamGames, config: CFG };
 });

@@ -401,7 +401,7 @@ function writeIfChanged(file, text) {
   return true;
 }
 
-module.exports = { main, ingestSeason, GATES, blank, pair, numOf, ST_COLS };
+module.exports = { main, ingestSeason, loadSeasonCsv, GATES, blank, pair, numOf, ST_COLS };
 if (require.main === module) {
   main().then(c => process.exit(c)).catch(e => { console.error('BOX INGEST FAILED:', e && e.stack || e); process.exit(1); });
 }

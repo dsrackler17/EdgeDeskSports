@@ -171,6 +171,11 @@
           game_id: tg2.game_id, week: tg2.week, team: fbs[tg2.team] ? tg2.team : POOL,
           opp: oppIsFbs ? tg2.opp : POOL, team_is_fbs: !!fbs[tg2.team], opp_is_fbs: oppIsFbs,
           games_ago: agesAgo, recency: recency, weight: w,
+          /* A game the BOX carries and the play table does not is a game that
+             was played, with a kicking line and no scrimmage plays. It counts
+             as a game; it supplies no performance evidence, and must not raise
+             the weight this season carries in ETSR. */
+          play_evidence: tg2.play_evidence !== false,
           agg: agg, full: tg2.off, competitive: tg2.comp || null,
           /* special teams is joined per team-game from the box feed and is not
              split by game state — no public feed says which kick was garbage
@@ -477,18 +482,27 @@
     /* per-team sample facts the confidence and the gates read */
     var sample = {};
     function blankSample() {
-      return { games: 0, fbs_games: 0, weighted_games: 0,
+      return { games: 0, games_played: 0, box_only_games: 0, fbs_games: 0, weighted_games: 0,
         plays: 0, competitive_plays: 0, garbage_plays: 0, scored_plays: 0,
         off_plays: 0, def_plays: 0, opponents: {},
-        st_games: 0, fg_att: 0, punts: 0, kick_returns: 0, punt_returns: 0, xp_att: 0 };
+        st_games: 0, fg_att: 0, fg_att_box: 0, punts: 0, kick_returns: 0, punt_returns: 0, xp_att: 0 };
     }
     for (i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (!r.team_is_fbs) continue;
       var s = sample[r.team] || (sample[r.team] = blankSample());
-      s.games++;
-      if (r.opp_is_fbs) s.fbs_games++;
-      s.weighted_games += (r.opp_is_fbs ? 1 : CFG.NON_FBS.game_weight);
+      /* GAMES PLAYED and GAMES THE PERFORMANCE LAYER COULD READ are two
+         different counts, and conflating them is how a team that played on
+         Sunday reads as a team that has not played. `games` prices the
+         performance evidence and drives the ETSR ramp and the confidence;
+         `games_played` is the fact. */
+      s.games_played++;
+      if (!r.play_evidence) { s.box_only_games++; }
+      else {
+        s.games++;
+        if (r.opp_is_fbs) s.fbs_games++;
+        s.weighted_games += (r.opp_is_fbs ? 1 : CFG.NON_FBS.game_weight);
+      }
       /* the three play counts ship side by side so the garbage-time discount
          is arithmetic anybody can redo: scored = competitive + w x garbage */
       s.plays += field(r.full, 'plays_all') || 0;
@@ -496,10 +510,11 @@
       s.garbage_plays += r.garbage_plays;
       s.scored_plays += field(r.agg, 'plays_all') || 0;
       s.off_plays += field(r.agg, 'plays_all') || 0;
-      s.opponents[r.opp] = 1;
+      if (r.play_evidence) s.opponents[r.opp] = 1;
       if (r.st) {
         s.st_games++;
         s.fg_att += num(r.st.fg_att) || 0;
+        s.fg_att_box += num(r.st.fg_att_box) || 0;
         s.punts += num(r.st.punts) || 0;
         s.kick_returns += num(r.st.kr) || 0;
         s.punt_returns += num(r.st.pr) || 0;
@@ -570,6 +585,14 @@
         sub_units: sub,
         sample: {
           games: sm2.games, fbs_games: sm2.fbs_games,
+          /* the fact, and the evidence, side by side */
+          games_played: sm2.games_played,
+          box_only_games: sm2.box_only_games,
+          games_basis: sm2.box_only_games
+            ? sm2.games_played + ' game(s) played; ' + sm2.games + ' the play table has published. '
+              + sm2.box_only_games + ' game(s) are confirmed by the ESPN box alone — they are real games with a real kicking line, '
+              + 'they carry no scrimmage play, and they therefore raise no performance rating and no ETSR weight.'
+            : 'every game this team has played is in the play table',
           fbs_equivalent_games: Math.round(sm2.weighted_games * 100) / 100,
           non_fbs_share: sm2.games ? Math.round((1 - sm2.fbs_games / sm2.games) * 1000) / 1000 : null,
           plays: sm2.plays, competitive_plays: sm2.competitive_plays,
@@ -579,7 +602,13 @@
           offensive_plays: Math.round(sm2.off_plays), defensive_plays: Math.round(sm2.def_plays),
           distinct_opponents: Object.keys(sm2.opponents).length,
           special_teams: { games: sm2.st_games, fg_attempts: sm2.fg_att, punts: sm2.punts,
-            kick_returns: sm2.kick_returns, punt_returns: sm2.punt_returns, xp_attempts: sm2.xp_att }
+            kick_returns: sm2.kick_returns, punt_returns: sm2.punt_returns, xp_attempts: sm2.xp_att,
+            fg_attempts_in_box: sm2.fg_att_box,
+            fg_basis: (sm2.fg_att_box > sm2.fg_att)
+              ? sm2.fg_att_box + ' field-goal attempt(s) are in the box and ' + sm2.fg_att
+                + ' in the play table. Place kicking is rated over expectation BY DISTANCE and the box carries no distances, '
+                + 'so the attempts the play table has not published cannot be scored — and are not silently counted as zero either.'
+              : 'every field-goal attempt in the box is also in the play table, with its distance' }
         }
       };
     }

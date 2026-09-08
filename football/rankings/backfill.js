@@ -61,9 +61,19 @@ async function main() {
   /* the week ordinals this season has actually finished, plus the preseason,
      which is a real row: it is what the system believed before the season
      answered it */
+  /* the same finality rule the build uses: a game the ESPN box carries for
+     both teams is a game that was played, whatever the schedule feed says */
+  const box = (() => {
+    try { return JSON.parse(fs.readFileSync(path.join(DIR, '..', 'data', 'box', SEASON + '.json'), 'utf8')); }
+    catch (_) { return null; }
+  })();
+  const rec = BR.reconcileFinality(sched, box);
+  if (rec.confirmed_by_box.length) {
+    log(`  ${rec.confirmed_by_box.length} game(s) confirmed final by the box feed alone`);
+  }
   const played = new Set([0]);
   for (const g of sched.games) {
-    if (!g.completed || g.home_points == null) continue;
+    if (!BR.isFinal(g)) continue;
     played.add(BR.weekOrdinal(g.season_type, g.week));
   }
   let ords = Array.from(played).sort((a, b) => a - b).filter(o => o >= FROM && (TO == null || o <= TO));
