@@ -17,6 +17,22 @@ the Supabase SQL editor, and every one of them follows the same three rules.
 3. **It ends in a report.** The last statement is a `select` whose rows each say
    `ok` or `CHECK THIS`. A migration you cannot verify from its own output is a
    migration you have to trust, and the point of these files is not having to.
+4. **No psql meta-commands.** Not one, not even a leading
+   `\set ON_ERROR_STOP on`. These files are pasted into the **SQL editor**,
+   which sends raw SQL to the server — it does not run psql. A backslash
+   command there is not a convenience that degrades; it is a hard
+   `syntax error at or near "\"` on its own line, before anything else in the
+   file is read, so the whole paste does nothing and the message points at a
+   character rather than at a cause.
+
+   `collective_nfl_readiness.sql` shipped with one and the suite passed it,
+   because the suite ran the file with `psql -f` — which reads the file itself
+   and honours meta-commands. The test and the deployment target disagreed
+   about what "running this file" means, so the first thing a user hits was the
+   one thing nothing checked. `tools/collective/model_autocreate_sql.test.js`
+   now asserts the rule for **every** file in this folder, and runs the
+   readiness file the way the editor sends it: one raw string, one round trip,
+   no meta-command handling anywhere.
 
 The edge functions in `functions/` are pasted the same way: one file per
 function, **zero imports**, because the dashboard bundles only the folder you
@@ -70,10 +86,14 @@ the NFL rows were looked up in the **college** schedule, so every game came back
 unmatched with nothing saying why.
 
 This installs the capability in the database, for the same reason
-`collective_member_removal.sql` did: `collective_join`, `collective_public` and
-`collective_admin` are deployed from the dashboard and are not in this
-repository, so a fix inside one of them could not be reviewed, tested, or relied
-on by the other two.
+`collective_member_removal.sql` did: when this was written, `collective_join`,
+`collective_public` and `collective_admin` were deployed from the dashboard and
+were not in this repository, so a fix inside one of them could not be reviewed,
+tested, or relied on by the other two. (All three are committed now, under
+`functions/` — which does not change the answer: a capability all of them need
+is still better defined once, in the database, than three times in three bundles
+that cannot import from each other. What it changes is that they can now all
+CALL it, and be tested doing so.)
 
 * `collective.get_or_create_model(creator, sport, name)` — **the** single source
   of truth. Normalises the sport, takes a transaction-scoped advisory lock on
@@ -120,6 +140,49 @@ resolving against that sport's schedule — is
 `functions/collective_ingest/index.ts`: that function calls
 `get_or_create_model` and, on a database where this file has not been run yet,
 writes the row directly so a contributor is still never blocked.
+
+### `collective_nfl_readiness.sql` — can this Collective take a slate, weekly?
+**Read-only.** Safe on production, any time, including mid-slate: it creates a
+temp report and a temp helper and touches nothing else. The repairs it points at
+are commented out at the bottom, so running it can never be the thing that
+changed something.
+
+It exists because the obvious suspect for a failed upload is the wrong one. When
+thirty rows post and thirty quarantine, there are four possible causes and only
+one of them is anything an index could touch:
+
+1. the contributor has no model for the sport — fixed, it is created on the way past
+2. two models in one sport, so nothing can choose — what the unique index stops
+3. the server does not list the sport at all — a slate for it can never resolve
+4. **the schedule for that week is not loaded** — no game to attach to
+
+Four is the one that recurs, and no index can reach it. This names which link is
+broken instead of leaving it to be inferred from a receipt full of quarantined
+rows: the index and what it is actually built on, the sport vocabulary and how
+your code normalises through it, who covers the sport, any duplicate that would
+block the index, the loaded schedule broken down per week **and how much of it
+is still ahead of kickoff**, and the team count.
+
+Set `p_sport` at the top (default `NFL`). Column names are discovered, so it
+reads whatever shape the deployment has. Rows should each say `ok`; a
+`CHECK THIS` names the fix. The schedule repair is deliberately **not** SQL —
+games come from the feed, and loading them by hand is how a slate ends up
+attached to a fixture nobody checked:
+
+```bash
+node tools/collective/sync_schedule.js --sport NFL            # dry run
+node tools/collective/sync_schedule.js --sport NFL --commit   # load it
+```
+
+The **Sync the Collective schedule** workflow does every sport daily at 09:20
+UTC. It needs `COLLECTIVE_ADMIN_REFRESH_TOKEN` as a repository secret; without
+it the job warns and loads nothing, which looks exactly like a working sync that
+had nothing to do.
+
+Exercised against a real PostgreSQL by
+`tools/collective/model_autocreate_sql.test.js` — with no schedule, with one
+ahead of kickoff, with one entirely in the past, and with the sport delisted —
+and checked for writing nothing while it does it.
 
 ### `collective_member_removal.sql` — removing a contributor, safely
 Until this file there was no way to remove somebody from the Collective except

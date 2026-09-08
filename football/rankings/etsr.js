@@ -591,8 +591,22 @@
         }
         var pt = prev.talent && prev.talent.rating;
         if (isNum(tr) && isNum(pt) && (pt - tr) > T.talent_drop_points) {
-          out.push({ id: 'TALENT_COLLAPSE', severity: 'severe', team: k,
-            detail: 'talent fell ' + r2(pt - tr) + ' points in one week. Talent is not allowed to react to a result.' });
+          /* WHOSE TALENT, MEASURED WHEN? Talent comes from the committed
+             player artifact, and a rebuilt player artifact moves it for
+             reasons that have nothing to do with a result — a roster sync, a
+             newly rateable player, a position spelling corrected. Comparing
+             across two different ones and calling the difference a collapse
+             would fail the build every time the player job lands between two
+             rankings runs, which freezes the board. It still fires; across
+             different artifacts it fires as a WARNING, naming both. */
+          var sameLayer = opts.player_artifact == null || opts.previous_player_artifact == null
+            || opts.player_artifact === opts.previous_player_artifact;
+          out.push({ id: 'TALENT_COLLAPSE', severity: sameLayer ? 'severe' : 'warn', team: k,
+            detail: 'talent fell ' + r2(pt - tr) + ' points in one week. Talent is not allowed to react to a result.'
+              + (sameLayer ? ''
+                : ' Reported as a WARNING rather than a failure: the two boards stood on DIFFERENT player artifacts ('
+                  + opts.previous_player_artifact + ' -> ' + opts.player_artifact
+                  + '), so this is the player layer being rebuilt, not talent reacting to a result.') });
         }
       }
       if (t.duplicate_games && t.duplicate_games.length) {

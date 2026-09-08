@@ -594,6 +594,8 @@ async function main() {
   const expected = Object.keys(sched[cur].fbs);
   const anom = ETSR.anomalies(teams, prevTeams, {
     expected_teams: expected, stability: stab,
+    player_artifact: playersCur.digest || null,
+    previous_player_artifact: (prevSnap && prevSnap.built_on && prevSnap.built_on.player_artifact) || null,
     missing_snapshot: missingSnapshotCheck(SEASON, week.ordinal, sched[cur])
   });
   log(`  anomalies: ${anom.severe} severe, ${anom.warn} warnings`);
@@ -674,6 +676,13 @@ async function main() {
     data_as_of: startedAt, generated_at: startedAt, digest: manifest.digest,
     carryover: finalSlope, centre: built.centre,
     categories: HISTORY.categories(),
+    /* WHICH PLAYER ARTIFACT THIS BOARD'S TALENT CAME FROM. Talent is read from
+       the committed player layer, so two snapshots built on two different ones
+       are not comparable on talent — and a reader, the anomaly gate and a
+       future backfill all need to be able to tell. */
+    built_on: { player_artifact: playersCur.digest || null,
+      player_count: playersCur.player_count || null,
+      player_artifact_generated_at: playersCur.generated_at || null },
     immutability: CFG.HISTORY.immutability_basis,
     team_count: Object.keys(snapTeams).length,
     teams: snapTeams

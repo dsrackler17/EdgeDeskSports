@@ -757,6 +757,30 @@ function board(teamGames, opts) {
     snaps.every(s => s.versions && s.versions.team_rating));
   ok('9. a reconstructed week is labelled as one',
     snaps.every(s => !s.reconstructed || typeof s.reconstructed_basis === 'string'));
+  ok('9. and every snapshot names the player artifact its talent came from',
+    snaps.every(s => s.built_on && 'player_artifact' in s.built_on),
+    'a snapshot with no talent provenance cannot be compared on talent');
+
+  /* TALENT MOVES WHEN THE PLAYER LAYER IS REBUILT, and that is not a collapse.
+     Failing the build on it freezes the board every time the player job lands
+     between two rankings runs, so it fires as a WARNING across two different
+     player artifacts and as a FAILURE across the same one. */
+  const now = { a: { key: 'a', etsr: 1, talent: { rating: 50 }, ranks: {}, confidence: { value: 0.5 } } };
+  const was = { a: { etsr: 1, talent: { rating: 60 } } };
+  const same = ETSR.anomalies(now, was, { player_artifact: 'abc', previous_player_artifact: 'abc' });
+  const diff = ETSR.anomalies(now, was, { player_artifact: 'abc', previous_player_artifact: 'xyz' });
+  const none = ETSR.anomalies(now, was, {});
+  eq('9. a talent collapse on ONE player artifact fails the build',
+    same.list.filter(x => x.id === 'TALENT_COLLAPSE' && x.severity === 'severe').length, 1);
+  eq('9. across two player artifacts it warns instead',
+    diff.list.filter(x => x.id === 'TALENT_COLLAPSE' && x.severity === 'warn').length, 1);
+  ok('9. and it names both artifacts so the reader can check',
+    /abc/.test(diff.list.find(x => x.id === 'TALENT_COLLAPSE').detail)
+    && /xyz/.test(diff.list.find(x => x.id === 'TALENT_COLLAPSE').detail));
+  eq('9. with no provenance recorded it stays severe — the safe direction',
+    none.list.filter(x => x.id === 'TALENT_COLLAPSE' && x.severity === 'severe').length, 1);
+  ok('9. it never stops firing altogether',
+    [same, diff, none].every(r => r.list.some(x => x.id === 'TALENT_COLLAPSE')));
 
   if (fs.existsSync(BR.HISTORY_FILE)) {
     const h = JSON.parse(fs.readFileSync(BR.HISTORY_FILE, 'utf8'));

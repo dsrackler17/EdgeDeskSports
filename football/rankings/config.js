@@ -608,7 +608,7 @@
   };
   var ANOMALIES = [
     { id: 'RATING_JUMP',        severity: 'severe', basis: 'a week-over-week ETSR move beyond the configured bound' },
-    { id: 'TALENT_COLLAPSE',    severity: 'severe', basis: 'talent falling more than the bound in a week — talent is not allowed to react to a result' },
+    { id: 'TALENT_COLLAPSE',    severity: 'severe', basis: 'talent falling more than the bound in a week — talent is not allowed to react to a result. It is downgraded to a WARNING when the two boards stood on DIFFERENT player artifacts: a rebuilt player layer moves talent for a reason that has nothing to do with a result, and failing the build there would freeze the board every time the player job lands between two rankings runs.' },
     { id: 'IMPOSSIBLE_RATING',  severity: 'severe', basis: 'a rating outside the physically plausible band, or not a number' },
     { id: 'MISSING_TEAM',       severity: 'severe', basis: 'an FBS team in the schedule that produced no rating' },
     { id: 'DUPLICATE_TEAM',     severity: 'severe', basis: 'two rating rows for one team key' },
