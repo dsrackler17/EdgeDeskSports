@@ -37099,10 +37099,23 @@ function fbPqUnmeasured(p,L){
        on every ladder rung says which is which.
    ═════════════════════════════════════════════════════════════════════════ */
 FB.rk = { data:null, err:null, at:0, _p:null, features:null, _fp:null,
+  history:null, _hp:null, histErr:null, health:null, _healthP:null,
   tab:'overall', team:null, sort:null, f:{ conf:'', minConf:0, q:'' } };
 
 var FBRK_URL = 'football/rankings/current.json';
 var FBRK_FEATURES = 'football/validation/feature-status.json';
+/* The weekly history is a SEPARATE committed artifact so the board itself does
+   not carry every category of every week of the season on every page load. It
+   is fetched once, lazily, the first time a team detail is opened. Like the
+   board it is BUILT, not computed here: this page reads it and renders it. */
+var FBRK_HISTORY = 'football/rankings/history.json';
+/* The RUN RECORD. current.json's generated_at is the moment the CONTENT was
+   produced and deliberately does not move when a rebuild changes nothing;
+   health.json is written on every successful run, so this is the file that
+   answers "when did the rankings last build" rather than "when did a number
+   last change". Both are shown, and they are labelled as the two different
+   things they are. */
+var FBRK_HEALTH = 'football/rankings/health.json';
 
 function fbRkEnsure(){
   if(FB.rk.data)return Promise.resolve(FB.rk.data);
@@ -37125,6 +37138,27 @@ function fbRkFeatures(){
     .then(function(j){ FB.rk.features=j||{features:[],unavailable:true}; FB.rk._fp=null; return FB.rk.features; })
     .catch(function(){ FB.rk.features={features:[],unavailable:true}; FB.rk._fp=null; return FB.rk.features; });
   return FB.rk._fp;
+}
+function fbRkHealth(){
+  if(FB.rk.health)return Promise.resolve(FB.rk.health);
+  if(FB.rk._healthP)return FB.rk._healthP;
+  FB.rk._healthP=fetch(FBRK_HEALTH,{cache:'no-cache'})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(j){ FB.rk.health=j||null; FB.rk._healthP=null; return FB.rk.health; })
+    .catch(function(){ FB.rk._healthP=null; return null; });
+  return FB.rk._healthP;
+}
+/* the weekly history artifact. Optional: if it will not load the team panel
+   still renders every week the board itself carries, and says which half is
+   missing rather than showing an empty table. */
+function fbRkHistory(){
+  if(FB.rk.history)return Promise.resolve(FB.rk.history);
+  if(FB.rk._hp)return FB.rk._hp;
+  FB.rk._hp=fetch(FBRK_HISTORY,{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('history '+r.status); return r.json(); })
+    .then(function(j){ FB.rk.history=j; FB.rk.histErr=null; FB.rk._hp=null; return j; })
+    .catch(function(e){ FB.rk.histErr=String(e&&e.message||e).slice(0,120); FB.rk._hp=null; return null; });
+  return FB.rk._hp;
 }
 window.fbRkStatus=function(name){
   var reg=FB.rk.features;
@@ -37161,7 +37195,15 @@ function fbRkRank(t,cat){
 
 /* ---- the segment ---- */
 window.fbRkTab=function(t){FB.rk.tab=t;FB.rk.team=null;window.renderFootball();};
-window.fbRkTeam=function(k){FB.rk.team=k;window.renderFootball();};
+window.fbRkTeam=function(k){
+  FB.rk.team=k;
+  /* the full per-category history is fetched once, the first time any team is
+     opened, and the panel re-renders when it lands */
+  if(!FB.rk.history&&!FB.rk._hp&&!FB.rk.histErr){
+    fbRkHistory().then(function(){ if(FB.rk.team)window.renderFootball(); });
+  }
+  window.renderFootball();
+};
 window.fbRkBack=function(){FB.rk.team=null;window.renderFootball();};
 window.fbRkFilter=function(k,v){FB.rk.f[k]=v;window.renderFootball();};
 
@@ -37173,7 +37215,8 @@ function fbRkRender(host){
   }
   if(!FB.rk.data){
     host.innerHTML='<div class="empty">Loading the national rankings…</div>';
-    fbRkEnsure().then(function(){return fbRkFeatures();}).then(function(){window.renderFootball();})
+    fbRkEnsure().then(function(){return fbRkFeatures();}).then(function(){return fbRkHealth();})
+      .then(function(){window.renderFootball();})
       .catch(function(){window.renderFootball();});
     return;
   }
@@ -37183,8 +37226,12 @@ function fbRkRender(host){
    +'those are game facts and the matchup engine applies them on top. '
    +'Talent and performance are rated and ranked separately on purpose. '
    +'<b>No language model produced, ranked or explained any number here</b>, and nothing on this page is computed in your browser. '
-   +'<span class="mono" style="color:var(--faint)">'+fbEsc(D.versions.team_rating)+' · '+D.season+' '+fbEsc(D.week_label)
-   +' · '+D.team_count+' teams · data as of '+fbEsc(String(D.data_as_of).slice(0,10))+'</span></div>';
+   +'<span class="mono" style="color:var(--faint)">'+fbEsc(D.versions.team_rating)+' · '+fbEsc(D.versions.performance||'')
+   +(D.versions.special_teams?(' · '+fbEsc(D.versions.special_teams)):'')+' · '+D.season+' '+fbEsc(D.week_label)
+   +' · '+D.team_count+' teams · data as of '+fbEsc(String(D.data_as_of).slice(0,10))
+   +((FB.rk.health&&FB.rk.health.last_rankings_build)
+     ?(' · built '+fbEsc(String(FB.rk.health.last_rankings_build).slice(0,16).replace('T',' '))+' UTC'):'')
+   +'</span></div>';
 
   var reg=FB.rk.features;
   if(reg&&reg.statement){
@@ -37194,11 +37241,66 @@ function fbRkRender(host){
 
   if(FB.rk.team)return void(host.innerHTML=h+fbRkTeamHTML(FB.rk.team));
 
+  h+=fbRkPipeline(D);
   h+=fbRkCoverage(D);
   h+=fbRkTabs();
   h+=(FB.rk.tab==='overall')?fbRkTop25(D):'';
   h+=fbRkTable(D);
   host.innerHTML=h;
+}
+
+/* ---- §33 the pipeline health strip ----
+   The build's own report, rendered. It says how many FBS teams there are, how
+   many hold each rating, how many are low-confidence, how many are genuinely
+   unavailable and when a game was last ingested — so a reader can tell a quiet
+   week apart from a pipeline that stopped running, without opening a file. */
+function fbRkPipeline(D){
+  var H=FB.rk.health||D.pipeline_health;
+  if(!H)return '';
+  var R=H.ratings||{};
+  var rows=[['overall','Overall'],['talent','Talent'],['performance','Performance'],
+    ['offense','Offense'],['defense','Defense'],['special_teams','Special teams'],
+    ['run_offense','Run O'],['pass_offense','Pass O'],['run_defense','Run D'],['pass_defense','Pass D']];
+  var n=H.fbs_teams_expected||D.team_count||0;
+  var h='<div class="pq-sec">Pipeline health — '+H.season+' '+fbEsc(H.week_label)+'</div>';
+  h+='<div class="pq-gate"><span class="mono">'+n+' FBS teams</span>'
+    +'<span class="mono">'+(H.teams_processed||0)+' processed</span>'
+    +'<span class="mono">'+(H.confidence?H.confidence.below_rank_floor:0)+' low confidence</span>'
+    +'<span class="mono">'+((H.genuinely_unavailable||[]).length)+' with a genuinely unavailable category</span>'
+    +'<span class="mut">'+(H.ingestion&&H.ingestion.opponent_adjustment_converged?'opponent adjustment converged':'OPPONENT ADJUSTMENT DID NOT CONVERGE')+'</span></div>';
+  h+='<div style="overflow-x:auto"><table class="pq-tbl"><tr><th>category</th><th>rated</th><th>ranked</th><th>unranked (low confidence)</th><th>no rating</th></tr>';
+  rows.forEach(function(r){
+    var c=(H.by_category&&H.by_category[r[0]])||null;
+    h+='<tr><td>'+fbEsc(r[1])+'</td>'
+      +'<td class="mono">'+(R[r[0]]==null?'—':R[r[0]])+'</td>'
+      +'<td class="mono">'+(c?c.ranked:'—')+'</td>'
+      +'<td class="mono">'+(c?c.unranked_low_confidence:'—')+'</td>'
+      +'<td class="mono">'+(c?c.no_rating:'—')+'</td></tr>';
+  });
+  h+='</table></div>';
+  var ing=H.ingestion||{};
+  h+='<div class="pq-note"><b>Ingestion:</b> '+(ing.completed_games_in_schedule||0)+' completed games read, '
+    +'last kickoff '+fbEsc(String(ing.last_completed_kickoff||'—')).slice(0,16).replace('T',' ')+'; '
+    +(ing.team_games_read||0)+' team-games; special teams joined '+(ing.special_teams_team_games_joined||0)
+    +' team-games ('+(ing.special_teams_coverage_joined||0)+' with opponent coverage). '
+    +'<b>Last build:</b> '+fbEsc(String(H.last_rankings_build||(FB.rk.data&&FB.rk.data.data_as_of)||'—')).slice(0,16).replace('T',' ')+' UTC · '
+    +'<b>version</b> '+fbEsc((H.build_version&&H.build_version.schema_version)||'')+' '
+    +fbEsc((H.build_version&&H.build_version.digest)||'')+'.</div>';
+  var fd=H.special_teams_feed_density;
+  if(fd&&fd.available&&fd.mean_ratio!=null){
+    h+='<div class="pq-note"><b>Kicking feed density:</b> '+Math.round(fd.mean_ratio*100)+'% of '+fd.reference_season
+      +' per team-game ('+(fd.per_team_game?fd.per_team_game.punts:'—')+' punts, '
+      +(fd.per_team_game?fd.per_team_game.fg_att:'—')+' field-goal attempts, '
+      +(fd.per_team_game?fd.per_team_game.kr:'—')+' kick returns). '+fbEsc(fd.basis)+'</div>';
+  }
+  if((H.genuinely_unavailable||[]).length){
+    var g=H.genuinely_unavailable.slice(0,8);
+    h+='<div class="pq-note"><b>Genuinely unavailable, by name and by reason</b> (first '+g.length+' of '
+      +H.genuinely_unavailable.length+'): '
+      +g.map(function(x){return '<b>'+fbEsc(x.team)+'</b> — '+fbEsc(x.missing.join(', '));}).join('; ')
+      +'. These are teams whose SOURCE DATA does not exist yet, not teams the board declined to rate.</div>';
+  }
+  return h;
 }
 
 /* ---- §29 the data coverage view: WHY confidence is limited ---- */
@@ -37227,6 +37329,14 @@ function fbRkCoverage(D){
     'no public, keyless feed carries coordinator history. The input is contracted for and stays absent rather than being guessed.');
   var conv=D.performance_diagnostics&&D.performance_diagnostics.all_converged;
   add('Play-by-play',conv?1:0.5,'the opponent adjustment '+(conv?'converged on every metric':'did NOT converge — see the diagnostics'));
+  var std=D.performance_diagnostics&&D.performance_diagnostics.special_teams;
+  if(std){
+    add('Special teams',
+      std.contract?(std.metrics_available/std.contract):0,
+      std.metrics_available+' of '+std.contract+' special-teams components could be solved this season, over '
+        +std.team_games_joined+' team-games joined from the kicking feeds. Kickoff placement, hang time, blocked punts, '
+        +'the snap and the hold are carried by no public feed and stay absent.');
+  }
 
   var h='<div class="pq-sec">Data coverage — why confidence is limited</div><div class="pq-grid">';
   rows.forEach(function(r){
@@ -37242,9 +37352,49 @@ function fbRkCoverage(D){
 }
 
 var FBRK_TABS=[['overall','Overall'],['talent','Talent'],['performance','Performance'],
-  ['offense','Offense'],['defense','Defense'],['run_offense','Run O'],['pass_offense','Pass O'],
+  ['offense','Offense'],['defense','Defense'],['special_teams','Special teams'],
+  ['run_offense','Run O'],['pass_offense','Pass O'],
   ['run_defense','Run D'],['pass_defense','Pass D'],['qb','QB'],['ol','OL'],['wr','WR'],
   ['rb','RB'],['dl','DL'],['lb','LB'],['secondary','Secondary'],['depth','Depth'],['continuity','Continuity']];
+/* one place that knows where a category's NUMBER lives on a team record, so
+   the table, the tabs and the team panel cannot disagree about what "Special
+   teams" means. Every one of these is read off the committed artifact — no
+   value on this page is computed, re-ranked or re-sorted into existence. */
+var FBRK_FIELD={
+  overall:function(t){return t.etsr;},
+  talent:function(t){return t.talent&&t.talent.rating;},
+  performance:function(t){return t.performance&&t.performance.rating;},
+  offense:function(t){return t.performance&&t.performance.offense;},
+  defense:function(t){return t.performance&&t.performance.defense;},
+  special_teams:function(t){return t.special_teams&&t.special_teams.rating;},
+  run_offense:function(t){return t.performance&&t.performance.run_offense;},
+  pass_offense:function(t){return t.performance&&t.performance.pass_offense;},
+  run_defense:function(t){return t.run_defence_power&&t.run_defence_power.score;},
+  pass_defense:function(t){return t.performance&&t.performance.pass_defense;},
+  qb:function(t){return t.units&&t.units.QB&&t.units.QB.rating;},
+  ol:function(t){return t.units&&t.units.OL&&t.units.OL.rating;},
+  wr:function(t){return t.units&&t.units.WR&&t.units.WR.rating;},
+  rb:function(t){return t.units&&t.units.RB&&t.units.RB.rating;},
+  dl:function(t){return t.units&&t.units.DL&&t.units.DL.rating;},
+  lb:function(t){return t.units&&t.units.LB&&t.units.LB.rating;},
+  secondary:function(t){return t.units&&t.units.SECONDARY&&t.units.SECONDARY.rating;},
+  depth:function(t){return t.depth&&t.depth.rating;},
+  continuity:function(t){return t.continuity&&t.continuity.rating;}
+};
+function fbRkVal(t,cat){
+  var f=FBRK_FIELD[cat];
+  var v=f?f(t):null;
+  return (v==null||!isFinite(v))?null:v;
+}
+/* the Δ for THIS category, straight out of the build's own movement object.
+   The page never differences two numbers itself. */
+function fbRkCatMove(t,cat){
+  var m=t.movement;
+  if(!m||!m.available)return null;
+  if(cat==='overall')return m.rank?m.rank.delta:null;
+  var c=m.categories&&m.categories[cat];
+  return c&&c.rank?c.rank.delta:null;
+}
 function fbRkTabs(){
   return '<div class="pq-sec">National rankings</div><div class="pq-filters">'
     +FBRK_TABS.map(function(t){
@@ -37254,8 +37404,8 @@ function fbRkTabs(){
 
 function fbRkTop25(D){
   var list=fbRkSorted(D,'overall').slice(0,25);
-  var h='<div class="pq-sec">EdgeDesk top 25</div><table class="pq-tbl">'
-    +'<tr><th>#</th><th>team</th><th>ETSR</th><th>talent</th><th>offense</th><th>defense</th><th>run D</th><th>conf</th><th>Δ wk</th></tr>';
+  var h='<div class="pq-sec">EdgeDesk top 25</div><div style="overflow-x:auto"><table class="pq-tbl">'
+    +'<tr><th>#</th><th>team</th><th>ETSR</th><th>talent</th><th>offense</th><th>defense</th><th>special teams</th><th>run D</th><th>conf</th><th>Δ wk</th></tr>';
   list.forEach(function(t){
     h+='<tr class="click" onclick="fbRkTeam(\''+fbEsc(t.key)+'\')">'
       +'<td class="mono">'+(t.rank==null?'—':t.rank)+'</td>'
@@ -37264,11 +37414,14 @@ function fbRkTop25(D){
       +'<td class="mono">'+fbRkN(t.talent.rating)+' <span class="mut">'+fbRkRank(t,'talent')+'</span></td>'
       +'<td class="mono">'+fbRkN(t.performance.offense)+' <span class="mut">'+fbRkRank(t,'offense')+'</span></td>'
       +'<td class="mono">'+fbRkN(t.performance.defense)+' <span class="mut">'+fbRkRank(t,'defense')+'</span></td>'
+      +'<td class="mono">'+((t.special_teams&&t.special_teams.rating!=null)
+        ?(fbRkN(t.special_teams.rating)+' <span class="mut">'+fbRkRank(t,'special_teams')+'</span>')
+        :('<span class="pq-miss" title="'+fbEsc((t.special_teams&&t.special_teams.reason)||'')+'">—</span>'))+'</td>'
       +'<td class="mono">'+fbRkN(t.run_defence_power.score)+'</td>'
       +'<td class="mono">'+fbRkPct(t.confidence.value)+'</td>'
       +'<td class="mono">'+fbRkMove(t.movement&&t.movement.rank?t.movement.rank.delta:null)+'</td></tr>';
   });
-  return h+'</table>';
+  return h+'</table></div>';
 }
 
 function fbRkSorted(D,cat){
@@ -37303,33 +37456,119 @@ function fbRkTable(D){
     +'<select onchange="fbRkFilter(\'minConf\',this.value)"><option value="">any confidence</option>'
     +[[0.4,'40%+'],[0.6,'60%+'],[0.8,'80%+']].map(function(o){return '<option value="'+o[0]+'"'+(String(f.minConf)===String(o[0])?' selected':'')+'>'+o[1]+' confidence</option>';}).join('')
     +'</select></div>';
-  h+='<div class="pq-note">'+list.length+' teams. Tap a team for its full rating, its weekly history and why it moved. '
-    +'A category with too little data reads <b>unranked</b> rather than being given a rank that looks like the others.</div>';
+  var catLabel=(function(){for(var i=0;i<FBRK_TABS.length;i++)if(FBRK_TABS[i][0]===cat)return FBRK_TABS[i][1];return cat;})();
+  h+='<div class="pq-note">'+list.length+' teams, sorted by <b>'+fbEsc(catLabel)+'</b>. '
+    +'Tap a team for its full rating, its weekly history and why it moved. '
+    +'A category with too little data reads <b>unranked</b> rather than being given a rank that looks like the others, '
+    +'and a category whose inputs do not exist yet reads <b>—</b> rather than a number that was made up to fill the cell.</div>';
+  /* THE COLUMN THE BOARD IS SORTED BY IS ALWAYS SHOWN, whichever it is, with
+     its own national rank and its own Δ week — so Special teams behaves on
+     this table exactly like Offense does. */
+  var showCat=(['overall','talent','performance','offense','defense','special_teams',
+    'run_offense','pass_offense','run_defense','pass_defense'].indexOf(cat)<0);
   h+='<div style="overflow-x:auto"><table class="pq-tbl">'
-    +'<tr><th>#</th><th>team</th><th>ETSR</th><th>Tal</th><th>Off</th><th>Def</th><th>Run O</th><th>Pass O</th>'
-    +'<th>Run D</th><th>Pass D</th><th>QB</th><th>OL</th><th>DL</th><th>Sec</th><th>conf</th><th>Δ wk</th><th>mkt</th></tr>';
+    +'<tr><th>#</th><th>team</th>'
+    +(showCat?('<th>'+fbEsc(catLabel)+'</th>'):'')
+    +'<th>ETSR</th><th>Tal</th><th>Off</th><th>Def</th><th>ST</th><th>Run O</th><th>Pass O</th>'
+    +'<th>Run D</th><th>Pass D</th><th>QB</th><th>OL</th><th>WR</th><th>RB</th><th>DL</th><th>LB</th><th>Sec</th>'
+    +'<th>conf</th><th>Δ wk</th><th>mkt</th></tr>';
   function u(t,g){var x=t.units&&t.units[g];return (x&&x.rating!=null)?fbRkN(x.rating):'<span class="pq-miss">—</span>';}
+  function cell(v,title){
+    return (v==null||!isFinite(v))
+      ? ('<td class="mono"><span class="pq-miss"'+(title?(' title="'+fbEsc(title)+'"'):'')+'>—</span></td>')
+      : ('<td class="mono">'+fbRkN(v)+'</td>');
+  }
   list.forEach(function(t){
     var r=t.ranks&&t.ranks[cat];
     var pos=(r&&!r.unranked&&r.rank!=null)?r.rank:null;
+    var stWhy=(t.special_teams&&t.special_teams.rating==null)?(t.special_teams.reason||''):'';
     h+='<tr class="click" onclick="fbRkTeam(\''+fbEsc(t.key)+'\')">'
-      +'<td class="mono">'+(pos==null?'<span class="pq-miss">ur</span>':pos)+'</td>'
+      +'<td class="mono">'+(pos==null?'<span class="pq-miss" title="'+fbEsc((r&&r.reason)||'no rating in this category yet')+'">ur</span>':pos)+'</td>'
       +'<td>'+fbEsc(t.team)+'</td>'
+      +(showCat?cell(fbRkVal(t,cat)):'')
       +'<td class="mono"><b>'+fbRkPts(t.etsr)+'</b></td>'
-      +'<td class="mono">'+fbRkN(t.talent.rating)+'</td>'
-      +'<td class="mono">'+fbRkN(t.performance.offense)+'</td>'
-      +'<td class="mono">'+fbRkN(t.performance.defense)+'</td>'
-      +'<td class="mono">'+fbRkN(t.performance.run_offense)+'</td>'
-      +'<td class="mono">'+fbRkN(t.performance.pass_offense)+'</td>'
-      +'<td class="mono">'+fbRkN(t.run_defence_power.score)+'</td>'
-      +'<td class="mono">'+fbRkN(t.performance.pass_defense)+'</td>'
+      +cell(t.talent.rating)
+      +cell(t.performance.offense)
+      +cell(t.performance.defense)
+      +cell(t.special_teams?t.special_teams.rating:null,stWhy)
+      +cell(t.performance.run_offense)
+      +cell(t.performance.pass_offense)
+      +cell(t.run_defence_power.score)
+      +cell(t.performance.pass_defense)
       +'<td class="mono">'+u(t,'QB')+'</td><td class="mono">'+u(t,'OL')+'</td>'
-      +'<td class="mono">'+u(t,'DL')+'</td><td class="mono">'+u(t,'SECONDARY')+'</td>'
+      +'<td class="mono">'+u(t,'WR')+'</td><td class="mono">'+u(t,'RB')+'</td>'
+      +'<td class="mono">'+u(t,'DL')+'</td><td class="mono">'+u(t,'LB')+'</td>'
+      +'<td class="mono">'+u(t,'SECONDARY')+'</td>'
       +'<td class="mono">'+fbRkPct(t.confidence.value)+'</td>'
-      +'<td class="mono">'+fbRkMove(t.movement&&t.movement.rank?t.movement.rank.delta:null)+'</td>'
+      +'<td class="mono">'+fbRkMove(fbRkCatMove(t,cat))+'</td>'
       +'<td class="mono">'+(t.market&&t.market.available?fbRkPts(t.market.difference):'<span class="pq-miss">—</span>')+'</td></tr>';
   });
   return h+'</table></div>';
+}
+
+/* ---- §32 the weekly history panel ----
+   Two sources, both COMMITTED, neither computed here: the compact per-week
+   series the board itself carries, and the full per-category series in
+   history.json which is fetched once the first time a team is opened. If the
+   second will not load the first still renders and the panel says which half
+   is missing — it never fills a gap with the number next to it. */
+function fbRkHistoryHTML(t){
+  var h='<div class="pq-sec">Week by week</div>';
+  var rows=t.history||[];
+  if(!rows.length){
+    return h+'<div class="pq-note">no weekly snapshot carries this team yet. The first week it is rated is the first row there can be — a history that starts by inventing its own beginning is not a history.</div>';
+  }
+  var full=null;
+  if(FB.rk.history&&FB.rk.history.teams)full=FB.rk.history.teams[t.key]||null;
+  h+='<div style="overflow-x:auto"><table class="pq-tbl">'
+    +'<tr><th>week</th><th>ETSR</th><th>rank</th><th>Δ ETSR</th><th>offense</th><th>defense</th><th>special teams</th><th>talent</th><th>conf</th></tr>';
+  rows.forEach(function(r,i){
+    var prev=i>0?rows[i-1]:null;
+    var d=(prev&&r.etsr!=null&&prev.etsr!=null)?(r.etsr-prev.etsr):null;
+    h+='<tr><td>'+fbEsc(r.week_label)+'</td>'
+      +'<td class="mono"><b>'+fbRkPts(r.etsr)+'</b></td>'
+      +'<td class="mono">'+(r.rank==null?'<span class="pq-miss">ur</span>':('#'+r.rank))+'</td>'
+      +'<td class="mono">'+(d==null?'<span class="mut">—</span>':('<span style="color:'+(d>0?'var(--pos)':(d<0?'var(--neg)':'var(--dim)'))+'">'+fbRkPts(d)+'</span>'))+'</td>'
+      +'<td class="mono">'+(r.offense==null?'<span class="pq-miss">—</span>':fbRkN(r.offense))+'</td>'
+      +'<td class="mono">'+(r.defense==null?'<span class="pq-miss">—</span>':fbRkN(r.defense))+'</td>'
+      +'<td class="mono">'+(r.special_teams==null?'<span class="pq-miss">—</span>':fbRkN(r.special_teams))+'</td>'
+      +'<td class="mono">'+(r.talent==null?'<span class="pq-miss">—</span>':fbRkN(r.talent))+'</td>'
+      +'<td class="mono">'+fbRkPct(r.confidence)+'</td></tr>';
+  });
+  h+='</table></div>';
+  if(full&&full.length){
+    var last=full[full.length-1];
+    if(last&&last.delta&&last.previous){
+      var moved=[];
+      for(var c in last.delta.categories){
+        if(!last.delta.categories.hasOwnProperty(c))continue;
+        var dc=last.delta.categories[c];
+        if(dc.value==null&&dc.rank==null)continue;
+        if((dc.value==null||Math.abs(dc.value)<0.05)&&(dc.rank==null||dc.rank===0))continue;
+        moved.push({id:c,v:dc.value,r:dc.rank});
+      }
+      moved.sort(function(a,b){return Math.abs(b.v||0)-Math.abs(a.v||0);});
+      h+='<div class="pq-note"><b>Every category, '+fbEsc(last.previous.week_label)+' → '+fbEsc(last.week_label)+':</b></div>';
+      h+='<div style="overflow-x:auto"><table class="pq-tbl"><tr><th>category</th><th>value</th><th>moved</th><th>rank</th></tr>'
+        +(moved.length?moved.map(function(m){
+          var cur=last.categories[m.id]||{};
+          return '<tr><td>'+fbEsc(m.id.replace(/_/g,' '))+'</td>'
+            +'<td class="mono">'+(cur.value==null?'<span class="pq-miss">—</span>':fbRkN(cur.value))+'</td>'
+            +'<td class="mono" style="color:'+((m.v||0)>0?'var(--pos)':'var(--neg)')+'">'+(m.v==null?'—':fbRkPts(m.v))+'</td>'
+            +'<td class="mono">'+(cur.rank==null?'<span class="pq-miss">ur</span>':('#'+cur.rank))+(m.r?(' '+fbRkMove(m.r)):'')+'</td></tr>';
+        }).join(''):'<tr><td colspan="4" class="mut">nothing moved by more than the reporting floor</td></tr>')
+        +'</table></div>';
+    }
+    var recon=(FB.rk.history.snapshots||[]).filter(function(sn){return sn.reconstructed;});
+    if(recon.length){
+      h+='<div class="pq-note">'+recon.length+' of these weeks were RECONSTRUCTED after the fact by the season backfill — '
+        +'what this board would say about that week, built from the player artifact as it stands today, not a record of what it said at the time.</div>';
+    }
+  } else if(FB.rk.histErr){
+    h+='<div class="pq-note">the full per-category history did not load ('+fbEsc(FB.rk.histErr)+'), so only the weeks the board itself carries are shown. Nothing has been filled in.</div>';
+  }
+  h+='<div class="pq-note">'+fbEsc(t.history_basis||'')+'</div>';
+  return h;
 }
 
 /* ---- §17 team detail ---- */
@@ -37358,9 +37597,11 @@ function fbRkTeamHTML(key){
   /* every component, ranked */
   h+='<div class="pq-sec">Every component</div><div style="overflow-x:auto"><table class="pq-tbl"><tr><th>component</th><th>rating</th><th>rank</th></tr>';
   [['offense','Offense',t.performance.offense],['defense','Defense',t.performance.defense],
+   ['special_teams','Special teams',t.special_teams&&t.special_teams.rating],
    ['run_offense','Run offense',t.performance.run_offense],['pass_offense','Pass offense',t.performance.pass_offense],
    ['run_defense','Run defense',t.run_defence_power.score],['pass_defense','Pass defense',t.performance.pass_defense],
    ['qb','QB room',t.units.QB&&t.units.QB.rating],['ol','OL',t.units.OL&&t.units.OL.rating],
+   ['k_room','K room (roster)',t.units.K&&t.units.K.rating],
    ['wr','WR / TE',t.units.WR&&t.units.WR.rating],['rb','RB',t.units.RB&&t.units.RB.rating],
    ['dl','DL',t.units.DL&&t.units.DL.rating],['lb','LB',t.units.LB&&t.units.LB.rating],
    ['secondary','Secondary',t.units.SECONDARY&&t.units.SECONDARY.rating],
@@ -37420,6 +37661,44 @@ function fbRkTeamHTML(key){
     +'<tr><td>home field</td><td class="mono">not included</td>'
     +'<td class="mut" style="font-size:11px">'+fbEsc(t.home_field.basis)+'</td></tr>'
     +'</table>';
+
+  /* §31 SPECIAL TEAMS — a measured team unit, with every component it used,
+     every component it could not get, and what nobody can see at all. */
+  h+='<div class="pq-sec">Special teams</div>';
+  var st=t.special_teams;
+  if(st&&st.rating!=null){
+    h+='<div class="pq-gate"><span class="pq-state" style="color:'+(st.rating>=55?'var(--pos)':(st.rating>=45?'var(--warn)':'var(--neg)'))+'">'
+      +fbRkN(st.rating)+'</span><span class="mono">'+fbRkRank(t,'special_teams')+'</span>'
+      +'<span class="mut">contract '+fbRkPct(st.coverage)+' scored · reliability '+fbRkPct(st.reliability)+'</span></div>';
+    if(st.used&&st.used.length){
+      h+='<div style="overflow-x:auto"><table class="pq-tbl"><tr><th>component</th><th>adjusted</th><th>observed</th><th>weight</th><th>reliability</th></tr>'
+        +st.used.map(function(c){
+          return '<tr><td>'+fbEsc(String(c.id).replace(/^st_/,'').replace(/_/g,' '))+'</td>'
+            +'<td class="mono">'+fbRkN(c.adjusted,2)+'</td><td class="mono">'+fbRkN(c.n_obs,0)+'</td>'
+            +'<td class="mono">'+fbRkN(c.w,2)+'</td><td class="mono">'+fbRkPct(c.reliability)+'</td></tr>';
+        }).join('')+'</table></div>';
+    }
+    if(st.missing&&st.missing.length){
+      h+='<div class="pq-note"><b>Not scored yet:</b> '+st.missing.map(function(m){
+        return fbEsc(String(m.id).replace(/^st_/,'').replace(/_/g,' '))+' — '+fbEsc(m.why);}).join('; ')+'</div>';
+    }
+    h+='<div class="pq-note">'+fbEsc(st.basis||'')+'</div>';
+  } else {
+    h+='<div class="pq-note">'+fbEsc((st&&st.reason)||'no special-teams record for this team')+'</div>';
+  }
+  if(st&&st.provenance&&st.provenance.feeds){
+    h+='<div class="pq-note"><b>What feeds it:</b> '+st.provenance.feeds.map(fbEsc).join('; ')+'. '
+      +'<b>It is not an ETSR input:</b> '+fbEsc(st.is_etsr_input_basis||'')+'</div>';
+  }
+  if(st&&st.unobservable){
+    h+='<div class="pq-note"><b>What nobody can see:</b> '+Object.keys(st.unobservable).map(function(k2){
+      return fbEsc(st.unobservable[k2]);}).join(' ')+'</div>';
+  }
+
+  /* §32 WEEKLY HISTORY — Preseason, Week 1, Week 2 … straight out of the
+     immutable weekly snapshots. Nothing here is interpolated: a week the team
+     was not rated in is a blank, not a carried-forward number. */
+  h+=fbRkHistoryHTML(t);
 
   /* run defence detail */
   h+='<div class="pq-sec">Run defense</div>';
@@ -37500,8 +37779,13 @@ function fbRenderBoard(host){
     if(ban){ban.className='flbanner hide';ban.innerHTML='';}
     if(ctl)ctl.style.display='none';
     var frk=$('fbFresh');
-    if(frk)frk.textContent=(FB.rk.data&&FB.rk.data.data_as_of)
-      ?('rankings built '+String(FB.rk.data.data_as_of).slice(0,10)):'—';
+    if(frk){
+      /* the most recent SUCCESSFUL build, from the run record; the board's own
+         content stamp only when the run record is unavailable */
+      var built=(FB.rk.health&&FB.rk.health.last_rankings_build)
+        ||(FB.rk.data&&FB.rk.data.data_as_of)||null;
+      frk.textContent=built?('rankings built '+String(built).slice(0,10)):'—';
+    }
     fbRkRender(host);return;
   }
   /* Players: the national player-quality + scheme matchup layer. Separate

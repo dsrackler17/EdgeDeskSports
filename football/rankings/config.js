@@ -30,16 +30,28 @@
 
   var VERSIONS = {
     talent: 'talent_v1',
-    performance: 'performance_v1',
+    performance: 'performance_v2',
     team_rating: 'team_rating_v1',
     run_defence_power: 'run_defence_power_v1',
+    special_teams: 'special_teams_v1',
     /* the layers underneath, restated so every artifact says what it was built
        on rather than leaving the reader to guess */
     player_rating: 'player_rating_v1',
     scheme_matchup: 'scheme_matchup_v1',
     simulation: 'simulation_v1'
   };
-  var SCHEMA_VERSION = '1.0.0';
+  var SCHEMA_VERSION = '1.1.0';
+  /* WHY performance_v2 and schema 1.1.0.
+     v1 evaluated every metric's scoring floor against the WEIGHT-DISCOUNTED
+     denominator while `min_n` below is stated in OBSERVATIONS, and it dropped
+     garbage-time plays out of the scored sample entirely. The two compounded:
+     the config's own floor_basis reasons about "seventy plays at the 0.45 game
+     weight", and a team that beat an FCS side 73-6 arrived at the floor with
+     eleven. Thirty-one teams that had played a real game came back with no
+     offence and no defence at all. v2 separates the two numbers — the floor is
+     asked of the OBSERVATIONS, the shrink is asked of the WEIGHTED evidence —
+     and scores garbage-time plays at a declared discount instead of deleting
+     them. Nothing about min_n, the weights or the shrink direction changed. */
 
   /* ------------------------------------------------------------------ *
    * WHAT THE PERFORMANCE LAYER MEASURES                                 *
@@ -131,6 +143,98 @@
       ] }
   };
 
+  /* ------------------------------------------------------------------ *
+   * SPECIAL TEAMS — a real team unit, measured from real kicking data   *
+   * ------------------------------------------------------------------ *
+   * BEFORE THIS EXISTED, "special teams" on the rankings board was the K
+   * position group out of the player-talent layer: a roster read of who is on
+   * the kicking depth chart. That is a talent statement, not a performance
+   * one, and it could not move when a team missed three field goals.
+   *
+   * WHERE EVERY NUMBER COMES FROM. Two feeds this pipeline already ingests,
+   * and nothing else:
+   *
+   *   the cfbfastR play table       every field-goal attempt, its DISTANCE
+   *   (player_stats_YYYY.csv)       (`field_goal_attempt_stat`), whether it
+   *                                 was made, and whether it was blocked
+   *
+   *   the ESPN player box           punts, punt yards, touchbacks, punts
+   *   (sportsdataverse release)     inside the 20, extra points, kick and
+   *                                 punt returns and their yards — per player
+   *                                 per game, so per TEAM per GAME, so the
+   *                                 opponent's row in the same game is this
+   *                                 team's COVERAGE
+   *
+   * PLACE KICKING IS RATED OVER EXPECTATION, NOT ON PERCENTAGE. A 38-yard
+   * kicker and a 52-yard kicker do not have the same job. The expected make
+   * rate per distance is fitted from this pipeline's OWN play table across the
+   * seasons it loads (five-yard buckets, shrunk toward the neighbouring
+   * buckets), so the expectation is measured from the same football the rating
+   * is measured on and no external table is imported.
+   *
+   * WHAT IS DELIBERATELY ABSENT. No public keyless feed carries kickoff
+   * placement or hang time, blocked PUNTS as an attributed event, fair-catch
+   * or fumbled-return detail, or which unit was on the field. Those stay
+   * missing: an absent component lowers this unit's coverage and its
+   * confidence, and never moves the number.
+   * ------------------------------------------------------------------ */
+  var SPECIAL_TEAMS = {
+    label: 'Special teams',
+    /* Every metric reads the SPECIAL-TEAMS aggregate on the team-game
+       (`src: 'st'`) rather than the offensive one, and every one is stated
+       from the rating team's point of view: a coverage counter is already
+       "allowed by me", so `dir: -1` means the same thing it means everywhere
+       else in this file. */
+    /* WHY THESE FLOORS ARE STATED IN EVENTS AND NOT AS A FRACTION.
+       Everywhere else in this file the scoring floor is a fifth of min_n,
+       because a scrimmage play happens seventy times a game and a fifth of a
+       season's plays is reached in week two. A punt happens four times a game
+       and a kickoff return once. A fifth of a season's kicks is NOVEMBER, so
+       reading the same fraction here would mean special teams stayed dark for
+       two months of every season while the events it rates were being played
+       on television. Each metric therefore names `floor_n` directly: the
+       fewest events that can produce a number at all — one game's worth — with
+       full credit still only at min_n, roughly a season's worth. Between the
+       two the reliability shrink does exactly what it does everywhere else,
+       and a team holding one kick carries about a eighteenth of its z. */
+    metrics: [
+      { id: 'st_fg_over_expected', src: 'st', num: 'fg_over_expected', den: 'fg_att', w: 0.26, dir: 1, min_n: 18, floor_n: 1,
+        basis: 'field goals made minus the league make rate at the distance each one was attempted from, per attempt. The only place-kicking number that does not reward a team for never trying anything hard.' },
+      { id: 'st_punt_net',         src: 'st', num: 'punt_net_yds',     den: 'punts',  w: 0.22, dir: 1, min_n: 40, floor_n: 2,
+        basis: 'net punting: gross punt yards, less the return yards the opponent actually gained on them, less the touchback cost. It is the punt unit and the punt COVERAGE unit measured as the one thing they are. A team-game whose OPPONENT row is not in the box feed scores no net punting at all, because the return half would otherwise be silently read as zero.' },
+      { id: 'st_kick_coverage',    src: 'st', num: 'kr_yds_allowed',   den: 'kr_allowed', w: 0.14, dir: -1, min_n: 20, floor_n: 1,
+        basis: 'yards per kickoff return allowed. Read off the opponent’s own box row in the same game, so it is a measured event rather than a residual.' },
+      { id: 'st_punt_return',      src: 'st', num: 'pr_yds',           den: 'pr',     w: 0.12, dir: 1, min_n: 16, floor_n: 1,
+        basis: 'yards per punt return. Small samples, and weighted accordingly.' },
+      { id: 'st_kick_return',      src: 'st', num: 'kr_yds',           den: 'kr',     w: 0.11, dir: 1, min_n: 20, floor_n: 1,
+        basis: 'yards per kickoff return' },
+      { id: 'st_punt_inside20',    src: 'st', num: 'punts_in20',       den: 'punts',  w: 0.08, dir: 1, min_n: 40, floor_n: 2,
+        basis: 'share of punts downed inside the 20 — placement, which net average alone under-credits on a short field' },
+      { id: 'st_xp',               src: 'st', num: 'xp_made',          den: 'xp_att', w: 0.04, dir: 1, min_n: 40, floor_n: 2,
+        basis: 'extra points. Nearly automatic, so a small weight — but a team that misses them is losing real points and the board should be able to see it.' },
+      { id: 'st_kicks_blocked',    src: 'st', num: 'fg_blocked',       den: 'fg_att', w: 0.03, dir: -1, min_n: 18, floor_n: 1,
+        basis: 'field goals blocked against, per attempt. Protection, and the loudest single special-teams failure there is.', regress: 0.5 }
+    ],
+    /* the expected-FG surface */
+    fg_expectation: {
+      bucket_yards: 5,
+      min_distance: 15,
+      max_distance: 70,
+      neighbour_shrink_n: 40,
+      basis: 'the league make rate in five-yard distance buckets, fitted from the play table this build already loaded, with each bucket shrunk toward its neighbours by a constant 40-attempt pseudo-count so a thin bucket cannot produce a make rate of 0 or 1. Refitted every build from the seasons in the window; never imported and never hand-written.'
+    },
+    touchback_yards: 20,
+    touchback_basis: 'a touchback returns the ball to the 20 for scrimmage purposes here — the yardage charged back against a gross punt average. It is the convention, stated rather than assumed.',
+    coverage_floor: 0.34,
+    coverage_floor_basis: 'a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish "the punt return rating" under the label "special teams".',
+    unobservable: {
+      kickoff_placement: 'no public keyless feed carries kickoff landing spot or hang time, so touchback RATE on kickoffs — the thing a modern kickoff unit is actually judged on — cannot be separated from the punting touchbacks the box does carry.',
+      blocked_punts: 'the play table attributes a blocked FIELD GOAL and nothing else. A blocked punt is not an attributed event in either feed.',
+      snap_and_hold: 'the snapper and the holder are unobserved everywhere. A miss caused by a bad snap is charged to the kicker here, and there is no feed that would let it be charged correctly.',
+      unit_personnel: 'no feed says who was on the field for a kick, so this is a TEAM special-teams rating and is never presented as a player one.'
+    }
+  };
+
   /* Offence and defence weigh equally in the net efficiency that feeds ETSR.
      Stated rather than assumed: there is no measured reason in this data to
      prefer one, and asserting one without a measurement is exactly the kind of
@@ -179,10 +283,37 @@
    * ------------------------------------------------------------------ */
   var SAMPLE = {
     score_floor_fraction: 0.20,
-    floor_basis: 'below a fifth of a metric’s stated sample the metric is still not scored for that team. The fifth is not taste: ONE GAME of football must reach the board, and one game against a non-FBS opponent — seventy plays at the 0.45 game weight — lands at 0.21 of a 150-play sample. Set any higher and half the league is dark every September; set lower and a four-play red-zone sample gets a number whose only job is to be shrunk to nothing.',
-    reliability_basis: 'reliability = min(1, n / min_n). A team holding half the stated sample carries half its z, and reaches full credit exactly at min_n. The shrink is toward the league mean — the direction a thin sample should be pulled — and every scored metric ships its own reliability and the sample it was measured on.',
+    floor_basis: 'below a fifth of a metric’s stated sample the metric is still not scored for that team. The fifth is not taste: ONE GAME of football must reach the board, and one game is about seventy plays against a 150-play sample. Set any higher and half the league is dark every September; set lower and a four-play red-zone sample gets a number whose only job is to be shrunk to nothing.',
+    /* THE TWO NUMBERS ARE NOT THE SAME NUMBER, and treating them as one is the
+       bug that emptied the offence and defence columns. See performance_v2. */
+    floor_on: 'observations',
+    floor_on_basis: 'the floor is asked of the OBSERVATIONS — how many plays, attempts or dropbacks were actually seen, garbage time counted at its declared discount. min_n is stated in observations, so the floor has to be tested in observations. Testing it against the weighted evidence instead compares "150 plays" to "eleven plays’ worth of evidence" and deletes a rating that a whole game of football supports.',
+    reliability_on: 'weighted evidence',
+    reliability_basis: 'reliability = min(1, weighted evidence / min_n), where the weighted evidence is the same denominator the opponent adjustment used — recency decay, the non-FBS discount and the garbage-time discount all included. A team holding half the stated evidence carries half its z, and reaches full credit exactly at min_n. THAT is where a thin or cheap sample belongs: shrinking the number toward the league mean and cutting the confidence, never deleting the row. Every scored metric ships its own reliability, its observation count and its weighted evidence.',
     standardise_min_teams: 12,
     standardise_basis: 'the league standardisation runs over every team above the scoring floor. Fewer teams than this and there is no population to standardise against, so the metric is declared unusable rather than standardised against a handful.'
+  };
+
+  /* ------------------------------------------------------------------ *
+   * GARBAGE TIME                                                        *
+   * ------------------------------------------------------------------ *
+   * v1 scored the COMPETITIVE-ONLY aggregate and threw the rest away. That is
+   * a deletion, and this file's own header says the layer "does not delete
+   * data it dislikes". It also broke the scoring floor: the floor was sized
+   * for a full seventy-play game, and a 73-6 win over an FCS side leaves
+   * twenty-five competitive plays, which is not a small sample of football —
+   * it is most of a game of football thrown in the bin.
+   *
+   * A garbage-time snap is real football played by real players against a
+   * defence that has stopped playing the same way. It is worth LESS, not
+   * NOTHING — exactly the treatment a non-FBS opponent already gets here.
+   * ------------------------------------------------------------------ */
+  var GARBAGE = {
+    scored_weight: 0.35,
+    measured: false,
+    scored_weight_basis: 'a garbage-time play counts as roughly a third of a competitive one, in both the numerator and the denominator, so the RATE is a blend and the SAMPLE grows by the discounted amount. Like NON_FBS.game_weight this is DECLARED rather than measured — no walk-forward has been run that would fit it — and both the competitive-only and the full aggregates continue to ship per team-game so the choice can be audited and changed with evidence.',
+    both_published: true,
+    publish_basis: 'every team ships plays, competitive_plays, garbage_plays and the scored (blended) count, so the effect of this constant on any team is arithmetic a reader can redo.'
   };
 
   /* ------------------------------------------------------------------ *
@@ -403,7 +534,9 @@
     { id: 'FCS_DOMINATED_SAMPLE',     severity: 'high',   confidence_cost: 0.16, basis: 'most of the games played are against a pooled non-FBS opponent, so the sample says far less about where this team sits among FBS teams than its size suggests' },
     { id: 'SCHEME_DATA_LOW_CONFIDENCE', severity: 'low',  confidence_cost: 0,    duplicates_component: 'scheme_data',
       basis: 'the tendency profile is mostly last season’s, or is thin. Already priced by the `scheme_data` component.' },
-    { id: 'PRIOR_SEASON_MISSING',     severity: 'medium', confidence_cost: 0.10, basis: 'no prior-season rating exists (an FBS newcomer, or a season the feed never published), so the PRIOR term rests on talent alone' }
+    { id: 'PRIOR_SEASON_MISSING',     severity: 'medium', confidence_cost: 0.10, basis: 'no prior-season rating exists (an FBS newcomer, or a season the feed never published), so the PRIOR term rests on talent alone' },
+    { id: 'THIN_SPECIAL_TEAMS_DATA',  severity: 'low',    confidence_cost: 0,    duplicates_component: 'game_sample',
+      basis: 'the special-teams contract scored below its coverage floor — the kicking, punting and return feeds did not reach enough of this team’s games. It costs no confidence directly because the sample components already price it; it fires as the reason the special-teams cell is empty. Special teams is NOT an input to ETSR, so a missing one cannot move the overall rating.' }
   ];
   var GATE_THRESHOLDS = {
     low_sample_games: 3,
@@ -428,7 +561,8 @@
     { id: 'pass_offense', label: 'Pass offense', field: 'performance.pass_offense',dir: -1 },
     { id: 'run_defense',  label: 'Run defense',  field: 'run_defence_power.score',dir: -1 },
     { id: 'pass_defense', label: 'Pass defense', field: 'performance.pass_defense',dir: -1 },
-    { id: 'special_teams',label: 'Special teams',field: 'units.K.rating',                dir: -1 },
+    { id: 'special_teams',label: 'Special teams',field: 'special_teams.rating',           dir: -1 },
+    { id: 'k_room',       label: 'K room',       field: 'units.K.rating',                dir: -1 },
     { id: 'qb',           label: 'QB room',      field: 'units.QB.rating',               dir: -1 },
     { id: 'ol',           label: 'OL',           field: 'units.OL.rating',               dir: -1 },
     { id: 'wr',           label: 'WR / TE',      field: 'units.WR.rating',               dir: -1 },
@@ -449,8 +583,8 @@
    * MOVEMENT, STABILITY AND ANOMALIES                                   *
    * ------------------------------------------------------------------ */
   var MOVEMENT = {
-    explain_components: ['talent', 'performance', 'offense', 'defense', 'run_offense', 'pass_offense',
-      'run_defense', 'pass_defense', 'opponent_adjustment', 'prior_weight', 'availability'],
+    explain_components: ['talent', 'performance', 'offense', 'defense', 'special_teams', 'run_offense',
+      'pass_offense', 'run_defense', 'pass_defense', 'opponent_adjustment', 'prior_weight', 'availability'],
     min_reportable_points: 0.05,
     basis: 'movement is explained by DIFFERENCING the components between two snapshots and reporting the ones that actually moved. No model is asked why a rating changed, because the answer is arithmetic and the arithmetic is available.'
   };
@@ -458,7 +592,19 @@
     max_mean_rank_shift: 6.0,
     max_share_moving_15: 0.15,
     max_rating_shift_points: 6.0,
-    basis: 'if forty teams move fifteen spots in a week, the system is broken, not perceptive. These are diagnostics that FAIL a build, not scores.'
+    basis: 'if forty teams move fifteen spots in a week, the system is broken, not perceptive. These are diagnostics that FAIL a build, not scores.',
+    /* WHEN THE TWO BOARDS ARE NOT THE SAME KIND OF BOARD.
+       These bounds compare a board against the one before it, and they assume
+       the two were mixed the same way. Between the preseason and week one they
+       are not: w_performance goes from 0 to g/(g+k) and every team re-ranks
+       BECAUSE THE MODEL SAID IT WOULD. Failing the build there would be the
+       diagnostic catching its own design. Rather than widen the bound with a
+       constant nobody can see, the check states when the comparison is not a
+       like-for-like one, reports the numbers anyway, and downgrades itself
+       from a build failure to a warning. */
+    comparable_weight_shift: 0.05,
+    comparable_basis: 'if the mean change in w_performance between the two boards is more than this, the boards were mixed differently and the stability bounds are not measuring week-to-week stability any more. The diagnostic still runs and still publishes every number; it stops being allowed to fail the build.',
+    reconstruction_note: 'a comparison whose earlier side was RECONSTRUCTED after the fact (see HISTORY and --through-week) is also not like-for-like, because the reconstruction read a player artifact that did not exist in the week it describes.'
   };
   var ANOMALIES = [
     { id: 'RATING_JUMP',        severity: 'severe', basis: 'a week-over-week ETSR move beyond the configured bound' },
@@ -503,6 +649,27 @@
     basis: 'a team whose performance rank is at least twenty-five places better than its talent rank is OVERPERFORMING TALENT, and vice versa. It is a research view and it is never automatically a betting signal.'
   };
 
+  /* ------------------------------------------------------------------ *
+   * WEEKLY HISTORY                                                      *
+   * ------------------------------------------------------------------ *
+   * A snapshot is written for every (season, week ordinal) the board has ever
+   * stood at, keyed by team, carrying EVERY ranking category's rating and
+   * rank plus the rating version that produced them. The current week's
+   * snapshot is refreshed as its games land; a week that is over is finished
+   * and is never rewritten, so "what did this board say in week 3" has one
+   * answer for ever.
+   * ------------------------------------------------------------------ */
+  var HISTORY = {
+    file_pattern: '{season}-w{ordinal}.json',
+    key: ['season', 'week_ordinal', 'team', 'rating_version'],
+    immutable_before_current_week: true,
+    immutability_basis: 'only the snapshot for the week the board currently stands at may be rewritten, because its games are still landing. Every earlier week is a finished record and the build refuses to touch it — a history you are allowed to edit is not a history.',
+    delta_against: 'previous_snapshot',
+    delta_basis: 'Δ week is differenced against the LATEST snapshot strictly BEFORE the current week ordinal — not against the file with the previous number, because a bye week, a cancelled Saturday or a build that did not run leaves a gap and comparing across it is still the honest comparison. The ordinal actually compared against ships beside the delta.',
+    preseason_ordinal: 0,
+    preseason_basis: 'a board built before any game has been played is week ordinal 0 and is labelled Preseason. It is a real row in the history: it is what the system believed before the season answered it.'
+  };
+
   /* Manual overrides: allowed for identity only, never for strength. */
   var OVERRIDES = {
     allowed_kinds: ['player_identity', 'team_mapping', 'eligibility', 'availability'],
@@ -517,6 +684,9 @@
     OFFENSE_METRICS: OFFENSE_METRICS,
     DEFENSE_METRICS: DEFENSE_METRICS,
     SUB_UNITS: SUB_UNITS,
+    SPECIAL_TEAMS: SPECIAL_TEAMS,
+    GARBAGE: GARBAGE,
+    HISTORY: HISTORY,
     NET: NET,
     OPPONENT: OPPONENT,
     RECENCY: RECENCY,

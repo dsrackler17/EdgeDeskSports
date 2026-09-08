@@ -1,14 +1,32 @@
-# EdgeDesk Football — the weekly build.
+# EdgeDesk Football — the build.
 #
 # ONE workflow, in dependency order, because the layers genuinely depend on each
 # other and three workflows racing each other to commit the same tree is how you
 # get a Tuesday where the rankings were built on last week's players.
 #
-#   box enrichment  ->  player ratings (+ the v2 candidate)  ->  national
-#   rankings + ETSR  ->  weekly snapshot  ->  tests  ->  one commit
+#   FINAL-game check  ->  box enrichment  ->  player ratings (+ the v2
+#   candidate)  ->  national rankings + ETSR + special teams  ->  weekly
+#   snapshot + history  ->  health report  ->  tests  ->  one commit
 #
 # NO EDGE FUNCTION IS INVOLVED IN ANY OF IT. Every number is computed here and
 # committed as an artifact; the browser reads the artifact and computes nothing.
+#
+# THREE WAYS IT RUNS, which is what "automatic refresh" means here:
+#
+#   1  AFTER COMPLETED-GAME INGESTION. In season it wakes every two hours and
+#      asks the cheap question first — football/rankings/refresh.js compares the
+#      DIGEST of the schedule feed's FINAL games against the digest the
+#      published board recorded. Same set of games, recent build: it stops,
+#      having spent one CSV. A game has gone final, or a result was corrected:
+#      it rebuilds. So a Saturday result is on the board within a couple of
+#      hours of the feed publishing it, without a rebuild every twenty minutes.
+#
+#   2  THE DAILY SAFETY REBUILD. Once a morning the check is skipped entirely
+#      and the whole thing runs regardless, so a stuck feed shows up as a build
+#      that ran and found nothing rather than as a board nobody looked at.
+#
+#   3  MANUALLY, with workflow_dispatch — including a full-season BACKFILL that
+#      rebuilds every completed week in order so the weekly history exists.
 #
 # WHAT THIS JOB DELIBERATELY DOES NOT DO: it does not run the feature
 # walk-forward and it does not recalibrate a weight. Refitting on a schedule is
@@ -33,14 +51,30 @@ on:
         type: boolean
         required: false
         default: false
-  # IN SEASON THE BOARD RUNS DAILY. A twice-a-week cadence meant a Saturday
-  # result could sit unread for three days, and the feeds publish on their own
-  # schedule rather than ours — a daily pass picks each week up the morning
-  # after it happens instead of waiting for the next slot. Out of season the
-  # only thing that moves is the roster, so Tuesday is enough.
+      force:
+        description: 'Rebuild even if no new FINAL game has been played'
+        type: boolean
+        required: false
+        default: true
+      backfill:
+        description: 'Rebuild EVERY completed week of the season in order, so the weekly history exists'
+        type: boolean
+        required: false
+        default: false
+      rewrite_history:
+        description: 'Allow the backfill to overwrite snapshots for weeks that are already finished'
+        type: boolean
+        required: false
+        default: false
+  # IN SEASON THE BOARD CHASES THE GAMES. Every two hours from August through
+  # January the FINAL-game check runs and the rest of the job runs only if the
+  # feed has moved; at 09:40 the check is skipped and the safety rebuild runs
+  # whatever happened. Out of season the only thing that moves is the roster,
+  # so Tuesday is enough.
   schedule:
-    - cron: '40 9 * 8-12,1 *'  # every morning, August through January
-    - cron: '40 9 * 2-7 2'     # Tuesdays only, February through July
+    - cron: '40 9 * 8-12,1 *'      # the daily safety rebuild, in season
+    - cron: '20 */2 * 8-12,1 *'    # the FINAL-game chase, in season
+    - cron: '40 9 * 2-7 2'         # Tuesdays only, February through July
   push:
     branches: [main]
     paths:
@@ -53,9 +87,13 @@ on:
       - 'football/data/**'
       - 'football/rankings/config.js'
       - 'football/rankings/performance.js'
+      - 'football/rankings/special_teams.js'
+      - 'football/rankings/history.js'
       - 'football/rankings/talent.js'
       - 'football/rankings/etsr.js'
       - 'football/rankings/build_rankings.js'
+      - 'football/rankings/backfill.js'
+      - 'football/rankings/refresh.js'
       - '.github/workflows/football-weekly-build.yml'
 
 permissions:
@@ -68,7 +106,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -99,32 +137,89 @@ jobs:
           restore-keys: |
             football-feeds-
 
+      # ---------------------------------------------------------------
+      # 1. IS THERE FOOTBALL THE BOARD HAS NOT READ YET?
+      # One schedule CSV. Everything after this step is skipped when the
+      # answer is no — except on the daily safety cron, a push, or a manual
+      # run with force, where the question is not asked at all.
+      # ---------------------------------------------------------------
+      - name: Decide whether this run is forced
+        id: mode
+        run: |
+          FORCED=false
+          if [ "${{ github.event_name }}" != "schedule" ]; then FORCED=true; fi
+          if [ "${{ github.event.schedule }}" = "40 9 * 8-12,1 *" ]; then FORCED=true; fi
+          if [ "${{ github.event.schedule }}" = "40 9 * 2-7 2" ]; then FORCED=true; fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.force }}" != "true" ]; then FORCED=false; fi
+          echo "forced=$FORCED" >> "$GITHUB_OUTPUT"
+          echo "this run is $([ "$FORCED" = "true" ] && echo 'FORCED (safety rebuild / push / manual)' || echo 'GATED on new FINAL games')"
+
+      - name: Check for newly FINAL games
+        id: refresh
+        if: steps.mode.outputs.forced != 'true'
+        run: |
+          set +e
+          node football/rankings/refresh.js --cache .cache/football \
+            ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          CODE=$?
+          set -e
+          if [ "$CODE" = "10" ]; then echo "nothing new — this run stops here"; exit 0; fi
+          if [ "$CODE" != "0" ]; then echo "the check itself failed; rebuilding rather than guessing"; echo "rebuild=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Should the rest of this job run?
+        id: go
+        run: |
+          if [ "${{ steps.mode.outputs.forced }}" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo 'forced run'
+          elif [ "${{ steps.refresh.outputs.rebuild }}" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "rebuilding: ${{ steps.refresh.outputs.reason }}"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "up to date: ${{ steps.refresh.outputs.reason }}"
+          fi
+
       # The suites gate the write. A build that would commit a dataset its own
       # rules reject has to fail BEFORE it writes anything.
       - name: Suites (before)
+        if: steps.go.outputs.run == 'true'
         run: npm run cfb:test
 
       - name: Box-score enrichment
+        if: steps.go.outputs.run == 'true'
         run: node football/data/build_box.js --seasons 4 --cache .cache/football
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
 
       - name: Player ratings (v1 canonical, v2 candidate)
+        if: steps.go.outputs.run == 'true'
         run: node --max-old-space-size=6144 football/players/build_players.js --cache .cache/football
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
           ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
 
-      - name: National rankings and ETSR
+      - name: National rankings, special teams and ETSR
+        if: steps.go.outputs.run == 'true' && github.event.inputs.backfill != 'true'
         run: node --max-old-space-size=6144 football/rankings/build_rankings.js --cache .cache/football
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
           ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
           ${{ github.event.inputs.allow_anomalies == 'true' && '--allow-anomalies' || '' }}
 
+      # The backfill walks every completed week in order and leaves the board
+      # standing at the latest one — the state a weekly job would have reached
+      # had it run every week. Manual only: it is minutes of work and it writes
+      # history, so nothing schedules it.
+      - name: Season backfill (every completed week, in order)
+        if: steps.go.outputs.run == 'true' && github.event.inputs.backfill == 'true'
+        run: node football/rankings/backfill.js --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
+          ${{ github.event.inputs.rewrite_history == 'true' && '--rewrite-history' || '' }}
+
       # Re-run against what was actually written. The first pass proved the code
       # is sound; this proves the DATA is.
       - name: Suites (after)
+        if: steps.go.outputs.run == 'true'
         run: npm run cfb:test
 
       - name: Refuse to publish a wrong-shaped dataset
+        if: steps.go.outputs.run == 'true'
         run: |
           node -e "
             const fail = s => { console.error('REFUSING TO COMMIT: ' + s); process.exit(1); };
@@ -140,6 +235,14 @@ jobs:
             const fresh = r.data_freshness || {};
             if (!(fresh.completed_games > 0) && r.week_ordinal > 0)
               fail('the board says ' + r.week_label + ' but this build read no completed game — the feed is stale');
+            if (!fresh.completed_games_digest && r.week_ordinal > 0)
+              fail('the board carries no completed-game digest, so the refresh check cannot tell whether it is current');
+            const h = require('./football/rankings/health.json');
+            if (h.teams_processed !== h.fbs_teams_expected)
+              fail(h.teams_processed + ' of ' + h.fbs_teams_expected + ' FBS teams were processed');
+            if (!h.last_rankings_build) fail('the health report carries no build timestamp');
+            const hist = require('./football/rankings/history.json');
+            if (!hist.snapshots.length) fail('no weekly snapshot is on file');
             const reg = require('./football/validation/feature-status.json');
             const moved = reg.features.filter(f => f.may_move_lines);
             console.log('ok — ' + r.team_count + ' teams, ' + p.player_count + ' players, '
@@ -147,9 +250,12 @@ jobs:
             console.log('     read ' + fresh.completed_games + ' completed games ('
               + fresh.team_games_read + ' team-games), rated ' + fresh.teams_with_a_performance_rating
               + ' teams on the play this season has produced so far');
+            console.log('     ratings: ' + Object.keys(h.ratings).map(k => h.ratings[k] + ' ' + k).join(', '));
+            console.log('     history: ' + hist.snapshots.map(s => s.week_label).join(' -> '));
           "
 
       - name: Commit
+        if: steps.go.outputs.run == 'true'
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -157,7 +263,8 @@ jobs:
                   football/players/params.js football/players/teams \
                   football/players/snapshots football/players/candidates \
                   football/data/box football/rankings/current.json \
-                  football/rankings/snapshots football/rankings/params.js
+                  football/rankings/snapshots football/rankings/params.js \
+                  football/rankings/history.json football/rankings/health.json
           if git diff --cached --quiet; then
             echo 'nothing changed — quiet day, no commit'
             exit 0

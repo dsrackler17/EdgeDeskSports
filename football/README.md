@@ -26,6 +26,13 @@ football/
                 uncertainty), its own parameters, and its own backtest against
                 a real CFB line archive. See cfb_p4/README.md.
 
+  rankings/     the NATIONAL TEAM RANKINGS pipeline — talent + opponent-
+                adjusted performance + a measured SPECIAL TEAMS unit -> ETSR,
+                confidence, 22 ranked categories, immutable weekly snapshots
+                and a pipeline health report. Rebuilt in Actions, committed as
+                artifacts, rendered by a browser that computes nothing.
+                See rankings/README.md.
+
   players/      the PLAYER QUALITY + SCHEME MATCHUP ENGINE — every active FBS
                 player rated 0-100 with provenance, rolled into position
                 groups, team units, scheme profiles, a matchup engine, a
@@ -209,6 +216,41 @@ node tools/football/player_quality_ui.test.js    # 74 checks over the real page
 `.github/workflows/player-ratings.yml` rebuilds and commits the datasets twice
 a week in season. It deliberately does NOT run the validator: recalibrating on
 a schedule is how a layer quietly starts fitting the recent past.
+
+## National rankings
+
+`football/rankings/` builds the board the site's **Rankings** segment renders:
+ETSR (points against an average FBS team, neutral field), talent and
+opponent-adjusted performance ranked separately, and twenty-two ranked
+categories including a **measured special-teams unit** — field goals over
+expectation by distance, net punting, kickoff coverage, returns, punts inside
+the 20, extra points and blocked kicks, out of the play table and the ESPN
+player box. Special teams is measured and ranked; it is deliberately NOT an
+ETSR input.
+
+```
+npm run cfb:refresh     # has a game gone FINAL since the board was built?
+npm run cfb:rankings    # one build of the current week
+npm run cfb:backfill    # every completed week, in order, so the history exists
+npm run cfb:health      # the pipeline health report
+node football/rankings/pipeline.test.js    # 139 end-to-end checks
+```
+
+`.github/workflows/football-weekly-build.yml` chases the games: every two
+hours in season the cheap FINAL-game check runs first and the expensive
+rebuild runs only if the feed has moved, plus a daily safety rebuild that
+skips the check entirely. The build is idempotent — running it three times
+produces the same tree as running it once.
+
+**A correction this pipeline forced.** `performance_v1` tested each metric's
+scoring floor against the WEIGHT-DISCOUNTED denominator while `min_n` is
+stated in OBSERVATIONS, and it deleted garbage-time plays instead of
+discounting them. The two compounded, and thirty-one FBS teams that had played
+a real game carried no offence and no defence rating at all. `performance_v2`
+asks the floor of the observations and the shrink of the weighted evidence,
+and scores garbage time at a declared discount. Nothing about `min_n`, the
+weights or the confidence model changed. Full record:
+`rankings/README.md`.
 
 ## Regenerating parameters
 

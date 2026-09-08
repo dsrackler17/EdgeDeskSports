@@ -341,6 +341,25 @@ function isGarbage(period, scoreDiff) {
   return Math.abs(scoreDiff) > lim;
 }
 
+/* The special-teams aggregate for one team-game. The play-table half is filled
+   here; football/rankings/special_teams.js joins the box half onto it and
+   turns `fg_kicks` into an expected-make total. Every field is a COUNT of an
+   observed event — nothing here is estimated. */
+function blankST() {
+  return {
+    fg_att: 0, fg_made: 0, fg_blocked: 0,
+    fg_kicks: [],            /* [distance_yards, made 1|0] per attempt */
+    fg_over_expected: null,  /* filled once the league distance curve is fitted */
+    /* joined from the ESPN player box */
+    xp_made: null, xp_att: null,
+    punts: null, punt_yds: null, punts_in20: null, punt_touchbacks: null,
+    kr: null, kr_yds: null, pr: null, pr_yds: null,
+    /* the opponent's own box row in the same game — this team's coverage */
+    kr_allowed: null, kr_yds_allowed: null, punt_ret_yds_allowed: null,
+    box_joined: false
+  };
+}
+
 function blankTG() {
   return {
     plays: 0, rush_att: 0, rush_yds: 0, rush_success: 0, rush_explosive: 0, rush_stuffed: 0,
@@ -440,7 +459,15 @@ async function loadPlays(season, sched, opts) {
     let tg = teamGames.get(gkey);
     if (!tg) {
       tg = { game_id: gid, week, team: off, team_name: offName, opp: def, opp_name: defName,
-        conference: cell(r, ix.conference), off: blankTG(), comp: blankTG(), garbage_plays: 0 };
+        conference: cell(r, ix.conference), off: blankTG(), comp: blankTG(), garbage_plays: 0,
+        /* SPECIAL TEAMS. The play table's half of it: every field-goal attempt
+           with the DISTANCE it was attempted from, whether it was made and
+           whether it was blocked. The punting, return and coverage half is
+           joined in later from the ESPN box, which is the only public feed
+           that carries it. Kept on its own aggregate rather than inside `off`
+           because a kick is not a scrimmage play and must never land in a
+           play-count denominator. */
+        st: blankST() };
       teamGames.set(gkey, tg);
     }
     teamGameSet.add(gkey);
@@ -569,10 +596,17 @@ async function loadPlays(season, sched, opts) {
       const k = P(fgaId, cell(r, ix.field_goal_attempt_player), off, week);
       add(k, 'fg_att', 1);
       if (dist2 != null && dist2 >= 40) add(k, 'fg_att_long', 1);
-      if (cell(r, ix.field_goal_made_player_id) === fgaId) {
+      const made = cell(r, ix.field_goal_made_player_id) === fgaId;
+      if (made) {
         add(k, 'fg_made', 1);
         if (dist2 != null && dist2 >= 40) add(k, 'fg_made_long', 1);
       }
+      /* the TEAM's side of the same kick, with its distance kept, so place
+         kicking can be rated over expectation instead of on percentage */
+      tg.st.fg_att++;
+      if (made) tg.st.fg_made++;
+      if (cell(r, ix.field_goal_blocked_player_id)) tg.st.fg_blocked++;
+      if (dist2 != null && isFinite(dist2)) tg.st.fg_kicks.push([dist2, made ? 1 : 0]);
     }
   }
 
@@ -892,7 +926,7 @@ function normaliseSeason(season, play, roster, prevRoster, sched, adj) {
 
 module.exports = {
   SEASON, SEASONS_BACK, FCS_KEY,
-  splitLine, headerIndex, parseCsvObjects, isSuccess, blankTG, isGarbage, GARBAGE_BY_PERIOD,
+  splitLine, headerIndex, parseCsvObjects, isSuccess, blankTG, blankST, isGarbage, GARBAGE_BY_PERIOD,
   loadSchedule, loadRoster, loadPlays, coverageGates, espnRosterPositions, refinePositions, loadBox, BOX_COLS,
   teamSeasonAggregates, opponentAdjust, normaliseSeason,
   ADJ_METRICS, RECV_MAP, QBRUSH_MAP, fetchText, digestOf, readJson

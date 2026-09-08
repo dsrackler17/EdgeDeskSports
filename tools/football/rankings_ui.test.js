@@ -50,6 +50,10 @@ if (!fs.existsSync(RANKINGS)) {
 const DATA = JSON.parse(fs.readFileSync(RANKINGS, 'utf8'));
 const REG = fs.existsSync(path.join(ROOT, 'football', 'validation', 'feature-status.json'))
   ? JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'feature-status.json'), 'utf8')) : null;
+const HEALTH = fs.existsSync(path.join(ROOT, 'football', 'rankings', 'health.json'))
+  ? JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'rankings', 'health.json'), 'utf8')) : null;
+const HISTORY = fs.existsSync(path.join(ROOT, 'football', 'rankings', 'history.json'))
+  ? JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'rankings', 'history.json'), 'utf8')) : null;
 const PLAYERS = fs.existsSync(path.join(ROOT, 'football', 'players', 'current.json'))
   ? JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'players', 'current.json'), 'utf8')) : null;
 
@@ -74,6 +78,8 @@ function makeCtx(opts) {
   /* the module initialises FB.rk on load, so the fixture goes in AFTER */
   ctx.FB.rk.data = opts.noData ? null : DATA;
   ctx.FB.rk.features = opts.noRegistry ? null : REG;
+  ctx.FB.rk.health = opts.noHealth ? null : HEALTH;
+  ctx.FB.rk.history = opts.noHistory ? null : HISTORY;
   ctx.FB.rk.at = Date.now();
   return ctx;
 }
@@ -216,6 +222,143 @@ chk('it stamps every version it was built under',
   !!DATA.versions.team_rating && !!DATA.versions.talent && !!DATA.versions.performance && !!DATA.versions.player_rating);
 chk('it stamps the point in the season', DATA.week_ordinal != null && !!DATA.week_label);
 chk('and what it was built on', !!DATA.built_on && !!DATA.built_on.player_artifact);
+
+/* ======================================================================== */
+/* 9. SPECIAL TEAMS, THE WEEKLY HISTORY AND THE PIPELINE HEALTH STRIP        */
+/* ------------------------------------------------------------------------ */
+/* The three things the rankings page gained. Each is checked against the    */
+/* REAL committed artifacts, so a build that stops producing one of them     */
+/* fails here rather than rendering an empty box on the site.                */
+/* ======================================================================== */
+(function specialTeamsAndHistory() {
+  const S = makeCtx();
+  const h = { innerHTML: '' };
+  S.fbRkRender(h);
+  const board = h.innerHTML;
+
+  chk('Special teams is a tab on the board', /Special teams/.test(board));
+  chk('the tab list covers every category the request named', () => {
+    const want = ['Overall', 'Talent', 'Performance', 'Offense', 'Defense', 'Special teams',
+      'Run O', 'Pass O', 'Run D', 'Pass D', 'QB', 'OL', 'WR', 'RB', 'DL', 'LB', 'Secondary',
+      'Depth', 'Continuity'];
+    const missing = want.filter(w => board.indexOf('>' + w + '<') < 0);
+    return missing.length === 0 || 'missing tabs: ' + missing.join(', ');
+  });
+  has(board, '<th>ST</th>', 'the table carries a special-teams column');
+  has(board, '<th>WR</th>', 'and a WR column');
+  has(board, '<th>RB</th>', 'and an RB column');
+  has(board, '<th>LB</th>', 'and an LB column');
+  chk('the top 25 shows special teams beside offence and defence',
+    board.indexOf('<th>special teams</th>') >= 0);
+
+  if (HEALTH) {
+    has(board, 'Pipeline health', 'the pipeline health strip renders');
+    has(board, HEALTH.fbs_teams_expected + ' FBS teams', 'it states the FBS count');
+    has(board, HEALTH.teams_processed + ' processed', 'and how many were processed');
+    chk('it states the special-teams rating count',
+      board.indexOf('>' + HEALTH.ratings.special_teams + '<') >= 0);
+    has(board, 'genuinely unavailable', 'and names what is genuinely unavailable');
+    has(board, 'Last build', 'and when the pipeline last ran');
+    chk('the health strip is read from the committed run record, not recomputed',
+      SRC.indexOf('var H=FB.rk.health||D.pipeline_health') >= 0);
+  }
+
+  /* the special-teams tab behaves like every other tab */
+  const T = makeCtx();
+  T.FB.rk.tab = 'special_teams';
+  const h2 = { innerHTML: '' };
+  T.fbRkRender(h2);
+  const stBoard = h2.innerHTML;
+  chk('the special-teams tab renders a table', stBoard.length > 800);
+  chk('sorted by special teams, and it says so',
+    stBoard.indexOf('sorted by <b>Special teams</b>') >= 0);
+  chk('a team with no special-teams rating shows a miss marker, never a number', () => {
+    const blank = Object.keys(DATA.teams).filter(k => !DATA.teams[k].special_teams
+      || DATA.teams[k].special_teams.rating == null);
+    if (!blank.length) return true;
+    /* the row for such a team must carry the miss marker with the build's own
+       reason on it, and must not carry a special-teams value */
+    const t = DATA.teams[blank[0]];
+    const i = stBoard.indexOf('>' + esc(t.team) + '<');
+    if (i < 0) return 'the team is not on the page at all';
+    const row = stBoard.slice(i, stBoard.indexOf('</tr>', i));
+    return /class="pq-miss"[^>]*>—</.test(row)
+      || 'no miss marker in the row for ' + t.team;
+  });
+  chk('and the build-s own reason travels with the cell', () => {
+    const blank = Object.keys(DATA.teams).filter(k => DATA.teams[k].special_teams
+      && DATA.teams[k].special_teams.rating == null && DATA.teams[k].special_teams.reason);
+    if (!blank.length) return true;
+    const t = DATA.teams[blank[0]];
+    const i = stBoard.indexOf('>' + esc(t.team) + '<');
+    const row = stBoard.slice(i, stBoard.indexOf('</tr>', i));
+    return row.indexOf('title="') >= 0 || 'no reason on the empty cell for ' + t.team;
+  });
+
+  /* the ranks come from the artifact, never from a browser sort */
+  chk('the artifact-s own #1 in special teams is on the page', () => {
+    const best = Object.keys(DATA.teams)
+      .filter(k => DATA.teams[k].ranks && DATA.teams[k].ranks.special_teams
+        && DATA.teams[k].ranks.special_teams.rank === 1);
+    if (!best.length) return true;
+    return stBoard.indexOf(esc(DATA.teams[best[0]].team)) >= 0;
+  });
+
+  /* the team panel: special teams and the week-by-week history */
+  const teamKey = Object.keys(DATA.teams).find(k => DATA.teams[k].special_teams
+    && DATA.teams[k].special_teams.rating != null) || Object.keys(DATA.teams)[0];
+  const P = makeCtx();
+  P.FB.rk.team = teamKey;
+  const h3 = { innerHTML: '' };
+  P.fbRkRender(h3);
+  const panel = h3.innerHTML;
+  has(panel, 'Special teams', 'the team panel has a special-teams section');
+  has(panel, 'What nobody can see', 'which says what no feed carries');
+  has(panel, 'What feeds it', 'and names the feeds it does read');
+  has(panel, 'Week by week', 'the team panel has a weekly history');
+  chk('the history lists every week the board carries for this team', () => {
+    const rows = DATA.teams[teamKey].history || [];
+    const missing = rows.filter(r => panel.indexOf(esc(r.week_label)) < 0);
+    return missing.length === 0 || 'missing ' + missing.map(r => r.week_label).join(', ');
+  });
+  chk('the history shows overall, offence, defence and special teams per week',
+    panel.indexOf('<th>ETSR</th>') >= 0 && panel.indexOf('<th>offense</th>') >= 0
+    && panel.indexOf('<th>defense</th>') >= 0 && panel.indexOf('<th>special teams</th>') >= 0);
+  chk('a week with no rating in a column is blank, not carried forward',
+    panel.indexOf('<td class="mono">null</td>') < 0 && panel.indexOf('NaN') < 0);
+  if (HISTORY && HISTORY.teams[teamKey] && HISTORY.teams[teamKey].length > 1) {
+    has(panel, 'Every category,', 'the full per-category move is shown when history.json loads');
+  }
+
+  /* it degrades honestly */
+  const NH = makeCtx({ noHistory: true });
+  NH.FB.rk.team = teamKey;
+  NH.FB.rk.histErr = 'history 404';
+  const h4 = { innerHTML: '' };
+  NH.fbRkRender(h4);
+  chk('with no history artifact the panel still renders the weeks the board carries',
+    h4.innerHTML.indexOf('Week by week') >= 0 && h4.innerHTML.indexOf('Nothing has been filled in') >= 0);
+
+  const NHealth = makeCtx({ noHealth: true });
+  const h5 = { innerHTML: '' };
+  NHealth.fbRkRender(h5);
+  chk('with no run record the board still renders, from the board-s own health block',
+    h5.innerHTML.length > 800);
+})();
+
+/* ======================================================================== */
+/* 10. THE PAGE COMPUTES NO RATING AND NO RANK                              */
+/* ======================================================================== */
+(function noBrowserRatings() {
+  lacks(SRC, 'EDRankPerformance', 'the page does not load the rating engine');
+  lacks(SRC, 'EDRankConfig', 'nor the rating config');
+  lacks(SRC, 'opponentAdjust', 'nor the opponent adjustment');
+  chk('every category value is read through the one field map', SRC.indexOf('var FBRK_FIELD=') >= 0);
+  chk('the delta week comes from the build-s movement object',
+    SRC.indexOf('function fbRkCatMove') >= 0 && SRC.indexOf('m.categories&&m.categories[cat]') >= 0);
+  chk('the board sorts on the artifact-s ranks, not on values it derived',
+    SRC.indexOf('ra&&!ra.unranked&&ra.rank!=null') >= 0);
+})();
 
 /* ======================================================================== */
 console.log(failures.map(f => '  FAIL  ' + f).join('\n'));

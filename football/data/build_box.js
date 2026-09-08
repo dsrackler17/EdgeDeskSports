@@ -87,7 +87,10 @@ const GATES = {
   interceptions:  { field: 'ints',       per_team_game_min: 0.55, basis: 'FBS interception rate is around 0.8 per team-game' },
   punting:        { field: 'punts',      per_team_game_min: 2.5,  basis: 'an FBS team punts 4-5 times a game' },
   field_goals:    { field: 'fg_att',     per_team_game_min: 0.8,  basis: 'an FBS team attempts about 1.5 field goals a game' },
-  qbr:            { field: 'qbr_games',  per_team_game_min: 0.5,  basis: 'one rated quarterback per team-game is the most there can be' }
+  qbr:            { field: 'qbr_games',  per_team_game_min: 0.5,  basis: 'one rated quarterback per team-game is the most there can be' },
+  extra_points:   { field: 'xp_att',     per_team_game_min: 1.5,  basis: 'an FBS team attempts three to four extra points a game' },
+  kick_returns:   { field: 'kr',         per_team_game_min: 0.7,  basis: 'an FBS team returns one to two kickoffs a game in the touchback era. Below this the column is not being filled in.' },
+  punt_returns:   { field: 'pr',         per_team_game_min: 0.7,  basis: 'an FBS team returns one to two punts a game' }
 };
 
 /* ------------------------------------------------------------------ */
@@ -150,9 +153,18 @@ function blank() {
     int_yds: 0, def_td: 0, fum_lost: 0, fum_rec: 0,
     punts: 0, punt_yds: 0, punts_in20: 0, touchbacks: 0, long_punt: 0,
     fg_made: 0, fg_att: 0, xp_made: 0, xp_att: 0, kick_points: 0,
+    kr: 0, kr_yds: 0, kr_td: 0, pr: 0, pr_yds: 0, pr_td: 0,
     qbr_sum: 0, qbr_games: 0,
     rush_att: 0, rec: 0, pass_att: 0 };
 }
+/* THE SPECIAL-TEAMS ROW, per team per game.
+   Season totals cannot be opponent-adjusted, cannot be recency-weighted and
+   cannot say who the coverage was against. The rankings need all three, so the
+   kicking columns are also emitted per TEAM-GAME — and because both sides of a
+   game are in the same table, the opponent's row IS this team's coverage. */
+const ST_COLS = ['fg_made', 'fg_att', 'xp_made', 'xp_att',
+  'punts', 'punt_yds', 'punts_in20', 'touchbacks',
+  'kr', 'kr_yds', 'kr_td', 'pr', 'pr_yds', 'pr_td'];
 
 async function ingestSeason(season, teamName) {
   const got = await loadSeasonCsv(season);
@@ -163,7 +175,7 @@ async function ingestSeason(season, teamName) {
   const need = ['athlete_id', 'game_id', 'team_id', 'season'];
   for (const k of need) if (ix[k] == null) return { season, available: false, reason: 'player box is missing column ' + k };
 
-  const players = new Map(), teams = new Map(), teamGames = new Set();
+  const players = new Map(), teams = new Map(), teamGames = new Set(), teamGameRows = new Map();
   const names = new Map();
   let rows = 0;
   let pos = nl + 1;
@@ -187,6 +199,10 @@ async function ingestSeason(season, teamName) {
     let T = teams.get(tid);
     if (!T) { T = blank(); teams.set(tid, T); }
     targets.push(T);
+    const tgk = gid + '|' + tid;
+    let TG = teamGameRows.get(tgk);
+    if (!TG) { TG = blank(); TG.team_id = tid; TG.game_id = gid; teamGameRows.set(tgk, TG); }
+    targets.push(TG);
 
     const fg = pair(r[ix['fieldGoalsMade/fieldGoalAttempts']]);
     const xp = pair(r[ix['extraPointsMade/extraPointAttempts']]);
@@ -212,6 +228,10 @@ async function ingestSeason(season, teamName) {
       X.fg_made += fg[0]; X.fg_att += fg[1];
       X.xp_made += xp[0]; X.xp_att += xp[1];
       X.kick_points += numOf(r[ix.totalKickingPoints]);
+      X.kr += numOf(r[ix.kickReturns]); X.kr_yds += numOf(r[ix.kickReturnYards]);
+      X.kr_td += numOf(r[ix.kickReturnTouchdowns]);
+      X.pr += numOf(r[ix.puntReturns]); X.pr_yds += numOf(r[ix.puntReturnYards]);
+      X.pr_td += numOf(r[ix.puntReturnTouchdowns]);
       X.rush_att += numOf(r[ix.rushingAttempts]);
       X.rec += numOf(r[ix.receptions]);
       X.pass_att += cmp[1];
@@ -242,7 +262,7 @@ async function ingestSeason(season, teamName) {
     };
   }
   return { season, available: true, format: got.format, rows, team_games: tgCount,
-    coverage, players, teams, names };
+    coverage, players, teams, teamGameRows, names };
 }
 
 /* ------------------------------------------------------------------ */
@@ -299,8 +319,23 @@ async function main() {
       teams[key] = { team_games: Object.keys(T.games).length,
         tackles: T.tackles, solo: T.solo, tfl: T.tfl, sacks: T.sacks, pbu: T.pbu,
         hurries: T.hurries, ints: T.ints, punts: T.punts, punt_yds: T.punt_yds,
-        punts_in20: T.punts_in20, fg_made: T.fg_made, fg_att: T.fg_att, def_td: T.def_td };
+        punts_in20: T.punts_in20, touchbacks: T.touchbacks,
+        fg_made: T.fg_made, fg_att: T.fg_att, xp_made: T.xp_made, xp_att: T.xp_att,
+        kr: T.kr, kr_yds: T.kr_yds, kr_td: T.kr_td,
+        pr: T.pr, pr_yds: T.pr_yds, pr_td: T.pr_td, def_td: T.def_td };
     }
+    /* one row per team-game, in ST_COLS order, keyed game_id|team_key. Sorted
+       so a rebuild of the same games writes byte-identical output. */
+    const teamGames = {};
+    let stRows = 0, stUnmapped = 0;
+    for (const [, TG] of s.teamGameRows) {
+      const key = idToKey[TG.team_id];
+      if (!key) { stUnmapped++; continue; }
+      teamGames[TG.game_id + '|' + key] = ST_COLS.map(c => Math.round((TG[c] || 0) * 100) / 100);
+      stRows++;
+    }
+    const orderedTeamGames = {};
+    for (const k of Object.keys(teamGames).sort()) orderedTeamGames[k] = teamGames[k];
     const artifact = {
       schema: 'edgedesk_box_enrichment_v1',
       season: y, generated_at: new Date().toISOString(),
@@ -316,6 +351,16 @@ async function main() {
         'hurries', 'interceptions', 'punts', 'punt_yards', 'punts_inside_20', 'fg_made', 'fg_att',
         'qbr_mean', 'qbr_games', 'fumbles_lost', 'defensive_touchdowns', 'team_key'],
       note: 'games is the count of distinct games this player appeared in the box score for. It is DIRECT PARTICIPATION evidence — not a snap count, which no public feed carries, but a far better role signal than touch share alone.',
+      /* THE SPECIAL-TEAMS JOIN SURFACE. Keyed `game_id|team_key` so the
+         rankings can attach it to the play table's team-games by the same
+         game id, and so the OPPONENT's row in the same game supplies this
+         team's kick and punt coverage. */
+      team_game_columns: ST_COLS,
+      team_game_key: 'game_id|team_key',
+      team_game_basis: 'per team per game, because a season total cannot be opponent-adjusted, cannot be recency-weighted and cannot say who the coverage was against. Both sides of every game are here, so the other side of a row IS its coverage.',
+      team_game_rows: stRows,
+      team_game_unmapped: stUnmapped,
+      team_games: orderedTeamGames,
       players, teams
     };
     const file = path.join(OUT, `${y}.json`);
@@ -323,6 +368,7 @@ async function main() {
     written.push(file);
     summary[y] = { available: true, format: s.format, rows: s.rows, team_games: s.team_games,
       players: Object.keys(players).length,
+      special_teams_team_game_rows: stRows,
       usable_columns: usable, failed_columns: failed };
   }
 
@@ -336,7 +382,9 @@ async function main() {
       'The defensive columns are only usable from 2024 onward — earlier seasons are measured, fail their gate, and are declared missing.',
       'MISSED TACKLES are still not carried anywhere public, so a tackling-efficiency measure remains impossible.',
       'A hurry is ESPN’s own charting judgement, not a tracked event, so it is a pressure PROXY and is labelled one.',
-      'The box has no snap counts. Appearances are participation evidence; they are not snaps and are never called snaps.'
+      'The box has no snap counts. Appearances are participation evidence; they are not snaps and are never called snaps.',
+      'KICKOFF placement and hang time are absent, so kickoff touchbacks cannot be separated from punting touchbacks and a kickoff unit is rated only on the returns it allowed.',
+      'A BLOCKED PUNT is not an attributed event in either feed. Only a blocked FIELD GOAL is, and it comes from the play table rather than from here.'
     ]
   };
   if (!DRY) writeIfChanged(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1));
@@ -353,7 +401,7 @@ function writeIfChanged(file, text) {
   return true;
 }
 
-module.exports = { main, ingestSeason, GATES, blank, pair, numOf };
+module.exports = { main, ingestSeason, GATES, blank, pair, numOf, ST_COLS };
 if (require.main === module) {
   main().then(c => process.exit(c)).catch(e => { console.error('BOX INGEST FAILED:', e && e.stack || e); process.exit(1); });
 }
