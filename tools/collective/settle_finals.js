@@ -406,6 +406,8 @@ function normEspn(ev) {
   };
   const score = c => (c.score === undefined || c.score === null || c.score === '')
     ? '' : String(c.score);
+  const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)))
+    ? null : Number(v);
   return {
     start_date: ev.date || comp.date || '',
     home_team: (home.team && (home.team.location || home.team.displayName)) || '',
@@ -416,6 +418,27 @@ function normEspn(ev) {
        Nothing is inferred from the clock or the score. */
     completed: espnCompleted(st),
     espn_status: st.name || st.description || '',
+    /* THE PROVIDER'S OWN IDENTITY AND ADDRESS FOR THIS FIXTURE.
+
+       The id is stable across a kickoff moving, a network changing and a
+       postponement, which is exactly what matching on two team names and a
+       date is not. Nothing keys on it yet -- the Collective's own game ids
+       are what its projections hang off, and those never move -- but a
+       schedule sync that has it can tell "this fixture moved" from "this is
+       a different fixture", and that is the difference between updating a
+       game and duplicating it.
+
+       The week and season type are the AUTHORITATIVE schedule address: what
+       ESPN itself calls this game's week. Every week number the Collective
+       stores comes from here, so no part of this repository ever has to
+       compute one from a date -- which is the only way Week 0, a Tuesday
+       game in November, a conference championship and a playoff round can
+       all be right. Absent on some payload shapes, hence null rather than a
+       guess; the caller falls back to the bucket it asked for. */
+    espn_id: ev && ev.id != null ? String(ev.id) : null,
+    espn_week: num(ev && ev.week && ev.week.number),
+    espn_season_type: num((ev && ev.season && ev.season.type) ||
+      (comp.season && comp.season.type)),
     source: 'espn',
   };
 }

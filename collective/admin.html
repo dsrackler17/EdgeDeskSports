@@ -1020,11 +1020,45 @@ var RES_SPORT=null,RES_SEASON=null,RES_TOKEN=0;
 async function secResults(app){
   var SP=await sports();
   if(!RES_SPORT){RES_SPORT=SP[0].code;RES_SEASON=seasonFor(SP,RES_SPORT);}
-  var d=await api('/v1/games?sport='+encodeURIComponent(RES_SPORT)+'&season='+encodeURIComponent(RES_SEASON),{fn:'collective_public'});
+  /* EVERY WEEK UP TO THE CURRENT ONE, not just the current one.
+
+     /v1/games serves a week at a time and this screen used to read exactly
+     one -- whichever week the server called current -- so an unsettled game
+     from an earlier week was unreachable from the console that exists to
+     settle it. That was survivable while "current" meant a 36-hour lookback,
+     because the week just played was still it. It is not survivable now that
+     Current rolls forward as soon as a slate is complete: a game the settle
+     job could not find a final for would roll out of this screen the next
+     day and stay out.
+
+     So the head call names the current week and the sweep reads back to week
+     zero. A week with nothing outstanding costs one cached, empty response. */
+  var head=await api('/v1/games?sport='+encodeURIComponent(RES_SPORT)+'&season='+encodeURIComponent(RES_SEASON),{fn:'collective_public'});
+  var cur=(head&&head.week!=null)?Number(head.week):null;
+  var all=(head&&head.games)||[];
+  if(cur!=null&&cur>0){
+    var wks=[];for(var wi=0;wi<cur;wi++)wks.push(wi);
+    var pages=await Promise.all(wks.map(function(w){
+      return api('/v1/games?sport='+encodeURIComponent(RES_SPORT)+'&season='+encodeURIComponent(RES_SEASON)+'&week='+w,
+        {fn:'collective_public'}).catch(function(){return null;});
+    }));
+    pages.forEach(function(pg){if(pg&&pg.games)all=all.concat(pg.games);});
+  }
+  /* the head payload is one of the weeks, so a game can arrive twice */
+  var seenG={};
+  all=all.filter(function(g){
+    var k=String(g&&g.game_id);
+    if(!g||seenG[k])return false;
+    seenG[k]=1;return true;
+  });
+  var d={games:all};
   /* Unsettled past games, plus any settled 0-0: that is the shape of this
      form submitted with nothing typed in it (see settleScore), not a final,
      and the fix is to settle the game again with the real score. */
   var need=(d.games||[]).filter(function(g){return (!g.result||isPlaceholderResult(g.result))&&new Date(g.kickoff_at).getTime()<Date.now();});
+  /* oldest first: the game that has been waiting longest is the one an
+     operator opening this screen is looking for */
+  need.sort(function(a,b){return new Date(a.kickoff_at)-new Date(b.kickoff_at);});
   var rows=need.map(function(g,i){
     return '<tr><td><b>'+esc(g.label)+'</b><br><span class="note">'+new Date(g.kickoff_at).toLocaleString()+'</span>'+
       (isPlaceholderResult(g.result)?'<br><span class="warnnote">Settled 0-0 &mdash; a placeholder, not a final. Every model on it is graded against nothing until it is settled again with the real score.</span>':'')+'</td>'+
