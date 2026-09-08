@@ -64,9 +64,16 @@ function eq(name, a, b) { ok(name, a === b, 'got ' + JSON.stringify(a) + ', expe
   ok('parity: and it refuses when either is missing',
     /fair_total==null\|\|m\.fair_spread==null\)returnnull/.test(scoreSrc.replace(/\s+/g, '')));
   ok('parity: home is (total + spread) / 2, rounded',
-    /home:Math\.round\(\(m\.fair_total\+m\.fair_spread\)\/2\)/.test(scoreSrc.replace(/\s+/g, '')));
+    /home=Math\.round\(\(m\.fair_total\+m\.fair_spread\)\/2\)/.test(scoreSrc.replace(/\s+/g, '')));
   ok('parity: away is (total − spread) / 2, rounded',
-    /away:Math\.round\(\(m\.fair_total-m\.fair_spread\)\/2\)/.test(scoreSrc.replace(/\s+/g, '')));
+    /away=Math\.round\(\(m\.fair_total-m\.fair_spread\)\/2\)/.test(scoreSrc.replace(/\s+/g, '')));
+  /* The brief refused a negative side before the board did — a 50-point
+     projected margin over a 24-point total put "Florida A&M −25.1" on a
+     printed page. The board now refuses it the same way, and this is the
+     assertion that keeps the two from drifting apart again. */
+  ok('parity: and the board, like the brief, refuses a score with a negative side',
+    /if\(home<0\|\|away<0\)returnnull;/.test(scoreSrc.replace(/\s+/g, '')),
+    'app.html fbGxScore no longer guards the negative case that press_brief.projectedScore guards');
 })();
 
 /* ---------------------------------------------------------------- */
