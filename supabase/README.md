@@ -70,10 +70,14 @@ the NFL rows were looked up in the **college** schedule, so every game came back
 unmatched with nothing saying why.
 
 This installs the capability in the database, for the same reason
-`collective_member_removal.sql` did: `collective_join`, `collective_public` and
-`collective_admin` are deployed from the dashboard and are not in this
-repository, so a fix inside one of them could not be reviewed, tested, or relied
-on by the other two.
+`collective_member_removal.sql` did: when this was written, `collective_join`,
+`collective_public` and `collective_admin` were deployed from the dashboard and
+were not in this repository, so a fix inside one of them could not be reviewed,
+tested, or relied on by the other two. (All three are committed now, under
+`functions/` — which does not change the answer: a capability all of them need
+is still better defined once, in the database, than three times in three bundles
+that cannot import from each other. What it changes is that they can now all
+CALL it, and be tested doing so.)
 
 * `collective.get_or_create_model(creator, sport, name)` — **the** single source
   of truth. Normalises the sport, takes a transaction-scoped advisory lock on

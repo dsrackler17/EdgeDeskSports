@@ -1,9 +1,24 @@
 # Edge Functions
 
-68 functions are deployed. Until recently **five** of them lived here; the
-other 63 existed only as deployed artifacts, which meant they could not be
-reviewed, diffed, tested or restored, and nobody could answer "what does this
-one do?" without opening the dashboard.
+68 functions are deployed. **Eight** of them live here now; the other 60 exist
+only as deployed artifacts, which means they cannot be reviewed, diffed, tested
+or restored, and nobody can answer "what does this one do?" without opening the
+dashboard.
+
+The three that arrived most recently — `collective_join`, `collective_public`
+and `collective_admin` — were **pasted in, not exported**, like `close` and
+`learn` before them. **Diff each against the deployed function before treating
+it as authoritative:** a transcription error would be indistinguishable from a
+real difference. Their headers say what changed on the way in and what did not.
+
+They also arrived with a caveat worth stating once. Each names
+`supabase/functions/_shared/` and `tools/collective/bundle_functions.py` in its
+header, and **neither is in this repository** — so these bundles are not
+generated from anything here. Until the sources and the bundler land, the
+bundle IS the source and editing it is how the function changes. That is why
+the shared blocks are duplicated across the three files rather than imported:
+the dashboard bundles one folder, so an import that cannot resolve fails the
+deploy silently.
 
 `tools/supabase/download_functions.sh` pulls all of them into this directory.
 
@@ -32,6 +47,22 @@ Evidence from the shipped front end, not from the naming.
 | `edgedesk_ai` | the AI presentation layer |
 | `odds` | odds reads |
 | `team_brief` | team briefs |
+
+**Called directly by `collective/index.html`** (the Collective's own site)
+
+| function | what for |
+|---|---|
+| `collective_public` | the wall, the board, the rules, and every dashboard route — including `/v1/dashboard/submit`, which is what the uploader posts a slate to |
+| `collective_join` | the invite flow, and `POST /v1/models` to cover another sport |
+| `collective_admin` | the founder console (`collective/admin.html`) |
+| `collective_odds` | the market panel |
+
+`collective/index.html` also calls two SECURITY DEFINER routines over PostgREST
+directly rather than through any function: `public.collective_model_ensure` and
+`public.collective_my_models`, installed by
+`../collective_model_autocreate.sql`. That is deliberate — a capability every
+one of these functions needs is defined once, in the database, instead of three
+times in three bundles that cannot import from each other.
 
 **Everything else is a scheduled job or a webhook.** A cron job is load-bearing
 if the app reads a table it writes:

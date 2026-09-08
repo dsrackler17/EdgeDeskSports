@@ -139,6 +139,13 @@ jobs:
       - name: A slate finds its own model, and its own sport's schedule
         run: node tools/collective/ingest_model_resolution.test.js
 
+      # The same rule on the route the dashboard's own uploader posts to, plus
+      # the door beside it. collective_public and collective_join were not in
+      # this repository when collective_ingest was fixed, so the identical bug
+      # stood in the one path a contributor actually clicks through.
+      - name: The dashboard files a slate under its sport, and can cover a new one
+        run: node tools/collective/dashboard_model_resolution.test.js
+
       # Reads the real functions out of app.html rather than a copy, so it
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective
