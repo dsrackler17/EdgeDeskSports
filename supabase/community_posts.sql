@@ -32,6 +32,37 @@ begin;
 
 create extension if not exists pgcrypto;
 
+-- ── RUN THE OTHER TWO FIRST ────────────────────────────────────────────────
+-- This file's policies are written against public.site_article_is_admin() and
+-- its entitlement test reads public.subscriptions. A CREATE POLICY expression
+-- is resolved when the policy is created, so a missing predicate does not
+-- degrade — it stops the file with `42883: function
+-- public.site_article_is_admin() does not exist`, which says what is missing
+-- and nothing about what to do. This says it up front instead.
+--
+-- Worth knowing WHY that happens even to somebody who did run site_articles.sql:
+-- until it was fixed, that file died partway through on a project without
+-- issue_reports.sql, and because it is one transaction the rollback took the
+-- admin function with it. A re-run of the current site_articles.sql fixes it.
+do $preflight$
+begin
+  if to_regclass('public.subscriptions') is null then
+    raise exception E'community_posts.sql needs public.subscriptions.\n'
+      '  Run supabase/billing.sql first, then supabase/site_articles.sql, then this file.'
+      using errcode = '42P01';
+  end if;
+  if to_regproc('public.site_article_is_admin') is null then
+    raise exception E'community_posts.sql needs public.site_article_is_admin().\n'
+      '  Run supabase/site_articles.sql first, then this file.\n'
+      '  If you already ran it and are still seeing this, it rolled back: the version before\n'
+      '  2026-09-08 stopped on a project with no public.issue_report_admins, and the whole file\n'
+      '  is one transaction. Re-run the current supabase/site_articles.sql and its report should\n'
+      '  end with row 12; then run this file again.'
+      using errcode = '42883';
+  end if;
+end
+$preflight$;
+
 create table if not exists public.community_posts (
   id             uuid primary key default gen_random_uuid(),
   author_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
