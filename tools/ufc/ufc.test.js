@@ -307,6 +307,18 @@ async function syncWith(db, doc, now, extra) {
   eq('the sync stores the event and its bouts', [db.count('ufc', 'events'), db.count('ufc', 'bouts')], [1, 3]);
   chk('bouts resolved to both fighters where the dataset has them', s1.resolved === 2 && db.rows('ufc', 'bouts').filter(b => b.bout_id === 'espn:401900101')[0].red_fighter_id === 'marco-testerson');
   chk('unresolved names are reported, not guessed', s1.unmatched.length === 2 && db.rows('ufc', 'bouts').filter(b => b.bout_id === 'espn:401900103')[0].red_fighter_id === null);
+  /* a database whose migration predates the first_last confidence value */
+  const dbOld = seedDb();
+  const origUpsert = dbOld.upsert.bind(dbOld);
+  dbOld.upsert = async (schema, rel, rows, onConflict, o) => {
+    if (rel === 'fighter_aliases' && rows.some(r => !S.ORIGINAL_CONFIDENCE.includes(r.confidence))) { const e = new Error('UPSERT ufc.fighter_aliases -> 400: {"code":"23514","message":"new row for relation \\"fighter_aliases\\" violates check constraint"}'); e.status = 400; throw e; }
+    return origUpsert(schema, rel, rows, onConflict, o);
+  };
+  dbOld.tables['ufc.fighters'].push({ fighter_id: 'jose-delgado', full_name: 'Jose Delgado' });
+  const sOld = await syncWith(dbOld, M.card({ bouts: [{ id: '401900110', order: 1, red: { id: '5000001', name: 'Marco Testerson' }, blue: { id: '5223435', name: 'Jose Miguel Delgado' } }] }), '2026-09-13T10:00:00Z', { market: false });
+  chk('an alias the older constraint refuses does not end the sync: the bout is still resolved and written', sOld.resolved === 1 && dbOld.rows('ufc', 'bouts')[0].blue_fighter_id === 'jose-delgado', JSON.stringify(sOld.errors));
+  chk('and the run says the migration needs re-running', sOld.errors.some(e => /schema lag/.test(e) && /first_last/.test(e)));
+  chk('rows the older constraint accepts are still written', dbOld.rows('ufc', 'fighter_aliases').every(a => S.ORIGINAL_CONFIDENCE.includes(a.confidence)));
   const dbT = seedDb();
   const sT = await syncWith(dbT, M.card({ bouts: [{ id: '401900109', order: 1, red: { id: '5000001', name: 'Marco Testerson' }, blue: { id: '4402367', name: 'Opponent TBA' } }] }), '2026-09-13T10:00:00Z', { market: false });
   chk('a TBA opponent is stored as the provider names it and is not listed as unresolved', sT.unmatched.length === 0 && dbT.rows('ufc', 'bouts')[0].blue_name === 'Opponent TBA' && dbT.rows('ufc', 'bouts')[0].blue_fighter_id === null);

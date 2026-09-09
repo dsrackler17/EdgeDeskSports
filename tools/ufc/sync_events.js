@@ -218,6 +218,30 @@ function captureRows(links, signalRows, ticks, boutsById, eventsById) {
   return out;
 }
 
+/* Alias rows are a cache of a resolution the resolver repeats every run, so
+   a refused alias write must never end the sync. The migration's original
+   check constraint knew fewer confidence values than the resolver now
+   produces; a database that has not had the file re-run refuses those rows
+   with 23514, and the sync keeps the rows it accepts and says so. */
+const ORIGINAL_CONFIDENCE = ['exact', 'provider_id', 'name_order', 'surname', 'curated', 'manual'];
+async function writeAliases(db, rows, summary) {
+  try { await db.upsert('ufc', 'fighter_aliases', rows, 'alias_key', { returning: false }); return rows.length; }
+  catch (e) {
+    const msg = String(e && e.message || e);
+    if (/23514|check constraint/.test(msg)) {
+      const keep = rows.filter(r => ORIGINAL_CONFIDENCE.includes(r.confidence));
+      summary.errors.push('schema lag: ufc.fighter_aliases refuses the confidence value(s) ' + Array.from(new Set(rows.filter(r => !ORIGINAL_CONFIDENCE.includes(r.confidence)).map(r => r.confidence))).join(', ') + ' — re-run supabase/ufc_live_center.sql');
+      log('  alias write refused by an older check constraint; ' + (rows.length - keep.length) + ' row(s) skipped until the migration is re-run');
+      if (!keep.length) return 0;
+      try { await db.upsert('ufc', 'fighter_aliases', keep, 'alias_key', { returning: false }); return keep.length; }
+      catch (e2) { summary.errors.push('aliases: ' + String(e2 && e2.message || e2).slice(0, 200)); return 0; }
+    }
+    summary.errors.push('aliases: ' + msg.slice(0, 200));
+    log('  alias write failed (non-fatal): ' + msg.slice(0, 200));
+    return 0;
+  }
+}
+
 /* Events long past their start that never closed. */
 const STALE_AFTER_MS = 14 * 3600 * 1000;
 function staleEvents(events, nowMs, liveIds) {
@@ -296,7 +320,7 @@ async function run(o, deps) {
       await db.upsert('ufc', 'events', [rows.event], 'event_id', { returning: false });
       if (rec.upserts.length) await db.upsert('ufc', 'bouts', rec.upserts, 'bout_id', { returning: false });
       if (rec.cancelled.length) await db.upsert('ufc', 'bouts', rec.cancelled, 'bout_id', { returning: false });
-      if (res.aliasRows.length) { await db.upsert('ufc', 'fighter_aliases', res.aliasRows, 'alias_key', { returning: false }); summary.aliases += res.aliasRows.length; res.aliasRows.forEach(a => { aliases[a.alias_key] = a.fighter_id; }); }
+      if (res.aliasRows.length) { const w = await writeAliases(db, res.aliasRows, summary); summary.aliases += w; res.aliasRows.forEach(a => { aliases[a.alias_key] = a.fighter_id; }); }
     } else {
       summary.aliases += res.aliasRows.length;
       rec.cancelled.forEach(c => log(`  would cancel ${c.bout_id} (${c.status_detail})`));
@@ -399,5 +423,5 @@ async function main() {
   process.exit(code);
 }
 
-module.exports = { parseArgs, eventRows, reconcileBouts, resolveBouts, linkMarkets, captureRows, staleEvents, nextEvent, run, eventId, boutId, SPORT_KEY, STALE_AFTER_MS };
+module.exports = { parseArgs, eventRows, reconcileBouts, resolveBouts, linkMarkets, captureRows, staleEvents, nextEvent, run, eventId, boutId, SPORT_KEY, STALE_AFTER_MS, writeAliases, ORIGINAL_CONFIDENCE };
 if (require.main === module) main();
