@@ -71,7 +71,8 @@
       'key moments',
       'both sides of the ball',
       'the playbook',
-      'the player universe: profiles, tiers, bodies and home towns'
+      'the player universe: profiles, tiers, bodies and home towns',
+      'the Vault: packs you hold, odds you can read, and a card that remembers'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -1354,7 +1355,8 @@
      THE SERVER COUNTS, ROLLS AND KEEPS. Nothing is purchasable: a pack is
      earned by playing and by nothing else. */
   var RANK_VERSION = 'rank_v1';
-  var PACKS_VERSION = 'packs_v1';
+  /* PACKS_VERSION lives with the Vault below: the rank's cache is one kind of
+     pack now, and packs_v2 says what every kind holds. */
   var RANKS = {
     cost_base: 15, cost_step: 3, pack_size: 3, pack_keep: 1,
     floor_below: 10, edge_base: 2, edge_per_rank: 0.3, edge_max: 14,
@@ -1848,6 +1850,25 @@
      the identity and nothing else, and keeping sends a player id. The server
      counts the rank, rolls the three men and decides the band. Never queued:
      opening a pack must see its answer. */
+  /* ── THE VAULT (packs_v2) ─────────────────────────────────────────────────
+     The pack table, mirrored for display; the SQL's franchise_pack_defs() is
+     what applies, and the parity test pins these names to it. */
+  var PACKS_VERSION = 'packs_v2';
+  var PACKS = {
+    gridiron_cache:     { name: 'Gridiron Cache', art: 'cache', size: 3, keep: 1, earned: 'every rank you reach' },
+    rookie_cache:       { name: 'Rookie Cache', art: 'rookie', size: 3, keep: 1, earned: 'founding the franchise' },
+    postseason_pack:    { name: 'Postseason Pack', art: 'postseason', size: 3, keep: 1, earned: 'a season seen out' },
+    championship_vault: { name: 'Championship Vault', art: 'vault', size: 4, keep: 2, earned: 'a bowl won' },
+    scouts_find:        { name: "Scout's Find", art: 'scout', size: 2, keep: 1, earned: 'three Price Its scoring 80 or better in one week' }
+  };
+  function packDef(kind) { return PACKS[kind] || { name: kind, art: 'cache', size: 3, keep: 1, earned: '' }; }
+  /* the board: every sealed pack with its odds, the one on the table, the men kept */
+  function packsBoard() { return rpc('franchise_packs_board', withSecret({})); }
+  /* open one pack by id — the server rolls it, writes it, and only then answers */
+  function packOpenId(id) { return rpc('franchise_pack_open_id', withSecret({ p_pack: String(id || '') })).then(moveThen); }
+  /* one man, whole: profile, history, career, the pack he came from */
+  function card(id) { return rpc('franchise_card', withSecret({ p_player: String(id || '') })); }
+
   function ranks() { return rpc('franchise_rank_board', withSecret({})); }
   function packOpen() { return rpc('franchise_pack_open', withSecret({})).then(moveThen); }
   function packKeep(player) {
@@ -2104,10 +2125,11 @@
     SCHEMA: SCHEMA, SCHEMA_PHASES: SCHEMA_PHASES, SCHEMA_FILES: SCHEMA_FILES,
     schema: schema, schemaGap: schemaGap,
     development: development, develop: develop,
-    RANK_VERSION: RANK_VERSION, PACKS_VERSION: PACKS_VERSION, RANKS: RANKS,
+    RANK_VERSION: RANK_VERSION, RANKS: RANKS,
     rankCost: rankCost, rankAt: rankAt, rankFor: rankFor, rankEdge: rankEdge,
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
+    PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, packsBoard: packsBoard, packOpenId: packOpenId, card: card,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,

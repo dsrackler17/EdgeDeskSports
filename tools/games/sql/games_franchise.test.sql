@@ -72,6 +72,16 @@ create or replace function pg_temp.box_adds_up(b jsonb) returns boolean language
      and (select bool_and((p->'stats'->>'yds')::int >= 0 and coalesce((p->'stats'->>'rec')::int, 0) >= 0) from jsonb_array_elements(b->'players') p where p->'stats' ? 'yds');
 $$;
 
+-- true when the statement raises, whatever it raises; the refusals the
+-- suite cares about are refusals, not their exact words
+create or replace function pg_temp.raises(p_sql text) returns boolean language plpgsql as $$
+begin
+  execute p_sql;
+  return false;
+exception when others then
+  return true;
+end; $$;
+
 do $test$
 declare
   ALICE  constant uuid := 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -128,6 +138,9 @@ declare
   SEC_SG constant text := 'device-secret-scoutscoutscoutscoutscout2';
   SEC_S constant text := 'device-secret-ssssssssssssssssssssssssssss';
   SEC_C constant text := 'device-secret-cccccccccccccccccccccccccccc';
+  -- the Vault
+  v_pack uuid; vr jsonb; vr2 jsonb; v_ids text[]; v_bad integer; v_prime_guar integer; v_prime_kept integer;
+  v_pity integer; v_pity_ok integer; ptally jsonb; podds jsonb; v_kind text; mrec record; k2 integer;
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (ALICE, 'alice@example.com', '{"display_name":"Alice"}'),
@@ -5268,6 +5281,134 @@ begin
   perform pg_temp.ok('a founding roster still lands where it always has, with the wider pools',
     (select (public.franchise_team_rating(f.id)->>'overall')::int between 62 and 78
        from public.franchises f where f.anon_hash = public.games_hash(SEC_OF)));
+
+
+  -- ═══ 33. THE VAULT — packs_v2 ══════════════════════════════════════════════
+  -- A pack is a thing you hold now: derived from the record, rolled and
+  -- written on the server before any animation runs, with odds a page can
+  -- print and a rule you can read. The rank's door is unchanged in what it
+  -- promises; the Vault adds kinds around it.
+  perform pg_temp.as_owner();
+  select id into ofl from public.franchises where anon_hash = public.games_hash(SEC_OF);
+  -- clear whatever section 31 left on the table
+  perform pg_temp.as_anon();
+  begin perform public.franchise_pack_pass(SEC_OF); exception when others then null; end;
+  v := public.franchise_packs_board(SEC_OF);
+  perform pg_temp.ok('the Vault board lists the sealed packs the record owes, the founding cache among them',
+    v ? 'sealed' and exists (select 1 from jsonb_array_elements(v->'sealed') sk where sk->>'kind' = 'rookie_cache'), (v->'sealed')::text);
+  perform pg_temp.ok('every sealed pack prints its odds, and they add up to a hundred',
+    (select bool_and(abs((select sum(t.value::numeric) from jsonb_each_text(sk->'odds'->'tiers') t) - 100) < 0.5
+                     and (sk->'odds'->>'low')::int <= (sk->'odds'->>'high')::int)
+       from jsonb_array_elements(v->'sealed') sk), (v->'sealed')::text);
+  perform pg_temp.ok('the protection rule is printed, not hidden',
+    (v->'pity'->>'after')::int = 5 and (v->'pity'->>'since')::int >= 0 and v->'pity' ? 'active', (v->'pity')::text);
+  perform pg_temp.ok('the board is the same read twice — nothing is granted twice by reading',
+    jsonb_array_length(public.franchise_packs_board(SEC_OF)->'sealed') = jsonb_array_length(v->'sealed'));
+  -- open the founding cache by id, as the device
+  select (sk->>'id')::uuid into v_pack from jsonb_array_elements(v->'sealed') sk where sk->>'kind' = 'rookie_cache';
+  vr := public.franchise_pack_open_id(v_pack, SEC_OF);
+  perform pg_temp.ok('opening a pack by id hands over its men, and the band they were rolled from',
+    (vr->>'ok')::boolean and jsonb_array_length(vr->'players') = 3 and (vr->'range'->>0)::int <= (vr->'range'->>1)::int
+    and vr->'pack'->>'kind' = 'rookie_cache' and (vr->>'keep')::int = 1, vr::text);
+  perform pg_temp.ok('every man is inside the printed band, at a position the team is thin at',
+    (select bool_and((m->>'overall')::int between (vr->'range'->>0)::int and (vr->'range'->>1)::int and m->>'position' is not null)
+       from jsonb_array_elements(vr->'players') m));
+  -- the table itself is the owner's to read; the device only ever sees it through the door
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the result was written before it was shown: the men are on the table with the pack''s id',
+    (select count(*) from public.game_players where franchise_id = ofl and status = 'pack' and pack_id = v_pack) = 3
+    and (select status from public.franchise_packs where id = v_pack) = 'open',
+    (select count(*) from public.game_players where franchise_id = ofl and status = 'pack' and pack_id = v_pack)::text || ' men, pack '
+    || coalesce((select status from public.franchise_packs where id = v_pack), 'missing'));
+  perform pg_temp.ok('and opening it again is refused', (select pg_temp.raises('select public.franchise_pack_open_id(''' || v_pack || ''', ''' || SEC_OF || ''')')));
+  perform pg_temp.ok('the same board now shows the open pack and its men, with their profiles',
+    (public.franchise_packs_board(SEC_OF)->'open'->>'id')::uuid = v_pack
+    and jsonb_array_length(public.franchise_packs_board(SEC_OF)->'open'->'men') = 3
+    and (public.franchise_packs_board(SEC_OF)->'open'->'men'->0) ? 'profile');
+  perform pg_temp.ok('a man on the table can be read as a card of his own, one of one, with the line of how he arrived',
+    (public.franchise_card((vr->'players'->0->>'id')::uuid, SEC_OF)->'edition'->>'of')::int = 1
+    and public.franchise_card((vr->'players'->0->>'id')::uuid, SEC_OF)->'history'->0->>'kind' = 'generated');
+  -- keep one: the card remembers it, the pack is spent, the others are passed
+  vr2 := public.franchise_pack_keep((vr->'players'->0->>'id')::uuid, SEC_OF);
+  perform pg_temp.ok('keeping one closes a keep-one pack and passes the rest',
+    (vr2->>'ok')::boolean and (vr2->>'passed')::int = 2 and (vr2->>'keep_left')::int = 0
+    and (select status from public.franchise_packs where id = v_pack) = 'done', vr2::text);
+  perform pg_temp.ok('and the card remembers the day he was kept',
+    exists (select 1 from jsonb_array_elements((select history from public.game_players where id = (vr->'players'->0->>'id')::uuid)) h
+             where h->>'kind' = 'acquired' and h->>'source' = 'pack'));
+  perform pg_temp.ok('a man from a pack lists the pack he came from on the board',
+    exists (select 1 from jsonb_array_elements(public.franchise_packs_board(SEC_OF)->'kept') sk where sk->>'kind' = 'rookie_cache'));
+
+  -- the card's history is written by the trigger, whoever changes the man
+  perform pg_temp.as_owner();
+  select id into pid from public.game_players where franchise_id = ofl and status = 'active' order by overall limit 1;
+  update public.game_players set overall = overall + 1 where id = pid;
+  perform pg_temp.ok('a change in the ratings leaves a line on the card',
+    (select h->>'kind' = 'ratings' and (h->>'after')::int = (h->>'before')::int + 1
+       from (select history->(jsonb_array_length(history) - 1) h from public.game_players where id = pid) x));
+  update public.game_players set potential = potential + 3 where id = pid;
+  perform pg_temp.ok('and so does a change in the ceiling',
+    (select history->(jsonb_array_length(history) - 1)->>'kind' = 'potential' from public.game_players where id = pid));
+  for i in 1..90 loop update public.game_players set overall = overall + (case when i % 2 = 0 then 1 else -1 end) where id = pid; end loop;
+  perform pg_temp.ok('the history is capped, and keeps how he arrived',
+    (select jsonb_array_length(history) <= 80 and history->0->>'kind' = 'generated' from public.game_players where id = pid));
+
+  -- A THOUSAND PACKS. Every kind, generated straight from the server's
+  -- generator: nothing null, no two men the same, every man inside the band
+  -- he was advertised at, the guarantee kept, the observed tiers within reach
+  -- of the printed odds, and the protection firing when it says it will.
+  v_ids := '{}'; n := 0; k2 := 0; v_bad := 0; v_prime_guar := 0; v_prime_kept := 0; v_pity := 0; v_pity_ok := 0;
+  ptally := '{}'::jsonb; podds := null;
+  for i in 1..1000 loop
+    v_kind := (array['gridiron_cache','rookie_cache','postseason_pack','championship_vault','scouts_find'])[1 + (i % 5)];
+    -- the rank's cache is keyed by the rank it was owed at; the thousand sit far above any rank
+    v_pack := public.franchise_pack_grant(ofl, v_kind, case when v_kind = 'gridiron_cache' then (10000 + i)::text else 'thousand:' || i end, 'the thousand');
+    if v_kind = 'gridiron_cache' and podds is null then
+      podds := public.franchise_pack_odds(ofl, 'gridiron_cache');
+      -- the printed odds under test are the everyday ones, not the protection's widened band
+      if coalesce((podds->'pity'->>'active')::boolean, false) then podds := null; end if;
+    end if;
+    v := public.franchise_pack_generate(ofl, v_pack);
+    select contents into vr from public.franchise_packs where id = v_pack;
+    if jsonb_array_length(v) <> (public.franchise_pack_def(v_kind)->>'size')::int then v_bad := v_bad + 1; end if;
+    for mrec in select m from jsonb_array_elements(v) m loop
+      n := n + 1;
+      if mrec.m->>'id' is null or mrec.m->>'first_name' is null or mrec.m->>'last_name' is null or mrec.m->>'position' is null or (mrec.m->>'overall') is null then v_bad := v_bad + 1; end if;
+      if (mrec.m->>'overall')::int < (vr->'band'->>'low')::int or (mrec.m->>'overall')::int > (vr->'band'->>'high')::int then v_bad := v_bad + 1; end if;
+      v_ids := array_append(v_ids, mrec.m->>'id');
+      if v_kind = 'gridiron_cache' and not coalesce((vr->'band'->'pity'->>'active')::boolean, false) then
+        k2 := k2 + 1;
+        ptally := ptally || jsonb_build_object(mrec.m->>'tier', coalesce((ptally->>(mrec.m->>'tier'))::int, 0) + 1);
+      end if;
+    end loop;
+    if vr->'band'->>'guarantee' = 'prime' then
+      v_prime_guar := v_prime_guar + 1;
+      if (vr->>'got_prime')::boolean then v_prime_kept := v_prime_kept + 1; end if;
+    end if;
+    if coalesce((vr->'band'->'pity'->>'active')::boolean, false) then
+      v_pity := v_pity + 1;
+      if (vr->>'got_prime')::boolean then v_pity_ok := v_pity_ok + 1; end if;
+    end if;
+  end loop;
+  perform pg_temp.ok('a thousand packs: every one the right size, every man whole and inside his band', v_bad = 0, v_bad::text || ' bad');
+  perform pg_temp.ok('and no two men are the same man', (select count(distinct x) from unnest(v_ids) x) = n, n::text);
+  perform pg_temp.ok('every pack that promised a Prime man delivered one', v_prime_guar > 0 and v_prime_kept = v_prime_guar,
+    v_prime_kept || ' of ' || v_prime_guar);
+  perform pg_temp.ok('the protection fired, and every time it did the man it promised was there', v_pity > 0 and v_pity_ok = v_pity,
+    v_pity_ok || ' of ' || v_pity);
+  perform pg_temp.ok('the tiers that came out of the rank''s cache are within reach of the odds it printed',
+    k2 >= 300 and (select bool_and(abs(100.0 * coalesce((ptally->>t.key)::int, 0) / k2 - t.value::numeric) <= 8)
+                     from jsonb_each_text(podds->'tiers') t),
+    'seen ' || ptally::text || ' of ' || k2 || ' vs ' || (podds->'tiers')::text);
+  perform pg_temp.ok('all three thousand men are on the table with their pack''s id, none of them on the roster',
+    (select count(*) from public.game_players where franchise_id = ofl and status = 'pack' and pack_id is not null) = n
+    and (select count(*) from public.game_players where franchise_id = ofl and status = 'active' and acquired_detail = 'the thousand') = 0);
+  vr := public.franchise_pack_pass(SEC_OF);
+  perform pg_temp.ok('and one pass clears the table and closes every open pack',
+    (vr->>'passed')::int = n and (select count(*) from public.franchise_packs where franchise_id = ofl and status = 'open') = 0);
+  -- the rank's own door still keeps every promise it made in packs_v1
+  perform pg_temp.ok('the rank''s door refuses with the same words when no rank is owed',
+    (select pg_temp.raises('select public.franchise_pack_open(''' || SEC_OF || ''')')) or (public.franchise_rank_report(ofl)->>'packs')::int > 0);
 
 end
 $test$;

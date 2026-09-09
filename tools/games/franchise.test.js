@@ -2068,9 +2068,9 @@ fresh();
      copy of the curves is the SQL's. */
 
   eq('the rank is versioned', F.RANK_VERSION, 'rank_v1');
-  eq('and the packs are', F.PACKS_VERSION, 'packs_v1');
+  eq('and the packs are', F.PACKS_VERSION, 'packs_v2');
   has(SQL, "'version', 'rank_v1'", 'the SQL agrees on the rank');
-  has(SQL, "'pack_version', 'packs_v1'", 'and on the packs');
+  has(SQL, "'pack_version', 'packs_v1'", "and the rank's own door still keeps every packs_v1 promise it made");
 
   /* THE LOAD-BEARING ONE. A pack is earned by playing and by nothing else. */
   /* Since staff_v2 a rank also PAYS Coach Points, so the function does call
@@ -2196,20 +2196,27 @@ fresh();
     && /function packKeep\(player\) \{[\s\S]{0,140}p_player: String\(player \|\| ''\)/.test(FJS)
     && !/Math\.random/.test(FJS));
 
-  /* THE PAGE */
-  chk('the packs page asks the server and shows what a pack would hold',
-    /FR\.ranks\(\)/.test(PACKS) && /FR\.packOpen\(\)/.test(PACKS) && /FR\.packKeep\(id\)/.test(PACKS)
-    && /would_hold/.test(PACKS));
-  chk('and says a pack is three men and one is kept',
-    /Keep <b>one<\/b>/.test(PACKS) && /passed over/.test(PACKS));
+  /* THE PAGE (the Vault, packs_v2 — every kind of pack goes through one door) */
+  const VAULT_JS = fs.readFileSync(G('lib/vault.js'), 'utf8');
+  chk('the packs page asks the server for the board and shows what every pack would hold',
+    /FR\.packsBoard\(\)/.test(PACKS) && /FR\.packOpenId\(id\)/.test(PACKS) && /FR\.packKeep\(m\.id\)/.test(PACKS)
+    && /odds\.low|od\.low/.test(PACKS) && /oddsChips\(od\)/.test(PACKS));
+  chk('the server writes before the room shows: the page opens by id first and only then draws the Vault',
+    PACKS.indexOf('FR.packOpenId(id)') < PACKS.indexOf('roomFor(packFor(') && /THE SERVER ROLLS AND WRITES FIRST/.test(PACKS));
+  chk('and says how many to keep, and that the rest are passed over',
+    /keep '\+esc\(p\.keep\)/.test(PACKS) && /passed over/.test(VAULT_JS) && /Keep ' \+ \(left === 1 \? 'one'/.test(VAULT_JS));
   chk('and offers the way out, so a pack can never block the ones behind it',
-    /FR\.packPass\(\)/.test(PACKS) && /turn the whole pack down/.test(PACKS)
-    && /the rank is spent either way/.test(PACKS));
+    /FR\.packPass\(\)/.test(PACKS) && /Pass on ' \+ \(kept \? 'the rest' : 'the whole pack'\)/.test(VAULT_JS)
+    && /Finish the pack on the table first/.test(PACKS));
+  chk('a pack already open survives a refresh: the page offers the same men back',
+    /alreadyOpen/.test(PACKS) && /Back to the table/.test(PACKS) && /o\.alreadyOpen/.test(VAULT_JS));
   chk('it names what the next rank costs in the things you actually do',
     /FR\.rankWeight\('weekly_game'\)/.test(PACKS) && /FR\.rankWeight\('price_it'\)/.test(PACKS));
   chk('the page is a room like the others, with the guard the others wear',
     require(G('games.js')).ROOMS.some(r => r.key === 'packs' && r.href === '/games/packs/')
-    && /EDFranchise\.packOpen/.test(PACKS) && /stale games scripts/.test(PACKS));
+    && /EDFranchise\.packOpenId/.test(PACKS) && /EDVault\.open/.test(PACKS) && /stale games scripts/.test(PACKS));
+  chk('a kept man can be read as a card of his own, with his line',
+    /FR\.card\(id\)/.test(PACKS) && /edition/.test(PACKS) && /history/.test(PACKS));
   has(SITEMAP, '/games/packs', 'the room is in the sitemap');
   has(NOTFOUND, "p[1]==='packs'", 'and routed from 404');
 
@@ -2794,9 +2801,7 @@ fresh();
   chk('the report grew to thirty-eight rows', /select 38, 'the player universe is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 17, 'the player universe: profiles, tiers, bodies and home towns'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 17);
-  chk('and the report checks the same number',
-    /\(public\.games_schema\(\)->>'franchise'\)::int = 17/.test(SQL));
+  chk('and the client expects at least that many', F.SCHEMA.franchise >= 17);
   eq('the client profile is versioned as the SQL is', F.PROFILE_VERSION, 'profile_v1');
   chk('the roster read model carries the profile', /\|\| public\.franchise_profile_of\(p\)\)/.test(SQL));
   chk('a card shows the collector\'s tier and the universal six', (() => {
@@ -2812,6 +2817,37 @@ fresh();
       html.indexOf('/games/lib/gridiron/profile.js') > 0 && html.indexOf('/games/lib/gridiron/profile.js') < html.indexOf('/games/lib/franchise.js'));
   });
   has(README, 'profile_v1', 'the README documents the profile');
+
+  /* ═══ 18. THE VAULT — packs_v2 ═══════════════════════════════════════════ */
+  chk('the report grew to thirty-nine rows', /select 39, 'the Vault is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 18, 'the Vault: packs you hold, odds you can read, and a card that remembers'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 18);
+  chk('and the report checks the same number',
+    /\(public\.games_schema\(\)->>'franchise'\)::int = 18/.test(SQL));
+  eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v2');
+  has(SQL, '"version": "packs_v2"', 'and the SQL carries the same version');
+  (function () {
+    const m = SQL.match(/function public\.franchise_pack_defs\(\)[\s\S]*?select '([\s\S]*?)'::jsonb;/);
+    chk('the SQL states the pack table', !!m);
+    if (!m) return;
+    const defs = JSON.parse(m[1].replace(/''/g, "'"));
+    eq('the client knows every kind the SQL deals', Object.keys(F.PACKS).sort().join(','), Object.keys(defs.kinds).sort().join(','));
+    Object.keys(defs.kinds).forEach(k => {
+      const d = defs.kinds[k], c = F.PACKS[k] || {};
+      chk('the client shows ' + k + ' as the SQL deals it', c.name === d.name && c.size === d.size && c.keep === d.keep && c.earned === d.earned && c.art === d.art,
+        JSON.stringify(c) + ' vs ' + JSON.stringify(d));
+    });
+    chk('the rank\'s cache carries a protection rule the client can read', defs.kinds.gridiron_cache.pity && defs.kinds.gridiron_cache.pity.after === 5);
+  })();
+  chk('the packs page opens through the server and never picks its own men', /FR\.packOpenId\(/.test(PACKS) && !/Math\.random\(\)[^;]*(overall|tier|position)/.test(PACKS));
+  has(PACKS, 'FR.packsBoard()', 'the packs page reads the Vault board');
+  has(PACKS, 'EDVault', 'and opens through the Vault');
+  has(PACKS, '/games/lib/vault.js', 'the packs page loads the Vault');
+  has(PACKS, '/games/vault.css', 'and its stylesheet');
+  ['pack_opened', 'card_revealed', 'rare_pull', 'pack_kept', 'pack_passed', 'packs_view'].forEach(e => chk('the packs page fires ' + e, new RegExp("track\\('" + e + "'").test(PACKS) || new RegExp("'" + e + "'").test(fs.readFileSync(G('lib/vault.js'), 'utf8'))));
+  has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
+  has(README, 'packs_v2', 'the README documents the Vault');
 
   has(README, 'a formation that lies', 'and what a trick play actually needs');
 

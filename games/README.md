@@ -3152,3 +3152,92 @@ row under the four, and the build and home town in the meta line. The live
 engine reads strength and stamina from the profile (the stiff arm and the
 sprint); speed, acceleration and agility keep the sources the harness is
 banded on.
+
+## Phase 8–9 — the card, and the Vault (`packs_v2`)
+
+**Every man is a card, and every card is one of one.** There is no second
+print of anybody: `franchise_card(p_player)` returns the man whole — profile,
+history, career, the pack he came from — and an `edition` that says
+`serial 1 of 1`. A trigger on `game_players` (`franchise_card_history`)
+writes his line for him, whoever changes the row: *generated* (how he came
+to exist, at what overall, ceiling and age), *acquired* (kept from a pack,
+drafted, signed), *traded*, *ratings* (before → after, the season and his
+age), *potential*, *retired*, *released*. Capped at eighty lines, keeping
+the first and the last seventy-nine, so the day he arrived is never lost.
+The packs page shows the card as a sheet; tap a man kept from a pack.
+
+**A pack is a thing your record owes you**, not a thing you are sold. The
+rank's cache (`packs_v1`) already worked that way — one pack for every rank
+reached, drawn around your own team — and every promise it made still holds
+(`franchise_pack_open` is redefined, not replaced, and the SQL suite still
+attacks it as before). The Vault generalises it. `franchise_pack_defs()` is
+the table of kinds and `franchise_packs_sync(franchise)` derives, from the
+record alone, which sealed packs a franchise holds:
+
+| kind | for | men · keep | band |
+| --- | --- | --- | --- |
+| Gridiron Cache | every rank reached | 3 · 1 | floor 10 under your overall, ceiling rises with the rank |
+| Rookie Cache | founding the franchise | 3 · 1 | floor 8 under, flat edge +4, at the positions you are thin |
+| Postseason Pack | a season seen out (the two most recent) | 3 · 1 | floor 6 under, rank edge +4, where you are thin |
+| Championship Vault | a bowl won | 4 · 2 | floor 2 under, rank edge +8, **one Prime man guaranteed** |
+| Scout's Find | three Price Its scoring 80+ in one week | 2 · 1 | floor 4 under, rank edge +2, the ceiling lifted 6 |
+
+Derived, never accumulated: nothing wraps `franchise_create` or
+`franchise_play_game`; the sync reads seasons, bowls and verified Price It
+scores and inserts what is missing, idempotent on (franchise, kind, source
+key). A pack you have not earned cannot exist, and no code path hands one
+out.
+
+**The odds are printed before you open.** The roll is uniform over the whole
+numbers of the band and the server rolls it, so `franchise_pack_odds` is
+arithmetic anyone can check: the share of the band inside each collector's
+tier. The board (`franchise_packs_board`) prints them on every sealed pack,
+and the packs page prints them as chips. A guaranteed man is stated
+separately; the odds are the odds for the others. **Bad-luck protection is
+printed too**, not hidden: after five Gridiron Caches without a Prime man
+the next one lifts its ceiling by six and guarantees one; the counter
+(`franchises.packs_since_prime`) is on the board as dots, and the rule is
+stated in words beside them.
+
+**The server writes before the room shows.** `franchise_pack_open_id(pack)`
+rolls the men, writes them to `game_players` with status `pack` and the
+pack's id, records the band they were rolled from on the pack row, and only
+then answers. The page calls that first — the button says *Sealing the
+result…* — and only a persisted result gets a reveal. A refresh mid-reveal
+finds the same men face down on the table (*Back to the table*); the reveal
+is theatre over a result that is already true. Nothing in
+`games/lib/vault.js` calls the server or rolls anything; the test pins that
+it never writes an overall or a tier.
+
+**The Vault itself** (`games/lib/vault.js`, `games/vault.css`) is a room,
+not a button: the screen goes to a dark scouting tunnel, EdgeDesk data lines
+drift behind a sealed case dressed in the pack's own colour, a scan line
+crosses it, the lid swings, and the men come out as silhouettes you turn
+over one at a time. A Prime or Elite man gets a short build (position,
+signature rating, overall, card). An Apex, Legend or Mythic man does not
+simply appear: the room goes to black, a low synthesised rumble starts, and
+he is revealed a fact at a time — the mark, position, archetype, the one
+rating that defines him, his home town, the overall, the outline, the name,
+then the card, with confetti for a Legend or better. Every clue is his own
+fact in a slow order; there is no fake-out and no bait. The plan of a reveal
+is a pure function (`EDVault.plan(man)`), bounded under nine seconds, and
+`tools/games/vault.test.js` holds it down without a DOM. Sound is
+synthesised, haptics are a vibrate pattern, both switch off, and the whole
+room goes still under `prefers-reduced-motion`.
+
+**Proof.** Section 33 of `tools/games/sql/games_franchise.test.sql` opens
+the founding cache by id as the device, checks the men are on the table with
+the pack's id before the answer is read, refuses a second opening, keeps one
+and watches the card remember it, drives the history trigger through ratings,
+potential and ninety edits to see the cap hold, and then generates **a
+thousand packs** straight from the server's generator across every kind:
+every one the right size, every man whole and inside his printed band, no
+two men the same man, every guaranteed Prime delivered, protection firing
+exactly when it says and delivering every time, and the observed tiers from
+the rank's cache within eight points of the odds it printed. The client's
+pack table (`EDFranchise.PACKS`) is pinned name-for-name to
+`franchise_pack_defs()`.
+
+Nothing here can be bought. There is no pack for sale and no way to open one
+faster with money; the page says so in three places, and the SQL has no
+currency path that grants a pack.
