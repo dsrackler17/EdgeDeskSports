@@ -2998,3 +2998,109 @@ trades and the staff are each versioned (`sim_v4`, `offseason_v2`,
 `career_v1`, `snap_v1`, `moment_v1`, `clock_v1`, `defense_v1`, `playbook_v1`, `rookie_v2`) so a retuned one is a new version and old boxes, old reports,
 old classes, old tables, old deals and old coaches stay true to the rules
 they were played under.
+
+---
+
+# EdgeDesk Football — the rebuild
+
+The brief: turn the experimental arcade game, the Tecmo-style prototype and
+the franchise systems into one cohesive football product — original players,
+an exceptional collectible ecosystem, a living marketplace, broadcast-level
+presentation, season history and research education — **without** starting
+over and destroying what works. So the first thing done was an audit, and the
+audit's verdict is the shape of everything after it.
+
+## Phase 1 — what the audit found, and what was fixed
+
+Three audits, one per layer. The verdicts:
+
+| layer | verdict |
+| --- | --- |
+| the engine (`engine.js`, `live.js`, `paint.js`, `stage.js`) | **keep**. Deterministic, invariant-tested, a real 2.5D renderer and a live twenty-two-man simulation. Refactor around it; do not replace it. |
+| the server (`games_franchise.sql`) | **keep**. The ledger, the identity model, RLS and the seeded generator are exactly what a card economy needs. The one structural gap: a `game_players` row is at once the player, the card and the roster slot, and there is no marketplace, no awards and no card editions. |
+| the shell (`games.js`, the pages) | **keep** the shared renderer; the packs page was a list, not an opening, and the play page was an orphan (no analytics, absent from the 404 map). |
+
+Concrete bugs found and fixed in this phase — each one asserted by a test now:
+
+* **Overtime ran longer than the quarter.** `startOT` set a ten-minute clock on a
+  five-minute game, which the invariants rightly refused; nine games in two
+  hundred at Blitz length broke. An overtime period is now never longer than
+  the quarter it follows.
+* **Play Mode's progression was coverage-blind.** `live.js` handed `F.reads`
+  the coverage's *name*, so every separation came back zero and the badges
+  read the routes in the order they were typed. It passes the coverage now,
+  and `flow.test.js` refuses the string.
+* **Resuming a live game lost every player's name.** `session.resume` stepped
+  the engine with raw ids; the men are looked up again on the way back in.
+* **`prepare()` dropped `shortAcc`**, so weather never touched a short throw.
+* **Every new game leaked a Stage** — a `ResizeObserver` and a resize
+  listener per game, and two tap handlers on one canvas. `Stage.destroy()`.
+* **Coach Mode's picture and its books were different games**: the resolver
+  drew a second result under the play you watched. One game, one truth: the
+  play you watch is the play that is booked, in every mode.
+* **The camera framed half a field that was never hidden** on wide screens,
+  where the call sheet is a column rather than a sheet.
+* **The field-goal button ignored the weather** the kick would be taken in.
+* **A phone that locked mid-play dropped the down**; the loop restarts on
+  `visibilitychange` and the watchdog waits for it.
+* **An interception was re-spotted by dice** when the live play had measured
+  the spot exactly.
+* The tab bar and the header disagreed by one pixel at 480px; the Drill,
+  Pick 5, Head-to-Head and Groups had no tab bar to come back on; the shared
+  libraries carried a version token the bumper could not see; the play page
+  had no analytics; `/games/play/anything` bounced to the games home; dead
+  markup on the home and the War Room promised things nothing rendered.
+
+## Phase 2 — the game you hold
+
+**One named state for the page.** `games/lib/gridiron/flow.js` — LOADING,
+PRE_GAME, KICKOFF, PLAY_SELECT, PRE_SNAP, LIVE_PLAY, PLAY_ENDING, RESULT,
+TRANSITION, PAT, QUARTER_END, HALFTIME, GAME_OVER — with the legal moves
+written down. The call sheet asks `FLOW.can('call')`, the snap button asks
+`FLOW.can('snap')`; an unlisted move is reported and then taken, because a
+game that refuses to continue is a worse bug than one that continued from the
+wrong place. The engine's game object stays the only authority on the
+football. `window.__edFlow` is the debug read.
+
+**Arcade length, by default.** Four two-minute quarters that still hold a
+game's worth of snaps: the engine's `cfg.deadScale` charges a fraction of the
+dead ball (0.30 at Arcade; 1 everywhere else), so the clock reads 2:00 and the
+game has about fifty snaps in it. Every band in the harness is a rate, so the
+sport is unchanged — the quick harness runs green at every length. Blitz
+(5:00), Quick (8:00) and Full (15:00) stay in the settings.
+
+**The thumbs.** A ball carrier holds **Sprint** and taps **Juke**, **Spin** or
+**Stiff arm**; a defender holds Sprint and taps **Tackle**, **Dive** or
+**Switch**. None of them teleports: a juke is a bounded lateral cut, a spin
+keeps him going forward and slower for a beat, a stiff arm is his strength
+against the nearest man's tackling, a dive reaches further and costs a beat on
+the ground if it misses, and switch *cycles* through the defenders nearest the
+ball rather than bouncing between two. Every move raises `a.spam`, which drains
+over three seconds and is read by the tackle roll, so the fourth juke in two
+seconds is worth a quarter of the first. Sprint drains wind (`a.gas`) at a rate
+set by stamina and refills it when released.
+
+**The keyboard, second.** Arrows or WASD steer, Space snaps then sprints, J K L
+are the three taps, 1–5 throw to a badge in progression order, Tab switches,
+Escape closes the sheet. Bound once, for the life of the page.
+
+**Takeaways.** A pick is returned: the interceptor runs, the offence chases,
+and on defence the thumb goes straight to him. A return into the end zone is
+the defence's touchdown — six points, a try, and a touchdown that is nobody's
+rushing or receiving score (`stats.defTD`, player `dtd`). Fumbles exist in
+Play Mode now: once per tackle, about one carry in ninety, and a fumble the
+defence falls on is booked as the play it was — a run, a catch, a scramble or
+a sack — and then turned over where it lay, so the yard columns still add up.
+
+**Route running acts on the field.** A receiver's own `rte` buys him cushion
+against man coverage; it used to enter only as a unit average.
+
+**Rotate to play.** A phone held upright is asked once, over the field, and
+may say no for the session.
+
+**Tests.** `tools/games/flow.test.js`: the flow machine's edges; a hundred
+consecutive live snaps and a hundred lined-up-and-abandoned previews; every
+event a game has at arcade length with the invariants holding; returned picks,
+defensive touchdowns with a try pending, fumbles with the columns agreeing;
+overtime inside the quarter; a resumed game keeping its names; the progression
+reading the coverage; every button every tick, deterministically.

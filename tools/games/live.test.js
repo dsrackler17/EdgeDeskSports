@@ -37,7 +37,10 @@ function mulberry(seed) {
 }
 
 function freshGame(seed) {
-  const g = S.build({ home: 'lubbock', away: 'amarillo', seed: seed, length: 'blitz' });
+  /* build() takes team objects and a settings block; the strings this used to
+     pass were ignored, so it silently tested the default matchup at the
+     default length. Say what is meant. */
+  const g = S.build({ seed: seed, settings: { length: 'blitz', difficulty: 'pro' } });
   let guard = 0;
   while (g.phase !== 'play' && !g.over && guard++ < 40) {
     S.step(g, { type: g.phase === 'kickoff' ? 'kickoff' : g.phase === 'pat' ? 'pat' : 'halftime_done' });

@@ -29,6 +29,7 @@ var SHELL = [
   '/games/lib/gridiron/stage.js' + Q,
   '/games/lib/gridiron/lineup.js' + Q,
   '/games/lib/gridiron/session.js' + Q,
+  '/games/lib/gridiron/flow.js' + Q,
   '/games/lib/week.js' + Q,
   '/games/lib/store.js' + Q,
   '/games/lib/social.js' + Q,

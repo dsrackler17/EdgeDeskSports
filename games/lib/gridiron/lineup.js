@@ -18,7 +18,7 @@
 
   /* which look each side of the ball is shown in */
   var SHOWS = {
-    offense: { form: 'i_form', play: 'iso' },
+    offense: { form: 'i_form', play: 'power' },
     defense: { def: 'two_deep' }
   };
 

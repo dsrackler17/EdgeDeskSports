@@ -57,7 +57,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
   transform:skewX(-12deg)}
 .gh-tag{color:var(--val);font-weight:700}
 .gh-sp{flex:1}
-/* the nav shrinks before the page does: eleven rooms at 1280px must never
+/* the nav shrinks before the page does: fifteen rooms at 1280px must never
    push the page wider than the viewport, so the nav scrolls within itself
    if it ever has to (every room is in the footer regardless) */
 .gh-nav{display:flex;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
@@ -77,7 +77,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
                    item is in the footer of every page — and the logo's
                    wordmark, leaving the mark and GAMES
      under 380px   tighten the remaining links */
-@media(max-width:479px){
+@media(max-width:480px){
   .gh-nav a{padding:8px 7px;font-size:12px}
   .gh-only-wide{display:none}
   /* the wordmark goes here too: with the War Room and the Drill in the nav,
@@ -482,7 +482,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
   background:rgba(63,184,131,.14);color:var(--val);font-size:10.5px;font-weight:800;
   vertical-align:1px;letter-spacing:.02em}
 .gh-lvl[hidden]{display:none}
-@media(max-width:479px){.gh-lvl{display:none}}
+@media(max-width:480px){.gh-lvl{display:none}}
 
 /* ── the pulse: what just changed, without stopping the page ────────────── */
 .pulse{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:70;
@@ -740,7 +740,10 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 /* on a phone the chip is the mark alone, and the header sheds the rooms the
    tab bar (HQ, Scouting, Training) or the footer already carries: measured
    at 390px, the chip, the level badge and four rooms overflowed by 60px */
-@media(max-width:479px){
+/* THE SAME BREAKPOINT AS THE TAB BAR. These used to sit at 479px while the
+   bar turned on at 480px, so at exactly 480 a phone showed both the full
+   header and the bar under it — the overflow this rule exists to prevent. */
+@media(max-width:480px){
   .gh-fr .gh-fr-ab{display:none}.gh-fr{padding:3px}
   .gh-home,.gh-train{display:none}
   body.has-tabs .gh-scout{display:none}
@@ -760,7 +763,15 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
   body.has-tabs{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
   body.has-tabs .toast{bottom:calc(76px + env(safe-area-inset-bottom))}
   body.has-tabs .gf{padding-bottom:20px}
+  /* the Pick 5 lock bar rides above the tab bar rather than under it */
+  body.has-tabs .p5-bar{bottom:calc(64px + env(safe-area-inset-bottom))}
 }
+
+/* the headline a franchise-vs-franchise invite lands on. Game Day and
+   Head-to-Head both set it, so it lives here rather than in one page's
+   private stylesheet where the other could not reach it. */
+.h2h-h1{font-family:'Space Grotesk',Inter,sans-serif;font-size:26px;font-weight:700;line-height:1.15;
+  text-align:center;margin:10px 0 0;overflow-wrap:break-word}
 
 /* the reward panel on a reveal: what the franchise was credited */
 .rw{margin-top:16px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px 14px}

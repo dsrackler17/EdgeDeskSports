@@ -41,6 +41,18 @@
 
   var set = S.settings();
   var game = null, stage = null, me = 'home', teams = { me: null, opp: null };
+  /* ── ONE NAMED STATE FOR THE PAGE ──────────────────────────────────────
+     games/lib/gridiron/flow.js. Every transition below says where the page
+     is in the ritual of a snap — LOADING, PRE_GAME, KICKOFF, PLAY_SELECT,
+     PRE_SNAP, LIVE_PLAY, PLAY_ENDING, RESULT, TRANSITION, PAT, QUARTER_END,
+     HALFTIME, GAME_OVER — and the guards below ask it rather than a flag of
+     their own. `busy` is the interaction lock the football holds between the
+     snap and the next call; it is set at exactly the transitions that lock
+     and released at exactly the ones that unlock. The engine's game object
+     remains the only authority on the football itself. */
+  var FLOW = window.EDGridironFlow ? window.EDGridironFlow.create() : null;
+  function flow(to, why) { if (FLOW) FLOW.set(to, why); }
+  try { window.__edFlow = FLOW; } catch (_) {}
   var busy = false, pendingCall = null, ballX = PT.FIELD.half, lastResult = null;
   var tipsSeen = {};
   try { tipsSeen = JSON.parse(localStorage.getItem('ed_gridiron_tips') || '{}'); } catch (_) {}
@@ -447,7 +459,13 @@
          truthfully answered "still off the bottom of the screen", so the
          camera never moved. offsetHeight is where it is going to be. */
       var h = window.innerHeight || fr.bottom;
-      var over = open ? Math.max(0, fr.bottom - (h - drawer.offsetHeight)) : 0;
+      /* ON A WIDE SCREEN THE SHEET IS A COLUMN BESIDE THE FIELD, not a sheet
+         over it, and covers nothing; asked the same question it answered
+         with its own height and the camera framed half a field that was
+         never hidden. */
+      var beside = false;
+      try { beside = window.getComputedStyle(drawer).position === 'static'; } catch (_) {}
+      var over = (open && !beside) ? Math.max(0, fr.bottom - (h - drawer.offsetHeight)) : 0;
       stage.setCover(Math.min(over, fr.height * 0.54));
     };
     if (window.requestAnimationFrame) window.requestAnimationFrame(run); else run();
@@ -557,7 +575,10 @@
 
   function fourthRow(sit) {
     var ou = G.unitsOf(G.teamOf(game, sit.offense), game.tick);
-    var k = G.fieldGoal(ou, null, sit.ball, function () { return 0.5; }, false);
+    /* IN THE WEATHER THE KICK WILL BE TAKEN IN. Asked on a still day, the
+       button offered kicks the engine would then treat as out of range in a
+       fifteen-mile-an-hour wind. */
+    var k = G.fieldGoal(ou, null, sit.ball, function () { return 0.5; }, false, game.weather);
     var inRange = k.distance <= k.range + 4;
     return '<div class="dr-row">'
       + '<button class="btn" id="drPunt" type="button">Punt</button>'
@@ -644,11 +665,39 @@
       + '</div>';
     wireStick(); wireActs();
   }
-  function padRun() { sticks(['truck', 'Truck'], ['juke', 'Juke']); }
-  function padDefense() { sticks(['dive', 'Tackle'], ['switch', 'Switch']); }
+  /* ── THE MOVES, UNDER THE RIGHT THUMB ───────────────────────────────────
+     A ball carrier holds SPRINT and taps JUKE, SPIN or STIFF ARM; a defender
+     holds SPRINT and taps TACKLE, DIVE or SWITCH. One big button you hold
+     and three you tap, in a cluster the thumb can cover without looking. */
+  function cluster(hold, taps) {
+    pad.classList.add('on');
+    pad.innerHTML =
+      '<div class="pd-stick" id="pdStick"><div class="pd-ring"></div><div class="pd-knob" id="pdKnob"></div></div>'
+      + '<div class="pd-acts pd-cluster">'
+      + taps.map(function (t, i) {
+          return '<button class="pd-act pd-act-b pd-t' + i + '" data-act="' + t[0] + '" type="button">' + esc(t[1]) + '</button>';
+        }).join('')
+      + (hold ? '<button class="pd-act pd-act-a pd-hold" data-hold="' + hold[0] + '" type="button">' + esc(hold[1]) + '</button>' : '')
+      + '</div>';
+    wireStick(); wireActs(); wireHold();
+  }
+  function padRun() { cluster(['sprint', 'Sprint'], [['juke', 'Juke'], ['spin', 'Spin'], ['stiff', 'Stiff arm']]); }
+  function padDefense() { cluster(['sprint', 'Sprint'], [['tackle', 'Tackle'], ['dive', 'Dive'], ['switch', 'Switch']]); }
   /* Dropping back you can still run: the stick and the scramble button stay
      live while the throw badges sit over the receivers. */
   function padPass() { sticks(['scramble', 'Scramble'], null); }
+  /* the held button: down is on, up or leaving is off, and a finger that
+     wanders off the button lets go */
+  var holdOn = false;
+  function wireHold() {
+    var b = pad.querySelector('[data-hold]');
+    if (!b) return;
+    function on(e) { holdOn = true; b.classList.add('on'); if (stage) stage.sprint(true); if (e.cancelable) e.preventDefault(); }
+    function off() { if (!holdOn) return; holdOn = false; b.classList.remove('on'); if (stage) stage.sprint(false); }
+    b.addEventListener('touchstart', on, { passive: false });
+    b.addEventListener('mousedown', on);
+    ['touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(function (ev) { b.addEventListener(ev, off); });
+  }
   /* whether the ball is in a hand this user is steering */
   function userHasBall() {
     var sit = game ? G.situation(game) : null;
@@ -798,20 +847,81 @@
   }
   fieldWrap.addEventListener('touchstart', floatStick, { passive: false });
   fieldWrap.addEventListener('mousedown', floatStick);
+  function act(a) {
+    if (!stage) return;
+    if (a === 'switch') { stage.switchDefender(); SOUND.tap(); buzz('light'); return; }
+    if (a === 'scramble') { if (stage.action('scramble')) { SOUND.tap(); buzz('light'); padRun(); } return; }
+    if (stage.action(a)) { SOUND.hit(); buzz('medium'); }
+  }
   function wireActs() {
     Array.prototype.forEach.call(pad.querySelectorAll('[data-act]'), function (b) {
-      b.onclick = function () {
-        var a = b.getAttribute('data-act');
-        if (a === 'switch') { stage.switchDefender(); SOUND.tap(); buzz('light'); return; }
-        if (a === 'scramble') { if (stage.action('scramble')) { SOUND.tap(); buzz('light'); padRun(); } return; }
-        if (stage.action(a)) { SOUND.hit(); buzz('medium'); }
+      /* touchstart rather than click: a tap that waits for the finger to lift
+         is a tap that arrives after the tackle */
+      var fired = 0;
+      var go = function (e) {
+        if (Date.now() - fired < 120) return;
+        fired = Date.now();
+        act(b.getAttribute('data-act'));
+        if (e.cancelable) e.preventDefault();
       };
+      b.addEventListener('touchstart', go, { passive: false });
+      b.addEventListener('mousedown', go);
     });
   }
 
+  /* ── THE KEYBOARD, SECOND ────────────────────────────────────────────────
+     A desktop plays the same game: arrows or WASD steer, Space is the snap
+     before the ball moves and the sprint after it, J K L are the three taps,
+     1–5 throw to the badges in progression order, Tab switches the defender
+     and Enter snaps. Bound once, for the life of the page. */
+  var KEYS = { held: {}, dirty: false };
+  function keySteer() {
+    var x = 0, y = 0, h = KEYS.held;
+    if (h.ArrowLeft || h.a || h.A) x -= 1;
+    if (h.ArrowRight || h.d || h.D) x += 1;
+    if (h.ArrowUp || h.w || h.W) y += 1;
+    if (h.ArrowDown || h.s || h.S) y -= 1;
+    if (stage) stage.steer(x, y);
+  }
+  function typing(e) {
+    var t = e.target, tag = t && t.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable);
+  }
+  window.addEventListener('keydown', function (e) {
+    if (gd.hidden || typing(e)) return;
+    var k = e.key;
+    if (k === 'Escape') { if (ovHost.innerHTML) { closeOverlay(); } else drawerClose(); return; }
+    if (!game) return;
+    var live = stage && stage.phase() === 'live';
+    var onDef = game && G.situation(game).offense !== me;
+    if (k === 'Enter' || k === ' ') {
+      e.preventDefault();
+      if (stage && stage.phase() === 'set' && FLOW && FLOW.can('snap')) { doSnap(); return; }
+      if (live && k === ' ') { if (stage) stage.sprint(true); }
+      return;
+    }
+    if (/^[1-5]$/.test(k) && live && !onDef && stage) {
+      var i = parseInt(k, 10) - 1, list = stage.receivers();
+      if (list && list[i]) { stage.throwTo(i); SOUND.tap(); padRun(); }
+      e.preventDefault(); return;
+    }
+    if (k === 'Tab' && live && onDef) { act('switch'); e.preventDefault(); return; }
+    if (live && (k === 'j' || k === 'J')) { act(onDef ? 'tackle' : 'juke'); return; }
+    if (live && (k === 'k' || k === 'K')) { act(onDef ? 'dive' : 'spin'); return; }
+    if (live && (k === 'l' || k === 'L')) { act(onDef ? 'switch' : 'stiff'); return; }
+    if (live && (k === 'q' || k === 'Q') && !onDef) { act('scramble'); return; }
+    if (/^Arrow|^[wasdWASD]$/.test(k)) { KEYS.held[k] = 1; keySteer(); e.preventDefault(); }
+  });
+  window.addEventListener('keyup', function (e) {
+    var k = e.key;
+    if (k === ' ') { if (stage) stage.sprint(false); }
+    if (KEYS.held[k]) { delete KEYS.held[k]; keySteer(); }
+  });
+
   /* ── CHOOSING ─────────────────────────────────────────────────────────── */
   function choosePlay(key, formKey) {
-    if (busy) return;
+    if (busy || (FLOW && !FLOW.can('call'))) return;
+    flow('PRE_SNAP', 'play chosen');
     SOUND.tap(); buzz('light');
     drawerClose();
     var sit = G.situation(game);
@@ -824,7 +934,8 @@
     autoSnap();
   }
   function chooseDefense(defKey) {
-    if (busy) return;
+    if (busy || (FLOW && !FLOW.can('call'))) return;
+    flow('PRE_SNAP', 'defence chosen');
     SOUND.tap(); buzz('light');
     drawerClose();
     var sit = G.situation(game);
@@ -885,8 +996,9 @@
   }
   function doSnap() {
     cancelAuto();
-    if (busy || stage.phase() !== 'set') return;
+    if (busy || stage.phase() !== 'set' || (FLOW && !FLOW.can('snap'))) return;
     busy = true;
+    flow('LIVE_PLAY', 'snap');
     readEl.hidden = true;
     SOUND.snap(); buzz('light');
     /* the place leans in on the snap and settles again on the whistle */
@@ -899,7 +1011,7 @@
        the whistle, so a second tap cannot snap the same ball twice — which
        means a snap that could not happen has to give the lock back, and a
        whistle that never comes has to be one anyway. */
-    if (!stage.snapNow()) { busy = false; nextCall(); return; }
+    if (!stage.snapNow()) { busy = false; flow('TRANSITION', 'snap refused'); nextCall(); return; }
     armWhistle();
     if (set.mode === 'coach' || !mine) {
       if (!mine && set.mode === 'play') padDefense();
@@ -929,13 +1041,29 @@
     whistleT = setTimeout(function () {
       whistleT = null;
       if (!busy) return;
+      /* a tab that went to the background is not a play that hung: the loop
+         restarts when it comes back, and the watch is re-armed then */
+      if (document.hidden) { whistleT = null; return; }
       try { if (stage && stage.stop) stage.stop(); } catch (_) {}
       busy = false;
       say('');
       paintScore();
+      flow('TRANSITION', 'whistle watchdog');
       nextCall();
     }, 22000);
   }
+  /* ── A PHONE THAT LOCKED MID-PLAY ────────────────────────────────────────
+     The stage stops drawing when the page is hidden, which is right. What was
+     wrong is that nothing started it again: the play sat unfinished until the
+     watchdog dropped the down on the floor. Coming back restarts the loop and
+     re-arms the watch; going away parks it. */
+  document.addEventListener('visibilitychange', function () {
+    if (!stage) return;
+    if (document.hidden) { clearWhistle(); if (stage.sprint) stage.sprint(false); return; }
+    var ph = stage.phase && stage.phase();
+    if (ph === 'live' || ph === 'dead' || ph === 'set' || ph === 'kick') { try { stage.start(); } catch (_) {} }
+    if (busy && ph === 'live') armWhistle();
+  });
   function clearWhistle() { if (whistleT) { clearTimeout(whistleT); whistleT = null; } }
 
   /* the clock on the pocket: not a deadline, a warning */
@@ -960,6 +1088,7 @@
   function special(call) {
     if (busy) return;
     busy = true; drawerClose(); padClear();
+    flow('TRANSITION', call.type);
     var r = S.step(game, call);
     var sit = G.situation(game);
     if (r.event === 'punt') { SOUND.whistle(); say('Punt — ' + r.punt.gross + ' yards' + (r.punt.touchback ? ', touchback.' : '.')); }
@@ -1006,9 +1135,16 @@
 
   function onEnd(kind, res) {
     clearWhistle();
+    if (stage && stage.sprint) stage.sprint(false);
+    holdOn = false;
+    flow('PLAY_ENDING', kind);
     /* the simulation settled it; the engine books it, and only now do down,
-       distance, clock and the season move */
-    var p = (set.mode === 'play' && res && res.live) ? commit(res) : commitCoach();
+       distance, clock and the season move. ONE GAME, ONE TRUTH: whatever mode
+       you are in, the play you watched is the play that is booked. Coach Mode
+       used to hand the resolver a second, independent draw, so a forty-yard
+       run on the grass went into the books as three. */
+    var p = (res && res.live) ? commit(res) : commitCoach();
+    flow('RESULT', kind);
     if (p) {
       var myColor = kitFor('me').primary || '#3fb883';
       var theirColor = kitFor('opp').primary || '#e2664b';
@@ -1033,8 +1169,12 @@
         });
       } else if (p.turnover) {
         SOUND.bad(); buzz('strong'); crowdUp(0.9, 0.3);
+        /* a takeaway gets the broadcast's pull-out, briefly, before the next
+           call brings the lens back down onto the new offence */
+        setTimeout(function () { shotWide(true, true); }, 380);
         banner({ kind: 'bad', head: p.turnover === 'fumble' ? 'Fumble' : 'Intercepted',
-          sub: p.interceptor ? FRname(p.interceptor) : '', hold: 1500 });
+          sub: (p.interceptor ? FRname(p.interceptor) : '')
+            + (p.returnYards ? ' · returned ' + p.returnYards : ''), hold: 1500 });
       } else if (p.sack) {
         SOUND.bad(); buzz('medium'); crowdUp(0.75, 0.24);
         banner({ kind: 'bad', head: 'Sack', sub: p.tackler ? FRname(p.tackler) : '', hold: 1150 });
@@ -1060,7 +1200,7 @@
     paintScore();
     var wait = set.speed === 'instant' ? 260
       : (p && p.touchdown) ? 2200 : (p && p.turnover) ? 1500 : 900;
-    setTimeout(function () { busy = false; nextCall(); }, wait);
+    setTimeout(function () { busy = false; flow('TRANSITION', 'next down'); nextCall(); }, wait);
   }
   /* THE BALL IS SPOTTED BETWEEN THE HASHES, and it wanders like a real one.
      Drawn from the game's own coaching stream rather than a loose die, so the
@@ -1102,6 +1242,7 @@
     if (!p) return '';
     var y = p.yards == null ? null : p.yards;
     if (p.turnover === 'interception') return 'Pick six';
+    if (p.turnover === 'fumble') return 'Fumble return';
     if (p.completion) return (y != null ? y + '-yard ' : '') + 'catch';
     if (y != null) return y + '-yard run';
     return '';
@@ -1179,9 +1320,10 @@
     /* PLAIN FOOTBALL ENGLISH. "-2-yard rush" is a spreadsheet cell; a run that
        lost two yards lost two yards, and no gain is no gain. */
     var y = p.yards == null ? 0 : p.yards;
-    if (p.sack) line = 'Sacked for ' + Math.abs(y);
-    else if (p.turnover === 'interception') line = 'Intercepted';
-    else if (p.turnover === 'fumble') line = 'Fumble';
+    if (p.sack && p.turnover === 'fumble') line = 'Sacked, and the ball came out';
+    else if (p.sack) line = 'Sacked for ' + Math.abs(y);
+    else if (p.turnover === 'interception') line = 'Intercepted' + (p.returnYards ? ', returned ' + p.returnYards : '');
+    else if (p.turnover === 'fumble') line = 'Fumble' + (y > 0 ? ' after ' + y : '');
     else if (p.incomplete) line = 'Incomplete';
     else if (y < 0) line = 'Lost ' + Math.abs(y) + (p.completion ? ' on the catch' : ' on the ground');
     else if (y === 0) line = 'No gain';
@@ -1320,6 +1462,7 @@
       : was === 3 ? 'End of the third quarter'
       : was >= 4 ? 'End of regulation' : '';
     if (!name) return;
+    flow('QUARTER_END', name);
     SOUND.whistle();
     banner({ kind: 'good', eyebrow: 'Q' + was, head: name,
       sub: teams.me.abbr + ' ' + game.score[me] + '  \u00b7  ' + teams.opp.abbr + ' ' + game.score[G.other(me)],
@@ -1331,8 +1474,9 @@
     var sit = G.situation(game);
     paintScore();
     quarterBreak(sit);
-    if (sit.phase === 'halftime') { halftimeScreen(); return; }
+    if (sit.phase === 'halftime') { flow('HALFTIME', 'half'); halftimeScreen(); return; }
     if (sit.phase === 'kickoff') {
+      flow('KICKOFF', 'kickoff');
       padClear(); drawer.classList.remove('open');
       /* THE SHOT BEFORE THE FOOTBALL. A broadcast does not open on a patch of
          grass: it opens on the building, full, lit, waiting. */
@@ -1352,6 +1496,7 @@
       return;
     }
     if (sit.phase === 'pat') {
+      flow('PAT', 'try');
       /* the engine clears the pending score the moment the try is taken, and
          a redraw can land on the far side of that; treat a missing one as
          theirs and offer the button that just moves the game on */
@@ -1379,6 +1524,7 @@
       return;
     }
     if (sit.phase !== 'play') return;
+    flow('PLAY_SELECT', 'call sheet');
     shotWide(false);
     if (sit.offense === me) showOffenseDrawer(); else showDefenseDrawer();
     /* keep somebody on the field between calls */
@@ -1592,6 +1738,7 @@
 
   /* ── THE RECAP ────────────────────────────────────────────────────────── */
   function finalScreen() {
+    flow('GAME_OVER', 'final');
     S.clearSave();
     /* the last thing the game shows is the place it was played in */
     shotWide(true);
@@ -1830,12 +1977,13 @@
       + row('Game speed', 'How fast the play runs', seg('speed', [['normal', 'Normal'], ['fast', 'Fast'], ['instant', 'Instant']], set.speed))
       + row('Difficulty', 'What the opposing coach sees, not what his players are worth',
           seg('difficulty', AI.TIER_ORDER.map(function (k) { return [k, AI.TIERS[k].name]; }), set.difficulty))
-      + row('Quarter length', 'The clock is real; this is how much of it there is',
-          seg('length', [['standard', '15:00'], ['quick', '8:00'], ['blitz', '5:00']], set.length))
+      + row('Game length', 'Arcade is four two-minute quarters with a full game of snaps in them; the longer settings run a real clock',
+          seg('length', ['arcade', 'blitz', 'quick', 'standard'].map(function (k) { return [k, S.LENGTH_LABELS[k] || k]; }), set.length))
       + row('Play art', 'Routes, run paths and blitz arrows before the snap', seg('art', [[true, 'On'], [false, 'Off']], set.art))
       + row('Sound', 'Short cues, no music', seg('sound', [[true, 'On'], [false, 'Off']], set.sound))
       + row('Haptics', 'Where the device supports it', seg('haptics', [[true, 'On'], [false, 'Off']], set.haptics))
-      + '<div class="muted" style="padding-top:12px">Quarter length applies to the next game you start.</div>'
+      + '<div class="muted" style="padding-top:12px">Game length applies to the next game you start.</div>'
+      + '<div class="muted" style="padding-top:6px">Keyboard: arrows or WASD steer · Space snaps, then sprints · J K L are the three moves · 1–5 throw to a badge · Tab switches the defender.</div>'
       + '<div class="btn-row"><button class="btn btn-go" id="btnDone" type="button">Done</button></div>');
     Array.prototype.forEach.call(ovHost.querySelectorAll('[data-set]'), function (b) {
       b.onclick = function () {
@@ -1933,6 +2081,7 @@
   }
 
   function pregame(resumable) {
+    flow('PRE_GAME', 'matchup');
     pre.hidden = false; gd.hidden = true;
     var opp = teams.opp, mine = teams.me, oppTeam = null;
     S.TEAMS.forEach(function (t) { if (t.abbr === opp.abbr) oppTeam = t; });
@@ -2044,6 +2193,7 @@
   /* ── STARTING ─────────────────────────────────────────────────────────── */
   function makeStage() {
     var c0 = cond();
+    if (stage && stage.destroy) { try { stage.destroy(); } catch (_) {} }
     stage = ST.Stage(canvas, {
       /* THE GAME IS PLAYED IN THE WEATHER THE CARD PROMISED. The matchup
          page names a 7:05 kickoff under an overcast sky and then the field
@@ -2059,14 +2209,17 @@
         onCatch: function () { SOUND.catch_(); buzz('light'); crowdUp(0.42, 0.16); if (set.mode === 'play' && userHasBall()) padRun(); },
         onScramble: function () { if (set.mode === 'play' && userHasBall()) padRun(); },
         onBreak: function () { SOUND.hit(true); buzz('medium'); crowdUp(0.62, 0.20); },
-        onIntercept: function () { SOUND.bad(); },
+        /* a pick: the side that threw it has nobody to steer; the side that
+           took it is now carrying, and gets the runner's buttons */
+        onIntercept: function () { SOUND.bad(); buzz('medium'); if (set.mode === 'play') { if (!userHasBall()) padRun(); else padClear(); } },
+        onFumble: function () { SOUND.hit(true); buzz('strong'); },
         onKick: function () { SOUND.kick(); buzz('medium'); },
         onIncomplete: function () {},
         onMove: function () {},
         onEnd: onEnd
       }
     });
-    wireFieldTaps();
+    if (!canvas.__taps) { canvas.__taps = 1; wireFieldTaps(); }
   }
   function newGame() {
     /* THE WEATHER ON THE CARD IS THE WEATHER ON THE FIELD. The matchup page
@@ -2094,11 +2247,41 @@
     makeStage();
     syncTools(); paintScore(); say('');
     busy = false;
+    flow('TRANSITION', 'game start');
+    rotatePrompt();
     setTimeout(function () { stage.resize(); nextCall(); }, 30);
+  }
+  /* ── ROTATE TO PLAY ──────────────────────────────────────────────────────
+     The field is wider than it is tall, and so is a phone on its side. A
+     phone held upright still plays — the layout stacks — but it is asked
+     once, politely, and it may say no for the rest of the session. */
+  function portraitPhone() {
+    return window.innerHeight > window.innerWidth && window.innerWidth < 760;
+  }
+  function rotatePrompt() {
+    var seen = false;
+    try { seen = sessionStorage.getItem('ed_rotate_ok') === '1'; } catch (_) {}
+    if (seen || !portraitPhone()) return;
+    var d = document.createElement('div');
+    d.className = 'rotate';
+    d.innerHTML = '<div class="rt-in"><div class="rt-phone"><span></span></div>'
+      + '<b>Rotate your device to play</b>'
+      + '<i>The field is wider than it is tall. Turn the phone on its side for the whole picture.</i>'
+      + '<button class="btn" type="button" id="rtStay">Play upright anyway</button></div>';
+    fieldWrap.appendChild(d);
+    function gone() {
+      if (d.parentNode) d.parentNode.removeChild(d);
+      try { sessionStorage.setItem('ed_rotate_ok', '1'); } catch (_) {}
+      window.removeEventListener('resize', onTurn);
+    }
+    function onTurn() { if (!portraitPhone()) { gone(); if (stage && stage.resize) stage.resize(); } }
+    $('rtStay').onclick = gone;
+    window.addEventListener('resize', onTurn);
   }
 
   /* ── BOOT ─────────────────────────────────────────────────────────────── */
   function boot() {
+    flow('LOADING', 'boot');
     teams.me = S.teamFromLeague({ key: 'house', city: S.HOUSE.city, name: S.HOUSE.name, abbr: S.HOUSE.abbr,
       theme: S.HOUSE.theme, logo: S.HOUSE.logo, offense: S.HOUSE.offense, defense: S.HOUSE.defense,
       overall: S.HOUSE.overall });

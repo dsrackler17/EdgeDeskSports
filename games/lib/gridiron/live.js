@@ -307,7 +307,11 @@
     var ORDER = (function () {
       var out = {}, i;
       var list = [];
-      try { list = F.reads(play.key, parts.coverage.key) || []; } catch (_) { list = []; }
+      /* THE COVERAGE, NOT ITS NAME. F.reads indexes the coverage table by
+         route band; handed the key as a string every separation came back
+         zero, so the badges and the AI quarterback read the routes in the
+         order they were typed rather than the order that beats the shell. */
+      try { list = F.reads(play.key, parts.coverage) || []; } catch (_) { list = []; }
       for (i = 0; i < list.length; i++) out[list[i].slot] = i;
       return out;
     })();
@@ -378,12 +382,13 @@
       if (!manual) return;
       if (input.throwTo != null && !thrown) throwTo(input.throwTo);
       if (input.action) doAction(input.action);
-      if (input.switchDef && userSide === 'def') {
-        var n = nearestDefTo(carrier || ball, user);
-        if (n) self.setUser(n);
-      }
+      if (input.switchDef && userSide === 'def') switchUser();
       var a = user;
       if (!a || a.state === 'down') return;
+      /* SPRINT IS A BUTTON YOU HOLD. It buys a step and costs wind: the
+         gauge drains while it is held and refills while it is not, faster
+         for a man with the stamina for it. */
+      a.sprint = !!input.sprint && a.gas > 0.05;
       var mx = input.mx || 0, my = input.my || 0;
       var m = len(mx, my);
       if (m > 0.08) {
@@ -398,24 +403,89 @@
       a.steered = true;
     }
 
+    /* SWITCH CYCLES. It used to pick the nearest defender who was not the
+       current one, which on a play with two men near the ball is a coin that
+       lands on the same two faces for ever. Cycle through the men nearest the
+       ball in order, so a third tap reaches a third man. */
+    function switchUser() {
+      var tgt = carrier || ball, list = [];
+      actors.forEach(function (d) { if (d.side === 'def' && d.state !== 'down') list.push(d); });
+      list.sort(function (p, q) { return dist(p, tgt) - dist(q, tgt); });
+      if (!list.length) return;
+      var i = user ? list.indexOf(user) : -1;
+      var n = list[(i + 1) % list.length];
+      if (n && n !== user) self.setUser(n);
+    }
+
+    /* ── THE MOVES ─────────────────────────────────────────────────────────
+       Four things a ball carrier can do and three a defender can, none of
+       them a teleport and all of them worth less the more they are spammed.
+       `a.spam` climbs with every move and drains over three seconds; the
+       tackle roll reads it, so a back who jukes every half second is a back
+       who is about to get hit square. */
+    function spent(a) {
+      var pen = clamp(1 - (a.spam || 0) * 0.30, 0.25, 1);
+      a.spam = Math.min(3, (a.spam || 0) + 1);
+      return pen;
+    }
     function doAction(kind) {
       var a = userSide === 'def' ? user : carrier;
-      if (!a || a.state === 'down' || a.moveCool > 0) return;
-      if (kind === 'juke' || kind === 'spin') {
-        a.moveCool = 0.62; a.move = kind; a.moveT = 0.34;
-        /* a cut is lateral and costs him a stride */
-        var s = a.dx >= 0 ? 1 : -1;
-        a.vx += s * 5.4 * (0.6 + a.k.agi * 0.8);
-        a.vy *= 0.72;
-        if (events.onMove) events.onMove(kind);
-      } else if (kind === 'truck') {
-        a.moveCool = 0.70; a.move = 'truck'; a.moveT = 0.38;
-        a.vy += (a.side === 'off' ? 1 : -1) * 2.6 * (0.5 + a.k.pwr);
-        a.vx *= 0.6;
+      if (!a || a.state === 'down') return;
+      if (kind !== 'scramble' && a.moveCool > 0) return;
+      var pen, s;
+      if (kind === 'juke') {
+        /* a cut: lateral, quick, and it costs him a stride. Bounded so a
+           99 agility man is very quick, not somewhere else. */
+        pen = spent(a);
+        a.moveCool = 0.62; a.move = 'juke'; a.moveT = 0.34; a.moveEdge = (0.13 + a.k.agi * 0.30) * pen;
+        s = a.dx >= 0 ? 1 : -1;
+        a.vx += s * 4.6 * (0.55 + a.k.agi * 0.7) * pen;
+        a.vy *= 0.74;
+        if (events.onMove) events.onMove('juke');
+      } else if (kind === 'spin') {
+        /* a spin keeps him going forward and turns his back to the tackler for
+           a beat: harder to wrap, slower through it */
+        pen = spent(a);
+        a.moveCool = 0.90; a.move = 'spin'; a.moveT = 0.42; a.moveEdge = (0.16 + a.k.agi * 0.26) * pen;
+        a.vx *= 0.55; a.vy *= 0.82;
+        a.spinT = 0.42;
+        if (events.onMove) events.onMove('spin');
+      } else if (kind === 'stiff' || kind === 'truck') {
+        /* a stiff arm is strength against a man you can reach; with nobody
+           there it is a shoulder lowered into the next contact */
+        pen = spent(a);
+        var near = nearestDefTo(a, null, 2.6);
+        a.moveCool = 0.80; a.moveT = 0.40;
+        if (near && !near.lock) {
+          a.move = 'stiff'; a.moveEdge = (0.12 + a.k.str * 0.32) * pen;
+          var win = a.k.str * 0.9 + 0.25 - near.k.tkl * 0.6;
+          if (rand() < clamp(0.35 + win, 0.10, 0.92)) {
+            near.stun = (0.42 + a.k.str * 0.45) * pen; near.vx *= 0.25; near.vy *= 0.25;
+            var px = near.x - a.x, py = near.y - a.y, pl = len(px, py) || 1;
+            near.x += px / pl * 0.55; near.y += py / pl * 0.55;
+            notes.push(shortName(a) + ' shoved ' + shortName(near) + ' off.');
+          }
+          a.vx *= 0.92; a.vy *= 0.92;
+        } else {
+          a.move = 'truck'; a.moveEdge = (0.09 + a.k.str * 0.26) * pen;
+          a.vy += (a.side === 'off' ? 1 : -1) * 2.2 * (0.5 + a.k.str) * pen;
+          a.vx *= 0.6;
+        }
         a.state = 'block';
-        if (events.onMove) events.onMove('truck');
-      } else if (kind === 'dive' || kind === 'tackle') {
-        a.dive = 0.40; a.state = 'tackle';
+        if (events.onMove) events.onMove(a.move);
+      } else if (kind === 'dive') {
+        /* he leaves his feet: a longer reach, a lunge, and a beat on the
+           ground if he misses */
+        a.moveCool = 0.95;
+        a.dive = 0.50; a.state = 'tackle';
+        var tgt = carrier || qb;
+        if (tgt) { var lx = tgt.x - a.x, ly = tgt.y - a.y, ll = len(lx, ly) || 1; a.vx += lx / ll * 3.6; a.vy += ly / ll * 3.6; }
+        a.diveMiss = 0.70;
+        if (events.onMove) events.onMove('dive');
+      } else if (kind === 'tackle') {
+        /* a form tackle: shorter reach, no penalty for missing */
+        a.moveCool = 0.45;
+        a.dive = 0.32; a.state = 'tackle';
       } else if (kind === 'scramble' && qb && !thrown && play.type === 'pass') {
         qb.job = { kind: 'scramble' };
         qb.carry = true; carrier = qb; ball.holder = qb;
@@ -429,10 +499,21 @@
     function think(a, dt) {
       a.phase += dt * (a.state === 'run' || a.state === 'carry' ? 1 : 0.25);
       if (a.moveCool > 0) a.moveCool -= dt;
-      if (a.moveT > 0) { a.moveT -= dt; if (a.moveT <= 0) a.move = null; }
+      if (a.moveT > 0) { a.moveT -= dt; if (a.moveT <= 0) { a.move = null; a.moveEdge = 0; } }
+      if (a.spinT > 0) a.spinT -= dt;
+      if (a.spam > 0) a.spam = Math.max(0, a.spam - dt / 3);
       if (a.stun > 0) a.stun -= dt;
       if (a.grace > 0) a.grace -= dt;
-      if (a.dive > 0) a.dive -= dt;
+      if (a.dive > 0) { a.dive -= dt; if (a.dive <= 0 && a.diveMiss > 0) { a.stun = Math.max(a.stun, a.diveMiss); a.diveMiss = 0; } }
+      /* the wind: sprinting drains it, everything else refills it */
+      if (a.gas == null) a.gas = 1;
+      if (a.sprint) a.gas = Math.max(0, a.gas - dt * (0.34 - a.k.sta * 0.16));
+      else a.gas = Math.min(1, a.gas + dt * (0.10 + a.k.sta * 0.10));
+      /* the ball has changed hands: everybody on offence becomes a tackler */
+      if (carrier && carrier.side === 'def' && a.side === 'off' && a.state !== 'down') {
+        if (a === user && a.steered && a.drive > 0.08) { /* the thumb is on him */ }
+        else { pursue(a, carrier); a.state = a.dive > 0 ? 'tackle' : 'run'; return; }
+      }
       if (a.react > 0) { a.react -= dt; if (a.side === 'def') { a.tx = a.x; a.ty = a.y; return; } }
       if (a.state === 'down' || a.state === 'celebrate') return;
 
@@ -444,9 +525,16 @@
         a.state = a.carry ? 'carry' : 'run';
         return;
       }
-      if (a === user && userSide === 'def' && !a.steered) {
+      if (a === user && userSide === 'def' && !a.steered && !(carrier && carrier === a)) {
         var tg = carrier || qb;
         if (tg) { a.tx = tg.x; a.ty = tg.y; a.state = a.dive > 0 ? 'tackle' : 'run'; }
+        return;
+      }
+      /* a defender with the ball and no thumb on him runs to daylight the
+         other way */
+      if (a.carry && a.side === 'def' && !(a === user && a.steered)) {
+        var back = daylight(a);
+        a.tx = back.x; a.ty = back.y; a.state = 'carry';
         return;
       }
 
@@ -574,9 +662,12 @@
 
     function daylight(a) {
       var best = null, bs = -1e9, i;
+      /* which way is forward: the offence attacks +y, a defender with the
+         ball attacks -y */
+      var dir = a.side === 'def' ? -1 : 1;
       for (i = -4; i <= 4; i++) {
         var ang = i * 0.19;
-        var dx = Math.sin(ang), dy = Math.cos(ang);
+        var dx = Math.sin(ang), dy = Math.cos(ang) * dir;
         var px = clamp(a.x + dx * 6, 1, FIELD.width - 1), py = a.y + dy * 6;
         var room = 1e9;
         actors.forEach(function (d) {
@@ -1051,7 +1142,11 @@
          cent for four yards a completion and every intermediate route was
          "broken up". Real man coverage concedes a couple of yards; taking
          them away is what a great corner is for. */
-      var trail = 0.80 + env.separation * 0.72 - a.k.cov * 1.10;
+      /* AND THE MAN HE IS COVERING IS A MAN, not a unit average: a route
+         technician buys himself another step of cushion, a straight-line
+         runner does not. This is the one place a receiver's own route rating
+         acts on the field. */
+      var trail = 0.80 + env.separation * 0.72 - a.k.cov * 1.10 + ((m.k && m.k.rte) != null ? (m.k.rte - 0.5) * 0.9 : 0);
       var lead = 0.16 + a.k.cov * 0.20;
       a.tx = m.x + m.vx * lead;
       a.ty = m.y + m.vy * lead + clamp(trail, 0.45, 3.4);
@@ -1168,6 +1263,10 @@
            set a cut up and how you pick a hole at a speed you can still
            change your mind at; the rim of the ring is the whole horse. */
         if (a === user && a.steered && a.drive > 0.08) top *= 0.64 + a.drive * 0.36;
+        /* the sprint button: a step faster while there is wind for it */
+        if (a.sprint && a.gas > 0.05) top *= 1.07 + a.k.sta * 0.04;
+        /* a spin turns him: he keeps going, slower, and cannot cut through it */
+        if (a.spinT > 0) top *= 0.80;
         if (sp > top && sp > 0) { a.vx = a.vx / sp * top; a.vy = a.vy / sp * top; }
         a.vx -= a.vx * 1.8 * dt; a.vy -= a.vy * 1.8 * dt;
         a.x = clamp(a.x + a.vx * dt, -3, FIELD.width + 3);
@@ -1392,17 +1491,24 @@
 
          So the angle carries it. Square in the hole is still most of the way
          to certain; a chase from behind is a real chance he is gone. */
+      /* either side can be the tackler now, so read whichever numbers the man
+         has: an offensive player chasing a pick tackles off his strength */
+      var dTkl = d.k.tkl != null ? d.k.tkl : (d.k.str == null ? 0.5 : d.k.str) * 0.7;
+      var cPwr = c.k.pwr != null ? c.k.pwr : (c.k.str == null ? 0.5 : c.k.str);
       var p = 0.868 + square * 0.07
-            + (d.k.tkl - (c.k.pwr * 0.50 + c.k.agi * 0.50)) * 0.42
+            + (dTkl - (cPwr * 0.50 + c.k.agi * 0.50)) * 0.42
             - clamp(sp - closing, -3, 3) * 0.030
             + (env.runFit || 0) * 0.3;
       if (d.dive > 0) p += 0.06;
       if (d.stun > 0) p -= 0.30;
       /* reaching past the man who is holding you */
       if (d.lock) p -= 0.66;
-      /* THE USER'S MOVE. This is the whole reason the buttons exist. */
-      if (c.move === 'juke' || c.move === 'spin') p -= 0.13 + c.k.agi * 0.30;
-      if (c.move === 'truck') p -= 0.09 + c.k.pwr * 0.26;
+      /* THE USER'S MOVE. This is the whole reason the buttons exist. The edge
+         is set when the move is made and already carries the spam penalty. */
+      if (c.move && c.moveEdge) p -= c.moveEdge;
+      /* a defender who left his feet and is still in the air reaches further
+         but wraps worse; one on the ground from a miss is not tackling */
+      if (d.stun > 0 && d.diveMiss === 0) p -= 0.10;
       /* gang tackling: the second man arrives to a runner already slowed */
       var help = 0;
       actors.forEach(function (o) {
@@ -1416,6 +1522,27 @@
          game one coin flip at the line: lose it and you have two yards, win
          it and nobody was ever within fifteen yards of you again. */
       if (rand() < clamp(p, 0.06, 0.93)) {
+        /* ── THE BALL CAN COME OUT ────────────────────────────────────────
+           Once per tackle, and rarely: the weather, the hit, how many hands
+           are on him and how well he holds it. The resolver's rate is about
+           one carry in ninety; the live game lands there too. A fumble the
+           offence falls on is a tackle with a story; one the defence falls
+           on is theirs, where it lies. */
+        var pFum = clamp(0.0105 + (env.fumble || 0) + help * 0.004 + (closing > 7 ? 0.004 : 0)
+                         - (c.k.hnd - 0.5) * 0.010 + (c.move === 'stiff' ? 0.004 : 0), 0.001, 0.05);
+        if (c.side === 'off' && rand() < pFum) {
+          if (events.onFumble) events.onFumble(c, d);
+          if (rand() < 0.48) {
+            notes.push(shortName(d) + ' knocked it loose and the defence has it.');
+            c.state = 'down'; c.fell = 1; d.state = 'tackle';
+            var ffs = d; ffs.ff = (ffs.ff || 0) + 1;
+            fumbledBy = c; fumbleForced = d;
+            finish('fumble', c, d);
+            return;
+          }
+          notes.push('The ball came out, and ' + shortName(c) + ' fell on it.');
+          fumbleKept = true;
+        }
         down(c, d);
         return;
       }
@@ -1429,9 +1556,12 @@
       if (events.onBreak) events.onBreak(c, d);
     }
 
+    var fumbledBy = null, fumbleForced = null, fumbleKept = false;
     function down(c, d) {
       c.state = 'down'; c.fell = rand() > 0.5 ? 1 : -1;
       if (d) d.state = 'tackle';
+      /* a defender brought down with the ball ends the takeaway where he is */
+      if (c.side === 'def') { finish(interceptor ? 'interception' : 'fumble', c, d); return; }
       finish(c === qb && !thrown && play.type === 'pass' && c.y < los ? 'sack' : 'tackle', c, d);
     }
 
@@ -1476,7 +1606,6 @@
       var err = (1 - qb.k.accy) * 1.5
               + hurried * 1.05
               + moving * 0.9
-              - (env.deepAcc || 0) * -1 * 0 /* weather is applied below, by band */
               + clamp(d0 - 10, 0, 34) * 0.072
               + early * 1.6
               - (d0 > 18 ? (env.deepAcc || 0) : (env.shortAcc || 0)) * 4;
@@ -1603,9 +1732,16 @@
       interceptor = d;
       airYards = f.airYards;
       notes.push(shortName(d) + ' picked it off.');
+      /* HE BRINGS IT BACK. The pick used to end the play where it was caught;
+         now the man with the ball runs, the offence chases, and the thumb on
+         defence has a return to steer. A defender is a runner like any other
+         from here: the tackle, the sideline and the far goal line end it. */
+      d.vx *= 0.35; d.vy *= 0.35; d.grace = 0.30;
+      d.job = { kind: 'return' }; d.retFrom = d.y;
       if (events.onIntercept) events.onIntercept(d);
-      /* the play is dead where he caught it: no returns in this milestone */
-      finish('interception', d, null);
+      /* the thumb on defence goes straight to the man with the ball */
+      if (manual && userSide === 'def') self.setUser(d);
+      refreshUser();
     }
     var interceptor = null;
 
@@ -1621,12 +1757,17 @@
       var c = carrier;
       if (c && c.carry) {
         /* a foot on the line is out: his middle need not cross it */
-        if (c.x < 0.55 || c.x > FIELD.width - 0.55) { finish('outofbounds', c, null); return; }
+        if (c.x < 0.55 || c.x > FIELD.width - 0.55) {
+          finish(c.side === 'def' ? (interceptor ? 'interception' : 'fumble') : 'outofbounds', c, null); return;
+        }
         if (c.side === 'off' && c.y >= 100) { finish('touchdown', c, null); return; }
         if (c.side === 'def' && c.y <= 0) { finish('defensive_td', c, null); return; }
       }
       /* he held it too long and nobody is coming: the whistle is mercy */
-      if (t > 12) { finish(carrier ? 'tackle' : 'incomplete', carrier, null); }
+      if (t > 12) {
+        finish(carrier ? (carrier.side === 'def' ? (interceptor ? 'interception' : 'fumble') : 'tackle') : 'incomplete',
+          carrier, null);
+      }
     }
 
     /* ── THE OUTCOME ──────────────────────────────────────────────────────
@@ -1644,11 +1785,36 @@
         r.incomplete = true; r.completion = false; r.yards = 0;
         r.airYards = airYards;
         r.threwAway = threwAway;
-      } else if (kind === 'interception') {
-        r.turnover = 'interception'; r.completion = false; r.incomplete = false;
+      } else if (kind === 'interception' || (kind === 'fumble' && c && c.side === 'def') || kind === 'defensive_td') {
+        /* a takeaway, wherever it ended: the spot is where the defender was
+           brought down, went out, or crossed the goal line */
+        r.turnover = interceptor ? 'interception' : 'fumble';
+        r.completion = false; r.incomplete = false;
         r.yards = 0; r.airYards = airYards;
-        r.interceptor = interceptor && interceptor.player;
-        r.tackler = interceptor && interceptor.player;
+        r.interceptor = interceptor ? interceptor.player : (fumbleForced && fumbleForced.player);
+        r.tackler = interceptor ? interceptor.player : (fumbleForced && fumbleForced.player);
+        r.returnYards = c ? Math.max(0, Math.round((c.retFrom == null ? c.y : c.retFrom) - c.y)) : 0;
+        r.defTouchdown = kind === 'defensive_td';
+        if (fumbledBy) r.carrier = fumbledBy.player;
+      } else if (kind === 'fumble') {
+        /* the offence fumbled and the defence recovered on the spot. It is
+           booked as the play it was — a run, a catch, a scramble or a sack —
+           and then the ball is turned over where it lay, so the yards it
+           gained still land in the column they belong to. */
+        endY = c ? c.y : los;
+        r.turnover = 'fumble';
+        r.yards = Math.round(endY - los);
+        r.tackler = tk && tk.player;
+        r.interceptor = tk && tk.player;
+        if (c === qb && !thrown && play.type === 'pass' && c.y < los) {
+          r.sack = true; r.pressure = true; r.carrier = c && c.player;
+        } else if (play.type === 'pass' && caughtBy && c === caughtBy) {
+          r.completion = true; r.target = caughtBy.player;
+          r.airYards = airYards; r.yac = Math.max(0, r.yards - airYards);
+        } else {
+          r.carrier = c && c.player;
+          if (c === qb && play.type === 'pass') r.scramble = true;
+        }
       } else if (kind === 'sack') {
         endY = c ? c.y : los;
         r.sack = true; r.pressure = true;

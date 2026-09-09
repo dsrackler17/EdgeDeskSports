@@ -111,7 +111,15 @@
     'trade_offer', 'trade_accept', 'trade_decline', 'trade_withdraw',
     /* the coaching staff (Phase 8): the building seen, a coach hired,
        levelled and let go */
-    'staff_view', 'staff_hire', 'staff_promote', 'staff_fire'];
+    'staff_view', 'staff_hire', 'staff_promote', 'staff_fire',
+    /* the age gate, the packs and the development program: all fired for
+       months and declared nowhere, which is a funnel step that cannot be
+       counted */
+    'age_gate_shown', 'age_gate_answered',
+    'packs_view', 'pack_opened', 'pack_kept', 'pack_passed',
+    'development_view', 'player_developed',
+    /* the game itself */
+    'gridiron_game_started', 'gridiron_game_finished'];
 
   var _level = null;
   function track(event, props) {
@@ -550,21 +558,27 @@
   }
 
   /* THE SHARED LIBRARIES, LOADED ONCE, FROM HERE.
-     Eighteen pages under /games each list their own scripts. Adding three
-     more <script> tags to eighteen files is eighteen chances for one to be
+     Every page under /games lists its own scripts. Adding three more
+     <script> tags to every one of them is that many chances for one to be
      missed, and the page that misses it is the page with the bug on it. So
      the shared runtime — which every page already loads — pulls them in and
      configures them from the same config.json the social layer uses. Either
      every /games page can report a problem and finish a confirmation link, or
      none can; there is no in-between to debug. */
+  var SHARED_V = '20260909a';   /* stamped by tools/games/bump_assets.js */
   var _shared = null;
   function sharedLibs() {
     if (_shared) return _shared;
     var d = root.document;
     _shared = new Promise(function (resolve) {
-      var srcs = ['/lib/edgedesk_auth.js?v=20260907b',
-                  '/lib/edgedesk_report.js?v=20260907b',
-                  '/lib/edgedesk_report_ui.js?v=20260907b'];
+      /* ONE TOKEN, STAMPED BY THE SAME TOOL AS THE PAGES. These used to carry
+         a hand-typed version the bumper could not see, and were already a
+         letter behind every page that loaded them — the exact stale-cache
+         failure the versioning exists to prevent. tools/games/bump_assets.js
+         rewrites SHARED_V. */
+      var srcs = ['/lib/edgedesk_auth.js?v=' + SHARED_V,
+                  '/lib/edgedesk_report.js?v=' + SHARED_V,
+                  '/lib/edgedesk_report_ui.js?v=' + SHARED_V];
       var left = srcs.length;
       /* A library that will not load must not hang the page behind it. */
       var done = function () { if (--left <= 0) resolve(); };
@@ -582,7 +596,7 @@
       return config().then(function (c) {
         if (c && root.EDReport) root.EDReport.configure({
           url: c.supabase_url, key: c.supabase_anon_key,
-          version: 'games-20260907b', surface: 'games' });
+          version: 'games-' + SHARED_V, surface: 'games' });
         return c;
       });
     });
