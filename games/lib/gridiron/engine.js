@@ -25,6 +25,9 @@
 
   var F = root.EDFootball || (typeof require === 'function' ? require('./football.js') : null);
   var R = root.EDRoster || (typeof require === 'function' ? require('./roster.js') : null);
+  /* the derived profile (agility, strength, stamina and the rest) — optional,
+     so the engine still runs on a page that has not loaded it */
+  var PR = root.EDProfile || (typeof require === 'function' ? (function () { try { return require('./profile.js'); } catch (_) { return null; } })() : null);
 
   var ENGINE_VERSION = 'gridiron_v1';
 
@@ -437,10 +440,16 @@
     var pRush = passRush(ou, du, parts, playObj, 0, off.mods, def.mods);
     var hold = playObj.hold || 2.4;
 
+    /* ── THE TIER TOUCHES THE HEAD, NEVER THE LEGS ────────────────────────
+       A difficulty is how sharp the other side's defence reads: the angle it
+       takes, the beat before it breaks on a ball, the cushion it gives. Every
+       man keeps the speed and strength his card says. Pro is one. */
+    var SHARP = { rookie: 0.84, pro: 1.0, allpro: 1.06, legend: 1.12 };
     var env = {
       version: ENGINE_VERSION,
       playKey: playObj.key, formKey: formKey, defKey: parts.key,
       parts: parts, box: Math.round(box * 10) / 10, edge: edge,
+      sharp: SHARP[ctx.difficulty] || 1,
       read: rec.read, readP: Math.round(rec.p * 100) / 100,
       /* the defence's head start, in seconds: a front that read the play
          moves on the snap, one that did not is a beat late */
@@ -482,8 +491,20 @@
        Ratings are 30..99; these are yards per second, yards per second
        squared and 0..1 competences. Fatigue is already inside the unit
        averages, so a fourth-quarter line really is slower. */
+    /* THE PROFILE, WHERE THERE IS ONE. A card that came from the server
+       carries the derived six; a generated opponent gets them computed here
+       from the same pure function, so both sides of the ball are the same
+       kind of athlete. Speed, acceleration and agility keep their tuned
+       sources — the harness is banded on them — and the profile supplies
+       what the four ratings never had: strength and stamina. */
+    function profOf(pl) {
+      if (!pl) return null;
+      if (pl.profile && pl.profile.spd != null) return pl.profile;
+      if (PR && pl.position) { try { return PR.profile(pl); } catch (_) { return null; } }
+      return null;
+    }
     function offMan(pl, pos) {
-      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62;
+      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62, pf = profOf(pl);
       var spd = r.spd == null ? ov : r.spd;
       return {
         pid: pid(pl), pos: pos, ovr: ov,
@@ -501,12 +522,12 @@
            stamina, a cut is agility (above). A card that carries the
            universal ratings uses them; one that does not falls back to what
            it has. */
-        str: unit(r.str == null ? (r.pwr == null ? ov : r.pwr) : r.str),
-        sta: unit(pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))
+        str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.pwr == null ? ov : r.pwr) : r.str)),
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
       };
     }
     function defMan(pl, pos) {
-      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62;
+      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62, pf = profOf(pl);
       var spd = r.spd == null ? ov : r.spd;
       return {
         pid: pid(pl), pos: pos, ovr: ov,
@@ -518,8 +539,8 @@
         shed: unit(r.rst == null ? (r.str == null ? ov : r.str) : r.rst),
         bhk: unit(r.bhk == null ? ov : r.bhk),
         iq: unit(r.iq == null ? ov : r.iq),
-        str: unit(r.str == null ? (r.tkl == null ? ov : r.tkl) : r.str),
-        sta: unit(pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))
+        str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.tkl == null ? ov : r.tkl) : r.str)),
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
       };
     }
     function put(pl, pos, side) {
@@ -1093,6 +1114,11 @@
     if (!k) return null;
     if (!g.players[k]) g.players[k] = { id: k, name: R.name(player), position: player.position,
       side: side || null, first: player.first_name || '', last: player.last_name || '',
+      /* who he is to the franchise: the card's own id, how he arrived, and
+         the two careers — the simulation's and the one in your hands — so a
+         broadcast can recognise a Vault pull and call a milestone */
+      uid: player.id == null ? null : String(player.id), acq: player.acquired_source || null,
+      career: player.career_stats || null, live: player.live_stats || null,
       pa: 0, pc: 0, py: 0, ptd: 0, pint: 0, car: 0, ry: 0, rtd: 0, rec: 0, recy: 0, rectd: 0,
       tkl: 0, sack: 0, sackYards: 0, tfl: 0, int: 0, pd: 0, ff: 0, dtd: 0, fg: 0, fga: 0, xp: 0, xpa: 0,
       long: 0, longRush: 0, longRec: 0, targets: 0, drops: 0 };

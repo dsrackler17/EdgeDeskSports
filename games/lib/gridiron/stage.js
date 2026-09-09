@@ -228,6 +228,34 @@
   var ALIGN = { offense: alignOffense, defense: alignDefense };
 
   /* ── THE STAGE ───────────────────────────────────────────────────────────── */
+  /* ── THE TAPE ─────────────────────────────────────────────────────────
+     A replay is not a second simulation: it is the picture of the one that
+     happened, played back. Thirty frames a second of where every man was,
+     how he stood and which way he leaned, plus the football — everything
+     the artist reads and nothing that decides a yard. Pure, so a test can
+     record a play and get it back to the inch. */
+  var TAPE_FIELDS = ['x', 'y', 'vx', 'vy', 'state', 'face', 'lean', 'carry', 'catchKind', 'fallT', 'throwT', 'dive', 'spinT', 'fell', 'move', 'lock', 'engaged'];
+  function recordFrame(actors, ball, t) {
+    var men = [], i, j, a, m;
+    for (i = 0; i < actors.length; i++) {
+      a = actors[i]; m = {};
+      for (j = 0; j < TAPE_FIELDS.length; j++) m[TAPE_FIELDS[j]] = a[TAPE_FIELDS[j]];
+      men.push(m);
+    }
+    return { t: t, men: men, ball: { x: ball.x, y: ball.y, z: ball.z, spin: ball.spin,
+      holder: ball.holder ? ball.holder.id : null, flight: !!ball.flight } };
+  }
+  function restoreFrame(actors, ball, fr, byId) {
+    var i, j, a, m;
+    for (i = 0; i < actors.length && i < fr.men.length; i++) {
+      a = actors[i]; m = fr.men[i];
+      for (j = 0; j < TAPE_FIELDS.length; j++) a[TAPE_FIELDS[j]] = m[TAPE_FIELDS[j]];
+    }
+    ball.x = fr.ball.x; ball.y = fr.ball.y; ball.z = fr.ball.z; ball.spin = fr.ball.spin;
+    ball.holder = fr.ball.holder && byId ? (byId[fr.ball.holder] || null) : null;
+    ball.flight = fr.ball.flight ? (ball.flight || { t: 0, dur: 1 }) : null;
+  }
+
   function Stage(canvas, opts) {
     opts = opts || {};
     var self = {};
@@ -264,6 +292,10 @@
     var events = opts.on || {};
     var flash = null;
     var shake = 0;
+    /* the tape of the last play, and the replay running off it */
+    var TAPE = { hz: 30, max: 400 };
+    var tape = [], tapeAcc = 0, replay = null;
+    var armed = -1;
     /* ── WHAT CONTACT LEAVES BEHIND ──────────────────────────────────────
        Two men hit each other and nothing happens to the grass, and the whole
        thing reads as two sprites overlapping. A handful of turf, thrown at
@@ -494,6 +526,7 @@
       pendingAction = null; pendingThrow = null; pendingSwitch = false;
       phase = 'set'; t = 0; dead = 0;
       actors = []; byId = {};
+      tape = []; tapeAcc = 0; replay = null; armed = -1;
 
       var off = offenseSpots(play, formKey, ballX, los, o.offUnits);
       var def = defenseSpots(defParts, ballX, los, o.strong || 0, o.defUnits, play);
@@ -719,12 +752,19 @@
       return true;
     };
     /* the tap that throws it: which receiver, and the moment is now */
-    self.throwTo = function (idx) {
+    var pendingThrowKind = null;
+    self.throwTo = function (idx, kind) {
       if (phase !== 'live' || !sim || sim.thrown()) return null;
-      pendingThrow = idx;
-      targets = false; targetBoxes = [];
+      pendingThrow = idx; pendingThrowKind = kind || null;
+      targets = false; targetBoxes = []; armed = -1;
       return true;
     };
+    /* a finger resting on a badge: the badge fills while it is held, so a
+       bullet is a thing you can see yourself winding up */
+    self.armTarget = function (idx) { armed = idx == null ? -1 : idx; };
+    /* the lens takes a hit: the page asks for one on the whistle, sized to
+       the tackle the simulation reported */
+    self.bump = function (strength) { if (!reduce) shake = Math.max(shake, clamp(strength || 0.15, 0, 0.42)); };
     /* AND IT SAYS WHETHER IT ACTUALLY SNAPPED. A caller that locks its own
        controls on the way in has to know whether the ball moved, or a snap
        that could not happen leaves the game holding a lock nobody will ever
@@ -810,30 +850,50 @@
       /* NOTHING RUNS OFF SCREEN. A game left in a background tab has no
          business burning a phone battery on a crowd nobody is looking at. */
       if (root.document && root.document.hidden) { stop(); return; }
-      if (phase === 'dead' && dead > 1.4 && glide <= 0) stop();
-      if (phase === 'idle') stop();
+      if (phase === 'dead' && dead > 1.4 && glide <= 0 && !replay) stop();
+      if (phase === 'idle' && !replay) stop();
     }
 
     function update(dt) {
       t += dt; tick += dt;
       if (shake > 0) shake = Math.max(0, shake - dt * 1.6);
       if (phase === 'kick' && kickScene) { kickStep(dt); camFollow(dt); return; }
+      /* ── THE REPLAY RUNS OFF THE TAPE, NOT THE SIMULATION ─────────────
+         Nothing is re-decided: the men are put back where the tape has them,
+         frame by frame, at half speed, under a lower, tighter lens. */
+      if (replay) { replayStep(dt); stepPuffs(dt); camFollow(dt); return; }
       if (sim) {
         sim.step(dt, {
           mx: steer.on ? steer.x : 0,
           my: steer.on ? steer.y : 0,
           action: pendingAction,
           throwTo: pendingThrow,
+          throwKind: pendingThrowKind,
           switchDef: pendingSwitch,
           sprint: sprintOn
         });
-        pendingAction = null; pendingThrow = null; pendingSwitch = false;
+        pendingAction = null; pendingThrow = null; pendingThrowKind = null; pendingSwitch = false;
         userActor = sim.user();
         if (sim.outcome() && phase === 'live') {
           phase = 'dead'; dead = 0;
           result = sim.outcome();
-          targets = false; targetBoxes = [];
+          targets = false; targetBoxes = []; armed = -1;
+          /* A HIT LANDS ON THE LENS. The simulation says how hard: a square
+             form tackle at closing speed bumps the picture and throws turf;
+             a drag-down barely registers. The thumb gets it from the page. */
+          if (result.hit && !reduce) {
+            shake = Math.max(shake, 0.05 + result.hit.force * 0.20);
+            puff(result.hit.x, result.hit.y, 0.5 + result.hit.force * 0.9);
+          }
           if (events.onEnd) events.onEnd(endKindOf(result), result);
+        }
+        /* the tape rolls from the snap to a beat after the whistle */
+        if (phase === 'live' || (phase === 'dead' && dead < 1.0)) {
+          tapeAcc += dt;
+          if (tapeAcc >= 1 / TAPE.hz) {
+            tapeAcc -= 1 / TAPE.hz;
+            if (tape.length < TAPE.max) tape.push(recordFrame(actors, ball, t));
+          }
         }
       }
       /* ── HOW LONG HE HAS BEEN ON THE GROUND ─────────────────────────────
@@ -891,6 +951,67 @@
       camFollow(dt);
     }
 
+    /* ── INSTANT REPLAY ──────────────────────────────────────────────────
+       Reserved by the page for the plays a broadcast would show again: a
+       score, a takeaway, a huge gain, a stand, the play that won it. It
+       plays the tape back at half speed from a lower, tighter lens, holds
+       the last frame, and hands back. A tap skips it; nothing waits on it
+       that the football needs. */
+    self.hasReplay = function () { return tape.length >= 12; };
+    self.replaying = function () { return !!replay; };
+    self.replay = function (o) {
+      o = o || {};
+      if (!tape.length || replay || !actors || !ball) return false;
+      var last = tape[tape.length - 1];
+      replay = { i: 0, speed: o.speed || 0.5, hold: 0, holdFor: o.hold == null ? 0.55 : o.hold,
+                 prior: { x: cam.x, y: cam.y, wide: cam.wide, back: cam.back, kf: kf, anchor: anchorBias },
+                 last: last, onEnd: o.onEnd || null };
+      restoreFrame(actors, ball, tape[0], byId);
+      puffs.length = 0;
+      start();
+      return true;
+    };
+    self.skipReplay = function () { if (replay) endReplay(); };
+    function replayStep(dt) {
+      var r = replay;
+      if (r.i >= tape.length - 1) {
+        r.hold += dt;
+        if (r.hold >= r.holdFor) endReplay();
+        return;
+      }
+      r.i += dt * r.speed * TAPE.hz;
+      var fi = Math.min(tape.length - 1, Math.floor(r.i));
+      var fr = tape[fi];
+      /* a man who went down on the tape throws turf on the replay too */
+      for (var k2 = 0; k2 < fr.men.length && k2 < actors.length; k2++) {
+        if (fr.men[k2].state === 'down' && actors[k2].state !== 'down') puff(fr.men[k2].x, fr.men[k2].y, 0.7);
+      }
+      restoreFrame(actors, ball, fr, byId);
+    }
+    function endReplay() {
+      var r = replay;
+      if (!r) return;
+      restoreFrame(actors, ball, r.last, byId);
+      replay = null;
+      /* the lens glides back to where the whistle left it */
+      glide = Math.max(glide, 0.6);
+      if (r.onEnd) { try { r.onEnd(); } catch (_) {} }
+      if (events.onReplayEnd) events.onReplayEnd();
+    }
+    function replayCam(dt) {
+      var f = ball.holder || ball;
+      var wide = 20, back = 48, kfWant = 2.55, abWant = 0.60;
+      var wantX = f.x, wantY = f.y + 0.4;
+      var halfW = wide / 2;
+      wantX = clamp(wantX, halfW - 5, FIELD.width - halfW + 5);
+      var k = 1 - Math.pow(0.010, dt), kz = 1 - Math.pow(0.10, dt);
+      cam.x += (wantX - cam.x) * k; cam.y += (wantY - cam.y) * k;
+      cam.wide += (wide - cam.wide) * kz; cam.back += (back - cam.back) * kz;
+      kf += (kfWant - kf) * kz;
+      if (Math.abs(anchorBias - abWant) > 0.001) { anchorBias += (abWant - anchorBias) * kz; applyAnchor(); }
+      fitCamera();
+    }
+
     function endKindOf(r) {
       if (!r) return 'tackle';
       if (r.touchdown) return 'touchdown';
@@ -907,6 +1028,7 @@
        make. After it, it closes in on the football and stays with it — which
        is what a broadcast does and why a broadcast is legible. */
     function camFollow(dt, snap) {
+      if (replay) { replayCam(dt); return; }
       var f = ball.holder || (ball.flight ? ball : byId['o_QB']);
       var tx = f ? f.x : ballX, ty = f ? f.y : los;
       var wantX, wantY, wide, back, kfWant = 1.45, abWant = 0.70;
@@ -1231,12 +1353,29 @@
           var a = byId[tg.id];
           if (!a || a.state === 'down') return;
           var box = P.target(ctx, cam, a, SLOT_LETTER[tg.slot] || String(i + 1),
-            { name: tg.name, hot: tg.open > 0.55 });
+            { name: tg.name, hot: tg.open > 0.55, armed: armed === i });
           box.idx = i;
           targetBoxes.push(box);
         });
       }
       P.conditions(ctx, cam, scene);
+      /* the replay wears the broadcast's bars and its word */
+      if (replay) {
+        var bar = Math.round(h * 0.075);
+        ctx.fillStyle = 'rgba(4,6,9,.92)';
+        ctx.fillRect(-20, -20, w + 40, bar + 20); ctx.fillRect(-20, h - bar, w + 40, bar + 20);
+        ctx.font = '800 ' + Math.max(10, Math.round(bar * 0.52)) + 'px "Space Grotesk", Inter, sans-serif';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#f2c744';
+        ctx.fillText('REPLAY', 12, bar / 2);
+        ctx.fillStyle = 'rgba(255,255,255,.55)';
+        ctx.font = '700 ' + Math.max(9, Math.round(bar * 0.40)) + 'px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('tap to skip', w - 12, bar / 2);
+        /* a red dot that breathes, the way a tape deck's does */
+        ctx.fillStyle = 'rgba(226,102,75,' + (0.55 + 0.45 * Math.sin(tick * 4)) + ')';
+        ctx.beginPath(); ctx.arc(w - 12 - ctx.measureText('tap to skip').width - 12, bar / 2, bar * 0.14, 0, 6.2832); ctx.fill();
+      }
       ctx.restore();
     }
     self.draw = draw;
@@ -1264,7 +1403,7 @@
     return self;
   }
 
-  var API = { Stage: Stage, speedOf: speedOf, Actor: Actor,
+  var API = { Stage: Stage, speedOf: speedOf, Actor: Actor, recordFrame: recordFrame, restoreFrame: restoreFrame, TAPE_FIELDS: TAPE_FIELDS,
     alignOffense: alignOffense, alignDefense: alignDefense, routeWorld: routeWorldPure,
     slotPos: slotPos, jersey: jersey };
   root.EDGridironStage = API;

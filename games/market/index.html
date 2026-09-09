@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260909a">
-<link rel="stylesheet" href="/games/franchise.css?v=20260909a">
+<link rel="stylesheet" href="/games/games.css?v=20260909g">
+<link rel="stylesheet" href="/games/franchise.css?v=20260909g">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,18 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260909a"></script>
-<script src="/games/lib/scoring.js?v=20260909a"></script>
-<script src="/games/lib/challenge.js?v=20260909a"></script>
-<script src="/games/lib/research_state.js?v=20260909a"></script>
-<script src="/games/lib/attribution.js?v=20260909a"></script>
-<script src="/games/lib/store.js?v=20260909a"></script>
-<script src="/games/lib/dynasty.js?v=20260909a"></script>
-<script src="/games/lib/social.js?v=20260909a"></script>
-<script src="/games/lib/auth.js?v=20260909a"></script>
-<script src="/games/lib/franchise.js?v=20260909a"></script>
-<script src="/games/games.js?v=20260909a"></script>
+<script src="/games/lib/week.js?v=20260909g"></script>
+<script src="/games/lib/scoring.js?v=20260909g"></script>
+<script src="/games/lib/challenge.js?v=20260909g"></script>
+<script src="/games/lib/research_state.js?v=20260909g"></script>
+<script src="/games/lib/attribution.js?v=20260909g"></script>
+<script src="/games/lib/store.js?v=20260909g"></script>
+<script src="/games/lib/dynasty.js?v=20260909g"></script>
+<script src="/games/lib/social.js?v=20260909g"></script>
+<script src="/games/lib/auth.js?v=20260909g"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260909g"></script>
+<script src="/games/lib/franchise.js?v=20260909g"></script>
+<script src="/games/games.js?v=20260909g"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -235,7 +236,8 @@
       +(b.agents.length?'<div class="pc-grid">'+b.agents.map(function(p){return agentCard(p,b);}).join('')+'</div>'
         :'<div class="card"><div class="empty">Nobody left on the market until the next offseason.</div></div>')
       +'<div class="ftp" style="margin-top:10px">A free agent hides nothing. He asks '+esc(b.rules.signing.floor)+' TC, or '+esc(b.rules.signing.per_point)+' for every point over '+esc(b.rules.signing.over)+'. '
-      +'The roster runs '+esc(room.min)+' to '+esc(room.max)+'; at '+esc(room.max)+' someone must be released on the <a href="/games/roster/">roster</a> first.</div></div>'
+      +'The roster runs '+esc(room.min)+' to '+esc(room.max)+'; at '+esc(room.max)+' someone must be released on the <a href="/games/roster/">roster</a> first. '
+      +'Men change hands <b>between franchises</b> on the <a href="/games/exchange/">Exchange</a>, at prices the sellers set.</div></div>'
       +'<div class="sec"><div class="sec-h"><h2>On the record</h2><span class="m">last '+esc((b.history||[]).length)+'</span></div><div class="card">'
       +((b.history||[]).length?'<ul class="mk-hist">'+b.history.map(histRow).join('')+'</ul>':'<div class="empty">No report, pick, signing or release yet.</div>')
       +'<div class="ftp" style="margin-top:10px">Every move here is a row on the server: a report and a signing are lines on the ledger, a pick and a release are on the record. Nothing is undone.</div></div></div>';

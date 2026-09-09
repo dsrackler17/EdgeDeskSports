@@ -10,8 +10,8 @@
   gtag('js', new Date());
   gtag('config', 'G-1PXVBV53FZ');
 </script>
-<title>Rank &amp; Packs | EdgeDesk Games</title>
-<meta name="description" content="A rank that counts how much you play, and a pack of three players for every rank you reach. Earned by playing and by nothing else — nothing here can be bought. Free to play, no real-money wagering.">
+<title>The Vault | EdgeDesk Games</title>
+<meta name="description" content="The EdgeDesk Vault: every pack your record has earned, the odds printed on each one, and a reveal worth the wait. Earned by playing and by nothing else — nothing here can be bought. Free to play, no real-money wagering.">
 <link rel="canonical" href="https://edgedesksports.com/games/packs">
 <meta name="theme-color" content="#0b0d11">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
@@ -19,16 +19,105 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EdgeDesk Games">
 <meta property="og:url" content="https://edgedesksports.com/games/packs">
-<meta property="og:title" content="Rank &amp; Packs — EdgeDesk Games">
-<meta property="og:description" content="A rank that counts how much you play, and a pack of three players for every rank. Earned by playing, never bought.">
+<meta property="og:title" content="The Vault — EdgeDesk Games">
+<meta property="og:description" content="Every pack your record has earned, with its odds printed on it. Earned by playing, never bought.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Rank &amp; Packs — EdgeDesk Games">
-<meta name="twitter:description" content="A rank that counts how much you play, and a pack of three players for every rank. Earned by playing, never bought.">
+<meta name="twitter:title" content="The Vault — EdgeDesk Games">
+<meta name="twitter:description" content="Every pack your record has earned, with its odds printed on it. Earned by playing, never bought.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260909a">
-<link rel="stylesheet" href="/games/franchise.css?v=20260909a">
+<link rel="stylesheet" href="/games/games.css?v=20260909g">
+<link rel="stylesheet" href="/games/franchise.css?v=20260909g">
+<link rel="stylesheet" href="/games/vault.css?v=20260909g">
+<style>
+/* the Vault's shelf: one tile per sealed pack, the pack's own colour on it */
+.vs-grid{display:grid;gap:10px;margin-top:10px}
+@media(min-width:560px){.vs-grid{grid-template-columns:repeat(2,1fr)}}
+.vs{position:relative;background:var(--cell);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;overflow:hidden;
+  --vh:#3fb883;--vd:#0d2a1e}
+.vs::before{content:'';position:absolute;inset:0;background:radial-gradient(90% 60% at 100% 0%,color-mix(in srgb,var(--vh) 22%,transparent),transparent 70%);pointer-events:none}
+.vs-art-cache{--vh:#3fb883;--vd:#0d2a1e}.vs-art-rookie{--vh:#5c9dff;--vd:#0f1d33}.vs-art-postseason{--vh:#d9a441;--vd:#2a2010}
+.vs-art-vault{--vh:#f2c744;--vd:#2b1e08}.vs-art-scout{--vh:#9d7bff;--vd:#1d1530}.vs-art-gameday{--vh:#e2664b;--vd:#2a140f}
+.vs-top{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--vh)}
+.vs-top .m{margin-left:auto;color:var(--faint);font-weight:600;letter-spacing:.08em}
+.vs-name{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin-top:8px;line-height:1.1}
+.vs-src{font-size:12.5px;color:var(--dim);margin-top:3px}
+.vs-band{display:flex;align-items:baseline;gap:8px;margin-top:10px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.vs-band b{font-size:22px;font-weight:700}
+.vs-band span{font-size:11px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+.vs-odds{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.vs-odds em{font-style:normal;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
+.vs-odds em b{color:var(--text)}
+.vs-guar{font-size:12px;color:var(--text);margin-top:8px}
+.vs-guar b{color:var(--vh)}
+.vs-acts{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vs-acts .btn{min-height:42px;font-size:14px}
+.vs-acts .why{font-size:12px;color:var(--faint)}
+.vs-open .btn-go{box-shadow:0 0 0 1px color-mix(in srgb,var(--vh) 50%,transparent),0 0 24px color-mix(in srgb,var(--vh) 25%,transparent)}
+/* the protection rule, printed */
+.vs-pity{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-size:12.5px;color:var(--dim)}
+.vs-pity .dots{display:flex;gap:4px}
+.vs-pity .dots i{width:10px;height:10px;border-radius:50%;background:var(--line2)}
+.vs-pity .dots i.on{background:var(--val)}
+.vs-pity b{color:var(--text)}
+/* how packs are earned */
+.vs-earn{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.vs-earn li{display:flex;gap:10px;align-items:baseline;font-size:13.5px;line-height:1.4}
+.vs-earn li .k{flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px solid var(--line2)}
+.vs-earn li .k.cache{color:#3fb883}.vs-earn li .k.rookie{color:#5c9dff}.vs-earn li .k.postseason{color:#d9a441}.vs-earn li .k.vault{color:#f2c744}.vs-earn li .k.scout{color:#9d7bff}.vs-earn li .k.gameday{color:#e2664b}
+/* kept men, and a card of one's own */
+.mk-hist .tier{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line2);border-radius:999px;padding:2px 6px;margin-left:6px;color:var(--dim)}
+.mk-hist li{cursor:pointer}
+.mk-hist li:hover .o b{color:var(--val)}
+.cd{position:fixed;inset:0;z-index:70;background:rgba(4,5,7,.78);display:flex;align-items:flex-end;justify-content:center;padding:0;opacity:0;transition:opacity .25s}
+.cd.on{opacity:1}
+.cd-in{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom))}
+@media(min-width:560px){.cd{align-items:center;padding:20px}.cd-in{border-radius:18px}}
+.cd-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.cd-h .eyebrow{margin:0}
+.cd-ed{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.06em}
+/* a pack earned: its moment, above the shelf */
+.vs-earned{display:flex;align-items:center;gap:12px;margin:10px 0 4px;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--val) 45%,transparent);
+  background:linear-gradient(120deg,color-mix(in srgb,var(--val) 16%,transparent),transparent 70%),var(--panel);animation:vs-earned .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes vs-earned{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.vs-earned .k{flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#04110a;background:var(--val);padding:5px 8px;border-radius:999px}
+.vs-earned b{display:block;font-family:'Space Grotesk',sans-serif;font-size:16px;line-height:1.15}
+.vs-earned span{display:block;font-size:12.5px;color:var(--dim);margin-top:2px}
+/* my pulls */
+.pl-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.pl-stats div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:0}
+.pl-stats .k{font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.pl-stats .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.pl-best{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);margin-bottom:10px}
+.pl-best[role=button]{cursor:pointer}
+.pl-best[role=button]:hover b{color:var(--val)}
+.pl-best .o{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.pl-best b{display:block;font-family:'Space Grotesk',sans-serif;font-size:17px;line-height:1.15}
+.pl-best small{display:block;font-size:12px;color:var(--dim);margin-top:3px}
+.pl-best .tier{margin-left:0}
+.pl-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pl-list li{display:grid;gap:6px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
+.pl-list .h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.pl-list .h b{color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:14px}
+.pl-men{display:flex;flex-wrap:wrap;gap:5px}
+.pl-men i{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 7px;border-radius:8px;border:1px solid var(--line2);color:var(--dim);font-variant-numeric:tabular-nums}
+.pl-men i.kept{color:var(--text);border-color:var(--val)}
+.pl-men i.t-elite{color:#d9a441}.pl-men i.t-apex{color:#7a5cff}.pl-men i.t-legend{color:#f2c744}.pl-men i.t-mythic{color:#ff5c8a}
+/* the share sheet of our own */
+.sh{position:fixed;inset:0;z-index:91;background:rgba(4,5,7,.85);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .25s}
+.sh.on{opacity:1}
+.sh-in{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;text-align:center}
+.sh-in img{display:block;width:100%;border-radius:12px;margin-bottom:10px}
+.sh-in p{font-size:13px;color:var(--dim);margin:0 0 10px}
+.cd-hist{list-style:none;margin:12px 0 0;padding:0;border-top:1px solid var(--line)}
+.cd-hist li{display:grid;grid-template-columns:78px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.4}
+.cd-hist li .w{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding-top:2px}
+.cd-hist li .w.acquired,.cd-hist li .w.generated{color:var(--val)}
+.cd-hist li .w.ratings{color:var(--obs)}.cd-hist li .w.potential{color:var(--exp)}.cd-hist li .w.traded{color:var(--est)}
+.cd-hist li .w.retired,.cd-hist li .w.released{color:var(--neg)}
+.cd-hist li small{display:block;color:var(--faint);font-size:11.5px}
+</style>
 </head>
 <body>
 <div id="gh"></div>
@@ -36,10 +125,10 @@
 <main class="wrap" id="main">
   <div class="sec" style="margin-top:18px">
     <div class="card" id="stage">
-      <div class="eyebrow">Rank &amp; Packs</div>
+      <div class="eyebrow">The Vault</div>
       <div class="sk" style="width:55%;margin:16px 0"></div>
       <div class="sk" style="width:35%;margin:10px 0"></div>
-      <div class="sk-label" style="text-align:left">Counting what you have played</div>
+      <div class="sk-label" style="text-align:left">Reading what your record has earned</div>
     </div>
   </div>
   <div id="rooms"></div>
@@ -48,22 +137,24 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260909a"></script>
-<script src="/games/lib/scoring.js?v=20260909a"></script>
-<script src="/games/lib/challenge.js?v=20260909a"></script>
-<script src="/games/lib/research_state.js?v=20260909a"></script>
-<script src="/games/lib/attribution.js?v=20260909a"></script>
-<script src="/games/lib/store.js?v=20260909a"></script>
-<script src="/games/lib/dynasty.js?v=20260909a"></script>
-<script src="/games/lib/social.js?v=20260909a"></script>
-<script src="/games/lib/auth.js?v=20260909a"></script>
-<script src="/games/lib/franchise.js?v=20260909a"></script>
-<script src="/games/games.js?v=20260909a"></script>
+<script src="/games/lib/week.js?v=20260909g"></script>
+<script src="/games/lib/scoring.js?v=20260909g"></script>
+<script src="/games/lib/challenge.js?v=20260909g"></script>
+<script src="/games/lib/research_state.js?v=20260909g"></script>
+<script src="/games/lib/attribution.js?v=20260909g"></script>
+<script src="/games/lib/store.js?v=20260909g"></script>
+<script src="/games/lib/dynasty.js?v=20260909g"></script>
+<script src="/games/lib/social.js?v=20260909g"></script>
+<script src="/games/lib/auth.js?v=20260909g"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260909g"></script>
+<script src="/games/lib/franchise.js?v=20260909g"></script>
+<script src="/games/lib/vault.js?v=20260909g"></script>
+<script src="/games/games.js?v=20260909g"></script>
 <script>
 /* STALE SCRIPT GUARD — the same belt every franchise page wears. */
 (function(){
-  var need=['EDFranchise.ranks','EDFranchise.packOpen','EDFranchise.packKeep',
-            'EDFranchise.packPass','EDFranchise.rankEdge','EDFranchise.packBand','EDGames.franchiseReady'];
+  var need=['EDFranchise.packsBoard','EDFranchise.packOpenId','EDFranchise.packKeep','EDFranchise.packPass',
+            'EDFranchise.card','EDFranchise.playerCard','EDVault.open','EDGames.franchiseReady'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -76,25 +167,48 @@
 <script>
 (function(){
   'use strict';
-  var G=window.EDGames,FR=window.EDFranchise;
+  /* THE VAULT (packs_v2). The board is read from the server — every sealed
+     pack the record owes, with the odds it would open at right now — and a
+     pack is OPENED on the server: franchise_pack_open_id rolls the men,
+     writes them with the pack's id, and only then answers. What EDVault
+     draws after that is the reveal of a result that is already true. A
+     refresh mid-reveal finds the same men on the table. Nothing here can be
+     bought: there is no pack for sale and no way to open one faster. */
+  var G=window.EDGames,FR=window.EDFranchise,V=window.EDVault;
   var $=function(id){return document.getElementById(id);};
   var stage=$('stage'),rooms=$('rooms');
-  var esc=G.esc,fmt=FR.fmt;
+  var esc=G.esc;
   var READY=G.boot('packs');
-  var BOARD=null,BUSY=false;
+  var BOARD=null,PULLS=null,ROSTER=null,BUSY=false,ROOM=null;
+  /* what this device has seen of the Vault: whether a pack was ever opened
+     here (the first one is guided), and which sealed packs it has already
+     been shown (a new one gets its moment). Nothing about the record lives
+     here — the record is the server's. */
+  var FIRST_KEY='edgedesk_vault_opened',SEEN_KEY='edgedesk_vault_seen';
+  var FIRST_RUN=(function(){try{return !localStorage.getItem(FIRST_KEY);}catch(_){return false;}})();
+  function markOpened(){FIRST_RUN=false;try{localStorage.setItem(FIRST_KEY,String(Date.now()));}catch(_){}}
+  function earnedSince(sealed){
+    var seen=null;try{seen=JSON.parse(localStorage.getItem(SEEN_KEY)||'null');}catch(_){seen=null;}
+    var ids=sealed.map(function(p){return p.id;});
+    try{localStorage.setItem(SEEN_KEY,JSON.stringify(ids));}catch(_){}
+    if(!Array.isArray(seen))return [];
+    return sealed.filter(function(p){return seen.indexOf(p.id)<0;});
+  }
+  function loadRoster(){return FR.roster().then(function(r){ROSTER=(r.ok&&r.data&&r.data.players)||null;return ROSTER;},function(){return null;});}
+  var TIER_ORDER=['prospect','starter','impact','prime','elite','apex','legend','mythic'];
+  function tierName(k){return V.tierName(k);}
+  function track(name,props){var p=props||{};p.game_type='franchise';G.track(name,p);}
 
   /* ---- no franchise yet --------------------------------------------------- */
   function renderEmpty(state){
     stage.className='card';
-    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Rank &amp; Packs</div>'
-      +'<h1>A rank for turning up.</h1>'
-      +'<p>Everything else here is paid for by being <i>good</i> at something — Scouting Points for pricing games well, '
-      +'Coach Points for winning. Your <b>rank</b> is paid for by <b>playing</b>: every game, every price, every drill, '
-      +'every season you see out.</p>'
-      +'<ul class="fo-list"><li>Every rank is a <b>pack</b>: three players, and you keep one.</li>'
-      +'<li>They are drawn around <b>your own team</b> — the floor sits '+FR.RANKS.floor_below+' below your overall, '
-      +'and the ceiling rises with your rank, to <b>+'+FR.RANKS.edge_max+'</b>.</li>'
-      +'<li>The rank <b>never caps</b>. Rank 2 costs '+FR.RANKS.cost_base+' points and each one after costs '+FR.RANKS.cost_step+' more.</li>'
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">The Vault</div>'
+      +'<h1>Every pack you earn, and the odds printed on it.</h1>'
+      +'<p>A pack is a thing your <b>record</b> owes you: a rank reached, a franchise founded, a season seen out, '
+      +'a bowl won, a week of reading the real games well. The Vault holds them until you open them.</p>'
+      +'<ul class="fo-list">'+Object.keys(FR.PACKS).map(function(k){var d=FR.PACKS[k];
+          return '<li><b>'+esc(d.name)+'</b> — '+esc(d.size)+' men, keep '+esc(d.keep)+' · for '+esc(d.earned)+'.</li>';}).join('')
+      +'<li>Every pack is drawn around <b>your own team</b>, and every one prints its <b>odds by tier</b> before you open it.</li>'
       +'<li><b>Nothing here can be bought.</b> There is no pack for sale and no way to open one faster with money.</li></ul>'
       +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=packs" id="goFound">Found my franchise</a></div>'
       +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Packs are earned by playing and cannot be bought</div></div>';
@@ -102,129 +216,327 @@
       ?'<div class="sec"><div class="card"><div class="empty">Franchise services are temporarily unavailable, so nothing can be saved to your record right now.<br><a class="btn btn-go" style="margin-top:14px" href="/games/play/">Play a game anyway</a></div></div></div>'
       :'';
     var go=$('goFound');
-    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'packs',game_type:'franchise'});});
+    if(go)go.addEventListener('click',function(){track('signup_start_from_games',{placement:'packs'});});
   }
 
-  /* ---- the rank ----------------------------------------------------------- */
+  /* ---- the stage: who you are, what is waiting --------------------------- */
   function renderStage(b){
-    var snap=FR.snapshot()||{},f=snap.franchise||{},r=b.rank||{},band=b.would_hold||[],room=b.roster||{};
-    var at=r.at|0,next=r.next_at|0,pts=r.points|0;
+    var snap=FR.snapshot()||{},f=snap.franchise||{},r=b.rank||{},room=b.roster||{};
+    var at=r.at|0,next=r.next_at|0,pts=r.points|0,sealed=b.sealed||[];
     var pct=next>at?Math.max(2,Math.min(100,Math.round(100*(pts-at)/(next-at)))):100;
     stage.className='card';
     stage.setAttribute('style',FR.themeVars(f.theme));
-    stage.innerHTML='<div class="eyebrow">Rank &amp; Packs</div>'
+    stage.innerHTML='<div class="eyebrow">The Vault <span class="m" style="color:var(--faint);font-weight:600;margin-left:6px">'+esc(b.version||FR.PACKS_VERSION)+'</span></div>'
       +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
       +'<div><div class="hq-city">'+esc(f.city||'')+' · '+esc(f.abbr||'')+'</div>'
       +'<div class="hq-name">'+esc(f.name||'')+'</div>'
-      +'<div class="hq-line">'+esc(r.points|0)+' played · '+esc(r.to_next|0)+' to rank '+esc((r.rank|0)+1)+'</div></div>'
+      +'<div class="hq-line">'+esc(pts)+' played · '+esc(r.to_next|0)+' to rank '+esc((r.rank|0)+1)+'</div></div>'
       +'<div class="hq-rec">'+esc(r.rank|0)+'<span class="s">rank</span></div></div>'
       +'<div class="xp"><div class="xp-row"><b>Rank '+esc(r.rank|0)+'</b><span>'+esc(pts-at)+' of '+esc(next-at)+' to rank '+esc((r.rank|0)+1)+'</span></div>'
       +'<div class="xp-bar" role="progressbar" aria-label="progress to the next rank" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'">'
       +'<div class="xp-fill" style="width:'+pct+'%"></div></div></div>'
       +'<div class="mk-sum">'
-      +'<div class="sp"><div class="k">Packs waiting</div><div class="v">'+esc(r.packs|0)+'<small>one for every rank</small></div></div>'
-      +'<div><div class="k">A pack holds</div><div class="v">'+esc(band[0]|0)+'–'+esc(band[1]|0)+'<small>your team is '+esc(b.team_overall|0)+'</small></div></div>'
+      +'<div class="sp"><div class="k">Sealed</div><div class="v">'+esc(sealed.length)+'<small>pack'+(sealed.length===1?'':'s')+' waiting</small></div></div>'
+      +'<div><div class="k">Your team</div><div class="v">'+esc(b.team_overall|0)+'<small>packs draw around it</small></div></div>'
       +'<div><div class="k">Roster</div><div class="v">'+esc(room.active|0)+'<small>of '+esc(room.max|0)+' · '+((room.room|0)?((room.room|0)+' open'):'full')+'</small></div></div>'
       +'<div><div class="k">From packs</div><div class="v">'+esc((b.kept||[]).length)+'<small>on the roster now</small></div></div>'
       +'</div>'
-      +'<div class="ftp" style="margin-top:12px">A pack is drawn around <b>your own team</b>, so it is never junk and never a shortcut: '
-      +'the floor is '+esc(FR.RANKS.floor_below)+' under your overall and the ceiling rises with the rank. '
-      +'<b>Earned by playing and by nothing else</b> — there is no pack for sale.</div>';
+      +'<div class="ftp" style="margin-top:12px">Every pack is drawn around <b>your own team</b>, so it is never junk and never a shortcut, '
+      +'and every one prints the odds it will open at. <b>Earned by playing and by nothing else</b> — there is no pack for sale.</div>';
   }
 
-  function packCard(p,b){
-    var top='<div class="pc-top"><span class="pc-pos">'+esc(p.position)+'</span><span class="pc-num">'+esc(p.age)+' yrs</span>'
-      +(p.rarity?'<span class="pc-rar">'+esc(p.rarity)+'</span>':'')+'</div>';
-    var body='<div class="pc-ovr"><b>'+esc(p.overall)+'</b><span>OVR</span></div>'
-      +'<div class="pc-name">'+esc(FR.fullName(p))+'</div>'
-      +'<div class="pc-arch">'+esc(p.archetype||'')+' · ceiling <b>'+esc(p.potential)+'</b> · '+esc(FR.DEV_TIERS[p.dev_tier]||p.dev_tier||'')+'</div>'
-      +'<div class="pc-attrs">'+FR.keyRatings(p).map(function(a){return '<div class="pc-a"><span class="k">'+esc(a.label)+'</span><b>'+esc(a.value)+'</b></div>';}).join('')+'</div>'
-      +(FR.traitOf(p)?'<div class="pc-line"><b>'+esc(FR.traitOf(p).name)+'</b> · '+esc(FR.traitOf(p).desc||'')+'</div>':'');
-    var full=(b.roster||{}).room<=0;
-    var acts='<div class="pc-actions">'
-      +(full?'<span class="pc-line">Roster full — release a player on the <a href="/games/roster/">roster</a> to keep him.</span>'
-            :'<button class="btn btn-go" type="button" data-keep="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'">Keep him</button>')
-      +'</div>';
-    return '<div class="pc" data-player="'+esc(p.id)+'">'+top+body+acts+'</div>';
+  /* ---- a sealed pack on the shelf ----------------------------------------- */
+  function oddsChips(od){
+    if(!od||!od.tiers)return '';
+    return TIER_ORDER.map(function(k){var v=+od.tiers[k];if(!(v>0))return '';
+      return '<em>'+esc(tierName(k))+' <b>'+esc(v)+'%</b></em>';}).join('');
+  }
+  /* the line under a pack's name: where the record earned it */
+  function sourceLine(p){
+    var src=String(p.source||'');
+    if(p.kind==='gridiron_cache'&&/^\d+$/.test(src))return 'Rank '+src;
+    if(!src||src===p.kind)return FR.packDef(p.kind).name;
+    return src;
+  }
+  function shelfTile(p,b){
+    var od=p.odds||{},open=!!b.open,why='';
+    var can=!open&&(p.kind!=='gridiron_cache'||p.next);
+    if(open)why='Finish the pack on the table first.';
+    else if(p.kind==='gridiron_cache'&&!p.next)why='Opens after the rank before it.';
+    var guar=od.guarantee?'<div class="vs-guar">One man <b>'+esc(tierName(od.guarantee))+' or better</b> is guaranteed. The odds above are for the others.</div>':'';
+    if(od.pity&&od.pity.active)guar+='<div class="vs-guar"><b>Protection is on</b>: the ceiling is lifted by '+esc(od.pity.lift)+' and a Prime man is guaranteed.</div>';
+    return '<div class="vs vs-art-'+esc(p.art||'cache')+(can?' vs-open':'')+'" data-pack="'+esc(p.id)+'">'
+      +'<div class="vs-top"><span>'+esc(p.name||FR.packDef(p.kind).name)+'</span><span class="m">'+esc(p.size)+' men · keep '+esc(p.keep)+'</span></div>'
+      +'<div class="vs-name">'+esc(sourceLine(p))+'</div>'
+      +'<div class="vs-src">For '+esc(FR.packDef(p.kind).earned)+'.</div>'
+      +'<div class="vs-band"><b>'+esc(od.low|0)+'–'+esc(od.high|0)+'</b><span>overall · your team is '+esc(od.team_overall|0)+'</span></div>'
+      +'<div class="vs-odds" aria-label="odds by tier">'+oddsChips(od)+'</div>'
+      +guar
+      +'<div class="vs-acts">'+(can
+          ?'<button class="btn btn-go" type="button" data-open="'+esc(p.id)+'">Open in the Vault</button>'
+          :'<button class="btn" type="button" disabled>Sealed</button><span class="why">'+esc(why)+'</span>')
+      +'</div></div>';
+  }
+  function pityLine(b){
+    var p=b.pity;if(!p)return '';
+    var since=p.since|0,after=p.after|0,dots='';
+    for(var i=0;i<after;i++)dots+='<i class="'+(i<since?'on':'')+'"></i>';
+    return '<div class="vs-pity"><span class="dots" aria-hidden="true">'+dots+'</span>'
+      +'<span><b>Bad-luck protection, printed.</b> '+(p.active
+        ?'It is on now: the next Gridiron Cache lifts its ceiling by '+esc(p.lift)+' and guarantees a Prime man.'
+        :esc(since)+' of '+esc(after)+' caches without a Prime man. At '+esc(after)+', the next one lifts its ceiling by '+esc(p.lift)+' and guarantees one.')
+      +'</span></div>';
   }
 
+  /* ---- the men you kept, and the record of every opening ------------------ */
   function keptRow(p){
-    return '<li><span class="k">R'+esc(p.rank)+'</span><span class="o"><b>'+esc(p.name)+'</b><small>'
-      +esc(p.position)+' · OVR '+esc(p.overall)+' · ceiling '+esc(p.potential)+'</small></span><span class="r"></span></li>';
+    return '<li data-card="'+esc(p.id)+'" role="button" tabindex="0"><span class="k">'+esc(p.position)+'</span><span class="o"><b>'+esc(p.name)+'</b>'
+      +'<span class="tier">'+esc(tierName(p.tier))+'</span><small>OVR '+esc(p.overall)+' · ceiling '+esc(p.potential)+' · '
+      +esc(p.kind_name||'Gridiron Cache')+(p.rank?' · rank '+esc(p.rank):'')+'</small></span><span class="r">›</span></li>';
+  }
+  function histRow(h){
+    var d=h.detail||{},men=(d.men||[]),best=men.slice().sort(function(a,b){return (b.overall|0)-(a.overall|0);})[0];
+    var when=h.at?new Date(h.at):null,day=when?when.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+    return '<li><span class="k">'+esc(day)+'</span><span class="o"><b>'+esc(FR.packDef(d.kind||'gridiron_cache').name)+(d.rank?' · rank '+esc(d.rank):'')+'</b>'
+      +'<small>'+esc(d.low|0)+'–'+esc(d.high|0)+(best?' · best '+esc(best.position)+' '+esc(best.name)+' ('+esc(best.overall)+')':'')+'</small></span><span class="r"></span></li>';
+  }
+
+  /* ---- a pack earned gets its moment, and never opens on its own ---------- */
+  function earnedBanner(list){
+    if(!list.length)return '';
+    list.forEach(function(p){track('pack_earned_seen',{kind:p.kind});});
+    return list.map(function(p){var def=FR.packDef(p.kind);
+      return '<div class="vs-earned" role="status"><span class="k">Pack earned</span><div><b>'+esc(p.name||def.name)
+        +(p.kind==='gridiron_cache'&&/^\d+$/.test(String(p.source||''))?' · rank '+esc(p.source):'')+'</b>'
+        +'<span>For '+esc(def.earned)+'. It waits in the Vault until you open it — nothing opens on its own.</span></div></div>';}).join('');
+  }
+  /* ---- my pulls: every pack opened, the men as they were pulled ------------ */
+  function menChips(men){
+    return '<span class="pl-men">'+men.map(function(m){
+      return '<i class="t-'+esc(m.tier)+(m.kept?' kept':'')+'" title="'+esc(m.name)+'">'+esc(m.position)+' '+esc(m.overall)+(m.kept?' ✓':'')+'</i>';}).join('')+'</span>';
+  }
+  function pullsSection(pl,hist){
+    if(!pl||!(pl.opened|0)){
+      return hist.length?'<div class="sec"><div class="sec-h"><h2>The record</h2><span class="m">last '+esc(hist.length)+'</span></div><div class="card"><ul class="mk-hist">'+hist.map(histRow).join('')+'</ul></div></div>':'';
+    }
+    var best=pl.best;
+    return '<div class="sec"><div class="sec-h"><h2>My pulls</h2><span class="m">'+esc(pl.opened)+' pack'+(pl.opened===1?'':'s')+'</span></div><div class="card">'
+      +'<div class="pl-stats"><div><div class="k">Opened</div><div class="v">'+esc(pl.opened|0)+'</div></div>'
+      +'<div><div class="k">Kept</div><div class="v">'+esc(pl.kept|0)+'</div></div>'
+      +'<div><div class="k">Apex+</div><div class="v">'+esc(pl.premium|0)+'</div></div>'
+      +'<div><div class="k">Best</div><div class="v">'+esc(best?best.overall:'—')+'</div></div></div>'
+      +(best?'<div class="pl-best"'+(best.kept&&best.status==='active'?' data-card="'+esc(best.id)+'" role="button" tabindex="0"':'')+'>'
+          +'<span class="o">'+esc(best.overall)+'</span><div><b>'+esc(best.name)+'</b><small>'+esc(best.position)+' · <span class="tier">'+esc(tierName(best.tier))+'</span> · '
+          +esc(best.kind_name||'')+(best.kept?' · kept':' · passed over')+'</small></div></div>':'')
+      +'<ul class="pl-list">'+(pl.pulls||[]).map(function(p){
+          var when=p.opened_at?new Date(p.opened_at).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+          return '<li><div class="h"><b>'+esc(p.kind_name||'')+(p.kind==='gridiron_cache'&&/^\d+$/.test(String(p.source||''))?' · rank '+esc(p.source):'')+'</b>'
+            +'<span>'+esc(p.low|0)+'–'+esc(p.high|0)+(when?' · '+esc(when):'')+'</span></div>'+menChips(p.men||[])+'</li>';}).join('')+'</ul>'
+      +'<div class="ftp" style="margin-top:10px">Every man as he was the night he was pulled. ✓ marks the ones you kept.</div></div></div>';
   }
 
   function renderBoard(b,fresh){
     BOARD=b;
     renderStage(b);
-    var open=b.open||[],packs=(b.rank||{}).packs|0;
+    var sealed=b.sealed||[],open=b.open,kept=b.kept||[],hist=b.history||[];
     rooms.innerHTML=
-      '<div class="sec"><div class="sec-h"><h2>'+(open.length?'On the table':'Open a pack')+'</h2>'
-      +'<span class="m">'+esc(FR.PACKS_VERSION)+'</span></div>'
-      +(open.length
-        ? '<div class="pc-grid">'+open.map(function(p){return packCard(p,b);}).join('')+'</div>'
-          +'<div class="ftp" style="margin-top:10px">Keep <b>one</b>. The other two are passed over — they stay on your record as men you turned down. '
-          +'If none of them is worth a place, <button class="lnk" type="button" id="passPack">turn the whole pack down</button> — '
-          +'the rank is spent either way, but a pack can never block the ones behind it.</div>'
-        : (packs>0
-            ? '<div class="card"><div class="empty" style="padding:22px 12px">'
-              +'<div style="font-size:15px;color:var(--text);margin-bottom:6px"><b>'+esc(packs)+' pack'+(packs===1?'':'s')+' waiting</b></div>'
-              +'Three players drawn between <b>'+esc((b.would_hold||[])[0]|0)+'</b> and <b>'+esc((b.would_hold||[])[1]|0)+'</b> overall.'
-              +'<div class="btn-row" style="justify-content:center"><button class="btn btn-go btn-big" type="button" id="openPack">Open a pack</button></div></div></div>'
-            : '<div class="card"><div class="empty">No pack waiting. '+esc((b.rank||{}).to_next|0)+' more played and rank '
-              +esc(((b.rank||{}).rank|0)+1)+' is yours — a game is worth '+esc(FR.rankWeight('weekly_game'))
-              +', a <a href="/games/price-it/">Price It</a> '+esc(FR.rankWeight('price_it'))
-              +', a season seen out '+esc(FR.rankWeight('season_complete'))+'.</div></div>'))
+      (open
+        ?'<div class="sec"><div class="sec-h"><h2>On the table</h2><span class="m">'+esc(open.name||'')+'</span></div>'
+          +'<div class="card"><div class="empty" style="padding:18px 12px">'
+          +'<div style="font-size:15px;color:var(--text);margin-bottom:6px"><b>'+esc((open.men||[]).length)+' men face down</b> · keep '+esc(open.keep|0)+(open.kept?' · '+esc(open.kept)+' kept':'')+'</div>'
+          +'The result is already written. Back in the Vault the same men are waiting.'
+          +'<div class="btn-row" style="justify-content:center"><button class="btn btn-go btn-big" type="button" id="resume">Back to the table</button></div></div></div></div>'
+        :'')
+      +'<div class="sec"><div class="sec-h"><h2>Sealed</h2><span class="m">'+esc(sealed.length)+'</span></div>'
+      +earnedBanner(earnedSince(sealed))
+      +(sealed.length
+        ?'<div class="vs-grid">'+sealed.map(function(p){return shelfTile(p,b);}).join('')+'</div>'
+        :'<div class="card"><div class="empty">Nothing sealed. '+esc((b.rank||{}).to_next|0)+' more played and rank '
+          +esc(((b.rank||{}).rank|0)+1)+' is yours — a game is worth '+esc(FR.rankWeight('weekly_game'))
+          +', a <a href="/games/price-it/">Price It</a> '+esc(FR.rankWeight('price_it'))
+          +', a season seen out '+esc(FR.rankWeight('season_complete'))+'.</div></div>')
+      +pityLine(b)
       +'</div>'
-      +'<div class="sec"><div class="sec-h"><h2>Kept from packs</h2><span class="m">'+esc((b.kept||[]).length)+'</span></div><div class="card">'
-      +((b.kept||[]).length?'<ul class="mk-hist">'+(b.kept||[]).map(keptRow).join('')+'</ul>'
+      +'<div class="sec"><div class="sec-h"><h2>How a pack is earned</h2><span class="m">'+esc(b.version||FR.PACKS_VERSION)+'</span></div><div class="card">'
+      +'<ul class="vs-earn">'+Object.keys(FR.PACKS).map(function(k){var d=FR.PACKS[k];
+          return '<li><span class="k '+esc(d.art)+'">'+esc(d.name)+'</span><span>'+esc(d.size)+' men, keep '+esc(d.keep)+' — for <b>'+esc(d.earned)+'</b>.</span></li>';}).join('')+'</ul>'
+      +'<div class="ftp" style="margin-top:12px">The roll is uniform over the whole numbers of the printed band and the <b>server</b> rolls it, writes it, and only then shows it — '
+      +'so what the Vault reveals is already true, and a refresh finds the same men. '
+      +'<b>Nothing here can be bought.</b></div></div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>Kept from packs</h2><span class="m">'+esc(kept.length)+'</span></div><div class="card">'
+      +(kept.length?'<ul class="mk-hist">'+kept.map(keptRow).join('')+'</ul><div class="ftp" style="margin-top:8px">Tap a man for his card — one of one, with the line of how he arrived.</div>'
         :'<div class="empty">Nobody yet.</div>')
-      +'</div></div>';
-    if(fresh)G.track('packs_view',{rank:(b.rank||{}).rank|0,packs:packs,open:open.length,game_type:'franchise'});
+      +'</div></div>'
+      +pullsSection(PULLS,hist);
+    if(fresh)track('packs_view',{rank:(b.rank||{}).rank|0,sealed:sealed.length,open:open?1:0,kinds:sealed.map(function(p){return p.kind;}).join(',')});
 
-    var pb=$('passPack');
-    if(pb)pb.addEventListener('click',function(){
-      if(BUSY)return; BUSY=true; pb.disabled=true; pb.textContent='Passing…';
-      FR.packPass().then(function(r){
-        BUSY=false;
-        if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
-        G.track('pack_passed',{passed:(r.data||{}).passed,game_type:'franchise'});
-        G.toast('Pack turned down');
-        G.paintFranchise();
-        load(false);
-      });
+    rooms.querySelectorAll('[data-open]').forEach(function(btn){
+      btn.addEventListener('click',function(){openPack(btn.getAttribute('data-open'),btn);});
     });
-    var ob=$('openPack');
-    if(ob)ob.addEventListener('click',function(){
-      if(BUSY)return; BUSY=true; ob.disabled=true; ob.textContent='Opening…';
-      FR.packOpen().then(function(r){
-        BUSY=false;
-        if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
-        var d=r.data||{};
-        G.track('pack_opened',{rank:d.rank,low:(d.range||[])[0],high:(d.range||[])[1],team_overall:d.team_overall,game_type:'franchise'});
-        (d.achievements||[]).forEach(function(a){G.track('achievement_unlocked',{achievement:a,placement:'packs'});});
-        G.paintFranchise();
-        load(false);
-      });
+    var rs=$('resume');
+    if(rs)rs.addEventListener('click',function(){resumePack(open);});
+    rooms.querySelectorAll('[data-card]').forEach(function(li){
+      var go=function(){showCard(li.getAttribute('data-card'));};
+      li.addEventListener('click',go);
+      li.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
     });
-    rooms.querySelectorAll('[data-keep]').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        if(BUSY)return; BUSY=true;
-        var id=btn.getAttribute('data-keep'),name=btn.getAttribute('data-name');
-        btn.disabled=true;btn.textContent='Signing…';
-        FR.packKeep(id).then(function(r){
-          BUSY=false;
-          if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
-          G.track('pack_kept',{player:id,game_type:'franchise'});
-          G.toast(name+' joins the roster');
-          G.paintFranchise();
-          load(false);
+  }
+
+  /* ---- opening: the server first, the room second ------------------------- */
+  function packFor(p,d){
+    var def=FR.packDef(p.kind);
+    return {id:p.id,kind:p.kind,art:p.art||def.art,name:p.name||def.name,source:p.source||'',keep:(p.keep|0)||def.keep,band:p.band||(d&&d.pack&&d.pack.band)||null};
+  }
+  /* the card as an image, to share: the man, his tier, his number, the mark.
+     Nothing of you is on it. The share sheet where there is one; a sheet of
+     our own, with the image to save and the line to copy, where there is not. */
+  function shareCard(m,pl,art){
+    var cv=V.cardImage(m,{art:art||'cache'});
+    var text=FR.fullName(m).trim()+' — '+m.position+', '+m.overall+' OVR, '+pl.tierName+'. Pulled in the EdgeDesk Vault.';
+    var url=location.origin+'/games/packs/';
+    function sheet(){
+      var s=document.createElement('div');s.className='sh';s.setAttribute('role','dialog');s.setAttribute('aria-modal','true');
+      s.innerHTML='<div class="sh-in">'+(cv?'<img alt="'+esc(text)+'" src="'+cv.toDataURL('image/png')+'">':'')+'<p>'+esc(text)+'</p>'
+        +'<div class="btn-row" style="justify-content:center"><button class="btn btn-go" type="button" id="shCopy">Copy the line</button><button class="btn" type="button" id="shX">Close</button></div>'
+        +'<div class="ftp" style="margin-top:8px">Long-press the image to save it. Nothing of you is on it.</div></div>';
+      document.body.appendChild(s);setTimeout(function(){s.classList.add('on');},10);
+      var off=function(){s.classList.remove('on');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},250);};
+      s.addEventListener('click',function(e){if(e.target===s)off();});
+      s.querySelector('#shX').addEventListener('click',off);
+      s.querySelector('#shCopy').addEventListener('click',function(){
+        var line=text+' '+url;
+        if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(line).then(function(){G.toast('Copied');},function(){G.toast('Could not copy');});
+        else G.toast('Could not copy');
+      });
+    }
+    if(!cv||!cv.toBlob||!navigator.share)return sheet();
+    return new Promise(function(res){cv.toBlob(function(blob){
+      var data={text:text+' '+url};
+      try{if(blob){var file=new File([blob],'edgedesk-pull.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]}))data={files:[file],text:text};}}catch(_){}
+      navigator.share(data).then(res,function(){sheet();res();});
+    },'image/png');});
+  }
+  /* the next pack that could be opened once this one is done, if there is one */
+  function anotherSealed(exceptId){
+    return ((BOARD||{}).sealed||[]).some(function(p){return p.id!==exceptId;});
+  }
+  function openNext(){
+    load(false).then(function(){
+      var nx=((BOARD||{}).sealed||[]).filter(function(p){return p.kind!=='gridiron_cache'||p.next;})[0];
+      var btn=nx?rooms.querySelector('[data-open="'+nx.id+'"]'):null;
+      if(nx&&btn)openPack(nx.id,btn);else G.toast('Nothing else can be opened yet');
+    });
+  }
+  function roomFor(pack,men,odds,already,guided){
+    if(ROOM){try{ROOM.close();}catch(_){}ROOM=null;}
+    var full=((BOARD||{}).roster||{}).room<=0;
+    ROOM=V.open({
+      host:document.body,pack:pack,men:men,odds:odds,alreadyOpen:!!already,roomFull:full,
+      roster:ROSTER,firstTime:!!guided,
+      cardHtml:function(m){return FR.playerCard(m,{compact:true});},
+      /* what men like him sell for, off the Exchange's comparable sales */
+      marketEstimate:function(m){return FR.exchangeComps(m.position,m.overall).then(function(r){return r.ok?r.data:null;},function(){return null;});},
+      /* the server sets the best eleven; the room only asks */
+      onAutoLineup:function(){
+        return FR.lineupBest().then(function(r){
+          if(!r.ok){G.toast(r.message||'Could not set the lineup');return {ok:false};}
+          var moved=((r.data||{}).moved|0);G.toast(moved?'Lineup set · '+moved+' moved':'The lineup already had him where he belongs');G.paintFranchise();
+          return {ok:true,moved:moved};
         });
-      });
+      },
+      nextPack:anotherSealed(pack.id)?openNext:null,
+      onShare:function(m,pl){return shareCard(m,pl,pack.art);},
+      onKeep:function(m){
+        return FR.packKeep(m.id).then(function(r){
+          if(!r.ok)return {ok:false,message:r.message||'That did not go through.'};
+          var d=r.data||{};
+          G.toast(FR.fullName(m).trim()+' joins the roster');
+          G.paintFranchise();
+          return {ok:true,keep_left:d.keep_left};
+        });
+      },
+      onPass:function(){
+        return FR.packPass().then(function(r){
+          if(!r.ok){G.toast(r.message||'That did not go through');return {ok:false};}
+          G.toast('Passed');G.paintFranchise();return {ok:true};
+        });
+      },
+      onDone:function(){ROOM=null;load(false);},
+      track:track
+    });
+  }
+  function openPack(id,btn){
+    if(BUSY||!BOARD)return;
+    var p=(BOARD.sealed||[]).filter(function(x){return x.id===id;})[0];
+    if(!p)return;
+    BUSY=true;btn.disabled=true;btn.textContent='Sealing the result…';
+    var guided=FIRST_RUN;
+    /* THE SERVER ROLLS AND WRITES FIRST. Only a persisted result gets a reveal.
+       The roster comes along so every turned card can say what he does to the lineup. */
+    Promise.all([FR.packOpenId(id),loadRoster()]).then(function(rs){
+      var r=rs[0];
+      BUSY=false;
+      if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
+      markOpened();
+      var d=r.data||{};
+      track('pack_open_written',{kind:p.kind,low:(d.range||[])[0],high:(d.range||[])[1],team_overall:d.team_overall,size:(d.players||[]).length});
+      (d.achievements||[]).forEach(function(a){track('achievement_unlocked',{achievement:a,placement:'packs'});});
+      G.paintFranchise();
+      roomFor(packFor(Object.assign({},p,{band:(d.pack||{}).band}),d),d.players||[],p.odds,false,guided);
+    });
+  }
+  function resumePack(open){
+    if(!open||BUSY)return;
+    var band=open.band||{};BUSY=true;
+    loadRoster().then(function(){
+      BUSY=false;
+      roomFor(packFor(open),open.men||[],null,true,false);
+      track('pack_resumed',{kind:open.kind,men:(open.men||[]).length,band:(band.low|0)+'-'+(band.high|0)});
+    });
+  }
+
+  /* ---- a card of his own ---------------------------------------------------- */
+  function histLine(h){
+    var w=h.kind||'',s='';
+    var season=h.season!=null?'Season '+esc(h.season):'';
+    if(w==='generated')s='Generated for the '+esc(h.detail||h.source||'record')+' at '+esc(h.overall)+' overall, ceiling '+esc(h.potential)+', age '+esc(h.age)+'.';
+    else if(w==='acquired')s='Kept'+(h.source==='pack'?' from the pack':h.source==='draft'?' from the draft':h.source==='free_agent'?' as a free agent':'')+' at '+esc(h.overall)+' overall'+(h.jersey!=null?', number '+esc(h.jersey):'')+'.';
+    else if(w==='ratings')s='Overall '+esc(h.before)+' → <b>'+esc(h.after)+'</b>'+(h.age!=null?' at '+esc(h.age):'')+'.';
+    else if(w==='potential')s='Ceiling '+esc(h.before)+' → <b>'+esc(h.after)+'</b>.';
+    else if(w==='traded')s='Traded to a new franchise at '+esc(h.overall)+' overall.';
+    else if(w==='retired')s='Retired at '+esc(h.age)+', '+esc(h.overall)+' overall, after '+esc(h.games|0)+' games.';
+    else if(w==='released')s='Released at '+esc(h.overall)+' overall.';
+    else s=esc(JSON.stringify(h));
+    var when=h.at?new Date(h.at).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
+    return '<li><span class="w '+esc(w)+'">'+esc(w)+'</span><span>'+s+'<small>'+esc([season,when].filter(Boolean).join(' · '))+'</small></span></li>';
+  }
+  function showCard(id){
+    if(BUSY)return;BUSY=true;
+    FR.card(id).then(function(r){
+      BUSY=false;
+      if(!r.ok||!r.data){G.toast(r.message||'That card could not be read');return;}
+      var p=r.data,ed=p.edition||{},pk=p.pack;
+      var sheet=document.createElement('div');sheet.className='cd';sheet.setAttribute('role','dialog');sheet.setAttribute('aria-modal','true');
+      sheet.innerHTML='<div class="cd-in"><div class="cd-h"><div><div class="eyebrow">The card</div>'
+        +'<div class="cd-ed">'+esc(ed.label||'One of one')+' · No. '+esc(ed.serial||1)+' of '+esc(ed.of||1)+(pk?' · '+esc(pk.name):'')+'</div></div>'
+        +'<button class="btn" type="button" id="cdX" aria-label="Close">✕</button></div>'
+        +FR.playerCard(p,{})
+        +'<div class="eyebrow" style="margin-top:14px">His line</div>'
+        +'<ul class="cd-hist">'+((p.history||[]).slice().reverse().map(histLine).join('')||'<li><span class="w"></span><span>Nothing written yet.</span></li>')+'</ul>'
+        +'</div>';
+      document.body.appendChild(sheet);
+      setTimeout(function(){sheet.classList.add('on');},10);
+      var off=function(){sheet.classList.remove('on');setTimeout(function(){if(sheet.parentNode)sheet.parentNode.removeChild(sheet);},250);};
+      sheet.addEventListener('click',function(e){if(e.target===sheet)off();});
+      sheet.querySelector('#cdX').addEventListener('click',off);
+      track('card_view',{tier:p.tier,overall:p.overall,position:p.position,source:p.acquired_source});
     });
   }
 
   function load(fresh){
-    return FR.ranks().then(function(r){
+    /* the board and the pull record together; the record failing never costs the board */
+    return Promise.all([FR.packsBoard(),FR.pulls().then(function(r){return r.ok?r.data:null;},function(){return null;})]).then(function(rs){
+      var r=rs[0];PULLS=rs[1];
       if(r.ok&&r.data)return renderBoard(r.data,fresh);
       if(r.status===404||r.error==='not_configured')return renderEmpty('not_deployed');
       return renderEmpty(null);

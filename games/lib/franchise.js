@@ -30,6 +30,9 @@
   var S = root.EDGamesSocial || (typeof require === 'function' ? require('./social.js') : null);
   var ST = root.EDGamesStore || (typeof require === 'function' ? require('./store.js') : null);
   var W = root.EDGamesWeek || (typeof require === 'function' ? require('./week.js') : null);
+  /* the derived player profile (profile_v1) — the same pure function the SQL
+     restates, so a card can show more than its four stored ratings */
+  var PR = root.EDProfile || (typeof require === 'function' ? require('./gridiron/profile.js') : null);
 
   /* ── THE SCHEMA THIS BUILD EXPECTS ──────────────────────────────────────
      supabase/games_social.sql and supabase/games_franchise.sql are pasted
@@ -67,15 +70,20 @@
       'the drives you call',
       'key moments',
       'both sides of the ball',
-      'the playbook'
+      'the playbook',
+      'the player universe: profiles, tiers, bodies and home towns',
+      'the Vault: packs you hold, odds you can read, and a card that remembers',
+      'the lineup, chemistry, and the Exchange',
+      'the pull record: every pack you opened and the best of them',
+      'the game you hold counts: live results, careers, and the Game Day pack'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
   /* 'franchise' -> 'supabase/games_franchise.sql' — what to paste to fix a gap */
   var SCHEMA_FILES = { social: 'supabase/games_social.sql', franchise: 'supabase/games_franchise.sql' };
 
-  /* ── the economy, economy_v1 — the same table franchise_economy() returns ── */
-  var ECONOMY_VERSION = 'economy_v1';
+  /* ── the economy, economy_v2 — the same table franchise_economy() returns ── */
+  var ECONOMY_VERSION = 'economy_v2';
   var ECONOMY = {
     price_it:      { xp: 50, sp_base: 5, sp_per_score: 0.35, tc_base: 10, tc_per_ten: 1 },
     pick5_card:    { xp: 75, tc: 25 },
@@ -107,15 +115,55 @@
     bowl_game:     { xp: 150, tc: 60 },
     bowl_win:      { xp: 300, tc: 200, cp: 5 },
     import_unverified_price_it: { xp: 50 },
-    import_unverified_pick5:    { xp: 75 }
+    import_unverified_pick5:    { xp: 75 },
+    /* THE GAME YOU HOLD (Phase 21): a live game finished, won, and what the
+       performance was worth — capped a day, scaled by the tier */
+    live_game:     { xp: 60, tc: 25 },
+    live_win:      { xp: 40, tc: 25, cp: 1 },
+    live_perf:     { tc_per_td: 3, tc_per_100: 4, tc_max: 30, xp_per_100: 5, xp_max: 40 },
+    live_cap:      { per_day: 5 },
+    live_tier:     { rookie: 0.6, pro: 1, allpro: 1.15, legend: 1.3 }
   };
+  /* what one live game pays, before the daily cap, exactly as the server
+     rounds it (half up on a positive number) */
+  function liveRewards(g) {
+    g = g || {};
+    var won = (g.score_for | 0) > (g.score_against | 0), tier = ECONOMY.live_tier[g.difficulty] || 1;
+    var xp = ECONOMY.live_game.xp, tc = ECONOMY.live_game.tc, cp = 0;
+    if (won) { xp += ECONOMY.live_win.xp; tc += ECONOMY.live_win.tc; cp = ECONOMY.live_win.cp; }
+    var hundreds = Math.floor(Math.max(0, g.yards | 0) / 100);
+    tc += Math.min(ECONOMY.live_perf.tc_max, (g.touchdowns | 0) * ECONOMY.live_perf.tc_per_td + hundreds * ECONOMY.live_perf.tc_per_100);
+    xp += Math.min(ECONOMY.live_perf.xp_max, hundreds * ECONOMY.live_perf.xp_per_100);
+    return { xp: Math.round(xp * tier), tc: Math.round(tc * tier), cp: cp, tier: tier, won: won };
+  }
+  /* ONE MAN'S LINE FROM A LIVE GAME, in the keys his career already uses
+     (statsLine reads them), so a game played with thumbs and a game the
+     server simulated add up in the same columns. Nothing negative; a man
+     with no line and no snap has no entry. */
+  function liveLine(pos, m) {
+    m = m || {};
+    var o = {};
+    function put(k, v) { v = Math.max(0, v | 0); if (v > 0) o[k] = v; }
+    switch (pos) {
+      case 'QB': put('att', m.pa); put('cmp', m.pc); put('yds', m.py); put('td', m.ptd); put('int', m.pint);
+                 put('car', m.car); put('rush_yds', m.ry); put('rush_td', m.rtd); break;
+      case 'RB': put('car', m.car); put('yds', m.ry); put('td', m.rtd); put('rec', m.rec); put('rec_yds', m.recy); put('rec_td', m.rectd); break;
+      case 'WR': case 'TE': put('rec', m.rec); put('yds', m.recy); put('td', m.rectd); put('car', m.car); put('rush_yds', m.ry); break;
+      case 'K': put('fg', m.fg); put('fga', m.fga); put('xp', m.xp); break;
+      case 'P': case 'OL': break;
+      default: put('tkl', m.tkl); put('sacks', m.sack); put('int', m.int); put('tfl', m.tfl); put('pd', m.pd); break;
+    }
+    if (!Object.keys(o).length && !m.played) return null;
+    o.games = 1;
+    return o;
+  }
   var CURRENCIES = {
-    xp: { key: 'xp', label: 'XP', short: 'XP', field: 'xp',
-      means: 'Franchise experience. Levels follow the published curve.' },
+    xp: { key: 'xp', label: 'Research XP', short: 'XP', field: 'xp',
+      means: 'Experience, earned by playing and by reading the real games. Levels follow the published curve.' },
     sp: { key: 'sp', label: 'Scouting Points', short: 'SP', field: 'scouting_points',
       means: 'Earned by Price It accuracy. Spent on scouting reports and prospects.' },
-    tc: { key: 'tc', label: 'Team Credits', short: 'TC', field: 'team_credits',
-      means: 'Earned by playing. Spent on ordinary upgrades and progression.' },
+    tc: { key: 'tc', label: 'Credits', short: 'TC', field: 'team_credits',
+      means: 'Earned by playing. Spent on signings, upgrades and the Exchange. Never bought.' },
     cp: { key: 'cp', label: 'Coach Points', short: 'CP', field: 'coach_points',
       means: 'Earned in competition. Spent on scheme and facility progression.' }
   };
@@ -403,18 +451,55 @@
   /* THE PLAYER CARD. A pure function of a row: collectible, readable on a
      phone, and consistent with its own numbers (the overall is the mean of
      the four attributes shown). */
+  /* ── the profile, on the client ──────────────────────────────────────────
+     The server sends `profile`, `tier`, `potential_tier`, `body` and
+     `hometown` on every card it returns; a card that arrived without them (an
+     older snapshot, a generated opponent) gets the same answers from the same
+     pure function here. */
+  function profileOf(p) {
+    if (!p) return null;
+    if (p.profile && p.profile.spd != null) return p.profile;
+    return PR ? PR.profile(p) : null;
+  }
+  function tierOf(p) {
+    if (!p) return null;
+    if (p.tier && PR) { var i; for (i = 0; i < PR.TIERS.length; i++) if (PR.TIERS[i].key === p.tier) return PR.TIERS[i]; }
+    return PR ? PR.tierOf(p.overall) : null;
+  }
+  function potentialTierOf(p) { return (p && p.potential_tier) || (PR ? PR.potentialOf(p) : 'normal'); }
+  function potentialWord(p) { var k = potentialTierOf(p); return (PR && PR.POTENTIAL_NAMES[k]) || k; }
+  function hometownOf(p) { return (p && p.hometown) || (PR && p ? PR.hometown(p) : ''); }
+  function bodyOf(p) { return (p && p.body) || (PR && p ? PR.body(p) : null); }
+  /* the universal six, labelled, for a card's second row */
+  function universalRatings(p) {
+    var pf = profileOf(p);
+    if (!pf || !PR) return [];
+    return PR.UNIVERSAL.map(function (k) { return { key: k, label: PR.LABELS[k], name: PR.NAMES[k], value: pf[k] }; });
+  }
+  /* the position's own words, labelled */
+  function specificRatings(p) {
+    var pf = profileOf(p);
+    if (!pf || !PR) return [];
+    return (PR.SPECIFIC[p.position] || []).map(function (k) { return { key: k, label: PR.LABELS[k], name: PR.NAMES[k], value: pf[k] }; });
+  }
+
   function playerCard(p, o) {
     o = o || {};
     if (!p) return '';
     var rar = RARITY[p.rarity] || RARITY.common, tr = traitOf(p), starter = isStarter(p);
     var hurt = !isAvailable(p), hurtLine = hurt ? injuryLine(p) : '';
+    var tier = tierOf(p), home = hometownOf(p), body = bodyOf(p);
     var attrs = keyRatings(p).map(function (a) {
       return '<div class="pc-a"><span class="k">' + esc(a.label) + '</span><b>' + (a.value == null ? '—' : a.value) + '</b></div>';
     }).join('');
-    return '<article class="pc pc-' + esc(rar.key) + (starter ? ' pc-start' : '') + (hurt ? ' pc-hurt' : '') + (o.compact ? ' pc-compact' : '')
+    var uni = universalRatings(p).map(function (a) {
+      return '<span class="pc-u" title="' + esc(a.name) + '"><i>' + esc(a.label) + '</i><b>' + esc(a.value) + '</b></span>';
+    }).join('');
+    return '<article class="pc pc-' + esc(rar.key) + (tier ? ' pc-tier-' + esc(tier.key) : '') + (starter ? ' pc-start' : '') + (hurt ? ' pc-hurt' : '') + (o.compact ? ' pc-compact' : '')
       + '" data-player="' + esc(p.id) + '" data-position="' + esc(p.position) + '" data-depth="' + (p.depth | 0) + '">'
       + '<div class="pc-top"><span class="pc-num mono">#' + (p.jersey == null ? '—' : p.jersey) + '</span>'
       + '<span class="pc-pos">' + esc(p.position) + '</span>'
+      + (tier ? '<span class="pc-tier">' + esc(tier.name) + '</span>' : '')
       + '<span class="pc-rar">' + esc(rar.label) + '</span>'
       + (starter ? '<span class="pc-st">' + (STARTERS[p.position] > 1 ? esc(p.position) + (p.depth | 0) : 'Starter') + '</span>' : '')
       + (hurt ? '<span class="pc-out">Out</span>' : '')
@@ -423,10 +508,15 @@
       + '<div class="pc-arch">' + esc(p.position) + ' <span class="sep">|</span> ' + esc(p.archetype || '') + '</div>'
       + '<div class="pc-ovr"><b class="mono">' + (p.overall | 0) + '</b><span>OVR</span></div>'
       + '<div class="pc-attrs">' + attrs + '</div>'
+      + (uni ? '<div class="pc-uni">' + uni + '</div>' : '')
       + (tr ? '<div class="pc-trait"><span class="k">Trait</span><b>' + esc(tr.name) + '</b><span class="d">' + esc(tr.desc || '') + '</span></div>'
             : '<div class="pc-trait none"><span class="k">Trait</span><span class="d">None yet</span></div>')
       + '<div class="pc-meta">Age ' + (p.age | 0) + ' <span class="sep">·</span> POT ' + (p.potential | 0)
-      + ' <span class="sep">·</span> ' + esc(DEV_TIERS[p.dev_tier] || p.dev_tier || '') + '</div>'
+      + ' <span class="sep">·</span> ' + esc(DEV_TIERS[p.dev_tier] || p.dev_tier || '')
+      + (p.potential != null ? ' <span class="sep">·</span> ' + esc(potentialWord(p)) : '')
+      + (body || home ? '<span class="pc-bio">' + (body ? esc(body.height) + ' · ' + esc(body.weight_lb) + ' lb' : '')
+          + (home ? (body ? ' · ' : '') + esc(home) : '') + '</span>' : '')
+      + '</div>'
       + (hurt ? '<div class="pc-injury"><span class="k">Unavailable</span>' + esc(hurtLine) + '</div>' : '')
       + '<div class="pc-acq"><span class="k">Acquired</span>' + esc(acquiredLine(p)) + '</div>'
       + (seasonLine(p) ? '<div class="pc-career"><span class="k">This season</span>' + esc(seasonLine(p)) + '</div>' : '')
@@ -1308,13 +1398,14 @@
      THE SERVER COUNTS, ROLLS AND KEEPS. Nothing is purchasable: a pack is
      earned by playing and by nothing else. */
   var RANK_VERSION = 'rank_v1';
-  var PACKS_VERSION = 'packs_v1';
+  /* PACKS_VERSION lives with the Vault below: the rank's cache is one kind of
+     pack now, and packs_v2 says what every kind holds. */
   var RANKS = {
     cost_base: 15, cost_step: 3, pack_size: 3, pack_keep: 1,
     floor_below: 10, edge_base: 2, edge_per_rank: 0.3, edge_max: 14,
     weights: { weekly_game: 3, bowl_bid: 3, conf_game: 3, fc_played: 2,
                price_it: 1, drill_daily: 1, research_open: 1,
-               pick5_card: 2, season_complete: 5 }
+               pick5_card: 2, season_complete: 5, live_game: 2 }
   };
   /* what the next rank costs: 15, and three more every time */
   function rankCost(rank) { return RANKS.cost_base + RANKS.cost_step * Math.max(0, (rank | 0) - 1); }
@@ -1802,6 +1893,71 @@
      the identity and nothing else, and keeping sends a player id. The server
      counts the rank, rolls the three men and decides the band. Never queued:
      opening a pack must see its answer. */
+  /* ── THE VAULT (packs_v2) ─────────────────────────────────────────────────
+     The pack table, mirrored for display; the SQL's franchise_pack_defs() is
+     what applies, and the parity test pins these names to it. */
+  var PACKS_VERSION = 'packs_v3';
+  var PACKS = {
+    gridiron_cache:     { name: 'Gridiron Cache', art: 'cache', size: 3, keep: 1, earned: 'every rank you reach' },
+    rookie_cache:       { name: 'Rookie Cache', art: 'rookie', size: 3, keep: 1, earned: 'founding the franchise' },
+    postseason_pack:    { name: 'Postseason Pack', art: 'postseason', size: 3, keep: 1, earned: 'a season seen out' },
+    championship_vault: { name: 'Championship Vault', art: 'vault', size: 4, keep: 2, earned: 'a bowl won' },
+    scouts_find:        { name: "Scout's Find", art: 'scout', size: 2, keep: 1, earned: 'three Price Its scoring 80 or better in one week' },
+    gameday_pack:       { name: 'Game Day Pack', art: 'gameday', size: 3, keep: 1, earned: 'five live games finished at Pro or harder' }
+  };
+  function packDef(kind) { return PACKS[kind] || { name: kind, art: 'cache', size: 3, keep: 1, earned: '' }; }
+  /* the board: every sealed pack with its odds, the one on the table, the men kept */
+  function packsBoard() { return rpc('franchise_packs_board', withSecret({})); }
+  /* MY PULLS: every pack ever opened, the men as they were pulled, the best of them (Phase 20) */
+  var PULLS_VERSION = 'pulls_v1';
+  function pulls() { return rpc('franchise_pulls', withSecret({})); }
+  /* open one pack by id — the server rolls it, writes it, and only then answers */
+  function packOpenId(id) { return rpc('franchise_pack_open_id', withSecret({ p_pack: String(id || '') })).then(moveThen); }
+  /* one man, whole: profile, history, career, the pack he came from */
+  function card(id) { return rpc('franchise_card', withSecret({ p_player: String(id || '') })); }
+
+  /* ── THE LINEUP, CHEMISTRY AND THE EXCHANGE (Phase 19) ───────────────────
+     Mirrors for display; the SQL's franchise_lineup_rules(),
+     franchise_chemistry_rules() and franchise_exchange_rules() are what
+     apply, and the parity test pins these to them. */
+  var LINEUP_VERSION = 'lineup_v1';
+  var CHEMISTRY_VERSION = 'chemistry_v1';
+  var CHEMISTRY = { per_point: 2, scale: 8, tenure_games: 8, new_games: 3, new_cap: 4,
+    core: { line: 2, secondary: 2, passing: 2 }, fit_range: [-2, 2] };
+  var EXCHANGE_VERSION = 'exchange_v1';
+  var EXCHANGE = { currency: 'tc', fee_pct: 5, min_price: 50, max_price: 50000, max_open: 5, expires_days: 7,
+    comps_days: 60, comps_band: 2, comps_shown: 12 };
+  /* the fee, exactly as the SQL rounds it: up */
+  function exchangeFee(price) { return Math.ceil((+price || 0) * EXCHANGE.fee_pct / 100); }
+  /* what chemistry says, in a sentence: the score and the biggest reason */
+  function chemistryLine(side) {
+    if (!side) return '';
+    var s = side.score | 0, why = [];
+    if ((side.fit || 0) > 0) why.push('the scheme fits'); else if ((side.fit || 0) < 0) why.push('the scheme fights the men in it');
+    if ((side.settled || 0) >= 8) why.push('a settled eleven'); else if ((side.settled || 0) > 0) why.push(side.settled + ' settled');
+    if ((side.core || 0) > 0) why.push('whole units grown together');
+    if ((side.new || 0) > 0) why.push(side.new + ' still learning the calls');
+    if ((side.leaders || 0) > 0) why.push((side.leaders | 0) + ' leader' + (side.leaders === 1 ? '' : 's'));
+    return s + (why.length ? ' · ' + why.join(', ') : '');
+  }
+  function chemistryWord(score) {
+    score = score | 0;
+    return score >= 85 ? 'Locked in' : score >= 70 ? 'Settled' : score >= 55 ? 'Finding it' : score >= 45 ? 'Neutral' : score >= 30 ? 'Unsettled' : 'At odds';
+  }
+  function lineupBest() { return rpc('franchise_lineup_best', withSecret({})); }
+  function exchangeBrowse(o) {
+    o = o || {};
+    return rpc('franchise_exchange_browse', withSecret({
+      p_position: o.position || null, p_min: o.min == null ? null : (o.min | 0), p_max: o.max == null ? null : (o.max | 0),
+      p_sort: o.sort || 'newest', p_query: o.query || null, p_limit: o.limit || 40, p_offset: o.offset || 0 }));
+  }
+  function exchangeList(playerId, price) { return rpc('franchise_exchange_list', withSecret({ p_player: String(playerId || ''), p_price: price | 0 })); }
+  function exchangeWithdraw(listingId) { return rpc('franchise_exchange_withdraw', withSecret({ p_listing: String(listingId || '') })); }
+  /* a LISTING ID and nothing else: the price and the balance are the server's */
+  function exchangeBuy(listingId) { return rpc('franchise_exchange_buy', withSecret({ p_listing: String(listingId || '') })).then(moveThen); }
+  function exchangeComps(position, overall) { return rpc('franchise_exchange_comps', { p_position: String(position || ''), p_overall: overall | 0 }); }
+  function exchangeHistory(limit) { return rpc('franchise_exchange_history', withSecret({ p_limit: limit || 20 })); }
+
   function ranks() { return rpc('franchise_rank_board', withSecret({})); }
   function packOpen() { return rpc('franchise_pack_open', withSecret({})).then(moveThen); }
   function packKeep(player) {
@@ -1979,6 +2135,13 @@
   function recordResearch(gameId) {
     return record('franchise_record_research', { p_game_id: String(gameId) }, 'research:' + gameId);
   }
+  /* THE GAME YOU HOLD, filed (Phase 21). The key is the game's own — its
+     seed and the moment it started — so a replayed request credits nothing
+     twice and a game resumed from its save still files as itself. The server
+     checks the shape, credits by its table, and says what moved. */
+  function recordLiveGame(key, game) {
+    return record('franchise_record_live_game', { p_key: String(key || ''), p_game: game || {} }, 'live:' + key);
+  }
 
   /* Replay whatever the server has not confirmed. Sequential, so a burst of
      replays cannot race each other; each one dequeues itself on success. */
@@ -2058,10 +2221,16 @@
     SCHEMA: SCHEMA, SCHEMA_PHASES: SCHEMA_PHASES, SCHEMA_FILES: SCHEMA_FILES,
     schema: schema, schemaGap: schemaGap,
     development: development, develop: develop,
-    RANK_VERSION: RANK_VERSION, PACKS_VERSION: PACKS_VERSION, RANKS: RANKS,
+    RANK_VERSION: RANK_VERSION, RANKS: RANKS,
     rankCost: rankCost, rankAt: rankAt, rankFor: rankFor, rankEdge: rankEdge,
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
+    PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, packsBoard: packsBoard, pulls: pulls, PULLS_VERSION: PULLS_VERSION, packOpenId: packOpenId, card: card,
+    LINEUP_VERSION: LINEUP_VERSION, CHEMISTRY_VERSION: CHEMISTRY_VERSION, CHEMISTRY: CHEMISTRY, chemistryLine: chemistryLine, chemistryWord: chemistryWord,
+    lineupBest: lineupBest,
+    EXCHANGE_VERSION: EXCHANGE_VERSION, EXCHANGE: EXCHANGE, exchangeFee: exchangeFee,
+    exchangeBrowse: exchangeBrowse, exchangeList: exchangeList, exchangeWithdraw: exchangeWithdraw, exchangeBuy: exchangeBuy,
+    exchangeComps: exchangeComps, exchangeHistory: exchangeHistory,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,
@@ -2091,6 +2260,9 @@
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,
+    profileOf: profileOf, tierOf: tierOf, potentialTierOf: potentialTierOf, potentialWord: potentialWord,
+    hometownOf: hometownOf, bodyOf: bodyOf, universalRatings: universalRatings, specificRatings: specificRatings,
+    PROFILE_VERSION: PR ? PR.VERSION : null, TIERS: PR ? PR.TIERS : [],
     careerLine: careerLine, acquiredLine: acquiredLine, playerCard: playerCard, groups: groups,
     weakest: weakest, strongest: strongest, logoSvg: logoSvg, themeVars: themeVars, identity: identity,
     prep: prep, preview: preview, historyPayload: historyPayload, esc: esc, fmt: fmt,
@@ -2098,7 +2270,8 @@
     owner: owner, state: state, claim: claim,
     home: home, roster: roster, ledger: ledger, pick5Mine: pick5Mine, create: create, importHistory: importHistory,
     setStarter: setStarter, record: record, recordPriceIt: recordPriceIt, submitPick5: submitPick5,
-    recordDrill: recordDrill, recordResearch: recordResearch, sync: sync, boot: boot, forget: forget
+    recordDrill: recordDrill, recordResearch: recordResearch, recordLiveGame: recordLiveGame, liveRewards: liveRewards, liveLine: liveLine,
+    sync: sync, boot: boot, forget: forget
   };
   root.EDFranchise = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

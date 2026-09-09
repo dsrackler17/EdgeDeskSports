@@ -1,0 +1,299 @@
+/* ===========================================================================
+   EDGEDESK FOOTBALL — THE VAULT (games/lib/vault.js draws the room, this
+   dresses it). A dark scouting tunnel, EdgeDesk data lines drifting behind a
+   sealed case, a scan, the lid, and cards that turn over one at a time.
+
+   Everything here is presentation of a result the server already wrote.
+   --vh is the pack's hue, --vd its deep colour; vault.js sets both.
+   =========================================================================== */
+.vault{position:fixed;inset:0;z-index:80;overflow:hidden;display:flex;flex-direction:column;
+  background:radial-gradient(120% 90% at 50% 20%,var(--vd,#0d2a1e) 0%,#07090d 62%,#040507 100%);
+  color:var(--text,#e9edf4);opacity:0;transition:opacity .32s ease;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.vault.on{opacity:1}
+.vault.vt-out{opacity:0;transition:opacity .3s ease}
+.vault.vt-dim{background:radial-gradient(120% 90% at 50% 20%,var(--vd,#0d2a1e) 0%,#05070a 58%,#020304 100%)}
+.vault.vt-black{background:#020304}
+.vault.vt-black .vt-tunnel,.vault.vt-black .vt-top{opacity:.15}
+
+/* the data lines (a canvas) and the tunnel grid behind them */
+.vt-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.9;transition:opacity .6s}
+.vt-tunnel{position:absolute;inset:0;pointer-events:none;opacity:.55;transition:opacity .6s;
+  background:
+    linear-gradient(to bottom,transparent 55%,rgba(255,255,255,.035) 55.4%,transparent 55.8%),
+    repeating-linear-gradient(90deg,transparent 0 48px,rgba(255,255,255,.028) 48px 49px),
+    repeating-linear-gradient(0deg,transparent 0 48px,rgba(255,255,255,.028) 48px 49px);
+  transform:perspective(600px) rotateX(58deg) translateY(28%) scale(1.8);transform-origin:50% 100%;
+  mask-image:linear-gradient(to top,rgba(0,0,0,.9),transparent 80%);-webkit-mask-image:linear-gradient(to top,rgba(0,0,0,.9),transparent 80%)}
+
+/* hidden means hidden, whatever display a block was given */
+.vault [hidden]{display:none!important}
+
+/* top bar */
+.vt-top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0}
+.vt-eyebrow{font:800 10.5px/1 'Inter',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--vh,#3fb883)}
+.vt-x{min-width:var(--tap,48px);min-height:var(--tap,48px);border-radius:12px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);color:var(--text,#e9edf4);font-size:16px;cursor:pointer}
+.vt-x:hover{background:rgba(255,255,255,.08)}
+
+/* the stage: one centred column that scrolls when the decision runs long,
+   centred by two flexible spacers so nothing is ever clipped off the top */
+.vt-stage{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:16px;padding:10px 14px 18px;max-width:720px;width:100%;margin:0 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.vt-stage::-webkit-scrollbar{display:none}
+.vt-stage::before,.vt-stage::after{content:'';flex:1 1 0;min-height:0}
+
+/* THE CASE. A lid on a body; the lid swings up on .opened */
+.vt-case{position:relative;width:min(78vw,300px);aspect-ratio:1.42;perspective:900px;transform-style:preserve-3d;
+  transition:transform .6s cubic-bezier(.2,.8,.2,1),opacity .5s,width .55s cubic-bezier(.2,.8,.2,1),margin .55s;filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}
+.vt-case-body,.vt-case-lid{position:absolute;inset:0;border-radius:18px;border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--vd,#0d2a1e) 70%,#000) 0%,#0b0e13 55%,#05070a 100%)}
+.vt-case-body{display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:1;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 -40px 60px rgba(0,0,0,.5)}
+.vt-seal{font:800 12px/1 'Inter',sans-serif;letter-spacing:.32em;color:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.18);
+  padding:9px 14px;border-radius:999px;transform:rotate(-8deg);transition:opacity .4s}
+.vt-scan{position:absolute;left:0;right:0;top:-6px;height:4px;opacity:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--vh,#3fb883),#fff,var(--vh,#3fb883),transparent);
+  box-shadow:0 0 18px var(--vh,#3fb883),0 0 40px var(--vh,#3fb883)}
+.vt-case-lid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:2;
+  transform-origin:50% 0;transform:rotateX(0deg) translateZ(1px);transition:transform .7s cubic-bezier(.3,.9,.3,1.1),opacity .5s;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--vh,#3fb883) 26%,#0b0e13) 0%,#0e1218 50%,color-mix(in srgb,var(--vd,#0d2a1e) 80%,#000) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.6)}
+.vt-case-lid::before{content:'';position:absolute;inset:10px;border-radius:12px;border:1px dashed rgba(255,255,255,.12)}
+.vt-case-lid::after{content:'';position:absolute;left:14%;right:14%;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--vh,#3fb883),transparent);opacity:.7}
+.vt-word{font:800 clamp(18px,6vw,26px)/1 'Space Grotesk',sans-serif;letter-spacing:.22em;color:var(--vh,#3fb883);text-shadow:0 0 22px color-mix(in srgb,var(--vh,#3fb883) 60%,transparent)}
+.vt-kind{font:600 11px/1 'Inter',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.vt-case.live{transform:translateY(-6px) scale(1.03)}
+.vt-case.live .vt-case-lid{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 40px color-mix(in srgb,var(--vh,#3fb883) 45%,transparent)}
+.vt-case.live .vt-scan{animation:vt-scan .95s ease-in-out forwards}
+.vt-case.scanned .vt-seal{opacity:0}
+.vt-case.opened .vt-case-lid{transform:rotateX(-112deg) translateZ(2px);opacity:.92}
+.vt-case.opened .vt-case-body{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset 0 0 70px color-mix(in srgb,var(--vh,#3fb883) 40%,transparent)}
+@keyframes vt-scan{0%{opacity:0;top:-6px}12%{opacity:1}88%{opacity:1}100%{opacity:0;top:calc(100% + 2px)}}
+/* once the men are out the case steps back: a small open emblem above them */
+.vt-case.away{width:min(38vw,150px);opacity:.75;filter:drop-shadow(0 14px 20px rgba(0,0,0,.5));margin-top:6px}
+.vt-case.away .vt-case-lid{transform:rotateX(-100deg) translateZ(2px);opacity:.8}
+.vt-case.away .vt-word{font-size:12px;letter-spacing:.18em}
+.vt-case.away .vt-kind{display:none}
+
+/* what the pack is, printed under the case */
+.vt-under{text-align:center;max-width:520px;transition:opacity .4s,transform .4s}
+.vt-under b{display:block;font:700 20px/1.15 'Space Grotesk',sans-serif}
+.vt-under i{display:block;font-style:normal;color:var(--dim,#8b95a6);font-size:13.5px;margin-top:4px}
+.vt-odds{display:block;margin-top:10px;font:500 11.5px/1.6 'JetBrains Mono',monospace;color:var(--dim,#8b95a6);font-variant-numeric:tabular-nums}
+.vt-odds em{font-style:normal;color:var(--text,#e9edf4);margin:0 2px}
+.vt-under .vt-odds b{display:inline;font:inherit;font-weight:700;color:var(--vh,#3fb883)}
+.vt-under.gone,.vt-open.gone{opacity:0;transform:translateY(6px);pointer-events:none;position:absolute;visibility:hidden}
+.vt-open{min-width:200px}
+
+/* THE CARDS. Silhouettes first; each turns into its card */
+.vt-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:640px;transition:opacity .4s,filter .4s}
+.vt-cards.vt-n2{grid-template-columns:repeat(2,minmax(0,1fr));max-width:420px}
+.vt-cards.vt-n4{grid-template-columns:repeat(2,minmax(0,1fr));max-width:440px}
+@media(min-width:640px){.vt-cards.vt-n4{grid-template-columns:repeat(4,minmax(0,1fr));max-width:720px}}
+.vt-cards.vt-hold{opacity:.18;filter:blur(2px);pointer-events:none}
+.vt-card{position:relative;min-height:170px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0d1117;color:inherit;
+  padding:0;cursor:pointer;overflow:hidden;text-align:left;font:inherit;
+  animation:vt-land .5s cubic-bezier(.2,.8,.2,1) both;transform-style:preserve-3d}
+.vt-card:disabled{cursor:default}
+@keyframes vt-land{from{opacity:0;transform:translateY(26px) scale(.94)}to{opacity:1;transform:none}}
+.vt-card.vt-sil{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  background:radial-gradient(80% 60% at 50% 30%,rgba(255,255,255,.06),transparent 70%),#0d1117}
+.vt-card.vt-sil:hover,.vt-card.vt-sil:focus-visible{border-color:var(--vh,#3fb883);outline:none}
+.vt-sil-body{position:relative;width:54px;height:64px;display:block;opacity:.9}
+.vt-sil-body::before{content:'';position:absolute;left:50%;top:0;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:#2a3140}
+.vt-sil-body::after{content:'';position:absolute;left:0;right:0;bottom:0;height:38px;border-radius:26px 26px 6px 6px;background:linear-gradient(#2a3140,#1a1f29)}
+.vt-sil-pos{font:800 12px/1 'Inter',sans-serif;letter-spacing:.16em;color:var(--dim,#8b95a6)}
+.vt-sil-tap{font:600 10.5px/1 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--vh,#3fb883);opacity:.8}
+.vt-card.vt-build .vt-sil-body::before,.vt-card.vt-build .vt-sil-body::after{background:#3a4252}
+.vt-card.vt-premium{border-color:rgba(255,255,255,.25);box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 26px color-mix(in srgb,var(--vh,#3fb883) 35%,transparent)}
+.vt-card.vt-premium::after{content:'';position:absolute;inset:-40%;pointer-events:none;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.08) 50%,transparent 60%);animation:vt-shimmer 2.2s linear infinite}
+@keyframes vt-shimmer{from{transform:translateX(-40%)}to{transform:translateX(40%)}}
+.vt-card.vt-building{border-color:var(--vh,#3fb883)}
+.vt-clue{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:0 8px;animation:vt-clue .45s ease both}
+.vt-clue i{font-style:normal;font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#59626f)}
+.vt-clue b{font:700 clamp(15px,4.5vw,20px)/1.15 'Space Grotesk',sans-serif}
+@keyframes vt-clue{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* the card lands: a half turn from its back */
+.vt-card.vt-turned{animation:vt-turn .55s cubic-bezier(.2,.8,.2,1) both;background:var(--cell,#161a22);cursor:default;min-height:0}
+@keyframes vt-turn{from{transform:rotateY(-92deg);opacity:.4}to{transform:none;opacity:1}}
+.vt-card.vt-landed{animation:vt-drop .6s cubic-bezier(.2,.9,.2,1.2) both}
+@keyframes vt-drop{from{transform:scale(1.25) translateY(-30px);opacity:0}to{transform:none;opacity:1}}
+.vt-face{display:block;height:100%}
+.vt-face .pc{border:0;border-radius:0;background:transparent;padding:12px 10px 10px;height:100%}
+.vt-face .pc::before{display:none}
+.vt-face .pc-name{font-size:16px}
+.vt-face .pc-ovr{right:10px;top:30px}
+.vt-face .pc-ovr b{font-size:28px}
+.vt-face .pc-attrs{grid-template-columns:repeat(2,1fr);gap:4px;margin-top:10px}
+.vt-face .pc-uni,.vt-face .pc-trait,.vt-face .pc-actions,.vt-face .pc-meta,.vt-face .pc-acq,.vt-face .pc-career{display:none}
+/* the mini card vault.js draws when the page gives it none */
+.vt-mc{padding:12px 10px 12px;display:flex;flex-direction:column;gap:6px;height:100%}
+.vt-mc-top{display:flex;justify-content:space-between;font:800 10px/1 'Inter',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--dim,#8b95a6)}
+.vt-mc-tier{color:var(--text,#e9edf4)}
+.vt-mc-ovr{font:700 34px/1 'JetBrains Mono',monospace}
+.vt-mc-ovr small{font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.14em;color:var(--faint,#59626f);margin-left:4px}
+.vt-mc-name{font:700 16px/1.1 'Space Grotesk',sans-serif}
+.vt-mc-arch,.vt-mc-home{font-size:11.5px;color:var(--dim,#8b95a6);line-height:1.35}
+/* tier framing once turned */
+.vt-tier-prime{border-color:rgba(233,237,244,.35)}
+.vt-tier-elite{border-color:rgba(217,164,65,.6);box-shadow:0 0 22px rgba(217,164,65,.22)}
+.vt-tier-apex{border-color:transparent;background:linear-gradient(var(--cell,#161a22),var(--cell,#161a22)) padding-box,linear-gradient(135deg,#7a5cff,#3fb883) border-box;box-shadow:0 0 30px rgba(122,92,255,.3)}
+.vt-tier-legend{border-color:transparent;background:linear-gradient(var(--cell,#161a22),var(--cell,#161a22)) padding-box,linear-gradient(135deg,#f2c744,#ffe9a3) border-box;box-shadow:0 0 36px rgba(242,199,68,.35)}
+.vt-tier-mythic{border-color:transparent;background:linear-gradient(var(--cell,#161a22),var(--cell,#161a22)) padding-box,linear-gradient(135deg,#ff5c8a,#7a5cff 55%,#3fb883) border-box;box-shadow:0 0 44px rgba(255,92,138,.35)}
+.vt-card.vt-kept{outline:2px solid var(--val,#3fb883);outline-offset:2px}
+.vt-card.vt-kept::before{content:'KEPT';position:absolute;z-index:3;right:8px;top:8px;font:800 9.5px/1 'Inter',sans-serif;letter-spacing:.14em;
+  color:#04110a;background:var(--val,#3fb883);padding:4px 7px;border-radius:999px}
+
+/* THE PREMIUM REVEAL. The whole stage, one fact at a time */
+.vt-reveal{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;pointer-events:none}
+.vt-rv-in{animation:vt-rv .5s cubic-bezier(.2,.8,.2,1) both;max-width:90vw}
+@keyframes vt-rv{from{opacity:0;transform:translateY(14px) scale(.96);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+.vt-rv-mark{font:800 clamp(24px,8vw,44px)/1 'Space Grotesk',sans-serif;letter-spacing:.24em;color:#fff;
+  text-shadow:0 0 30px var(--vh,#3fb883),0 0 80px color-mix(in srgb,var(--vh,#3fb883) 60%,transparent);animation:vt-pulse 1.1s ease-in-out infinite}
+@keyframes vt-pulse{0%,100%{opacity:.85}50%{opacity:1}}
+.vt-rv-clue i{display:block;font-style:normal;font:700 11px/1 'Inter',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--vh,#3fb883);margin-bottom:12px}
+.vt-rv-clue b{display:block;font:700 clamp(28px,9vw,54px)/1.05 'Space Grotesk',sans-serif;color:#fff}
+.vt-rv-ovr{font:700 clamp(90px,30vw,180px)/1 'JetBrains Mono',monospace;color:#fff;text-shadow:0 0 40px color-mix(in srgb,var(--vh,#3fb883) 70%,transparent)}
+.vt-rv-ovr small{display:block;font:800 12px/1 'Inter',sans-serif;letter-spacing:.3em;color:var(--dim,#8b95a6);margin-top:8px}
+.vt-rv-sil span{display:block;width:120px;height:150px;margin:0 auto;position:relative;filter:drop-shadow(0 0 30px var(--vh,#3fb883))}
+.vt-rv-sil span::before{content:'';position:absolute;left:50%;top:0;width:50px;height:50px;margin-left:-25px;border-radius:50%;background:#0b0e13;border:2px solid rgba(255,255,255,.35)}
+.vt-rv-sil span::after{content:'';position:absolute;left:0;right:0;bottom:0;height:88px;border-radius:60px 60px 10px 10px;background:#0b0e13;border:2px solid rgba(255,255,255,.35)}
+.vt-rv-name{font:700 clamp(30px,9vw,60px)/1.05 'Space Grotesk',sans-serif;color:#fff;letter-spacing:-.01em}
+.vt-reveal.vt-burst .vt-rv-in{animation:vt-burst .5s ease both}
+@keyframes vt-burst{to{opacity:0;transform:scale(1.6);filter:blur(10px)}}
+
+/* THE DECISION. A sheet along the bottom of the stage */
+.vt-actions{width:100%;max-width:640px;display:flex;flex-direction:column;gap:10px;align-items:stretch;text-align:center}
+.vt-hint{font-size:13px;color:var(--dim,#8b95a6)}
+.vt-choose b,.vt-done b{display:block;font:700 18px/1.2 'Space Grotesk',sans-serif}
+.vt-choose span,.vt-done span{display:block;font-size:13px;color:var(--dim,#8b95a6);margin-top:3px}
+.vt-pick{display:grid;gap:8px}
+@media(min-width:560px){.vt-pick{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
+.vt-keep{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:54px;padding:8px 12px;border-color:rgba(63,184,131,.45)}
+.vt-keep small{font:500 11px/1 'JetBrains Mono',monospace;color:var(--dim,#8b95a6)}
+.vt-keep:disabled{opacity:.5;cursor:not-allowed}
+.vt-actions .btn-row{justify-content:center}
+.vt-err{background:rgba(226,102,75,.12);border:1px solid rgba(226,102,75,.4);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--text,#e9edf4)}
+
+/* wider stages, and stillness for those who ask for it */
+@media(min-width:640px){.vt-case{width:340px}.vt-cards{gap:14px}.vt-card{min-height:200px}}
+@media(max-width:380px){.vt-cards{gap:7px}.vt-card{min-height:150px}.vt-face .pc-name{font-size:14px}.vt-face .pc-ovr b{font-size:24px}}
+.vault.vault-still *,.vault.vault-still *::before,.vault.vault-still *::after{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}
+@media(prefers-reduced-motion:reduce){.vault *,.vault *::before,.vault *::after{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}}
+body.vault-open{overflow:hidden}
+
+/* ===========================================================================
+   THE VAULT AS A PRODUCT. The case in the hand, the backs that hint, the
+   lineup line and the estimate under a turned card, the summary, the guided
+   first pack, and the top of the ladder's own night.
+   =========================================================================== */
+
+/* the case in the hand: a finger tilts it and the light follows the finger */
+.vt-case.held{transition:transform .08s linear;transform:perspective(900px) rotateX(var(--tx,0deg)) rotateY(var(--ty,0deg)) translateY(-4px) scale(1.02)}
+.vt-case.held .vt-case-lid{background:
+  radial-gradient(circle at var(--lx,50%) 28%,rgba(255,255,255,.16),transparent 42%),
+  linear-gradient(160deg,color-mix(in srgb,var(--vh,#3fb883) 26%,#0b0e13) 0%,#0e1218 50%,color-mix(in srgb,var(--vd,#0d2a1e) 80%,#000) 100%)}
+
+/* the first pack: one line of guidance, never a tour */
+.vt-first{max-width:420px;text-align:center;font-size:13.5px;line-height:1.45;color:var(--dim,#8b95a6);padding:10px 14px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);animation:vt-clue .5s ease both}
+.vt-first b{color:var(--text,#e9edf4)}
+
+/* THE BACK OF A CARD HINTS AND NEVER TELLS. A build's back has a firmer
+   edge; a premium man's back breathes; the top of the ladder's back carries a
+   beam across it and the room's data lines brighten while it is face down.
+   Which tier, and who, stays face down. */
+.vt-card.vt-sil.vt-build{border-color:rgba(255,255,255,.22)}
+.vt-card.vt-sil.vt-premium{animation:vt-land .5s cubic-bezier(.2,.8,.2,1) both,vt-breathe 2.4s ease-in-out .5s infinite}
+@keyframes vt-breathe{0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 22px color-mix(in srgb,var(--vh,#3fb883) 30%,transparent)}
+  50%{box-shadow:0 0 0 1px rgba(255,255,255,.12),0 0 40px color-mix(in srgb,var(--vh,#3fb883) 55%,transparent)}}
+.vt-card.vt-sil.vt-sig{border-color:rgba(255,255,255,.4)}
+.vt-card.vt-sil.vt-sig::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);background-size:300% 100%;animation:vt-beam 1.8s ease-in-out infinite}
+@keyframes vt-beam{from{background-position:120% 0}to{background-position:-20% 0}}
+.vt-card.vt-sil.vt-sig .vt-sil-tap{color:#fff;opacity:1}
+.vault:has(.vt-card.vt-sil.vt-sig) .vt-lines{opacity:1;filter:brightness(1.5)}
+
+/* under a turned card: what he does to the lineup, and what men like him sell for */
+.vt-card.vt-turned{display:flex;flex-direction:column}
+.vt-card.vt-turned .vt-face{flex:1 1 auto}
+.vt-imp{display:flex;flex-direction:column;gap:1px;padding:7px 10px 8px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:var(--dim,#8b95a6);line-height:1.3;animation:vt-clue .4s ease .25s both}
+.vt-imp b{font:800 11px/1.2 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--text,#e9edf4)}
+.vt-imp.up{background:linear-gradient(to right,color-mix(in srgb,var(--val,#3fb883) 14%,transparent),transparent)}
+.vt-imp.up b{color:var(--val,#3fb883)}
+.vt-est{padding:0 10px 8px;font:500 10.5px/1.35 'JetBrains Mono',monospace;color:var(--dim,#8b95a6);font-variant-numeric:tabular-nums;animation:vt-clue .4s ease both}
+.vt-est:empty{display:none}
+.vt-est b{color:var(--text,#e9edf4)}
+.vt-est i{display:block;font-style:normal;color:var(--faint,#59626f);font-family:'Inter',sans-serif}
+
+/* THE SUMMARY: the pull, all together, and what each man is */
+.vt-summary{width:100%;max-width:640px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.035);padding:10px 12px;animation:vt-clue .45s ease both}
+.vt-sum-h{font:800 10.5px/1 'Inter',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--vh,#3fb883);margin-bottom:8px}
+.vt-summary ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.vt-summary li{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:'p n o' 'p t s';gap:3px 8px;align-items:center;font-size:13px}
+.vt-summary li .p{grid-area:p;font:800 10.5px/1 'Inter',sans-serif;letter-spacing:.1em;color:var(--dim,#8b95a6)}
+.vt-summary li b{grid-area:n;font:700 14px/1.2 'Space Grotesk',sans-serif}
+.vt-summary li .o{grid-area:o;font:500 11.5px/1 'JetBrains Mono',monospace;color:var(--dim,#8b95a6);white-space:nowrap}
+.vt-summary li .t{grid-area:t;display:flex;flex-wrap:wrap;gap:4px}
+.vt-summary li .t i{font:800 9px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;padding:3px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.14);color:var(--dim,#8b95a6)}
+.vt-summary li .t i.new{color:var(--text,#e9edf4)}
+.vt-summary li .t i.up{color:#04110a;background:var(--val,#3fb883);border-color:transparent}
+.vt-summary li .t i.hi{color:#f2c744;border-color:rgba(242,199,68,.5)}
+.vt-summary li .t i.kept{color:var(--val,#3fb883);border-color:rgba(63,184,131,.5)}
+.vt-summary li .t i.pass{color:var(--faint,#59626f)}
+.vt-summary li .lnk{grid-area:s;justify-self:end;background:none;border:0;color:var(--vh,#3fb883);font:700 12px/1 'Inter',sans-serif;cursor:pointer;padding:6px 0;min-height:0}
+
+/* THE TOP OF THE LADDER IS A DIFFERENT NIGHT. Not more sparks: the room
+   goes to black and the sound cuts, one light finds the floor, the mark
+   glitches and a signal is called, the tier's symbol is shown before a
+   single fact about him, the lens goes down the tunnel, the number counts
+   up, and the stadium lights come on. */
+.vault.vt-void{background:#000}
+.vault.vt-void .vt-lines,.vault.vt-void .vt-tunnel,.vault.vt-void .vt-top{opacity:0}
+.vault.vt-black .vt-cards.vt-hold{opacity:.06}
+.vt-rv-beam{position:relative;width:2px;height:58vh;margin:0 auto;animation:vt-beam-on .9s ease both;
+  background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.9) 30%,rgba(255,255,255,.25));box-shadow:0 0 30px 6px rgba(255,255,255,.25)}
+.vt-rv-beam::after{content:'';position:absolute;left:50%;bottom:-6px;width:180px;height:26px;margin-left:-90px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,.35),transparent 70%)}
+@keyframes vt-beam-on{0%{opacity:0;transform:scaleY(0)}40%{opacity:1;transform:scaleY(1.02)}55%{opacity:.4}62%{opacity:1}100%{opacity:1}}
+.vt-rv-glitch{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vt-rv-glitch .mk{display:block;width:64px;height:64px;border-radius:16px;border:2px solid #fff;position:relative;animation:vt-glitch 1.3s steps(1) both}
+.vt-rv-glitch .mk::before{content:'';position:absolute;left:14px;right:14px;top:50%;height:2px;margin-top:-1px;background:#fff;box-shadow:0 -10px 0 #fff,0 10px 0 #fff}
+@keyframes vt-glitch{0%{transform:translate(0)}8%{transform:translate(-4px,2px) skewX(6deg);opacity:.6}12%{transform:translate(3px,-1px)}20%{transform:none;opacity:1}
+  44%{transform:translate(2px,0) skewX(-4deg);opacity:.7}48%{transform:none;opacity:1}100%{transform:none}}
+.vt-rv-glitch b{display:block;font:800 clamp(18px,6vw,32px)/1 'Space Grotesk',sans-serif;letter-spacing:.32em;color:#fff;animation:vt-flicker 1.3s linear both}
+.vt-rv-glitch i{display:block;font:700 10.5px/1 'Inter',sans-serif;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.5);font-style:normal}
+@keyframes vt-flicker{0%,18%{opacity:0}20%{opacity:1}24%{opacity:.2}28%{opacity:1}60%{opacity:1}64%{opacity:.4}68%{opacity:1}100%{opacity:1}}
+.vt-rv-symbol{display:flex;flex-direction:column;align-items:center;gap:18px}
+.vt-rv-symbol span{display:block;width:96px;height:96px;position:relative;animation:vt-sym .9s cubic-bezier(.2,.9,.2,1.3) both}
+.vt-rv-symbol b{display:block;font:800 clamp(16px,5vw,24px)/1 'Inter',sans-serif;letter-spacing:.4em;text-transform:uppercase}
+@keyframes vt-sym{from{transform:scale(.2) rotate(-90deg);opacity:0}to{opacity:1}}
+/* legend: a gold diamond in a ring */
+.vt-sym-legend span{background:linear-gradient(135deg,#f2c744,#ffe9a3);border-radius:14px;box-shadow:0 0 60px rgba(242,199,68,.6);transform:rotate(45deg)}
+.vt-sym-legend span::after{content:'';position:absolute;inset:-18px;border-radius:50%;border:2px solid rgba(242,199,68,.5)}
+.vt-sym-legend b{color:#f2c744;text-shadow:0 0 30px rgba(242,199,68,.7)}
+/* mythic: a ring of three colours around a void */
+.vt-sym-mythic span{border-radius:50%;background:conic-gradient(#ff5c8a,#7a5cff,#3fb883,#ff5c8a);box-shadow:0 0 70px rgba(255,92,138,.55)}
+.vt-sym-mythic span::after{content:'';position:absolute;inset:14px;border-radius:50%;background:#000}
+.vt-sym-mythic b{background:linear-gradient(90deg,#ff5c8a,#7a5cff,#3fb883);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* down the tunnel: a silhouette far away, coming closer */
+.vt-rv-sil.far span{animation:vt-approach 1.4s cubic-bezier(.3,.7,.3,1) both}
+@keyframes vt-approach{from{transform:scale(.25) translateY(40px);opacity:.2;filter:blur(3px) drop-shadow(0 0 30px var(--vh,#3fb883))}to{transform:none;opacity:1;filter:drop-shadow(0 0 30px var(--vh,#3fb883))}}
+.vault.vt-tunnel-go .vt-tunnel{opacity:.9;animation:vt-tunnel-zoom 1.4s ease-in both}
+@keyframes vt-tunnel-zoom{to{transform:perspective(600px) rotateX(58deg) translateY(28%) scale(3.2)}}
+/* the number counts up and lands */
+.vt-rv-ovr .n{display:inline-block;transition:transform .2s cubic-bezier(.2,.9,.2,1.4)}
+.vt-rv-ovr .n.land{transform:scale(1.08);text-shadow:0 0 60px #fff}
+/* the stadium lights come on: a flash over everything, then the room, lit */
+.vault.vt-lit::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:#fff;animation:vt-flash .7s ease both}
+@keyframes vt-flash{0%{opacity:0}25%{opacity:.95}45%{opacity:.25}100%{opacity:0}}
+.vault.vt-lit .vt-lines,.vault.vt-lit .vt-tunnel{opacity:1;filter:brightness(2)}
+.vault.vt-lit .vt-rv-name{text-shadow:0 0 40px #fff,0 0 80px var(--vh,#3fb883)}
+/* a lower-end phone gets the whole sequence and none of the sparkle */
+.vault.vault-lite .vt-card.vt-premium::after,.vault.vault-lite .vt-card.vt-sil.vt-sig::before{animation:none;display:none}
+.vault.vault-lite .vt-card.vt-sil.vt-premium{animation:vt-land .5s cubic-bezier(.2,.8,.2,1) both}
+.vault.vault-lite .vt-rv-beam{box-shadow:none}

@@ -3104,3 +3104,470 @@ event a game has at arcade length with the invariants holding; returned picks,
 defensive touchdowns with a try pending, fumbles with the columns agreeing;
 overtime inside the quarter; a resumed game keeping its names; the progression
 reading the coverage; every button every tick, deterministically.
+
+## Phase 7 — the player universe (`profile_v1`)
+
+Every athlete stores four ratings for his position, the simulator plays with
+them and the overall is their mean; nothing about that changes. What a card
+can *say* does. **The profile** — `games/lib/gridiron/profile.js` on the
+client, `franchise_profile()` on the server — derives the universal six
+(**SPD ACC AGI STR AWR STA**) and the position's own words (a quarterback's
+THP SAC MAC DAC TUP SCR, a back's BTK CAR VIS CTH, a receiver's CTH RTE REL
+CIT, a lineman's PBK RBK, a rusher's PRSH BSH PUR, a linebacker's TCK PUR MCV
+ZCV BSH, a corner's MCV ZCV TCK PRS) as a **pure function of what is stored**:
+position, the four ratings, the archetype, and four small integers the card
+already carries (jersey, age, stamina, the letters of the last name). No
+column, no migration, no ageing code: when the four grow in the offseason the
+profile grows with them, and it can never disagree with the card it is printed
+on. Both languages use integer arithmetic so they agree to the digit, and
+`tools/games/profile.test.js` proves it on four hundred random cards against a
+real PostgreSQL, plus pins the constant tables (skews, towns, tier thresholds)
+byte for byte.
+
+Also derived, and carried by every read model (`franchise_roster`, the
+market's `franchise_prospect_json`, the trade floor's player):
+
+* **the collector's tier** — Prospect · Starter · Impact · Prime · Elite ·
+  Apex · Legend · Mythic, off the overall (62 · 69 · 75 · 81 · 87 · 93 · 98);
+  the rarity a card already carries (common..elite) is the generator's, this
+  is the collector's;
+* **how far he can go, in words** — Limited · Normal · Rising · Breakout ·
+  Elite · Generational, from the gap to his ceiling and his development tier;
+* **a body and a home town**, from the same four integers; the towns are real
+  American places and none of them is a team, a brand or a person.
+
+An unscouted prospect has a body and a home town and **no** profile — the
+profile is the ratings by another name, and those are what a report buys.
+
+The generator deals the brief's archetypes now — Improviser, Game Manager,
+Workhorse, Route Technician, Possession Receiver, Slot Weapon, Physical
+Target, Speed Rusher, Power Rusher, Balanced, Shutdown, Press Specialist, Zone
+Specialist — appended to the pools (every skew sums near zero, so a founding
+roster lands where it always has), and each archetype adds a small, named
+push to the profile on top. The name pools grew from 110/150 to about
+280/360; the client's fictional opponents draw from a wider well too.
+
+The card shows the tier beside the position, the universal six in one quiet
+row under the four, and the build and home town in the meta line. The live
+engine reads strength and stamina from the profile (the stiff arm and the
+sprint); speed, acceleration and agility keep the sources the harness is
+banded on.
+
+## Phase 8–9 — the card, and the Vault (`packs_v2`)
+
+**Every man is a card, and every card is one of one.** There is no second
+print of anybody: `franchise_card(p_player)` returns the man whole — profile,
+history, career, the pack he came from — and an `edition` that says
+`serial 1 of 1`. A trigger on `game_players` (`franchise_card_history`)
+writes his line for him, whoever changes the row: *generated* (how he came
+to exist, at what overall, ceiling and age), *acquired* (kept from a pack,
+drafted, signed), *traded*, *ratings* (before → after, the season and his
+age), *potential*, *retired*, *released*. Capped at eighty lines, keeping
+the first and the last seventy-nine, so the day he arrived is never lost.
+The packs page shows the card as a sheet; tap a man kept from a pack.
+
+**A pack is a thing your record owes you**, not a thing you are sold. The
+rank's cache (`packs_v1`) already worked that way — one pack for every rank
+reached, drawn around your own team — and every promise it made still holds
+(`franchise_pack_open` is redefined, not replaced, and the SQL suite still
+attacks it as before). The Vault generalises it. `franchise_pack_defs()` is
+the table of kinds and `franchise_packs_sync(franchise)` derives, from the
+record alone, which sealed packs a franchise holds:
+
+| kind | for | men · keep | band |
+| --- | --- | --- | --- |
+| Gridiron Cache | every rank reached | 3 · 1 | floor 10 under your overall, ceiling rises with the rank |
+| Rookie Cache | founding the franchise | 3 · 1 | floor 8 under, flat edge +4, at the positions you are thin |
+| Postseason Pack | a season seen out (the two most recent) | 3 · 1 | floor 6 under, rank edge +4, where you are thin |
+| Championship Vault | a bowl won | 4 · 2 | floor 2 under, rank edge +8, **one Prime man guaranteed** |
+| Scout's Find | three Price Its scoring 80+ in one week | 2 · 1 | floor 4 under, rank edge +2, the ceiling lifted 6 |
+
+Derived, never accumulated: nothing wraps `franchise_create` or
+`franchise_play_game`; the sync reads seasons, bowls and verified Price It
+scores and inserts what is missing, idempotent on (franchise, kind, source
+key). A pack you have not earned cannot exist, and no code path hands one
+out.
+
+**The odds are printed before you open.** The roll is uniform over the whole
+numbers of the band and the server rolls it, so `franchise_pack_odds` is
+arithmetic anyone can check: the share of the band inside each collector's
+tier. The board (`franchise_packs_board`) prints them on every sealed pack,
+and the packs page prints them as chips. A guaranteed man is stated
+separately; the odds are the odds for the others. **Bad-luck protection is
+printed too**, not hidden: after five Gridiron Caches without a Prime man
+the next one lifts its ceiling by six and guarantees one; the counter
+(`franchises.packs_since_prime`) is on the board as dots, and the rule is
+stated in words beside them.
+
+**The server writes before the room shows.** `franchise_pack_open_id(pack)`
+rolls the men, writes them to `game_players` with status `pack` and the
+pack's id, records the band they were rolled from on the pack row, and only
+then answers. The page calls that first — the button says *Sealing the
+result…* — and only a persisted result gets a reveal. A refresh mid-reveal
+finds the same men face down on the table (*Back to the table*); the reveal
+is theatre over a result that is already true. Nothing in
+`games/lib/vault.js` calls the server or rolls anything; the test pins that
+it never writes an overall or a tier.
+
+**The Vault itself** (`games/lib/vault.js`, `games/vault.css`) is a room,
+not a button: the screen goes to a dark scouting tunnel, EdgeDesk data lines
+drift behind a sealed case dressed in the pack's own colour, a scan line
+crosses it, the lid swings, and the men come out as silhouettes you turn
+over one at a time. A Prime or Elite man gets a short build (position,
+signature rating, overall, card). An Apex, Legend or Mythic man does not
+simply appear: the room goes to black, a low synthesised rumble starts, and
+he is revealed a fact at a time — the mark, position, archetype, the one
+rating that defines him, his home town, the overall, the outline, the name,
+then the card, with confetti for a Legend or better. Every clue is his own
+fact in a slow order; there is no fake-out and no bait. The plan of a reveal
+is a pure function (`EDVault.plan(man)`), bounded under nine seconds, and
+`tools/games/vault.test.js` holds it down without a DOM. Sound is
+synthesised, haptics are a vibrate pattern, both switch off, and the whole
+room goes still under `prefers-reduced-motion`.
+
+**Proof.** Section 33 of `tools/games/sql/games_franchise.test.sql` opens
+the founding cache by id as the device, checks the men are on the table with
+the pack's id before the answer is read, refuses a second opening, keeps one
+and watches the card remember it, drives the history trigger through ratings,
+potential and ninety edits to see the cap hold, and then generates **a
+thousand packs** straight from the server's generator across every kind:
+every one the right size, every man whole and inside his printed band, no
+two men the same man, every guaranteed Prime delivered, protection firing
+exactly when it says and delivering every time, and the observed tiers from
+the rank's cache within eight points of the odds it printed. The client's
+pack table (`EDFranchise.PACKS`) is pinned name-for-name to
+`franchise_pack_defs()`.
+
+Nothing here can be bought. There is no pack for sale and no way to open one
+faster with money; the page says so in three places, and the SQL has no
+currency path that grants a pack.
+
+## Phase 10–12 — the lineup, chemistry and the Exchange (`lineup_v1` · `chemistry_v1` · `exchange_v1`)
+
+**Chemistry is a property of the eleven who play**, not a number a man
+carries. The column on `game_players` had sat at fifty since the day it was
+made and nothing read it; it still does, and it still does nothing. Instead
+`franchise_chemistry(franchise)` derives, from the starting lineup and
+nothing else: how each starter's archetype fits the scheme the franchise runs
+(`franchise_scheme_fit()`, −2..+2 per man, a table anyone can read — and a
+test that every archetype it names is one the generator deals, because a
+typo there would be a silent zero), how many starters have played eight games
+for this franchise (*settled*), whether whole units have grown up together
+(the line, the passing game, the secondary), how many arrivals by market,
+trade, free agency, pack or draft are still learning the calls, and who among
+them leads. The score is `50 + 2 × raw`, held to 0..100, every term printed;
+the effect is `(score − 50) / 50 × 8` in the units a trait uses, and it
+reaches the simulation through `franchise_trait_effects` — a quarter of a
+point of rating per point, as every trait — so `franchise_sim` and
+`franchise_sim_versus` feel it without a line of either changing. A founding
+roster lands around 65; eight games with the same eleven and it climbs toward
+the nineties; sell a starter and it drops. The roster page prints both units
+as bars with the word, the effect and the reasons, and **Best lineup**
+(`franchise_lineup_best`) orders every position by overall among the fit in
+one call; a backup can be started at any slot, not only the last.
+
+**The Exchange is the first market between franchises.** The market page was
+and remains a private one — a draft class and free agents generated for you.
+The Exchange is public: any franchise lists an active man of its own at a
+price of its choosing inside published bounds (50–50,000 Credits, five open
+at once, seven days), and he **keeps playing for the seller until he sells**.
+A buyer sends a **listing id and nothing else** — never a price, never a
+balance. `franchise_exchange_buy` locks the listing, then both franchises in
+id order, and only then decides: the listing still open and unexpired, the
+man still on the roster that listed him, the seller keeping the floor and the
+starters his position needs (`franchise_exchange_illegal`, the same rules a
+release and a trade obey), the buyer with room and with the Credits the
+ledger says he has. Five per cent of the price, rounded up, is the fee and
+leaves the economy; the rest reaches the seller as one ledger row keyed by
+the listing, and the buyer's price is one ledger row keyed the same way, so
+nothing can pay twice. The man moves as a trade moves him — bottom of the
+new chart, a new number only on a clash, his career untouched — and his card
+remembers the sale with its price. A listing that lapses, or whose man has
+since left, is closed by the next reader with the reason kept on it.
+
+**Prices are decisions made with the record in view.** `franchise_listing_json`
+prints the free-agent reference beside every asking price, and
+`franchise_exchange_comps(position, overall)` is public arithmetic on the
+sold listings of the last sixty days within two points: count, median, low,
+high, the last twelve, and how many like him are listed now. The sell form
+reads them before a price is typed. The record (`franchise_exchange_history`)
+shows a franchise's own listings from both sides and the whole Exchange's
+recent sales and volume.
+
+**Proof.** Section 34 of the SQL suite drives it end to end: the chemistry
+arithmetic and every fit, the trait-effects hookup, eight games together,
+a new arrival named, the best lineup and a contiguous chart; listing
+refusals by price, by ownership, twice; browsing as buyer, seller and nobody;
+a sale with the price, fee, net, both ledger rows, the fee gone from the
+economy, the card's line, both charts, both records and both achievements;
+a second buy refused; comps and history; the clock and a man who left; the
+floor by name. `tools/games/exchange_concurrency.test.js` then does what one
+session cannot: six buyers on one listing from six connections at once
+(exactly one wins, five are refused by a closed listing, never by a deadlock,
+every balance the sum of its ledger, the economy down by exactly the fee),
+and one buyer with the Credits for one man reaching for two (exactly one
+goes through, the balance never below zero).
+
+Credits are what the ledger calls `tc` and the game calls Credits; XP is
+Research XP. Nothing on the Exchange can be bought with money: there is no
+Credit for sale, and the SQL has no path that grants one.
+
+## The game you hold counts — cards move the grass, the grass feeds the Vault (`economy_v2` · `packs_v3`)
+
+The third part of the brief: connect the two. A card has to change what
+happens on the field, and what happens on the field has to feed the Vault —
+or the two best things in the building are two separate buildings.
+
+**The card is the man.** Every man on the grass is read from his card by one
+function a side (`offMan`, `defMan` in `engine.js` `prepare()`): speed,
+acceleration, agility, hands, route, power, blocking, arm, accuracy, coverage,
+tackling, rush, ball skills, strength, stamina — and the game's own tests now
+hold it at the outcome level, forty seeds a side with only one position
+group's card changed: a 96-accuracy quarterback completes the same slant more
+often than a 42; receivers who run routes and run away make more of the same
+dagger; a back with power and feet gains more on the same inside zone; a line
+that can block keeps the pocket up longer; better cover men take completions
+away on the same slant, in zone and in man (`tools/games/live.test.js`
+section 15). Measuring it found a gap and closed it: zone coverage read
+nothing from the card — a 42 corner and a 96 corner squeezed the same route
+the same way — so now a great zone corner sees the route a step sooner,
+matches it tighter and gives up less cushion, and the distance a defender
+will break on a ball from carries a little of how well he was covering.
+
+**A finished game is filed with the franchise** (`franchise_record_live_game`,
+Phase 21) under the game's own key — its seed and the moment it started, kept
+in the save so a resumed game files as itself — with the score, the yards,
+the touchdowns, the tier the defence was set to, and every man of yours with
+his line in the keys his career already uses (`EDFranchise.liveLine`). The
+server checks the shape (a score of 150 is not a score; nine touchdowns do
+not fit in seven points; a key of one letter is not a key), credits once by
+the economy's own table — a game 60 XP and 25 Credits, a win 40 XP, 25
+Credits and a Coach Point, the performance itself up to 30 Credits and 40 XP
+for touchdowns and every hundred yards — scaled by the tier (Rookie six
+tenths, Pro one, All-Pro 1.15, Legend 1.3), **capped at five credited games a
+day** so a grind pays nothing while the record and the careers still take the
+sixth, and weighs it **two toward the rank**, so the Gridiron Cache is closer
+for having played. The final screen shows the server's answer, never the
+page's hope: the chips, the rank line, the pack line, how many men added to
+their careers, and this week's preparation.
+
+**Careers in your hands.** The men's lines land in `live_stats`, a column of
+their own, kept apart from the simulation's `career_stats` so neither can
+inflate the other; only the keys a career knows, bounded, for men who are
+yours — a stranger's id takes nothing. The roster and the card carry it.
+
+**The Game Day pack.** Every fifth live game finished at Pro or harder seals
+one (`gameday_pack`, three men keep one, drawn where the team is thinnest, a
+little above the rank). Derived by `franchise_packs_sync` from the credited
+games, like every other pack: earned by playing and by nothing else.
+
+**The broadcast knows your men.** A man who came out of the Vault is
+announced as one when he is having the day; and when tonight's line takes a
+man across a round number of his career — the simulation's and the one in
+your hands together — the broadcast calls the milestone, once.
+
+**New weapon.** Game Day names the man most recently kept from a pack until
+he has played a game in your hands: who he is, where he starts, the matchup
+he lines up against ("their defense rates 64 — he lines up against it"), and
+the one thing to do about it: *Play the next game*. After that, quietly, what
+he has done for you.
+
+**The whole loop, with nobody's hands on it** (`tools/games/loop.test.js`,
+against a real PostgreSQL through the phone's own doors): a franchise is
+founded → its first pack is sealed → the server rolls it → the best man is
+kept → the server sets the lineup → a whole game is played live with the
+franchise's own men, scripted thumbs on runs and throws, the AI on defence,
+to the final whistle → filed and paid exactly what the client estimated →
+two toward the rank → the quarterback's line on his card → filed again,
+nothing twice → four more games → the fifth seals a Game Day pack → the home
+counts the games and names the weapon → the pack opens, a man is kept, the
+lineup is set → the team is no worse for it → a sixth game is capped → My
+pulls remembers both → every balance is the sum of its ledger.
+
+## The Vault as a product — the case in the hand, the night at the top of the ladder, the pull record (`pulls_v1`)
+
+The second sentence of the brief: *that was sick*. Phase 8–9 built the room
+and the rule (the server rolls and writes before anything is shown; the odds
+are printed on the pack; nothing is for sale). This pass makes the room a
+product. Nothing about the rule changed, and the tests that pin it still pass
+untouched.
+
+**The case has weight.** A finger on the sealed case tilts it toward the
+touch and the light moves across the lid (`--tx`, `--ty`, `--lx`, set by
+`vault.js`, read by `vault.css`); a tap on it taps back. While the seal is
+being scanned a tap on the case skips to the men, so a veteran is never made
+to sit through the theatre twice.
+
+**The back of a card hints and never tells.** A plain man's back is plain; a
+Prime or Elite man's has a firmer edge; an Apex man's breathes; a Legend or
+Mythic man's carries a beam across it and the room's data lines brighten
+while it is face down (`.vt-sig`). The back carries the position and nothing
+else — the test holds that the markup never puts a tier or a name on it.
+
+**The Apex reveal counts up.** The mark, the clues, and now the overall is
+counted up from below and lands (`from` on the `ovr` step, always under the
+number, never above it), with a tick in the hand when it lands.
+
+**The top of the ladder is a different night, not a bigger Apex.** A Legend
+or Mythic man goes: the room to black and the sound *cut* (not louder —
+silent) · one light finds the floor · the EdgeDesk mark glitches and
+**SIGNAL DETECTED** is called · the tier's own symbol (a gold diamond in a
+ring; a three-colour ring around a void) before a single fact about him ·
+the lens goes down the tunnel to a silhouette far away · position, build,
+archetype, the one number that defines him, how far he can go · the overall
+counted up · the name · the stadium lights come on. `EDVault.plan()` returns
+`top: true` for these and the steps carry `blackout`, `signal`, `symbol`,
+`tunnel` and `lights` kinds the Apex plan never uses; the test holds that the
+two sequences do not even open the same way. Each tier has its own haptic
+rhythm (`HAPTIC_BY_TIER`) and its own sounds (a data sweep, a bass hit, a
+stadium rise, the signal's three notes, the lights), all synthesised.
+
+**After the reveal, what he is to you.** Under every turned card: what he
+does to the lineup, computed from the roster the page hands in and never
+fetched (`EDVault.lineupImpact` — "+4 OVR at WR2, over Vance (79)" or "WR4
+on the chart"), and after a beat the estimated market range off the
+Exchange's comparable sales (`EDVault.marketEstimate` — the sales when there
+are three or more, a band around the free-agent reference when there are
+not, nothing at all when there is nothing to go on: never an invented
+number). Both arrive after the card, never in front of it.
+
+**The summary.** When every card is over: the pull as a list — each man with
+NEW · LINEUP UPGRADE · HIGH VALUE · COLLECTION · KEPT / PASSED — and the
+actions: *Put him in the lineup* (the server's `franchise_lineup_best`, the
+room only asks), *Open the next pack* (reloads the board and opens the first
+one that can be), *Roster*, *Exchange*, and *Share* on a premium man: the
+card drawn on a canvas (`EDVault.cardImage` — the man, his tier, his number,
+his signature, the EdgeDesk Football mark, **nothing of the user**), through
+the Web Share sheet where there is one and a sheet of our own with the image
+to save and the line to copy where there is not.
+
+**Reveal all.** A veteran's way out. Every card turns at once; a premium man
+still gets a beat — the mark and his name on the stage for a second — so
+skipping the theatre never means not knowing what you pulled.
+
+**A pack earned gets its moment.** The shelf compares the sealed packs to
+what this device was last shown and gives a new one a card of its own: PACK
+EARNED · what it is · what earned it · *it waits in the Vault until you open
+it — nothing opens on its own*. Nothing opens automatically, ever.
+
+**The first pack is guided.** One line under the case, then one line over the
+cards; no tour. The device remembers it has opened one.
+
+**A lower-end phone gets the whole sequence and none of the sparkle.** With
+four cores or four gigabytes or fewer the room drops the shimmer, halves the
+data lines and the confetti (`.vault-lite`); the reveal is never shortened
+and the card is never smaller — the sequence is the product, the sparks are
+the dressing.
+
+**My pulls (`pulls_v1`, Phase 20 of the SQL).** `franchise_pulls(secret)`
+reads every pack this franchise ever opened from the pack rows and the men
+who came out of them — **as they were the night they were pulled** (the
+first line of every card's history is the overall he was generated at, so a
+man developed since still shows the pull as it was), which were kept, the
+best pull of all, the counts by tier, how many were Apex or better, and the
+last thirty packs newest first with their bands. Nothing is stored for it;
+it is a read, like the rank, and the report row checks it stays one. The
+page prints it under *Kept from packs*: opened · kept · Apex+ · best, the
+best pull as a card you can tap, and the list.
+
+**Tests.** `tools/games/vault.test.js` (1,246): the top-tier plan opens with
+the blackout, calls the signal second, shows its own symbol third, goes down
+the tunnel, reads the overall before the name and the lights before the card,
+counts up from below, never borrows the Apex mark, carries the ceiling and
+the build; a Mythic and a Legend share the shape but not the symbol; the
+longest night is under twelve seconds and longer than an Apex; the lineup
+line and the estimate are pinned case by case; every tier has a haptic
+pattern and the top two have their own; the stylesheet dresses every state
+the markup emits; the card back never carries a tier or a name.
+`tools/games/pack_odds.test.js` (41): the server's roll, guarantee, bounds,
+odds arithmetic and protection rule are pinned to the SQL's own text, then
+mirrored and run **100,000 times** — every man a whole number inside his
+band, every whole number drawn about as often as every other, the tiers
+within half a point of the printed odds; 25,000 Championship Vaults every one
+holding a Prime man with the odds "for the others" holding for the others;
+100,000 caches on the protection counter with no run past the printed count
+and every protected pack rolling on its lifted ceiling; every band the game
+can print adding up to a hundred. The SQL suite's section 35 holds the pull
+record against a franchise that opened a thousand packs.
+
+## The game you hold, felt — throw kinds, the run concepts, the replay
+
+The brief for this pass was two sentences: *this actually feels good* when
+you play, and *that was sick* when you open a pack. This section is the first
+one. Everything here was measured before it was changed, on the deterministic
+harness (`tools/games/live.test.js`), and the measurements are in the tests.
+
+**Three footballs.** A tap on a receiver's badge is a throw. A tap *held*
+past a fifth of a second is a bullet: it leaves harder and lower, arrives
+sooner, gives the man in coverage less of a look, and past twenty yards is the
+harder ball to place. A touch pass (the engine's third kind, reachable from a
+script today) floats and hangs. The badge grows a gold ring while it is held,
+so the wind-up is something you can see, and the throw goes on the release.
+`EDGridironLive.THROWS` is the table; the tests hold that a bullet is faster
+on every seed, a touch slower on every seed, the bullet worse past twenty and
+tighter underneath, and that the kind is booked on the play.
+
+**His feet, and which way he is going.** The quarterback is yours from the
+snap: the stick rolls him, and a roll across the line with the ball becomes a
+scramble, booked as one. A quarterback who has set his feet throws the best
+ball of the three; one rolling *away* from the side he throws to is throwing
+across his body, and the engine marks it (`lastThrow().across`) and charges
+for it. Before this the stick did nothing for the first three seconds of
+every pass play, because the user's man was nobody until a handoff or a
+catch.
+
+**The run concepts are different blocks.** Every lineman used to take the
+nearest rusher whatever was called, so inside zone, outside zone and power
+were one play with three names — the probe printed identical yards for all
+three. Now outside zone reaches for the play-side shoulder and runs the front
+sideways, power pulls the backside guard round and through the hole, counter
+shows one way for a beat and pulls the other, and a draw pass-sets for half a
+second while the backers drop. The thumb still picks the crease; the concept
+decides where the creases are.
+
+**The secondary does not tackle the handoff.** The single biggest number in
+the audit: against a base front the first tackler on seven carries in ten
+was a *cornerback*, at two yards. Every coverage defender broke for the ball
+the frame it reached the back's belly, from wherever he stood. A defender in
+coverage now plays his man or his zone until the run declares — the ball
+across the line, or a beat of reading it: a safety's beat is short, a
+corner's long, a sharper defence's shorter. Inside zone against a base front
+went from 2.2 yards a carry with linebackers never in the picture to 4.0 with
+the linebackers making the tackle at four, four carries in ten reaching four
+yards and one in twenty reaching ten. A draw can lose yards now, which a draw
+should.
+
+**The tier touches the head, never the legs.** Difficulty used to change the
+opposing coach only. It now also sharpens his defence's *reading*: how late
+it comes off the ball, how far ahead it aims in pursuit, the beat before a
+zone defender turns and runs with the deepest man or breaks on a throw, the
+cushion a man defender concedes. Nobody gets faster. Your own defence is
+untouched by it. The same runs go three yards a carry against a rookie
+defence and one against a legend one.
+
+**One hit, felt once.** The tackle already resolves once per approach; it now
+reports how hard it landed (closing speed and how square) and where. The
+stage bumps the lens and throws turf in proportion, the page pulses the
+phone harder for a square hit at speed and says who laid him out. A
+drag-down barely registers, as it should.
+
+**Instant replay.** The stage keeps a tape of the last play — thirty frames
+a second of where every man was, how he stood and which way he leaned, and
+the football; a picture, never a decision. A score from twenty out, any
+takeaway, a fourth-down stand, a gain of thirty-five or the play that took
+the lead late is shown again at half speed from a lower, tighter lens with
+the broadcast's bars on it. A tap anywhere skips it. `Replays` is a setting.
+`ST.recordFrame` / `ST.restoreFrame` are pure and tested: rewound, every man
+is back in his stance; run to the end, every man is where the whistle found
+him.
+
+**The dead ball has a broadcast.** Every fourth ordinary play, one short fact
+arrives on the dead ball and goes: the man having the day and his line, this
+drive, third downs, total yards. A fourth-down stand and a thirty-yard play
+get a graphic of their own. None of it waits on the football.
+
+**Proof.** `live.test.js` grew from 58 to 79 assertions (the three footballs,
+across the body, the tier, the tape, the hit, a hundred snaps with every
+kind of throw); `flow.test.js` proves a pick crossing the goal line is booked
+as a defensive touchdown with the try pending and a hundred previews line up
+and never snap.

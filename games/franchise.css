@@ -747,3 +747,59 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .lu-t.on{background:rgba(63,184,131,.16);color:var(--text);border-color:rgba(63,184,131,.4)}
 .lu-field{display:block;width:100%;height:210px;background:#0a0e13}
 @media (min-width:720px){.lu-field{height:280px}}
+
+/* ── THE PROFILE ON THE CARD (profile_v1) ─────────────────────────────────
+   The collector's tier beside the position, the universal six in one quiet
+   row under the four the position is judged on, and a man's build and home
+   town in the meta line. The tier tints the rail; nothing else shouts. */
+.pc-tier{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border-radius:999px;
+  background:var(--raised);color:var(--dim);border:1px solid var(--line2)}
+.pc-tier-prime .pc-tier{color:var(--text)}
+.pc-tier-elite .pc-tier{color:var(--est);border-color:rgba(217,164,65,.45)}
+.pc-tier-apex .pc-tier{color:#fff;background:linear-gradient(135deg,#7a5cff,#3fb883);border-color:transparent}
+.pc-tier-legend .pc-tier{color:#1a1200;background:linear-gradient(135deg,#f2c744,#ffe9a3);border-color:transparent}
+.pc-tier-mythic .pc-tier{color:#fff;background:linear-gradient(135deg,#ff5c8a,#7a5cff 55%,#3fb883);border-color:transparent}
+.pc-uni{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:9px;padding:7px 9px;border-radius:9px;background:var(--panel);
+  border:1px dashed var(--line)}
+.pc-u{display:inline-flex;align-items:baseline;gap:4px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:11.5px}
+.pc-u i{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--faint)}
+.pc-u b{color:var(--text);font-weight:700}
+.pc-bio{display:block;margin-top:3px;font-family:'Inter',sans-serif;color:var(--faint)}
+.pc-compact .pc-uni{display:none}
+
+/* ── the lineup, chemistry and the Exchange (Phase 19) ─────────────────── */
+.lu-tabs .lu-best{margin-left:auto;min-height:36px;font-size:12.5px;padding:0 12px}
+.chem{margin-top:6px}
+.ch-grid{display:grid;gap:8px}
+@media(min-width:560px){.ch-grid{grid-template-columns:1fr 1fr}}
+.ch-side{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.ch-row{display:flex;align-items:baseline;gap:8px}
+.ch-row b{font-family:'Space Grotesk',sans-serif;font-size:14px}
+.ch-word{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--val)}
+.ch-num{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.ch-num small{display:block;font:500 10px 'Inter',sans-serif;color:var(--faint);text-align:right;letter-spacing:0}
+.ch-bar{height:6px;border-radius:999px;background:var(--line2);overflow:hidden;margin-top:8px}
+.ch-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--val-dim),var(--val))}
+.ch-why{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
+.ch-why i{font-style:normal;color:var(--faint)}
+.ch-units{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.ch-units span{font-size:10.5px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line2);border-radius:999px;padding:2px 8px;color:var(--faint)}
+.ch-units span.on{color:var(--val);border-color:rgba(63,184,131,.45)}
+.pc-slot{display:grid;grid-template-columns:1fr auto;gap:6px}
+.pc-slot select{min-height:40px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--text);padding:0 8px;font:500 12.5px 'Inter',sans-serif;min-width:0}
+.pc-listed{display:block;font-size:12px;color:var(--dim);line-height:1.45}
+.pc-listed b{color:var(--text)}
+.pc-listed .lnk{font-size:12px}
+
+/* THE NEW WEAPON, on Game Day: the man most recently kept from a pack, where
+   he starts, the matchup he lines up against, and the one thing to do */
+.gd-weapon{margin:12px 0 4px;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--val,#3fb883) 45%,transparent);
+  background:linear-gradient(120deg,color-mix(in srgb,var(--val,#3fb883) 16%,transparent),transparent 70%),var(--panel,#0f131a);animation:gdw .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes gdw{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gd-weapon .k{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#04110a;background:var(--val,#3fb883);padding:4px 8px;border-radius:999px}
+.gd-weapon .t{font-family:'Space Grotesk',sans-serif;font-size:17px;line-height:1.2;margin-top:8px}
+.gd-weapon .s{font-size:13px;color:var(--dim,#8b95a6);line-height:1.45;margin-top:4px}
+.gd-weapon .s b{color:var(--text,#e9edf4)}
+.gd-weapon .btn-row{margin-top:10px}
+.gd-weapon.quiet{border-color:var(--line,#232a36);background:var(--panel,#0f131a)}
+.gd-weapon.quiet .k{background:var(--line2,#2a3140);color:var(--text,#e9edf4)}

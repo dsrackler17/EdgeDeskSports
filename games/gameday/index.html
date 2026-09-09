@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260909a">
-<link rel="stylesheet" href="/games/franchise.css?v=20260909a">
+<link rel="stylesheet" href="/games/games.css?v=20260909g">
+<link rel="stylesheet" href="/games/franchise.css?v=20260909g">
 </head>
 <body>
 <div id="gh"></div>
@@ -75,17 +75,18 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260909a"></script>
-<script src="/games/lib/scoring.js?v=20260909a"></script>
-<script src="/games/lib/challenge.js?v=20260909a"></script>
-<script src="/games/lib/research_state.js?v=20260909a"></script>
-<script src="/games/lib/attribution.js?v=20260909a"></script>
-<script src="/games/lib/store.js?v=20260909a"></script>
-<script src="/games/lib/dynasty.js?v=20260909a"></script>
-<script src="/games/lib/social.js?v=20260909a"></script>
-<script src="/games/lib/auth.js?v=20260909a"></script>
-<script src="/games/lib/franchise.js?v=20260909a"></script>
-<script src="/games/games.js?v=20260909a"></script>
+<script src="/games/lib/week.js?v=20260909g"></script>
+<script src="/games/lib/scoring.js?v=20260909g"></script>
+<script src="/games/lib/challenge.js?v=20260909g"></script>
+<script src="/games/lib/research_state.js?v=20260909g"></script>
+<script src="/games/lib/attribution.js?v=20260909g"></script>
+<script src="/games/lib/store.js?v=20260909g"></script>
+<script src="/games/lib/dynasty.js?v=20260909g"></script>
+<script src="/games/lib/social.js?v=20260909g"></script>
+<script src="/games/lib/auth.js?v=20260909g"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260909g"></script>
+<script src="/games/lib/franchise.js?v=20260909g"></script>
+<script src="/games/games.js?v=20260909g"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or franchise.js for
    longer than it keeps this page, and a page built for the new library then
@@ -163,6 +164,29 @@
     var n=+v||0,cls=n>0?'pos':n<0?'neg':'';
     return '<li><span class="k">'+esc(k)+'</span><b class="'+cls+'">'+(n>0?'+':'')+esc(n)+'</b><span class="s">'+esc(s||'')+'</span></li>';
   }
+  /* ── NEW WEAPON ────────────────────────────────────────────────────────
+     The man most recently kept from a pack, until he has played a game in
+     your hands: who he is, where he starts, the matchup he lines up against,
+     and the one thing to do about it. After that, what he has done for you. */
+  function tierWord(k){return k?k.charAt(0).toUpperCase()+k.slice(1):'';}
+  function weaponCard(snap,g){
+    var w=snap&&snap.weapon;if(!w||!w.name)return '';
+    var opp=(g&&g.opponent)||{},n=FR.STARTERS[w.position]||1,d=w.depth|0,starts=d>=1&&d<=n;
+    var slot=w.position+(n>1&&starts?d:'');
+    var off=['QB','RB','WR','TE','OL'].indexOf(w.position)>=0;
+    var edge=off&&opp.defense_r!=null?'Their defense rates <b>'+esc(opp.defense_r)+'</b> — he lines up against it.'
+      :!off&&opp.offense_r!=null?'Their offense rates <b>'+esc(opp.offense_r)+'</b> — he lines up against it.':'';
+    var ls=w.live_stats||{},gp=ls.games|0;
+    if(!(w.games_since|0)){
+      return '<div class="gd-weapon"><div class="k">New weapon</div>'
+        +'<div class="t"><b>'+esc(w.position)+' '+esc(w.name)+'</b> · '+esc(w.overall)+' OVR · '+esc(tierWord(w.tier))+'</div>'
+        +'<div class="s">'+(starts?'Starts at <b>'+esc(slot)+'</b>. ':'On the chart at '+esc(w.position)+esc(d||'')+' — <a href="/games/roster/">set the lineup</a> to start him. ')+edge+'</div>'
+        +'<div class="btn-row"><a class="btn btn-go" href="/games/play/" data-weapon="1">Play the next game</a></div></div>';
+    }
+    if(!gp)return '';
+    return '<div class="gd-weapon quiet"><div class="k">In your hands</div>'
+      +'<div class="t"><b>'+esc(w.position)+' '+esc(w.name)+'</b> · '+esc(FR.statsLine(w.position,ls,{games:true})||(gp+' GP'))+'</div></div>';
+  }
   function pregame(snap,ph){
     var f=snap.franchise,g=ph.game,opp=g.opponent||{},ss=snap.season||{};
     var prep=snap.prep||FR.prep(snap.week||{}),ed=FR.matchupEdges(f,g,prep),todo=prepList(prep);
@@ -170,6 +194,7 @@
     return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season I')+' · '
       +(g.bowl?esc(g.bowl_name||'The bowl'):'Week '+esc(g.week)+' of '+esc(ss.weeks||8))
       +(g.rival?' · <span class="rival-tag">Rivalry game</span>':'')+'</div>'
+      +weaponCard(snap,g)
       +(g.bowl?'<div class="bowl"><div class="k">Postseason</div><div class="t">'+esc(g.bowl_name||'The bowl')+'</div>'
         +'<div class="s">'+esc(ss.label||'The season')+' finished '+esc((ss.wins|0)+'–'+(ss.losses|0))+' and earned a ninth game, '
         +'against a club rated above you. It counts in the record like any other.</div></div>':'')

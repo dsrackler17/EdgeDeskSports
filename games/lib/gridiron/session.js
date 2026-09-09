@@ -75,6 +75,9 @@
     art: true,
     sound: true,
     haptics: true,
+    /* the broadcast's replay of a score, a takeaway, a stand or a huge play;
+       skippable by a tap, and off entirely here */
+    replay: true,
     /* ARCADE BY DEFAULT. Four two-minute quarters that still hold a game's
        worth of snaps, because the clock charges a fraction of the dead ball
        (DEAD_SCALE). A phone game that runs fifteen-minute quarters is a

@@ -705,28 +705,59 @@
   }
 
   /* a tap on the field is a throw, if it lands on a badge */
+  /* ── A TAP IS A THROW; A TAP HELD IS A BULLET ────────────────────────
+     The finger lands on the badge and the badge arms — a gold ring grows
+     out of it. Let go inside a fifth of a second and it is the ordinary
+     football; hold it past that and the ball leaves harder and lower. The
+     throw goes on the release, so the hold is something you can see and
+     feel (a second light pulse when the bullet is ready) rather than a
+     timer you have to trust. Nobody needs five kinds of throw. */
+  var HOLD_MS = 220;
+  var armed = null, armTimer = null;
+  function throwArmed(a) {
+    if (!a) return;
+    clearTimeout(armTimer);
+    if (stage && stage.armTarget) stage.armTarget(-1);
+    var kind = (Date.now() - a.at >= HOLD_MS) ? 'bullet' : null;
+    if (stage && stage.throwTo(a.idx, kind)) {
+      if (kind) { SOUND.kick(); buzz('medium'); } else SOUND.tap();
+      padRun();
+    }
+  }
   function wireFieldTaps() {
     /* A TAP IS ONE TAP. A touch screen fires touchstart and then a synthetic
        mousedown for the same finger, and both were throwing the ball: the
        simulation ignores the second one, but the sound and the buzz fired
        twice and it read as a stutter. */
     var lastTap = 0;
-    function at(e) {
+    function down(e) {
       var now = Date.now();
       if (now - lastTap < 400) return;
+      /* a replay is skipped by a tap anywhere on it */
+      if (stage && stage.replaying && stage.replaying()) { lastTap = now; stage.skipReplay(); if (e.cancelable) e.preventDefault(); return; }
       var t = e.changedTouches ? e.changedTouches[0] : e;
       var b = canvas.getBoundingClientRect();
       var i = stage.hitTarget(t.clientX - b.left, t.clientY - b.top);
       if (i >= 0) {
         lastTap = now;
-        SOUND.tap(); buzz('light');
-        stage.throwTo(i);
-        padRun();
+        armed = { idx: i, at: now };
+        stage.armTarget(i);
+        buzz('light');
+        clearTimeout(armTimer);
+        armTimer = setTimeout(function () { if (armed) buzz('light'); }, HOLD_MS);
         if (e.cancelable) e.preventDefault();
       }
     }
-    canvas.addEventListener('touchstart', at, { passive: false });
-    canvas.addEventListener('mousedown', at);
+    function up() {
+      if (!armed) return;
+      var a = armed; armed = null;
+      throwArmed(a);
+    }
+    canvas.addEventListener('touchstart', down, { passive: false });
+    canvas.addEventListener('mousedown', down);
+    window.addEventListener('touchend', up);
+    window.addEventListener('touchcancel', up);
+    window.addEventListener('mouseup', up);
   }
 
   function slotName(s) {
@@ -901,8 +932,9 @@
       return;
     }
     if (/^[1-5]$/.test(k) && live && !onDef && stage) {
+      if (e.repeat) { e.preventDefault(); return; }
       var i = parseInt(k, 10) - 1, list = stage.receivers();
-      if (list && list[i]) { stage.throwTo(i); SOUND.tap(); padRun(); }
+      if (list && list[i] && !armed) { armed = { idx: i, at: Date.now(), key: k }; stage.armTarget(i); }
       e.preventDefault(); return;
     }
     if (k === 'Tab' && live && onDef) { act('switch'); e.preventDefault(); return; }
@@ -915,6 +947,7 @@
   window.addEventListener('keyup', function (e) {
     var k = e.key;
     if (k === ' ') { if (stage) stage.sprint(false); }
+    if (armed && armed.key === k) { var a2 = armed; armed = null; throwArmed(a2); }
     if (KEYS.held[k]) { delete KEYS.held[k]; keySteer(); }
   });
 
@@ -962,8 +995,11 @@
     autoT = setTimeout(function () { autoT = null; doSnap(); }, 700);
   }
 
+  var snapSit = null;
   function lineUp(playKey, formKey, defKey, ps, sit) {
     var offT = G.teamOf(game, sit.offense), defT = G.teamOf(game, sit.defense);
+    snapSit = { down: sit.down, toGo: sit.toGo, toGoal: sit.toGoal, offense: sit.offense, quarter: sit.quarter,
+                clock: sit.clock, score: { home: game.score.home, away: game.score.away } };
     stage.setUserSide(sit.offense === me ? 'off' : 'def');
     stage.setMode(set.mode);
     stage.teams(kitFor(sit.offense === me ? 'me' : 'opp'), kitFor(sit.offense === me ? 'opp' : 'me'),
@@ -978,7 +1014,9 @@
     var env = G.prepare({
       off: offT, def: defT, rand: game.aiRand || game.rand, tick: game.tick,
       playKey: playKey, formKey: formKey, defCall: defKey,
-      sit: sit, mem: game.mem[sit.offense], weather: game.weather
+      sit: sit, mem: game.mem[sit.offense], weather: game.weather,
+      /* the tier sharpens the OTHER side's defence and nothing of yours */
+      difficulty: sit.offense === me ? set.difficulty : 'pro'
     });
     stage.lineUp({
       play: playKey, formation: formKey, def: defKey,
@@ -1182,11 +1220,19 @@
         SOUND.first(); buzz('medium'); crowdUp(0.55, 0.22);
         banner({ kind: 'first', head: 'First down', color: myColor, hold: 950 });
       } else {
-        SOUND.hit(!!p.big); buzz(p.big ? 'medium' : 'light');
+        /* ── THE HIT ─────────────────────────────────────────────────────
+           The simulation says how hard it landed. A square tackle at closing
+           speed is a bump on the lens, a stronger pulse in the hand and the
+           heavier sound; a drag-down is barely any of those. */
+        var force = p.hit ? p.hit.force : 0;
+        SOUND.hit(!!p.big || force > 0.72); buzz(force > 0.72 ? 'medium' : 'light');
+        if (stage && stage.bump && force > 0.2) stage.bump(0.05 + force * 0.17);
         if (p.big) crowdUp(0.7, 0.22);
+        if (force > 0.82 && p.hit.by) say(FRname(p.hit.by) + ' laid him out.');
       }
       setTimeout(function () { SOUND.whistle(); }, 230);
       if (!p.touchdown) resultCard(p);
+      try { bigPlay(p, kind); } catch (e) { if (window.console) console.warn('bigPlay', e); }
       /* THE FOOTBALL DOES NOT STOP BECAUSE A CAPTION FAILED. Everything from
          here to the end of this handler is what moves the game on — the
          clock, the score, the next call — and the line above the numbers is
@@ -1194,13 +1240,160 @@
          stopped dead on the first snap of every game: no next play, no clock,
          nothing to press. Decoration gets a net; the game does not need one. */
       try { milestone(p); } catch (e) { if (window.console) console.warn('milestone', e); }
+      try { broadcastBit(p); } catch (e) { if (window.console) console.warn('bit', e); }
       ballX = drift(ballX);
     }
     padClear();
     paintScore();
     var wait = set.speed === 'instant' ? 260
       : (p && p.touchdown) ? 2200 : (p && p.turnover) ? 1500 : 900;
-    setTimeout(function () { busy = false; flow('TRANSITION', 'next down'); nextCall(); }, wait);
+    var proceed = function () { busy = false; flow('TRANSITION', 'next down'); nextCall(); };
+    /* ── THE REPLAY ──────────────────────────────────────────────────────
+       Reserved for the plays a broadcast shows again. It runs after the
+       graphic has had its moment, off the tape the stage kept, at half
+       speed from a low lens; a tap skips it and the game moves on. */
+    if (p && replayWorthy(p, kind)) {
+      setTimeout(function () {
+        var ok = stage && stage.replay && stage.replay({ speed: 0.5, onEnd: function () { replaySkip(false); setTimeout(proceed, 320); } });
+        if (!ok) { proceed(); return; }
+        replaySkip(true);
+        if (GM && GM.track) GM.track('gridiron_replay', { kind: kind, yards: p.yards | 0, touchdown: !!p.touchdown, turnover: p.turnover || null });
+      }, Math.max(300, wait - 250));
+    } else setTimeout(proceed, wait);
+  }
+  /* which plays are shown again: a score from distance, any takeaway, a
+     fourth-down stand, a huge gain, and the play that took the lead late */
+  function replayWorthy(p, kind) {
+    if (set.replay === false || set.speed === 'instant' || !stage || !stage.hasReplay || !stage.hasReplay()) return false;
+    if (p.touchdown && ((p.yards | 0) >= 20 || p.turnover)) return true;
+    if (p.turnover) return true;
+    if (snapSit && snapSit.down === 4 && !p.firstDown && !p.touchdown && !p.turnover && !p.punt) return true;
+    if ((p.yards | 0) >= 35) return true;
+    if (p.touchdown && snapSit && snapSit.quarter >= 4 && snapSit.clock <= 120) {
+      var sc = game.pendingScore ? game.pendingScore.side : snapSit.offense;
+      var before = snapSit.score[sc] - snapSit.score[G.other(sc)];
+      if (before <= 0) return true;
+    }
+    return false;
+  }
+  function replaySkip(on) {
+    var old = fieldWrap.querySelector('.rp-skip');
+    if (old) old.parentNode.removeChild(old);
+    if (!on) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'rp-skip'; b.textContent = 'Skip';
+    b.addEventListener('click', function () { if (stage && stage.skipReplay) stage.skipReplay(); });
+    fieldWrap.appendChild(b);
+  }
+  /* ── THE BIG PLAY ────────────────────────────────────────────────────
+     A score has its own moment and a takeaway its banner. This is the rest
+     of what a broadcast puts a graphic on: a fourth-down stand, a huge gain,
+     and the man's day so far under it. Short; the football is waiting. */
+  function bigPlay(p, kind) {
+    if (!game || !p || p.touchdown || p.turnover) return;
+    var stand = snapSit && snapSit.down === 4 && !p.firstDown && !p.punt;
+    if (stand) {
+      var mineStop = snapSit.offense !== me;
+      banner({ kind: mineStop ? 'first' : 'bad', eyebrow: 'Fourth down',
+        head: snapSit.toGoal <= 5 ? 'Goal-line stand' : 'Stopped', sub: 'Turnover on downs',
+        color: kitFor(mineStop ? 'me' : 'opp').primary, hold: 1400 });
+      crowdUp(mineStop ? 0.85 : 0.5, 0.3);
+      return;
+    }
+    if ((p.yards | 0) >= 30) {
+      var man = p.target || p.carrier, st = man ? game.players[man.uid || man.id] : null;
+      banner({ kind: 'good', eyebrow: 'Big play', head: (p.yards | 0) + '-yard ' + (p.completion ? 'catch' : 'run'),
+        sub: st ? FRname(man) + ' · ' + dayLine(st) : (man ? FRname(man) : ''),
+        color: kitFor(snapSit && snapSit.offense === me ? 'me' : 'opp').primary, hold: 1500 });
+    }
+  }
+  /* a man's day in one line, in the position's own numbers */
+  function dayLine(st) {
+    if (!st) return '';
+    if (st.position === 'QB') return st.pc + '/' + st.pa + ' · ' + st.py + ' YDS' + (st.ptd ? ' · ' + st.ptd + ' TD' : '') + (st.pint ? ' · ' + st.pint + ' INT' : '');
+    if (st.position === 'RB') return st.car + ' CAR · ' + st.ry + ' YDS' + (st.rtd ? ' · ' + st.rtd + ' TD' : '') + (st.rec ? ' · ' + st.rec + ' REC' : '');
+    if (st.position === 'WR' || st.position === 'TE') return st.rec + ' REC · ' + st.recy + ' YDS' + (st.rectd ? ' · ' + st.rectd + ' TD' : '');
+    return st.tkl + ' TKL' + (st.sack ? ' · ' + st.sack + ' SACK' : '') + (st.int ? ' · ' + st.int + ' INT' : '');
+  }
+  /* ── THE DEAD-BALL BIT ───────────────────────────────────────────────
+     Every few ordinary plays the broadcast fills the dead ball with one
+     short fact: the man having the day, this drive, third downs, the
+     matchup. Never on a play that already has a graphic, never long. */
+  var bitCount = 0, bitTurn = 0;
+  function broadcastBit(p) {
+    if (!game || !p || p.touchdown || p.turnover || p.sack || (p.yards | 0) >= 30) return;
+    bitCount++;
+    if (bitCount % 4 !== 0) return;
+    var sit = G.situation(game), off = snapSit ? snapSit.offense : sit.offense;
+    var st = game.stats[off] || {}, drive = game.drive, text = null, eyebrow = null;
+    var tries = 0;
+    while (!text && tries++ < 5) {
+      var pick = (bitTurn++) % 5;
+      if (pick === 4) {
+        var ms = milestoneBit(off);
+        if (ms) { eyebrow = ms.eyebrow; text = ms.text; }
+      } else if (pick === 0) {
+        var best = null, bestV = 0;
+        Object.keys(game.players || {}).forEach(function (k) {
+          var m = game.players[k];
+          if (m.side !== off) return;
+          var v = (m.py || 0) * 0.55 + (m.ry || 0) + (m.recy || 0) + (m.tkl || 0) * 4 + (m.sack || 0) * 25;
+          if (v > bestV) { bestV = v; best = m; }
+        });
+        if (best && bestV >= 45) {
+          /* a man who came out of the Vault is announced as one */
+          eyebrow = (best.acq === 'pack' && off === me ? 'From the Vault' : (off === me ? teams.me.abbr : teams.opp.abbr)) + ' · ' + best.position;
+          text = '<b>' + esc(best.name) + '</b><br>' + esc(dayLine(best));
+        }
+      } else if (pick === 1) {
+        if (drive && drive.side === off && (drive.plays | 0) >= 3) { eyebrow = 'This drive'; text = '<b>' + drive.plays + ' plays, ' + (drive.yards | 0) + ' yards</b>'; }
+      } else if (pick === 2) {
+        if ((st.thirdAtt | 0) >= 3) { eyebrow = 'Third down'; text = '<b>' + (st.thirdConv | 0) + ' of ' + st.thirdAtt + '</b> today'; }
+      } else {
+        var box = G.boxScore(game), mine = box[me], theirs = box[G.other(me)];
+        if ((mine.yards | 0) + (theirs.yards | 0) >= 120) { eyebrow = 'Total yards'; text = '<b>' + esc(teams.me.abbr) + ' ' + (mine.yards | 0) + '</b> · ' + esc(teams.opp.abbr) + ' ' + (theirs.yards | 0); }
+      }
+    }
+    if (!text) return;
+    var old = fieldWrap.querySelector('.bit');
+    if (old) old.parentNode.removeChild(old);
+    var d = document.createElement('div');
+    d.className = 'bit';
+    d.style.setProperty('--bc', kitFor(off === me ? 'me' : 'opp').primary || '#f2c744');
+    d.innerHTML = '<i>' + esc(eyebrow) + '</i>' + text;
+    fieldWrap.appendChild(d);
+    setTimeout(function () { d.classList.add('out'); }, 2600);
+    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 3000);
+  }
+  /* A MILESTONE, CALLED ONCE. The careers your men carry — the simulation's
+     and the one in your hands — plus tonight's line: when tonight takes a
+     man across a round number the broadcast says so, once. Only your side
+     has careers, so only your side is ever called. */
+  var MILESTONES = { yds: [500, 1000, 2500, 5000, 10000], td: [5, 10, 25, 50], tkl: [50, 100, 250, 500] };
+  function milestoneBit(off) {
+    if (off !== me || !game) return null;
+    var found = null;
+    Object.keys(game.players || {}).some(function (k) {
+      var m = game.players[k];
+      if (m.side !== me || (!m.career && !m.live)) return false;
+      var c = m.career || {}, l = m.live || {};
+      var before = {}, tonight = {};
+      if (m.position === 'QB') { before.yds = (c.yds | 0) + (l.yds | 0); tonight.yds = m.py | 0; before.td = (c.td | 0) + (l.td | 0); tonight.td = m.ptd | 0; }
+      else if (m.position === 'RB') { before.yds = (c.yds | 0) + (l.yds | 0); tonight.yds = m.ry | 0; before.td = (c.td | 0) + (l.td | 0); tonight.td = m.rtd | 0; }
+      else if (m.position === 'WR' || m.position === 'TE') { before.yds = (c.yds | 0) + (l.yds | 0); tonight.yds = m.recy | 0; before.td = (c.td | 0) + (l.td | 0); tonight.td = m.rectd | 0; }
+      else { before.tkl = (c.tkl | 0) + (l.tkl | 0); tonight.tkl = m.tkl | 0; }
+      return Object.keys(before).some(function (stat) {
+        return MILESTONES[stat].some(function (line) {
+          var key = k + ':' + stat + ':' + line;
+          if (milestoned[key] || before[stat] >= line || before[stat] + tonight[stat] < line) return false;
+          milestoned[key] = 1;
+          found = { eyebrow: (m.acq === 'pack' ? 'Milestone · From the Vault' : 'Milestone'),
+            text: '<b>' + esc(m.name) + '</b><br>' + esc(line.toLocaleString() + ' career ' + (stat === 'yds' ? 'yards' : stat === 'td' ? 'touchdowns' : 'tackles') + ' · in your hands') };
+          return true;
+        });
+      });
+    });
+    return found;
   }
   /* THE BALL IS SPOTTED BETWEEN THE HASHES, and it wanders like a real one.
      Drawn from the game's own coaching stream rather than a loose die, so the
@@ -1841,11 +2034,77 @@
           return '<div class="' + cls + '">' + esc(who) + ' · ' + d.plays + ' plays, ' + d.yards + ' yards · '
             + esc(driveWord(d.outcome)) + '</div>';
         }).join('') + '</div>'
+      + '<div id="frPanel" class="fr-panel" hidden></div>'
       + '<div class="btn-row"><button class="btn btn-go" id="btnAgain" type="button">Play again</button>'
       + '<a class="btn btn-ghost" href="/games/gameday/">Back to Game Day</a></div>', true);
     $('btnAgain').onclick = function () { closeOverlay(); newGame(); };
+    fileFranchise();
     if (GM && GM.track) GM.track('gridiron_game_finished', { won: won, score_for: game.score[me],
       score_against: game.score[them], difficulty: set.difficulty, mode: set.mode, plays: game.plays.length });
+  }
+  /* ── THE GAME YOU HOLD COUNTS ─────────────────────────────────────────
+     A finished game is filed with the franchise under its own key — the
+     seed and the moment it started — with the score, the yards, the
+     touchdowns, the tier the defence was set to, and every man of yours with
+     his line in the keys his career already uses. The server checks the
+     shape, credits once by its table, weighs it toward the rank, and seals a
+     Game Day pack every fifth game at Pro or harder. The panel shows what
+     the server said, never what the page hoped. */
+  function livePayload() {
+    var them = G.other(me), st = game.stats[me] || {}, box = G.boxScore(game), mine = box[me] || {};
+    var men = [], seen = {};
+    Object.keys(game.players || {}).forEach(function (k) {
+      var m = game.players[k];
+      if (m.side !== me || !m.uid) return;
+      var line = FR.liveLine(m.position, m);
+      if (line) { men.push({ id: m.uid, stats: line }); seen[m.uid] = 1; }
+    });
+    /* the men who started and never touched the ball still played the game */
+    ((teams.me && teams.me.players) || []).forEach(function (p) {
+      if (!p || !p.id || seen[p.id]) return;
+      if ((p.depth | 0) >= 1 && (p.depth | 0) <= (FR.STARTERS[p.position] || 1) && p.status === 'active') men.push({ id: String(p.id), stats: { games: 1 } });
+    });
+    return { difficulty: set.difficulty, length: set.length, score_for: game.score[me] | 0, score_against: game.score[them] | 0,
+      plays: game.plays.length, yards: mine.yards | 0, touchdowns: (st.passTD | 0) + (st.rushTD | 0) + (st.defTD | 0),
+      turnovers: (st.ints | 0) + (st.fumblesLost | 0), opponent: title(teams.opp), players: men.slice(0, 60) };
+  }
+  function fileFranchise() {
+    var panel = $('frPanel');
+    if (!panel || !FR || !FR.recordLiveGame || !FR.hasFranchise || !FR.hasFranchise() || !game || !game.meta) return;
+    var key = String(game.meta.seed) + ':' + (game.meta.startedAt || 0);
+    var payload = livePayload(), est = FR.liveRewards(payload);
+    panel.hidden = false;
+    panel.innerHTML = '<h3>Your franchise</h3><div class="muted">Filing the result… a game like this is worth about '
+      + esc(est.xp) + ' XP and ' + esc(est.tc) + ' Credits at ' + esc(set.difficulty) + '.</div>';
+    FR.recordLiveGame(key, payload).then(function (r) { paintFranchisePanel(r, payload); },
+      function () { paintFranchisePanel({ ok: false }, payload); });
+  }
+  function paintFranchisePanel(r, payload) {
+    var panel = $('frPanel');
+    if (!panel) return;
+    var html = '<h3>Your franchise</h3>';
+    if (r && r.ok && r.data) {
+      var d = r.data, rank = d.rank || {}, gd = d.gameday || {};
+      html += (GM && GM.rewardPanel) ? GM.rewardPanel(r) : '';
+      if (d.capped) html += '<div class="muted">Today\'s ' + esc(d.gameday && d.gameday.cap || 5) + ' credited games are in. This one counts for the record and the careers, not the Credits.</div>';
+      if (!d.already && !d.capped) html += '<div class="fr-line"><b>+' + esc(d.rank_gain | 0) + '</b> toward rank ' + esc((rank.rank | 0) + 1) + ' · ' + esc(rank.to_next | 0) + ' to go · a Gridiron Cache waits at every rank</div>';
+      if ((d.packs_new | 0) > 0) html += '<div class="fr-pack"><b>A Game Day pack is sealed in the Vault.</b> Five games finished at Pro or harder. <a class="btn btn-go" href="/games/packs/">Open it in the Vault</a></div>';
+      else if (gd.per_pack) html += '<div class="fr-line"><b>' + esc(gd.toward | 0) + ' of ' + esc(gd.per_pack) + '</b> live games at Pro or harder toward a Game Day pack'
+        + (set.difficulty === 'rookie' ? ' · Rookie games count for the record, not the pack' : '') + '</div>';
+      if (d.result && (d.result.men | 0) > 0) html += '<div class="fr-line"><b>' + esc(d.result.men) + '</b> of your men added tonight to the career in your hands</div>';
+      var snap = null; try { snap = FR.snapshot(); } catch (_) {}
+      var prep = snap && FR.prep ? FR.prep(snap.week || {}) : null;
+      if (prep && prep.preparation != null) html += '<div class="fr-line">Preparation <b>' + esc(prep.preparation | 0) + '%</b> this week — the Price Its, drills and film that set the team up</div>';
+    } else if (r && r.queued) {
+      html += '<div class="muted">Saved here. EdgeDesk could not be reached, so this credits the next time you are online.</div>';
+    } else if (r && r.skipped) {
+      panel.hidden = true; return;
+    } else {
+      html += '<div class="muted">This game could not be filed with your franchise' + (r && r.message ? ': ' + esc(r.message) : '.') + '</div>';
+    }
+    panel.innerHTML = html;
+    if (GM && GM.track) GM.track('gridiron_game_filed', { ok: !!(r && r.ok), already: !!(r && r.data && r.data.already), capped: !!(r && r.data && r.data.capped),
+      xp: r && r.data && r.data.rewards ? r.data.rewards.xp : null, packs_new: r && r.data ? r.data.packs_new : null, difficulty: set.difficulty });
   }
   function driveWord(o) {
     return { td: 'touchdown', fg: 'field goal', fg_miss: 'missed field goal', punt: 'punt',
@@ -1982,8 +2241,9 @@
       + row('Play art', 'Routes, run paths and blitz arrows before the snap', seg('art', [[true, 'On'], [false, 'Off']], set.art))
       + row('Sound', 'Short cues, no music', seg('sound', [[true, 'On'], [false, 'Off']], set.sound))
       + row('Haptics', 'Where the device supports it', seg('haptics', [[true, 'On'], [false, 'Off']], set.haptics))
+      + row('Replays', 'A score, a takeaway, a stand or a huge play, shown again at half speed; a tap skips it', seg('replay', [[true, 'On'], [false, 'Off']], set.replay !== false))
       + '<div class="muted" style="padding-top:12px">Game length applies to the next game you start.</div>'
-      + '<div class="muted" style="padding-top:6px">Keyboard: arrows or WASD steer · Space snaps, then sprints · J K L are the three moves · 1–5 throw to a badge · Tab switches the defender.</div>'
+      + '<div class="muted" style="padding-top:6px">Keyboard: arrows or WASD steer · Space snaps, then sprints · J K L are the three moves · 1–5 throw to a badge, held for a bullet · Tab switches the defender.</div>'
       + '<div class="btn-row"><button class="btn btn-go" id="btnDone" type="button">Done</button></div>');
     Array.prototype.forEach.call(ovHost.querySelectorAll('[data-set]'), function (b) {
       b.onclick = function () {
@@ -2230,6 +2490,7 @@
     game = S.build({ me: teams.me, opponent: teams.opp, home: teams.home !== false,
       week: teams.week || 1, season: teams.season || 1, opponentKey: teams.oppKey,
       weather: cond(), settings: set });
+    game.meta.startedAt = Date.now();
     me = game.meta.user;
     startPlaying();
     if (GM && GM.track) GM.track('gridiron_game_started', { difficulty: set.difficulty, mode: set.mode });

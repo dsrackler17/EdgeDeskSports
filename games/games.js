@@ -472,6 +472,8 @@
     { key: 'trophies', href: '/games/trophies/',         label: 'Trophy Room',  cls: 'gh-only-wider' },
     /* the draft and the market: where Scouting Points are spent (Phase 5) */
     { key: 'market',   href: '/games/market/',           label: 'Market',       cls: 'gh-only-wider' },
+    /* the Exchange: the market between franchises (Phase 19) */
+    { key: 'exchange', href: '/games/exchange/',         label: 'Exchange',     cls: 'gh-only-wider' },
     /* the conference: a league of friends with standings of its own (Phase 6).
        League (Groups) stays what it is — the leaderboard league for the real
        games; this is the franchise one. */
@@ -565,7 +567,7 @@
      configures them from the same config.json the social layer uses. Either
      every /games page can report a problem and finish a confirmation link, or
      none can; there is no in-between to debug. */
-  var SHARED_V = '20260909a';   /* stamped by tools/games/bump_assets.js */
+  var SHARED_V = '20260909g';   /* stamped by tools/games/bump_assets.js */
   var _shared = null;
   function sharedLibs() {
     if (_shared) return _shared;
