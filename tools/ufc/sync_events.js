@@ -138,6 +138,7 @@ function resolveBouts(bouts, index, aliases) {
       const corner = p[0], name = p[1], pid = p[2];
       const r = R.resolveFighter(name, pid, index, aliases);
       b[corner + '_fighter_id'] = r.fighter_id || null;
+      if (r.method === 'placeholder') return;   /* "TBA": not a fighter, not a miss */
       if (!r.fighter_id) {
         const k = (pid || '') + '|' + R.normName(name);
         if (!seen.has(k)) { seen.add(k); unmatched.push({ name, provider_id: pid, reason: r.method === 'ambiguous' ? 'ambiguous' : 'no_match', candidates: r.candidates }); }
@@ -145,12 +146,12 @@ function resolveBouts(bouts, index, aliases) {
       }
       if (pid && r.method !== 'provider_id') {
         aliasRows.push({ alias_key: 'espn:' + String(pid), fighter_id: r.fighter_id, display_name: name, source: 'sync',
-          confidence: r.method === 'exact' ? 'exact' : (r.method === 'name_order' ? 'name_order' : (r.method === 'surname' ? 'surname' : 'exact')) });
+          confidence: ['exact', 'name_order', 'surname', 'first_last'].indexOf(r.method) >= 0 ? r.method : 'exact' });
       }
       const nk = R.normName(name);
       if (nk && r.method !== 'exact' && r.method !== 'alias')
         aliasRows.push({ alias_key: 'name:' + nk, fighter_id: r.fighter_id, display_name: name, source: 'sync',
-          confidence: r.method === 'provider_id' ? 'provider_id' : (r.method === 'name_order' ? 'name_order' : 'surname') });
+          confidence: ['provider_id', 'name_order', 'surname', 'first_last'].indexOf(r.method) >= 0 ? r.method : 'surname' });
     });
   });
   const dedup = {};

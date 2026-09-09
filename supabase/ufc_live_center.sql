@@ -329,8 +329,15 @@ create table if not exists ufc.fighter_aliases (
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   constraint ufc_aliases_confidence_shape check
-    (confidence in ('exact','provider_id','name_order','surname','curated','manual'))
+    (confidence in ('exact','provider_id','name_order','first_last','surname','curated','manual'))
 );
+-- Widened after the first production sync: a first-and-last-name resolution
+-- ("Jose Miguel Delgado" -> Jose Delgado, unique on file) is its own kind.
+-- Dropping and re-adding a CHECK is additive here: it admits one more value
+-- and refuses nothing it admitted before.
+alter table ufc.fighter_aliases drop constraint if exists ufc_aliases_confidence_shape;
+alter table ufc.fighter_aliases add constraint ufc_aliases_confidence_shape check
+  (confidence in ('exact','provider_id','name_order','first_last','surname','curated','manual'));
 create index if not exists ufc_aliases_fighter_idx on ufc.fighter_aliases (fighter_id);
 drop trigger if exists ufc_fighter_aliases_touch on ufc.fighter_aliases;
 create trigger ufc_fighter_aliases_touch before update on ufc.fighter_aliases

@@ -63,6 +63,16 @@ eq('an unknown name resolves to nothing, not to a neighbour', R.resolveFighter('
 eq('a provider id alias wins over the name', R.resolveFighter('Somebody Else', '99', IX, { 'espn:99': 'jon-jones' }).method, 'provider_id');
 eq('a stored name alias resolves', R.resolveFighter('Bones Jones', null, IX, { 'name:bones jones': 'jon-jones' }).fighter_id, 'jon-jones');
 chk('a name that does not reach a match keeps the ambiguity visible', R.resolveFighter('Smith', null, IX, {}).fighter_id === null);
+const IX2 = R.buildFighterIndex(FIGHTERS.concat([{ fighter_id: 'jose-delgado', full_name: 'Jose Delgado' }, { fighter_id: 'carlos-delgado', full_name: 'Carlos Delgado' }, { fighter_id: 'ana-maria-costa', full_name: 'Ana Maria Costa' }, { fighter_id: 'ana-lima-costa', full_name: 'Ana Lima Costa' }]));
+eq('a feed name with a middle name resolves to the unique first+last on file (Jose Miguel Delgado)', R.resolveFighter('Jose Miguel Delgado', null, IX2, {}).fighter_id, 'jose-delgado');
+eq('and the method says so', R.resolveFighter('Jose Miguel Delgado', null, IX2, {}).method, 'first_last');
+chk('a first+last pair shared by two people on file is refused', R.resolveFighter('Ana Costa', null, IX2, {}).method === 'ambiguous');
+chk('a shared surname is still not enough (Chris Smith is not Colby Smith)', R.resolveFighter('C. Smith', null, IX2, {}).fighter_id === null);
+eq('the provider\'s TBA placeholder is a placeholder, not a miss', R.resolveFighter('Opponent TBA', '4402367', IX2, {}).method, 'placeholder');
+chk('sameName tolerates a middle name and nothing else', R.sameName('Jose Delgado', 'Jose Miguel Delgado') && R.sameName('Jon Jones Jr.', 'Jon Jones') && !R.sameName('Chris Smith', 'Colby Smith') && !R.sameName('Jose Delgado', 'Carlos Delgado'));
+const nMid = R.normalizeFixture(R.groupFixtures([{ sig_key: 'm1', event_id: 'oddsM', market: 'h2h', selection: 'Jean Silva', home_team: 'Jean Silva', away_team: 'Jose Delgado', best_dec: 1.5 }, { sig_key: 'm2', event_id: 'oddsM', market: 'h2h', selection: 'Jose Delgado', home_team: 'Jean Silva', away_team: 'Jose Delgado', best_dec: 2.6 }])[0]);
+const lMid = R.linkFixture(nMid, [{ bout_id: 'main', event_id: 'e', red_name: 'Jean Silva', blue_name: 'Jose Miguel Delgado' }], null);
+chk('a fixture links to a bout whose provider name carries a middle name', lMid.ok && lMid.link.red_sig_key === 'm1' && lMid.link.blue_sig_key === 'm2', JSON.stringify(lMid));
 
 /* ======================================================================== */
 /* 2. THE DRAW RULE                                                         */
@@ -297,6 +307,9 @@ async function syncWith(db, doc, now, extra) {
   eq('the sync stores the event and its bouts', [db.count('ufc', 'events'), db.count('ufc', 'bouts')], [1, 3]);
   chk('bouts resolved to both fighters where the dataset has them', s1.resolved === 2 && db.rows('ufc', 'bouts').filter(b => b.bout_id === 'espn:401900101')[0].red_fighter_id === 'marco-testerson');
   chk('unresolved names are reported, not guessed', s1.unmatched.length === 2 && db.rows('ufc', 'bouts').filter(b => b.bout_id === 'espn:401900103')[0].red_fighter_id === null);
+  const dbT = seedDb();
+  const sT = await syncWith(dbT, M.card({ bouts: [{ id: '401900109', order: 1, red: { id: '5000001', name: 'Marco Testerson' }, blue: { id: '4402367', name: 'Opponent TBA' } }] }), '2026-09-13T10:00:00Z', { market: false });
+  chk('a TBA opponent is stored as the provider names it and is not listed as unresolved', sT.unmatched.length === 0 && dbT.rows('ufc', 'bouts')[0].blue_name === 'Opponent TBA' && dbT.rows('ufc', 'bouts')[0].blue_fighter_id === null);
   chk('a surname resolution earns a provider-id alias', db.rows('ufc', 'fighter_aliases').some(a => a.alias_key === 'espn:5000004' && a.fighter_id === 'alexander-placeholder'));
   const s2 = await syncWith(db, M.card({ bouts: bouts() }), '2026-09-13T16:00:00Z');
   eq('the same card twice is the same rows', [db.count('ufc', 'events'), db.count('ufc', 'bouts'), db.count('ufc', 'bout_markets')], [1, 3, 0]);
