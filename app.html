@@ -33297,7 +33297,8 @@ function fbLoadCfb(signal){
     }
     S.absorbed=absorbed;
     S.up.sort(function(a,b){return a.t-b.t;});
-    S.up=S.up.slice(0,40);
+    /* the full FBS-vs-FBS slate inside the window; the old 40-game cap cut a
+       normal Saturday short */
     /* consensus book context from the ingested cfb schema, keyed by CFBD id */
     var ids=S.up.map(function(u){return u.g.game_id;}).filter(Boolean);
     var linesP=ids.length?sbFetch('lines?select=game_id,provider,spread,over_under&game_id=in.('+ids.map(encodeURIComponent).join(',')+')',{'accept-profile':'cfb'},signal).catch(function(){S.notes.push('cfb.lines not reachable — no book context joined');return [];}):Promise.resolve([]);
@@ -34836,7 +34837,10 @@ function fbP4Load(force,signal){
         S.up.push({g:r,t:t});
       });
       S.up.sort(function(a,b){return a.t-b.t;});
-      S.up=S.up.slice(0,30);
+      /* every Power 4 game inside the window stays on the board. An earlier
+         build kept only the first 30 by kickoff, which silently dropped the
+         back half of a full Saturday slate — the header said 30 GAMES and
+         nothing said the rest existed. */
       if(!S.up.length)S.notes.push('No Power 4 game kicks off inside the next '+FBP4_LOOKAHEAD_D
         +' days in the '+S.schedSrc+' feed.');
       /* per-team season index for the engine's schedule-stress layer:
