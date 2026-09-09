@@ -514,6 +514,7 @@
           onThrow: events.onThrow || null,
           onCatch: events.onCatch || null,
           onIntercept: events.onIntercept || null,
+          onFumble: events.onFumble || null,
           onScramble: events.onScramble || null,
           onMove: events.onMove || null,
           onBreak: function (a2, b2) {
@@ -525,6 +526,7 @@
       });
       ball = sim.ball;
       ball.x = ballX; ball.y = los; ball.z = 0; ball.flight = null;
+      sprintOn = false; pendingAction = null; pendingThrow = null; pendingSwitch = false;
 
       artPaths = buildArt();
       userActor = sim.user();
@@ -695,6 +697,10 @@
     }
 
     self.switchDefender = function () { if (userSide === 'def') pendingSwitch = true; };
+    /* the sprint button is HELD: the page says when the thumb lands on it and
+       when it leaves, and every tick in between carries it */
+    var sprintOn = false;
+    self.sprint = function (on) { sprintOn = !!on; };
 
     /* ── INPUT ───────────────────────────────────────────────────────────
        Nothing here decides anything. A thumb is a direction and a tap is an
@@ -818,7 +824,8 @@
           my: steer.on ? steer.y : 0,
           action: pendingAction,
           throwTo: pendingThrow,
-          switchDef: pendingSwitch
+          switchDef: pendingSwitch,
+          sprint: sprintOn
         });
         pendingAction = null; pendingThrow = null; pendingSwitch = false;
         userActor = sim.user();
@@ -1242,8 +1249,18 @@
     };
 
     resize();
-    if (root.ResizeObserver) { try { new root.ResizeObserver(resize).observe(canvas); } catch (_) {} }
+    /* THE STAGE CAN BE TAKEN DOWN. Every new game built a new Stage over the
+       same canvas and left the old one's observer and resize listener alive,
+       so after Play again two stages drew to one canvas on every resize. */
+    var ro = null;
+    if (root.ResizeObserver) { try { ro = new root.ResizeObserver(resize); ro.observe(canvas); } catch (_) { ro = null; } }
     if (root.addEventListener) root.addEventListener('resize', resize);
+    self.destroy = function () {
+      stop();
+      sim = null; kickScene = null; phase = 'idle';
+      if (ro) { try { ro.disconnect(); } catch (_) {} ro = null; }
+      if (root.removeEventListener) root.removeEventListener('resize', resize);
+    };
     return self;
   }
 

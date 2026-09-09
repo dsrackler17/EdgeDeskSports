@@ -460,7 +460,7 @@
       deepCover: (def.mods.deepCover || 0),
       /* the day, as the live simulation reads it */
       weather: wx,
-      hands: wx.hands, footing: wx.footing, deepAcc: wx.deepAcc, fumble: wx.fumble,
+      hands: wx.hands, footing: wx.footing, deepAcc: wx.deepAcc, shortAcc: wx.shortAcc, fumble: wx.fumble,
       /* the outcome header, so a live play narrates and books exactly like a
          resolved one. The simulation fills in the result fields. */
       template: {
@@ -496,7 +496,13 @@
         rbk: unit(r.rbk == null ? (r.blk == null ? ov : r.blk) : r.rbk),
         arm: unit(r.arm == null ? ov : r.arm),
         accy: unit(r.acc == null ? ov : r.acc),
-        iq: unit(r.iq == null ? ov : r.iq)
+        iq: unit(r.iq == null ? ov : r.iq),
+        /* the thumbs' moves read these: a stiff arm is strength, a sprint is
+           stamina, a cut is agility (above). A card that carries the
+           universal ratings uses them; one that does not falls back to what
+           it has. */
+        str: unit(r.str == null ? (r.pwr == null ? ov : r.pwr) : r.str),
+        sta: unit(pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))
       };
     }
     function defMan(pl, pos) {
@@ -511,7 +517,9 @@
         rsh: unit(r.prs == null ? ov : r.prs),
         shed: unit(r.rst == null ? (r.str == null ? ov : r.str) : r.rst),
         bhk: unit(r.bhk == null ? ov : r.bhk),
-        iq: unit(r.iq == null ? ov : r.iq)
+        iq: unit(r.iq == null ? ov : r.iq),
+        str: unit(r.str == null ? (r.tkl == null ? ov : r.tkl) : r.str),
+        sta: unit(pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))
       };
     }
     function put(pl, pos, side) {
@@ -532,10 +540,10 @@
     env.fallback = {
       off: { spd: liveSpeed('WR', ou.wr.spd), acc: liveAccel('WR', 62), agi: unit(62), pwr: unit(62),
              hnd: unit(ou.wr.hnd), rte: unit(ou.wr.rte), blk: unit(ou.ol.pbk), rbk: unit(ou.ol.rbk),
-             arm: unit(ou.qb.arm), accy: unit(ou.qb.acc), iq: unit(ou.qb.iq) },
+             arm: unit(ou.qb.arm), accy: unit(ou.qb.acc), iq: unit(ou.qb.iq), str: unit(62), sta: unit(70) },
       def: { spd: liveSpeed('LB', du.lb.spd), acc: liveAccel('LB', 62), agi: unit(62),
              tkl: unit(du.lb.tkl), cov: unit(du.cb.cov), rsh: unit(du.dl.prs),
-             shed: unit(du.dl.rst), bhk: unit(du.s.bhk), iq: unit(du.lb.iq) }
+             shed: unit(du.dl.rst), bhk: unit(du.s.bhk), iq: unit(du.lb.iq), str: unit(62), sta: unit(70) }
     };
     return env;
   }
@@ -581,6 +589,7 @@
     r.outOfBounds = !!r.outOfBounds;
     r.big = r.yards >= 16;
     if (r.turnover !== 'interception' && r.turnover !== 'fumble') r.turnover = null;
+    r.defTouchdown = !!(r.turnover && r.defTouchdown);
     return r;
   }
 
@@ -1011,7 +1020,13 @@
       quarterSeconds: opts.quarterSeconds || RULES.quarter_seconds,
       user: opts.user || 'home',                  /* which side the player coaches */
       difficulty: opts.difficulty || 'pro',
-      overtime: opts.overtime !== false
+      overtime: opts.overtime !== false,
+      /* HOW MUCH OF THE DEAD BALL THE CLOCK CHARGES. One is real football:
+         twenty-nine seconds between snaps. An arcade game keeps the same
+         snaps and the same football and charges a fraction of it, so four
+         two-minute quarters still hold a game's worth of plays. Every band in
+         the harness is a rate, so the sport does not change. */
+      deadScale: opts.deadScale == null ? 1 : clamp(+opts.deadScale || 1, 0.1, 1)
     };
     var rand = rng(seed);
     /* TWO STREAMS, ON PURPOSE. `rand` resolves football and nothing else;
@@ -1067,7 +1082,7 @@
              thirdAtt: 0, thirdConv: 0, fourthAtt: 0, fourthConv: 0,
              redzoneAtt: 0, redzoneTD: 0, explosive: 0, drives: 0, top: 0,
              punts: 0, puntYards: 0, fgAtt: 0, fgMade: 0, pressures: 0, tacklesForLoss: 0,
-             passTD: 0, rushTD: 0, timeoutsUsed: 0 };
+             passTD: 0, rushTD: 0, defTD: 0, timeoutsUsed: 0 };
   }
   /* WHICH SIDE A MAN PLAYS FOR is part of his line. Without it the box score
      is a bag of names nobody can add up, and no test can ever say that the
@@ -1079,7 +1094,7 @@
     if (!g.players[k]) g.players[k] = { id: k, name: R.name(player), position: player.position,
       side: side || null, first: player.first_name || '', last: player.last_name || '',
       pa: 0, pc: 0, py: 0, ptd: 0, pint: 0, car: 0, ry: 0, rtd: 0, rec: 0, recy: 0, rectd: 0,
-      tkl: 0, sack: 0, sackYards: 0, tfl: 0, int: 0, pd: 0, fg: 0, fga: 0, xp: 0, xpa: 0,
+      tkl: 0, sack: 0, sackYards: 0, tfl: 0, int: 0, pd: 0, ff: 0, dtd: 0, fg: 0, fga: 0, xp: 0, xpa: 0,
       long: 0, longRush: 0, longRec: 0, targets: 0, drops: 0 };
     if (side && !g.players[k].side) g.players[k].side = side;
     return g.players[k];
@@ -1159,7 +1174,11 @@
     endDrive(g, 'clock', 0);
     g.ot++; g.otPossessions = 0;
     g.quarter = g.cfg.quarters + g.ot;
-    g.clock = RULES.ot_seconds;
+    /* AN OVERTIME PERIOD IS NEVER LONGER THAN A QUARTER. Ten minutes of
+       overtime on a five-minute-quarter game put the clock above the length
+       the game was configured with, which the invariants rightly refuse; a
+       short game gets a short period. */
+    g.clock = Math.min(RULES.ot_seconds, g.cfg.quarterSeconds);
     g.phase = 'kickoff';
     g.possession = g.rand() < 0.5 ? 'home' : 'away';
     g.timeouts = { home: 2, away: 2 };
@@ -1223,7 +1242,7 @@
       return;
     }
     startDrive(g, receiving, k.touchback ? RULES.touchback : k.at);
-    runClock(g, CLOCK.kick);
+    runClock(g, CLOCK.kick * g.cfg.deadScale);
   }
 
   /* ── HALFTIME ADJUSTMENTS ────────────────────────────────────────────────
@@ -1363,7 +1382,7 @@
        the end of the half, the end of the game — the points are already on
        the board, which is the whole point of doing it in this order. */
     g.phase = 'play';
-    runClock(g, CLOCK.score);
+    runClock(g, CLOCK.score * g.cfg.deadScale);
     g.clockStopped = true; g.deadCharged = 0;
     if (g.over || (g.clock <= 0 && g.quarter >= g.cfg.quarters)) {
       g.over = true; g.phase = 'final';
@@ -1394,7 +1413,7 @@
     var p = punt(unitsOf(t, g.tick), g.ball, g.rand);
     g.stats[side].punts++; g.stats[side].puntYards += p.gross;
     endDrive(g, 'punt', 0);
-    runClock(g, CLOCK.kick);
+    runClock(g, CLOCK.kick * g.cfg.deadScale);
     g.clockStopped = true; g.deadCharged = 0;
     if (g.over) return { ok: true, event: 'punt', punt: p, state: situation(g) };
     var at = p.touchback ? 100 - RULES.touchback : 100 - p.at;
@@ -1414,7 +1433,7 @@
       g.stats[side].fgMade++; if (ks) ks.fg++;
       score(g, side, 3, 'field goal');
       endDrive(g, 'fg', 3);
-      runClock(g, CLOCK.score);
+      runClock(g, CLOCK.score * g.cfg.deadScale);
       g.clockStopped = true; g.deadCharged = 0;
       if (g.ot) {
         g.otPossessions++;
@@ -1424,7 +1443,7 @@
       return { ok: true, event: 'fieldgoal', fg: k, state: situation(g) };
     }
     endDrive(g, 'fg_miss', 0);
-    runClock(g, CLOCK.kick);
+    runClock(g, CLOCK.kick * g.cfg.deadScale);
     g.clockStopped = true; g.deadCharged = 0;
     if (g.over || g.phase === 'halftime') return { ok: true, event: 'fieldgoal', fg: k, state: situation(g) };
     changePossession(g, clamp(100 - Math.max(g.ball, 80), 1, 99), 'missed field goal');
@@ -1542,12 +1561,32 @@
     }
 
     if (r.turnover) {
-      var spot = r.turnover === 'interception'
-        ? clamp(100 - (g.ball + r.airYards + Math.round(g.rand() * 8)), 1, 99)
-        : clamp(100 - newBall, 1, 99);
-      if (r.turnover === 'fumble') { st.fumblesLost++; }
+      /* WHERE THE BALL ACTUALLY IS. A live play measured the spot the pick
+         (or the fumble) ended at; a resolved one only knows the air yards and
+         draws the rest. The measurement wins when there is one. */
+      var spot = r.endY != null && r.live
+        ? clamp(100 - Math.round(r.endY), 1, 99)
+        : r.turnover === 'interception'
+          ? clamp(100 - (g.ball + r.airYards + Math.round(g.rand() * 8)), 1, 99)
+          : clamp(100 - newBall, 1, 99);
+      if (r.turnover === 'fumble') {
+        st.fumblesLost++;
+        var ffp = pstat(g, r.tackler, def); if (ffp) ffp.ff++;
+      }
       endDrive(g, r.turnover, 0);
-      runClock(g, CLOCK.change);
+      /* ── A TAKEAWAY RUN ALL THE WAY BACK ────────────────────────────────
+         A live play can carry an interception or a fumble into the end zone.
+         It is the DEFENCE's touchdown: six points their way, a try to follow,
+         and a touchdown that is nobody's rushing or receiving score. The
+         drive that gave it away is already closed above. */
+      if (r.defTouchdown) {
+        dst.defTD++;
+        var dt2 = pstat(g, r.interceptor || r.tackler, def); if (dt2) dt2.dtd++;
+        r.touchdown = true;
+        touchdown(g, def, r);
+        return finish(g, r, 'touchdown', startBall, side);
+      }
+      runClock(g, CLOCK.change * g.cfg.deadScale);
       g.clockStopped = true; g.deadCharged = 0;
       if (!g.over && g.phase !== 'halftime') changePossession(g, spot, r.turnover);
       return finish(g, r, r.turnover, startBall, side);
@@ -1591,7 +1630,7 @@
            game ends on has to be a state football has */
         g.down = 4;
         endDrive(g, 'downs', 0);
-        runClock(g, CLOCK.change);
+        runClock(g, CLOCK.change * g.cfg.deadScale);
         g.clockStopped = true; g.deadCharged = 0;
         if (!g.over && g.phase !== 'halftime') changePossession(g, clamp(100 - g.ball, 1, 99), 'downs');
         return finish(g, r, 'downs', startBall, side);
@@ -1616,7 +1655,7 @@
            : CLOCK.pass_complete;
       var stops = r.incomplete || lateOOB
                || (r.firstDown && sit.twoMinute);
-      dead = stops ? 0 : CLOCK.dead * tempo;
+      dead = stops ? 0 : CLOCK.dead * tempo * g.cfg.deadScale;
     }
     var secs = Math.round(live + dead);
     runClock(g, secs);

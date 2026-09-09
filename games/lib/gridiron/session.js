@@ -75,11 +75,18 @@
     art: true,
     sound: true,
     haptics: true,
-    length: 'standard',     /* standard 15:00 | quick 8:00 | blitz 5:00 */
+    /* ARCADE BY DEFAULT. Four two-minute quarters that still hold a game's
+       worth of snaps, because the clock charges a fraction of the dead ball
+       (DEAD_SCALE). A phone game that runs fifteen-minute quarters is a
+       twenty-five minute commitment nobody made. The longer lengths stay. */
+    length: 'arcade',       /* arcade 2:00 | blitz 5:00 | quick 8:00 | standard 15:00 */
     autoDefense: false
   };
   var SPEEDS = { normal: 1.5, fast: 2.6, instant: 99 };
-  var LENGTHS = { standard: 900, quick: 480, blitz: 300 };
+  var LENGTHS = { arcade: 120, blitz: 300, quick: 480, standard: 900 };
+  /* how much of the dead ball each length charges — see engine.js cfg.deadScale */
+  var DEAD_SCALE = { arcade: 0.30, blitz: 1, quick: 1, standard: 1 };
+  var LENGTH_LABELS = { arcade: 'Arcade · 2:00', blitz: 'Blitz · 5:00', quick: 'Quick · 8:00', standard: 'Full · 15:00' };
 
   function store() {
     try { return root.localStorage; } catch (_) { return null; }
@@ -148,7 +155,8 @@
       difficulty: set.difficulty,
       /* the day it is being played on, from the fixture */
       weather: o.weather || null,
-      quarterSeconds: LENGTHS[set.length] || LENGTHS.standard
+      quarterSeconds: LENGTHS[set.length] || LENGTHS.arcade,
+      deadScale: DEAD_SCALE[set.length] == null ? 1 : DEAD_SCALE[set.length]
     });
     g.meta = { user: atHome ? 'home' : 'away', seed: seed, week: o.week || 1, season: o.season || 1,
                opponentKey: o.opponentKey || null, home: atHome, length: set.length,
@@ -281,7 +289,14 @@
     g.meta = rec.meta;
     var i;
     for (i = 0; i < rec.calls.length; i++) {
-      var r = G.step(g, expand(rec.calls[i]));
+      /* A SAVED LIVE OUTCOME NAMES ITS MEN BY ID. Stepping the engine with
+         the raw record left every carrier, target and tackler as a string,
+         so a resumed Play Mode game came back with its yards and none of its
+         names — and player lines that no longer summed to the team. Look
+         the men up on the way back in, exactly as step() does. */
+      var c = expand(rec.calls[i]);
+      if (c.outcome) c.outcome = withPlayers(g, c.outcome);
+      var r = G.step(g, c);
       if (!r.ok) break;
       g.calls.push(rec.calls[i]);
     }
@@ -524,6 +539,7 @@
 
   var API = {
     TEAMS: TEAMS, HOUSE: HOUSE, DEFAULTS: DEFAULTS, SPEEDS: SPEEDS, LENGTHS: LENGTHS,
+    DEAD_SCALE: DEAD_SCALE, LENGTH_LABELS: LENGTH_LABELS,
     SAVE_KEY: SAVE_KEY, SET_KEY: SET_KEY,
     teamByKey: teamByKey, settings: settings, saveSettings: saveSettings,
     teamFromFranchise: teamFromFranchise, teamFromLeague: teamFromLeague,

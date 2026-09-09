@@ -78,6 +78,15 @@ function stamp(html, v) {
     (m, q, url) => q + url + '?v=' + v + q);
 }
 
+/* THE SHARED LIBRARIES TOO. games.js loads /lib/edgedesk_*.js itself, from a
+   token the page stamper could not see, and it was already a letter behind
+   every page that loaded it. The token is one constant in games.js and this
+   rewrites it with the same value the pages get. */
+const SHARED = path.join(ROOT, 'games', 'games.js');
+function stampShared(js, v) {
+  return js.replace(/var SHARED_V = '[A-Za-z0-9._-]*';/, "var SHARED_V = '" + v + "';");
+}
+
 if (require.main === module) {
   const v = next(process.argv[2]);
   let changed = 0;
@@ -87,7 +96,12 @@ if (require.main === module) {
     const after = stamp(before, v);
     if (after !== before) { fs.writeFileSync(p, after); changed++; }
   });
-  console.log('games assets stamped ' + v + ' in ' + changed + ' page(s)');
+  if (fs.existsSync(SHARED)) {
+    const before = fs.readFileSync(SHARED, 'utf8');
+    const after = stampShared(before, v);
+    if (after !== before) { fs.writeFileSync(SHARED, after); changed++; }
+  }
+  console.log('games assets stamped ' + v + ' in ' + changed + ' file(s)');
 }
 
-module.exports = { PAGES, current, next, stamp, today, bumpSuffix };
+module.exports = { PAGES, SHARED, current, next, stamp, stampShared, today, bumpSuffix };
