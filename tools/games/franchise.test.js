@@ -2880,6 +2880,29 @@ fresh();
     has(card, 'Built for your scheme (+2)', 'the scheme\'s word');
     has(card, 'Edge vs press man (+2)', 'and Saturday\'s');
   })();
+  /* THE SCOUTING REPORT: Saturday's edges, read off the starters */
+  (function scout() {
+    const opp = { offense: 'power_run', defense: 'press_man' };
+    const fr = { offense: 'air_raid', defense: 'zone' };
+    const roster = [
+      { id: 'w1', position: 'WR', depth: 1, archetype: 'Deep Threat', overall: 84, first_name: 'Deep', last_name: 'Threat', status: 'active' },
+      { id: 'w2', position: 'WR', depth: 2, archetype: 'Possession', overall: 80, first_name: 'Poss', last_name: 'Ession', status: 'active' },
+      { id: 'w4', position: 'WR', depth: 4, archetype: 'Deep Threat', overall: 90, first_name: 'On', last_name: 'Bench', status: 'active' },
+      { id: 'd1', position: 'DL', depth: 1, archetype: 'Run Stopper', overall: 78, first_name: 'Run', last_name: 'Stopper', status: 'active' },
+      { id: 'd2', position: 'DL', depth: 2, archetype: 'Speed Rusher', overall: 79, first_name: 'Speed', last_name: 'Rusher', status: 'active' },
+      { id: 'k', position: 'K', depth: 1, archetype: 'Leg', overall: 70, first_name: 'K', last_name: 'K', status: 'active' }
+    ];
+    const rep = F.scoutingReport(roster, fr, opp);
+    chk('the report reads only the starters', rep && rep.starters === 4 && !rep.edges.concat(rep.worries).some(e => e.id === 'w4'), JSON.stringify(rep && rep.edges.map(e => e.id)));
+    chk('the edges are the men the matchup favours, best first', rep.edges.map(e => e.id).join(',') === 'w1,d1', rep.edges.map(e => e.id).join(','));
+    chk('the worries are the men it does not', rep.worries.map(e => e.id).join(',') === 'w2,d2', rep.worries.map(e => e.id).join(','));
+    has(rep.edges[0].text, 'Deep Threat against press man: the matchup is his', 'and each is said in a line');
+    has(rep.opponent.line, 'They run a power run game and play press man.', 'with their schemes named');
+    chk('no roster, no report', F.scoutingReport(null, fr, opp) === null);
+    has(GAMEDAY, 'id="gdScout"', 'Game Day carries the report as a module');
+    has(GAMEDAY, 'FR.scoutingReport(players,snap.franchise,ph.game.opponent)', 'read off the roster the server hands back');
+    has(GAMEDAY, "localStorage.setItem('ed_gd_scout',det.open?'open':'closed')", 'and it stays folded when folded');
+  })();
   /* THE CARD REMEMBERS: milestone badges, the games in your hands, a reason on every move */
   (function card() {
     const wr = { position: 'WR', career_stats: { games: 61, rec: 200, yds: 3100, td: 22 }, live_stats: { games: 40, rec: 80, yds: 1200, td: 9 } };

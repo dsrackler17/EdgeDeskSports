@@ -2024,6 +2024,34 @@
       west_coast: { CB: { 'Zone Specialist': 1, 'Press Specialist': -1 }, LB: { 'Coverage': 1 }, S: { 'Coverage': 1 }, DL: { 'Power Rusher': 1 } }
     }
   };
+  /* THE SCOUTING REPORT: two or three edges and a worry or two for Saturday,
+     read off your starters against their schemes — the research a coach does
+     on Tuesday, said in a few lines. Pure: the roster, the franchise and the
+     opponent in; nothing decided. */
+  function scoutingReport(players, franchise, opp) {
+    if (!players || !franchise || !opp) return null;
+    var rows = [];
+    (players || []).forEach(function (p) {
+      if (!p || (p.status && p.status !== 'active') || !isStarter(p)) return;
+      var m = matchupFit(p, opp), f = fitFor(p, franchise);
+      if (!m) return;
+      var score = m.value * 2 + (f ? f.value : 0);
+      rows.push({ id: p.id, name: fullName(p).trim(), position: p.position, archetype: p.archetype || '', overall: p.overall | 0,
+                  matchup: m, scheme: f, score: score });
+    });
+    rows.sort(function (a, b) { return b.score - a.score || b.overall - a.overall; });
+    var edges = rows.filter(function (r) { return r.matchup.value > 0; }).slice(0, 3);
+    var worries = rows.filter(function (r) { return r.matchup.value < 0; }).sort(function (a, b) { return a.score - b.score; }).slice(0, 2);
+    function line(r) {
+      return r.position + ' ' + r.name + ' — ' + (r.archetype || r.position) + ' against ' + schemeWord(r.matchup.against) + (r.matchup.value > 0 ? ': the matchup is his' : ': a long afternoon');
+    }
+    return {
+      opponent: { offense: opp.offense, defense: opp.defense, line: 'They run ' + schemeWord(opp.offense) + ' and play ' + schemeWord(opp.defense) + '.' },
+      edges: edges.map(function (r) { return { id: r.id, position: r.position, name: r.name, value: r.matchup.value, text: line(r) }; }),
+      worries: worries.map(function (r) { return { id: r.id, position: r.position, name: r.name, value: r.matchup.value, text: line(r) }; }),
+      starters: rows.length
+    };
+  }
   var SCHEME_WORDS = { air_raid: 'an air raid', spread: 'a spread', pro_style: 'a pro-style offence', power_run: 'a power run game', option: 'an option offence', west_coast: 'a West Coast offence',
     four_three: 'a 4-3', three_four: 'a 3-4', press_man: 'press man', zone: 'zone', blitz_heavy: 'a blitz-heavy defence', bend_dont_break: 'a bend-don\'t-break defence' };
   function schemeWord(k) { return SCHEME_WORDS[k] || String(k || '').replace(/_/g, ' '); }
@@ -2364,7 +2392,7 @@
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
     badges: badges, careerTotals: careerTotals, handsLine: handsLine, evolutionReason: evolutionReason, BADGES: BADGES,
-    MATCHUP_FIT: MATCHUP_FIT, matchupFit: matchupFit, schemeWord: schemeWord,
+    MATCHUP_FIT: MATCHUP_FIT, matchupFit: matchupFit, schemeWord: schemeWord, scoutingReport: scoutingReport,
     PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, PASS_SP: PASS_SP, passValue: passValue, SCHEME_FIT: SCHEME_FIT, schemeFit: schemeFit, fitFor: fitFor, packsBoard: packsBoard, pulls: pulls, PULLS_VERSION: PULLS_VERSION, packOpenId: packOpenId, card: card,
     LINEUP_VERSION: LINEUP_VERSION, CHEMISTRY_VERSION: CHEMISTRY_VERSION, CHEMISTRY: CHEMISTRY, chemistryLine: chemistryLine, chemistryWord: chemistryWord,
     lineupBest: lineupBest,

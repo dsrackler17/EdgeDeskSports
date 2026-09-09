@@ -847,3 +847,17 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .gd-weapon .btn-row{margin-top:10px}
 .gd-weapon.quiet{border-color:var(--line,#232a36);background:var(--panel,#0f131a)}
 .gd-weapon.quiet .k{background:var(--line2,#2a3140);color:var(--text,#e9edf4)}
+
+/* ── THE SCOUTING REPORT on Game Day: a module that folds ───────────────── */
+.gd-scout{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--cell)}
+.gd-scout summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;list-style:none}
+.gd-scout summary::-webkit-details-marker{display:none}
+.gd-scout summary .eyebrow{margin:0}
+.gd-scout-m{font-size:11.5px;color:var(--dim);white-space:nowrap}
+.gd-scout summary::after{content:'▾';color:var(--faint);font-size:12px;margin-left:6px;transition:transform .2s}
+.gd-scout:not([open]) summary::after{transform:rotate(-90deg)}
+.gd-scout-b{padding:0 12px 12px}
+.gd-scout-l{font-size:13px;color:var(--text);margin-bottom:6px}
+.gd-scout-e,.gd-scout-w{margin-top:4px}
+.gd-edges .dot.pos{background:var(--val)}.gd-edges .dot.neg{background:var(--neg)}
+.gd-edges .r.pos{color:var(--val)}.gd-edges .r.neg{color:var(--neg)}

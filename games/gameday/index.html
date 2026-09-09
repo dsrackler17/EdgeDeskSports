@@ -230,6 +230,11 @@
       +edgeRow('Preparation',ed.prep_adj,esc(prep.preparation|0)+'% this week')
       +'</ul>'
       +'<div class="ftp" style="margin-top:8px">In rating points, from the published table (sim_v4). Your starters’ traits add on the server; the result explains what applied.</div>'
+      /* THE SCOUTING REPORT: two or three edges and a worry for Saturday, read
+         off your starters against their schemes. A module you can fold away
+         and it stays folded. */
+      +'<details class="gd-scout" id="gdScout"'+(scoutOpen()?' open':'')+'><summary><span class="eyebrow">Opponent scouting report</span><span class="gd-scout-m" id="gdScoutM">reading the roster…</span></summary>'
+      +'<div class="gd-scout-b" id="gdScoutB"><div class="sk" style="width:70%"></div></div></details>'
       +(snap.last_game?'<div class="gd-last">Last time out: <a href="/games/gameday/?game='+esc(snap.last_game.id)+'"><b>'+esc(FR.resultLine(snap.last_game))+'</b> '+esc(FR.matchupLine(snap.last_game))+'</a>'
           +(snap.last_game.potg?' · POTG '+esc(snap.last_game.potg.name):'')+'</div>':'');
   }
@@ -584,13 +589,33 @@
   }
 
   /* ---- render ------------------------------------------------------------- */
+  /* the scouting report folds away and stays folded, per device */
+  function scoutOpen(){try{return localStorage.getItem('ed_gd_scout')!=='closed';}catch(_){return true;}}
+  var ROSTER_P=null;
+  function paintScout(snap,ph){
+    var box=$('gdScoutB'),m=$('gdScoutM'),det=$('gdScout');
+    if(!box||!ph.game||!ph.game.opponent)return;
+    if(det&&!det.__wired){det.__wired=1;det.addEventListener('toggle',function(){try{localStorage.setItem('ed_gd_scout',det.open?'open':'closed');}catch(_){}G.track('gameday_module',{module:'scout',open:det.open});});}
+    ROSTER_P=ROSTER_P||FR.roster();
+    ROSTER_P.then(function(r){
+      var d=r&&r.ok?r.data:null,players=d&&(d.players||d.roster);
+      if(!players){box.innerHTML='<div class="ftp">The roster could not be read. <a href="/games/roster/">Roster</a></div>';if(m)m.textContent='';return;}
+      var rep=FR.scoutingReport(players,snap.franchise,ph.game.opponent);
+      if(!rep){box.innerHTML='';return;}
+      if(m)m.textContent=(rep.edges.length?rep.edges.length+' edge'+(rep.edges.length===1?'':'s'):'no clear edge')+(rep.worries.length?' · '+rep.worries.length+' worr'+(rep.worries.length===1?'y':'ies'):'');
+      box.innerHTML='<div class="gd-scout-l">'+esc(rep.opponent.line)+'</div>'
+        +(rep.edges.length?'<ul class="gd-edges gd-scout-e">'+rep.edges.map(function(e){return '<li><span class="dot pos"></span><span class="t">'+esc(e.text)+'</span><span class="r pos">+'+esc(e.value)+'</span></li>';}).join('')+'</ul>':'<div class="ftp">No starter of yours has a clear edge against these schemes; the game is on the calls.</div>')
+        +(rep.worries.length?'<ul class="gd-edges gd-scout-w">'+rep.worries.map(function(e){return '<li><span class="dot neg"></span><span class="t">'+esc(e.text)+'</span><span class="r neg">'+esc(e.value)+'</span></li>';}).join('')+'</ul>':'')
+        +'<div class="ftp" style="margin-top:8px">Read off your starters’ archetypes against their schemes, the way the <a href="/games/roster/">roster</a> reads them. The lineup is yours to change until kickoff.</div>';
+    }).catch(function(){if(m)m.textContent='';});
+  }
   function renderStage(){
     var snap=FR.snapshot();
     if(!snap||!snap.franchise){renderEmpty(FR.state());return;}
     var ph=FR.gamePhase(snap);
     stage.className='card gd';
     stage.setAttribute('style',FR.themeVars(snap.franchise.theme));
-    if(ph.phase==='ready'||ph.phase==='waiting')stage.innerHTML=pregame(snap,ph);
+    if(ph.phase==='ready'||ph.phase==='waiting'){stage.innerHTML=pregame(snap,ph);paintScout(snap,ph);}
     else stage.innerHTML=seasonCard(snap,ph);
     wireStage(snap,ph);
     if(!TRACKED){TRACKED=true;G.track('gameday_view',{phase:ph.phase,week:ph.game?ph.game.week:null,season:(snap.season||{}).number});}
