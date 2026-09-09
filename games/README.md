@@ -3104,3 +3104,51 @@ event a game has at arcade length with the invariants holding; returned picks,
 defensive touchdowns with a try pending, fumbles with the columns agreeing;
 overtime inside the quarter; a resumed game keeping its names; the progression
 reading the coverage; every button every tick, deterministically.
+
+## Phase 7 — the player universe (`profile_v1`)
+
+Every athlete stores four ratings for his position, the simulator plays with
+them and the overall is their mean; nothing about that changes. What a card
+can *say* does. **The profile** — `games/lib/gridiron/profile.js` on the
+client, `franchise_profile()` on the server — derives the universal six
+(**SPD ACC AGI STR AWR STA**) and the position's own words (a quarterback's
+THP SAC MAC DAC TUP SCR, a back's BTK CAR VIS CTH, a receiver's CTH RTE REL
+CIT, a lineman's PBK RBK, a rusher's PRSH BSH PUR, a linebacker's TCK PUR MCV
+ZCV BSH, a corner's MCV ZCV TCK PRS) as a **pure function of what is stored**:
+position, the four ratings, the archetype, and four small integers the card
+already carries (jersey, age, stamina, the letters of the last name). No
+column, no migration, no ageing code: when the four grow in the offseason the
+profile grows with them, and it can never disagree with the card it is printed
+on. Both languages use integer arithmetic so they agree to the digit, and
+`tools/games/profile.test.js` proves it on four hundred random cards against a
+real PostgreSQL, plus pins the constant tables (skews, towns, tier thresholds)
+byte for byte.
+
+Also derived, and carried by every read model (`franchise_roster`, the
+market's `franchise_prospect_json`, the trade floor's player):
+
+* **the collector's tier** — Prospect · Starter · Impact · Prime · Elite ·
+  Apex · Legend · Mythic, off the overall (62 · 69 · 75 · 81 · 87 · 93 · 98);
+  the rarity a card already carries (common..elite) is the generator's, this
+  is the collector's;
+* **how far he can go, in words** — Limited · Normal · Rising · Breakout ·
+  Elite · Generational, from the gap to his ceiling and his development tier;
+* **a body and a home town**, from the same four integers; the towns are real
+  American places and none of them is a team, a brand or a person.
+
+An unscouted prospect has a body and a home town and **no** profile — the
+profile is the ratings by another name, and those are what a report buys.
+
+The generator deals the brief's archetypes now — Improviser, Game Manager,
+Workhorse, Route Technician, Possession Receiver, Slot Weapon, Physical
+Target, Speed Rusher, Power Rusher, Balanced, Shutdown, Press Specialist, Zone
+Specialist — appended to the pools (every skew sums near zero, so a founding
+roster lands where it always has), and each archetype adds a small, named
+push to the profile on top. The name pools grew from 110/150 to about
+280/360; the client's fictional opponents draw from a wider well too.
+
+The card shows the tier beside the position, the universal six in one quiet
+row under the four, and the build and home town in the meta line. The live
+engine reads strength and stamina from the profile (the stiff arm and the
+sprint); speed, acceleration and agility keep the sources the harness is
+banded on.

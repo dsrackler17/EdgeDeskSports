@@ -42,13 +42,36 @@
   var FIRST = ['Marcus', 'Darius', 'Elijah', 'Tyrell', 'Jalen', 'Cade', 'Brayden', 'Isaiah', 'Malik',
     'Trevor', 'Damon', 'Kaleb', 'Xavier', 'Rhett', 'Jonah', 'Amari', 'Beau', 'Silas', 'Quinton',
     'Dontae', 'Weston', 'Rashad', 'Colby', 'Nico', 'Emmett', 'Zaire', 'Holden', 'Devante', 'Rowan',
-    'Tobias', 'Kellen', 'Micah', 'Jaxon', 'Corbin', 'Ezra', 'Roman', 'Deion', 'Bryce', 'Kadeem', 'Landry'];
+    'Tobias', 'Kellen', 'Micah', 'Jaxon', 'Corbin', 'Ezra', 'Roman', 'Deion', 'Bryce', 'Kadeem', 'Landry',
+    /* the well widens with the player universe (profile_v1) */
+    'Jace', 'Andre', 'Keon', 'Devin', 'Tyler', 'Darnell', 'Kameron', 'Tariq', 'Desmond', 'Lamont',
+    'Nathaniel', 'Rodney', 'Shane', 'Trent', 'Vernon', 'Wesley', 'Alonzo', 'Brendan', 'Cortez', 'Damien',
+    'Ellis', 'Fabian', 'Garrett', 'Ignacio', 'Jarvis', 'Kendall', 'Leland', 'Maurice', 'Nasir', 'Orlando',
+    'Preston', 'Quentin', 'Rafael', 'Santiago', 'Tyrese', 'Vaughn', 'Warren', 'Yusuf', 'Abram', 'Barrett',
+    'Clayton', 'Deon', 'Elliot', 'Franklin', 'Gideon', 'Harlan', 'Jeremiah', 'Lorenzo', 'Mateo', 'Octavio',
+    'Solomon', 'Titus', 'Victor', 'Wilson', 'Zeke', 'Alvin', 'Bennett', 'Curtis', 'Dexter', 'Emilio',
+    'Felix', 'Gavin', 'Hugo', 'Ivan', 'Kyler', 'Lucas', 'Marvin', 'Oscar', 'Ramon', 'Theo',
+    'Ahmad', 'Booker', 'Cassius', 'Demarcus', 'Enzo', 'Gerald', 'Hakeem', 'Idris', 'Jamison', 'Kareem',
+    'Lionel', 'Moses', 'Nigel', 'Omar', 'Pierce', 'Raheem', 'Sebastian', 'Carver', 'Denzel', 'Fletcher',
+    'Graham', 'Heath', 'Jett', 'Kade', 'Lane', 'Mekhi', 'Odell', 'Paxton', 'Rocco', 'Tate'];
   var LAST = ['Hale', 'King', 'Vance', 'Boone', 'Merritt', 'Okafor', 'Salazar', 'Whitfield', 'Ndiaye',
     'Crowder', 'Alvarez', 'Pruitt', 'Ashby', 'Delgado', 'Fontaine', 'Guthrie', 'Mbeki', 'Rasmussen',
     'Tallent', 'Vickers', 'Winslow', 'Yates', 'Brannigan', 'Castellanos', 'Doyle', 'Eastwood',
     'Ferreira', 'Gallagher', 'Hollis', 'Ives', 'Jessup', 'Kowalski', 'Lindqvist', 'Mercado',
     'Nakamura', 'Ovalle', 'Prescott', 'Quintero', 'Radcliffe', 'Sutherland', 'Thorne', 'Ulrich',
-    'Valdez', 'Wexler', 'Ximenes', 'Yarborough', 'Zamora', 'Ashford', 'Bellamy', 'Cardoza'];
+    'Valdez', 'Wexler', 'Ximenes', 'Yarborough', 'Zamora', 'Ashford', 'Bellamy', 'Cardoza',
+    /* the well widens with the player universe (profile_v1) */
+    'Holloway', 'Brennan', 'Whitaker', 'Lockhart', 'Bell', 'Ricks', 'Fields', 'Adeyemi', 'Bautista', 'Colvin',
+    'Dumas', 'Eze', 'Fitzgerald', 'Galloway', 'Hairston', 'Jimenez', 'Kirkland', 'Lockett', 'Nwosu', 'Ortega',
+    'Pickens', 'Quarles', 'Reddick', 'Sandoval', 'Talley', 'Urbina', 'Valentine', 'Wheatley', 'Yancey', 'Zapata',
+    'Alston', 'Bledsoe', 'Cordova', 'Dickerson', 'Espinoza', 'Foreman', 'Gaskins', 'Igwe', 'Jeffcoat', 'Kearse',
+    'Lassiter', 'McCray', 'Nunez', 'Ojeda', 'Paschal', 'Rainey', 'Satterfield', 'Toussaint', 'Vasquez', 'Wilkerson',
+    'Acosta', 'Battle', 'Cartwright', 'Deloach', 'Ellison', 'Fuentes', 'Gadsden', 'Holcomb', 'Joyner', 'Kittrell',
+    'Lowry', 'Mabry', 'Norwood', 'Poindexter', 'Rucker', 'Spivey', 'Trotter', 'Wingate', 'Ybarra', 'Broussard',
+    'Cullen', 'Dupree', 'Etienne', 'Ferrell', 'Goins', 'Harrell', 'Isom', 'Jeter', 'Kelso', 'Lipscomb',
+    'Mendez', 'Osborne', 'Rhodes', 'Shackleford', 'Threadgill', 'Vinson', 'Westbrook', 'Adair', 'Boykin', 'Cobb',
+    'Dozier', 'Eldridge', 'Fairchild', 'Grissom', 'Ivey', 'Kirby', 'Leblanc', 'Mayfield', 'Odom', 'Parrish',
+    'Rankin', 'Stallworth', 'Teague', 'Whitehurst', 'Arrington', 'Blackmon', 'Crenshaw', 'Estrada', 'Fowler', 'Lanier'];
 
   /* how many of each position a roster carries, and how many start */
   var DEPTH = { QB: 2, RB: 3, WR: 5, TE: 2, OL: 8, DL: 6, LB: 5, CB: 4, S: 3, K: 1, P: 1 };

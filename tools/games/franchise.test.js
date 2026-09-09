@@ -2785,11 +2785,34 @@ fresh();
   chk('the report grew to thirty-six rows', /select 35, 'the playbook is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 16, 'the playbook'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 16);
-  chk('and the report checks the same number',
-    /\(public\.games_schema\(\)->>'franchise'\)::int = 16/.test(SQL));
+  /* the phase count moves on with every phase; Phase 17 carries the pin now */
+  chk('and the client expects at least that many', F.SCHEMA.franchise >= 16);
 
   has(README, 'playbook_v1', 'the README documents the playbook');
+
+  /* ═══ 17. THE PLAYER UNIVERSE — profile_v1 ═══════════════════════════════ */
+  chk('the report grew to thirty-eight rows', /select 38, 'the player universe is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 17, 'the player universe: profiles, tiers, bodies and home towns'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 17);
+  chk('and the report checks the same number',
+    /\(public\.games_schema\(\)->>'franchise'\)::int = 17/.test(SQL));
+  eq('the client profile is versioned as the SQL is', F.PROFILE_VERSION, 'profile_v1');
+  chk('the roster read model carries the profile', /\|\| public\.franchise_profile_of\(p\)\)/.test(SQL));
+  chk('a card shows the collector\'s tier and the universal six', (() => {
+    const html = F.playerCard({ id: 'p', first_name: 'Malik', last_name: 'Vance', position: 'WR', jersey: 81, age: 24, stamina: 82,
+      overall: 88, potential: 94, dev_tier: 'star', archetype: 'Deep Threat', rarity: 'elite', ratings: { spd: 96, rte: 84, hnd: 86, iq: 80 }, depth: 1 });
+    return /pc-tier">Apex</.test(html) && /pc-uni/.test(html) && /pc-u"[^>]*><i>SPD<\/i><b>\d+/.test(html) && /pc-bio/.test(html);
+  })());
+  chk('a card without ratings still renders', F.playerCard({ id: 'p', first_name: 'A', last_name: 'B', position: 'RB', jersey: 1, overall: 70, ratings: {}, depth: 1 }).indexOf('pc-uni') >= 0);
+  chk('the card classes the profile draws are in the stylesheet', ['pc-tier', 'pc-uni', 'pc-u', 'pc-bio', 'pc-tier-apex', 'pc-tier-mythic'].every(c => FRCSS.indexOf('.' + c) >= 0));
+  ['roster', 'packs', 'market', 'trades', 'gameday', 'trophies', 'development'].forEach(pg => {
+    const html = fs.readFileSync(G(pg + '/index.html'), 'utf8');
+    chk('the ' + pg + ' page loads the profile before the franchise library',
+      html.indexOf('/games/lib/gridiron/profile.js') > 0 && html.indexOf('/games/lib/gridiron/profile.js') < html.indexOf('/games/lib/franchise.js'));
+  });
+  has(README, 'profile_v1', 'the README documents the profile');
+
   has(README, 'a formation that lies', 'and what a trick play actually needs');
 
   /* ═══ 27. TEN THOUSAND SEASONS ═══════════════════════════════════════════

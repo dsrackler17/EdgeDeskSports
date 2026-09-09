@@ -30,6 +30,9 @@
   var S = root.EDGamesSocial || (typeof require === 'function' ? require('./social.js') : null);
   var ST = root.EDGamesStore || (typeof require === 'function' ? require('./store.js') : null);
   var W = root.EDGamesWeek || (typeof require === 'function' ? require('./week.js') : null);
+  /* the derived player profile (profile_v1) — the same pure function the SQL
+     restates, so a card can show more than its four stored ratings */
+  var PR = root.EDProfile || (typeof require === 'function' ? require('./gridiron/profile.js') : null);
 
   /* ── THE SCHEMA THIS BUILD EXPECTS ──────────────────────────────────────
      supabase/games_social.sql and supabase/games_franchise.sql are pasted
@@ -67,7 +70,8 @@
       'the drives you call',
       'key moments',
       'both sides of the ball',
-      'the playbook'
+      'the playbook',
+      'the player universe: profiles, tiers, bodies and home towns'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -403,18 +407,55 @@
   /* THE PLAYER CARD. A pure function of a row: collectible, readable on a
      phone, and consistent with its own numbers (the overall is the mean of
      the four attributes shown). */
+  /* ── the profile, on the client ──────────────────────────────────────────
+     The server sends `profile`, `tier`, `potential_tier`, `body` and
+     `hometown` on every card it returns; a card that arrived without them (an
+     older snapshot, a generated opponent) gets the same answers from the same
+     pure function here. */
+  function profileOf(p) {
+    if (!p) return null;
+    if (p.profile && p.profile.spd != null) return p.profile;
+    return PR ? PR.profile(p) : null;
+  }
+  function tierOf(p) {
+    if (!p) return null;
+    if (p.tier && PR) { var i; for (i = 0; i < PR.TIERS.length; i++) if (PR.TIERS[i].key === p.tier) return PR.TIERS[i]; }
+    return PR ? PR.tierOf(p.overall) : null;
+  }
+  function potentialTierOf(p) { return (p && p.potential_tier) || (PR ? PR.potentialOf(p) : 'normal'); }
+  function potentialWord(p) { var k = potentialTierOf(p); return (PR && PR.POTENTIAL_NAMES[k]) || k; }
+  function hometownOf(p) { return (p && p.hometown) || (PR && p ? PR.hometown(p) : ''); }
+  function bodyOf(p) { return (p && p.body) || (PR && p ? PR.body(p) : null); }
+  /* the universal six, labelled, for a card's second row */
+  function universalRatings(p) {
+    var pf = profileOf(p);
+    if (!pf || !PR) return [];
+    return PR.UNIVERSAL.map(function (k) { return { key: k, label: PR.LABELS[k], name: PR.NAMES[k], value: pf[k] }; });
+  }
+  /* the position's own words, labelled */
+  function specificRatings(p) {
+    var pf = profileOf(p);
+    if (!pf || !PR) return [];
+    return (PR.SPECIFIC[p.position] || []).map(function (k) { return { key: k, label: PR.LABELS[k], name: PR.NAMES[k], value: pf[k] }; });
+  }
+
   function playerCard(p, o) {
     o = o || {};
     if (!p) return '';
     var rar = RARITY[p.rarity] || RARITY.common, tr = traitOf(p), starter = isStarter(p);
     var hurt = !isAvailable(p), hurtLine = hurt ? injuryLine(p) : '';
+    var tier = tierOf(p), home = hometownOf(p), body = bodyOf(p);
     var attrs = keyRatings(p).map(function (a) {
       return '<div class="pc-a"><span class="k">' + esc(a.label) + '</span><b>' + (a.value == null ? '—' : a.value) + '</b></div>';
     }).join('');
-    return '<article class="pc pc-' + esc(rar.key) + (starter ? ' pc-start' : '') + (hurt ? ' pc-hurt' : '') + (o.compact ? ' pc-compact' : '')
+    var uni = universalRatings(p).map(function (a) {
+      return '<span class="pc-u" title="' + esc(a.name) + '"><i>' + esc(a.label) + '</i><b>' + esc(a.value) + '</b></span>';
+    }).join('');
+    return '<article class="pc pc-' + esc(rar.key) + (tier ? ' pc-tier-' + esc(tier.key) : '') + (starter ? ' pc-start' : '') + (hurt ? ' pc-hurt' : '') + (o.compact ? ' pc-compact' : '')
       + '" data-player="' + esc(p.id) + '" data-position="' + esc(p.position) + '" data-depth="' + (p.depth | 0) + '">'
       + '<div class="pc-top"><span class="pc-num mono">#' + (p.jersey == null ? '—' : p.jersey) + '</span>'
       + '<span class="pc-pos">' + esc(p.position) + '</span>'
+      + (tier ? '<span class="pc-tier">' + esc(tier.name) + '</span>' : '')
       + '<span class="pc-rar">' + esc(rar.label) + '</span>'
       + (starter ? '<span class="pc-st">' + (STARTERS[p.position] > 1 ? esc(p.position) + (p.depth | 0) : 'Starter') + '</span>' : '')
       + (hurt ? '<span class="pc-out">Out</span>' : '')
@@ -423,10 +464,15 @@
       + '<div class="pc-arch">' + esc(p.position) + ' <span class="sep">|</span> ' + esc(p.archetype || '') + '</div>'
       + '<div class="pc-ovr"><b class="mono">' + (p.overall | 0) + '</b><span>OVR</span></div>'
       + '<div class="pc-attrs">' + attrs + '</div>'
+      + (uni ? '<div class="pc-uni">' + uni + '</div>' : '')
       + (tr ? '<div class="pc-trait"><span class="k">Trait</span><b>' + esc(tr.name) + '</b><span class="d">' + esc(tr.desc || '') + '</span></div>'
             : '<div class="pc-trait none"><span class="k">Trait</span><span class="d">None yet</span></div>')
       + '<div class="pc-meta">Age ' + (p.age | 0) + ' <span class="sep">·</span> POT ' + (p.potential | 0)
-      + ' <span class="sep">·</span> ' + esc(DEV_TIERS[p.dev_tier] || p.dev_tier || '') + '</div>'
+      + ' <span class="sep">·</span> ' + esc(DEV_TIERS[p.dev_tier] || p.dev_tier || '')
+      + (p.potential != null ? ' <span class="sep">·</span> ' + esc(potentialWord(p)) : '')
+      + (body || home ? '<span class="pc-bio">' + (body ? esc(body.height) + ' · ' + esc(body.weight_lb) + ' lb' : '')
+          + (home ? (body ? ' · ' : '') + esc(home) : '') + '</span>' : '')
+      + '</div>'
       + (hurt ? '<div class="pc-injury"><span class="k">Unavailable</span>' + esc(hurtLine) + '</div>' : '')
       + '<div class="pc-acq"><span class="k">Acquired</span>' + esc(acquiredLine(p)) + '</div>'
       + (seasonLine(p) ? '<div class="pc-career"><span class="k">This season</span>' + esc(seasonLine(p)) + '</div>' : '')
@@ -2091,6 +2137,9 @@
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,
+    profileOf: profileOf, tierOf: tierOf, potentialTierOf: potentialTierOf, potentialWord: potentialWord,
+    hometownOf: hometownOf, bodyOf: bodyOf, universalRatings: universalRatings, specificRatings: specificRatings,
+    PROFILE_VERSION: PR ? PR.VERSION : null, TIERS: PR ? PR.TIERS : [],
     careerLine: careerLine, acquiredLine: acquiredLine, playerCard: playerCard, groups: groups,
     weakest: weakest, strongest: strongest, logoSvg: logoSvg, themeVars: themeVars, identity: identity,
     prep: prep, preview: preview, historyPayload: historyPayload, esc: esc, fmt: fmt,

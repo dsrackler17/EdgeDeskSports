@@ -25,6 +25,9 @@
 
   var F = root.EDFootball || (typeof require === 'function' ? require('./football.js') : null);
   var R = root.EDRoster || (typeof require === 'function' ? require('./roster.js') : null);
+  /* the derived profile (agility, strength, stamina and the rest) — optional,
+     so the engine still runs on a page that has not loaded it */
+  var PR = root.EDProfile || (typeof require === 'function' ? (function () { try { return require('./profile.js'); } catch (_) { return null; } })() : null);
 
   var ENGINE_VERSION = 'gridiron_v1';
 
@@ -482,8 +485,20 @@
        Ratings are 30..99; these are yards per second, yards per second
        squared and 0..1 competences. Fatigue is already inside the unit
        averages, so a fourth-quarter line really is slower. */
+    /* THE PROFILE, WHERE THERE IS ONE. A card that came from the server
+       carries the derived six; a generated opponent gets them computed here
+       from the same pure function, so both sides of the ball are the same
+       kind of athlete. Speed, acceleration and agility keep their tuned
+       sources — the harness is banded on them — and the profile supplies
+       what the four ratings never had: strength and stamina. */
+    function profOf(pl) {
+      if (!pl) return null;
+      if (pl.profile && pl.profile.spd != null) return pl.profile;
+      if (PR && pl.position) { try { return PR.profile(pl); } catch (_) { return null; } }
+      return null;
+    }
     function offMan(pl, pos) {
-      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62;
+      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62, pf = profOf(pl);
       var spd = r.spd == null ? ov : r.spd;
       return {
         pid: pid(pl), pos: pos, ovr: ov,
@@ -501,12 +516,12 @@
            stamina, a cut is agility (above). A card that carries the
            universal ratings uses them; one that does not falls back to what
            it has. */
-        str: unit(r.str == null ? (r.pwr == null ? ov : r.pwr) : r.str),
-        sta: unit(pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))
+        str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.pwr == null ? ov : r.pwr) : r.str)),
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
       };
     }
     function defMan(pl, pos) {
-      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62;
+      var r = (pl && pl.ratings) || {}, ov = (pl && pl.overall) || 62, pf = profOf(pl);
       var spd = r.spd == null ? ov : r.spd;
       return {
         pid: pid(pl), pos: pos, ovr: ov,
@@ -518,8 +533,8 @@
         shed: unit(r.rst == null ? (r.str == null ? ov : r.str) : r.rst),
         bhk: unit(r.bhk == null ? ov : r.bhk),
         iq: unit(r.iq == null ? ov : r.iq),
-        str: unit(r.str == null ? (r.tkl == null ? ov : r.tkl) : r.str),
-        sta: unit(pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))
+        str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.tkl == null ? ov : r.tkl) : r.str)),
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
       };
     }
     function put(pl, pos, side) {

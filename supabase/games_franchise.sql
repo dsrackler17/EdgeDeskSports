@@ -8455,18 +8455,9 @@ returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
       where c->>'key' = public.franchise_fronts()->>'default'));
 $$;
 
--- IS THIS AN OFFENSIVE CALL OR A DEFENSIVE ONE. The two tables never share a
--- key, so a call names its own side and the server can refuse one meant for
--- the other.
-create or replace function public.franchise_call_side(p_key text)
-returns text language sql immutable set search_path = pg_catalog, pg_temp as $$
-  select case
-    when exists (select 1 from jsonb_array_elements(public.franchise_snaps()->'calls') c
-                  where c->>'key' = coalesce(p_key, '')) then 'off'
-    when exists (select 1 from jsonb_array_elements(public.franchise_fronts()->'calls') c
-                  where c->>'key' = coalesce(p_key, '')) then 'def'
-    else null end;
-$$;
+-- (franchise_call_side is defined once, below, where the playbook is: the
+--  earlier immutable definition that lived here was dead on arrival — the
+--  later one replaced it on every install.)
 
 commit;
 
@@ -9078,6 +9069,548 @@ select public.games_schema_note('franchise', 16, 'the playbook');
 commit;
 
 -- ===========================================================================
+-- THE PLAYER UNIVERSE — profile_v1 (Phase 17)
+--
+-- Every athlete carries four stored ratings for his position; the simulator
+-- plays with them and the overall is their mean. A football game wants more
+-- than four numbers on a card. THE PROFILE DERIVES THEM: speed, acceleration,
+-- agility, strength, awareness and stamina for everybody, and the position's
+-- own vocabulary on top (a quarterback's throw power and accuracy by depth, a
+-- corner's man and zone coverage, a lineman's pass and run block).
+--
+-- It is a PURE FUNCTION of what is already stored — position, the four
+-- ratings, the archetype, and four small integers the card carries (jersey,
+-- age, stamina, the letters of the last name) — so it needs no column, no
+-- migration and no ageing code: when the four grow, the profile grows, and it
+-- can never disagree with the card it is printed on. games/lib/gridiron/
+-- profile.js restates every formula in JavaScript with INTEGER arithmetic in
+-- both languages, and tools/games/profile.test.js pins the two together
+-- against a real database.
+--
+-- Also here: the collector's eight tiers off the overall (Prospect to
+-- Mythic), how far a man can go in words (Limited to Generational), a body
+-- and a home town from the same four integers, a bigger pool of names, and
+-- the archetypes the brief names. Nothing here is random.
+-- ===========================================================================
+
+begin;
+
+-- more names: the original lists are kept in place and grown, so an existing
+-- roster is unchanged and a new one draws from a wider well. Believable, and
+-- nobody famous.
+create or replace function public.franchise_pool_first_names()
+returns text[] language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select array[
+    'Mason','Cameron','Jalen','Trey','Dorian','Malik','Bryce','Colton','Elijah','Deshawn',
+    'Tanner','Marcus','Kellen','Rashad','Tyler','Isaiah','Devin','Grant','Xavier','Jordan',
+    'Caleb','Andre','Brock','Terrell','Wyatt','Darius','Hunter','Jamal','Cody','Antonio',
+    'Landon','Kwame','Reid','Tavion','Ethan','Deandre','Cole','Jaylen','Nolan','Marquis',
+    'Griffin','Omari','Beau','Zion','Sawyer','Ezekiel','Parker','Amari','Weston','Kendrick',
+    'Dalton','Javon','Miles','Roman','Silas','Terrance','Blake','Kalil','Rhett','Dashawn',
+    'Emmett','Lamar','Everett','Quincy','Holden','Tremaine','Jasper','Cedric','Wade','Jerome',
+    'Hayes','Donovan','Ford','Micah','Boone','Keon','Lincoln','Reggie','Cash','Marlon',
+    'Tucker','Isaac','Brooks','Andre','Knox','Terrell','Cruz','Dante','Sterling','Kofi',
+    'Ridge','Josiah','Colby','Malachi','Turner','Rasheed','Gage','Adrian','Walker','Jabari',
+    'Bishop','Tobias','Cyrus','Elias','Vance','Amos','Judah','Levi','Rowan','Otis',
+    -- profile_v1: the well widens
+    'Jace','Andres','Darnell','Kameron','Braxton','Tariq','Corey','Desmond','Lamont','Nathaniel',
+    'Rodney','Shane','Trent','Vernon','Wesley','Zachary','Alonzo','Brendan','Cortez','Damien',
+    'Ellis','Fabian','Garrett','Hollis','Ignacio','Jarvis','Kendall','Leland','Maurice','Nasir',
+    'Orlando','Preston','Quentin','Rafael','Santiago','Tyrese','Ulysses','Vaughn','Warren','Yusuf',
+    'Abram','Barrett','Clayton','Deon','Elliot','Franklin','Gideon','Harlan','Irving','Jeremiah',
+    'Kobe','Lorenzo','Mateo','Nehemiah','Octavio','Percy','Rex','Solomon','Titus','Uriel',
+    'Victor','Wilson','Xander','Yosef','Zeke','Alvin','Bennett','Curtis','Dexter','Emilio',
+    'Felix','Gavin','Hugo','Ivan','Jonas','Kyler','Lucas','Marvin','Nikolai','Oscar',
+    'Phoenix','Quinn','Ramon','Simeon','Theo','Ulrich','Vince','Wilder','Yancy','Zavier',
+    'Ahmad','Booker','Cassius','Demarcus','Enzo','Frederick','Gerald','Hakeem','Idris','Jamison',
+    'Kareem','Lionel','Moses','Nigel','Omar','Pierce','Raheem','Sebastian','Tremont','Vaughan',
+    'Whitman','Alden','Bo','Carver','Denzel','Eamon','Fletcher','Graham','Heath','Imani',
+    'Jett','Kade','Lane','Mekhi','Nash','Odell','Paxton','Rocco','Stellan','Tate',
+    'Ugo','Vidal','Wendell','Xzavier','York','Zander','Anson','Bram','Colt','Dax',
+    'Ezra','Flynn','Grady','Hollins','Ike','Jaxon','Kian','Lyle','Merritt','Nico',
+    'Onyx','Pryor','Ransom','Slade','Thaddeus','Ulises','Vaughnn','Wes','Yael','Zephyr',
+    'Abel','Baylor','Cannon','Deacon','Emory','Forrest','Gunnar','Hendrix','Ira','Jonah'];
+$$;
+
+create or replace function public.franchise_pool_last_names()
+returns text[] language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select array[
+    'Crowe','Redd','Vale','Hargrove','Whitlock','Bell','Okafor','Dawson','Pruitt','Marsh',
+    'Calloway','Reyes','Sutton','Banks','Thorne','Delgado','Mercer','Kincaid','Ashby','Fontaine',
+    'Greer','Holloway','Ingram','Jessup','Kerrigan','Lockhart','Maddox','Navarro','Osei','Pemberton',
+    'Quinlan','Rourke','Sable','Tillman','Underwood','Vickers','Wolfe','Yates','Zeller','Abernathy',
+    'Barlow','Coyle','Driscoll','Easton','Fairbanks','Gaines','Hensley','Ivory','Jarrett','Keller',
+    'Lattimore','Moncrief','Northcutt','Oakes','Pettigrew','Ramsey','Sheppard','Tremble','Upshaw','Voss',
+    'Whitfield','Beaumont','Castellano','Duvall','Everly','Falk','Gatlin','Harlan','Iverson','Jubilee',
+    'Kessler','Lindqvist','Montague','Nash','Oduya','Prescott','Ridley','Stovall','Tolbert','Vaughn',
+    'Wexler','Bloom','Corbin','Denning','Ellsworth','Fenwick','Granger','Hobbs','Isley','Jennings',
+    'Knowles','Landry','Mathis','Newsome','Orland','Pike','Rutledge','Sizemore','Truett','Vandiver',
+    'Whitaker','Ainsley','Bright','Chisholm','Dorsey','Emerson','Fielder','Goodwin','Haskins','Irwin',
+    'Jacoby','Kilgore','Lemieux','Mallory','Nix','Overton','Pinkney','Rawls','Stanton','Tibbs',
+    'Ulrich','Villanueva','Waverly','Blackwood','Coleman','Darby','Escobar','Frost','Gilliam','Hollis',
+    'Ibarra','Judd','Kemp','Lacey','Merriweather','Oyelaran','Pace','Reinholt','Sloan','Tatum',
+    'Vega','Winslow','Ackerman','Boudreaux','Carrick','Dunbar','Farrow','Guthrie','Hyde','Larkin',
+    -- profile_v1: the well widens
+    'Vance','Brennan','Ricks','Fields','Adeyemi','Bautista','Colvin','Dumas','Eze','Fitzgerald',
+    'Galloway','Hairston','Ikande','Jimenez','Kirkland','Lockett','Mbatha','Nwosu','Ortega','Pickens',
+    'Quarles','Reddick','Sandoval','Talley','Urbina','Valentine','Wheatley','Yancey','Zapata','Alston',
+    'Bledsoe','Cordova','Dickerson','Espinoza','Foreman','Gaskins','Hairfield','Igwe','Jeffcoat','Kearse',
+    'Lassiter','McCray','Nunez','Ojeda','Paschal','Rainey','Satterfield','Toussaint','Vasquez','Wilkerson',
+    'Acosta','Battle','Cartwright','Deloach','Ellison','Fuentes','Gadsden','Holcomb','Ingle','Joyner',
+    'Kittrell','Lowry','Mabry','Norwood','Olamide','Poindexter','Rucker','Spivey','Trotter','Umana',
+    'Vanterpool','Wingate','Ybarra','Zamora','Applewhite','Broussard','Cullen','Dupree','Etienne','Ferrell',
+    'Goins','Harrell','Isom','Jeter','Kelso','Lipscomb','Mendez','Nolan','Osborne','Pruett',
+    'Rhodes','Shackleford','Threadgill','Vinson','Westbrook','Adair','Boykin','Cobb','Dozier','Eldridge',
+    'Fairchild','Grissom','Hutto','Ivey','Jasper','Kirby','Leblanc','Mayfield','Odom','Parrish',
+    'Rankin','Stallworth','Teague','Vann','Whitehurst','Arrington','Blackmon','Crenshaw','Dellinger','Estrada',
+    'Fowler','Gowdy','Hairston','Ingalls','Jernigan','Kimbrough','Lanier','Melton','Newby','Oakley',
+    'Pettaway','Ruffin','Strickland','Tolliver','Varnado','Weathers','Aldridge','Brister','Cofield','Dansby',
+    'Ealy','Fontenot','Gaither','Hightower','Inman','Jolley','Kinsey','Lovett','Mims','Nettles',
+    'Ousley','Pryor','Rambo','Shivers','Thigpen','Veal','Wimberly','Amos','Bostic','Cheatham',
+    'Dortch','Ensley','Furlow','Gholston','Hardaway','Irby','Jordan','Keyes','Lipsey','Marable'];
+$$;
+
+-- the archetypes the brief names, appended to the pools the generator
+-- already draws from. Every skew sums near zero across the four, so a
+-- founding roster still lands where it always has.
+create or replace function public.franchise_pool_archetypes()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select '{
+    "QB":[{"name":"Field General","skew":{"iq":6,"acc":3,"arm":-2,"spd":-4}},
+          {"name":"Gunslinger","skew":{"arm":7,"acc":-2,"iq":-1,"spd":-2}},
+          {"name":"Scrambler","skew":{"spd":8,"arm":-3,"acc":-2,"iq":-1}},
+          {"name":"Improviser","skew":{"spd":4,"iq":3,"acc":-3,"arm":-2}},
+          {"name":"Game Manager","skew":{"acc":6,"iq":3,"arm":-5,"spd":-3}}],
+    "RB":[{"name":"Power Back","skew":{"pwr":7,"elu":-3,"spd":-2}},
+          {"name":"Elusive Back","skew":{"elu":7,"spd":3,"pwr":-5}},
+          {"name":"Receiving Back","skew":{"hnd":7,"elu":2,"pwr":-4}},
+          {"name":"Workhorse","skew":{"pwr":3,"hnd":2,"elu":-2,"spd":-1}}],
+    "WR":[{"name":"Deep Threat","skew":{"spd":8,"rte":-3,"hnd":-2}},
+          {"name":"Route Runner","skew":{"rte":7,"iq":3,"spd":-3}},
+          {"name":"Possession","skew":{"hnd":7,"iq":2,"spd":-4}},
+          {"name":"Route Technician","skew":{"rte":8,"iq":2,"spd":-4,"hnd":-2}},
+          {"name":"Possession Receiver","skew":{"hnd":8,"iq":1,"spd":-5}},
+          {"name":"Slot Weapon","skew":{"rte":4,"spd":3,"hnd":-2,"iq":-3}},
+          {"name":"Physical Target","skew":{"hnd":5,"iq":2,"rte":-2,"spd":-3}}],
+    "TE":[{"name":"Seam Stretcher","skew":{"spd":6,"rte":3,"blk":-6}},
+          {"name":"In-Line","skew":{"blk":7,"hnd":-2,"spd":-4}},
+          {"name":"Move TE","skew":{"hnd":4,"rte":3,"blk":-3}}],
+    "OL":[{"name":"Pass Protector","skew":{"pbk":6,"rbk":-3}},
+          {"name":"Road Grader","skew":{"rbk":6,"str":3,"pbk":-4}},
+          {"name":"Technician","skew":{"iq":5,"pbk":2,"rbk":1,"str":-4}}],
+    "DL":[{"name":"Edge Rusher","skew":{"prs":8,"rst":-4}},
+          {"name":"Run Stopper","skew":{"rst":7,"str":3,"prs":-5}},
+          {"name":"Hybrid","skew":{"prs":2,"rst":2}},
+          {"name":"Speed Rusher","skew":{"spd":7,"prs":4,"str":-5,"rst":-4}},
+          {"name":"Power Rusher","skew":{"str":7,"prs":2,"spd":-5,"rst":-2}},
+          {"name":"Balanced","skew":{"prs":1,"rst":1,"str":1,"spd":-1}}],
+    "LB":[{"name":"Run Stopper","skew":{"tkl":6,"cov":-4}},
+          {"name":"Coverage","skew":{"cov":7,"tkl":-3}},
+          {"name":"Hybrid","skew":{"tkl":2,"cov":2,"spd":2}}],
+    "CB":[{"name":"Ball Hawk","skew":{"bhk":8,"tkl":-4}},
+          {"name":"Coverage","skew":{"cov":6,"bhk":-2}},
+          {"name":"Hybrid","skew":{"tkl":4,"cov":2,"spd":-2}},
+          {"name":"Shutdown","skew":{"cov":8,"spd":1,"tkl":-4,"bhk":-3}},
+          {"name":"Press Specialist","skew":{"tkl":4,"cov":3,"bhk":-4,"spd":-1}},
+          {"name":"Zone Specialist","skew":{"bhk":4,"cov":3,"spd":-4,"tkl":-1}}],
+    "S":[{"name":"Ball Hawk","skew":{"bhk":8,"tkl":-3}},
+         {"name":"Run Stopper","skew":{"tkl":7,"cov":-4}},
+         {"name":"Coverage","skew":{"cov":6,"iq":2,"tkl":-3}}],
+    "K":[{"name":"Big Leg","skew":{"pwr":8,"acc":-3}},
+         {"name":"Precision","skew":{"acc":7,"pwr":-4}},
+         {"name":"Clutch","skew":{"clu":8,"con":-2}}],
+    "P":[{"name":"Big Leg","skew":{"pwr":8,"acc":-3}},
+         {"name":"Precision","skew":{"acc":7,"pwr":-4}},
+         {"name":"Directional","skew":{"con":6,"pwr":-2}}]
+  }'::jsonb;
+$$;
+
+-- ── the arithmetic, shared with games/lib/gridiron/profile.js to the digit ──
+-- a weighted mean in tenths, rounded the same way in both languages
+create or replace function public.franchise_pw(a integer, wa integer, b integer, wb integer,
+                                               c integer default 0, wc integer default 0)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select (coalesce(a, 0) * wa + coalesce(b, 0) * wb + coalesce(c, 0) * wc + 5) / 10;
+$$;
+-- the letters of a name, as a number: printable ASCII only, so the two
+-- languages count the same thing
+create or replace function public.franchise_letters(p text)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce(sum(ascii(ch)), 0)::int
+    from regexp_split_to_table(coalesce(p, ''), '') ch
+   where ascii(ch) between 32 and 126;
+$$;
+-- a little deterministic noise, -3..3, from the four integers a card carries
+create or replace function public.franchise_noise(p_jersey integer, p_age integer, p_stamina integer, p_last text, p_m integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select ((coalesce(p_jersey, 0) * 7 + coalesce(p_age, 0) * 13 + coalesce(p_stamina, 0) * 3
+           + public.franchise_letters(p_last) * p_m) % 7) - 3;
+$$;
+-- a core rating, or the overall where the position does not carry it
+create or replace function public.franchise_cr(r jsonb, k text, ov integer)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce((r->>k)::int, ov);
+$$;
+
+-- what an archetype adds on top of the four it already skewed — the same
+-- table games/lib/gridiron/profile.js carries as ARCH
+create or replace function public.franchise_profile_skews()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select '{
+    "Field General":{"awr":5,"tup":4,"scr":-3},
+    "Gunslinger":{"thp":5,"dac":4,"sac":-2},
+    "Scrambler":{"scr":7,"agi":5,"acc":3,"thp":-2},
+    "Improviser":{"tup":6,"scr":4,"agi":3,"mac":-2},
+    "Game Manager":{"sac":5,"awr":4,"thp":-3},
+    "Power Back":{"btk":6,"str":5,"agi":-3},
+    "Elusive Back":{"agi":6,"acc":4,"btk":-3},
+    "Receiving Back":{"cth":6,"rel":3,"btk":-3},
+    "Workhorse":{"sta":7,"car":5,"acc":-2},
+    "Deep Threat":{"spd":4,"rel":5,"cit":-3},
+    "Route Runner":{"rte":6,"agi":3,"str":-2},
+    "Route Technician":{"rte":7,"rel":3,"str":-2},
+    "Possession":{"cth":5,"cit":5,"spd":-2},
+    "Possession Receiver":{"cth":5,"cit":6,"spd":-3},
+    "Slot Weapon":{"agi":5,"acc":4,"rel":3,"str":-3},
+    "Physical Target":{"str":6,"cit":5,"agi":-3},
+    "Seam Stretcher":{"spd":4,"rel":3,"blk":-3},
+    "In-Line":{"blk":6,"str":4,"rel":-3},
+    "Move TE":{"agi":3,"rte":3},
+    "Pass Protector":{"pbk":4,"awr":2},
+    "Road Grader":{"rbk":4,"str":3},
+    "Technician":{"awr":4,"pbk":2,"rbk":2},
+    "Edge Rusher":{"prsh":4,"acc":3,"bsh":-2},
+    "Speed Rusher":{"prsh":5,"acc":4,"spd":3,"bsh":-3},
+    "Power Rusher":{"bsh":5,"str":5,"acc":-2},
+    "Balanced":{"prsh":2,"bsh":2},
+    "Run Stopper":{"bsh":4,"tck":4,"str":3,"agi":-2},
+    "Coverage":{"mcv":3,"zcv":4,"tck":-2},
+    "Hybrid":{"pur":3,"awr":2},
+    "Ball Hawk":{"bhk":5,"zcv":3,"tck":-2},
+    "Shutdown":{"mcv":6,"prs":3,"zcv":-2},
+    "Press Specialist":{"prs":6,"str":3,"zcv":-3},
+    "Zone Specialist":{"zcv":6,"awr":3,"mcv":-3},
+    "Big Leg":{"kpw":5,"kac":-2},
+    "Precision":{"kac":5,"kpw":-2},
+    "Clutch":{"clu":5},
+    "Directional":{"con":4,"kac":2}
+  }'::jsonb;
+$$;
+
+-- THE PROFILE. Pure, immutable, and restated key for key in profile.js.
+create or replace function public.franchise_profile(p_pos text, p_ratings jsonb, p_overall integer, p_archetype text,
+                                                    p_jersey integer, p_age integer, p_stamina integer, p_last text)
+returns jsonb language plpgsql immutable set search_path = pg_catalog, pg_temp as $$
+declare
+  ov integer := coalesce(nullif(p_overall, 0), 60);
+  r jsonb := coalesce(p_ratings, '{}'::jsonb);
+  sta integer := coalesce(p_stamina, 75);
+  n1 integer := public.franchise_noise(p_jersey, p_age, p_stamina, p_last, 1);
+  n2 integer := public.franchise_noise(p_jersey, p_age, p_stamina, p_last, 2);
+  n3 integer := public.franchise_noise(p_jersey, p_age, p_stamina, p_last, 3);
+  o jsonb; sk jsonb; k text; v text;
+begin
+  if p_pos is null then return null; end if;
+  case p_pos
+    when 'QB' then o := jsonb_build_object(
+      'spd', public.franchise_cr(r, 'spd', ov),
+      'acc', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'iq', ov), 4) + n1,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'acc', ov), 4) + n2,
+      'str', public.franchise_pw(public.franchise_cr(r, 'arm', ov), 4, 58, 6) + n3,
+      'awr', public.franchise_cr(r, 'iq', ov),
+      'thp', public.franchise_cr(r, 'arm', ov),
+      'sac', greatest(30, least(99, public.franchise_cr(r, 'acc', ov) + 2 + n1)),
+      'mac', public.franchise_cr(r, 'acc', ov),
+      'dac', public.franchise_pw(public.franchise_cr(r, 'acc', ov), 6, public.franchise_cr(r, 'arm', ov), 4) - 3 + n2,
+      'tup', public.franchise_pw(public.franchise_cr(r, 'iq', ov), 6, public.franchise_cr(r, 'acc', ov), 4) + n3,
+      'scr', public.franchise_cr(r, 'spd', ov));
+    when 'RB' then o := jsonb_build_object(
+      'spd', public.franchise_cr(r, 'spd', ov),
+      'acc', public.franchise_pw(public.franchise_cr(r, 'elu', ov), 5, public.franchise_cr(r, 'spd', ov), 5) + n1,
+      'agi', public.franchise_cr(r, 'elu', ov),
+      'str', public.franchise_cr(r, 'pwr', ov),
+      'awr', public.franchise_pw(public.franchise_cr(r, 'elu', ov), 3, public.franchise_cr(r, 'hnd', ov), 3, ov, 4) + n2,
+      'btk', public.franchise_pw(public.franchise_cr(r, 'pwr', ov), 6, public.franchise_cr(r, 'elu', ov), 4) + n3,
+      'car', public.franchise_pw(public.franchise_cr(r, 'pwr', ov), 5, public.franchise_cr(r, 'hnd', ov), 5) - n1,
+      'vis', public.franchise_pw(public.franchise_cr(r, 'elu', ov), 5, public.franchise_cr(r, 'hnd', ov), 5) + n2,
+      'cth', public.franchise_cr(r, 'hnd', ov));
+    when 'WR' then o := jsonb_build_object(
+      'spd', public.franchise_cr(r, 'spd', ov),
+      'acc', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'rte', ov), 4) + n1,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'rte', ov), 6, public.franchise_cr(r, 'spd', ov), 4) + n2,
+      'str', public.franchise_pw(public.franchise_cr(r, 'hnd', ov), 3, 52, 7) + n3,
+      'awr', public.franchise_cr(r, 'iq', ov),
+      'cth', public.franchise_cr(r, 'hnd', ov),
+      'rte', public.franchise_cr(r, 'rte', ov),
+      'rel', public.franchise_pw(public.franchise_cr(r, 'rte', ov), 5, public.franchise_cr(r, 'spd', ov), 5) + n1,
+      'cit', public.franchise_pw(public.franchise_cr(r, 'hnd', ov), 6, public.franchise_cr(r, 'iq', ov), 4) + n3);
+    when 'TE' then o := jsonb_build_object(
+      'spd', public.franchise_cr(r, 'spd', ov),
+      'acc', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'rte', ov), 4) + n1,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'rte', ov), 5, public.franchise_cr(r, 'spd', ov), 5) + n2,
+      'str', public.franchise_pw(public.franchise_cr(r, 'blk', ov), 6, 60, 4) + n3,
+      'awr', public.franchise_pw(public.franchise_cr(r, 'rte', ov), 4, public.franchise_cr(r, 'hnd', ov), 3, public.franchise_cr(r, 'blk', ov), 3) + n1,
+      'cth', public.franchise_cr(r, 'hnd', ov),
+      'rte', public.franchise_cr(r, 'rte', ov),
+      'rel', public.franchise_pw(public.franchise_cr(r, 'rte', ov), 5, public.franchise_cr(r, 'spd', ov), 5) - 2 + n2,
+      'cit', public.franchise_pw(public.franchise_cr(r, 'hnd', ov), 6, public.franchise_cr(r, 'blk', ov), 4) + n3,
+      'blk', public.franchise_cr(r, 'blk', ov));
+    when 'OL' then o := jsonb_build_object(
+      'spd', public.franchise_pw(public.franchise_cr(r, 'str', ov), 2, 46, 8) + n1,
+      'acc', public.franchise_pw(public.franchise_cr(r, 'iq', ov), 2, 50, 8) + n2,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'iq', ov), 3, 48, 7) + n3,
+      'str', public.franchise_cr(r, 'str', ov),
+      'awr', public.franchise_cr(r, 'iq', ov),
+      'pbk', public.franchise_cr(r, 'pbk', ov),
+      'rbk', public.franchise_cr(r, 'rbk', ov));
+    when 'DL' then o := jsonb_build_object(
+      'spd', public.franchise_cr(r, 'spd', ov),
+      'acc', public.franchise_pw(public.franchise_cr(r, 'prs', ov), 5, public.franchise_cr(r, 'spd', ov), 5) + n1,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'prs', ov), 4) + n2,
+      'str', public.franchise_cr(r, 'str', ov),
+      'awr', public.franchise_pw(public.franchise_cr(r, 'rst', ov), 5, public.franchise_cr(r, 'prs', ov), 3, 60, 2) + n3,
+      'prsh', public.franchise_cr(r, 'prs', ov),
+      'bsh', public.franchise_pw(public.franchise_cr(r, 'str', ov), 6, public.franchise_cr(r, 'rst', ov), 4) + n1,
+      'pur', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'rst', ov), 4) + n2);
+    when 'LB' then o := jsonb_build_object(
+      'spd', public.franchise_cr(r, 'spd', ov),
+      'acc', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'tkl', ov), 4) + n1,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'cov', ov), 4) + n2,
+      'str', public.franchise_pw(public.franchise_cr(r, 'tkl', ov), 6, 58, 4) + n3,
+      'awr', public.franchise_cr(r, 'iq', ov),
+      'tck', public.franchise_cr(r, 'tkl', ov),
+      'pur', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 6, public.franchise_cr(r, 'tkl', ov), 4) + n1,
+      'mcv', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'spd', ov), 4) + n2,
+      'zcv', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'iq', ov), 4) + n3,
+      'bsh', public.franchise_pw(public.franchise_cr(r, 'tkl', ov), 5, public.franchise_cr(r, 'iq', ov), 5) - 4 + n1);
+    when 'CB' then o := jsonb_build_object(
+      'spd', public.franchise_cr(r, 'spd', ov),
+      'acc', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 7, public.franchise_cr(r, 'cov', ov), 3) + n1,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'spd', ov), 5, public.franchise_cr(r, 'cov', ov), 5) + n2,
+      'str', public.franchise_pw(public.franchise_cr(r, 'tkl', ov), 5, 50, 5) + n3,
+      'awr', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 5, public.franchise_cr(r, 'bhk', ov), 5) + n1,
+      'mcv', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'spd', ov), 4) + n2,
+      'zcv', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'bhk', ov), 4) + n3,
+      'tck', public.franchise_cr(r, 'tkl', ov),
+      'prs', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 5, public.franchise_cr(r, 'tkl', ov), 5) + n1);
+    when 'S' then o := jsonb_build_object(
+      'spd', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 5, public.franchise_cr(r, 'bhk', ov), 3, 70, 2) + n1,
+      'acc', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'tkl', ov), 4) + n2,
+      'agi', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'bhk', ov), 4) + n3,
+      'str', public.franchise_pw(public.franchise_cr(r, 'tkl', ov), 6, 55, 4) + n1,
+      'awr', public.franchise_cr(r, 'iq', ov),
+      'mcv', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'tkl', ov), 2, public.franchise_cr(r, 'bhk', ov), 2) - 2 + n2,
+      'zcv', public.franchise_pw(public.franchise_cr(r, 'cov', ov), 6, public.franchise_cr(r, 'iq', ov), 4) + n3,
+      'tck', public.franchise_cr(r, 'tkl', ov),
+      'bhk', public.franchise_cr(r, 'bhk', ov));
+    else o := jsonb_build_object(
+      'spd', 52 + n1, 'acc', 50 + n2, 'agi', 50 + n3,
+      'str', public.franchise_pw(public.franchise_cr(r, 'pwr', ov), 5, 45, 5) + n1,
+      'awr', public.franchise_cr(r, 'con', ov),
+      'kpw', public.franchise_cr(r, 'pwr', ov), 'kac', public.franchise_cr(r, 'acc', ov),
+      'clu', public.franchise_cr(r, 'clu', ov), 'con', public.franchise_cr(r, 'con', ov));
+  end case;
+  o := o || jsonb_build_object('sta', sta);
+  sk := public.franchise_profile_skews()->coalesce(p_archetype, '');
+  if sk is not null then
+    for k, v in select key, value from jsonb_each_text(sk) loop
+      if o ? k then o := o || jsonb_build_object(k, (o->>k)::int + v::int); end if;
+    end loop;
+  end if;
+  select jsonb_object_agg(key, greatest(30, least(99, value::int))) into o from jsonb_each_text(o);
+  return o || jsonb_build_object('version', 'profile_v1');
+end;
+$$;
+
+-- the collector's eight tiers, off the overall. The rarity a card already
+-- carries (common..elite) is the generator's; this is the collector's.
+create or replace function public.franchise_card_tier(p_overall integer)
+returns text language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select case when coalesce(p_overall, 0) >= 98 then 'mythic'
+              when p_overall >= 93 then 'legend'
+              when p_overall >= 87 then 'apex'
+              when p_overall >= 81 then 'elite'
+              when p_overall >= 75 then 'prime'
+              when p_overall >= 69 then 'impact'
+              when p_overall >= 62 then 'starter'
+              else 'prospect' end;
+$$;
+-- how far he can go, in words
+create or replace function public.franchise_potential_tier(p_overall integer, p_potential integer, p_dev_tier text)
+returns text language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select case when coalesce(p_potential, p_overall) >= 95 and p_dev_tier = 'superstar' then 'generational'
+              when coalesce(p_potential, p_overall) >= 90 then 'elite'
+              when coalesce(p_potential, p_overall) - coalesce(p_overall, 0) >= 12 then 'breakout'
+              when coalesce(p_potential, p_overall) - coalesce(p_overall, 0) >= 6 then 'rising'
+              when coalesce(p_potential, p_overall) - coalesce(p_overall, 0) >= 2 then 'normal'
+              else 'limited' end;
+$$;
+-- a body, from the position and the same four integers
+create or replace function public.franchise_body(p_pos text, p_jersey integer, p_age integer, p_stamina integer, p_last text)
+returns jsonb language plpgsql immutable set search_path = pg_catalog, pg_temp as $$
+declare
+  b jsonb := coalesce(('{"QB":[74,3,215,12],"RB":[70,3,212,14],"WR":[72,3,195,14],"TE":[76,2,250,12],'
+    || '"OL":[77,2,312,16],"DL":[75,2,282,22],"LB":[73,2,238,12],"CB":[71,2,190,10],'
+    || '"S":[72,2,202,10],"K":[71,2,190,12],"P":[73,2,200,12]}')::jsonb->coalesce(p_pos, ''),
+    '[73,2,238,12]'::jsonb);
+  n1 integer := public.franchise_noise(p_jersey, p_age, p_stamina, p_last, 1);
+  n2 integer := public.franchise_noise(p_jersey, p_age, p_stamina, p_last, 2);
+  inches integer; lbs integer;
+begin
+  inches := (b->>0)::int + floor((n1 * (b->>1)::int + 1)::numeric / 3)::int;
+  lbs := (b->>2)::int + n2 * ((b->>3)::int / 3);
+  return jsonb_build_object('height_in', inches, 'weight_lb', lbs,
+    'height', (inches / 12)::text || '''' || (inches % 12)::text || '"');
+end;
+$$;
+-- a home town: real American places, none of them a team, a brand or a person
+create or replace function public.franchise_towns()
+returns text[] language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select array['Tyler, TX', 'Odessa, TX', 'Lufkin, TX', 'Waco, TX', 'Killeen, TX', 'Beaumont, TX', 'Valdosta, GA', 'Macon, GA',
+    'Albany, GA', 'Rome, GA', 'Mobile, AL', 'Dothan, AL', 'Gadsden, AL', 'Hattiesburg, MS', 'Meridian, MS', 'Tupelo, MS',
+    'Lafayette, LA', 'Monroe, LA', 'Lake Charles, LA', 'Shreveport, LA', 'Pine Bluff, AR', 'Jonesboro, AR', 'Tulsa, OK', 'Lawton, OK',
+    'Muskogee, OK', 'Wichita, KS', 'Topeka, KS', 'Lincoln, NE', 'Grand Island, NE', 'Sioux Falls, SD', 'Bismarck, ND', 'Billings, MT',
+    'Boise, ID', 'Pocatello, ID', 'Ogden, UT', 'Provo, UT', 'Pueblo, CO', 'Grand Junction, CO', 'Las Cruces, NM', 'Yuma, AZ',
+    'Mesa, AZ', 'Bakersfield, CA', 'Fresno, CA', 'Stockton, CA', 'Modesto, CA', 'Oceanside, CA', 'Inglewood, CA', 'Long Beach, CA',
+    'Compton, CA', 'Vallejo, CA', 'Salinas, CA', 'Eugene, OR', 'Medford, OR', 'Tacoma, WA', 'Yakima, WA', 'Spokane, WA', 'Reno, NV',
+    'Henderson, NV', 'Flint, MI', 'Saginaw, MI', 'Muskegon, MI', 'Toledo, OH', 'Akron, OH', 'Youngstown, OH', 'Canton, OH', 'Dayton, OH',
+    'Gary, IN', 'Fort Wayne, IN', 'Evansville, IN', 'Peoria, IL', 'Joliet, IL', 'Rockford, IL', 'Racine, WI', 'Green Bay, WI',
+    'Duluth, MN', 'Rochester, MN', 'Davenport, IA', 'Waterloo, IA', 'Springfield, MO', 'Joplin, MO', 'Cape Girardeau, MO',
+    'Paducah, KY', 'Bowling Green, KY', 'Owensboro, KY', 'Chattanooga, TN', 'Jackson, TN', 'Clarksville, TN', 'Huntsville, AL',
+    'Charleston, WV', 'Huntington, WV', 'Roanoke, VA', 'Hampton, VA', 'Norfolk, VA', 'Lynchburg, VA', 'Fayetteville, NC',
+    'Greenville, NC', 'Wilmington, NC', 'Rock Hill, SC', 'Florence, SC', 'Sumter, SC', 'Pensacola, FL', 'Ocala, FL', 'Lakeland, FL',
+    'Fort Pierce, FL', 'Homestead, FL', 'Daytona Beach, FL', 'Erie, PA', 'Scranton, PA', 'Altoona, PA', 'Reading, PA', 'Camden, NJ',
+    'Paterson, NJ', 'Trenton, NJ', 'Utica, NY', 'Binghamton, NY', 'Schenectady, NY', 'New Britain, CT', 'Waterbury, CT',
+    'Brockton, MA', 'Lowell, MA', 'Manchester, NH', 'Lewiston, ME', 'Dover, DE', 'Hagerstown, MD', 'Salisbury, MD', 'Anchorage, AK',
+    'Hilo, HI', 'Laredo, TX', 'Brownsville, TX', 'McAllen, TX', 'Amarillo, TX', 'Abilene, TX', 'San Angelo, TX', 'Wichita Falls, TX',
+    'Texarkana, TX', 'Nacogdoches, TX', 'Columbus, GA', 'Savannah, GA', 'Augusta, GA', 'Tuscaloosa, AL', 'Montgomery, AL', 'Jackson, MS'];
+$$;
+create or replace function public.franchise_hometown(p_jersey integer, p_age integer, p_stamina integer, p_last text, p_first text)
+returns text language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select (public.franchise_towns())[
+    ((coalesce(p_jersey, 0) * 31 + coalesce(p_age, 0) * 17 + coalesce(p_stamina, 0) * 7
+      + public.franchise_letters(p_last) + public.franchise_letters(p_first))
+     % array_length(public.franchise_towns(), 1)) + 1];
+$$;
+
+-- one object with all of it, for the read models
+create or replace function public.franchise_profile_of(p public.game_players)
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'profile', public.franchise_profile(p.position, p.ratings, p.overall, p.archetype, p.jersey, p.age, p.stamina, p.last_name),
+    'tier', public.franchise_card_tier(p.overall),
+    'potential_tier', public.franchise_potential_tier(p.overall, p.potential, p.dev_tier),
+    'body', public.franchise_body(p.position, p.jersey, p.age, p.stamina, p.last_name),
+    'hometown', public.franchise_hometown(p.jersey, p.age, p.stamina, p.last_name, p.first_name));
+$$;
+
+-- ── the read models carry it ──────────────────────────────────────────────
+create or replace function public.franchise_roster(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare f public.franchises%rowtype; v_players jsonb;
+begin
+  select * into f from public.franchises where id = public.franchise_of(p_secret);
+  if not found then return null; end if;
+  select coalesce(jsonb_agg((jsonb_build_object(
+      'id', p.id, 'first_name', p.first_name, 'last_name', p.last_name, 'position', p.position, 'jersey', p.jersey,
+      'age', p.age, 'overall', p.overall, 'archetype', p.archetype, 'dev_tier', p.dev_tier, 'potential', p.potential,
+      'stamina', p.stamina, 'chemistry', p.chemistry, 'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits,
+      'depth', p.depth, 'status', p.status, 'acquired_source', p.acquired_source, 'acquired_season', p.acquired_season,
+      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats,
+      -- hurt or fit, and when he is back (Phase 7)
+      'available', public.franchise_is_available(p.status, p.injured_until),
+      'injured_until', p.injured_until, 'injury', p.injury)
+      -- the profile, the tier, the body and the home town (Phase 17)
+      || public.franchise_profile_of(p))
+      order by array_position(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P'], p.position), p.depth, p.overall desc), '[]'::jsonb)
+    into v_players from public.game_players p where p.franchise_id = f.id and p.status = 'active';
+  return jsonb_build_object(
+    'franchise', jsonb_build_object('id', f.id, 'name', f.name, 'city', f.city, 'abbr', f.abbr, 'logo', f.logo, 'theme', f.theme,
+      'offense', f.offense, 'defense', f.defense, 'founded_season', f.founded_season,
+      'owner', case when f.user_id is not null then 'account' else 'device' end),
+    'rating', public.franchise_team_rating(f.id),
+    'starters', jsonb_build_object('QB', 1, 'RB', 1, 'WR', 3, 'TE', 1, 'OL', 5, 'DL', 4, 'LB', 3, 'CB', 2, 'S', 2, 'K', 1, 'P', 1),
+    'injuries', public.franchise_injuries(),
+    'injured', (select count(*) from public.game_players p where p.franchise_id = f.id and p.status = 'active'
+                 and not public.franchise_is_available(p.status, p.injured_until)),
+    'players', v_players);
+end;
+$$;
+
+create or replace function public.franchise_prospect_json(p public.game_players)
+returns jsonb language plpgsql stable set search_path = public, pg_temp as $$
+declare lo integer; hi integer; w integer; base jsonb; reveal boolean := p.scouted or p.status <> 'prospect';
+begin
+  /* THE BAND. Its width was stamped on this prospect by the department that
+     found him (scout_band, scouting_v1) and does not move afterwards; a class
+     stays true to the grade it was found under. Eleven is what every class
+     generated before Phase 9 was shown at.
+
+     Inside the band the true overall is UNIFORM — the rule is in this file
+     and anyone may read it, so the honest thing is for the band to mean
+     exactly what it looks like: somewhere in here, nothing narrower implied.
+     The band always contains the truth, so a report never contradicts it. */
+  w := greatest(2, coalesce(p.scout_band, 11));
+  lo := greatest(40, p.overall - (abs(hashtext(p.id::text || ':band')) % w));
+  hi := least(99, lo + w - 1);
+  base := jsonb_build_object('id', p.id, 'first_name', p.first_name, 'last_name', p.last_name, 'position', p.position,
+    'age', p.age, 'archetype', p.archetype, 'status', p.status, 'scouted', p.scouted, 'class_season', p.class_season,
+    'acquired_source', p.acquired_source, 'acquired_detail', p.acquired_detail, 'asking', p.asking,
+    'jersey', case when p.status = 'active' then p.jersey end, 'depth', p.depth,
+    -- a body and a home town are not a scouting report: a prospect has them
+    -- before anybody has paid to look at him (Phase 17)
+    'body', public.franchise_body(p.position, case when p.status = 'active' then p.jersey end, p.age, p.stamina, p.last_name),
+    'hometown', public.franchise_hometown(case when p.status = 'active' then p.jersey end, p.age, p.stamina, p.last_name, p.first_name));
+  if reveal then
+    return base || jsonb_build_object('overall', p.overall, 'potential', p.potential, 'dev_tier', p.dev_tier,
+      'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits, 'stamina', p.stamina,
+      -- the profile is derived from the ratings, so it is revealed with them
+      'profile', public.franchise_profile(p.position, p.ratings, p.overall, p.archetype,
+                   case when p.status = 'active' then p.jersey end, p.age, p.stamina, p.last_name),
+      'tier', public.franchise_card_tier(p.overall),
+      'potential_tier', public.franchise_potential_tier(p.overall, p.potential, p.dev_tier));
+  end if;
+  return base || jsonb_build_object('range', jsonb_build_array(lo, hi), 'band', w, 'overall', null, 'potential', null);
+end;
+$$;
+
+create or replace function public.franchise_trade_player_json(p_player uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position,
+      'jersey', p.jersey, 'age', p.age, 'overall', p.overall, 'archetype', p.archetype, 'potential', p.potential,
+      'dev_tier', p.dev_tier, 'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits, 'depth', p.depth,
+      'available', public.franchise_is_available(p.status, p.injured_until), 'injury', p.injury,
+      'career_stats', p.career_stats, 'season_stats', p.season_stats,
+      'first_name', p.first_name, 'last_name', p.last_name, 'stamina', p.stamina,
+      'franchise', jsonb_build_object('id', f.id, 'name', f.name, 'abbr', f.abbr))
+    || public.franchise_profile_of(p)
+  from public.game_players p join public.franchises f on f.id = p.franchise_id
+  where p.id = p_player and p.status = 'active';
+$$;
+
+-- the pure functions are open to read; nothing here writes
+grant execute on function public.franchise_pw(integer, integer, integer, integer, integer, integer) to anon, authenticated;
+grant execute on function public.franchise_letters(text) to anon, authenticated;
+grant execute on function public.franchise_noise(integer, integer, integer, text, integer) to anon, authenticated;
+grant execute on function public.franchise_cr(jsonb, text, integer) to anon, authenticated;
+grant execute on function public.franchise_profile_skews() to anon, authenticated;
+grant execute on function public.franchise_profile(text, jsonb, integer, text, integer, integer, integer, text) to anon, authenticated;
+grant execute on function public.franchise_card_tier(integer) to anon, authenticated;
+grant execute on function public.franchise_potential_tier(integer, integer, text) to anon, authenticated;
+grant execute on function public.franchise_body(text, integer, integer, integer, text) to anon, authenticated;
+grant execute on function public.franchise_towns() to anon, authenticated;
+grant execute on function public.franchise_hometown(integer, integer, integer, text, text) to anon, authenticated;
+revoke all on function public.franchise_profile_of(public.game_players) from public, anon, authenticated;
+-- two helpers from earlier phases that were neither granted nor revoked, so
+-- they kept PostgreSQL's default; the convention here is that every function
+-- says which it is
+revoke all on function public.franchise_anybody(jsonb, text, integer) from public, anon, authenticated;
+grant execute on function public.franchise_offseason_version() to anon, authenticated;
+
+select public.games_schema_note('franchise', 17, 'the player universe: profiles, tiers, bodies and home towns');
+commit;
+
+-- ===========================================================================
 -- THE REPORT. Every row should say ok.
 -- ===========================================================================
 select 1 as row, 'franchise tables exist' as what,
@@ -9244,7 +9777,7 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 16 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 17 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
@@ -9713,5 +10246,42 @@ select 37, 'the rank is derived from the record and a replayed reward cannot cou
         and public.franchise_rank_for(0) = 1 and public.franchise_rank_for(-99) = 1
         and (select bool_and(public.franchise_rank_for(public.franchise_rank_at(t.n)) = t.n)
                from generate_series(2, 200) as t(n))
+    then 'ok' else 'CHECK THIS' end
+union all
+select 38, 'the player universe is ' || (public.franchise_profile('QB', '{}'::jsonb, 70, null, 1, 25, 70, 'X')->>'version')
+        || ': a profile derived from the four, eight tiers, a body and a home town, pure and open to read',
+  case when public.franchise_profile('QB', '{}'::jsonb, 70, null, 1, 25, 70, 'X')->>'version' = 'profile_v1'
+        -- pure: the same card gives the same profile, and the functions say so
+        and (select bool_and(p.provolatile = 'i') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname in ('franchise_profile', 'franchise_card_tier', 'franchise_potential_tier',
+                                                            'franchise_body', 'franchise_hometown', 'franchise_pw', 'franchise_letters', 'franchise_noise'))
+        -- every position carries the universal six and its own words
+        and (select bool_and(pr ? 'spd' and pr ? 'acc' and pr ? 'agi' and pr ? 'str' and pr ? 'awr' and pr ? 'sta')
+               from unnest(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P']) pos,
+                    lateral (select public.franchise_profile(pos, '{}'::jsonb, 70, null, 10, 25, 75, 'Vance') pr) x)
+        and public.franchise_profile('QB', '{"arm":90}'::jsonb, 70, null, 1, 25, 70, 'X') ? 'thp'
+        and public.franchise_profile('CB', '{}'::jsonb, 70, null, 1, 25, 70, 'X') ? 'mcv'
+        -- everything lands inside a rating
+        and (select bool_and(v.value::int between 30 and 99) from jsonb_each_text(public.franchise_profile('WR', '{"spd":99,"rte":99,"hnd":99,"iq":99}'::jsonb, 99, 'Deep Threat', 81, 24, 99, 'Vance') - 'version') v)
+        -- the tiers climb with the overall and the words with the ceiling
+        and public.franchise_card_tier(50) = 'prospect' and public.franchise_card_tier(62) = 'starter' and public.franchise_card_tier(75) = 'prime'
+        and public.franchise_card_tier(87) = 'apex' and public.franchise_card_tier(93) = 'legend' and public.franchise_card_tier(99) = 'mythic'
+        and public.franchise_potential_tier(70, 70, 'normal') = 'limited' and public.franchise_potential_tier(70, 84, 'star') = 'breakout'
+        and public.franchise_potential_tier(80, 96, 'superstar') = 'generational'
+        -- a home town is a real place from the list, and the same one every time
+        and public.franchise_hometown(7, 24, 80, 'Vance', 'Malik') = any (public.franchise_towns())
+        and public.franchise_hometown(7, 24, 80, 'Vance', 'Malik') = public.franchise_hometown(7, 24, 80, 'Vance', 'Malik')
+        -- the roster read model carries it
+        and (select p.prosrc like '%franchise_profile_of(p)%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_roster')
+        -- the brief's archetypes are in the generator, and the pools are wider
+        and (select bool_and(exists (select 1 from jsonb_array_elements(public.franchise_pool_archetypes()->pos) a where a->>'name' = nm))
+               from (values ('QB','Improviser'),('QB','Game Manager'),('RB','Workhorse'),('WR','Route Technician'),('WR','Slot Weapon'),
+                            ('WR','Physical Target'),('DL','Speed Rusher'),('DL','Power Rusher'),('CB','Shutdown'),('CB','Press Specialist'),
+                            ('CB','Zone Specialist')) t(pos, nm))
+        and array_length(public.franchise_pool_first_names(), 1) >= 250
+        and array_length(public.franchise_pool_last_names(), 1) >= 300
+        and has_function_privilege('anon', 'public.franchise_profile(text, jsonb, integer, text, integer, integer, integer, text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_profile_of(public.game_players)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

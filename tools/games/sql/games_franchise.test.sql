@@ -5205,5 +5205,69 @@ begin
   perform pg_temp.ok('and it agrees, key for key, with what the Packs room reads',
     v->'reputation' = public.franchise_rank_report(ofl));
 
+
+  -- ═══ 32. THE PLAYER UNIVERSE — profile_v1 ══════════════════════════════════
+  -- A card carries four stored ratings; the profile derives the rest from
+  -- them, purely, and the read models carry it. The arithmetic is restated in
+  -- games/lib/gridiron/profile.js and pinned to this SQL by
+  -- tools/games/profile.test.js against a real database; here the question
+  -- is only whether the server hands it out where a page will look for it.
+  perform pg_temp.as_anon();
+  v := public.franchise_roster(SEC_OF);
+  perform pg_temp.ok('every man on the roster carries a profile with the universal six',
+    (select bool_and(p ? 'profile' and p->'profile' ? 'spd' and p->'profile' ? 'acc' and p->'profile' ? 'agi'
+                     and p->'profile' ? 'str' and p->'profile' ? 'awr' and p->'profile' ? 'sta'
+                     and p->'profile'->>'version' = 'profile_v1')
+       from jsonb_array_elements(v->'players') p));
+  perform pg_temp.ok('and a tier, a potential word, a body and a home town',
+    (select bool_and(p->>'tier' in ('prospect','starter','impact','prime','elite','apex','legend','mythic')
+                     and p->>'potential_tier' in ('limited','normal','rising','breakout','elite','generational')
+                     and (p->'body'->>'height_in')::int between 60 and 84
+                     and (p->'body'->>'weight_lb')::int between 150 and 380
+                     and p->>'hometown' = any (public.franchise_towns()))
+       from jsonb_array_elements(v->'players') p));
+  perform pg_temp.ok('a quarterback speaks his position''s words and a corner his',
+    (select bool_and(case p->>'position' when 'QB' then p->'profile' ? 'thp' and p->'profile' ? 'dac'
+                                          when 'CB' then p->'profile' ? 'mcv' and p->'profile' ? 'zcv'
+                                          when 'OL' then p->'profile' ? 'pbk' and p->'profile' ? 'rbk'
+                                          else true end)
+       from jsonb_array_elements(v->'players') p));
+  perform pg_temp.ok('the profile is a pure function of the card: the same roster read twice is the same profile',
+    (select bool_and(ra.pa->'profile' = rb.pb->'profile')
+       from jsonb_array_elements(v->'players') with ordinality ra(pa, i)
+       join jsonb_array_elements(public.franchise_roster(SEC_OF)->'players') with ordinality rb(pb, j) on ra.i = rb.j));
+  perform pg_temp.ok('the profile moves with the ratings it is derived from',
+    public.franchise_profile('WR', '{"spd":90,"rte":70,"hnd":70,"iq":70}'::jsonb, 75, null, 1, 24, 80, 'Vance')->>'spd'
+      <> public.franchise_profile('WR', '{"spd":70,"rte":70,"hnd":70,"iq":70}'::jsonb, 70, null, 1, 24, 80, 'Vance')->>'spd');
+  -- the market: a prospect nobody has paid to look at has a body and a home
+  -- town but no profile, because the profile is the ratings by another name
+  v := public.franchise_market_board(SEC_OF);
+  perform pg_temp.ok('an unscouted prospect has a home town and a body and no profile',
+    (select bool_and((p ? 'hometown') and (p ? 'body') and not (p ? 'profile'))
+       from jsonb_array_elements(v->'prospects') p where not (p->>'scouted')::boolean));
+  perform pg_temp.ok('and a free agent, whose ratings are on the table, shows his profile and his tier',
+    (select bool_and((p ? 'profile') and (p ? 'tier')) from jsonb_array_elements(v->'agents') p));
+  -- the words and the tiers, at the boundaries the client mirrors
+  perform pg_temp.ok('the eight tiers climb with the overall',
+    public.franchise_card_tier(61) = 'prospect' and public.franchise_card_tier(62) = 'starter'
+    and public.franchise_card_tier(68) = 'starter' and public.franchise_card_tier(69) = 'impact'
+    and public.franchise_card_tier(74) = 'impact' and public.franchise_card_tier(75) = 'prime'
+    and public.franchise_card_tier(80) = 'prime' and public.franchise_card_tier(81) = 'elite'
+    and public.franchise_card_tier(86) = 'elite' and public.franchise_card_tier(87) = 'apex'
+    and public.franchise_card_tier(92) = 'apex' and public.franchise_card_tier(93) = 'legend'
+    and public.franchise_card_tier(97) = 'legend' and public.franchise_card_tier(98) = 'mythic');
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the generator deals the brief''s archetypes and the pools are wider than they were',
+    array_length(public.franchise_pool_first_names(), 1) >= 250
+    and array_length(public.franchise_pool_last_names(), 1) >= 300
+    and jsonb_array_length(public.franchise_pool_archetypes()->'QB') = 5
+    and jsonb_array_length(public.franchise_pool_archetypes()->'WR') = 7
+    and jsonb_array_length(public.franchise_pool_archetypes()->'CB') = 6);
+  -- the franchise founded a section ago is fresh; the ones above it have
+  -- lived through sixty seasons and are no measure of a founding roster
+  perform pg_temp.ok('a founding roster still lands where it always has, with the wider pools',
+    (select (public.franchise_team_rating(f.id)->>'overall')::int between 62 and 78
+       from public.franchises f where f.anon_hash = public.games_hash(SEC_OF)));
+
 end
 $test$;
