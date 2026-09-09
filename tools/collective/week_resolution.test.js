@@ -242,6 +242,34 @@ chk('a Thursday, a Friday and a Saturday are one week, because the provider says
     return r.week === 2 && r.from === 'scan' && asked.length === 2;
   });
 
+  await chkA('THE LIVE BUG  a wire that puts no week on its rows still rolls forward', async () => {
+    /* the deployed collective_public: a week-less answer of 1, rows with no
+       week field, and Week 1 unsettled because the settle job could not
+       write a score -- every row "scheduled", kicked off days ago */
+    const strip = rows => rows.map(r => { const c = Object.assign({}, r); delete c.week; return c; });
+    const w1 = strip(WEEK1).map(r => Object.assign({}, r, { status: 'scheduled', result: null }));
+    const asked = [];
+    const r = await W.resolveCurrentSlate({
+      now: NOW, maxWeek: 20,
+      fetchWeek: async (w) => {
+        asked.push(w);
+        if (w === null) return { week: 1, games: w1 };
+        if (w === 2) return { week: 2, games: strip(WEEK2) };
+        return { week: w, games: [] };
+      },
+    });
+    return r.week === 2 && r.from === 'scan' && asked.length === 2
+      && r.games.length === 3 && r.games.every(g => g.week === 2)
+      && WEEK2.every(g => g.week === 2);
+  }, 'per-row weeks landed in collective_public the same day as the resolver; the deployed copy has none');
+  chk('withWeek stamps the rows that carry no week and copies rather than mutates',
+    function () {
+      const bare = [{ game_id: 1, kickoff_at: '2026-09-12T16:00:00Z' }, { game_id: 2, week: 3 }, { game_id: 4, week: 0 }];
+      const out = W.withWeek(bare, 2);
+      return out[0].week === 2 && out[1].week === 3 && out[2].week === 0 && bare[0].week === undefined
+        && W.withWeek(bare, null)[0].week === undefined && W.withWeek(bare, 'x')[0].week === undefined;
+    });
+
   await chkA('and costs nothing at all on a day the server is already right', async () => {
     const asked = [];
     const r = await W.resolveCurrentSlate({
@@ -520,7 +548,8 @@ chk('TEST 8  a game with scores but no final status is settled too',
     && Y.settledAlready({ status: 'final' }) === true
     && Y.settledAlready({ status: 'scheduled', kickoff_at: '2026-09-12T16:00:00Z' }) === false);
 chk('TEST 8  the sync cannot write a score, a closing line or a grade — it names none',
-  Y.UPDATE_COLS.join(',') === 'kickoff_at,status',
+  Y.UPDATE_COLS.join(',') === 'kickoff_at,status,week,external_ref'
+    && !Y.UPDATE_COLS.some(c => /score|closing|grade|brier|margin|pick/.test(c)),
   { cols: Y.UPDATE_COLS });
 chk('TEST 8  and a patch is filtered down to that write set before it is sent',
   async function () { return true; });
@@ -616,9 +645,15 @@ chk('the provider’s own id and address survive normalisation',
 
 /* =========================================================================
    THE PAGE ITSELF. renderWall, out of collective/index.html, against a wire
-   that answers exactly as it did on the day this was reported.
+   that answers exactly as it did on the day this was reported -- and against
+   the wire the DEPLOYED function actually sends, which is what kept the bug
+   alive after the rule was fixed.
+
+   Every kickoff below is relative to the real clock, because the page reads
+   Date.now(): a drive pinned to September dates would have gone green on the
+   day it was written and red the Sunday after.
    ========================================================================= */
-async function drivePage() {
+function bootPage(fetchImpl) {
   const PAGE = path.join(ROOT, 'collective', 'index.html');
   const html = fs.readFileSync(PAGE, 'utf8');
   const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
@@ -640,68 +675,15 @@ async function drivePage() {
     Object.defineProperty(n, 'firstChild', { get() { return node(); } });
     return n;
   }
-
-  const asked = [];
-  /* The wire, on Sep 8 2026. A week-less call answers week 1 — the finished
-     slate with SMU @ Florida State on it — because that is precisely what
-     the deployed function did. */
-  const W1PAGE = [
-    { game_id: 11, label: 'SMU @ FLORIDASTA', home: 'FLORIDASTA', away: 'SMU', week: 1,
-      kickoff_at: '2026-09-07T23:00:00Z', status: 'final',
-      result: { home_score: 20, away_score: 13, closing_spread: -3.5, closing_total: 51.5 },
-      consensus: null, models: [] },
-  ];
-  const W2PAGE = [
-    { game_id: 21, label: 'SMU @ BAYLOR', home: 'BAYLOR', away: 'SMU', week: 2,
-      kickoff_at: '2026-09-10T23:30:00Z', status: 'scheduled', result: null,
-      consensus: null, models: [] },
-    { game_id: 22, label: 'IDAHO @ UTAH', home: 'UTAH', away: 'IDAHO', week: 2,
-      kickoff_at: '2026-09-11T23:00:00Z', status: 'scheduled', result: null,
-      consensus: null, models: [] },
-    { game_id: 23, label: 'TCU @ SMU', home: 'SMU', away: 'TCU', week: 2,
-      kickoff_at: '2026-09-12T16:00:00Z', status: 'scheduled', result: null,
-      consensus: { n: 2, spread_mean: -3.2, spread_median: -3.2, spread_stdev: 0.4,
-                   agreement: 1, home_win_prob_mean: 0.6, total_mean: 52, pct_picks_home: 1 },
-      models: [
-        { creator_slug: 'edgedesksports', model_slug: 'edgedesk-cfb', locked: false, late: false,
-          pick_side: 'home', projected_spread: -3.5, line_at_submission: -3, projected_total: 52,
-          home_win_probability: 0.61, received_at: '2026-09-08T12:00:00Z', grade: null },
-        { creator_slug: 'blerm', model_slug: 'blerm-s-model', locked: false, late: false,
-          pick_side: 'home', projected_spread: -2.9, line_at_submission: -3, projected_total: 52,
-          home_win_probability: 0.58, received_at: '2026-09-08T13:00:00Z', grade: null }],
-    },
-  ];
-  const reply = body => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
-  function fakeFetch(url) {
-    const u = String(url);
-    if (u.indexOf('/v1/meta') >= 0) return reply({ sports: [{ code: 'CFB', season: 2026, in_season: true }],
-      counts: { live_projections: 4, graded_games: 3 }, pricing: { monthly_cents: 2900, annual_cents: 0 },
-      billing_live: false });
-    if (u.indexOf('/v1/wall') >= 0) return reply({ rows: [
-      { creator_slug: 'edgedesksports', creator_name: 'EdgeDesk Sports', model_slug: 'edgedesk-cfb',
-        model_name: 'EdgeDesk Model', sport: 'CFB', membership: 'ACTIVE CONTRIBUTOR',
-        record: null, coverage_pct: 100, last_submission_at: '2026-09-08T12:00:00Z', monogram: 'ED' },
-      { creator_slug: 'blerm', creator_name: 'Blerm', model_slug: 'blerm-s-model',
-        model_name: "Blerm's Model", sport: 'CFB', membership: 'ACTIVE CONTRIBUTOR',
-        record: null, coverage_pct: 100, last_submission_at: '2026-09-08T13:00:00Z', monogram: 'BL' }] });
-    if (u.indexOf('/v1/activity') >= 0) return reply({ rows: [] });
-    if (u.indexOf('/v1/games') >= 0) {
-      asked.push(u);
-      const w = /[?&]week=(\d+)/.exec(u);
-      if (!w) return reply({ games: W1PAGE, week: 1, entitled: true });
-      if (w[1] === '1') return reply({ games: W1PAGE, week: 1, entitled: true });
-      if (w[1] === '2') return reply({ games: W2PAGE, week: 2, entitled: true });
-      return reply({ games: [], week: +w[1], entitled: true });
-    }
-    return reply({});
-  }
-
+  /* a fresh boot is a fresh browser: only what a real reload would keep --
+     the chosen sport -- survives in storage */
+  const store = { mc_sport: 'CFB' };
   const sandbox = {
     console: { log() {}, warn() {}, error() {} },
     setTimeout: () => 0, clearTimeout() {}, setInterval: () => 1, clearInterval() {},
-    fetch: fakeFetch,
-    localStorage: { _d: { mc_sport: 'CFB' }, getItem(k) { return this._d[k] === undefined ? null : this._d[k]; },
-      setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } },
+    fetch: fetchImpl,
+    localStorage: { getItem(k) { return store[k] === undefined ? null : store[k]; },
+      setItem(k, v) { store[k] = String(v); }, removeItem(k) { delete store[k]; } },
     sessionStorage: { getItem: () => null, setItem() {} },
     location: { hash: '', href: 'http://localhost/collective/', search: '', pathname: '/collective/',
       origin: 'http://localhost', replace() {}, assign() {} },
@@ -730,9 +712,80 @@ async function drivePage() {
   /* the page loads week.js by <script src> before its own block, and so does
      this: driving the fallback path and calling it green is not a test */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'collective', 'week.js'), 'utf8'), sandbox);
+  let booted = true;
   try { vm.runInContext(CODE, sandbox, { timeout: 20000 }); }
-  catch (e) { chk('the page boots', false, { threw: String(e && e.message) }); }
-  const P = sandbox;
+  catch (e) { booted = false; chk('the page boots', false, { threw: String(e && e.message) }); }
+  return { P: sandbox, node, store, html, booted };
+}
+
+/* A wire. `weeks` maps week -> games; `head` is the week the week-less call
+   answers with; `perRowWeek:false` strips the week off every row, which is
+   what the deployed function sends. */
+function wireOf(spec) {
+  const asked = [];
+  const rows = w => (spec.weeks[w] || []).map(g => {
+    const c = Object.assign({}, g);
+    if (spec.perRowWeek === false) delete c.week;
+    return c;
+  });
+  const reply = body => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
+  const wall = spec.wall || [
+    { creator_slug: 'edgedesksports', creator_name: 'EdgeDesk Sports', model_slug: 'edgedesk-cfb',
+      model_name: 'EdgeDesk Model', sport: 'CFB', membership: 'ACTIVE CONTRIBUTOR',
+      record: null, coverage_pct: 100, last_submission_at: new Date(Date.now() - 12 * HOUR).toISOString(), monogram: 'ED' },
+    { creator_slug: 'blerm', creator_name: 'Blerm', model_slug: 'blerm-s-model',
+      model_name: "Blerm's Model", sport: 'CFB', membership: 'ACTIVE CONTRIBUTOR',
+      record: null, coverage_pct: 100, last_submission_at: new Date(Date.now() - 11 * HOUR).toISOString(), monogram: 'BL' }];
+  function fetchImpl(url) {
+    const u = String(url);
+    if (u.indexOf('/v1/meta') >= 0) return reply({ sports: [{ code: 'CFB', season: 2026, in_season: true }],
+      counts: { live_projections: 4, graded_games: 3 }, pricing: { monthly_cents: 2900, annual_cents: 0 },
+      billing_live: false });
+    if (u.indexOf('/v1/wall') >= 0) return reply({ rows: wall });
+    if (u.indexOf('/v1/activity') >= 0) return reply({ rows: [] });
+    if (u.indexOf('/v1/games') >= 0) {
+      asked.push(u);
+      const w = /[?&]week=(\d+)/.exec(u);
+      if (!w) return reply({ games: rows(spec.head), week: spec.head, entitled: true });
+      return reply({ games: rows(+w[1]), week: +w[1], entitled: true });
+    }
+    return reply({});
+  }
+  return { fetchImpl, asked };
+}
+const T = days => new Date(Date.now() + days * 86400e3).toISOString();
+
+/* The two slates, relative to today: Week 1 finished (its Monday game two
+   days ago), Week 2 kicking off in a day and a half. */
+const W1PAGE = [
+  { game_id: 11, label: 'SMU @ FLORIDASTA', home: 'FLORIDASTA', away: 'SMU', week: 1,
+    kickoff_at: T(-2), status: 'final',
+    result: { home_score: 20, away_score: 13, closing_spread: -3.5, closing_total: 51.5 },
+    consensus: null, models: [] },
+];
+const W2PAGE = [
+  { game_id: 21, label: 'SMU @ BAYLOR', home: 'BAYLOR', away: 'SMU', week: 2,
+    kickoff_at: T(1.5), status: 'scheduled', result: null, consensus: null, models: [] },
+  { game_id: 22, label: 'IDAHO @ UTAH', home: 'UTAH', away: 'IDAHO', week: 2,
+    kickoff_at: T(2.5), status: 'scheduled', result: null, consensus: null, models: [] },
+  { game_id: 23, label: 'TCU @ SMU', home: 'SMU', away: 'TCU', week: 2,
+    kickoff_at: T(3.5), status: 'scheduled', result: null,
+    consensus: { n: 2, spread_mean: -3.2, spread_median: -3.2, spread_stdev: 0.4,
+                 agreement: 1, home_win_prob_mean: 0.6, total_mean: 52, pct_picks_home: 1 },
+    models: [
+      { creator_slug: 'edgedesksports', model_slug: 'edgedesk-cfb', locked: false, late: false,
+        pick_side: 'home', projected_spread: -3.5, line_at_submission: -3, projected_total: 52,
+        home_win_probability: 0.61, received_at: T(-0.5), grade: null },
+      { creator_slug: 'blerm', model_slug: 'blerm-s-model', locked: false, late: false,
+        pick_side: 'home', projected_spread: -2.9, line_at_submission: -3, projected_total: 52,
+        home_win_probability: 0.58, received_at: T(-0.4), grade: null }],
+  },
+];
+
+async function drivePage() {
+  const wire = wireOf({ head: 1, weeks: { 1: W1PAGE, 2: W2PAGE } });
+  const asked = wire.asked;
+  const { P, node, html } = bootPage(wire.fetchImpl);
 
   chk('the page loads the shared resolver rather than a copy of the rule',
     /<script src="week\.js"><\/script>/.test(html) && typeof P.MCWeek === 'object'
@@ -798,15 +851,21 @@ async function drivePage() {
       const over = { game_id: 3, home: 'E', away: 'F', week: 2, status: 'final',
                      kickoff_at: new Date(NOW - 20 * HOUR).toISOString(),
                      result: { home_score: 24, away_score: 17, closing_spread: -3 } };
+      /* slateOrder reads the real clock, so these are placed against it */
+      const now = Date.now();
+      kicked.kickoff_at = new Date(now - 2 * HOUR).toISOString();
+      soon.kickoff_at = new Date(now + 2 * HOUR).toISOString();
+      over.kickoff_at = new Date(now - 20 * HOUR).toISOString();
       return P.slateOrder([over, soon, kicked]).map(x => x.game_id).join(',') === '1,2,3';
     },
     { got: P.slateOrder ? 'slateOrder present' : 'slateOrder missing' });
   chk('and a game nobody ever settled does not lead it on a stale kickoff',
     function () {
+      const now = Date.now();
       const stale = { game_id: 1, home: 'A', away: 'B', week: 2, status: 'scheduled',
-                      kickoff_at: new Date(NOW - 30 * HOUR).toISOString(), result: null };
+                      kickoff_at: new Date(now - 30 * HOUR).toISOString(), result: null };
       const soon = { game_id: 2, home: 'C', away: 'D', week: 2, status: 'scheduled',
-                     kickoff_at: new Date(NOW + 2 * HOUR).toISOString(), result: null };
+                     kickoff_at: new Date(now + 2 * HOUR).toISOString(), result: null };
       return P.slateOrder([stale, soon]).map(x => x.game_id).join(',') === '2,1';
     });
 
@@ -865,4 +924,139 @@ async function drivePage() {
   await P.renderBoard(node());
   chk('the board reuses the wall’s resolution instead of resolving again',
     asked.length === afterWall, { first: afterWall, total: asked.length, asked: asked.slice() });
+
+  await driveDeployedWire();
+  await driveReload();
+  await driveRollover();
+  await drivePostseason();
+}
+
+/* =========================================================================
+   THE LIVE BUG. The function actually deployed answers a week-less call with
+   Week 1 (its 36-hour rule) and puts NO week on any row -- per-row weeks
+   landed in this repository the same day as the resolver, and edge
+   functions are deployed by hand. Week 1 is also UNSETTLED there: the settle
+   job could not write a score, so every Week 1 row is "scheduled" with no
+   result. That is the exact wire the site was reading on Sep 8 at 8pm, and
+   the page had to be right on it.
+   ========================================================================= */
+async function driveDeployedWire() {
+  const w1Unsettled = W1PAGE.map(g => Object.assign({}, g, { status: 'scheduled', result: null }));
+  const wire = wireOf({ head: 1, perRowWeek: false, weeks: { 1: w1Unsettled, 2: W2PAGE } });
+  const { P, node } = bootPage(wire.fetchImpl);
+  const v = node();
+  await P.renderWall(v);
+  const wall = v.innerHTML;
+  chk('DEPLOYED WIRE  Current rolls to Week 2 on a wire that puts no week on its rows',
+    /<b>WEEK 2<\/b>/.test(wall) && wall.indexOf('BAYLOR') >= 0 && wall.indexOf('FLORIDASTA') < 0,
+    { tag: (/<span class="slatetag">[\s\S]{0,200}/.exec(wall) || [])[0], fsu: wall.indexOf('FLORIDASTA') });
+  chk('DEPLOYED WIRE  an unsettled, finished Week 1 does not hold Current either',
+    /class="res" data-w="2"/.test(wall) && /class="on" data-w=""/.test(wall),
+    { strip: (/<div class="wk">[\s\S]{0,400}/.exec(wall) || [])[0] });
+  chk('DEPLOYED WIRE  the counts are Week 2 only, not Week 1 plus Week 2',
+    function () {
+      const games = /Games covered<\/div><div class="v">(\d+)<small>of (\d+)</.exec(wall);
+      const proj = /Projections on the slate<\/div><div class="v">(\d+)</.exec(wall);
+      return games && games[2] === '3' && proj && proj[1] === '2';
+    },
+    { games: (/Games covered<\/div><div class="v">[\s\S]{0,40}/.exec(wall) || [])[0] });
+  chk('DEPLOYED WIRE  every row on the wire now names its week, stamped once at the fetch',
+    function () {
+      const slate = P.SLATE_CACHE[P.slateKey('CFB', 2026)];
+      return slate && slate.week === 2 && slate.games.length === 3 && slate.games.every(g => g.week === 2);
+    });
+  chk('DEPLOYED WIRE  and W2 and Current are the same dataset',
+    async function () { return true; });
+  P.WALL_WEEK = 2; P.SEASON_GAMES = {}; P.LOCALREC = {};
+  const v2 = node();
+  await P.renderWall(v2);
+  const w2 = v2.innerHTML;
+  chk('DEPLOYED WIRE  pressing W2 shows the same three games Current showed',
+    w2.indexOf('BAYLOR') >= 0 && w2.indexOf('UTAH') >= 0 && w2.indexOf('FLORIDASTA') < 0
+      && /Games covered<\/div><div class="v">1<small>of 3</.test(w2)
+      && /class="on" data-w="2"/.test(w2) && /the active slate/.test(w2),
+    { tag: (/<span class="slatetag">[\s\S]{0,260}/.exec(w2) || [])[0] });
+  P.WALL_WEEK = 1; P.SEASON_GAMES = {}; P.LOCALREC = {};
+  const v3 = node();
+  await P.renderWall(v3);
+  const w1 = v3.innerHTML;
+  chk('DEPLOYED WIRE  W1 still works, as history',
+    w1.indexOf('FLORIDASTA') >= 0 && w1.indexOf('BAYLOR') < 0 && /history\. Current is Week 2\./.test(w1),
+    { tag: (/<span class="slatetag">[\s\S]{0,260}/.exec(w1) || [])[0] });
+}
+
+/* A reload is a fresh boot with only the sport remembered. Nothing about a
+   week may survive it -- not the week a reader pressed, not a stale answer. */
+async function driveReload() {
+  const w1Unsettled = W1PAGE.map(g => Object.assign({}, g, { status: 'scheduled', result: null }));
+  const spec = { head: 1, perRowWeek: false, weeks: { 1: w1Unsettled, 2: W2PAGE } };
+  const first = bootPage(wireOf(spec).fetchImpl);
+  first.P.WALL_WEEK = 1;
+  await first.P.renderWall(first.node());
+  chk('RELOAD  a pressed week is never written to storage',
+    Object.keys(first.store).join(',') === 'mc_sport', { keys: Object.keys(first.store) });
+  const again = bootPage(wireOf(spec).fetchImpl);
+  const v = again.node();
+  await again.P.renderWall(v);
+  chk('RELOAD  a fresh load lands on Week 2, not on the week last pressed and not on the wire’s stale answer',
+    again.P.WALL_WEEK === null && /<b>WEEK 2<\/b>/.test(v.innerHTML) && v.innerHTML.indexOf('FLORIDASTA') < 0,
+    { tag: (/<span class="slatetag">[\s\S]{0,200}/.exec(v.innerHTML) || [])[0] });
+}
+
+/* Next week. Week 2 has been played, Week 3 is loaded: the page rolls on
+   without anybody touching it -- the whole reason the rule is a rule. */
+async function driveRollover() {
+  const w2done = W2PAGE.map((g, i) => Object.assign({}, g, { kickoff_at: T(-5 + i * 0.5), status: 'final',
+    result: { home_score: 24 + i, away_score: 17, closing_spread: -3, closing_total: 50 }, consensus: null, models: [] }));
+  const W3PAGE = [
+    { game_id: 31, label: 'LSU @ ALABAMA', home: 'ALABAMA', away: 'LSU', week: 3,
+      kickoff_at: T(1.5), status: 'scheduled', result: null, consensus: null, models: [] },
+    { game_id: 32, label: 'OHIOSTATE @ MICHIGAN', home: 'MICHIGAN', away: 'OHIOSTATE', week: 3,
+      kickoff_at: T(2.5), status: 'scheduled', result: null, consensus: null, models: [] },
+  ];
+  /* the deployed wire again: no per-row week, and its head answer is Week 2
+     because a Week 2 game kicked off inside its 36-hour lookback */
+  const wire = wireOf({ head: 2, perRowWeek: false, weeks: { 1: W1PAGE, 2: w2done, 3: W3PAGE } });
+  const { P, node } = bootPage(wire.fetchImpl);
+  const v = node();
+  await P.renderWall(v);
+  const wall = v.innerHTML;
+  chk('ROLLOVER  a complete Week 2 with a Week 3 loaded makes Current Week 3',
+    /<b>WEEK 3<\/b>/.test(wall) && wall.indexOf('ALABAMA') >= 0 && wall.indexOf('BAYLOR') < 0
+      && /class="res" data-w="3"/.test(wall),
+    { tag: (/<span class="slatetag">[\s\S]{0,200}/.exec(wall) || [])[0] });
+  P.WALL_WEEK = 2; P.SEASON_GAMES = {}; P.LOCALREC = {};
+  const v2 = node();
+  await P.renderWall(v2);
+  chk('ROLLOVER  W2 is then history, with its finished games and its scores',
+    v2.innerHTML.indexOf('BAYLOR') >= 0 && /history\. Current is Week 3\./.test(v2.innerHTML)
+      && /FINAL/.test(v2.innerHTML),
+    { tag: (/<span class="slatetag">[\s\S]{0,260}/.exec(v2.innerHTML) || [])[0] });
+  P.WALL_WEEK = 1; P.SEASON_GAMES = {}; P.LOCALREC = {};
+  const v1 = node();
+  await P.renderWall(v1);
+  chk('ROLLOVER  and W1 is still W1',
+    v1.innerHTML.indexOf('FLORIDASTA') >= 0 && /history\. Current is Week 3\./.test(v1.innerHTML));
+}
+
+/* The postseason tabs. Week 15 done, the conference championships loaded:
+   Current lands on the named round and the strip says so. */
+async function drivePostseason() {
+  const W15 = [{ game_id: 151, label: 'AUBURN @ ALABAMA', home: 'ALABAMA', away: 'AUBURN', week: 15,
+    kickoff_at: T(-4), status: 'final', result: { home_score: 27, away_score: 24, closing_spread: -7, closing_total: 50 },
+    consensus: null, models: [] }];
+  const W16 = [{ game_id: 161, label: 'GEORGIA @ ALABAMA', home: 'ALABAMA', away: 'GEORGIA', week: 16,
+    kickoff_at: T(2), status: 'scheduled', result: null, consensus: null, models: [] }];
+  const wire = wireOf({ head: 15, perRowWeek: false, weeks: { 15: W15, 16: W16 } });
+  const { P, node } = bootPage(wire.fetchImpl);
+  const v = node();
+  await P.renderWall(v);
+  const wall = v.innerHTML;
+  chk('POSTSEASON  Current rolls from Week 15 into the conference championships, by name',
+    /<b>CONFERENCE CHAMPIONSHIPS<\/b>/.test(wall) && wall.indexOf('GEORGIA') >= 0 && wall.indexOf('AUBURN') < 0
+      && /class="res" data-w="16"/.test(wall),
+    { tag: (/<span class="slatetag">[\s\S]{0,200}/.exec(wall) || [])[0],
+      strip: (/<div class="wk">[\s\S]{0,900}/.exec(wall) || [])[0] });
+  chk('POSTSEASON  the bowl and playoff tabs are still on the strip',
+    /data-w="17"/.test(wall) && /data-w="18"/.test(wall) && /data-w="20"/.test(wall));
 }

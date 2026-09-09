@@ -352,6 +352,69 @@ chk('without the flag, the newest pre-lock row per model counts',
   catch (e) { threw = e.message; }
   chk('a games table with no score columns stops the run before it writes, and says what it saw',
     /home_score/.test(threw || '') && /id, status/.test(threw || ''), threw);
+
+  /* THE DEPLOYED SHAPE. collective.games carries no score at all; the score
+     lives in game_results, one row per game. This is what the real database
+     looks like, and the settle job threw on every finished game for the
+     whole of Week 1 because it only knew the other shape. */
+  const REAL = { definitions: {
+    games: { properties: { id: {}, sport_code: {}, season: {}, week: {}, kickoff_at: {}, home_team_id: {},
+      away_team_id: {}, status: {}, external_ref: {}, created_at: {} } },
+    game_results: { properties: { game_id: {}, home_score: {}, away_score: {}, closing_spread: {},
+      closing_total: {}, settled_at: {} } },
+    projections: { properties: Object.fromEntries(['id', 'model_id', 'game_id', 'pick_side', 'projected_spread',
+      'projected_total', 'proj_home_score', 'proj_away_score', 'home_win_prob', 'is_late', 'is_graded_candidate',
+      'data_origin', 'resolution_status', 'received_at', 'pick_result', 'margin_error', 'brier'].map(c => [c, {}])) },
+  } };
+  const realCalls = [];
+  const realFetch = async (url, opts) => {
+    const u = String(url), m = (opts && opts.method) || 'GET';
+    const body = opts && opts.body ? JSON.parse(opts.body) : null;
+    realCalls.push({ url: u, method: m, body, headers: (opts && opts.headers) || {} });
+    const reply = (status, obj) => ({ ok: status < 400, status, text: async () => JSON.stringify(obj) });
+    if (u.endsWith('/rest/v1/') && m === 'GET') return reply(200, REAL);
+    if (u.indexOf('/rest/v1/game_results') >= 0 && m === 'POST') return reply(201, body.map(r => ({ ...r, settled_at: 'now' })));
+    if (u.indexOf('/rest/v1/games?id=eq.g1') >= 0 && m === 'PATCH') {
+      if ('home_score' in body) return reply(400, { message: 'column games.home_score does not exist' });
+      return reply(200, [{ id: 'g1', ...body }]);
+    }
+    if (u.indexOf('/rest/v1/projections?select=') >= 0 && m === 'GET') return reply(200, PROJ);
+    if (u.indexOf('/rest/v1/projections?id=eq.') >= 0 && m === 'PATCH') return reply(200, [{ id: 'p', ...body }]);
+    return reply(404, { message: 'no route ' + m + ' ' + u });
+  };
+  const rdb = S.dbClient({ url: 'https://x.supabase.co', key: 'svc' }, realFetch);
+  const rschema = await rdb.schema();
+  const unsettled = { game_id: 'g1', label: 'NORTHCAROL @ TCU', home: 'TCU', away: 'NORTHCAROL',
+    kickoff_at: '2026-08-29T16:00:00Z', status: 'scheduled', result: null };
+  const rout = await S.settleDirect(rdb, rschema, unsettled, TCU_FINAL,
+    { closing_spread: -7.5, closing_total: 52.5, closing_home_ml_prob: 0.73 });
+  const up = realCalls.find(c => c.method === 'POST' && c.url.indexOf('/game_results') >= 0);
+  chk('DEPLOYED SHAPE  the score and the close go into game_results, keyed by the game',
+    up && /on_conflict=game_id/.test(up.url) && /merge-duplicates/.test(up.headers.prefer || '')
+      && up.body.length === 1 && up.body[0].game_id === 'g1' && up.body[0].home_score === 48
+      && up.body[0].away_score === 14 && up.body[0].closing_spread === -7.5 && up.body[0].closing_total === 52.5,
+    up && { url: up.url, body: up.body, prefer: up.headers.prefer });
+  const st = realCalls.find(c => c.method === 'PATCH' && c.url.indexOf('/games?id=eq.g1') >= 0);
+  chk('DEPLOYED SHAPE  and the games row is marked final, so the board and the current-week rule see it',
+    st && Object.keys(st.body).join(',') === 'status' && st.body.status === 'final', st && st.body);
+  chk('DEPLOYED SHAPE  a column game_results does not carry is a named gap, not a failed write',
+    rout.gaps.indexOf('game_results.closing_home_ml_prob') >= 0 && up && !('closing_home_ml_prob' in up.body),
+    rout.gaps);
+  chk('DEPLOYED SHAPE  the counting projections are still graded',
+    rout.graded === 2 && rout.candidates === 2, rout);
+
+  /* the close already on file is never blanked by a run that found none --
+     the same rule, on the results table: a column left out of the upsert is
+     a column left alone */
+  realCalls.length = 0;
+  const withClose = { ...unsettled, result: { home_score: 0, away_score: 0, closing_spread: -6.5, closing_total: 51 } };
+  await S.settleDirect(rdb, rschema, withClose, TCU_FINAL, null);
+  const up2 = realCalls.find(c => c.method === 'POST' && c.url.indexOf('/game_results') >= 0);
+  chk('DEPLOYED SHAPE  a settled close is not overwritten by a run with none',
+    up2 && !('closing_spread' in up2.body[0]) && !('closing_total' in up2.body[0]) && up2.body[0].home_score === 48,
+    up2 && up2.body);
+  chk('DEPLOYED SHAPE  running it twice writes the same row twice, never a second one',
+    realCalls.filter(c => c.method === 'POST' && c.url.indexOf('/game_results') >= 0).every(c => /on_conflict=game_id/.test(c.url)));
 })().catch(e => chk('the database door drive did not crash', false, String(e && e.stack || e)));
 
 /* The committed record. */

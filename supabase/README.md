@@ -174,10 +174,21 @@ node tools/collective/sync_schedule.js --sport NFL            # dry run
 node tools/collective/sync_schedule.js --sport NFL --commit   # load it
 ```
 
-The **Sync the Collective schedule** workflow does every sport daily at 09:20
-UTC. It needs `COLLECTIVE_ADMIN_REFRESH_TOKEN` as a repository secret; without
-it the job warns and loads nothing, which looks exactly like a working sync that
-had nothing to do.
+The **Sync the Collective schedule** workflow does every sport twice a day
+(09:20 and 21:20 UTC). It writes with the **service role** — `SB_SERVICE_ROLE`
+and `SB_URL`, the same repository secrets the settle job uses — reading the
+season off `game_detail`, creating the teams and games it is short of and
+updating a fixture that moved in place, by id. `COLLECTIVE_ADMIN_REFRESH_TOKEN`
+is the other door (through `collective_admin`) and is optional. It used to be
+the only door, was never set, and every scheduled run warned and loaded
+nothing — which looked exactly like a working sync that had nothing to do. A
+run with neither credential now fails loudly instead.
+
+Each game the sync loads carries the provider's fixture id in
+`games.external_ref` (`espn:<id>`), and a game loaded before that column was
+written is given its id the first time the sync matches it by its two teams.
+That id is how a kickoff that moves, or a fixture the provider re-files under
+another week, is an update to the same game rather than a second copy of it.
 
 Exercised against a real PostgreSQL by
 `tools/collective/model_autocreate_sql.test.js` — with no schedule, with one

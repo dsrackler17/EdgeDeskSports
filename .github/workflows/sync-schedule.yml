@@ -16,6 +16,10 @@ name: Sync the Collective schedule
 # looks at are the current one and the two after it, and "current" is the same
 # resolver the site shows Current with -- so the week creators are about to
 # post for is always one of them.
+#
+# It writes with the SERVICE ROLE (SB_SERVICE_ROLE / SB_URL), the credential
+# this repository's jobs actually hold. It used to require an admin refresh
+# token that was never set, and so had never loaded a single game.
 on:
   schedule:
     # Twice a day, not once. A kickoff moved for television is announced
@@ -80,14 +84,18 @@ jobs:
 
       - name: Sync
         env:
-          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
-          # A fixture that MOVED is updated in place, by id, through the same
-          # service-role door settle-finals already writes through. Without
-          # these the run still loads missing games and still reports what
-          # moved; it simply cannot write the two columns (kickoff_at, status)
-          # an update consists of.
+          # THE DOOR THIS JOB WRITES THROUGH is the service role -- the same
+          # SB_SERVICE_ROLE / SB_URL the settle job already uses. It reads the
+          # season straight off the database, creates the teams and games it is
+          # short of, and updates a fixture that moved in place. The admin
+          # refresh token is the other door, used when it is the credential a
+          # run has. This job used to REQUIRE the admin token and exit green
+          # without it, which it did on every scheduled run there has ever
+          # been: nothing was loaded, ever, and the week creators were posting
+          # for was on the site only because somebody loaded it by hand.
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
+          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
         run: |
           ARGS=""
           # A scheduled run loads. A manual run loads only when asked, so the
@@ -98,9 +106,9 @@ jobs:
           if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
           if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
           if [ -n "${{ inputs.week }}" ];   then ARGS="$ARGS --week ${{ inputs.week }}"; fi
-          if [ -z "$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
-            echo "::warning::COLLECTIVE_ADMIN_REFRESH_TOKEN is not set — nothing can be loaded."
+          if [ -z "$EDGD_SB_SERVICE$EDGD_SB_URL$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
+            echo "::error::Neither SB_SERVICE_ROLE + SB_URL nor COLLECTIVE_ADMIN_REFRESH_TOKEN is set — nothing can be loaded."
             echo "The verify step above still shows whether the source answered."
-            exit 0
+            exit 1
           fi
           node tools/collective/sync_schedule.js $ARGS

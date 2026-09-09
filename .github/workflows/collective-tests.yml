@@ -277,6 +277,15 @@ jobs:
       - name: Current resolves to the week that still has football in it
         run: node tools/collective/week_resolution.test.js
 
+      # THE PRODUCT, END TO END. The schedule sync run twice through its real
+      # entry point against a recorded feed and a PostgREST-shaped database
+      # (no duplicates, stable ids, a moved kickoff updated in place), then --
+      # where Chromium is available -- the page itself against the public
+      # function as deployed: no week on any row, Week 1 unsettled. Without a
+      # browser the sync half still runs and the page half says SKIPPED.
+      - name: The sync twice, and the page on the deployed wire
+        run: node tools/collective/cfb_current_week.e2e.js
+
       - name: Settle matching
         run: node tools/collective/settle_finals.test.js
 
