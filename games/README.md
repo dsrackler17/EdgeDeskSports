@@ -3312,6 +3312,42 @@ Credits are what the ledger calls `tc` and the game calls Credits; XP is
 Research XP. Nothing on the Exchange can be bought with money: there is no
 Credit for sale, and the SQL has no path that grants one.
 
+## The run defence reads before the handoff
+
+Merging the two experience layers turned the simulation suite's one live
+band red: yards per carry in the AI-against-AI league went from 5.1 to 6.4
+against a ceiling of 5.6. Measured properly — 120-game samples, one change
+at a time, on copies of the engine — the cause was not the size of any knob.
+The old run defence had rested on a behaviour that was never football:
+every coverage defender broke for the "carrier" the moment the snap put the
+ball in the quarterback's hands, so a run play had eleven men crashing the
+mesh point from the first frame. Part A's rule that the secondary does not
+tackle the handoff was right, and it removed the crutch; the run concepts
+then found the room they were drawn to find — the pulling guard alone was
+worth six tenths of a yard a carry to the league.
+
+The counterweights are the ones real defences use. On a called run the
+safeties and coverage linebackers read the action before the ball is handed
+off (three tenths of a second, scaled by the tier) and fill; the corners
+stay on their men until the run declares — the ball across the line, or a
+beat after the handoff; a quarterback who keeps it is a runner once he
+reaches the line. And the linebackers in the box read the guard: when one
+pulls, the backers flow with the pull before the handoff and hold their
+depth until the ball is out. Only a pull is a key. Leaning the backers
+toward the back on every run fixed the league and strangled the person
+holding the stick on an inside zone into a stacked box — the harness caught
+it, and that version is not in the game. The concepts themselves were
+trimmed, not removed: outside zone still reaches, power and counter still
+pull, the draw still sets and lets the rush go by, the counter still takes
+its false step, and the counter and draw still mesh later than a dive.
+Nothing about a man's speed changed.
+
+The league sits at about 5.3 yards a carry over 120 games (the suite's own
+20-game sample reads 5.14), points and yards per play inside their bands,
+and every pin in the live harness is untouched: the stick still changes the
+run, power still pays, the tiers still differ in the head. The 800-game check
+is green again.
+
 ## The game you hold counts — cards move the grass, the grass feeds the Vault (`economy_v2` · `packs_v3`)
 
 The third part of the brief: connect the two. A card has to change what
