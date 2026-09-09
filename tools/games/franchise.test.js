@@ -2068,7 +2068,7 @@ fresh();
      copy of the curves is the SQL's. */
 
   eq('the rank is versioned', F.RANK_VERSION, 'rank_v1');
-  eq('and the packs are', F.PACKS_VERSION, 'packs_v3');
+  eq('and the packs are', F.PACKS_VERSION, 'packs_v4');
   has(SQL, "'version', 'rank_v1'", 'the SQL agrees on the rank');
   has(SQL, "'pack_version', 'packs_v1'", "and the rank's own door still keeps every packs_v1 promise it made");
 
@@ -2825,8 +2825,8 @@ fresh();
   chk('and the client expects at least it', F.SCHEMA.franchise >= 18);
   chk('and the report checks a number no lower',
     +((SQL.match(/\(public\.games_schema\(\)->>'franchise'\)::int = (\d+)/) || [])[1]) >= 18);
-  eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v3');
-  has(SQL, '"version": "packs_v3"', 'and the SQL carries the same version');
+  eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v4');
+  has(SQL, '"version": "packs_v4"', 'and the SQL carries the same version');
   (function () {
     const m = SQL.match(/function public\.franchise_pack_defs\(\)[\s\S]*?select '([\s\S]*?)'::jsonb;/);
     chk('the SQL states the pack table', !!m);
@@ -2848,6 +2848,107 @@ fresh();
   ['pack_opened', 'card_revealed', 'rare_pull', 'pack_kept', 'pack_passed', 'packs_view'].forEach(e => chk('the packs page fires ' + e, new RegExp("track\\('" + e + "'").test(PACKS) || new RegExp("'" + e + "'").test(fs.readFileSync(G('lib/vault.js'), 'utf8'))));
   has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
   has(README, 'packs_v3', 'the README documents the Vault');
+  has(README, 'packs_v4', 'and the programs');
+  /* THE FORMATION VIEW: the roster's own eleven, a slot on a tap, the scheme's word and Saturday's */
+  (function formation() {
+    const ROSTER_SRC = fs.readFileSync(G('roster/index.html'), 'utf8');
+    const LINEUP_SRC = fs.readFileSync(G('lib/gridiron/lineup.js'), 'utf8');
+    has(ROSTER_SRC, "seed:(f.city||'')+(f.name||''),players:fieldPlayers()}", 'the field is drawn from the roster, not the seed');
+    has(LINEUP_SRC, "pid: m.player && m.player.id != null ? String(m.player.id) : null,", 'and every drawn man carries his roster id');
+    has(ROSTER_SRC, "if(best&&bd<=Math.max(22,best.r*1.6))slotSheet(best);", 'a tap on a man opens his slot');
+    has(ROSTER_SRC, 'data-slt-start="', 'and a backup can be started from it');
+    has(ROSTER_SRC, "FR.setStarter(id,sl)", 'through the server');
+    has(ROSTER_SRC, "fit:fitFor(p)", 'every card carries the scheme\'s word and Saturday\'s');
+    has(ROSTER_SRC, "Tap a man for his slot", 'and the field says so');
+    /* the matchup table, pure */
+    const opp = { offense: 'power_run', defense: 'press_man' };
+    eq('a deep threat against press man has the edge', F.matchupFit({ position: 'WR', archetype: 'Deep Threat' }, opp).value, 2);
+    eq('a run stopper against a power run game has it too', F.matchupFit({ position: 'DL', archetype: 'Run Stopper' }, opp).value, 2);
+    eq('a possession receiver against press man has a tough day', F.matchupFit({ position: 'WR', archetype: 'Possession' }, opp).word, 'Tough day vs press man');
+    eq('an unlisted man is even', F.matchupFit({ position: 'TE', archetype: 'Move TE' }, opp).value, 0);
+    chk('a kicker has no matchup, nor a man without an opponent', F.matchupFit({ position: 'K', archetype: 'Leg' }, opp) === null && F.matchupFit({ position: 'WR', archetype: 'Deep Threat' }, null) === null);
+    /* every archetype the matchup table names is one the scheme table knows at that position */
+    const known = {};
+    ['offense', 'defense'].forEach(side => Object.keys(F.SCHEME_FIT[side]).forEach(sc => Object.keys(F.SCHEME_FIT[side][sc]).forEach(pos => Object.keys(F.SCHEME_FIT[side][sc][pos]).forEach(a => { (known[pos] = known[pos] || {})[a] = 1; }))));
+    const strays = [];
+    ['vs_defense', 'vs_offense'].forEach(k => Object.keys(F.MATCHUP_FIT[k]).forEach(sc => Object.keys(F.MATCHUP_FIT[k][sc]).forEach(pos => Object.keys(F.MATCHUP_FIT[k][sc][pos]).forEach(a => { if (!known[pos] || !known[pos][a]) strays.push(pos + ':' + a); }))));
+    chk('every archetype in the matchup table is one the scheme table knows at that position', strays.length === 0, strays.join(','));
+    chk('and every scheme in it is one the franchise can run', Object.keys(F.MATCHUP_FIT.vs_defense).sort().join(',') === Object.keys(F.SCHEME_FIT.defense).sort().join(',')
+      && Object.keys(F.MATCHUP_FIT.vs_offense).sort().join(',') === Object.keys(F.SCHEME_FIT.offense).sort().join(','));
+    const card = F.playerCard({ id: 'x', position: 'WR', archetype: 'Deep Threat', overall: 80, first_name: 'A', last_name: 'B' }, { fit: { scheme: F.fitFor({ position: 'WR', archetype: 'Deep Threat' }, { offense: 'air_raid', defense: 'zone' }), matchup: F.matchupFit({ position: 'WR', archetype: 'Deep Threat' }, opp) } });
+    has(card, '<div class="pc-fit">', 'the card prints the fit when the page hands it in');
+    has(card, 'Built for your scheme (+2)', 'the scheme\'s word');
+    has(card, 'Edge vs press man (+2)', 'and Saturday\'s');
+  })();
+  /* THE SCOUTING REPORT: Saturday's edges, read off the starters */
+  (function scout() {
+    const opp = { offense: 'power_run', defense: 'press_man' };
+    const fr = { offense: 'air_raid', defense: 'zone' };
+    const roster = [
+      { id: 'w1', position: 'WR', depth: 1, archetype: 'Deep Threat', overall: 84, first_name: 'Deep', last_name: 'Threat', status: 'active' },
+      { id: 'w2', position: 'WR', depth: 2, archetype: 'Possession', overall: 80, first_name: 'Poss', last_name: 'Ession', status: 'active' },
+      { id: 'w4', position: 'WR', depth: 4, archetype: 'Deep Threat', overall: 90, first_name: 'On', last_name: 'Bench', status: 'active' },
+      { id: 'd1', position: 'DL', depth: 1, archetype: 'Run Stopper', overall: 78, first_name: 'Run', last_name: 'Stopper', status: 'active' },
+      { id: 'd2', position: 'DL', depth: 2, archetype: 'Speed Rusher', overall: 79, first_name: 'Speed', last_name: 'Rusher', status: 'active' },
+      { id: 'k', position: 'K', depth: 1, archetype: 'Leg', overall: 70, first_name: 'K', last_name: 'K', status: 'active' }
+    ];
+    const rep = F.scoutingReport(roster, fr, opp);
+    chk('the report reads only the starters', rep && rep.starters === 4 && !rep.edges.concat(rep.worries).some(e => e.id === 'w4'), JSON.stringify(rep && rep.edges.map(e => e.id)));
+    chk('the edges are the men the matchup favours, best first', rep.edges.map(e => e.id).join(',') === 'w1,d1', rep.edges.map(e => e.id).join(','));
+    chk('the worries are the men it does not', rep.worries.map(e => e.id).join(',') === 'w2,d2', rep.worries.map(e => e.id).join(','));
+    has(rep.edges[0].text, 'Deep Threat against press man: the matchup is his', 'and each is said in a line');
+    has(rep.opponent.line, 'They run a power run game and play press man.', 'with their schemes named');
+    chk('no roster, no report', F.scoutingReport(null, fr, opp) === null);
+    has(GAMEDAY, 'id="gdScout"', 'Game Day carries the report as a module');
+    has(GAMEDAY, 'FR.scoutingReport(players,snap.franchise,ph.game.opponent)', 'read off the roster the server hands back');
+    has(GAMEDAY, "localStorage.setItem('ed_gd_scout',det.open?'open':'closed')", 'and it stays folded when folded');
+  })();
+  /* THE CARD REMEMBERS: milestone badges, the games in your hands, a reason on every move */
+  (function card() {
+    const wr = { position: 'WR', career_stats: { games: 61, rec: 200, yds: 3100, td: 22 }, live_stats: { games: 40, rec: 80, yds: 1200, td: 9 } };
+    const bs = F.badges(wr).map(b => b.key);
+    chk('the badges count the career and the games in your hands together: 61 + 40 games, 3,100 + 1,200 yards', bs.join(',') === 'games_100,yards_1000', bs.join(','));
+    chk('a receiver at 4,300 yards has the thousand and not the five', F.badges({ position: 'WR', career_stats: { yds: 4300 } }).map(b => b.key).join(',') === 'yards_1000');
+    chk('and at 5,000 the five replaces the thousand', F.badges({ position: 'RB', career_stats: { yds: 4000, rec_yds: 1200 } }).map(b => b.key).join(',') === 'yards_5000');
+    chk('a hundred touchdowns is a badge for a skill man, not for a tackler', F.badges({ position: 'QB', career_stats: { td: 100 } }).some(b => b.key === 'td_100') && !F.badges({ position: 'LB', career_stats: { td: 100 } }).length);
+    chk('the defence has its own marks', F.badges({ position: 'DL', career_stats: { tkl: 250, sacks: 25, int: 10 } }).map(b => b.key).join(',') === 'tkl_250,sacks_25,int_10');
+    chk('a kicker\'s is fifty field goals', F.badges({ position: 'K', career_stats: { fg: 50 } }).map(b => b.key).join(',') === 'fg_50');
+    chk('a bowl won while he was on the roster is a championship badge, from the server\'s honours', F.badges({ position: 'S', honours: [{ kind: 'champion', season: 2, label: 'The Iron Bowl, Season II' }] }).map(b => b.label).join(',') === 'Championship roster');
+    chk('no card, no badges; a rookie, none', F.badges(null).length === 0 && F.badges({ position: 'WR', career_stats: {} }).length === 0);
+    chk('the badges never touch the tier or the rarity', !/rarity|tier/.test(F.badges.toString()) && !/\.rarity\s*=|\.tier\s*=/.test(FJS.slice(FJS.indexOf('function badges('), FJS.indexOf('function badges(') + 800)));
+    eq('the games in your hands are their own line', F.handsLine({ position: 'RB', live_stats: { games: 3, car: 40, yds: 212, td: 2 } }), '40 car, 212 yds, 2 TD, 3 GP');
+    eq('and absent when there are none', F.handsLine({ position: 'RB', live_stats: {} }), '');
+    eq('a young man\'s rise is growth', F.evolutionReason({ kind: 'ratings', before: 70, after: 73, age: 22 }), 'growth: a young man developing');
+    eq('an old man\'s fall is age', F.evolutionReason({ kind: 'ratings', before: 80, after: 77, age: 33 }), 'age: the legs go first');
+    has(FJS, "'<div class=\"pc-career pc-hands\"><span class=\"k\">In your hands</span>'", 'the card prints the line');
+    has(FJS, "'<div class=\"pc-badges\">'", 'and the badges');
+    has(SQL, "'honours', coalesce((select jsonb_agg(jsonb_build_object('kind', 'champion', 'season', g.season_number,", 'the server derives the honours from the bowls won');
+    has(SQL, "and g.season_number >= coalesce(p.acquired_season, 0)", 'while he was on the roster');
+    has(PACKS, "FR.evolutionReason(h)", 'the card\'s history says why a rating moved');
+  })();
+  /* THE PROGRAMS, AND WHAT A PASSED MAN IS WORTH (packs_v4) */
+  (function programs() {
+    const fitSrc = SQL.slice(SQL.lastIndexOf('create or replace function public.franchise_scheme_fit()'));
+    let FIT = null;
+    try { FIT = JSON.parse(fitSrc.slice(fitSrc.indexOf("'{") + 1, fitSrc.indexOf("}'::jsonb") + 1).replace(/''/g, "'")); } catch (e) { chk('the scheme-fit table parses', false, e.message); }
+    chk('the client mirrors the scheme-fit table the chemistry applies, entry for entry', !!FIT && JSON.stringify(FIT) === JSON.stringify(F.SCHEME_FIT));
+    eq('a Power Back is built for a power run', F.schemeFit('offense', 'power_run', 'RB', 'Power Back'), 2);
+    eq('a Deep Threat is not that scheme\'s man', F.schemeFit('offense', 'power_run', 'WR', 'Deep Threat'), -1);
+    eq('an unlisted archetype is neutral', F.schemeFit('offense', 'power_run', 'QB', 'Nobody'), 0);
+    const fr = { offense: 'power_run', defense: 'press_man' };
+    eq('the word on a man reads his side\'s scheme', F.fitFor({ position: 'CB', archetype: 'Zone Specialist' }, fr).word, 'Fights your scheme');
+    eq('and says when he is built for it', F.fitFor({ position: 'RB', archetype: 'Power Back' }, fr).word, 'Built for your scheme');
+    chk('a kicker has no scheme', F.fitFor({ position: 'K', archetype: 'Leg' }, fr) === null);
+    eq('passing over three men is worth the sum of their tiers', F.passValue([{ tier: 'starter' }, { tier: 'prime' }, { tier: 'elite', kept: true }]), 5 + 15);
+    eq('a man without a tier on him is read from his overall', F.passValue([{ overall: 90 }]), F.PASS_SP.apex);
+    has(PACKS, 'fit:function(m){', 'the packs page hands the room the scheme\'s word');
+    has(PACKS, 'passValue:function(men){return FR.passValue(men);}', 'and what the pass is worth');
+    has(PACKS, 'onView:function(m){showCard(m.id);}', 'and the whole card');
+    has(PACKS, "onMarket:function(m){location.href='/games/exchange/?position='", 'and the market for men like him');
+    has(PACKS, ".vs-art-speed{", 'the shelf styles the Speed Lab');
+    has(PACKS, ".vs-art-trench{", 'and the Trench Unit');
+    has(PACKS, ".vs-art-primetime{", 'and Primetime');
+  })();
 
   /* ═══ 21. THE GAME YOU HOLD COUNTS ═══════════════════════════════════════ */
   chk('the report grew to forty-two rows', /select 42, 'the game you hold counts/.test(SQL));
@@ -2888,7 +2989,17 @@ fresh();
   /* the pages */
   const PLAY = fs.readFileSync(G('play/play.js'), 'utf8');
   chk('the final screen files the game with the franchise, under the game\'s own key', /FR\.recordLiveGame\(key, payload\)/.test(PLAY) && /String\(game\.meta\.seed\) \+ ':' \+ \(game\.meta\.startedAt \|\| 0\)/.test(PLAY) && /game\.meta\.startedAt = Date\.now\(\);/.test(PLAY));
-  chk('and shows the server\'s answer, never the page\'s hope', /paintFranchisePanel\(r, payload\)/.test(PLAY) && /rewardPanel\(r\)/.test(PLAY) && /Open it in the Vault/.test(PLAY));
+  chk('and shows the server\'s answer, never the page\'s hope', /paintFranchisePanel\(r, f\.payload, id\)/.test(PLAY) && /rewardPanel\(r\)/.test(PLAY) && /Open it in the Vault/.test(PLAY));
+  chk('the filing starts once per game key and every panel paints from the same answer', /function startFiling\(\)/.test(PLAY) && /if \(FILING && FILING.key === key\) return FILING;/.test(PLAY) && /function paintFilingInto\(id\)/.test(PLAY) && /paintFilingInto\('frStage'\)/.test(PLAY) && /paintFilingInto\('frPanel'\)/.test(PLAY));
+  /* the broadcast package: beats, not a wall */
+  chk('halftime and the final are told in beats with a skip on every one', /function stagedOverlay\(o\)/.test(PLAY) && /id="stgSkip"/.test(PLAY) && /brand: 'EdgeDesk Halftime'/.test(PLAY) && /skipLabel: 'Skip to the adjustment'/.test(PLAY) && /onDone: halftimeAdjust/.test(PLAY) && /onDone: finalRecap/.test(PLAY));
+  chk('the instant speed setting never sits through a timed beat', /if \(st\.ms && set\.speed !== 'instant'\) stagedTimer = setTimeout\(next, st\.ms\);/.test(PLAY));
+  chk('the final ends at five doors, the next game first', /class="fin-acts"/.test(PLAY) && /id="btnAgain"/.test(PLAY) && /href="\/games\/gameday\/"/.test(PLAY) && /href="\/games\/roster\/"/.test(PLAY) && /href="\/games\/packs\/"/.test(PLAY) && /#research\/football/.test(PLAY));
+  chk('the season context is the franchise\'s own snapshot and the record on this device, never invented', /function seasonContext\(\)/.test(PLAY) && /FR\.snapshot\(\)/.test(PLAY) && /S\.readRecord\(\)/.test(PLAY) && /Nothing is invented to fill a line/.test(PLAY));
+  chk('the men on the cards play the game: the roster is read off the RPC envelope\'s data', /var d = r && r\.ok \? r\.data : \(r && r\.players \? r : null\);/.test(PLAY) && /var players = \(d && \(d\.players \|\| d\.roster\)\) \|\| null;/.test(PLAY));
+  chk('Resume and Kick off wait for the franchise\'s teams to settle', /function whenTeams\(fn\)/.test(PLAY) && /whenTeams\(function \(\) \{ resumeGame\(S\.saved\(\) \|\| resumable\); \}\)/.test(PLAY) && /whenTeams\(function \(\) \{ S\.clearSave\(\); newGame\(\); \}\)/.test(PLAY) && /teamsSettling = Promise\.resolve/.test(PLAY));
+  chk('the final is shown once per game and one staged sequence runs at a time', /if \(fk && finalShownFor === fk\) return;/.test(PLAY) && /if \(stagedActive\) stagedActive\.cancel\(\);/.test(PLAY) && !/if \(game\.over\) finalScreen\(\);\s*\}/.test(PLAY));
+  chk('a drive is summed up once when it ends, and a man closing on a round number is said once', /function driveChip\(\)/.test(PLAY) && /shownDrives = game\.drives\.length;/.test(PLAY) && /function needsBit\(off\)/.test(PLAY) && /milestoned\[k \+ ':needs:' \+ nr\.at\] = 1;/.test(PLAY));
   chk('the broadcast announces a man from the Vault and calls a milestone once', /From the Vault/.test(PLAY) && /function milestoneBit/.test(PLAY) && /milestoned\[key\] = 1;/.test(PLAY));
   chk('the engine keeps who a man is to you on his line', /uid: player\.id == null \? null : String\(player\.id\), acq: player\.acquired_source \|\| null/.test(fs.readFileSync(G('lib/gridiron/engine.js'), 'utf8')));
   has(GAMEDAY, 'New weapon', 'Game Day carries the new weapon');

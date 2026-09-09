@@ -1241,6 +1241,7 @@
          nothing to press. Decoration gets a net; the game does not need one. */
       try { milestone(p); } catch (e) { if (window.console) console.warn('milestone', e); }
       try { broadcastBit(p); } catch (e) { if (window.console) console.warn('bit', e); }
+      try { driveChip(); } catch (e) { if (window.console) console.warn('drive', e); }
       ballX = drift(ballX);
     }
     padClear();
@@ -1319,7 +1320,43 @@
      Every few ordinary plays the broadcast fills the dead ball with one
      short fact: the man having the day, this drive, third downs, the
      matchup. Never on a play that already has a graphic, never long. */
-  var bitCount = 0, bitTurn = 0;
+  var bitCount = 0, bitTurn = 0, shownDrives = 0, saidContext = false;
+  /* THE DRIVE, WHEN IT ENDS: how many plays, how many yards, how it ended —
+     the chip a broadcast puts up while the units change */
+  function driveChip() {
+    if (!game || !game.drives || game.drives.length <= shownDrives) return;
+    shownDrives = game.drives.length;
+    var d = game.drives[game.drives.length - 1];
+    if (!d || (d.plays | 0) < 2) return;
+    var who = d.side === me ? teams.me.abbr : teams.opp.abbr;
+    var el = document.createElement('div');
+    el.className = 'drc' + (d.outcome === 'td' || d.outcome === 'fg' ? ' sc' : (d.outcome === 'interception' || d.outcome === 'fumble') ? ' to' : '');
+    el.style.setProperty('--bc', kitFor(d.side === me ? 'me' : 'opp').primary || '#f2c744');
+    el.innerHTML = '<i>' + esc(who) + ' drive</i><b>' + esc(d.plays) + ' plays · ' + esc(d.yards | 0) + ' yds</b><span>' + esc(driveWord(d.outcome)) + '</span>';
+    fieldWrap.appendChild(el);
+    var wait = d.outcome === 'td' ? 2500 : 700;
+    setTimeout(function () { el.classList.add('on'); }, wait);
+    setTimeout(function () { el.classList.add('out'); }, wait + 2600);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, wait + 3100);
+  }
+  /* the round number a man of yours is closing on tonight, if he is close */
+  function needsBit(off) {
+    if (off !== me || !game) return null;
+    var found = null;
+    Object.keys(game.players || {}).some(function (k) {
+      var m = game.players[k];
+      if (m.side !== me || (!m.career && !m.live)) return false;
+      var c = m.career || {}, l = m.live || {};
+      var tonight = m.position === 'QB' ? (m.py | 0) : m.position === 'RB' ? (m.ry | 0) : (m.position === 'WR' || m.position === 'TE') ? (m.recy | 0) : 0;
+      if (tonight < 20) return false;
+      var total = (c.yds | 0) + (l.yds | 0) + tonight, nr = nextRound(total);
+      if (!nr || nr.left > 60 || milestoned[k + ':needs:' + nr.at]) return false;
+      milestoned[k + ':needs:' + nr.at] = 1;
+      found = { eyebrow: (m.acq === 'pack' ? 'From the Vault · ' : '') + m.position, text: '<b>' + esc(m.name) + '</b><br>needs ' + esc(nr.left) + ' for ' + esc(nr.at.toLocaleString()) + ' career yards in your hands' };
+      return true;
+    });
+    return found;
+  }
   function broadcastBit(p) {
     if (!game || !p || p.touchdown || p.turnover || p.sack || (p.yards | 0) >= 30) return;
     bitCount++;
@@ -1327,11 +1364,20 @@
     var sit = G.situation(game), off = snapSit ? snapSit.offense : sit.offense;
     var st = game.stats[off] || {}, drive = game.drive, text = null, eyebrow = null;
     var tries = 0;
-    while (!text && tries++ < 5) {
-      var pick = (bitTurn++) % 5;
+    while (!text && tries++ < 7) {
+      var pick = (bitTurn++) % 7;
       if (pick === 4) {
         var ms = milestoneBit(off);
         if (ms) { eyebrow = ms.eyebrow; text = ms.text; }
+      } else if (pick === 5) {
+        var nb = needsBit(off);
+        if (nb) { eyebrow = nb.eyebrow; text = nb.text; }
+      } else if (pick === 6) {
+        /* the season, once a game, and only what is true */
+        if (!saidContext) {
+          var sc = seasonContext();
+          if (sc.snap && sc.snap.season && sc.snap.season.label) { saidContext = true; eyebrow = esc(teams.me.abbr) + ' · ' + esc(sc.snap.season.label); text = '<b>' + esc((sc.snap.season.wins | 0) + '–' + (sc.snap.season.losses | 0)) + ' this season</b>' + (sc.snap.reputation && sc.snap.reputation.rank ? '<br>rank ' + esc(sc.snap.reputation.rank) : ''); }
+        }
       } else if (pick === 0) {
         var best = null, bestV = 0;
         Object.keys(game.players || {}).forEach(function (k) {
@@ -1823,29 +1869,95 @@
     }).join('') + '</div>';
   }
 
-  /* ── HALFTIME ─────────────────────────────────────────────────────────── */
+  /* ── A STAGED CARD, ONE THING AT A TIME ─────────────────────────────────
+     Halftime and the final are told in beats: one card on the screen, a dot
+     for each, a tap or a moment moves to the next, Skip goes straight to the
+     end. Every card reads the books the engine already wrote; nothing here
+     decides anything. The whole run is bounded: a viewer who does nothing is
+     through halftime in under twenty seconds. */
+  var stagedTimer = null;
+  var stagedActive = null;
+  function stagedOverlay(o) {
+    var stages = (o.stages || []).filter(Boolean), i = 0, done = false;
+    /* ONE SEQUENCE AT A TIME. Two of these interleaving on one shared timer
+       showed the same beat twice and skipped another; a new sequence cancels
+       whatever was running, without playing its ending. */
+    if (stagedActive) stagedActive.cancel();
+    var self = { cancel: function () { done = true; stop(); if (stagedActive === self) stagedActive = null; } };
+    stagedActive = self;
+    function stop() { if (stagedTimer) { clearTimeout(stagedTimer); stagedTimer = null; } }
+    function finish() { if (done) return; done = true; stop(); if (stagedActive === self) stagedActive = null; if (o.onDone) o.onDone(); }
+    function next() { if (done) return; stop(); i++; show(); }
+    function show() {
+      if (done) return;
+      if (i >= stages.length) { finish(); return; }
+      var st = stages[i];
+      overlay('<div class="stg' + (st.cls ? ' ' + st.cls : '') + '">'
+        + '<div class="stg-top"><span class="stg-brand">' + esc(o.brand || 'EdgeDesk') + '</span>'
+        + '<span class="stg-dots" aria-hidden="true">' + stages.map(function (_, k) { return '<i class="' + (k < i ? 'was' : k === i ? 'on' : '') + '"></i>'; }).join('') + '</span>'
+        + '<button class="stg-skip" type="button" id="stgSkip">' + esc(o.skipLabel || 'Skip') + '</button></div>'
+        + (st.eyebrow ? '<div class="stg-eyebrow">' + esc(st.eyebrow) + '</div>' : '')
+        + '<div class="stg-body">' + st.html + '</div>'
+        + '<div class="stg-foot">' + esc(i < stages.length - 1 ? 'Tap to continue' : (o.lastHint || 'Tap to continue')) + '</div>'
+        + '</div>', true);
+      var ov = $('ov');
+      if (ov) ov.onclick = function (e) { if (e.target && e.target.closest && e.target.closest('a,button')) return; next(); };
+      var sk = $('stgSkip');
+      if (sk) sk.onclick = function (e) { e.stopPropagation(); finish(); };
+      if (o.onStage) { try { o.onStage(st, i); } catch (err) { if (window.console) console.warn('stage', err); } }
+      if (st.ms && set.speed !== 'instant') stagedTimer = setTimeout(next, st.ms);
+    }
+    show();
+    self.next = next; self.finish = finish;
+    return self;
+  }
+  /* WHAT THE BROADCAST KNOWS ABOUT THE SEASON, and only what is true: the
+     franchise's record and rank from its own snapshot, the record on this
+     device from the games played here. Nothing is invented to fill a line. */
+  function seasonContext() {
+    var snap = null; try { snap = FR && FR.snapshot ? FR.snapshot() : null; } catch (_) {}
+    var out = { lines: [], snap: snap };
+    if (snap && snap.franchise) {
+      var ss = snap.season || {}, rep = snap.reputation || {};
+      if (ss.label) out.lines.push(esc(ss.label) + ' · ' + esc((ss.wins | 0) + '–' + (ss.losses | 0)) + (ss.week ? ' · week ' + esc(ss.week) : ''));
+      if (rep.rank) out.lines.push('Rank ' + esc(rep.rank) + (rep.to_next ? ' · ' + esc(rep.to_next) + ' to the next' : ''));
+      if (snap.next_game && snap.next_game.opponent) out.lines.push('Saturday: ' + esc(FR.matchupLine ? FR.matchupLine(snap.next_game) : ''));
+    }
+    var rec = null; try { rec = S.readRecord ? S.readRecord() : null; } catch (_) {}
+    if (rec && rec.games) out.lines.push(esc(S.recordLine(rec)));
+    return out;
+  }
+  function seasonContextHtml() {
+    var c = seasonContext();
+    return c.lines.length ? '<div class="stg-ctx">' + c.lines.map(function (l) { return '<span>' + l + '</span>'; }).join('') + '</div>' : '';
+  }
+
+  /* ── EDGEDESK HALFTIME ──────────────────────────────────────────────────
+     Five beats — the score, the numbers, the men, the biggest play, the one
+     thing — then the adjustment, which is the decision the half is for. A
+     viewer who does nothing is at the decision in seventeen seconds. */
   function halftimeScreen() {
     shotWide(true);
     var box = G.boxScore(game), mine = box[me], theirs = box[G.other(me)];
-    var rows = [['Total yards', mine.yards, theirs.yards], ['Yards per play', mine.ypp, theirs.ypp],
-      ['Rushing', mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
-      ['Passing', mine.comp + '/' + mine.att + ' · ' + mine.passYards, theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
-      ['Third down', mine.third, theirs.third], ['Explosive plays', mine.explosive, theirs.explosive],
-      ['Sacks', mine.sacks, theirs.sacks], ['Turnovers', mine.turnovers, theirs.turnovers]];
-    overlay('<div class="eyebrow">Halftime</div>' + scoreHead('HT')
-      + compare([['Total yards', mine.yards, theirs.yards],
-        ['Rushing', mine.rushYards, theirs.rushYards,
-          mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
-        ['Passing', mine.passYards, theirs.passYards,
-          mine.comp + '/' + mine.att + ' · ' + mine.passYards,
-          theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
-        ['Explosive plays', mine.explosive, theirs.explosive],
-        ['Sacks', mine.sacks, theirs.sacks],
-        ['Turnovers', mine.turnovers, theirs.turnovers]])
-      + '<div class="cmp-note">Yards per play ' + esc(mine.ypp) + ' — ' + esc(theirs.ypp)
-      + ' · Third down ' + esc(mine.third) + ' — ' + esc(theirs.third) + '</div>'
+    var tp = S.turningPoint(game);
+    var stages = [
+      { eyebrow: 'Halftime', ms: 3000, html: scoreHead('HT') + seasonContextHtml() },
+      { eyebrow: 'Team stats', ms: 4200, html: compare([['Total yards', mine.yards, theirs.yards],
+          ['Rushing', mine.rushYards, theirs.rushYards, mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
+          ['Passing', mine.passYards, theirs.passYards, mine.comp + '/' + mine.att + ' · ' + mine.passYards, theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
+          ['Explosive plays', mine.explosive, theirs.explosive], ['Sacks', mine.sacks, theirs.sacks], ['Turnovers', mine.turnovers, theirs.turnovers]])
+          + '<div class="cmp-note">Yards per play ' + esc(mine.ypp) + ' — ' + esc(theirs.ypp) + ' · Third down ' + esc(mine.third) + ' — ' + esc(theirs.third) + '</div>' },
+      { eyebrow: 'Top performers', ms: 3800, html: leaderStrip(box, true) || '<div class="muted">Nobody has separated himself yet.</div>' },
+      tp ? { eyebrow: 'Biggest play so far', ms: 3000, html: '<div class="stg-big"><i>Q' + esc(tp.q) + '</i>' + esc(tp.text) + '</div>' } : null,
+      { eyebrow: 'One thing', ms: 3200, html: takeaway() || '<div class="muted">Nothing is deciding it yet.</div>' }
+    ];
+    if (GM && GM.track) GM.track('gridiron_halftime', { score_for: game.score[me], score_against: game.score[G.other(me)] });
+    stagedOverlay({ brand: 'EdgeDesk Halftime', stages: stages, skipLabel: 'Skip to the adjustment', onDone: halftimeAdjust });
+  }
+  function halftimeAdjust() {
+    var box = G.boxScore(game), mine = box[me], theirs = box[G.other(me)];
+    overlay('<div class="eyebrow">EdgeDesk Halftime</div>' + scoreHead('HT')
       + takeaway()
-      + leaderStrip(box)
       + '<h3>One adjustment</h3>'
       + '<div class="adjs">' + G.ADJUSTMENTS.map(function (a) {
           return '<button class="adj" type="button" data-adj="' + esc(a.key) + '">'
@@ -1909,7 +2021,7 @@
     if (p.pd) d.push(p.pd + ' PD');
     return d.join(', ') || null;
   }
-  function leaderStrip(box) {
+  function leaderStrip(box, bare) {
     var them = G.other(me);
     var mine = box.leaders[me] || {}, theirs = box.leaders[them] || {};
     var rows = [['Passing', mine.passer, theirs.passer], ['Rushing', mine.rusher, theirs.rusher],
@@ -1924,13 +2036,25 @@
             + esc(b || '') + '</i>' : '<i>—</i>') + '</span></div>';
     }).join('');
     if (!out) return '';
-    return '<h3>Who is doing it</h3><div class="ldr">'
+    return (bare ? '' : '<h3>Who is doing it</h3>') + '<div class="ldr">'
       + '<div class="ldr-h"><span class="lk"></span><span class="la">' + esc(teams.me.abbr)
       + '</span><span class="lb">' + esc(teams.opp.abbr) + '</span></div>' + out + '</div>';
   }
 
-  /* ── THE RECAP ────────────────────────────────────────────────────────── */
+  /* ── THE FINAL, IN BEATS ────────────────────────────────────────────────
+     FINAL · player of the game · team stats · the turning point · research
+     · your franchise (what the server credited) · the season — one card at a
+     time, skippable, and then the whole recap with the four doors out. The
+     filing with the franchise starts the moment the game ends, so by the time
+     its card comes round the answer is usually there. */
+  var finalShownFor = null;
   function finalScreen() {
+    /* THE FINAL IS SHOWN ONCE PER GAME. Two roads lead here — the last play
+       and a resumed record that was already over — and both arriving started
+       two broadcasts on top of each other. */
+    var fk = game && game.meta ? String(game.meta.seed) + ':' + (game.meta.startedAt || 0) : null;
+    if (fk && finalShownFor === fk) return;
+    finalShownFor = fk;
     flow('GAME_OVER', 'final');
     S.clearSave();
     /* the last thing the game shows is the place it was played in */
@@ -1939,6 +2063,80 @@
     /* the loop is about to stop, so re-frame once by hand or the last frame
        on the screen is the one from the play that ended the game */
     if (stage) { stage.stop(); if (stage.resize) stage.resize(); }
+    startFiling();
+    var box = G.boxScore(game), them = G.other(me), mine = box[me], theirs = box[them];
+    var won = game.score[me] > game.score[them], level = game.score[me] === game.score[them];
+    var tp = S.turningPoint(game), potg = G.playerOfGame(game);
+    var rec = S.fileResult(game, me);
+    var matchup = S.keyMatchup(game, me), coaching = S.coachingImpact(game, me);
+    var ctx = seasonContext();
+    if (won) { SOUND.td(); buzz('strong'); crowdUp(1, 0.5); }
+    var heroHtml = '<div class="fin-hero' + (won ? ' win' : level ? ' level' : ' loss') + '" style="--tc:' + esc(kitFor('me').primary || '#3fb883') + '">'
+      + (won ? '<span class="fin-glow"></span>' : '')
+      + '<div class="fin-tag">Final' + (game.ot ? ' \u00b7 OT' : '') + '</div>'
+      + '<div class="fin-word">' + (won ? 'WIN' : level ? 'TIE' : 'LOSS') + '</div>'
+      + '<div class="fin-line">' + esc(title(teams.me)) + ' ' + game.score[me] + ' \u00b7 ' + esc(title(teams.opp)) + ' ' + game.score[them] + '</div>'
+      + (rec && rec.games ? '<div class="fin-rec">Record <b>' + esc(rec.w + '\u2013' + rec.l + (rec.t ? '\u2013' + rec.t : '')) + '</b>' + (game.ot ? ' \u00b7 after overtime' : '') + '</div>' : '')
+      + '</div>';
+    var potgHtml = potg ? '<div class="potg big"><div><div class="pn">' + esc(potg.position + ' ' + potg.name)
+        + '<span class="pt">' + esc(potg.side === me ? teams.me.abbr : teams.opp.abbr) + '</span></div>'
+        + '<div class="pl">' + esc(statLine(potg)) + '</div>' + careerContext(potg) + '</div></div>' : '';
+    var prep = ctx.snap && FR.prep ? FR.prep(ctx.snap.week || {}) : null;
+    var researchHtml = (matchup ? '<div class="stg-kv"><span>Key matchup</span>' + esc(matchup) + '</div>' : '')
+      + (coaching ? '<div class="stg-kv"><span>Coaching</span>' + esc(coaching) + '</div>' : '')
+      + (prep && prep.preparation != null ? '<div class="stg-kv"><span>Preparation</span>' + esc(prep.preparation | 0) + '% this week — the Price Its, drills and film that set the team up</div>' : '');
+    var stages = [
+      { eyebrow: 'Final', ms: 3200, cls: won ? 'win' : '', html: heroHtml + seasonContextHtml() },
+      potg ? { eyebrow: 'Player of the game', ms: 3600, html: potgHtml } : null,
+      { eyebrow: 'Team stats', ms: 4200, html: compare([['Total yards', mine.yards, theirs.yards],
+          ['Rushing', mine.rushYards, theirs.rushYards, mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
+          ['Passing', mine.passYards, theirs.passYards, mine.comp + '/' + mine.att + ' · ' + mine.passYards, theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
+          ['First downs', mine.firstDowns, theirs.firstDowns], ['Explosive plays', mine.explosive, theirs.explosive], ['Turnovers', mine.turnovers, theirs.turnovers]]) },
+      tp ? { eyebrow: 'The turning point', ms: 3200, html: '<div class="stg-big"><i>Q' + esc(tp.q) + '</i>' + esc(tp.text) + '</div>' } : null,
+      researchHtml ? { eyebrow: 'Research performance', ms: 3400, html: researchHtml } : null,
+      (FR && FR.hasFranchise && FR.hasFranchise()) ? { eyebrow: 'Your franchise', ms: 4600, key: 'franchise', html: '<div id="frStage" class="fr-panel"><div class="muted">Filing the result…</div></div>' } : null,
+      (FR && FR.hasFranchise && FR.hasFranchise()) ? { eyebrow: 'The season', ms: 3400, html: seasonImpactHtml(ctx, won) } : null
+    ];
+    stagedOverlay({ brand: 'EdgeDesk Football', stages: stages, skipLabel: 'Skip to the recap', lastHint: 'Tap for the full recap',
+      onStage: function (st) { if (st.key === 'franchise') paintFilingInto('frStage'); },
+      onDone: finalRecap });
+    if (GM && GM.track) GM.track('gridiron_game_finished', { won: won, score_for: game.score[me],
+      score_against: game.score[them], difficulty: set.difficulty, mode: set.mode, plays: game.plays.length });
+  }
+  /* THE MAN'S CAREER IN YOUR HANDS, under his night: only for your men, only
+     what the card carries, and the next round number if it is close */
+  function careerContext(st) {
+    if (!st || st.side !== me) return '';
+    var c = st.career || {}, l = st.live || {}, out = [];
+    var gp = (c.games | 0) + (l.games | 0) + 1;
+    var yds = (c.yds | 0) + (l.yds | 0) + (st.position === 'QB' ? (st.py | 0) : st.position === 'RB' ? (st.ry | 0) : (st.recy | 0));
+    if (gp > 1) out.push(esc(gp) + ' games');
+    if (yds > 0) out.push(esc(yds.toLocaleString()) + ' career yards');
+    var need = nextRound(yds);
+    if (need && need.left <= 150) out.push('needs ' + esc(need.left) + ' for ' + esc(need.at.toLocaleString()));
+    if (st.acq === 'pack') out.push('from the Vault');
+    return out.length ? '<div class="pc-ctx">' + out.join(' · ') + '</div>' : '';
+  }
+  function nextRound(v) {
+    var marks = [500, 1000, 2500, 5000, 10000], i;
+    for (i = 0; i < marks.length; i++) if (v < marks[i]) return { at: marks[i], left: marks[i] - v };
+    return null;
+  }
+  /* WHAT TONIGHT DID TO THE SEASON — the franchise's own record and rank from
+     its snapshot, the next fixture, and the live record on this device */
+  function seasonImpactHtml(ctx, won) {
+    var snap = ctx.snap, html = '';
+    if (snap && snap.season) {
+      var ss = snap.season;
+      html += '<div class="stg-kv"><span>' + esc(ss.label || 'The season') + '</span>' + esc((ss.wins | 0) + '–' + (ss.losses | 0)) + ' · week ' + esc(ss.week | 0) + ' of ' + esc(ss.weeks | 0)
+        + '<br><small>Saturday\'s game is the one on the record; tonight was yours to play.</small></div>';
+    }
+    if (snap && snap.next_game && snap.next_game.opponent) html += '<div class="stg-kv"><span>Saturday</span>' + esc(FR.matchupLine(snap.next_game)) + '</div>';
+    if (snap && snap.reputation) html += '<div class="stg-kv"><span>Rank</span>' + esc(snap.reputation.rank | 0) + ' · ' + esc(snap.reputation.to_next | 0) + ' to the next · a Gridiron Cache at every rank</div>';
+    return html || '<div class="muted">Found a franchise and the season starts counting.</div>';
+  }
+  /* ── THE RECAP ────────────────────────────────────────────────────────── */
+  function finalRecap() {
     var box = G.boxScore(game), them = G.other(me), mine = box[me], theirs = box[them];
     var won = game.score[me] > game.score[them];
     var tp = S.turningPoint(game), potg = G.playerOfGame(game);
@@ -1985,7 +2183,6 @@
       + (recLine ? '<div class="fin-rec">Record <b>' + esc(recLine) + '</b>'
           + (game.ot ? ' \u00b7 after overtime' : '') + '</div>' : '')
       + '</div>';
-    if (won) { SOUND.td(); buzz('strong'); crowdUp(1, 0.5); }
     overlay(hero + scoreHead(game.ot ? 'OT' : 'FT')
       + compare([['Total yards', mine.yards, theirs.yards],
         ['Rushing', mine.rushYards, theirs.rushYards,
@@ -2035,12 +2232,15 @@
             + esc(driveWord(d.outcome)) + '</div>';
         }).join('') + '</div>'
       + '<div id="frPanel" class="fr-panel" hidden></div>'
-      + '<div class="btn-row"><button class="btn btn-go" id="btnAgain" type="button">Play again</button>'
-      + '<a class="btn btn-ghost" href="/games/gameday/">Back to Game Day</a></div>', true);
+      + '<h3>Where next</h3><div class="fin-acts">'
+      + '<button class="btn btn-go" id="btnAgain" type="button"><b>Next game</b><i>Play again</i></button>'
+      + '<a class="btn" href="/games/gameday/"><b>Game Day</b><i>Saturday\'s fixture</i></a>'
+      + '<a class="btn" href="/games/roster/"><b>Team</b><i>Lineup and chemistry</i></a>'
+      + '<a class="btn" href="/games/packs/"><b>Pack Vault</b><i>What the games earned</i></a>'
+      + '<a class="btn" href="' + esc(GM && GM.withAttribution ? GM.withAttribution('/app.html') : '/app.html') + '#research/football"><b>Research</b><i>The real games</i></a>'
+      + '</div>', true);
     $('btnAgain').onclick = function () { closeOverlay(); newGame(); };
-    fileFranchise();
-    if (GM && GM.track) GM.track('gridiron_game_finished', { won: won, score_for: game.score[me],
-      score_against: game.score[them], difficulty: set.difficulty, mode: set.mode, plays: game.plays.length });
+    paintFilingInto('frPanel');
   }
   /* ── THE GAME YOU HOLD COUNTS ─────────────────────────────────────────
      A finished game is filed with the franchise under its own key — the
@@ -2068,21 +2268,32 @@
       plays: game.plays.length, yards: mine.yards | 0, touchdowns: (st.passTD | 0) + (st.rushTD | 0) + (st.defTD | 0),
       turnovers: (st.ints | 0) + (st.fumblesLost | 0), opponent: title(teams.opp), players: men.slice(0, 60) };
   }
-  function fileFranchise() {
-    var panel = $('frPanel');
-    if (!panel || !FR || !FR.recordLiveGame || !FR.hasFranchise || !FR.hasFranchise() || !game || !game.meta) return;
+  var FILING = null;
+  function startFiling() {
+    if (!FR || !FR.recordLiveGame || !FR.hasFranchise || !FR.hasFranchise() || !game || !game.meta) return null;
     var key = String(game.meta.seed) + ':' + (game.meta.startedAt || 0);
-    var payload = livePayload(), est = FR.liveRewards(payload);
-    panel.hidden = false;
-    panel.innerHTML = '<h3>Your franchise</h3><div class="muted">Filing the result… a game like this is worth about '
-      + esc(est.xp) + ' XP and ' + esc(est.tc) + ' Credits at ' + esc(set.difficulty) + '.</div>';
-    FR.recordLiveGame(key, payload).then(function (r) { paintFranchisePanel(r, payload); },
-      function () { paintFranchisePanel({ ok: false }, payload); });
+    if (FILING && FILING.key === key) return FILING;
+    var payload = livePayload();
+    FILING = { key: key, payload: payload, est: FR.liveRewards(payload), result: null, done: false };
+    FILING.promise = FR.recordLiveGame(key, payload).then(function (r) { FILING.result = r; FILING.done = true; return r; },
+      function () { FILING.result = { ok: false }; FILING.done = true; return FILING.result; });
+    return FILING;
   }
-  function paintFranchisePanel(r, payload) {
-    var panel = $('frPanel');
+  function paintFilingInto(id) {
+    var panel = $(id), f = startFiling();
     if (!panel) return;
-    var html = '<h3>Your franchise</h3>';
+    if (!f) { panel.hidden = true; return; }
+    panel.hidden = false;
+    if (f.done) { paintFranchisePanel(f.result, f.payload, id); return; }
+    panel.innerHTML = '<h3>Your franchise</h3><div class="muted">Filing the result… a game like this is worth about '
+      + esc(f.est.xp) + ' XP and ' + esc(f.est.tc) + ' Credits at ' + esc(set.difficulty) + '.</div>';
+    f.promise.then(function (r) { if ($(id)) paintFranchisePanel(r, f.payload, id); });
+  }
+  function paintFranchisePanel(r, payload, id) {
+    var panel = $(id || 'frPanel');
+    if (!panel) return;
+    /* on its own beat the eyebrow already says whose panel this is */
+    var html = id === 'frStage' ? '' : '<h3>Your franchise</h3>';
     if (r && r.ok && r.data) {
       var d = r.data, rank = d.rank || {}, gd = d.gameday || {};
       html += (GM && GM.rewardPanel) ? GM.rewardPanel(r) : '';
@@ -2403,8 +2614,13 @@
       + '<button class="btn btn-ghost" id="btnSet2" type="button">Settings</button>'
       + '<a class="btn btn-ghost" href="/games/gameday/">Back to Game Day</a></div>';
     paintPreField();
-    if ($('btnResume')) $('btnResume').onclick = function () { resumeGame(resumable); };
-    $('btnStart').onclick = function () { S.clearSave(); newGame(); };
+    /* THE TEAMS SETTLE BEFORE A GAME STARTS. The card paints with the house
+       teams while the franchise is still loading; a quick thumb on Resume in
+       that window replayed the save against the wrong men, and the replay
+       stopped where the calls no longer fit — a full game came back at
+       halftime. Both doors wait for the franchise to answer. */
+    if ($('btnResume')) $('btnResume').onclick = function () { whenTeams(function () { resumeGame(S.saved() || resumable); }); };
+    $('btnStart').onclick = function () { whenTeams(function () { S.clearSave(); newGame(); }); };
     $('btnSet2').onclick = settingsOverlay;
     $('btnFull2').onclick = toggleFull;
     syncFull();
@@ -2499,8 +2715,8 @@
     game = S.resume(rec, { me: teams.me, opponent: teams.opp, weather: cond() });
     if (!game) { newGame(); return; }
     me = game.meta.user;
+    /* a finished game reaches the final through nextCall, once */
     startPlaying();
-    if (game.over) finalScreen();
   }
   function startPlaying() {
     milestoned = {};
@@ -2541,6 +2757,12 @@
   }
 
   /* ── BOOT ─────────────────────────────────────────────────────────────── */
+  var teamsSettling = null;
+  function whenTeams(fn) {
+    if (!teamsSettling) { fn(); return; }
+    var once = false, go = function () { if (once) return; once = true; teamsSettling = null; fn(); };
+    teamsSettling.then(go, go);
+  }
   function boot() {
     flow('LOADING', 'boot');
     teams.me = S.teamFromLeague({ key: 'house', city: S.HOUSE.city, name: S.HOUSE.name, abbr: S.HOUSE.abbr,
@@ -2553,7 +2775,7 @@
     wireTools();
     if (GM && GM.boot) { try { GM.boot('gameday'); } catch (_) {} }
     if (!FR) return;
-    Promise.resolve(GM && GM.franchiseReady ? GM.franchiseReady() : null).then(function () {
+    teamsSettling = Promise.resolve(GM && GM.franchiseReady ? GM.franchiseReady() : null).then(function () {
       var snap = null;
       try { snap = FR.snapshot(); } catch (_) {}
       if (!snap || !snap.franchise || game) return;
@@ -2570,10 +2792,15 @@
         teams.season = (snap.season && snap.season.number) || 1;
       }
       return FR.roster().then(function (r) {
-        var players = (r && (r.players || r.roster)) || null;
+        /* THE MEN ON THE CARDS PLAY THE GAME. The RPC answers { ok, data };
+           reading the roster off the envelope found nothing, so every Play
+           Mode game was played by a roster generated from the seed while the
+           cards the user had kept sat in the Vault. */
+        var d = r && r.ok ? r.data : (r && r.players ? r : null);
+        var players = (d && (d.players || d.roster)) || null;
         if (players && players.length) teams.me.players = players;
       }).catch(function () {});
-    }).catch(function () {}).then(function () { if (!game) pregame(S.saved()); });
+    }).catch(function () {}).then(function () { teamsSettling = null; if (!game) pregame(S.saved()); });
   }
   function wireTools() {
     $('btnArt').onclick = function () {

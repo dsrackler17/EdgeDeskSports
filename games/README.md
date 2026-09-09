@@ -3348,6 +3348,28 @@ and every pin in the live harness is untouched: the stick still changes the
 run, power still pays, the tiers still differ in the head. The 800-game check
 is green again.
 
+## The programs, and what a passed man is worth (`packs_v4`)
+
+Three more pack programs, each derived from the live games filed at Pro or
+harder and each dressing its own room: the **Speed Lab** (backs, receivers
+and the men who cover them; one for every 1,500 live yards in your hands),
+the **Trench Unit** (both lines; one for every three games holding a side to
+ten points or fewer) and the **Primetime Vault** (four men, one of them
+Prime or better, keep one; one for every five live wins). `franchise_pack_defs()`
+carries them; `franchise_packs_sync()` materialises them from the record,
+idempotently, like every other kind; `franchise_pack_positions()` draws the
+Speed Lab and the Trench Unit from their own pools.
+
+A man passed over in a pack is never silently gone: he is scouted, and the
+department books scouting points by his tier (`franchise_pack_defs()->'pass_sp'`,
+mirrored as `EDFranchise.PASS_SP`), one ledger row per pack so a replay pays
+nothing twice. The room prints the value on the Pass button before you press
+it. Under every turned card: the lineup line, a **Duplicate** flag when the
+roster already holds the same archetype at his number or better, the scheme's
+word on him (`EDFranchise.fitFor`, a mirror of `franchise_scheme_fit()`), and
+three doors — Compare (against the starter he would play over, on the ratings
+where they differ most), View card, Market.
+
 ## The game you hold counts — cards move the grass, the grass feeds the Vault (`economy_v2` · `packs_v3`)
 
 The third part of the brief: connect the two. A card has to change what

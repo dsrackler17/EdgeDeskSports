@@ -154,6 +154,13 @@ function man(overall, pos, extra) {
     chk('the shelf styles ' + k, CSS.indexOf('vs-art-' + d.art) >= 0 || fs.readFileSync(path.join(ROOT, 'games', 'packs', 'index.html'), 'utf8').indexOf('vs-art-' + d.art) >= 0);
   });
   chk('an unknown kind falls back to the cache, never to nothing', V.artOf('nope') === V.ART.cache);
+  /* THE ROOM'S CLASS IS THE ROOM'S. A chip on the packs page once carried
+     class="vault" by way of the pack's art word, and vault.css turned it into
+     an invisible fixed sheet over the whole page: nothing could be tapped. */
+  const PACKS_SRC = fs.readFileSync(path.join(ROOT, 'games', 'packs', 'index.html'), 'utf8');
+  chk('the packs page never puts a pack\'s art word on an element as a bare class', !/class="k '\+esc\(d\.art\)/.test(PACKS_SRC) && /class="k art-'\+esc\(d\.art\)/.test(PACKS_SRC)
+    && !/class="[^"]*\bvault\b[^"]*"/.test(PACKS_SRC.replace(/vault-open|vs-art-vault|art-vault|\.vault/g, '')));
+  chk('nor lets games.css\'s head-to-head grid shape the shelf tile', /\.vs-grid>\.vs,\.vs\{position:relative;display:block;grid-template-columns:none/.test(PACKS_SRC));
   eq('the vault kind is recognised by name', V.artOf('vault').word, 'CHAMPIONSHIP');
   /* the tiers the CSS frames are the tiers the profile knows */
   ['prime', 'elite', 'apex', 'legend', 'mythic'].forEach(t => has(CSS, '.vt-tier-' + t, 'the stylesheet frames a ' + t + ' card'));
@@ -185,6 +192,42 @@ function man(overall, pos, extra) {
   has(VAULT_SRC, "'rare_pull'", 'and a rare pull');
   has(VAULT_SRC, "'pack_kept'", 'a man kept');
   has(VAULT_SRC, "'pack_passed'", 'and a pack passed');
+})();
+
+/* ── 6b. a duplicate said plainly, a starter to compare against ────────── */
+(function dup() {
+  const roster = [
+    { id: 'a', position: 'WR', overall: 84, archetype: 'Deep Threat', status: 'active', first_name: 'A', last_name: 'One', profile: { spd: 94, agi: 80, cth: 78, rte: 70, awr: 66 } },
+    { id: 'b', position: 'WR', overall: 79, archetype: 'Route Runner', status: 'active', first_name: 'B', last_name: 'Two', profile: { spd: 84, agi: 86, cth: 82, rte: 88, awr: 70 } },
+    { id: 'c', position: 'WR', overall: 70, archetype: 'Possession', status: 'active', first_name: 'C', last_name: 'Three', profile: { spd: 78, agi: 72, cth: 84, rte: 74, awr: 72 } },
+    { id: 'q', position: 'QB', overall: 77, archetype: 'Field General', status: 'active', first_name: 'Q', last_name: 'Back' }
+  ];
+  const twin = { id: 'x', position: 'WR', overall: 83, archetype: 'Deep Threat', profile: { spd: 92, agi: 78, cth: 76, rte: 68, awr: 60 } };
+  const d = V.duplicateOf(twin, roster);
+  chk('the same archetype at his number or better on the roster is a duplicate', !!d && d.of.id === 'a', JSON.stringify(d));
+  has(d.detail, 'A One (84)', 'and it says who');
+  chk('a better man of the same archetype is not a duplicate', V.duplicateOf({ id: 'y', position: 'WR', overall: 86, archetype: 'Deep Threat' }, roster) === null);
+  chk('nor a different archetype at the same number', V.duplicateOf({ id: 'z', position: 'WR', overall: 84, archetype: 'Slot Weapon' }, roster) === null);
+  chk('nor a man at a position the roster has not got', V.duplicateOf({ id: 'w', position: 'TE', overall: 70, archetype: 'In-Line' }, roster) === null);
+  chk('a man on the table never counts as the roster', V.duplicateOf(twin, roster.concat([{ id: 'p', position: 'WR', overall: 90, archetype: 'Deep Threat', status: 'pack' }])).of.id === 'a');
+  const cmp = V.compareTo(twin, roster, { spd: 'SPD', rte: 'RTE' });
+  chk('compare finds the starter he would play over — the third receiver', !!cmp && cmp.starter && cmp.starter.id === 'c', cmp && cmp.starter && cmp.starter.id);
+  eq('and the gain against him', cmp.gain, 13);
+  chk('the rows are the ratings where they differ most, at most five', cmp.rows.length === 5 && cmp.rows[0].key === 'spd' && cmp.rows[0].label === 'SPD' && cmp.rows[0].a === 92 && cmp.rows[0].b === 78);
+  chk('nobody at the position: he starts', V.compareTo({ id: 't', position: 'TE', overall: 70, profile: { spd: 70 } }, roster).starter === null);
+  /* the room wires them */
+  has(VAULT_SRC, 'data-cmp="', 'every turned card offers Compare');
+  has(VAULT_SRC, "if (b.hasAttribute('data-view') && o.onView)", 'View card when the page can show one');
+  has(VAULT_SRC, "if (b.hasAttribute('data-mkt') && o.onMarket)", 'and Market');
+  has(VAULT_SRC, "e.stopPropagation(); e.preventDefault();", 'and a tap on a door is not a tap on the card');
+  has(VAULT_SRC, "tags.push('<i class=\"dup\">Duplicate</i>'); else tags.push('<i class=\"new\">New</i>');", 'the summary labels a duplicate, else new');
+  has(VAULT_SRC, "High market value", 'and a high market value');
+  has(VAULT_SRC, "Collection item", 'and a collection item');
+  has(VAULT_SRC, "' SP</small>'", 'the Pass button prints what the pass is worth');
+  has(CSS, '.vault.vault-speed-lab', 'the Speed Lab has its own room');
+  has(CSS, '.vault.vault-trench-unit', 'and the Trench Unit');
+  has(CSS, '.vault.vault-primetime', 'and Primetime');
+  eq('the programs are recognised by their art', V.artOf('speed').word + '|' + V.artOf('trench').word + '|' + V.artOf('primetime').word, 'SPEED LAB|TRENCH UNIT|PRIMETIME');
 })();
 
 /* ── 6. what a card does, what it sells for, how it feels in the hand ─── */

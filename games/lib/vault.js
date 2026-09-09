@@ -149,6 +149,39 @@
     return { starts: false, slot: slot, gain: 0, label: pos + slot + ' on the chart',
              detail: 'behind ' + n + ' starter' + (n === 1 ? '' : 's') + ' at ' + pos };
   }
+  /* A DUPLICATE, SAID PLAINLY. A man is a duplicate of one already on the
+     roster when the roster has the same position and archetype at his
+     number or better — he adds nothing the lineup did not have. Never a
+     reason to lose him silently: a passed man is scouted for points. */
+  function duplicateOf(man, roster) {
+    if (!man || !roster) return null;
+    var list = roster.players || roster, best = null, i, p;
+    for (i = 0; i < list.length; i++) {
+      p = list[i];
+      if (p.id === man.id || p.status === 'pack' || p.position !== man.position) continue;
+      if (!man.archetype || p.archetype !== man.archetype) continue;
+      if ((p.overall | 0) >= (man.overall | 0) - 1 && (!best || (p.overall | 0) > (best.overall | 0))) best = p;
+    }
+    return best ? { of: best, label: 'Duplicate', detail: 'the roster has ' + fullName(best) + ' (' + best.overall + '), the same ' + man.archetype } : null;
+  }
+  /* THE STARTER HE WOULD PLAY OVER, and the two men side by side on the
+     ratings the position is judged on — the page hands in the profile
+     labels and the roster; nothing is decided here. */
+  function compareTo(man, roster, labels) {
+    if (!man || !roster) return null;
+    var pos = man.position, n = STARTERS[pos] || 1;
+    var same = (roster.players || roster).filter(function (p) { return p.position === pos && p.status !== 'pack' && p.id !== man.id; })
+      .sort(function (a, b) { return (b.overall | 0) - (a.overall | 0); });
+    var cur = same[Math.min(n, same.length) - 1] || null;
+    if (!cur) return { starter: null, rows: [] };
+    var keys = [], k, pa = man.profile || {}, pb = cur.profile || {}, skip = { version: 1 };
+    for (k in pa) if (pa.hasOwnProperty(k) && !skip[k] && typeof pa[k] === 'number') keys.push(k);
+    keys.sort(function (x, y) { return Math.abs((pa[y] || 0) - (pb[y] || 0)) - Math.abs((pa[x] || 0) - (pb[x] || 0)); });
+    var rows = keys.slice(0, 5).map(function (kk) {
+      return { key: kk, label: (labels && labels[kk]) || kk.toUpperCase(), a: pa[kk], b: pb[kk] == null ? null : pb[kk] };
+    });
+    return { starter: cur, rows: rows, gain: (man.overall | 0) - (cur.overall | 0) };
+  }
   /* WHAT MEN LIKE HIM SELL FOR: a range off the comparable sales the
      Exchange prints, or off the free-agent reference when nobody like him
      has sold yet. Never a promise, always labelled an estimate. */
@@ -172,7 +205,12 @@
     postseason: { hue: '#d9a441', deep: '#2a2010', word: 'POSTSEASON', line: 'A season seen out.' },
     vault:      { hue: '#f2c744', deep: '#2b1e08', word: 'CHAMPIONSHIP', line: 'Four men. Two kept. One of them Prime.' },
     scout:      { hue: '#9d7bff', deep: '#1d1530', word: "SCOUT'S FIND", line: 'Read the real games well.' },
-    gameday:    { hue: '#e2664b', deep: '#2a140f', word: 'GAME DAY', line: 'Five games you finished yourself.' }
+    gameday:    { hue: '#e2664b', deep: '#2a140f', word: 'GAME DAY', line: 'Five games you finished yourself.' },
+    /* the programs: each its own room — the lab's cold light and speed lines,
+       the trench's steel and earth, primetime's night sky and one spotlight */
+    speed:      { hue: '#39d5e6', deep: '#07222b', word: 'SPEED LAB', line: 'Fifteen hundred yards, on your thumbs.' },
+    trench:     { hue: '#d3a26a', deep: '#241a10', word: 'TRENCH UNIT', line: 'Three games where nothing got in.' },
+    primetime:  { hue: '#ff5c8a', deep: '#22091c', word: 'PRIMETIME', line: 'Five wins under the lights. One of them Prime.' }
   };
   function artOf(kind) { return ART[kind] || ART.cache; }
 
@@ -255,7 +293,7 @@
   function open(o) {
     var d = root.document, host = o.host || d.body;
     var pack = o.pack || {}, men = (o.men || []).slice(), art = artOf(pack.art || (pack.kind && pack.kind.indexOf('vault') >= 0 ? 'vault' : 'cache'));
-    var keep = pack.keep || 1, kept = 0, flipped = {}, timers = [], closed = false, busy = false;
+    var keep = pack.keep || 1, kept = 0, flipped = {}, timers = [], closed = false, busy = false, lastPassSp = 0;
     var reduce = false;
     try { reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
     /* A LOWER-END PHONE GETS FEWER LINES AND LESS CONFETTI, never a shorter
@@ -480,21 +518,57 @@
     /* the card itself takes the place of its silhouette */
     function turn(i, c, m, pl) {
       c.classList.remove('vt-sil'); c.classList.add('vt-turned', 'vt-tier-' + pl.tier);
-      var imp = lineupImpact(m, roster);
-      m.impact = imp;
+      var imp = lineupImpact(m, roster), dup = duplicateOf(m, roster), fit = o.fit ? o.fit(m) : null;
+      m.impact = imp; m.duplicate = dup; m.fit = fit;
       c.innerHTML = '<div class="vt-face">' + (o.cardHtml ? o.cardHtml(m) : miniCard(m, pl)) + '</div>'
-        + (imp ? '<div class="vt-imp ' + (imp.starts ? 'up' : '') + '"><b>' + esc(imp.label) + '</b><span>' + esc(imp.detail) + '</span></div>' : '')
-        + '<div class="vt-est" data-est="' + esc(i) + '"></div>';
+        + (imp ? '<div class="vt-imp ' + (imp.starts ? 'up' : '') + (dup ? ' dup' : '') + '"><b>' + esc(dup ? dup.label : imp.label) + '</b><span>' + esc(dup ? dup.detail : imp.detail) + '</span>'
+            + (fit ? '<em class="vt-fit f' + (fit.value > 0 ? 'p' : fit.value < 0 ? 'n' : 'z') + '">' + esc(fit.word) + (fit.value ? ' (' + (fit.value > 0 ? '+' : '') + esc(fit.value) + ')' : '') + '</em>' : '') + '</div>' : '')
+        + '<div class="vt-est" data-est="' + esc(i) + '"></div>'
+        + '<div class="vt-card-acts">'
+        +   (imp && imp.starts !== undefined ? '<span role="button" tabindex="0" class="vt-ca" data-cmp="' + esc(i) + '">Compare</span>' : '')
+        +   (o.onView ? '<span role="button" tabindex="0" class="vt-ca" data-view="' + esc(i) + '">View card</span>' : '')
+        +   (o.onMarket ? '<span role="button" tabindex="0" class="vt-ca" data-mkt="' + esc(i) + '">Market</span>' : '')
+        + '</div>'
+        + '<div class="vt-cmp" data-cmp-box="' + esc(i) + '" hidden></div>';
       c.setAttribute('aria-label', fullName(m) + ', ' + m.position + ', ' + m.overall + ' overall');
+      /* THE ACTIONS UNDER A CARD are spans inside the card button, so a tap
+         on one must not read as a tap on the card */
+      Array.prototype.forEach.call(c.querySelectorAll('.vt-ca'), function (b) {
+        var go = function (e) {
+          e.stopPropagation(); e.preventDefault();
+          if (b.hasAttribute('data-cmp')) { toggleCompare(i, c, m); return; }
+          if (b.hasAttribute('data-view') && o.onView) { track('card_view_from_pack', { tier: pl.tier, overall: m.overall, position: m.position }); o.onView(m); return; }
+          if (b.hasAttribute('data-mkt') && o.onMarket) { track('market_from_pack', { tier: pl.tier, overall: m.overall, position: m.position }); o.onMarket(m); }
+        };
+        b.addEventListener('click', go);
+        b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') go(e); });
+      });
       /* the estimate arrives after the reveal, never in front of it */
       if (o.marketEstimate) {
         later(function () {
           Promise.resolve(o.marketEstimate(m)).then(function (comps) {
             var est = marketEstimate(comps, m), box = c.querySelector('[data-est="' + i + '"]');
+            m.estimate = est || null;
             if (est && box) box.innerHTML = 'Est. market <b>' + esc(est.low) + '–' + esc(est.high) + '</b> Credits <i>' + esc(est.basis) + '</i>';
           }).catch(function () {});
         }, 900);
       }
+    }
+    /* the current starter he would play over, side by side on the ratings
+       where they differ most */
+    function toggleCompare(i, c, m) {
+      var box = c.querySelector('[data-cmp-box="' + i + '"]'); if (!box) return;
+      if (!box.hidden) { box.hidden = true; return; }
+      var cmp = compareTo(m, roster, o.labels || null);
+      if (!cmp || !cmp.starter) { box.innerHTML = '<div class="vt-cmp-h">Nobody at ' + esc(m.position) + ' yet: he starts.</div>'; box.hidden = false; return; }
+      box.innerHTML = '<div class="vt-cmp-h"><span>' + esc(fullName(m)) + ' <b>' + esc(m.overall) + '</b></span><i>vs</i><span>' + esc(fullName(cmp.starter)) + ' <b>' + esc(cmp.starter.overall) + '</b></span></div>'
+        + cmp.rows.map(function (r) {
+            var d = (r.a | 0) - (r.b | 0);
+            return '<div class="vt-cmp-r"><b class="' + (d > 0 ? 'up' : d < 0 ? 'dn' : '') + '">' + esc(r.a == null ? '—' : r.a) + '</b><span>' + esc(r.label) + '</span><b class="' + (d < 0 ? 'up' : d > 0 ? 'dn' : '') + '">' + esc(r.b == null ? '—' : r.b) + '</b></div>';
+          }).join('')
+        + '<div class="vt-cmp-f">' + (cmp.gain > 0 ? '+' + esc(cmp.gain) + ' OVR over the current starter' : cmp.gain < 0 ? esc(cmp.gain) + ' OVR to the current starter' : 'level with the current starter') + '</div>';
+      box.hidden = false;
+      track('card_compared', { position: m.position, overall: m.overall, gain: cmp.gain });
     }
     function miniCard(m, pl) {
       var sig = pl.signature;
@@ -590,10 +664,11 @@
       sum.hidden = false;
       sum.innerHTML = '<div class="vt-sum-h">The pull</div><ul>' + men.map(function (m, i) {
         var pl = plan(m), tags = [];
-        tags.push('<i class="new">New</i>');
+        if (m.duplicate) tags.push('<i class="dup">Duplicate</i>'); else tags.push('<i class="new">New</i>');
         if (m.impact && m.impact.starts) tags.push('<i class="up">Lineup upgrade ' + esc(m.impact.label) + '</i>');
-        if (pl.rank >= TIER_RANK.elite) tags.push('<i class="hi">High value</i>');
-        if (pl.rank <= TIER_RANK.starter) tags.push('<i class="col">Collection</i>');
+        if (pl.rank >= TIER_RANK.elite || (m.estimate && m.estimate.high >= 2000)) tags.push('<i class="hi">High market value</i>');
+        if (pl.rank <= TIER_RANK.starter && !(m.impact && m.impact.starts)) tags.push('<i class="col">Collection item</i>');
+        if (m.fit && m.fit.value > 0) tags.push('<i class="fit">Scheme fit</i>');
         if (m.kept) tags.push('<i class="kept">Kept</i>'); else if (m.passed) tags.push('<i class="pass">Passed</i>');
         return '<li><span class="p">' + esc(m.position) + '</span><b>' + esc(fullName(m)) + '</b><span class="o">' + esc(m.overall) + ' · ' + esc(pl.tierName) + '</span><span class="t">' + tags.join('') + '</span>'
           + (pl.premium && o.onShare ? '<button class="lnk" type="button" data-share="' + esc(i) + '">Share</button>' : '') + '</li>';
@@ -613,7 +688,7 @@
       if (left <= 0) {
         summary();
         acts.innerHTML = '<div class="vt-done"><b>' + (kept === 1 ? 'He is yours.' : 'They are yours.') + '</b>'
-          + '<span>' + esc(kept) + ' kept · the rest passed over</span></div>'
+          + '<span>' + esc(kept) + ' kept · the rest passed over' + (lastPassSp > 0 ? ', scouted for <b>+' + esc(lastPassSp) + ' SP</b>' : '') + '</span></div>'
           + '<div class="btn-row">'
           + (o.onAutoLineup && men.some(function (m) { return m.kept && m.impact && m.impact.starts; }) ? '<button class="btn btn-go" type="button" data-vt="auto">Put him in the lineup</button>' : '')
           + (o.nextPack ? '<button class="btn btn-go" type="button" data-vt="next">Open the next pack</button>' : '')
@@ -630,7 +705,8 @@
             return '<button class="btn vt-keep" type="button" data-keep="' + esc(i) + '"' + (o.roomFull ? ' disabled' : '') + '>'
               + 'Keep ' + esc(m.position) + ' ' + esc(fullName(m)) + ' <small>' + esc(m.overall) + ' · ' + esc(pl.tierName) + '</small></button>';
           }).join('') + '</div>'
-        + '<div class="btn-row"><button class="btn btn-ghost" type="button" data-vt="pass">Pass on ' + (kept ? 'the rest' : 'the whole pack') + '</button>'
+        + '<div class="btn-row"><button class="btn btn-ghost" type="button" data-vt="pass">Pass on ' + (kept ? 'the rest' : 'the whole pack')
+        + (o.passValue ? ' <small>+' + esc(o.passValue(men.filter(function (x) { return !x.kept; }))) + ' SP</small>' : '') + '</button>'
         + (kept ? '<button class="btn" type="button" data-vt="done">Done</button>' : '') + '</div>';
       wireActs();
     }
@@ -648,6 +724,7 @@
             track('pack_kept', { kind: pack.kind, tier: plan(m).tier, overall: m.overall, position: m.position });
             SOUND.reveal(false); HAPTICS.buzz([20, 30, 40]);
             if (r && r.keep_left != null) kept = keep - r.keep_left;
+            if (r && r.sp) lastPassSp = r.sp | 0;
             if (kept >= keep) men.forEach(function (x) { if (!x.kept) x.passed = true; });
             renderActions();
           });
@@ -671,7 +748,7 @@
             Promise.resolve(o.onPass ? o.onPass() : { ok: true }).then(function (r) {
               busy = false;
               if (r && r.ok === false) { b.disabled = false; return; }
-              track('pack_passed', { kind: pack.kind, kept: kept });
+              track('pack_passed', { kind: pack.kind, kept: kept, sp: r && r.sp != null ? r.sp : null });
               close(); if (o.onDone) o.onDone();
             });
           }
@@ -745,6 +822,7 @@
 
   var API = { plan: plan, signature: signature, tierOf: tierOf, tierName: tierName, artOf: artOf, ART: ART, PREMIUM: PREMIUM,
               open: open, oddsLine: oddsLine, SOUND: SOUND, fullName: fullName, lineupImpact: lineupImpact, marketEstimate: marketEstimate,
+              duplicateOf: duplicateOf, compareTo: compareTo,
               cardImage: cardImage, HAPTIC_BY_TIER: HAPTIC_BY_TIER, TIER_COLORS: TIER_COLORS, STARTERS: STARTERS, ceilingWord: ceilingWord };
   root.EDVault = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

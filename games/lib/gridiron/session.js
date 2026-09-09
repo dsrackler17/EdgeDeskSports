@@ -286,7 +286,10 @@
     var g = build({
       me: o.me, opponent: o.opponent, home: rec.meta.home, seed: rec.meta.seed,
       week: rec.meta.week, season: rec.meta.season, opponentKey: rec.meta.opponentKey,
-      weather: o.weather || rec.meta.weather || null,
+      /* THE RECORD KNOWS ITS OWN WEATHER. A save replays the calls under the
+         conditions they were made in; the page's idea of the fixture's sky is
+         only the fallback for a record from before the sky was saved. */
+      weather: rec.meta.weather || o.weather || null,
       settings: { difficulty: rec.meta.difficulty, length: rec.meta.length }
     });
     g.meta = rec.meta;

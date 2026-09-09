@@ -139,7 +139,19 @@
 .pc-actions{margin-top:10px;display:grid;gap:6px}
 .pc-actions .btn{min-height:40px;font-size:13px;padding:0 12px}
 .pc-compact .pc-attrs{margin-top:10px}
-.pc-compact .pc-acq,.pc-compact .pc-career{display:none}
+.pc-compact .pc-acq,.pc-compact .pc-career,.pc-compact .pc-badges,.pc-compact .pc-fit{display:none}
+/* the scheme's word on him, and Saturday's */
+.pc-fit{display:grid;gap:3px;margin-top:8px;font-size:12px;line-height:1.35;color:var(--dim)}
+.pc-fit span{display:flex;gap:8px;align-items:baseline}
+.pc-fit i{flex:0 0 58px;font:700 9.5px/1.4 'Inter',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-style:normal}
+.pc-fit .up{color:var(--val)}
+.pc-fit .dn{color:var(--neg)}
+.pc-hands{color:var(--val)}
+.pc-hands .k{color:var(--val-dim,#2f8a63)}
+/* MILESTONE BADGES: marks a career keeps, never a change to what he was rolled at */
+.pc-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.pc-badge{font:800 9.5px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;padding:4px 7px;border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--est,#d9a441) 55%,transparent);color:var(--est,#d9a441);background:color-mix(in srgb,var(--est,#d9a441) 10%,transparent)}
 
 /* ── position groups on the roster ─────────────────────────────────────── */
 .side-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 0 8px}
@@ -564,7 +576,8 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 /* the board's strip: the window, the picks, the room, what a report costs */
 .mk-sum{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
 @media(min-width:560px){.mk-sum{grid-template-columns:repeat(4,1fr)}}
-.mk-sum div{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+/* the box is the cell, not the label and the value inside it */
+.mk-sum>div{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
 .mk-sum .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mk-sum .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;margin-top:3px;line-height:1.1}
 .mk-sum .v small{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -769,6 +782,37 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 
 /* ── the lineup, chemistry and the Exchange (Phase 19) ─────────────────── */
 .lu-tabs .lu-best{margin-left:auto;min-height:36px;font-size:12.5px;padding:0 12px}
+/* what the scheme thinks of the eleven, and who is coming on Saturday */
+.lu-fit{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;padding:9px 12px;font-size:12px;line-height:1.4;color:var(--dim);border-top:1px solid var(--line)}
+.lu-fit b{color:var(--text)}
+.lu-fit .sep{color:var(--faint)}
+.lu-fit .lu-tap{margin-left:auto;font-size:11px;color:var(--faint);letter-spacing:.04em}
+.lu-field{cursor:pointer}
+/* THE SLOT SHEET: who holds it, how he fits, who is behind him */
+.slt{position:fixed;inset:0;z-index:70;background:rgba(4,5,7,.78);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .22s}
+.slt.on{opacity:1}
+.slt-in{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:14px 16px 20px;
+  transform:translateY(16px);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.slt.on .slt-in{transform:none}
+@media(min-width:560px){.slt{align-items:center;padding:20px}.slt-in{border-radius:18px}}
+.slt-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.slt-h>div{min-width:0}
+.slt-h .eyebrow{margin:0}
+.slt-t{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;line-height:1.1;margin-top:4px}
+.slt-x{width:auto;flex:0 0 auto;min-width:44px;min-height:44px;padding:0 14px}
+.slt-fits{display:grid;gap:4px;margin-top:8px;font-size:12.5px;color:var(--dim)}
+.slt-fit{display:flex;gap:8px;align-items:baseline}
+.slt-fit i{flex:0 0 62px;font:700 9.5px/1.4 'Inter',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-style:normal}
+.slt-fit.up{color:var(--val)}.slt-fit.dn{color:var(--neg)}
+.slt-list{list-style:none;margin:8px 0 0;padding:0;border-top:1px solid var(--line)}
+.slt-list li{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.slt-list .p{font:800 10.5px/1 'Inter',sans-serif;letter-spacing:.1em;color:var(--dim)}
+.slt-list .o b{display:block;font-family:'Space Grotesk',sans-serif;font-size:14px;line-height:1.2}
+.slt-list .o small{display:block;font-size:11.5px;color:var(--dim);margin-top:2px}
+.slt-list .o em{font-style:normal}
+.slt-list .o em.up{color:var(--val)}.slt-list .o em.dn{color:var(--neg)}
+.slt-list .r .btn{min-height:36px;font-size:12.5px;padding:0 12px;white-space:nowrap}
+.slt-list .r small{font-size:11px;color:var(--faint)}
 .chem{margin-top:6px}
 .ch-grid{display:grid;gap:8px}
 @media(min-width:560px){.ch-grid{grid-template-columns:1fr 1fr}}
@@ -803,3 +847,19 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .gd-weapon .btn-row{margin-top:10px}
 .gd-weapon.quiet{border-color:var(--line,#232a36);background:var(--panel,#0f131a)}
 .gd-weapon.quiet .k{background:var(--line2,#2a3140);color:var(--text,#e9edf4)}
+
+/* ── THE SCOUTING REPORT on Game Day: a module that folds ───────────────── */
+.gd-scout{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--cell)}
+.gd-scout summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;list-style:none}
+.gd-scout summary::-webkit-details-marker{display:none}
+.gd-scout summary .eyebrow{margin:0}
+.gd-scout-m{font-size:11.5px;color:var(--dim);white-space:nowrap}
+.gd-scout summary::after{content:'▾';color:var(--faint);font-size:12px;margin-left:6px;transition:transform .2s}
+.gd-scout:not([open]) summary::after{transform:rotate(-90deg)}
+.gd-scout-b{padding:0 12px 12px}
+.gd-scout-l{font-size:13px;color:var(--text);margin-bottom:6px}
+.gd-scout-e{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.gd-scout-e li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;color:var(--text)}
+.gd-scout-e .v{flex:0 0 40px;text-align:center;font:800 12px/1 'JetBrains Mono',monospace;padding:6px 0;border-radius:999px;border:1px solid var(--line2)}
+.gd-scout-e .v.pos{color:var(--val);border-color:rgba(63,184,131,.45)}
+.gd-scout-e .v.neg{color:var(--neg);border-color:rgba(226,102,75,.45)}

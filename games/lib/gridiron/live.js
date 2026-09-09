@@ -488,9 +488,9 @@
         /* a cut: lateral, quick, and it costs him a stride. Bounded so a
            99 agility man is very quick, not somewhere else. */
         pen = spent(a);
-        a.moveCool = 0.62; a.move = 'juke'; a.moveT = 0.34; a.moveEdge = (0.13 + a.k.agi * 0.30) * pen;
+        a.moveCool = 0.62; a.move = 'juke'; a.moveT = 0.34; a.moveEdge = (0.10 + a.k.agi * 0.36) * pen;
         s = a.dx >= 0 ? 1 : -1;
-        a.vx += s * 4.6 * (0.55 + a.k.agi * 0.7) * pen;
+        a.vx += s * 4.6 * (0.45 + a.k.agi * 0.85) * pen;
         a.vy *= 0.74;
         if (events.onMove) events.onMove('juke');
       } else if (kind === 'spin') {
@@ -927,7 +927,10 @@
       var p = j.pts[Math.min(j.i, j.pts.length - 1)];
       a.tx = p[0]; a.ty = p[1];
       a.state = 'run';
-      if (Math.hypot(a.x - p[0], a.y - p[1]) < 1.2 && j.i < j.pts.length - 1) j.i++;
+      /* a technician turns on the spot; a straight-line runner rounds the
+         break and gives the cover man the step back */
+      var breakR = 0.9 + (1 - (a.k.rte == null ? 0.5 : a.k.rte)) * 0.6;
+      if (Math.hypot(a.x - p[0], a.y - p[1]) < breakR && j.i < j.pts.length - 1) j.i++;
       /* at the end of the stem he works back to the ball or keeps running */
       if (j.i >= j.pts.length - 1 && Math.hypot(a.x - p[0], a.y - p[1]) < 1.4) {
         var deep = (F.ROUTES[j.route] && F.ROUTES[j.route].band) === 'deep';
@@ -1378,8 +1381,30 @@
           if (usp > 1.2) {
             var dot = (a.vx * a.dx + a.vy * a.dy) / usp;
             if (dot < 0.86) {
-              var k = clamp((0.86 - dot) * (0.55 + a.k.agi * 0.75) * 4.4 * dt, 0, 0.55);
+              /* SPRINTING BLUNTS THE CUT. A man at full stride cannot plant
+                 the way a man under control can — the button buys a step and
+                 costs him the sharpness of the next change of direction. */
+              var k = clamp((0.86 - dot) * (0.55 + a.k.agi * 0.75) * 4.4 * dt * (a.sprint ? 0.62 : 1), 0, 0.55);
               a.vx -= a.vx * k; a.vy -= a.vy * k;
+            }
+          }
+        } else if (d > 0.3 && (a.state === 'run' || a.state === 'carry')) {
+          /* ── EVERY MAN PLANTS AND CUTS, OFF HIS OWN CARD ─────────────────
+             The plant-and-cut above was the user's alone; everybody else
+             turned by momentum, so a route technician rounded his break
+             like a straight-line runner and an elusive back read as a bus.
+             Agility is how quickly a man throws his old direction away; a
+             receiver's route rating is half of it at the top of a route. It
+             is bounded, so a great one is crisp and nobody is somewhere
+             else. */
+          var asp = len(a.vx, a.vy);
+          if (asp > 1.2) {
+            var wdx = dx / d, wdy = dy / d;
+            var adot = (a.vx * wdx + a.vy * wdy) / asp;
+            if (adot < 0.86) {
+              var cutRating = (a.job && a.job.kind === 'route' && a.k.rte != null) ? a.k.agi * 0.5 + a.k.rte * 0.5 : a.k.agi;
+              var ak = clamp((0.86 - adot) * (0.35 + cutRating * 0.65) * 3.6 * dt * (a.sprint ? 0.62 : 1), 0, 0.45);
+              a.vx -= a.vx * ak; a.vy -= a.vy * ak;
             }
           }
         }
@@ -1622,8 +1647,12 @@
          has: an offensive player chasing a pick tackles off his strength */
       var dTkl = d.k.tkl != null ? d.k.tkl : (d.k.str == null ? 0.5 : d.k.str) * 0.7;
       var cPwr = c.k.pwr != null ? c.k.pwr : (c.k.str == null ? 0.5 : c.k.str);
+      /* and strength against strength: the man who is stronger at the point
+         of contact finishes it, or does not go down */
+      var dStr = d.k.str == null ? 0.5 : d.k.str, cStr = c.k.str == null ? 0.5 : c.k.str;
       var p = 0.868 + square * 0.07
             + (dTkl - (cPwr * 0.50 + c.k.agi * 0.50)) * 0.42
+            + (dStr - cStr) * 0.12
             - clamp(sp - closing, -3, 3) * 0.030
             + (env.runFit || 0) * 0.3;
       if (d.dive > 0) p += 0.06;
@@ -1856,7 +1885,10 @@
       if (recD > CATCH) { incomplete(f, 'nobody there'); return; }
 
       var contested = best ? clamp(1 - bd / 2.6, 0, 1) : 0;
-      var pCatch = clamp(0.71 + rec.k.hnd * 0.30 - (f.err - 0.5) * 0.11 - contested * 0.38
+      /* a contested ball is harder to finish the further it has travelled:
+         a man on the hip forty yards downfield is most of an incompletion */
+      var deepK = clamp(((f.airYards || 0) - 15) / 20, 0, 1);
+      var pCatch = clamp(0.71 + rec.k.hnd * 0.30 - (f.err - 0.5) * 0.11 - contested * (0.38 + 0.20 * deepK)
                          + (env.hands || 0) + (f.catchAdj || 0), 0.05, 0.985);
       if (rand() > pCatch) {
         if (best && bd < 1.5 && rand() < 0.03 + best.k.bhk * 0.11) { intercepted(best, f); return; }

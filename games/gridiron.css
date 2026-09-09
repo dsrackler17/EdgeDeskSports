@@ -882,3 +882,75 @@
 .fr-line b{color:var(--text,#e9edf4)}
 .fr-pack{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(226,102,75,.45);background:linear-gradient(120deg,rgba(226,102,75,.16),transparent 70%);font-size:13.5px;line-height:1.45}
 .fr-pack .btn{display:inline-flex;margin-top:8px}
+
+/* ── THE EDGEDESK BROADCAST PACKAGE ────────────────────────────────────────
+   Halftime and the final are told in beats: one idea per screen, a brand
+   line at the top, dots for where you are, a skip that is always there.
+   Every beat advances on a tap or on its own clock; nothing here can hold a
+   viewer who wants the next game. */
+.stg{position:relative;padding-top:6px;animation:stgin .34s cubic-bezier(.16,1,.3,1)}
+@keyframes stgin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.stg{animation:none}}
+.stg-top{display:flex;align-items:center;gap:10px;min-height:44px;padding-top:6px}
+.stg-brand{font:800 10px 'Space Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--val);
+  white-space:nowrap}
+.stg-dots{display:flex;gap:5px;flex:1;justify-content:center}
+.stg-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.14);transition:background .2s,transform .2s}
+.stg-dots i.was{background:rgba(255,255,255,.34)}
+.stg-dots i.on{background:var(--val);transform:scale(1.25);box-shadow:0 0 0 3px rgba(63,184,131,.18)}
+.stg-skip{min-height:36px;padding:0 12px;border-radius:var(--r-pill);border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.04);color:var(--dim);font:700 12px 'Inter',sans-serif;cursor:pointer;white-space:nowrap}
+.stg-skip:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.stg-eyebrow{margin-top:10px;font:800 10.5px 'Space Grotesk',sans-serif;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--faint)}
+.stg-body{margin-top:8px;min-height:120px}
+.stg-body .fin-hero{margin-top:-4px}
+.stg-foot{margin-top:14px;text-align:center;font:600 11px 'Inter',sans-serif;letter-spacing:.06em;color:var(--faint);
+  opacity:.75}
+.stg-ctx{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:10px;
+  font:600 11.5px 'Inter',sans-serif;color:var(--dim);font-variant-numeric:tabular-nums}
+.stg-ctx span{white-space:nowrap}
+/* the one play, said big */
+.stg-big{padding:16px 16px 18px;border-radius:var(--r-lg);border:1px solid rgba(242,199,68,.28);
+  background:linear-gradient(120deg,rgba(242,199,68,.13),rgba(242,199,68,.02));
+  font:700 16px/1.45 'Space Grotesk',sans-serif;color:#f4f7fa}
+.stg-big i{display:block;font:800 10px 'Inter',sans-serif;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gr-chain);margin-bottom:6px;font-style:normal}
+/* label on the left, the line beside it */
+.stg-kv{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);
+  font-size:13.5px;line-height:1.45;color:var(--text)}
+.stg-kv:last-child{border-bottom:0}
+.stg-kv span{font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);
+  padding-top:3px}
+/* a note under a value spans the row: it is an aside, not a third column */
+.stg-kv small{grid-column:1/-1;display:block;font-size:11.5px;line-height:1.4;color:var(--dim);margin-top:-2px}
+.stg-kv br{display:none}
+@media(max-width:380px){.stg-kv{grid-template-columns:1fr;gap:3px}}
+/* the player of the game, on his own beat */
+.potg.big{padding:18px 16px;margin-top:0;
+  background:linear-gradient(135deg,rgba(63,184,131,.14),rgba(255,255,255,.02));border-color:rgba(63,184,131,.3)}
+.potg.big .pn{font-size:21px;line-height:1.1}
+.potg.big .pl{margin-top:5px;font-size:13.5px;color:#d5deea}
+.pc-ctx{margin-top:8px;font:600 11.5px 'Inter',sans-serif;color:var(--faint);line-height:1.5}
+/* a drive, summed up, on the dead ball after it ends */
+.drc{position:absolute;right:12px;bottom:calc(112px + env(safe-area-inset-bottom));z-index:5;max-width:min(60%,300px);
+  background:rgba(8,12,17,.8);border-right:3px solid var(--bc,#f2c744);border-radius:10px 0 0 10px;padding:7px 11px 8px;
+  color:#e9edf4;text-align:right;backdrop-filter:blur(6px);opacity:0;transform:translateX(10px);
+  transition:opacity .3s cubic-bezier(.2,.8,.2,1),transform .3s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.drc.on{opacity:1;transform:none}
+.drc.out{opacity:0;transform:translateX(10px)}
+.drc i{display:block;font:800 9.5px/1 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--bc,#f2c744);
+  margin-bottom:3px;font-style:normal}
+.drc b{display:block;font:800 14px 'Space Grotesk',sans-serif}
+.drc span{display:block;font:600 11.5px 'Inter',sans-serif;color:var(--dim);margin-top:1px}
+.drc.sc span{color:var(--val)}
+.drc.to span{color:var(--gr-def)}
+/* where next: five doors, the next game first and biggest */
+.fin-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.fin-acts .btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:58px;padding:10px 12px;
+  text-align:left;text-decoration:none;color:var(--text);border:1px solid var(--line2);background:var(--raised);
+  border-radius:var(--r-md)}
+.fin-acts .btn b{font:800 14px 'Space Grotesk',sans-serif;line-height:1.15}
+.fin-acts .btn i{font-style:normal;font-size:11px;color:var(--dim);line-height:1.3}
+.fin-acts .btn-go{grid-column:1/-1;min-height:64px;color:#08110c}
+.fin-acts .btn-go i{color:rgba(8,17,12,.72)}

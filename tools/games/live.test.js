@@ -690,5 +690,86 @@ console.log('\nPLAY MODE — the thumbs');
   chk('every man is read from his card by one function a side', /function offMan\(pl, pos\)/.test(ENG) && /function defMan\(pl, pos\)/.test(ENG) && /env\.at\[k\] = side === 'off' \? offMan\(pl, pos\) : defMan\(pl, pos\);/.test(ENG));
 })();
 
+/* ── 16. FEEL YOU CAN MEASURE: the cut is agility, the finish is strength,
+         the break is the route, and sprinting blunts the plant ──────────── */
+(function feel() {
+  const PRF = L('profile.js');
+  function withCard(seed, who, pos, ratings, profile) {
+    const g = freshGame(seed);
+    const t = who === 'off' ? G.teamOf(g, g.possession) : G.teamOf(g, G.other(g.possession));
+    t.players.forEach(p => {
+      if (p.position !== pos) return;
+      p.ratings = p.ratings || {}; Object.keys(ratings).forEach(k => { p.ratings[k] = ratings[k]; });
+      /* the engine reads a whole profile or none: derive his, then override */
+      if (profile) p.profile = Object.assign(PRF.profile(p), profile);
+    });
+    t._units = null; t._unitsAt = -1;
+    return g;
+  }
+  const N = 60;
+  function mean(fn) { let s = 0; for (let i = 1; i <= N; i++) s += fn(i); return s / N; }
+  /* agility: the same juke at first contact, off the card */
+  /* the move itself, measured: how far the same juke moves the man sideways
+     in the third of a second it lasts — a thing you can feel in the thumb */
+  function jukeShift(seed, v) {
+    const g = withCard(seed, 'off', 'RB', { agi: v, elu: v }, { agi: v }), side = g.possession, offT = G.teamOf(g, side), defT = G.teamOf(g, G.other(side));
+    const playObj = F.play('inside_zone'), parts = F.defParts('base_3');
+    const env = G.prepare({ off: offT, def: defT, rand: mulberry(seed * 31 + 7), tick: g.tick, playKey: 'inside_zone', formKey: 'i_form', defCall: 'base_3', sit: G.situation(g), mem: g.mem[side], difficulty: 'pro' });
+    const bx = 26.665, los = g.ball;
+    const actors = ST.alignOffense(playObj, 'i_form', bx, los, G.unitsOf(offT, g.tick), {}).concat(ST.alignDefense(parts, bx, los, 1, G.unitsOf(defT, g.tick), playObj, 'i_form', {}));
+    const sim = LIVE.Play({ actors, playObj, parts, formKey: 'i_form', los, ballX: bx, env, rand: mulberry(seed), userSide: 'off', userMode: 'play' });
+    sim.snap();
+    let t = 0, x0 = null, x1 = null;
+    while (!sim.outcome() && t < 1.36) {
+      sim.step(1 / 120, { mx: 0, my: 1, action: (t > 1.0 && t < 1.02) ? 'juke' : null });
+      t += 1 / 120;
+      const c = sim.carrier();
+      if (c && t >= 1.0 && x0 == null) x0 = c.x;
+      if (c && t >= 1.34) x1 = c.x;
+    }
+    return x0 == null || x1 == null ? 0 : Math.abs(x1 - x0);
+  }
+  let shiftHi = 0, shiftLo = 0, sn = 0;
+  for (let s = 1; s <= 24; s++) { shiftHi += jukeShift(s, 96); shiftLo += jukeShift(s, 42); sn++; }
+  chk('an elusive back moves further sideways on the same juke than a stiff one', shiftHi / sn > shiftLo / sn + 0.35, (shiftHi / sn).toFixed(2) + ' vs ' + (shiftLo / sn).toFixed(2) + ' yards');
+  chk('and neither juke is a teleport', shiftHi / sn < 3.0, (shiftHi / sn).toFixed(2));
+  const jukeY = v => mean(s => record({ game: withCard(s, 'off', 'RB', { agi: v, elu: v }, { agi: v }), seed: s, play: 'inside_zone', form: 'i_form', def: 'base_3', script: jukeAt(1.0) }).out.yards | 0);
+  const jHi = jukeY(96), jLo = jukeY(42);
+  chk('and it is never worth less to the better man', jHi >= jLo - 0.2, jHi.toFixed(2) + ' vs ' + jLo.toFixed(2));
+  /* strength: the same truck at first contact, strength alone */
+  const truckY = v => mean(s => record({ game: withCard(s, 'off', 'RB', { str: v }, { str: v }), seed: s, play: 'inside_zone', form: 'i_form', def: 'stack', script: truckAt(0.85) }).out.yards | 0);
+  const tHi = truckY(96), tLo = truckY(42);
+  chk('a strong back finishes the same truck further than a weak one', tHi > tLo + 0.4, tHi.toFixed(2) + ' vs ' + tLo.toFixed(2));
+  /* the break is the route rating alone: speed and hands held */
+  /* the dig — a route with a break in it — thrown to the second read on time */
+  const rteY = v => mean(s => { const r = record({ game: withCard(s, 'off', 'WR', { rte: v, spd: 80, hnd: 80 }), seed: s, play: 'dagger', form: 'gun', def: 'stack', script: throwAt(2.3, 1) }); return r.out.completion ? (r.out.yards | 0) : 0; });
+  const rHi = rteY(96), rLo = rteY(42);
+  chk('a route technician makes more of the same dig at the same speed', rHi > rLo + 1.0, rHi.toFixed(1) + ' vs ' + rLo.toFixed(1));
+  /* sprinting blunts the plant: the same stick flip, with and without the button */
+  function flipTime(seed, sprint) {
+    const g = freshGame(seed), side = g.possession, offT = G.teamOf(g, side), defT = G.teamOf(g, G.other(side));
+    const playObj = F.play('outside_zone'), parts = F.defParts('base_3');
+    const env = G.prepare({ off: offT, def: defT, rand: mulberry(seed * 31 + 7), tick: g.tick, playKey: 'outside_zone', formKey: 'i_form', defCall: 'base_3', sit: G.situation(g), mem: g.mem[side], difficulty: 'pro' });
+    const bx = 26.665, los = g.ball;
+    const actors = ST.alignOffense(playObj, 'i_form', bx, los, G.unitsOf(offT, g.tick), {}).concat(ST.alignDefense(parts, bx, los, 1, G.unitsOf(defT, g.tick), playObj, 'i_form', {}));
+    const sim = LIVE.Play({ actors, playObj, parts, formKey: 'i_form', los, ballX: bx, env, rand: mulberry(seed), userSide: 'off', userMode: 'play' });
+    sim.snap();
+    let t = 0, flipAt = null;
+    while (!sim.outcome() && t < 2.2) {
+      sim.step(1 / 120, { mx: t < 1.2 ? 1 : -1, my: 0.1, sprint: sprint });
+      t += 1 / 120;
+      const c = sim.carrier();
+      if (t > 1.2 && c && c.vx < 0 && flipAt == null) flipAt = t - 1.2;
+    }
+    return flipAt == null ? 1.0 : flipAt;
+  }
+  let slow = 0, quick = 0, n = 0;
+  for (let s = 1; s <= 24; s++) { slow += flipTime(s, true); quick += flipTime(s, false); n++; }
+  chk('a sprinting back takes longer to reverse his direction than one under control', slow / n > quick / n + 0.015, (slow / n).toFixed(3) + 's vs ' + (quick / n).toFixed(3) + 's');
+  chk('and neither is a teleport: the reversal takes real time', quick / n > 0.05, (quick / n).toFixed(3) + 's');
+  /* the eleven routes a coach names all exist with real geometry */
+  ['slant', 'go', 'drag', 'curl', 'out', 'in', 'post', 'corner', 'flat', 'cross', 'wheel'].forEach(k => chk('the route book has a ' + k, F.ROUTES[k] && F.ROUTES[k].pts && F.ROUTES[k].pts.length >= 1));
+})();
+
 console.log('  ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { console.log('\nFAILURES'); fails.forEach(f => console.log(f)); process.exit(1); }

@@ -150,6 +150,8 @@
       m.phase = 0;
       P.player(ctx, m, cam);
       boxes.push({ id: m.id, slot: m.slot, pos: m.pos, name: m.name, num: m.num,
+        /* the roster man under the shirt, when the team was drawn from one */
+        pid: m.player && m.player.id != null ? String(m.player.id) : null,
         label: labelFor(m, front),
         x: cam.sx(m.x, m.y), y: cam.sy(m.y), r: Math.max(15, cam.scale(m.y) * 1.2) });
     });
