@@ -59,9 +59,9 @@ let DEFS = null;
 try { DEFS = JSON.parse(defsJson); } catch (e) { chk('the pack definitions parse', false, e.message); }
 const PRIME_AT = DEFS ? DEFS.prime_at : 75;
 const PITY = (DEFS && DEFS.kinds.gridiron_cache.pity) || { after: 5, lift: 6, guarantee: 'prime' };
-chk('the definitions are packs_v2 with the Prime line at 75', !!DEFS && DEFS.version === 'packs_v2' && PRIME_AT === 75);
-chk('the client prints the same five kinds at the same sizes and keeps',
-  !!DEFS && Object.keys(DEFS.kinds).length === 5 && Object.keys(DEFS.kinds).every(k => FR.PACKS[k] && FR.PACKS[k].size === DEFS.kinds[k].size && FR.PACKS[k].keep === DEFS.kinds[k].keep));
+chk('the definitions are packs_v3 with the Prime line at 75', !!DEFS && DEFS.version === 'packs_v3' && PRIME_AT === 75);
+chk('the client prints the same six kinds at the same sizes and keeps',
+  !!DEFS && Object.keys(DEFS.kinds).length === 6 && Object.keys(DEFS.kinds).every(k => FR.PACKS[k] && FR.PACKS[k].size === DEFS.kinds[k].size && FR.PACKS[k].keep === DEFS.kinds[k].keep));
 chk('only the rank\'s cache carries protection, and only the Championship Vault a guarantee',
   !!DEFS && Object.keys(DEFS.kinds).every(k => (k === 'gridiron_cache') === !!DEFS.kinds[k].pity && (k === 'championship_vault') === (DEFS.kinds[k].guarantee === 'prime')));
 

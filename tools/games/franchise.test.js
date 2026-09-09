@@ -116,8 +116,8 @@ function fresh() { MEM = {}; ST.reset(); }
 const T0 = Date.parse('2026-09-04T18:00:00Z');   /* Friday, week of 2026-09-01 */
 
 /* ═══ 1. THE ECONOMY, PINNED TO THE SQL ═══════════════════════════════════ */
-eq('the economy is versioned', F.ECONOMY_VERSION, 'economy_v1');
-has(SQL, "'version', 'economy_v1'", 'and the SQL carries the same version');
+eq('the economy is versioned', F.ECONOMY_VERSION, 'economy_v2');
+has(SQL, "'version', 'economy_v2'", 'and the SQL carries the same version');
 eq('Price It: 50 XP', F.ECONOMY.price_it.xp, 50);
 eq('Pick 5 card: 75 XP and 25 TC', F.ECONOMY.pick5_card.xp + '/' + F.ECONOMY.pick5_card.tc, '75/25');
 eq('a correct side: 10 XP and 15 TC', F.ECONOMY.pick5_correct.xp + '/' + F.ECONOMY.pick5_correct.tc, '10/15');
@@ -262,7 +262,7 @@ fresh();
   for (let i = 0; i < 12; i++) ST.recordResearchOpen({ game_id: 'r' + i, slug: 'r' + i }, T0);
   ST.setDisplayName('Alice');
   const pv = F.preview(ST.read(), T0);
-  eq('the preview is versioned', pv.version, 'economy_v1');
+  eq('the preview is versioned', pv.version, 'economy_v2');
   eq('two unique Price Its, one card, one daily drill', pv.week.games, 4);
   eq('XP: 50+50 + 75 + 10 (one correct) + 40 + 10×15 research', pv.week.xp, 50 + 50 + 75 + 10 + 40 + 150);
   eq('scouting points from the two scores: 37 + 40', pv.week.sp, 77);
@@ -686,7 +686,7 @@ fresh();
     /select \* into b from public\.game_board where game_id = p_game_id/.test(SQL) && !/p_edgedesk_spread|p_market_spread|p_client_price|p_benchmark/.test(SQL));
   chk('the founder achievement is season-exclusive', /'founder_2026',\s+'Founder Season 2026'[^\n]*2026, 1\)/.test(SQL));
   has(README, 'games_franchise.sql', 'the README documents the file');
-  has(README, 'economy_v1', 'and the economy version');
+  has(README, 'economy_v2', 'and the economy version');
   has(fs.readFileSync(path.join(ROOT, 'supabase', 'README.md'), 'utf8'), 'games_franchise.sql', 'and the supabase README lists it');
 
   /* ═══ 11. THE WEEKLY GAME (PHASE 2) ═══════════════════════════════════════ */
@@ -2068,7 +2068,7 @@ fresh();
      copy of the curves is the SQL's. */
 
   eq('the rank is versioned', F.RANK_VERSION, 'rank_v1');
-  eq('and the packs are', F.PACKS_VERSION, 'packs_v2');
+  eq('and the packs are', F.PACKS_VERSION, 'packs_v3');
   has(SQL, "'version', 'rank_v1'", 'the SQL agrees on the rank');
   has(SQL, "'pack_version', 'packs_v1'", "and the rank's own door still keeps every packs_v1 promise it made");
 
@@ -2825,8 +2825,8 @@ fresh();
   chk('and the client expects at least it', F.SCHEMA.franchise >= 18);
   chk('and the report checks a number no lower',
     +((SQL.match(/\(public\.games_schema\(\)->>'franchise'\)::int = (\d+)/) || [])[1]) >= 18);
-  eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v2');
-  has(SQL, '"version": "packs_v2"', 'and the SQL carries the same version');
+  eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v3');
+  has(SQL, '"version": "packs_v3"', 'and the SQL carries the same version');
   (function () {
     const m = SQL.match(/function public\.franchise_pack_defs\(\)[\s\S]*?select '([\s\S]*?)'::jsonb;/);
     chk('the SQL states the pack table', !!m);
@@ -2847,14 +2847,61 @@ fresh();
   has(PACKS, '/games/vault.css', 'and its stylesheet');
   ['pack_opened', 'card_revealed', 'rare_pull', 'pack_kept', 'pack_passed', 'packs_view'].forEach(e => chk('the packs page fires ' + e, new RegExp("track\\('" + e + "'").test(PACKS) || new RegExp("'" + e + "'").test(fs.readFileSync(G('lib/vault.js'), 'utf8'))));
   has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
-  has(README, 'packs_v2', 'the README documents the Vault');
+  has(README, 'packs_v3', 'the README documents the Vault');
+
+  /* ═══ 21. THE GAME YOU HOLD COUNTS ═══════════════════════════════════════ */
+  chk('the report grew to forty-two rows', /select 42, 'the game you hold counts/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 21, 'the game you hold counts: live results, careers, and the Game Day pack'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 21);
+  /* the economy's live lines, and the mirror's arithmetic */
+  eq('a live game pays 60 XP and 25 Credits; a win 40 XP, 25 Credits and a Coach Point', [F.ECONOMY.live_game.xp, F.ECONOMY.live_game.tc, F.ECONOMY.live_win.xp, F.ECONOMY.live_win.tc, F.ECONOMY.live_win.cp].join('/'), '60/25/40/25/1');
+  eq('the performance is capped: 30 Credits, 40 XP', F.ECONOMY.live_perf.tc_max + '/' + F.ECONOMY.live_perf.xp_max, '30/40');
+  eq('five credited games a day', F.ECONOMY.live_cap.per_day, 5);
+  eq('the tiers scale it, Pro being one', [F.ECONOMY.live_tier.rookie, F.ECONOMY.live_tier.pro, F.ECONOMY.live_tier.allpro, F.ECONOMY.live_tier.legend].join('/'), '0.6/1/1.15/1.3');
+  eq('a Pro win, 312 yards, three touchdowns: 115 XP, 71 Credits, 1 CP', JSON.stringify(F.liveRewards({ difficulty: 'pro', score_for: 24, score_against: 17, yards: 312, touchdowns: 3 })).replace(/,"tier".*/, '}'), '{"xp":115,"tc":71,"cp":1}');
+  eq('a Legend loss, 90 yards, one touchdown: 78 XP, 36 Credits, no CP', JSON.stringify(F.liveRewards({ difficulty: 'legend', score_for: 10, score_against: 21, yards: 90, touchdowns: 1 })).replace(/,"tier".*/, '}'), '{"xp":78,"tc":36,"cp":0}');
+  eq('a Rookie win pays six tenths', F.liveRewards({ difficulty: 'rookie', score_for: 14, score_against: 7, yards: 120, touchdowns: 2 }).xp, 63);
+  chk('a live game weighs two toward the rank, on both sides', F.rankWeight('live_game') === 2 && /'season_complete', 5, 'live_game', 2\)/.test(SQL));
+  chk('and a capped game weighs nothing: the extra kind is in the constraint and not in the weights',
+    /'live_game','live_game_extra'\)\);/.test(SQL)
+    && !/'live_game_extra'/.test((SQL.match(/create or replace function public\.franchise_ranks\(\)[\s\S]*?\$\$;/) || [''])[0]));
+  /* the Game Day pack */
+  chk('the Game Day pack is a kind the client knows, three men keep one, earned by playing', F.PACKS.gameday_pack && F.PACKS.gameday_pack.size === 3 && F.PACKS.gameday_pack.keep === 1 && /five live games/.test(F.PACKS.gameday_pack.earned));
+  chk('the sync derives it from the credited games, five to a pack', /franchise_gameday_progress\(p_franchise\)->>'packs'/.test(SQL) && /'gameday_pack', i::text/.test(SQL));
+  /* the line a man takes from a live game, in his career's own keys */
+  eq('a quarterback\'s line', JSON.stringify(F.liveLine('QB', { pa: 22, pc: 15, py: 212, ptd: 2, pint: 1, ry: -3 })), '{"att":22,"cmp":15,"yds":212,"td":2,"int":1,"games":1}');
+  eq('a back\'s line', JSON.stringify(F.liveLine('RB', { car: 14, ry: 81, rtd: 1, rec: 2, recy: 15 })), '{"car":14,"yds":81,"td":1,"rec":2,"rec_yds":15,"games":1}');
+  eq('a receiver\'s line', JSON.stringify(F.liveLine('WR', { rec: 5, recy: 70, rectd: 1 })), '{"rec":5,"yds":70,"td":1,"games":1}');
+  eq('a defender\'s line', JSON.stringify(F.liveLine('LB', { tkl: 7, sack: 1, int: 0, tfl: 2 })), '{"tkl":7,"sacks":1,"tfl":2,"games":1}');
+  chk('a man with no line and no snap has no entry', F.liveLine('WR', {}) === null && F.liveLine('OL', { tkl: 3 }) === null);
+  chk('the keys the client writes are the keys the server allows', (() => {
+    const allowed = (SQL.match(/allowed text\[\] := array\[([^\]]+)\]/) || [])[1];
+    if (!allowed) return false;
+    const list = allowed.split(',').map(x => x.trim().replace(/'/g, ''));
+    const written = ['games', 'att', 'cmp', 'yds', 'td', 'int', 'car', 'rush_yds', 'rush_td', 'rec', 'rec_yds', 'rec_td', 'tkl', 'sacks', 'tfl', 'pd', 'fg', 'fga', 'xp'];
+    return written.every(k => list.indexOf(k) >= 0) && /'live_stats', p\.live_stats/.test(SQL);
+  })());
+  chk('the record is one RPC with the key, the game and the secret', /function recordLiveGame\(key, game\) \{\s*return record\('franchise_record_live_game', \{ p_key: String\(key \|\| ''\), p_game: game \|\| \{\} \}, 'live:' \+ key\);/.test(FJS));
+  chk('the server refuses a shape that could not be a game', /v_for not between 0 and 99 or v_against not between 0 and 99 or v_plays not between 8 and 250/.test(SQL) && /or v_tds \* 6 > v_for then/.test(SQL));
+  chk('and files a key once', /where franchise_id = v_f and kind in \('live_game', 'live_game_extra'\) and key = p_key;/.test(SQL));
+  /* the pages */
+  const PLAY = fs.readFileSync(G('play/play.js'), 'utf8');
+  chk('the final screen files the game with the franchise, under the game\'s own key', /FR\.recordLiveGame\(key, payload\)/.test(PLAY) && /String\(game\.meta\.seed\) \+ ':' \+ \(game\.meta\.startedAt \|\| 0\)/.test(PLAY) && /game\.meta\.startedAt = Date\.now\(\);/.test(PLAY));
+  chk('and shows the server\'s answer, never the page\'s hope', /paintFranchisePanel\(r, payload\)/.test(PLAY) && /rewardPanel\(r\)/.test(PLAY) && /Open it in the Vault/.test(PLAY));
+  chk('the broadcast announces a man from the Vault and calls a milestone once', /From the Vault/.test(PLAY) && /function milestoneBit/.test(PLAY) && /milestoned\[key\] = 1;/.test(PLAY));
+  chk('the engine keeps who a man is to you on his line', /uid: player\.id == null \? null : String\(player\.id\), acq: player\.acquired_source \|\| null/.test(fs.readFileSync(G('lib/gridiron/engine.js'), 'utf8')));
+  has(GAMEDAY, 'New weapon', 'Game Day carries the new weapon');
+  has(GAMEDAY, 'Play the next game', 'and the one thing to do about it');
+  chk('the weapon is the server\'s: the newest man kept from a pack, with how many games he has been in your hands', /'weapon', \(select jsonb_build_object\('id', p\.id/.test(SQL) && /'games_since'/.test(SQL) && /'live', public\.franchise_gameday_progress\(f\.id\)/.test(SQL));
+  has(README, 'economy_v2', 'the README documents the economy');
 
   /* ═══ 20. THE PULL RECORD ════════════════════════════════════════════════ */
   chk('the report grew to forty-one rows', /select 41, 'the pull record is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 20, 'the pull record: every pack you opened and the best of them'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 20);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 20/.test(SQL));
+  chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 20);
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 21/.test(SQL));
   eq('the pull record is versioned', F.PULLS_VERSION, 'pulls_v1');
   has(SQL, "'version', 'pulls_v1'", 'and the SQL agrees');
   chk('the client reads it through one RPC with the secret and nothing else', /function pulls\(\) \{ return rpc\('franchise_pulls', withSecret\(\{\}\)\); \}/.test(FJS) && typeof F.pulls === 'function');
@@ -2873,7 +2920,7 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 19, 'the lineup, chemistry, and the Exchange'\)/.test(SQL));
   chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 19);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 20/.test(SQL));
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 21/.test(SQL));
   eq('the lineup is versioned', F.LINEUP_VERSION, 'lineup_v1');
   has(SQL, "'version', 'lineup_v1'", 'and the SQL agrees');
   eq('chemistry is versioned', F.CHEMISTRY_VERSION, 'chemistry_v1');
@@ -2996,10 +3043,10 @@ fresh();
     !/record\('franchise_play_week'/.test(FJS) && !/record\('franchise_start_season'/.test(FJS)
     && !/record\('franchise_offseason'/.test(FJS) && !/record\('franchise_upgrade'/.test(FJS)
     && !/record\('franchise_pack_open'/.test(FJS));
-  chk('and the four things you can do with no server are the four that queue',
-    ['franchise_record_price_it', 'franchise_submit_pick5', 'franchise_record_drill', 'franchise_record_research']
+  chk('and the five things you can do with no server are the five that queue: the four reads, and a game played with your thumbs',
+    ['franchise_record_price_it', 'franchise_submit_pick5', 'franchise_record_drill', 'franchise_record_research', 'franchise_record_live_game']
       .every(fn => FJS.indexOf("record('" + fn + "'") >= 0)
-    && (FJS.match(/\brecord\('franchise_/g) || []).length === 4);
+    && (FJS.match(/\brecord\('franchise_/g) || []).length === 5);
   chk('every one of them is worth something toward a rank',
     ['price_it', 'pick5_card', 'drill_daily', 'research_open'].every(k => F.rankWeight(k) > 0));
 

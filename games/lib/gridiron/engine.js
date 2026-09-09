@@ -1114,6 +1114,11 @@
     if (!k) return null;
     if (!g.players[k]) g.players[k] = { id: k, name: R.name(player), position: player.position,
       side: side || null, first: player.first_name || '', last: player.last_name || '',
+      /* who he is to the franchise: the card's own id, how he arrived, and
+         the two careers — the simulation's and the one in your hands — so a
+         broadcast can recognise a Vault pull and call a milestone */
+      uid: player.id == null ? null : String(player.id), acq: player.acquired_source || null,
+      career: player.career_stats || null, live: player.live_stats || null,
       pa: 0, pc: 0, py: 0, ptd: 0, pint: 0, car: 0, ry: 0, rtd: 0, rec: 0, recy: 0, rectd: 0,
       tkl: 0, sack: 0, sackYards: 0, tfl: 0, int: 0, pd: 0, ff: 0, dtd: 0, fg: 0, fga: 0, xp: 0, xpa: 0,
       long: 0, longRush: 0, longRec: 0, targets: 0, drops: 0 };

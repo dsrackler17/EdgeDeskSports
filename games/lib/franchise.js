@@ -74,15 +74,16 @@
       'the player universe: profiles, tiers, bodies and home towns',
       'the Vault: packs you hold, odds you can read, and a card that remembers',
       'the lineup, chemistry, and the Exchange',
-      'the pull record: every pack you opened and the best of them'
+      'the pull record: every pack you opened and the best of them',
+      'the game you hold counts: live results, careers, and the Game Day pack'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
   /* 'franchise' -> 'supabase/games_franchise.sql' — what to paste to fix a gap */
   var SCHEMA_FILES = { social: 'supabase/games_social.sql', franchise: 'supabase/games_franchise.sql' };
 
-  /* ── the economy, economy_v1 — the same table franchise_economy() returns ── */
-  var ECONOMY_VERSION = 'economy_v1';
+  /* ── the economy, economy_v2 — the same table franchise_economy() returns ── */
+  var ECONOMY_VERSION = 'economy_v2';
   var ECONOMY = {
     price_it:      { xp: 50, sp_base: 5, sp_per_score: 0.35, tc_base: 10, tc_per_ten: 1 },
     pick5_card:    { xp: 75, tc: 25 },
@@ -114,8 +115,48 @@
     bowl_game:     { xp: 150, tc: 60 },
     bowl_win:      { xp: 300, tc: 200, cp: 5 },
     import_unverified_price_it: { xp: 50 },
-    import_unverified_pick5:    { xp: 75 }
+    import_unverified_pick5:    { xp: 75 },
+    /* THE GAME YOU HOLD (Phase 21): a live game finished, won, and what the
+       performance was worth — capped a day, scaled by the tier */
+    live_game:     { xp: 60, tc: 25 },
+    live_win:      { xp: 40, tc: 25, cp: 1 },
+    live_perf:     { tc_per_td: 3, tc_per_100: 4, tc_max: 30, xp_per_100: 5, xp_max: 40 },
+    live_cap:      { per_day: 5 },
+    live_tier:     { rookie: 0.6, pro: 1, allpro: 1.15, legend: 1.3 }
   };
+  /* what one live game pays, before the daily cap, exactly as the server
+     rounds it (half up on a positive number) */
+  function liveRewards(g) {
+    g = g || {};
+    var won = (g.score_for | 0) > (g.score_against | 0), tier = ECONOMY.live_tier[g.difficulty] || 1;
+    var xp = ECONOMY.live_game.xp, tc = ECONOMY.live_game.tc, cp = 0;
+    if (won) { xp += ECONOMY.live_win.xp; tc += ECONOMY.live_win.tc; cp = ECONOMY.live_win.cp; }
+    var hundreds = Math.floor(Math.max(0, g.yards | 0) / 100);
+    tc += Math.min(ECONOMY.live_perf.tc_max, (g.touchdowns | 0) * ECONOMY.live_perf.tc_per_td + hundreds * ECONOMY.live_perf.tc_per_100);
+    xp += Math.min(ECONOMY.live_perf.xp_max, hundreds * ECONOMY.live_perf.xp_per_100);
+    return { xp: Math.round(xp * tier), tc: Math.round(tc * tier), cp: cp, tier: tier, won: won };
+  }
+  /* ONE MAN'S LINE FROM A LIVE GAME, in the keys his career already uses
+     (statsLine reads them), so a game played with thumbs and a game the
+     server simulated add up in the same columns. Nothing negative; a man
+     with no line and no snap has no entry. */
+  function liveLine(pos, m) {
+    m = m || {};
+    var o = {};
+    function put(k, v) { v = Math.max(0, v | 0); if (v > 0) o[k] = v; }
+    switch (pos) {
+      case 'QB': put('att', m.pa); put('cmp', m.pc); put('yds', m.py); put('td', m.ptd); put('int', m.pint);
+                 put('car', m.car); put('rush_yds', m.ry); put('rush_td', m.rtd); break;
+      case 'RB': put('car', m.car); put('yds', m.ry); put('td', m.rtd); put('rec', m.rec); put('rec_yds', m.recy); put('rec_td', m.rectd); break;
+      case 'WR': case 'TE': put('rec', m.rec); put('yds', m.recy); put('td', m.rectd); put('car', m.car); put('rush_yds', m.ry); break;
+      case 'K': put('fg', m.fg); put('fga', m.fga); put('xp', m.xp); break;
+      case 'P': case 'OL': break;
+      default: put('tkl', m.tkl); put('sacks', m.sack); put('int', m.int); put('tfl', m.tfl); put('pd', m.pd); break;
+    }
+    if (!Object.keys(o).length && !m.played) return null;
+    o.games = 1;
+    return o;
+  }
   var CURRENCIES = {
     xp: { key: 'xp', label: 'Research XP', short: 'XP', field: 'xp',
       means: 'Experience, earned by playing and by reading the real games. Levels follow the published curve.' },
@@ -1364,7 +1405,7 @@
     floor_below: 10, edge_base: 2, edge_per_rank: 0.3, edge_max: 14,
     weights: { weekly_game: 3, bowl_bid: 3, conf_game: 3, fc_played: 2,
                price_it: 1, drill_daily: 1, research_open: 1,
-               pick5_card: 2, season_complete: 5 }
+               pick5_card: 2, season_complete: 5, live_game: 2 }
   };
   /* what the next rank costs: 15, and three more every time */
   function rankCost(rank) { return RANKS.cost_base + RANKS.cost_step * Math.max(0, (rank | 0) - 1); }
@@ -1855,13 +1896,14 @@
   /* ── THE VAULT (packs_v2) ─────────────────────────────────────────────────
      The pack table, mirrored for display; the SQL's franchise_pack_defs() is
      what applies, and the parity test pins these names to it. */
-  var PACKS_VERSION = 'packs_v2';
+  var PACKS_VERSION = 'packs_v3';
   var PACKS = {
     gridiron_cache:     { name: 'Gridiron Cache', art: 'cache', size: 3, keep: 1, earned: 'every rank you reach' },
     rookie_cache:       { name: 'Rookie Cache', art: 'rookie', size: 3, keep: 1, earned: 'founding the franchise' },
     postseason_pack:    { name: 'Postseason Pack', art: 'postseason', size: 3, keep: 1, earned: 'a season seen out' },
     championship_vault: { name: 'Championship Vault', art: 'vault', size: 4, keep: 2, earned: 'a bowl won' },
-    scouts_find:        { name: "Scout's Find", art: 'scout', size: 2, keep: 1, earned: 'three Price Its scoring 80 or better in one week' }
+    scouts_find:        { name: "Scout's Find", art: 'scout', size: 2, keep: 1, earned: 'three Price Its scoring 80 or better in one week' },
+    gameday_pack:       { name: 'Game Day Pack', art: 'gameday', size: 3, keep: 1, earned: 'five live games finished at Pro or harder' }
   };
   function packDef(kind) { return PACKS[kind] || { name: kind, art: 'cache', size: 3, keep: 1, earned: '' }; }
   /* the board: every sealed pack with its odds, the one on the table, the men kept */
@@ -2093,6 +2135,13 @@
   function recordResearch(gameId) {
     return record('franchise_record_research', { p_game_id: String(gameId) }, 'research:' + gameId);
   }
+  /* THE GAME YOU HOLD, filed (Phase 21). The key is the game's own — its
+     seed and the moment it started — so a replayed request credits nothing
+     twice and a game resumed from its save still files as itself. The server
+     checks the shape, credits by its table, and says what moved. */
+  function recordLiveGame(key, game) {
+    return record('franchise_record_live_game', { p_key: String(key || ''), p_game: game || {} }, 'live:' + key);
+  }
 
   /* Replay whatever the server has not confirmed. Sequential, so a burst of
      replays cannot race each other; each one dequeues itself on success. */
@@ -2221,7 +2270,8 @@
     owner: owner, state: state, claim: claim,
     home: home, roster: roster, ledger: ledger, pick5Mine: pick5Mine, create: create, importHistory: importHistory,
     setStarter: setStarter, record: record, recordPriceIt: recordPriceIt, submitPick5: submitPick5,
-    recordDrill: recordDrill, recordResearch: recordResearch, sync: sync, boot: boot, forget: forget
+    recordDrill: recordDrill, recordResearch: recordResearch, recordLiveGame: recordLiveGame, liveRewards: liveRewards, liveLine: liveLine,
+    sync: sync, boot: boot, forget: forget
   };
   root.EDFranchise = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

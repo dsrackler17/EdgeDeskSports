@@ -1327,9 +1327,12 @@
     var sit = G.situation(game), off = snapSit ? snapSit.offense : sit.offense;
     var st = game.stats[off] || {}, drive = game.drive, text = null, eyebrow = null;
     var tries = 0;
-    while (!text && tries++ < 4) {
-      var pick = (bitTurn++) % 4;
-      if (pick === 0) {
+    while (!text && tries++ < 5) {
+      var pick = (bitTurn++) % 5;
+      if (pick === 4) {
+        var ms = milestoneBit(off);
+        if (ms) { eyebrow = ms.eyebrow; text = ms.text; }
+      } else if (pick === 0) {
         var best = null, bestV = 0;
         Object.keys(game.players || {}).forEach(function (k) {
           var m = game.players[k];
@@ -1337,7 +1340,11 @@
           var v = (m.py || 0) * 0.55 + (m.ry || 0) + (m.recy || 0) + (m.tkl || 0) * 4 + (m.sack || 0) * 25;
           if (v > bestV) { bestV = v; best = m; }
         });
-        if (best && bestV >= 45) { eyebrow = (off === me ? teams.me.abbr : teams.opp.abbr) + ' · ' + best.position; text = '<b>' + esc(best.name) + '</b><br>' + esc(dayLine(best)); }
+        if (best && bestV >= 45) {
+          /* a man who came out of the Vault is announced as one */
+          eyebrow = (best.acq === 'pack' && off === me ? 'From the Vault' : (off === me ? teams.me.abbr : teams.opp.abbr)) + ' · ' + best.position;
+          text = '<b>' + esc(best.name) + '</b><br>' + esc(dayLine(best));
+        }
       } else if (pick === 1) {
         if (drive && drive.side === off && (drive.plays | 0) >= 3) { eyebrow = 'This drive'; text = '<b>' + drive.plays + ' plays, ' + (drive.yards | 0) + ' yards</b>'; }
       } else if (pick === 2) {
@@ -1357,6 +1364,36 @@
     fieldWrap.appendChild(d);
     setTimeout(function () { d.classList.add('out'); }, 2600);
     setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 3000);
+  }
+  /* A MILESTONE, CALLED ONCE. The careers your men carry — the simulation's
+     and the one in your hands — plus tonight's line: when tonight takes a
+     man across a round number the broadcast says so, once. Only your side
+     has careers, so only your side is ever called. */
+  var MILESTONES = { yds: [500, 1000, 2500, 5000, 10000], td: [5, 10, 25, 50], tkl: [50, 100, 250, 500] };
+  function milestoneBit(off) {
+    if (off !== me || !game) return null;
+    var found = null;
+    Object.keys(game.players || {}).some(function (k) {
+      var m = game.players[k];
+      if (m.side !== me || (!m.career && !m.live)) return false;
+      var c = m.career || {}, l = m.live || {};
+      var before = {}, tonight = {};
+      if (m.position === 'QB') { before.yds = (c.yds | 0) + (l.yds | 0); tonight.yds = m.py | 0; before.td = (c.td | 0) + (l.td | 0); tonight.td = m.ptd | 0; }
+      else if (m.position === 'RB') { before.yds = (c.yds | 0) + (l.yds | 0); tonight.yds = m.ry | 0; before.td = (c.td | 0) + (l.td | 0); tonight.td = m.rtd | 0; }
+      else if (m.position === 'WR' || m.position === 'TE') { before.yds = (c.yds | 0) + (l.yds | 0); tonight.yds = m.recy | 0; before.td = (c.td | 0) + (l.td | 0); tonight.td = m.rectd | 0; }
+      else { before.tkl = (c.tkl | 0) + (l.tkl | 0); tonight.tkl = m.tkl | 0; }
+      return Object.keys(before).some(function (stat) {
+        return MILESTONES[stat].some(function (line) {
+          var key = k + ':' + stat + ':' + line;
+          if (milestoned[key] || before[stat] >= line || before[stat] + tonight[stat] < line) return false;
+          milestoned[key] = 1;
+          found = { eyebrow: (m.acq === 'pack' ? 'Milestone · From the Vault' : 'Milestone'),
+            text: '<b>' + esc(m.name) + '</b><br>' + esc(line.toLocaleString() + ' career ' + (stat === 'yds' ? 'yards' : stat === 'td' ? 'touchdowns' : 'tackles') + ' · in your hands') };
+          return true;
+        });
+      });
+    });
+    return found;
   }
   /* THE BALL IS SPOTTED BETWEEN THE HASHES, and it wanders like a real one.
      Drawn from the game's own coaching stream rather than a loose die, so the
@@ -1997,11 +2034,77 @@
           return '<div class="' + cls + '">' + esc(who) + ' · ' + d.plays + ' plays, ' + d.yards + ' yards · '
             + esc(driveWord(d.outcome)) + '</div>';
         }).join('') + '</div>'
+      + '<div id="frPanel" class="fr-panel" hidden></div>'
       + '<div class="btn-row"><button class="btn btn-go" id="btnAgain" type="button">Play again</button>'
       + '<a class="btn btn-ghost" href="/games/gameday/">Back to Game Day</a></div>', true);
     $('btnAgain').onclick = function () { closeOverlay(); newGame(); };
+    fileFranchise();
     if (GM && GM.track) GM.track('gridiron_game_finished', { won: won, score_for: game.score[me],
       score_against: game.score[them], difficulty: set.difficulty, mode: set.mode, plays: game.plays.length });
+  }
+  /* ── THE GAME YOU HOLD COUNTS ─────────────────────────────────────────
+     A finished game is filed with the franchise under its own key — the
+     seed and the moment it started — with the score, the yards, the
+     touchdowns, the tier the defence was set to, and every man of yours with
+     his line in the keys his career already uses. The server checks the
+     shape, credits once by its table, weighs it toward the rank, and seals a
+     Game Day pack every fifth game at Pro or harder. The panel shows what
+     the server said, never what the page hoped. */
+  function livePayload() {
+    var them = G.other(me), st = game.stats[me] || {}, box = G.boxScore(game), mine = box[me] || {};
+    var men = [], seen = {};
+    Object.keys(game.players || {}).forEach(function (k) {
+      var m = game.players[k];
+      if (m.side !== me || !m.uid) return;
+      var line = FR.liveLine(m.position, m);
+      if (line) { men.push({ id: m.uid, stats: line }); seen[m.uid] = 1; }
+    });
+    /* the men who started and never touched the ball still played the game */
+    ((teams.me && teams.me.players) || []).forEach(function (p) {
+      if (!p || !p.id || seen[p.id]) return;
+      if ((p.depth | 0) >= 1 && (p.depth | 0) <= (FR.STARTERS[p.position] || 1) && p.status === 'active') men.push({ id: String(p.id), stats: { games: 1 } });
+    });
+    return { difficulty: set.difficulty, length: set.length, score_for: game.score[me] | 0, score_against: game.score[them] | 0,
+      plays: game.plays.length, yards: mine.yards | 0, touchdowns: (st.passTD | 0) + (st.rushTD | 0) + (st.defTD | 0),
+      turnovers: (st.ints | 0) + (st.fumblesLost | 0), opponent: title(teams.opp), players: men.slice(0, 60) };
+  }
+  function fileFranchise() {
+    var panel = $('frPanel');
+    if (!panel || !FR || !FR.recordLiveGame || !FR.hasFranchise || !FR.hasFranchise() || !game || !game.meta) return;
+    var key = String(game.meta.seed) + ':' + (game.meta.startedAt || 0);
+    var payload = livePayload(), est = FR.liveRewards(payload);
+    panel.hidden = false;
+    panel.innerHTML = '<h3>Your franchise</h3><div class="muted">Filing the result… a game like this is worth about '
+      + esc(est.xp) + ' XP and ' + esc(est.tc) + ' Credits at ' + esc(set.difficulty) + '.</div>';
+    FR.recordLiveGame(key, payload).then(function (r) { paintFranchisePanel(r, payload); },
+      function () { paintFranchisePanel({ ok: false }, payload); });
+  }
+  function paintFranchisePanel(r, payload) {
+    var panel = $('frPanel');
+    if (!panel) return;
+    var html = '<h3>Your franchise</h3>';
+    if (r && r.ok && r.data) {
+      var d = r.data, rank = d.rank || {}, gd = d.gameday || {};
+      html += (GM && GM.rewardPanel) ? GM.rewardPanel(r) : '';
+      if (d.capped) html += '<div class="muted">Today\'s ' + esc(d.gameday && d.gameday.cap || 5) + ' credited games are in. This one counts for the record and the careers, not the Credits.</div>';
+      if (!d.already && !d.capped) html += '<div class="fr-line"><b>+' + esc(d.rank_gain | 0) + '</b> toward rank ' + esc((rank.rank | 0) + 1) + ' · ' + esc(rank.to_next | 0) + ' to go · a Gridiron Cache waits at every rank</div>';
+      if ((d.packs_new | 0) > 0) html += '<div class="fr-pack"><b>A Game Day pack is sealed in the Vault.</b> Five games finished at Pro or harder. <a class="btn btn-go" href="/games/packs/">Open it in the Vault</a></div>';
+      else if (gd.per_pack) html += '<div class="fr-line"><b>' + esc(gd.toward | 0) + ' of ' + esc(gd.per_pack) + '</b> live games at Pro or harder toward a Game Day pack'
+        + (set.difficulty === 'rookie' ? ' · Rookie games count for the record, not the pack' : '') + '</div>';
+      if (d.result && (d.result.men | 0) > 0) html += '<div class="fr-line"><b>' + esc(d.result.men) + '</b> of your men added tonight to the career in your hands</div>';
+      var snap = null; try { snap = FR.snapshot(); } catch (_) {}
+      var prep = snap && FR.prep ? FR.prep(snap.week || {}) : null;
+      if (prep && prep.preparation != null) html += '<div class="fr-line">Preparation <b>' + esc(prep.preparation | 0) + '%</b> this week — the Price Its, drills and film that set the team up</div>';
+    } else if (r && r.queued) {
+      html += '<div class="muted">Saved here. EdgeDesk could not be reached, so this credits the next time you are online.</div>';
+    } else if (r && r.skipped) {
+      panel.hidden = true; return;
+    } else {
+      html += '<div class="muted">This game could not be filed with your franchise' + (r && r.message ? ': ' + esc(r.message) : '.') + '</div>';
+    }
+    panel.innerHTML = html;
+    if (GM && GM.track) GM.track('gridiron_game_filed', { ok: !!(r && r.ok), already: !!(r && r.data && r.data.already), capped: !!(r && r.data && r.data.capped),
+      xp: r && r.data && r.data.rewards ? r.data.rewards.xp : null, packs_new: r && r.data ? r.data.packs_new : null, difficulty: set.difficulty });
   }
   function driveWord(o) {
     return { td: 'touchdown', fg: 'field goal', fg_miss: 'missed field goal', punt: 'punt',
@@ -2387,6 +2490,7 @@
     game = S.build({ me: teams.me, opponent: teams.opp, home: teams.home !== false,
       week: teams.week || 1, season: teams.season || 1, opponentKey: teams.oppKey,
       weather: cond(), settings: set });
+    game.meta.startedAt = Date.now();
     me = game.meta.user;
     startPlaying();
     if (GM && GM.track) GM.track('gridiron_game_started', { difficulty: set.difficulty, mode: set.mode });

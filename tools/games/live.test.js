@@ -635,5 +635,60 @@ console.log('\nPLAY MODE — the thumbs');
   chk('a hundred snaps with every kind of throw all end in a play the books can take', bad === 0 && n === 100, bad + ' bad');
 })();
 
+/* ── 15. THE CARD IS THE MAN: a rating moves what happens on the grass ───── */
+(function ratings() {
+  /* the same forty seeds, the same call, the same script; only one position
+     group's card changes, so any difference is the card's */
+  function withRatings(seed, who, pos, patch) {
+    const g = freshGame(seed);
+    const t = who === 'off' ? G.teamOf(g, g.possession) : G.teamOf(g, G.other(g.possession));
+    const poss = Array.isArray(pos) ? pos : [pos];
+    t.players.forEach(p => { if (poss.indexOf(p.position) >= 0) { p.ratings = p.ratings || {}; Object.keys(patch).forEach(k => { p.ratings[k] = patch[k]; }); } });
+    t._units = null; t._unitsAt = -1;
+    return g;
+  }
+  const N = 40;
+  function mean(fn) { let s = 0; for (let i = 1; i <= N; i++) s += fn(i); return s / N; }
+  /* the quarterback's accuracy: the same slant, thrown on time */
+  const qbComp = acc => mean(s => record({ game: withRatings(s, 'off', 'QB', { acc: acc, arm: 78 }), seed: s, play: 'slant', form: 'gun', def: 'base_3', script: throwAt(1.1, 0) }).out.completion ? 1 : 0);
+  const qbHi = qbComp(96), qbLo = qbComp(42);
+  chk('a 96-accuracy quarterback completes the same slant more often than a 42', qbHi > qbLo + 0.08, qbHi.toFixed(2) + ' vs ' + qbLo.toFixed(2));
+  /* the receivers' routes and speed: separation the throw can use */
+  const wrYards = v => mean(s => { const r = record({ game: withRatings(s, 'off', 'WR', { rte: v, spd: v, hnd: v }), seed: s, play: 'dagger', form: 'gun', def: 'two_deep', script: throwAt(1.6, 0) }); return r.out.completion ? (r.out.yards | 0) : 0; });
+  const wrHi = wrYards(96), wrLo = wrYards(42);
+  chk('receivers who run routes and run away make more of the same dagger', wrHi > wrLo + 1.5, wrHi.toFixed(1) + ' vs ' + wrLo.toFixed(1));
+  /* the back's power and feet: the same inside zone, trucking at first contact */
+  const rbYards = v => mean(s => record({ game: withRatings(s, 'off', 'RB', { pwr: v, elu: v, spd: v }), seed: s, play: 'inside_zone', form: 'i_form', def: 'base_3', script: truckAt(0.9) }).out.yards | 0);
+  const rbHi = rbYards(96), rbLo = rbYards(42);
+  chk('a back with power and feet gains more on the same inside zone', rbHi > rbLo + 0.6, rbHi.toFixed(2) + ' vs ' + rbLo.toFixed(2));
+  /* the line's pass protection: how long the pocket stands when nobody throws */
+  const olHold = v => mean(s => record({ game: withRatings(s, 'off', 'OL', { pbk: v, rbk: v, str: v }), seed: s, play: 'four_verts', form: 'gun', def: 'base_3', script: holdIt }).t);
+  const olHi = olHold(96), olLo = olHold(42);
+  chk('a line that can block keeps the pocket up longer', olHi > olLo + 0.15, olHi.toFixed(2) + 's vs ' + olLo.toFixed(2) + 's');
+  /* the coverage men — corners, safeties, linebackers — on a CONTESTED
+     throw: whoever is on the read, his card is what he covers with. (A quick
+     slant to a man already open is not a test of coverage; it is a test of
+     the quarterback, and the card that decides it is his.) */
+  const cvRun = (v, play, def, when, read) => mean(s => { const r = record({ game: withRatings(s, 'def', ['CB', 'S', 'LB'], { cov: v }), seed: s, play: play, form: 'gun', def: def, script: throwAt(when, read) }); return r.out.completion ? 1 : 0; });
+  const cvYds = (v, play, def, when, read) => mean(s => { const r = record({ game: withRatings(s, 'def', ['CB', 'S', 'LB'], { cov: v }), seed: s, play: play, form: 'gun', def: def, script: throwAt(when, read) }); return r.out.completion ? (r.out.yards | 0) : 0; });
+  const cvHiZ = cvRun(96, 'slant', 'base_3', 1.1, 1), cvLoZ = cvRun(42, 'slant', 'base_3', 1.1, 1);
+  chk('better cover men take completions away on the same contested slant, in zone', cvHiZ < cvLoZ - 0.08, cvHiZ.toFixed(2) + ' vs ' + cvLoZ.toFixed(2));
+  const cvHiM = cvRun(96, 'dagger', 'stack', 1.6, 0), cvLoM = cvRun(42, 'dagger', 'stack', 1.6, 0);
+  chk('and on the same dagger into man', cvHiM < cvLoM - 0.08, cvHiM.toFixed(2) + ' vs ' + cvLoM.toFixed(2));
+  const ydHi = cvYds(96, 'dagger', 'stack', 1.6, 0), ydLo = cvYds(42, 'dagger', 'stack', 1.6, 0);
+  chk('and concede fewer yards on it', ydHi < ydLo - 4, ydHi.toFixed(1) + ' vs ' + ydLo.toFixed(1));
+  /* and a corner's own card reaches the grass: the man the engine hands the actor is the card */
+  chk('a defender\'s actor carries his card, not a unit average', (() => {
+    const g = withRatings(3, 'def', 'CB', { cov: 96 });
+    const defT = G.teamOf(g, G.other(g.possession));
+    const env = G.prepare({ off: G.teamOf(g, g.possession), def: defT, rand: mulberry(9), tick: g.tick, playKey: 'slant', formKey: 'gun', defCall: 'stack', sit: G.situation(g), mem: g.mem[g.possession] });
+    const actors = ST.alignDefense(F.defParts('stack'), 26.665, g.ball, 1, G.unitsOf(defT, g.tick), F.play('slant'), 'gun', {});
+    return actors.filter(a => a.pos === 'CB').every(a => a.player && env.at[a.player.uid || a.player.id] && env.at[a.player.uid || a.player.id].cov > 0.9);
+  })());
+  /* and none of it is a special case: every man's numbers reach the grass through one function each way */
+  const ENG = require('fs').readFileSync(path.join(ROOT, 'games', 'lib', 'gridiron', 'engine.js'), 'utf8');
+  chk('every man is read from his card by one function a side', /function offMan\(pl, pos\)/.test(ENG) && /function defMan\(pl, pos\)/.test(ENG) && /env\.at\[k\] = side === 'off' \? offMan\(pl, pos\) : defMan\(pl, pos\);/.test(ENG));
+})();
+
 console.log('  ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { console.log('\nFAILURES'); fails.forEach(f => console.log(f)); process.exit(1); }

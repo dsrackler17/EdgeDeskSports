@@ -141,6 +141,7 @@ declare
   -- the Vault
   v_pack uuid; vr jsonb; vr2 jsonb; v_ids text[]; v_bad integer; v_prime_guar integer; v_prime_kept integer;
   pu jsonb; pu_id uuid; pu_men integer; pu_kept integer; pu_best integer; pu_opened integer; pu_was integer; pu_now integer;
+  lg jsonb; lg_id uuid; lg_pts integer; lg_men integer; lg_ovr integer;
   v_pity integer; v_pity_ok integer; ptally jsonb; podds jsonb; v_kind text; mrec record; k2 integer;
   -- the lineup, chemistry and the Exchange
   xs uuid; xb uuid; xl jsonb; xl2 jsonb; xlid uuid; xl2id uuid; xpid uuid; xbench uuid; xspare uuid; xr jsonb; xc jsonb; xv jsonb;
@@ -195,7 +196,7 @@ begin
     public.games_level_for(0) = 1 and public.games_level_for(99) = 1 and public.games_level_for(100) = 2
     and public.games_level_for(700) = 5 and public.games_level_for(2699) = 9 and public.games_level_for(2700) = 10
     and public.games_level_for(999999) = 30);
-  perform pg_temp.ok('the economy is versioned', econ->>'version' = 'economy_v1');
+  perform pg_temp.ok('the economy is versioned', econ->>'version' = 'economy_v2');
   perform pg_temp.ok('the economy is the published table',
     (econ->'price_it'->>'xp')::int = 50 and (econ->'pick5_card'->>'xp')::int = 75
     and (econ->'pick5_correct'->>'xp')::int = 10 and (econ->'pick5_perfect'->>'xp')::int = 150
@@ -809,7 +810,7 @@ begin
   v := public.franchise_ledger_recent(5);
   perform pg_temp.ok('the ledger read model is capped and ordered', jsonb_array_length(v) = 5 and (v->0->>'at') >= (v->4->>'at'));
   perform pg_temp.ok('every ledger line names its economy version',
-    (select bool_and(economy = 'economy_v1') from public.franchise_ledger));
+    (select bool_and(economy = 'economy_v2') from public.franchise_ledger));
   perform pg_temp.ok('no ledger line was ever written outside a real record kind',
     (select bool_and(kind in ('price_it','pick5_card','pick5_correct','pick5_perfect','drill_daily','research_open','h2h_locked','h2h_win','founded',
                               'weekly_game','weekly_win','rival_win','season_complete'))
@@ -5703,6 +5704,104 @@ begin
     and has_function_privilege('anon', 'public.franchise_pulls(text)', 'execute')
     and not has_function_privilege('anon', 'public.franchise_pulled_men(uuid)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_pulled_overall(public.game_players)', 'execute'));
+
+
+  -- ═══ 36. THE GAME YOU HOLD COUNTS ════════════════════════════════════════
+  -- economy_v2 · packs_v3. A live game filed with its key: bounded, credited
+  -- once by the table scaled by the tier, capped a day, weighed toward the
+  -- rank, the men's careers in your hands kept apart from the simulation's,
+  -- and every fifth game at Pro or harder sealing a Game Day pack.
+  perform pg_temp.as_owner();
+  select id into lg_id from public.game_players where franchise_id = xs and status = 'active' and position = 'QB' order by depth, overall desc limit 1;
+  lg_pts := (public.franchise_rank_report(xs)->>'points')::int;
+  perform pg_temp.as_anon();
+  lg := public.franchise_record_live_game('loop:1', jsonb_build_object('difficulty', 'pro', 'length', 'blitz', 'score_for', 24, 'score_against', 17,
+          'plays', 60, 'yards', 312, 'touchdowns', 3, 'turnovers', 1, 'opponent', 'North Fork Greywolves',
+          'players', jsonb_build_array(
+            jsonb_build_object('id', lg_id, 'stats', jsonb_build_object('games', 1, 'att', 22, 'cmp', 15, 'yds', 212, 'td', 2, 'int', 1, 'bogus', 9, 'yds_evil', -50, 'sacks', 5000)),
+            jsonb_build_object('id', gen_random_uuid(), 'stats', jsonb_build_object('yds', 500)),
+            jsonb_build_object('id', 'not-an-id', 'stats', jsonb_build_object('yds', 500)))), SEC_XS);
+  perform pg_temp.ok('a live game files once by the economy''s own numbers: 60+40 XP and 15 for the yards, 25+25 Credits and 21 for the play, a Coach Point for the win',
+    (lg->>'ok')::boolean and not (lg->>'already')::boolean and not (lg->>'capped')::boolean
+    and (lg->'rewards'->>'xp')::int = 115 and (lg->'rewards'->>'tc')::int = 71 and (lg->'rewards'->>'cp')::int = 1, (lg->'rewards')::text);
+  perform pg_temp.ok('and weighs two toward the rank', (lg->>'rank_gain')::int = 2 and (lg->'rank'->>'points')::int = lg_pts + 2, lg->>'rank_gain');
+  perform pg_temp.ok('the answer says how the Game Day pack is coming', (lg->'gameday'->>'counted')::int = 1 and (lg->'gameday'->>'per_pack')::int = 5 and (lg->'gameday'->>'toward')::int = 1 and (lg->'gameday'->>'packs')::int = 0, (lg->'gameday')::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the man''s career in your hands took his line: only the keys a career knows, nothing negative, nothing absurd, and not the simulation''s career',
+    (select (live_stats->>'yds')::int = 212 and (live_stats->>'games')::int = 1 and (live_stats->>'att')::int = 22
+            and not live_stats ? 'bogus' and not live_stats ? 'yds_evil' and not live_stats ? 'sacks'
+            and coalesce((career_stats->>'yds')::int, 0) < 212
+       from public.game_players where id = lg_id),
+    (select live_stats::text from public.game_players where id = lg_id));
+  perform pg_temp.ok('a stranger''s id and a string that is not an id took nothing, and the answer counted one man',
+    (select count(*) from public.game_players where franchise_id = xs and live_stats <> '{}'::jsonb) = 1 and (lg->'result'->>'men')::int = 1);
+  perform pg_temp.ok('the ledger carries three lines for it: XP, Credits, a Coach Point',
+    (select count(*) from public.franchise_ledger where franchise_id = xs and kind = 'live_game' and key = 'loop:1') = 3
+    and (select sum(delta) from public.franchise_ledger where franchise_id = xs and kind = 'live_game' and key = 'loop:1' and currency = 'tc') = 71);
+  perform pg_temp.as_anon();
+  lg := public.franchise_record_live_game('loop:1', jsonb_build_object('difficulty', 'pro', 'length', 'blitz', 'score_for', 24, 'score_against', 17, 'plays', 60, 'yards', 312, 'touchdowns', 3), SEC_XS);
+  perform pg_temp.ok('the same key filed again credits nothing twice and says so',
+    (lg->>'already')::boolean and (lg->'rewards'->>'xp')::int = 0 and (lg->>'rank_gain')::int = 0
+    and (lg->'rank'->>'points')::int = lg_pts + 2);
+  perform pg_temp.ok('a result that is not a result is refused: a score of 150, a difficulty that does not exist, nine touchdowns in seven points, a key too short',
+    pg_temp.raises('select public.franchise_record_live_game(''bad:one'', ''{"difficulty":"pro","length":"blitz","score_for":150,"score_against":3,"plays":40}''::jsonb, ''' || SEC_XB || ''')')
+    and pg_temp.raises('select public.franchise_record_live_game(''bad:two'', ''{"difficulty":"god","length":"blitz","score_for":10,"score_against":3,"plays":40}''::jsonb, ''' || SEC_XB || ''')')
+    and pg_temp.raises('select public.franchise_record_live_game(''bad:three'', ''{"difficulty":"pro","length":"blitz","score_for":7,"score_against":3,"plays":40,"touchdowns":9}''::jsonb, ''' || SEC_XB || ''')')
+    and pg_temp.raises('select public.franchise_record_live_game(''x'', ''{"difficulty":"pro","length":"blitz","score_for":7,"score_against":3,"plays":40}''::jsonb, ''' || SEC_XB || ''')')
+    and pg_temp.raises('select public.franchise_record_live_game(''bad:four'', ''{"difficulty":"pro","length":"blitz","score_for":"lots","score_against":3,"plays":40}''::jsonb, ''' || SEC_XB || ''')'));
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and nothing of them was written', (select count(*) from public.franchise_activity where franchise_id = xb and kind like 'live_game%') = 0);
+  perform pg_temp.as_anon();
+  -- the tier scales it; a loss pays the game and nothing for the win; Rookie pays six tenths
+  lg := public.franchise_record_live_game('loop:2', jsonb_build_object('difficulty', 'legend', 'length', 'arcade', 'score_for', 10, 'score_against', 21, 'plays', 30, 'yards', 90, 'touchdowns', 1, 'turnovers', 2), SEC_XS);
+  perform pg_temp.ok('a Legend loss pays the game scaled by the tier and nothing for the win: 78 XP, 36 Credits, no Coach Point',
+    (lg->'rewards'->>'xp')::int = 78 and (lg->'rewards'->>'tc')::int = 36 and (lg->'rewards'->>'cp')::int = 0, (lg->'rewards')::text);
+  lg := public.franchise_record_live_game('loop:r', jsonb_build_object('difficulty', 'rookie', 'length', 'arcade', 'score_for', 14, 'score_against', 7, 'plays', 30, 'yards', 120, 'touchdowns', 2), SEC_XB);
+  perform pg_temp.ok('a Rookie win pays six tenths: 63 XP, 36 Credits, and the Coach Point', (lg->'rewards'->>'xp')::int = 63 and (lg->'rewards'->>'tc')::int = 36 and (lg->'rewards'->>'cp')::int = 1, (lg->'rewards')::text);
+  perform pg_temp.ok('and a Rookie game counts for the record, not toward the Game Day pack', (lg->'gameday'->>'played')::int = 1 and (lg->'gameday'->>'counted')::int = 0);
+  -- three more at Pro or harder, and the fifth seals the pack
+  lg := public.franchise_record_live_game('loop:3', jsonb_build_object('difficulty', 'pro', 'length', 'blitz', 'score_for', 21, 'score_against', 20, 'plays', 50, 'yards', 250, 'touchdowns', 3), SEC_XS);
+  lg := public.franchise_record_live_game('loop:4', jsonb_build_object('difficulty', 'allpro', 'length', 'blitz', 'score_for', 7, 'score_against', 14, 'plays', 50, 'yards', 180, 'touchdowns', 1), SEC_XS);
+  perform pg_temp.ok('four games in, the pack is one away', (lg->'gameday'->>'counted')::int = 4 and (lg->'gameday'->>'next_in')::int = 1 and (lg->'gameday'->>'packs')::int = 0, (lg->'gameday')::text);
+  lg := public.franchise_record_live_game('loop:5', jsonb_build_object('difficulty', 'pro', 'length', 'blitz', 'score_for', 28, 'score_against', 10, 'plays', 55, 'yards', 340, 'touchdowns', 4), SEC_XS);
+  perform pg_temp.ok('the fifth game at Pro or harder seals a Game Day pack, and the answer says so', (lg->>'packs_new')::int >= 1 and (lg->'gameday'->>'packs')::int = 1 and (lg->'gameday'->>'toward')::int = 0, (lg->'gameday')::text || ' new ' || (lg->>'packs_new'));
+  v := public.franchise_packs_board(SEC_XS);
+  perform pg_temp.ok('the board shows it sealed, named, with its odds printed, and it can be opened',
+    exists (select 1 from jsonb_array_elements(v->'sealed') sk where sk->>'kind' = 'gameday_pack' and sk->>'name' = 'Game Day Pack' and sk->>'art' = 'gameday'
+             and (sk->'odds'->>'low')::int between 40 and 99 and (sk->'odds'->'tiers'->>'prime')::numeric >= 0), (v->'sealed')::text);
+  select (sk->>'id')::uuid into v_pack from jsonb_array_elements(v->'sealed') sk where sk->>'kind' = 'gameday_pack';
+  perform pg_temp.as_owner();
+  lg_ovr := (public.franchise_team_rating(xs)->>'overall')::int;
+  perform pg_temp.as_anon();
+  vr := public.franchise_pack_open_id(v_pack, SEC_XS);
+  perform pg_temp.ok('opened: three men, drawn at the positions the team is thinnest, inside the printed band',
+    jsonb_array_length(vr->'players') = 3 and (select bool_and((m->>'overall')::int between (vr->'range'->0)::int and (vr->'range'->1)::int) from jsonb_array_elements(vr->'players') m), vr::text);
+  select m into v from jsonb_array_elements(vr->'players') m order by (m->>'overall')::int desc limit 1;
+  vr := public.franchise_pack_keep((v->>'id')::uuid, SEC_XS);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('kept: he is on the roster, from the pack', (vr->>'ok')::boolean and (select acquired_source = 'pack' and status = 'active' from public.game_players where id = (v->>'id')::uuid), vr::text);
+  perform pg_temp.ok('and the team is no worse for it', (public.franchise_team_rating(xs)->>'overall')::int >= lg_ovr);
+  -- the sixth credited game of the day: the record and the careers take it, the Credits do not
+  perform pg_temp.as_anon();
+  lg := public.franchise_record_live_game('loop:6', jsonb_build_object('difficulty', 'pro', 'length', 'blitz', 'score_for', 17, 'score_against', 14, 'plays', 50, 'yards', 200, 'touchdowns', 2,
+          'players', jsonb_build_array(jsonb_build_object('id', lg_id, 'stats', jsonb_build_object('games', 1, 'yds', 100)))), SEC_XS);
+  perform pg_temp.ok('the sixth game of the day is capped: filed, careers kept, nothing credited, nothing toward the rank or the pack',
+    (lg->>'ok')::boolean and (lg->>'capped')::boolean and (lg->'rewards'->>'xp')::int = 0 and (lg->'rewards'->>'tc')::int = 0
+    and (lg->>'rank_gain')::int = 0 and (lg->'gameday'->>'counted')::int = 5, lg::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the capped game is on the record under its own kind, and the man''s career still grew',
+    (select kind from public.franchise_activity where franchise_id = xs and key = 'loop:6') = 'live_game_extra'
+    and (select (live_stats->>'yds')::int from public.game_players where id = lg_id) = 312
+    and (select count(*) from public.franchise_ledger where franchise_id = xs and key = 'loop:6') = 0);
+  -- the home carries the weapon and the count
+  perform pg_temp.as_anon();
+  v := public.franchise_home(SEC_XS);
+  perform pg_temp.ok('the home names the newest man kept from a pack, with no game yet in your hands, and how the live games count',
+    v->'weapon'->>'name' is not null and (v->'weapon'->>'games_since')::int = 0 and v->'weapon'->>'tier' is not null
+    and (v->'live'->>'counted')::int = 5 and (v->'live'->>'today')::int = 5, (v->'weapon')::text || ' ' || (v->'live')::text);
+  perform pg_temp.ok('the doors: the record is open to a client, the progress is the server''s',
+    has_function_privilege('anon', 'public.franchise_record_live_game(text, jsonb, text)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_gameday_progress(uuid)', 'execute'));
 
 end
 $test$;

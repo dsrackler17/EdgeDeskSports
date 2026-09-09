@@ -171,7 +171,8 @@
     rookie:     { hue: '#5c9dff', deep: '#0f1d33', word: 'ROOKIE', line: 'Three young men, where you are thin.' },
     postseason: { hue: '#d9a441', deep: '#2a2010', word: 'POSTSEASON', line: 'A season seen out.' },
     vault:      { hue: '#f2c744', deep: '#2b1e08', word: 'CHAMPIONSHIP', line: 'Four men. Two kept. One of them Prime.' },
-    scout:      { hue: '#9d7bff', deep: '#1d1530', word: "SCOUT'S FIND", line: 'Read the real games well.' }
+    scout:      { hue: '#9d7bff', deep: '#1d1530', word: "SCOUT'S FIND", line: 'Read the real games well.' },
+    gameday:    { hue: '#e2664b', deep: '#2a140f', word: 'GAME DAY', line: 'Five games you finished yourself.' }
   };
   function artOf(kind) { return ART[kind] || ART.cache; }
 

@@ -27,9 +27,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260909f">
-<link rel="stylesheet" href="/games/franchise.css?v=20260909f">
-<link rel="stylesheet" href="/games/vault.css?v=20260909f">
+<link rel="stylesheet" href="/games/games.css?v=20260909g">
+<link rel="stylesheet" href="/games/franchise.css?v=20260909g">
+<link rel="stylesheet" href="/games/vault.css?v=20260909g">
 <style>
 /* the Vault's shelf: one tile per sealed pack, the pack's own colour on it */
 .vs-grid{display:grid;gap:10px;margin-top:10px}
@@ -38,7 +38,7 @@
   --vh:#3fb883;--vd:#0d2a1e}
 .vs::before{content:'';position:absolute;inset:0;background:radial-gradient(90% 60% at 100% 0%,color-mix(in srgb,var(--vh) 22%,transparent),transparent 70%);pointer-events:none}
 .vs-art-cache{--vh:#3fb883;--vd:#0d2a1e}.vs-art-rookie{--vh:#5c9dff;--vd:#0f1d33}.vs-art-postseason{--vh:#d9a441;--vd:#2a2010}
-.vs-art-vault{--vh:#f2c744;--vd:#2b1e08}.vs-art-scout{--vh:#9d7bff;--vd:#1d1530}
+.vs-art-vault{--vh:#f2c744;--vd:#2b1e08}.vs-art-scout{--vh:#9d7bff;--vd:#1d1530}.vs-art-gameday{--vh:#e2664b;--vd:#2a140f}
 .vs-top{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--vh)}
 .vs-top .m{margin-left:auto;color:var(--faint);font-weight:600;letter-spacing:.08em}
 .vs-name{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin-top:8px;line-height:1.1}
@@ -65,7 +65,7 @@
 .vs-earn{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
 .vs-earn li{display:flex;gap:10px;align-items:baseline;font-size:13.5px;line-height:1.4}
 .vs-earn li .k{flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px solid var(--line2)}
-.vs-earn li .k.cache{color:#3fb883}.vs-earn li .k.rookie{color:#5c9dff}.vs-earn li .k.postseason{color:#d9a441}.vs-earn li .k.vault{color:#f2c744}.vs-earn li .k.scout{color:#9d7bff}
+.vs-earn li .k.cache{color:#3fb883}.vs-earn li .k.rookie{color:#5c9dff}.vs-earn li .k.postseason{color:#d9a441}.vs-earn li .k.vault{color:#f2c744}.vs-earn li .k.scout{color:#9d7bff}.vs-earn li .k.gameday{color:#e2664b}
 /* kept men, and a card of one's own */
 .mk-hist .tier{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line2);border-radius:999px;padding:2px 6px;margin-left:6px;color:var(--dim)}
 .mk-hist li{cursor:pointer}
@@ -137,19 +137,19 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260909f"></script>
-<script src="/games/lib/scoring.js?v=20260909f"></script>
-<script src="/games/lib/challenge.js?v=20260909f"></script>
-<script src="/games/lib/research_state.js?v=20260909f"></script>
-<script src="/games/lib/attribution.js?v=20260909f"></script>
-<script src="/games/lib/store.js?v=20260909f"></script>
-<script src="/games/lib/dynasty.js?v=20260909f"></script>
-<script src="/games/lib/social.js?v=20260909f"></script>
-<script src="/games/lib/auth.js?v=20260909f"></script>
-<script src="/games/lib/gridiron/profile.js?v=20260909f"></script>
-<script src="/games/lib/franchise.js?v=20260909f"></script>
-<script src="/games/lib/vault.js?v=20260909f"></script>
-<script src="/games/games.js?v=20260909f"></script>
+<script src="/games/lib/week.js?v=20260909g"></script>
+<script src="/games/lib/scoring.js?v=20260909g"></script>
+<script src="/games/lib/challenge.js?v=20260909g"></script>
+<script src="/games/lib/research_state.js?v=20260909g"></script>
+<script src="/games/lib/attribution.js?v=20260909g"></script>
+<script src="/games/lib/store.js?v=20260909g"></script>
+<script src="/games/lib/dynasty.js?v=20260909g"></script>
+<script src="/games/lib/social.js?v=20260909g"></script>
+<script src="/games/lib/auth.js?v=20260909g"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260909g"></script>
+<script src="/games/lib/franchise.js?v=20260909g"></script>
+<script src="/games/lib/vault.js?v=20260909g"></script>
+<script src="/games/games.js?v=20260909g"></script>
 <script>
 /* STALE SCRIPT GUARD — the same belt every franchise page wears. */
 (function(){

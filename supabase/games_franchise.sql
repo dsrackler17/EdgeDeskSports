@@ -164,7 +164,7 @@ create or replace function public.franchise_economy()
 returns jsonb language sql immutable
 set search_path = pg_catalog, pg_temp as $$
   select jsonb_build_object(
-    'version', 'economy_v1',
+    'version', 'economy_v2',
     'price_it',      jsonb_build_object('xp', 50, 'sp_base', 5, 'sp_per_score', 0.35, 'tc_base', 10, 'tc_per_ten', 1),
     'pick5_card',    jsonb_build_object('xp', 75, 'tc', 25),
     'pick5_correct', jsonb_build_object('xp', 10, 'tc', 15),
@@ -195,7 +195,15 @@ set search_path = pg_catalog, pg_temp as $$
     'conf_playoff',  jsonb_build_object('xp', 100, 'cp', 1),
     'conf_title',    jsonb_build_object('xp', 400, 'tc', 300, 'cp', 10),
     'import_unverified_price_it', jsonb_build_object('xp', 50),
-    'import_unverified_pick5',    jsonb_build_object('xp', 75)
+    'import_unverified_pick5',    jsonb_build_object('xp', 75),
+    -- THE GAME YOU HOLD (Phase 21): a live game finished, a live game won,
+    -- and what the performance itself is worth — capped a day so a grind
+    -- pays nothing, scaled by the tier the defence was set to
+    'live_game',     jsonb_build_object('xp', 60, 'tc', 25),
+    'live_win',      jsonb_build_object('xp', 40, 'tc', 25, 'cp', 1),
+    'live_perf',     jsonb_build_object('tc_per_td', 3, 'tc_per_100', 4, 'tc_max', 30, 'xp_per_100', 5, 'xp_max', 40),
+    'live_cap',      jsonb_build_object('per_day', 5),
+    'live_tier',     jsonb_build_object('rookie', 0.6, 'pro', 1, 'allpro', 1.15, 'legend', 1.3)
   );
 $$;
 
@@ -447,7 +455,7 @@ create table if not exists public.franchise_ledger (
   kind           text not null,
   key            text not null,
   label          text,
-  economy        text not null default 'economy_v1',
+  economy        text not null default 'economy_v2',
   created_at     timestamptz not null default now(),
   unique (franchise_id, currency, kind, key)
 );
@@ -4639,6 +4647,16 @@ begin
     -- the conference (Phase 6): where the franchise stands in its league of
     -- friends, whether a round is waiting to be played, and the titles won
     'conference', v_conf,
+    -- THE GAME YOU HOLD (Phase 21): the man most recently kept from a pack,
+    -- for the storyline on Game Day, and how the live games are counting
+    'weapon', (select jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'overall', p.overall,
+                 'depth', p.depth, 'tier', public.franchise_card_tier(p.overall), 'kept_at', a.created_at, 'live_stats', p.live_stats,
+                 'games_since', (select count(*) from public.franchise_activity g
+                                  where g.franchise_id = f.id and g.kind in ('live_game', 'live_game_extra') and g.created_at > a.created_at))
+                 from public.game_players p join public.franchise_activity a on a.franchise_id = f.id and a.kind = 'signing' and a.key = p.id::text
+                where p.franchise_id = f.id and p.status = 'active' and p.acquired_source = 'pack'
+                order by a.created_at desc limit 1),
+    'live', public.franchise_gameday_progress(f.id),
     'economy', public.franchise_economy()->>'version');
 end;
 $$;
@@ -4655,7 +4673,7 @@ begin
       'age', p.age, 'overall', p.overall, 'archetype', p.archetype, 'dev_tier', p.dev_tier, 'potential', p.potential,
       'stamina', p.stamina, 'chemistry', p.chemistry, 'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits,
       'depth', p.depth, 'status', p.status, 'acquired_source', p.acquired_source, 'acquired_season', p.acquired_season,
-      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats,
+      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats, 'live_stats', p.live_stats,
       -- hurt or fit, and when he is back (Phase 7)
       'available', public.franchise_is_available(p.status, p.injured_until),
       'injured_until', p.injured_until, 'injury', p.injury)
@@ -6903,7 +6921,8 @@ alter table public.franchise_activity add constraint franchise_activity_kind_che
    'conf_joined','conf_season','conf_game','conf_win','conf_playoff','conf_title',
    'bowl_bid','injury','trade',
    'staff_hire','staff_promote','staff_fire',
-   'program'));
+   'program',
+   'live_game','live_game_extra'));
 
 insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
   ('dev_first',  'Development Program', 'Put a player through his first development program.', null, 110),
@@ -7393,7 +7412,7 @@ returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
     'weights', jsonb_build_object(
       'weekly_game', 3, 'bowl_bid', 3, 'conf_game', 3, 'fc_played', 2,
       'price_it', 1, 'drill_daily', 1, 'research_open', 1,
-      'pick5_card', 2, 'season_complete', 5));
+      'pick5_card', 2, 'season_complete', 5, 'live_game', 2));
 $$;
 
 -- WHAT THE NEXT RANK COSTS: 15 points, and three more for every rank already
@@ -9516,7 +9535,7 @@ begin
       'age', p.age, 'overall', p.overall, 'archetype', p.archetype, 'dev_tier', p.dev_tier, 'potential', p.potential,
       'stamina', p.stamina, 'chemistry', p.chemistry, 'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits,
       'depth', p.depth, 'status', p.status, 'acquired_source', p.acquired_source, 'acquired_season', p.acquired_season,
-      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats,
+      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats, 'live_stats', p.live_stats,
       -- hurt or fit, and when he is back (Phase 7)
       'available', public.franchise_is_available(p.status, p.injured_until),
       'injured_until', p.injured_until, 'injury', p.injury)
@@ -9666,7 +9685,7 @@ alter table public.franchises add column if not exists packs_since_prime integer
 create or replace function public.franchise_pack_defs()
 returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
   select '{
-    "version": "packs_v2",
+    "version": "packs_v3",
     "prime_at": 75,
     "kinds": {
       "gridiron_cache":     {"name":"Gridiron Cache","art":"cache","size":3,"keep":1,"floor_below":10,"edge":"rank","edge_bonus":0,
@@ -9683,7 +9702,10 @@ returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
                              "earned":"a bowl won","blurb":"Four men, two kept, one of them Prime or better. The best pack in the game, and it is only ever won."},
       "scouts_find":        {"name":"Scout''s Find","art":"scout","size":2,"keep":1,"floor_below":4,"edge":"rank","edge_bonus":2,
                              "pool":"need","guarantee":null,"pity":null,"potential_lift":6,
-                             "earned":"three Price Its scoring 80 or better in one week","blurb":"Read the real games well and the scouting department finds you somebody with a ceiling."}
+                             "earned":"three Price Its scoring 80 or better in one week","blurb":"Read the real games well and the scouting department finds you somebody with a ceiling."},
+      "gameday_pack":       {"name":"Game Day Pack","art":"gameday","size":3,"keep":1,"floor_below":8,"edge":"rank","edge_bonus":2,
+                             "pool":"need","guarantee":null,"pity":null,
+                             "earned":"five live games finished at Pro or harder","blurb":"Played, not simulated. Every fifth game you finish with your own thumbs at Pro or harder, the Vault seals one of these."}
     }
   }'::jsonb;
 $$;
@@ -9743,6 +9765,10 @@ begin
               and coalesce((a.detail->>'score')::int, 0) >= 80 and a.created_at > now() - interval '56 days'
             group by a.week_key having count(*) >= 3 loop
     if public.franchise_pack_grant(p_franchise, 'scouts_find', r.week_key, 'Three sharp reads, week ' || r.week_key) is not null then n := n + 1; end if;
+  end loop;
+  -- THE GAME YOU HOLD (Phase 21): every fifth live game finished at Pro or harder
+  for i in 1..coalesce((public.franchise_gameday_progress(p_franchise)->>'packs')::int, 0) loop
+    if public.franchise_pack_grant(p_franchise, 'gameday_pack', i::text, 'Game Day, five played') is not null then n := n + 1; end if;
   end loop;
   return n;
 end;
@@ -10174,7 +10200,7 @@ begin
   if not found then return null; end if;
   if p.pack_id is not null then select * into k from public.franchise_packs where id = p.pack_id; end if;
   return public.franchise_prospect_json(p) || public.franchise_profile_of(p) || jsonb_build_object(
-    'history', p.history, 'career_stats', p.career_stats, 'season_stats', p.season_stats,
+    'history', p.history, 'career_stats', p.career_stats, 'season_stats', p.season_stats, 'live_stats', p.live_stats,
     'acquired_season', p.acquired_season, 'retired_season', p.retired_season,
     'available', public.franchise_is_available(p.status, p.injured_until), 'injury', p.injury, 'injured_until', p.injured_until,
     'developed', p.developed, 'programs', p.programs,
@@ -10536,7 +10562,8 @@ alter table public.franchise_activity add constraint franchise_activity_kind_che
    'bowl_bid','injury','trade',
    'staff_hire','staff_promote','staff_fire',
    'program','pack',
-   'exchange_list','exchange_sale','exchange_buy'));
+   'exchange_list','exchange_sale','exchange_buy',
+   'live_game','live_game_extra'));
 
 insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
   ('exchange_first_sale', 'First Sale',     'Sold a player on the Exchange.', null, 130),
@@ -10866,7 +10893,7 @@ begin
       'age', p.age, 'overall', p.overall, 'archetype', p.archetype, 'dev_tier', p.dev_tier, 'potential', p.potential,
       'stamina', p.stamina, 'chemistry', p.chemistry, 'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits,
       'depth', p.depth, 'status', p.status, 'acquired_source', p.acquired_source, 'acquired_season', p.acquired_season,
-      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats,
+      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats, 'live_stats', p.live_stats,
       'available', public.franchise_is_available(p.status, p.injured_until),
       'injured_until', p.injured_until, 'injury', p.injury,
       -- the open listing he carries, if any (Phase 19)
@@ -11002,6 +11029,137 @@ select public.games_schema_note('franchise', 20, 'the pull record: every pack yo
 commit;
 
 -- ===========================================================================
+-- PHASE 21 — THE GAME YOU HOLD COUNTS
+--
+-- The live game — the one played with thumbs on glass — was the best thing
+-- in the building and the only thing that fed nothing back. A finished game
+-- is filed here with its own key: the score, the yards, the touchdowns, the
+-- difficulty, and every man of yours with his line. The server checks the
+-- shape (a score of 150 is not a score; nine touchdowns do not fit in seven
+-- points), credits it once by the economy's own table scaled by the tier the
+-- defence was set to, caps the credited games at five a day so a grind pays
+-- nothing while the record and the careers still take it, weighs it toward
+-- the rank (so the Gridiron Cache is closer for having played), and seals a
+-- Game Day pack for every fifth game finished at Pro or harder.
+--
+-- The men's lines land in live_stats — a career in your hands, kept apart
+-- from the simulation's career_stats so neither can quietly inflate the
+-- other — and only the keys a career knows, bounded, for men who are yours.
+-- ===========================================================================
+begin;
+
+alter table public.game_players add column if not exists live_stats jsonb not null default '{}'::jsonb;
+
+-- how the live games are counting toward the Game Day pack: the credited
+-- games finished at Pro or harder, five to a pack
+create or replace function public.franchise_gameday_progress(p_franchise uuid)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare v_n integer; v_all integer; v_today integer; v_per integer := 5;
+begin
+  select count(*) filter (where detail->>'difficulty' in ('pro', 'allpro', 'legend')), count(*),
+         count(*) filter (where day_key = public.games_day_key(now()))
+    into v_n, v_all, v_today
+    from public.franchise_activity where franchise_id = p_franchise and kind = 'live_game';
+  return jsonb_build_object('played', v_all, 'counted', v_n, 'per_pack', v_per, 'packs', v_n / v_per,
+    'toward', v_n % v_per, 'next_in', v_per - (v_n % v_per),
+    'today', v_today, 'cap', (public.franchise_economy()->'live_cap'->>'per_day')::int);
+end;
+$$;
+
+create or replace function public.franchise_record_live_game(p_key text, p_game jsonb, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); econ jsonb := public.franchise_economy(); v_day text := public.games_day_key(now());
+  v_diff text; v_len text; v_for integer; v_against integer; v_plays integer; v_yards integer; v_tds integer; v_to integer;
+  v_won boolean; v_tier numeric; v_xp integer := 0; v_tc integer := 0; v_cp integer := 0; v_today integer; v_capped boolean := false;
+  v_kind text; v_existing jsonb; ln jsonb; v_stats jsonb; v_k text; v_val numeric; v_men integer := 0; v_detail jsonb; v_packs integer;
+  v_before jsonb; v_rep jsonb;
+  allowed text[] := array['games','att','cmp','yds','td','int','car','rush_yds','rush_td','rec','rec_yds','rec_td','tkl','sacks','tfl','pd','fg','fga','xp'];
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  if p_key is null or length(p_key) < 6 or length(p_key) > 120 then raise exception 'that is not a game key' using errcode = '22023'; end if;
+  if p_game is null or jsonb_typeof(p_game) <> 'object' then raise exception 'that is not a game' using errcode = '22023'; end if;
+  v_diff := coalesce(p_game->>'difficulty', 'pro'); v_len := coalesce(p_game->>'length', 'blitz');
+  if v_diff not in ('rookie', 'pro', 'allpro', 'legend') or v_len not in ('arcade', 'blitz', 'quick', 'standard') then
+    raise exception 'that is not a game' using errcode = '22023';
+  end if;
+  begin
+    v_for := (p_game->>'score_for')::int; v_against := (p_game->>'score_against')::int; v_plays := (p_game->>'plays')::int;
+    v_yards := coalesce((p_game->>'yards')::int, 0); v_tds := coalesce((p_game->>'touchdowns')::int, 0); v_to := coalesce((p_game->>'turnovers')::int, 0);
+  exception when others then raise exception 'that is not a game result' using errcode = '22023'; end;
+  -- THE SHAPE OF A RESULT. Not a simulation of the game — a check that the
+  -- numbers could have come from one.
+  if v_for is null or v_against is null or v_plays is null
+     or v_for not between 0 and 99 or v_against not between 0 and 99 or v_plays not between 8 and 250
+     or v_yards not between -60 and 999 or v_tds not between 0 and 15 or v_to not between 0 and 12
+     or v_tds * 6 > v_for then
+    raise exception 'that is not a game result' using errcode = '22023';
+  end if;
+  -- filed once: the same key comes back with what it already paid
+  select detail into v_existing from public.franchise_activity
+   where franchise_id = v_f and kind in ('live_game', 'live_game_extra') and key = p_key;
+  if v_existing is not null then
+    return jsonb_build_object('ok', true, 'already', true, 'result', v_existing, 'capped', coalesce((v_existing->>'capped')::boolean, false),
+      'rewards', jsonb_build_object('xp', 0, 'tc', 0, 'cp', 0), 'rank_gain', 0, 'packs_new', 0,
+      'rank', public.franchise_rank_report(v_f), 'gameday', public.franchise_gameday_progress(v_f), 'totals', public.franchise_totals(v_f));
+  end if;
+  perform 1 from public.franchises where id = v_f for update;
+  select count(*) into v_today from public.franchise_activity where franchise_id = v_f and kind = 'live_game' and day_key = v_day;
+  v_capped := v_today >= (econ->'live_cap'->>'per_day')::int;
+  v_kind := case when v_capped then 'live_game_extra' else 'live_game' end;
+  v_won := v_for > v_against;
+  v_tier := coalesce((econ->'live_tier'->>v_diff)::numeric, 1);
+  if not v_capped then
+    v_xp := (econ->'live_game'->>'xp')::int; v_tc := (econ->'live_game'->>'tc')::int;
+    if v_won then
+      v_xp := v_xp + (econ->'live_win'->>'xp')::int; v_tc := v_tc + (econ->'live_win'->>'tc')::int; v_cp := (econ->'live_win'->>'cp')::int;
+    end if;
+    -- the performance itself, capped: touchdowns and every hundred yards
+    v_tc := v_tc + least((econ->'live_perf'->>'tc_max')::int,
+                         v_tds * (econ->'live_perf'->>'tc_per_td')::int + (greatest(0, v_yards) / 100) * (econ->'live_perf'->>'tc_per_100')::int);
+    v_xp := v_xp + least((econ->'live_perf'->>'xp_max')::int, (greatest(0, v_yards) / 100) * (econ->'live_perf'->>'xp_per_100')::int);
+    v_xp := round(v_xp * v_tier)::int; v_tc := round(v_tc * v_tier)::int;
+  end if;
+  v_before := public.franchise_rank_report(v_f);
+  -- THE MEN: only yours, only the keys a career knows, nothing negative,
+  -- nothing past a season's worth in one game; a stranger's id takes nothing
+  for ln in select x from jsonb_array_elements(coalesce(p_game->'players', '[]'::jsonb)) x limit 60 loop
+    if ln->>'id' is null or ln->>'id' !~ '^[0-9a-fA-F-]{36}$' or jsonb_typeof(ln->'stats') <> 'object' then continue; end if;
+    v_stats := '{}'::jsonb;
+    for v_k, v_val in select key, case when jsonb_typeof(value) = 'number' then (value #>> '{}')::numeric else null end from jsonb_each(ln->'stats') loop
+      if v_k = any(allowed) and v_val is not null and v_val between 0 and 999 then v_stats := v_stats || jsonb_build_object(v_k, floor(v_val)::int); end if;
+    end loop;
+    if v_stats = '{}'::jsonb then continue; end if;
+    update public.game_players set live_stats = public.games_jsonb_sum(live_stats, v_stats), updated_at = now()
+     where id = (ln->>'id')::uuid and franchise_id = v_f and status = 'active';
+    if found then v_men := v_men + 1; end if;
+  end loop;
+  v_detail := jsonb_build_object('key', p_key, 'difficulty', v_diff, 'length', v_len, 'score_for', v_for, 'score_against', v_against,
+    'won', v_won, 'plays', v_plays, 'yards', v_yards, 'touchdowns', v_tds, 'turnovers', v_to,
+    'opponent', left(coalesce(p_game->>'opponent', ''), 60), 'men', v_men, 'capped', v_capped, 'tier', v_tier,
+    'rewards', jsonb_build_object('xp', v_xp, 'tc', v_tc, 'cp', v_cp), 'version', econ->>'version');
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, verified, detail)
+  values (v_f, v_kind, p_key, public.games_week_key(now()), v_day, false, v_detail);
+  if v_xp > 0 then perform public.franchise_credit(v_f, 'xp', v_xp, 'live_game', p_key, 'Game Day, ' || v_for || '–' || v_against); end if;
+  if v_tc > 0 then perform public.franchise_credit(v_f, 'tc', v_tc, 'live_game', p_key, 'Game Day, ' || v_for || '–' || v_against); end if;
+  if v_cp > 0 then perform public.franchise_credit(v_f, 'cp', v_cp, 'live_game', p_key, 'Game Day, won'); end if;
+  v_packs := public.franchise_packs_sync(v_f);
+  v_rep := public.franchise_rank_report(v_f);
+  return jsonb_build_object('ok', true, 'already', false, 'result', v_detail, 'capped', v_capped,
+    'rewards', jsonb_build_object('xp', v_xp, 'tc', v_tc, 'cp', v_cp),
+    'rank', v_rep, 'rank_gain', (v_rep->>'points')::int - (v_before->>'points')::int,
+    'packs_new', v_packs, 'gameday', public.franchise_gameday_progress(v_f),
+    'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+grant execute on function public.franchise_record_live_game(text, jsonb, text) to anon, authenticated;
+revoke all on function public.franchise_gameday_progress(uuid) from public, anon, authenticated;
+
+select public.games_schema_note('franchise', 21, 'the game you hold counts: live results, careers, and the Game Day pack');
+commit;
+
+-- ===========================================================================
 -- THE REPORT. Every row should say ok.
 -- ===========================================================================
 select 1 as row, 'franchise tables exist' as what,
@@ -11045,7 +11203,7 @@ select 6, 'the H2H settlement trigger is attached',
   case when exists (select 1 from pg_trigger where tgname = 'franchise_h2h_settled') then 'ok' else 'CHECK THIS' end
 union all
 select 7, 'the economy is ' || (public.franchise_economy()->>'version'),
-  case when public.franchise_economy()->>'version' = 'economy_v1' then 'ok' else 'CHECK THIS' end
+  case when public.franchise_economy()->>'version' = 'economy_v2' then 'ok' else 'CHECK THIS' end
 union all
 select 8, 'the achievement definitions are seeded',
   case when (select count(*) from public.franchise_achievement_defs) >= 6 then 'ok' else 'CHECK THIS' end
@@ -11168,7 +11326,7 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 20 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 21 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
@@ -11678,9 +11836,9 @@ select 38, 'the player universe is ' || (public.franchise_profile('QB', '{}'::js
 union all
 select 39, 'the Vault is ' || (public.franchise_pack_defs()->>'version')
         || ': packs you hold, derived from the record, rolled and written on the server, with odds a page can print and a rule you can read',
-  case when public.franchise_pack_defs()->>'version' = 'packs_v2'
+  case when public.franchise_pack_defs()->>'version' = 'packs_v3'
         -- five kinds, each with a size, a keep and the words for what earns it
-        and (select count(*) from jsonb_object_keys(public.franchise_pack_defs()->'kinds')) = 5
+        and (select count(*) from jsonb_object_keys(public.franchise_pack_defs()->'kinds')) = 6
         and (select bool_and((k.value->>'size')::int between 2 and 4 and (k.value->>'keep')::int between 1 and 2
                              and k.value->>'earned' is not null and k.value->>'name' is not null)
                from jsonb_each(public.franchise_pack_defs()->'kinds') k)
@@ -11752,5 +11910,25 @@ select 41, 'the pull record is ' || (public.franchise_pulls_rules()->>'version')
         and has_function_privilege('anon', 'public.franchise_pulls_rules()', 'execute')
         and not has_function_privilege('anon', 'public.franchise_pulled_men(uuid)', 'execute')
         and not has_function_privilege('authenticated', 'public.franchise_pulled_overall(public.game_players)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 42, 'the game you hold counts (' || (public.franchise_economy()->>'version') || ', ' || (public.franchise_pack_defs()->>'version')
+        || '): a live result filed once, bounded, capped a day, weighed toward the rank, the careers in your hands kept apart, a Game Day pack every fifth game',
+  case when public.franchise_economy()->>'version' = 'economy_v2' and public.franchise_pack_defs()->>'version' = 'packs_v3'
+        and (public.franchise_ranks()->'weights'->>'live_game')::int = 2
+        and not (public.franchise_ranks()->'weights' ? 'live_game_extra')
+        and (public.franchise_economy()->'live_cap'->>'per_day')::int = 5
+        and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'game_players' and column_name = 'live_stats')
+        and (select bool_and(pg_get_constraintdef(c.oid) like '%''' || k || '''%')
+               from pg_constraint c join pg_class t on t.oid = c.conrelid, unnest(array['live_game','live_game_extra']) k
+              where t.relname = 'franchise_activity' and c.conname = 'franchise_activity_kind_check')
+        and public.franchise_pack_def('gameday_pack')->>'art' = 'gameday'
+        and (select p.prosrc like '%franchise_gameday_progress(p_franchise)%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_packs_sync')
+        -- the lines land in live_stats and never in the simulation's career
+        and (select p.prosrc like '%set live_stats = public.games_jsonb_sum(live_stats, v_stats)%' and p.prosrc not like '%career_stats = public.games_jsonb_sum%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'franchise_record_live_game')
+        and has_function_privilege('anon', 'public.franchise_record_live_game(text, jsonb, text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_gameday_progress(uuid)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

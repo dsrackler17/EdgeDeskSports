@@ -790,3 +790,16 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .pc-listed{display:block;font-size:12px;color:var(--dim);line-height:1.45}
 .pc-listed b{color:var(--text)}
 .pc-listed .lnk{font-size:12px}
+
+/* THE NEW WEAPON, on Game Day: the man most recently kept from a pack, where
+   he starts, the matchup he lines up against, and the one thing to do */
+.gd-weapon{margin:12px 0 4px;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--val,#3fb883) 45%,transparent);
+  background:linear-gradient(120deg,color-mix(in srgb,var(--val,#3fb883) 16%,transparent),transparent 70%),var(--panel,#0f131a);animation:gdw .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes gdw{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gd-weapon .k{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#04110a;background:var(--val,#3fb883);padding:4px 8px;border-radius:999px}
+.gd-weapon .t{font-family:'Space Grotesk',sans-serif;font-size:17px;line-height:1.2;margin-top:8px}
+.gd-weapon .s{font-size:13px;color:var(--dim,#8b95a6);line-height:1.45;margin-top:4px}
+.gd-weapon .s b{color:var(--text,#e9edf4)}
+.gd-weapon .btn-row{margin-top:10px}
+.gd-weapon.quiet{border-color:var(--line,#232a36);background:var(--panel,#0f131a)}
+.gd-weapon.quiet .k{background:var(--line2,#2a3140);color:var(--text,#e9edf4)}

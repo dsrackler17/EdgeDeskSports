@@ -1286,10 +1286,17 @@
         a.state = 'run';
         return;
       }
-      /* otherwise he sits on his landmark and squeezes whoever comes into it */
-      if (near && nd < (deep ? 9.5 : 7.5) * sharp) {
-        a.tx = near.x * 0.55 + j.x * 0.45;
-        a.ty = Math.max(j.y - 1.5, near.y + 0.9);
+      /* otherwise he sits on his landmark and squeezes whoever comes into it —
+         AND HOW WELL IS HIS COVERAGE RATING. Zone used to read nothing from
+         the card: a 42 corner and a 96 corner squeezed the same route the
+         same way, and the only thing a great cover man changed was how he
+         broke on a ball already thrown. A great zone corner sees the route a
+         step sooner, matches it tighter, and gives up less of the cushion;
+         a poor one is late to it and leaves the window open. */
+      var cv = a.k.cov;
+      if (near && nd < (deep ? 9.5 : 7.5) * sharp * (0.85 + cv * 0.30)) {
+        a.tx = near.x * (0.45 + cv * 0.30) + j.x * (0.55 - cv * 0.30);
+        a.ty = Math.max(j.y - 1.5, near.y + 0.35 + (1 - cv) * 1.1);
       } else { a.tx = j.x; a.ty = j.y; }
       a.state = 'run';
     }
@@ -1304,7 +1311,9 @@
          his ball skills too. */
       if (f.t < (0.34 - a.k.bhk * 0.20) * (0.5 + 0.5 * dull)) return;
       var d = Math.hypot(a.x - f.tx, a.y - f.ty);
-      if (d > 5.5 + a.k.bhk * 6) return;
+      /* the distance he will even try from: his ball skills, and a little of
+         how well he was covering to begin with */
+      if (d > 4.5 + a.k.bhk * 5 + a.k.cov * 2) return;
       /* and he only leaves his man for a ball he can actually get to */
       var canGet = (f.dur - f.t) * a.top + 1.2;
       if (d > canGet) return;

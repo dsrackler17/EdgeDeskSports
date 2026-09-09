@@ -3312,6 +3312,78 @@ Credits are what the ledger calls `tc` and the game calls Credits; XP is
 Research XP. Nothing on the Exchange can be bought with money: there is no
 Credit for sale, and the SQL has no path that grants one.
 
+## The game you hold counts — cards move the grass, the grass feeds the Vault (`economy_v2` · `packs_v3`)
+
+The third part of the brief: connect the two. A card has to change what
+happens on the field, and what happens on the field has to feed the Vault —
+or the two best things in the building are two separate buildings.
+
+**The card is the man.** Every man on the grass is read from his card by one
+function a side (`offMan`, `defMan` in `engine.js` `prepare()`): speed,
+acceleration, agility, hands, route, power, blocking, arm, accuracy, coverage,
+tackling, rush, ball skills, strength, stamina — and the game's own tests now
+hold it at the outcome level, forty seeds a side with only one position
+group's card changed: a 96-accuracy quarterback completes the same slant more
+often than a 42; receivers who run routes and run away make more of the same
+dagger; a back with power and feet gains more on the same inside zone; a line
+that can block keeps the pocket up longer; better cover men take completions
+away on the same slant, in zone and in man (`tools/games/live.test.js`
+section 15). Measuring it found a gap and closed it: zone coverage read
+nothing from the card — a 42 corner and a 96 corner squeezed the same route
+the same way — so now a great zone corner sees the route a step sooner,
+matches it tighter and gives up less cushion, and the distance a defender
+will break on a ball from carries a little of how well he was covering.
+
+**A finished game is filed with the franchise** (`franchise_record_live_game`,
+Phase 21) under the game's own key — its seed and the moment it started, kept
+in the save so a resumed game files as itself — with the score, the yards,
+the touchdowns, the tier the defence was set to, and every man of yours with
+his line in the keys his career already uses (`EDFranchise.liveLine`). The
+server checks the shape (a score of 150 is not a score; nine touchdowns do
+not fit in seven points; a key of one letter is not a key), credits once by
+the economy's own table — a game 60 XP and 25 Credits, a win 40 XP, 25
+Credits and a Coach Point, the performance itself up to 30 Credits and 40 XP
+for touchdowns and every hundred yards — scaled by the tier (Rookie six
+tenths, Pro one, All-Pro 1.15, Legend 1.3), **capped at five credited games a
+day** so a grind pays nothing while the record and the careers still take the
+sixth, and weighs it **two toward the rank**, so the Gridiron Cache is closer
+for having played. The final screen shows the server's answer, never the
+page's hope: the chips, the rank line, the pack line, how many men added to
+their careers, and this week's preparation.
+
+**Careers in your hands.** The men's lines land in `live_stats`, a column of
+their own, kept apart from the simulation's `career_stats` so neither can
+inflate the other; only the keys a career knows, bounded, for men who are
+yours — a stranger's id takes nothing. The roster and the card carry it.
+
+**The Game Day pack.** Every fifth live game finished at Pro or harder seals
+one (`gameday_pack`, three men keep one, drawn where the team is thinnest, a
+little above the rank). Derived by `franchise_packs_sync` from the credited
+games, like every other pack: earned by playing and by nothing else.
+
+**The broadcast knows your men.** A man who came out of the Vault is
+announced as one when he is having the day; and when tonight's line takes a
+man across a round number of his career — the simulation's and the one in
+your hands together — the broadcast calls the milestone, once.
+
+**New weapon.** Game Day names the man most recently kept from a pack until
+he has played a game in your hands: who he is, where he starts, the matchup
+he lines up against ("their defense rates 64 — he lines up against it"), and
+the one thing to do about it: *Play the next game*. After that, quietly, what
+he has done for you.
+
+**The whole loop, with nobody's hands on it** (`tools/games/loop.test.js`,
+against a real PostgreSQL through the phone's own doors): a franchise is
+founded → its first pack is sealed → the server rolls it → the best man is
+kept → the server sets the lineup → a whole game is played live with the
+franchise's own men, scripted thumbs on runs and throws, the AI on defence,
+to the final whistle → filed and paid exactly what the client estimated →
+two toward the rank → the quarterback's line on his card → filed again,
+nothing twice → four more games → the fifth seals a Game Day pack → the home
+counts the games and names the weapon → the pack opens, a man is kept, the
+lineup is set → the team is no worse for it → a sixth game is capped → My
+pulls remembers both → every balance is the sum of its ledger.
+
 ## The Vault as a product — the case in the hand, the night at the top of the ladder, the pull record (`pulls_v1`)
 
 The second sentence of the brief: *that was sick*. Phase 8–9 built the room
@@ -3398,7 +3470,7 @@ it is a read, like the rank, and the report row checks it stays one. The
 page prints it under *Kept from packs*: opened · kept · Apex+ · best, the
 best pull as a card you can tap, and the list.
 
-**Tests.** `tools/games/vault.test.js` (1,244): the top-tier plan opens with
+**Tests.** `tools/games/vault.test.js` (1,246): the top-tier plan opens with
 the blackout, calls the signal second, shows its own symbol third, goes down
 the tunnel, reads the overall before the name and the lights before the card,
 counts up from below, never borrows the Apex mark, carries the ceiling and
