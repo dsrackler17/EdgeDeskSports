@@ -11,7 +11,7 @@
   ],
   "title": "Cleveland Browns vs. Tampa Bay Buccaneers: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Cleveland Browns vs. Tampa Bay Buccaneers 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Cleveland Browns at Tampa Bay Buccaneers at Tampa Bay Buccaneers -4.4 with a 40.5 fair total. Tampa Bay Buccaneers wins 66% of simulations. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Cleveland Browns at Tampa Bay Buccaneers at Tampa Bay Buccaneers -4.4 with a 40.5 fair total. Tampa Bay Buccaneers wins 66% of simulations. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Tampa Bay Buccaneers carries the stronger EdgeDesk offensive profile (#19 in EPA per play), while Cleveland Browns owns the more favourable defensive matchup (#7 in EPA allowed per play). EdgeDesk’s independent projection makes it Tampa Bay Buccaneers -4.4…",
   "home_team": "Tampa Bay Buccaneers",
   "away_team": "Cleveland Browns",
@@ -23,11 +23,11 @@
   "game_time": "2026-09-20T13:00:00.000Z",
   "game_when_label": "2026-09-20 13:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-08T23:20:09.636Z",
-  "generated_at": "2026-09-08T23:20:09.636Z",
+  "updated_at": "2026-09-09T04:30:49.739Z",
+  "generated_at": "2026-09-09T04:30:49.739Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "INVESTIGATE",
+  "model_status_note": "EdgeDesk differs from the market by 2.1 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Tampa Bay Buccaneers -4.4",
@@ -113,8 +113,8 @@
       "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 0 absorbed 2026 games.",
       "sample_games": 0,
       "seeded": true,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk differs from the market by 2.1 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1164,16 +1164,25 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Tampa Bay Buccaneers -4.4",
+      "market": "Tampa Bay Buccaneers -6.5",
+      "difference": "2.1 points",
       "total_model": "40.5",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "42.5",
+      "total_difference": "2.0 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk differs from the market by 2.1 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Tampa Bay Buccaneers 22, Cleveland Browns 18.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk differs from the market by 2.1 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1299,8 +1308,7 @@
     },
     "notes": [
       "EdgeDesk’s line is Tampa Bay Buccaneers -4.4 with a fair total of 40.5, before any book is consulted.",
-      "Tampa Bay Buccaneers wins 66% of the time in EdgeDesk’s distribution, Cleveland Browns 34%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "Tampa Bay Buccaneers wins 66% of the time in EdgeDesk’s distribution, Cleveland Browns 34%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1310,6 +1318,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-08T23:20:09.636Z"
+    "at": "2026-09-09T04:30:49.739Z"
   }
 }
