@@ -251,6 +251,34 @@ const rs = E.roundSplits(M.statsDoc({ sigL: 30 }, { 1: { sigL: 10 }, 2: { sigL: 
 chk('provider round splits are read when present', rs[1] && rs[1].sig_strikes_landed === 10 && rs[2].sig_strikes_landed === 20);
 
 /* ======================================================================== */
+/* 8b. DISCOVERY — the request shapes, and what a 403 does to them          */
+/* ======================================================================== */
+(async () => {
+  const doc = M.card({ bouts: [{ id: '9', order: 1, red: { id: 'a', name: 'Marco Testerson' }, blue: { id: 'b', name: 'Ivan Sparring' } }] });
+  const far = M.card({ eventId: '600099002', date: '2026-12-13T22:00Z', bouts: [{ id: '8', order: 1, red: { id: 'c', name: 'Some Body' }, blue: { id: 'd', name: 'Any One' } }] });
+  const seen = [];
+  const f403range = async (url, opts) => {
+    seen.push({ url, headers: opts.headers || {} });
+    if (/dates=\d{8}-\d{8}/.test(url)) return { ok: false, status: 403, text: async () => 'forbidden' };
+    return { ok: true, status: 200, text: async () => JSON.stringify({ events: doc.events.concat(far.events) }) };
+  };
+  const src = E.source({ fetchImpl: f403range });
+  const r = await src.scoreboard(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z'));
+  chk('a 403 on the range falls through to the year request', r.via === 'year:2026' && r.tried.length === 2 && r.tried[0].status === 403, JSON.stringify(r.tried));
+  chk('the answer is filtered to the window and says how many it saw', r.events.length === 1 && r.totalSeen === 2 && r.events[0].provider_event_id === '600099001');
+  chk('no custom User-Agent is sent — the plain request the football jobs make', seen.every(x => !Object.keys(x.headers).some(h => h.toLowerCase() === 'user-agent')) && seen.every(x => x.headers.accept === 'application/json'));
+  chk('the request shapes are range, year, plain, in that order', E.discoveryAttempts(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z')).map(a => a.via).join(',') === 'range,year:2026,plain');
+  chk('a window crossing a year boundary asks for both years', E.discoveryAttempts(Date.parse('2026-12-20T00:00:00Z'), Date.parse('2027-01-20T00:00:00Z')).map(a => a.via).join(',') === 'range,year:2026,year:2027,plain');
+  const probe = await src.probe(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z'));
+  chk('the probe reports every shape with its status', probe.length === 3 && probe[0].status === 403 && probe[1].status === 200 && probe[1].inWindow === 1 && probe[2].status === 200);
+  let allFail = null;
+  try { await E.source({ fetchImpl: async () => ({ ok: false, status: 403, text: async () => 'no' }) }).scoreboard(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z')); }
+  catch (e) { allFail = e; }
+  chk('every shape failing is one error that lists each status', allFail && /range -> 403; year:2026 -> 403; plain -> 403/.test(allFail.message), allFail && allFail.message);
+  chk('an undated card is never silently dropped by the window filter', E.inWindow({ scheduled_at: null }, 0, 1));
+})().catch(e => { chk('discovery tests ran', false, String(e && e.stack || e)); });
+
+/* ======================================================================== */
 /* 9. THE SYNC — twice, reordered, with a cancelled bout                    */
 /* ======================================================================== */
 function bouts(o) { o = o || {}; return [

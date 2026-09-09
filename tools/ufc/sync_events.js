@@ -247,8 +247,16 @@ async function run(o, deps) {
   let parsed;
   if (o.fixture) parsed = E.parseScoreboard(JSON.parse(fs.readFileSync(o.fixture, 'utf8')));
   else {
-    const r = await src.scoreboard(nowMs - o.fromDays * 86400000, nowMs + o.toDays * 86400000);
-    parsed = r.events; summary.source_latency_ms = r.latency;
+    const fromMs = nowMs - o.fromDays * 86400000, toMs = nowMs + o.toDays * 86400000;
+    if (o.verify && typeof src.probe === 'function') {
+      /* every request shape, each reported: a 403 names the shape that drew it */
+      const probe = await src.probe(fromMs, toMs);
+      probe.forEach(p => log(`  probe ${p.via.padEnd(10)} ${p.status == null ? 'ERR ' : p.status} ${p.status === 200 ? p.events + ' events, ' + p.inWindow + ' in window, ' + p.latency + 'ms' : (p.error || '')}  ${p.url}`));
+      summary.probe = probe;
+    }
+    const r = await src.scoreboard(fromMs, toMs);
+    parsed = r.events; summary.source_latency_ms = r.latency; summary.source_via = r.via || null; summary.source_tried = r.tried || null;
+    if (r.via) log(`source answered via ${r.via}` + (r.totalSeen != null ? ` (${r.totalSeen} events seen, ${parsed.length} in window)` : ''));
   }
   if (o.event) parsed = parsed.filter(e => String(e.provider_event_id) === String(o.event));
   summary.events = parsed.length;

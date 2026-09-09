@@ -21,15 +21,27 @@
 const ESPN_API = (process.env.ESPN_API || 'https://site.api.espn.com').replace(/\/$/, '');
 const ESPN_WEB_API = (process.env.ESPN_WEB_API || 'https://site.web.api.espn.com').replace(/\/$/, '');
 const ESPN_CORE = (process.env.ESPN_CORE_API || 'https://sports.core.api.espn.com').replace(/\/$/, '');
-const UA = 'EdgeDeskSports/ufc (+https://edgedesksports.com)';
 
 function ymd(d) { return new Date(d).toISOString().slice(0, 10).replace(/-/g, ''); }
 
+/* THE REQUEST SHAPES, in the order they are tried. The first version of this
+   adapter sent one shape — a date RANGE with a custom User-Agent — and ESPN's
+   edge answered 403 from a GitHub runner while the repository's football jobs,
+   which send a plain request for one day, were answered. So the request is now
+   the plain one those jobs make (no custom User-Agent, accept: json, follow
+   redirects), and discovery tries a range, then the whole year, then the
+   plain scoreboard, and records which one answered. */
 function scoreboardUrl(fromMs, toMs) {
-  return `${ESPN_API}/apis/site/v2/sports/mma/ufc/scoreboard?dates=${ymd(fromMs)}-${ymd(toMs)}&limit=100`;
+  return `${ESPN_API}/apis/site/v2/sports/mma/ufc/scoreboard?dates=${ymd(fromMs)}-${ymd(toMs)}&limit=400`;
+}
+function scoreboardYearUrl(year) {
+  return `${ESPN_API}/apis/site/v2/sports/mma/ufc/scoreboard?dates=${year}&limit=400`;
+}
+function scoreboardPlainUrl() {
+  return `${ESPN_API}/apis/site/v2/sports/mma/ufc/scoreboard?limit=400`;
 }
 function scoreboardDayUrl(dayMs) {
-  return `${ESPN_API}/apis/site/v2/sports/mma/ufc/scoreboard?dates=${ymd(dayMs)}&limit=100`;
+  return `${ESPN_API}/apis/site/v2/sports/mma/ufc/scoreboard?dates=${ymd(dayMs)}&limit=400`;
 }
 function fightCenterUrl(providerEventId) {
   return `${ESPN_WEB_API}/apis/site/v2/sports/mma/ufc/fightcenter/${encodeURIComponent(providerEventId)}?region=us&lang=en`;
@@ -45,7 +57,7 @@ async function fetchJson(url, fetchImpl, timeoutMs) {
   const timer = ctl ? setTimeout(() => ctl.abort(), timeoutMs || 15000) : null;
   const t0 = Date.now();
   try {
-    const res = await f(url, { headers: { accept: 'application/json', 'user-agent': UA }, signal: ctl ? ctl.signal : undefined });
+    const res = await f(url, { headers: { accept: 'application/json' }, redirect: 'follow', signal: ctl ? ctl.signal : undefined });
     const text = await res.text();
     const latency = Date.now() - t0;
     if (!res.ok) { const e = new Error(`${res.status} from ${url.split('?')[0]}`); e.status = res.status; e.latency = latency; throw e; }
@@ -310,16 +322,61 @@ function roundSplits(raw) {
   return out;
 }
 
+function inWindow(ev, fromMs, toMs) {
+  const t = Date.parse(ev.scheduled_at);
+  if (!isFinite(t)) return true;             /* an undated card is kept, never silently dropped */
+  return t >= fromMs - 86400000 && t <= toMs + 86400000;
+}
+function discoveryAttempts(fromMs, toMs) {
+  const years = [];
+  for (let y = new Date(fromMs).getUTCFullYear(); y <= new Date(toMs).getUTCFullYear(); y++) years.push(y);
+  const out = [{ via: 'range', url: scoreboardUrl(fromMs, toMs) }];
+  years.forEach(y => out.push({ via: 'year:' + y, url: scoreboardYearUrl(y) }));
+  out.push({ via: 'plain', url: scoreboardPlainUrl() });
+  return out;
+}
+
 /* ---- the source, as one object the jobs use ------------------------------- */
 function source(opts) {
   opts = opts || {};
   const fetchImpl = opts.fetchImpl || null;
   const timeoutMs = opts.timeoutMs || 15000;
   return {
-    urls: { scoreboardUrl, scoreboardDayUrl, fightCenterUrl, statsUrl },
+    urls: { scoreboardUrl, scoreboardYearUrl, scoreboardPlainUrl, scoreboardDayUrl, fightCenterUrl, statsUrl },
+    /* Every card in [fromMs, toMs]. Tries the range, then the year(s) the
+       window touches, then the plain scoreboard; whichever answers is
+       filtered to the window and named in `via`. All three failing is the
+       error, with every status in the message. */
     async scoreboard(fromMs, toMs) {
-      const r = await fetchJson(scoreboardUrl(fromMs, toMs), fetchImpl, timeoutMs);
-      return { events: parseScoreboard(r.json), latency: r.latency, raw: r.json };
+      const attempts = discoveryAttempts(fromMs, toMs);
+      const tried = [];
+      for (const a of attempts) {
+        try {
+          const r = await fetchJson(a.url, fetchImpl, timeoutMs);
+          const all = parseScoreboard(r.json);
+          const events = all.filter(e => inWindow(e, fromMs, toMs));
+          tried.push({ via: a.via, status: 200, events: all.length });
+          return { events, latency: r.latency, raw: r.json, via: a.via, tried, totalSeen: all.length };
+        } catch (e) {
+          tried.push({ via: a.via, status: e && e.status || null, error: String(e && e.message || e).slice(0, 120) });
+        }
+      }
+      const err = new Error('every discovery request failed: ' + tried.map(t => `${t.via} -> ${t.status || t.error}`).join('; '));
+      err.tried = tried;
+      throw err;
+    },
+    /* The same attempts, each reported rather than the first taken — what
+       the workflow's verify step prints so a 403 names the shape that drew it. */
+    async probe(fromMs, toMs) {
+      const out = [];
+      for (const a of discoveryAttempts(fromMs, toMs)) {
+        try {
+          const r = await fetchJson(a.url, fetchImpl, timeoutMs);
+          const all = parseScoreboard(r.json);
+          out.push({ via: a.via, url: a.url, status: 200, latency: r.latency, events: all.length, inWindow: all.filter(e => inWindow(e, fromMs, toMs)).length });
+        } catch (e) { out.push({ via: a.via, url: a.url, status: e && e.status || null, error: String(e && e.message || e).slice(0, 160) }); }
+      }
+      return out;
     },
     /* One event in detail: the fight-center document when it answers, the
        day's scoreboard otherwise. Both parse to the same shape. */
@@ -347,5 +404,5 @@ function source(opts) {
   };
 }
 
-module.exports = { ESPN_API, ESPN_CORE, ESPN_WEB_API, scoreboardUrl, scoreboardDayUrl, fightCenterUrl, statsUrl, fetchJson, parseEvent, parseBout, parseScoreboard,
+module.exports = { ESPN_API, ESPN_CORE, ESPN_WEB_API, scoreboardUrl, scoreboardYearUrl, scoreboardPlainUrl, scoreboardDayUrl, fightCenterUrl, statsUrl, fetchJson, parseEvent, parseBout, parseScoreboard, discoveryAttempts, inWindow,
   statusOf, STAT_ALIASES, STAT_FIELDS, STAT_IGNORE, normalizeStats, roundSplits, flattenStats, source, keyOf, clockToSeconds };
