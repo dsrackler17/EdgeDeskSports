@@ -440,10 +440,16 @@
     var pRush = passRush(ou, du, parts, playObj, 0, off.mods, def.mods);
     var hold = playObj.hold || 2.4;
 
+    /* ── THE TIER TOUCHES THE HEAD, NEVER THE LEGS ────────────────────────
+       A difficulty is how sharp the other side's defence reads: the angle it
+       takes, the beat before it breaks on a ball, the cushion it gives. Every
+       man keeps the speed and strength his card says. Pro is one. */
+    var SHARP = { rookie: 0.84, pro: 1.0, allpro: 1.06, legend: 1.12 };
     var env = {
       version: ENGINE_VERSION,
       playKey: playObj.key, formKey: formKey, defKey: parts.key,
       parts: parts, box: Math.round(box * 10) / 10, edge: edge,
+      sharp: SHARP[ctx.difficulty] || 1,
       read: rec.read, readP: Math.round(rec.p * 100) / 100,
       /* the defence's head start, in seconds: a front that read the play
          moves on the snap, one that did not is a beat late */

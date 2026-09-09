@@ -913,6 +913,13 @@
     ctx.strokeStyle = o.hot ? '#eafff4' : 'rgba(255,255,255,.72)';
     ctx.lineWidth = 2;
     ctx.stroke();
+    /* A FINGER ON THE BADGE. The ring thickens and a second ring grows out
+       of it while the throw is held, so a bullet is a thing you can see
+       yourself winding up rather than a timer you have to trust. */
+    if (o.armed) {
+      ctx.beginPath(); ctx.arc(sx, cy, r + 4, 0, 6.2832);
+      ctx.strokeStyle = '#f2c744'; ctx.lineWidth = 3; ctx.stroke();
+    }
     ctx.fillStyle = o.hot ? '#06231a' : '#ffffff';
     ctx.font = '800 ' + Math.round(r * 1.05) + 'px "Space Grotesk", Inter, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

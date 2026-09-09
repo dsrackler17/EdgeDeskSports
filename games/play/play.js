@@ -705,28 +705,59 @@
   }
 
   /* a tap on the field is a throw, if it lands on a badge */
+  /* ── A TAP IS A THROW; A TAP HELD IS A BULLET ────────────────────────
+     The finger lands on the badge and the badge arms — a gold ring grows
+     out of it. Let go inside a fifth of a second and it is the ordinary
+     football; hold it past that and the ball leaves harder and lower. The
+     throw goes on the release, so the hold is something you can see and
+     feel (a second light pulse when the bullet is ready) rather than a
+     timer you have to trust. Nobody needs five kinds of throw. */
+  var HOLD_MS = 220;
+  var armed = null, armTimer = null;
+  function throwArmed(a) {
+    if (!a) return;
+    clearTimeout(armTimer);
+    if (stage && stage.armTarget) stage.armTarget(-1);
+    var kind = (Date.now() - a.at >= HOLD_MS) ? 'bullet' : null;
+    if (stage && stage.throwTo(a.idx, kind)) {
+      if (kind) { SOUND.kick(); buzz('medium'); } else SOUND.tap();
+      padRun();
+    }
+  }
   function wireFieldTaps() {
     /* A TAP IS ONE TAP. A touch screen fires touchstart and then a synthetic
        mousedown for the same finger, and both were throwing the ball: the
        simulation ignores the second one, but the sound and the buzz fired
        twice and it read as a stutter. */
     var lastTap = 0;
-    function at(e) {
+    function down(e) {
       var now = Date.now();
       if (now - lastTap < 400) return;
+      /* a replay is skipped by a tap anywhere on it */
+      if (stage && stage.replaying && stage.replaying()) { lastTap = now; stage.skipReplay(); if (e.cancelable) e.preventDefault(); return; }
       var t = e.changedTouches ? e.changedTouches[0] : e;
       var b = canvas.getBoundingClientRect();
       var i = stage.hitTarget(t.clientX - b.left, t.clientY - b.top);
       if (i >= 0) {
         lastTap = now;
-        SOUND.tap(); buzz('light');
-        stage.throwTo(i);
-        padRun();
+        armed = { idx: i, at: now };
+        stage.armTarget(i);
+        buzz('light');
+        clearTimeout(armTimer);
+        armTimer = setTimeout(function () { if (armed) buzz('light'); }, HOLD_MS);
         if (e.cancelable) e.preventDefault();
       }
     }
-    canvas.addEventListener('touchstart', at, { passive: false });
-    canvas.addEventListener('mousedown', at);
+    function up() {
+      if (!armed) return;
+      var a = armed; armed = null;
+      throwArmed(a);
+    }
+    canvas.addEventListener('touchstart', down, { passive: false });
+    canvas.addEventListener('mousedown', down);
+    window.addEventListener('touchend', up);
+    window.addEventListener('touchcancel', up);
+    window.addEventListener('mouseup', up);
   }
 
   function slotName(s) {
@@ -901,8 +932,9 @@
       return;
     }
     if (/^[1-5]$/.test(k) && live && !onDef && stage) {
+      if (e.repeat) { e.preventDefault(); return; }
       var i = parseInt(k, 10) - 1, list = stage.receivers();
-      if (list && list[i]) { stage.throwTo(i); SOUND.tap(); padRun(); }
+      if (list && list[i] && !armed) { armed = { idx: i, at: Date.now(), key: k }; stage.armTarget(i); }
       e.preventDefault(); return;
     }
     if (k === 'Tab' && live && onDef) { act('switch'); e.preventDefault(); return; }
@@ -915,6 +947,7 @@
   window.addEventListener('keyup', function (e) {
     var k = e.key;
     if (k === ' ') { if (stage) stage.sprint(false); }
+    if (armed && armed.key === k) { var a2 = armed; armed = null; throwArmed(a2); }
     if (KEYS.held[k]) { delete KEYS.held[k]; keySteer(); }
   });
 
@@ -962,8 +995,11 @@
     autoT = setTimeout(function () { autoT = null; doSnap(); }, 700);
   }
 
+  var snapSit = null;
   function lineUp(playKey, formKey, defKey, ps, sit) {
     var offT = G.teamOf(game, sit.offense), defT = G.teamOf(game, sit.defense);
+    snapSit = { down: sit.down, toGo: sit.toGo, toGoal: sit.toGoal, offense: sit.offense, quarter: sit.quarter,
+                clock: sit.clock, score: { home: game.score.home, away: game.score.away } };
     stage.setUserSide(sit.offense === me ? 'off' : 'def');
     stage.setMode(set.mode);
     stage.teams(kitFor(sit.offense === me ? 'me' : 'opp'), kitFor(sit.offense === me ? 'opp' : 'me'),
@@ -978,7 +1014,9 @@
     var env = G.prepare({
       off: offT, def: defT, rand: game.aiRand || game.rand, tick: game.tick,
       playKey: playKey, formKey: formKey, defCall: defKey,
-      sit: sit, mem: game.mem[sit.offense], weather: game.weather
+      sit: sit, mem: game.mem[sit.offense], weather: game.weather,
+      /* the tier sharpens the OTHER side's defence and nothing of yours */
+      difficulty: sit.offense === me ? set.difficulty : 'pro'
     });
     stage.lineUp({
       play: playKey, formation: formKey, def: defKey,
@@ -1182,11 +1220,19 @@
         SOUND.first(); buzz('medium'); crowdUp(0.55, 0.22);
         banner({ kind: 'first', head: 'First down', color: myColor, hold: 950 });
       } else {
-        SOUND.hit(!!p.big); buzz(p.big ? 'medium' : 'light');
+        /* ── THE HIT ─────────────────────────────────────────────────────
+           The simulation says how hard it landed. A square tackle at closing
+           speed is a bump on the lens, a stronger pulse in the hand and the
+           heavier sound; a drag-down is barely any of those. */
+        var force = p.hit ? p.hit.force : 0;
+        SOUND.hit(!!p.big || force > 0.72); buzz(force > 0.72 ? 'medium' : 'light');
+        if (stage && stage.bump && force > 0.2) stage.bump(0.05 + force * 0.17);
         if (p.big) crowdUp(0.7, 0.22);
+        if (force > 0.82 && p.hit.by) say(FRname(p.hit.by) + ' laid him out.');
       }
       setTimeout(function () { SOUND.whistle(); }, 230);
       if (!p.touchdown) resultCard(p);
+      try { bigPlay(p, kind); } catch (e) { if (window.console) console.warn('bigPlay', e); }
       /* THE FOOTBALL DOES NOT STOP BECAUSE A CAPTION FAILED. Everything from
          here to the end of this handler is what moves the game on — the
          clock, the score, the next call — and the line above the numbers is
@@ -1194,13 +1240,123 @@
          stopped dead on the first snap of every game: no next play, no clock,
          nothing to press. Decoration gets a net; the game does not need one. */
       try { milestone(p); } catch (e) { if (window.console) console.warn('milestone', e); }
+      try { broadcastBit(p); } catch (e) { if (window.console) console.warn('bit', e); }
       ballX = drift(ballX);
     }
     padClear();
     paintScore();
     var wait = set.speed === 'instant' ? 260
       : (p && p.touchdown) ? 2200 : (p && p.turnover) ? 1500 : 900;
-    setTimeout(function () { busy = false; flow('TRANSITION', 'next down'); nextCall(); }, wait);
+    var proceed = function () { busy = false; flow('TRANSITION', 'next down'); nextCall(); };
+    /* ── THE REPLAY ──────────────────────────────────────────────────────
+       Reserved for the plays a broadcast shows again. It runs after the
+       graphic has had its moment, off the tape the stage kept, at half
+       speed from a low lens; a tap skips it and the game moves on. */
+    if (p && replayWorthy(p, kind)) {
+      setTimeout(function () {
+        var ok = stage && stage.replay && stage.replay({ speed: 0.5, onEnd: function () { replaySkip(false); setTimeout(proceed, 320); } });
+        if (!ok) { proceed(); return; }
+        replaySkip(true);
+        if (GM && GM.track) GM.track('gridiron_replay', { kind: kind, yards: p.yards | 0, touchdown: !!p.touchdown, turnover: p.turnover || null });
+      }, Math.max(300, wait - 250));
+    } else setTimeout(proceed, wait);
+  }
+  /* which plays are shown again: a score from distance, any takeaway, a
+     fourth-down stand, a huge gain, and the play that took the lead late */
+  function replayWorthy(p, kind) {
+    if (set.replay === false || set.speed === 'instant' || !stage || !stage.hasReplay || !stage.hasReplay()) return false;
+    if (p.touchdown && ((p.yards | 0) >= 20 || p.turnover)) return true;
+    if (p.turnover) return true;
+    if (snapSit && snapSit.down === 4 && !p.firstDown && !p.touchdown && !p.turnover && !p.punt) return true;
+    if ((p.yards | 0) >= 35) return true;
+    if (p.touchdown && snapSit && snapSit.quarter >= 4 && snapSit.clock <= 120) {
+      var sc = game.pendingScore ? game.pendingScore.side : snapSit.offense;
+      var before = snapSit.score[sc] - snapSit.score[G.other(sc)];
+      if (before <= 0) return true;
+    }
+    return false;
+  }
+  function replaySkip(on) {
+    var old = fieldWrap.querySelector('.rp-skip');
+    if (old) old.parentNode.removeChild(old);
+    if (!on) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'rp-skip'; b.textContent = 'Skip';
+    b.addEventListener('click', function () { if (stage && stage.skipReplay) stage.skipReplay(); });
+    fieldWrap.appendChild(b);
+  }
+  /* ── THE BIG PLAY ────────────────────────────────────────────────────
+     A score has its own moment and a takeaway its banner. This is the rest
+     of what a broadcast puts a graphic on: a fourth-down stand, a huge gain,
+     and the man's day so far under it. Short; the football is waiting. */
+  function bigPlay(p, kind) {
+    if (!game || !p || p.touchdown || p.turnover) return;
+    var stand = snapSit && snapSit.down === 4 && !p.firstDown && !p.punt;
+    if (stand) {
+      var mineStop = snapSit.offense !== me;
+      banner({ kind: mineStop ? 'first' : 'bad', eyebrow: 'Fourth down',
+        head: snapSit.toGoal <= 5 ? 'Goal-line stand' : 'Stopped', sub: 'Turnover on downs',
+        color: kitFor(mineStop ? 'me' : 'opp').primary, hold: 1400 });
+      crowdUp(mineStop ? 0.85 : 0.5, 0.3);
+      return;
+    }
+    if ((p.yards | 0) >= 30) {
+      var man = p.target || p.carrier, st = man ? game.players[man.uid || man.id] : null;
+      banner({ kind: 'good', eyebrow: 'Big play', head: (p.yards | 0) + '-yard ' + (p.completion ? 'catch' : 'run'),
+        sub: st ? FRname(man) + ' · ' + dayLine(st) : (man ? FRname(man) : ''),
+        color: kitFor(snapSit && snapSit.offense === me ? 'me' : 'opp').primary, hold: 1500 });
+    }
+  }
+  /* a man's day in one line, in the position's own numbers */
+  function dayLine(st) {
+    if (!st) return '';
+    if (st.position === 'QB') return st.pc + '/' + st.pa + ' · ' + st.py + ' YDS' + (st.ptd ? ' · ' + st.ptd + ' TD' : '') + (st.pint ? ' · ' + st.pint + ' INT' : '');
+    if (st.position === 'RB') return st.car + ' CAR · ' + st.ry + ' YDS' + (st.rtd ? ' · ' + st.rtd + ' TD' : '') + (st.rec ? ' · ' + st.rec + ' REC' : '');
+    if (st.position === 'WR' || st.position === 'TE') return st.rec + ' REC · ' + st.recy + ' YDS' + (st.rectd ? ' · ' + st.rectd + ' TD' : '');
+    return st.tkl + ' TKL' + (st.sack ? ' · ' + st.sack + ' SACK' : '') + (st.int ? ' · ' + st.int + ' INT' : '');
+  }
+  /* ── THE DEAD-BALL BIT ───────────────────────────────────────────────
+     Every few ordinary plays the broadcast fills the dead ball with one
+     short fact: the man having the day, this drive, third downs, the
+     matchup. Never on a play that already has a graphic, never long. */
+  var bitCount = 0, bitTurn = 0;
+  function broadcastBit(p) {
+    if (!game || !p || p.touchdown || p.turnover || p.sack || (p.yards | 0) >= 30) return;
+    bitCount++;
+    if (bitCount % 4 !== 0) return;
+    var sit = G.situation(game), off = snapSit ? snapSit.offense : sit.offense;
+    var st = game.stats[off] || {}, drive = game.drive, text = null, eyebrow = null;
+    var tries = 0;
+    while (!text && tries++ < 4) {
+      var pick = (bitTurn++) % 4;
+      if (pick === 0) {
+        var best = null, bestV = 0;
+        Object.keys(game.players || {}).forEach(function (k) {
+          var m = game.players[k];
+          if (m.side !== off) return;
+          var v = (m.py || 0) * 0.55 + (m.ry || 0) + (m.recy || 0) + (m.tkl || 0) * 4 + (m.sack || 0) * 25;
+          if (v > bestV) { bestV = v; best = m; }
+        });
+        if (best && bestV >= 45) { eyebrow = (off === me ? teams.me.abbr : teams.opp.abbr) + ' · ' + best.position; text = '<b>' + esc(best.name) + '</b><br>' + esc(dayLine(best)); }
+      } else if (pick === 1) {
+        if (drive && drive.side === off && (drive.plays | 0) >= 3) { eyebrow = 'This drive'; text = '<b>' + drive.plays + ' plays, ' + (drive.yards | 0) + ' yards</b>'; }
+      } else if (pick === 2) {
+        if ((st.thirdAtt | 0) >= 3) { eyebrow = 'Third down'; text = '<b>' + (st.thirdConv | 0) + ' of ' + st.thirdAtt + '</b> today'; }
+      } else {
+        var box = G.boxScore(game), mine = box[me], theirs = box[G.other(me)];
+        if ((mine.yards | 0) + (theirs.yards | 0) >= 120) { eyebrow = 'Total yards'; text = '<b>' + esc(teams.me.abbr) + ' ' + (mine.yards | 0) + '</b> · ' + esc(teams.opp.abbr) + ' ' + (theirs.yards | 0); }
+      }
+    }
+    if (!text) return;
+    var old = fieldWrap.querySelector('.bit');
+    if (old) old.parentNode.removeChild(old);
+    var d = document.createElement('div');
+    d.className = 'bit';
+    d.style.setProperty('--bc', kitFor(off === me ? 'me' : 'opp').primary || '#f2c744');
+    d.innerHTML = '<i>' + esc(eyebrow) + '</i>' + text;
+    fieldWrap.appendChild(d);
+    setTimeout(function () { d.classList.add('out'); }, 2600);
+    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 3000);
   }
   /* THE BALL IS SPOTTED BETWEEN THE HASHES, and it wanders like a real one.
      Drawn from the game's own coaching stream rather than a loose die, so the
@@ -1982,8 +2138,9 @@
       + row('Play art', 'Routes, run paths and blitz arrows before the snap', seg('art', [[true, 'On'], [false, 'Off']], set.art))
       + row('Sound', 'Short cues, no music', seg('sound', [[true, 'On'], [false, 'Off']], set.sound))
       + row('Haptics', 'Where the device supports it', seg('haptics', [[true, 'On'], [false, 'Off']], set.haptics))
+      + row('Replays', 'A score, a takeaway, a stand or a huge play, shown again at half speed; a tap skips it', seg('replay', [[true, 'On'], [false, 'Off']], set.replay !== false))
       + '<div class="muted" style="padding-top:12px">Game length applies to the next game you start.</div>'
-      + '<div class="muted" style="padding-top:6px">Keyboard: arrows or WASD steer · Space snaps, then sprints · J K L are the three moves · 1–5 throw to a badge · Tab switches the defender.</div>'
+      + '<div class="muted" style="padding-top:6px">Keyboard: arrows or WASD steer · Space snaps, then sprints · J K L are the three moves · 1–5 throw to a badge, held for a bullet · Tab switches the defender.</div>'
       + '<div class="btn-row"><button class="btn btn-go" id="btnDone" type="button">Done</button></div>');
     Array.prototype.forEach.call(ovHost.querySelectorAll('[data-set]'), function (b) {
       b.onclick = function () {

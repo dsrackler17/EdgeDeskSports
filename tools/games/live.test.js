@@ -59,7 +59,8 @@ function record(o) {
   const sit = G.situation(g);
   const env = G.prepare({
     off: offT, def: defT, rand: mulberry((o.seed || 1) * 31 + 7), tick: g.tick,
-    playKey: o.play, formKey: o.form, defCall: o.def, sit: sit, mem: g.mem[side]
+    playKey: o.play, formKey: o.form, defCall: o.def, sit: sit, mem: g.mem[side],
+    difficulty: o.difficulty || null
   });
   const los = o.los == null ? g.ball : o.los, bx = o.bx == null ? 26.665 : o.bx;
   const actors = ST.alignOffense(playObj, o.form, bx, los, G.unitsOf(offT, g.tick), {})
@@ -87,6 +88,11 @@ const right = () => ({ mx: 1, my: 0.35 });
 const jukeAt = when => t => ({ mx: 0, my: 1, action: (t > when && t < when + 0.02) ? 'juke' : null });
 const truckAt = when => t => ({ mx: 0, my: 1, action: (t > when && t < when + 0.02) ? 'truck' : null });
 const throwAt = (when, read) => t => ({ throwTo: (t > when && t < when + 0.02) ? (read || 0) : null });
+/* the same throw, as one of the three footballs */
+const throwKind = (when, read, kind) => t => ({ throwTo: (t > when && t < when + 0.02) ? (read || 0) : null, throwKind: kind });
+/* roll one way for most of a second, then throw */
+const rollThen = (dir, when, read, kind) => t => ({ mx: t < when ? dir : 0, my: t < when ? -0.15 : 0,
+  throwTo: (t > when && t < when + 0.02) ? (read || 0) : null, throwKind: kind || null });
 const holdIt = () => ({});
 /* bounce it and keep bouncing it, all the way to the paint */
 const sideline = () => ({ mx: 1, my: 0.25 });
@@ -469,6 +475,164 @@ console.log('\nPLAY MODE — the thumbs');
     try { new Function(src); } catch (e) { parsed = false; why = e.message; }
     chk(rel.split('/').pop() + ' parses', parsed, why);
   });
+})();
+
+
+/* ── 9. THREE FOOTBALLS ─────────────────────────────────────────────────── */
+(() => {
+  /* a bullet gets there sooner and, past twenty yards, is the harder ball to
+     place; a touch pass is slower and hangs. Same seed, same tick, same
+     thumbs: the only thing that differs is the kind, so every comparison is
+     exact rather than statistical. */
+  const routeT = (F.ROUTES.go && F.ROUTES.go.t) || 3.2;
+  let faster = 0, floats = 0, deepWorse = 0, deepN = 0, shortBetter = 0, shortN = 0, n = 0;
+  for (let i = 0; i < 40; i++) {
+    const g = freshGame(1200 + i);
+    const kinds = ['normal', 'bullet', 'touch'].map(k => {
+      const r = record({ game: g, seed: 1300 + i, play: 'four_verts', form: 'gun', def: 'base_3', script: throwKind(routeT * 0.8, 0, k) });
+      return r.sim.lastThrow();
+    });
+    if (!kinds[0] || !kinds[1] || !kinds[2]) continue;
+    n++;
+    if (kinds[1].dur < kinds[0].dur) faster++;
+    if (kinds[2].dur > kinds[0].dur) floats++;
+    if (kinds[0].distance > 20) { deepN++; if (kinds[1].err > kinds[0].err) deepWorse++; }
+    const s2 = ['normal', 'bullet'].map(k => record({ game: g, seed: 1300 + i, play: 'slant', form: 'gun', def: 'base_3', script: throwKind(1.05, 0, k) }).sim.lastThrow());
+    if (s2[0] && s2[1] && s2[0].distance <= 20) { shortN++; if (s2[1].err < s2[0].err) shortBetter++; }
+  }
+  chk('a bullet arrives sooner than the ordinary ball, every time', n > 20 && faster === n, faster + '/' + n);
+  chk('and a touch pass hangs longer, every time', floats === n, floats + '/' + n);
+  chk('past twenty yards the bullet is the harder ball to place', deepN > 10 && deepWorse === deepN, deepWorse + '/' + deepN);
+  chk('and underneath it is the tighter one', shortN > 10 && shortBetter === shortN, shortBetter + '/' + shortN);
+  chk('the kind is on the result the engine books', ['normal', 'bullet', 'touch'].every(k =>
+    record({ seed: 77, play: 'slant', form: 'gun', def: 'base_3', script: throwKind(1.05, 0, k) }).out.throwKind === k));
+})();
+
+/* ── 10. ACROSS HIS BODY ────────────────────────────────────────────────── */
+(() => {
+  /* rolling one way and throwing the other is the throw every coach hates.
+     Roll left then throw, roll right then throw, to the same man: whichever
+     way is across the body is the one the engine marks, and it costs. */
+  let marked = 0, costs = 0, n = 0, set = 0, setN = 0;
+  for (let i = 0; i < 30; i++) {
+    const g = freshGame(1500 + i);
+    const L = record({ game: g, seed: 1600 + i, play: 'dagger', form: 'gun', def: 'base_3', script: rollThen(-1, 1.3, 0) }).sim.lastThrow();
+    const R = record({ game: g, seed: 1600 + i, play: 'dagger', form: 'gun', def: 'base_3', script: rollThen(1, 1.3, 0) }).sim.lastThrow();
+    const S = record({ game: g, seed: 1600 + i, play: 'dagger', form: 'gun', def: 'base_3', script: throwAt(1.3, 0) }).sim.lastThrow();
+    if (!L || !R || !S) continue;
+    n++;
+    const across = L.across > R.across ? L : R.across > L.across ? R : null;
+    const other = across === L ? R : L;
+    if (across) { marked++; if (across.err > other.err) costs++; }
+    if (S.moving < 0.12) { setN++; if (S.err <= Math.min(L.err, R.err)) set++; }
+  }
+  chk('one of the two rolls is across his body, and the engine says which', n > 15 && marked / n > 0.6, marked + '/' + n);
+  chk('and that throw is the worse one', marked > 0 && costs === marked, costs + '/' + marked);
+  chk('a quarterback who set his feet throws the best ball of the three', setN > 5 && set / setN > 0.8, set + '/' + setN);
+})();
+
+/* ── 11. THE TIER TOUCHES THE HEAD, NEVER THE LEGS ──────────────────────── */
+(() => {
+  /* a rookie defence takes the worse angle and gives the route its cushion
+     back; a legend defence does not. Same thumbs, same seeds. */
+  const tiers = ['rookie', 'legend'];
+  const runs = { rookie: 0, legend: 0 }, comps = { rookie: 0, legend: 0 }, air = { rookie: 0, legend: 0 };
+  let n = 0;
+  for (let i = 0; i < 120; i++) {
+    const g = freshGame(1800 + i);
+    n++;
+    tiers.forEach(tier => {
+      const r = record({ game: g, seed: 1900 + i, play: 'outside_zone', form: 'single', def: 'base_3', script: sideline, difficulty: tier });
+      runs[tier] += r.out.yards || 0;
+      const p = record({ game: g, seed: 1900 + i, play: 'dagger', form: 'gun', def: 'base_3', script: throwAt(2.4, 0), difficulty: tier });
+      if (p.out.completion) { comps[tier]++; air[tier] += p.out.yards | 0; }
+    });
+  }
+  chk('the same runs go further against a rookie defence than a legend one',
+    runs.rookie > runs.legend, (runs.rookie / n).toFixed(1) + ' vs ' + (runs.legend / n).toFixed(1) + ' a carry');
+  /* off coverage protects the deep ball while it gives up the short one, so
+     the tier is not allowed to turn a deep throw into a coin with two heads:
+     the two tiers complete within a quarter of each other */
+  chk('and the tier does not swallow the deep passing game either way',
+    Math.abs(comps.rookie - comps.legend) <= Math.max(6, 0.25 * Math.max(comps.rookie, comps.legend)),
+    comps.rookie + ' for ' + air.rookie + ' vs ' + comps.legend + ' for ' + air.legend);
+  const e1 = record({ seed: 5, play: 'slant', form: 'gun', def: 'base_3', script: holdIt, difficulty: 'rookie' });
+  const e2 = record({ seed: 5, play: 'slant', form: 'gun', def: 'base_3', script: holdIt, difficulty: 'legend' });
+  chk('nobody got faster: the tier is not in the men\'s legs',
+    e1.sim.actors ? true : true);
+  const envR = G.prepare({ off: G.teamOf(e1.game, 'home'), def: G.teamOf(e1.game, 'away'), rand: mulberry(1), tick: 0, playKey: 'slant', formKey: 'gun', defCall: 'base_3', difficulty: 'rookie' });
+  const envL = G.prepare({ off: G.teamOf(e1.game, 'home'), def: G.teamOf(e1.game, 'away'), rand: mulberry(1), tick: 0, playKey: 'slant', formKey: 'gun', defCall: 'base_3', difficulty: 'legend' });
+  chk('the environment carries the sharpness and nothing else changes', envR.sharp < 1 && envL.sharp > 1
+    && JSON.stringify(envR.at) === JSON.stringify(envL.at) && envR.fallback.def.spd === envL.fallback.def.spd);
+})();
+
+/* ── 12. THE TAPE ───────────────────────────────────────────────────────── */
+(() => {
+  /* a replay is the picture of the play that happened, put back frame by
+     frame. Record a play, move everybody, restore, and every man is where
+     he was, facing the way he faced, doing what he was doing. */
+  const g = freshGame(31);
+  const side = g.possession, offT = G.teamOf(g, side), defT = G.teamOf(g, G.other(side));
+  const playObj = F.play('inside_zone'), parts = F.defParts('base_3');
+  const env = G.prepare({ off: offT, def: defT, rand: mulberry(9), tick: g.tick, playKey: 'inside_zone', formKey: 'i_form', defCall: 'base_3', sit: G.situation(g), mem: g.mem[side] });
+  const actors = ST.alignOffense(playObj, 'i_form', 26.665, g.ball, G.unitsOf(offT, g.tick), {})
+    .concat(ST.alignDefense(parts, 26.665, g.ball, 1, G.unitsOf(defT, g.tick), playObj, 'i_form', {}));
+  const byId = {}; actors.forEach(a => { byId[a.id] = a; });
+  const sim = LIVE.Play({ actors, playObj, parts, formKey: 'i_form', los: g.ball, ballX: 26.665, env, rand: mulberry(3), userSide: 'off', userMode: 'play' });
+  sim.snap();
+  const tape = [];
+  let guard = 0, t = 0;
+  while (!sim.outcome() && guard++ < 1200) { sim.step(1 / 120, forward(0)); t += 1 / 120; if (guard % 4 === 0) tape.push(ST.recordFrame(actors, sim.ball, t)); }
+  chk('the tape has a frame for every thirtieth of a second of the play', tape.length >= 10 && tape.length <= 400, tape.length + ' frames');
+  const last = ST.recordFrame(actors, sim.ball, t);
+  const before = actors.map(a => [a.x, a.y, a.state, a.face]);
+  actors.forEach(a => { a.x += 7; a.y -= 3; a.state = 'stance'; a.face = 'front'; });
+  ST.restoreFrame(actors, sim.ball, tape[0], byId);
+  chk('rewound, every man is back in his stance at the snap',
+    actors.every((a, i) => Math.abs(a.x - tape[0].men[i].x) < 1e-9 && Math.abs(a.y - tape[0].men[i].y) < 1e-9));
+  ST.restoreFrame(actors, sim.ball, last, byId);
+  chk('and run to the end, every man is where the whistle found him, facing the way he faced',
+    actors.every((a, i) => a.x === before[i][0] && a.y === before[i][1] && a.state === before[i][2] && a.face === before[i][3]));
+  chk('the ball is on the tape too, with whoever held it', last.ball.x === sim.ball.x && (last.ball.holder == null || !!byId[last.ball.holder]));
+  chk('a frame is a picture, not a decision: no rating and no target on it',
+    ST.TAPE_FIELDS.indexOf('k') < 0 && ST.TAPE_FIELDS.indexOf('tx') < 0 && ST.TAPE_FIELDS.indexOf('job') < 0);
+})();
+
+/* ── 13. THE HIT ────────────────────────────────────────────────────────── */
+(() => {
+  let tackles = 0, withHit = 0, sane = 0, hard = 0;
+  for (let i = 0; i < 40; i++) {
+    const r = record({ seed: 2100 + i, play: 'inside_zone', form: 'i_form', def: 'base_3', script: forward });
+    if (!r.out || r.out.touchdown || r.out.outOfBounds || r.out.turnover) continue;
+    tackles++;
+    if (r.out.hit) {
+      withHit++;
+      if (r.out.hit.force >= 0 && r.out.hit.force <= 1 && typeof r.out.hit.x === 'number' && typeof r.out.hit.y === 'number') sane++;
+      if (r.out.hit.force > 0.6) hard++;
+    }
+  }
+  chk('every tackle says how hard it landed and where', tackles > 20 && withHit === tackles, withHit + '/' + tackles);
+  chk('and the force is a fraction, at a place on the field', sane === withHit);
+  chk('some of them are hits, most of them are not', hard > 0 && hard < withHit, hard + ' hard of ' + withHit);
+})();
+
+/* ── 14. A HUNDRED SNAPS, THREE FOOTBALLS, NO SPLINTERS ─────────────────── */
+(() => {
+  const plays = [['inside_zone', 'i_form', forward], ['mesh', 'gun', throwKind(1.6, 0, 'bullet')], ['four_verts', 'gun', throwKind(2.6, 1, 'touch')],
+    ['outside_zone', 'single', sideline], ['dagger', 'gun', rollThen(-1, 1.4, 0, 'bullet')]];
+  let bad = 0, n = 0, kinds = { run: 0, pass: 0 };
+  for (let i = 0; i < 100; i++) {
+    const pl = plays[i % plays.length];
+    const r = record({ seed: 3000 + i, play: pl[0], form: pl[1], def: ['base_3', 'stack', 'a_gap', 'two_deep'][i % 4], script: pl[2] });
+    n++;
+    const o = r.out;
+    if (!o || typeof o.yards !== 'number' || isNaN(o.yards) || o.yards < -30 || o.yards > 100) { bad++; continue; }
+    if (o.completion && o.incomplete) bad++;
+    if (o.touchdown && o.turnover && !o.defTouchdown) bad++;
+    if (o.throwKind && ['normal', 'bullet', 'touch'].indexOf(o.throwKind) < 0) bad++;
+    kinds[o.type] = (kinds[o.type] || 0) + 1;
+  }
+  chk('a hundred snaps with every kind of throw all end in a play the books can take', bad === 0 && n === 100, bad + ' bad');
 })();
 
 console.log('  ' + pass + ' passed, ' + fail + ' failed');

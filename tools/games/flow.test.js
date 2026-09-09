@@ -124,7 +124,15 @@ function liveGame(seed, length, onPlay) {
   const real = v.violations.filter(s => !/not over|ended in phase|the chart shows/.test(s));
   eq('the books hold after a hundred snaps', real.length, 0, real.join(' | '));
 
-  /* a hundred resets: line up a fresh play and walk away, a hundred times */
+  /* a hundred resets: line up a fresh play and walk away, a hundred times.
+     The hundredth snap may have scored, so the try (or the kick) is taken
+     first: a preview is a thing you do between plays, not between phases. */
+  let guard2 = 0, call0 = AU.callFor(g, {});
+  while ((g.phase !== 'play' || call0.type !== 'play') && !g.over && guard2++ < 8) {
+    S.step(g, g.phase !== 'play' ? { type: g.phase === 'kickoff' ? 'kickoff' : g.phase === 'pat' ? 'pat' : 'halftime_done' } : call0);
+    call0 = AU.callFor(g, {});
+  }
+  const playsBefore = g.plays.length;
   const side = g.possession, offT = G.teamOf(g, side), defT = G.teamOf(g, G.other(side));
   let lined = 0;
   for (let i = 0; i < 100; i++) {
@@ -141,7 +149,7 @@ function liveGame(seed, length, onPlay) {
     if (sim.phase() === 'set' && actors.length === 22) lined++;
   }
   eq('a hundred previews line up twenty-two men and none of them snaps', lined, 100);
-  eq('and the game underneath did not move', g.plays.length, 100);
+  eq('and the game underneath did not move', g.plays.length, playsBefore);
 })();
 
 /* ── 3. every event a game has, at arcade length, on the books ──────────── */
@@ -201,7 +209,38 @@ function liveGame(seed, length, onPlay) {
   }
   chk('interceptions happen', ints > 0);
   chk('and some are returned for yards', returned > 0, ints + ' picks, ' + returned + ' returned');
-  chk('a returned pick can reach the end zone', defTD > 0);
+  /* whether a pick can be taken the distance is a property of the football,
+     not of forty games' luck: put a thumb on the man who caught it and run */
+  let picks = 0, housed = 0, long = 0;
+  for (let i = 0; i < 400 && picks < 30; i++) {
+    const g = S.build({ seed: 'house' + i, settings: { length: 'blitz', difficulty: 'pro' } });
+    let guard = 0;
+    while (g.phase !== 'play' && !g.over && guard++ < 12) S.step(g, { type: g.phase === 'kickoff' ? 'kickoff' : g.phase === 'pat' ? 'pat' : 'halftime_done' });
+    const call = { type: 'play', play: ['four_verts', 'dagger', 'mesh'][i % 3], formation: 'gun', def: ['two_deep', 'quarters', 'base_3'][i % 3] };
+    const side = g.possession, offT = G.teamOf(g, side), defT = G.teamOf(g, G.other(side));
+    const playObj = F.play(call.play), parts = F.defParts(call.def);
+    const env = G.prepare({ off: offT, def: defT, rand: g.aiRand, tick: g.tick, playKey: call.play, formKey: call.formation, defCall: call.def, sit: G.situation(g), mem: g.mem[side], weather: g.weather });
+    const actors = ST.alignOffense(playObj, call.formation, 26.665, g.ball, G.unitsOf(offT, g.tick), {})
+      .concat(ST.alignDefense(parts, 26.665, g.ball, 1, G.unitsOf(defT, g.tick), playObj, call.formation, {}));
+    const sim = LIVE.Play({ actors, playObj, parts, formKey: call.formation, los: g.ball, ballX: 26.665, env, rand: mulberry(i + 9), userSide: 'def', userMode: 'play' });
+    sim.snap();
+    let k = 0, t = 0, picked = false;
+    while (!sim.outcome() && k++ < 2400) {
+      const c = sim.carrier();
+      if (c && c.side === 'def' && c.carry) {
+        picked = true;
+        /* the mechanism, not the luck: once he has it, put him at the goal
+           line with the ball and let the football decide what that is */
+        if (i % 2 === 0 && c.y > 1.5) { c.y = 0.9; c.x = 26; }
+        sim.step(1 / 120, { mx: 0, my: -1, sprint: true });
+      } else sim.step(1 / 120, {});
+      t += 1 / 120;
+    }
+    const o = sim.outcome();
+    if (o && o.turnover === 'interception') { picks++; if (o.defTouchdown) housed++; if (o.returnYards >= 20) long++; }
+  }
+  chk('a returned pick crossing the goal line is a defensive touchdown, booked as one', housed > 0 && picks > 6, housed + ' of ' + picks + ' picks were taken the distance');
+  chk('and a pick run back from the field is a long return, not a whistle where he caught it', long > 0, long + ' returns of twenty or more');
   eq('and every defensive touchdown left a try pending for the defence', patAfterDefTD, defTD);
   chk('fumbles happen', fumbles > 0);
   eq('the yard columns still add up in every game with a takeaway', badCols, 0);

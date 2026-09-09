@@ -3311,3 +3311,85 @@ goes through, the balance never below zero).
 Credits are what the ledger calls `tc` and the game calls Credits; XP is
 Research XP. Nothing on the Exchange can be bought with money: there is no
 Credit for sale, and the SQL has no path that grants one.
+
+## The game you hold, felt — throw kinds, the run concepts, the replay
+
+The brief for this pass was two sentences: *this actually feels good* when
+you play, and *that was sick* when you open a pack. This section is the first
+one. Everything here was measured before it was changed, on the deterministic
+harness (`tools/games/live.test.js`), and the measurements are in the tests.
+
+**Three footballs.** A tap on a receiver's badge is a throw. A tap *held*
+past a fifth of a second is a bullet: it leaves harder and lower, arrives
+sooner, gives the man in coverage less of a look, and past twenty yards is the
+harder ball to place. A touch pass (the engine's third kind, reachable from a
+script today) floats and hangs. The badge grows a gold ring while it is held,
+so the wind-up is something you can see, and the throw goes on the release.
+`EDGridironLive.THROWS` is the table; the tests hold that a bullet is faster
+on every seed, a touch slower on every seed, the bullet worse past twenty and
+tighter underneath, and that the kind is booked on the play.
+
+**His feet, and which way he is going.** The quarterback is yours from the
+snap: the stick rolls him, and a roll across the line with the ball becomes a
+scramble, booked as one. A quarterback who has set his feet throws the best
+ball of the three; one rolling *away* from the side he throws to is throwing
+across his body, and the engine marks it (`lastThrow().across`) and charges
+for it. Before this the stick did nothing for the first three seconds of
+every pass play, because the user's man was nobody until a handoff or a
+catch.
+
+**The run concepts are different blocks.** Every lineman used to take the
+nearest rusher whatever was called, so inside zone, outside zone and power
+were one play with three names — the probe printed identical yards for all
+three. Now outside zone reaches for the play-side shoulder and runs the front
+sideways, power pulls the backside guard round and through the hole, counter
+shows one way for a beat and pulls the other, and a draw pass-sets for half a
+second while the backers drop. The thumb still picks the crease; the concept
+decides where the creases are.
+
+**The secondary does not tackle the handoff.** The single biggest number in
+the audit: against a base front the first tackler on seven carries in ten
+was a *cornerback*, at two yards. Every coverage defender broke for the ball
+the frame it reached the back's belly, from wherever he stood. A defender in
+coverage now plays his man or his zone until the run declares — the ball
+across the line, or a beat of reading it: a safety's beat is short, a
+corner's long, a sharper defence's shorter. Inside zone against a base front
+went from 2.2 yards a carry with linebackers never in the picture to 4.0 with
+the linebackers making the tackle at four, four carries in ten reaching four
+yards and one in twenty reaching ten. A draw can lose yards now, which a draw
+should.
+
+**The tier touches the head, never the legs.** Difficulty used to change the
+opposing coach only. It now also sharpens his defence's *reading*: how late
+it comes off the ball, how far ahead it aims in pursuit, the beat before a
+zone defender turns and runs with the deepest man or breaks on a throw, the
+cushion a man defender concedes. Nobody gets faster. Your own defence is
+untouched by it. The same runs go three yards a carry against a rookie
+defence and one against a legend one.
+
+**One hit, felt once.** The tackle already resolves once per approach; it now
+reports how hard it landed (closing speed and how square) and where. The
+stage bumps the lens and throws turf in proportion, the page pulses the
+phone harder for a square hit at speed and says who laid him out. A
+drag-down barely registers, as it should.
+
+**Instant replay.** The stage keeps a tape of the last play — thirty frames
+a second of where every man was, how he stood and which way he leaned, and
+the football; a picture, never a decision. A score from twenty out, any
+takeaway, a fourth-down stand, a gain of thirty-five or the play that took
+the lead late is shown again at half speed from a lower, tighter lens with
+the broadcast's bars on it. A tap anywhere skips it. `Replays` is a setting.
+`ST.recordFrame` / `ST.restoreFrame` are pure and tested: rewound, every man
+is back in his stance; run to the end, every man is where the whistle found
+him.
+
+**The dead ball has a broadcast.** Every fourth ordinary play, one short fact
+arrives on the dead ball and goes: the man having the day and his line, this
+drive, third downs, total yards. A fourth-down stand and a thirty-yard play
+get a graphic of their own. None of it waits on the football.
+
+**Proof.** `live.test.js` grew from 58 to 79 assertions (the three footballs,
+across the body, the tier, the tape, the hit, a hundred snaps with every
+kind of throw); `flow.test.js` proves a pick crossing the goal line is booked
+as a defensive touchdown with the try pending and a hundred previews line up
+and never snap.

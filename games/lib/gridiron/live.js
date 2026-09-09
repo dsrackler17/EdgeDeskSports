@@ -78,10 +78,13 @@
     actors.forEach(function (a) { byId[a.id] = a; });
 
     var t = 0, phase = 'set', outcome = null;
+    var runSide = 1;   /* which way a run concept goes: the art and the pull agree */
     var ball = { x: ballX, y: los, z: 0, spin: 0, holder: null, flight: null };
     var qb = byId['o_QB'] || null;
     var carrier = null, user = null;
-    var handoffAt = play.type === 'run' ? 0.62 : 0;
+    /* WHEN THE BALL IS IN HIS BELLY. A counter shows one way first and a
+       draw waits for the rush to go past, so both mesh later than a dive. */
+    var handoffAt = play.type !== 'run' ? 0 : play.key === 'counter' ? 0.80 : play.concept === 'draw' ? 0.85 : 0.62;
     var thrown = false, pressureSeen = false, handedOff = false;
     var notes = [];
     var threwAway = false;
@@ -99,6 +102,14 @@
        0-for-0 passing came from, and the sack totals, and the hundred and
        forty negative yards — all one missing decision. */
     var autoQB = !manual || userSide === 'def';
+    /* ── HOW SHARP THE DEFENCE IS ──────────────────────────────────────────
+       The difficulty tier never touches a man's speed or strength; it
+       touches his head. A rookie defence takes the worse angle, breaks on
+       the ball a beat late and gives a route its cushion back; a legend
+       defence reads it early. `env.sharp` is 1 at Pro, below it on Rookie,
+       above it on Legend, and `dull` is what it costs the other way. */
+    var sharp = clamp(env.sharp == null ? 1 : env.sharp, 0.7, 1.25);
+    var dull = clamp(2 - sharp, 0.75, 1.3);
 
     /* ── THE MEN, AS NUMBERS ──────────────────────────────────────────────
        The engine rated every card it knows; anyone it does not know gets the
@@ -136,6 +147,33 @@
         else b.job = { kind: 'block', on: null };
       });
       rushers.forEach(function (d) { d.job = { kind: 'rush', lane: d.x - ballX }; });
+
+      /* ── THE RUN CONCEPTS ARE DIFFERENT BLOCKS ────────────────────────
+         Every lineman used to take the nearest rusher and drive him,
+         whatever was called, so inside zone, outside zone and power were
+         one play with three names. They are not. Outside zone reaches for
+         the play-side shoulder and runs the front sideways; power pulls the
+         backside guard and leads through the hole; counter shows one way and
+         pulls the other; a draw pass-sets for half a second and lets the
+         rush run itself out of the lane. The thumb still picks the crease —
+         the concept decides where the creases are. */
+      if (play.type === 'run') {
+        runSide = play.concept === 'gap' ? -1 : 1;
+        var sortedOL = line.slice().sort(function (p, q) { return p.x - q.x; });
+        line.forEach(function (b) {
+          if (!b.job) return;
+          b.job.reach = play.concept === 'outside' ? runSide * 0.75 : play.concept === 'inside' ? runSide * 0.30 : 0;
+          if (play.concept === 'draw') b.job.setFirst = 0.55;
+        });
+        if (play.concept === 'gap' && sortedOL.length >= 5) {
+          /* the backside guard pulls: play goes left, the right guard comes round */
+          var puller = runSide < 0 ? sortedOL[3] : sortedOL[1];
+          if (puller) {
+            if (puller.job && puller.job.on) taken[puller.job.on] = 0;
+            puller.job = { kind: 'pull', side: runSide, to: { x: ballX + runSide * 2.6, y: los - 0.9 } };
+          }
+        }
+      }
 
       actors.forEach(function (a) {
         if (a.side !== 'off' || a.pos === 'OL' || a.slot === 'QB') return;
@@ -200,6 +238,8 @@
           .sort(function (a, b) { return a.x - b.x; });
         fit(dl, 4.6, 1.1);
         fit(lb, 6.2, 3.4);
+        /* a draw is a pass until it is not: the backers drop for a beat */
+        if (play.concept === 'draw') lb.forEach(function (d) { if (d.job && d.job.kind === 'fill') d.job.dropFirst = 0.45; });
 
         /* ── THE SECOND LEVEL ────────────────────────────────────────────
            Five linemen against a four-man front leaves one free, and what he
@@ -268,10 +308,19 @@
       ball.holder = qb;
       if (qb) { qb.carry = play.type !== 'pass'; }
       carrier = qb;
+      /* ── THE QUARTERBACK IS YOURS FROM THE SNAP ────────────────────────
+         Before the throw he drops on his own, but a thumb on the stick
+         moves him: a step up, a roll either way, a reset. The user's man
+         used to be nobody until a handoff or a catch, so the stick did
+         nothing for the first three seconds of every pass play — and the
+         stick doing nothing is the worst thing a control can do. */
+      refreshUser();
       actors.forEach(function (a) {
         a.state = a.side === 'off' && a.pos === 'OL' ? 'block' : 'run';
-        /* a defence that did not read it is a beat late off the ball */
-        a.react = a.side === 'def' ? env.reaction * (0.6 + rand() * 0.8) : 0;
+        /* a defence that did not read it is a beat late off the ball — and a
+           rookie defence is later still, a legend one earlier: the tier is a
+           head start, never a step of speed */
+        a.react = a.side === 'def' ? env.reaction * (0.6 + rand() * 0.8) * dull : 0;
       });
       if (events.onSnap) events.onSnap();
       return true;
@@ -380,7 +429,7 @@
 
     function applyInput(input) {
       if (!manual) return;
-      if (input.throwTo != null && !thrown) throwTo(input.throwTo);
+      if (input.throwTo != null && !thrown) throwTo(input.throwTo, input.throwKind || null);
       if (input.action) doAction(input.action);
       if (input.switchDef && userSide === 'def') switchUser();
       var a = user;
@@ -519,6 +568,9 @@
 
       /* the man in your thumb goes where you point */
       if (a === user && a.steered && a.drive > 0.08) {
+        /* a quarterback steered across the line with the ball is running
+           it: the play becomes a scramble, and is booked as one */
+        if (a === qb && !a.carry && !thrown && play.type === 'pass' && a.y > los + 0.3) doAction('scramble');
         var aim = a.carry ? lane(a) : null;
         if (aim) { a.tx = aim.x; a.ty = aim.y; }
         else { a.tx = a.x + a.dx * 8; a.ty = a.y + a.dy * 8; }
@@ -561,6 +613,21 @@
           if (d2 && dist(a, d2) < 3) { a.tx = d2.x; a.ty = d2.y - 0.4; }
           return;
         }
+        case 'pull': {
+          /* round the corner behind the line, then through the hole: the
+             first defender waiting there is his, and he leads the back */
+          var arrived = Math.abs(a.x - j.to.x) < 1.2 && a.y > j.to.y - 0.6;
+          if (!arrived && !a.lock) { a.tx = j.to.x; a.ty = j.to.y; a.state = 'run'; return; }
+          var kick = null, kd = 4.2;
+          actors.forEach(function (r) {
+            if (r.side !== 'def' || r.lock || r.state === 'down') return;
+            if ((r.x - a.x) * j.side < -1.5) return;      /* behind the pull */
+            var g = dist(a, r);
+            if (g < kd) { kd = g; kick = r; }
+          });
+          if (kick) { a.tx = kick.x; a.ty = kick.y - 0.3; a.job.on = kick.id; a.state = dist(a, kick) < 1.4 ? 'block' : 'run'; return; }
+          a.tx = j.to.x + j.side * 1.2; a.ty = los + 2.2; a.state = 'block'; return;
+        }
         case 'hand':
           a.tx = ballX - 1.4; a.ty = los - 2.4; a.state = 'run'; return;
         case 'back': return backThink(a, j);
@@ -586,10 +653,17 @@
     function backThink(a, j) {
       if (!a.carry) {
         var mesh = { x: ballX + (play.concept === 'gap' ? -1.1 : 0), y: los - 1.9 };
+        /* a counter's first step is the wrong way, on purpose */
+        if (play.key === 'counter' && t < 0.42) mesh = { x: ballX + 1.6, y: los - 2.6 };
         a.tx = mesh.x; a.ty = mesh.y; a.state = 'run';
         return;
       }
-      var aim = daylight(a);
+      /* the first beat after the mesh he runs the play as drawn — the edge,
+         the hole behind the pull, the middle — then he runs to daylight */
+      var aim;
+      if (t < handoffAt + 0.45 && play.concept === 'outside') aim = { x: clamp(ballX + runSide * 7, 2, FIELD.width - 2), y: los + 1.5 };
+      else if (t < handoffAt + 0.40 && play.concept === 'gap') aim = { x: ballX + runSide * 2.6, y: los + 1.2 };
+      else aim = daylight(a);
       a.tx = aim.x; a.ty = aim.y;
       a.state = 'carry';
     }
@@ -702,6 +776,7 @@
        to chase. A defence that skips this step is eleven men in a queue. */
     function fillThink(a, j) {
       var c = carrier;
+      if (j.dropFirst && t < j.dropFirst) { a.tx = j.x; a.ty = j.y + 3.5; a.state = 'run'; return; }
       if (c && c.carry && c !== qb) {
         var declared = c.y > los + 1.0 || Math.abs(c.x - j.x) < 2.6 || t > 2.4;
         if (declared) { pursue(a, c); return; }
@@ -760,8 +835,14 @@
       }
       var qx = qb ? qb.x : ballX, qy = qb ? qb.y : los - 4;
       if (play.type === 'run') {
-        /* drive him off the ball and off the runner's track */
-        a.tx = clamp(d.x, a.hx - 2.6, a.hx + 2.6);
+        /* a draw sells the pass first: he sets, and the rush comes to him */
+        if (j.setFirst && t < j.setFirst) {
+          a.tx = a.hx; a.ty = a.hy - 0.7; a.state = 'block'; return;
+        }
+        /* drive him off the ball and off the runner's track — and on a zone
+           play, get to his play-side shoulder so the front flows the way the
+           back is going and the cutback opens behind it */
+        a.tx = clamp(d.x + (j.reach || 0), a.hx - 2.6, a.hx + 2.6);
         a.ty = d.y + 0.35;
       } else {
         var ux = qx - d.x, uy = qy - d.y, u = len(ux, uy) || 1;
@@ -812,7 +893,7 @@
          slow linebacker to the edge is this number. */
       if (a.missAt == null || t > a.missAt) {
         a.missAt = t + 0.45;
-        a.miss = (rand() - 0.5) * 2 * (1 - a.k.iq * 0.72) * 0.85;
+        a.miss = (rand() - 0.5) * 2 * (1 - a.k.iq * 0.72) * 0.85 * dull;
       }
       /* AND IT ONLY COSTS HIM UP CLOSE. A false step at the point of attack
          is the play; the same step with fifteen yards to work in is one he
@@ -1127,10 +1208,28 @@
       finish('incomplete', null, null);
     }
 
+    /* ── THE SECONDARY DOES NOT TACKLE THE HANDOFF ────────────────────
+       Every coverage defender used to break for the ball carrier on the
+       frame the ball reached his belly, from wherever he stood — so a corner
+       ten yards wide arrived at the line with the back and the first tackler
+       on seven carries in ten was a cornerback, at two yards. That is not a
+       defence, it is a net, and it is why the run game starved. A defender
+       in coverage plays his man or his zone until the run DECLARES: the ball
+       across the line, or a beat of reading it — a safety's beat is short, a
+       corner's is long, and a sharper defence reads it sooner. */
+    function runDeclared(a) {
+      var c = carrier;
+      if (!c || !c.carry || c === qb || c.side !== 'off') return false;
+      /* a safety keys the back and sees the handoff; a corner is watching a
+         receiver and sees it last */
+      if (c.y > los + (a.pos === 'S' ? -0.5 : 0.5)) return true;
+      var beat = a.pos === 'CB' ? 0.85 : a.pos === 'S' ? 0.30 : 0.45;
+      return t > handoffAt + beat * dull;
+    }
     function manThink(a, j) {
       var m = byId[j.on];
       if (!m) { a.tx = a.x; a.ty = a.y + 4; a.state = 'run'; return; }
-      if (carrier && carrier.carry) { pursue(a, carrier); return; }
+      if (carrier && carrier.carry && (carrier.side === 'def' || runDeclared(a))) { pursue(a, carrier); return; }
       /* HOW TIGHT HE TRAILS IS HIS COVERAGE RATING against how well the man
          in front of him runs routes — which is exactly the number the engine
          already computed for this matchup. A good corner sits on the hip; a
@@ -1146,8 +1245,9 @@
          technician buys himself another step of cushion, a straight-line
          runner does not. This is the one place a receiver's own route rating
          acts on the field. */
-      var trail = 0.80 + env.separation * 0.72 - a.k.cov * 1.10 + ((m.k && m.k.rte) != null ? (m.k.rte - 0.5) * 0.9 : 0);
-      var lead = 0.16 + a.k.cov * 0.20;
+      var trail = 0.80 + env.separation * 0.72 - a.k.cov * 1.10 + ((m.k && m.k.rte) != null ? (m.k.rte - 0.5) * 0.9 : 0)
+                + (dull - 1) * 0.6;
+      var lead = (0.16 + a.k.cov * 0.20) * sharp;
       a.tx = m.x + m.vx * lead;
       a.ty = m.y + m.vy * lead + clamp(trail, 0.45, 3.4);
       a.state = 'run';
@@ -1155,7 +1255,7 @@
     }
 
     function zoneThink(a, j) {
-      if (carrier && carrier.carry) { pursue(a, carrier); return; }
+      if (carrier && carrier.carry && (carrier.side === 'def' || runDeclared(a))) { pursue(a, carrier); return; }
       if (ball.flight) { breakOnBall(a); return; }
 
       /* ── NOBODY GETS BEHIND HIM ────────────────────────────────────────
@@ -1178,7 +1278,8 @@
         if (d < nd) { nd = d; near = r; }
         if (lat <= width && r.y > dy) { dy = r.y; deepest = r; }
       });
-      if (deep && deepest && deepest.y > j.y - 4.0) {
+      /* a rookie safety turns and runs a beat late; a legend one early */
+      if (deep && deepest && deepest.y > j.y - 4.0 * (2 - dull)) {
         /* he opens his hips and runs, keeping his cushion */
         a.tx = deepest.x * 0.55 + j.x * 0.45;
         a.ty = Math.max(deepest.y + 1.5, j.y);
@@ -1186,7 +1287,7 @@
         return;
       }
       /* otherwise he sits on his landmark and squeezes whoever comes into it */
-      if (near && nd < (deep ? 9.5 : 7.5)) {
+      if (near && nd < (deep ? 9.5 : 7.5) * sharp) {
         a.tx = near.x * 0.55 + j.x * 0.45;
         a.ty = Math.max(j.y - 1.5, near.y + 0.9);
       } else { a.tx = j.x; a.ty = j.y; }
@@ -1201,7 +1302,7 @@
          made every defender a free safety and every throw contested. The
          beat is his ball skills, and the distance he will even try from is
          his ball skills too. */
-      if (f.t < 0.34 - a.k.bhk * 0.20) return;
+      if (f.t < (0.34 - a.k.bhk * 0.20) * (0.5 + 0.5 * dull)) return;
       var d = Math.hypot(a.x - f.tx, a.y - f.ty);
       if (d > 5.5 + a.k.bhk * 6) return;
       /* and he only leaves his man for a ball he can actually get to */
@@ -1334,7 +1435,7 @@
       actors.forEach(function (b) {
         if (b.side !== 'off' || !b.job) return;
         var kind = b.job.kind;
-        if (kind !== 'block' && kind !== 'lead' && kind !== 'stalk' && kind !== 'protect') return;
+        if (kind !== 'block' && kind !== 'lead' && kind !== 'stalk' && kind !== 'protect' && kind !== 'pull') return;
         var d = b.job.on && byId[b.job.on];
         /* ── THE MEN WHO WERE ONLY PRETENDING TO BLOCK ────────────────────
            A fullback leading through the hole, a receiver stalking a corner
@@ -1522,6 +1623,11 @@
          game one coin flip at the line: lose it and you have two yards, win
          it and nobody was ever within fifteen yards of you again. */
       if (rand() < clamp(p, 0.06, 0.93)) {
+        /* HOW HARD IT LANDED, for the lens and the thumb: closing speed and
+           how square he was. Nothing that decides a yard reads it. */
+        lastHit = { x: Math.round(c.x * 100) / 100, y: Math.round(c.y * 100) / 100,
+                    force: clamp((closing / 16) * (0.35 + Math.max(0, square) * 0.65), 0, 1),
+                    square: Math.round(square * 100) / 100, help: help, by: d.player || null };
         /* ── THE BALL CAN COME OUT ────────────────────────────────────────
            Once per tackle, and rarely: the weather, the hit, how many hands
            are on him and how well he holds it. The resolver's rate is about
@@ -1556,7 +1662,7 @@
       if (events.onBreak) events.onBreak(c, d);
     }
 
-    var fumbledBy = null, fumbleForced = null, fumbleKept = false;
+    var fumbledBy = null, fumbleForced = null, fumbleKept = false, lastHit = null;
     function down(c, d) {
       c.state = 'down'; c.fell = rand() > 0.5 ? 1 : -1;
       if (d) d.state = 'tackle';
@@ -1567,13 +1673,28 @@
 
     /* ── THE THROW ────────────────────────────────────────────────────────
        When and where is the user's. Whether it arrives is the football's. */
-    function throwTo(idx) {
+    /* ── THREE FOOTBALLS ─────────────────────────────────────────────────
+       A tap is a throw. A tap HELD is a bullet: it leaves harder and lower,
+       gets there sooner, and gives the man in coverage less of a look — and
+       past twenty yards it is the harder ball to place, because a line
+       drive has no arc to drop into a window. A touch pass is the other
+       trade: slower, higher, a ball a receiver can run under and a defender
+       can run to. No fourth kind: nobody should need a manual for a throw. */
+    var THROWS = {
+      normal: { speed: 1.00, arc: 1.00, short: 0,     deep: 0,     catchAdj: 0,     hang: 0 },
+      bullet: { speed: 1.32, arc: 0.55, short: -0.22, deep: 0.45,  catchAdj: -0.05, hang: -0.08 },
+      touch:  { speed: 0.78, arc: 1.50, short: 0.25,  deep: -0.30, catchAdj: 0.02,  hang: 0.06 }
+    };
+    var lastThrow = null;
+    function throwTo(idx, kind) {
       if (thrown || play.type !== 'pass' || !qb || qb.state === 'down') return false;
       var list = self.targets();
       var tg = null;
       if (typeof idx === 'string') { tg = byId[idx]; }
       else { var e = list[idx | 0]; tg = e && byId[e.id]; }
       if (!tg) return false;
+      var tk = THROWS[kind] || THROWS.normal;
+      kind = THROWS[kind] ? kind : 'normal';
 
       thrown = true; thrownAt = t;
       qb.state = 'throw'; qb.hold = 0.3;
@@ -1584,7 +1705,7 @@
       /* where he leads him: far enough ahead that a well-thrown ball meets a
          running man, wrong by however much the throw was worth */
       var d0 = dist(qb, tg);
-      var speed = 17 + qb.k.arm * 12;
+      var speed = (17 + qb.k.arm * 12) * tk.speed;
       var flight = clamp(d0 / speed, 0.22, 1.5);
       /* THROWING HIM OPEN. A quarterback does not aim at where a receiver is;
          he aims at where the route puts him when the ball gets there. How
@@ -1603,11 +1724,22 @@
       var hurried = len(heat.dx, heat.dy);
       var moving = len(qb.vx, qb.vy) / Math.max(1, qb.top);
       var early = tg.job && tg.job.t ? clamp((tg.job.t - t) / Math.max(0.6, tg.job.t), 0, 1) : 0;
+      /* ── HIS FEET, AND WHICH WAY HE IS GOING ──────────────────────────
+         A quarterback who has stopped and set his feet is the accurate
+         version of himself. One rolling AWAY from the side he throws to is
+         throwing across his body, and every coach on earth will tell you
+         what that costs; rolling toward the throw costs nothing extra. */
+      var throwSide = (lx - qb.x) > 0 ? 1 : (lx - qb.x) < 0 ? -1 : 0;
+      var across = throwSide !== 0 && qb.vx * throwSide < -1.6 ? clamp((-qb.vx * throwSide - 1.6) / 4, 0, 1) : 0;
+      var set = moving < 0.12 ? 1 : 0;
       var err = (1 - qb.k.accy) * 1.5
               + hurried * 1.05
               + moving * 0.9
+              + across * 0.60
+              - set * 0.12
               + clamp(d0 - 10, 0, 34) * 0.072
               + early * 1.6
+              + (d0 > 20 ? tk.deep : tk.short)
               - (d0 > 18 ? (env.deepAcc || 0) : (env.shortAcc || 0)) * 4;
       err = clamp(err, 0.15, 5.5);
       var ang = rand() * Math.PI * 2, mag = err * (0.35 + rand() * 0.85);
@@ -1616,16 +1748,24 @@
 
       ball.flight = {
         fx: ball.x, fy: ball.y, tx: lx, ty: ly, t: 0,
-        dur: clamp(Math.hypot(lx - ball.x, ly - ball.y) / speed, 0.20, 1.6),
-        to: tg, airYards: Math.round(ly - los), err: err, early: early
+        dur: clamp(Math.hypot(lx - ball.x, ly - ball.y) / speed, 0.20, 1.6 / tk.speed),
+        to: tg, airYards: Math.round(ly - los), err: err, early: early,
+        kind: kind, arc: tk.arc, catchAdj: tk.catchAdj, hang: tk.hang
       };
+      lastThrow = { kind: kind, err: Math.round(err * 1000) / 1000, dur: Math.round(ball.flight.dur * 1000) / 1000,
+                    distance: Math.round(d0 * 10) / 10, across: Math.round(across * 100) / 100, set: !!set,
+                    moving: Math.round(moving * 100) / 100, hurried: Math.round(hurried * 100) / 100 };
       if (hurried > 0.55) { pressureSeen = true; }
-      if (events.onThrow) events.onThrow(tg);
+      if (events.onThrow) events.onThrow(tg, kind);
       refreshUser();
       return true;
     }
     self.throwTo = throwTo;
     self.thrown = function () { return thrown; };
+    /* what the last throw was, for the result card and for the tests that
+       hold the three footballs apart */
+    self.lastThrow = function () { return lastThrow; };
+    self.THROWS = THROWS;
 
     /* where his route has him in `ahead` seconds, walked along the waypoints */
     function predictRoute(a, ahead) {
@@ -1653,7 +1793,7 @@
       var u = clamp(f.t / f.dur, 0, 1);
       ball.x = f.fx + (f.tx - f.fx) * u;
       ball.y = f.fy + (f.ty - f.fy) * u;
-      ball.z = 1.0 + Math.sin(u * Math.PI) * (1.1 + Math.hypot(f.tx - f.fx, f.ty - f.fy) * 0.11);
+      ball.z = 1.0 + Math.sin(u * Math.PI) * (1.1 + Math.hypot(f.tx - f.fx, f.ty - f.fy) * 0.11) * (f.arc || 1);
       ball.spin += dt * 26;
       if (u < 1) return;
       arrive(f);
@@ -1678,7 +1818,7 @@
       if (best && bd < CATCH && bd < recD - 0.55) {
         /* he still has to catch it, and defenders drop more than they keep */
         var pInt = clamp(0.10 + best.k.bhk * 0.24 + (f.err - 1.6) * 0.06
-                         - rec.k.hnd * 0.06, 0.01, 0.42);
+                         - rec.k.hnd * 0.06 + (f.hang || 0), 0.01, 0.42);
         if (rand() < pInt) {
           notes.push('Thrown where he had no business going.');
           intercepted(best, f);
@@ -1691,7 +1831,7 @@
 
       var contested = best ? clamp(1 - bd / 2.6, 0, 1) : 0;
       var pCatch = clamp(0.71 + rec.k.hnd * 0.30 - (f.err - 0.5) * 0.11 - contested * 0.38
-                         + (env.hands || 0), 0.05, 0.985);
+                         + (env.hands || 0) + (f.catchAdj || 0), 0.05, 0.985);
       if (rand() > pCatch) {
         if (best && bd < 1.5 && rand() < 0.03 + best.k.bhk * 0.11) { intercepted(best, f); return; }
         incomplete(f, contested > 0.5 ? 'contested' : 'off his hands');
@@ -1860,6 +2000,8 @@
       r.endX = c ? Math.round(c.x * 100) / 100 : ballX;
       r.endY = c ? Math.round(c.y * 100) / 100 : los;
       r.big = r.yards >= 16;
+      r.hit = lastHit;
+      r.throwKind = lastThrow ? lastThrow.kind : null;
       r.liveTime = Math.round(t * 100) / 100;
       r.throwAt = thrownAt == null ? null : Math.round(thrownAt * 100) / 100;
       r.broke = (c && c.broke) || 0;
