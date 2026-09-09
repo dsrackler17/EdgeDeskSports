@@ -598,6 +598,130 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .ufc-sparkl{display:flex;justify-content:space-between;font-size:9.5px;color:var(--faint);margin-top:3px}
 .ufc-evmeta{font-size:11px;color:var(--faint);margin:-4px 0 10px;font-family:'JetBrains Mono',monospace}
 @media(max-width:520px){.ufc-pacew,.ufc-mkw{grid-template-columns:1fr}.ufc-scl{min-width:68px;font-size:9.5px}}
+/* ---- UFC Live Fight Center v2. Mobile-first; every class is prefixed .ufc-. ---- */
+.ufc-fc-head{position:sticky;top:0;z-index:6;background:rgba(13,15,19,.94);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.ufc-fc-ev{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ufc-fc-name{font-weight:800;font-size:15px;letter-spacing:.01em}
+.ufc-fc-state{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--dim)}
+.ufc-fc-state.live{color:#e0533a;border-color:rgba(224,83,58,.5);background:rgba(224,83,58,.12);animation:ufcPulse 2.4s ease-in-out infinite}
+.ufc-fc-state.pre{color:var(--accent);border-color:rgba(77,141,255,.4);background:rgba(77,141,255,.1)}
+.ufc-fc-state.final{color:var(--dim)}
+.ufc-fc-state.stale{color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.1)}
+@keyframes ufcPulse{0%,100%{opacity:1}50%{opacity:.55}}
+.ufc-fc-meta{font-size:11px;color:var(--dim);margin-top:3px}
+.ufc-fc-cur{font-size:13px;margin-top:5px;font-weight:600}
+.ufc-rc{font-family:'JetBrains Mono',monospace;color:#e0533a;margin-left:6px}
+.ufc-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.ufc-chip{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.04em;padding:2px 7px;border-radius:6px;border:1px solid var(--border);color:var(--dim);background:var(--surface2)}
+.ufc-chip b{font-weight:700;margin-right:3px}
+.ufc-chip.ok{color:var(--pos);border-color:rgba(47,180,124,.35)}
+.ufc-chip.warn{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.ufc-chip.neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.ufc-chip.mut{color:var(--faint)}
+.ufc-stale{margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(226,96,68,.14);border:1px solid rgba(226,96,68,.5);color:#ffb3a3;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.03em}
+.ufc-strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.ufc-strip-b{flex:0 0 auto;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:132px;max-width:190px;min-height:48px;padding:7px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.ufc-strip-b .mk{font-size:10px;color:var(--faint)}
+.ufc-strip-b .tx{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ufc-strip-b .sb{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);letter-spacing:.06em}
+.ufc-strip-b.live{border-color:rgba(224,83,58,.55)}.ufc-strip-b.live .mk{color:#e0533a}
+.ufc-strip-b.done .tx{color:var(--dim)}.ufc-strip-b.done .mk{color:var(--pos)}
+.ufc-strip-b.cancelled .tx{text-decoration:line-through;color:var(--faint)}
+.ufc-strip-b.on{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+.ufc-hero{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}
+.ufc-hero-t{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.ufc-hero-g{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start}
+.ufc-hero-side.blue{text-align:right}
+.ufc-hero-c{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--faint)}
+.ufc-hero-side.red .ufc-hero-c{color:#e0533a}.ufc-hero-side.blue .ufc-hero-c{color:#5d8def}
+.ufc-hero-n{font-weight:800;font-size:17px;line-height:1.15;margin-top:2px;cursor:pointer;overflow-wrap:anywhere}
+.ufc-hero-n .ar{font-size:10px;opacity:.5}
+.ufc-hero-m{font-size:11.5px;color:var(--text);margin-top:3px}
+.ufc-hero-b{font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.4}
+.ufc-streak{display:inline-block;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.06);color:var(--dim)}
+.ufc-hero-mid{text-align:center;padding:4px 8px;min-width:88px}
+.ufc-hero-r{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--dim)}
+.ufc-hero-k{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:#e0533a;line-height:1.1}
+.ufc-hero-k.mut{color:var(--dim);font-size:18px}
+.ufc-hero-w{font-weight:800;font-size:15px;margin-top:2px}
+.ufc-hero-mk{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:center}
+.ufc-hero-mk b{font-size:15px}
+.ufc-read{background:linear-gradient(180deg,rgba(77,141,255,.07),rgba(77,141,255,.02));border:1px solid rgba(77,141,255,.3);border-radius:12px;padding:11px 12px;margin-bottom:10px}
+.ufc-read-h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--accent);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ufc-read-l{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px;align-items:start}
+.ufc-read-l:last-of-type{border-bottom:none}
+.ufc-read-l .k{color:var(--dim);font-size:11px;padding-top:1px}
+.ufc-read-l .v{font-weight:600;line-height:1.35}
+.ufc-read-l .v small{display:block;font-weight:400;color:var(--faint);font-size:10.5px;margin-top:1px}
+.ufc-read-f{font-size:10px;color:var(--faint);margin-top:8px;padding-top:6px;border-top:1px dashed var(--border)}
+.ufc-ksg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:4px}
+.ufc-ks{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center;min-width:0}
+.ufc-ks .l{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.ufc-ks .v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ufc-ks .v .s{color:var(--faint);margin:0 3px;font-weight:400}
+.ufc-ks .rl{color:#e0533a}.ufc-ks .bl{color:#5d8def}
+.ufc-ksf{font-size:10px;color:var(--faint);margin:2px 0 10px}
+.ufc-flags{margin-bottom:10px}
+.ufc-flag{border:1px solid var(--border);border-left:3px solid var(--dim);border-radius:10px;padding:8px 10px;margin-top:6px;background:var(--surface)}
+.ufc-flag.red{border-left-color:#e0533a}.ufc-flag.blue{border-left-color:#5d8def}
+.ufc-flag-h{display:flex;justify-content:space-between;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em}
+.ufc-flag-h .code{font-weight:700}
+.ufc-flag-h .sev{color:var(--warn)}
+.ufc-flag.watch .ufc-flag-h .sev{color:var(--faint)}
+.ufc-flag-x{font-size:12.5px;margin-top:4px;line-height:1.4}
+.ufc-flag-n{display:flex;gap:12px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);margin-top:5px}
+.ufc-flag-r{font-size:9.5px;color:var(--faint);margin-top:3px}
+.ufc-sec2{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+.ufc-sech2{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;color:var(--text);font:inherit;text-align:left;padding:11px 12px;cursor:pointer;min-height:44px}
+.ufc-sech2 .t{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--dim);flex:1 1 auto}
+.ufc-sech2 .ar{color:var(--faint);font-size:12px}
+.ufc-sec2.open .ufc-sech2 .t{color:var(--text)}
+.ufc-secb{padding:0 12px 12px}
+.ufc-derived.mk{background:rgba(227,184,77,.14);color:#e3b84d;border-color:rgba(227,184,77,.35)}
+.ufc-derived.lv{background:rgba(224,83,58,.14);color:#e0533a;border-color:rgba(224,83,58,.35)}
+.ufc-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ufc-rt{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;min-width:520px}
+.ufc-rt th{text-align:right;font-weight:600;color:var(--faint);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:4px 6px;border-bottom:1px solid var(--border)}
+.ufc-rt th:first-child,.ufc-rt th.lean{text-align:left}
+.ufc-rt td{text-align:right;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap}
+.ufc-rt td.who{text-align:left;font-family:'Inter',system-ui,sans-serif;font-size:11.5px}
+.ufc-rt td.who small{color:#e0533a;font-size:9px;letter-spacing:.06em;text-transform:uppercase;margin-left:4px}
+.ufc-rt .r{color:#e0533a;font-weight:700}.ufc-rt .b{color:#5d8def;font-weight:700}
+.ufc-rt tr.lead td{font-weight:700}
+.ufc-rt tr.blue td{border-bottom:1px solid var(--border)}
+.ufc-rt td.lean{text-align:left;font-family:'Inter',system-ui,sans-serif;font-size:11px;vertical-align:middle;white-space:normal;min-width:120px}
+.ufc-rt td.lean small{display:block;color:var(--faint);font-size:9.5px}
+.ufc-rt td.lean b.red{color:#e0533a}.ufc-rt td.lean b.blue{color:#5d8def}
+.ufc-rt tr.tot td{background:rgba(255,255,255,.03)}
+.ufc-notes{margin-top:8px;font-size:12px;line-height:1.5;color:var(--text)}
+.ufc-notes div{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+.ufc-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.06);margin:6px 0 4px}
+.ufc-bar .d{background:#4d8dff}.ufc-bar .c{background:#d99a2b}.ufc-bar .g{background:#2fb47c}
+.ufc-rbs{display:flex;gap:6px;align-items:flex-end;height:74px;margin-top:6px}
+.ufc-rb{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.ufc-rb .bar{width:100%;max-width:44px;border-radius:4px 4px 0 0}
+.ufc-rb .lb{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);margin-top:3px}
+.ufc-rb .vl{font-family:'JetBrains Mono',monospace;font-size:10px}
+.ufc-big{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;margin:2px 0}
+.ufc-big .r{color:#e0533a}.ufc-big .b{color:#5d8def}
+.ufc-mat{font-family:'JetBrains Mono',monospace;font-size:12px;padding:3px 0}
+.ufc-vig{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:6px}
+.ufc-pacen.r{color:#e0533a}.ufc-pacen.b{color:#5d8def}
+.ufc-lbls{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:8px}
+.ufc-lbls .b{text-align:right}
+.ufc-lbls .mid{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;color:var(--warn);text-align:center;font-weight:700}
+.ufc-lbl{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;padding:2px 6px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--dim);margin:2px 3px 2px 0}
+.ufc-unk-i{display:grid;grid-template-columns:132px 1fr;gap:8px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.06);font-size:12px}
+.ufc-unk-i b{color:var(--warn);font-size:11px}
+.ufc-unk-i span{color:var(--text);line-height:1.4}
+.ufc-meth h4{margin:10px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.ufc-meth p,.ufc-meth li{font-size:12px;line-height:1.55;color:var(--text);margin:0}
+.ufc-meth ul{margin:0;padding-left:18px}
+.ufc-diag .warn{color:var(--warn)}.ufc-diag .neg{color:var(--neg)}
+.ufc-diag .gd-line .v{text-align:right;overflow-wrap:anywhere;white-space:normal}
+.ufc-fcfoot{font-size:10.5px;color:var(--faint);text-align:center;padding:12px 4px 4px;line-height:1.5}
+@media(max-width:520px){.ufc-ksg{grid-template-columns:repeat(3,minmax(0,1fr))}.ufc-ks .v{font-size:13px}.ufc-hero-n{font-size:15px}.ufc-hero-k{font-size:22px}.ufc-read-l{grid-template-columns:78px 1fr}.ufc-unk-i{grid-template-columns:1fr}.ufc-lbls{grid-template-columns:1fr}.ufc-lbls .b{text-align:left}.ufc-lbls .mid{text-align:left}}
+@media(min-width:760px){.ufc-ksg{grid-template-columns:repeat(6,minmax(0,1fr))}}
 /* ===== Stats section ===== */
 .stchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:11px;-webkit-overflow-scrolling:touch}
 .stchip{flex:none;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:20px;padding:6px 13px;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
@@ -3046,6 +3170,7 @@ window.mcRefresh=function(){
   -->
 </nav>
 
+<script src="/lib/ufc_research.js?v=20260909a"></script>
 <script>
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
@@ -4305,14 +4430,16 @@ var RS_PROV={
     {nm:'Closing probability shown per bout',tier:'T2',src:'De-vigged two-way consensus price stored in the dataset. Not a CLV measurement.'},
     {nm:'Finish rate, streaks, activity, opponent quality',tier:'T2',src:'ufc.fighter_derived_metrics — aggregates computed from loaded fight history'},
     {nm:'Style percentiles and durability',tier:'T2',src:'ufc.fighter_style_metrics percentiles / losses-by-finish computed in the browser'},
-    {nm:'Live win probability',tier:'T3',model:'espn.live_win_prob',src:'Supplied by the ESPN live feed via the ufc_live poller. Not an EdgeDesk model.'},
-    {nm:'Live round-by-round statistics (strikes, target, position, grappling, control)',tier:'T0',src:'ufc.live_fight_round_stats \u2014 as published by the configured live provider, normalized into EdgeDesk\u2019s canonical stat contract. Round 0 is the fight total.'},
-    {nm:'Fight state, referee, scheduled rounds, method and finish',tier:'T0',src:'ufc.live_fight_state \u2014 as published by the live provider.'},
-    {nm:'Snapshot timeline',tier:'T0',src:'ufc.live_fight_snapshots \u2014 immutable, timestamped, deduplicated by content so a row exists only where a number actually moved.'},
-    {nm:'Live momentum',tier:'T2',src:'EdgeDesk-derived: the difference between two stored snapshots. Observed change, not a judging score \u2014 no live official scoring source exists and none is imitated.'},
-    {nm:'Pace vs career baseline',tier:'T2',src:'EdgeDesk-derived: live rate over elapsed fight time, compared with ufc.fighter_career_stats career averages. Both inputs are stored; the comparison is EdgeDesk\u2019s.'},
-    {nm:'Market context (opening, current, movement, sharp fair, edge, flag)',tier:'T0',src:'public.signals, read exactly as the odds capture wrote it. Nothing on this screen recomputes a price, a fair line or an edge.'},
-    {nm:'Pre-fight CLV',tier:'T2',src:'EdgeDesk-derived from stored values only: closing fair line \u00d7 frozen entry price \u2212 1. Entry from signals.flagged_best_dec (or the opener), close from signals.closing_sharp_fair or the last signal_ticks row at or before commence_time. No price is recomputed and no new table stores one.'}
+    {nm:'Fighter baselines (finish environment, recent form, five-round depth, activity, opponent quality, style labels)',tier:'T2',src:'ufc.fighter_baselines — built by the UFC sync workflow (tools/ufc/build_baselines.js) from the fight history and career rates on file, deterministic, with sample sizes. Observed target/position baselines accumulate from fights this pipeline has watched.'},
+    {nm:'Events and bouts (card, order, corners, status, result, first bell)',tier:'T0',src:'ufc.events / ufc.bouts — ESPN\u2019s public UFC feed, read by GitHub Actions (tools/ufc/sync_events.js, tools/ufc/live_poll.js) and written over PostgREST with the service role. No Edge Function.'},
+    {nm:'Live statistics (strikes, target, position, takedowns, control, knockdowns)',tier:'T0',src:'ufc.fight_live_state / ufc.fight_round_stats / ufc.fight_snapshots \u2014 as published by the provider, normalised into the canonical stat contract; unmapped source fields are counted in diagnostics, never guessed into a column.'},
+    {nm:'Round splits',tier:'T2',src:'Provider splits where published; otherwise differences between cumulative snapshots at round boundaries, stored with stat_source = snapshot_delta and labelled on screen.'},
+    {nm:'Statistical round lean',tier:'T2',src:'EdgeDesk-derived from published round counts (knockdowns 3, sig. strikes 2, takedowns / control / sub attempts 1). Not an official scorecard; none is imitated.'},
+    {nm:'Live rates, differentials and research flags',tier:'T2',src:'lib/ufc_research.js: counts over elapsed fight time against ufc.fighter_baselines, with documented thresholds (FLAG_RULES). Deterministic; the same code runs in the pipeline tests.'},
+    {nm:'Market context (opening, current, movement, de-vig, sharp anchor, books)',tier:'T0',src:'public.signals, read exactly as the odds capture wrote it, joined to a bout only through ufc.bout_markets — a link made when BOTH fixture participants resolved to the bout\u2019s corners. A Draw outcome is a separate row and never a corner.'},
+    {nm:'Market timeline and PRE / LIVE tagging',tier:'T0',src:'ufc.market_captures \u2014 every observed price tagged against the bout\u2019s own first bell at the moment it was written.'},
+    {nm:'Pre-fight CLV',tier:'T2',src:'EdgeDesk-derived from stored values only: closing fair line \u00d7 frozen entry price \u2212 1. Close is the last PRE capture at or before first_bell_at (within six hours), or the close pipeline\u2019s closing_sharp_fair when it was measured before the bell. Never a post-bell price.'},
+    {nm:'Live win probability',tier:'T3',src:'Not shown. No EdgeDesk UFC model is registered and no provider probability is relabelled as one.'}
   ],
   wta:[
     {nm:'Player rankings and ranking date',tier:'T0',src:'wta.daily_research — official WTA rankings as ingested'},
@@ -4365,14 +4492,15 @@ var RS_LIMITS={
        'Odds are dataset consensus closing prices, not Pinnacle, and carry no CLV record.',
        'Per-minute microstats absent from the source are omitted rather than shown as blanks.',
        'The fighter list renders at most 300 rows; search or filter by division to reach the rest.',
-       'Live model probability is gated because no UFC model is registered — the model registry holds no entry for this sport, so there is nothing to display and nothing is estimated in its place.',
-       'Pre-fight CLV reads the existing odds engine and recomputes nothing: entry is the price capture froze, close is closing_sharp_fair where the close pipeline has run and otherwise the last tick at or before the bell. A tick written after the fight starts is a live price and is never used as a close.',
-       'A bout with no stored mma_mixed_martial_arts signal shows no CLV rather than a substituted one, and a final pre-fight capture more than six hours before the bell is reported as an unqualified close rather than presented as one.',
-       'Live statistics are only as deep as the configured provider publishes. A field the source omits is stored as NULL and rendered as a dash \u2014 never as a zero.',
-       'Source fields the normalizer does not recognise are displayed nowhere. They are counted in the live pipeline diagnostics so they can be mapped, rather than being guessed into a column.',
-       'EdgeDesk publishes no live round score. The UFC\u2019s official judging is not available live, so momentum is reported as observed change and labelled EdgeDesk-derived.',
-       'Market context is matched to a bout by fighter name. An unmatched fighter shows no quote rather than a nearby one.',
-       'The live layer is written by the ufc_live_stats function and is independent of the odds capture. A UFC source failure cannot affect the board.'],
+       'Live model probability is gated because no UFC model is registered \u2014 the model registry holds no entry for this sport, so there is nothing to display and nothing is estimated in its place.',
+       'Pre-fight CLV reads stored values and recomputes nothing: entry is the price capture froze, close is the last capture stamped at or before the bout\u2019s own first bell (or the close pipeline\u2019s fair when measured before it). A price captured after the first bell is a live price and is never used as a close; with no qualifying capture the screen says \u201cClosing line unavailable\u201d.',
+       'A bout is linked to a market fixture only when both of the fixture\u2019s participants resolve to its two corners. A Draw or any other outcome is a separate market row; it can never be shown as a fighter. Fixtures the linker refuses are listed for operators with the reason.',
+       'Live statistics are only as deep as the provider publishes. A field the source omits is stored as NULL and rendered as a dash \u2014 never as a zero. Per-round rows derived from cumulative snapshots are labelled as such.',
+       'The historical dataset carries no per-round pace and no target or position split, so those baselines are EdgeDesk\u2019s own observed ones, accumulated from fights this pipeline has watched. They start empty and every comparison shows its sample.',
+       'Research flags are deterministic and thresholded (lib/ufc_research.js FLAG_RULES). They describe observable data; they do not claim a physiological state and are not a recommendation.',
+       'EdgeDesk publishes no live round score. The UFC\u2019s official judging is not available live; the statistical round lean is an informational read of published counts and is labelled so.',
+       'Freshness is measured per domain (live, market, event sync, fighter history) against stated thresholds. During a card the live feed decides the overall level; a poller that stopped writing reads STALE, never healthy.',
+       'The live layer is written by GitHub Actions (ufc-sync.yml, ufc-live.yml) over PostgREST with the service role and is independent of the odds capture. A UFC source failure cannot affect the board, and no credential reaches the browser.'],
   wta:['The qualifying grade is computed server-side by the pipeline. The app displays its result and never recomputes or asserts it.',
        'Records and rates are historical. They are not a prediction of the match.',
        'Today’s slate is read at most 400 rows deep; the watchlist at most 100.',
@@ -10639,29 +10767,30 @@ function ufcOvLoad(force){
   if(UFC.ov.loading)return UFC.ov.loading;
   if(!force&&UFC.ov.at&&(Date.now()-UFC.ov.at)<300000)return Promise.resolve();
   UFC.ov.loading=(async function(){
-    var ev=null;
-    try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time,updated_at&order=start_time.desc&limit=25');}catch(_){ev=null;}
-    if(!ev||!ev.length){try{var de=await sbGetUfc('live_event_state?select=event_id,name,status,start_time,updated_at&order=start_time.desc&limit=25');if(de&&de.length)ev=de;}catch(_){}}
-    UFC.ov.evOk=(ev!==null);UFC.ov.events=ev||[];
+    try{await ufcFcEvents();}catch(_){UFC.ov.evOk=false;UFC.ov.events=[];UFC.fc.evOk=false;}
     try{await ufcMarketFetch();}catch(_){}
-    try{await ufcDeepLoadHealth();}catch(_){}
+    try{await ufcFcStatus();}catch(_){}
+    if((typeof edIsOwner==='function')&&edIsOwner()){try{await ufcFcRejections();}catch(_){}}
     UFC.ov.at=Date.now();UFC.ov.loading=null;
     ufcRenderOverview();ufcRenderSystem();
   })().catch(function(){UFC.ov.loading=null;});
   return UFC.ov.loading;
 }
-/* bouts priced in the capture window, from the market join the Fight Center
-   already keeps: one h2h row per fighter, latest capture wins */
+/* Priced bouts, from the odds feed's fixtures. A fixture's two PARTICIPANTS
+   are the fighters; an h2h selection is a price only when its name matches a
+   participant. A "Draw" outcome (or any other) is kept apart, so it can never
+   be drawn as a fighter — which is exactly what "Jean Silva vs Draw" was. The
+   rule lives in lib/ufc_research.js and is the one the server-side linker
+   uses; fixtures it refuses are kept for the operator diagnostics. */
 function ufcBouts(){
-  var out=[],pair=(UFC.market&&UFC.market.byPair)||{},pk;
+  var R=ufcR(),out=[];if(!R)return out;
+  var fx=R.boutsFromSignals(UFC.market.rows||[]);
+  UFC.market.rejected=fx.rejected;
   function mv(r){var o=ufcImplied(r.first_best_dec),n=ufcImplied(r.best_dec);return (o!=null&&n!=null)?(n-o)*100:null;}
-  for(pk in pair){if(!pair.hasOwnProperty(pk))continue;
-    var slot=pair[pk],h2h={};
-    slot.rows.forEach(function(r){if(r.market!=='h2h')return;var k=ufcNormName(r.selection);if(!k)return;
-      if(!h2h[k]||String(r.last_seen_at||'')>String(h2h[k].last_seen_at||''))h2h[k]=r;});
-    var ks=Object.keys(h2h);if(ks.length<2)continue;
-    var A=h2h[ks[0]],B=h2h[ks[1]];
-    var bo={key:pk,t:slot.commence_time?Date.parse(slot.commence_time):null,a:A,b:B,
+  fx.bouts.forEach(function(f){
+    if(!f.priced)return;
+    var A=f.a.row,B=f.b.row;
+    var bo={key:f.key,t:f.commence_time?Date.parse(f.commence_time):null,a:A,b:B,draw:f.draw||null,
       at:Math.max(Date.parse(A.last_seen_at||0)||0,Date.parse(B.last_seen_at||0)||0)||null};
     bo.mvA=mv(A);bo.mvB=mv(B);
     var m=[[Math.abs(bo.mvA==null?0:bo.mvA),A,bo.mvA],[Math.abs(bo.mvB==null?0:bo.mvB),B,bo.mvB]].sort(function(x,y){return y[0]-x[0];})[0];
@@ -10669,7 +10798,7 @@ function ufcBouts(){
     var e=[A,B].filter(function(r){return r.edge!=null&&isFinite(+r.edge);}).sort(function(x,y){return Math.abs(+y.edge)-Math.abs(+x.edge);})[0];
     bo.edge=e?{row:e,v:+e.edge}:null;
     out.push(bo);
-  }
+  });
   out.sort(function(x,y){return (x.t||0)-(y.t||0);});
   return out;
 }
@@ -10678,13 +10807,13 @@ function ufcFinishOK(x){return x.d&&x.d.finish_rate!=null&&(x.wins||0)>=10;}
 function ufcTodayItems(bouts){
   var items=[],pick=ufcOvPick(),e=pick.event,h=UFC.deep.health;
   if(e){
-    var when='';try{when=whenLabel(e.start_time);}catch(_){}
-    var up=e.updated_at?rsParseStamp(e.updated_at):null;
-    items.push({k:pick.mode==='live'?'Live now':(pick.mode==='upcoming'?'Next event':'Live feed stale'),pri:pick.mode==='stale'?'warn':(pick.mode==='live'?'notable':'info'),cls:pick.mode==='stale'?'warn':'',tag:'LIVE',
+    var when='';try{when=whenLabel(e.scheduled_at);}catch(_){}
+    var up=e.source_updated_at?rsParseStamp(e.source_updated_at):null;
+    items.push({k:pick.mode==='live'?'Live now':(pick.mode==='upcoming'?'Next event':(pick.mode==='final'?'Latest result':'Live feed stale')),pri:pick.mode==='stale'?'warn':(pick.mode==='live'?'notable':'info'),cls:pick.mode==='stale'?'warn':'',tag:'LIVE',
       title:e.name||'UFC event',
-      cells:[{l:'Status',v:String(e.status||'—').toUpperCase(),p:true,c:pick.mode==='live'?'neg':(pick.mode==='stale'?'warn':'txt')},{l:'Starts',v:e.start_time?rsTkWhen(e.start_time):'—'},{l:'Poller wrote',v:up?ago(up):'unknown',c:pick.mode==='stale'?'warn':'mut'}],
-      note:pick.mode==='stale'?'The most recent event on file is still marked open and the poller has not moved it on. Not shown as live.':(pick.mode==='live'?'Round, clock and strike counts stream from the fight-state poller.':'Fights, corners and pre-fight tendencies appear in the Live Fight Center.'),
-      foot:(when?(when+' · '):'')+'ufc.live_events · '+(up?('feed '+ago(up)):'no write stamp'),
+      cells:[{l:'Status',v:String(e.event_state||'—').toUpperCase(),p:true,c:pick.mode==='live'?'neg':(pick.mode==='stale'?'warn':'txt')},{l:'Starts',v:e.scheduled_at?rsTkWhen(e.scheduled_at):'—'},{l:'Last write',v:up?ago(up):'unknown',c:pick.mode==='stale'?'warn':'mut'}],
+      note:pick.mode==='stale'?'The most recent card on file is still marked open and nothing has written it for a long time. Not shown as live.':(pick.mode==='live'?'Round, clock, strikes, takedowns and control stream from the fight-night poller.':(pick.mode==='final'?'Results, round statistics and the market timeline are in the Fight Center.':'Bouts, corners, baselines and the pre-fight market are in the Fight Center.')),
+      foot:(when?(when+' · '):'')+'ufc.events · '+(up?('written '+ago(up)):'no write stamp'),
       action:{label:'Open Fight Center',onclick:"ufcToolGo('live')"}});
   }
   var mvB=bouts.filter(function(b){return b.move;}).sort(function(x,y){return Math.abs(y.move.pp)-Math.abs(x.move.pp);});
@@ -10708,9 +10837,10 @@ function ufcTodayItems(bouts){
   if(UFC.market.ok===false)items.push({k:'Market read failed',pri:'neg',cls:'neg',tag:'MARKET',title:'public.signals did not answer',
     cells:[{l:'Status',v:'FAILED',c:'neg',p:true},{l:'Quotes',v:'—',c:'mut'},{l:'Sharp fair',v:'—',c:'mut'}],
     note:'No market context is shown for any bout until the signals table can be read. Nothing is substituted.',foot:'odds capture',action:{label:'Retry',onclick:'ufcRefreshClick()'}});
-  if(h&&h.provider_verified===false)items.push({k:'Live pipeline warning',pri:(h.api_failures>0)?'neg':'warn',cls:(h.api_failures>0)?'neg':'warn',tag:'LIVE',title:(h.api_failures>0)?'The live source is failing':'Provider answered, adapter parsed no events',
-    cells:[{l:'Failures',v:String(h.api_failures==null?'—':h.api_failures),c:h.api_failures>0?'neg':'warn',p:true},{l:'API requests',v:String(h.api_requests==null?'—':h.api_requests)},{l:'Events active',v:String(h.events_active==null?'—':h.events_active)}],
-    note:'From ufc.live_pipeline_health. Live rounds and strike counts cannot be trusted while this stands.',foot:'ufc_live_stats',action:{label:'View pipeline',onclick:"rsTkColToggle('ufcSys')"}});
+  var hl=null;try{hl=ufcFcHealth();}catch(_){}
+  if(hl&&hl.level!=='HEALTHY'&&ufcFcPhase()!=='idle')items.push({k:'Live pipeline warning',pri:(hl.level==='OFFLINE'||(hl.level==='STALE'&&ufcFcPhase()==='live'))?'neg':'warn',cls:(hl.level==='OFFLINE')?'neg':'warn',tag:'LIVE',title:hl.level,
+    cells:[{l:'Live',v:ufcFcAgeTxt(ufcFcLiveAgeS()),c:hl.domains.live.level==='HEALTHY'?'txt':'warn',p:true},{l:'Market',v:UFC.fc.marketOk===false?'unreadable':ufcFcAgeTxt(ufcFcMarketAgeS())},{l:'Event sync',v:ufcFcAgeTxt(ufcFcEventAgeS())}],
+    note:hl.reasons.join(' · ')||'A data domain is past its freshness threshold.',foot:'ufc.pipeline_status',action:{label:'View pipeline',onclick:"rsTkColToggle('ufcSys')"}});
   var streak=UFC.fighters.filter(function(x){return x.d&&x.d.win_streak>0;}).sort(function(a,b){return b.d.win_streak-a.d.win_streak;});
   if(streak.length){
     var st=streak[0];
@@ -10757,7 +10887,7 @@ function ufcMarketSnapHTML(b){
     var tot=+b.a.consensus_fair+ +b.b.consensus_fair;
     if(tot>0)split={a:{name:b.a.selection,p:+b.a.consensus_fair/tot,c:'#e0533a'},b:{name:b.b.selection,p:+b.b.consensus_fair/tot,c:'#5d8def'},label:'consensus fair · de-vigged by the capture'};
   }
-  return rsTkMvm({title:'Captured price vs sharp fair',game:b.a.selection+' vs '+b.b.selection,when:when+(b.at?(' · market '+ago(b.at)):''),
+  return rsTkMvm({title:'Captured price vs sharp fair',game:b.a.selection+' vs '+b.b.selection,when:when+(b.at?(' · market '+ago(b.at)):'')+(b.draw?' · draw priced separately':''),
     rows:side(b.a).concat(side(b.b)),split:split,
     foot:'Read from <span class="mono">public.signals</span> exactly as the odds capture wrote it. Best price is the best captured book, not Pinnacle unless the anchor says so. <b>No EdgeDesk model prices this bout</b>; nothing here is a fair line of EdgeDesk’s own.'});
 }
@@ -10766,9 +10896,10 @@ function ufcStatusHTML(){
   var badges=[['amber','Descriptive only'],['mut','No EdgeDesk model']];
   if(pick.mode==='live')badges.push(['green','Live feed active']);
   else if(pick.mode==='upcoming')badges.push(['blue','Event upcoming']);
+  else if(pick.mode==='final')badges.push(['mut','Latest card final']);
   else if(pick.mode==='stale')badges.push(['amber','Live feed stale']);
-  else if(UFC.ov.evOk===false)badges.push(['mut','Live tables unreachable']);
-  else if(UFC.ov.at)badges.push(['mut','No live event']);
+  else if(UFC.ov.evOk===false)badges.push(['mut','Event tables unreachable']);
+  else if(UFC.ov.at)badges.push(['mut','No card in window']);
   if(f&&f.published)badges.push(f.stale?['amber','Build stale']:['green','Build time published']);
   else if(UFC.at)badges.push(['mut','No build time published']);
   if(UFC.market.ok===false)badges.push(['red','Market read failed']);
@@ -10776,7 +10907,7 @@ function ufcStatusHTML(){
   var ver='ufc schema · '+UFC.fighters.length+' fighters · '+UFC.divs.length+' divisions'+(bt?(' · built '+new Date(bt).toISOString().slice(0,10)):' · no build stamp');
   return '<div class="fb-card"><div class="fb-ms-h"><span class="t">Data status</span><span class="n">UFC research dataset</span></div>'
     +rsTkBadges(badges)
-    +'<p class="fb-ms-d">Fighter records, career microstats and per-fight consensus closing prices from the dataset; live rounds from the fight-state poller and market context from the odds capture. Nothing here is a prediction.</p><div class="fb-ms-v">'+stEsc(ver)+'</div>'
+    +'<p class="fb-ms-d">Fighter records, career microstats and per-fight consensus closing prices from the dataset; live rounds, strikes, takedowns and control from the fight-night poller (GitHub Actions → Supabase) and market context from the odds capture. Nothing here is a prediction.</p><div class="fb-ms-v">'+stEsc(ver)+'</div>'
     +'<div class="fb-ms-p"><b>Research context, not edges.</b> The consensus close in the dataset is not Pinnacle and carries no CLV record; only a graded closing-line result ever counts.</div>'
     +'<div class="fb-btns"><button class="fb-btn" onclick="ufcDrawerOpen(\'method\')">View methodology</button><button class="fb-btn pri" onclick="ufcDrawerOpen(\'record\')">Data record</button></div></div>';
 }
@@ -10800,7 +10931,7 @@ function ufcDrawerHTML(kind){
     +keys.map(function(k){return '<tr><td>'+stEsc(k)+'</td><td>'+stEsc(String(m[k]))+'</td></tr>';}).join('')+'</table></div>';
   var pipe=rsTkPipeRows(UFC.meta,'Dataset pipeline');if(pipe)h+=pipe;
   var bouts=ufcBouts();
-  h+='<h4>Market window</h4><p>'+bouts.length+' bout'+(bouts.length===1?'':'s')+' priced in the capture window (6h back, 8 days ahead)'+(UFC.market.ok===false?' — the last read failed':'')+'. Prices, sharp fair and edge are stored by the odds capture and not recomputed here.</p>';
+  h+='<h4>Market window</h4><p>'+bouts.length+' bout'+(bouts.length===1?'':'s')+' priced in the capture window (6h back, 8 days ahead)'+(UFC.market.ok===false?' — the last read failed':'')+(UFC.market.rejected&&UFC.market.rejected.length?(' · '+UFC.market.rejected.length+' fixture row'+(UFC.market.rejected.length===1?'':'s')+' rejected (draw-as-fighter or unmatched selection) and kept out of the board'):'')+'. Prices, sharp fair and edge are stored by the odds capture and not recomputed here.</p>';
   var diag='';try{diag=ufcDiagHTML();}catch(_){}
   h+='<h4>Live pipeline</h4>'+(diag||'<p>No live pipeline health row is on file.</p>');
   h+='<h4>Independent record</h4><p>No UFC model is registered, so there is no model record to show. A closing-line record can only come from graded captured quotes on the Edges board.</p>';
@@ -10811,27 +10942,35 @@ window.ufcDrawerOpen=function(kind){
   try{rsModelsLoad().then(function(){if(rsTkDrawerIsOpen())rsTkDrawerOpen(ufcDrawerHTML(kind));});}catch(_){}
 };
 function ufcSystemHTML(){
-  var pick=ufcOvPick(),h=UFC.deep.health,f=null;try{f=rsFreshness('ufc');}catch(_){}
+  var pick=ufcOvPick(),f=null;try{f=rsFreshness('ufc');}catch(_){}
   var pipe=rsTkPipeLevel(UFC.meta),bits=[],level='ok',tt;
   var st=(RESEARCH_MODULES.ufc._.uistate||{}).state;
+  var hl=null;try{hl=ufcFcHealth();}catch(_){}
+  var phase='idle';try{phase=ufcFcPhase();}catch(_){}
+  /* The overall level degrades on the subsystem that matters NOW: during a
+     card a stale live feed is a failure whatever the dataset says; between
+     cards a dead poller is noted, not shouted. Thresholds live in
+     lib/ufc_research.js (HEALTH) and are printed under Methodology. */
   if(st&&st!=='ok'&&st!=='empty'){level='neg';tt='Dataset read failed · '+st;}
+  else if(UFC.fc.evOk===false){level='neg';tt='Event tables unreachable — run supabase/ufc_live_center.sql';}
   else if(pipe==='neg'){level='neg';tt='A dataset pipeline job reported a failure';}
-  else if(h&&h.db_write_failures>0){level='neg';tt='Live pipeline: database write failures';}
-  else if(h&&h.provider_verified===false&&h.api_failures>0){level='neg';tt='Live source is failing';}
-  else if(UFC.market.ok===false){level='neg';tt='Market read failed';}
+  else if(hl&&hl.level==='OFFLINE'){level=phase==='idle'?'warn':'neg';tt=phase==='idle'?'OFFLINE · no pipeline run recorded':'OFFLINE · live poller has never written this card';}
+  else if(hl&&hl.level==='STALE'&&phase==='live'){level='neg';tt='STALE · live data '+ufcFcAgeTxt(ufcFcLiveAgeS());}
+  else if(hl&&hl.level==='LIVE DEGRADED'){level='warn';tt='LIVE DEGRADED · '+hl.reasons.join(' · ');}
+  else if(hl&&hl.level==='MARKET DEGRADED'){level='warn';tt='MARKET DEGRADED · '+hl.reasons.join(' · ');}
+  else if(hl&&hl.level==='STALE'){level='warn';tt='STALE · '+hl.reasons.join(' · ');}
+  else if(UFC.market.ok===false){level='warn';tt='MARKET DEGRADED · signals not readable this session';}
   else if(!UFC.at){level='mut';tt='Waiting for the dataset';}
   else{
-    if(f&&f.stale)bits.push('build stale');
-    if(pick.mode==='stale')bits.push('live feed stale');
+    if(f&&f.stale)bits.push('dataset build stale');
     if(pipe==='warn')bits.push('pipeline warning');
-    if(h&&h.provider_verified===false)bits.push('adapter parsed no events');
     if(bits.length){level='warn';tt='Attention needed';}
-    else tt='All UFC research systems operational';
+    else tt='HEALTHY · '+(phase==='live'?'live feed, market and history current':(phase==='window'?'card in window, feeds current':'no card near; sync and history current'));
   }
-  var up=pick.event&&pick.event.updated_at?rsParseStamp(pick.event.updated_at):null;
-  var ts=(bits.length?(bits.join(' · ')+' · research still usable · '):'')+'Last refresh '+(UFC.at?ago(UFC.at):'—')+((f&&f.published)?(' · build '+ago(f.builtAt)):' · no build time')+(up?(' · live poller '+ago(up)):'')+(UFC.market.at?(' · market '+ago(UFC.market.at)):'');
+  var ts=(bits.length?(bits.join(' · ')+' · research still usable · '):'')+'Live '+ufcFcAgeTxt(ufcFcLiveAgeS())+' · market '+(UFC.fc.marketOk===false?'unreadable':ufcFcAgeTxt(ufcFcMarketAgeS()))+' · event sync '+ufcFcAgeTxt(ufcFcEventAgeS())+' · history '+ufcFcAgeTxt(ufcFcHistoryAgeS())+((f&&f.published)?(' · dataset build '+ago(f.builtAt)):' · no dataset build time');
   var body=rsTkPipeRows(UFC.meta,'Dataset pipeline');
-  var diag='';try{diag=ufcDiagHTML();}catch(_){}
+  var diag='';try{diag='<div class="fb-pipe-t" style="margin-top:10px">UFC pipeline</div>'+ufcFcDiagHTML();}catch(_){}
+  if((typeof edIsOwner==='function')&&edIsOwner()&&UFC.fc.rejections===null)diag+='<div class="fb-btns" style="margin-top:8px"><button class="fb-btn" onclick="ufcFcOperator()">Load rejected market rows</button></div>';
   body+=diag+'<div id="rsMeta-ufc" class="rs-panelwrap"></div>';
   return rsTkSysCard({level:level,tt:tt,ts:ts,key:'ufcSys',body:body});
 }
@@ -10839,12 +10978,13 @@ function ufcOverviewHTML(){
   var err=rsTkStateCard('ufc');if(err)return err;
   if(!UFC.at)return rsTkSkel();
   var bouts=ufcBouts(),pick=ufcOvPick(),items=ufcTodayItems(bouts),h=UFC.deep.health;
-  var faults=(UFC.market.ok===false?1:0)+((h&&h.db_write_failures>0)?1:0)+((h&&h.provider_verified===false&&h.api_failures>0)?1:0)+(rsTkPipeLevel(UFC.meta)==='neg'?1:0);
-  var evTxt=pick.mode==='live'?'LIVE':(pick.mode==='upcoming'?'NEXT':(pick.mode==='stale'?'STALE':'—'));
+  var hl=null;try{hl=ufcFcHealth();}catch(_){}
+  var faults=(UFC.market.ok===false?1:0)+((hl&&hl.level==='OFFLINE'&&ufcFcPhase()!=='idle')?1:0)+((hl&&hl.level==='STALE'&&ufcFcPhase()==='live')?1:0)+(rsTkPipeLevel(UFC.meta)==='neg'?1:0)+(UFC.fc.evOk===false?1:0);
+  var evTxt=pick.mode==='live'?'LIVE':(pick.mode==='upcoming'?'NEXT':(pick.mode==='final'?'FINAL':(pick.mode==='stale'?'STALE':'—')));
   var html=rsTkSnap({title:'UFC research',meta:'Updated '+ago(UFC.at)+' · dataset + live',key:'ufcSnap',
     kpis:[{n:UFC.fighters.length,l:'Fighters'},{n:bouts.length,l:'Priced',c:bouts.length?'':'mut'},{n:evTxt,l:'Event',c:pick.mode==='live'?'neg':(pick.mode==='upcoming'?'':(pick.mode==='stale'?'warn':'mut'))},{n:faults,l:'Faults',c:faults?'neg':'pos'}],
-    defs:[['Priced','Bouts with a captured moneyline in the odds window.'],['Event','Live poller state: live, next, stale or none.'],['Faults','Failed reads or live-pipeline errors.']],
-    how:'<b>Fighters</b> counts rows loaded from ufc.fighters. <b>Priced</b> counts fixtures with an h2h quote for both fighters in public.signals, 6 hours back to 8 days ahead. <b>Event</b> reads ufc.live_events: LIVE when an event is in progress within an 8-hour window, NEXT when one starts within 3 hours, STALE when the newest row is still marked open but the poller stopped writing. <b>Faults</b> add a failed signals read, live database write failures and a failing live source. No EdgeDesk model runs on this panel; the dataset is descriptive history.',
+    defs:[['Priced','Fixtures whose two participants both carry a captured moneyline; a Draw outcome is never a participant.'],['Event','Card state from ufc.events: live, next, final, stale or none.'],['Faults','Failed reads, an unreachable event table, or a stale live feed during a card.']],
+    how:'<b>Fighters</b> counts rows loaded from ufc.fighters. <b>Priced</b> counts odds-feed fixtures whose two named participants both have an h2h quote in public.signals, 6 hours back to 8 days ahead — a fixture is a bout, a selection is a price, and a Draw is a separate outcome. <b>Event</b> reads ufc.events, written by the GitHub sync and the fight-night poller: LIVE only when the card is marked live AND has been written within 15 minutes, NEXT for a scheduled card within 7 days, FINAL for a card finished within 3 days, STALE when a card is still marked open but nothing has written it. <b>Faults</b> add a failed signals read, an unreachable event table, and a live feed past its stale threshold during a card. No EdgeDesk model runs on this panel; the dataset is descriptive history.',
     cta:{label:'Open fighter research',onclick:"ufcToolGo('fighters')"}});
   html+='<div class="fb-sechd"><span>Today in UFC</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+stEsc(ago(UFC.ov.at||UFC.at))+'</span></div>';
   html+=rsTkToday(items,'ufcToday','<div class="fb-quiet">No major research changes since the last refresh.<small>No live event, no priced bout and no dataset movement to report.</small></div>');
@@ -10881,15 +11021,29 @@ window.ufcFocusBout=function(key){
 };
 window.ufcRefreshClick=function(){UFC.ov.at=0;rsTkRefresh('ufcRefreshBtn',['ufc']);};
 
-/* ===== UFC Live Fight Center =====
-   Reads live event/fight state from ufc.live_events + ufc.live_fights, which a
-   server-side poller (ufc_live edge function) fills from ESPN. Pre-fight context
-   (finish rate, streaks, tendencies) comes from the REAL loaded fighter data.
-   Two slots are HONESTLY GATED and render "not active" until the pipeline exists:
-     - model probability  -> requires a UFC model (none yet; frozen by design)
-     - CLV from pre-fight  -> requires live capture + pre-fight Pinnacle fair
-   These never show a fabricated number. When the pipeline is deployed they light up. */
+/* ===== UFC Live Fight Center =====================================================
+   Reads the contract supabase/ufc_live_center.sql defines and the GitHub jobs in
+   tools/ufc/ fill: ufc.events, ufc.bouts, ufc.fight_live_state, ufc.fight_round_stats,
+   ufc.fight_snapshots, ufc.fighter_baselines, ufc.bout_markets, ufc.market_captures
+   and ufc.pipeline_status. Every rule it applies — name folding, the draw rule, the
+   first-bell boundary, the health thresholds, the research flags — lives in
+   lib/ufc_research.js and is the same code the pipeline runs and the tests hold.
+
+   Three things are kept apart on every screen and never blur:
+     MARKET FACT        what the odds capture stored (price, fair, movement)
+     LIVE FIGHT DATA    what the provider published (strikes, takedowns, control)
+     EDGEDESK RESEARCH  what EdgeDesk computed from the two, labelled as such
+   There is no EdgeDesk UFC model. The one probability on screen is the market's,
+   de-vigged, and says so. Nothing here is a recommendation.
+   ================================================================================= */
 UFC.mode='research';UFC.liveAt=0;UFC.liveTimer=null;
+UFC.fc={events:[],evOk:null,event:null,bouts:[],byBout:{},states:{},rounds:{},snaps:{},baselines:{},links:{},sig:{},captures:{},status:[],rejections:null,sel:null,at:0,liveAt:0,marketAt:0,marketOk:null,loading:null,open:{},why:'',ticks:{}};
+/* compat shell for the overview: health is derived from ufc.pipeline_status now */
+UFC.deep={health:null,ok:null,why:'',ticks:{}};
+UFC.market={byName:{},byPair:{},rows:[],fixtures:null,at:0,ok:null};
+function ufcR(){return window.EDUfcResearch||null;}
+function ufcFcNow(){return Date.now();}
+
 window.ufcSetMode=function(m){
   UFC.mode=m;
   var r=$('ufcTabResearch'),l=$('ufcTabLive'),q=$('ufcQ');
@@ -10898,102 +11052,664 @@ window.ufcSetMode=function(m){
   if(q)q.style.display=(m==='live')?'none':'';
   if(UFC.liveTimer){clearInterval(UFC.liveTimer);UFC.liveTimer=null;}
   if(m==='live'){loadUFCLive();UFC.liveTimer=setInterval(function(){if(UFC.mode==='live'&&!document.hidden)loadUFCLive();},20000);}
-  /* Live mode repoints the freshness chip at the poller's feed age. Coming back
-     to research has to repoint it at the dataset build time, or the research
-     screen keeps wearing the live feed's stamp. */
   else{renderUFC();rsFreshApply('ufc');}
 };
-/* An event the poller never closed out stays at status 'pre'/'in' forever. The
-   old query asked for the OLDEST such row (order=start_time.asc&limit=1), so one
-   stuck card permanently shadowed every newer event and the header still claimed
-   LIVE NOW weeks later. Read recent candidates instead and choose one, then say
-   plainly which case it is — live, upcoming, or a stale row the poller stopped
-   updating. A status column is not evidence about the present on its own. */
-var UFC_LIVE_WINDOW=8*3600*1000;      /* a card runs ~6h; 8h is generous */
-function ufcEventAge(e){var t=e&&e.start_time?new Date(e.start_time).getTime():NaN;return isFinite(t)?(Date.now()-t):NaN;}
-/* how long ago the ufc_live poller last wrote this row. This is the real
-   "is the feed alive" signal — an event's start_time only says when it began. */
-function ufcPollerLabel(e){
-  var t=e&&e.updated_at?new Date(e.updated_at).getTime():NaN;
-  return isFinite(t)?(' Poller last wrote '+ago(t)+'.'):' This row carries no write stamp, so the poller\u2019s last run is unknown.';
-}
-/* how long ago the event started, phrased for the stale banner. Lives here with
-   the other event helpers rather than inside the shell renderer. */
-function ufcStaleAgeLabel(e){
-  var age=ufcEventAge(e);
-  if(!isFinite(age)||age<0)return '';
-  var days=Math.floor(age/86400000);
-  if(days>=1)return ' '+days+' day'+(days===1?'':'s')+' after it started';
-  var hrs=Math.floor(age/3600000);
-  return hrs>=1?(' '+hrs+' hour'+(hrs===1?'':'s')+' after it started'):' shortly after it started';
-}
+
+/* ---- event choice ------------------------------------------------------------
+   The newest row is not evidence about the present. A card is LIVE only when
+   its state says so AND the poller has written recently; a card marked live
+   that nothing has touched for an hour is shown as stale, not live. */
+var UFC_LIVE_WINDOW=9*3600*1000, UFC_PRE_WINDOW=7*86400000, UFC_POST_WINDOW=3*86400000, UFC_LIVE_STALE_MS=15*60*1000;
+function ufcEvAge(e){var t=e&&e.scheduled_at?Date.parse(e.scheduled_at):NaN;return isFinite(t)?(ufcFcNow()-t):NaN;}
+function ufcEvWrite(e){var t=e&&(e.source_updated_at||e.updated_at)?Date.parse(e.source_updated_at||e.updated_at):NaN;return isFinite(t)?(ufcFcNow()-t):NaN;}
 function ufcPickEvent(evs){
-  var live=null,next=null,recent=null;
+  var live=null,next=null,recent=null,stale=null,now=ufcFcNow();
   (evs||[]).forEach(function(e){
-    var age=ufcEventAge(e);
-    if(!recent)recent=e;                                   /* query is newest-first */
-    if(e.status==='in'&&isFinite(age)&&age>=0&&age<=UFC_LIVE_WINDOW){
-      if(!live||ufcEventAge(live)>age)live=e;
+    var age=ufcEvAge(e),w=ufcEvWrite(e);
+    if(e.event_state==='live'){
+      if(isFinite(age)&&age<=UFC_LIVE_WINDOW+3600000&&isFinite(w)&&w<=UFC_LIVE_STALE_MS){if(!live||ufcEvAge(live)>age)live=e;}
+      else if(!stale||ufcEvAge(stale)>age)stale=e;
     }
-    if(e.status==='pre'&&isFinite(age)&&age<=3*3600000){    /* not yet started, or just did */
-      if(!next||ufcEventAge(next)<age)next=e;
-    }
+    else if(e.event_state==='scheduled'){if(isFinite(age)&&age<=0&&-age<=UFC_PRE_WINDOW){if(!next||ufcEvAge(next)<age)next=e;}else if(isFinite(age)&&age>0&&age<=UFC_LIVE_WINDOW){if(!next||ufcEvAge(next)<age)next=e;}}
+    else if(e.event_state==='final'){if(isFinite(age)&&age>=0&&age<=UFC_POST_WINDOW){if(!recent||ufcEvAge(recent)>age)recent=e;}}
+    else if(e.event_state==='stale'){if(!stale||ufcEvAge(stale)>age)stale=e;}
   });
   if(live)return {event:live,mode:'live'};
   if(next)return {event:next,mode:'upcoming'};
-  if(recent)return {event:recent,mode:'stale'};
+  if(recent)return {event:recent,mode:'final'};
+  if(stale)return {event:stale,mode:'stale'};
   return {event:null,mode:'none'};
 }
+function ufcOvPick(){return ufcPickEvent(UFC.fc.events||UFC.ov.events||[]);}
+
+/* ---- reads --------------------------------------------------------------- */
+var UFC_EV_COLS='event_id,provider_event_id,name,short_name,promotion,venue,city,state,country,timezone,scheduled_at,event_state,current_bout_id,first_bell_at,completed_at,bouts_total,bouts_completed,bouts_live,source,source_updated_at,updated_at';
+var UFC_BOUT_COLS='bout_id,event_id,provider_bout_id,bout_order,card_segment,is_main,is_title,weight_class,scheduled_rounds,red_provider_id,blue_provider_id,red_name,blue_name,red_fighter_id,blue_fighter_id,red_record,blue_record,red_rank,blue_rank,corner_source,status,status_detail,round,clock,clock_seconds,elapsed_seconds,winner_corner,winner_fighter_id,method,method_detail,result_detail,end_round,end_time,referee,first_bell_at,first_live_seen_at,close_bound_source,completed_at,source_updated_at,updated_at';
+var UFC_BASE_COLS='fighter_id,full_name,built_at,fights_on_file,dated_fights,career_stats_available,slpm,sapm,striking_accuracy,striking_defense,takedown_avg,takedown_accuracy,takedown_defense,submission_avg,knockdown_avg,control_time_avg,wins,losses,draws,no_contests,win_ko,win_sub,win_dec,loss_ko,loss_sub,loss_dec,finish_rate,ko_rate,sub_rate,decision_rate,finished_loss_rate,distance_rate,avg_fight_seconds,total_fight_seconds,timed_fights,five_round_scheduled,fights_past_r3,r4_r5_seconds,finishes_after_r3,title_fights,round_finish_dist,last_fight_at,days_since_last_fight,fights_last_365,fights_last_730,current_streak,last3_wins,last3_finishes,last3_avg_fight_seconds,last5_wins,last5_finishes,last5_avg_fight_seconds,opp_avg_win_pct,opp_sample,opp_adj_win_pct,obs_fights,obs_sig_attempts_per_min,obs_sig_landed_per_min,obs_absorbed_per_min,obs_td_attempts_per_15,obs_head_share,obs_body_share,obs_leg_share,obs_distance_share,obs_clinch_share,obs_ground_share,obs_round_pace,style_labels,style_rules_version,notes';
+async function ufcFcEvents(signal){
+  var ev=await sbGetUfc('events?select='+UFC_EV_COLS+'&order=scheduled_at.desc&limit=14',signal);
+  UFC.fc.events=ev||[];UFC.fc.evOk=true;
+  /* the overview keeps reading the old shape; map once here so one picker serves both */
+  UFC.ov.events=UFC.fc.events;UFC.ov.evOk=true;
+  return UFC.fc.events;
+}
+async function ufcFcStatus(signal){
+  try{UFC.fc.status=(await sbGetUfc('pipeline_status?select=job,run_id,event_id,status,started_at,heartbeat_at,finished_at,last_success_at,last_source_at,source_latency_ms,consecutive_failures,polls,writes,github_run_url,message,details,seconds_since_heartbeat,seconds_since_success,seconds_since_source',signal))||[];}
+  catch(e){UFC.fc.status=null;}
+  UFC.deep.health=ufcFcStatusOf('ufc_live');UFC.deep.ok=UFC.fc.status!==null;
+}
+function ufcFcStatusOf(job){var s=UFC.fc.status||[];for(var i=0;i<s.length;i++)if(s[i].job===job)return s[i];return null;}
+async function ufcFcCard(eventId,signal){
+  var bouts=await sbGetUfc('bouts?select='+UFC_BOUT_COLS+'&event_id=eq.'+encodeURIComponent(eventId)+'&order=bout_order.asc.nullslast&limit=40',signal);
+  UFC.fc.bouts=bouts||[];UFC.fc.byBout={};UFC.fc.bouts.forEach(function(b){UFC.fc.byBout[b.bout_id]=b;});
+  var st=[];try{st=await sbGetUfc('fight_live_state?select=*&event_id=eq.'+encodeURIComponent(eventId)+'&limit=80',signal);}catch(_){st=[];}
+  UFC.fc.states={};(st||[]).forEach(function(s){(UFC.fc.states[s.bout_id]=UFC.fc.states[s.bout_id]||{})[s.corner]=s;});
+  var ids=[];UFC.fc.bouts.forEach(function(b){if(b.red_fighter_id)ids.push(b.red_fighter_id);if(b.blue_fighter_id)ids.push(b.blue_fighter_id);});
+  ids=ids.filter(function(x,i,a){return a.indexOf(x)===i;});
+  if(ids.length){try{var bl=await sbGetUfc('fighter_baselines?select='+UFC_BASE_COLS+'&fighter_id=in.('+ids.map(function(i){return '%22'+encodeURIComponent(i)+'%22';}).join(',')+')&limit=80',signal);
+    (bl||[]).forEach(function(b){UFC.fc.baselines[b.fighter_id]=b;});}catch(_){}}
+  try{var lk=await sbGetUfc('bout_markets?select=bout_id,event_id,signal_event_id,home_team,away_team,red_selection,blue_selection,red_sig_key,blue_sig_key,draw_sig_key,commence_time,link_method,linked_at&event_id=eq.'+encodeURIComponent(eventId)+'&limit=40',signal);
+    UFC.fc.links={};(lk||[]).forEach(function(l){UFC.fc.links[l.bout_id]=l;});}catch(_){}
+}
+async function ufcFcMarket(force){
+  var links=UFC.fc.links,keys=[];
+  Object.keys(links).forEach(function(k){var l=links[k];[l.red_sig_key,l.blue_sig_key,l.draw_sig_key].forEach(function(s){if(s)keys.push(s);});});
+  if(!keys.length){UFC.fc.marketOk=null;return;}
+  if(!force&&UFC.fc.marketAt&&(ufcFcNow()-UFC.fc.marketAt)<60000)return;
+  try{
+    var rows=[];
+    for(var i=0;i<keys.length;i+=30){
+      var list=keys.slice(i,i+30).map(function(k){return '%22'+encodeURIComponent(k)+'%22';}).join(',');
+      rows=rows.concat(await sbGet('signals?select=sig_key,event_id,sport_key,market,selection,point,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,first_sharp_fair,first_has_sharp,sharp_fair,consensus_fair,edge,n_books,has_sharp,last_seen_at,closing_sharp_fair,closed_at,'+BOARD_FLAG_COLS+',flagged_sharp_fair&sig_key=in.('+list+')&limit=200')||[]);
+    }
+    UFC.fc.sig={};rows.forEach(function(r){UFC.fc.sig[r.sig_key]=r;});
+    UFC.fc.marketOk=true;UFC.fc.marketAt=ufcFcNow();
+  }catch(e){UFC.fc.marketOk=false;UFC.fc.marketAt=ufcFcNow();}
+}
+async function ufcFcBoutDetail(boutId,force){
+  if(!boutId)return;
+  var need=force||UFC.fc.rounds[boutId]===undefined;
+  if(need){try{UFC.fc.rounds[boutId]=(await sbGetUfc('fight_round_stats?select=*&bout_id=eq.'+encodeURIComponent(boutId)+'&order=round.asc,corner.asc&limit=20'))||[];}catch(e){UFC.fc.rounds[boutId]=null;}}
+  if(force||UFC.fc.snaps[boutId]===undefined){try{UFC.fc.snaps[boutId]=(await sbGetUfc('fight_snapshots?select=corner,round,captured_at,clock,elapsed_seconds,status,sig_strikes_landed,sig_strikes_attempted,takedowns_landed,takedowns_attempted,control_seconds,knockdowns,submission_attempts&bout_id=eq.'+encodeURIComponent(boutId)+'&order=captured_at.asc&limit=500'))||[];}catch(e){UFC.fc.snaps[boutId]=null;}}
+  if(force||UFC.fc.captures[boutId]===undefined){try{UFC.fc.captures[boutId]=(await sbGetUfc('market_captures?select=sig_key,corner,book,capture_at,market_state,round,clock,best_dec,sharp_fair,consensus_fair,n_books,has_sharp,source&bout_id=eq.'+encodeURIComponent(boutId)+'&order=capture_at.asc&limit=800'))||[];}catch(e){UFC.fc.captures[boutId]=null;}}
+}
+async function ufcFcRejections(){
+  try{UFC.fc.rejections=(await sbGetUfc('market_rejections?select=signal_event_id,sig_key,home_team,away_team,selection,market,reason,detail,first_seen_at,last_seen_at,seen_count&order=last_seen_at.desc&limit=25'))||[];}catch(_){UFC.fc.rejections=null;}
+}
+
+/* the live-mode loader: one pass, cheap, safe to call every 20s */
 async function loadUFCLive(){
   var body=$('ufcBody');if(!body)return;
-  var ev=[],fx=[],reachable=true;
-  try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time,updated_at&order=start_time.desc&limit=25');}catch(e){
-    reachable=false;
-  }
-  /* DEEP FALLBACK (additive). ufc.live_events is written by the ufc_live
-     poller; ufc.live_event_state by ufc_live_stats. EITHER ONE ALONE is enough
-     to show a card, so when the first is missing or empty the second answers.
-     When both have rows the existing table wins — the stated precedence. */
-  if(!ev||!ev.length){
-    try{
-      var de=await sbGetUfc('live_event_state?select=event_id,name,status,start_time,updated_at&order=start_time.desc&limit=25');
-      if(de&&de.length){ev=de;reachable=true;}
-    }catch(_){}
-  }
-  if(!reachable){
-    UFC._lastEvent=null;UFC._lastFights=[];UFC._lastMode='none';
-    body.innerHTML=ufcLiveShellHTML(null,[],'none')+'<div class="empty" style="margin-top:10px">Live source not reachable. Deploy the <b>ufc_live</b> poller and create the live tables (ufc_live.sql). Until then, the Live Center has no event to show.</div>';
-    return;
-  }
-  var pick=ufcPickEvent(ev);
-  if(!pick.event){
-    UFC._lastEvent=null;UFC._lastFights=[];UFC._lastMode='none';
-    await ufcDeepLoadHealth();
-    body.innerHTML=ufcLiveShellHTML(null,[],'none');return;
-  }
-  var e=pick.event;
-  try{fx=await sbGetUfc('live_fights?select=fight_id,red_name,blue_name,red_fighter_id,blue_fighter_id,status,round,clock,red_strikes,blue_strikes,red_td,blue_td,red_kd,blue_kd,red_win_prob,weight_class,is_main,red_odds,blue_odds&event_id=eq.'+encodeURIComponent(e.event_id)+'&order=is_main.desc,fight_id.asc&limit=30');}catch(_){fx=[];}
-  fx=await ufcDeepLoad(e.event_id,fx);
-  await ufcMarketFetch();   /* cached 120s — the CLV tile must be right on the first paint */
-  UFC._lastEvent=e;UFC._lastFights=fx||[];UFC._lastMode=pick.mode;
-  body.innerHTML=ufcLiveShellHTML(e,fx||[],pick.mode);
-  UFC.liveAt=Date.now();
-  UFC.ov.events=ev||UFC.ov.events;UFC.ov.evOk=true;
-  try{ufcRenderOverview();ufcRenderSystem();}catch(_){}
-  var lf=$('ufcFresh');
-  if(lf){
-    var w=e&&e.updated_at?new Date(e.updated_at).getTime():NaN;
-    lf.textContent=isFinite(w)?('feed '+ago(w)):'feed age unknown';
-    lf.className='freshness'+((pick.mode==='stale')?' rs-stale':'');
-  }
+  if(UFC.fc.loading)return UFC.fc.loading;
+  UFC.fc.loading=(async function(){
+    var reachable=true;
+    try{await ufcFcEvents();}catch(e){reachable=false;UFC.fc.evOk=false;UFC.fc.why=(e&&e.message)?String(e.message):'';}
+    await ufcFcStatus();
+    if((typeof edIsOwner==='function')&&edIsOwner()&&UFC.fc.rejections===null){try{await ufcFcRejections();}catch(_){}}
+    if(!reachable){UFC.fc.event=null;UFC.fc.at=ufcFcNow();body.innerHTML=ufcFcShellHTML();return;}
+    var pick=ufcPickEvent(UFC.fc.events);
+    UFC.fc.mode=pick.mode;
+    if(!pick.event){UFC.fc.event=null;UFC.fc.at=ufcFcNow();body.innerHTML=ufcFcShellHTML();return;}
+    var changed=!UFC.fc.event||UFC.fc.event.event_id!==pick.event.event_id;
+    UFC.fc.event=pick.event;
+    try{await ufcFcCard(pick.event.event_id);}catch(e){UFC.fc.bouts=[];UFC.fc.why=(e&&e.message)?String(e.message):'';}
+    if(changed||!UFC.fc.sel||!UFC.fc.byBout[UFC.fc.sel])UFC.fc.sel=ufcFcDefaultBout();
+    await ufcFcMarket(changed);
+    var selB=UFC.fc.byBout[UFC.fc.sel];
+    await ufcFcBoutDetail(UFC.fc.sel,!!(selB&&selB.status==='live'));
+    UFC.fc.at=ufcFcNow();UFC.liveAt=UFC.fc.at;
+    UFC.fc.liveAt=ufcFcLiveStamp();
+    body.innerHTML=ufcFcShellHTML();
+    try{ufcRenderOverview();ufcRenderSystem();}catch(_){}
+    var lf=$('ufcFresh');
+    if(lf){var la=ufcFcLiveAgeS();lf.textContent=(la==null)?'live feed: never':('live '+ufcR().ageLabel(la));lf.className='freshness'+((pick.mode==='stale'||(la!=null&&la>180&&pick.mode==='live'))?' rs-stale':'');}
+  })().catch(function(e){UFC.fc.why=(e&&e.message)?String(e.message):'';}).then(function(){UFC.fc.loading=null;});
+  return UFC.fc.loading;
 }
-function ufcWinProbBar(p){
-  if(p==null)return '<div style="font-size:11px;color:var(--faint);text-align:center;margin-top:8px">live win probability \u2014 not provided by source</div>';
-  var pct=Math.max(0,Math.min(100,Math.round(+p*100)));
-  return '<div style="margin-top:10px"><div style="text-align:center;margin-bottom:4px">'+rsBadgeHTML('T3','espn.live_win_prob')+'</div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-bottom:3px"><span style="color:#e0533a">red '+pct+'%</span><span style="color:#5d8def">'+(100-pct)+'% blue</span></div>'+
-    '<div style="height:9px;border-radius:6px;background:#5d8def;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#e0533a"></div></div></div>';
+function ufcFcDefaultBout(){
+  var e=UFC.fc.event,bs=UFC.fc.bouts;
+  if(!bs.length)return null;
+  if(e&&e.current_bout_id&&UFC.fc.byBout[e.current_bout_id])return e.current_bout_id;
+  var live=bs.filter(function(b){return b.status==='live';});if(live.length)return live[0].bout_id;
+  var sch=bs.filter(function(b){return b.status==='scheduled';});if(sch.length)return sch[0].bout_id;
+  var main=bs.filter(function(b){return b.is_main;});return (main[0]||bs[bs.length-1]).bout_id;
 }
+window.ufcFcSelect=async function(id){
+  if(!id||!UFC.fc.byBout[id])return;
+  UFC.fc.sel=id;ufcFcRepaint();
+  await ufcFcBoutDetail(id,false);ufcFcRepaint();
+  var el=$('ufcFcHero');if(el)rsTkScrollTo(el);
+};
+window.ufcFcToggle=function(key){UFC.fc.open[key]=!UFC.fc.open[key];ufcFcRepaint();};
+function ufcFcRepaint(){if(UFC.mode!=='live')return;var body=$('ufcBody');if(body)body.innerHTML=ufcFcShellHTML();}
+window.ufcFcRefresh=function(){UFC.fc.marketAt=0;loadUFCLive();};
+
+/* ---- freshness and health ------------------------------------------------ */
+function ufcFcLiveStamp(){
+  var t=0,e=UFC.fc.event;
+  Object.keys(UFC.fc.states).forEach(function(b){['red','blue'].forEach(function(c){var s=UFC.fc.states[b][c];if(s&&s.updated_at){var x=Date.parse(s.updated_at);if(x>t)t=x;}});});
+  var run=ufcFcStatusOf('ufc_live');
+  if(run&&run.heartbeat_at&&run.event_id===(e&&e.event_id)){var h=Date.parse(run.heartbeat_at);if(h>t)t=h;}
+  if(!t&&e&&e.source_updated_at)t=Date.parse(e.source_updated_at);
+  return t||0;
+}
+function ufcFcLiveAgeS(){var t=ufcFcLiveStamp();return t?Math.round((ufcFcNow()-t)/1000):null;}
+function ufcFcMarketAgeS(){
+  var t=0;Object.keys(UFC.fc.sig).forEach(function(k){var r=UFC.fc.sig[k];if(r&&r.last_seen_at){var x=Date.parse(r.last_seen_at);if(x>t)t=x;}});
+  return t?Math.round((ufcFcNow()-t)/1000):null;
+}
+function ufcFcEventAgeS(){var s=ufcFcStatusOf('ufc_sync');var t=s&&s.last_success_at?Date.parse(s.last_success_at):(UFC.fc.event&&UFC.fc.event.source_updated_at?Date.parse(UFC.fc.event.source_updated_at):NaN);return isFinite(t)?Math.round((ufcFcNow()-t)/1000):null;}
+function ufcFcHistoryAgeS(){var t=0,any=false;Object.keys(UFC.fc.baselines).forEach(function(k){var b=UFC.fc.baselines[k];if(b&&b.built_at){any=true;var x=Date.parse(b.built_at);if(!t||x<t)t=x;}});
+  if(!any){var s=ufcFcStatusOf('ufc_baselines');if(s&&s.last_success_at)t=Date.parse(s.last_success_at);}
+  return t?Math.round((ufcFcNow()-t)/1000):null;}
+function ufcFcPhase(){
+  var e=UFC.fc.event,m=UFC.fc.mode;
+  if(!e)return 'idle';
+  if(e.event_state==='live'&&m==='live')return 'live';
+  var age=ufcEvAge(e);
+  if(e.event_state==='scheduled'&&isFinite(age)&&age>=-45*60000&&age<=UFC_LIVE_WINDOW)return 'window';
+  if(e.event_state==='live'||m==='stale')return 'window';
+  return 'idle';
+}
+function ufcFcHealth(){
+  var R=ufcR();if(!R)return null;
+  var live=ufcFcStatusOf('ufc_live');
+  return R.healthLevel({phase:ufcFcPhase(),liveAgeS:ufcFcLiveAgeS(),marketAgeS:ufcFcMarketAgeS(),marketOk:UFC.fc.marketOk,eventAgeS:ufcFcEventAgeS(),historyAgeS:ufcFcHistoryAgeS(),
+    consecutiveFailures:live&&live.status==='running'?(live.consecutive_failures||0):0});
+}
+function ufcFcAgeTxt(s){var R=ufcR();return R?R.ageLabel(s):'—';}
+function ufcFcFreshChip(label,ageS,th,phase){
+  var R=ufcR(),lvl=R?R.domainLevel(ageS,th):'OFFLINE';
+  var cls=lvl==='HEALTHY'?'ok':(lvl==='DEGRADED'?'warn':'neg');
+  if(phase==='idle'&&label==='Live')cls='mut';
+  return '<span class="ufc-chip '+cls+'"><b>'+label+'</b> '+(ageS==null?'never':ufcFcAgeTxt(ageS))+'</span>';
+}
+
+/* ---- helpers --------------------------------------------------------------- */
+var UFC_DASH='—';
+function ufcNum(v){return (v==null||!isFinite(+v))?UFC_DASH:String(+v);}
+function ufcPairTxt(l,a){if(l==null&&a==null)return UFC_DASH;if(l!=null&&a==null)return String(l);if(l==null&&a!=null)return UFC_DASH+'/'+a;return l+'/'+a;}
+function ufcAccTxt(l,a){if(l==null||a==null||+a<=0)return UFC_DASH;return Math.round(+l/+a*100)+'%';}
+function ufcTimeTxt(s){var R=ufcR();return R?R.fmtSeconds(s):UFC_DASH;}
+function ufcLead(a,b){if(a==null||b==null)return '';if(+a>+b)return 'a';if(+b>+a)return 'b';return '';}
+function ufcLast(n){return String(n||'').split(' ').filter(Boolean).slice(-1)[0]||'';}
+function ufcAmTxt(dec){var R=ufcR();return (typeof GE!=='undefined'&&GE.fmtPrice&&dec!=null)?GE.fmtPrice(+dec):(R?R.fmtDecAsAm(dec):UFC_DASH);}
+function ufcPctTxt(p,dp){return (p==null||!isFinite(+p))?UFC_DASH:((+p*100).toFixed(dp==null?0:dp)+'%');}
+function ufcDerivedTag(t){return '<span class="ufc-derived">'+(t||'EdgeDesk research')+'</span>';}
+function ufcMarketTag(){return '<span class="ufc-derived mk">Market fact</span>';}
+function ufcLiveTag(){return '<span class="ufc-derived lv">Live fight data</span>';}
+function ufcFcSec(key,title,tag,body,opts){
+  opts=opts||{};
+  var open=UFC.fc.open[key]!==undefined?!!UFC.fc.open[key]:!!opts.openDefault;
+  return '<section class="ufc-sec2'+(open?' open':'')+'"><button class="ufc-sech2" aria-expanded="'+(open?'true':'false')+'" onclick="ufcFcToggle(\''+key+'\')"><span class="t">'+stEsc(title)+'</span>'+(tag||'')+'<span class="ar">'+(open?'▾':'▸')+'</span></button>'+(open?'<div class="ufc-secb">'+body+'</div>':'')+'</section>';
+}
+function ufcFighterMeta(fid){return (fid&&UFC.byId[fid])||null;}
+function ufcBaseline(fid){return (fid&&UFC.fc.baselines[fid])||null;}
+function ufcElapsed(b){var R=ufcR(),st=UFC.fc.states[b.bout_id]||{};return R?R.elapsedOf(b,st.red||st.blue||null):null;}
+function ufcBoutMarket(b){
+  var l=UFC.fc.links[b.bout_id];if(!l)return {linked:false};
+  var R=ufcR(),red=UFC.fc.sig[l.red_sig_key]||null,blue=UFC.fc.sig[l.blue_sig_key]||null,draw=UFC.fc.sig[l.draw_sig_key]||null;
+  var m=R.marketSummary(red,blue,draw);
+  m.linked=true;m.link=l;m.unreadable=(UFC.fc.marketOk===false);m.rows={red:red,blue:blue,draw:draw};
+  return m;
+}
+function ufcStateTxt(mode){return mode==='live'?'LIVE':(mode==='upcoming'?'PRE':(mode==='final'?'FINAL':(mode==='stale'?'STALE':'—')));}
+
+/* ---- the shell ------------------------------------------------------------- */
+function ufcFcShellHTML(){
+  var R=ufcR();
+  if(!R)return '<div class="empty">The UFC research engine (lib/ufc_research.js) did not load, so the Fight Center cannot render. Reload the page.</div>';
+  if(UFC.fc.evOk===false)return ufcFcNoEventHTML('unreachable');
+  var e=UFC.fc.event;
+  if(!e)return ufcFcNoEventHTML('none');
+  var sel=UFC.fc.byBout[UFC.fc.sel]||null;
+  var h=ufcFcHeaderHTML(e)+ufcFcStripHTML()+
+    (sel?(ufcFcHeroHTML(sel)+ufcFcBoutHTML(sel)):'<div class="empty">The card is on file but carries no bouts yet. The sync job loads them from the provider; until it does there is nothing to show — no bout is invented in its place.</div>');
+  return h+ufcFcFootHTML();
+}
+function ufcFcNoEventHTML(why){
+  var R=ufcR(),st=ufcFcStatusOf('ufc_sync');
+  var head='<div class="ufc-fc-head"><div class="ufc-fc-ev"><span class="ufc-fc-name">UFC Live Fight Center</span><span class="ufc-fc-state mut">'+(why==='unreachable'?'OFFLINE':'NO CARD')+'</span></div>'+ufcFcChipsHTML('idle')+'</div>';
+  var body;
+  if(why==='unreachable')body='<div class="empty">The <span class="mono">ufc.events</span> table did not answer'+(UFC.fc.why?' <span class="mono">('+stEsc(UFC.fc.why)+')</span>':'')+'. Either the migration <span class="mono">supabase/ufc_live_center.sql</span> has not been run or the schema is not exposed. Nothing is shown in its place.</div>';
+  else body='<div class="empty">No UFC card is live, within seven days ahead, or within three days behind.'+(st&&st.last_success_at?' The sync last ran '+ufcFcAgeTxt(Math.round((ufcFcNow()-Date.parse(st.last_success_at))/1000))+'.':' The sync job has not recorded a run yet.')+'</div>';
+  return head+body+ufcFcFootHTML();
+}
+function ufcFcChipsHTML(phase){
+  var R=ufcR();
+  return '<div class="ufc-chips">'+ufcFcFreshChip('Live',ufcFcLiveAgeS(),R.HEALTH.live,phase)+ufcFcFreshChip('Market',ufcFcMarketAgeS(),R.HEALTH.market,phase)+ufcFcFreshChip('Event',ufcFcEventAgeS(),R.HEALTH.event,phase)+ufcFcFreshChip('History',ufcFcHistoryAgeS(),R.HEALTH.history,phase)+'</div>';
+}
+function ufcFcHeaderHTML(e){
+  var R=ufcR(),mode=UFC.fc.mode,phase=ufcFcPhase(),cur=UFC.fc.byBout[e.current_bout_id]||null;
+  var stateCls=mode==='live'?'live':(mode==='upcoming'?'pre':(mode==='final'?'final':'stale'));
+  var loc=[e.venue,e.city,e.state||e.country].filter(Boolean).join(' · ');
+  var when='';try{when=whenLabel(e.scheduled_at);}catch(_){}
+  var done=e.bouts_completed!=null?e.bouts_completed:UFC.fc.bouts.filter(function(b){return b.status==='final'||b.status==='no_contest';}).length;
+  var total=e.bouts_total!=null?e.bouts_total:UFC.fc.bouts.length;
+  var remaining=UFC.fc.bouts.filter(function(b){return b.status==='scheduled';}).length;
+  var line2='';
+  if(cur){
+    var pos=cur.bout_order?('Fight '+cur.bout_order+' of '+total):'';
+    var rc=cur.status==='live'?('<b class="ufc-rc">Round '+ufcNum(cur.round)+' · '+stEsc(cur.clock||'—')+'</b>'):(cur.status==='scheduled'?'<span class="mut">up next</span>':'');
+    line2='<div class="ufc-fc-cur">'+stEsc(ufcLast(cur.red_name)+' vs '+ufcLast(cur.blue_name))+' '+rc+(pos?' <span class="mut">· '+pos+'</span>':'')+(remaining?' <span class="mut">· '+remaining+' remaining</span>':'')+'</div>';
+  }
+  var la=ufcFcLiveAgeS(),stale='';
+  if(phase==='live'&&(la==null||la>R.HEALTH.live.degraded))stale='<div class="ufc-stale">LIVE DATA STALE · last update '+(la==null?'never':ufcFcAgeTxt(la))+'</div>';
+  else if(mode==='stale')stale='<div class="ufc-stale">This card is still marked open but nothing has written it for '+ufcFcAgeTxt(Math.round(ufcEvWrite(e)/1000))+'. It is not shown as live.</div>';
+  return '<div class="ufc-fc-head" id="ufcFcHead"><div class="ufc-fc-ev"><span class="ufc-fc-name">'+stEsc(e.name||'UFC event')+'</span><span class="ufc-fc-state '+stateCls+'">'+ufcStateTxt(mode)+'</span></div>'+
+    '<div class="ufc-fc-meta">'+(loc?stEsc(loc)+' · ':'')+stEsc(when)+(total?' · '+done+'/'+total+' bouts complete':'')+'</div>'+line2+ufcFcChipsHTML(phase)+stale+'</div>';
+}
+function ufcFcStripHTML(){
+  var bs=UFC.fc.bouts;if(!bs.length)return '';
+  return '<div class="ufc-strip" role="tablist">'+bs.map(function(b){
+    var cls=b.status==='live'?'live':(b.status==='final'||b.status==='no_contest'?'done':(b.status==='cancelled'?'cancelled':'up'));
+    var mark=b.status==='live'?'●':(cls==='done'?'✓':(cls==='cancelled'?'✕':'○'));
+    var txt;
+    if(cls==='done'&&b.winner_corner==='red')txt=ufcLast(b.red_name)+' def. '+ufcLast(b.blue_name);
+    else if(cls==='done'&&b.winner_corner==='blue')txt=ufcLast(b.blue_name)+' def. '+ufcLast(b.red_name);
+    else txt=ufcLast(b.red_name)+' vs '+ufcLast(b.blue_name);
+    return '<button role="tab" class="ufc-strip-b '+cls+(b.bout_id===UFC.fc.sel?' on':'')+'" aria-selected="'+(b.bout_id===UFC.fc.sel?'true':'false')+'" onclick="ufcFcSelect(\''+edAttrJs(b.bout_id)+'\')"><span class="mk">'+mark+'</span><span class="tx">'+stEsc(txt)+'</span><span class="sb">'+(b.status==='live'?('R'+ufcNum(b.round)):(b.is_main?'MAIN':(b.card_segment||''))||'')+'</span></button>';
+  }).join('')+'</div>';
+}
+function ufcFcHeroHTML(b){
+  var R=ufcR(),rf=ufcFighterMeta(b.red_fighter_id),bf=ufcFighterMeta(b.blue_fighter_id),rb=ufcBaseline(b.red_fighter_id),bb=ufcBaseline(b.blue_fighter_id);
+  function side(c,name,fid,f,base,rec,rank){
+    var bits=[];
+    if(rank)bits.push('#'+stEsc(rank));
+    if(rec)bits.push(stEsc(rec));else if(f)bits.push(stEsc(ufcRec(f)));
+    var body=[];
+    if(f){if(f.age!=null)body.push(f.age+' yrs');if(f.height_inches!=null)body.push(f.height_inches+'"');if(f.reach_inches!=null)body.push(f.reach_inches+'" reach');if(f.stance)body.push(f.stance);}
+    var streak=base&&base.current_streak?('<span class="ufc-streak">'+(base.current_streak>0?'W'+base.current_streak:'L'+(-base.current_streak))+' streak</span>'):'';
+    var open=fid?'onclick="ufcProfile(\''+edAttrJs(fid)+'\')"':'';
+    return '<div class="ufc-hero-side '+c+'"><div class="ufc-hero-c">'+(c==='red'?'RED':'BLUE')+'</div><div class="ufc-hero-n" '+open+(fid?' role="button" tabindex="0"':'')+'>'+stEsc(name||'—')+(fid?' <span class="ar">↗</span>':'')+'</div>'+
+      '<div class="ufc-hero-m">'+bits.join(' · ')+'</div><div class="ufc-hero-b">'+(body.length?body.join(' · '):(fid?'':'<span class="mut">not in the fighter dataset</span>'))+'</div>'+streak+'</div>';
+  }
+  var mid;
+  if(b.status==='live')mid='<div class="ufc-hero-mid"><div class="ufc-hero-r">ROUND '+ufcNum(b.round)+'</div><div class="ufc-hero-k">'+stEsc(b.clock||'—')+'</div><div class="mut">of '+ufcNum(b.scheduled_rounds)+'</div></div>';
+  else if(b.status==='final'||b.status==='no_contest'){var w=b.winner_corner==='red'?ufcLast(b.red_name):(b.winner_corner==='blue'?ufcLast(b.blue_name):(b.winner_corner==='draw'?'Draw':((b.winner_corner==='nc'||b.status==='no_contest')?'No contest':'Result pending')));
+    mid='<div class="ufc-hero-mid"><div class="ufc-hero-r">FINAL</div><div class="ufc-hero-w">'+stEsc(w)+'</div><div class="mut">'+stEsc([b.method,b.end_round!=null?'R'+b.end_round:'',b.end_time].filter(Boolean).join(' · '))+'</div></div>';}
+  else mid='<div class="ufc-hero-mid"><div class="ufc-hero-r">'+(b.status==='cancelled'?'CANCELLED':'SCHEDULED')+'</div><div class="ufc-hero-k mut">'+ufcNum(b.scheduled_rounds)+' rds</div><div class="mut">'+stEsc(b.weight_class||'')+'</div></div>';
+  var m=ufcBoutMarket(b),mk='';
+  if(m.linked&&!m.unreadable&&(m.red||m.blue)){
+    mk='<div class="ufc-hero-mk">'+ufcMarketTag()+' <b>'+(m.red?ufcAmTxt(m.red.now):'—')+'</b> / <b>'+(m.blue?ufcAmTxt(m.blue.now):'—')+'</b>'+(m.devig?' <span class="mut">· de-vigged '+ufcPctTxt(m.devig.red)+' / '+ufcPctTxt(m.devig.blue)+'</span>':'')+(m.at?' <span class="mut">· '+ago(Date.parse(m.at))+'</span>':'')+(m.draw&&m.draw.now?' <span class="mut">· draw '+ufcAmTxt(m.draw.now)+' (separate outcome, never a corner)</span>':'')+'</div>';
+  }else if(m.linked&&m.unreadable)mk='<div class="ufc-hero-mk mut">market not readable this session</div>';
+  var tags=[stEsc(b.weight_class||''),b.is_title?'TITLE':'',b.is_main?'MAIN EVENT':'',b.card_segment&&!b.is_main?stEsc(b.card_segment):''].filter(Boolean).join(' · ');
+  return '<div class="ufc-hero" id="ufcFcHero"><div class="ufc-hero-t">'+tags+(b.referee?' <span class="mut">· ref '+stEsc(b.referee)+'</span>':'')+'</div><div class="ufc-hero-g">'+side('red',b.red_name,b.red_fighter_id,rf,rb,b.red_record,b.red_rank)+mid+side('blue',b.blue_name,b.blue_fighter_id,bf,bb,b.blue_record,b.blue_rank)+'</div>'+mk+'</div>';
+}
+
+/* ---- the bout body ----------------------------------------------------------- */
+function ufcFcCtx(b){
+  var R=ufcR(),st=UFC.fc.states[b.bout_id]||{};
+  var rounds=UFC.fc.rounds[b.bout_id]||[];
+  var m=ufcBoutMarket(b),market=null;
+  if(m.linked&&!m.unreadable&&m.devig){
+    var line=ufcLast(b.red_name)+' '+ufcPctTxt(m.devig.red)+' · '+ufcLast(b.blue_name)+' '+ufcPctTxt(m.devig.blue);
+    var detail='de-vigged from the best captured prices'+(m.openDevig?' · opened '+ufcPctTxt(m.openDevig.red)+' / '+ufcPctTxt(m.openDevig.blue):'');
+    market={line:line,detail:detail};
+  }
+  return {bout:b,red:st.red||null,blue:st.blue||null,redBase:ufcBaseline(b.red_fighter_id),blueBase:ufcBaseline(b.blue_fighter_id),rounds:rounds,elapsed:ufcElapsed(b),market:market,mk:m};
+}
+function ufcFcBoutHTML(b){
+  var R=ufcR(),c=ufcFcCtx(b),live=(b.status==='live'),fin=(b.status==='final'||b.status==='no_contest'),hasStats=!!((c.red&&c.red.stats_available)||(c.blue&&c.blue.stats_available));
+  var h='';
+  if(live||fin){
+    h+=ufcFcReadHTML(c);
+    h+=ufcFcKeyStatsHTML(c);
+    h+=ufcFcFlagsHTML(c);
+    h+=ufcFcSec('rounds','Round breakdown',ufcLiveTag(),ufcFcRoundsHTML(c),{openDefault:true});
+    h+=ufcFcSec('strike','Striking battle',ufcLiveTag()+ufcDerivedTag(),ufcFcStrikingHTML(c));
+    h+=ufcFcSec('grap','Wrestling / grappling battle',ufcLiveTag()+ufcDerivedTag(),ufcFcGrapplingHTML(c));
+    h+=ufcFcSec('range','Range / positional battle',ufcLiveTag()+ufcDerivedTag(),ufcFcRangeHTML(c));
+    h+=ufcFcSec('pace','Pace + cardio',ufcDerivedTag(),ufcFcPaceHTML(c));
+    h+=ufcFcSec('dmg','Damage / pressure indicators',ufcDerivedTag(),ufcFcDamageHTML(c));
+    h+=ufcFcSec('mvf','Market vs fight',ufcMarketTag()+ufcLiveTag(),ufcFcMarketVsFightHTML(c),{openDefault:live});
+  }else{
+    h+=ufcFcPreReadHTML(c);
+  }
+  h+=ufcFcSec('market','Market'+(live||fin?' timeline':' research'),ufcMarketTag(),ufcFcMarketHTML(c),{openDefault:!live&&!fin});
+  h+=ufcFcSec('clv','Closing line / CLV integrity',ufcMarketTag()+ufcDerivedTag(),ufcFcClvHTML(c));
+  h+=ufcFcSec('matchup','Matchup baselines',ufcDerivedTag(),ufcFcMatchupHTML(c),{openDefault:!live&&!fin});
+  h+=ufcFcSec('research','Fighter research','',ufcFcFighterResearchHTML(c));
+  h+=ufcFcSec('unknown','What we don’t know','',ufcFcUnknownHTML(c),{openDefault:true});
+  h+=ufcFcSec('method','Methodology','',ufcFcMethodHTML(c));
+  return h;
+}
+
+/* EDGEDESK LIVE READ */
+function ufcFcReadHTML(c){
+  var R=ufcR(),read=R.liveRead(c);
+  if(read.empty)return '<div class="ufc-read"><div class="ufc-read-h">EDGEDESK LIVE READ '+ufcDerivedTag()+'</div><div class="fi-empty">The source has not published statistics for this bout yet. The read appears when numbers exist; nothing is estimated in their place.</div></div>';
+  return '<div class="ufc-read"><div class="ufc-read-h">EDGEDESK LIVE READ '+ufcDerivedTag()+'</div>'+read.lines.map(function(l){return '<div class="ufc-read-l"><span class="k">'+stEsc(l.k)+'</span><span class="v">'+stEsc(l.v)+(l.d?'<small>'+stEsc(l.d)+'</small>':'')+'</span></div>';}).join('')+
+    '<div class="ufc-read-f">Research context, not a wagering recommendation. Rates are this bout’s published counts over elapsed time against each fighter’s stored baseline.</div></div>';
+}
+function ufcFcPreReadHTML(c){
+  var R=ufcR(),b=c.bout,rb=c.redBase,bb=c.blueBase,lines=[];
+  var col=R.styleCollision(rb,bb);
+  if(col.length)lines.push({k:'Style collision',v:col.join(' · '),d:'from documented classification rules ('+R.STYLE_RULES.version+')'});
+  [[ufcLast(b.red_name),rb],[ufcLast(b.blue_name),bb]].forEach(function(p){var base=p[1];if(!base)return;var t=[];if(base.style_labels&&base.style_labels.length)t.push(base.style_labels.join(', '));if(base.finish_rate!=null&&base.wins>=3)t.push('finishes '+ufcPctTxt(base.finish_rate)+' of wins ('+base.wins+')');if(base.days_since_last_fight!=null)t.push(base.days_since_last_fight+'d since last fight');if(t.length)lines.push({k:p[0],v:t.join(' · '),d:''});});
+  if(c.market)lines.push({k:'Market',v:c.market.line,d:c.market.detail});
+  if(!lines.length)return '<div class="ufc-read"><div class="ufc-read-h">EDGEDESK PRE-FIGHT READ '+ufcDerivedTag()+'</div><div class="fi-empty">Neither fighter has a baseline on file and no market fixture is linked to this bout, so there is nothing to read yet. Nothing is inferred in its place.</div></div>';
+  return '<div class="ufc-read"><div class="ufc-read-h">EDGEDESK PRE-FIGHT READ '+ufcDerivedTag()+'</div>'+lines.map(function(l){return '<div class="ufc-read-l"><span class="k">'+stEsc(l.k)+'</span><span class="v">'+stEsc(l.v)+(l.d?'<small>'+stEsc(l.d)+'</small>':'')+'</span></div>';}).join('')+'<div class="ufc-read-f">Research context, not a wagering recommendation. Live statistics begin at the first bell.</div></div>';
+}
+/* KEY LIVE STATS */
+function ufcFcKeyStatsHTML(c){
+  var r=c.red||{},b=c.blue||{};
+  function cell(l,ra,ba,lead){return '<div class="ufc-ks"><div class="l">'+l+'</div><div class="v"><span class="'+(lead==='a'?'rl':'')+'">'+ra+'</span><span class="s">/</span><span class="'+(lead==='b'?'bl':'')+'">'+ba+'</span></div></div>';}
+  var any=(r.sig_strikes_landed!=null||b.sig_strikes_landed!=null||r.takedowns_landed!=null||b.takedowns_landed!=null);
+  if(!any)return '';
+  return '<div class="ufc-ksg">'+
+    cell('Total strikes',ufcNum(r.total_strikes_landed),ufcNum(b.total_strikes_landed),ufcLead(r.total_strikes_landed,b.total_strikes_landed))+
+    cell('Sig. strikes',ufcPairTxt(r.sig_strikes_landed,r.sig_strikes_attempted),ufcPairTxt(b.sig_strikes_landed,b.sig_strikes_attempted),ufcLead(r.sig_strikes_landed,b.sig_strikes_landed))+
+    cell('Takedowns',ufcPairTxt(r.takedowns_landed,r.takedowns_attempted),ufcPairTxt(b.takedowns_landed,b.takedowns_attempted),ufcLead(r.takedowns_landed,b.takedowns_landed))+
+    cell('Control',ufcTimeTxt(r.control_seconds),ufcTimeTxt(b.control_seconds),ufcLead(r.control_seconds,b.control_seconds))+
+    cell('Knockdowns',ufcNum(r.knockdowns),ufcNum(b.knockdowns),ufcLead(r.knockdowns,b.knockdowns))+
+    cell('Sub attempts',ufcNum(r.submission_attempts),ufcNum(b.submission_attempts),ufcLead(r.submission_attempts,b.submission_attempts))+
+    '</div><div class="ufc-ksf">'+ufcLiveTag()+' red / blue · a dash is a value the source did not publish, never a zero.</div>';
+}
+/* WHAT'S DIFFERENT TONIGHT */
+function ufcFcFlagsHTML(c){
+  var R=ufcR(),flags=R.flagsFor(c);
+  var body;
+  if(!flags.length){
+    var why=(c.elapsed==null||c.elapsed<R.FLAG_RULES.minElapsed)?'Flags need at least two minutes of fight time.':((!c.redBase&&!c.blueBase)?'Neither fighter has a baseline on file, so nothing can be compared.':'Nothing is outside its threshold so far.');
+    body='<div class="fi-empty">'+why+'</div>';
+  }else body=flags.map(function(f){return '<div class="ufc-flag '+(f.severity==='notable'?'notable':'watch')+' '+f.corner+'"><div class="ufc-flag-h"><span class="code">'+stEsc(f.title)+'</span><span class="sev">'+(f.severity==='notable'?'Notable':'Watch')+'</span></div><div class="ufc-flag-x">'+stEsc(f.explain)+'</div>'+
+      '<div class="ufc-flag-n">'+(f.current!=null?'<span>now <b>'+stEsc(String(f.current))+'</b></span>':'')+(f.baseline!=null?'<span>baseline <b>'+stEsc(String(f.baseline))+'</b></span>':'')+(f.sample?'<span>sample '+stEsc(String(f.sample))+'</span>':'')+'</div><div class="ufc-flag-r">rule: '+stEsc(f.threshold)+'</div></div>';}).join('');
+  return '<div class="ufc-flags"><div class="ufc-read-h">WHAT’S DIFFERENT TONIGHT '+ufcDerivedTag()+'</div>'+body+'<div class="ufc-read-f">Deterministic flags ('+R.FLAG_RULES.version+'): each names its calculation, baseline, sample and threshold. They describe observable data; they do not claim a physiological state and they are not a pick.</div></div>';
+}
+/* ROUND BREAKDOWN */
+function ufcFcRoundsHTML(c){
+  var R=ufcR(),rows=UFC.fc.rounds[c.bout.bout_id];
+  if(rows===undefined)return '<div class="fi-empty">Loading round statistics…</div>';
+  if(rows===null)return '<div class="fi-empty">Round statistics could not be read (<span class="mono">ufc.fight_round_stats</span> did not answer).</div>';
+  if(!rows.length)return '<div class="fi-empty">No round rows stored for this bout yet. Blank means the source has not published them or the poller has not observed a round boundary — not that nothing happened.</div>';
+  var leans=R.roundLean(rows),derived=rows.some(function(x){return x.stat_source==='snapshot_delta';});
+  var by={};rows.forEach(function(x){(by[x.round]=by[x.round]||{})[x.corner]=x;});
+  var nums=Object.keys(by).map(Number).sort(function(a,b){return a-b;});
+  function cellPair(r,f){return ufcPairTxt(r?r[f+'_landed']:null,r?r[f+'_attempted']:null);}
+  var head='<tr><th>Round</th><th>Sig.</th><th>Total</th><th>TD</th><th>Ctrl</th><th>KD</th><th>Sub</th><th class="lean">Statistical lean</th></tr>';
+  var body=nums.map(function(n){var g=by[n],ln=leans.filter(function(l){return l.round===n;})[0];
+    function row(corner,r){var lead=ln&&ln.corner===corner;return '<tr class="'+corner+(lead?' lead':'')+'"><td class="who">'+(corner==='red'?'<span class="r">R'+n+'</span> '+stEsc(ufcLast(c.bout.red_name)):'<span class="b">R'+n+'</span> '+stEsc(ufcLast(c.bout.blue_name)))+(r&&r.round_status==='in_progress'?' <small>live</small>':'')+'</td><td>'+cellPair(r,'sig_strikes')+'</td><td>'+cellPair(r,'total_strikes')+'</td><td>'+cellPair(r,'takedowns')+'</td><td>'+ufcTimeTxt(r?r.control_seconds:null)+'</td><td>'+ufcNum(r?r.knockdowns:null)+'</td><td>'+ufcNum(r?r.submission_attempts:null)+'</td>'+(corner==='red'?'<td class="lean" rowspan="2">'+(ln&&ln.corner?('<b class="'+ln.corner+'">'+stEsc(ln.corner==='red'?ufcLast(c.bout.red_name):ufcLast(c.bout.blue_name))+'</b><small>'+stEsc(ln.basis.join(', '))+'</small>'):'<span class="mut">even / not enough data</span>')+'</td>':'')+'</tr>';}
+    return row('red',g.red)+row('blue',g.blue);}).join('');
+  var t=c.red||{},u=c.blue||{};
+  var tot='<tr class="tot red"><td class="who"><b>Total</b> '+stEsc(ufcLast(c.bout.red_name))+'</td><td>'+ufcPairTxt(t.sig_strikes_landed,t.sig_strikes_attempted)+'</td><td>'+ufcPairTxt(t.total_strikes_landed,t.total_strikes_attempted)+'</td><td>'+ufcPairTxt(t.takedowns_landed,t.takedowns_attempted)+'</td><td>'+ufcTimeTxt(t.control_seconds)+'</td><td>'+ufcNum(t.knockdowns)+'</td><td>'+ufcNum(t.submission_attempts)+'</td><td class="lean" rowspan="2"><span class="mut">totals</span></td></tr>'+
+    '<tr class="tot blue"><td class="who"><b>Total</b> '+stEsc(ufcLast(c.bout.blue_name))+'</td><td>'+ufcPairTxt(u.sig_strikes_landed,u.sig_strikes_attempted)+'</td><td>'+ufcPairTxt(u.total_strikes_landed,u.total_strikes_attempted)+'</td><td>'+ufcPairTxt(u.takedowns_landed,u.takedowns_attempted)+'</td><td>'+ufcTimeTxt(u.control_seconds)+'</td><td>'+ufcNum(u.knockdowns)+'</td><td>'+ufcNum(u.submission_attempts)+'</td></tr>';
+  return '<div class="ufc-tw"><table class="ufc-rt">'+head+body+tot+'</table></div><div class="fi-foot"><b>EdgeDesk statistical round lean</b> is an informational read of the published numbers (knockdowns 3, sig. strikes 2, takedowns, control and sub attempts 1 each). It is <b>not an official scorecard</b>: the UFC’s judging is not published live and none is imitated.'+(derived?' Per-round rows marked from cumulative snapshots are differences between the totals at round boundaries, not provider splits.':'')+'</div>';
+}
+/* STRIKING */
+function ufcFcStrikingHTML(c){
+  var R=ufcR(),r=c.red||{},b=c.blue||{},RR=R.liveRates(r,b,c.elapsed,c.redBase),BB=R.liveRates(b,r,c.elapsed,c.blueBase);
+  function pair(label,base){return ufcScRow(label,ufcPairTxt(r[base+'_landed'],r[base+'_attempted'])+acc(r,base),ufcPairTxt(b[base+'_landed'],b[base+'_attempted'])+acc(b,base),ufcLead(r[base+'_landed'],b[base+'_landed']));}
+  function acc(x,base){var a=ufcAccTxt(x[base+'_landed'],x[base+'_attempted']);return a===UFC_DASH?'':' <span class="ufc-acc">'+a+'</span>';}
+  var rows=pair('Sig. strikes','sig_strikes')+pair('Total strikes','total_strikes')+'<div class="ufc-scsub">Target</div>'+pair('Head','head_strikes')+pair('Body','body_strikes')+pair('Leg','leg_strikes')+
+    '<div class="ufc-scsub">Position</div>'+pair('Distance','distance_strikes')+pair('Clinch','clinch_strikes')+pair('Ground','ground_strikes')+ufcScRow('Knockdowns',ufcNum(r.knockdowns),ufcNum(b.knockdowns),ufcLead(r.knockdowns,b.knockdowns));
+  var der='<div class="ufc-scsub">EdgeDesk research</div>'+
+    ufcScRow('Sig. differential',RR.sigDiff==null?UFC_DASH:(RR.sigDiff>0?'+':'')+RR.sigDiff,BB.sigDiff==null?UFC_DASH:(BB.sigDiff>0?'+':'')+BB.sigDiff,ufcLead(RR.sigDiff,BB.sigDiff))+
+    ufcCmpRow2('Pace (attempts/min)',RR.sigAttemptsPerMin,BB.sigAttemptsPerMin,RR.vs.sigAttemptsPerMin,BB.vs.sigAttemptsPerMin,2)+
+    ufcCmpRow2('Landed/min vs career',RR.sigLandedPerMin,BB.sigLandedPerMin,RR.vs.sigLandedPerMin,BB.vs.sigLandedPerMin,2)+
+    ufcCmpRow2('Accuracy vs career',RR.accuracy,BB.accuracy,RR.vs.accuracy,BB.vs.accuracy,'pct')+
+    ufcCmpRow2('Absorbed/min vs career',RR.absorbedPerMin,BB.absorbedPerMin,RR.vs.absorbedPerMin,BB.vs.absorbedPerMin,2)+
+    ufcCmpRow2('Body share vs observed',RR.target?RR.target.body:null,BB.target?BB.target.body:null,RR.vs.body,BB.vs.body,'pct')+
+    ufcCmpRow2('Leg share vs observed',RR.target?RR.target.leg:null,BB.target?BB.target.leg:null,RR.vs.leg,BB.vs.leg,'pct');
+  return '<div class="ufc-scblk">'+rows+der+'</div><div class="fi-foot">Counts as published by the source. Rates are those counts over '+ufcTimeTxt(c.elapsed)+' of elapsed fight time; “career” baselines are UFCStats career averages, “observed” baselines are EdgeDesk’s own from fights this pipeline has watched (sample shown). No baseline, no comparison.</div>';
+}
+function ufcCmpRow2(label,a,b,va,vb,fmt){
+  function f(v){if(v==null)return UFC_DASH;return fmt==='pct'?ufcPctTxt(v):(+v).toFixed(fmt||1);}
+  function d(v){if(!v||v.pct==null)return v&&v.base==null?' <span class="mut">(no baseline)</span>':'';var p=Math.round(v.pct*100);return ' <span class="'+(p>=15?'up':(p<=-15?'dn':'mut'))+'">'+(p>0?'+':'')+p+'% vs '+f(v.base)+(v.n?' · n='+v.n:'')+'</span>';}
+  return ufcScRow(label,f(a)+d(va),f(b)+d(vb),'');
+}
+function ufcScRow(label,ra,ba,lead,hint){
+  var lc=(lead==='a')?'#e0533a':'',bc=(lead==='b')?'#5d8def':'';
+  return '<div class="ufc-scrow"><span class="ufc-scv" style="text-align:right;'+(lc?'color:'+lc+';font-weight:700':'')+'">'+ra+'</span><span class="ufc-scl"'+(hint?(' title="'+rsEsc(hint)+'"'):'')+'>'+stEsc(label)+'</span><span class="ufc-scv" style="text-align:left;'+(bc?'color:'+bc+';font-weight:700':'')+'">'+ba+'</span></div>';
+}
+/* GRAPPLING */
+function ufcFcGrapplingHTML(c){
+  var R=ufcR(),r=c.red||{},b=c.blue||{},RR=R.liveRates(r,b,c.elapsed,c.redBase),BB=R.liveRates(b,r,c.elapsed,c.blueBase),bt=c.bout,notes=[];
+  var rows=ufcScRow('Takedowns',ufcPairTxt(r.takedowns_landed,r.takedowns_attempted),ufcPairTxt(b.takedowns_landed,b.takedowns_attempted),ufcLead(r.takedowns_landed,b.takedowns_landed))+
+    ufcScRow('TD accuracy',ufcPctTxt(RR.tdAccuracy),ufcPctTxt(BB.tdAccuracy),'')+ufcScRow('TD defense',ufcPctTxt(RR.tdDefense),ufcPctTxt(BB.tdDefense),'')+
+    ufcScRow('Control',ufcTimeTxt(r.control_seconds),ufcTimeTxt(b.control_seconds),ufcLead(r.control_seconds,b.control_seconds))+
+    ufcScRow('Sub attempts',ufcNum(r.submission_attempts),ufcNum(b.submission_attempts),ufcLead(r.submission_attempts,b.submission_attempts))+
+    ufcScRow('Reversals',ufcNum(r.reversals),ufcNum(b.reversals),'')+ufcScRow('Ground strikes',ufcPairTxt(r.ground_strikes_landed,r.ground_strikes_attempted),ufcPairTxt(b.ground_strikes_landed,b.ground_strikes_attempted),ufcLead(r.ground_strikes_landed,b.ground_strikes_landed))+
+    '<div class="ufc-scsub">EdgeDesk research</div>'+ufcCmpRow2('TD attempts/15',RR.tdAttemptsPer15,BB.tdAttemptsPer15,RR.vs.tdAttemptsPer15,BB.vs.tdAttemptsPer15,1)+ufcCmpRow2('TD landed/15 vs career',RR.tdLandedPer15,BB.tdLandedPer15,RR.vs.tdLandedPer15,BB.vs.tdLandedPer15,1)+ufcCmpRow2('TD defense vs career',RR.tdDefense,BB.tdDefense,RR.vs.tdDefense,BB.vs.tdDefense,'pct')+ufcCmpRow2('Sub att/15 vs career',RR.subPer15,BB.subPer15,RR.vs.subPer15,BB.vs.subPer15,1);
+  [[ufcLast(bt.red_name),r,RR,c.redBase],[ufcLast(bt.blue_name),b,BB,c.blueBase]].forEach(function(p){
+    var nm=p[0],s=p[1],rt=p[2],base=p[3];
+    if(s.takedowns_attempted!=null&&c.elapsed>=60&&rt.tdAttemptsPer15!=null)notes.push(nm+' has attempted '+s.takedowns_attempted+' takedown'+(s.takedowns_attempted===1?'':'s')+' through '+ufcTimeTxt(c.elapsed)+(base&&base.takedown_avg!=null?'. Career landed rate: '+(+base.takedown_avg).toFixed(1)+' per 15 minutes.':'.'));
+    if(rt.tdDefense!=null&&base&&base.takedown_defense!=null)notes.push(nm+' has defended '+Math.round(rt.tdDefense*100)+'% of attempts after entering with a '+Math.round(base.takedown_defense*100)+'% career takedown-defense rate.');
+    if(s.control_seconds!=null&&s.control_seconds>=120&&s.ground_strikes_landed!=null&&s.ground_strikes_landed<=8)notes.push(nm+' has '+ufcTimeTxt(s.control_seconds)+' of control time but only '+s.ground_strikes_landed+' ground strikes landed.');
+  });
+  return '<div class="ufc-scblk">'+rows+'</div>'+(notes.length?'<div class="ufc-notes">'+notes.map(function(n){return '<div>'+stEsc(n)+'</div>';}).join('')+'</div>':'')+'<div class="fi-foot">Defense is computed from the opponent’s attempts and landings in this bout. Career rates are UFCStats averages; a fighter with no career row shows no comparison.</div>';
+}
+/* RANGE */
+function ufcFcRangeHTML(c){
+  var R=ufcR(),r=c.red||{},b=c.blue||{},RR=R.liveRates(r,b,c.elapsed,c.redBase),BB=R.liveRates(b,r,c.elapsed,c.blueBase);
+  if(!RR.position&&!BB.position)return '<div class="fi-empty">The source has not published position splits for this bout, so range cannot be measured.</div>';
+  function bar(rt,base,name,col){
+    if(!rt.position)return '<div class="ufc-pace"><div class="ufc-pacen" style="color:'+col+'">'+stEsc(name)+'</div><div class="fi-empty">no position split published</div></div>';
+    var p=rt.position;
+    function seg(k,cls){return '<span class="'+cls+'" style="width:'+Math.round(p[k]*100)+'%" title="'+k+' '+Math.round(p[k]*100)+'%"></span>';}
+    var obs=base&&base.obs_fights?('<div class="ufc-sparkl"><span>observed: '+ufcPctTxt(base.obs_distance_share)+' distance · '+ufcPctTxt(base.obs_clinch_share)+' clinch · '+ufcPctTxt(base.obs_ground_share)+' ground</span><span class="mut">'+base.obs_fights+' fights</span></div>'):'<div class="ufc-sparkl"><span class="mut">no observed baseline yet (EdgeDesk has not watched a fight of theirs)</span></div>';
+    return '<div class="ufc-pace"><div class="ufc-pacen" style="color:'+col+'">'+stEsc(name)+'</div><div class="ufc-bar">'+seg('distance','d')+seg('clinch','c')+seg('ground','g')+'</div><div class="ufc-sparkl"><span>'+ufcPctTxt(p.distance)+' distance</span><span>'+ufcPctTxt(p.clinch)+' clinch</span><span>'+ufcPctTxt(p.ground)+' ground</span></div>'+obs+'</div>';
+  }
+  var shape='';
+  var d=RR.vs.distance||BB.vs.distance;
+  if(d&&d.base!=null&&Math.abs(d.live-d.base)>=0.2)shape='<div class="ufc-notes"><div><b>Unexpected fight shape.</b> '+(RR.vs.distance&&RR.vs.distance.base!=null&&Math.abs(RR.vs.distance.live-RR.vs.distance.base)>=0.2?'This fight is spending materially '+(RR.vs.distance.live<RR.vs.distance.base?'less':'more')+' time in '+stEsc(ufcLast(c.bout.red_name))+'’s usual striking environment ('+ufcPctTxt(RR.vs.distance.live)+' at distance vs '+ufcPctTxt(RR.vs.distance.base)+' observed).':'This fight is spending materially '+(BB.vs.distance.live<BB.vs.distance.base?'less':'more')+' time in '+stEsc(ufcLast(c.bout.blue_name))+'’s usual striking environment ('+ufcPctTxt(BB.vs.distance.live)+' at distance vs '+ufcPctTxt(BB.vs.distance.base)+' observed).')+'</div></div>';
+  return '<div class="ufc-pacew">'+bar(RR,c.redBase,c.bout.red_name,'#e0533a')+bar(BB,c.blueBase,c.bout.blue_name,'#5d8def')+'</div>'+shape+'<div class="fi-foot">Share of landed significant strikes by position, as published. The historical dataset carries no position split, so the only baseline is EdgeDesk’s own observed one, which accumulates as this pipeline watches fights.</div>';
+}
+/* PACE + CARDIO */
+function ufcFcPaceHTML(c){
+  var R=ufcR(),rows=UFC.fc.rounds[c.bout.bout_id]||[];
+  function side(corner,name,col,base){
+    var rp=R.roundPace(rows,corner);
+    if(!rp.length)return '<div class="ufc-pace"><div class="ufc-pacen" style="color:'+col+'">'+stEsc(name)+'</div><div class="fi-empty">no round rows yet</div></div>';
+    var vals=rp.map(function(x){return x.sigAttemptsPerMin;}),max=Math.max.apply(null,vals.filter(function(v){return v!=null;}).concat([1]));
+    var bars=rp.map(function(x){var h=x.sigAttemptsPerMin==null?0:Math.max(4,Math.round(x.sigAttemptsPerMin/max*44));return '<div class="ufc-rb"><div class="bar" style="height:'+h+'px;background:'+col+(x.status==='in_progress'?';opacity:.55':'')+'"></div><div class="lb">R'+x.round+'</div><div class="vl">'+(x.sigAttemptsPerMin==null?'—':x.sigAttemptsPerMin.toFixed(1))+'</div></div>';}).join('');
+    var hist='';
+    if(base&&base.obs_round_pace){var ks=Object.keys(base.obs_round_pace).sort();hist='<div class="ufc-sparkl"><span class="mut">observed round profile: '+ks.map(function(k){var o=base.obs_round_pace[k];return 'R'+k+' '+(o.sig_attempts_per_min==null?'—':(+o.sig_attempts_per_min).toFixed(1))+' (n='+o.n+')';}).join(' · ')+'</span></div>';}
+    else hist='<div class="ufc-sparkl"><span class="mut">no observed round profile on file'+(base&&base.avg_fight_seconds?' · avg fight '+ufcTimeTxt(base.avg_fight_seconds)+' over '+base.timed_fights+' timed fights':'')+'</span></div>';
+    var watch='';
+    var r1=rp[0],last=rp[rp.length-1];
+    if(r1&&last&&last.round>1&&r1.sigAttemptsPerMin>0&&last.sigAttemptsPerMin!=null&&(last.seconds||0)>=90){var pd=(last.sigAttemptsPerMin-r1.sigAttemptsPerMin)/r1.sigAttemptsPerMin;if(Math.abs(pd)>=0.25)watch='<div class="ufc-notes"><div><b>PACE WATCH · Notable.</b> '+stEsc(ufcLast(name))+'’s significant-strike attempt rate has '+(pd<0?'fallen':'risen')+' '+Math.round(Math.abs(pd)*100)+'% from round 1 to round '+last.round+'.</div></div>';}
+    return '<div class="ufc-pace"><div class="ufc-pacen" style="color:'+col+'">'+stEsc(name)+' <small class="mut">sig. attempts / min</small></div><div class="ufc-rbs">'+bars+'</div>'+hist+watch+'</div>';
+  }
+  return '<div class="ufc-pacew">'+side('red',c.bout.red_name,'#e0533a',c.redBase)+side('blue',c.bout.blue_name,'#5d8def',c.blueBase)+'</div><div class="fi-foot">Round pace is attempts over that round’s seconds. A drop is a described change in output; it is not a claim about conditioning. The historical dataset carries no per-round pace, so the round profile is EdgeDesk’s observed one and starts empty.</div>';
+}
+/* DAMAGE / PRESSURE */
+function ufcFcDamageHTML(c){
+  var R=ufcR(),r=c.red||{},b=c.blue||{},RR=R.liveRates(r,b,c.elapsed,c.redBase),BB=R.liveRates(b,r,c.elapsed,c.blueBase);
+  var rows=ufcScRow('Knockdowns',ufcNum(r.knockdowns),ufcNum(b.knockdowns),ufcLead(r.knockdowns,b.knockdowns))+
+    ufcScRow('Head-strike differential',RR.headDiff==null?UFC_DASH:(RR.headDiff>0?'+':'')+RR.headDiff,BB.headDiff==null?UFC_DASH:(BB.headDiff>0?'+':'')+BB.headDiff,ufcLead(RR.headDiff,BB.headDiff))+
+    ufcScRow('Sig. differential',RR.sigDiff==null?UFC_DASH:(RR.sigDiff>0?'+':'')+RR.sigDiff,BB.sigDiff==null?UFC_DASH:(BB.sigDiff>0?'+':'')+BB.sigDiff,ufcLead(RR.sigDiff,BB.sigDiff))+
+    ufcCmpRow2('Opponent accuracy',RR.oppAccuracy,BB.oppAccuracy,null,null,'pct')+ufcCmpRow2('Defense vs career',RR.defense,BB.defense,RR.vs.defense,BB.vs.defense,'pct');
+  return '<div class="ufc-scblk">'+rows+'</div><div class="fi-foot">Only what the data supports: a knockdown is data, a differential is data. Nothing here measures damage medically and nothing claims a fighter is hurt.</div>';
+}
+/* MARKET VS FIGHT */
+function ufcFcMarketVsFightHTML(c){
+  var R=ufcR(),m=c.mk,b=c.bout,r=c.red||{},u=c.blue||{};
+  if(!m.linked)return '<div class="fi-empty">No odds-feed fixture resolved to both fighters of this bout, so there is no market to set beside the fight.</div>';
+  if(m.unreadable)return '<div class="fi-empty">The signals table is not readable this session; no price context is shown.</div>';
+  var caps=UFC.fc.captures[b.bout_id]||[],pre=caps.filter(function(x){return x.market_state==='PRE';}),live=caps.filter(function(x){return x.market_state==='LIVE';});
+  function lastPair(list){var rr=null,bb=null;list.forEach(function(x){if(x.corner==='red')rr=x;if(x.corner==='blue')bb=x;});return (rr&&bb)?R.devig2(rr.best_dec,bb.best_dec):null;}
+  var preD=lastPair(pre),liveD=lastPair(live);
+  var cols='<div class="ufc-mkw"><div class="ufc-mkc"><div class="ufc-pacen">PRE-FIGHT</div>'+(preD?'<div class="ufc-big"><span class="r">'+ufcPctTxt(preD.a)+'</span> / <span class="b">'+ufcPctTxt(preD.b)+'</span></div><div class="mut">de-vigged, last pre-bell capture</div>':(m.devig&&b.status!=='live'?'<div class="ufc-big"><span class="r">'+ufcPctTxt(m.devig.red)+'</span> / <span class="b">'+ufcPctTxt(m.devig.blue)+'</span></div><div class="mut">de-vigged, current capture</div>':'<div class="fi-empty">no pre-bell capture stored</div>'))+'</div>'+
+    '<div class="ufc-mkc"><div class="ufc-pacen">LIVE MARKET</div>'+(liveD?'<div class="ufc-big"><span class="r">'+ufcPctTxt(liveD.a)+'</span> / <span class="b">'+ufcPctTxt(liveD.b)+'</span></div><div class="mut">de-vigged, latest capture after the bell</div>':'<div class="fi-empty">no in-play capture stored'+(b.status==='live'?' — the odds capture prices on its own cadence':'')+'</div>')+'</div></div>';
+  var bits=[];
+  if(r.sig_strikes_landed!=null&&u.sig_strikes_landed!=null){var d=r.sig_strikes_landed-u.sig_strikes_landed;bits.push((d>=0?ufcLast(b.red_name):ufcLast(b.blue_name))+' '+(d>=0?'+':'+')+Math.abs(d)+' significant-strike differential');}
+  if(r.takedowns_attempted!=null||u.takedowns_attempted!=null)bits.push('takedowns '+ufcPairTxt(r.takedowns_landed,r.takedowns_attempted)+' / '+ufcPairTxt(u.takedowns_landed,u.takedowns_attempted));
+  if(r.control_seconds!=null||u.control_seconds!=null)bits.push('control '+ufcTimeTxt(r.control_seconds)+' / '+ufcTimeTxt(u.control_seconds));
+  if((r.knockdowns||0)+(u.knockdowns||0)>0)bits.push('knockdowns '+ufcNum(r.knockdowns)+' / '+ufcNum(u.knockdowns));
+  return cols+(bits.length?'<div class="ufc-scblk"><div class="ufc-schd">What changed on the mat</div>'+bits.map(function(x){return '<div class="ufc-mat">'+stEsc(x)+'</div>';}).join('')+'</div>':'')+
+    '<div class="fi-foot">'+(liveD?'The live market has moved while these fight-state changes have occurred. No causal claim is made.':'Pre-fight and live prices are stored apart: a capture after the first bell is tagged LIVE and can never become the pre-fight close.')+'</div>';
+}
+/* MARKET (pre-fight research + timeline) */
+function ufcFcMarketHTML(c){
+  var R=ufcR(),m=c.mk,b=c.bout;
+  if(!m.linked)return '<div class="fi-empty">No stored <span class="mono">mma_mixed_martial_arts</span> fixture resolved to both fighters. A bout with no verified market shows nothing rather than a nearby price.'+(UFC.fc.rejections&&UFC.fc.rejections.length?' Rejected fixtures are listed under System health for operators.':'')+'</div>';
+  if(m.unreadable)return '<div class="fi-empty">The signals table is not readable this session (a subscription is required to read the odds capture); no price is shown.</div>';
+  function col(cm,name,cls){
+    if(!cm)return '<div class="ufc-mkc"><div class="ufc-pacen '+cls+'">'+stEsc(name)+'</div><div class="fi-empty">no stored quote</div></div>';
+    var mv=cm.movement;
+    return '<div class="ufc-mkc"><div class="ufc-pacen '+cls+'">'+stEsc(name)+'</div>'+
+      '<div class="gd-line"><span class="l">Opened</span><span class="v mono">'+ufcAmTxt(cm.open)+(cm.openAt?' <span class="mut">'+ago(Date.parse(cm.openAt))+'</span>':'')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Now</span><span class="v mono">'+ufcAmTxt(cm.now)+(cm.book?' <span class="mut">'+stEsc(cm.book)+'</span>':'')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Movement</span><span class="v mono '+(mv?(mv.pp>0.05?'up':(mv.pp<-0.05?'dn':'mut')):'mut')+'">'+(mv?((mv.pp>0?'+':'')+mv.pp.toFixed(1)+' pp implied · '+ufcAmTxt(cm.open)+' → '+ufcAmTxt(cm.now)):UFC_DASH)+'</span></div>'+
+      '<div class="gd-line"><span class="l">De-vigged</span><span class="v mono">'+(m.devig?ufcPctTxt(cls==='r'?m.devig.red:m.devig.blue,1):UFC_DASH)+'</span></div>'+
+      '<div class="gd-line"><span class="l">'+(cm.has_sharp?'Sharp anchor':'Consensus fair')+'</span><span class="v mono">'+(cm.sharp_fair!=null?ufcPctTxt(cm.sharp_fair,1):UFC_DASH)+(cm.has_sharp?'':' <span class="mut">no reference book</span>')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Books</span><span class="v mono">'+(cm.n_books==null?UFC_DASH:cm.n_books)+'</span></div></div>';
+  }
+  var head='<div class="ufc-mkw">'+col(m.red,b.red_name,'r')+col(m.blue,b.blue_name,'b')+'</div>'+
+    (m.devig?'<div class="ufc-vig">vig '+ufcPctTxt(m.devig.vig,1)+' · '+(m.nBooks==null?'—':m.nBooks)+' books · '+(m.at?'captured '+ago(Date.parse(m.at)):'')+(m.draw&&m.draw.now?' · draw priced '+ufcAmTxt(m.draw.now)+' (separate outcome, never a corner)':'')+'</div>':'');
+  return head+ufcFcTimelineHTML(c)+'<div class="fi-foot">'+ufcMarketTag()+' Read from <span class="mono">public.signals</span> as the odds capture wrote it; de-vig is a two-way multiplicative removal of the margin from the best captured prices. “Sharp anchor” appears only when a reference book was captured; otherwise the fair line is a consensus and says so. Best price is the best captured book, not Pinnacle unless the anchor says so. No EdgeDesk model prices this bout.</div>';
+}
+function ufcFcTimelineHTML(c){
+  var R=ufcR(),caps=UFC.fc.captures[c.bout.bout_id];
+  if(caps===undefined)return '<div class="fi-empty">Loading market timeline…</div>';
+  if(caps===null||!caps.length)return '<div class="fi-empty">No stored captures for this bout yet; the timeline appears once the sync has recorded openers and ticks.</div>';
+  var pts={red:[],blue:[]},bell=c.bout.first_bell_at?Date.parse(c.bout.first_bell_at):null;
+  caps.forEach(function(x){var p=R.impliedFromDec(x.best_dec);if(p==null||!pts[x.corner])return;pts[x.corner].push([Date.parse(x.capture_at),p,x.market_state]);});
+  var all=pts.red.concat(pts.blue);if(all.length<2)return '<div class="fi-empty">Only one capture stored; a timeline needs two.</div>';
+  var t0=Math.min.apply(null,all.map(function(p){return p[0];})),t1=Math.max.apply(null,all.map(function(p){return p[0];}));
+  if(bell&&bell>t1)t1=bell;if(t1<=t0)t1=t0+1;
+  var W=300,H=64;
+  function path(arr,col){if(arr.length<2)return '';var d=arr.map(function(p,i){var x=((p[0]-t0)/(t1-t0))*W,y=H-(p[1]*(H-8))-4;return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');return '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linejoin="round"/>';}
+  var bx=bell?((bell-t0)/(t1-t0))*W:null;
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block">'+(bx!=null?'<line x1="'+bx.toFixed(1)+'" y1="0" x2="'+bx.toFixed(1)+'" y2="'+H+'" stroke="#d99a2b" stroke-dasharray="3 3"/>':'')+path(pts.red,'#e0533a')+path(pts.blue,'#5d8def')+'</svg>';
+  var pre=caps.filter(function(x){return x.market_state==='PRE';}),liveN=caps.length-pre.length;
+  var first=caps[0],last=caps[caps.length-1];
+  return '<div class="ufc-spark">'+svg+'</div><div class="ufc-sparkl"><span style="color:#e0533a">'+stEsc(ufcLast(c.bout.red_name))+'</span><span class="mut">implied probability · '+pre.length+' pre-bell'+(liveN?' · '+liveN+' live':'')+(bell?' · dashed = first bell':'')+'</span><span style="color:#5d8def">'+stEsc(ufcLast(c.bout.blue_name))+'</span></div>'+
+    '<div class="ufc-sparkl"><span class="mut">opener '+ago(Date.parse(first.capture_at))+'</span><span class="mut">latest '+ago(Date.parse(last.capture_at))+'</span></div>';
+}
+/* CLV */
+function ufcEntryOf(e){
+  if(e&&e.flagged_at&&e.flagged_best_dec!=null&&+e.flagged_best_dec>1)return {dec:+e.flagged_best_dec,fair:(e.flagged_sharp_fair!=null?+e.flagged_sharp_fair:null),at:e.flagged_at,kind:'flagged'};
+  if(e&&e.first_best_dec!=null&&+e.first_best_dec>1)return {dec:+e.first_best_dec,fair:(e.first_sharp_fair!=null?+e.first_sharp_fair:null),at:e.first_seen_at,kind:'opening'};
+  return null;
+}
+function ufcFcClvHTML(c){
+  var R=ufcR(),m=c.mk,b=c.bout;
+  var modelTile='<div class="ufc-gate">EdgeDesk model probability<br><b style="color:var(--warn)">not active</b> — no UFC model is registered, and nothing is estimated in its place</div>';
+  if(!m.linked)return '<div class="ufc-gategrid">'+modelTile+'<div class="ufc-gate">Pre-fight CLV<br><b style="color:var(--warn)">no market</b> — no fixture resolved to both fighters</div></div>';
+  if(m.unreadable)return '<div class="ufc-gategrid">'+modelTile+'<div class="ufc-gate">Pre-fight CLV<br><b style="color:var(--warn)">unavailable</b> — signals not readable this session</div></div>';
+  var caps=UFC.fc.captures[b.bout_id]||[],bound=R.closeBound(b,UFC.fc.event);
+  var rows=[];
+  [['red',m.rows.red,b.red_name],['blue',m.rows.blue,b.blue_name]].forEach(function(p){
+    var corner=p[0],e=p[1],name=p[2];if(!e)return;
+    var entry=ufcEntryOf(e);
+    var close=R.closingReference(caps.filter(function(x){return x.corner===corner;}),b,UFC.fc.event);
+    var src='';
+    if(!close.available&&e.closing_sharp_fair!=null&&+e.closing_sharp_fair>0&&+e.closing_sharp_fair<1&&bound.at!=null&&e.closed_at&&Date.parse(e.closed_at)<=bound.at){close={available:true,fair:+e.closing_sharp_fair,at:e.closed_at,leadMs:bound.at-Date.parse(e.closed_at)};src='close pipeline';}
+    else if(close.available)src='last pre-bell capture';
+    var v=(entry&&close.available)?R.clv(entry.dec,close.fair):null;
+    var sub=entry?('entry '+ufcAmTxt(entry.dec)+' ('+entry.kind+')'):'no stored entry price';
+    var val;
+    if(!entry)val='<span class="mut">no entry</span>';
+    else if(b.status==='scheduled')val='<b class="mut">pending</b> <span class="mut">closes at first bell</span>';
+    else if(!close.available)val='<b class="mut">Closing line unavailable</b> <span class="mut">'+stEsc(close.reason||'')+'</span>';
+    else val='<b class="'+(v>0?'up':(v<0?'dn':'mut'))+'">'+(v==null?UFC_DASH:((v>0?'+':'')+(v*100).toFixed(2)+'%'))+'</b> <span class="mut">close '+ufcPctTxt(close.fair,1)+' · '+src+' · '+Math.round((close.leadMs||0)/60000)+'m before the bell</span>';
+    rows.push('<div class="ufc-clvrow"><span class="ufc-clvsel">'+stEsc(name)+'<span class="ufc-clvsub">'+sub+'</span></span><span class="ufc-clvv">'+val+'</span></div>');
+  });
+  return '<div class="ufc-clvbox">'+rows.join('')+'</div><div class="fi-foot">First bell for this bout: '+(bound.at!=null?(new Date(bound.at).toISOString().replace('T',' ').slice(0,19)+' UTC ('+(bound.source==='observed_bell'?'observed by the poller':'card start — the bell itself was not observed, so the weaker bound applies')+')'):'not yet observed')+'. Only a capture at or before that moment can be a close, and a capture more than six hours before it is not called one. A price captured after the bell is a live price and is never used. Nothing here is called CLV without a stored entry and a qualifying close.</div><div class="ufc-gategrid" style="margin-top:10px">'+modelTile+'</div>';
+}
+/* MATCHUP BASELINES */
+function ufcFcMatchupHTML(c){
+  var R=ufcR(),b=c.bout,rows=R.matchupRows(b,ufcFighterMeta(b.red_fighter_id)||{},ufcFighterMeta(b.blue_fighter_id)||{},c.redBase,c.blueBase);
+  var col=R.styleCollision(c.redBase,c.blueBase);
+  var lab=function(base){return base&&base.style_labels&&base.style_labels.length?base.style_labels.map(function(l){return '<span class="ufc-lbl">'+stEsc(l)+'</span>';}).join(''):'<span class="mut">no labels (sample below threshold)</span>';};
+  var h='<div class="ufc-lbls"><div class="r">'+lab(c.redBase)+'</div><div class="mid">'+(col.length?col.map(stEsc).join('<br>'):'')+'</div><div class="b">'+lab(c.blueBase)+'</div></div>';
+  h+='<div class="ufc-scblk">'+rows.map(function(r){return ufcScRow(r.label,(r.red==null?UFC_DASH:stEsc(String(r.red))),(r.blue==null?UFC_DASH:stEsc(String(r.blue))),r.lead==='red'?'a':(r.lead==='blue'?'b':''),r.note);}).join('')+'</div>';
+  var fin=function(base,name){if(!base)return '';return '<div class="ufc-pace"><div class="ufc-pacen">'+stEsc(name)+' · finish environment</div><div class="gd-line"><span class="l">Wins</span><span class="v mono">'+ufcNum(base.win_ko)+' KO · '+ufcNum(base.win_sub)+' SUB · '+ufcNum(base.win_dec)+' DEC</span></div><div class="gd-line"><span class="l">Losses</span><span class="v mono">'+ufcNum(base.loss_ko)+' KO · '+ufcNum(base.loss_sub)+' SUB · '+ufcNum(base.loss_dec)+' DEC</span></div>'+(b.scheduled_rounds===5?'<div class="gd-line"><span class="l">Five-round profile</span><span class="v mono">'+ufcNum(base.fights_past_r3)+' past R3 · '+ufcTimeTxt(base.r4_r5_seconds)+' in R4-5 · '+ufcNum(base.finishes_after_r3)+' finishes after R3</span></div>':'')+'<div class="gd-line"><span class="l">Recent vs career</span><span class="v mono">last 3: '+(base.last3_wins==null?UFC_DASH:base.last3_wins+'W '+base.last3_finishes+'F')+' · last 5: '+(base.last5_wins==null?UFC_DASH:base.last5_wins+'W '+base.last5_finishes+'F')+' · avg time '+ufcTimeTxt(base.last5_avg_fight_seconds)+' vs '+ufcTimeTxt(base.avg_fight_seconds)+'</span></div></div>';};
+  h+='<div class="ufc-pacew">'+fin(c.redBase,b.red_name)+fin(c.blueBase,b.blue_name)+'</div>';
+  h+='<div class="fi-foot">Green marks the better figure on that row; it is a descriptive contrast of stored baselines, not a prediction. Baselines are built by the GitHub sync from the fight history and UFCStats career rates on file ('+(c.redBase&&c.redBase.built_at?'built '+ago(Date.parse(c.redBase.built_at)):'not built yet')+'). Style labels follow '+R.STYLE_RULES.version+'; every rule is listed under Methodology.</div>';
+  return h;
+}
+function ufcFcFighterResearchHTML(c){
+  var b=c.bout;
+  function card(fid,name,base,cls){
+    var f=ufcFighterMeta(fid);
+    if(!fid||!f)return '<div class="ufc-pace"><div class="ufc-pacen '+cls+'">'+stEsc(name)+'</div><div class="fi-empty">Not in EdgeDesk’s fighter dataset (debut, or newer than the dataset). No history, no baseline — nothing is inferred from the opponent.</div></div>';
+    var bits=[ufcRec(f),f.division,base&&base.days_since_last_fight!=null?base.days_since_last_fight+'d since last fight':'',base?base.fights_on_file+' fights on file':''].filter(Boolean).join(' · ');
+    return '<div class="ufc-pace"><div class="ufc-pacen '+cls+'">'+stEsc(name)+'</div><div class="mut" style="font-size:11px">'+stEsc(bits)+'</div><div class="fb-btns" style="margin-top:8px"><button class="fb-btn" onclick="ufcProfile(\''+edAttrJs(fid)+'\')">Open research drawer</button></div></div>';
+  }
+  return '<div class="ufc-pacew">'+card(b.red_fighter_id,b.red_name,c.redBase,'r')+card(b.blue_fighter_id,b.blue_name,c.blueBase,'b')+'</div><div class="fi-foot">The drawer opens over the Fight Center: profile, record, streak, finish rates, recent fights with opponent, method, round, date and the dataset’s closing price, career striking and wrestling rates, activity and the baseline’s round profile.</div>';
+}
+function ufcFcUnknownHTML(c){
+  var R=ufcR(),m=c.mk,live=null;
+  if(c.bout.status==='live'||c.bout.status==='final'){var la=ufcFcLiveAgeS();live={missing:R.missingLiveFields(c.red,c.blue),stale:(c.bout.status==='live'&&la!=null&&la>R.HEALTH.live.degraded),ageS:la,roundsDerived:(UFC.fc.rounds[c.bout.bout_id]||[]).some(function(x){return x.stat_source==='snapshot_delta';})};}
+  var caps=UFC.fc.captures[c.bout.bout_id]||[],closeRef=(m.linked&&!m.unreadable&&c.bout.status!=='scheduled')?R.closingReference(caps.filter(function(x){return x.corner==='red';}),c.bout,UFC.fc.event):null;
+  var items=R.unknowns({bout:c.bout,redBase:c.redBase,blueBase:c.blueBase,live:live,market:{unreadable:m.unreadable,linked:m.linked,hasSharp:m.hasSharp,nBooks:m.nBooks,closeUnavailable:!!(closeRef&&!closeRef.available),closeReason:closeRef&&closeRef.reason}});
+  if(!items.length)return '<div class="fi-empty">Nothing flagged — which is unusual. Sample sizes and freshness still apply to everything above.</div>';
+  return '<div class="ufc-unk">'+items.map(function(i){return '<div class="ufc-unk-i"><b>'+stEsc(i.k)+'</b><span>'+stEsc(i.v)+'</span></div>';}).join('')+'</div>';
+}
+function ufcFcMethodHTML(c){
+  var R=ufcR();
+  return '<div class="ufc-meth"><h4>Three kinds of number</h4><p><b>Market fact</b> is what the odds capture stored: best price, opener, movement, fair line. <b>Live fight data</b> is what the provider published: strikes, takedowns, control, knockdowns, round and clock. <b>EdgeDesk research</b> is arithmetic on the two — rates over elapsed time, differences from a stored baseline, and the flags — and is labelled wherever it appears. None of it is a prediction; there is no EdgeDesk UFC model.</p>'+
+    '<h4>The draw rule</h4><p>An odds-feed fixture names two participants. Only an h2h selection matching a participant’s name is a fighter price; a Draw or any other outcome is stored as a separate market row and can never occupy a corner. A fixture whose participant is itself a draw outcome is rejected and listed for operators.</p>'+
+    '<h4>The first bell</h4><p>The poller records the last moment it saw a bout not yet started. A capture at or before that moment is pre-fight; anything after it is live and is never used as a close. When a bout was only ever seen live, the card’s start is used as the weaker bound and the screen says so.</p>'+
+    '<h4>Flags</h4><ul>'+Object.keys(R.FLAG_RULES).filter(function(k){return typeof R.FLAG_RULES[k]==='object';}).map(function(k){return '<li><b>'+stEsc(k.replace(/_/g,' '))+'</b> — '+stEsc(R.FLAG_RULES[k].means)+'</li>';}).join('')+'</ul>'+
+    '<h4>Style labels ('+stEsc(R.STYLE_RULES.version)+')</h4><ul>'+R.STYLE_RULES.rules.map(function(r){return '<li><b>'+stEsc(r.label)+'</b> — '+stEsc(r.means)+' (needs '+stEsc(r.needs)+')</li>';}).join('')+'</ul>'+
+    '<h4>Freshness thresholds</h4><p>Live '+R.HEALTH.live.healthy+'s healthy / '+R.HEALTH.live.degraded+'s degraded, then stale. Market '+Math.round(R.HEALTH.market.healthy/60)+'m / '+Math.round(R.HEALTH.market.degraded/60)+'m. Event sync '+Math.round(R.HEALTH.event.healthy/3600)+'h / '+Math.round(R.HEALTH.event.degraded/3600)+'h. Fighter history '+Math.round(R.HEALTH.history.healthy/86400)+'d / '+Math.round(R.HEALTH.history.degraded/86400)+'d. During a card the live feed dominates the overall level.</p>'+
+    '<h4>Sources</h4><p>Events, bouts and live statistics: ESPN’s public UFC feed, read by GitHub Actions and written to Supabase (no Edge Function). Fighter history and career rates: the ufc research schema (UFCStats-derived). Prices: EdgeDesk’s own odds capture. Only fields the source publishes are stored; a missing one is a dash.</p></div>';
+}
+function ufcFcFootHTML(){
+  return '<div class="ufc-fcfoot">Research, not picks. Prices are stored market facts; statistics are the provider’s; comparisons are EdgeDesk’s and say so. No EdgeDesk UFC model is registered. <a href="#" onclick="ufcDrawerOpen(\'method\');return false">Methodology</a> · <a href="#" onclick="ufcFcRefresh();return false">Refresh</a></div>';
+}
+
+/* ---- system health and operator diagnostics ------------------------------- */
+function ufcFcHealthLevelCls(l){return l==='HEALTHY'?'ok':(l==='OFFLINE'?'neg':(l==='STALE'&&ufcFcPhase()==='live'?'neg':'warn'));}
+function ufcFcDiagHTML(){
+  var R=ufcR(),st=UFC.fc.status,e=UFC.fc.event,op=(typeof edIsOwner==='function')&&edIsOwner();
+  if(st===null)return '<div class="fi-empty">The <span class="mono">ufc.pipeline_status</span> view did not answer. Run <span class="mono">supabase/ufc_live_center.sql</span>.</div>';
+  var h=ufcFcHealth();
+  var rows=[];
+  var live=ufcFcStatusOf('ufc_live'),sync=ufcFcStatusOf('ufc_sync'),base=ufcFcStatusOf('ufc_baselines'),gate=ufcFcStatusOf('ufc_gate');
+  if(e)rows.push(['Next / current event',stEsc(e.name||'—')+' <span class="mono">'+stEsc(e.event_id)+'</span> · '+stEsc(e.event_state)+' · '+(e.scheduled_at?stEsc(whenLabel(e.scheduled_at)):'—')]);
+  if(e)rows.push(['Mapped fights',UFC.fc.bouts.filter(function(b){return b.red_fighter_id&&b.blue_fighter_id;}).length+' of '+UFC.fc.bouts.length+' resolved to both fighters · '+Object.keys(UFC.fc.links).length+' linked to a market fixture']);
+  var unres=UFC.fc.bouts.filter(function(b){return !b.red_fighter_id||!b.blue_fighter_id;}).map(function(b){return (!b.red_fighter_id?b.red_name:'')+(!b.red_fighter_id&&!b.blue_fighter_id?', ':'')+(!b.blue_fighter_id?b.blue_name:'');});
+  if(unres.length)rows.push(['Unmatched fighters','<span class="warn">'+stEsc(unres.join(' · '))+'</span>']);
+  if(e&&e.current_bout_id&&UFC.fc.byBout[e.current_bout_id]){var cb=UFC.fc.byBout[e.current_bout_id];rows.push(['Current fight',stEsc(cb.red_name+' vs '+cb.blue_name)+' · '+stEsc(cb.status)+(cb.status==='live'?' R'+ufcNum(cb.round)+' '+stEsc(cb.clock||''):'')]);}
+  function runRow(label,r,extra){if(!r){rows.push([label,'<span class="mut">no run recorded</span>']);return;}
+    rows.push([label,'<span class="'+(r.status==='ok'||r.status==='running'||r.status==='handed_off'?'':(r.status==='warn'?'warn':'neg'))+'">'+stEsc(r.status)+'</span> · heartbeat '+ufcFcAgeTxt(r.seconds_since_heartbeat)+' · last write '+ufcFcAgeTxt(r.seconds_since_success)+(r.source_latency_ms!=null?' · source '+r.source_latency_ms+'ms':'')+(r.consecutive_failures?' · <span class="neg">'+r.consecutive_failures+' consecutive failures</span>':'')+(extra||'')+(r.message?'<br><span class="mut">'+stEsc(r.message)+'</span>':'')+(op&&r.github_run_url?' <a href="'+rsEsc(r.github_run_url)+'" target="_blank" rel="noopener">workflow run</a>':'')]);}
+  runRow('Live poller',live,live&&live.polls!=null?' · '+live.polls+' polls · '+(live.writes||0)+' writes':'');
+  runRow('Event sync',sync);runRow('Baselines',base);runRow('Live gate',gate);
+  rows.push(['Live freshness',ufcFcAgeTxt(ufcFcLiveAgeS())+' · '+stEsc(h?h.domains.live.level:'—')]);
+  rows.push(['Market freshness',(UFC.fc.marketOk===false?'<span class="neg">unreadable</span>':ufcFcAgeTxt(ufcFcMarketAgeS()))+' · '+stEsc(h?h.domains.market.level:'—')]);
+  rows.push(['Fighter history',ufcFcAgeTxt(ufcFcHistoryAgeS())+' · '+stEsc(h?h.domains.history.level:'—')]);
+  if(live&&live.details&&live.details.unmapped_keys&&Object.keys(live.details.unmapped_keys).length)rows.push(['Unmapped source fields','<span class="mono warn">'+stEsc(Object.keys(live.details.unmapped_keys).slice(0,10).join(', '))+'</span>']);
+  var rej=UFC.fc.rejections;
+  if(rej&&rej.length)rows.push(['Rejected market rows',rej.slice(0,8).map(function(r){return stEsc((r.home_team||'?')+' vs '+(r.away_team||'?')+(r.selection?' ['+r.selection+']':''))+' — <span class="mono">'+stEsc(r.reason)+'</span> ×'+r.seen_count;}).join('<br>')+(rej.length>8?'<br><span class="mut">and '+(rej.length-8)+' more</span>':'')]);
+  else if(rej)rows.push(['Rejected market rows','<span class="mut">none in the window</span>']);
+  if(e)rows.push(['Event completion',e.event_state==='final'?('final · completed '+(e.completed_at?ago(Date.parse(e.completed_at)):'—')):stEsc(e.event_state)+' · '+ufcNum(e.bouts_completed)+'/'+ufcNum(e.bouts_total)+' complete']);
+  return '<div class="ufc-diag">'+rows.map(function(r){return '<div class="gd-line"><span class="l">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';}).join('')+'<div class="fi-foot">Read from <span class="mono">ufc.pipeline_status</span>, <span class="mono">ufc.events</span>, <span class="mono">ufc.bouts</span> and <span class="mono">ufc.market_rejections</span>. Levels are deterministic thresholds (see Methodology). Workflows: <span class="mono">ufc-sync.yml</span> every six hours, <span class="mono">ufc-live.yml</span> gate every 30 minutes with a long-running poll job on fight night.</div></div>';
+}
+function ufcDiagHTML(){try{return '<details class="rs-prov" style="margin-top:12px"><summary><b>Live pipeline diagnostics</b> · '+stEsc((ufcFcHealth()||{level:'—'}).level)+'</summary><div style="padding:8px 12px 12px">'+ufcFcDiagHTML()+'</div></details>';}catch(_){return '';}}
+window.ufcFcOperator=function(){ufcFcRejections().then(function(){ufcRenderSystem();});};
+
+/* ---- the odds capture window, read once and shared with the overview -----
+   Same rows the overview's "priced bouts" and the AI research resolver use.
+   Grouping into fixtures happens in lib/ufc_research.js (boutsFromSignals),
+   which is where the draw rule lives. */
+function ufcNormName(n){var R=ufcR();return R?R.normName(n):String(n==null?'':n).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+function ufcPairKey(a,b){var x=ufcNormName(a),y=ufcNormName(b);if(!x||!y)return '';return (x<y)?(x+'|'+y):(y+'|'+x);}
+async function ufcMarketFetch(){
+  if(UFC.market.at&&(Date.now()-UFC.market.at)<120000)return;
+  try{
+    var from=new Date(Date.now()-6*3600000).toISOString();
+    var to=new Date(Date.now()+8*86400000).toISOString();
+    var rows=await sbGet('signals?select=sig_key,event_id,sport_key,sport_title,market,selection,point,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,first_sharp_fair,first_has_sharp,sharp_fair,consensus_fair,edge,n_books,has_sharp,last_seen_at,closing_sharp_fair,closed_at,'+BOARD_FLAG_COLS+',flagged_sharp_fair&sport_key=eq.mma_mixed_martial_arts&commence_time=gte.'+from+'&commence_time=lte.'+to+'&order=commence_time.asc&limit=800');
+    var ix={},pair={};
+    (rows||[]).forEach(function(r){
+      var k=ufcNormName(r.selection);
+      /* a selection indexes by name only when it is a participant of its own fixture — a draw row never becomes a "fighter" here either */
+      if(k&&r.market==='h2h'&&(k===ufcNormName(r.home_team)||k===ufcNormName(r.away_team))){
+        if(!ix[k]||String(r.last_seen_at||'')>String(ix[k].last_seen_at||''))ix[k]=r;
+      }
+      var pk=ufcPairKey(r.home_team,r.away_team);
+      if(pk){var slot=pair[pk]||(pair[pk]={event_id:r.event_id,commence_time:r.commence_time,rows:[]});slot.rows.push(r);}
+    });
+    UFC.market.byName=ix;UFC.market.byPair=pair;UFC.market.rows=rows||[];UFC.market.ok=true;UFC.market.at=Date.now();
+  }catch(e){UFC.market.ok=false;UFC.market.at=Date.now();}
+}
+
+
 /* ===== Fighter profile modal — REAL data only; style/matchup honestly gated ===== */
 function ufcFinishedLosses(fid,fights){
   if(!fights)return null;
@@ -11047,7 +11763,34 @@ function ufcProfileHTML(x,fights){
 
   var hist=fights?('<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Fight history</div>'+ufcFightsHTML(x.fighter_id,fights)):'<div class="fi-empty" style="margin-top:14px">Loading fights\u2026</div>';
 
-  return close+header+tend+sos+styleBox+style+hist;
+  return close+header+tend+ufcBaselineHTML(x.fighter_id)+sos+styleBox+style+hist;
+}
+/* The precomputed baseline (ufc.fighter_baselines): finish environment, recent
+   form against career, five-round depth, activity, opponent quality, style
+   labels and the observed live baselines — every rate with its sample. */
+function ufcBaselineHTML(fid){
+  var b=UFC.fc.baselines[fid];
+  if(!b)return '<div style="margin-top:14px;padding:10px 12px;border:1px dashed rgba(255,255,255,.16);border-radius:10px;font-size:11px;color:var(--faint)">No baseline row built for this fighter yet (the UFC sync builds them for fighters on upcoming cards, and every fighter weekly).</div>';
+  var R=ufcR();
+  function pct(v){return v==null?'\u2014':Math.round(+v*100)+'%';}
+  var labels=(b.style_labels&&b.style_labels.length)?b.style_labels.map(function(l){return '<span class="ufc-lbl">'+stEsc(l)+'</span>';}).join(''):'<span class="mut" style="font-size:10.5px">no labels — samples below the rule thresholds</span>';
+  var streak=b.current_streak>0?('W'+b.current_streak):(b.current_streak<0?('L'+(-b.current_streak)):'\u2014');
+  return '<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">EdgeDesk baseline <span class="ufc-derived">'+stEsc(b.style_rules_version||'')+'</span></div><div style="margin:6px 0">'+labels+'</div><div style="margin-top:4px">'+
+    ufcKV('Fights on file / dated',b.fights_on_file+' / '+b.dated_fights)+
+    ufcKV('Finish environment (wins)',ufcNum(b.win_ko)+' KO \u00b7 '+ufcNum(b.win_sub)+' SUB \u00b7 '+ufcNum(b.win_dec)+' DEC')+
+    ufcKV('Finish environment (losses)',ufcNum(b.loss_ko)+' KO \u00b7 '+ufcNum(b.loss_sub)+' SUB \u00b7 '+ufcNum(b.loss_dec)+' DEC')+
+    ufcKV('Finish rate / by finish loss',pct(b.finish_rate)+' / '+pct(b.finished_loss_rate))+
+    ufcKV('Current streak',streak)+
+    ufcKV('Last 3 / last 5',(b.last3_wins==null?'\u2014':b.last3_wins+'W '+b.last3_finishes+'F')+' / '+(b.last5_wins==null?'\u2014':b.last5_wins+'W '+b.last5_finishes+'F'))+
+    ufcKV('Avg fight time career / last 5',ufcTimeTxt(b.avg_fight_seconds)+' / '+ufcTimeTxt(b.last5_avg_fight_seconds))+
+    ufcKV('Total recorded fight time',ufcTimeTxt(b.total_fight_seconds)+' ('+ufcNum(b.timed_fights)+' timed)')+
+    ufcKV('Past round 3',ufcNum(b.fights_past_r3)+' fights \u00b7 '+ufcTimeTxt(b.r4_r5_seconds)+' in R4-5 \u00b7 '+ufcNum(b.finishes_after_r3)+' finishes after R3')+
+    ufcKV('Days since last fight',b.days_since_last_fight==null?'\u2014':b.days_since_last_fight)+
+    ufcKV('Fights last 365 / 730 days',ufcNum(b.fights_last_365)+' / '+ufcNum(b.fights_last_730))+
+    ufcKV('Opponent avg win %',pct(b.opp_avg_win_pct)+' over '+ufcNum(b.opp_sample)+' opponents')+
+    ufcKV('Opponent-weighted win %',b.opp_adj_win_pct==null?'\u2014 (needs 5 opponents on file)':pct(b.opp_adj_win_pct))+
+    ufcKV('Observed live fights',b.obs_fights?(b.obs_fights+' \u00b7 '+(b.obs_sig_attempts_per_min==null?'\u2014':(+b.obs_sig_attempts_per_min).toFixed(1))+' sig att/min \u00b7 '+pct(b.obs_distance_share)+' distance'):'none yet')+
+    '</div><div class="fi-foot">Built '+(b.built_at?ago(Date.parse(b.built_at)):'\u2014')+' by the UFC sync from the fight history and career rates on file. Every rule is listed under the Fight Center\u2019s Methodology.</div>';
 }
 function ufcStyleBar(label,v){
   if(v==null)return '';
@@ -11058,7 +11801,7 @@ function ufcStyleBar(label,v){
 }
 function ufcStyleProfileHTML(x){
   var s=x.s;
-  if(!s)return '<div style="margin-top:14px;padding:12px;border:1px dashed rgba(255,255,255,.16);border-radius:10px;font-size:11px;color:var(--faint)">Style profile not computed for this fighter yet (no UFCStats microstats). Run the ufcstats_sync + refresh_style_metrics to populate.</div>';
+  if(!s)return '<div style="margin-top:14px;padding:12px;border:1px dashed rgba(255,255,255,.16);border-radius:10px;font-size:11px;color:var(--faint)">Style profile not computed for this fighter (no UFCStats microstats on file), so nothing is shown in its place.</div>';
   var tag=s.primary_style?'<span style="background:rgba(224,83,58,.16);color:#e0533a;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">'+stEsc(s.primary_style)+'</span>':'';
   return '<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Fighter style (percentile vs all fighters)</div>'+
     '<div style="margin-top:6px;margin-bottom:6px">'+tag+'</div>'+
@@ -11106,892 +11849,11 @@ window.ufcProfile=async function(fid){
   var x=UFC.byId[fid];
   if(!x){card.innerHTML=ufcProfileNotInDB(fid);return;}
   card.innerHTML=ufcProfileHTML(x,null);
+  if(!UFC.fc.baselines[fid]){try{var bl=await sbGetUfc('fighter_baselines?select='+UFC_BASE_COLS+'&fighter_id=eq.'+encodeURIComponent(fid)+'&limit=1');if(bl&&bl[0])UFC.fc.baselines[fid]=bl[0];}catch(_){}}
   var fights=await ufcLoadFights(fid);
   card.innerHTML=ufcProfileHTML(x,fights);
 };
 window.ufcCloseProfile=function(){var m=$('ufcModal');if(m)m.style.display='none';document.body.style.overflow='';};
-
-function ufcChips(fid){
-  var x=UFC.byId[fid];
-  if(!x||!x.d)return '<span style="font-size:10px;color:var(--faint2,#6b7280)">no DB history</span>';
-  var d=x.d,bits=[];
-  /* Say what each number IS. The old chips read "65% finW1611m avg1/yr" — every
-     value correct, none of them legible. Same values, same arithmetic, labelled. */
-  if(x.s&&x.s.primary_style)bits.push(x.s.primary_style);
-  if(d.finish_rate!=null)bits.push('finish rate '+ufcPct(d.finish_rate));
-  if(d.win_streak)bits.push(d.win_streak+'-fight win streak');
-  else if(d.loss_streak)bits.push(d.loss_streak+'-fight losing streak');
-  if(d.average_fight_time!=null)bits.push('avg '+Math.round(+d.average_fight_time/60)+' min/fight');
-  if(d.activity_last365!=null)bits.push(ufcPlural(d.activity_last365,'fight')+' in the last year');
-  return bits.map(function(b){return '<span style="display:inline-block;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:2px 7px;margin:3px 4px 0 0;font-size:10px;color:var(--faint)">'+rsEsc(''+b)+'</span>';}).join('');
-}
-function ufcLiveFightCard(g){
-  var live=(g.status==='live'||g.status==='in');
-  var fin=(g.status==='final'||g.status==='post');
-  var badge=live?'<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(224,83,58,.15);color:#e0533a;font-weight:700;font-size:11px;padding:3px 9px;border-radius:20px">\u25cf R'+rsEsc(''+(g.round||'?'))+(g.clock?' '+rsEsc(''+g.clock):'')+' LIVE</span>'
-            :(fin?'<span style="background:rgba(255,255,255,.06);color:var(--faint);font-size:11px;padding:3px 9px;border-radius:20px">FINAL</span>':'<span style="background:rgba(93,141,239,.12);color:#5d8def;font-size:11px;padding:3px 9px;border-radius:20px">UPCOMING</span>');
-  function stat(l,a,b){
-    var an=(a==null?0:+a),bn=(b==null?0:+b);
-    /* a missing value is unknown, not zero: never crown a leader against a blank */
-    var both=(a!=null&&b!=null),aHi=both&&an>bn,bHi=both&&bn>an;
-    return '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;padding:5px 0;font-size:13px;align-items:center">'+
-      '<span style="text-align:right;font-weight:'+(aHi?'700':'400')+';color:'+(aHi?'#e0533a':'inherit')+'">'+(a==null?'\u2014':a)+'</span>'+
-      '<span style="color:var(--faint);font-size:10px;text-align:center;min-width:78px">'+l+'</span>'+
-      '<span style="text-align:left;font-weight:'+(bHi?'700':'400')+';color:'+(bHi?'#5d8def':'inherit')+'">'+(b==null?'\u2014':b)+'</span></div>';
-  }
-  var mainTag=g.is_main?'<span style="background:rgba(232,130,59,.15);color:#e8823b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">MAIN</span>':'';
-  var head='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
-    '<span style="color:var(--faint);font-size:11px">'+stEsc(g.weight_class||'')+'</span>'+
-    '<span style="display:flex;gap:6px;align-items:center">'+badge+mainTag+'</span></div>';
-  var names='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;margin-bottom:2px">'+
-    '<div style="text-align:left"><div onclick="ufcProfile(decodeURIComponent(\''+encodeURIComponent(''+(g.red_fighter_id||''))+'\'))" style="font-weight:700;font-size:15px;color:#e0533a;cursor:pointer">'+stEsc(g.red_name||'Red')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.red_fighter_id)+'</div></div>'+
-    '<div style="color:var(--faint);font-size:11px;font-weight:600;padding-top:3px">vs</div>'+
-    '<div style="text-align:right"><div onclick="ufcProfile(decodeURIComponent(\''+encodeURIComponent(''+(g.blue_fighter_id||''))+'\'))" style="font-weight:700;font-size:15px;color:#5d8def;cursor:pointer">'+stEsc(g.blue_name||'Blue')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.blue_fighter_id)+'</div></div></div>';
-  var statsBlock='';
-  if(live||fin){
-    var noStats=(g.red_strikes==null&&g.blue_strikes==null&&g.red_td==null&&g.blue_td==null&&g.red_kd==null&&g.blue_kd==null);
-    statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:6px">'+
-      stat('sig strikes',g.red_strikes,g.blue_strikes)+
-      stat('takedowns',g.red_td,g.blue_td)+
-      stat('knockdowns',g.red_kd,g.blue_kd)+
-      (noStats?'<div style="font-size:10.5px;color:var(--faint);text-align:center;padding-top:4px">The poller wrote no strike, takedown or knockdown counts for this fight \u2014 blank means not recorded, not zero.</div>':'')+
-      ufcWinProbBar(g.red_win_prob)+'</div>';
-  }else{
-    statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:8px;text-align:center;font-size:11px;color:var(--faint2,#6b7280)">Live strikes, takedowns &amp; knockdowns begin at first bell</div>';
-  }
-  /* Was two hardcoded "not active" tiles that read no condition at all — the
-     CLV one would have said "not active" with a fully graded signal sitting in
-     the database. It now reads the stored market. The model tile stays gated
-     because that one is still true. */
-  var gated=ufcClvHTML(g);
-  var odds=(g.red_odds!=null||g.blue_odds!=null)?'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--faint)"><span>best book price via capture \u00b7 de-vigged pipeline, not Pinnacle</span><span class="mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'';
-  /* DEEP PANEL (additive). ufcDeepPanelHTML returns '' when no deep row exists
-     for this bout, so with the migration unrun this card renders byte-for-byte
-     what it rendered before the Fight Centre layer was added. */
-  return '<div class="fi-card" style="margin-bottom:12px;'+(live?'border:1px solid rgba(224,83,58,.35)':'')+'">'+head+names+statsBlock+gated+odds+ufcDeepPanelHTML(g)+'</div>';
-}
-function ufcLiveShellHTML(e,fx,mode){
-  var head;
-  if(!e){head='<div class="flbanner demo">\u25cb No live or upcoming UFC event on the board right now. When a card is live (or the ufc_live poller is running), fights appear here in real time.</div>';}
-  else{
-    var when=e.start_time?(' \u00b7 '+new Date(e.start_time).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})):'';
-    if(mode==='stale'){
-      /* the row exists but the poller stopped updating it: never call this live */
-      head='<div class="flbanner demo" style="font-size:13px">\u25b2 <b>Live feed stale</b> \u00b7 '+stEsc(e.name||'UFC event')+when+
-        ' \u2014 the most recent event on file is still marked <span class="mono">'+rsEsc(''+(e.status||'?'))+'</span>'+
-        ufcStaleAgeLabel(e)+
-        '. The <b>ufc_live</b> poller has not moved it on, so this is not being shown as live.'+
-        ufcPollerLabel(e)+' Fights below are the last state it wrote.</div>';
-    }else{
-      var st=(mode==='live')?'<span style="color:#e0533a;font-weight:700">\u25cf LIVE NOW</span>':'<span style="color:#5d8def;font-weight:600">UPCOMING</span>';
-      head='<div class="flbanner live" style="font-size:13px">'+st+' \u00b7 '+stEsc(e.name||'UFC event')+when+'</div>';
-    }
-  }
-  var cards=fx.map(ufcLiveFightCard).join('');
-  return head+ufcEventMetaHTML(e)+
-    '<p class="lede" style="margin-top:10px">Red vs blue corners, weight class, and the live round/clock stream from the fight-state poller. Pre-fight tendencies (finish rate, streaks, activity) are computed from EdgeDesk\u2019s loaded history \u2014 fighters not in the database show \u201cno DB history.\u201d <b style="color:var(--warn)">Model probability stays gated</b> \u2014 no UFC model is registered, so nothing is estimated in its place. <b>Pre-fight CLV is live</b>: it reads the entry price capture froze against the closing fair line, taken from the close pipeline where it has run and otherwise from the last tick stamped at or before the bell. A price captured after the first bell is a live price and is never used as a close. Nothing here is a fabricated number, and consensus is never relabelled as CLV.</p>'+
-    (cards||(e?'<div class="empty">Event found but no fights loaded yet for it.</div>':''))+
-    ufcDiagHTML();
-}
-
-/* ============================================================================
-   UFC LIVE FIGHT CENTER — DEEP LAYER
-   ============================================================================
-   Reads the canonical UFC layer written by the `ufc_live_stats` Edge Function
-   (sql/ufc_live_v2.sql):
-
-     ufc.live_event_state        event metadata — venue, location, card counts
-     ufc.live_fight_state        bout metadata — referee, rounds, result, clock
-     ufc.live_fight_round_stats  round 0 = fight total, 1..N = that round
-     ufc.live_fight_snapshots    immutable timestamped timeline
-     ufc.live_pipeline_health    one-row diagnostic view
-
-   PURELY ADDITIVE. Every one of these reads sits in its own try/catch and every
-   renderer returns '' when its data is absent. If the migration has not been
-   run, or the poller has never fired, the Live Fight Center renders EXACTLY
-   what it rendered before this block existed — the shallow ufc.live_fights
-   card. Nothing here can subtract from what already worked.
-
-   THE ONE RULE THIS FILE OBEYS EVERYWHERE: a number that was not published is
-   drawn as a dash, never as a zero, and anything EdgeDesk computes itself is
-   labelled as EdgeDesk-derived on the same screen as the number.
-   ============================================================================ */
-UFC.deep = {ev:null, fights:{}, rounds:{}, snaps:{}, ticks:{}, health:null, at:0, ok:null, why:''};
-UFC.liveOpen = {};
-UFC.market = {byName:{}, byPair:{}, at:0, ok:null};
-
-/* ---- reads -------------------------------------------------------------- */
-async function ufcDeepFetchEvent(eventId){
-  var out={ev:null,fights:[]};
-  out.ev=(await sbGetUfc('live_event_state?select=event_id,name,short_name,status,status_detail,start_time,venue,location,source,source_url,fights_total,fights_completed,fights_active,current_fight_id,updated_at&event_id=eq.'+encodeURIComponent(eventId)+'&limit=1'))[0]||null;
-  out.fights=await sbGetUfc('live_fight_state?select=fight_id,event_id,card_segment,fight_order,is_main,is_title,weight_class,scheduled_rounds,referee,status,status_detail,round,clock,clock_seconds,elapsed_seconds,red_fighter_id,red_name,blue_fighter_id,blue_name,winner_corner,winner_fighter_id,method,method_detail,decision_type,end_round,end_time,red_win_prob,blue_win_prob,stats_available,source,source_timestamp,source_freshness_seconds,updated_at&event_id=eq.'+encodeURIComponent(eventId)+'&order=fight_order.asc.nullslast&limit=40');
-  return out;
-}
-async function ufcRoundsFetch(fightId){
-  return await sbGetUfc('live_fight_round_stats?select=*&fight_id=eq.'+encodeURIComponent(fightId)+'&order=round.asc,corner.asc&limit=40');
-}
-async function ufcSnapsFetch(fightId){
-  /* oldest-first so the timeline reads left to right. Capped: a five-round war
-     produces a few hundred state changes, not thousands, and a cap keeps one
-     runaway fight from stalling the tab. */
-  return await sbGetUfc('live_fight_snapshots?select=corner,round,captured_at,clock,elapsed_seconds,status,sig_strikes_landed,sig_strikes_attempted,total_strikes_landed,takedowns_landed,takedowns_attempted,control_seconds,knockdowns,submission_attempts&fight_id=eq.'+encodeURIComponent(fightId)+'&order=captured_at.asc&limit=400');
-}
-
-/* Market context. READ ONLY, from the existing signals table. EdgeDesk's odds
-   engine already owns opening price, current price, sharp fair, edge and tick
-   history; this joins to that work and recomputes none of it. */
-async function ufcMarketFetch(){
-  if(UFC.market.at&&(Date.now()-UFC.market.at)<120000)return;
-  try{
-    var from=new Date(Date.now()-6*3600000).toISOString();
-    var to=new Date(Date.now()+8*86400000).toISOString();
-    /* EVERY market on the fixture, not just the moneyline. The bout card is
-       about the two fighters, but capture also prices totals and props on the
-       same fixture and a CLV receipt that silently omitted them would be
-       reporting on a subset without saying so.
-
-       Deliberately NOT filtered by BOARD_FLAG_FILTER: an unflagged row is still
-       real market data with a real stored entry, and the board's flag rule
-       exists to decide what EdgeDesk puts its NAME on, not what it may read. */
-    var rows=await sbGet('signals?select=sig_key,event_id,sport_key,sport_title,market,selection,point,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,first_sharp_fair,first_has_sharp,sharp_fair,consensus_fair,edge,n_books,has_sharp,last_seen_at,closing_sharp_fair,closed_at,'+BOARD_FLAG_COLS+',flagged_sharp_fair&sport_key=eq.mma_mixed_martial_arts&commence_time=gte.'+from+'&commence_time=lte.'+to+'&order=commence_time.asc&limit=800');
-    var ix={},pair={};
-    (rows||[]).forEach(function(r){
-      var k=ufcNormName(r.selection);
-      if(k&&r.market==='h2h'){
-        if(!ix[k]||String(r.last_seen_at||'')>String(ix[k].last_seen_at||''))ix[k]=r;
-      }
-      /* An MMA "event" in the odds feed IS one bout: home_team and away_team
-         are the two fighters. The unordered normalized name pair therefore
-         identifies the fixture without depending on corner assignment or on
-         either feed's ordering. */
-      var pk=ufcPairKey(r.home_team,r.away_team);
-      if(pk){
-        var slot=pair[pk]||(pair[pk]={event_id:r.event_id,commence_time:r.commence_time,rows:[]});
-        slot.rows.push(r);
-      }
-    });
-    UFC.market.byName=ix;UFC.market.byPair=pair;UFC.market.ok=true;UFC.market.at=Date.now();
-  }catch(e){UFC.market.ok=false;UFC.market.at=Date.now();}
-}
-
-/* Same normalization the Edge Function uses to link a feed name to a fighter.
-   Kept identical on purpose: if the two disagree, a bout matches a signal on
-   the server and not in the browser, and the market block silently empties. */
-function ufcNormName(n){
-  return String(n==null?'':n).normalize('NFD').replace(/[̀-ͯ]/g,'')
-    .toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b/g,' ')
-    .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
-}
-
-/* ---- formatting --------------------------------------------------------- */
-var UFC_DASH='—';
-function ufcNum(v){return (v==null||!isFinite(+v))?UFC_DASH:String(+v);}
-function ufcPairTxt(l,a){
-  if(l==null&&a==null)return UFC_DASH;
-  if(l!=null&&a==null)return String(l);
-  if(l==null&&a!=null)return UFC_DASH+'/'+a;
-  return l+'/'+a;
-}
-function ufcAccTxt(l,a){
-  if(l==null||a==null||+a<=0)return UFC_DASH;
-  return Math.round(+l/+a*100)+'%';
-}
-function ufcTimeTxt(s){
-  if(s==null||!isFinite(+s))return UFC_DASH;
-  var n=Math.max(0,Math.round(+s));
-  return Math.floor(n/60)+':'+('0'+(n%60)).slice(-2);
-}
-/* a value present on one side and absent on the other must not crown a leader:
-   unknown is not "less than". Mirrors the existing ufcLiveFightCard stat(). */
-function ufcLead(a,b){
-  if(a==null||b==null)return '';
-  if(+a>+b)return 'a';
-  if(+b>+a)return 'b';
-  return '';
-}
-
-/* ---- the scorecard ------------------------------------------------------ */
-function ufcScRow(label,ra,ba,lead,hint){
-  var lc=(lead==='a')?'#e0533a':'', bc=(lead==='b')?'#5d8def':'';
-  return '<div class="ufc-scrow">'+
-    '<span class="ufc-scv" style="text-align:right;'+(lc?'color:'+lc+';font-weight:700':'')+'">'+ra+'</span>'+
-    '<span class="ufc-scl"'+(hint?(' title="'+rsEsc(hint)+'"'):'')+'>'+stEsc(label)+'</span>'+
-    '<span class="ufc-scv" style="text-align:left;'+(bc?'color:'+bc+';font-weight:700':'')+'">'+ba+'</span></div>';
-}
-
-/* One block of statistics for one round (or the fight total). Every row is
-   drawn from stored numbers; a row whose source published nothing shows dashes
-   on both sides rather than being hidden, so a reader can tell "this feed does
-   not carry leg strikes" from "no leg strikes were thrown". */
-function ufcStatBlockHTML(r,b){
-  r=r||{};b=b||{};
-  function row(label,f,hint){
-    return ufcScRow(label,ufcNum(r[f]),ufcNum(b[f]),ufcLead(r[f],b[f]),hint);
-  }
-  function pair(label,base,hint){
-    var rl=r[base+'_landed'],ra=r[base+'_attempted'],bl=b[base+'_landed'],ba=b[base+'_attempted'];
-    var rt=ufcPairTxt(rl,ra),bt=ufcPairTxt(bl,ba);
-    var racc=ufcAccTxt(rl,ra),bacc=ufcAccTxt(bl,ba);
-    return '<div class="ufc-scrow">'+
-      '<span class="ufc-scv" style="text-align:right;'+(ufcLead(rl,bl)==='a'?'color:#e0533a;font-weight:700':'')+'">'+rt+
-        (racc!==UFC_DASH?' <span class="ufc-acc">'+racc+'</span>':'')+'</span>'+
-      '<span class="ufc-scl"'+(hint?(' title="'+rsEsc(hint)+'"'):'')+'>'+stEsc(label)+'</span>'+
-      '<span class="ufc-scv" style="text-align:left;'+(ufcLead(rl,bl)==='b'?'color:#5d8def;font-weight:700':'')+'">'+bt+
-        (bacc!==UFC_DASH?' <span class="ufc-acc">'+bacc+'</span>':'')+'</span></div>';
-  }
-  return pair('Sig. strikes','sig_strikes','Landed / attempted, with accuracy. As published by the live source.')+
-    pair('Total strikes','total_strikes')+
-    '<div class="ufc-scsub">Target</div>'+
-    pair('Head','head_strikes')+pair('Body','body_strikes')+pair('Leg','leg_strikes')+
-    '<div class="ufc-scsub">Position</div>'+
-    pair('Distance','distance_strikes')+pair('Clinch','clinch_strikes')+pair('Ground','ground_strikes')+
-    '<div class="ufc-scsub">Grappling</div>'+
-    pair('Takedowns','takedowns')+
-    ufcScRow('Control',ufcTimeTxt(r.control_seconds),ufcTimeTxt(b.control_seconds),ufcLead(r.control_seconds,b.control_seconds),'Control time as published by the source.')+
-    row('Sub attempts','submission_attempts')+
-    row('Reversals','reversals')+
-    row('Knockdowns','knockdowns');
-}
-
-/* Round-by-round. Round 0 is the fight total by schema contract, so it is
-   pulled out and shown as TOTAL rather than as "round 0". */
-function ufcRoundsHTML(fightId){
-  var rows=UFC.deep.rounds[fightId];
-  if(rows===undefined)return '<div class="fi-empty" style="margin-top:10px">Loading round statistics…</div>';
-  if(rows===null)return '<div class="fi-empty" style="margin-top:10px">Round statistics could not be read. The <span class="mono">ufc.live_fight_round_stats</span> table did not answer — run <span class="mono">sql/ufc_live_v2.sql</span> if it has not been created.</div>';
-  if(!rows.length)return '<div class="fi-empty" style="margin-top:10px">No round statistics stored for this bout yet. Blank means the live source has not published them — not that nothing happened.</div>';
-
-  var byRound={};
-  rows.forEach(function(x){
-    var k=String(x.round);
-    byRound[k]=byRound[k]||{};
-    byRound[k][x.corner]=x;
-  });
-  var nums=Object.keys(byRound).map(Number).sort(function(a,b){return a-b;});
-  var out='';
-  var total=byRound['0'];
-  if(total){
-    out+='<div class="ufc-scblk"><div class="ufc-schd">Fight total</div>'+
-      ufcStatBlockHTML(total.red,total.blue)+'</div>';
-  }
-  nums.filter(function(n){return n>0;}).forEach(function(n){
-    var g=byRound[String(n)];
-    var st=(g.red&&g.red.round_status)||(g.blue&&g.blue.round_status)||'';
-    var tag=st?(' <span class="ufc-schs">'+stEsc(st)+'</span>'):'';
-    out+='<div class="ufc-scblk"><div class="ufc-schd">Round '+n+tag+'</div>'+
-      ufcStatBlockHTML(g.red,g.blue)+'</div>';
-  });
-  var cum=rows.some(function(x){return x.round>0&&x.is_cumulative;});
-  return out+'<div class="fi-foot">Per-round rows are that round only'+(cum?' — except where the source publishes running totals, which are stored and flagged as cumulative':'')+'. A dash means the source published no value for that field; it does not mean zero.</div>';
-}
-
-/* ---- EdgeDesk-derived analytics ----------------------------------------
-   Everything below is COMPUTED BY EDGEDESK from the stored numbers, and every
-   one of these renderers says so on screen. None of it is an official UFC
-   figure and none of it is a scorecard: the UFC's own judging is not published
-   live, so EdgeDesk does not imitate it. */
-
-function ufcDerivedTag(){
-  return '<span class="ufc-derived">EdgeDesk-derived</span>';
-}
-
-/* Momentum = what actually changed, over the window the snapshots cover. Not a
-   score, not a prediction — a difference between two observed states, which is
-   the only thing an immutable timeline can honestly support. */
-function ufcMomentumHTML(fightId,g){
-  var snaps=UFC.deep.snaps[fightId];
-  if(!snaps||!snaps.length)return '';
-  var cur=(g&&g.round!=null)?+g.round:null;
-  var pick=snaps.filter(function(s){return cur==null||+s.round===cur;});
-  if(pick.length<2)pick=snaps;
-  if(pick.length<2)return '';
-
-  function side(corner){
-    var rows=pick.filter(function(s){return s.corner===corner;});
-    if(rows.length<2)return null;
-    var a=rows[0],b=rows[rows.length-1];
-    function d(f){
-      if(a[f]==null||b[f]==null)return null;
-      return +b[f]-+a[f];
-    }
-    return {sig:d('sig_strikes_landed'),td:d('takedowns_landed'),
-      ctrl:d('control_seconds'),kd:d('knockdowns'),sub:d('submission_attempts'),
-      from:a.captured_at,to:b.captured_at};
-  }
-  var R=side('red'),B=side('blue');
-  if(!R&&!B)return '';
-  function bits(x){
-    if(!x)return '<span class="mut">'+UFC_DASH+'</span>';
-    var out=[];
-    if(x.sig)out.push((x.sig>0?'+':'')+x.sig+' sig');
-    if(x.td)out.push((x.td>0?'+':'')+x.td+' TD');
-    if(x.ctrl)out.push((x.ctrl>0?'+':'')+ufcTimeTxt(x.ctrl)+' control');
-    if(x.kd)out.push((x.kd>0?'+':'')+x.kd+' KD');
-    if(x.sub)out.push((x.sub>0?'+':'')+x.sub+' sub att');
-    return out.length?stEsc(out.join(' · ')):'<span class="mut">no change</span>';
-  }
-  var win=(R&&R.from)||(B&&B.from);
-  var winTo=(R&&R.to)||(B&&B.to);
-  var span='';
-  if(win&&winTo){
-    var secs=Math.max(0,Math.round((new Date(winTo)-new Date(win))/1000));
-    span=' over the last '+ufcTimeTxt(secs)+' of captured state';
-  }
-  return '<div class="ufc-sec"><div class="ufc-sech">Live momentum '+ufcDerivedTag()+'</div>'+
-    '<div class="ufc-mom"><span style="color:#e0533a">'+bits(R)+'</span>'+
-      '<span class="ufc-scl">change'+(cur!=null?' in R'+cur:'')+'</span>'+
-      '<span style="color:#5d8def">'+bits(B)+'</span></div>'+
-    '<div class="fi-foot">Differences between stored snapshots'+span+'. This is observed change, not a judging score — EdgeDesk does not publish a round score because no live official scoring source exists.</div></div>';
-}
-
-/* Pace against the fighter's own career baseline. The baseline is UFCStats
-   career microstats already loaded by the research module; the live rate is
-   arithmetic on stored live numbers. Both sides are real; the COMPARISON is
-   EdgeDesk's, and is labelled. */
-function ufcPaceHTML(g){
-  var rows=UFC.deep.rounds[g.fight_id];
-  if(!rows||!rows.length)return '';
-  var tot={};
-  rows.forEach(function(x){if(+x.round===0)tot[x.corner]=x;});
-  if(!tot.red&&!tot.blue)return '';
-  var el=(g.elapsed_seconds!=null)?+g.elapsed_seconds:null;
-  if(!el||el<60)return '';   /* a rate over a few seconds is noise, not a read */
-
-  function line(corner,fid,name,col){
-    var t=tot[corner];if(!t)return '';
-    var f=UFC.byId[fid];var c=(f&&f.c)||null;
-    var mins=el/60;
-    var liveSl=(t.sig_strikes_landed!=null)?(+t.sig_strikes_landed/mins):null;
-    var baseSl=(c&&c.slpm!=null)?+c.slpm:null;
-    var liveTd=(t.takedowns_landed!=null)?(+t.takedowns_landed/mins*15):null;
-    var baseTd=(c&&c.takedown_avg!=null)?+c.takedown_avg:null;
-    function cmp(live,base,unit,label){
-      if(live==null)return '<div class="gd-line"><span class="l">'+label+'</span><span class="v mut">'+UFC_DASH+'</span></div>';
-      var lv=live.toFixed(2)+unit;
-      if(base==null)return '<div class="gd-line"><span class="l">'+label+'</span><span class="v mono">'+lv+' <span class="mut">(no career baseline)</span></span></div>';
-      var pct=base>0?Math.round((live-base)/base*100):null;
-      var cls=(pct==null)?'mut':(pct>=15?'up':(pct<=-15?'dn':'mut'));
-      var arrow=(pct==null)?'':((pct>0?'+':'')+pct+'%');
-      return '<div class="gd-line"><span class="l">'+label+'</span><span class="v mono">'+lv+
-        ' <span class="'+cls+'">vs '+base.toFixed(2)+unit+' career '+arrow+'</span></span></div>';
-    }
-    return '<div class="ufc-pace"><div class="ufc-pacen" style="color:'+col+'">'+stEsc(name||corner)+'</div>'+
-      cmp(liveSl,baseSl,'','Sig. strikes / min')+
-      cmp(liveTd,baseTd,'','Takedowns / 15 min')+'</div>';
-  }
-  var a=line('red',g.red_fighter_id,g.red_name,'#e0533a');
-  var b=line('blue',g.blue_fighter_id,g.blue_name,'#5d8def');
-  if(!a&&!b)return '';
-  return '<div class="ufc-sec"><div class="ufc-sech">Pace vs career baseline '+ufcDerivedTag()+'</div>'+
-    '<div class="ufc-pacew">'+a+b+'</div>'+
-    '<div class="fi-foot">Live rate is this bout’s stored count over '+ufcTimeTxt(el)+' of elapsed fight time. Career baselines are UFCStats career averages from <span class="mono">ufc.fighter_career_stats</span>. A fighter with no career row shows no baseline rather than a substituted one.</div></div>';
-}
-
-/* Cumulative sig-strike timeline, drawn from the immutable snapshot table.
-   This is the "what did the fight look like at 8:42:31" mechanism made
-   visible. Pure SVG, no library, no external request. */
-function ufcTimelineHTML(fightId){
-  var snaps=UFC.deep.snaps[fightId];
-  if(snaps===undefined)return '';
-  if(snaps===null||!snaps.length)return '';
-  var pts={red:[],blue:[]};
-  snaps.forEach(function(s){
-    if(s.sig_strikes_landed==null)return;
-    var t=new Date(s.captured_at).getTime();
-    if(!isFinite(t))return;
-    if(pts[s.corner])pts[s.corner].push([t,+s.sig_strikes_landed]);
-  });
-  var all=pts.red.concat(pts.blue);
-  if(all.length<3)return '';
-  var t0=Math.min.apply(null,all.map(function(p){return p[0];}));
-  var t1=Math.max.apply(null,all.map(function(p){return p[0];}));
-  var vmax=Math.max.apply(null,all.map(function(p){return p[1];}))||1;
-  if(t1<=t0)return '';
-  var W=280,H=54;
-  function path(arr,col){
-    if(arr.length<2)return '';
-    var d=arr.map(function(p,i){
-      var x=((p[0]-t0)/(t1-t0))*W, y=H-((p[1]/vmax)*(H-6))-3;
-      return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
-    }).join(' ');
-    return '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linejoin="round"/>';
-  }
-  return '<div class="ufc-sec"><div class="ufc-sech">Snapshot timeline '+ufcDerivedTag()+'</div>'+
-    '<div class="ufc-spark"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block">'+
-      path(pts.red,'#e0533a')+path(pts.blue,'#5d8def')+'</svg></div>'+
-    '<div class="ufc-sparkl"><span style="color:#e0533a">red</span><span class="mut">cumulative sig. strikes landed · '+all.length+' stored states</span><span style="color:#5d8def">blue</span></div>'+
-    '<div class="fi-foot">Each point is a moment the numbers actually changed, from <span class="mono">ufc.live_fight_snapshots</span>. Snapshots are immutable and deduplicated, so the fight can be reconstructed at any earlier point.</div></div>';
-}
-
-/* ---- market context ----------------------------------------------------
-   Consumes the EXISTING odds pipeline. Recomputes nothing: opening price,
-   current price, sharp fair, edge and the flag all come from `signals` exactly
-   as capture wrote them, and are rendered with the same helpers the board uses
-   so a price cannot read differently in two places. */
-function ufcMarketHTML(g){
-  if(UFC.market.ok===false)
-    return '<div class="ufc-sec"><div class="ufc-sech">Market</div><div class="fi-empty">The signals table could not be read for this session, so no market context is shown.</div></div>';
-  var R=UFC.market.byName[ufcNormName(g.red_name)];
-  var B=UFC.market.byName[ufcNormName(g.blue_name)];
-  if(!R&&!B){
-    return '<div class="ufc-sec"><div class="ufc-sech">Market</div>'+
-      '<div class="fi-empty">No MMA moneyline signal is stored for either fighter in the current window. The odds capture prices the board on its own cron — a bout with no stored quote shows nothing rather than a placeholder price.</div></div>';
-  }
-  function col(e,name,c){
-    if(!e)return '<div class="ufc-mkc"><div class="ufc-pacen" style="color:'+c+'">'+stEsc(name||UFC_DASH)+'</div>'+
-      '<div class="fi-empty" style="padding:8px 9px">No stored quote.</div></div>';
-    var GEok=(typeof GE!=='undefined'&&GE&&typeof GE.decToAm==='function');
-    var open=(e.first_best_dec&&GEok)?GE.decToAm(e.first_best_dec):null;
-    var cur=(e.best_dec&&GEok)?GE.decToAm(e.best_dec):null;
-    var mv=(open!=null&&cur!=null)?(cur-open):null;
-    var fair=(e.sharp_fair!=null&&GEok)?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null;
-    var anc=(typeof anchorOf==='function')?anchorOf(e,'live'):null;
-    var flagged=(typeof isFlaggedSignal==='function')?isFlaggedSignal(e):!!e.flagged_at;
-    function am(v,dec){return (typeof GE!=='undefined'&&GE.fmtPrice&&dec!=null)?GE.fmtPrice(dec):(v==null?UFC_DASH:((v>0?'+':'')+v));}
-    return '<div class="ufc-mkc"><div class="ufc-pacen" style="color:'+c+'">'+stEsc(name||UFC_DASH)+'</div>'+
-      '<div class="gd-line"><span class="l">Opened</span><span class="v mono">'+am(open,e.first_best_dec)+'</span></div>'+
-      '<div class="gd-line"><span class="l">Current</span><span class="v mono">'+am(cur,e.best_dec)+(e.best_book?' <span class="mut">'+stEsc(e.best_book)+'</span>':'')+'</span></div>'+
-      '<div class="gd-line"><span class="l">Movement</span><span class="v mono '+(mv==null?'mut':(mv>0?'up':(mv<0?'dn':'mut')))+'">'+(mv==null?UFC_DASH:((mv>0?'+':'')+mv+' cents'))+'</span></div>'+
-      '<div class="gd-line"><span class="l">Sharp fair</span><span class="v mono">'+am(fair,(e.sharp_fair!=null?1/Math.max(0.0001,e.sharp_fair):null))+'</span></div>'+
-      '<div class="gd-line"><span class="l">Edge</span><span class="v mono">'+(e.edge==null?UFC_DASH:(+e.edge*100).toFixed(2)+'%')+'</span></div>'+
-      '<div class="gd-line"><span class="l">Books</span><span class="v mono">'+(e.n_books==null?UFC_DASH:e.n_books)+'</span></div>'+
-      '<div class="gd-line"><span class="l">Signal</span><span class="v">'+(flagged?'<span class="pos">flagged</span>':'<span class="mut">stored, not flagged</span>')+'</span></div>'+
-      (anc?'<div class="gd-line"><span class="l">Anchor</span><span class="v mut" title="'+rsEsc(anc.why)+'">'+stEsc(anc.short)+'</span></div>':'')+
-      '</div>';
-  }
-  return '<div class="ufc-sec"><div class="ufc-sech">Market context</div>'+
-    '<div class="ufc-mkw">'+col(R,g.red_name,'#e0533a')+col(B,g.blue_name,'#5d8def')+'</div>'+
-    '<div class="fi-foot">Read straight from <span class="mono">signals</span> as the odds capture wrote it — opening price, current price, sharp fair, edge and the flag are not recomputed here. Movement is current minus opening in American cents. Prices are the best book quote across the captured books, not Pinnacle unless the anchor says so. Matched to this bout by fighter name; an unmatched fighter shows no quote rather than a nearby one.</div></div>';
-}
-
-/* ---- freshness ---------------------------------------------------------- */
-function ufcFreshHTML(g){
-  var bits=[];
-  if(g.updated_at){
-    var w=new Date(g.updated_at).getTime();
-    if(isFinite(w))bits.push('row written '+ago(w));
-  }
-  if(g.source_freshness_seconds!=null){
-    bits.push('source state '+ufcTimeTxt(g.source_freshness_seconds)+' old');
-  }
-  if(g.source)bits.push('via '+stEsc(g.source));
-  if(!bits.length)return '';
-  /* A poller writing happily against a frozen upstream has a moving write stamp
-     and a stationary source stamp. Showing BOTH is the only way that is
-     visible; showing one would make a dead feed look alive. */
-  return '<div class="ufc-fresh">'+bits.join(' · ')+'</div>';
-}
-
-/* ---- the deep panel ----------------------------------------------------- */
-window.ufcToggleDeep=async function(fid){
-  UFC.liveOpen[fid]=!UFC.liveOpen[fid];
-  if(UFC.liveOpen[fid]){
-    if(UFC.deep.rounds[fid]===undefined){
-      try{UFC.deep.rounds[fid]=await ufcRoundsFetch(fid)||[];}catch(e){UFC.deep.rounds[fid]=null;}
-    }
-    if(UFC.deep.snaps[fid]===undefined){
-      try{UFC.deep.snaps[fid]=await ufcSnapsFetch(fid)||[];}catch(e){UFC.deep.snaps[fid]=null;}
-    }
-    ufcMarketFetch().then(function(){
-      /* ticks only for the bout being looked at — a twelve-bout card would
-         otherwise pull the tick series for sixty selections every poll */
-      var d=UFC.deep.fights[fid];
-      if(!d||!d.red_name){
-        /* the deep row may not exist for a bout only the shallow poller saw;
-           ufcBoutSignals matches on fighter names, so find a row that has them */
-        d=(UFC._lastFights||[]).filter(function(x){return x.fight_id===fid;})[0]||d;
-      }
-      return ufcLoadCloseTicks(d||{fight_id:fid});
-    }).then(function(){ufcRepaintLive();});
-  }
-  ufcRepaintLive();
-};
-function ufcRepaintLive(){
-  if(UFC.mode!=='live')return;
-  var body=$('ufcBody');if(!body)return;
-  body.innerHTML=ufcLiveShellHTML(UFC._lastEvent||null,UFC._lastFights||[],UFC._lastMode||'none');
-}
-
-/* Appended to the bottom of the existing live card. Returns '' when there is no
-   deep row for this bout, which is what makes this whole file additive: with no
-   migration and no poller, every card renders exactly as it did before. */
-function ufcDeepPanelHTML(g){
-  var d=UFC.deep.fights[g.fight_id];
-  if(!d)return '';
-  var open=!!UFC.liveOpen[g.fight_id];
-  var meta=[];
-  if(d.weight_class&&!g.weight_class)meta.push(stEsc(d.weight_class));
-  if(d.scheduled_rounds!=null)meta.push(d.scheduled_rounds+' rounds');
-  if(d.referee)meta.push('ref '+stEsc(d.referee));
-  if(d.card_segment)meta.push(stEsc(d.card_segment));
-  if(d.is_title)meta.push('<span class="st-pos">TITLE</span>');
-
-  var res='';
-  if(d.method||d.end_round!=null){
-    var m=[d.method,d.decision_type&&d.decision_type!==d.method?d.decision_type:'',
-      (d.end_round!=null?'R'+d.end_round:''),(d.end_time||'')].filter(Boolean).join(' · ');
-    res='<div class="ufc-res">'+stEsc(m)+'</div>';
-  }
-  var live=(d.status==='in'||d.status==='live');
-  var clock=live?('<span class="ufc-clock">R'+rsEsc(''+(d.round||'?'))+(d.clock?(' · '+rsEsc(''+d.clock)):'')+'</span>'):'';
-
-  var head='<div class="ufc-dhd" onclick="ufcToggleDeep(decodeURIComponent(\''+encodeURIComponent(''+g.fight_id)+'\'))">'+
-    '<span class="ufc-dtag">'+(open?'▾':'▸')+' Fight centre</span>'+
-    (meta.length?'<span class="ufc-dmeta">'+meta.join(' · ')+'</span>':'')+clock+'</div>';
-
-  if(!open){
-    return '<div class="ufc-deep">'+head+res+
-      (d.stats_available===false?'<div class="ufc-nostat">The source publishes no live statistics for this bout yet.</div>':'')+
-      ufcFreshHTML(d)+'</div>';
-  }
-  return '<div class="ufc-deep open">'+head+res+
-    ufcRoundsHTML(g.fight_id)+
-    ufcMomentumHTML(g.fight_id,d)+
-    ufcPaceHTML(d)+
-    ufcTimelineHTML(g.fight_id)+
-    ufcMarketHTML(d)+
-    ufcFreshHTML(d)+'</div>';
-}
-
-/* ---- event header extras ------------------------------------------------ */
-function ufcEventMetaHTML(e){
-  if(!e)return '';
-  var d=UFC.deep.ev;
-  if(!d)return '';
-  var bits=[];
-  if(d.venue)bits.push(stEsc(d.venue));
-  if(d.location)bits.push(stEsc(d.location));
-  if(d.fights_total!=null){
-    var done=(d.fights_completed!=null?d.fights_completed:0);
-    bits.push(done+' of '+d.fights_total+' bouts complete');
-  }
-  if(d.fights_active)bits.push('<span style="color:#e0533a">'+d.fights_active+' live now</span>');
-  if(!bits.length)return '';
-  return '<div class="ufc-evmeta">'+bits.join(' · ')+'</div>';
-}
-
-/* ---- diagnostics -------------------------------------------------------
-   The five questions that look identical on a blank screen and have five
-   different fixes. Collapsed by default; it is a tool, not a banner. */
-function ufcDiagHTML(){
-  var h=UFC.deep.health;
-  if(UFC.deep.ok===false){
-    return '<details class="rs-prov" style="margin-top:12px"><summary><b>Live pipeline</b> · not installed</summary>'+
-      '<div style="padding:10px 12px;font-size:11.5px;color:var(--dim);line-height:1.6">'+
-      'The deep UFC tables did not answer. Run <span class="mono">sql/ufc_live_v2.sql</span> and deploy the '+
-      '<span class="mono">ufc_live_stats</span> function. Until then the Fight Centre shows the shallow live card only, '+
-      'which is exactly what it showed before this layer existed — nothing has been taken away.'+
-      (UFC.deep.why?'<div class="mono" style="margin-top:6px;color:var(--faint)">'+stEsc(UFC.deep.why)+'</div>':'')+
-      '</div></details>';
-  }
-  if(!h)return '';
-  var lines=[];
-  var age=h.seconds_since_last_run;
-  lines.push(['Last capture run',(age==null?UFC_DASH:(age<90?age+'s ago':ufcTimeTxt(age)+' ago'))+' · '+stEsc(h.last_run_status||UFC_DASH)]);
-  lines.push(['Provider',stEsc(h.provider||UFC_DASH)+(h.provider_verified===false?' <span class="neg">(adapter parsed nothing)</span>':(h.provider_verified?' <span class="pos">(parsing)</span>':''))]);
-  lines.push(['Events discovered / active',ufcNum(h.events_discovered)+' / '+ufcNum(h.events_active)]);
-  lines.push(['Fights discovered / live',ufcNum(h.fights_discovered)+' / '+ufcNum(h.fights_live_now)]);
-  lines.push(['Live fights WITH statistics',ufcNum(h.fights_live_with_stats)]);
-  lines.push(['Snapshots written / deduped',ufcNum(h.snapshots_written)+' / '+ufcNum(h.snapshots_skipped_dup)]);
-  lines.push(['API requests / failures',ufcNum(h.api_requests)+' / '+ufcNum(h.api_failures)+(h.rate_limited?(' · '+h.rate_limited+' rate-limited'):'')]);
-  if(h.db_write_failures)lines.push(['Database write failures','<span class="neg">'+h.db_write_failures+'</span>']);
-  var um=h.unmapped_stat_keys&&Object.keys(h.unmapped_stat_keys).length?Object.keys(h.unmapped_stat_keys).slice(0,8).join(', '):null;
-  if(um)lines.push(['Unmapped source fields','<span class="mono" style="color:var(--warn)">'+stEsc(um)+'</span>']);
-
-  /* the verdict, stated rather than left to be inferred from the numbers */
-  var verdict;
-  if(h.provider_verified===false&&h.api_failures>0)verdict='The source is failing — requests are erroring. This is not a quiet night.';
-  else if(h.provider_verified===false)verdict='The provider answered but the adapter parsed no events. The response shape has probably changed.';
-  else if(!h.events_active)verdict='No UFC event is inside the capture window right now. Nothing is wrong.';
-  else if(!h.fights_live_now)verdict='There is an event, but no bout is currently live.';
-  else if(!h.fights_live_with_stats)verdict='A bout is live, but the source publishes no statistics for it yet.';
-  else verdict='Event live, statistics flowing. If this screen still looks empty, the UI is failing to consume valid data.';
-
-  return '<details class="rs-prov" style="margin-top:12px"><summary><b>Live pipeline diagnostics</b> · '+stEsc(verdict)+'</summary>'+
-    '<div style="padding:8px 12px 12px">'+
-    lines.map(function(l){return '<div class="gd-line"><span class="l">'+l[0]+'</span><span class="v mono">'+l[1]+'</span></div>';}).join('')+
-    '<div class="fi-foot">Read from <span class="mono">ufc.live_pipeline_health</span>. '+
-    (um?'Unmapped fields are source keys the normalizer does not recognise — they are stored nowhere and displayed nowhere; add them to STAT_ALIASES in the ufc_live_stats function to light them up. ':'')+
-    'Snapshots are deduplicated by content, so a high dedup count during a live fight is correct: it means the numbers have not moved.</div></div></details>';
-}
-
-/* ---- deep-layer loaders ------------------------------------------------- */
-/* Build a shallow-shaped fight row from a deep row, so the EXISTING card
-   renderer can draw a bout discovered only by ufc_live_stats. This is what
-   lets the Fight Centre work with either poller deployed, or both. */
-function ufcFxFromDeep(rows){
-  return (rows||[]).map(function(d){
-    return {fight_id:d.fight_id,red_name:d.red_name,blue_name:d.blue_name,
-      red_fighter_id:d.red_fighter_id,blue_fighter_id:d.blue_fighter_id,
-      status:d.status,round:d.round,clock:d.clock,
-      red_strikes:null,blue_strikes:null,red_td:null,blue_td:null,
-      red_kd:null,blue_kd:null,red_win_prob:d.red_win_prob,
-      weight_class:d.weight_class,is_main:d.is_main,red_odds:null,blue_odds:null};
-  });
-}
-/* Fill the summary counts on the card from round-0 (fight total) rows, in ONE
-   query for the whole card rather than one per bout.
-
-   PRECEDENCE, and it matters: only a NULL is filled. ufc.live_fights is written
-   by the existing ufc_live poller and remains the source of truth for every
-   field it carries, so this can never overwrite a value that poller wrote. */
-async function ufcFillTotals(ids){
-  if(!ids||!ids.length)return;
-  try{
-    var list=ids.slice(0,30).map(function(i){return '%22'+encodeURIComponent(String(i))+'%22';}).join(',');
-    var rows=await sbGetUfc('live_fight_round_stats?select=fight_id,corner,sig_strikes_landed,takedowns_landed,knockdowns&round=eq.0&fight_id=in.('+list+')&limit=80');
-    var by={};
-    (rows||[]).forEach(function(r){by[r.fight_id]=by[r.fight_id]||{};by[r.fight_id][r.corner]=r;});
-    (UFC._lastFights||[]).forEach(function(g){
-      var t=by[g.fight_id];if(!t)return;
-      if(g.red_strikes==null&&t.red)g.red_strikes=t.red.sig_strikes_landed;
-      if(g.blue_strikes==null&&t.blue)g.blue_strikes=t.blue.sig_strikes_landed;
-      if(g.red_td==null&&t.red)g.red_td=t.red.takedowns_landed;
-      if(g.blue_td==null&&t.blue)g.blue_td=t.blue.takedowns_landed;
-      if(g.red_kd==null&&t.red)g.red_kd=t.red.knockdowns;
-      if(g.blue_kd==null&&t.blue)g.blue_kd=t.blue.knockdowns;
-    });
-  }catch(_){}
-}
-async function ufcDeepLoadHealth(){
-  try{UFC.deep.health=(await sbGetUfc('live_pipeline_health?select=*&limit=1'))[0]||null;}
-  catch(e){UFC.deep.health=null;}
-}
-async function ufcDeepLoad(eventId,fx){
-  UFC._lastFights=fx||[];
-  try{
-    var d=await ufcDeepFetchEvent(eventId);
-    UFC.deep.ev=d.ev;UFC.deep.fights={};
-    (d.fights||[]).forEach(function(x){UFC.deep.fights[x.fight_id]=x;});
-    UFC.deep.ok=true;UFC.deep.why='';
-    if((!fx||!fx.length)&&(d.fights||[]).length)UFC._lastFights=ufcFxFromDeep(d.fights);
-    await ufcFillTotals(Object.keys(UFC.deep.fights));
-  }catch(e){
-    /* The deep tables are optional. If they are not installed the Fight Centre
-       degrades to exactly the card it drew before, and the reason is recorded
-       for the diagnostics block rather than shown as an outage. */
-    UFC.deep.ok=false;UFC.deep.why=(e&&e.message)?String(e.message):'';
-    UFC.deep.fights={};UFC.deep.ev=null;
-  }
-  await ufcDeepLoadHealth();
-  return UFC._lastFights;
-}
-
-/* ============================================================================
-   PRE-FIGHT CLV — the bridge from a UFC bout to the existing odds engine
-   ============================================================================
-   TWO SEPARATE BUGS KEPT THIS GATED, and only one of them was about data.
-
-   1. THE GATE WAS UNCONDITIONAL. `ufcLiveFightCard` rendered the literal string
-      "Pre-fight CLV — not active — needs live capture" with no check of any
-      kind. Even with a fully graded signal sitting in the database it would
-      still have said "not active". A gate that never reads its own condition
-      is not a gate, it is a caption.
-
-   2. NOTHING DERIVED A CLOSING REFERENCE FOR A BOUT. Entry was always there —
-      capture freezes `flagged_best_dec` / `flagged_sharp_fair` the first time a
-      selection crosses the floor, and `first_*` holds the opener. The missing
-      half was the close.
-
-   NO NEW TABLE. The raw material already exists and duplicating it into ufc.*
-   would create a second version of a number that already has one:
-
-     signals.closing_sharp_fair   written by the close pipeline once it grades
-                                  the bout. The canonical close.
-     signal_ticks(created_at)     the full pre-fight series capture already
-                                  writes. The LAST TICK AT OR BEFORE
-                                  commence_time IS the final pre-fight market
-                                  snapshot — which is exactly what a close is.
-
-   So this reads, it does not write. No price, fair line or edge is recomputed:
-   entry comes from the frozen anchor capture stored, close comes from the close
-   pipeline or from the tick series, and the only arithmetic here is the same
-   `fair × decimal − 1` the engine already uses.
-
-   THE LIVE PRICE IS NEVER THE CLOSE. Only ticks stamped at or before
-   commence_time qualify, and a snapshot taken too long before the bell is
-   reported as unqualified rather than quietly presented as a close.
-   ============================================================================ */
-
-/* How stale the final pre-fight tick may be and still be called a close. A card
-   capture last priced six hours before the bell did not observe the close, and
-   saying otherwise would put a number in the record that nothing supports. */
-var UFC_CLOSE_MAX_LEAD_MS = 6 * 3600 * 1000;
-
-/* Bout -> odds event. In the Odds API an MMA "event" IS one bout: home_team and
-   away_team are the two fighters. So the bridge is the unordered normalized
-   name pair, which does not depend on corner assignment or on either feed's
-   ordering. Names are folded by the same ufcNormName the fighter resolver uses,
-   so a bout that matches server-side matches here too. */
-function ufcPairKey(a, b) {
-  var x = ufcNormName(a), y = ufcNormName(b);
-  if (!x || !y) return '';
-  return (x < y) ? (x + '|' + y) : (y + '|' + x);
-}
-
-/* Entry price, defined the same way close/index.ts entryPrice() defines it:
-   the frozen flagged price when the signal was flagged, the opener otherwise.
-   Grading and display must agree on what "entry" means or the two will quietly
-   report different CLV for the same row. */
-function ufcEntryOf(e) {
-  if (e && e.flagged_at && e.flagged_best_dec != null && +e.flagged_best_dec > 1) {
-    return { dec: +e.flagged_best_dec, fair: (e.flagged_sharp_fair != null ? +e.flagged_sharp_fair : null),
-             at: e.flagged_at, kind: 'flagged' };
-  }
-  if (e && e.first_best_dec != null && +e.first_best_dec > 1) {
-    return { dec: +e.first_best_dec, fair: (e.first_sharp_fair != null ? +e.first_sharp_fair : null),
-             at: e.first_seen_at, kind: 'opening' };
-  }
-  return null;
-}
-
-/* Closing reference, in precedence order, each labelled with where it came from
-   so a reader is never left guessing which number they are looking at. */
-function ufcCloseOf(e, ticks) {
-  if (e && e.closing_sharp_fair != null && +e.closing_sharp_fair > 0 && +e.closing_sharp_fair < 1) {
-    return { fair: +e.closing_sharp_fair, at: e.closed_at || null, src: 'close pipeline', qualified: true };
-  }
-  var ct = e && e.commence_time ? new Date(e.commence_time).getTime() : NaN;
-  if (!isFinite(ct) || !ticks || !ticks.length) return null;
-  /* THE FINAL PRE-FIGHT SNAPSHOT. Strictly at or before the bell — a tick
-     written after commence_time is a live price, and calling that a close is
-     the one mistake that would make every CLV figure here a lie. */
-  var best = null;
-  for (var i = 0; i < ticks.length; i++) {
-    var t = ticks[i], ts = t && t.created_at ? new Date(t.created_at).getTime() : NaN;
-    if (!isFinite(ts) || ts > ct) continue;
-    if (t.sharp_fair == null || !(+t.sharp_fair > 0 && +t.sharp_fair < 1)) continue;
-    if (!best || ts > best.ts) best = { ts: ts, fair: +t.sharp_fair };
-  }
-  if (!best) return null;
-  var lead = ct - best.ts;
-  return {
-    fair: best.fair, at: new Date(best.ts).toISOString(), src: 'final pre-fight tick',
-    leadMs: lead, qualified: lead <= UFC_CLOSE_MAX_LEAD_MS
-  };
-}
-
-/* CLV, using the engine's own definition of an edge: what the entry price was
-   worth against the closing fair line. Positive means the market moved toward
-   the bet after it was taken. */
-function ufcClvOf(entry, close) {
-  if (!entry || !close || !close.qualified) return null;
-  var v = close.fair * entry.dec - 1;
-  return isFinite(v) ? v : null;
-}
-
-function ufcLeadTxt(ms) {
-  if (ms == null || !isFinite(ms)) return '';
-  var m = Math.round(ms / 60000);
-  if (m < 1) return 'at the bell';
-  if (m < 90) return m + 'm before the bell';
-  return (m / 60).toFixed(1) + 'h before the bell';
-}
-
-/* Every signal stored on this bout, moneyline first because that is the market
-   the card is about, then anything else capture priced on the same fixture. */
-function ufcBoutSignals(g) {
-  var k = ufcPairKey(g && g.red_name, g && g.blue_name);
-  if (!k) return [];
-  var slot = UFC.market.byPair ? UFC.market.byPair[k] : null;
-  if (!slot || !slot.rows) return [];
-  return slot.rows.slice().sort(function (a, b) {
-    var am = (a.market === 'h2h') ? 0 : 1, bm = (b.market === 'h2h') ? 0 : 1;
-    if (am !== bm) return am - bm;
-    return String(a.selection || '').localeCompare(String(b.selection || ''));
-  });
-}
-
-/* Lazy tick load, one query for every signal on the bout. Only issued when the
-   deep panel is opened — a twelve-bout card would otherwise pull the whole tick
-   series for sixty selections every twenty seconds to render a tile most of
-   which is collapsed. */
-async function ufcLoadCloseTicks(g) {
-  var rows = ufcBoutSignals(g);
-  if (!rows.length) return;
-  var keys = rows.map(function (r) { return r.sig_key; }).filter(Boolean);
-  if (!keys.length) return;
-  var need = keys.filter(function (k) { return UFC.deep.ticks[k] === undefined; });
-  if (!need.length) return;
-  var list = need.slice(0, 12).map(function (k) { return '%22' + encodeURIComponent(k) + '%22'; }).join(',');
-  try {
-    var t = await sbGet('signal_ticks?select=sig_key,created_at,sharp_fair,best_dec&sig_key=in.(' + list + ')&order=created_at.asc&limit=2000');
-    var by = {};
-    (t || []).forEach(function (x) { (by[x.sig_key] = by[x.sig_key] || []).push(x); });
-    need.forEach(function (k) { UFC.deep.ticks[k] = by[k] || []; });
-  } catch (e) {
-    /* A tick table this session cannot read costs the derived close and nothing
-       else: closing_sharp_fair still works where the close pipeline has run. */
-    need.forEach(function (k) { UFC.deep.ticks[k] = null; });
-  }
-}
-
-/* ---- the tile ----------------------------------------------------------- */
-function ufcClvLine(e) {
-  var entry = ufcEntryOf(e);
-  var ticks = UFC.deep.ticks[e.sig_key];
-  var close = ufcCloseOf(e, ticks);
-  var clv = ufcClvOf(entry, close);
-  var sel = stEsc(e.selection || '—') + (e.point != null ? (' ' + e.point) : '');
-  var mkt = (e.market && e.market !== 'h2h') ? (' <span class="mut">' + stEsc(e.market) + '</span>') : '';
-
-  if (!entry) {
-    return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt + '</span>' +
-      '<span class="ufc-clvv mut">no stored entry price</span></div>';
-  }
-  var entryTxt = GE.fmtPrice(entry.dec);
-  if (!close) {
-    return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt + '</span>' +
-      '<span class="ufc-clvv"><b class="mut">pending</b> <span class="mut">entry ' + entryTxt +
-      ' · closes at first bell</span></span></div>';
-  }
-  if (!close.qualified) {
-    return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt + '</span>' +
-      '<span class="ufc-clvv"><b class="mut">unavailable</b> <span class="mut">no qualified closing reference — last pre-fight capture ' +
-      ufcLeadTxt(close.leadMs) + '</span></span></div>';
-  }
-  var closeTxt = GE.fmtPrice(1 / close.fair);
-  var cls = (clv == null) ? 'mut' : (clv > 0 ? 'up' : (clv < 0 ? 'dn' : 'mut'));
-  var val = (clv == null) ? UFC_DASH : ((clv > 0 ? '+' : '') + (clv * 100).toFixed(2) + '%');
-  var anc = (typeof anchorOf === 'function') ? anchorOf(e, 'entry') : null;
-  var src = close.src + (close.leadMs != null ? (' · ' + ufcLeadTxt(close.leadMs)) : '');
-  return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt +
-      '<span class="ufc-clvsub">entry ' + entryTxt + ' (' + entry.kind + ') → close ' + closeTxt +
-      ' · ' + stEsc(src) + (anc ? (' · ' + stEsc(anc.short)) : '') + '</span></span>' +
-    '<span class="ufc-clvv ' + cls + '"><b>' + val + '</b></span></div>';
-}
-
-/* Replaces the two hardcoded "not active" tiles. The model tile stays gated —
-   that one is still true, there is no UFC model in the registry — and the CLV
-   tile now reads its own condition instead of asserting an answer. */
-function ufcClvHTML(g) {
-  var modelTile = '<div class="ufc-gate">EdgeDesk model prob<br><b style="color:var(--warn)">not active</b> — needs UFC model</div>';
-  var rows = ufcBoutSignals(g);
-
-  if (UFC.market.ok === false) {
-    return '<div class="ufc-gategrid">' + modelTile +
-      '<div class="ufc-gate">Pre-fight CLV<br><b style="color:var(--warn)">unavailable</b> — signals not readable this session</div></div>';
-  }
-  if (!rows.length) {
-    /* This is the honest answer to "why is there no CLV for this bout": the
-       odds engine has no stored market for it. Naming the sport key and the
-       matching rule makes that checkable instead of mysterious. */
-    return '<div class="ufc-gategrid">' + modelTile +
-      '<div class="ufc-gate">Pre-fight CLV<br><b style="color:var(--warn)">no market</b> — capture has no stored <span class="mono">mma_mixed_martial_arts</span> signal matching these two fighters</div></div>';
-  }
-
-  var body = rows.map(ufcClvLine).join('');
-  var anyGraded = rows.some(function (r) { return r.closing_sharp_fair != null; });
-  return '<div class="ufc-sec"><div class="ufc-sech">Pre-fight CLV ' + ufcDerivedTag() + '</div>' +
-    '<div class="ufc-clvbox">' + body + '</div>' +
-    '<div class="fi-foot">Entry is the price capture froze — <span class="mono">flagged_best_dec</span> when the signal was flagged, the opener otherwise — the same definition the grader uses. ' +
-    'Close is ' + (anyGraded ? '<span class="mono">closing_sharp_fair</span> from the close pipeline where it has run, and otherwise ' : '') +
-    'the last tick stamped at or before the bell. <b>A tick written after the fight starts is a live price and is never used as a close.</b> ' +
-    'CLV is that closing fair line against the entry price. Consensus is never substituted for a sharp close.</div>' +
-    '<div class="ufc-gategrid" style="margin-top:10px">' + modelTile + '</div></div>';
-}
-
-
 
 /* Per-user data ownership guard. Logout clears everything, but it cannot cover the
    SWITCH-WITHOUT-LOGOUT case: if user B signs in on index.html while user A never

@@ -98,6 +98,16 @@ the one people skip:
 ## The shape of the estate
 
 `capture` covers `americanfootball_ncaaf` and `americanfootball_nfl` only. The
-app still renders MLB, golf, tennis, UFC and WTA surfaces from tables other
-jobs feed, so the football pivot reached capture but not the estate around it.
+app still renders MLB, golf, tennis and WTA surfaces from tables other jobs
+feed, so the football pivot reached capture but not the estate around it.
 That gap is the thing worth deciding about deliberately.
+
+**UFC no longer depends on any Edge Function.** The Live Fight Center reads the
+contract in `../ufc_live_center.sql`, which GitHub Actions fill directly over
+PostgREST with the service role (`.github/workflows/ufc-sync.yml`,
+`.github/workflows/ufc-live.yml`, scripts in `tools/ufc/`). The deployed
+`ufc_live` and `ufc_live_stats` functions — never committed here — are no
+longer read by anything in `app.html` and can be retired once their cron
+schedules are removed; the fighter dataset itself is still built by the
+deployed `ufc_fighters_sync` / `ufcstats_sync` jobs, which this change does not
+touch.

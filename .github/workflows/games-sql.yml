@@ -33,6 +33,9 @@ on:
       - 'supabase/community_posts.sql'
       - 'tools/articles/sql/**'
       - 'tools/articles/community_sql.test.js'
+      - 'supabase/ufc_live_center.sql'
+      - 'tools/ufc/sql/**'
+      - 'tools/ufc/ufc_sql.test.js'
       - '.github/workflows/games-sql.yml'
   pull_request:
     paths:
@@ -51,6 +54,9 @@ on:
       - 'supabase/community_posts.sql'
       - 'tools/articles/sql/**'
       - 'tools/articles/community_sql.test.js'
+      - 'supabase/ufc_live_center.sql'
+      - 'tools/ufc/sql/**'
+      - 'tools/ufc/ufc_sql.test.js'
 
 jobs:
   sql:
@@ -121,11 +127,20 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/articles/community_sql.test.js | tee community.log
 
+      # The UFC Live Fight Center contract: public reads, no client writes, the
+      # per-event poller lock, the dedup constraints and the cascade — the
+      # guarantees the browser and the GitHub jobs both depend on.
+      - name: Run the UFC live center SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/ufc/ufc_sql.test.js | tee ufc.log
+
       # A skip here would mean the guarantee was never tested. On this job that
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          for f in sql.log franchise.log issues.log billing.log community.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log ufc.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
