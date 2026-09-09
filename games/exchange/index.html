@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>The Exchange | EdgeDesk Games</title>
+<meta name="description" content="The EdgeDesk Exchange: the market between franchises. List a man of your own at your price, buy one with Credits earned by playing, read what men like him actually sold for. Five per cent fee, nothing bought with money.">
+<link rel="canonical" href="https://edgedesksports.com/games/exchange">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/exchange">
+<meta property="og:title" content="The Exchange — EdgeDesk Games">
+<meta property="og:description" content="The market between franchises. Your price, their Credits, the record of what men like him sold for.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The Exchange — EdgeDesk Games">
+<meta name="twitter:description" content="The market between franchises. Your price, their Credits, the record of what men like him sold for.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260909c">
+<link rel="stylesheet" href="/games/franchise.css?v=20260909c">
+<style>
+/* the board's controls */
+.xf{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+@media(min-width:640px){.xf{grid-template-columns:1.2fr 1.2fr .8fr .8fr 1.4fr}}
+.xf label{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+.xf select,.xf input{width:100%;min-height:42px;border-radius:10px;border:1px solid var(--line2);background:var(--cell);color:var(--text);padding:0 10px;font:500 14px 'Inter',sans-serif}
+.xf .q{grid-column:1 / -1}
+@media(min-width:640px){.xf .q{grid-column:auto}}
+/* a listing on the board */
+.xl-grid{display:grid;gap:10px;margin-top:10px}
+@media(min-width:560px){.xl-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:960px){.xl-grid{grid-template-columns:repeat(3,1fr)}}
+.xl{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.xl.mine{border-color:rgba(63,184,131,.45)}
+.xl-top{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim)}
+.xl-top .who{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--text)}
+.xl-top .who .fr-mark{width:18px;height:18px;border-radius:5px}
+.xl-top .clock{margin-left:auto;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--faint)}
+.xl .pc{border:0;background:transparent;padding:0}
+.xl .pc::before{display:none}
+.xl-price{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:10px}
+.xl-price b{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700}
+.xl-price b small{font-size:11px;color:var(--faint);letter-spacing:.1em;margin-left:4px;font-family:'Inter',sans-serif}
+.xl-price .ref{font-size:11.5px;color:var(--dim);text-align:right;line-height:1.35}
+.xl-price .ref em{font-style:normal;color:var(--text)}
+.xl-acts{display:flex;gap:8px;flex-wrap:wrap}
+.xl-acts .btn{min-height:42px;font-size:13.5px;flex:1}
+.xl-comps{font-size:12px;color:var(--dim);line-height:1.45;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.xl-comps b{color:var(--text)}
+.xl-why{font-size:12px;color:var(--faint)}
+/* the sell form */
+.xs{display:grid;gap:10px;margin-top:10px}
+@media(min-width:640px){.xs{grid-template-columns:1.4fr 1fr}}
+.xs select,.xs input{width:100%;min-height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--cell);color:var(--text);padding:0 10px;font:500 14px 'Inter',sans-serif}
+.xs-math{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.xs-math div{background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+.xs-math .k{display:block;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.xs-math b{display:block;font-family:'JetBrains Mono',monospace;font-size:16px;margin-top:2px}
+.xs-comps{font-size:12.5px;color:var(--dim);line-height:1.5}
+.xs-comps b{color:var(--text)}
+.xs-comps ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px}
+.xs-comps li{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--cell);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.x-vol{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.x-vol div{background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
+.x-vol .k{display:block;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x-vol b{display:block;font-family:'Space Grotesk',sans-serif;font-size:18px;margin-top:2px}
+.mk-hist .st{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line2);border-radius:999px;padding:2px 6px;margin-left:6px;color:var(--dim)}
+.mk-hist .st.sold{color:var(--val);border-color:rgba(63,184,131,.45)}
+.mk-hist .st.expired,.mk-hist .st.withdrawn{color:var(--faint)}
+.x-pager{display:flex;justify-content:center;gap:8px;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">The Exchange</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Opening the board</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260909c"></script>
+<script src="/games/lib/scoring.js?v=20260909c"></script>
+<script src="/games/lib/challenge.js?v=20260909c"></script>
+<script src="/games/lib/research_state.js?v=20260909c"></script>
+<script src="/games/lib/attribution.js?v=20260909c"></script>
+<script src="/games/lib/store.js?v=20260909c"></script>
+<script src="/games/lib/dynasty.js?v=20260909c"></script>
+<script src="/games/lib/social.js?v=20260909c"></script>
+<script src="/games/lib/auth.js?v=20260909c"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260909c"></script>
+<script src="/games/lib/franchise.js?v=20260909c"></script>
+<script src="/games/games.js?v=20260909c"></script>
+<script>
+/* STALE SCRIPT GUARD — the same belt every franchise page wears. */
+(function(){
+  var need=['EDFranchise.exchangeBrowse','EDFranchise.exchangeBuy','EDFranchise.exchangeList','EDFranchise.exchangeWithdraw',
+            'EDFranchise.exchangeComps','EDFranchise.exchangeHistory','EDFranchise.exchangeFee','EDFranchise.roster','EDFranchise.playerCard','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  /* THE EXCHANGE (exchange_v1). The first market between franchises. The
+     board is read from the server, filtered and sorted there; a listing is
+     one man at the seller's own price inside published bounds; a buy sends
+     a LISTING ID and nothing else — the price and the balance are the
+     server's, under locks, and the fee is five per cent that leaves the
+     economy. Credits are earned by playing. Nothing here can be bought with
+     money. */
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc,fmt=FR.fmt;
+  var READY=G.boot('exchange');
+  var BOARD=null,ROSTER=null,HIST=null,BUSY=false,COMPS={};
+  var Q={position:'',sort:'newest',min:'',max:'',query:'',offset:0,limit:24};
+  var POS=['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P'];
+  var SORTS=[['newest','Newest'],['ending','Ending soon'],['price_asc','Price, low first'],['price_desc','Price, high first'],['overall_desc','Overall, high first'],['overall_asc','Overall, low first']];
+  function track(name,props){var p=props||{};p.game_type='franchise';G.track(name,p);}
+  function left(iso){
+    var ms=new Date(iso).getTime()-Date.now();if(!(ms>0))return 'closing';
+    var h=Math.floor(ms/36e5);if(h>=48)return Math.floor(h/24)+'d left';if(h>=1)return h+'h left';return Math.max(1,Math.floor(ms/6e4))+'m left';
+  }
+  function credits(n){return esc(fmt(n))+'<small>CREDITS</small>';}
+
+  /* ---- the stage: who you are, what you hold ---------------------------- */
+  function renderStage(b){
+    var snap=FR.snapshot()||{},f=snap.franchise||{},has=FR.state()==='franchise';
+    stage.className='card';
+    if(!has){
+      stage.innerHTML='<div class="fo-hero"><div class="eyebrow">The Exchange</div>'
+        +'<h1>The market between franchises.</h1>'
+        +'<p>Any franchise may list a man of its own at a price of its choosing; any other may buy him with <b>Credits earned by playing</b>. '
+        +'The server holds the price, the balance and the man, five per cent of every sale is the fee, and every sale stays on the record so a price is a decision made with the comparable sales in view.</p>'
+        +'<ul class="fo-list"><li>Browse below. To buy or sell, found a franchise first.</li>'
+        +'<li>Credits are earned by playing the week, running the drill, reading the real games. <b>Nothing here can be bought with money.</b></li></ul>'
+        +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=exchange" id="goFound">Found my franchise</a></div>'
+        +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+      var go=$('goFound');if(go)go.addEventListener('click',function(){track('signup_start_from_games',{placement:'exchange'});});
+      return;
+    }
+    var r=b.roster||{},rules=b.rules||FR.EXCHANGE;
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">The Exchange <span style="color:var(--faint);font-weight:600;margin-left:6px">'+esc(b.version||FR.EXCHANGE_VERSION)+'</span></div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city||'')+' · '+esc(f.abbr||'')+'</div>'
+      +'<div class="hq-name">'+esc(f.name||'')+'</div>'
+      +'<div class="hq-line"><b>'+esc(fmt(b.balance|0))+'</b> Credits to spend · '+esc((b.mine||[]).length)+' of '+esc(rules.max_open)+' listings open</div></div>'
+      +'<div class="hq-rec">'+esc(b.total|0)+'<span class="s">for sale</span></div></div>'
+      +'<div class="mk-sum">'
+      +'<div class="sp"><div class="k">Credits</div><div class="v">'+esc(fmt(b.balance|0))+'<small>earned by playing</small></div></div>'
+      +'<div><div class="k">Roster</div><div class="v">'+esc(r.active|0)+'<small>of '+esc(r.max|0)+' · '+(((r.max|0)-(r.active|0))>0?((r.max|0)-(r.active|0))+' open':'full')+'</small></div></div>'
+      +'<div><div class="k">The fee</div><div class="v">'+esc(rules.fee_pct)+'%<small>leaves the economy</small></div></div>'
+      +'<div><div class="k">A listing</div><div class="v">'+esc(rules.expires_days)+'d<small>'+esc(fmt(rules.min_price))+'–'+esc(fmt(rules.max_price))+' Credits</small></div></div>'
+      +'</div>'
+      +'<div class="ftp" style="margin-top:12px">A man you list <b>keeps playing for you</b> until he is sold. A buy sends the listing and nothing else: the price, your balance and the roster rules are checked on the server, under lock, and the record of every sale is public. '
+      +'<b>Nothing here can be bought with money.</b></div>';
+  }
+
+  /* ---- the board ---------------------------------------------------------- */
+  function filters(){
+    return '<div class="card"><div class="xf">'
+      +'<div><label for="xfPos">Position</label><select id="xfPos"><option value="">Every position</option>'+POS.map(function(p){return '<option value="'+p+'"'+(Q.position===p?' selected':'')+'>'+p+'</option>';}).join('')+'</select></div>'
+      +'<div><label for="xfSort">Sort</label><select id="xfSort">'+SORTS.map(function(s){return '<option value="'+s[0]+'"'+(Q.sort===s[0]?' selected':'')+'>'+esc(s[1])+'</option>';}).join('')+'</select></div>'
+      +'<div><label for="xfMin">Overall from</label><input id="xfMin" type="number" inputmode="numeric" min="40" max="99" placeholder="40" value="'+esc(Q.min)+'"></div>'
+      +'<div><label for="xfMax">to</label><input id="xfMax" type="number" inputmode="numeric" min="40" max="99" placeholder="99" value="'+esc(Q.max)+'"></div>'
+      +'<div class="q"><label for="xfQ">Name or archetype</label><input id="xfQ" type="search" placeholder="Search the board" value="'+esc(Q.query)+'"></div>'
+      +'</div></div>';
+  }
+  function listingTile(l,b){
+    var m=l.man||{},s=l.seller||{},has=FR.state()==='franchise';
+    var full=b.roster&&(b.roster.active|0)>=(b.roster.max|0);
+    var poor=has&&(b.balance|0)<(l.price|0);
+    var can=has&&!l.mine&&!full&&!poor;
+    var why=!has?'Found a franchise to buy.':l.mine?'Your own listing.':full?'Your roster is full — release someone first.':poor?'You hold '+fmt(b.balance|0)+' Credits.':'';
+    var comps=COMPS[m.position+':'+m.overall];
+    return '<div class="xl'+(l.mine?' mine':'')+'" data-listing="'+esc(l.id)+'">'
+      +'<div class="xl-top"><span class="who">'+FR.logoSvg(s.logo,18,s.theme)+esc(s.abbr||'')+'</span><span>'+esc(s.city||'')+' '+esc(s.name||'')+'</span><span class="clock">'+esc(left(l.expires_at))+'</span></div>'
+      +FR.playerCard(m,{compact:true})
+      +'<div class="xl-price"><b>'+credits(l.price)+'</b>'
+      +'<div class="ref">Free agent reference <em>'+esc(fmt(l.asking_reference|0))+'</em>'+(comps&&comps.sold?'<br>'+esc(comps.sold)+' sold · median <em>'+esc(fmt(comps.median))+'</em>':'')+'</div></div>'
+      +(comps?'<div class="xl-comps">'+compsLine(comps)+'</div>':'')
+      +'<div class="xl-acts">'
+      +(can?'<button class="btn btn-go" type="button" data-buy="'+esc(l.id)+'" data-name="'+esc(FR.fullName(m))+'" data-price="'+esc(l.price)+'">Buy for '+esc(fmt(l.price))+'</button>':'')
+      +(l.mine?'<button class="btn btn-ghost" type="button" data-withdraw="'+esc(l.id)+'">Take it down</button>':'')
+      +(!comps?'<button class="btn" type="button" data-comps="'+esc(m.position)+':'+esc(m.overall)+'">What do men like him sell for?</button>':'')
+      +'</div>'
+      +(why?'<div class="xl-why">'+esc(why)+'</div>':'')
+      +'</div>';
+  }
+  function compsLine(c){
+    if(!c)return '';
+    if(!(c.sold|0))return 'No '+esc(c.position)+' between '+esc(c.overall-c.band)+' and '+esc(c.overall+c.band)+' has sold in the last '+esc(c.days)+' days. '+esc(c.open|0)+' listed now. The free-agent reference is <b>'+esc(fmt(c.asking_reference))+'</b>.';
+    return '<b>'+esc(c.sold)+'</b> '+esc(c.position)+' between '+esc(c.overall-c.band)+' and '+esc(c.overall+c.band)+' sold in '+esc(c.days)+' days · median <b>'+esc(fmt(c.median))+'</b> · low '+esc(fmt(c.low))+' · high '+esc(fmt(c.high))+' · '+esc(c.open|0)+' listed now.';
+  }
+  function mineRow(l){
+    var m=l.man||{};
+    return '<li><span class="k">'+esc(m.position||'')+'</span><span class="o"><b>'+esc(FR.fullName(m)||m.name||'')+'</b><span class="st '+esc(l.status)+'">'+esc(l.status)+'</span>'
+      +'<small>OVR '+esc(m.overall)+' · '+esc(fmt(l.price))+' Credits · fee '+esc(fmt(l.fee))+' · you receive '+esc(fmt(l.net))+' · '+esc(left(l.expires_at))+'</small></span>'
+      +'<span class="r"><button class="lnk" type="button" data-withdraw="'+esc(l.id)+'">Take down</button></span></li>';
+  }
+  function histRow(l){
+    var m=l.man||{},when=l.closed_at?new Date(l.closed_at).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+    var side=l.mine?(l.status==='sold'?'sold to the '+esc((l.buyer||{}).name||'')+'':l.status):'bought from the '+esc((l.seller||{}).name||'');
+    return '<li><span class="k">'+esc(when)+'</span><span class="o"><b>'+esc(m.name||FR.fullName(m))+'</b><span class="st '+esc(l.status)+'">'+esc(l.status)+'</span>'
+      +'<small>'+esc(m.position||'')+' · OVR '+esc(m.overall)+' · '+esc(fmt(l.price))+' Credits · '+side+(l.reason&&l.status!=='sold'?' · '+esc(l.reason):'')+'</small></span><span class="r"></span></li>';
+  }
+  function recentRow(s){
+    var when=s.sold_at?new Date(s.sold_at).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+    return '<li><span class="k">'+esc(s.position)+'</span><span class="o"><b>'+esc(s.name||'')+'</b><small>OVR '+esc(s.overall)+' · '+esc(s.tier||'')+' · '+esc(when)+'</small></span><span class="r">'+esc(fmt(s.price))+'</span></li>';
+  }
+
+  function sellForm(){
+    if(FR.state()!=='franchise')return '';
+    var men=((ROSTER||{}).players||[]).filter(function(p){return !p.listing;});
+    var rules=(BOARD&&BOARD.rules)||FR.EXCHANGE;
+    var slots=BOARD?(BOARD.open_slots|0):rules.max_open;
+    return '<div class="sec"><div class="sec-h"><h2>Sell a player</h2><span class="m">'+esc(slots)+' listing'+(slots===1?'':'s')+' open to you</span></div><div class="card">'
+      +(slots<=0?'<div class="empty">You have '+esc(rules.max_open)+' listings open. Take one down to list another.</div>'
+      :'<div class="xs"><div><label class="xf" style="display:block;margin:0"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:4px">The man</span>'
+        +'<select id="xsMan"><option value="">Choose from your roster</option>'+men.map(function(p){
+            return '<option value="'+esc(p.id)+'" data-pos="'+esc(p.position)+'" data-ovr="'+esc(p.overall)+'">'+esc(p.position)+' '+esc(FR.fullName(p))+' · OVR '+esc(p.overall)+(FR.isStarter(p)?' · starter':'')+'</option>';}).join('')+'</select></label>'
+        +'<div class="xs-comps" id="xsComps" style="margin-top:10px">Pick a man and the comparable sales come up.</div></div>'
+        +'<div><label style="display:block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:4px" for="xsPrice">Your price, in Credits</label>'
+        +'<input id="xsPrice" type="number" inputmode="numeric" min="'+esc(rules.min_price)+'" max="'+esc(rules.max_price)+'" step="10" placeholder="'+esc(rules.min_price)+'–'+esc(fmt(rules.max_price))+'">'
+        +'<div class="xs-math" style="margin-top:8px"><div><span class="k">Price</span><b id="xsP">—</b></div><div><span class="k">Fee '+esc(rules.fee_pct)+'%</span><b id="xsF">—</b></div><div><span class="k">You receive</span><b id="xsN">—</b></div></div>'
+        +'<div class="btn-row" style="margin-top:10px"><button class="btn btn-go" type="button" id="xsGo" disabled>List him</button></div>'
+        +'<div class="ftp" style="margin-top:8px">He keeps playing for you until he is sold. The listing runs '+esc(rules.expires_days)+' days; you can take it down any time before it sells. The roster must stay at its floor and every position at its starters, or the sale is refused.</div></div></div>')
+      +'</div></div>';
+  }
+
+  function renderBoard(b,fresh){
+    BOARD=b;
+    renderStage(b);
+    var ls=b.listings||[],mine=b.mine||[],hist=HIST||{};
+    var pages=Math.ceil((b.total|0)/Q.limit),page=Math.floor(Q.offset/Q.limit)+1;
+    rooms.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>On the board</h2><span class="m">'+esc(b.total|0)+' listing'+((b.total|0)===1?'':'s')+'</span></div>'
+      +filters()
+      +(ls.length?'<div class="xl-grid">'+ls.map(function(l){return listingTile(l,b);}).join('')+'</div>'
+        :'<div class="card" style="margin-top:10px"><div class="empty">Nobody on the board'+(Q.position||Q.query||Q.min||Q.max?' who fits that filter':'')+'. Be the first to list a man, or come back — a listing lasts '+esc((b.rules||FR.EXCHANGE).expires_days)+' days.</div></div>')
+      +(pages>1?'<div class="x-pager">'+(page>1?'<button class="btn" type="button" data-page="'+(page-2)+'">Newer</button>':'')+'<span class="m" style="align-self:center;font-size:12px;color:var(--faint)">'+esc(page)+' of '+esc(pages)+'</span>'+(page<pages?'<button class="btn" type="button" data-page="'+page+'">Older</button>':'')+'</div>':'')
+      +'<div class="ftp" style="margin-top:10px">Every price on this board was set by the franchise selling. The <b>free agent reference</b> is what the server\'s own market would ask for a man of that overall; the <b>comparable sales</b> are what men like him actually went for here. '
+      +'A buy is checked on the server: the listing still open, the man still where he was listed, the seller keeping his floor, your roster with room and your Credits enough — then one ledger row out of you and one into the seller, less the fee.</div></div>'
+      +(mine.length?'<div class="sec"><div class="sec-h"><h2>Your listings</h2><span class="m">'+esc(mine.length)+' of '+esc((b.rules||FR.EXCHANGE).max_open)+'</span></div><div class="card"><ul class="mk-hist">'+mine.map(mineRow).join('')+'</ul></div></div>':'')
+      +sellForm()
+      +'<div class="sec"><div class="sec-h"><h2>The record</h2><span class="m">'+esc((hist.volume||{}).sold_30d|0)+' sold in 30 days</span></div><div class="card">'
+      +'<div class="x-vol"><div><span class="k">Sold, 30d</span><b>'+esc((hist.volume||{}).sold_30d|0)+'</b></div><div><span class="k">Credits moved</span><b>'+esc(fmt((hist.volume||{}).credits_30d|0))+'</b></div><div><span class="k">Fees out</span><b>'+esc(fmt((hist.volume||{}).fees_30d|0))+'</b></div><div><span class="k">Open now</span><b>'+esc((hist.volume||{}).open|0)+'</b></div></div>'
+      +((hist.mine||[]).length?'<div class="eyebrow" style="margin-top:14px">Yours</div><ul class="mk-hist">'+hist.mine.map(histRow).join('')+'</ul>':'')
+      +((hist.recent||[]).length?'<div class="eyebrow" style="margin-top:14px">Recent sales, the whole Exchange</div><ul class="mk-hist">'+hist.recent.map(recentRow).join('')+'</ul>':'<div class="empty" style="margin-top:10px">No sale yet. The first price sets the first comp.</div>')
+      +'<div class="ftp" style="margin-top:10px">Every sale is a row the server wrote: the man as he was listed, the price, the fee, the day. The comparable sales are arithmetic on these rows, the same for everybody. Nothing here can be bought with money.</div>'
+      +'</div></div>';
+    if(fresh)track('exchange_view',{total:b.total|0,mine:mine.length,balance:b.balance|0,position:Q.position||'all',sort:Q.sort});
+    wire();
+  }
+
+  /* ---- actions -------------------------------------------------------------- */
+  function browse(fresh){
+    return FR.exchangeBrowse({position:Q.position||null,min:Q.min===''?null:+Q.min,max:Q.max===''?null:+Q.max,sort:Q.sort,query:Q.query||null,limit:Q.limit,offset:Q.offset}).then(function(r){
+      if(r.ok&&r.data)return renderBoard(r.data,fresh);
+      if(r.status===404||r.error==='not_configured'){stage.className='card';stage.innerHTML='<div class="eyebrow">The Exchange</div><div class="empty">Franchise services are temporarily unavailable, so the board cannot be read right now.</div>';rooms.innerHTML='';return;}
+      stage.innerHTML='<div class="empty">The board could not be read. '+esc(r.message||'Check your connection and reload.')+'</div>';
+    });
+  }
+  function reloadAll(fresh){
+    var jobs=[FR.exchangeHistory(20).then(function(r){HIST=r.ok&&r.data?r.data:HIST;})];
+    if(FR.state()==='franchise')jobs.push(FR.roster().then(function(r){ROSTER=r.ok&&r.data?r.data:ROSTER;}));
+    return Promise.all(jobs).then(function(){return browse(fresh);});
+  }
+  function wire(){
+    var pos=$('xfPos'),sort=$('xfSort'),mn=$('xfMin'),mx=$('xfMax'),q=$('xfQ');
+    function refilter(){
+      Q.position=pos.value;Q.sort=sort.value;Q.min=mn.value;Q.max=mx.value;Q.query=q.value.trim();Q.offset=0;
+      track('exchange_filter',{position:Q.position||'all',sort:Q.sort,min:Q.min,max:Q.max,query:Q.query?1:0});
+      browse(false);
+    }
+    [pos,sort,mn,mx].forEach(function(el){if(el)el.addEventListener('change',refilter);});
+    if(q){var t=null;q.addEventListener('input',function(){clearTimeout(t);t=setTimeout(refilter,350);});}
+    rooms.querySelectorAll('[data-page]').forEach(function(b){b.addEventListener('click',function(){Q.offset=(+b.getAttribute('data-page'))*Q.limit;browse(false);});});
+    rooms.querySelectorAll('[data-comps]').forEach(function(b){
+      b.addEventListener('click',function(){
+        var k=b.getAttribute('data-comps'),parts=k.split(':');
+        b.disabled=true;b.textContent='Reading the record…';
+        FR.exchangeComps(parts[0],+parts[1]).then(function(r){
+          if(r.ok&&r.data){COMPS[k]=r.data;renderBoard(BOARD,false);}else{b.disabled=false;b.textContent='What do men like him sell for?';G.toast(r.message||'The record could not be read');}
+        });
+      });
+    });
+    rooms.querySelectorAll('[data-buy]').forEach(function(b){
+      b.addEventListener('click',function(){
+        if(BUSY)return;
+        var id=b.getAttribute('data-buy'),name=b.getAttribute('data-name'),price=b.getAttribute('data-price');
+        if(!window.confirm('Buy '+name+' for '+fmt(price)+' Credits? The server checks the listing, your roster and your balance, and the sale is final.'))return;
+        BUSY=true;b.disabled=true;b.textContent='Buying…';
+        /* A LISTING ID AND NOTHING ELSE. The price shown is the server's; the price charged is the server's. */
+        FR.exchangeBuy(id).then(function(r){
+          BUSY=false;
+          if(!r.ok){G.toast(r.message||'That did not go through');return reloadAll(false);}
+          var d=r.data||{};
+          track('exchange_bought',{price:d.price,fee:d.fee,position:(d.player||{}).position,overall:(d.player||{}).overall,tier:(d.player||{}).tier});
+          (d.achievements||[]).forEach(function(a){track('achievement_unlocked',{achievement:a,placement:'exchange'});});
+          G.toast(name+' joins the roster for '+fmt(d.price)+' Credits');
+          G.paintFranchise();
+          reloadAll(false);
+        });
+      });
+    });
+    rooms.querySelectorAll('[data-withdraw]').forEach(function(b){
+      b.addEventListener('click',function(){
+        if(BUSY)return;BUSY=true;b.disabled=true;
+        FR.exchangeWithdraw(b.getAttribute('data-withdraw')).then(function(r){
+          BUSY=false;
+          if(!r.ok){G.toast(r.message||'That did not go through');return reloadAll(false);}
+          track('exchange_withdrawn',{});
+          G.toast('Listing taken down');
+          reloadAll(false);
+        });
+      });
+    });
+    var man=$('xsMan'),price=$('xsPrice'),go=$('xsGo');
+    function math(){
+      var p=parseInt(price&&price.value,10),rules=(BOARD&&BOARD.rules)||FR.EXCHANGE,okp=p>=rules.min_price&&p<=rules.max_price;
+      $('xsP').textContent=okp?fmt(p):'—';$('xsF').textContent=okp?fmt(FR.exchangeFee(p)):'—';$('xsN').textContent=okp?fmt(p-FR.exchangeFee(p)):'—';
+      go.disabled=!(okp&&man.value);
+    }
+    if(man){
+      man.addEventListener('change',function(){
+        var o=man.options[man.selectedIndex],pos2=o&&o.getAttribute('data-pos'),ovr=o&&+o.getAttribute('data-ovr');
+        math();
+        if(!pos2){$('xsComps').textContent='Pick a man and the comparable sales come up.';return;}
+        $('xsComps').textContent='Reading the record…';
+        FR.exchangeComps(pos2,ovr).then(function(r){
+          if(!r.ok||!r.data){$('xsComps').textContent='The record could not be read.';return;}
+          var c=r.data;COMPS[pos2+':'+ovr]=c;
+          $('xsComps').innerHTML=compsLine(c)+((c.sales||[]).length?'<ul>'+c.sales.map(function(s){return '<li>'+esc(s.overall)+' OVR · '+esc(fmt(s.price))+'</li>';}).join('')+'</ul>':'');
+          if(!price.value&&c.median)price.value=c.median;else if(!price.value)price.value=c.asking_reference;
+          math();
+        });
+      });
+      price.addEventListener('input',math);
+      go.addEventListener('click',function(){
+        if(BUSY||!man.value)return;
+        var p=parseInt(price.value,10);BUSY=true;go.disabled=true;go.textContent='Listing…';
+        FR.exchangeList(man.value,p).then(function(r){
+          BUSY=false;go.textContent='List him';
+          if(!r.ok){G.toast(r.message||'That did not go through');go.disabled=false;return;}
+          var l=(r.data||{}).listing||{};
+          track('exchange_listed',{price:l.price,fee:l.fee,position:(l.man||{}).position,overall:(l.man||{}).overall});
+          G.toast('Listed at '+fmt(l.price)+' Credits — you receive '+fmt(l.net)+' if he sells');
+          reloadAll(false);
+        });
+      });
+    }
+  }
+
+  READY.then(function(){return G.franchiseReady();}).then(function(){return reloadAll(true);}).catch(function(){return browse(true);});
+})();
+</script>
+</body>
+</html>

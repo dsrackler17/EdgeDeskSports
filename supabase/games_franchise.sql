@@ -10202,6 +10202,719 @@ select public.games_schema_note('franchise', 18, 'the Vault: packs you hold, odd
 commit;
 
 -- ===========================================================================
+-- PHASE 19 — THE LINEUP, CHEMISTRY, AND THE EXCHANGE
+--
+-- Three things a roster page owed the player.
+--
+-- CHEMISTRY (chemistry_v1). The column on game_players has sat at fifty since
+-- the day it was made and nothing read it. Chemistry is not a number a man
+-- carries around; it is a property of the ELEVEN who take the field
+-- together, so it is derived here from the starting lineup and nothing else:
+-- how the starters' archetypes fit the scheme the franchise runs, how many
+-- games the starters have played for this franchise, whether whole units
+-- (the line, the secondary, the passing game) have grown up together, how
+-- many new arrivals are still learning the calls, and who among them leads.
+-- It moves the simulation the way every trait does — through
+-- franchise_trait_effects, a quarter of a point of rating per point — so a
+-- churned roster plays a little below its paper and a settled one a little
+-- above, and the lineup page can say exactly why.
+--
+-- THE LINEUP. franchise_set_starter already swaps one man into one slot.
+-- franchise_lineup_best orders every position by who is best and fit, in one
+-- call, for the player who wants the server's answer rather than eleven taps.
+--
+-- THE EXCHANGE (exchange_v1). The first market between franchises. A seller
+-- lists one of his own active men at a price of his choosing, inside
+-- published bounds; the man keeps playing for him until he is sold. A buyer
+-- sends a LISTING ID and nothing else — never a price, never a balance —
+-- and the server decides, under row locks taken in a fixed order: the
+-- listing is still open, the man is still where he was listed, both rosters
+-- stay legal, the buyer can pay from the balance the ledger says he has.
+-- Five per cent of the price is the house's fee and leaves the economy; the
+-- rest reaches the seller as one ledger row keyed by the listing, so nothing
+-- can pay twice. Every sale is kept, and the comparable sales for a position
+-- and an overall are printed beside the asking price, so a price is a
+-- decision made with the record in view. Nothing here can be bought with
+-- money: Credits are earned by playing and by nothing else.
+-- ===========================================================================
+
+begin;
+
+-- ── CHEMISTRY ──────────────────────────────────────────────────────────────
+create or replace function public.franchise_chemistry_rules()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'chemistry_v1',
+    -- the score is 50 plus per_point for every point of raw chemistry, held to 0..100
+    'per_point', 2,
+    -- and the effect on the rating, in the units a trait uses (a quarter reaches the rating), is
+    -- (score - 50) / 50 * scale — so ±8 here is ±2 on the field
+    'scale', 8,
+    -- a starter who has played this many games for the franchise counts as settled
+    'tenure_games', 8,
+    -- a man who arrived by market, trade, free agency, pack or draft and has played fewer than this is still learning the calls
+    'new_games', 3, 'new_cap', 4,
+    -- whole units that have grown up together
+    'core', jsonb_build_object('line', 2, 'secondary', 2, 'passing', 2),
+    'sides', jsonb_build_object('offense', jsonb_build_array('QB','RB','WR','TE','OL'), 'defense', jsonb_build_array('DL','LB','CB','S')),
+    'fit_range', jsonb_build_array(-2, 2));
+$$;
+
+-- WHICH ARCHETYPES A SCHEME LOVES. Per scheme, per position, the archetype
+-- and how well it fits, -2 to +2. Anything unlisted is 0: a fine player in
+-- a scheme that is neither built for him nor against him.
+create or replace function public.franchise_scheme_fit()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select '{
+    "offense": {
+      "air_raid":   {"QB":{"Gunslinger":2,"Field General":1,"Game Manager":-1},
+                     "WR":{"Deep Threat":2,"Route Runner":1,"Route Technician":1,"Slot Weapon":1,"Possession":-1,"Possession Receiver":-1},
+                     "TE":{"Seam Stretcher":2,"Move TE":1,"In-Line":-1},
+                     "RB":{"Receiving Back":2,"Power Back":-1},
+                     "OL":{"Pass Protector":2,"Road Grader":-1}},
+      "spread":     {"QB":{"Scrambler":2,"Improviser":2,"Game Manager":-1},
+                     "WR":{"Slot Weapon":2,"Deep Threat":1,"Route Runner":1},
+                     "TE":{"Move TE":2,"In-Line":-1},
+                     "RB":{"Elusive Back":2,"Receiving Back":1,"Power Back":-1},
+                     "OL":{"Technician":2,"Pass Protector":1}},
+      "pro_style":  {"QB":{"Field General":2,"Game Manager":1,"Scrambler":-1},
+                     "WR":{"Possession":1,"Possession Receiver":1,"Route Runner":1,"Route Technician":1},
+                     "TE":{"In-Line":1,"Move TE":1},
+                     "RB":{"Workhorse":2,"Power Back":1},
+                     "OL":{"Technician":1,"Pass Protector":1,"Road Grader":1}},
+      "power_run":  {"QB":{"Game Manager":2,"Field General":1,"Gunslinger":-1},
+                     "WR":{"Physical Target":2,"Possession":1,"Possession Receiver":1,"Deep Threat":-1},
+                     "TE":{"In-Line":2,"Seam Stretcher":-1},
+                     "RB":{"Power Back":2,"Workhorse":2,"Elusive Back":-1},
+                     "OL":{"Road Grader":2,"Pass Protector":-1}},
+      "option":     {"QB":{"Scrambler":2,"Improviser":1,"Gunslinger":-1,"Game Manager":-1},
+                     "WR":{"Deep Threat":1,"Physical Target":1},
+                     "TE":{"In-Line":1,"Move TE":1},
+                     "RB":{"Elusive Back":2,"Workhorse":1},
+                     "OL":{"Road Grader":2,"Technician":1,"Pass Protector":-1}},
+      "west_coast": {"QB":{"Game Manager":2,"Field General":1,"Gunslinger":-1},
+                     "WR":{"Route Runner":2,"Route Technician":2,"Possession":1,"Slot Weapon":1,"Deep Threat":-1},
+                     "TE":{"Move TE":2,"Seam Stretcher":1},
+                     "RB":{"Receiving Back":2,"Elusive Back":1},
+                     "OL":{"Technician":2,"Pass Protector":1}}
+    },
+    "defense": {
+      "four_three":      {"DL":{"Edge Rusher":1,"Run Stopper":1,"Balanced":1,"Hybrid":1},
+                          "LB":{"Run Stopper":1,"Hybrid":1},
+                          "CB":{"Coverage":1,"Hybrid":1},
+                          "S":{"Coverage":1,"Run Stopper":1}},
+      "three_four":      {"DL":{"Run Stopper":2,"Power Rusher":1,"Speed Rusher":-1},
+                          "LB":{"Hybrid":2,"Coverage":1,"Run Stopper":1},
+                          "CB":{"Coverage":1},
+                          "S":{"Ball Hawk":1,"Coverage":1}},
+      "press_man":       {"DL":{"Edge Rusher":2,"Speed Rusher":2,"Run Stopper":-1},
+                          "LB":{"Coverage":1},
+                          "CB":{"Shutdown":2,"Press Specialist":2,"Zone Specialist":-2,"Ball Hawk":-1},
+                          "S":{"Coverage":2,"Run Stopper":-1}},
+      "zone":            {"DL":{"Hybrid":1,"Balanced":1,"Run Stopper":1},
+                          "LB":{"Coverage":2,"Hybrid":1,"Run Stopper":-1},
+                          "CB":{"Zone Specialist":2,"Ball Hawk":2,"Press Specialist":-2},
+                          "S":{"Ball Hawk":2,"Coverage":1}},
+      "blitz_heavy":     {"DL":{"Speed Rusher":2,"Edge Rusher":2,"Power Rusher":1,"Run Stopper":-1},
+                          "LB":{"Run Stopper":1,"Hybrid":2,"Coverage":-1},
+                          "CB":{"Shutdown":1,"Press Specialist":1,"Coverage":1},
+                          "S":{"Run Stopper":1,"Ball Hawk":1}},
+      "bend_dont_break": {"DL":{"Run Stopper":2,"Balanced":1,"Speed Rusher":-1},
+                          "LB":{"Coverage":2,"Run Stopper":1},
+                          "CB":{"Zone Specialist":1,"Coverage":2,"Press Specialist":-1},
+                          "S":{"Coverage":2,"Ball Hawk":1}}
+    }
+  }'::jsonb;
+$$;
+
+-- THE CHEMISTRY OF THE ELEVEN WHO PLAY. Internal. The starters are the men
+-- franchise_pos_avg counts — fit, in depth order, as many as the position
+-- starts — so the rating and the chemistry describe the same lineup.
+create or replace function public.franchise_chemistry(p_franchise uuid)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; rules jsonb := public.franchise_chemistry_rules(); fit jsonb := public.franchise_scheme_fit();
+  st record; side text; v_fit numeric; v_games integer; v_ten boolean; v_new boolean; v_lead boolean; v_scheme text;
+  o_fit numeric := 0; d_fit numeric := 0; o_ten integer := 0; d_ten integer := 0; o_new integer := 0; d_new integer := 0;
+  o_lead integer := 0; d_lead integer := 0; o_core numeric := 0; d_core numeric := 0; o_n integer := 0; d_n integer := 0;
+  ol_n integer := 0; ol_ten integer := 0; sec_n integer := 0; sec_ten integer := 0; pass_n integer := 0; pass_ten integer := 0;
+  o_raw numeric; d_raw numeric; o_score integer; d_score integer; o_eff numeric; d_eff numeric;
+  o_men jsonb := '[]'::jsonb; d_men jsonb := '[]'::jsonb; o_units jsonb := '[]'::jsonb; d_units jsonb := '[]'::jsonb;
+  per_point numeric := (rules->>'per_point')::numeric; scale numeric := (rules->>'scale')::numeric;
+begin
+  select * into f from public.franchises where id = p_franchise;
+  if not found then return null; end if;
+  for st in
+    with s as (
+      select p.id, p.first_name, p.last_name, p.position, p.archetype, p.overall, p.depth, p.acquired_source, p.career_stats, p.traits,
+             row_number() over (partition by p.position order by p.depth, p.overall desc) as rn,
+             (select (x->>'starters')::int from jsonb_array_elements(public.franchise_pool_plan()) x where x->>'pos' = p.position) as n
+        from public.game_players p
+       where p.franchise_id = p_franchise and public.franchise_is_available(p.status, p.injured_until))
+    select * from s where rn <= n and position not in ('K', 'P')
+    order by array_position(array['QB','RB','WR','TE','OL','DL','LB','CB','S'], position), rn
+  loop
+    side := case when st.position in ('QB','RB','WR','TE','OL') then 'offense' else 'defense' end;
+    v_scheme := case side when 'offense' then f.offense else f.defense end;
+    v_fit := coalesce((fit -> side -> v_scheme -> st.position ->> st.archetype)::numeric, 0);
+    v_games := coalesce((st.career_stats->>'games')::int, 0);
+    v_ten := v_games >= (rules->>'tenure_games')::int;
+    v_new := st.acquired_source in ('market','trade','free_agent','pack','draft') and v_games < (rules->>'new_games')::int;
+    v_lead := exists (select 1 from jsonb_array_elements(coalesce(st.traits, '[]'::jsonb)) t where (t->'effect') ? 'chemistry');
+    if side = 'offense' then
+      o_n := o_n + 1; o_fit := o_fit + v_fit; o_ten := o_ten + v_ten::int; o_new := o_new + v_new::int; o_lead := o_lead + v_lead::int;
+      if st.position = 'OL' then ol_n := ol_n + 1; ol_ten := ol_ten + v_ten::int; end if;
+      if st.position in ('QB','WR') then pass_n := pass_n + 1; pass_ten := pass_ten + v_ten::int; end if;
+      o_men := o_men || jsonb_build_object('id', st.id, 'name', st.first_name || ' ' || st.last_name, 'position', st.position,
+        'archetype', st.archetype, 'fit', v_fit, 'games', v_games, 'settled', v_ten, 'new', v_new, 'leader', v_lead);
+    else
+      d_n := d_n + 1; d_fit := d_fit + v_fit; d_ten := d_ten + v_ten::int; d_new := d_new + v_new::int; d_lead := d_lead + v_lead::int;
+      if st.position in ('CB','S') then sec_n := sec_n + 1; sec_ten := sec_ten + v_ten::int; end if;
+      d_men := d_men || jsonb_build_object('id', st.id, 'name', st.first_name || ' ' || st.last_name, 'position', st.position,
+        'archetype', st.archetype, 'fit', v_fit, 'games', v_games, 'settled', v_ten, 'new', v_new, 'leader', v_lead);
+    end if;
+  end loop;
+  -- whole units that have grown up together
+  if ol_n = 5 and ol_ten = 5 then o_core := o_core + (rules->'core'->>'line')::numeric; end if;
+  if pass_n = 4 and pass_ten = 4 then o_core := o_core + (rules->'core'->>'passing')::numeric; end if;
+  if sec_n = 4 and sec_ten = 4 then d_core := d_core + (rules->'core'->>'secondary')::numeric; end if;
+  o_units := jsonb_build_array(
+    jsonb_build_object('key', 'line', 'name', 'The line', 'settled', ol_ten, 'of', ol_n, 'on', ol_n = 5 and ol_ten = 5),
+    jsonb_build_object('key', 'passing', 'name', 'The passing game', 'settled', pass_ten, 'of', pass_n, 'on', pass_n = 4 and pass_ten = 4));
+  d_units := jsonb_build_array(
+    jsonb_build_object('key', 'secondary', 'name', 'The secondary', 'settled', sec_ten, 'of', sec_n, 'on', sec_n = 4 and sec_ten = 4));
+  -- the arithmetic, printed with the result so the page can show every term
+  o_raw := o_fit + o_ten + o_core - least(o_new, (rules->>'new_cap')::int);
+  d_raw := d_fit + d_ten + d_core - least(d_new, (rules->>'new_cap')::int);
+  o_score := greatest(0, least(100, round(50 + per_point * o_raw)::int));
+  d_score := greatest(0, least(100, round(50 + per_point * d_raw)::int));
+  o_eff := round((o_score - 50) / 50.0 * scale, 2);
+  d_eff := round((d_score - 50) / 50.0 * scale, 2);
+  return jsonb_build_object(
+    'version', rules->>'version',
+    'scheme', jsonb_build_object('offense', f.offense, 'defense', f.defense),
+    'offense', jsonb_build_object('score', o_score, 'effect', o_eff, 'raw', o_raw, 'fit', o_fit, 'settled', o_ten, 'core', o_core,
+                                  'new', o_new, 'leaders', o_lead, 'starters', o_n, 'men', o_men, 'units', o_units),
+    'defense', jsonb_build_object('score', d_score, 'effect', d_eff, 'raw', d_raw, 'fit', d_fit, 'settled', d_ten, 'core', d_core,
+                                  'new', d_new, 'leaders', d_lead, 'starters', d_n, 'men', d_men, 'units', d_units),
+    'team', round((o_score + d_score) / 2.0)::int,
+    'rules', rules);
+end;
+$$;
+
+-- WHAT THE STARTERS' TRAITS ADD UP TO, AND NOW THEIR CHEMISTRY. Redefined
+-- from Phase 2 with one addition: the lineup's chemistry effect rides on the
+-- same offense and defense terms a trait does, so franchise_sim and
+-- franchise_sim_versus feel it without a line of either changing.
+create or replace function public.franchise_trait_effects(p_franchise uuid)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare base jsonb; ch jsonb;
+begin
+  with st as (
+    select p.position, e.key, (e.value)::numeric as v
+    from public.game_players p
+    cross join lateral jsonb_array_elements(p.traits) t
+    cross join lateral jsonb_each_text(t -> 'effect') e
+    where p.franchise_id = p_franchise and public.franchise_is_available(p.status, p.injured_until)
+      and p.depth <= case p.position when 'WR' then 3 when 'OL' then 5 when 'DL' then 4 when 'LB' then 3
+                                     when 'CB' then 2 when 'S' then 2 else 1 end
+  )
+  select jsonb_build_object(
+    'offense', coalesce(sum(v) filter (where key in ('pressure_resist','fatigue_resist','breakaway','drop_resist','red_zone','pass_block_anchor','run_block_power')), 0)
+             + coalesce(sum(v) filter (where key = 'chemistry' and position in ('QB','RB','WR','TE','OL')), 0),
+    'defense', coalesce(sum(v) filter (where key in ('edge_rush','run_stop','man_coverage','interception')), 0)
+             + coalesce(sum(v) filter (where key = 'chemistry' and position in ('DL','LB','CB','S')), 0),
+    'special', coalesce(sum(v) filter (where key in ('clutch_kick','punt_placement')), 0),
+    'late_offense', coalesce(sum(v) filter (where key = 'late_game_passing'), 0),
+    'late_defense', coalesce(sum(v) filter (where key = 'late_game_pressure'), 0),
+    'takeaway', coalesce(sum(v) filter (where key = 'interception'), 0),
+    'clutch', coalesce(sum(v) filter (where key = 'clutch_kick'), 0),
+    'edge_rush', coalesce(sum(v) filter (where key = 'edge_rush'), 0),
+    'drop_resist', coalesce(sum(v) filter (where key = 'drop_resist'), 0),
+    'preparation', coalesce(sum(v) filter (where key = 'preparation'), 0),
+    'count', count(*))
+    into base from st;
+  ch := public.franchise_chemistry(p_franchise);
+  if ch is null then return base; end if;
+  return base || jsonb_build_object(
+    'traits_offense', (base->>'offense')::numeric, 'traits_defense', (base->>'defense')::numeric,
+    'offense', (base->>'offense')::numeric + (ch->'offense'->>'effect')::numeric,
+    'defense', (base->>'defense')::numeric + (ch->'defense'->>'effect')::numeric,
+    'chemistry', jsonb_build_object('version', ch->>'version', 'team', ch->'team',
+      'offense', ch->'offense'->'score', 'defense', ch->'defense'->'score',
+      'offense_effect', ch->'offense'->'effect', 'defense_effect', ch->'defense'->'effect'));
+end;
+$$;
+
+-- ── THE LINEUP ─────────────────────────────────────────────────────────────
+create or replace function public.franchise_lineup_rules()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'lineup_v1',
+    'starters', jsonb_build_object('QB', 1, 'RB', 1, 'WR', 3, 'TE', 1, 'OL', 5, 'DL', 4, 'LB', 3, 'CB', 2, 'S', 2, 'K', 1, 'P', 1),
+    'offense', jsonb_build_array('QB','RB','WR','TE','OL'), 'defense', jsonb_build_array('DL','LB','CB','S'), 'special', jsonb_build_array('K','P'),
+    'best', 'the fit men first, then by overall; the hurt man keeps his card and loses his slot until he is back');
+$$;
+
+-- THE BEST LINEUP, in one call: every position ordered by availability then
+-- overall. A hurt starter drops behind the fit men; his place comes back
+-- when he does, if you ask again. Returns the roster.
+create or replace function public.franchise_lineup_best(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); r record; v_moved integer := 0;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  perform 1 from public.franchises where id = v_f for update;
+  for r in
+    select p.id, p.depth as was,
+           row_number() over (partition by p.position
+                              order by public.franchise_is_available(p.status, p.injured_until) desc, p.overall desc, p.depth, p.id) as d
+      from public.game_players p where p.franchise_id = v_f and p.status = 'active'
+  loop
+    if r.was <> r.d then
+      update public.game_players set depth = r.d, updated_at = now() where id = r.id;
+      v_moved := v_moved + 1;
+    end if;
+  end loop;
+  return public.franchise_roster(p_secret) || jsonb_build_object('moved', v_moved);
+end;
+$$;
+
+-- ── THE EXCHANGE ───────────────────────────────────────────────────────────
+create or replace function public.franchise_exchange_rules()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'exchange_v1',
+    'currency', 'tc',
+    'fee_pct', 5,
+    'min_price', 50, 'max_price', 50000,
+    'max_open', 5,
+    'expires_days', 7,
+    'comps_days', 60, 'comps_band', 2, 'comps_shown', 12,
+    'who', 'any franchise',
+    'what', 'an active man of your own; he keeps playing for you until he is sold',
+    'checks', jsonb_build_array(
+      'the listing is still open and has not expired',
+      'the man is still on the roster that listed him',
+      'the seller keeps the floor and the starters a position needs',
+      'the buyer has the room and the Credits the ledger says he has',
+      'five per cent of the price is the fee and leaves the economy; the rest reaches the seller as one ledger row'));
+$$;
+
+create table if not exists public.franchise_listings (
+  id            uuid primary key default gen_random_uuid(),
+  franchise_id  uuid not null references public.franchises (id) on delete cascade,
+  player_id     uuid not null references public.game_players (id) on delete cascade,
+  price         integer not null check (price between 1 and 1000000),
+  status        text not null default 'open' check (status in ('open', 'sold', 'withdrawn', 'expired')),
+  reason        text,
+  -- the man as he was listed: comps and the record read him from here, whatever he becomes later
+  snapshot      jsonb not null default '{}'::jsonb,
+  buyer_id      uuid references public.franchises (id) on delete set null,
+  fee           integer,
+  net           integer,
+  created_at    timestamptz not null default now(),
+  expires_at    timestamptz not null default now() + interval '7 days',
+  closed_at     timestamptz
+);
+create unique index if not exists franchise_listings_one_open on public.franchise_listings (player_id) where status = 'open';
+create index if not exists franchise_listings_open on public.franchise_listings (status, created_at desc);
+create index if not exists franchise_listings_seller on public.franchise_listings (franchise_id, created_at desc);
+create index if not exists franchise_listings_sold on public.franchise_listings ((snapshot->>'position'), closed_at desc) where status = 'sold';
+
+alter table public.franchise_listings enable row level security;
+drop policy if exists franchise_listings_party on public.franchise_listings;
+create policy franchise_listings_party on public.franchise_listings for select
+  using (public.franchise_is_mine(franchise_id) or public.franchise_is_mine(buyer_id));
+
+alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
+alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
+  ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
+   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason',
+   'market','scout','draft','signing','release',
+   'conf_joined','conf_season','conf_game','conf_win','conf_playoff','conf_title',
+   'bowl_bid','injury','trade',
+   'staff_hire','staff_promote','staff_fire',
+   'program','pack',
+   'exchange_list','exchange_sale','exchange_buy'));
+
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('exchange_first_sale', 'First Sale',     'Sold a player on the Exchange.', null, 130),
+  ('exchange_first_buy',  'Exchange Buyer', 'Bought a player on the Exchange.', null, 131)
+on conflict (id) do nothing;
+
+-- the fee, rounded up: the house never rounds in its own favour by less
+create or replace function public.franchise_exchange_fee(p_price integer)
+returns integer language sql immutable set search_path = public, pg_temp as $$
+  select ceil(coalesce(p_price, 0) * (public.franchise_exchange_rules()->>'fee_pct')::numeric / 100.0)::int;
+$$;
+
+-- WHY A MAN CANNOT LEAVE, or null when he can. The same floor and starter
+-- rules a release and a trade obey, asked at listing and again at sale.
+create or replace function public.franchise_exchange_illegal(p_seller uuid, p_player uuid)
+returns text language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare p public.game_players%rowtype; mk jsonb := public.franchise_market(); n integer; starters integer; v_left integer;
+begin
+  select * into p from public.game_players where id = p_player;
+  if not found or p.franchise_id is distinct from p_seller then return 'that player is not on your roster'; end if;
+  if p.status <> 'active' then return 'only a man on the roster can be listed'; end if;
+  select count(*) into n from public.game_players where franchise_id = p_seller and status = 'active';
+  if n - 1 < (mk->>'roster_min')::int then return 'that would put your roster under ' || (mk->>'roster_min')::int; end if;
+  select coalesce((x->>'starters')::int, 1) into starters from jsonb_array_elements(public.franchise_pool_plan()) x where x->>'pos' = p.position;
+  select count(*) into v_left from public.game_players where franchise_id = p_seller and position = p.position and status = 'active' and id <> p.id;
+  if v_left < starters then return 'that would leave you short at ' || p.position; end if;
+  return null;
+end;
+$$;
+
+-- CLOSE WHAT HAS LAPSED. Internal, called at the door of every read and
+-- write: a listing past its date, or whose man has since left the roster
+-- that listed him, is closed with the reason kept on it.
+create or replace function public.franchise_exchange_sweep()
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare n integer := 0; m integer := 0;
+begin
+  update public.franchise_listings set status = 'expired', reason = 'the listing ran out', closed_at = now()
+   where status = 'open' and expires_at < now();
+  get diagnostics n = row_count;
+  update public.franchise_listings l set status = 'expired', reason = 'the player left the roster', closed_at = now()
+    from public.game_players p
+   where l.player_id = p.id and l.status = 'open' and (p.franchise_id is distinct from l.franchise_id or p.status <> 'active');
+  get diagnostics m = row_count;
+  return n + m;
+end;
+$$;
+
+-- a listing as the board shows it: the man, the price, the seller, the clock
+create or replace function public.franchise_listing_json(l public.franchise_listings, p_viewer uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'id', l.id, 'price', l.price, 'status', l.status, 'reason', l.reason,
+    'fee', public.franchise_exchange_fee(l.price), 'net', l.price - public.franchise_exchange_fee(l.price),
+    'created_at', l.created_at, 'expires_at', l.expires_at, 'closed_at', l.closed_at,
+    'mine', l.franchise_id = p_viewer,
+    'seller', (select jsonb_build_object('id', f.id, 'name', f.name, 'city', f.city, 'abbr', f.abbr, 'logo', f.logo, 'theme', f.theme)
+                 from public.franchises f where f.id = l.franchise_id),
+    'buyer', (select jsonb_build_object('name', f.name, 'city', f.city, 'abbr', f.abbr) from public.franchises f where f.id = l.buyer_id),
+    'man', l.snapshot || coalesce((select jsonb_build_object('overall', p.overall, 'age', p.age, 'potential', p.potential,
+                                            'available', public.franchise_is_available(p.status, p.injured_until))
+                                     from public.game_players p where p.id = l.player_id and l.status = 'open'), '{}'::jsonb),
+    'asking_reference', public.franchise_signing_cost((l.snapshot->>'overall')::int));
+$$;
+
+-- COMPARABLE SALES: what men like this one actually went for. Public
+-- arithmetic on the record — the same window and band for everybody.
+create or replace function public.franchise_exchange_comps(p_position text, p_overall integer)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare rules jsonb := public.franchise_exchange_rules(); band integer := (rules->>'comps_band')::int; v jsonb; n integer; med numeric; lo integer; hi integer; v_open integer;
+begin
+  select count(*), percentile_cont(0.5) within group (order by price), min(price), max(price)
+    into n, med, lo, hi
+    from public.franchise_listings
+   where status = 'sold' and closed_at >= now() - ((rules->>'comps_days')::int || ' days')::interval
+     and snapshot->>'position' = p_position and (snapshot->>'overall')::int between p_overall - band and p_overall + band;
+  select coalesce(jsonb_agg(jsonb_build_object('price', l.price, 'overall', (l.snapshot->>'overall')::int, 'tier', l.snapshot->>'tier',
+             'age', (l.snapshot->>'age')::int, 'name', l.snapshot->>'name', 'sold_at', l.closed_at) order by l.closed_at desc), '[]'::jsonb)
+    into v
+    from (select * from public.franchise_listings
+           where status = 'sold' and closed_at >= now() - ((rules->>'comps_days')::int || ' days')::interval
+             and snapshot->>'position' = p_position and (snapshot->>'overall')::int between p_overall - band and p_overall + band
+           order by closed_at desc limit (rules->>'comps_shown')::int) l;
+  select count(*) into v_open from public.franchise_listings
+   where status = 'open' and expires_at >= now() and snapshot->>'position' = p_position
+     and (snapshot->>'overall')::int between p_overall - band and p_overall + band;
+  return jsonb_build_object('position', p_position, 'overall', p_overall, 'band', band, 'days', (rules->>'comps_days')::int,
+    'sold', n, 'median', case when n > 0 then round(med)::int end, 'low', lo, 'high', hi, 'open', v_open,
+    'asking_reference', public.franchise_signing_cost(p_overall), 'sales', v);
+end;
+$$;
+
+-- LIST A MAN. The seller's own price, inside the published bounds; the man
+-- keeps playing for him until he is sold.
+create or replace function public.franchise_exchange_list(p_player uuid, p_price integer, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); rules jsonb := public.franchise_exchange_rules(); p public.game_players%rowtype;
+  v_why text; n integer; l public.franchise_listings%rowtype; v_new text[] := '{}';
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  perform public.franchise_exchange_sweep();
+  perform 1 from public.franchises where id = v_f for update;
+  if p_price is null or p_price < (rules->>'min_price')::int or p_price > (rules->>'max_price')::int then
+    raise exception 'a price is between % and % Credits', (rules->>'min_price')::int, (rules->>'max_price')::int using errcode = '22023';
+  end if;
+  select count(*) into n from public.franchise_listings where franchise_id = v_f and status = 'open';
+  if n >= (rules->>'max_open')::int then
+    raise exception 'you can have % listings open at once', (rules->>'max_open')::int using errcode = '55000';
+  end if;
+  v_why := public.franchise_exchange_illegal(v_f, p_player);
+  if v_why is not null then raise exception '%', v_why using errcode = '55000'; end if;
+  select * into p from public.game_players where id = p_player for update;
+  if exists (select 1 from public.franchise_listings where player_id = p.id and status = 'open') then
+    raise exception 'he is already listed' using errcode = '55000';
+  end if;
+  insert into public.franchise_listings (franchise_id, player_id, price, snapshot, expires_at)
+  values (v_f, p.id, p_price,
+          public.franchise_prospect_json(p) || public.franchise_profile_of(p)
+            || jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'tier', public.franchise_card_tier(p.overall)),
+          now() + ((rules->>'expires_days')::int || ' days')::interval)
+  returning * into l;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'exchange_list', l.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('listing', l.id, 'player', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position,
+                             'overall', p.overall, 'price', p_price, 'currency', 'tc'))
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('ok', true, 'listing', public.franchise_listing_json(l, v_f),
+    'comps', public.franchise_exchange_comps(p.position, p.overall), 'achievements', to_jsonb(v_new));
+end;
+$$;
+
+-- TAKE IT DOWN. Only the seller, only while it is open. Idempotent.
+create or replace function public.franchise_exchange_withdraw(p_listing uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); l public.franchise_listings%rowtype;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into l from public.franchise_listings where id = p_listing and franchise_id = v_f for update;
+  if not found then raise exception 'that listing is not yours' using errcode = 'P0002'; end if;
+  if l.status = 'open' then
+    update public.franchise_listings set status = 'withdrawn', reason = 'taken down by the seller', closed_at = now() where id = l.id returning * into l;
+  end if;
+  return jsonb_build_object('ok', true, 'listing', public.franchise_listing_json(l, v_f));
+end;
+$$;
+
+-- BUY. A listing id and an identity: the server decides everything else,
+-- under locks taken in one order so two buyers can never both win.
+create or replace function public.franchise_exchange_buy(p_listing uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_b uuid := public.franchise_of(p_secret); rules jsonb := public.franchise_exchange_rules(); mk jsonb := public.franchise_market();
+  l public.franchise_listings%rowtype; p public.game_players%rowtype; fb public.franchises%rowtype; fs public.franchises%rowtype;
+  v_why text; v_fee integer; v_net integer; v_active integer; v_depth integer; ok boolean; v_real integer := public.games_season_of(now());
+  v_new text[] := '{}'; k integer := 0; r record;
+begin
+  if v_b is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  -- the listing first: whoever holds this row is the only one deciding it
+  select * into l from public.franchise_listings where id = p_listing for update;
+  if not found then raise exception 'no such listing' using errcode = 'P0002'; end if;
+  if l.status <> 'open' then raise exception 'that listing is closed: %', coalesce(l.reason, l.status) using errcode = '55000'; end if;
+  if l.expires_at < now() then
+    update public.franchise_listings set status = 'expired', reason = 'the listing ran out', closed_at = now() where id = l.id;
+    raise exception 'that listing has expired' using errcode = '55000';
+  end if;
+  if l.franchise_id = v_b then raise exception 'that is your own listing' using errcode = '55000'; end if;
+  -- then both franchises, in id order, whichever side is buying
+  perform 1 from public.franchises where id in (l.franchise_id, v_b) order by id for update;
+  select * into fs from public.franchises where id = l.franchise_id;
+  select * into fb from public.franchises where id = v_b;
+  -- the man is still where he was listed, and can still be spared
+  select * into p from public.game_players where id = l.player_id for update;
+  v_why := public.franchise_exchange_illegal(l.franchise_id, l.player_id);
+  if v_why is not null then
+    update public.franchise_listings set status = 'expired', reason = v_why, closed_at = now() where id = l.id;
+    raise exception 'that listing is no longer good: %', v_why using errcode = '55000';
+  end if;
+  -- the buyer has the room and the Credits
+  select count(*) into v_active from public.game_players where franchise_id = v_b and status = 'active';
+  if v_active >= (mk->>'roster_max')::int then
+    raise exception 'the roster is full at %: release a player first', (mk->>'roster_max')::int using errcode = '55000';
+  end if;
+  if fb.team_credits < l.price then
+    raise exception 'not enough Credits: % needed, % on hand', l.price, fb.team_credits using errcode = '55000';
+  end if;
+  v_fee := public.franchise_exchange_fee(l.price); v_net := l.price - v_fee;
+  -- the money: one row out of the buyer, one row into the seller, both keyed by the listing
+  ok := public.franchise_credit(v_b, 'tc', -l.price, 'exchange_buy', l.id::text, 'Bought ' || p.first_name || ' ' || p.last_name || ' on the Exchange');
+  if not ok then raise exception 'that purchase is already on the books' using errcode = '55000'; end if;
+  perform public.franchise_credit(l.franchise_id, 'tc', v_net, 'exchange_sale', l.id::text,
+    'Sold ' || p.first_name || ' ' || p.last_name || ' on the Exchange (' || v_fee || ' fee)');
+  -- the man: bottom of the buyer's chart, a new number only on a clash, his career untouched
+  select coalesce(max(depth), 0) + 1 into v_depth from public.game_players where franchise_id = v_b and position = p.position and status = 'active';
+  update public.game_players
+     set franchise_id = v_b, depth = v_depth,
+         jersey = case when exists (select 1 from public.game_players o where o.franchise_id = v_b and o.status = 'active' and o.jersey = p.jersey)
+                       then public.franchise_free_number(v_b, p.position, p.id::text) else p.jersey end,
+         acquired_source = 'market', acquired_season = v_real,
+         acquired_detail = 'Bought on the Exchange from the ' || fs.name || ' for ' || l.price || ' Credits',
+         updated_at = now()
+   where id = p.id;
+  -- the card remembers the sale itself, with the price; the trigger has already written the move
+  update public.game_players
+     set history = history || jsonb_build_object('kind', 'sold', 'at', now(), 'price', l.price, 'fee', v_fee,
+                                                 'from', fs.name, 'to', fb.name, 'overall', p.overall)
+   where id = p.id;
+  -- the seller's chart closes up
+  for r in select id from public.game_players where franchise_id = l.franchise_id and position = p.position and status = 'active' order by depth, overall desc loop
+    k := k + 1; update public.game_players set depth = k where id = r.id;
+  end loop;
+  update public.franchise_listings set status = 'sold', buyer_id = v_b, fee = v_fee, net = v_net, closed_at = now() where id = l.id returning * into l;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_b, 'exchange_buy', l.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('listing', l.id, 'player', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position,
+                             'overall', p.overall, 'price', l.price, 'from', fs.name, 'currency', 'tc')),
+         (l.franchise_id, 'exchange_sale', l.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('listing', l.id, 'player', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position,
+                             'overall', p.overall, 'price', l.price, 'fee', v_fee, 'net', v_net, 'to', fb.name, 'currency', 'tc'))
+  on conflict (franchise_id, kind, key) do nothing;
+  if public.franchise_award(v_b, 'exchange_first_buy', v_real, jsonb_build_object('listing', l.id, 'price', l.price)) then
+    v_new := array_append(v_new, 'exchange_first_buy'); end if;
+  perform public.franchise_award(l.franchise_id, 'exchange_first_sale', v_real, jsonb_build_object('listing', l.id, 'price', l.price));
+  select * into p from public.game_players where id = p.id;
+  return jsonb_build_object('ok', true, 'listing', public.franchise_listing_json(l, v_b),
+    'player', public.franchise_prospect_json(p) || public.franchise_profile_of(p),
+    'price', l.price, 'fee', v_fee, 'net', v_net, 'currency', 'tc',
+    'roster_active', v_active + 1, 'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_b));
+end;
+$$;
+
+-- BROWSE. Open listings, filtered and sorted on the server; the caller's own
+-- listings are marked, never hidden. Sweeps first, so nothing lapsed is shown.
+create or replace function public.franchise_exchange_browse(
+  p_position text default null, p_min integer default null, p_max integer default null,
+  p_sort text default 'newest', p_query text default null, p_limit integer default 40, p_offset integer default 0,
+  p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); rules jsonb := public.franchise_exchange_rules(); v_total integer; v_rows jsonb; v_mine jsonb; f public.franchises%rowtype;
+  v_limit integer := least(greatest(coalesce(p_limit, 40), 1), 100); v_offset integer := greatest(coalesce(p_offset, 0), 0);
+  v_sort text := case when p_sort in ('newest','price_asc','price_desc','overall_desc','overall_asc','ending') then p_sort else 'newest' end;
+  v_q text := nullif(btrim(coalesce(p_query, '')), '');
+begin
+  perform public.franchise_exchange_sweep();
+  if v_f is not null then select * into f from public.franchises where id = v_f; end if;
+  select count(*) into v_total from public.franchise_listings l
+   where l.status = 'open'
+     and (p_position is null or l.snapshot->>'position' = p_position)
+     and (p_min is null or (l.snapshot->>'overall')::int >= p_min)
+     and (p_max is null or (l.snapshot->>'overall')::int <= p_max)
+     and (v_q is null or l.snapshot->>'name' ilike '%' || v_q || '%' or l.snapshot->>'archetype' ilike '%' || v_q || '%');
+  select coalesce(jsonb_agg(public.franchise_listing_json(l, v_f) order by
+             case v_sort when 'price_asc' then l.price end asc,
+             case v_sort when 'price_desc' then l.price end desc,
+             case v_sort when 'overall_desc' then (l.snapshot->>'overall')::int end desc,
+             case v_sort when 'overall_asc' then (l.snapshot->>'overall')::int end asc,
+             case v_sort when 'ending' then l.expires_at end asc,
+             l.created_at desc), '[]'::jsonb) into v_rows
+    from public.franchise_listings l
+   where l.id in (select x.id from public.franchise_listings x
+           where x.status = 'open'
+             and (p_position is null or x.snapshot->>'position' = p_position)
+             and (p_min is null or (x.snapshot->>'overall')::int >= p_min)
+             and (p_max is null or (x.snapshot->>'overall')::int <= p_max)
+             and (v_q is null or x.snapshot->>'name' ilike '%' || v_q || '%' or x.snapshot->>'archetype' ilike '%' || v_q || '%')
+           order by
+             case v_sort when 'price_asc' then x.price end asc,
+             case v_sort when 'price_desc' then x.price end desc,
+             case v_sort when 'overall_desc' then (x.snapshot->>'overall')::int end desc,
+             case v_sort when 'overall_asc' then (x.snapshot->>'overall')::int end asc,
+             case v_sort when 'ending' then x.expires_at end asc,
+             x.created_at desc
+           limit v_limit offset v_offset);
+  select coalesce(jsonb_agg(public.franchise_listing_json(l, v_f) order by l.created_at desc), '[]'::jsonb) into v_mine
+    from public.franchise_listings l where v_f is not null and l.franchise_id = v_f and l.status = 'open';
+  return jsonb_build_object(
+    'version', rules->>'version', 'rules', rules,
+    'total', v_total, 'limit', v_limit, 'offset', v_offset, 'sort', v_sort,
+    'filter', jsonb_build_object('position', p_position, 'min', p_min, 'max', p_max, 'query', v_q),
+    'listings', v_rows,
+    'mine', v_mine,
+    'open_slots', case when v_f is null then null else (rules->>'max_open')::int - jsonb_array_length(v_mine) end,
+    'balance', case when v_f is null then null else f.team_credits end,
+    'roster', case when v_f is null then null else jsonb_build_object(
+        'active', (select count(*) from public.game_players where franchise_id = v_f and status = 'active'),
+        'max', (public.franchise_market()->>'roster_max')::int) end,
+    'resources', case when v_f is null then null else public.franchise_totals(v_f) end);
+end;
+$$;
+
+-- THE RECORD. What this franchise listed, sold and bought, and the last
+-- sales on the whole Exchange — the price history a buyer reads.
+create or replace function public.franchise_exchange_history(p_limit integer default 20, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); v_limit integer := least(greatest(coalesce(p_limit, 20), 1), 100);
+begin
+  perform public.franchise_exchange_sweep();
+  return jsonb_build_object(
+    'mine', case when v_f is null then '[]'::jsonb else coalesce((select jsonb_agg(public.franchise_listing_json(l, v_f) order by coalesce(l.closed_at, l.created_at) desc)
+              from public.franchise_listings l
+             where l.id in (select x.id from public.franchise_listings x where (x.franchise_id = v_f or x.buyer_id = v_f) and x.status <> 'open'
+                             order by coalesce(x.closed_at, x.created_at) desc limit v_limit)), '[]'::jsonb) end,
+    'recent', coalesce((select jsonb_agg(jsonb_build_object('price', l.price, 'position', l.snapshot->>'position', 'overall', (l.snapshot->>'overall')::int,
+                          'tier', l.snapshot->>'tier', 'name', l.snapshot->>'name', 'sold_at', l.closed_at) order by l.closed_at desc)
+                from (select * from public.franchise_listings where status = 'sold' order by closed_at desc limit v_limit) l), '[]'::jsonb),
+    'volume', jsonb_build_object(
+      'sold_30d', (select count(*) from public.franchise_listings where status = 'sold' and closed_at >= now() - interval '30 days'),
+      'credits_30d', (select coalesce(sum(price), 0) from public.franchise_listings where status = 'sold' and closed_at >= now() - interval '30 days'),
+      'fees_30d', (select coalesce(sum(fee), 0) from public.franchise_listings where status = 'sold' and closed_at >= now() - interval '30 days'),
+      'open', (select count(*) from public.franchise_listings where status = 'open')));
+end;
+$$;
+
+-- ── THE ROSTER READ MODEL, REDEFINED ────────────────────────────────────────
+-- Phase 17's roster with three more things on it: the chemistry of the
+-- lineup with every term printed, the lineup rules, and on each man the open
+-- listing he carries, if he does.
+create or replace function public.franchise_roster(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare f public.franchises%rowtype; v_players jsonb;
+begin
+  select * into f from public.franchises where id = public.franchise_of(p_secret);
+  if not found then return null; end if;
+  select coalesce(jsonb_agg((jsonb_build_object(
+      'id', p.id, 'first_name', p.first_name, 'last_name', p.last_name, 'position', p.position, 'jersey', p.jersey,
+      'age', p.age, 'overall', p.overall, 'archetype', p.archetype, 'dev_tier', p.dev_tier, 'potential', p.potential,
+      'stamina', p.stamina, 'chemistry', p.chemistry, 'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits,
+      'depth', p.depth, 'status', p.status, 'acquired_source', p.acquired_source, 'acquired_season', p.acquired_season,
+      'acquired_detail', p.acquired_detail, 'career_stats', p.career_stats, 'season_stats', p.season_stats,
+      'available', public.franchise_is_available(p.status, p.injured_until),
+      'injured_until', p.injured_until, 'injury', p.injury,
+      -- the open listing he carries, if any (Phase 19)
+      'listing', (select jsonb_build_object('id', l.id, 'price', l.price, 'expires_at', l.expires_at)
+                    from public.franchise_listings l where l.player_id = p.id and l.status = 'open'))
+      || public.franchise_profile_of(p))
+      order by array_position(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P'], p.position), p.depth, p.overall desc), '[]'::jsonb)
+    into v_players from public.game_players p where p.franchise_id = f.id and p.status = 'active';
+  return jsonb_build_object(
+    'franchise', jsonb_build_object('id', f.id, 'name', f.name, 'city', f.city, 'abbr', f.abbr, 'logo', f.logo, 'theme', f.theme,
+      'offense', f.offense, 'defense', f.defense, 'founded_season', f.founded_season,
+      'owner', case when f.user_id is not null then 'account' else 'device' end),
+    'rating', public.franchise_team_rating(f.id),
+    'starters', jsonb_build_object('QB', 1, 'RB', 1, 'WR', 3, 'TE', 1, 'OL', 5, 'DL', 4, 'LB', 3, 'CB', 2, 'S', 2, 'K', 1, 'P', 1),
+    'lineup', public.franchise_lineup_rules(),
+    'chemistry', public.franchise_chemistry(f.id),
+    'exchange', public.franchise_exchange_rules(),
+    'injuries', public.franchise_injuries(),
+    'injured', (select count(*) from public.game_players p where p.franchise_id = f.id and p.status = 'active'
+                 and not public.franchise_is_available(p.status, p.injured_until)),
+    'totals', public.franchise_totals(f.id),
+    'players', v_players);
+end;
+$$;
+
+-- ── WHO MAY CALL WHAT ───────────────────────────────────────────────────────
+grant execute on function public.franchise_chemistry_rules() to anon, authenticated;
+grant execute on function public.franchise_scheme_fit() to anon, authenticated;
+grant execute on function public.franchise_lineup_rules() to anon, authenticated;
+grant execute on function public.franchise_lineup_best(text) to anon, authenticated;
+grant execute on function public.franchise_exchange_rules() to anon, authenticated;
+grant execute on function public.franchise_exchange_fee(integer) to anon, authenticated;
+grant execute on function public.franchise_exchange_comps(text, integer) to anon, authenticated;
+grant execute on function public.franchise_exchange_list(uuid, integer, text) to anon, authenticated;
+grant execute on function public.franchise_exchange_withdraw(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_exchange_buy(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_exchange_browse(text, integer, integer, text, text, integer, integer, text) to anon, authenticated;
+grant execute on function public.franchise_exchange_history(integer, text) to anon, authenticated;
+revoke all on function public.franchise_chemistry(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_trait_effects(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_exchange_illegal(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.franchise_exchange_sweep() from public, anon, authenticated;
+revoke all on function public.franchise_listing_json(public.franchise_listings, uuid) from public, anon, authenticated;
+
+select public.games_schema_note('franchise', 19, 'the lineup, chemistry, and the Exchange');
+commit;
+
+-- ===========================================================================
 -- THE REPORT. Every row should say ok.
 -- ===========================================================================
 select 1 as row, 'franchise tables exist' as what,
@@ -10368,7 +11081,7 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 18 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 19 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
@@ -10903,5 +11616,39 @@ select 39, 'the Vault is ' || (public.franchise_pack_defs()->>'version')
         -- the pack table is read by its owner and written by nobody
         and exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_packs' and cmd = 'SELECT')
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_packs' and cmd <> 'SELECT')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 40, 'the lineup is ' || (public.franchise_lineup_rules()->>'version') || ', chemistry is ' || (public.franchise_chemistry_rules()->>'version')
+        || ' and the Exchange is ' || (public.franchise_exchange_rules()->>'version')
+        || ': a market between franchises where the server holds the price, the balance and the man',
+  case when public.franchise_exchange_rules()->>'version' = 'exchange_v1'
+        and public.franchise_chemistry_rules()->>'version' = 'chemistry_v1'
+        and public.franchise_lineup_rules()->>'version' = 'lineup_v1'
+        -- the fee is five per cent, rounded up, and leaves the economy
+        and (public.franchise_exchange_rules()->>'fee_pct')::int = 5
+        and public.franchise_exchange_fee(50) = 3 and public.franchise_exchange_fee(1000) = 50 and public.franchise_exchange_fee(999) = 50
+        -- every scheme the franchise can run has a fit table
+        and (select count(*) from jsonb_object_keys(public.franchise_scheme_fit()->'offense')) = 6
+        and (select count(*) from jsonb_object_keys(public.franchise_scheme_fit()->'defense')) = 6
+        -- chemistry reaches the simulation through the trait effects, and the roster prints it
+        and (select p.prosrc like '%franchise_chemistry(p_franchise)%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_trait_effects')
+        and (select p.prosrc like '%franchise_chemistry(f.id)%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_roster')
+        -- the listings table is read by its parties and written by nobody but the server
+        and exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'franchise_listings')
+        and exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_listings' and cmd = 'SELECT')
+        and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_listings' and cmd <> 'SELECT')
+        and exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'franchise_listings_one_open')
+        -- a client sends a listing id or a price of its own to list; the buy takes no price and no balance
+        and has_function_privilege('anon', 'public.franchise_exchange_buy(uuid, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_exchange_list(uuid, integer, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_exchange_browse(text, integer, integer, text, text, integer, integer, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_exchange_comps(text, integer)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_lineup_best(text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_chemistry(uuid)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_exchange_sweep()', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_exchange_illegal(uuid, uuid)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_credit(uuid, text, integer, text, text, text)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

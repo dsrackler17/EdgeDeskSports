@@ -72,7 +72,8 @@
       'both sides of the ball',
       'the playbook',
       'the player universe: profiles, tiers, bodies and home towns',
-      'the Vault: packs you hold, odds you can read, and a card that remembers'
+      'the Vault: packs you hold, odds you can read, and a card that remembers',
+      'the lineup, chemistry, and the Exchange'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -115,12 +116,12 @@
     import_unverified_pick5:    { xp: 75 }
   };
   var CURRENCIES = {
-    xp: { key: 'xp', label: 'XP', short: 'XP', field: 'xp',
-      means: 'Franchise experience. Levels follow the published curve.' },
+    xp: { key: 'xp', label: 'Research XP', short: 'XP', field: 'xp',
+      means: 'Experience, earned by playing and by reading the real games. Levels follow the published curve.' },
     sp: { key: 'sp', label: 'Scouting Points', short: 'SP', field: 'scouting_points',
       means: 'Earned by Price It accuracy. Spent on scouting reports and prospects.' },
-    tc: { key: 'tc', label: 'Team Credits', short: 'TC', field: 'team_credits',
-      means: 'Earned by playing. Spent on ordinary upgrades and progression.' },
+    tc: { key: 'tc', label: 'Credits', short: 'TC', field: 'team_credits',
+      means: 'Earned by playing. Spent on signings, upgrades and the Exchange. Never bought.' },
     cp: { key: 'cp', label: 'Coach Points', short: 'CP', field: 'coach_points',
       means: 'Earned in competition. Spent on scheme and facility progression.' }
   };
@@ -1869,6 +1870,48 @@
   /* one man, whole: profile, history, career, the pack he came from */
   function card(id) { return rpc('franchise_card', withSecret({ p_player: String(id || '') })); }
 
+  /* ── THE LINEUP, CHEMISTRY AND THE EXCHANGE (Phase 19) ───────────────────
+     Mirrors for display; the SQL's franchise_lineup_rules(),
+     franchise_chemistry_rules() and franchise_exchange_rules() are what
+     apply, and the parity test pins these to them. */
+  var LINEUP_VERSION = 'lineup_v1';
+  var CHEMISTRY_VERSION = 'chemistry_v1';
+  var CHEMISTRY = { per_point: 2, scale: 8, tenure_games: 8, new_games: 3, new_cap: 4,
+    core: { line: 2, secondary: 2, passing: 2 }, fit_range: [-2, 2] };
+  var EXCHANGE_VERSION = 'exchange_v1';
+  var EXCHANGE = { currency: 'tc', fee_pct: 5, min_price: 50, max_price: 50000, max_open: 5, expires_days: 7,
+    comps_days: 60, comps_band: 2, comps_shown: 12 };
+  /* the fee, exactly as the SQL rounds it: up */
+  function exchangeFee(price) { return Math.ceil((+price || 0) * EXCHANGE.fee_pct / 100); }
+  /* what chemistry says, in a sentence: the score and the biggest reason */
+  function chemistryLine(side) {
+    if (!side) return '';
+    var s = side.score | 0, why = [];
+    if ((side.fit || 0) > 0) why.push('the scheme fits'); else if ((side.fit || 0) < 0) why.push('the scheme fights the men in it');
+    if ((side.settled || 0) >= 8) why.push('a settled eleven'); else if ((side.settled || 0) > 0) why.push(side.settled + ' settled');
+    if ((side.core || 0) > 0) why.push('whole units grown together');
+    if ((side.new || 0) > 0) why.push(side.new + ' still learning the calls');
+    if ((side.leaders || 0) > 0) why.push((side.leaders | 0) + ' leader' + (side.leaders === 1 ? '' : 's'));
+    return s + (why.length ? ' · ' + why.join(', ') : '');
+  }
+  function chemistryWord(score) {
+    score = score | 0;
+    return score >= 85 ? 'Locked in' : score >= 70 ? 'Settled' : score >= 55 ? 'Finding it' : score >= 45 ? 'Neutral' : score >= 30 ? 'Unsettled' : 'At odds';
+  }
+  function lineupBest() { return rpc('franchise_lineup_best', withSecret({})); }
+  function exchangeBrowse(o) {
+    o = o || {};
+    return rpc('franchise_exchange_browse', withSecret({
+      p_position: o.position || null, p_min: o.min == null ? null : (o.min | 0), p_max: o.max == null ? null : (o.max | 0),
+      p_sort: o.sort || 'newest', p_query: o.query || null, p_limit: o.limit || 40, p_offset: o.offset || 0 }));
+  }
+  function exchangeList(playerId, price) { return rpc('franchise_exchange_list', withSecret({ p_player: String(playerId || ''), p_price: price | 0 })); }
+  function exchangeWithdraw(listingId) { return rpc('franchise_exchange_withdraw', withSecret({ p_listing: String(listingId || '') })); }
+  /* a LISTING ID and nothing else: the price and the balance are the server's */
+  function exchangeBuy(listingId) { return rpc('franchise_exchange_buy', withSecret({ p_listing: String(listingId || '') })).then(moveThen); }
+  function exchangeComps(position, overall) { return rpc('franchise_exchange_comps', { p_position: String(position || ''), p_overall: overall | 0 }); }
+  function exchangeHistory(limit) { return rpc('franchise_exchange_history', withSecret({ p_limit: limit || 20 })); }
+
   function ranks() { return rpc('franchise_rank_board', withSecret({})); }
   function packOpen() { return rpc('franchise_pack_open', withSecret({})).then(moveThen); }
   function packKeep(player) {
@@ -2130,6 +2173,11 @@
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
     PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, packsBoard: packsBoard, packOpenId: packOpenId, card: card,
+    LINEUP_VERSION: LINEUP_VERSION, CHEMISTRY_VERSION: CHEMISTRY_VERSION, CHEMISTRY: CHEMISTRY, chemistryLine: chemistryLine, chemistryWord: chemistryWord,
+    lineupBest: lineupBest,
+    EXCHANGE_VERSION: EXCHANGE_VERSION, EXCHANGE: EXCHANGE, exchangeFee: exchangeFee,
+    exchangeBrowse: exchangeBrowse, exchangeList: exchangeList, exchangeWithdraw: exchangeWithdraw, exchangeBuy: exchangeBuy,
+    exchangeComps: exchangeComps, exchangeHistory: exchangeHistory,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,

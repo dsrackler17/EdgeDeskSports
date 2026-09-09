@@ -141,6 +141,11 @@ declare
   -- the Vault
   v_pack uuid; vr jsonb; vr2 jsonb; v_ids text[]; v_bad integer; v_prime_guar integer; v_prime_kept integer;
   v_pity integer; v_pity_ok integer; ptally jsonb; podds jsonb; v_kind text; mrec record; k2 integer;
+  -- the lineup, chemistry and the Exchange
+  xs uuid; xb uuid; xl jsonb; xl2 jsonb; xlid uuid; xl2id uuid; xpid uuid; xbench uuid; xspare uuid; xr jsonb; xc jsonb; xv jsonb;
+  xtc_s integer; xtc_b integer; xpos text; xovr integer; xk uuid; xcaught text;
+  SEC_XS constant text := 'device-secret-exchangesellerexchange01';
+  SEC_XB constant text := 'device-secret-exchangebuyerexchange001';
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (ALICE, 'alice@example.com', '{"display_name":"Alice"}'),
@@ -5409,6 +5414,232 @@ begin
   -- the rank's own door still keeps every promise it made in packs_v1
   perform pg_temp.ok('the rank''s door refuses with the same words when no rank is owed',
     (select pg_temp.raises('select public.franchise_pack_open(''' || SEC_OF || ''')')) or (public.franchise_rank_report(ofl)->>'packs')::int > 0);
+
+
+  -- ═══ 34. THE LINEUP, CHEMISTRY AND THE EXCHANGE ═══════════════════════════
+  -- lineup_v1 · chemistry_v1 · exchange_v1. Chemistry is a property of the
+  -- eleven who play, derived from the lineup and printed term by term; the
+  -- Exchange is the first market between franchises, and the server holds
+  -- the price, the balance and the man.
+  perform pg_temp.as_anon();
+  v := public.franchise_create('Foundry', 'Bethel', 'BET', 'gear', 'forest', 'power_run', 'press_man', SEC_XS);
+  xs := (v->'franchise'->>'id')::uuid;
+  v := public.franchise_create('Harbor', 'Kodiak', 'KOD', 'anchor', 'navy', 'air_raid', 'zone', SEC_XB);
+  xb := (v->'franchise'->>'id')::uuid;
+  xr := public.franchise_roster(SEC_XS);
+  perform pg_temp.ok('the roster prints the chemistry of the eleven, with every term',
+    xr->'chemistry'->>'version' = 'chemistry_v1'
+    and (xr->'chemistry'->'offense'->>'score')::int between 0 and 100 and (xr->'chemistry'->'defense'->>'score')::int between 0 and 100
+    and (xr->'chemistry'->'offense'->>'starters')::int = 11 and (xr->'chemistry'->'defense'->>'starters')::int = 11
+    and jsonb_array_length(xr->'chemistry'->'offense'->'men') = 11 and jsonb_array_length(xr->'chemistry'->'defense'->'men') = 11
+    and xr->'chemistry'->'offense' ? 'fit' and xr->'chemistry'->'offense' ? 'settled' and xr->'chemistry'->'offense' ? 'new'
+    and xr->'chemistry'->'scheme'->>'offense' = 'power_run', ((xr->'chemistry') - 'rules')::text);
+  perform pg_temp.ok('a founding roster has played nothing together yet: nobody is settled and no unit is on',
+    (xr->'chemistry'->'offense'->>'settled')::int = 0 and (xr->'chemistry'->'defense'->>'settled')::int = 0
+    and not exists (select 1 from jsonb_array_elements(xr->'chemistry'->'offense'->'units') u where (u->>'on')::boolean));
+  perform pg_temp.ok('the score is the printed arithmetic, and nothing else',
+    (xr->'chemistry'->'offense'->>'score')::int = greatest(0, least(100, round(50 + 2 * (xr->'chemistry'->'offense'->>'raw')::numeric)::int))
+    and (xr->'chemistry'->'offense'->>'raw')::numeric = (xr->'chemistry'->'offense'->>'fit')::numeric + (xr->'chemistry'->'offense'->>'settled')::int
+        + (xr->'chemistry'->'offense'->>'core')::numeric - least((xr->'chemistry'->'offense'->>'new')::int, 4)
+    and (xr->'chemistry'->'offense'->>'effect')::numeric = round(((xr->'chemistry'->'offense'->>'score')::int - 50) / 50.0 * 8, 2));
+  perform pg_temp.ok('every starter''s fit is inside the printed range, and is his archetype against the scheme',
+    (select bool_and((m->>'fit')::numeric between -2 and 2
+        and (m->>'fit')::numeric = coalesce((public.franchise_scheme_fit()->'offense'->'power_run'->(m->>'position')->>(m->>'archetype'))::numeric, 0))
+       from jsonb_array_elements(xr->'chemistry'->'offense'->'men') m));
+  perform pg_temp.as_owner();
+  v := public.franchise_trait_effects(xs);
+  perform pg_temp.ok('the lineup''s chemistry rides on the trait effects the simulation reads',
+    (v->>'offense')::numeric = (v->>'traits_offense')::numeric + (v->'chemistry'->>'offense_effect')::numeric
+    and (v->>'defense')::numeric = (v->>'traits_defense')::numeric + (v->'chemistry'->>'defense_effect')::numeric
+    and v->'chemistry'->>'version' = 'chemistry_v1', v::text);
+  perform pg_temp.ok('and the effect is held to the scale', abs((v->'chemistry'->>'offense_effect')::numeric) <= 8 and abs((v->'chemistry'->>'defense_effect')::numeric) <= 8);
+  -- eight games together
+  update public.game_players set career_stats = career_stats || '{"games": 8}'::jsonb where franchise_id = xs and status = 'active';
+  v2 := public.franchise_chemistry(xs);
+  perform pg_temp.ok('eight games together and the eleven are settled; the line, the passing game and the secondary count as units',
+    (v2->'offense'->>'settled')::int = 11 and (v2->'defense'->>'settled')::int = 11
+    and (v2->'offense'->>'core')::numeric = 4 and (v2->'defense'->>'core')::numeric = 2
+    and (v2->'offense'->>'score')::int > (xr->'chemistry'->'offense'->>'score')::int, (v2 - 'rules')::text);
+  perform pg_temp.ok('the simulation''s own edge moved with it',
+    (public.franchise_trait_effects(xs)->'chemistry'->>'offense_effect')::numeric > (v->'chemistry'->>'offense_effect')::numeric);
+  -- a new arrival: fund both, sign a free agent, start him
+  perform public.franchise_credit(xs, 'tc', 5000, 'test', 'fund34s', 'the suite');
+  perform public.franchise_credit(xb, 'tc', 5000, 'test', 'fund34b', 'the suite');
+  select id into xpid from public.game_players where franchise_id = xs and status = 'free_agent' order by overall desc limit 1;
+  perform pg_temp.as_anon();
+  v := public.franchise_sign(xpid, SEC_XS);
+  perform pg_temp.ok('the seller signed a man above the floor', (v->>'ok')::boolean and (v->>'roster_active')::int = 39, v::text);
+  v := public.franchise_set_starter(xpid, 1, SEC_XS);
+  perform pg_temp.ok('a new arrival in the lineup is still learning the calls, and the chemistry says so by name',
+    ((v->'chemistry'->'offense'->>'new')::int + (v->'chemistry'->'defense'->>'new')::int) = 1
+    and exists (select 1 from jsonb_array_elements((v->'chemistry'->'offense'->'men') || (v->'chemistry'->'defense'->'men')) m
+                 where (m->>'id')::uuid = xpid and (m->>'new')::boolean and not (m->>'settled')::boolean), ((v->'chemistry') - 'rules')::text);
+  -- the best lineup
+  v := public.franchise_lineup_best(SEC_XS);
+  perform pg_temp.ok('the best lineup orders every position by overall among the fit, and the chart is contiguous from one',
+    v ? 'moved' and not exists (
+      select 1 from jsonb_array_elements(v->'players') p_one, jsonb_array_elements(v->'players') p_two
+       where p_one->>'position' = p_two->>'position' and (p_one->>'depth')::int < (p_two->>'depth')::int
+         and (p_one->>'available')::boolean and (p_two->>'available')::boolean and (p_one->>'overall')::int < (p_two->>'overall')::int)
+    and (select bool_and(x.mx_d = x.cnt_d) from (select max((pl->>'depth')::int) mx_d, count(*) cnt_d from jsonb_array_elements(v->'players') pl group by pl->>'position') x), v->>'moved');
+  perform pg_temp.ok('asked again, nothing moves', (public.franchise_lineup_best(SEC_XS)->>'moved')::int = 0);
+
+  -- THE EXCHANGE
+  xc := public.franchise_exchange_rules();
+  perform pg_temp.ok('the Exchange prints its rules: the fee, the bounds, the clock, the checks',
+    xc->>'version' = 'exchange_v1' and (xc->>'fee_pct')::int = 5 and (xc->>'min_price')::int = 50 and (xc->>'max_open')::int = 5
+    and (xc->>'expires_days')::int = 7 and jsonb_array_length(xc->'checks') = 5 and xc->>'currency' = 'tc');
+  perform pg_temp.ok('the fee is five per cent rounded up', public.franchise_exchange_fee(50) = 3 and public.franchise_exchange_fee(1000) = 50
+    and public.franchise_exchange_fee(999) = 50 and public.franchise_exchange_fee(51) = 3);
+  -- the man to sell: the seller's lowest man at the position that now has a spare (the table is the owner's to read)
+  perform pg_temp.as_owner();
+  select position into xpos from public.game_players where id = xpid;
+  select id into xbench from public.game_players where franchise_id = xs and status = 'active' and position = xpos order by overall asc, id limit 1;
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('a price under the floor is refused', pg_temp.raises('select public.franchise_exchange_list(''' || xbench || ''', 10, ''' || SEC_XS || ''')'));
+  perform pg_temp.ok('a price over the ceiling is refused', pg_temp.raises('select public.franchise_exchange_list(''' || xbench || ''', 60000, ''' || SEC_XS || ''')'));
+  perform pg_temp.ok('a man of somebody else''s cannot be listed', pg_temp.raises('select public.franchise_exchange_list(''' || xbench || ''', 500, ''' || SEC_XB || ''')'));
+  xl := public.franchise_exchange_list(xbench, 500, SEC_XS);
+  xlid := (xl->'listing'->>'id')::uuid;
+  perform pg_temp.ok('a man is listed at the seller''s own price, and the listing prints the fee and the net',
+    (xl->>'ok')::boolean and xl->'listing'->>'status' = 'open' and (xl->'listing'->>'price')::int = 500
+    and (xl->'listing'->>'fee')::int = 25 and (xl->'listing'->>'net')::int = 475 and (xl->'listing'->>'mine')::boolean
+    and xl->'listing'->'man'->>'position' = xpos and xl->'listing'->'man'->>'name' is not null and xl->'listing'->'man'->>'tier' is not null
+    and (xl->'listing'->'man'->>'overall')::int between 40 and 99, xl::text);
+  xovr := (xl->'listing'->'man'->>'overall')::int;
+  perform pg_temp.ok('the comps come back with the listing: nothing sold yet, the asking reference printed',
+    (xl->'comps'->>'sold')::int = 0 and xl->'comps'->'median' = 'null'::jsonb
+    and (xl->'comps'->>'asking_reference')::int = public.franchise_signing_cost(xovr) and (xl->'comps'->>'open')::int >= 1);
+  perform pg_temp.ok('he is still on the roster, still playing, and the roster shows his listing',
+    exists (select 1 from jsonb_array_elements(public.franchise_roster(SEC_XS)->'players') p
+             where (p->>'id')::uuid = xbench and (p->'listing'->>'id')::uuid = xlid and (p->'listing'->>'price')::int = 500));
+  perform pg_temp.ok('he cannot be listed twice', pg_temp.raises('select public.franchise_exchange_list(''' || xbench || ''', 600, ''' || SEC_XS || ''')'));
+  -- browsing
+  v := public.franchise_exchange_browse(null, null, null, 'newest', null, 40, 0, SEC_XB);
+  perform pg_temp.ok('a buyer browsing sees the listing with the seller named, not as his own, and sees his own balance',
+    (v->>'total')::int >= 1
+    and exists (select 1 from jsonb_array_elements(v->'listings') al_l where (al_l->>'id')::uuid = xlid and not (al_l->>'mine')::boolean and al_l->'seller'->>'abbr' = 'BET')
+    and (v->>'balance')::int = 5100 and jsonb_array_length(v->'mine') = 0 and (v->>'open_slots')::int = 5, v::text);
+  v := public.franchise_exchange_browse(null, null, null, 'newest', null, 40, 0, null);
+  perform pg_temp.ok('anyone may read the board; without a franchise there is no balance and nothing is yours',
+    (v->>'total')::int >= 1 and v->'balance' = 'null'::jsonb and jsonb_array_length(v->'mine') = 0);
+  v := public.franchise_exchange_browse(xpos, xovr, xovr, 'price_asc', null, 40, 0, SEC_XB);
+  perform pg_temp.ok('filters by position and overall find him', exists (select 1 from jsonb_array_elements(v->'listings') al_l where (al_l->>'id')::uuid = xlid));
+  v := public.franchise_exchange_browse(xpos, 100, 100, 'newest', null, 40, 0, SEC_XB);
+  perform pg_temp.ok('and a filter that fits nobody finds nobody', (v->>'total')::int = 0 and jsonb_array_length(v->'listings') = 0);
+  v := public.franchise_exchange_browse(null, null, null, 'newest', null, 40, 0, SEC_XS);
+  perform pg_temp.ok('the seller sees his own listing marked as his, and one slot fewer',
+    exists (select 1 from jsonb_array_elements(v->'listings') al_l where (al_l->>'id')::uuid = xlid and (al_l->>'mine')::boolean)
+    and jsonb_array_length(v->'mine') = 1 and (v->>'open_slots')::int = 4);
+  -- refusals before the sale
+  perform pg_temp.ok('a seller cannot buy his own listing', pg_temp.raises('select public.franchise_exchange_buy(''' || xlid || ''', ''' || SEC_XS || ''')'));
+  perform pg_temp.ok('nobody without a franchise can buy', pg_temp.raises('select public.franchise_exchange_buy(''' || xlid || ''', ''device-secret-nobodynobodynobodynobody1'')'));
+  perform pg_temp.as_owner();
+  select id into xspare from public.game_players where franchise_id = xs and status = 'active' and position = 'WR' and id <> xbench order by overall asc, id limit 1;
+  perform pg_temp.as_anon();
+  xl2 := public.franchise_exchange_list(xspare, 50000, SEC_XS);
+  xl2id := (xl2->'listing'->>'id')::uuid;
+  begin
+    perform public.franchise_exchange_buy(xl2id, SEC_XB); xcaught := null;
+  exception when others then xcaught := SQLERRM; end;
+  perform pg_temp.ok('a buyer without the Credits is refused, with the numbers', xcaught like 'not enough Credits: 50000 needed, 5100 on hand', xcaught);
+  perform pg_temp.ok('another franchise cannot take down my listing', pg_temp.raises('select public.franchise_exchange_withdraw(''' || xl2id || ''', ''' || SEC_XB || ''')'));
+  v := public.franchise_exchange_withdraw(xl2id, SEC_XS);
+  perform pg_temp.ok('the seller takes it down', v->'listing'->>'status' = 'withdrawn' and v->'listing'->>'reason' is not null);
+  perform pg_temp.ok('taking it down twice is nothing', public.franchise_exchange_withdraw(xl2id, SEC_XS)->'listing'->>'status' = 'withdrawn');
+  perform pg_temp.ok('and a listing taken down cannot be bought', pg_temp.raises('select public.franchise_exchange_buy(''' || xl2id || ''', ''' || SEC_XB || ''')'));
+  -- THE SALE
+  perform pg_temp.as_owner();
+  select team_credits into xtc_s from public.franchises where id = xs;
+  select team_credits into xtc_b from public.franchises where id = xb;
+  perform pg_temp.as_anon();
+  v := public.franchise_exchange_buy(xlid, SEC_XB);
+  perform pg_temp.ok('the sale: the buyer pays the price, the fee and the net are stated, the man is his',
+    (v->>'ok')::boolean and (v->>'price')::int = 500 and (v->>'fee')::int = 25 and (v->>'net')::int = 475
+    and (v->'totals'->>'team_credits')::int = xtc_b - 500 and v->'listing'->>'status' = 'sold'
+    and (v->'player'->>'id')::uuid = xbench and (v->>'roster_active')::int = 39
+    and v->'achievements' ? 'exchange_first_buy', v::text);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the man changed hands: the buyer''s franchise, bought on the Exchange, his career untouched',
+    (select franchise_id = xb and status = 'active' and acquired_source = 'market' and acquired_detail like 'Bought on the Exchange from the Foundry for 500 Credits'
+            and (career_stats->>'games')::int = 8
+       from public.game_players where id = xbench));
+  perform pg_temp.ok('the seller received exactly the net, as one ledger row keyed by the listing',
+    (select team_credits from public.franchises where id = xs) = xtc_s + 475
+    and (select count(*) from public.franchise_ledger where franchise_id = xs and kind = 'exchange_sale' and key = xlid::text and delta = 475) = 1
+    and (select count(*) from public.franchise_ledger where franchise_id = xb and kind = 'exchange_buy' and key = xlid::text and delta = -500) = 1);
+  perform pg_temp.ok('the fee left the economy: the two franchises together hold twenty-five fewer Credits',
+    (select sum(team_credits) from public.franchises where id in (xs, xb)) = xtc_s + xtc_b - 25);
+  perform pg_temp.ok('the card remembers the sale with its price, and the move',
+    exists (select 1 from jsonb_array_elements((select history from public.game_players where id = xbench)) h where h->>'kind' = 'sold' and (h->>'price')::int = 500 and h->>'from' = 'Foundry' and h->>'to' = 'Harbor')
+    and exists (select 1 from jsonb_array_elements((select history from public.game_players where id = xbench)) h where h->>'kind' = 'traded'));
+  perform pg_temp.ok('the seller''s chart closed up behind him',
+    (select max(depth) = count(*) and min(depth) = 1 from public.game_players where franchise_id = xs and position = xpos and status = 'active'));
+  perform pg_temp.ok('the buyer''s new man sits at the bottom of his chart with a number nobody else wears',
+    (select depth from public.game_players where id = xbench) = (select count(*) from public.game_players where franchise_id = xb and position = xpos and status = 'active')
+    and (select count(*) from public.game_players a join public.game_players b on a.franchise_id = b.franchise_id and a.jersey = b.jersey and a.id < b.id
+          where a.franchise_id = xb and a.status = 'active' and b.status = 'active') = 0);
+  perform pg_temp.ok('the record on both sides, and the listing closed with the buyer, the fee and the net',
+    exists (select 1 from public.franchise_activity where franchise_id = xb and kind = 'exchange_buy' and key = xlid::text and (detail->>'price')::int = 500)
+    and exists (select 1 from public.franchise_activity where franchise_id = xs and kind = 'exchange_sale' and key = xlid::text and (detail->>'net')::int = 475)
+    and (select status = 'sold' and buyer_id = xb and fee = 25 and net = 475 and closed_at is not null from public.franchise_listings where id = xlid));
+  perform pg_temp.ok('the first sale and the first purchase are achievements',
+    exists (select 1 from public.franchise_achievements where franchise_id = xs and achievement_id = 'exchange_first_sale')
+    and exists (select 1 from public.franchise_achievements where franchise_id = xb and achievement_id = 'exchange_first_buy'));
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('the same listing cannot be bought twice', pg_temp.raises('select public.franchise_exchange_buy(''' || xlid || ''', ''' || SEC_XB || ''')'));
+  -- comps and the record
+  v := public.franchise_exchange_comps(xpos, xovr);
+  perform pg_temp.ok('the comparable sales now show the one sale, at its price',
+    (v->>'sold')::int = 1 and (v->>'median')::int = 500 and (v->>'low')::int = 500 and (v->>'high')::int = 500
+    and (v->'sales'->0->>'price')::int = 500 and (v->'sales'->0->>'overall')::int = xovr, v::text);
+  v := public.franchise_exchange_history(20, SEC_XS);
+  perform pg_temp.ok('the history reads the sale from the seller''s side, and the volume of the whole Exchange',
+    exists (select 1 from jsonb_array_elements(v->'mine') al_l where (al_l->>'id')::uuid = xlid and al_l->>'status' = 'sold' and (al_l->>'mine')::boolean)
+    and (v->'recent'->0->>'price')::int = 500 and (v->'volume'->>'sold_30d')::int >= 1 and (v->'volume'->>'fees_30d')::int >= 25, v::text);
+  perform pg_temp.ok('and from the buyer''s',
+    exists (select 1 from jsonb_array_elements(public.franchise_exchange_history(20, SEC_XB)->'mine') al_l where (al_l->>'id')::uuid = xlid and not (al_l->>'mine')::boolean));
+  -- the seller is at the floor now: nobody can be listed
+  begin
+    perform public.franchise_exchange_list(xspare, 500, SEC_XS); xcaught := null;
+  exception when others then xcaught := SQLERRM; end;
+  perform pg_temp.ok('at the floor nobody can be listed: the roster cannot spare a man, and it says so',
+    xcaught like '%under 38%', xcaught);
+  perform pg_temp.as_owner();
+  select id into xk from public.game_players where franchise_id = xb and position = 'K' and status = 'active' limit 1;
+  perform pg_temp.ok('a man his position cannot spare is refused by name', public.franchise_exchange_illegal(xb, xk) like '%short at K%');
+  perform pg_temp.ok('a man not on your roster is refused', public.franchise_exchange_illegal(xb, xspare) = 'that player is not on your roster');
+  -- lapses: the clock. The buyer, above the floor at 39, lists the man he has a spare of
+  select id into xspare from public.game_players where franchise_id = xb and status = 'active' and position = xpos and id <> xbench order by overall asc, id limit 1;
+  perform pg_temp.as_anon();
+  xl2 := public.franchise_exchange_list(xspare, 500, SEC_XB);
+  xl2id := (xl2->'listing'->>'id')::uuid;
+  perform pg_temp.as_owner();
+  update public.franchise_listings set expires_at = now() - interval '1 minute' where id = xl2id;
+  perform pg_temp.as_anon();
+  v := public.franchise_exchange_browse(null, null, null, 'newest', null, 40, 0, SEC_XS);
+  perform pg_temp.ok('a listing past its date is closed by the next reader, with the reason kept',
+    not exists (select 1 from jsonb_array_elements(v->'listings') al_l where (al_l->>'id')::uuid = xl2id)
+    and exists (select 1 from jsonb_array_elements(public.franchise_exchange_history(20, SEC_XB)->'mine') al_l
+                 where (al_l->>'id')::uuid = xl2id and al_l->>'status' = 'expired' and al_l->>'reason' = 'the listing ran out'));
+  perform pg_temp.ok('and cannot be bought', pg_temp.raises('select public.franchise_exchange_buy(''' || xl2id || ''', ''' || SEC_XS || ''')'));
+  -- a listed man who leaves: the buyer (above the floor at 39) lists his new man, then he goes
+  perform pg_temp.as_anon();
+  xl2 := public.franchise_exchange_list(xbench, 700, SEC_XB);
+  xl2id := (xl2->'listing'->>'id')::uuid;
+  perform pg_temp.as_owner();
+  update public.game_players set status = 'released' where id = xbench;
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('a listing whose man has left the roster is closed by the next reader, with that reason',
+    not exists (select 1 from jsonb_array_elements(public.franchise_exchange_browse(null, null, null, 'newest', null, 40, 0, SEC_XS)->'listings') al_l where (al_l->>'id')::uuid = xl2id)
+    and exists (select 1 from jsonb_array_elements(public.franchise_exchange_history(20, SEC_XB)->'mine') al_l
+                 where (al_l->>'id')::uuid = xl2id and al_l->>'status' = 'expired' and al_l->>'reason' = 'the player left the roster'));
+  perform pg_temp.ok('the listings table is nobody''s to read directly', (select count(*) from public.franchise_listings) = 0);
+  perform pg_temp.ok('the internal doors are shut',
+    not has_function_privilege('anon', 'public.franchise_chemistry(uuid)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_exchange_sweep()', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_exchange_illegal(uuid, uuid)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_listing_json(public.franchise_listings, uuid)', 'execute'));
 
 end
 $test$;

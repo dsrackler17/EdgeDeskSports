@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260909c">
-<link rel="stylesheet" href="/games/franchise.css?v=20260909c">
+<link rel="stylesheet" href="/games/games.css?v=20260909d">
+<link rel="stylesheet" href="/games/franchise.css?v=20260909d">
 </head>
 <body>
 <div id="gh"></div>
@@ -49,24 +49,24 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260909c"></script>
-<script src="/games/lib/scoring.js?v=20260909c"></script>
-<script src="/games/lib/challenge.js?v=20260909c"></script>
-<script src="/games/lib/research_state.js?v=20260909c"></script>
-<script src="/games/lib/attribution.js?v=20260909c"></script>
-<script src="/games/lib/store.js?v=20260909c"></script>
-<script src="/games/lib/dynasty.js?v=20260909c"></script>
-<script src="/games/lib/social.js?v=20260909c"></script>
-<script src="/games/lib/auth.js?v=20260909c"></script>
-<script src="/games/lib/gridiron/profile.js?v=20260909c"></script>
-<script src="/games/lib/franchise.js?v=20260909c"></script>
-<script src="/games/lib/gridiron/football.js?v=20260909c"></script>
-<script src="/games/lib/gridiron/roster.js?v=20260909c"></script>
-<script src="/games/lib/gridiron/engine.js?v=20260909c"></script>
-<script src="/games/lib/gridiron/paint.js?v=20260909c"></script>
-<script src="/games/lib/gridiron/stage.js?v=20260909c"></script>
-<script src="/games/lib/gridiron/lineup.js?v=20260909c"></script>
-<script src="/games/games.js?v=20260909c"></script>
+<script src="/games/lib/week.js?v=20260909d"></script>
+<script src="/games/lib/scoring.js?v=20260909d"></script>
+<script src="/games/lib/challenge.js?v=20260909d"></script>
+<script src="/games/lib/research_state.js?v=20260909d"></script>
+<script src="/games/lib/attribution.js?v=20260909d"></script>
+<script src="/games/lib/store.js?v=20260909d"></script>
+<script src="/games/lib/dynasty.js?v=20260909d"></script>
+<script src="/games/lib/social.js?v=20260909d"></script>
+<script src="/games/lib/auth.js?v=20260909d"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260909d"></script>
+<script src="/games/lib/franchise.js?v=20260909d"></script>
+<script src="/games/lib/gridiron/football.js?v=20260909d"></script>
+<script src="/games/lib/gridiron/roster.js?v=20260909d"></script>
+<script src="/games/lib/gridiron/engine.js?v=20260909d"></script>
+<script src="/games/lib/gridiron/paint.js?v=20260909d"></script>
+<script src="/games/lib/gridiron/stage.js?v=20260909d"></script>
+<script src="/games/lib/gridiron/lineup.js?v=20260909d"></script>
+<script src="/games/games.js?v=20260909d"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -76,7 +76,8 @@
    function is missing, say so and offer a fresh load instead of a dead
    screen. */
 (function(){
-  var need=['EDFranchise.roster','EDFranchise.playerCard','EDFranchise.setStarter','EDFranchise.release','EDGames.franchiseReady'];
+  var need=['EDFranchise.roster','EDFranchise.playerCard','EDFranchise.setStarter','EDFranchise.release','EDFranchise.lineupBest',
+            'EDFranchise.exchangeList','EDFranchise.exchangeWithdraw','EDFranchise.chemistryLine','EDGames.franchiseReady'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -134,15 +135,54 @@
     var spare=g.players.length>g.starters;
     var cards=g.players.map(function(p){
       var actions='';
-      if(!FR.isStarter(p))actions='<button class="btn" type="button" data-start="'+esc(p.id)+'" data-slot="'+g.starters+'">'
-        +'Move into the lineup'+(g.starters>1?' ('+esc(g.position)+g.starters+')':'')+'</button>';
+      if(!FR.isStarter(p)){
+        /* which slot he takes: every starting slot, with the man who holds it now */
+        if(g.starters>1){
+          var opts='';
+          for(var k=1;k<=g.starters;k++){
+            var holder=null;g.players.forEach(function(x){if((x.depth|0)===k)holder=x;});
+            opts+='<option value="'+k+'"'+(k===g.starters?' selected':'')+'>'+esc(g.position)+k+(holder?' · '+esc(FR.fullName(holder))+' '+esc(holder.overall):'')+'</option>';
+          }
+          actions='<div class="pc-slot"><select aria-label="which slot" data-slot-sel="'+esc(p.id)+'">'+opts+'</select>'
+            +'<button class="btn" type="button" data-start="'+esc(p.id)+'" data-slot="'+g.starters+'">Start him</button></div>';
+        }else{
+          actions='<button class="btn" type="button" data-start="'+esc(p.id)+'" data-slot="1">Start him</button>';
+        }
+      }
       if(!FR.isStarter(p)&&spare&&room&&!room.floor)actions+='<button class="btn btn-ghost" type="button" data-release="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'">Release</button>';
+      /* the Exchange: a man of your own at your price, still playing for you until he sells */
+      if(p.listing)actions+='<span class="pc-line pc-listed">Listed on the <a href="/games/exchange/">Exchange</a> at <b>'+esc(FR.fmt(p.listing.price))+'</b> Credits · '
+        +'<button class="lnk" type="button" data-withdraw="'+esc(p.listing.id)+'">take it down</button></span>';
+      else if(spare&&room&&!room.floor)actions+='<button class="btn btn-ghost" type="button" data-list="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'" data-pos="'+esc(p.position)+'" data-ovr="'+esc(p.overall)+'">Sell on the Exchange</button>';
       return FR.playerCard(p,{actions:actions});
     }).join('');
     return '<details class="pos'+cls+'"'+(open?' open':'')+' data-pos="'+esc(g.position)+'">'
       +'<summary><span class="p">'+esc(g.position)+'</span><span class="n">'+esc(g.name)+' · '+g.players.length+' · '+g.starters+' start'+(g.starters===1?'s':'')+'</span>'
       +'<span class="r">'+esc(val)+'<small>OVR</small></span></summary>'
       +'<div class="pc-grid">'+cards+'</div></details>';
+  }
+  /* CHEMISTRY. A property of the eleven who start, derived on the server
+     from the lineup and nothing else — how the archetypes fit the scheme,
+     how many games the starters have played together, whole units grown up
+     together, new arrivals still learning the calls — and printed term by
+     term, because a number you cannot explain is a number you cannot coach. */
+  function chemBar(side,name,scheme){
+    if(!side)return '';
+    var s=side.score|0,eff=+side.effect||0;
+    return '<div class="ch-side"><div class="ch-row"><b>'+esc(name)+'</b><span class="ch-word">'+esc(FR.chemistryWord(s))+'</span>'
+      +'<span class="ch-num">'+esc(s)+'<small>'+(eff>=0?'+':'')+esc(eff.toFixed(1))+' on the field</small></span></div>'
+      +'<div class="ch-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+s+'" aria-label="'+esc(name)+' chemistry"><div class="ch-fill" style="width:'+s+'%"></div></div>'
+      +'<div class="ch-why">'+esc(FR.chemistryLine(side).replace(/^\d+ · /,''))+(scheme?' · <i>'+esc(scheme.replace(/_/g,' '))+'</i>':'')+'</div>'
+      +(side.units&&side.units.length?'<div class="ch-units">'+side.units.map(function(u){return '<span class="'+(u.on?'on':'')+'">'+esc(u.name)+' '+esc(u.settled)+'/'+esc(u.of)+'</span>';}).join('')+'</div>':'')
+      +'</div>';
+  }
+  function chemBlock(c){
+    if(!c)return '';
+    return '<div class="chem"><div class="side-h" style="margin:14px 0 6px"><h2 style="font-size:14px">Chemistry · '+esc(c.team|0)+'</h2><span class="m">'+esc(c.version||'')+'</span></div>'
+      +'<div class="ch-grid">'+chemBar(c.offense,'Offense',(c.scheme||{}).offense)+chemBar(c.defense,'Defense',(c.scheme||{}).defense)+'</div>'
+      +'<div class="ftp" style="margin-top:8px">Chemistry is the eleven who start, not a number a man carries: how each archetype fits the scheme, '
+      +esc((c.rules||{}).tenure_games||8)+' games together to be settled, whole units grown together, a new arrival still learning the calls. '
+      +'A quarter of the effect reaches the rating on the field, as every trait does. Change the lineup and it changes.</div></div>';
   }
   /* THE TREATMENT ROOM. A hurt player keeps his card, his number and his
      place on the chart; what he does not do is count toward the team rating
@@ -173,10 +213,12 @@
       +'<div class="hq-line">'+(strong?'Strongest: <b>'+esc(strong.name)+' '+esc(strong.value)+'</b>':'')
       +(weak?' · Weakest: <b>'+esc(weak.name)+' '+esc(weak.value)+'</b>':'')+'</div></div></div>'
       +rate(rt)
+      +chemBlock(d.chemistry)
       +injuryBlock(d)
       +'<div class="lineup"><div class="lu-tabs">'
       +'<button type="button" class="lu-t on" data-lu="offense">Offense</button>'
-      +'<button type="button" class="lu-t" data-lu="defense">Defense</button></div>'
+      +'<button type="button" class="lu-t" data-lu="defense">Defense</button>'
+      +'<button type="button" class="btn lu-best" id="bestLineup" title="Every position in order of overall among the fit">Best lineup</button></div>'
       +'<canvas id="luField" class="lu-field" aria-label="Your starting eleven, in the positions they line up in"></canvas></div>'
       +'<div class="ftp" style="margin-top:12px">Overall is the mean of a player’s four ratings. Team ratings weight the starters by position; '
       +'the depth chart decides who starts, and only a fit player is counted. Every number here was generated on the server and cannot be edited.</div>';
@@ -193,7 +235,7 @@
       +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Players develop in the offseason, after every season: the young grow toward their potential, '
       +'the old fade, anyone 35 retires (33 and under 55 too), and a rookie is signed for every one who goes. A <a href="/games/franchise/">Training Center</a> '
       +'speeds the young along. The <a href="/games/market/">draft class and the free agents</a> are where the roster changes on purpose: Scouting Points buy the truth '
-      +'about a prospect, two picks a season, Team Credits sign a veteran, and the roster runs '+esc(room.min)+' to '+esc(room.max)+' — above the floor a player his position can spare can be released here. '
+      +'about a prospect, two picks a season, Credits sign a veteran, men change hands between franchises on the <a href="/games/exchange/">Exchange</a>, and the roster runs '+esc(room.min)+' to '+esc(room.max)+' — above the floor a player his position can spare can be released here. '
       +'The way to a better team is still the way to a better read: <a href="/games/price-it/">scout in Price It</a>, <a href="/games/pick-5/">play the week</a>, '
       +'<a href="/games/two-minute-drill/">run the drill</a>. The retired are in the <a href="/games/trophies/">Trophy Room</a>.</p></div></div>';
 
@@ -240,11 +282,38 @@
     });
   }
 
+  /* re-read the roster, keeping the groups that were open */
+  function refresh(){
+    var openPos={};
+    Array.prototype.forEach.call(groupsEl.querySelectorAll('details[open]'),function(d){openPos[d.getAttribute('data-pos')]=true;});
+    return FR.roster().then(function(r){
+      if(!r.ok||!r.data)return;
+      renderRoster(r.data,false);
+      Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos[d.getAttribute('data-pos')];});
+    });
+  }
+  var WIRED=false;
   function wire(){
+    var best=$('bestLineup');
+    if(best)best.onclick=function(){
+      best.disabled=true;best.textContent='Ordering…';
+      FR.lineupBest().then(function(r){
+        if(!r.ok||!r.data){G.toast(r.message||'Could not order the lineup.');best.disabled=false;best.textContent='Best lineup';return;}
+        var openPos={};
+        Array.prototype.forEach.call(groupsEl.querySelectorAll('details[open]'),function(d){openPos[d.getAttribute('data-pos')]=true;});
+        renderRoster(r.data,false);
+        Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos[d.getAttribute('data-pos')];});
+        G.toast((r.data.moved|0)?(r.data.moved+' place'+(r.data.moved===1?'':'s')+' changed'):'Already the best lineup');
+        G.track('lineup_best',{moved:r.data.moved|0,overall:r.data.rating?r.data.rating.overall:null,chemistry:r.data.chemistry?r.data.chemistry.team:null,game_type:'franchise'});
+      });
+    };
+    if(WIRED)return;WIRED=true;
     groupsEl.addEventListener('click',function(e){
       var b=e.target.closest?e.target.closest('button[data-start]'):null;
       if(b){
         var id=b.getAttribute('data-start'),slot=+b.getAttribute('data-slot')||1;
+        var sel=groupsEl.querySelector('select[data-slot-sel="'+id+'"]');
+        if(sel)slot=+sel.value||slot;
         b.disabled=true;b.textContent='Moving…';
         FR.setStarter(id,slot).then(function(r){
           if(!r.ok||!r.data){G.toast(r.message||'Could not change the lineup.');b.disabled=false;b.textContent='Move into the lineup';return;}
@@ -271,6 +340,37 @@
           Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos2[d.getAttribute('data-pos')];});
           G.toast((r.data.released?r.data.released.name:'Player')+' released');
           G.track('player_released',{player:rid,position:r.data.released?r.data.released.position:null,roster:r.data.roster_active});
+        });
+        return;
+      }
+      var lb=e.target.closest?e.target.closest('button[data-list]'):null;
+      if(lb){
+        var lid=lb.getAttribute('data-list'),lnm=lb.getAttribute('data-name'),lovr=+lb.getAttribute('data-ovr')||0;
+        var rules=(DATA&&DATA.exchange)||FR.EXCHANGE;
+        var ref=FR.signingCost?FR.signingCost(lovr):0;
+        var ans=window.prompt('List '+lnm+' on the Exchange. Your price, in Credits ('+rules.min_price+'–'+rules.max_price+'). '
+          +'The fee is '+rules.fee_pct+'%; he keeps playing for you until he sells.'+(ref?' The free-agent reference for a '+lovr+' is '+ref+'.':''),String(ref||rules.min_price));
+        if(ans==null)return;
+        var price=parseInt(ans,10);
+        if(!(price>=rules.min_price&&price<=rules.max_price)){G.toast('A price is between '+rules.min_price+' and '+rules.max_price+' Credits');return;}
+        lb.disabled=true;lb.textContent='Listing…';
+        FR.exchangeList(lid,price).then(function(r){
+          if(!r.ok){G.toast(r.message||'Could not list him.');lb.disabled=false;lb.textContent='Sell on the Exchange';return;}
+          var l=(r.data||{}).listing||{};
+          G.toast('Listed at '+FR.fmt(l.price)+' Credits — you receive '+FR.fmt(l.net)+' if he sells');
+          G.track('exchange_listed',{placement:'roster',price:l.price,fee:l.fee,position:(l.man||{}).position,overall:(l.man||{}).overall,game_type:'franchise'});
+          refresh();
+        });
+        return;
+      }
+      var wb=e.target.closest?e.target.closest('button[data-withdraw]'):null;
+      if(wb){
+        wb.disabled=true;
+        FR.exchangeWithdraw(wb.getAttribute('data-withdraw')).then(function(r){
+          if(!r.ok){G.toast(r.message||'Could not take it down.');wb.disabled=false;return;}
+          G.toast('Listing taken down');
+          G.track('exchange_withdrawn',{placement:'roster',game_type:'franchise'});
+          refresh();
         });
         return;
       }

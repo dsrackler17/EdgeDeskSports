@@ -3241,3 +3241,73 @@ pack table (`EDFranchise.PACKS`) is pinned name-for-name to
 Nothing here can be bought. There is no pack for sale and no way to open one
 faster with money; the page says so in three places, and the SQL has no
 currency path that grants a pack.
+
+## Phase 10–12 — the lineup, chemistry and the Exchange (`lineup_v1` · `chemistry_v1` · `exchange_v1`)
+
+**Chemistry is a property of the eleven who play**, not a number a man
+carries. The column on `game_players` had sat at fifty since the day it was
+made and nothing read it; it still does, and it still does nothing. Instead
+`franchise_chemistry(franchise)` derives, from the starting lineup and
+nothing else: how each starter's archetype fits the scheme the franchise runs
+(`franchise_scheme_fit()`, −2..+2 per man, a table anyone can read — and a
+test that every archetype it names is one the generator deals, because a
+typo there would be a silent zero), how many starters have played eight games
+for this franchise (*settled*), whether whole units have grown up together
+(the line, the passing game, the secondary), how many arrivals by market,
+trade, free agency, pack or draft are still learning the calls, and who among
+them leads. The score is `50 + 2 × raw`, held to 0..100, every term printed;
+the effect is `(score − 50) / 50 × 8` in the units a trait uses, and it
+reaches the simulation through `franchise_trait_effects` — a quarter of a
+point of rating per point, as every trait — so `franchise_sim` and
+`franchise_sim_versus` feel it without a line of either changing. A founding
+roster lands around 65; eight games with the same eleven and it climbs toward
+the nineties; sell a starter and it drops. The roster page prints both units
+as bars with the word, the effect and the reasons, and **Best lineup**
+(`franchise_lineup_best`) orders every position by overall among the fit in
+one call; a backup can be started at any slot, not only the last.
+
+**The Exchange is the first market between franchises.** The market page was
+and remains a private one — a draft class and free agents generated for you.
+The Exchange is public: any franchise lists an active man of its own at a
+price of its choosing inside published bounds (50–50,000 Credits, five open
+at once, seven days), and he **keeps playing for the seller until he sells**.
+A buyer sends a **listing id and nothing else** — never a price, never a
+balance. `franchise_exchange_buy` locks the listing, then both franchises in
+id order, and only then decides: the listing still open and unexpired, the
+man still on the roster that listed him, the seller keeping the floor and the
+starters his position needs (`franchise_exchange_illegal`, the same rules a
+release and a trade obey), the buyer with room and with the Credits the
+ledger says he has. Five per cent of the price, rounded up, is the fee and
+leaves the economy; the rest reaches the seller as one ledger row keyed by
+the listing, and the buyer's price is one ledger row keyed the same way, so
+nothing can pay twice. The man moves as a trade moves him — bottom of the
+new chart, a new number only on a clash, his career untouched — and his card
+remembers the sale with its price. A listing that lapses, or whose man has
+since left, is closed by the next reader with the reason kept on it.
+
+**Prices are decisions made with the record in view.** `franchise_listing_json`
+prints the free-agent reference beside every asking price, and
+`franchise_exchange_comps(position, overall)` is public arithmetic on the
+sold listings of the last sixty days within two points: count, median, low,
+high, the last twelve, and how many like him are listed now. The sell form
+reads them before a price is typed. The record (`franchise_exchange_history`)
+shows a franchise's own listings from both sides and the whole Exchange's
+recent sales and volume.
+
+**Proof.** Section 34 of the SQL suite drives it end to end: the chemistry
+arithmetic and every fit, the trait-effects hookup, eight games together,
+a new arrival named, the best lineup and a contiguous chart; listing
+refusals by price, by ownership, twice; browsing as buyer, seller and nobody;
+a sale with the price, fee, net, both ledger rows, the fee gone from the
+economy, the card's line, both charts, both records and both achievements;
+a second buy refused; comps and history; the clock and a man who left; the
+floor by name. `tools/games/exchange_concurrency.test.js` then does what one
+session cannot: six buyers on one listing from six connections at once
+(exactly one wins, five are refused by a closed listing, never by a deadlock,
+every balance the sum of its ledger, the economy down by exactly the fee),
+and one buyer with the Credits for one man reaching for two (exactly one
+goes through, the balance never below zero).
+
+Credits are what the ledger calls `tc` and the game calls Credits; XP is
+Research XP. Nothing on the Exchange can be bought with money: there is no
+Credit for sale, and the SQL has no path that grants one.

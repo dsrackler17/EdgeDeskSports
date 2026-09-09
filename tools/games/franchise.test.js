@@ -2822,9 +2822,9 @@ fresh();
   chk('the report grew to thirty-nine rows', /select 39, 'the Vault is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 18, 'the Vault: packs you hold, odds you can read, and a card that remembers'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 18);
-  chk('and the report checks the same number',
-    /\(public\.games_schema\(\)->>'franchise'\)::int = 18/.test(SQL));
+  chk('and the client expects at least it', F.SCHEMA.franchise >= 18);
+  chk('and the report checks a number no lower',
+    +((SQL.match(/\(public\.games_schema\(\)->>'franchise'\)::int = (\d+)/) || [])[1]) >= 18);
   eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v2');
   has(SQL, '"version": "packs_v2"', 'and the SQL carries the same version');
   (function () {
@@ -2848,6 +2848,92 @@ fresh();
   ['pack_opened', 'card_revealed', 'rare_pull', 'pack_kept', 'pack_passed', 'packs_view'].forEach(e => chk('the packs page fires ' + e, new RegExp("track\\('" + e + "'").test(PACKS) || new RegExp("'" + e + "'").test(fs.readFileSync(G('lib/vault.js'), 'utf8'))));
   has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
   has(README, 'packs_v2', 'the README documents the Vault');
+
+  /* ═══ 19. THE LINEUP, CHEMISTRY AND THE EXCHANGE ═════════════════════════ */
+  chk('the report grew to forty rows', /select 40, 'the lineup is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 19, 'the lineup, chemistry, and the Exchange'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 19);
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 19/.test(SQL));
+  eq('the lineup is versioned', F.LINEUP_VERSION, 'lineup_v1');
+  has(SQL, "'version', 'lineup_v1'", 'and the SQL agrees');
+  eq('chemistry is versioned', F.CHEMISTRY_VERSION, 'chemistry_v1');
+  has(SQL, "'version', 'chemistry_v1'", 'and the SQL agrees');
+  eq('the Exchange is versioned', F.EXCHANGE_VERSION, 'exchange_v1');
+  has(SQL, "'version', 'exchange_v1'", 'and the SQL agrees');
+  (function () {
+    /* the client's mirrors are the SQL's numbers, read out of the rules functions */
+    /* the LAST definition of a function is the one the database keeps: the pools were widened in Phase 17 */
+    const rules = (name) => { const all = SQL.match(new RegExp('function public\\.' + name + '\\(\\)[\\s\\S]*?\\$\\$;', 'g')) || []; return all.length ? all[all.length - 1] : ''; };
+    const ex = rules('franchise_exchange_rules');
+    ['fee_pct', 'min_price', 'max_price', 'max_open', 'expires_days', 'comps_days', 'comps_band', 'comps_shown'].forEach(k => {
+      const m = ex.match(new RegExp("'" + k + "', (\\d+)"));
+      chk('EXCHANGE.' + k + ' is the SQL\'s', m && +m[1] === F.EXCHANGE[k], m ? m[1] + ' vs ' + F.EXCHANGE[k] : 'not in the SQL');
+    });
+    has(ex, "'currency', 'tc'", 'the Exchange trades in Credits and nothing else');
+    const ch = rules('franchise_chemistry_rules');
+    ['per_point', 'scale', 'tenure_games', 'new_games', 'new_cap'].forEach(k => {
+      const m = ch.match(new RegExp("'" + k + "', ([\\d.]+)"));
+      chk('CHEMISTRY.' + k + ' is the SQL\'s', m && +m[1] === F.CHEMISTRY[k], m ? m[1] + ' vs ' + F.CHEMISTRY[k] : 'not in the SQL');
+    });
+    ['line', 'secondary', 'passing'].forEach(k => {
+      const m = ch.match(new RegExp("'" + k + "', (\\d+)"));
+      chk('CHEMISTRY.core.' + k + ' is the SQL\'s', m && +m[1] === F.CHEMISTRY.core[k]);
+    });
+    /* the fee rounds the way the SQL rounds: up */
+    chk('the fee is five per cent rounded up on both sides', F.exchangeFee(50) === 3 && F.exchangeFee(1000) === 50 && F.exchangeFee(999) === 50 && F.exchangeFee(51) === 3);
+    has(SQL, 'ceil(coalesce(p_price, 0) * (public.franchise_exchange_rules()->>\'fee_pct\')::numeric / 100.0)::int', 'and the SQL rounds up');
+    /* every archetype the scheme-fit table names is one the generator deals — a typo here would be a silent zero */
+    const fitSrc = rules('franchise_scheme_fit');
+    const fitJson = (fitSrc.match(/select '(\{[\s\S]*\})'::jsonb/) || [])[1];
+    const poolsSrc = rules('franchise_pool_archetypes');
+    const poolsJson = (poolsSrc.match(/select '(\{[\s\S]*\})'::jsonb/) || [])[1];
+    let fit = null, pools = null;
+    try { fit = JSON.parse(fitJson); pools = JSON.parse(poolsJson); } catch (e) { chk('the fit and pool tables parse', false, String(e)); }
+    if (fit && pools) {
+      const offs = ['air_raid', 'spread', 'pro_style', 'power_run', 'option', 'west_coast'], defs = ['four_three', 'three_four', 'press_man', 'zone', 'blitz_heavy', 'bend_dont_break'];
+      chk('every offense a franchise can run has a fit table', offs.every(k => fit.offense[k]));
+      chk('every defense a franchise can run has a fit table', defs.every(k => fit.defense[k]));
+      let bad = [];
+      ['offense', 'defense'].forEach(side => Object.keys(fit[side]).forEach(scheme => Object.keys(fit[side][scheme]).forEach(pos => Object.keys(fit[side][scheme][pos]).forEach(arch => {
+        const v = fit[side][scheme][pos][arch];
+        if (!(pools[pos] || []).some(a => a.name === arch)) bad.push(scheme + '/' + pos + '/' + arch);
+        if (!(v >= -2 && v <= 2)) bad.push(scheme + '/' + pos + '/' + arch + '=' + v);
+      }))));
+      chk('every archetype the fit table names is one the generator deals, inside -2..2', bad.length === 0, bad.join(', '));
+    }
+  })();
+  /* the buy sends a listing id and nothing else — never a price, never a balance */
+  chk('the client buys by listing id alone', /function exchangeBuy\(listingId\) \{ return rpc\('franchise_exchange_buy', withSecret\(\{ p_listing: String\(listingId \|\| ''\) \}\)\)/.test(FJS));
+  chk('and the SQL takes no price on a buy', /function public\.franchise_exchange_buy\(p_listing uuid, p_secret text default null\)/.test(SQL));
+  chk('a listing is one man, one price, inside bounds the SQL states', /function public\.franchise_exchange_list\(p_player uuid, p_price integer, p_secret text default null\)/.test(SQL)
+    && /a price is between % and % Credits/.test(SQL));
+  chk('the buy locks the listing, then both franchises in id order', /from public\.franchise_listings where id = p_listing for update/.test(SQL)
+    && /from public\.franchises where id in \(l\.franchise_id, v_b\) order by id for update/.test(SQL));
+  chk('the fee leaves the economy: the seller is credited the net, keyed by the listing',
+    /franchise_credit\(l\.franchise_id, 'tc', v_net, 'exchange_sale', l\.id::text/.test(SQL) && /franchise_credit\(v_b, 'tc', -l\.price, 'exchange_buy', l\.id::text/.test(SQL));
+  chk('chemistry reaches the simulation through the trait effects, not a new sim', /ch := public\.franchise_chemistry\(p_franchise\);/.test(SQL)
+    && /'offense', \(base->>'offense'\)::numeric \+ \(ch->'offense'->>'effect'\)::numeric/.test(SQL));
+  /* the pages */
+  const EXCHANGE_PAGE = fs.readFileSync(G('exchange/index.html'), 'utf8');
+  chk('the Exchange is a room of the facility', require(G('games.js')).ROOMS.some(r => r.key === 'exchange' && r.href === '/games/exchange/'));
+  has(SITEMAP, '/games/exchange', 'and in the sitemap');
+  has(NOTFOUND, "p[1]==='exchange'", 'and routed from 404');
+  chk('the Exchange page browses, lists, withdraws and buys through the library',
+    /FR\.exchangeBrowse\(/.test(EXCHANGE_PAGE) && /FR\.exchangeBuy\(/.test(EXCHANGE_PAGE) && /FR\.exchangeList\(/.test(EXCHANGE_PAGE) && /FR\.exchangeWithdraw\(/.test(EXCHANGE_PAGE)
+    && /FR\.exchangeComps\(/.test(EXCHANGE_PAGE));
+  chk('the page never sends a price with a buy', !/exchangeBuy\([^)]*price/.test(EXCHANGE_PAGE));
+  chk('the page prints the fee before a listing is made', /exchangeFee\(/.test(EXCHANGE_PAGE));
+  has(EXCHANGE_PAGE, 'Nothing here can be bought', 'and says Credits are earned, not bought');
+  chk('the page loads the profile before the franchise library',
+    EXCHANGE_PAGE.indexOf('/games/lib/gridiron/profile.js') > 0 && EXCHANGE_PAGE.indexOf('/games/lib/gridiron/profile.js') < EXCHANGE_PAGE.indexOf('/games/lib/franchise.js'));
+  ['exchange_view', 'exchange_listed', 'exchange_bought', 'exchange_withdrawn'].forEach(e => chk('the Exchange page fires ' + e, new RegExp("'" + e + "'").test(EXCHANGE_PAGE)));
+  const ROSTER_PAGE = fs.readFileSync(G('roster/index.html'), 'utf8');
+  chk('the roster page prints the chemistry and offers the best lineup', /chemistry/.test(ROSTER_PAGE) && /FR\.lineupBest\(/.test(ROSTER_PAGE) && /chemistryLine|chemistryWord/.test(ROSTER_PAGE));
+  chk('and lets a man be sent to the Exchange from his card', /data-list=/.test(ROSTER_PAGE) && /FR\.exchangeList\(/.test(ROSTER_PAGE));
+  chk('the concurrency test is part of the run', /exchange_concurrency\.test\.js/.test(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')));
+  has(README, 'exchange_v1', 'the README documents the Exchange');
+  has(README, 'chemistry_v1', 'and chemistry');
 
   has(README, 'a formation that lies', 'and what a trick play actually needs');
 
