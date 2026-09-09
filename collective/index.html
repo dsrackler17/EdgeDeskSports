@@ -917,6 +917,23 @@ async function api(path,opts){
      on this page can render a superseded number or a row posted after the
      lock as if it counted. */
   if(d&&d.games&&path.indexOf('/v1/games')===0)collapseGames(d.games);
+  if(d&&d.games&&path.indexOf('/v1/games')===0)stampWeek(d,path);
+  return d;
+}
+/* EVERY GAME ON THE WIRE NAMES ITS WEEK, from here on. /v1/games serves one
+   week per request, so a row that arrived for ?week=2 is a Week 2 game, and
+   a week-less request's rows belong to the week the payload itself names.
+   The deployed edge function did not put a week on each row until the day
+   the resolver was written, and nothing in this page could tell: the scan
+   asked for Week 2, got the Week 2 slate back, found no row that said "2"
+   and left Current on the finished week. Normalised once, at the fetch, so
+   the resolver, the counts, the season sweep and the game keys all read the
+   same number. A row that already says its week is never touched. */
+function stampWeek(d,path){
+  var m=/[?&]week=(\d+)(?:&|$)/.exec(String(path||''));
+  var w=m?Number(m[1]):((d&&d.week!=null&&isFinite(Number(d.week)))?Number(d.week):null);
+  if(w==null||!isFinite(w))return d;
+  (d.games||[]).forEach(function(g){if(g&&(g.week==null||g.week===''))g.week=w;});
   return d;
 }
 var META=null;

@@ -134,6 +134,31 @@
   }
   MCWeek.weekOf = weekOf;
 
+  /* THE WEEK A PAGE OF GAMES BELONGS TO, when the rows do not say.
+
+     /v1/games is asked for one week at a time, so every game on a page
+     fetched with ?week=2 IS a Week 2 game whether or not the row carries a
+     `week` field -- and the deployed edge function did not carry one until
+     the same day this resolver was written. Without this the forward scan
+     asked for Week 2, received the whole Week 2 slate, found no row that
+     said "2", counted the week as empty of football and left Current on the
+     finished week: the bug this file exists to end, surviving in the one
+     place that could not see it. A row that names its own week keeps it;
+     nothing here overrides a provider's number. Copies, never the caller's
+     rows -- the page normalises its own wire in one place (api()). */
+  function withWeek(games, week) {
+    var w = Number(week);
+    if (week == null || !isFinite(w)) return (games || []).slice();
+    return (games || []).map(function (g) {
+      if (!g || (g.week != null && g.week !== '')) return g;
+      var c = {};
+      for (var k in g) if (Object.prototype.hasOwnProperty.call(g, k)) c[k] = g[k];
+      c.week = w;
+      return c;
+    });
+  }
+  MCWeek.withWeek = withWeek;
+
   /* Every week the given games actually carry, ascending. Week 0 is a week. */
   function weekNumbers(games) {
     var seen = {}, out = [];
@@ -242,6 +267,9 @@
     if (anchor == null || !isFinite(anchor)) {
       return { week: null, payload: head, games: headGames, scanned: scanned, from: 'server' };
     }
+    /* The server named the week its rows belong to; rows that do not say so
+       themselves are that week's. */
+    headGames = withWeek(headGames, anchor);
 
     /* The server's answer stands whenever it still has football in it. This
        is the ordinary case and it costs nothing. */
@@ -258,7 +286,10 @@
       if (maxWeek != null && w > maxWeek) break;
       var page = null;
       try { page = await fetchWeek(w); } catch (e) { page = null; }
-      var games = (page && page.games) || [];
+      /* Asked for by number, so this is week w's slate whatever the rows
+         carry; a page that names its own week is trusted over the request. */
+      var games = withWeek((page && page.games) || [],
+        (page && page.week != null && isFinite(Number(page.week))) ? Number(page.week) : w);
       scanned.push(w);
       if (!games.length) {
         if (++empties >= SCAN_EMPTY_STOP) break;

@@ -723,6 +723,45 @@ function dbClient(cfg, fetchImpl) {
       const t = await body(res, `PATCH ${rel}?${query}`);
       return t ? JSON.parse(t) : [];
     },
+    /* New rows. The representation comes back so a caller has the ids the
+       database minted -- a game cannot be reported, let alone linked to,
+       without its own id. */
+    async insert(rel, rows) {
+      const res = await f(`${cfg.url}/rest/v1/${rel}`, {
+        method: 'POST',
+        headers: H({ 'content-profile': 'collective', 'content-type': 'application/json',
+          prefer: 'return=representation' }),
+        body: JSON.stringify(rows),
+      });
+      const t = await body(res, `POST ${rel}`);
+      return t ? JSON.parse(t) : [];
+    },
+    /* Insert-or-update on one conflict column: the shape a settlement takes
+       when scores live in their own table keyed by game. Running it twice
+       writes the same row twice, which is the point. */
+    async upsert(rel, rows, onConflict) {
+      const q = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : '';
+      const res = await f(`${cfg.url}/rest/v1/${rel}${q}`, {
+        method: 'POST',
+        headers: H({ 'content-profile': 'collective', 'content-type': 'application/json',
+          prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(rows),
+      });
+      const t = await body(res, `POST ${rel}${q} (upsert)`);
+      return t ? JSON.parse(t) : [];
+    },
+    /* A routine in the collective schema, called the way PostgREST exposes
+       it. Best-effort callers catch; the routine's own answer comes back. */
+    async rpc(fn, args) {
+      const res = await f(`${cfg.url}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: H({ 'content-profile': 'collective', 'accept-profile': 'collective',
+          'content-type': 'application/json' }),
+        body: JSON.stringify(args || {}),
+      });
+      const t = await body(res, `RPC ${fn}`);
+      return t ? JSON.parse(t) : null;
+    },
   };
 }
 
@@ -836,18 +875,62 @@ async function settleDirect(db, schema, game, final, close) {
     closing_home_ml_prob: close ? num(close.closing_home_ml_prob) : null,
     status: 'final',
   };
-  const patch = {};
-  DIRECT_GAME_COLS.forEach(c => { if (gcols.indexOf(c) >= 0) patch[c] = want[c]; else gaps.push('games.' + c); });
-  if (!('home_score' in patch) || !('away_score' in patch)) {
-    throw new Error(`collective.games carries no home_score/away_score column (saw: ${gcols.join(', ') || 'nothing'})`);
+  /* WHERE THE SCORE LIVES. On the games row when it carries score columns;
+     otherwise in game_results, one row per game keyed by game_id, which is
+     the shape the deployed database actually has: collective.games is
+     (id, sport_code, season, week, kickoff_at, home_team_id, away_team_id,
+     status, external_ref, created_at) and game_detail joins the score in
+     from game_results. This path used to know only the first shape, so on
+     the real database it threw "carries no home_score/away_score column"
+     for every finished game, every hour, and Week 1 of the 2026 college
+     season stood unsettled in the database with 58 agreed finals in hand:
+     status never became final, the server's settled count stayed at 0, and
+     the whole record lived in the committed JSON file alone. */
+  const rcols = schema.game_results || [];
+  const onGames = gcols.indexOf('home_score') >= 0 && gcols.indexOf('away_score') >= 0;
+  const onResults = !onGames && rcols.indexOf('home_score') >= 0 && rcols.indexOf('away_score') >= 0;
+  if (!onGames && !onResults) {
+    throw new Error(`collective.games carries no home_score/away_score column (saw: ${gcols.join(', ') || 'nothing'})` +
+      ` and collective.game_results carries none either (saw: ${rcols.join(', ') || 'nothing'})`);
   }
   /* a close the row already holds is never blanked by a run that found none */
   const had = game.result || {};
-  ['closing_spread', 'closing_total', 'closing_home_ml_prob'].forEach(c => {
-    if (c in patch && patch[c] === null && had[c] !== null && had[c] !== undefined) delete patch[c];
-  });
-  const rows = await db.patch('games', `id=eq.${enc(game.game_id)}`, patch);
-  if (!rows.length) throw new Error(`no collective.games row has id ${game.game_id}`);
+  const keepHeldClose = p => {
+    ['closing_spread', 'closing_total', 'closing_home_ml_prob'].forEach(c => {
+      if (c in p && p[c] === null && had[c] !== null && had[c] !== undefined) delete p[c];
+    });
+  };
+  let patch = {};
+  if (onGames) {
+    DIRECT_GAME_COLS.forEach(c => { if (gcols.indexOf(c) >= 0) patch[c] = want[c]; else gaps.push('games.' + c); });
+    keepHeldClose(patch);
+    const rows = await db.patch('games', `id=eq.${enc(game.game_id)}`, patch);
+    if (!rows.length) throw new Error(`no collective.games row has id ${game.game_id}`);
+  } else {
+    /* The result row, inserted or updated on game_id. Only the columns sent
+       are written, so a close left out here (because the row already holds
+       one and this run found none) stays exactly as it was. */
+    const row = { game_id: game.game_id };
+    ['home_score', 'away_score', 'closing_spread', 'closing_total', 'closing_home_ml_prob'].forEach(c => {
+      if (rcols.indexOf(c) >= 0) row[c] = want[c]; else gaps.push('game_results.' + c);
+    });
+    keepHeldClose(row);
+    const rows = await db.upsert('game_results', [row], 'game_id');
+    if (!rows.length) throw new Error(`collective.game_results took no row for ${game.game_id}`);
+    patch = Object.assign({}, row);
+    delete patch.game_id;
+    /* The games row still carries the status the board, the settle sweep
+       and the current-week rule all read. A game with a score and no
+       "final" would be settled and still counted as football left to play
+       for the length of the in-play window. */
+    if (gcols.indexOf('status') >= 0) {
+      const g = await db.patch('games', `id=eq.${enc(game.game_id)}`, { status: 'final' });
+      if (!g.length) throw new Error(`no collective.games row has id ${game.game_id}`);
+      patch.status = 'final';
+    } else {
+      gaps.push('games.status');
+    }
+  }
 
   const readCols = DIRECT_PROJ_READ.filter(c => pcols.indexOf(c) >= 0);
   const gradeCols = DIRECT_GRADE_COLS.filter(c => pcols.indexOf(c) >= 0);
