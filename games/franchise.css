@@ -858,6 +858,8 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .gd-scout:not([open]) summary::after{transform:rotate(-90deg)}
 .gd-scout-b{padding:0 12px 12px}
 .gd-scout-l{font-size:13px;color:var(--text);margin-bottom:6px}
-.gd-scout-e,.gd-scout-w{margin-top:4px}
-.gd-edges .dot.pos{background:var(--val)}.gd-edges .dot.neg{background:var(--neg)}
-.gd-edges .r.pos{color:var(--val)}.gd-edges .r.neg{color:var(--neg)}
+.gd-scout-e{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.gd-scout-e li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;color:var(--text)}
+.gd-scout-e .v{flex:0 0 40px;text-align:center;font:800 12px/1 'JetBrains Mono',monospace;padding:6px 0;border-radius:999px;border:1px solid var(--line2)}
+.gd-scout-e .v.pos{color:var(--val);border-color:rgba(63,184,131,.45)}
+.gd-scout-e .v.neg{color:var(--neg);border-color:rgba(226,102,75,.45)}

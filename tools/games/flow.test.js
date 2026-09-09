@@ -322,5 +322,31 @@ function liveGame(seed, length, onPlay) {
   eq('and it is deterministic', r2.out.yards + ':' + r2.out.endX, r.out.yards + ':' + r.out.endX);
 })();
 
+/* ── 9. a thousand plays reset clean ────────────────────────────────────── */
+(function resets() {
+  /* every snap builds a fresh simulation and drops the last one; a thousand
+     of them must come and go without a stuck state, a leaked timer or a
+     creeping heap — the stress a long session on a phone puts on it */
+  MEM = {};
+  const g = S.build({ seed: 'thousand', settings: { length: 'standard', difficulty: 'pro' } });
+  const call = { type: 'play', play: 'power', formation: 'i_form', def: 'base_3' };
+  if (global.gc) global.gc();
+  const before = process.memoryUsage().heapUsed, t0 = Date.now();
+  let ok = 0, stuck = 0, sims = 0;
+  for (let i = 0; i < 1000; i++) {
+    const c = i % 3 === 0 ? { type: 'play', play: 'stack', formation: 'gun', def: 'cover3' } : call;
+    const r = liveSnap(g, c, 9000 + i, i % 2 ? (t, sim) => ({ mx: Math.sin(t * 6), my: 1, sprint: t > 1, throwTo: t > 1.6 ? 1 : undefined }) : null);
+    sims++;
+    if (r.out && typeof r.out.yards === 'number' && r.out.endY >= -10 && r.out.endY <= 110) ok++; else stuck++;
+  }
+  if (global.gc) global.gc();
+  const after = process.memoryUsage().heapUsed, ms = Date.now() - t0;
+  eq('a thousand fresh plays all settle', ok, 1000);
+  chk('none is stuck', stuck === 0, stuck + ' stuck');
+  chk('and they settle quickly enough for a phone (under 90 s for a thousand in Node)', ms < 90000, ms + ' ms');
+  chk('and the heap does not creep more than 120 MB across them', (after - before) < 120 * 1024 * 1024, Math.round((after - before) / 1048576) + ' MB');
+  chk('the game itself was never advanced by a live snap that was not booked', g.plays.length === 0 && g.quarter === 1);
+})();
+
 console.log('\nFLOW — the game keeps its shape\n  ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { console.log('\nFAILURES'); fails.forEach(f => console.log(f)); process.exit(1); }

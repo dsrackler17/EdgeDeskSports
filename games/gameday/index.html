@@ -604,8 +604,8 @@
       if(!rep){box.innerHTML='';return;}
       if(m)m.textContent=(rep.edges.length?rep.edges.length+' edge'+(rep.edges.length===1?'':'s'):'no clear edge')+(rep.worries.length?' · '+rep.worries.length+' worr'+(rep.worries.length===1?'y':'ies'):'');
       box.innerHTML='<div class="gd-scout-l">'+esc(rep.opponent.line)+'</div>'
-        +(rep.edges.length?'<ul class="gd-edges gd-scout-e">'+rep.edges.map(function(e){return '<li><span class="dot pos"></span><span class="t">'+esc(e.text)+'</span><span class="r pos">+'+esc(e.value)+'</span></li>';}).join('')+'</ul>':'<div class="ftp">No starter of yours has a clear edge against these schemes; the game is on the calls.</div>')
-        +(rep.worries.length?'<ul class="gd-edges gd-scout-w">'+rep.worries.map(function(e){return '<li><span class="dot neg"></span><span class="t">'+esc(e.text)+'</span><span class="r neg">'+esc(e.value)+'</span></li>';}).join('')+'</ul>':'')
+        +(rep.edges.length?'<ul class="gd-scout-e">'+rep.edges.map(function(e){return '<li><b class="v pos">+'+esc(e.value)+'</b><span class="t">'+esc(e.text)+'</span></li>';}).join('')+'</ul>':'<div class="ftp">No starter of yours has a clear edge against these schemes; the game is on the calls.</div>')
+        +(rep.worries.length?'<ul class="gd-scout-e">'+rep.worries.map(function(e){return '<li><b class="v neg">'+esc(e.value)+'</b><span class="t">'+esc(e.text)+'</span></li>';}).join('')+'</ul>':'')
         +'<div class="ftp" style="margin-top:8px">Read off your starters’ archetypes against their schemes, the way the <a href="/games/roster/">roster</a> reads them. The lineup is yours to change until kickoff.</div>';
     }).catch(function(){if(m)m.textContent='';});
   }
