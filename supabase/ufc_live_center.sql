@@ -52,11 +52,16 @@ grant usage on schema ufc to anon, authenticated, service_role;
 
 -- The dataset pipeline's own ledger already lives here in production
 -- (key/value). Creating it here is a no-op there and gives a fresh database
--- the same row shape the shell's pipeline ledger reads.
+-- the same row shape the shell's pipeline ledger reads. In production the
+-- table predates this file and was owned without a grant to service_role
+-- (the first sync logged "permission denied for table meta"), so the grant
+-- is made here, explicitly, and the report checks it.
 create table if not exists ufc.meta (
   key   text primary key,
   value text
 );
+grant select, insert, update on ufc.meta to service_role;
+grant select on ufc.meta to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- updated_at, kept by the database rather than by every writer remembering to
@@ -324,8 +329,15 @@ create table if not exists ufc.fighter_aliases (
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   constraint ufc_aliases_confidence_shape check
-    (confidence in ('exact','provider_id','name_order','surname','curated','manual'))
+    (confidence in ('exact','provider_id','name_order','first_last','surname','curated','manual'))
 );
+-- Widened after the first production sync: a first-and-last-name resolution
+-- ("Jose Miguel Delgado" -> Jose Delgado, unique on file) is its own kind.
+-- Dropping and re-adding a CHECK is additive here: it admits one more value
+-- and refuses nothing it admitted before.
+alter table ufc.fighter_aliases drop constraint if exists ufc_aliases_confidence_shape;
+alter table ufc.fighter_aliases add constraint ufc_aliases_confidence_shape check
+  (confidence in ('exact','provider_id','name_order','first_last','surname','curated','manual'));
 create index if not exists ufc_aliases_fighter_idx on ufc.fighter_aliases (fighter_id);
 drop trigger if exists ufc_fighter_aliases_touch on ufc.fighter_aliases;
 create trigger ufc_fighter_aliases_touch before update on ufc.fighter_aliases
@@ -703,6 +715,9 @@ union all select 12, 'snapshot and capture dedup constraints installed',
                    where conname in ('ufc_snapshots_dedup','ufc_market_captures_dedup','ufc_market_rejections_key',
                                      'ufc_bout_markets_fixture_key','ufc_bouts_provider_key','ufc_events_provider_key')) = 6
             then 'ok' else 'CHECK THIS' end
-union all select 13, 'ufc schema is exposed to the API (project setting, not checkable here)',
+union all select 13, 'service_role may write the ufc.meta ledger',
+       case when has_table_privilege('service_role', 'ufc.meta', 'INSERT')
+             and has_table_privilege('service_role', 'ufc.meta', 'UPDATE') then 'ok' else 'CHECK THIS' end
+union all select 14, 'ufc schema is exposed to the API (project setting, not checkable here)',
        'ok (confirm Supabase > API > Exposed schemas lists ufc — the fighter table already reads through it)'
 order by row;

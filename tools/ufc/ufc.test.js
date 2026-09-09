@@ -63,6 +63,16 @@ eq('an unknown name resolves to nothing, not to a neighbour', R.resolveFighter('
 eq('a provider id alias wins over the name', R.resolveFighter('Somebody Else', '99', IX, { 'espn:99': 'jon-jones' }).method, 'provider_id');
 eq('a stored name alias resolves', R.resolveFighter('Bones Jones', null, IX, { 'name:bones jones': 'jon-jones' }).fighter_id, 'jon-jones');
 chk('a name that does not reach a match keeps the ambiguity visible', R.resolveFighter('Smith', null, IX, {}).fighter_id === null);
+const IX2 = R.buildFighterIndex(FIGHTERS.concat([{ fighter_id: 'jose-delgado', full_name: 'Jose Delgado' }, { fighter_id: 'carlos-delgado', full_name: 'Carlos Delgado' }, { fighter_id: 'ana-maria-costa', full_name: 'Ana Maria Costa' }, { fighter_id: 'ana-lima-costa', full_name: 'Ana Lima Costa' }]));
+eq('a feed name with a middle name resolves to the unique first+last on file (Jose Miguel Delgado)', R.resolveFighter('Jose Miguel Delgado', null, IX2, {}).fighter_id, 'jose-delgado');
+eq('and the method says so', R.resolveFighter('Jose Miguel Delgado', null, IX2, {}).method, 'first_last');
+chk('a first+last pair shared by two people on file is refused', R.resolveFighter('Ana Costa', null, IX2, {}).method === 'ambiguous');
+chk('a shared surname is still not enough (Chris Smith is not Colby Smith)', R.resolveFighter('C. Smith', null, IX2, {}).fighter_id === null);
+eq('the provider\'s TBA placeholder is a placeholder, not a miss', R.resolveFighter('Opponent TBA', '4402367', IX2, {}).method, 'placeholder');
+chk('sameName tolerates a middle name and nothing else', R.sameName('Jose Delgado', 'Jose Miguel Delgado') && R.sameName('Jon Jones Jr.', 'Jon Jones') && !R.sameName('Chris Smith', 'Colby Smith') && !R.sameName('Jose Delgado', 'Carlos Delgado'));
+const nMid = R.normalizeFixture(R.groupFixtures([{ sig_key: 'm1', event_id: 'oddsM', market: 'h2h', selection: 'Jean Silva', home_team: 'Jean Silva', away_team: 'Jose Delgado', best_dec: 1.5 }, { sig_key: 'm2', event_id: 'oddsM', market: 'h2h', selection: 'Jose Delgado', home_team: 'Jean Silva', away_team: 'Jose Delgado', best_dec: 2.6 }])[0]);
+const lMid = R.linkFixture(nMid, [{ bout_id: 'main', event_id: 'e', red_name: 'Jean Silva', blue_name: 'Jose Miguel Delgado' }], null);
+chk('a fixture links to a bout whose provider name carries a middle name', lMid.ok && lMid.link.red_sig_key === 'm1' && lMid.link.blue_sig_key === 'm2', JSON.stringify(lMid));
 
 /* ======================================================================== */
 /* 2. THE DRAW RULE                                                         */
@@ -251,6 +261,34 @@ const rs = E.roundSplits(M.statsDoc({ sigL: 30 }, { 1: { sigL: 10 }, 2: { sigL: 
 chk('provider round splits are read when present', rs[1] && rs[1].sig_strikes_landed === 10 && rs[2].sig_strikes_landed === 20);
 
 /* ======================================================================== */
+/* 8b. DISCOVERY — the request shapes, and what a 403 does to them          */
+/* ======================================================================== */
+(async () => {
+  const doc = M.card({ bouts: [{ id: '9', order: 1, red: { id: 'a', name: 'Marco Testerson' }, blue: { id: 'b', name: 'Ivan Sparring' } }] });
+  const far = M.card({ eventId: '600099002', date: '2026-12-13T22:00Z', bouts: [{ id: '8', order: 1, red: { id: 'c', name: 'Some Body' }, blue: { id: 'd', name: 'Any One' } }] });
+  const seen = [];
+  const f403range = async (url, opts) => {
+    seen.push({ url, headers: opts.headers || {} });
+    if (/dates=\d{8}-\d{8}/.test(url)) return { ok: false, status: 403, text: async () => 'forbidden' };
+    return { ok: true, status: 200, text: async () => JSON.stringify({ events: doc.events.concat(far.events) }) };
+  };
+  const src = E.source({ fetchImpl: f403range });
+  const r = await src.scoreboard(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z'));
+  chk('a 403 on the range falls through to the year request', r.via === 'year:2026' && r.tried.length === 2 && r.tried[0].status === 403, JSON.stringify(r.tried));
+  chk('the answer is filtered to the window and says how many it saw', r.events.length === 1 && r.totalSeen === 2 && r.events[0].provider_event_id === '600099001');
+  chk('no custom User-Agent is sent — the plain request the football jobs make', seen.every(x => !Object.keys(x.headers).some(h => h.toLowerCase() === 'user-agent')) && seen.every(x => x.headers.accept === 'application/json'));
+  chk('the request shapes are range, year, plain, in that order', E.discoveryAttempts(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z')).map(a => a.via).join(',') === 'range,year:2026,plain');
+  chk('a window crossing a year boundary asks for both years', E.discoveryAttempts(Date.parse('2026-12-20T00:00:00Z'), Date.parse('2027-01-20T00:00:00Z')).map(a => a.via).join(',') === 'range,year:2026,year:2027,plain');
+  const probe = await src.probe(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z'));
+  chk('the probe reports every shape with its status', probe.length === 3 && probe[0].status === 403 && probe[1].status === 200 && probe[1].inWindow === 1 && probe[2].status === 200);
+  let allFail = null;
+  try { await E.source({ fetchImpl: async () => ({ ok: false, status: 403, text: async () => 'no' }) }).scoreboard(Date.parse('2026-09-06T00:00:00Z'), Date.parse('2026-10-09T00:00:00Z')); }
+  catch (e) { allFail = e; }
+  chk('every shape failing is one error that lists each status', allFail && /range -> 403; year:2026 -> 403; plain -> 403/.test(allFail.message), allFail && allFail.message);
+  chk('an undated card is never silently dropped by the window filter', E.inWindow({ scheduled_at: null }, 0, 1));
+})().catch(e => { chk('discovery tests ran', false, String(e && e.stack || e)); });
+
+/* ======================================================================== */
 /* 9. THE SYNC — twice, reordered, with a cancelled bout                    */
 /* ======================================================================== */
 function bouts(o) { o = o || {}; return [
@@ -269,6 +307,21 @@ async function syncWith(db, doc, now, extra) {
   eq('the sync stores the event and its bouts', [db.count('ufc', 'events'), db.count('ufc', 'bouts')], [1, 3]);
   chk('bouts resolved to both fighters where the dataset has them', s1.resolved === 2 && db.rows('ufc', 'bouts').filter(b => b.bout_id === 'espn:401900101')[0].red_fighter_id === 'marco-testerson');
   chk('unresolved names are reported, not guessed', s1.unmatched.length === 2 && db.rows('ufc', 'bouts').filter(b => b.bout_id === 'espn:401900103')[0].red_fighter_id === null);
+  /* a database whose migration predates the first_last confidence value */
+  const dbOld = seedDb();
+  const origUpsert = dbOld.upsert.bind(dbOld);
+  dbOld.upsert = async (schema, rel, rows, onConflict, o) => {
+    if (rel === 'fighter_aliases' && rows.some(r => !S.ORIGINAL_CONFIDENCE.includes(r.confidence))) { const e = new Error('UPSERT ufc.fighter_aliases -> 400: {"code":"23514","message":"new row for relation \\"fighter_aliases\\" violates check constraint"}'); e.status = 400; throw e; }
+    return origUpsert(schema, rel, rows, onConflict, o);
+  };
+  dbOld.tables['ufc.fighters'].push({ fighter_id: 'jose-delgado', full_name: 'Jose Delgado' });
+  const sOld = await syncWith(dbOld, M.card({ bouts: [{ id: '401900110', order: 1, red: { id: '5000001', name: 'Marco Testerson' }, blue: { id: '5223435', name: 'Jose Miguel Delgado' } }] }), '2026-09-13T10:00:00Z', { market: false });
+  chk('an alias the older constraint refuses does not end the sync: the bout is still resolved and written', sOld.resolved === 1 && dbOld.rows('ufc', 'bouts')[0].blue_fighter_id === 'jose-delgado', JSON.stringify(sOld.errors));
+  chk('and the run says the migration needs re-running', sOld.errors.some(e => /schema lag/.test(e) && /first_last/.test(e)));
+  chk('rows the older constraint accepts are still written', dbOld.rows('ufc', 'fighter_aliases').every(a => S.ORIGINAL_CONFIDENCE.includes(a.confidence)));
+  const dbT = seedDb();
+  const sT = await syncWith(dbT, M.card({ bouts: [{ id: '401900109', order: 1, red: { id: '5000001', name: 'Marco Testerson' }, blue: { id: '4402367', name: 'Opponent TBA' } }] }), '2026-09-13T10:00:00Z', { market: false });
+  chk('a TBA opponent is stored as the provider names it and is not listed as unresolved', sT.unmatched.length === 0 && dbT.rows('ufc', 'bouts')[0].blue_name === 'Opponent TBA' && dbT.rows('ufc', 'bouts')[0].blue_fighter_id === null);
   chk('a surname resolution earns a provider-id alias', db.rows('ufc', 'fighter_aliases').some(a => a.alias_key === 'espn:5000004' && a.fighter_id === 'alexander-placeholder'));
   const s2 = await syncWith(db, M.card({ bouts: bouts() }), '2026-09-13T16:00:00Z');
   eq('the same card twice is the same rows', [db.count('ufc', 'events'), db.count('ufc', 'bouts'), db.count('ufc', 'bout_markets')], [1, 3, 0]);

@@ -138,6 +138,7 @@ function resolveBouts(bouts, index, aliases) {
       const corner = p[0], name = p[1], pid = p[2];
       const r = R.resolveFighter(name, pid, index, aliases);
       b[corner + '_fighter_id'] = r.fighter_id || null;
+      if (r.method === 'placeholder') return;   /* "TBA": not a fighter, not a miss */
       if (!r.fighter_id) {
         const k = (pid || '') + '|' + R.normName(name);
         if (!seen.has(k)) { seen.add(k); unmatched.push({ name, provider_id: pid, reason: r.method === 'ambiguous' ? 'ambiguous' : 'no_match', candidates: r.candidates }); }
@@ -145,12 +146,12 @@ function resolveBouts(bouts, index, aliases) {
       }
       if (pid && r.method !== 'provider_id') {
         aliasRows.push({ alias_key: 'espn:' + String(pid), fighter_id: r.fighter_id, display_name: name, source: 'sync',
-          confidence: r.method === 'exact' ? 'exact' : (r.method === 'name_order' ? 'name_order' : (r.method === 'surname' ? 'surname' : 'exact')) });
+          confidence: ['exact', 'name_order', 'surname', 'first_last'].indexOf(r.method) >= 0 ? r.method : 'exact' });
       }
       const nk = R.normName(name);
       if (nk && r.method !== 'exact' && r.method !== 'alias')
         aliasRows.push({ alias_key: 'name:' + nk, fighter_id: r.fighter_id, display_name: name, source: 'sync',
-          confidence: r.method === 'provider_id' ? 'provider_id' : (r.method === 'name_order' ? 'name_order' : 'surname') });
+          confidence: ['provider_id', 'name_order', 'surname', 'first_last'].indexOf(r.method) >= 0 ? r.method : 'surname' });
     });
   });
   const dedup = {};
@@ -217,6 +218,30 @@ function captureRows(links, signalRows, ticks, boutsById, eventsById) {
   return out;
 }
 
+/* Alias rows are a cache of a resolution the resolver repeats every run, so
+   a refused alias write must never end the sync. The migration's original
+   check constraint knew fewer confidence values than the resolver now
+   produces; a database that has not had the file re-run refuses those rows
+   with 23514, and the sync keeps the rows it accepts and says so. */
+const ORIGINAL_CONFIDENCE = ['exact', 'provider_id', 'name_order', 'surname', 'curated', 'manual'];
+async function writeAliases(db, rows, summary) {
+  try { await db.upsert('ufc', 'fighter_aliases', rows, 'alias_key', { returning: false }); return rows.length; }
+  catch (e) {
+    const msg = String(e && e.message || e);
+    if (/23514|check constraint/.test(msg)) {
+      const keep = rows.filter(r => ORIGINAL_CONFIDENCE.includes(r.confidence));
+      summary.errors.push('schema lag: ufc.fighter_aliases refuses the confidence value(s) ' + Array.from(new Set(rows.filter(r => !ORIGINAL_CONFIDENCE.includes(r.confidence)).map(r => r.confidence))).join(', ') + ' — re-run supabase/ufc_live_center.sql');
+      log('  alias write refused by an older check constraint; ' + (rows.length - keep.length) + ' row(s) skipped until the migration is re-run');
+      if (!keep.length) return 0;
+      try { await db.upsert('ufc', 'fighter_aliases', keep, 'alias_key', { returning: false }); return keep.length; }
+      catch (e2) { summary.errors.push('aliases: ' + String(e2 && e2.message || e2).slice(0, 200)); return 0; }
+    }
+    summary.errors.push('aliases: ' + msg.slice(0, 200));
+    log('  alias write failed (non-fatal): ' + msg.slice(0, 200));
+    return 0;
+  }
+}
+
 /* Events long past their start that never closed. */
 const STALE_AFTER_MS = 14 * 3600 * 1000;
 function staleEvents(events, nowMs, liveIds) {
@@ -247,8 +272,16 @@ async function run(o, deps) {
   let parsed;
   if (o.fixture) parsed = E.parseScoreboard(JSON.parse(fs.readFileSync(o.fixture, 'utf8')));
   else {
-    const r = await src.scoreboard(nowMs - o.fromDays * 86400000, nowMs + o.toDays * 86400000);
-    parsed = r.events; summary.source_latency_ms = r.latency;
+    const fromMs = nowMs - o.fromDays * 86400000, toMs = nowMs + o.toDays * 86400000;
+    if (o.verify && typeof src.probe === 'function') {
+      /* every request shape, each reported: a 403 names the shape that drew it */
+      const probe = await src.probe(fromMs, toMs);
+      probe.forEach(p => log(`  probe ${p.via.padEnd(10)} ${p.status == null ? 'ERR ' : p.status} ${p.status === 200 ? p.events + ' events, ' + p.inWindow + ' in window, ' + p.latency + 'ms' : (p.error || '')}  ${p.url}`));
+      summary.probe = probe;
+    }
+    const r = await src.scoreboard(fromMs, toMs);
+    parsed = r.events; summary.source_latency_ms = r.latency; summary.source_via = r.via || null; summary.source_tried = r.tried || null;
+    if (r.via) log(`source answered via ${r.via}` + (r.totalSeen != null ? ` (${r.totalSeen} events seen, ${parsed.length} in window)` : ''));
   }
   if (o.event) parsed = parsed.filter(e => String(e.provider_event_id) === String(o.event));
   summary.events = parsed.length;
@@ -287,7 +320,7 @@ async function run(o, deps) {
       await db.upsert('ufc', 'events', [rows.event], 'event_id', { returning: false });
       if (rec.upserts.length) await db.upsert('ufc', 'bouts', rec.upserts, 'bout_id', { returning: false });
       if (rec.cancelled.length) await db.upsert('ufc', 'bouts', rec.cancelled, 'bout_id', { returning: false });
-      if (res.aliasRows.length) { await db.upsert('ufc', 'fighter_aliases', res.aliasRows, 'alias_key', { returning: false }); summary.aliases += res.aliasRows.length; res.aliasRows.forEach(a => { aliases[a.alias_key] = a.fighter_id; }); }
+      if (res.aliasRows.length) { const w = await writeAliases(db, res.aliasRows, summary); summary.aliases += w; res.aliasRows.forEach(a => { aliases[a.alias_key] = a.fighter_id; }); }
     } else {
       summary.aliases += res.aliasRows.length;
       rec.cancelled.forEach(c => log(`  would cancel ${c.bout_id} (${c.status_detail})`));
@@ -390,5 +423,5 @@ async function main() {
   process.exit(code);
 }
 
-module.exports = { parseArgs, eventRows, reconcileBouts, resolveBouts, linkMarkets, captureRows, staleEvents, nextEvent, run, eventId, boutId, SPORT_KEY, STALE_AFTER_MS };
+module.exports = { parseArgs, eventRows, reconcileBouts, resolveBouts, linkMarkets, captureRows, staleEvents, nextEvent, run, eventId, boutId, SPORT_KEY, STALE_AFTER_MS, writeAliases, ORIGINAL_CONFIDENCE };
 if (require.main === module) main();

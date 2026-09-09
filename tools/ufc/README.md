@@ -23,7 +23,7 @@ key and reads through RLS.
 ## Running by hand
 
 ```bash
-node tools/ufc/sync_events.js --verify              # prove the source answers, no credential needed
+node tools/ufc/sync_events.js --verify              # prove the source answers, no credential needed; prints every request shape's status
 node tools/ufc/sync_events.js                       # dry run: says what it would write
 node tools/ufc/sync_events.js --commit              # write
 node tools/ufc/build_baselines.js --upcoming --commit
