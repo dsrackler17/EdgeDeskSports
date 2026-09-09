@@ -139,7 +139,13 @@
 .pc-actions{margin-top:10px;display:grid;gap:6px}
 .pc-actions .btn{min-height:40px;font-size:13px;padding:0 12px}
 .pc-compact .pc-attrs{margin-top:10px}
-.pc-compact .pc-acq,.pc-compact .pc-career,.pc-compact .pc-badges{display:none}
+.pc-compact .pc-acq,.pc-compact .pc-career,.pc-compact .pc-badges,.pc-compact .pc-fit{display:none}
+/* the scheme's word on him, and Saturday's */
+.pc-fit{display:grid;gap:3px;margin-top:8px;font-size:12px;line-height:1.35;color:var(--dim)}
+.pc-fit span{display:flex;gap:8px;align-items:baseline}
+.pc-fit i{flex:0 0 58px;font:700 9.5px/1.4 'Inter',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-style:normal}
+.pc-fit .up{color:var(--val)}
+.pc-fit .dn{color:var(--neg)}
 .pc-hands{color:var(--val)}
 .pc-hands .k{color:var(--val-dim,#2f8a63)}
 /* MILESTONE BADGES: marks a career keeps, never a change to what he was rolled at */
@@ -776,6 +782,37 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 
 /* ── the lineup, chemistry and the Exchange (Phase 19) ─────────────────── */
 .lu-tabs .lu-best{margin-left:auto;min-height:36px;font-size:12.5px;padding:0 12px}
+/* what the scheme thinks of the eleven, and who is coming on Saturday */
+.lu-fit{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;padding:9px 12px;font-size:12px;line-height:1.4;color:var(--dim);border-top:1px solid var(--line)}
+.lu-fit b{color:var(--text)}
+.lu-fit .sep{color:var(--faint)}
+.lu-fit .lu-tap{margin-left:auto;font-size:11px;color:var(--faint);letter-spacing:.04em}
+.lu-field{cursor:pointer}
+/* THE SLOT SHEET: who holds it, how he fits, who is behind him */
+.slt{position:fixed;inset:0;z-index:70;background:rgba(4,5,7,.78);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .22s}
+.slt.on{opacity:1}
+.slt-in{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:14px 16px 20px;
+  transform:translateY(16px);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.slt.on .slt-in{transform:none}
+@media(min-width:560px){.slt{align-items:center;padding:20px}.slt-in{border-radius:18px}}
+.slt-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.slt-h>div{min-width:0}
+.slt-h .eyebrow{margin:0}
+.slt-t{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;line-height:1.1;margin-top:4px}
+.slt-x{width:auto;flex:0 0 auto;min-width:44px;min-height:44px;padding:0 14px}
+.slt-fits{display:grid;gap:4px;margin-top:8px;font-size:12.5px;color:var(--dim)}
+.slt-fit{display:flex;gap:8px;align-items:baseline}
+.slt-fit i{flex:0 0 62px;font:700 9.5px/1.4 'Inter',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-style:normal}
+.slt-fit.up{color:var(--val)}.slt-fit.dn{color:var(--neg)}
+.slt-list{list-style:none;margin:8px 0 0;padding:0;border-top:1px solid var(--line)}
+.slt-list li{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.slt-list .p{font:800 10.5px/1 'Inter',sans-serif;letter-spacing:.1em;color:var(--dim)}
+.slt-list .o b{display:block;font-family:'Space Grotesk',sans-serif;font-size:14px;line-height:1.2}
+.slt-list .o small{display:block;font-size:11.5px;color:var(--dim);margin-top:2px}
+.slt-list .o em{font-style:normal}
+.slt-list .o em.up{color:var(--val)}.slt-list .o em.dn{color:var(--neg)}
+.slt-list .r .btn{min-height:36px;font-size:12.5px;padding:0 12px;white-space:nowrap}
+.slt-list .r small{font-size:11px;color:var(--faint)}
 .chem{margin-top:6px}
 .ch-grid{display:grid;gap:8px}
 @media(min-width:560px){.ch-grid{grid-template-columns:1fr 1fr}}

@@ -154,7 +154,7 @@
       if(p.listing)actions+='<span class="pc-line pc-listed">Listed on the <a href="/games/exchange/">Exchange</a> at <b>'+esc(FR.fmt(p.listing.price))+'</b> Credits · '
         +'<button class="lnk" type="button" data-withdraw="'+esc(p.listing.id)+'">take it down</button></span>';
       else if(spare&&room&&!room.floor)actions+='<button class="btn btn-ghost" type="button" data-list="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'" data-pos="'+esc(p.position)+'" data-ovr="'+esc(p.overall)+'">Sell on the Exchange</button>';
-      return FR.playerCard(p,{actions:actions});
+      return FR.playerCard(p,{actions:actions,fit:fitFor(p)});
     }).join('');
     return '<details class="pos'+cls+'"'+(open?' open':'')+' data-pos="'+esc(g.position)+'">'
       +'<summary><span class="p">'+esc(g.position)+'</span><span class="n">'+esc(g.name)+' · '+g.players.length+' · '+g.starters+' start'+(g.starters===1?'s':'')+'</span>'
@@ -219,7 +219,8 @@
       +'<button type="button" class="lu-t on" data-lu="offense">Offense</button>'
       +'<button type="button" class="lu-t" data-lu="defense">Defense</button>'
       +'<button type="button" class="btn lu-best" id="bestLineup" title="Every position in order of overall among the fit">Best lineup</button></div>'
-      +'<canvas id="luField" class="lu-field" aria-label="Your starting eleven, in the positions they line up in"></canvas></div>'
+      +'<canvas id="luField" class="lu-field" aria-label="Your starting eleven, in the positions they line up in; tap a man for his slot"></canvas>'
+      +'<div class="lu-fit" id="luFit"></div></div>'
       +'<div class="ftp" style="margin-top:12px">Overall is the mean of a player’s four ratings. Team ratings weight the starters by position; '
       +'the depth chart decides who starts, and only a fit player is counted. Every number here was generated on the server and cannot be edited.</div>';
 
@@ -247,7 +248,22 @@
      The same artist, the same camera and the same uniforms as the game
      itself, so the roster page shows the men who actually take the snap
      standing where they actually stand. */
-  var LU_SIDE='offense';
+  var LU_SIDE='offense',LU_BOXES=[];
+  /* SATURDAY'S OPPONENT, from the franchise's own snapshot: their schemes are
+     what a matchup is read against */
+  function saturday(){
+    var snap=null;try{snap=FR.snapshot();}catch(_){}
+    var ng=snap&&snap.next_game;
+    return ng&&ng.opponent?ng.opponent:null;
+  }
+  function fitFor(p){
+    var f=DATA&&DATA.franchise,opp=saturday();
+    return {scheme:f?FR.fitFor(p,f):null,matchup:opp?FR.matchupFit(p,opp):null};
+  }
+  /* the men who can take the field: the drawer wants the roster, not a seed */
+  function fieldPlayers(){
+    return DATA&&DATA.players?DATA.players.filter(function(p){return p.status==='active'||!p.status;}):null;
+  }
   function themeObj(key){
     var t=null;
     (FR&&FR.THEMES?FR.THEMES:[]).forEach(function(x){if(x.key===key)t=x;});
@@ -258,12 +274,15 @@
     if(!LU||!cv||!f)return;
     LU_SIDE=side||LU_SIDE;
     var th=themeObj(f.theme);
+    /* THE ELEVEN ON THE FIELD ARE YOUR ELEVEN. Drawn without the roster the
+       artist generates a team from the seed, so the field showed eleven men
+       who were not on the page below it. */
     var team={id:f.id,city:f.city,name:f.name,abbr:f.abbr,theme:f.theme,logo:f.logo,
       offense:f.offense,defense:f.defense,overall:f.overall||f.rating_overall||74,
-      seed:(f.city||'')+(f.name||'')};
+      seed:(f.city||'')+(f.name||''),players:fieldPlayers()};
     function go(){
-      try{LU.draw(cv,team,LU_SIDE,{theme:th,homeColor:th.secondary||'#123326',
-        awayColor:'#1b2430',homeName:f.abbr||''});}catch(e){}
+      try{LU_BOXES=LU.draw(cv,team,LU_SIDE,{theme:th,homeColor:th.secondary||'#123326',
+        awayColor:'#1b2430',homeName:f.abbr||''})||[];cv.__boxes=LU_BOXES;}catch(e){}
     }
     go();
     if(window.requestAnimationFrame)requestAnimationFrame(go);
@@ -271,15 +290,90 @@
       cv.__wired=1;
       if(window.ResizeObserver){try{new ResizeObserver(go).observe(cv);}catch(e){}}
       window.addEventListener('resize',go);
+      /* TAP A MAN FOR HIS SLOT: the nearest drawn man within reach opens the
+         slot — who holds it, how he fits, who is behind him */
+      cv.addEventListener('click',function(e){
+        var r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,best=null,bd=1e9;
+        LU_BOXES.forEach(function(b){var d=Math.hypot(b.x-x,b.y-y);if(d<bd){bd=d;best=b;}});
+        if(best&&bd<=Math.max(22,best.r*1.6))slotSheet(best);
+      });
     }
+    paintFitLine();
     var tabs=document.querySelectorAll('.lu-t');
     Array.prototype.forEach.call(tabs,function(b){
       b.onclick=function(){
         Array.prototype.forEach.call(tabs,function(x){x.classList.remove('on');});
         b.classList.add('on');
         paintLineup(f,b.getAttribute('data-lu'));
+        paintFitLine();
       };
     });
+  }
+
+  /* what the scheme thinks of the eleven, and who is coming on Saturday */
+  function paintFitLine(){
+    var el=$('luFit');if(!el||!DATA)return;
+    var c=DATA.chemistry||{},side=c[LU_SIDE]||{},opp=saturday();
+    var fit=side.fit==null?null:+side.fit,men=side.men||[];
+    var fights=men.filter(function(m){return (m.fit|0)<0;}).length,built=men.filter(function(m){return (m.fit|0)>=2;}).length;
+    var bits=[];
+    if(fit!=null)bits.push('<b>Scheme fit '+(fit>0?'+':'')+esc(fit)+'</b>'+(built?' · '+built+' built for it':'')+(fights?' · '+fights+' fighting it':''));
+    if(opp)bits.push('Saturday: <b>'+esc(opp.abbr||opp.name||'')+'</b> run '+esc(FR.schemeWord(opp.offense))+' and '+esc(FR.schemeWord(opp.defense)));
+    el.innerHTML=bits.join(' <span class="sep">·</span> ')+'<span class="lu-tap">Tap a man for his slot</span>';
+  }
+  var SHEET=null;
+  function closeSheet(){if(!SHEET)return;var s=SHEET;SHEET=null;s.classList.remove('on');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},220);}
+  function slotSheet(box){
+    if(!DATA)return;
+    var f=DATA.franchise,opp=saturday(),pos=box.pos;
+    var same=DATA.players.filter(function(p){return p.position===pos&&(p.status==='active'||!p.status);})
+      .sort(function(a,b){return ((a.depth|0)||99)-((b.depth|0)||99)||(b.overall|0)-(a.overall|0);});
+    var starter=null;same.forEach(function(p){if(box.pid&&String(p.id)===String(box.pid))starter=p;});
+    var n=FR.STARTERS?FR.STARTERS[pos]||1:1;
+    if(!starter)starter=same[0]||null;
+    var slot=starter?Math.max(1,Math.min(n,starter.depth|0||1)):1;
+    var backups=same.filter(function(p){return !starter||p.id!==starter.id;});
+    var st=starter?fitFor(starter):null;
+    function fitChips(ft){
+      if(!ft)return '';
+      var out='';
+      if(ft.scheme)out+='<span class="slt-fit '+(ft.scheme.value>0?'up':ft.scheme.value<0?'dn':'')+'"><i>Scheme</i>'+esc(ft.scheme.word)+(ft.scheme.value?' ('+(ft.scheme.value>0?'+':'')+esc(ft.scheme.value)+')':'')+'</span>';
+      if(ft.matchup)out+='<span class="slt-fit '+(ft.matchup.value>0?'up':ft.matchup.value<0?'dn':'')+'"><i>Saturday</i>'+esc(ft.matchup.word)+(ft.matchup.value?' ('+(ft.matchup.value>0?'+':'')+esc(ft.matchup.value)+')':'')+'</span>';
+      return out;
+    }
+    closeSheet();
+    var sh=document.createElement('div');sh.className='slt';sh.setAttribute('role','dialog');sh.setAttribute('aria-modal','true');
+    sh.innerHTML='<div class="slt-in"><div class="slt-h"><div><div class="eyebrow">'+esc(pos)+(n>1?esc(slot):'')+((box.label||box.slot)&&(box.label||box.slot)!==pos?' · '+esc(box.label||box.slot):'')+'</div>'
+      +'<div class="slt-t">'+(starter?esc(FR.fullName(starter)):'Nobody in the slot')+'</div></div>'
+      +'<button class="btn slt-x" type="button" id="rsX" aria-label="Close">✕</button></div>'
+      +(starter?FR.playerCard(starter,{compact:true})+'<div class="slt-fits">'+fitChips(st)+'</div>':'')
+      +'<div class="eyebrow" style="margin-top:14px">Behind him · '+esc(backups.length)+'</div>'
+      +(backups.length?'<ul class="slt-list">'+backups.map(function(p){
+          var d=starter?(p.overall|0)-(starter.overall|0):0,ft=fitFor(p),isStart=FR.isStarter(p);
+          return '<li><span class="p">'+esc(pos)+(isStart?esc(p.depth|0):'')+'</span><span class="o"><b>'+esc(FR.fullName(p))+'</b>'
+            +'<small>OVR '+esc(p.overall)+' <em class="'+(d>0?'up':d<0?'dn':'')+'">('+(d>0?'+':'')+esc(d)+')</em>'
+            +(ft.scheme&&ft.scheme.value?' · scheme '+(ft.scheme.value>0?'+':'')+esc(ft.scheme.value):'')+(ft.matchup&&ft.matchup.value?' · Saturday '+(ft.matchup.value>0?'+':'')+esc(ft.matchup.value):'')+'</small></span>'
+            +(isStart&&n>1&&(p.depth|0)!==slot?'<span class="r"><small>starts at '+esc(pos)+esc(p.depth|0)+'</small></span>':isStart?'<span class="r"></span>'
+              :'<span class="r"><button class="btn" type="button" data-slt-start="'+esc(p.id)+'" data-slt-slot="'+esc(slot)+'">Start him</button></span>')+'</li>';
+        }).join('')+'</ul>':'<div class="empty" style="padding:12px 0">Nobody else at '+esc(pos)+'.</div>')
+      +'</div>';
+    document.body.appendChild(sh);SHEET=sh;
+    setTimeout(function(){sh.classList.add('on');},10);
+    sh.addEventListener('click',function(e){if(e.target===sh)closeSheet();});
+    sh.querySelector('#rsX').addEventListener('click',closeSheet);
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-slt-start]'),function(b){
+      b.addEventListener('click',function(){
+        var id=b.getAttribute('data-slt-start'),sl=+b.getAttribute('data-slt-slot')||1;
+        b.disabled=true;b.textContent='Moving…';
+        FR.setStarter(id,sl).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'Could not change the lineup.');b.disabled=false;b.textContent='Start him';return;}
+          renderRoster(r.data,false);closeSheet();
+          G.toast('Lineup updated');
+          G.track('roster_change',{player:id,slot:sl,from:'slot_sheet',overall:r.data.rating?r.data.rating.overall:null});
+        });
+      });
+    });
+    G.track('slot_view',{position:pos,slot:slot,game_type:'franchise'});
   }
 
   /* re-read the roster, keeping the groups that were open */

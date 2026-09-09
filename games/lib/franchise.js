@@ -571,6 +571,10 @@
       + '<div class="pc-career"><span class="k">Career</span>' + esc(careerLine(p)) + '</div>'
       + (handsLine(p) ? '<div class="pc-career pc-hands"><span class="k">In your hands</span>' + esc(handsLine(p)) + '</div>' : '')
       + (function () { var bs = badges(p); return bs.length ? '<div class="pc-badges">' + bs.map(function (b) { return '<i class="pc-badge" title="' + esc(b.detail || b.label) + '">' + esc(b.label) + '</i>'; }).join('') + '</div>' : ''; })()
+      + (o.fit && (o.fit.scheme || o.fit.matchup) ? '<div class="pc-fit">'
+          + (o.fit.scheme ? '<span class="' + (o.fit.scheme.value > 0 ? 'up' : o.fit.scheme.value < 0 ? 'dn' : '') + '"><i>Scheme</i>' + esc(o.fit.scheme.word) + (o.fit.scheme.value ? ' (' + (o.fit.scheme.value > 0 ? '+' : '') + esc(o.fit.scheme.value) + ')' : '') + '</span>' : '')
+          + (o.fit.matchup ? '<span class="' + (o.fit.matchup.value > 0 ? 'up' : o.fit.matchup.value < 0 ? 'dn' : '') + '"><i>Saturday</i>' + esc(o.fit.matchup.word) + (o.fit.matchup.value ? ' (' + (o.fit.matchup.value > 0 ? '+' : '') + esc(o.fit.matchup.value) + ')' : '') + '</span>' : '')
+          + '</div>' : '')
       + (o.actions ? '<div class="pc-actions">' + o.actions + '</div>' : '')
       + '</article>';
   }
@@ -1996,6 +2000,42 @@
     return t && archetype && t[archetype] != null ? t[archetype] : 0;
   }
   var OFFENSE_POS = { QB: 1, RB: 1, WR: 1, TE: 1, OL: 1 };
+  /* SATURDAY'S MATCHUP: what the opponent's scheme does to a man's archetype,
+     -2 to +2, unlisted is 0. An offensive man is read against their defence,
+     a defensive man against their offence. A small, original table; the
+     parity test holds every archetype in it to one the scheme table knows. */
+  var MATCHUP_FIT = {
+    /* their defence, and your offensive men */
+    vs_defense: {
+      press_man:       { WR: { 'Deep Threat': 2, 'Route Technician': 1, 'Route Runner': 1, 'Possession': -1, 'Possession Receiver': -1 }, RB: { 'Receiving Back': 1 }, TE: { 'Seam Stretcher': 1 }, QB: { 'Gunslinger': 1 } },
+      zone:            { WR: { 'Route Runner': 1, 'Route Technician': 1, 'Slot Weapon': 1, 'Deep Threat': -1 }, TE: { 'Seam Stretcher': 1, 'Move TE': 1 }, QB: { 'Field General': 1, 'Gunslinger': -1 } },
+      blitz_heavy:     { OL: { 'Pass Protector': 2, 'Road Grader': -1 }, QB: { 'Improviser': 1, 'Scrambler': 1, 'Game Manager': -1 }, RB: { 'Receiving Back': 1 }, WR: { 'Deep Threat': 1 } },
+      three_four:      { RB: { 'Elusive Back': 1, 'Power Back': -1 }, OL: { 'Road Grader': 1, 'Technician': 1 }, TE: { 'In-Line': -1 } },
+      four_three:      { RB: { 'Workhorse': 1 }, OL: { 'Technician': 1 }, WR: { 'Slot Weapon': 1 } },
+      bend_dont_break: { WR: { 'Possession': 1, 'Possession Receiver': 1, 'Deep Threat': -1 }, TE: { 'In-Line': 1 }, RB: { 'Workhorse': 1, 'Power Back': 1 }, QB: { 'Game Manager': 1 } }
+    },
+    /* their offence, and your defensive men */
+    vs_offense: {
+      air_raid:   { CB: { 'Coverage': 1, 'Shutdown': 1, 'Zone Specialist': 1, 'Press Specialist': 1 }, S: { 'Ball Hawk': 1, 'Coverage': 1, 'Run Stopper': -1 }, DL: { 'Speed Rusher': 1, 'Edge Rusher': 1, 'Run Stopper': -1 }, LB: { 'Coverage': 1, 'Run Stopper': -1 } },
+      spread:     { LB: { 'Hybrid': 1, 'Coverage': 1, 'Run Stopper': -1 }, CB: { 'Zone Specialist': 1, 'Coverage': 1 }, DL: { 'Speed Rusher': 1 }, S: { 'Coverage': 1 } },
+      pro_style:  { LB: { 'Hybrid': 1 }, S: { 'Coverage': 1 }, DL: { 'Balanced': 1 } },
+      power_run:  { DL: { 'Run Stopper': 2, 'Power Rusher': 1, 'Speed Rusher': -1 }, LB: { 'Run Stopper': 1, 'Coverage': -1 }, S: { 'Run Stopper': 1, 'Ball Hawk': -1 }, CB: { 'Coverage': -1 } },
+      option:     { LB: { 'Hybrid': 1, 'Run Stopper': 1 }, DL: { 'Run Stopper': 1, 'Edge Rusher': 1 }, S: { 'Run Stopper': 1 }, CB: { 'Ball Hawk': -1 } },
+      west_coast: { CB: { 'Zone Specialist': 1, 'Press Specialist': -1 }, LB: { 'Coverage': 1 }, S: { 'Coverage': 1 }, DL: { 'Power Rusher': 1 } }
+    }
+  };
+  var SCHEME_WORDS = { air_raid: 'an air raid', spread: 'a spread', pro_style: 'a pro-style offence', power_run: 'a power run game', option: 'an option offence', west_coast: 'a West Coast offence',
+    four_three: 'a 4-3', three_four: 'a 3-4', press_man: 'press man', zone: 'zone', blitz_heavy: 'a blitz-heavy defence', bend_dont_break: 'a bend-don\'t-break defence' };
+  function schemeWord(k) { return SCHEME_WORDS[k] || String(k || '').replace(/_/g, ' '); }
+  function matchupFit(man, opp) {
+    if (!man || !opp || man.position === 'K' || man.position === 'P') return null;
+    var off = !!OFFENSE_POS[man.position];
+    var theirs = off ? opp.defense : opp.offense;
+    if (!theirs) return null;
+    var t = MATCHUP_FIT[off ? 'vs_defense' : 'vs_offense'][theirs];
+    var v = t && t[man.position] && man.archetype && t[man.position][man.archetype] != null ? t[man.position][man.archetype] : 0;
+    return { value: v, against: theirs, word: (v > 0 ? 'Edge' : v < 0 ? 'Tough day' : 'Even') + ' vs ' + schemeWord(theirs) };
+  }
   function fitFor(man, franchise) {
     if (!man || !franchise) return null;
     var side = OFFENSE_POS[man.position] ? 'offense' : 'defense';
@@ -2324,6 +2364,7 @@
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
     badges: badges, careerTotals: careerTotals, handsLine: handsLine, evolutionReason: evolutionReason, BADGES: BADGES,
+    MATCHUP_FIT: MATCHUP_FIT, matchupFit: matchupFit, schemeWord: schemeWord,
     PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, PASS_SP: PASS_SP, passValue: passValue, SCHEME_FIT: SCHEME_FIT, schemeFit: schemeFit, fitFor: fitFor, packsBoard: packsBoard, pulls: pulls, PULLS_VERSION: PULLS_VERSION, packOpenId: packOpenId, card: card,
     LINEUP_VERSION: LINEUP_VERSION, CHEMISTRY_VERSION: CHEMISTRY_VERSION, CHEMISTRY: CHEMISTRY, chemistryLine: chemistryLine, chemistryWord: chemistryWord,
     lineupBest: lineupBest,

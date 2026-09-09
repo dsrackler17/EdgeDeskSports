@@ -2849,6 +2849,37 @@ fresh();
   has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
   has(README, 'packs_v3', 'the README documents the Vault');
   has(README, 'packs_v4', 'and the programs');
+  /* THE FORMATION VIEW: the roster's own eleven, a slot on a tap, the scheme's word and Saturday's */
+  (function formation() {
+    const ROSTER_SRC = fs.readFileSync(G('roster/index.html'), 'utf8');
+    const LINEUP_SRC = fs.readFileSync(G('lib/gridiron/lineup.js'), 'utf8');
+    has(ROSTER_SRC, "seed:(f.city||'')+(f.name||''),players:fieldPlayers()}", 'the field is drawn from the roster, not the seed');
+    has(LINEUP_SRC, "pid: m.player && m.player.id != null ? String(m.player.id) : null,", 'and every drawn man carries his roster id');
+    has(ROSTER_SRC, "if(best&&bd<=Math.max(22,best.r*1.6))slotSheet(best);", 'a tap on a man opens his slot');
+    has(ROSTER_SRC, 'data-slt-start="', 'and a backup can be started from it');
+    has(ROSTER_SRC, "FR.setStarter(id,sl)", 'through the server');
+    has(ROSTER_SRC, "fit:fitFor(p)", 'every card carries the scheme\'s word and Saturday\'s');
+    has(ROSTER_SRC, "Tap a man for his slot", 'and the field says so');
+    /* the matchup table, pure */
+    const opp = { offense: 'power_run', defense: 'press_man' };
+    eq('a deep threat against press man has the edge', F.matchupFit({ position: 'WR', archetype: 'Deep Threat' }, opp).value, 2);
+    eq('a run stopper against a power run game has it too', F.matchupFit({ position: 'DL', archetype: 'Run Stopper' }, opp).value, 2);
+    eq('a possession receiver against press man has a tough day', F.matchupFit({ position: 'WR', archetype: 'Possession' }, opp).word, 'Tough day vs press man');
+    eq('an unlisted man is even', F.matchupFit({ position: 'TE', archetype: 'Move TE' }, opp).value, 0);
+    chk('a kicker has no matchup, nor a man without an opponent', F.matchupFit({ position: 'K', archetype: 'Leg' }, opp) === null && F.matchupFit({ position: 'WR', archetype: 'Deep Threat' }, null) === null);
+    /* every archetype the matchup table names is one the scheme table knows at that position */
+    const known = {};
+    ['offense', 'defense'].forEach(side => Object.keys(F.SCHEME_FIT[side]).forEach(sc => Object.keys(F.SCHEME_FIT[side][sc]).forEach(pos => Object.keys(F.SCHEME_FIT[side][sc][pos]).forEach(a => { (known[pos] = known[pos] || {})[a] = 1; }))));
+    const strays = [];
+    ['vs_defense', 'vs_offense'].forEach(k => Object.keys(F.MATCHUP_FIT[k]).forEach(sc => Object.keys(F.MATCHUP_FIT[k][sc]).forEach(pos => Object.keys(F.MATCHUP_FIT[k][sc][pos]).forEach(a => { if (!known[pos] || !known[pos][a]) strays.push(pos + ':' + a); }))));
+    chk('every archetype in the matchup table is one the scheme table knows at that position', strays.length === 0, strays.join(','));
+    chk('and every scheme in it is one the franchise can run', Object.keys(F.MATCHUP_FIT.vs_defense).sort().join(',') === Object.keys(F.SCHEME_FIT.defense).sort().join(',')
+      && Object.keys(F.MATCHUP_FIT.vs_offense).sort().join(',') === Object.keys(F.SCHEME_FIT.offense).sort().join(','));
+    const card = F.playerCard({ id: 'x', position: 'WR', archetype: 'Deep Threat', overall: 80, first_name: 'A', last_name: 'B' }, { fit: { scheme: F.fitFor({ position: 'WR', archetype: 'Deep Threat' }, { offense: 'air_raid', defense: 'zone' }), matchup: F.matchupFit({ position: 'WR', archetype: 'Deep Threat' }, opp) } });
+    has(card, '<div class="pc-fit">', 'the card prints the fit when the page hands it in');
+    has(card, 'Built for your scheme (+2)', 'the scheme\'s word');
+    has(card, 'Edge vs press man (+2)', 'and Saturday\'s');
+  })();
   /* THE CARD REMEMBERS: milestone badges, the games in your hands, a reason on every move */
   (function card() {
     const wr = { position: 'WR', career_stats: { games: 61, rec: 200, yds: 3100, td: 22 }, live_stats: { games: 40, rec: 80, yds: 1200, td: 9 } };
