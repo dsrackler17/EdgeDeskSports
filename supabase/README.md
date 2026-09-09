@@ -44,6 +44,44 @@ deploy that worked and changed nothing.
 
 ## The files
 
+### `ufc_live_center.sql` — the UFC Live Fight Center contract
+The Fight Center used to read a live layer no file in this repository ever
+created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,
+`ufc.live_fight_state`, `ufc.live_fight_round_stats`, `ufc.live_fight_snapshots`,
+`ufc.live_pipeline_health`), written by two Edge Functions (`ufc_live`,
+`ufc_live_stats`) that were never committed either. When the poller stopped
+nothing in a checkout could say why. This file is the replacement contract,
+fed by GitHub Actions over PostgREST with the service role — **no Edge Function
+is in the path** — and read by the browser through the anon/RLS door:
+
+* `ufc.events`, `ufc.bouts` — the card, by provider id, with `first_bell_at` on
+  every bout: the boundary a closing line must sit at or before;
+* `ufc.fight_live_state`, `ufc.fight_round_stats`, `ufc.fight_snapshots` —
+  cumulative statistics per corner, per-round rows (provider splits or
+  cumulative deltas, labelled), and an immutable timeline deduplicated by
+  content hash;
+* `ufc.fighter_aliases`, `ufc.fighter_baselines` — identity resolution and the
+  precomputed historical tendencies, every rate with its sample;
+* `ufc.bout_markets`, `ufc.market_captures`, `ufc.market_rejections` — a bout is
+  linked to an odds fixture only when BOTH participants resolved to its corners;
+  a Draw is a separate row and can never be a corner; every capture is tagged
+  PRE or LIVE against the bout's own bell; what the linker refused is kept with
+  its reason;
+* `ufc.pipeline_runs`, `ufc.pipeline_status` — heartbeat and diagnostics per job;
+* `ufc.live_locks` + `ufc.acquire_live_lock()` / `ufc.release_live_lock()` — one
+  poller per event, enforced in one statement, TTL-expiring, service role only.
+
+Run it once in the SQL editor; every report row should say `ok`. Nothing in
+the ufc schema is dropped or rewritten — the old `live_*` tables are simply no
+longer read. RLS: anon and authenticated may **select** every research table
+and may write nothing; `live_locks` is unreachable from a client role.
+
+Tested against a real PostgreSQL by `tools/ufc/ufc_sql.test.js`
+(`npm run ufc:sql`), which applies the file twice and attacks it as anon, as
+authenticated, and as two pollers racing for one lock. The jobs that fill it
+are `tools/ufc/*.js`, run by `.github/workflows/ufc-sync.yml` and
+`.github/workflows/ufc-live.yml`; see `tools/ufc/README.md`.
+
 ### `capture_v9_qualification.sql` — the qualification state
 Adds the columns `capture-v9` writes: the tier, the reason, the reference type,
 the evidence behind each decision, and the corroboration and raw two-way price
