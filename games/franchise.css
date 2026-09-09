@@ -139,7 +139,13 @@
 .pc-actions{margin-top:10px;display:grid;gap:6px}
 .pc-actions .btn{min-height:40px;font-size:13px;padding:0 12px}
 .pc-compact .pc-attrs{margin-top:10px}
-.pc-compact .pc-acq,.pc-compact .pc-career{display:none}
+.pc-compact .pc-acq,.pc-compact .pc-career,.pc-compact .pc-badges{display:none}
+.pc-hands{color:var(--val)}
+.pc-hands .k{color:var(--val-dim,#2f8a63)}
+/* MILESTONE BADGES: marks a career keeps, never a change to what he was rolled at */
+.pc-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.pc-badge{font:800 9.5px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;padding:4px 7px;border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--est,#d9a441) 55%,transparent);color:var(--est,#d9a441);background:color-mix(in srgb,var(--est,#d9a441) 10%,transparent)}
 
 /* ── position groups on the roster ─────────────────────────────────────── */
 .side-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 0 8px}
@@ -564,7 +570,8 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 /* the board's strip: the window, the picks, the room, what a report costs */
 .mk-sum{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
 @media(min-width:560px){.mk-sum{grid-template-columns:repeat(4,1fr)}}
-.mk-sum div{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+/* the box is the cell, not the label and the value inside it */
+.mk-sum>div{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
 .mk-sum .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mk-sum .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;margin-top:3px;line-height:1.1}
 .mk-sum .v small{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

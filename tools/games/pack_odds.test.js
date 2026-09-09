@@ -53,17 +53,38 @@ const RESET_SQL = 'packs_since_prime = case when got_prime then 0 else packs_sin
 chk('the roll happens inside the generator, after setseed on the pack\'s own seed',
   /perform setseed\(public\.franchise_seed_float\(pk\.seed \|\| ':' \|\| i\)\);\s*[\s\S]{0,300}v_target := v_low \+ floor\(random\(\)/.test(SQL));
 
+const NAMES_ALL = ['prospect', 'starter', 'impact', 'prime', 'elite', 'apex', 'legend', 'mythic'];
 const defsSrc = SQL.slice(SQL.lastIndexOf('create or replace function public.franchise_pack_defs()'));
 const defsJson = defsSrc.slice(defsSrc.indexOf("'{") + 1, defsSrc.indexOf("}'::jsonb") + 1).replace(/''/g, "'");
 let DEFS = null;
 try { DEFS = JSON.parse(defsJson); } catch (e) { chk('the pack definitions parse', false, e.message); }
 const PRIME_AT = DEFS ? DEFS.prime_at : 75;
 const PITY = (DEFS && DEFS.kinds.gridiron_cache.pity) || { after: 5, lift: 6, guarantee: 'prime' };
-chk('the definitions are packs_v3 with the Prime line at 75', !!DEFS && DEFS.version === 'packs_v3' && PRIME_AT === 75);
-chk('the client prints the same six kinds at the same sizes and keeps',
-  !!DEFS && Object.keys(DEFS.kinds).length === 6 && Object.keys(DEFS.kinds).every(k => FR.PACKS[k] && FR.PACKS[k].size === DEFS.kinds[k].size && FR.PACKS[k].keep === DEFS.kinds[k].keep));
-chk('only the rank\'s cache carries protection, and only the Championship Vault a guarantee',
-  !!DEFS && Object.keys(DEFS.kinds).every(k => (k === 'gridiron_cache') === !!DEFS.kinds[k].pity && (k === 'championship_vault') === (DEFS.kinds[k].guarantee === 'prime')));
+chk('the definitions are packs_v4 with the Prime line at 75', !!DEFS && DEFS.version === 'packs_v4' && PRIME_AT === 75);
+chk('the client prints the same nine kinds at the same sizes, keeps, names and art',
+  !!DEFS && Object.keys(DEFS.kinds).length === 9 && Object.keys(FR.PACKS).length === 9
+  && Object.keys(DEFS.kinds).every(k => FR.PACKS[k] && FR.PACKS[k].size === DEFS.kinds[k].size && FR.PACKS[k].keep === DEFS.kinds[k].keep
+                                        && FR.PACKS[k].name === DEFS.kinds[k].name && FR.PACKS[k].art === DEFS.kinds[k].art));
+chk('only the rank\'s cache carries protection; the Championship Vault and the Primetime Vault carry the guarantee',
+  !!DEFS && Object.keys(DEFS.kinds).every(k => (k === 'gridiron_cache') === !!DEFS.kinds[k].pity
+    && (k === 'championship_vault' || k === 'primetime_vault') === (DEFS.kinds[k].guarantee === 'prime')));
+chk('the programs draw from their own pools: the Speed Lab from the men who run, the Trench Unit from the lines',
+  !!DEFS && DEFS.kinds.speed_lab.pool === 'speed' && DEFS.kinds.trench_unit.pool === 'trench' && DEFS.kinds.primetime_vault.pool === 'need'
+  && /if d->>'pool' = 'speed' then\s*rot := array\['RB','WR','CB','S','WR','RB'\];/.test(SQL) && /if d->>'pool' = 'trench' then\s*rot := array\['OL','DL'\];/.test(SQL));
+chk('a passed man is worth his tier in scouting points, and the client prints the same table',
+  !!DEFS && DEFS.pass_sp && Object.keys(DEFS.pass_sp).length === 8 && NAMES_ALL.every(k => FR.PASS_SP[k] === DEFS.pass_sp[k])
+  && NAMES_ALL.every((k, i) => i === 0 || DEFS.pass_sp[k] > DEFS.pass_sp[NAMES_ALL[i - 1]]));
+chk('the server books it once per pack, from keep\'s auto-pass and from pass alike',
+  /create or replace function public\.franchise_pack_pass_credit\(p_franchise uuid, p_pack uuid, p_ids uuid\[\]\)/.test(SQL)
+  && (SQL.match(/v_sp := public\.franchise_pack_pass_credit\(v_f, /g) || []).length === 2
+  && /perform public\.franchise_credit\(p_franchise, 'sp', v_sp, 'pack_pass', coalesce\(p_pack::text, p_ids\[1\]::text\)/.test(SQL)
+  && /revoke all on function public\.franchise_pack_pass_credit\(uuid, uuid, uuid\[\]\) from public, anon, authenticated;/.test(SQL));
+chk('the programs are earned from the filed live games at Pro or harder, capped games excepted',
+  /a\.kind = 'live_game' and a\.detail->>'difficulty' in \('pro', 'allpro', 'legend'\)/.test(SQL)
+  && /for i in 1\.\.\(v_yds \/ 1500\) loop/.test(SQL) && /'speed_lab', i::text/.test(SQL)
+  && /for i in 1\.\.\(v_walls \/ 3\) loop/.test(SQL) && /'trench_unit', i::text/.test(SQL)
+  && /for i in 1\.\.\(v_wins \/ 5\) loop/.test(SQL) && /'primetime_vault', i::text/.test(SQL)
+  && /\(a\.detail->>'score_against'\)::int <= 10/.test(SQL));
 
 const BOUNDS = [0, 62, 69, 75, 81, 87, 93, 98, 100];
 const NAMES = ['prospect', 'starter', 'impact', 'prime', 'elite', 'apex', 'legend', 'mythic'];

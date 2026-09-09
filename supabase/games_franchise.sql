@@ -9685,8 +9685,9 @@ alter table public.franchises add column if not exists packs_since_prime integer
 create or replace function public.franchise_pack_defs()
 returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
   select '{
-    "version": "packs_v3",
+    "version": "packs_v4",
     "prime_at": 75,
+    "pass_sp": {"prospect":3,"starter":5,"impact":8,"prime":15,"elite":30,"apex":60,"legend":120,"mythic":250},
     "kinds": {
       "gridiron_cache":     {"name":"Gridiron Cache","art":"cache","size":3,"keep":1,"floor_below":10,"edge":"rank","edge_bonus":0,
                              "pool":"rotation","guarantee":null,"pity":{"after":5,"lift":6,"guarantee":"prime"},
@@ -9705,7 +9706,16 @@ returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
                              "earned":"three Price Its scoring 80 or better in one week","blurb":"Read the real games well and the scouting department finds you somebody with a ceiling."},
       "gameday_pack":       {"name":"Game Day Pack","art":"gameday","size":3,"keep":1,"floor_below":8,"edge":"rank","edge_bonus":2,
                              "pool":"need","guarantee":null,"pity":null,
-                             "earned":"five live games finished at Pro or harder","blurb":"Played, not simulated. Every fifth game you finish with your own thumbs at Pro or harder, the Vault seals one of these."}
+                             "earned":"five live games finished at Pro or harder","blurb":"Played, not simulated. Every fifth game you finish with your own thumbs at Pro or harder, the Vault seals one of these."},
+      "speed_lab":          {"name":"Speed Lab","art":"speed","size":3,"keep":1,"floor_below":6,"edge":"rank","edge_bonus":3,
+                             "pool":"speed","guarantee":null,"pity":null,
+                             "earned":"every 1,500 live yards in your hands at Pro or harder","blurb":"Backs, receivers and the men who cover them. Every 1,500 yards your thumbs gain at Pro or harder, the lab sends three who can run."},
+      "trench_unit":        {"name":"Trench Unit","art":"trench","size":3,"keep":1,"floor_below":6,"edge":"rank","edge_bonus":3,
+                             "pool":"trench","guarantee":null,"pity":null,
+                             "earned":"three live games at Pro or harder holding them to ten points or fewer","blurb":"Linemen, both sides of the ball. Hold a side to ten points three times with your own thumbs and the trench sends reinforcements."},
+      "primetime_vault":    {"name":"Primetime Vault","art":"primetime","size":4,"keep":1,"floor_below":3,"edge":"rank","edge_bonus":6,
+                             "pool":"need","guarantee":"prime","pity":null,
+                             "earned":"five live wins at Pro or harder","blurb":"Four men under the lights, one of them Prime or better, and you keep one. Five games won with your own thumbs at Pro or harder earn it."}
     }
   }'::jsonb;
 $$;
@@ -9744,6 +9754,7 @@ $$;
 create or replace function public.franchise_packs_sync(p_franchise uuid)
 returns integer language plpgsql security definer set search_path = public, pg_temp as $$
 declare rep jsonb := public.franchise_rank_report(p_franchise); v_claimed integer; v_rank integer; i integer; n integer := 0; r record;
+  v_yds integer; v_walls integer; v_wins integer;
 begin
   v_claimed := coalesce((rep->>'claimed')::int, 0); v_rank := coalesce((rep->>'rank')::int, 1);
   for i in (v_claimed + 1)..v_rank loop
@@ -9769,6 +9780,25 @@ begin
   -- THE GAME YOU HOLD (Phase 21): every fifth live game finished at Pro or harder
   for i in 1..coalesce((public.franchise_gameday_progress(p_franchise)->>'packs')::int, 0) loop
     if public.franchise_pack_grant(p_franchise, 'gameday_pack', i::text, 'Game Day, five played') is not null then n := n + 1; end if;
+  end loop;
+  -- THE PROGRAMS (packs_v4): what the games in your hands add up to, from the
+  -- filed results at Pro or harder — the yards for the Speed Lab, the walls
+  -- (ten points or fewer allowed) for the Trench Unit, the wins for the
+  -- Primetime Vault. Capped games count for the record, not for these.
+  select coalesce(sum(greatest(0, (a.detail->>'yards')::int)), 0),
+         count(*) filter (where (a.detail->>'score_against')::int <= 10),
+         count(*) filter (where coalesce((a.detail->>'won')::boolean, false))
+    into v_yds, v_walls, v_wins
+    from public.franchise_activity a
+   where a.franchise_id = p_franchise and a.kind = 'live_game' and a.detail->>'difficulty' in ('pro', 'allpro', 'legend');
+  for i in 1..(v_yds / 1500) loop
+    if public.franchise_pack_grant(p_franchise, 'speed_lab', i::text, 'Speed Lab, ' || (i * 1500) || ' live yards') is not null then n := n + 1; end if;
+  end loop;
+  for i in 1..(v_walls / 3) loop
+    if public.franchise_pack_grant(p_franchise, 'trench_unit', i::text, 'Trench Unit, three walls') is not null then n := n + 1; end if;
+  end loop;
+  for i in 1..(v_wins / 5) loop
+    if public.franchise_pack_grant(p_franchise, 'primetime_vault', i::text, 'Primetime Vault, five wins') is not null then n := n + 1; end if;
   end loop;
   return n;
 end;
@@ -9843,6 +9873,18 @@ begin
     for i in 1..v_size loop out := array_append(out, rot[1 + ((coalesce(p_ordinal, 1) - 1) * 5 + i - 1) % array_length(rot, 1)]); end loop;
     return out;
   end if;
+  -- THE PROGRAMS DRAW FROM THEIR OWN POOLS: the Speed Lab from the men who
+  -- run and the men who chase them, the Trench Unit from both lines.
+  if d->>'pool' = 'speed' then
+    rot := array['RB','WR','CB','S','WR','RB'];
+    for i in 1..v_size loop out := array_append(out, rot[1 + ((coalesce(p_ordinal, 1) - 1) * 3 + i - 1) % array_length(rot, 1)]); end loop;
+    return out;
+  end if;
+  if d->>'pool' = 'trench' then
+    rot := array['OL','DL'];
+    for i in 1..v_size loop out := array_append(out, rot[1 + ((coalesce(p_ordinal, 1) - 1) + i - 1) % 2]); end loop;
+    return out;
+  end if;
   g := public.franchise_team_rating(p_franchise)->'groups';
   select array_agg(k order by (g->>k)::int, k) into need
     from unnest(array['QB','RB','WR','TE','OL','DL','LB','CB','S']) k;
@@ -9870,7 +9912,7 @@ begin
   v_low := (b->>'low')::int; v_high := (b->>'high')::int; v_prime := (b->>'prime_at')::int;
   v_guar := b->>'guarantee'; v_size := (d->>'size')::int; v_lift := coalesce((d->>'potential_lift')::int, 0);
   v_pity := coalesce((b->'pity'->>'active')::boolean, false);
-  v_ordinal := case when pk.kind = 'gridiron_cache' then pk.source_key::int else 1 end;
+  v_ordinal := case when pk.kind in ('gridiron_cache', 'speed_lab', 'trench_unit', 'primetime_vault') and pk.source_key ~ '^[0-9]+$' then pk.source_key::int else 1 end;
   poss := public.franchise_pack_positions(p_franchise, pk.kind, v_ordinal);
   for i in 1..v_size loop
     perform setseed(public.franchise_seed_float(pk.seed || ':' || i));
@@ -10015,7 +10057,7 @@ returns jsonb language plpgsql security definer set search_path = public, pg_tem
 declare
   v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; p public.game_players%rowtype; pk public.franchise_packs%rowtype;
   m jsonb := public.franchise_market(); v_active integer; v_depth integer; v_passed integer := 0; v_keep integer := 1; v_kept integer;
-  v_left integer;
+  v_left integer; v_ids uuid[]; v_sp integer := 0;
 begin
   if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
   select * into f from public.franchises where id = v_f for update;
@@ -10043,9 +10085,12 @@ begin
   select count(*) into v_kept from public.game_players where franchise_id = v_f and pack_id = p.pack_id and status = 'active';
   select count(*) into v_left from public.game_players where franchise_id = v_f and status = 'pack';
   if p.pack_id is null or v_kept >= v_keep or v_left = 0 then
-    update public.game_players set status = 'passed', updated_at = now()
-     where franchise_id = v_f and status = 'pack' and id <> p.id;
-    get diagnostics v_passed = ROW_COUNT;
+    with moved as (
+      update public.game_players set status = 'passed', updated_at = now()
+       where franchise_id = v_f and status = 'pack' and id <> p.id returning id)
+    select array_agg(id) into v_ids from moved;
+    v_passed := coalesce(array_length(v_ids, 1), 0);
+    v_sp := public.franchise_pack_pass_credit(v_f, p.pack_id, v_ids);
     if p.pack_id is not null then
       update public.franchise_packs set status = 'done', done_at = now(),
              contents = contents || jsonb_build_object('kept', (select jsonb_agg(id) from public.game_players where pack_id = p.pack_id and status = 'active'))
@@ -10057,31 +10102,61 @@ begin
   values (v_f, 'signing', p.id::text, public.games_week_key(now()), public.games_day_key(now()),
           jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'position', p.position,
             'overall', p.overall, 'potential', p.potential, 'cost', 0, 'currency', 'pack',
-            'pack_rank', p.pack_rank, 'pack_kind', pk.kind, 'passed', v_passed))
+            'pack_rank', p.pack_rank, 'pack_kind', pk.kind, 'passed', v_passed, 'passed_sp', v_sp))
   on conflict (franchise_id, kind, key) do nothing;
 
   select * into p from public.game_players where id = p.id;
   return jsonb_build_object('ok', true, 'player', public.franchise_prospect_json(p),
-    'passed', v_passed, 'roster_active', v_active + 1,
+    'passed', v_passed, 'sp', v_sp, 'roster_active', v_active + 1,
     'keep_left', case when p.pack_id is null then 0 else greatest(0, v_keep - v_kept) end,
     'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
 end;
 $$;
 
+-- WHAT A PASSED MAN IS WORTH. Never silently gone: a man passed over is
+-- scouted, and the department books scouting points by his tier — the table
+-- in franchise_pack_defs()->'pass_sp', so the page prints what is paid.
+create or replace function public.franchise_pass_sp(p_overall integer)
+returns integer language sql immutable set search_path = public, pg_temp as $$
+  select coalesce((public.franchise_pack_defs()->'pass_sp'->>public.franchise_card_tier(p_overall))::int, 0);
+$$;
+-- Book the pass for the men of one pack: one ledger row per pack, so a
+-- replay pays nothing twice. Returns the points booked.
+create or replace function public.franchise_pack_pass_credit(p_franchise uuid, p_pack uuid, p_ids uuid[])
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_sp integer;
+begin
+  if p_ids is null or array_length(p_ids, 1) is null then return 0; end if;
+  select coalesce(sum(public.franchise_pass_sp(p.overall)), 0) into v_sp
+    from public.game_players p where p.id = any(p_ids) and p.franchise_id = p_franchise;
+  if v_sp > 0 then
+    perform public.franchise_credit(p_franchise, 'sp', v_sp, 'pack_pass', coalesce(p_pack::text, p_ids[1]::text),
+      array_length(p_ids, 1) || ' passed over, scouted');
+  end if;
+  return v_sp;
+end;
+$$;
+revoke all on function public.franchise_pack_pass_credit(uuid, uuid, uuid[]) from public, anon, authenticated;
+
 -- PASS ON THE WHOLE PACK. The rank (or whatever earned it) is spent either
 -- way, which is what makes it a real decision rather than a free re-roll.
+-- The men passed over are scouted: their value comes back as points.
 create or replace function public.franchise_pack_pass(p_secret text default null)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
-declare v_f uuid := public.franchise_of(p_secret); v_n integer;
+declare v_f uuid := public.franchise_of(p_secret); v_n integer; v_pk uuid; v_ids uuid[]; v_sp integer := 0;
 begin
   if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select id into v_pk from public.franchise_packs where franchise_id = v_f and status = 'open' order by opened_at desc limit 1;
   update public.franchise_packs set status = 'done', done_at = now()
    where franchise_id = v_f and status = 'open';
-  update public.game_players set status = 'passed', updated_at = now()
-   where franchise_id = v_f and status = 'pack';
-  get diagnostics v_n = ROW_COUNT;
+  with moved as (
+    update public.game_players set status = 'passed', updated_at = now()
+     where franchise_id = v_f and status = 'pack' returning id)
+  select array_agg(id) into v_ids from moved;
+  v_n := coalesce(array_length(v_ids, 1), 0);
   if v_n = 0 then raise exception 'no pack on the table' using errcode = 'P0002'; end if;
-  return jsonb_build_object('ok', true, 'passed', v_n,
+  v_sp := public.franchise_pack_pass_credit(v_f, v_pk, v_ids);
+  return jsonb_build_object('ok', true, 'passed', v_n, 'sp', v_sp,
     'rank_report', public.franchise_rank_report(v_f), 'totals', public.franchise_totals(v_f));
 end;
 $$;
@@ -10206,6 +10281,14 @@ begin
     'developed', p.developed, 'programs', p.programs,
     'pack', case when k.id is null then null else jsonb_build_object('id', k.id, 'kind', k.kind,
                 'name', public.franchise_pack_def(k.kind)->>'name', 'source', k.source, 'opened_at', k.opened_at) end,
+    -- HONOURS: a bowl won while he was on the roster. A badge the card keeps,
+    -- derived from the record, never a change to what he was rolled at.
+    'honours', coalesce((select jsonb_agg(jsonb_build_object('kind', 'champion', 'season', g.season_number,
+                  'label', coalesce(g.opponent->>'bowl_name', 'The bowl') || ', Season ' || public.games_roman(g.season_number)) order by g.season_number)
+                  from public.franchise_games g
+                 where g.franchise_id = v_f and g.bowl and g.result = 'W'
+                   and g.season_number >= coalesce(p.acquired_season, 0)
+                   and (p.retired_season is null or g.season_number <= p.retired_season)), '[]'::jsonb),
     -- every man is one of one: there is no second print of him anywhere
     'edition', jsonb_build_object('serial', 1, 'of', 1, 'label', 'One of one'));
 end;
@@ -11836,9 +11919,12 @@ select 38, 'the player universe is ' || (public.franchise_profile('QB', '{}'::js
 union all
 select 39, 'the Vault is ' || (public.franchise_pack_defs()->>'version')
         || ': packs you hold, derived from the record, rolled and written on the server, with odds a page can print and a rule you can read',
-  case when public.franchise_pack_defs()->>'version' = 'packs_v3'
-        -- five kinds, each with a size, a keep and the words for what earns it
-        and (select count(*) from jsonb_object_keys(public.franchise_pack_defs()->'kinds')) = 6
+  case when public.franchise_pack_defs()->>'version' = 'packs_v4'
+        -- nine kinds, each with a size, a keep and the words for what earns it
+        and (select count(*) from jsonb_object_keys(public.franchise_pack_defs()->'kinds')) = 9
+        -- and a passed man is worth something, by his tier
+        and (select count(*) from jsonb_object_keys(public.franchise_pack_defs()->'pass_sp')) = 8
+        and public.franchise_pass_sp(80) > public.franchise_pass_sp(60)
         and (select bool_and((k.value->>'size')::int between 2 and 4 and (k.value->>'keep')::int between 1 and 2
                              and k.value->>'earned' is not null and k.value->>'name' is not null)
                from jsonb_each(public.franchise_pack_defs()->'kinds') k)
@@ -11914,7 +12000,7 @@ select 41, 'the pull record is ' || (public.franchise_pulls_rules()->>'version')
 union all
 select 42, 'the game you hold counts (' || (public.franchise_economy()->>'version') || ', ' || (public.franchise_pack_defs()->>'version')
         || '): a live result filed once, bounded, capped a day, weighed toward the rank, the careers in your hands kept apart, a Game Day pack every fifth game',
-  case when public.franchise_economy()->>'version' = 'economy_v2' and public.franchise_pack_defs()->>'version' = 'packs_v3'
+  case when public.franchise_economy()->>'version' = 'economy_v2' and public.franchise_pack_defs()->>'version' = 'packs_v4'
         and (public.franchise_ranks()->'weights'->>'live_game')::int = 2
         and not (public.franchise_ranks()->'weights' ? 'live_game_extra')
         and (public.franchise_economy()->'live_cap'->>'per_day')::int = 5

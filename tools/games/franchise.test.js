@@ -2068,7 +2068,7 @@ fresh();
      copy of the curves is the SQL's. */
 
   eq('the rank is versioned', F.RANK_VERSION, 'rank_v1');
-  eq('and the packs are', F.PACKS_VERSION, 'packs_v3');
+  eq('and the packs are', F.PACKS_VERSION, 'packs_v4');
   has(SQL, "'version', 'rank_v1'", 'the SQL agrees on the rank');
   has(SQL, "'pack_version', 'packs_v1'", "and the rank's own door still keeps every packs_v1 promise it made");
 
@@ -2825,8 +2825,8 @@ fresh();
   chk('and the client expects at least it', F.SCHEMA.franchise >= 18);
   chk('and the report checks a number no lower',
     +((SQL.match(/\(public\.games_schema\(\)->>'franchise'\)::int = (\d+)/) || [])[1]) >= 18);
-  eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v3');
-  has(SQL, '"version": "packs_v3"', 'and the SQL carries the same version');
+  eq('the pack table is versioned as the SQL is', F.PACKS_VERSION, 'packs_v4');
+  has(SQL, '"version": "packs_v4"', 'and the SQL carries the same version');
   (function () {
     const m = SQL.match(/function public\.franchise_pack_defs\(\)[\s\S]*?select '([\s\S]*?)'::jsonb;/);
     chk('the SQL states the pack table', !!m);
@@ -2848,6 +2848,53 @@ fresh();
   ['pack_opened', 'card_revealed', 'rare_pull', 'pack_kept', 'pack_passed', 'packs_view'].forEach(e => chk('the packs page fires ' + e, new RegExp("track\\('" + e + "'").test(PACKS) || new RegExp("'" + e + "'").test(fs.readFileSync(G('lib/vault.js'), 'utf8'))));
   has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
   has(README, 'packs_v3', 'the README documents the Vault');
+  has(README, 'packs_v4', 'and the programs');
+  /* THE CARD REMEMBERS: milestone badges, the games in your hands, a reason on every move */
+  (function card() {
+    const wr = { position: 'WR', career_stats: { games: 61, rec: 200, yds: 3100, td: 22 }, live_stats: { games: 40, rec: 80, yds: 1200, td: 9 } };
+    const bs = F.badges(wr).map(b => b.key);
+    chk('the badges count the career and the games in your hands together: 61 + 40 games, 3,100 + 1,200 yards', bs.join(',') === 'games_100,yards_1000', bs.join(','));
+    chk('a receiver at 4,300 yards has the thousand and not the five', F.badges({ position: 'WR', career_stats: { yds: 4300 } }).map(b => b.key).join(',') === 'yards_1000');
+    chk('and at 5,000 the five replaces the thousand', F.badges({ position: 'RB', career_stats: { yds: 4000, rec_yds: 1200 } }).map(b => b.key).join(',') === 'yards_5000');
+    chk('a hundred touchdowns is a badge for a skill man, not for a tackler', F.badges({ position: 'QB', career_stats: { td: 100 } }).some(b => b.key === 'td_100') && !F.badges({ position: 'LB', career_stats: { td: 100 } }).length);
+    chk('the defence has its own marks', F.badges({ position: 'DL', career_stats: { tkl: 250, sacks: 25, int: 10 } }).map(b => b.key).join(',') === 'tkl_250,sacks_25,int_10');
+    chk('a kicker\'s is fifty field goals', F.badges({ position: 'K', career_stats: { fg: 50 } }).map(b => b.key).join(',') === 'fg_50');
+    chk('a bowl won while he was on the roster is a championship badge, from the server\'s honours', F.badges({ position: 'S', honours: [{ kind: 'champion', season: 2, label: 'The Iron Bowl, Season II' }] }).map(b => b.label).join(',') === 'Championship roster');
+    chk('no card, no badges; a rookie, none', F.badges(null).length === 0 && F.badges({ position: 'WR', career_stats: {} }).length === 0);
+    chk('the badges never touch the tier or the rarity', !/rarity|tier/.test(F.badges.toString()) && !/\.rarity\s*=|\.tier\s*=/.test(FJS.slice(FJS.indexOf('function badges('), FJS.indexOf('function badges(') + 800)));
+    eq('the games in your hands are their own line', F.handsLine({ position: 'RB', live_stats: { games: 3, car: 40, yds: 212, td: 2 } }), '40 car, 212 yds, 2 TD, 3 GP');
+    eq('and absent when there are none', F.handsLine({ position: 'RB', live_stats: {} }), '');
+    eq('a young man\'s rise is growth', F.evolutionReason({ kind: 'ratings', before: 70, after: 73, age: 22 }), 'growth: a young man developing');
+    eq('an old man\'s fall is age', F.evolutionReason({ kind: 'ratings', before: 80, after: 77, age: 33 }), 'age: the legs go first');
+    has(FJS, "'<div class=\"pc-career pc-hands\"><span class=\"k\">In your hands</span>'", 'the card prints the line');
+    has(FJS, "'<div class=\"pc-badges\">'", 'and the badges');
+    has(SQL, "'honours', coalesce((select jsonb_agg(jsonb_build_object('kind', 'champion', 'season', g.season_number,", 'the server derives the honours from the bowls won');
+    has(SQL, "and g.season_number >= coalesce(p.acquired_season, 0)", 'while he was on the roster');
+    has(PACKS, "FR.evolutionReason(h)", 'the card\'s history says why a rating moved');
+  })();
+  /* THE PROGRAMS, AND WHAT A PASSED MAN IS WORTH (packs_v4) */
+  (function programs() {
+    const fitSrc = SQL.slice(SQL.lastIndexOf('create or replace function public.franchise_scheme_fit()'));
+    let FIT = null;
+    try { FIT = JSON.parse(fitSrc.slice(fitSrc.indexOf("'{") + 1, fitSrc.indexOf("}'::jsonb") + 1).replace(/''/g, "'")); } catch (e) { chk('the scheme-fit table parses', false, e.message); }
+    chk('the client mirrors the scheme-fit table the chemistry applies, entry for entry', !!FIT && JSON.stringify(FIT) === JSON.stringify(F.SCHEME_FIT));
+    eq('a Power Back is built for a power run', F.schemeFit('offense', 'power_run', 'RB', 'Power Back'), 2);
+    eq('a Deep Threat is not that scheme\'s man', F.schemeFit('offense', 'power_run', 'WR', 'Deep Threat'), -1);
+    eq('an unlisted archetype is neutral', F.schemeFit('offense', 'power_run', 'QB', 'Nobody'), 0);
+    const fr = { offense: 'power_run', defense: 'press_man' };
+    eq('the word on a man reads his side\'s scheme', F.fitFor({ position: 'CB', archetype: 'Zone Specialist' }, fr).word, 'Fights your scheme');
+    eq('and says when he is built for it', F.fitFor({ position: 'RB', archetype: 'Power Back' }, fr).word, 'Built for your scheme');
+    chk('a kicker has no scheme', F.fitFor({ position: 'K', archetype: 'Leg' }, fr) === null);
+    eq('passing over three men is worth the sum of their tiers', F.passValue([{ tier: 'starter' }, { tier: 'prime' }, { tier: 'elite', kept: true }]), 5 + 15);
+    eq('a man without a tier on him is read from his overall', F.passValue([{ overall: 90 }]), F.PASS_SP.apex);
+    has(PACKS, 'fit:function(m){', 'the packs page hands the room the scheme\'s word');
+    has(PACKS, 'passValue:function(men){return FR.passValue(men);}', 'and what the pass is worth');
+    has(PACKS, 'onView:function(m){showCard(m.id);}', 'and the whole card');
+    has(PACKS, "onMarket:function(m){location.href='/games/exchange/?position='", 'and the market for men like him');
+    has(PACKS, ".vs-art-speed{", 'the shelf styles the Speed Lab');
+    has(PACKS, ".vs-art-trench{", 'and the Trench Unit');
+    has(PACKS, ".vs-art-primetime{", 'and Primetime');
+  })();
 
   /* ═══ 21. THE GAME YOU HOLD COUNTS ═══════════════════════════════════════ */
   chk('the report grew to forty-two rows', /select 42, 'the game you hold counts/.test(SQL));

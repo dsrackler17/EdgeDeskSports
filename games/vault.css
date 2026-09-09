@@ -125,8 +125,13 @@
 .vt-face{display:block;height:100%}
 .vt-face .pc{border:0;border-radius:0;background:transparent;padding:12px 10px 10px;height:100%}
 .vt-face .pc::before{display:none}
-.vt-face .pc-name{font-size:16px}
-.vt-face .pc-ovr{right:10px;top:30px}
+/* two cards to a row on a phone: the header wraps, the rarity chip (the tier
+   already says it) and the Out chip step aside, and the overall sits in the
+   corner the name is kept clear of */
+.vt-face .pc-top{flex-wrap:wrap;gap:5px;padding-right:54px;min-height:56px;align-content:flex-start}
+.vt-face .pc-rar,.vt-face .pc-out{display:none}
+.vt-face .pc-name{font-size:15px;margin-top:6px;overflow-wrap:break-word}
+.vt-face .pc-ovr{right:10px;top:12px}
 .vt-face .pc-ovr b{font-size:28px}
 .vt-face .pc-attrs{grid-template-columns:repeat(2,1fr);gap:4px;margin-top:10px}
 .vt-face .pc-uni,.vt-face .pc-trait,.vt-face .pc-actions,.vt-face .pc-meta,.vt-face .pc-acq,.vt-face .pc-career{display:none}
@@ -297,3 +302,65 @@ body.vault-open{overflow:hidden}
 .vault.vault-lite .vt-card.vt-premium::after,.vault.vault-lite .vt-card.vt-sil.vt-sig::before{animation:none;display:none}
 .vault.vault-lite .vt-card.vt-sil.vt-premium{animation:vt-land .5s cubic-bezier(.2,.8,.2,1) both}
 .vault.vault-lite .vt-rv-beam{box-shadow:none}
+
+/* ── THE PROGRAMS: EACH ROOM ITS OWN ─────────────────────────────────────
+   The Speed Lab is cold light and lines that streak; the Trench Unit is
+   steel plate and turned earth; Primetime is a night sky with one spotlight
+   down on the case. The hue and the deep colour come from vault.js; these
+   change the texture, so the eye knows which room it is in before a word. */
+.vault.vault-speed-lab .vt-case-lid{background:
+  repeating-linear-gradient(115deg,transparent 0 14px,rgba(57,213,230,.10) 14px 16px,transparent 16px 34px),
+  linear-gradient(160deg,color-mix(in srgb,var(--vd,#07222b) 80%,#000) 0%,#0a1418 55%,#05070a 100%)}
+.vault.vault-speed-lab .vt-tunnel{opacity:.8;background:
+  linear-gradient(to bottom,transparent 55%,rgba(57,213,230,.06) 55.4%,transparent 55.8%),
+  repeating-linear-gradient(90deg,transparent 0 22px,rgba(57,213,230,.05) 22px 23px);
+  transform:perspective(600px) rotateX(58deg) translateY(28%) scale(1.8)}
+.vault.vault-speed-lab .vt-word{letter-spacing:.42em;font-style:italic}
+.vault.vault-trench-unit .vt-case-lid{background:
+  repeating-linear-gradient(0deg,transparent 0 9px,rgba(0,0,0,.28) 9px 10px),
+  repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.05) 46px 47px),
+  linear-gradient(160deg,#2a2218 0%,#1a150f 50%,#0c0a07 100%);border-color:rgba(211,162,106,.35)}
+.vault.vault-trench-unit .vt-case-body{background:linear-gradient(180deg,#1a150f,#0a0806);box-shadow:inset 0 0 0 1px rgba(211,162,106,.12),inset 0 -40px 60px rgba(0,0,0,.6)}
+.vault.vault-trench-unit .vt-tunnel{opacity:.35}
+.vault.vault-trench-unit .vt-word{letter-spacing:.2em;font-weight:900}
+.vault.vault-primetime{background:radial-gradient(60% 40% at 50% 8%,rgba(255,92,138,.22),transparent 60%),
+  radial-gradient(120% 90% at 50% 20%,var(--vd,#22091c) 0%,#07070d 62%,#030305 100%)}
+.vault.vault-primetime .vt-case-lid{background:
+  radial-gradient(70% 90% at 50% -20%,rgba(255,255,255,.16),transparent 60%),
+  linear-gradient(160deg,color-mix(in srgb,var(--vd,#22091c) 75%,#000) 0%,#0d0912 55%,#05040a 100%)}
+.vault.vault-primetime .vt-tunnel{opacity:.3}
+.vault.vault-primetime .vt-eyebrow{color:#fff;text-shadow:0 0 14px var(--vh,#ff5c8a)}
+.vault.vault-primetime .vt-word{text-shadow:0 0 22px var(--vh,#ff5c8a)}
+@media(prefers-reduced-motion:no-preference){
+  .vault.vault-speed-lab .vt-case.live .vt-case-lid{animation:vt-streak 1.1s linear infinite}
+  @keyframes vt-streak{to{background-position:68px 0,0 0}}
+}
+
+/* WHAT THE CARD SAYS UNDER ITSELF: the lineup line, a duplicate flagged
+   plainly, the scheme's word on him, and three small doors. */
+.vt-imp.dup b{color:#f2c744}
+.vt-imp .vt-fit{display:block;margin-top:3px;font:600 10.5px/1.3 'Inter',sans-serif;font-style:normal;letter-spacing:0;text-transform:none}
+.vt-imp .vt-fit.fp{color:var(--val,#3fb883)}
+.vt-imp .vt-fit.fn{color:#e2664b}
+.vt-imp .vt-fit.fz{color:var(--faint,#59626f)}
+.vt-card-acts{display:flex;gap:6px;padding:0 10px 9px;flex-wrap:wrap;animation:vt-clue .4s ease .35s both}
+.vt-card-acts:empty{display:none}
+.vt-ca{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.05);color:var(--text,#e9edf4);font:700 11px 'Inter',sans-serif;cursor:pointer}
+.vt-ca:hover{background:rgba(255,255,255,.1)}
+.vt-cmp{margin:0 10px 10px;padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.28);
+  font:500 11.5px/1.35 'Inter',sans-serif;color:var(--dim,#8b95a6);animation:vt-clue .3s ease both}
+.vt-cmp-h{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;color:var(--text,#e9edf4);font-weight:700}
+.vt-cmp-h i{font-style:normal;color:var(--faint,#59626f);font-size:10px;letter-spacing:.14em}
+.vt-cmp-h b{color:#fff;font-family:'JetBrains Mono',monospace}
+.vt-cmp-r{display:grid;grid-template-columns:34px 1fr 34px;gap:6px;align-items:center;padding:3px 0;border-top:1px solid rgba(255,255,255,.06);font-variant-numeric:tabular-nums}
+.vt-cmp-r span{text-align:center;font:800 9px/1 'Inter',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--faint,#59626f)}
+.vt-cmp-r b{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text,#e9edf4)}
+.vt-cmp-r b:last-child{text-align:right}
+.vt-cmp-r b.up{color:var(--val,#3fb883)}
+.vt-cmp-r b.dn{color:#e2664b}
+.vt-cmp-f{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08);color:var(--text,#e9edf4);font-weight:600}
+.vt-summary li .t i.dup{color:#f2c744;border-color:rgba(242,199,68,.5)}
+.vt-summary li .t i.fit{color:#39d5e6;border-color:rgba(57,213,230,.45)}
+.vt-summary li .t i.col{color:var(--dim,#8b95a6)}
+.vt-choose+.vt-pick+.btn-row .btn small,.vt-actions .btn small{font:700 11px 'Inter',sans-serif;color:var(--val,#3fb883);margin-left:4px}

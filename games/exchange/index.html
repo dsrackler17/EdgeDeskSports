@@ -143,6 +143,16 @@
   var BOARD=null,ROSTER=null,HIST=null,BUSY=false,COMPS={};
   var Q={position:'',sort:'newest',min:'',max:'',query:'',offset:0,limit:24};
   var POS=['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P'];
+  /* ARRIVING WITH A MAN IN MIND. The Vault's Market door lands here with his
+     position and a band around his number, so the first page is men like him. */
+  (function fromUrl(){
+    try{
+      var u=new URLSearchParams(location.search),pos=String(u.get('position')||'').toUpperCase(),mn=parseInt(u.get('min'),10),mx=parseInt(u.get('max'),10);
+      if(POS.indexOf(pos)>=0)Q.position=pos;
+      if(mn>=40&&mn<=99)Q.min=String(mn);
+      if(mx>=40&&mx<=99&&(!Q.min||mx>=+Q.min))Q.max=String(mx);
+    }catch(_){}
+  })();
   var SORTS=[['newest','Newest'],['ending','Ending soon'],['price_asc','Price, low first'],['price_desc','Price, high first'],['overall_desc','Overall, high first'],['overall_asc','Overall, low first']];
   function track(name,props){var p=props||{};p.game_type='franchise';G.track(name,p);}
   function left(iso){

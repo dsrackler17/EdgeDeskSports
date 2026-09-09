@@ -435,6 +435,52 @@
     var line = statsLine(p && p.position, c, { games: true });
     return line || ('Career begins ' + (p && p.acquired_season ? p.acquired_season : ''));
   }
+  /* THE GAMES IN YOUR HANDS: what he has done in the live games you played
+     him in, kept apart from the season's simulated line */
+  function handsLine(p) {
+    var c = (p && p.live_stats) || {};
+    if (!c.games) return '';
+    return statsLine(p && p.position, c, { games: true });
+  }
+  /* MILESTONE BADGES. Marks a career earns and keeps — never a change to the
+     rarity or the tier, which are what he was rolled at. Counted over the
+     simulated career and the games in your hands together, because both are
+     his. Pure: a card in, a list out. */
+  var BADGES = [
+    { key: 'games_100', label: '100 games', test: function (t) { return t.games >= 100; } },
+    { key: 'yards_1000', label: '1,000 yards', test: function (t, pos) { return SKILL[pos] && t.yards >= 1000 && t.yards < 5000; } },
+    { key: 'yards_5000', label: '5,000 yards', test: function (t, pos) { return SKILL[pos] && t.yards >= 5000; } },
+    { key: 'td_100', label: '100 touchdowns', test: function (t, pos) { return SKILL[pos] && t.td >= 100; } },
+    { key: 'tkl_250', label: '250 tackles', test: function (t, pos) { return DEF[pos] && t.tkl >= 250; } },
+    { key: 'sacks_25', label: '25 sacks', test: function (t, pos) { return DEF[pos] && t.sacks >= 25; } },
+    { key: 'int_10', label: '10 interceptions', test: function (t, pos) { return DEF[pos] && t.int >= 10; } },
+    { key: 'fg_50', label: '50 field goals', test: function (t, pos) { return pos === 'K' && t.fg >= 50; } }
+  ];
+  var SKILL = { QB: 1, RB: 1, WR: 1, TE: 1 }, DEF = { DL: 1, LB: 1, CB: 1, S: 1 };
+  function careerTotals(p) {
+    var a = (p && p.career_stats) || {}, b = (p && p.live_stats) || {};
+    function n(k) { return (+a[k] || 0) + (+b[k] || 0); }
+    return { games: n('games'), yards: n('yds') + n('rush_yds') + n('rec_yds'), td: n('td') + n('rush_td') + n('rec_td'),
+             tkl: n('tkl'), sacks: n('sacks'), int: n('int'), fg: n('fg') };
+  }
+  function badges(p) {
+    if (!p) return [];
+    var t = careerTotals(p), out = [];
+    BADGES.forEach(function (b) { if (b.test(t, p.position)) out.push({ key: b.key, label: b.label }); });
+    /* honours the server derives: a bowl won while he was on the roster */
+    (p.honours || []).forEach(function (h) {
+      if (h && h.kind === 'champion') out.push({ key: 'champion_' + h.season, label: 'Championship roster', detail: h.label || ('Season ' + h.season) });
+    });
+    return out;
+  }
+  /* WHY A RATING MOVED, said from what the line knows: his age at the time
+     and which way it went */
+  function evolutionReason(h) {
+    if (!h || h.kind !== 'ratings') return '';
+    var up = (h.after | 0) > (h.before | 0), age = h.age | 0;
+    if (up) return age && age <= 24 ? 'growth: a young man developing' : age && age >= 30 ? 'a late bloom' : 'form: the work is showing';
+    return age && age >= 31 ? 'age: the legs go first' : age && age <= 24 ? 'a setback in his development' : 'form: a rough stretch';
+  }
   function seasonLine(p) {
     var c = (p && p.season_stats) || {};
     if (c.games == null) return '';
@@ -487,7 +533,9 @@
     o = o || {};
     if (!p) return '';
     var rar = RARITY[p.rarity] || RARITY.common, tr = traitOf(p), starter = isStarter(p);
-    var hurt = !isAvailable(p), hurtLine = hurt ? injuryLine(p) : '';
+    /* a man on the table is not "out": he is not on the roster yet, which is
+       a different thing from being hurt */
+    var hurt = p.status === 'pack' ? false : !isAvailable(p), hurtLine = hurt ? injuryLine(p) : '';
     var tier = tierOf(p), home = hometownOf(p), body = bodyOf(p);
     var attrs = keyRatings(p).map(function (a) {
       return '<div class="pc-a"><span class="k">' + esc(a.label) + '</span><b>' + (a.value == null ? '—' : a.value) + '</b></div>';
@@ -521,6 +569,8 @@
       + '<div class="pc-acq"><span class="k">Acquired</span>' + esc(acquiredLine(p)) + '</div>'
       + (seasonLine(p) ? '<div class="pc-career"><span class="k">This season</span>' + esc(seasonLine(p)) + '</div>' : '')
       + '<div class="pc-career"><span class="k">Career</span>' + esc(careerLine(p)) + '</div>'
+      + (handsLine(p) ? '<div class="pc-career pc-hands"><span class="k">In your hands</span>' + esc(handsLine(p)) + '</div>' : '')
+      + (function () { var bs = badges(p); return bs.length ? '<div class="pc-badges">' + bs.map(function (b) { return '<i class="pc-badge" title="' + esc(b.detail || b.label) + '">' + esc(b.label) + '</i>'; }).join('') + '</div>' : ''; })()
       + (o.actions ? '<div class="pc-actions">' + o.actions + '</div>' : '')
       + '</article>';
   }
@@ -1896,16 +1946,64 @@
   /* ── THE VAULT (packs_v2) ─────────────────────────────────────────────────
      The pack table, mirrored for display; the SQL's franchise_pack_defs() is
      what applies, and the parity test pins these names to it. */
-  var PACKS_VERSION = 'packs_v3';
+  var PACKS_VERSION = 'packs_v4';
   var PACKS = {
     gridiron_cache:     { name: 'Gridiron Cache', art: 'cache', size: 3, keep: 1, earned: 'every rank you reach' },
     rookie_cache:       { name: 'Rookie Cache', art: 'rookie', size: 3, keep: 1, earned: 'founding the franchise' },
     postseason_pack:    { name: 'Postseason Pack', art: 'postseason', size: 3, keep: 1, earned: 'a season seen out' },
     championship_vault: { name: 'Championship Vault', art: 'vault', size: 4, keep: 2, earned: 'a bowl won' },
     scouts_find:        { name: "Scout's Find", art: 'scout', size: 2, keep: 1, earned: 'three Price Its scoring 80 or better in one week' },
-    gameday_pack:       { name: 'Game Day Pack', art: 'gameday', size: 3, keep: 1, earned: 'five live games finished at Pro or harder' }
+    gameday_pack:       { name: 'Game Day Pack', art: 'gameday', size: 3, keep: 1, earned: 'five live games finished at Pro or harder' },
+    /* THE PROGRAMS (packs_v4): what the games in your hands add up to. Each
+       draws from its own pool and dresses its own room. */
+    speed_lab:          { name: 'Speed Lab', art: 'speed', size: 3, keep: 1, earned: 'every 1,500 live yards in your hands at Pro or harder' },
+    trench_unit:        { name: 'Trench Unit', art: 'trench', size: 3, keep: 1, earned: 'three live games at Pro or harder holding them to ten points or fewer' },
+    primetime_vault:    { name: 'Primetime Vault', art: 'primetime', size: 4, keep: 1, earned: 'five live wins at Pro or harder' }
   };
   function packDef(kind) { return PACKS[kind] || { name: kind, art: 'cache', size: 3, keep: 1, earned: '' }; }
+  /* WHAT A PASSED MAN IS WORTH. Never silently gone: a man passed over in a
+     pack is scouted, and the department books scouting points by his tier.
+     A mirror of franchise_pack_defs()->'pass_sp'; the SQL credits it. */
+  var PASS_SP = { prospect: 3, starter: 5, impact: 8, prime: 15, elite: 30, apex: 60, legend: 120, mythic: 250 };
+  function passValue(men) {
+    var sum = 0;
+    (men || []).forEach(function (m) { if (!m || m.kept) return; sum += PASS_SP[m.tier || (PR && PR.tierOf ? PR.tierOf(m.overall | 0).key : 'starter')] || 0; });
+    return sum;
+  }
+  /* WHICH ARCHETYPES A SCHEME LOVES: a mirror of franchise_scheme_fit(), the
+     table the server's chemistry applies, -2 to +2, unlisted is 0. The
+     parity test holds this to the SQL. */
+  var SCHEME_FIT = {
+      offense: {
+        air_raid: { 'QB': { 'Gunslinger': 2, 'Field General': 1, 'Game Manager': -1 }, 'WR': { 'Deep Threat': 2, 'Route Runner': 1, 'Route Technician': 1, 'Slot Weapon': 1, 'Possession': -1, 'Possession Receiver': -1 }, 'TE': { 'Seam Stretcher': 2, 'Move TE': 1, 'In-Line': -1 }, 'RB': { 'Receiving Back': 2, 'Power Back': -1 }, 'OL': { 'Pass Protector': 2, 'Road Grader': -1 } },
+        spread: { 'QB': { 'Scrambler': 2, 'Improviser': 2, 'Game Manager': -1 }, 'WR': { 'Slot Weapon': 2, 'Deep Threat': 1, 'Route Runner': 1 }, 'TE': { 'Move TE': 2, 'In-Line': -1 }, 'RB': { 'Elusive Back': 2, 'Receiving Back': 1, 'Power Back': -1 }, 'OL': { 'Technician': 2, 'Pass Protector': 1 } },
+        pro_style: { 'QB': { 'Field General': 2, 'Game Manager': 1, 'Scrambler': -1 }, 'WR': { 'Possession': 1, 'Possession Receiver': 1, 'Route Runner': 1, 'Route Technician': 1 }, 'TE': { 'In-Line': 1, 'Move TE': 1 }, 'RB': { 'Workhorse': 2, 'Power Back': 1 }, 'OL': { 'Technician': 1, 'Pass Protector': 1, 'Road Grader': 1 } },
+        power_run: { 'QB': { 'Game Manager': 2, 'Field General': 1, 'Gunslinger': -1 }, 'WR': { 'Physical Target': 2, 'Possession': 1, 'Possession Receiver': 1, 'Deep Threat': -1 }, 'TE': { 'In-Line': 2, 'Seam Stretcher': -1 }, 'RB': { 'Power Back': 2, 'Workhorse': 2, 'Elusive Back': -1 }, 'OL': { 'Road Grader': 2, 'Pass Protector': -1 } },
+        option: { 'QB': { 'Scrambler': 2, 'Improviser': 1, 'Gunslinger': -1, 'Game Manager': -1 }, 'WR': { 'Deep Threat': 1, 'Physical Target': 1 }, 'TE': { 'In-Line': 1, 'Move TE': 1 }, 'RB': { 'Elusive Back': 2, 'Workhorse': 1 }, 'OL': { 'Road Grader': 2, 'Technician': 1, 'Pass Protector': -1 } },
+        west_coast: { 'QB': { 'Game Manager': 2, 'Field General': 1, 'Gunslinger': -1 }, 'WR': { 'Route Runner': 2, 'Route Technician': 2, 'Possession': 1, 'Slot Weapon': 1, 'Deep Threat': -1 }, 'TE': { 'Move TE': 2, 'Seam Stretcher': 1 }, 'RB': { 'Receiving Back': 2, 'Elusive Back': 1 }, 'OL': { 'Technician': 2, 'Pass Protector': 1 } }
+      },
+      defense: {
+        four_three: { 'DL': { 'Edge Rusher': 1, 'Run Stopper': 1, 'Balanced': 1, 'Hybrid': 1 }, 'LB': { 'Run Stopper': 1, 'Hybrid': 1 }, 'CB': { 'Coverage': 1, 'Hybrid': 1 }, 'S': { 'Coverage': 1, 'Run Stopper': 1 } },
+        three_four: { 'DL': { 'Run Stopper': 2, 'Power Rusher': 1, 'Speed Rusher': -1 }, 'LB': { 'Hybrid': 2, 'Coverage': 1, 'Run Stopper': 1 }, 'CB': { 'Coverage': 1 }, 'S': { 'Ball Hawk': 1, 'Coverage': 1 } },
+        press_man: { 'DL': { 'Edge Rusher': 2, 'Speed Rusher': 2, 'Run Stopper': -1 }, 'LB': { 'Coverage': 1 }, 'CB': { 'Shutdown': 2, 'Press Specialist': 2, 'Zone Specialist': -2, 'Ball Hawk': -1 }, 'S': { 'Coverage': 2, 'Run Stopper': -1 } },
+        zone: { 'DL': { 'Hybrid': 1, 'Balanced': 1, 'Run Stopper': 1 }, 'LB': { 'Coverage': 2, 'Hybrid': 1, 'Run Stopper': -1 }, 'CB': { 'Zone Specialist': 2, 'Ball Hawk': 2, 'Press Specialist': -2 }, 'S': { 'Ball Hawk': 2, 'Coverage': 1 } },
+        blitz_heavy: { 'DL': { 'Speed Rusher': 2, 'Edge Rusher': 2, 'Power Rusher': 1, 'Run Stopper': -1 }, 'LB': { 'Run Stopper': 1, 'Hybrid': 2, 'Coverage': -1 }, 'CB': { 'Shutdown': 1, 'Press Specialist': 1, 'Coverage': 1 }, 'S': { 'Run Stopper': 1, 'Ball Hawk': 1 } },
+        bend_dont_break: { 'DL': { 'Run Stopper': 2, 'Balanced': 1, 'Speed Rusher': -1 }, 'LB': { 'Coverage': 2, 'Run Stopper': 1 }, 'CB': { 'Zone Specialist': 1, 'Coverage': 2, 'Press Specialist': -1 }, 'S': { 'Coverage': 2, 'Ball Hawk': 1 } }
+      }
+    };
+  function schemeFit(side, scheme, position, archetype) {
+    var t = SCHEME_FIT[side] && SCHEME_FIT[side][scheme] && SCHEME_FIT[side][scheme][position];
+    return t && archetype && t[archetype] != null ? t[archetype] : 0;
+  }
+  var OFFENSE_POS = { QB: 1, RB: 1, WR: 1, TE: 1, OL: 1 };
+  function fitFor(man, franchise) {
+    if (!man || !franchise) return null;
+    var side = OFFENSE_POS[man.position] ? 'offense' : 'defense';
+    var scheme = side === 'offense' ? franchise.offense : franchise.defense;
+    if (!scheme || man.position === 'K' || man.position === 'P') return null;
+    var v = schemeFit(side, scheme, man.position, man.archetype);
+    return { side: side, scheme: scheme, value: v, word: v >= 2 ? 'Built for your scheme' : v > 0 ? 'Fits your scheme' : v <= -2 ? 'Fights your scheme' : v < 0 ? 'Not your scheme\'s man' : 'Neutral in your scheme' };
+  }
   /* the board: every sealed pack with its odds, the one on the table, the men kept */
   function packsBoard() { return rpc('franchise_packs_board', withSecret({})); }
   /* MY PULLS: every pack ever opened, the men as they were pulled, the best of them (Phase 20) */
@@ -2225,7 +2323,8 @@
     rankCost: rankCost, rankAt: rankAt, rankFor: rankFor, rankEdge: rankEdge,
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
-    PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, packsBoard: packsBoard, pulls: pulls, PULLS_VERSION: PULLS_VERSION, packOpenId: packOpenId, card: card,
+    badges: badges, careerTotals: careerTotals, handsLine: handsLine, evolutionReason: evolutionReason, BADGES: BADGES,
+    PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, PASS_SP: PASS_SP, passValue: passValue, SCHEME_FIT: SCHEME_FIT, schemeFit: schemeFit, fitFor: fitFor, packsBoard: packsBoard, pulls: pulls, PULLS_VERSION: PULLS_VERSION, packOpenId: packOpenId, card: card,
     LINEUP_VERSION: LINEUP_VERSION, CHEMISTRY_VERSION: CHEMISTRY_VERSION, CHEMISTRY: CHEMISTRY, chemistryLine: chemistryLine, chemistryWord: chemistryWord,
     lineupBest: lineupBest,
     EXCHANGE_VERSION: EXCHANGE_VERSION, EXCHANGE: EXCHANGE, exchangeFee: exchangeFee,
