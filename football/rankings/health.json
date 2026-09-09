@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-09-08T14:32:49.703Z",
+ "generated_at": "2026-09-09T13:54:20.067Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -13,7 +13,7 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "c1df596dce9db16b"
+  "digest": "19565490c99612c1"
  },
  "season": 2026,
  "week": 1,
@@ -25,14 +25,14 @@
  "ratings": {
   "overall": 138,
   "talent": 138,
-  "performance": 133,
-  "offense": 135,
-  "defense": 135,
+  "performance": 134,
+  "offense": 136,
+  "defense": 136,
   "special_teams": 104,
-  "run_offense": 131,
-  "pass_offense": 128,
+  "run_offense": 132,
+  "pass_offense": 129,
   "run_defense": 138,
-  "pass_defense": 130,
+  "pass_defense": 131,
   "depth": 138,
   "continuity": 138
  },
@@ -55,43 +55,43 @@
   },
   "performance": {
    "label": "Performance",
-   "rated": 133,
-   "ranked": 96,
+   "rated": 134,
+   "ranked": 97,
    "unranked_low_confidence": 37,
-   "no_rating": 5,
-   "coverage": 0.964
+   "no_rating": 4,
+   "coverage": 0.971
   },
   "offense": {
    "label": "Offense",
-   "rated": 135,
-   "ranked": 98,
+   "rated": 136,
+   "ranked": 99,
    "unranked_low_confidence": 37,
-   "no_rating": 3,
-   "coverage": 0.978
+   "no_rating": 2,
+   "coverage": 0.986
   },
   "defense": {
    "label": "Defense",
-   "rated": 135,
-   "ranked": 98,
+   "rated": 136,
+   "ranked": 99,
    "unranked_low_confidence": 37,
-   "no_rating": 3,
-   "coverage": 0.978
+   "no_rating": 2,
+   "coverage": 0.986
   },
   "run_offense": {
    "label": "Run offense",
-   "rated": 131,
-   "ranked": 96,
+   "rated": 132,
+   "ranked": 97,
    "unranked_low_confidence": 35,
-   "no_rating": 7,
-   "coverage": 0.949
+   "no_rating": 6,
+   "coverage": 0.957
   },
   "pass_offense": {
    "label": "Pass offense",
-   "rated": 128,
-   "ranked": 93,
+   "rated": 129,
+   "ranked": 94,
    "unranked_low_confidence": 35,
-   "no_rating": 10,
-   "coverage": 0.928
+   "no_rating": 9,
+   "coverage": 0.935
   },
   "run_defense": {
    "label": "Run defense",
@@ -103,11 +103,11 @@
   },
   "pass_defense": {
    "label": "Pass defense",
-   "rated": 130,
-   "ranked": 95,
+   "rated": 131,
+   "ranked": 96,
    "unranked_low_confidence": 35,
-   "no_rating": 8,
-   "coverage": 0.942
+   "no_rating": 7,
+   "coverage": 0.949
   },
   "special_teams": {
    "label": "Special teams",
@@ -275,6 +275,17 @@
    "reason": "special teams: the special-teams contract scored 27% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
+   "team": "UConn",
+   "key": "uconn",
+   "games_played": 1,
+   "games_in_the_play_table": 1,
+   "box_only_games": 0,
+   "missing": [
+    "special_teams"
+   ],
+   "reason": "special teams: no special-teams metric cleared its observation floor for this team — the kicking, punting and return feeds reached none of its games"
+  },
+  {
    "team": "Alabama",
    "key": "alabama",
    "games_played": 1,
@@ -295,17 +306,6 @@
     "offense"
    ],
    "reason": "offense: no offensive metric cleared its observation floor — success_rate (only 21 observed, below the 30 this metric needs before it means anything); early_down_success (only 16 observed, below the 18 this metric needs before it means anything); explosive_pass_rate (only 10 observed, below the 12 this metric needs before it means anything)"
-  },
-  {
-   "team": "UConn",
-   "key": "uconn",
-   "games_played": 1,
-   "games_in_the_play_table": 1,
-   "box_only_games": 0,
-   "missing": [
-    "special_teams"
-   ],
-   "reason": "special teams: no special-teams metric cleared its observation floor for this team — the kicking, punting and return feeds reached none of its games"
   },
   {
    "team": "South Carolina",
@@ -330,19 +330,8 @@
    "reason": "special teams: the special-teams contract scored 27% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
-   "team": "App State",
-   "key": "appstate",
-   "games_played": 1,
-   "games_in_the_play_table": 1,
-   "box_only_games": 0,
-   "missing": [
-    "special_teams"
-   ],
-   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
-  },
-  {
-   "team": "Boston College",
-   "key": "bostoncollege",
+   "team": "UTSA",
+   "key": "utsa",
    "games_played": 1,
    "games_in_the_play_table": 1,
    "box_only_games": 0,
@@ -363,30 +352,8 @@
    "reason": "special teams: no special-teams metric cleared its observation floor for this team — the kicking, punting and return feeds reached none of its games"
   },
   {
-   "team": "Duke",
-   "key": "duke",
-   "games_played": 1,
-   "games_in_the_play_table": 1,
-   "box_only_games": 0,
-   "missing": [
-    "special_teams"
-   ],
-   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
-  },
-  {
-   "team": "Tulane",
-   "key": "tulane",
-   "games_played": 1,
-   "games_in_the_play_table": 1,
-   "box_only_games": 0,
-   "missing": [
-    "special_teams"
-   ],
-   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
-  },
-  {
-   "team": "UTSA",
-   "key": "utsa",
+   "team": "App State",
+   "key": "appstate",
    "games_played": 1,
    "games_in_the_play_table": 1,
    "box_only_games": 0,
@@ -418,28 +385,6 @@
    "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
-   "team": "Penn State",
-   "key": "pennstate",
-   "games_played": 1,
-   "games_in_the_play_table": 1,
-   "box_only_games": 0,
-   "missing": [
-    "defense"
-   ],
-   "reason": "defense: no defensive metric cleared its observation floor — def_success_allowed (only 10 observed, below the 30 this metric needs before it means anything); def_early_down_allowed (only 9 observed, below the 18 this metric needs before it means anything); def_explosive_pass_allowed (only 1 observed, below the 12 this metric needs before it means anything)"
-  },
-  {
-   "team": "Marshall",
-   "key": "marshall",
-   "games_played": 1,
-   "games_in_the_play_table": 1,
-   "box_only_games": 0,
-   "missing": [
-    "offense"
-   ],
-   "reason": "offense: no offensive metric cleared its observation floor — success_rate (only 10 observed, below the 30 this metric needs before it means anything); early_down_success (only 9 observed, below the 18 this metric needs before it means anything); explosive_pass_rate (only 1 observed, below the 12 this metric needs before it means anything)"
-  },
-  {
    "team": "Navy",
    "key": "navy",
    "games_played": 1,
@@ -449,6 +394,17 @@
     "special_teams"
    ],
    "reason": "special teams: the special-teams contract scored 26% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
+  },
+  {
+   "team": "Charlotte",
+   "key": "charlotte",
+   "games_played": 1,
+   "games_in_the_play_table": 1,
+   "box_only_games": 0,
+   "missing": [
+    "special_teams"
+   ],
+   "reason": "special teams: no special-teams metric cleared its observation floor for this team — the kicking, punting and return feeds reached none of its games"
   },
   {
    "team": "Auburn",
@@ -473,15 +429,59 @@
    "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
-   "team": "Charlotte",
-   "key": "charlotte",
+   "team": "Boston College",
+   "key": "bostoncollege",
    "games_played": 1,
    "games_in_the_play_table": 1,
    "box_only_games": 0,
    "missing": [
     "special_teams"
    ],
-   "reason": "special teams: no special-teams metric cleared its observation floor for this team — the kicking, punting and return feeds reached none of its games"
+   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
+  },
+  {
+   "team": "Penn State",
+   "key": "pennstate",
+   "games_played": 1,
+   "games_in_the_play_table": 1,
+   "box_only_games": 0,
+   "missing": [
+    "defense"
+   ],
+   "reason": "defense: no defensive metric cleared its observation floor — def_success_allowed (only 10 observed, below the 30 this metric needs before it means anything); def_early_down_allowed (only 9 observed, below the 18 this metric needs before it means anything); def_explosive_pass_allowed (only 1 observed, below the 12 this metric needs before it means anything)"
+  },
+  {
+   "team": "Marshall",
+   "key": "marshall",
+   "games_played": 1,
+   "games_in_the_play_table": 1,
+   "box_only_games": 0,
+   "missing": [
+    "offense"
+   ],
+   "reason": "offense: no offensive metric cleared its observation floor — success_rate (only 10 observed, below the 30 this metric needs before it means anything); early_down_success (only 9 observed, below the 18 this metric needs before it means anything); explosive_pass_rate (only 1 observed, below the 12 this metric needs before it means anything)"
+  },
+  {
+   "team": "Duke",
+   "key": "duke",
+   "games_played": 1,
+   "games_in_the_play_table": 1,
+   "box_only_games": 0,
+   "missing": [
+    "special_teams"
+   ],
+   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
+  },
+  {
+   "team": "Tulane",
+   "key": "tulane",
+   "games_played": 1,
+   "games_in_the_play_table": 1,
+   "box_only_games": 0,
+   "missing": [
+    "special_teams"
+   ],
+   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
    "team": "Tulsa",
@@ -605,8 +605,8 @@
    "reason": "special teams: no special-teams metric cleared its observation floor for this team — the kicking, punting and return feeds reached none of its games"
   },
   {
-   "team": "Northwestern",
-   "key": "northwestern",
+   "team": "BYU",
+   "key": "byu",
    "games_played": 1,
    "games_in_the_play_table": 1,
    "box_only_games": 0,
@@ -627,8 +627,8 @@
    "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
-   "team": "BYU",
-   "key": "byu",
+   "team": "Northwestern",
+   "key": "northwestern",
    "games_played": 1,
    "games_in_the_play_table": 1,
    "box_only_games": 0,
@@ -647,25 +647,13 @@
     "special_teams"
    ],
    "reason": "special teams: the special-teams contract scored 30% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
-  },
-  {
-   "team": "SMU",
-   "key": "smu",
-   "games_played": 1,
-   "games_in_the_play_table": 0,
-   "box_only_games": 1,
-   "missing": [
-    "offense",
-    "defense"
-   ],
-   "reason": "this team has played 1 game(s) and the play table has published none of them — the game is confirmed final by the ESPN box, which carries a kicking line and no scrimmage plays. Offence, defence and every sub-unit wait on the play feed; nothing about them is estimated in the meantime."
   }
  ],
  "ingestion": {
   "completed_games_in_schedule": 99,
   "last_completed_kickoff": "2026-09-07T23:30:00.000Z",
   "team_games_read": 413,
-  "teams_with_a_performance_rating": 133,
+  "teams_with_a_performance_rating": 134,
   "special_teams_team_games_joined": 191,
   "special_teams_coverage_joined": 178,
   "special_teams_box_available": true,
@@ -676,22 +664,13 @@
   "latest_completed_kickoff": "2026-09-07T23:30:00.000Z",
   "completed_games_digest": "53d1a794316d84ad",
   "finality": {
-   "schedule_final": 98,
-   "confirmed_by_box_alone": 1,
-   "games": [
-    {
-     "game_id": "401858212",
-     "home": "Florida State",
-     "away": "SMU",
-     "week": 1,
-     "start_date": "2026-09-07T23:30:00.000Z",
-     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
-    }
-   ],
+   "schedule_final": 99,
+   "confirmed_by_box_alone": 0,
+   "games": [],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
   "team_games_read": 413,
-  "teams_with_a_performance_rating": 133,
+  "teams_with_a_performance_rating": 134,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
  "special_teams_feed_density": {
@@ -738,12 +717,12 @@
    "week_ordinal": 1,
    "week_label": "Week 1",
    "season_type": "regular",
-   "generated_at": "2026-09-08T14:32:49.703Z",
+   "generated_at": "2026-09-09T13:54:20.067Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-09-08T14:32:49.703Z",
+ "last_rankings_build": "2026-09-09T13:54:20.067Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
