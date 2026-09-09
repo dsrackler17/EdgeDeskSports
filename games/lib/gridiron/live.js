@@ -79,12 +79,13 @@
 
     var t = 0, phase = 'set', outcome = null;
     var runSide = 1;   /* which way a run concept goes: the art and the pull agree */
+    var pullerActor = null;   /* the guard who pulls on a gap concept: the linebacker's oldest key */
     var ball = { x: ballX, y: los, z: 0, spin: 0, holder: null, flight: null };
     var qb = byId['o_QB'] || null;
     var carrier = null, user = null;
     /* WHEN THE BALL IS IN HIS BELLY. A counter shows one way first and a
        draw waits for the rush to go past, so both mesh later than a dive. */
-    var handoffAt = play.type !== 'run' ? 0 : play.key === 'counter' ? 0.80 : play.concept === 'draw' ? 0.85 : 0.62;
+    var handoffAt = play.type !== 'run' ? 0 : play.key === 'counter' ? 0.68 : play.concept === 'draw' ? 0.72 : 0.62;
     var thrown = false, pressureSeen = false, handedOff = false;
     var notes = [];
     var threwAway = false;
@@ -162,8 +163,8 @@
         var sortedOL = line.slice().sort(function (p, q) { return p.x - q.x; });
         line.forEach(function (b) {
           if (!b.job) return;
-          b.job.reach = play.concept === 'outside' ? runSide * 0.75 : play.concept === 'inside' ? runSide * 0.30 : 0;
-          if (play.concept === 'draw') b.job.setFirst = 0.55;
+          b.job.reach = play.concept === 'outside' ? runSide * 0.06 : play.concept === 'inside' ? runSide * 0.02 : 0;
+          if (play.concept === 'draw') b.job.setFirst = 0.20;
         });
         if (play.concept === 'gap' && sortedOL.length >= 5) {
           /* the backside guard pulls: play goes left, the right guard comes round */
@@ -171,6 +172,7 @@
           if (puller) {
             if (puller.job && puller.job.on) taken[puller.job.on] = 0;
             puller.job = { kind: 'pull', side: runSide, to: { x: ballX + runSide * 2.6, y: los - 0.9 } };
+            pullerActor = puller;
           }
         }
       }
@@ -239,7 +241,7 @@
         fit(dl, 4.6, 1.1);
         fit(lb, 6.2, 3.4);
         /* a draw is a pass until it is not: the backers drop for a beat */
-        if (play.concept === 'draw') lb.forEach(function (d) { if (d.job && d.job.kind === 'fill') d.job.dropFirst = 0.45; });
+        if (play.concept === 'draw') lb.forEach(function (d) { if (d.job && d.job.kind === 'fill') d.job.dropFirst = 0.10; });
 
         /* ── THE SECOND LEVEL ────────────────────────────────────────────
            Five linemen against a four-man front leaves one free, and what he
@@ -618,7 +620,7 @@
              first defender waiting there is his, and he leads the back */
           var arrived = Math.abs(a.x - j.to.x) < 1.2 && a.y > j.to.y - 0.6;
           if (!arrived && !a.lock) { a.tx = j.to.x; a.ty = j.to.y; a.state = 'run'; return; }
-          var kick = null, kd = 4.2;
+          var kick = null, kd = 3.0;
           actors.forEach(function (r) {
             if (r.side !== 'def' || r.lock || r.state === 'down') return;
             if ((r.x - a.x) * j.side < -1.5) return;      /* behind the pull */
@@ -626,7 +628,7 @@
             if (g < kd) { kd = g; kick = r; }
           });
           if (kick) { a.tx = kick.x; a.ty = kick.y - 0.3; a.job.on = kick.id; a.state = dist(a, kick) < 1.4 ? 'block' : 'run'; return; }
-          a.tx = j.to.x + j.side * 1.2; a.ty = los + 2.2; a.state = 'block'; return;
+          a.tx = j.to.x + j.side * 1.0; a.ty = los + 0.2; a.state = 'block'; return;
         }
         case 'hand':
           a.tx = ballX - 1.4; a.ty = los - 2.4; a.state = 'run'; return;
@@ -661,8 +663,8 @@
       /* the first beat after the mesh he runs the play as drawn — the edge,
          the hole behind the pull, the middle — then he runs to daylight */
       var aim;
-      if (t < handoffAt + 0.45 && play.concept === 'outside') aim = { x: clamp(ballX + runSide * 7, 2, FIELD.width - 2), y: los + 1.5 };
-      else if (t < handoffAt + 0.40 && play.concept === 'gap') aim = { x: ballX + runSide * 2.6, y: los + 1.2 };
+      if (t < handoffAt + 0.15 && play.concept === 'outside') aim = { x: clamp(ballX + runSide * 3, 2, FIELD.width - 2), y: los + 1.5 };
+      else if (t < handoffAt + 0.15 && play.concept === 'gap') aim = { x: ballX + runSide * 2.6, y: los + 1.2 };
       else aim = daylight(a);
       a.tx = aim.x; a.ty = aim.y;
       a.state = 'carry';
@@ -776,7 +778,15 @@
        to chase. A defence that skips this step is eleven men in a queue. */
     function fillThink(a, j) {
       var c = carrier;
-      if (j.dropFirst && t < j.dropFirst) { a.tx = j.x; a.ty = j.y + 3.5; a.state = 'run'; return; }
+      if (j.dropFirst && t < j.dropFirst) { a.tx = j.x; a.ty = j.y + 1.0; a.state = 'run'; return; }
+      /* THE LINEBACKER READS THE GUARD. A pulling guard is the oldest run key
+         there is: before the ball is handed off the backers flow with the
+         pull and hold their depth until it is; a rookie reads it later, a
+         legend sooner. Only a pull is a key — an inside zone still has to be
+         read off the ball, which is what keeps the stick's runs honest. */
+      if (play.type === 'run' && !handedOff && pullerActor && t > 0.22 * dull) {
+        a.tx = pullerActor.x * 0.5 + j.x * 0.5; a.ty = j.y; a.state = 'run'; return;
+      }
       if (c && c.carry && c !== qb) {
         var declared = c.y > los + 1.0 || Math.abs(c.x - j.x) < 2.6 || t > 2.4;
         if (declared) { pursue(a, c); return; }
@@ -1219,11 +1229,18 @@
        corner's is long, and a sharper defence reads it sooner. */
     function runDeclared(a) {
       var c = carrier;
-      if (!c || !c.carry || c === qb || c.side !== 'off') return false;
+      if (!c || !c.carry || c.side !== 'off') return false;
+      if (c === qb) {
+        /* a scramble is a run once he reaches the line; on a called run the
+           safeties and linebackers read the action before the ball is handed
+           off and fill — the corners stay on their men until it declares */
+        if (play.type !== 'run') return c.y > los - 0.5;
+        return a.pos !== 'CB' && t > 0.30 * dull;
+      }
       /* a safety keys the back and sees the handoff; a corner is watching a
          receiver and sees it last */
       if (c.y > los + (a.pos === 'S' ? -0.5 : 0.5)) return true;
-      var beat = a.pos === 'CB' ? 0.85 : a.pos === 'S' ? 0.30 : 0.45;
+      var beat = a.pos === 'CB' ? 0.50 : a.pos === 'S' ? 0.05 : 0.10;
       return t > handoffAt + beat * dull;
     }
     function manThink(a, j) {
