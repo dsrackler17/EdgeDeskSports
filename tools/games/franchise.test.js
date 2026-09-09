@@ -2888,7 +2888,17 @@ fresh();
   /* the pages */
   const PLAY = fs.readFileSync(G('play/play.js'), 'utf8');
   chk('the final screen files the game with the franchise, under the game\'s own key', /FR\.recordLiveGame\(key, payload\)/.test(PLAY) && /String\(game\.meta\.seed\) \+ ':' \+ \(game\.meta\.startedAt \|\| 0\)/.test(PLAY) && /game\.meta\.startedAt = Date\.now\(\);/.test(PLAY));
-  chk('and shows the server\'s answer, never the page\'s hope', /paintFranchisePanel\(r, payload\)/.test(PLAY) && /rewardPanel\(r\)/.test(PLAY) && /Open it in the Vault/.test(PLAY));
+  chk('and shows the server\'s answer, never the page\'s hope', /paintFranchisePanel\(r, f\.payload, id\)/.test(PLAY) && /rewardPanel\(r\)/.test(PLAY) && /Open it in the Vault/.test(PLAY));
+  chk('the filing starts once per game key and every panel paints from the same answer', /function startFiling\(\)/.test(PLAY) && /if \(FILING && FILING.key === key\) return FILING;/.test(PLAY) && /function paintFilingInto\(id\)/.test(PLAY) && /paintFilingInto\('frStage'\)/.test(PLAY) && /paintFilingInto\('frPanel'\)/.test(PLAY));
+  /* the broadcast package: beats, not a wall */
+  chk('halftime and the final are told in beats with a skip on every one', /function stagedOverlay\(o\)/.test(PLAY) && /id="stgSkip"/.test(PLAY) && /brand: 'EdgeDesk Halftime'/.test(PLAY) && /skipLabel: 'Skip to the adjustment'/.test(PLAY) && /onDone: halftimeAdjust/.test(PLAY) && /onDone: finalRecap/.test(PLAY));
+  chk('the instant speed setting never sits through a timed beat', /if \(st\.ms && set\.speed !== 'instant'\) stagedTimer = setTimeout\(next, st\.ms\);/.test(PLAY));
+  chk('the final ends at five doors, the next game first', /class="fin-acts"/.test(PLAY) && /id="btnAgain"/.test(PLAY) && /href="\/games\/gameday\/"/.test(PLAY) && /href="\/games\/roster\/"/.test(PLAY) && /href="\/games\/packs\/"/.test(PLAY) && /#research\/football/.test(PLAY));
+  chk('the season context is the franchise\'s own snapshot and the record on this device, never invented', /function seasonContext\(\)/.test(PLAY) && /FR\.snapshot\(\)/.test(PLAY) && /S\.readRecord\(\)/.test(PLAY) && /Nothing is invented to fill a line/.test(PLAY));
+  chk('the men on the cards play the game: the roster is read off the RPC envelope\'s data', /var d = r && r\.ok \? r\.data : \(r && r\.players \? r : null\);/.test(PLAY) && /var players = \(d && \(d\.players \|\| d\.roster\)\) \|\| null;/.test(PLAY));
+  chk('Resume and Kick off wait for the franchise\'s teams to settle', /function whenTeams\(fn\)/.test(PLAY) && /whenTeams\(function \(\) \{ resumeGame\(S\.saved\(\) \|\| resumable\); \}\)/.test(PLAY) && /whenTeams\(function \(\) \{ S\.clearSave\(\); newGame\(\); \}\)/.test(PLAY) && /teamsSettling = Promise\.resolve/.test(PLAY));
+  chk('the final is shown once per game and one staged sequence runs at a time', /if \(fk && finalShownFor === fk\) return;/.test(PLAY) && /if \(stagedActive\) stagedActive\.cancel\(\);/.test(PLAY) && !/if \(game\.over\) finalScreen\(\);\s*\}/.test(PLAY));
+  chk('a drive is summed up once when it ends, and a man closing on a round number is said once', /function driveChip\(\)/.test(PLAY) && /shownDrives = game\.drives\.length;/.test(PLAY) && /function needsBit\(off\)/.test(PLAY) && /milestoned\[k \+ ':needs:' \+ nr\.at\] = 1;/.test(PLAY));
   chk('the broadcast announces a man from the Vault and calls a milestone once', /From the Vault/.test(PLAY) && /function milestoneBit/.test(PLAY) && /milestoned\[key\] = 1;/.test(PLAY));
   chk('the engine keeps who a man is to you on his line', /uid: player\.id == null \? null : String\(player\.id\), acq: player\.acquired_source \|\| null/.test(fs.readFileSync(G('lib/gridiron/engine.js'), 'utf8')));
   has(GAMEDAY, 'New weapon', 'Game Day carries the new weapon');

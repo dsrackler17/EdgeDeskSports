@@ -63,6 +63,10 @@
     corner:   { pts: [[12, -1], [24, 9]],                 band: 'deep',  zone: 'out',  t: 3.3 },
     deepcross:{ pts: [[10, -2], [22, -20]],               band: 'deep',  zone: 'mid',  t: 3.4 },
     wheel:    { pts: [[1, 4], [6, 9], [26, 10]],          band: 'deep',  zone: 'out',  t: 3.3 },
+    /* the names a coach uses for two of the above: a drag is a shallow
+       cross, an in is a dig */
+    drag:     { pts: [[1, -3], [2, -16]],                 band: 'short', zone: 'mid',  t: 1.8 },
+    'in':     { pts: [[12, 0], [13, -14]],                band: 'int',   zone: 'mid',  t: 2.6 },
     /* blocking / decoy */
     block:    { pts: [[1, 0]],                            band: null,    zone: null,   t: 0 },
     stalk:    { pts: [[3, 0], [4, -1]],                   band: null,    zone: null,   t: 0 }

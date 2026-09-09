@@ -283,6 +283,16 @@ function liveGame(seed, length, onPlay) {
   eq('the resumed game has the same score', JSON.stringify(back.score), JSON.stringify(g.score));
   eq('and the same number of named men', menBack.length, men.length);
   eq('and their rushing yards still sum to the team\'s', menBack.reduce((t, p) => t + p.ry, 0), sumRy);
+  /* the record knows its own weather: the page's idea of the sky is only the
+     fallback for a record saved before the sky was */
+  MEM = {};
+  const wet = S.build({ seed: 'keep-sky', weather: { weather: 'rain', temp: 48, wind: 14 }, settings: { length: 'blitz', difficulty: 'pro' } });
+  S.step(wet, { type: 'kickoff' });
+  const dry = S.resume(S.saved(), { weather: { weather: 'clear', temp: 75, wind: 3 } });
+  eq('a resumed game replays under the sky it was saved in', dry.weather && dry.weather.kind, wet.weather && wet.weather.kind);
+  const rec = S.saved(); rec.meta.weather = null;
+  const fell = S.resume(rec, { weather: { weather: 'wind', temp: 60, wind: 20 } });
+  eq('and a record without a sky takes the page\'s', fell.weather && fell.weather.kind, 'wind');
 })();
 
 /* ── 7. the progression reads the coverage ──────────────────────────────── */
