@@ -3312,6 +3312,112 @@ Credits are what the ledger calls `tc` and the game calls Credits; XP is
 Research XP. Nothing on the Exchange can be bought with money: there is no
 Credit for sale, and the SQL has no path that grants one.
 
+## The Vault as a product — the case in the hand, the night at the top of the ladder, the pull record (`pulls_v1`)
+
+The second sentence of the brief: *that was sick*. Phase 8–9 built the room
+and the rule (the server rolls and writes before anything is shown; the odds
+are printed on the pack; nothing is for sale). This pass makes the room a
+product. Nothing about the rule changed, and the tests that pin it still pass
+untouched.
+
+**The case has weight.** A finger on the sealed case tilts it toward the
+touch and the light moves across the lid (`--tx`, `--ty`, `--lx`, set by
+`vault.js`, read by `vault.css`); a tap on it taps back. While the seal is
+being scanned a tap on the case skips to the men, so a veteran is never made
+to sit through the theatre twice.
+
+**The back of a card hints and never tells.** A plain man's back is plain; a
+Prime or Elite man's has a firmer edge; an Apex man's breathes; a Legend or
+Mythic man's carries a beam across it and the room's data lines brighten
+while it is face down (`.vt-sig`). The back carries the position and nothing
+else — the test holds that the markup never puts a tier or a name on it.
+
+**The Apex reveal counts up.** The mark, the clues, and now the overall is
+counted up from below and lands (`from` on the `ovr` step, always under the
+number, never above it), with a tick in the hand when it lands.
+
+**The top of the ladder is a different night, not a bigger Apex.** A Legend
+or Mythic man goes: the room to black and the sound *cut* (not louder —
+silent) · one light finds the floor · the EdgeDesk mark glitches and
+**SIGNAL DETECTED** is called · the tier's own symbol (a gold diamond in a
+ring; a three-colour ring around a void) before a single fact about him ·
+the lens goes down the tunnel to a silhouette far away · position, build,
+archetype, the one number that defines him, how far he can go · the overall
+counted up · the name · the stadium lights come on. `EDVault.plan()` returns
+`top: true` for these and the steps carry `blackout`, `signal`, `symbol`,
+`tunnel` and `lights` kinds the Apex plan never uses; the test holds that the
+two sequences do not even open the same way. Each tier has its own haptic
+rhythm (`HAPTIC_BY_TIER`) and its own sounds (a data sweep, a bass hit, a
+stadium rise, the signal's three notes, the lights), all synthesised.
+
+**After the reveal, what he is to you.** Under every turned card: what he
+does to the lineup, computed from the roster the page hands in and never
+fetched (`EDVault.lineupImpact` — "+4 OVR at WR2, over Vance (79)" or "WR4
+on the chart"), and after a beat the estimated market range off the
+Exchange's comparable sales (`EDVault.marketEstimate` — the sales when there
+are three or more, a band around the free-agent reference when there are
+not, nothing at all when there is nothing to go on: never an invented
+number). Both arrive after the card, never in front of it.
+
+**The summary.** When every card is over: the pull as a list — each man with
+NEW · LINEUP UPGRADE · HIGH VALUE · COLLECTION · KEPT / PASSED — and the
+actions: *Put him in the lineup* (the server's `franchise_lineup_best`, the
+room only asks), *Open the next pack* (reloads the board and opens the first
+one that can be), *Roster*, *Exchange*, and *Share* on a premium man: the
+card drawn on a canvas (`EDVault.cardImage` — the man, his tier, his number,
+his signature, the EdgeDesk Football mark, **nothing of the user**), through
+the Web Share sheet where there is one and a sheet of our own with the image
+to save and the line to copy where there is not.
+
+**Reveal all.** A veteran's way out. Every card turns at once; a premium man
+still gets a beat — the mark and his name on the stage for a second — so
+skipping the theatre never means not knowing what you pulled.
+
+**A pack earned gets its moment.** The shelf compares the sealed packs to
+what this device was last shown and gives a new one a card of its own: PACK
+EARNED · what it is · what earned it · *it waits in the Vault until you open
+it — nothing opens on its own*. Nothing opens automatically, ever.
+
+**The first pack is guided.** One line under the case, then one line over the
+cards; no tour. The device remembers it has opened one.
+
+**A lower-end phone gets the whole sequence and none of the sparkle.** With
+four cores or four gigabytes or fewer the room drops the shimmer, halves the
+data lines and the confetti (`.vault-lite`); the reveal is never shortened
+and the card is never smaller — the sequence is the product, the sparks are
+the dressing.
+
+**My pulls (`pulls_v1`, Phase 20 of the SQL).** `franchise_pulls(secret)`
+reads every pack this franchise ever opened from the pack rows and the men
+who came out of them — **as they were the night they were pulled** (the
+first line of every card's history is the overall he was generated at, so a
+man developed since still shows the pull as it was), which were kept, the
+best pull of all, the counts by tier, how many were Apex or better, and the
+last thirty packs newest first with their bands. Nothing is stored for it;
+it is a read, like the rank, and the report row checks it stays one. The
+page prints it under *Kept from packs*: opened · kept · Apex+ · best, the
+best pull as a card you can tap, and the list.
+
+**Tests.** `tools/games/vault.test.js` (1,244): the top-tier plan opens with
+the blackout, calls the signal second, shows its own symbol third, goes down
+the tunnel, reads the overall before the name and the lights before the card,
+counts up from below, never borrows the Apex mark, carries the ceiling and
+the build; a Mythic and a Legend share the shape but not the symbol; the
+longest night is under twelve seconds and longer than an Apex; the lineup
+line and the estimate are pinned case by case; every tier has a haptic
+pattern and the top two have their own; the stylesheet dresses every state
+the markup emits; the card back never carries a tier or a name.
+`tools/games/pack_odds.test.js` (41): the server's roll, guarantee, bounds,
+odds arithmetic and protection rule are pinned to the SQL's own text, then
+mirrored and run **100,000 times** — every man a whole number inside his
+band, every whole number drawn about as often as every other, the tiers
+within half a point of the printed odds; 25,000 Championship Vaults every one
+holding a Prime man with the odds "for the others" holding for the others;
+100,000 caches on the protection counter with no run past the printed count
+and every protected pack rolling on its lifted ceiling; every band the game
+can print adding up to a hundred. The SQL suite's section 35 holds the pull
+record against a franchise that opened a thousand packs.
+
 ## The game you hold, felt — throw kinds, the run concepts, the replay
 
 The brief for this pass was two sentences: *this actually feels good* when

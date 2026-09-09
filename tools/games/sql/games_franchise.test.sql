@@ -140,6 +140,7 @@ declare
   SEC_C constant text := 'device-secret-cccccccccccccccccccccccccccc';
   -- the Vault
   v_pack uuid; vr jsonb; vr2 jsonb; v_ids text[]; v_bad integer; v_prime_guar integer; v_prime_kept integer;
+  pu jsonb; pu_id uuid; pu_men integer; pu_kept integer; pu_best integer; pu_opened integer; pu_was integer; pu_now integer;
   v_pity integer; v_pity_ok integer; ptally jsonb; podds jsonb; v_kind text; mrec record; k2 integer;
   -- the lineup, chemistry and the Exchange
   xs uuid; xb uuid; xl jsonb; xl2 jsonb; xlid uuid; xl2id uuid; xpid uuid; xbench uuid; xspare uuid; xr jsonb; xc jsonb; xv jsonb;
@@ -5640,6 +5641,68 @@ begin
     and not has_function_privilege('anon', 'public.franchise_exchange_sweep()', 'execute')
     and not has_function_privilege('anon', 'public.franchise_exchange_illegal(uuid, uuid)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_listing_json(public.franchise_listings, uuid)', 'execute'));
+
+
+  -- ═══ 35. THE PULL RECORD ═════════════════════════════════════════════════
+  -- pulls_v1. Every pack this franchise opened, read from the packs and the
+  -- men AS THEY WERE PULLED; nothing stored for it, so nothing to drift.
+  perform pg_temp.as_anon();
+  pu := public.franchise_pulls(SEC_OF);
+  perform pg_temp.ok('the pull record reads as anon and carries its version', pu->>'version' = 'pulls_v1', pu::text);
+  perform pg_temp.as_owner();
+  select count(*), count(*) filter (where gp.status not in ('pack', 'passed')), max(coalesce((gp.history->0->>'overall')::int, gp.overall))
+    into pu_men, pu_kept, pu_best
+    from public.game_players gp join public.franchise_packs fk on fk.id = gp.pack_id
+   where fk.franchise_id = ofl and fk.status in ('open', 'done');
+  select count(*) into pu_opened from public.franchise_packs where franchise_id = ofl and status in ('open', 'done');
+  perform pg_temp.ok('it counts every pack opened and every man who came out of one',
+    (pu->>'opened')::int = pu_opened and pu_opened >= 1001 and (pu->>'men')::int = pu_men and (pu->>'kept')::int = pu_kept
+    and (pu->>'passed')::int + (pu->>'kept')::int + (pu->>'on_table')::int = pu_men,
+    ((pu - 'pulls') || jsonb_build_object('men_expected', pu_men, 'opened_expected', pu_opened))::text);
+  perform pg_temp.ok('the tiers add up to the men', (select sum(pu_t.value::int) from jsonb_each_text(pu->'by_tier') pu_t) = pu_men, (pu->'by_tier')::text);
+  perform pg_temp.ok('the premium count is the men at Apex or better, as pulled',
+    (pu->>'premium')::int = (select count(*) from public.game_players gp join public.franchise_packs fk on fk.id = gp.pack_id
+                              where fk.franchise_id = ofl and fk.status in ('open', 'done') and coalesce((gp.history->0->>'overall')::int, gp.overall) >= 87));
+  perform pg_temp.ok('the best pull is the highest overall as pulled, with his tier and his pack',
+    (pu->'best'->>'overall')::int = pu_best and pu->'best'->>'tier' = public.franchise_card_tier(pu_best)
+    and pu->'best'->>'kind_name' is not null and pu->'best'->>'name' is not null and pu->'best' ? 'kept', (pu->'best')::text);
+  perform pg_temp.ok('the list is the last thirty, newest first',
+    jsonb_array_length(pu->'pulls') = least(30, pu_opened)
+    and (select bool_and((pu_a->>'opened_at')::timestamptz >= (pu_b->>'opened_at')::timestamptz)
+           from jsonb_array_elements(pu->'pulls') with ordinality pu_x(pu_a, pu_i)
+           join jsonb_array_elements(pu->'pulls') with ordinality pu_y(pu_b, pu_j) on pu_j = pu_i + 1));
+  perform pg_temp.ok('each pack lists its men best first, and carries its band, its kind and its best',
+    (select bool_and(pu_pk ? 'low' and pu_pk ? 'high' and pu_pk->>'kind_name' is not null
+                     and (pu_pk->>'best')::int between (pu_pk->>'low')::int and (pu_pk->>'high')::int
+                     and (pu_pk->>'best')::int = (select max((pu_m->>'overall')::int) from jsonb_array_elements(pu_pk->'men') pu_m)
+                     and coalesce((select bool_and((pu_m1->>'overall')::int >= (pu_m2->>'overall')::int)
+                                     from jsonb_array_elements(pu_pk->'men') with ordinality pu_mm(pu_m1, pu_i)
+                                     join jsonb_array_elements(pu_pk->'men') with ordinality pu_nn(pu_m2, pu_j) on pu_j = pu_i + 1), true))
+       from jsonb_array_elements(pu->'pulls') pu_pk));
+  -- THE PULL AS IT WAS. A man who has changed since still shows the night he
+  -- was pulled, and the card's overall now beside it in the best line.
+  select (pu_m->>'id')::uuid into pu_id from jsonb_array_elements(pu->'pulls') pu_pk, jsonb_array_elements(pu_pk->'men') pu_m limit 1;
+  update public.game_players set overall = case when overall >= 95 then overall - 5 else overall + 5 end where id = pu_id;
+  -- read as the owner: the anon role cannot see the table, only the read model
+  select (history->0->>'overall')::int, overall into pu_was, pu_now from public.game_players where id = pu_id;
+  perform pg_temp.as_anon();
+  pu := public.franchise_pulls(SEC_OF);
+  perform pg_temp.ok('a man who has changed since still shows the overall he was pulled at',
+    pu_was <> pu_now and exists (select 1 from jsonb_array_elements(pu->'pulls') pu_pk, jsonb_array_elements(pu_pk->'men') pu_m
+             where (pu_m->>'id')::uuid = pu_id and (pu_m->>'overall')::int = pu_was),
+    'was ' || pu_was || ' now ' || pu_now);
+  -- a franchise that has opened nothing, and nobody at all
+  pu := public.franchise_pulls(SEC_XS);
+  perform pg_temp.ok('a franchise that has opened nothing has a record with nothing in it, not an error',
+    pu->>'version' = 'pulls_v1'
+    and (pu->>'opened')::int = (select count(*) from public.franchise_packs where franchise_id = xs and status in ('open', 'done'))
+    and (((pu->>'opened')::int = 0) = (pu->'best' = 'null'::jsonb)) and jsonb_typeof(pu->'pulls') = 'array', pu::text);
+  perform pg_temp.ok('nobody gets nothing', public.franchise_pulls('device-secret-nobody-at-all-000000000000') is null);
+  perform pg_temp.ok('the pull record is a read, and its inner tables are the server''s',
+    (select p.provolatile = 's' from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'franchise_pulls')
+    and has_function_privilege('anon', 'public.franchise_pulls(text)', 'execute')
+    and not has_function_privilege('anon', 'public.franchise_pulled_men(uuid)', 'execute')
+    and not has_function_privilege('authenticated', 'public.franchise_pulled_overall(public.game_players)', 'execute'));
 
 end
 $test$;

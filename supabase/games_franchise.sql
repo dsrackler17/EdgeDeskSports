@@ -10915,6 +10915,93 @@ select public.games_schema_note('franchise', 19, 'the lineup, chemistry, and the
 commit;
 
 -- ===========================================================================
+-- PHASE 20 — THE PULL RECORD
+--
+-- "My pulls": every pack this franchise ever opened, the men who came out of
+-- it AS THEY WERE THE NIGHT THEY WERE PULLED, which of them were kept, the
+-- best pull of all, and the counts by tier. Nothing is stored for it — the
+-- pack rows and the men carry everything, and the first line of every card's
+-- history is the overall he was generated at, so a man developed since still
+-- shows the pull as it was. A read, like the rank: nothing here writes.
+-- ===========================================================================
+begin;
+
+create or replace function public.franchise_pulls_rules()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object('version', 'pulls_v1', 'shown', 30, 'premium_from', 87);
+$$;
+
+-- the overall a man was pulled at: the first line of his history, written by
+-- the card trigger the moment he was generated
+create or replace function public.franchise_pulled_overall(p public.game_players)
+returns integer language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select coalesce((p.history->0->>'overall')::int, p.overall);
+$$;
+
+-- every man who ever came out of one of this franchise's packs, whatever
+-- became of him since: kept, passed over, traded on, retired
+create or replace function public.franchise_pulled_men(p_franchise uuid)
+returns table (pack_id uuid, kind text, source text, opened_at timestamptz, band jsonb, player_id uuid, name text, pos text,
+               overall integer, tier text, kept boolean, now_overall integer, status text)
+language sql stable security definer set search_path = public, pg_temp as $$
+  select k.id, k.kind, k.source, k.opened_at, k.contents->'band', p.id, p.first_name || ' ' || p.last_name, p.position,
+         public.franchise_pulled_overall(p), public.franchise_card_tier(public.franchise_pulled_overall(p)),
+         p.status not in ('pack', 'passed'), p.overall, p.status
+    from public.franchise_packs k join public.game_players p on p.pack_id = k.id
+   where k.franchise_id = p_franchise and k.status in ('open', 'done');
+$$;
+
+create or replace function public.franchise_pulls(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; v_best jsonb; v_list jsonb; v_tiers jsonb;
+  v_opened integer; v_men integer; v_kept integer; v_passed integer; v_table integer; v_premium integer;
+  v_shown integer := (public.franchise_pulls_rules()->>'shown')::int;
+  v_from integer := (public.franchise_pulls_rules()->>'premium_from')::int;
+begin
+  if v_f is null then return null; end if;
+  select * into f from public.franchises where id = v_f;
+  if not found then return null; end if;
+  select count(distinct m.pack_id), count(*), count(*) filter (where m.kept), count(*) filter (where m.status = 'passed'),
+         count(*) filter (where m.status = 'pack'), count(*) filter (where m.overall >= v_from)
+    into v_opened, v_men, v_kept, v_passed, v_table, v_premium
+    from public.franchise_pulled_men(v_f) m;
+  select coalesce(jsonb_object_agg(t.tier, t.n), '{}'::jsonb) into v_tiers
+    from (select m.tier, count(*) as n from public.franchise_pulled_men(v_f) m group by m.tier) t;
+  -- the best pull of all: the highest overall as pulled, the earliest if tied
+  select jsonb_build_object('id', m.player_id, 'name', m.name, 'position', m.pos, 'overall', m.overall, 'tier', m.tier,
+           'kept', m.kept, 'status', m.status, 'now_overall', m.now_overall, 'kind', m.kind,
+           'kind_name', public.franchise_pack_def(m.kind)->>'name', 'source', m.source, 'opened_at', m.opened_at, 'pack_id', m.pack_id)
+    into v_best
+    from public.franchise_pulled_men(v_f) m
+   order by m.overall desc, m.opened_at asc, m.player_id limit 1;
+  -- the last packs, newest first, each with its men best first
+  select coalesce(jsonb_agg(jsonb_build_object('pack_id', g.pack_id, 'kind', g.kind, 'kind_name', public.franchise_pack_def(g.kind)->>'name',
+           'source', g.source, 'opened_at', g.opened_at, 'low', (g.band->>'low')::int, 'high', (g.band->>'high')::int,
+           'best', g.best, 'kept', g.kept_n, 'men', g.men) order by g.opened_at desc, g.pack_id), '[]'::jsonb)
+    into v_list
+    from (select m.pack_id, m.kind, m.source, m.opened_at, m.band, max(m.overall) as best, count(*) filter (where m.kept) as kept_n,
+                 jsonb_agg(jsonb_build_object('id', m.player_id, 'name', m.name, 'position', m.pos, 'overall', m.overall,
+                   'tier', m.tier, 'kept', m.kept, 'status', m.status) order by m.overall desc, m.player_id) as men
+            from public.franchise_pulled_men(v_f) m
+           group by m.pack_id, m.kind, m.source, m.opened_at, m.band
+           order by m.opened_at desc, m.pack_id limit v_shown) g;
+  return jsonb_build_object('version', public.franchise_pulls_rules()->>'version',
+    'opened', v_opened, 'men', v_men, 'kept', v_kept, 'passed', v_passed, 'on_table', v_table,
+    'premium', v_premium, 'premium_from', v_from, 'by_tier', v_tiers, 'best', v_best,
+    'since_prime', coalesce(f.packs_since_prime, 0), 'shown', v_shown, 'pulls', v_list);
+end;
+$$;
+
+grant execute on function public.franchise_pulls(text) to anon, authenticated;
+grant execute on function public.franchise_pulls_rules() to anon, authenticated;
+revoke all on function public.franchise_pulled_men(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_pulled_overall(public.game_players) from public, anon, authenticated;
+
+select public.games_schema_note('franchise', 20, 'the pull record: every pack you opened and the best of them');
+commit;
+
+-- ===========================================================================
 -- THE REPORT. Every row should say ok.
 -- ===========================================================================
 select 1 as row, 'franchise tables exist' as what,
@@ -11081,7 +11168,7 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
 union all
 select 0, 'the schema log says what this database has: ' ||
     coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
-  case when (public.games_schema()->>'franchise')::int = 19 and (public.games_schema()->>'social')::int >= 1
+  case when (public.games_schema()->>'franchise')::int = 20 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
@@ -11650,5 +11737,20 @@ select 40, 'the lineup is ' || (public.franchise_lineup_rules()->>'version') || 
         and not has_function_privilege('anon', 'public.franchise_exchange_sweep()', 'execute')
         and not has_function_privilege('anon', 'public.franchise_exchange_illegal(uuid, uuid)', 'execute')
         and not has_function_privilege('authenticated', 'public.franchise_credit(uuid, text, integer, text, text, text)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 41, 'the pull record is ' || (public.franchise_pulls_rules()->>'version')
+        || ': every pack opened, read from the packs and the men as they were pulled, never stored twice',
+  case when public.franchise_pulls_rules()->>'version' = 'pulls_v1'
+        -- a read: if it ever stopped being STABLE something started writing
+        and (select p.provolatile = 's' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_pulls')
+        -- the pull as it was: the first history line, not the overall now
+        and (select p.prosrc like '%history->0->>''overall''%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_pulled_overall')
+        and has_function_privilege('anon', 'public.franchise_pulls(text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_pulls_rules()', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_pulled_men(uuid)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_pulled_overall(public.game_players)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

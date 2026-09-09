@@ -2849,12 +2849,31 @@ fresh();
   has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
   has(README, 'packs_v2', 'the README documents the Vault');
 
+  /* ═══ 20. THE PULL RECORD ════════════════════════════════════════════════ */
+  chk('the report grew to forty-one rows', /select 41, 'the pull record is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 20, 'the pull record: every pack you opened and the best of them'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 20);
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 20/.test(SQL));
+  eq('the pull record is versioned', F.PULLS_VERSION, 'pulls_v1');
+  has(SQL, "'version', 'pulls_v1'", 'and the SQL agrees');
+  chk('the client reads it through one RPC with the secret and nothing else', /function pulls\(\) \{ return rpc\('franchise_pulls', withSecret\(\{\}\)\); \}/.test(FJS) && typeof F.pulls === 'function');
+  chk('the pull is read as it was: the first history line, never the overall now',
+    /franchise_pulled_overall[\s\S]{0,300}coalesce\(\(p\.history->0->>'overall'\)::int, p\.overall\)/.test(SQL));
+  chk('the inner table is the server\'s', /revoke all on function public\.franchise_pulled_men\(uuid\) from public, anon, authenticated;/.test(SQL));
+  has(PACKS, 'FR.pulls()', 'the packs page reads the pull record');
+  has(PACKS, 'My pulls', 'and prints it');
+  has(PACKS, 'Pack earned', 'a pack earned gets its moment on the shelf');
+  chk('and never opens on its own', /nothing opens on its own/.test(PACKS) && !/packOpenId\([^)]*\)[^;]*;\s*\}\)\(\)/.test(PACKS));
+  ['roster:ROSTER', 'marketEstimate:', 'onAutoLineup:', 'nextPack:', 'onShare:', 'firstTime:'].forEach(k => has(PACKS, k, 'the room is handed ' + k.replace(/:.*/, '')));
+  has(README, 'pulls_v1', 'the README documents the pull record');
+
   /* ═══ 19. THE LINEUP, CHEMISTRY AND THE EXCHANGE ═════════════════════════ */
   chk('the report grew to forty rows', /select 40, 'the lineup is '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 19, 'the lineup, chemistry, and the Exchange'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 19);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 19/.test(SQL));
+  chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 19);
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 20/.test(SQL));
   eq('the lineup is versioned', F.LINEUP_VERSION, 'lineup_v1');
   has(SQL, "'version', 'lineup_v1'", 'and the SQL agrees');
   eq('chemistry is versioned', F.CHEMISTRY_VERSION, 'chemistry_v1');
@@ -2864,7 +2883,7 @@ fresh();
   (function () {
     /* the client's mirrors are the SQL's numbers, read out of the rules functions */
     /* the LAST definition of a function is the one the database keeps: the pools were widened in Phase 17 */
-    const rules = (name) => { const all = SQL.match(new RegExp('function public\\.' + name + '\\(\\)[\\s\\S]*?\\$\\$;', 'g')) || []; return all.length ? all[all.length - 1] : ''; };
+    const rules = (name) => { const all = SQL.match(new RegExp('create or replace function public\\.' + name + '\\(\\)[\\s\\S]*?\\$\\$;', 'g')) || []; return all.length ? all[all.length - 1] : ''; };
     const ex = rules('franchise_exchange_rules');
     ['fee_pct', 'min_price', 'max_price', 'max_open', 'expires_days', 'comps_days', 'comps_band', 'comps_shown'].forEach(k => {
       const m = ex.match(new RegExp("'" + k + "', (\\d+)"));

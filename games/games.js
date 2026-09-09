@@ -567,7 +567,7 @@
      configures them from the same config.json the social layer uses. Either
      every /games page can report a problem and finish a confirmation link, or
      none can; there is no in-between to debug. */
-  var SHARED_V = '20260909e';   /* stamped by tools/games/bump_assets.js */
+  var SHARED_V = '20260909f';   /* stamped by tools/games/bump_assets.js */
   var _shared = null;
   function sharedLibs() {
     if (_shared) return _shared;

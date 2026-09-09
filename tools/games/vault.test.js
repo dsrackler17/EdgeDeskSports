@@ -86,11 +86,40 @@ function man(overall, pos, extra) {
   chk('an elite man gets the same short build', elite.build && !elite.premium);
   ['apex', 'legend', 'mythic'].forEach((k, i) => {
     const o = [88, 94, 98][i];
-    const pl = V.plan(man(o, 'RB'));
+    const m = man(o, 'RB');
+    const pl = V.plan(m);
     eq(k + ' is premium', pl.premium, true);
-    eq(k + ' is marked as such', pl.steps[0].text, V.PREMIUM[k]);
     eq(k + ' names its tier', pl.tier, k);
+    const kinds = pl.steps.map(s => s.kind);
+    if (k === 'apex') {
+      eq('apex is marked first', pl.steps[0].text, V.PREMIUM.apex);
+      eq('and apex is not the top of the ladder', pl.top, false);
+    } else {
+      /* THE TOP OF THE LADDER IS A DIFFERENT NIGHT, not a bigger apex */
+      eq(k + ' is the top of the ladder', pl.top, true);
+      eq(k + ' opens with the room going to black', kinds[0], 'blackout');
+      eq(k + ' calls a signal second', pl.steps[1].kind + ':' + pl.steps[1].text, 'signal:SIGNAL DETECTED');
+      eq(k + ' shows its symbol before a single fact about him', kinds[2], 'symbol');
+      eq(k + ' and the symbol is its own tier', pl.steps[2].tier + ':' + pl.steps[2].text, k + ':' + V.tierName(k));
+      eq(k + ' goes down the tunnel before the clues', kinds[3], 'tunnel');
+      chk(k + ' reads the overall before the name, the name before the lights, the lights before the card',
+        kinds.indexOf('ovr') < kinds.indexOf('name') && kinds.indexOf('name') < kinds.indexOf('lights') && kinds[kinds.length - 1] === 'card');
+      const ovr = pl.steps.filter(s => s.kind === 'ovr')[0];
+      chk(k + ' counts the overall up from below, never down from above', ovr.from < +ovr.text && ovr.from >= 40, JSON.stringify(ovr));
+      chk(k + ' never borrows the apex mark or the apex outline', !kinds.includes('mark') && !kinds.includes('silhouette'));
+      chk(k + ' carries the ceiling as a clue', pl.steps.some(s => s.label === 'Ceiling'));
+      chk(k + ' carries the build as a clue when the man has one', !P.body(m) || pl.steps.some(s => s.label === 'Build'));
+      const clue = l => pl.steps.filter(s => s.kind === 'clue' && s.label === l)[0];
+      eq(k + ': the position clue is his position', clue('Position').text, 'RB');
+      eq(k + ': the archetype clue is his archetype', clue('Archetype').text, 'Deep Threat');
+      eq(k + ': the ceiling clue is the profile\'s word for his ceiling', clue('Ceiling').text, V.ceilingWord(m));
+    }
   });
+  chk('the top sequence and the apex sequence do not even open the same way',
+    V.plan(man(94, 'RB')).steps[0].kind !== V.plan(man(88, 'RB')).steps[0].kind);
+  chk('a mythic and a legend share the shape but not the symbol',
+    V.plan(man(98, 'RB')).steps.map(s => s.kind).join() === V.plan(man(94, 'RB')).steps.map(s => s.kind).join()
+    && V.plan(man(98, 'RB')).steps[2].text !== V.plan(man(94, 'RB')).steps[2].text);
   chk('confetti is kept for a legend or better', !V.plan(man(88, 'RB')).confetti && V.plan(man(94, 'RB')).confetti && V.plan(man(98, 'RB')).confetti);
   chk('the rumble belongs to premium men only', V.plan(man(88, 'RB')).rumble && !V.plan(man(78, 'RB')).rumble);
   /* the server's tier wins over the overall, if it sends one */
@@ -110,8 +139,10 @@ function man(overall, pos, extra) {
     chk('every step has a non-negative duration (' + o + ' ' + pos + ')', pl.steps.every(s => s.ms >= 0));
     chk('a plan always ends in the card (' + o + ' ' + pos + ')', pl.steps[pl.steps.length - 1].kind === 'card');
   });
-  chk('the longest reveal is under nine seconds', worst <= 9000, worst + 'ms');
-  chk('and the longest reveal is long enough to be one', worst >= 5000, worst + 'ms');
+  chk('the longest reveal is under twelve seconds', worst <= 12000, worst + 'ms');
+  chk('the top of the ladder is the longest night', V.plan(man(98, 'WR')).total >= 8000 && V.plan(man(98, 'WR')).total > V.plan(man(88, 'WR')).total,
+    V.plan(man(98, 'WR')).total + ' vs ' + V.plan(man(88, 'WR')).total);
+  chk('an apex reveal is five to nine seconds', V.plan(man(88, 'WR')).total >= 5000 && V.plan(man(88, 'WR')).total <= 9000, V.plan(man(88, 'WR')).total + 'ms');
   chk('a prime build is a couple of seconds', V.plan(man(78, 'QB')).total >= 1200 && V.plan(man(78, 'QB')).total <= 3000);
 })();
 
@@ -154,6 +185,56 @@ function man(overall, pos, extra) {
   has(VAULT_SRC, "'rare_pull'", 'and a rare pull');
   has(VAULT_SRC, "'pack_kept'", 'a man kept');
   has(VAULT_SRC, "'pack_passed'", 'and a pack passed');
+})();
+
+/* ── 6. what a card does, what it sells for, how it feels in the hand ─── */
+(function connect() {
+  const roster = [
+    { id: 'a', position: 'WR', overall: 84, status: 'active', first_name: 'A', last_name: 'One' },
+    { id: 'b', position: 'WR', overall: 79, status: 'active', first_name: 'B', last_name: 'Two' },
+    { id: 'c', position: 'WR', overall: 70, status: 'active', first_name: 'C', last_name: 'Three' },
+    { id: 'd', position: 'WR', overall: 61, status: 'active', first_name: 'D', last_name: 'Four' },
+    { id: 'q', position: 'QB', overall: 77, status: 'active', first_name: 'Q', last_name: 'Back' },
+    { id: 'p', position: 'WR', overall: 99, status: 'pack', first_name: 'P', last_name: 'Table' }
+  ];
+  const wr2 = V.lineupImpact(man(82, 'WR'), roster);
+  eq('an 82 WR into 84/79/70 starts at WR2', wr2.slot, 2);
+  eq('and the gain is over the man he pushes out of the three', wr2.label, '+12 OVR at WR2');
+  eq('who is named', wr2.detail, 'over C Three (70)');
+  const wr4 = V.lineupImpact(man(65, 'WR'), roster);
+  chk('a 65 WR does not start', !wr4.starts && wr4.slot === 4, JSON.stringify(wr4));
+  eq('and the line says where he sits', wr4.label, 'WR4 on the chart');
+  eq('a better QB is +3 at QB, no slot number for a one-man position', V.lineupImpact(man(80, 'QB'), roster).label, '+3 OVR at QB');
+  const k = V.lineupImpact(man(70, 'K'), roster);
+  eq('a position with nobody there is a whole gain', k.label + '|' + k.detail, '+70 OVR at K|nobody there before');
+  chk('a man still on the table does not count as a starter', V.lineupImpact(man(90, 'WR'), roster).starts);
+  chk('no roster, no line', V.lineupImpact(man(90, 'WR'), null) === null);
+  chk('the starter counts are the roster page\'s', JSON.stringify(V.STARTERS) === JSON.stringify(FR.STARTERS));
+  const est = V.marketEstimate({ sold: 5, median: 900, low: 700, high: 1200, asking_reference: 800 }, man(80, 'WR'));
+  eq('three or more sales: the range is the sales', est.low + '-' + est.high, '700-1200');
+  has(est.basis, '5 sales', 'and says so');
+  const ref = V.marketEstimate({ sold: 1, median: 900, asking_reference: 800 }, man(80, 'WR'));
+  eq('fewer sales: a band around the free-agent reference', ref.low + '-' + ref.high, '640-1040');
+  chk('nothing to go on, no estimate: never an invented number',
+    V.marketEstimate({ sold: 0, asking_reference: 0 }, man(80, 'WR')) === null && V.marketEstimate(null, man(80, 'WR')) === null);
+  /* the hand and the ear learn the tier */
+  P.TIERS.forEach(t => chk('a haptic pattern for ' + t.key, Array.isArray(V.HAPTIC_BY_TIER[t.key]) && V.HAPTIC_BY_TIER[t.key].length >= 1));
+  chk('the top tiers have rhythms of their own',
+    JSON.stringify(V.HAPTIC_BY_TIER.legend) !== JSON.stringify(V.HAPTIC_BY_TIER.apex) && JSON.stringify(V.HAPTIC_BY_TIER.mythic) !== JSON.stringify(V.HAPTIC_BY_TIER.legend));
+  ['sweep', 'bass', 'rise', 'signal', 'lights', 'cut', 'rumble', 'reveal'].forEach(k => chk('the room has a sound for ' + k, typeof V.SOUND[k] === 'function'));
+  /* the room's markup and the stylesheet agree */
+  ['.vt-rv-beam', '.vt-rv-glitch', '.vt-rv-symbol', '.vt-sym-legend', '.vt-sym-mythic', '.vt-void', '.vt-tunnel-go', '.vt-lit', '.vt-imp', '.vt-est',
+   '.vt-summary', '.vt-first', '.vt-case.held', '.vault-lite', '.vt-sig', '.vt-rv-ovr .n.land', '.vt-rv-sil.far']
+    .forEach(c => has(CSS, c, 'the stylesheet dresses ' + c));
+  chk('a card back is a card back: the room never puts the top bar\'s class on a card', VAULT_SRC.indexOf("' vt-premium vt-top'") < 0);
+  chk('the back of a card carries the position and never the tier or the name',
+    /vt-sil-pos">' \+ esc\(m\.position/.test(VAULT_SRC) && !/vt-sil-[a-z]+">' \+ esc\((pl\.tierName|fullName)/.test(VAULT_SRC));
+  ['card_shared', 'pack_next', 'lineup_auto_from_pack', 'pack_opened', 'rare_pull'].forEach(e => has(VAULT_SRC, "'" + e + "'", 'the room reports ' + e));
+  chk('without a document there is no card image, and no crash', V.cardImage(man(90, 'WR')) === null);
+  chk('reveal all still gives a premium man his beat', /function revealAll[\s\S]*?premiums\.push/.test(VAULT_SRC));
+  chk('the estimate arrives after the reveal, never in front of it', /o\.marketEstimate\) \{\s*later\(function \(\) \{[\s\S]{0,400}\}, 900\)/.test(VAULT_SRC));
+  chk('the lineup line is computed from the roster handed in, never fetched', !/roster\s*=\s*.*rpc|fetch\(/.test(VAULT_SRC));
+  chk('a top-tier reveal cuts the sound before the signal', /pl\.top\) \{ SOUND\.cut\(\)/.test(VAULT_SRC));
 })();
 
 if (fails.length) console.log(fails.join('\n'));

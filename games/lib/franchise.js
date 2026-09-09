@@ -73,7 +73,8 @@
       'the playbook',
       'the player universe: profiles, tiers, bodies and home towns',
       'the Vault: packs you hold, odds you can read, and a card that remembers',
-      'the lineup, chemistry, and the Exchange'
+      'the lineup, chemistry, and the Exchange',
+      'the pull record: every pack you opened and the best of them'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -1865,6 +1866,9 @@
   function packDef(kind) { return PACKS[kind] || { name: kind, art: 'cache', size: 3, keep: 1, earned: '' }; }
   /* the board: every sealed pack with its odds, the one on the table, the men kept */
   function packsBoard() { return rpc('franchise_packs_board', withSecret({})); }
+  /* MY PULLS: every pack ever opened, the men as they were pulled, the best of them (Phase 20) */
+  var PULLS_VERSION = 'pulls_v1';
+  function pulls() { return rpc('franchise_pulls', withSecret({})); }
   /* open one pack by id — the server rolls it, writes it, and only then answers */
   function packOpenId(id) { return rpc('franchise_pack_open_id', withSecret({ p_pack: String(id || '') })).then(moveThen); }
   /* one man, whole: profile, history, career, the pack he came from */
@@ -2172,7 +2176,7 @@
     rankCost: rankCost, rankAt: rankAt, rankFor: rankFor, rankEdge: rankEdge,
     packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
     ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
-    PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, packsBoard: packsBoard, packOpenId: packOpenId, card: card,
+    PACKS_VERSION: PACKS_VERSION, PACKS: PACKS, packDef: packDef, packsBoard: packsBoard, pulls: pulls, PULLS_VERSION: PULLS_VERSION, packOpenId: packOpenId, card: card,
     LINEUP_VERSION: LINEUP_VERSION, CHEMISTRY_VERSION: CHEMISTRY_VERSION, CHEMISTRY: CHEMISTRY, chemistryLine: chemistryLine, chemistryWord: chemistryWord,
     lineupBest: lineupBest,
     EXCHANGE_VERSION: EXCHANGE_VERSION, EXCHANGE: EXCHANGE, exchangeFee: exchangeFee,
