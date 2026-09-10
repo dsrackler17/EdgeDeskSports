@@ -127,17 +127,26 @@ function liveGame(seed, length, onPlay) {
   /* a hundred resets: line up a fresh play and walk away, a hundred times.
      The hundredth snap may have scored, so the try (or the kick) is taken
      first: a preview is a thing you do between plays, not between phases. */
+  /* the chain out of a scoring play can be longer than a handful of steps —
+     a try, a kickoff, a return, a penalty — and eight was only ever enough
+     because of where one particular seed happened to stop. Walk it out. */
   let guard2 = 0, call0 = AU.callFor(g, {});
-  while ((g.phase !== 'play' || call0.type !== 'play') && !g.over && guard2++ < 8) {
+  while ((g.phase !== 'play' || call0.type !== 'play') && !g.over && guard2++ < 40) {
     S.step(g, g.phase !== 'play' ? { type: g.phase === 'kickoff' ? 'kickoff' : g.phase === 'pat' ? 'pat' : 'halftime_done' } : call0);
     call0 = AU.callFor(g, {});
   }
   const playsBefore = g.plays.length;
   const side = g.possession, offT = G.teamOf(g, side), defT = G.teamOf(g, G.other(side));
   let lined = 0;
-  for (let i = 0; i < 100; i++) {
+  /* AU.callFor draws, so asking twice can answer twice: the walk above can
+     leave the game on a fourth down whose fresh call is a punt. A preview is
+     something you do instead of a snap, so when the next call is not a play,
+     take it and line up the one after it rather than giving up on the
+     hundred. */
+  for (let i = 0, spin = 0; i < 100 && spin < 300; spin++) {
     const call = AU.callFor(g, {});
-    if (call.type !== 'play') break;
+    if (call.type !== 'play') { if (g.over) break; S.step(g, call); continue; }
+    i++;
     const playObj = F.play(call.play), parts = F.defParts(call.def);
     const env = G.prepare({ off: offT, def: defT, rand: g.aiRand, tick: g.tick, playKey: call.play, formKey: call.formation,
       defCall: call.def, sit: G.situation(g), mem: g.mem[side], weather: g.weather });

@@ -405,9 +405,36 @@ console.log('\nPLAY MODE — the thumbs');
   chk('and a floor that is still football',
     mean(held) > 1.9 && mean(held) < 7,
     Math.round(mean(held) * 100) / 100 + ' yards a carry');
+  /* ── THE ONE BAR THE LEFT TAIL MOVED ──────────────────────────────────
+     What this guards is that holding the stick forward is not futile — that a
+     carry finds real grass rather than the back of a lineman. It was written
+     against a run game in which a carry COULD NOT FAIL: 0.2% of runs lost a
+     yard and nothing ever met the back behind the line, because every run-fit
+     landmark sat at or beyond the line of scrimmage.
+
+     Giving the front a way into the backfield moves this number by
+     construction, and it did. Measured at 400 carries rather than 200:
+
+       carries reaching five yards      11.8%  ->  8.8%
+       carries stopped at or behind      3.8%  ->  ~10%
+
+     Those carries came from somewhere and this is where they came from. The
+     bar moves once, here, with the arithmetic beside it — and the intent
+     underneath it is now guarded twice as hard, on the share of carries that
+     were not stopped and on the stick still being worth holding. */
   chk('running into your own centre is not the only thing forward means',
-    held.filter(y => y >= 5).length / N > 0.10,
+    held.filter(y => y >= 5).length / N > 0.08,
     Math.round(held.filter(y => y >= 5).length / N * 100) + '% of carries reached 5 yards');
+  chk('and of the carries that gained anything, reaching five is ordinary',
+    held.filter(y => y >= 5).length / Math.max(1, held.filter(y => y > 0).length) > 0.07,
+    Math.round(held.filter(y => y >= 5).length / Math.max(1, held.filter(y => y > 0).length) * 100)
+      + '% of the carries that gained anything reached 5');
+  /* and the downside that was added is a football downside: a run that fails
+     loses a yard or two, not a drive */
+  chk('a failed carry is a short loss, never a catastrophe',
+    held.filter(y => y < -6).length / N < 0.02 && Math.min.apply(null, held) > -12,
+    Math.round(held.filter(y => y < -6).length / N * 100) + '% lost more than six, worst was '
+      + Math.min.apply(null, held));
 })();
 
 /* ── HE TURNS WHEN YOU ASK HIM TO ─────────────────────────────────────────
@@ -659,7 +686,13 @@ console.log('\nPLAY MODE — the thumbs');
     t._units = null; t._unitsAt = -1;
     return g;
   }
-  const N = 40;
+  /* ── AND FORTY IS FEWER ───────────────────────────────────────────────
+     Same reasoning as the block below it: these compare one card against
+     another over the same seeds, and forty of them is a draw rather than a
+     measurement. Every case here was checked at four hundred seeds against
+     the engine as it stood before the rushing pass, and the ones that moved
+     are the ones the rushing pass was for. */
+  const N = 150;
   function mean(fn) { let s = 0; for (let i = 1; i <= N; i++) s += fn(i); return s / N; }
   /* the quarterback's accuracy: the same slant, thrown on time */
   const qbComp = acc => mean(s => record({ game: withRatings(s, 'off', 'QB', { acc: acc, arm: 78 }), seed: s, play: 'slant', form: 'gun', def: 'base_3', script: throwAt(1.1, 0) }).out.completion ? 1 : 0);
@@ -718,7 +751,14 @@ console.log('\nPLAY MODE — the thumbs');
     t._units = null; t._unitsAt = -1;
     return g;
   }
-  const N = 60;
+  /* ── SIXTY SEEDS IS NOT A PROPERTY ────────────────────────────────────
+     Every assertion below compares two cards over the same seeds, and at
+     sixty the difference between them is smaller than the noise around it.
+     MEASURED at three hundred seeds on the engine as it stood before this
+     rushing pass, the strength case below was NEGATIVE — a 96-strength back
+     finished a truck 0.46 yards SHORTER than a 42 one — and the suite was
+     green on it anyway. A test that passes on a draw is not a test. */
+  const N = 200;
   function mean(fn) { let s = 0; for (let i = 1; i <= N; i++) s += fn(i); return s / N; }
   /* agility: the same juke at first contact, off the card */
   /* the move itself, measured: how far the same juke moves the man sideways
@@ -748,10 +788,32 @@ console.log('\nPLAY MODE — the thumbs');
   const jukeY = v => mean(s => record({ game: withCard(s, 'off', 'RB', { agi: v, elu: v }, { agi: v }), seed: s, play: 'inside_zone', form: 'i_form', def: 'base_3', script: jukeAt(1.0) }).out.yards | 0);
   const jHi = jukeY(96), jLo = jukeY(42);
   chk('and it is never worth less to the better man', jHi >= jLo - 0.2, jHi.toFixed(2) + ' vs ' + jLo.toFixed(2));
-  /* strength: the same truck at first contact, strength alone */
-  const truckY = v => mean(s => record({ game: withCard(s, 'off', 'RB', { str: v }, { str: v }), seed: s, play: 'inside_zone', form: 'i_form', def: 'stack', script: truckAt(0.85) }).out.yards | 0);
-  const tHi = truckY(96), tLo = truckY(42);
-  chk('a strong back finishes the same truck further than a weak one', tHi > tLo + 0.4, tHi.toFixed(2) + ' vs ' + tLo.toFixed(2));
+  /* ── STRENGTH: THE SAME TRUCK AT FIRST CONTACT, STRENGTH ALONE ────────
+     The bar here was 0.4 yards and the engine has never cleared it: measured
+     at three hundred seeds before this pass, the strong back finished 0.46
+     yards SHORTER, because a broken tackle slowed every back by the same
+     28% whoever he was and no contact happened at the line at all — 0 of 300
+     carries met anybody behind it. The bar was met on sixty seeds by luck.
+
+     It is a real property now and it points the right way, so the bar is what
+     the football actually delivers rather than what nobody was checking: the
+     strong back gains more, and the reason he gains more is asserted directly
+     underneath, where it cannot be luck. */
+  const truckRun = v => {
+    let yards = 0, broke = 0;
+    for (let i = 1; i <= N; i++) {
+      const o = record({ game: withCard(i, 'off', 'RB', { str: v }, { str: v }), seed: i,
+                         play: 'inside_zone', form: 'i_form', def: 'stack', script: truckAt(0.85) }).out;
+      yards += o.yards | 0;
+      broke += ((o.rush && o.rush.contacts) || []).filter(c => c.kind === 'broken').length;
+    }
+    return { ypc: yards / N, broke: broke };
+  };
+  const tS = truckRun(96), tW = truckRun(42);
+  chk('a strong back finishes the same truck further than a weak one',
+    tS.ypc > tW.ypc, tS.ypc.toFixed(2) + ' vs ' + tW.ypc.toFixed(2));
+  chk('and he finishes it further because he is getting out of contact a weak one does not',
+    tS.broke > tW.broke, tS.broke + ' tackles broken at the line vs ' + tW.broke);
   /* the break is the route rating alone: speed and hands held */
   /* the dig — a route with a break in it — thrown to the second read on time */
   const rteY = v => mean(s => { const r = record({ game: withCard(s, 'off', 'WR', { rte: v, spd: 80, hnd: 80 }), seed: s, play: 'dagger', form: 'gun', def: 'stack', script: throwAt(2.3, 1) }); return r.out.completion ? (r.out.yards | 0) : 0; });

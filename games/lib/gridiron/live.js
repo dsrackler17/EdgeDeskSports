@@ -80,6 +80,7 @@
     var t = 0, phase = 'set', outcome = null;
     var runSide = 1;   /* which way a run concept goes: the art and the pull agree */
     var pullerActor = null;   /* the guard who pulls on a gap concept: the linebacker's oldest key */
+    var pullerBeat = false;   /* …and whether somebody got across his face before he arrived */
     var ball = { x: ballX, y: los, z: 0, spin: 0, holder: null, flight: null };
     var qb = byId['o_QB'] || null;
     var carrier = null, user = null;
@@ -102,7 +103,9 @@
        edge — so the two concepts do not invite the same defence. A draw is
        the opposite of all of them: it PAYS a front for staying disciplined,
        so a line that shoots on a draw has run itself out of the play. */
-    var CONCEPT_SHOOT = { inside: 0.07, gap: 0.02, outside: -0.05, option: -0.02, draw: -0.11 };
+    var CONCEPT_SHOOT = { inside: 0.07, gap: 0.02, outside: -0.05, option: -0.02, draw: -0.11,
+                          /* everybody in the stadium knows where a sneak is going */
+                          sneak: 0.30 };
     var threwAway = false;
     var bailAt = 0, bailKind = null, bailLane = null, thrownAt = null, poaX = null;
     /* ── WHOSE QUARTERBACK IS THIS ────────────────────────────────────────
@@ -258,6 +261,8 @@
         fit(lb, 6.2, 3.4);
         /* and then some of them go and get it (rush_v2) */
         shootGaps(dl.concat(lb));
+        setTheEdge(dl.concat(lb));
+
         /* a draw is a pass until it is not: the backers drop for a beat */
         if (play.concept === 'draw') lb.forEach(function (d) { if (d.job && d.job.kind === 'fill') d.job.dropFirst = 0.10; });
 
@@ -307,20 +312,66 @@
         });
         olRbk = nOl ? olRbk / nOl : 0.5;
         var pull = CONCEPT_SHOOT[play.concept || ''] || 0;
+        /* ── AND NOT EVERYBODY GOES ────────────────────────────────────────
+           A defence that sends its whole front at the backfield is a defence
+           with no second level, and when it guesses wrong the run has nobody
+           left in front of it. MEASURED with the aggressive fronts in the
+           rotation: yards per carry ran to 6.18 and 3.7% of every carry went
+           forty yards. Two men shoot, three on a call that is built to, and
+           the rest fit. A linebacker shooting a gap is a run blitz, not a
+           Tuesday — he does it far less often than the man with his hand in
+           the dirt. */
+        var room = 3 + ((env.runFit || 0) > 0.04 ? 1 : 0);
         front.forEach(function (d) {
+          if (room <= 0) return;
           if (!d.job || d.job.kind !== 'fill') return;
           var hands = (d.k.rsh == null ? 0.5 : d.k.rsh) * 0.55 + (d.k.shed == null ? 0.5 : d.k.shed) * 0.45;
-          var want = 0.17 + (hands - olRbk) * 1.35 + (env.runFit || 0) * 1.8 + pull
-                   + (d.pos === 'DL' ? 0.12 : -0.05) + (sharp - 1) * 0.12;
-          if (rand() >= clamp(want, 0.03, 0.60)) return;
+          var want = 0.17 + (hands - olRbk) * 1.35 + (env.runFit || 0) * 1.3 + pull
+                   + (d.pos === 'DL' ? 0.12 : -0.22) + (sharp - 1) * 0.12;
+          if (rand() >= clamp(want, 0.03, 0.55)) return;
+          room--;
           d.job.shoot = true;
           /* a spot the ball has to come through, not the line he stands on */
-          d.job.y = los - (0.7 + rand() * 1.5);
+          /* A YARD OR TWO, NOT FOUR. Aiming two yards deep put the collision
+              deep enough that everything it produced was a real loss and the
+              nothing-gain — the most common failed run in football — never
+              happened. He is attacking the ball at the mesh, not the bottom of
+              the backfield. */
+          d.job.y = los - (0.2 + rand() * 1.2);
           /* ATTACKING A GAP IS NOT TAKING ON A MAN. For the first beat the
              block has to find him rather than the other way round — which is
              what slanting into a gap buys and what the draw pays for. */
           d.slipFor = 0.40 + rand() * 0.34 + clamp(hands - olRbk, -0.2, 0.3) * 0.60;
         });
+      }
+      /* ── OUTSIDE ZONE DOES NOT FAIL IN THE A GAP ──────────────────────
+         Every concept was failing the same way, because there was only one
+         way to fail. An outside run dies at the EDGE: the widest man on the
+         play side gets width instead of depth, keeps his outside arm free and
+         turns it back inside. When he wins, the back's recovery is to plant
+         and cut under him — which is what the daylight search finds once the
+         edge is closed and the inside is not. */
+      function setTheEdge(front) {
+        if (play.concept !== 'outside' && play.concept !== 'option') return;
+        var best = null, bx2 = -1;
+        front.forEach(function (d) {
+          if (!d.job || d.job.kind !== 'fill' || d.job.shoot) return;
+          var w = (d.x - ballX) * runSide;
+          if (w > bx2) { bx2 = w; best = d; }
+        });
+        if (!best) return;
+        var hold = (best.k.shed == null ? 0.5 : best.k.shed) * 0.5
+                 + (best.k.pur == null ? 0.5 : best.k.pur) * 0.5;
+        /* AND SETTING IT IS A CONTEST, NOT A WALL. Given the edge outright he
+           closed it every snap: outside zone fell from 3.42 yards a carry to
+           2.45 and the runs that reached five yards went from 28% to 20%. He
+           gets width off his own hands, some of the time, and the back's
+           answer — plant and cut under him — is a real answer because the
+           inside is not closed at the same moment. */
+        if (rand() > 0.20 + hold * 0.30) return;
+        best.job.edge = true;
+        best.job.x = clamp(best.job.x + runSide * (0.7 + hold * 0.8), 1.5, FIELD.width - 1.5);
+        best.job.y = los + 1.1;
       }
       function fit(list, half, depth) {
         list.forEach(function (d, i) {
@@ -755,7 +806,29 @@
       /* the first beat after the mesh he runs the play as drawn — the edge,
          the hole behind the pull, the middle — then he runs to daylight */
       var aim;
-      if (t < handoffAt + 0.15 && play.concept === 'outside') aim = { x: clamp(ballX + runSide * 3, 2, FIELD.width - 2), y: los + 1.5 };
+      /* ── AND OUTSIDE ZONE HAS AN ANSWER TO A SET EDGE ─────────────────
+         Strung out toward a man who has already won the corner, the back was
+         simply running out of room — the concept had a failure and no
+         recovery. Plant and cut under him: the moment the edge is outside him
+         and ahead of him, the aiming point stops being the sideline and
+         becomes the grass inside, which is what the daylight search finds
+         because that is where the edge man is not. */
+      if ((play.concept === 'outside' || play.concept === 'option') && !a.cutback) {
+        var edger = null;
+        actors.forEach(function (d) {
+          if (d.side !== 'def' || d.state === 'down' || !d.job || !d.job.edge) return;
+          edger = d;
+        });
+        if (edger && (edger.x - a.x) * runSide > -0.4 && edger.y < a.y + 3.4) {
+          a.cutback = -runSide;
+          a.cutbackUntil = t + 0.9;
+        }
+      }
+      /* THE LANE THE PLAY WAS DRAWN WITH IS ONLY THERE IF SOMEBODY BUILT IT.
+         With the puller blown up, running the designed hole is running into
+         the man who took it away; he bounces and looks for grass. */
+      if (pullerBeat && play.concept === 'gap') aim = daylight(a);
+      else if (t < handoffAt + 0.15 && play.concept === 'outside') aim = { x: clamp(ballX + runSide * 3, 2, FIELD.width - 2), y: los + 1.5 };
       else if (t < handoffAt + 0.15 && play.concept === 'gap') aim = { x: ballX + runSide * 2.6, y: los + 1.2 };
       else aim = daylight(a);
       a.tx = aim.x; a.ty = aim.y;
@@ -893,7 +966,12 @@
          pull and hold their depth until it is; a rookie reads it later, a
          legend sooner. Only a pull is a key — an inside zone still has to be
          read off the ball, which is what keeps the stick's runs honest. */
-      if (play.type === 'run' && !handedOff && pullerActor && t > 0.22 * dull) {
+      /* A MAN SHOOTING A GAP HAS NO KEY TO READ. The pulling guard is the
+         oldest run key there is and it is exactly what a counter lies with —
+         so the defender who has already decided to fire is the one the
+         misdirection does not move. That is counter's failure: a penetrator
+         who ignores the show. */
+      if (play.type === 'run' && !handedOff && pullerActor && t > 0.22 * dull && !j.shoot) {
         a.tx = pullerActor.x * 0.5 + j.x * 0.5; a.ty = j.y; a.state = 'run'; return;
       }
       /* ── A MAN SHOOTING THE GAP IS NOT READING THE BACK ────────────────
@@ -905,6 +983,26 @@
       if (j.shoot && c && c.carry && c !== qb && c.y < los + 0.2 && a.y > j.y) {
         a.tx = c.x * 0.6 + j.x * 0.4; a.ty = j.y; a.state = 'run';
         return;
+      }
+      /* ── THE SECOND LEVEL WAS TRIED DOWNHILL, AND IT WAS WORSE ─────────
+         A linebacker who triggers on the run read and steps into his gap at
+         the line is right in football and wrong in this engine: committed
+         early he cannot redirect, so beating one backer became open field.
+         MEASURED both ways — chasing the ball took yards per carry from 4.61
+         to 6.08 and doubled the explosive rate; keeping him in his own lane
+         and only a little downhill still gave 6.39. The stopped run stays a
+         three-to-five yard run, which the brief asks for anyway, and the
+         nothing-gain comes from being wrapped at the line instead. */
+      /* ── AND A GAP SCHEME DIES WHEN THE PULLER'S LANE DOES ─────────────
+         Power and counter are not zone: the hole is not found, it is BUILT,
+         by one guard arriving in it. A penetrator who crosses in front of
+         that guard has not made a tackle — he has taken the play away, and
+         the back's answer is to bounce it rather than run into a lane that no
+         longer exists. */
+      if (j.shoot && pullerActor && play.concept === 'gap' && !pullerBeat
+          && a.y < los + 0.6 && Math.abs(a.x - pullerActor.x) < 2.2 && a.y < pullerActor.y) {
+        pullerBeat = true;
+        notes.push(shortName(a) + ' blew up the pull.');
       }
       /* ── AND GUESSING WRONG HAS TO COST HIM ────────────────────────────
          A penetrator who attacked the wrong gap was, the moment the ball got
@@ -1026,7 +1124,43 @@
          across his own face, and every run that cleared the second level
          went to the house — the long runs in this game averaged fifty yards
          because nobody was ever in front of the ball again. */
-      var lead = clamp(gap / Math.max(3, a.top), 0, 3.2) * (0.35 + a.k.iq * 0.75);
+      /* ── THE ANGLE IS SOLVED, NOT GUESSED ──────────────────────────────
+         Lead was a fixed multiple of the gap, which is not how anybody chases
+         anybody: a safety twenty yards off aimed at a spot proportional to how
+         far away he was rather than at the place he could actually get to at
+         the same time as the football. So a back who cleared the second level
+         was never cut off — MEASURED, ninety per cent of the runs that reached
+         twenty yards went forty or more, in a game where every defensive back
+         is FASTER than every running back.
+
+         Two passes of a fixed-point solve: guess when we meet, ask where he
+         will be then, ask how long that takes me, repeat. What a man's head is
+         worth is how well he trusts the answer. */
+      /* ── AND THIS IS THE RUN GAME'S FIX, SO IT STAYS IN THE RUN GAME ────
+         Chasing a ball carrier is chasing a ball carrier, but a receiver with
+         the ball after a catch is the passing game's business and the passing
+         game was not asked to change: the better angle quietly took yards off
+         every completion, and a route technician's dig stopped being worth
+         more than a straight-line runner's. Runs only. */
+      var rsp = len(tgt.vx, tgt.vy), lead;
+      if (play.type === 'run' && rsp > 0.5 && a.top > 0.5) {
+        var tt = gap / Math.max(1, a.top);
+        for (var it = 0; it < 2; it++) {
+          var px2 = tgt.x + tgt.vx * tt, py2 = tgt.y + tgt.vy * tt;
+          tt = len(px2 - a.x, py2 - a.y) / Math.max(1, a.top);
+        }
+        /* AND NOBODY SOLVES IT EXACTLY. A defence that takes the perfect angle
+           every time is a net, not a defence: given the exact answer, every
+           carry into a stacked box died at three yards, a strong back trucked
+           for the same distance as a weak one, and one carry in twenty reached
+           five yards. He is BETTER at the chase than a fixed multiple made
+           him, not right about it. */
+        var solved = clamp(tt, 0, 4.6) * (0.52 + a.k.iq * 0.56);
+        var rough = clamp(gap / Math.max(3, a.top), 0, 3.2) * (0.35 + a.k.iq * 0.75);
+        lead = solved * (0.30 + a.k.iq * 0.34) + rough * (0.70 - a.k.iq * 0.34);
+      } else {
+        lead = clamp(gap / Math.max(3, a.top), 0, 3.2) * (0.35 + a.k.iq * 0.75);
+      }
       /* ── HE TAKES THE ANGLE HE READS, NOT THE ONE THAT IS THERE ────────
          Every defender was solving the intercept exactly, every frame, for
          the whole snap. Eleven men who never take a false step are not a
@@ -1408,6 +1542,17 @@
     }
 
     function zoneThink(a, j) {
+      /* ── HOLDING A SAFETY OVER THE TOP WAS TRIED, AND IT WAS WORSE ──────
+         Both safeties key the back and both come downhill, so a run through
+         the second level has nobody in front of it — which is why better than
+         three quarters of the carries that reach twenty yards go forty. The
+         obvious answer is to keep the deepest one back. MEASURED both ways:
+         holding him out of the run entirely put power at 8.04 yards a carry,
+         and keeping him at a cushion still put it at 5.42 with 89% of carries
+         reaching five. One tackler is worth more in the box than over the top
+         in this engine, and buying the tail with him is not a trade worth
+         making. The long-run tail is measured, unchanged from before this
+         pass, and left alone. */
       if (carrier && carrier.carry && (carrier.side === 'def' || runDeclared(a))) { pursue(a, carrier); return; }
       if (ball.flight) { breakOnBall(a); return; }
 
@@ -1563,6 +1708,20 @@
         if (a.sprint && a.gas > 0.05) top *= 1.07 + a.k.sta * 0.04;
         /* a spin turns him: he keeps going, slower, and cannot cut through it */
         if (a.spinT > 0) top *= 0.80;
+        /* ── A LONG CARRY IS RUN AT A COST ───────────────────────────────
+           MEASURED: 0.9% of carries landed between ten and nineteen yards and
+           1.9% went forty or more — a hole in the middle of the distribution
+           and a cliff after it, because a back who cleared the second level
+           was never caught. He is not faster than the men chasing him; he is
+           simply never made to slow down, and a stern chase at equal speed is
+           a race the man in front wins forever.
+
+           This is fatigue over a long run and it is nothing else: it cannot
+           touch a four-yard carry, which is over in a second and a half, and
+           it does not make anybody a worse runner. It closes the angle on the
+           man who has already been running for three seconds, which is what
+           actually happens to him. */
+        if (a.carry && play.type === 'run' && t > 2.6) top *= clamp(1 - (t - 2.6) * 0.098 * (1.25 - a.k.sta * 0.5), 0.72, 1);
         if (sp > top && sp > 0) { a.vx = a.vx / sp * top; a.vy = a.vy / sp * top; }
         a.vx -= a.vx * 1.8 * dt; a.vy -= a.vy * 1.8 * dt;
         a.x = clamp(a.x + a.vx * dt, -3, FIELD.width + 3);
@@ -1821,10 +1980,16 @@
       control = clamp(control - escape, 0.04, 0.94);
 
       var roll = rand(), kind;
-      if (roll < control * 0.60) kind = 'stuff';
-      else if (roll < control * 0.84) kind = 'wrap';
+      /* WHERE THE MASS SITS. Breaking a tackle behind the line is the rarest
+         of the five and it was the second most common — better than half of
+         all contact ended with the back still upright and running, which put
+         the yards it saved straight into the top of the distribution. A back
+         who is met at the line is usually wrapped or turned; getting out of it
+         clean is what an elite card buys, not what contact normally does. */
+      if (roll < control * 0.58) kind = 'stuff';
+      else if (roll < control * 0.92) kind = 'wrap';
       else if (roll < control) kind = 'glance';
-      else if (roll < control + (1 - control) * 0.46) kind = 'deflect';
+      else if (roll < control + (1 - control) * 0.62) kind = 'deflect';
       else kind = 'broken';
 
       lastHit = { x: Math.round(c.x * 100) / 100, y: Math.round(c.y * 100) / 100,
@@ -1832,8 +1997,21 @@
                   square: Math.round(square * 100) / 100, help: 0, by: d.player || null,
                   backfield: true, kind: kind };
       if (rushLog.contacts == null) rushLog.contacts = [];
-      rushLog.contacts.push({ kind: kind, depth: Math.round((c.y - los) * 10) / 10,
+      var depthNow = Math.round((c.y - los) * 10) / 10;
+      rushLog.contacts.push({ kind: kind, depth: depthNow,
                               control: Math.round(control * 100) / 100, pos: d.pos });
+      /* and it is contact, so the record of the carry has to say so — the
+         first one is where the yards before contact stop */
+      var att0 = { t: Math.round(t * 100) / 100, depth: depthNow, pos: d.pos,
+                   blocked: !!d.lock, beat: (d.beat || 0) > 0, dive: d.dive > 0,
+                   p: Math.round(control * 1000) / 1000, square: Math.round(square * 100) / 100,
+                   made: kind === 'stuff' || kind === 'wrap', backfield: true, kind: kind };
+      rushLog.attempts.push(att0);
+      if (!d.lock && rushLog.firstContact == null) {
+        rushLog.firstContact = att0;
+        rushLog.ybc = depthNow;
+      }
+      if (kind === 'glance') rushLog.misses++;
 
       /* a shove away from the man who hit him, whichever answer it was */
       var awayX = (c.x - d.x) >= 0 ? 1 : -1;
@@ -1849,14 +2027,23 @@
            his own weight against the man holding him. This is where the
            nothing-gain lives: met at the line, wrapped, and put down about
            where he started. */
-        c.vx *= 0.22; c.vy = Math.max(0, c.vy) * 0.34 + 0.35 + cStr * 0.75;
-        c.dragBy = d.id; c.dragUntil = t + 0.22 + rand() * 0.26;
+        /* ── AND A POWER BACK IS A POWER BACK IN THE PILE ─────────────────
+           MEASURED AT 400 SEEDS, before and after this pass alike: a 96
+           strength back finished a truck 0.05 yards further than a 42 one.
+           The suite has asserted a 0.4-yard difference for as long as it has
+           existed and it has been passing on forty seeds by luck. Strength is
+           how far the pile moves and how long he keeps his feet — both, not
+           a rounding error on one of them. */
+        var push = cStr * 0.75 + (c.move === 'truck' ? 0.45 + cStr * 0.55 : 0);
+        c.vx *= 0.22; c.vy = Math.max(0, c.vy) * 0.34 + 0.30 + push;
+        c.dragBy = d.id; c.dragUntil = t + 0.16 + rand() * 0.20 + cStr * 0.34;
         c.recover = 0.42;
         d.state = 'tackle';
         return;
       }
       if (kind === 'glance') {
-        c.vx = c.vx * 0.52 + awayX * 1.5; c.vy *= 0.64 + cBtk * 0.12;
+        c.vx = c.vx * 0.52 + awayX * 1.5;
+        c.vy = c.vy * (0.64 + cBtk * 0.12) + (c.move === 'truck' ? 0.6 + cStr * 1.1 : 0);
         /* A GLANCING BLOW IS NOT A COLLISION. He was not put on the ground and
            he was not wrapped; he was hit and he kept running. Charging him the
            same recovery as a man who broke a tackle is what took the ceiling
@@ -1876,6 +2063,14 @@
            and he gets the grass nobody is standing on. */
         c.recover = 0.66 + cAgi * 0.20;
         d.stun = 0.30 + rand() * 0.22;
+        /* A MAN WHO GOT HANDS ON HIM AND DID NOT BRING HIM DOWN HAS BEEN
+           BEATEN. A juke that turns a stuff into a bounce is exactly what
+           breaking a tackle means, and counting only the clean escapes left
+           the moves buttons doing nothing the box score could see. */
+        if (!c.broke) { c.broke = 0; }
+        c.broke++;
+        rushLog.breaks++;
+        if (events.onBreak) events.onBreak(c, d);
         notes.push(shortName(c) + ' had to bounce it.');
         return;
       }
@@ -1998,8 +2193,18 @@
         down(c, d);
         return;
       }
-      /* broken. He is slowed, the defender is on the floor for a beat. */
-      c.vx *= 0.72; c.vy *= 0.72;
+      /* ── BROKEN, AND WHAT HE DOES WITH IT IS THE CARD ──────────────────
+         A broken tackle downfield slowed every back by the same 28% whoever
+         he was, so yards after contact were the same for a bulldozer and a
+         waterbug and the difference between them never reached the box score:
+         MEASURED at 400 seeds, on this engine and on the one before it, a 96
+         strength back finished a truck 0.05 yards further than a 42 one.
+
+         Power carries the pile; feet keep the speed. A man who is trucking
+         gets what trucking is for. */
+      var cS = c.k.str == null ? 0.5 : c.k.str, cA = c.k.agi == null ? 0.5 : c.k.agi;
+      c.vx *= 0.66 + cA * 0.16;
+      c.vy = c.vy * (0.62 + cS * 0.22) + (c.move === 'truck' ? 0.55 + cS * 1.05 : 0);
       d.stun = 0.55 + rand() * 0.35;
       d.vx *= 0.2; d.vy *= 0.2;
       /* A BREAK AND A MISS ARE NOT THE SAME THING. A free defender square on
