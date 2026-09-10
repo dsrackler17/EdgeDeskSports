@@ -59,6 +59,30 @@
 .xl-comps{font-size:12px;color:var(--dim);line-height:1.45;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .xl-comps b{color:var(--text)}
 .xl-why{font-size:12px;color:var(--faint)}
+/* the instance on the tile */
+.xc{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);
+  background:var(--cell);font-size:11.5px;color:var(--dim);cursor:pointer}
+.xc:hover{border-color:var(--line2)}
+.xc b{color:var(--text)}
+.xc-ed{font:800 9.5px 'Space Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--est)}
+.xc-go{margin-left:auto;font-weight:700;color:var(--val)}
+/* the card, whole */
+.xcd{position:fixed;inset:0;z-index:72;background:rgba(4,5,7,.8);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .22s}
+.xcd.on{opacity:1}
+.xcd-in{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;
+  padding:14px 16px 20px;transform:translateY(16px);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.xcd.on .xcd-in{transform:none}
+@media(min-width:560px){.xcd{align-items:center;padding:20px}.xcd-in{border-radius:18px}}
+.xcd-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.xcd-h>div{min-width:0}
+.xcd-h .eyebrow{margin:0}
+.xcd-x{width:auto;flex:0 0 auto;min-width:44px;min-height:44px;padding:0 14px}
+.xcd-t{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;line-height:1.1;margin-top:4px}
+.xcd-s{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5}
+.xcd-s b{color:var(--text)}
+.xcd-l{list-style:none;margin:6px 0 0;padding:0}
+.xcd-l li{display:flex;align-items:baseline;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.xcd-l li span{margin-left:auto;font-size:11.5px;color:var(--faint);font-family:'JetBrains Mono',monospace}
 /* the sell form */
 .xs{display:grid;gap:10px;margin-top:10px}
 @media(min-width:640px){.xs{grid-template-columns:1.4fr 1fr}}
@@ -215,6 +239,7 @@
     return '<div class="xl'+(l.mine?' mine':'')+'" data-listing="'+esc(l.id)+'">'
       +'<div class="xl-top"><span class="who">'+FR.logoSvg(s.logo,18,s.theme)+esc(s.abbr||'')+'</span><span>'+esc(s.city||'')+' '+esc(s.name||'')+'</span><span class="clock">'+esc(left(l.expires_at))+'</span></div>'
       +FR.playerCard(m,{compact:true})
+      +cardStrip(l)
       +'<div class="xl-price"><b>'+credits(l.price)+'</b>'
       +'<div class="ref">Free agent reference <em>'+esc(fmt(l.asking_reference|0))+'</em>'+(comps&&comps.sold?'<br>'+esc(comps.sold)+' sold · median <em>'+esc(fmt(comps.median))+'</em>':'')+'</div></div>'
       +(comps?'<div class="xl-comps">'+compsLine(comps)+'</div>':'')
@@ -225,6 +250,58 @@
       +'</div>'
       +(why?'<div class="xl-why">'+esc(why)+'</div>':'')
       +'</div>';
+  }
+  /* WHAT IS ACTUALLY FOR SALE (cards_v1). Not a row of career statistics: a
+     printed instance, with an edition, a serial, the hands it has been
+     through and what editions like it have sold for. */
+  function cardStrip(l){
+    var c=l.card;if(!c)return '';
+    var bits=[];
+    bits.push('<span class="xc-ed">'+esc(c.label||'One of one')+'</span>');
+    if(c.rarity)bits.push('<span>'+esc(c.rarity)+'</span>');
+    if(c.base_overall!=null)bits.push('<span>printed at <b>'+esc(c.base_overall)+'</b></span>');
+    if(c.program)bits.push('<span>'+esc(FR.packDef(c.program).name)+'</span>');
+    bits.push('<span>'+((c.hands|0)>0?esc(c.hands)+' hand'+((c.hands|0)===1?'':'s'):'first hand')+'</span>');
+    var sales=(c.sales||[]);
+    if(sales.length)bits.push('<span>last sold <b>'+esc(fmt(sales[0].price))+'</b></span>');
+    return '<div class="xc" role="button" tabindex="0" data-card="'+esc(c.id)+'">'+bits.join('')
+      +'<span class="xc-go">Card</span></div>';
+  }
+  var CARD_SHEET=null;
+  function closeCard(){if(!CARD_SHEET)return;var x=CARD_SHEET;CARD_SHEET=null;x.classList.remove('on');setTimeout(function(){if(x.parentNode)x.parentNode.removeChild(x);},220);}
+  function showCard(cardId){
+    if(!cardId)return;
+    Promise.all([FR.cardEntity(cardId),FR.cardMarket(cardId)]).then(function(rs){
+      var e=rs[0]&&rs[0].ok?rs[0].data:null,mk=rs[1]&&rs[1].ok?rs[1].data:null;
+      if(!e){G.toast('That card could not be read');return;}
+      var pl=e.player||{},ed=e.edition||{},own=e.ownership||{},car=e.career||{},sales=(mk&&mk.sales)||[],prov=(mk&&mk.provenance)||[];
+      var est=mk&&mk.comps?FR.marketEstimate?null:null:null;
+      closeCard();
+      var sh=document.createElement('div');sh.className='xcd';sh.setAttribute('role','dialog');sh.setAttribute('aria-modal','true');
+      sh.innerHTML='<div class="xcd-in"><div class="xcd-h"><div><div class="eyebrow">The card</div>'
+        +'<div class="xcd-t">'+esc((pl.first_name||'')+' '+(pl.last_name||''))+'</div>'
+        +'<div class="xcd-s">'+esc(ed.label||'')+(ed.name&&ed.name!=='base'?' · '+esc(ed.name):'')+' · '+esc(ed.rarity||'')
+        +' · printed at <b>'+esc(ed.base_overall)+'</b>'+(ed.program?' · '+esc(FR.packDef(ed.program).name):'')+'</div></div>'
+        +'<button class="btn xcd-x" type="button" id="xcdX" aria-label="Close">✕</button></div>'
+        +(car&&car.id?FR.playerCard(car,{}):'')
+        +'<div class="eyebrow" style="margin-top:14px">Recent sales</div>'
+        +(sales.length?'<ul class="xcd-l">'+sales.map(function(x){
+            return '<li><b>'+esc(fmt(x.price))+'</b> Credits<span>'+esc(new Date(x.at).toLocaleDateString(undefined,{month:'short',day:'numeric'}))+'</span></li>';
+          }).join('')+'</ul>':'<div class="ftp">This edition has not sold yet.</div>')
+        +'<div class="eyebrow" style="margin-top:14px">Whose hands</div>'
+        +(prov.length?'<ul class="xcd-l">'+prov.map(function(x){
+            return '<li><b>'+esc(FR.cardsWord?FR.cardsWord(x.type):x.type)+'</b>'+(x.price?' · '+esc(fmt(x.price))+' Credits':'')
+              +'<span>'+esc(new Date(x.at).toLocaleDateString(undefined,{month:'short',day:'numeric'}))+'</span></li>';
+          }).join('')+'</ul>':'<div class="ftp">Minted here and never moved.</div>')
+        +'<div class="ftp" style="margin-top:12px">'+esc(pl.position||'')+(pl.hometown?' from '+esc(pl.hometown):'')
+        +(own.acquired_at?' · held since '+esc(new Date(own.acquired_at).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})):'')+'</div>'
+        +'</div>';
+      document.body.appendChild(sh);CARD_SHEET=sh;
+      setTimeout(function(){sh.classList.add('on');},10);
+      sh.addEventListener('click',function(ev){if(ev.target===sh)closeCard();});
+      sh.querySelector('#xcdX').addEventListener('click',closeCard);
+      track('card_view',{placement:'exchange',card:cardId});
+    });
   }
   function compsLine(c){
     if(!c)return '';
@@ -315,6 +392,11 @@
     [pos,sort,mn,mx].forEach(function(el){if(el)el.addEventListener('change',refilter);});
     if(q){var t=null;q.addEventListener('input',function(){clearTimeout(t);t=setTimeout(refilter,350);});}
     rooms.querySelectorAll('[data-page]').forEach(function(b){b.addEventListener('click',function(){Q.offset=(+b.getAttribute('data-page'))*Q.limit;browse(false);});});
+    rooms.querySelectorAll('[data-card]').forEach(function(b){
+      var go=function(ev){ev.preventDefault();ev.stopPropagation();showCard(b.getAttribute('data-card'));};
+      b.addEventListener('click',go);
+      b.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' ')go(ev);});
+    });
     rooms.querySelectorAll('[data-comps]').forEach(function(b){
       b.addEventListener('click',function(){
         var k=b.getAttribute('data-comps'),parts=k.split(':');

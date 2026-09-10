@@ -3348,6 +3348,225 @@ and every pin in the live harness is untouched: the stick still changes the
 run, power still pays, the tiers still differ in the head. The 800-game check
 is green again.
 
+## The rushing model, measured
+
+The regression band on live yards per carry is 3.0 to 5.6, and a reading of
+**5.53** once put the game a hundredth of a yard from failing it. That reading
+came from the Play Mode block inside the simulation suite, which plays a few
+dozen games — at that size the statistic swings by several tenths between runs.
+
+Measured properly, with the suite's own teams, scheme rotation and counters at
+**400 games**:
+
+| | value |
+| --- | --- |
+| yards per carry | 5.11 |
+| headroom to the ceiling | 0.49 |
+| points per team | 19.3 |
+| yards per play | 5.21 |
+| run share | 45.9% |
+
+The number is inside the 5.0–5.3 target and is not near the ceiling. Nothing
+was changed to make that true and the band was not touched.
+
+**What the distribution says instead.** A separate probe records every carry in
+a live sample — 8,719 of them over 300 games — and it found a real defect that
+the average hides:
+
+| | this game | roughly real football |
+| --- | --- | --- |
+| stopped at or behind the line | 4.1% | ~18% |
+| 10 yards or more | 5.7% | ~11% |
+| 20 yards or more | 2.3% | ~3% |
+| 40 yards or more | 1.49% | ~0.5% |
+| median | 3 | 3–4 |
+| p10 / p25 / p75 / p90 | 1 / 2 / 6 / 8 | — |
+
+Two thirds of the runs that clear twenty yards go forty or more, and almost
+nothing loses yardage. **A run play in this game has very little downside**,
+which is a decision with no cost.
+
+**Where it comes from, and why it is still here.** The cause is in the blocking
+clock: the shortest run block the engine can draw is 0.7 seconds, and the ball
+is not in the back's hands until 0.6 — so the worst rep in the game still
+outlasts the handoff and no defensive lineman is ever in the backfield when the
+ball arrives. Making one is a first-step win, not a rep that slowly runs out.
+
+Four changes were built and measured against that: a first-step loss on the run
+block whose chance is the matchup, a wider block draw, a deeper pursuit lead for
+the last man, and a smaller false step at the second level. Every one of them is
+recorded here because none of them shipped:
+
+| change | stuffed | yards per carry (gate) | cost |
+| --- | --- | --- | --- |
+| baseline | 4.1% | 5.11 | — |
+| first-step loss at 0.30 | 7.3% | 4.74 | below the target band |
+| first-step loss at 0.20 | ~7% | 4.69 | below the target band |
+| every run block at 0.20s | 39.6% | 1.25 | unplayable |
+| deeper pursuit lead | no change to the 40-yard tail | −0.2 | no benefit |
+
+And the cost is not only the average. The suite holds two properties that say a
+card changes what happens: a 96 power-and-feet back gains **1.07 yards** more
+than a 42 on the same inside zone, and finishes a truck **1.27 yards** further.
+The first-step loss cuts those margins to 0.22 and 0.13, because a play that
+dies at the snap dies the same way for both men. Buying a realistic stuff rate
+with the promise that the man on the card matters is the wrong trade in a card
+game.
+
+So the engine is unchanged. The number is calibrated and in band on a large
+sample; the distribution is a measured, documented defect with a named
+mechanism, and fixing it properly means making a great back able to beat a
+lineman who won at the snap — a change to contact in the backfield, not to the
+blocking clock, and a pass of its own.
+
+## One door, once (`resume_v1`)
+
+Everything that hands out value now goes through a door that can be knocked
+on twice, because a phone loses signal in a lift and a tab gets closed
+mid-animation. The two wrong answers are guessing yes and showing a reward
+the server never granted, and guessing no and granting it twice.
+
+The client generates an **operation key** before it asks. `franchise_once()`
+takes the key, locks the franchise row, and looks it up. If the key is on
+`franchise_ops` the work already happened and the **original result** comes
+back, not a new one; if it is not, the work runs and the key is written in the
+same transaction, so there is no window where one is true without the other.
+The lock is what stops two tabs pressing the same button from both finding the
+ledger empty.
+
+Five operations take a key: opening the rank's pack, opening a pack you hold,
+keeping a man from the pack on the table, playing the next game, and starting
+the next season. Four more doors were already exactly-once and stay as they
+are: a purchase (`game_market_txns.op_key`, unique), a live game result
+(`franchise_activity`, unique on franchise/kind/key), an achievement (a primary
+key) and a pack grant (unique on franchise/kind/source).
+
+When the client does not know whether its request left the building it does not
+decide — it asks. `franchise_op()` answers **completed**, with what the
+operation produced, or **not completed**. There is no third answer.
+`franchise_pack_pending()` answers the narrower version of the same question:
+a reveal that was interrupted leaves men on the table, and the page finishes an
+animation it never started rather than opening a second pack.
+
+On screen this is four states and no fifth: **synced**, **offline**,
+**reconnecting** (it may have landed; we are asking), **retry** (the server
+says it did not happen, so asking again is safe). One strip at the top of every
+page shows them. It never says a thing worked.
+
+`tools/games/offline.test.js` holds this to account in a real browser: Chromium
+loads the real pages, the real client library makes the real calls, and the
+calls run through psql against a real database. A drop *before* the request
+lands and a drop *after* it commits are two different tests, and the second one
+is the one that grants a reward twice if you get it wrong.
+
+## The living season (`season_v1`)
+
+A season used to be a record and a schedule. It is three more things now, and
+every one of them is derived from what has actually happened.
+
+**EdgeDesk Power Rankings.** Not a sort by record. Every club in the league is
+rated from roster strength and then moved by evidence: win percentage, average
+margin capped at 21 so a blowout cannot run away with it, strength of schedule,
+the last three results, wins over clubs rated above you, losses to clubs well
+below, and a little for winning on the road. The weights are published in
+`franchise_season_rules()` so any number on the page can be checked against the
+arithmetic that produced it, and every row carries the reasons it is where it
+is. Your franchise is rated on its results; the other clubs are rated on their
+rosters and on whatever they have shown against you, because that is all the
+record actually knows about them — nothing simulates a game nobody played.
+
+A snapshot is written every week into `franchise_rank_weeks`, so movement is
+this week's rank against the last week that was written down. Risers, fallers,
+the biggest jump, the biggest drop and anyone new in the top ten are all read
+off those two snapshots.
+
+**Award races.** Ten of them, updated weekly into `franchise_award_weeks`, each
+with the five men actually having the seasons. `franchise_award_score()` is
+position-specific and per game: a back is measured against what a back does, a
+corner against what a corner does, and every term is a rate so volume cannot
+win a race on its own. Two multipliers move a score — what the team did and who
+it played — and neither moves it by more than a fifth. **No overall is
+consulted anywhere in it.** Clutch is not a feeling: it is the same score
+computed over the one-score games only, added up out of those games' own box
+scores.
+
+The candidates are the men whose games the record keeps, which is your roster —
+opponents are clubs rather than persistent rosters, so there are no opposing
+candidates to invent, and none are invented.
+
+**The title game.** A winning season still earns its bowl. Losing at most once
+in a full season earns something else: `franchise_games.championship`, an
+opponent that is the strongest club you never played rather than a draw, and a
+game the pages treat like nothing else — a pregame with both records, the path,
+the men who got you there, the award finalists and the lineup introduced; a
+postgame with the whistle, the trophy, confetti, the season summary, the
+Championship Vault and a line in the record book. The Most Valuable Player is
+read out of that game's own box score on the same impact scale the simulator
+uses to name a player of the game. The best card in the game does not win it;
+the man who played best does.
+
+**Nobody writes a snapshot but the server.** A deferred constraint trigger on
+`franchise_games` fires at the end of the transaction that finished a game —
+after the season lines that same transaction is still writing — so whichever
+path played it, the week gets its rankings and its award race exactly once. The
+client has three functions and all three are reads.
+
+## The card is not the man (`cards_v1`)
+
+One table used to carry five ideas at once. `game_players` held **who a man
+is** (his name, his body, where he is from), **what his card says** (the
+edition, the rarity, the printed ratings), **who owns him** (a `franchise_id`
+column), **where he plays** (a `depth` number) and, by way of a listing
+pointing straight at him, **whether he is for sale**. The Exchange traded
+that row: a sale was an `UPDATE` of one column on the same record that also
+held his career. There was no way to hold two editions of one man, no way to
+say whose hands a card had been through, and no way to price a card apart
+from the man.
+
+These are separate things now:
+
+| table | what it is |
+| --- | --- |
+| `game_player_identities` | the persistent fictional athlete |
+| `game_card_defs` | a printed edition of that athlete |
+| `game_cards` | one instance of that edition, with its serial |
+| `game_card_ownership` | who holds that instance, right now |
+| `game_card_provenance` | every hand it has passed through |
+| `game_lineup_slots` | where an owned card is playing |
+| `franchise_listings` | a temporary offer of an owned card |
+| `game_market_txns` | a completed transfer, with money |
+| `game_market_prices` | what editions like it have sold for |
+
+`game_players` keeps what is genuinely its own: **the career sheet** — the
+stats, the development, the injuries and the ratings as they have moved
+since the card was printed. Its `franchise_id` and `depth` columns survive
+only as a **read projection** for code that has not been rewritten, and the
+database refuses to let anything write them behind the new tables' back:
+ownership moves through `franchise_card_transfer()` or it does not move, and
+a trigger raises if a statement tries. The schema report and the acceptance
+suite both hold the projection to the ownership record.
+
+**The migration** (`franchise_cards_migrate()`) is idempotent and additive.
+Every existing row is minted an identity, an edition, an instance and an
+ownership record; the lineup is rebuilt from the chart as it stands; every
+listing is pointed at the instance; every sale already on the books becomes a
+transaction and a price. Nothing is deleted, no roster moves, no ledger
+changes, no result changes. Running it twice mints nothing.
+
+**Buying is atomic and idempotent.** A purchase carries an operation key the
+device keeps until the server answers. The listing row is locked, the seller's
+ownership is verified against `game_card_ownership` rather than a column, the
+money moves once, ownership moves through the one door, and the sale is
+written as a transaction and a price. A unique index on the listing is what
+makes a second buyer impossible rather than unlikely: two buyers racing
+produce one winner and one clean refusal. A client whose connection dropped
+asks `franchise_market_op()` with its key and is told **completed** or **not
+completed**, never maybe.
+
+**The adapter** `franchise_card_entity()` hands gameplay one flat object —
+identity, edition, ownership, lineup slot and career — assembled from the
+separate tables rather than read off one conflated row.
+
 ## The programs, and what a passed man is worth (`packs_v4`)
 
 Three more pack programs, each derived from the live games filed at Pro or

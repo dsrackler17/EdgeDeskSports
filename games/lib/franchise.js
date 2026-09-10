@@ -75,7 +75,10 @@
       'the Vault: packs you hold, odds you can read, and a card that remembers',
       'the lineup, chemistry, and the Exchange',
       'the pull record: every pack you opened and the best of them',
-      'the game you hold counts: live results, careers, and the Game Day pack'
+      'the game you hold counts: live results, careers, and the Game Day pack',
+      'the card is not the man: identity, edition, instance, ownership',
+      'the living season: rankings, award races, the title game',
+      'one door, once: operation keys and the answer to did it happen'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -1779,6 +1782,9 @@
     return S.rpc(fn, args).then(function (r) {
       if (!r.ok && r.status === 404) { _deployed = false; r.error = 'not_deployed'; r.message = 'Franchise services are temporarily unavailable.'; }
       else if (r.ok) _deployed = true;
+      /* resume_v1: the transport is the only thing that knows whether the
+         request left the building, so the state is set here and nowhere else */
+      if (typeof setNet === 'function') setNet(r.ok ? NET.SYNCED : (r.error === 'unreachable' ? NET.OFFLINE : _net));
       return r;
     });
   }
@@ -1848,13 +1854,13 @@
      The server refuses a game that has not opened and plays each exactly
      once; the snapshot is refreshed from the server afterwards. */
   function startSeason() {
-    return rpc('franchise_start_season', withSecret({})).then(function (r) {
+    return once('start_season').then(function (r) {
       if (r.ok && r.data && r.data.home) remember(r.data.home);
       return r;
     });
   }
   function playWeek() {
-    return rpc('franchise_play_week', withSecret({})).then(function (r) {
+    return once('play_week').then(function (r) {
       if (r.ok && r.data && r.data.totals) touchTotals(r.data.totals);
       return r;
     });
@@ -1950,6 +1956,10 @@
   /* ── THE VAULT (packs_v2) ─────────────────────────────────────────────────
      The pack table, mirrored for display; the SQL's franchise_pack_defs() is
      what applies, and the parity test pins these names to it. */
+  /* THE CARD IS NOT THE MAN (cards_v1): the athlete, the edition, the
+     instance, who holds it and where it plays are separate things on the
+     server, and this is the version of that separation. */
+  var CARDS_VERSION = 'cards_v1';
   var PACKS_VERSION = 'packs_v4';
   var PACKS = {
     gridiron_cache:     { name: 'Gridiron Cache', art: 'cache', size: 3, keep: 1, earned: 'every rank you reach' },
@@ -2078,7 +2088,7 @@
   var PULLS_VERSION = 'pulls_v1';
   function pulls() { return rpc('franchise_pulls', withSecret({})); }
   /* open one pack by id — the server rolls it, writes it, and only then answers */
-  function packOpenId(id) { return rpc('franchise_pack_open_id', withSecret({ p_pack: String(id || '') })).then(moveThen); }
+  function packOpenId(id) { return once('pack_open_id', String(id || '')).then(moveThen); }
   /* one man, whole: profile, history, career, the pack he came from */
   function card(id) { return rpc('franchise_card', withSecret({ p_player: String(id || '') })); }
 
@@ -2120,14 +2130,167 @@
   function exchangeList(playerId, price) { return rpc('franchise_exchange_list', withSecret({ p_player: String(playerId || ''), p_price: price | 0 })); }
   function exchangeWithdraw(listingId) { return rpc('franchise_exchange_withdraw', withSecret({ p_listing: String(listingId || '') })); }
   /* a LISTING ID and nothing else: the price and the balance are the server's */
-  function exchangeBuy(listingId) { return rpc('franchise_exchange_buy', withSecret({ p_listing: String(listingId || '') })).then(moveThen); }
+  /* ── BUYING A CARD, ONCE ─────────────────────────────────────────────────
+     A purchase carries an OPERATION KEY: a name for this attempt, made once
+     and kept on the device until the server has answered. A connection that
+     drops mid-buy is retried with the same key and the server hands back the
+     purchase it already made rather than making a second one. Nothing here
+     decides whether it worked — `marketOp` asks. */
+  var OP_N = 0;
+  function opKey(kind, ref) {
+    var k = 'ed_op:' + kind + ':' + ref, v = null;
+    try { v = localStorage.getItem(k); } catch (_) {}
+    if (!v) {
+      /* a name for this attempt, from the platform's own id source — never a
+         roll: the client decides nothing about the outcome, only what to
+         call the question it is asking */
+      var uniq = null;
+      try { uniq = root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : null; } catch (_) {}
+      if (!uniq) {
+        try {
+          var a4 = new Uint8Array(8); root.crypto.getRandomValues(a4);
+          uniq = Array.prototype.map.call(a4, function (n) { return ('0' + n.toString(16)).slice(-2); }).join('');
+        } catch (_) { uniq = Date.now().toString(36) + ':' + (OP_N++); }
+      }
+      v = kind + ':' + ref + ':' + uniq;
+      try { localStorage.setItem(k, v); } catch (_) {}
+    }
+    return v;
+  }
+  function opDone(kind, ref) { try { localStorage.removeItem('ed_op:' + kind + ':' + ref); } catch (_) {} }
+
+  /* ── THE CONNECTION, SAID OUT LOUD (resume_v1) ─────────────────────────
+     Four states and no fifth. A page never decides for itself that something
+     worked; it shows what the connection is doing and what the server said.
+
+       synced        the last thing asked was answered
+       offline       the request never reached anybody
+       reconnecting  it may have landed — we are asking the server what it did
+       retry         the server says it did not happen; asking again is safe   */
+  var RESUME_VERSION = 'resume_v1';
+  var NET = { SYNCED: 'synced', OFFLINE: 'offline', RECONNECTING: 'reconnecting', RETRY: 'retry' };
+  var NET_WORDS = { synced: 'Synced', offline: 'Offline', reconnecting: 'Reconnecting…', retry: 'Not sent — try again' };
+  var _net = NET.SYNCED, _netFns = [];
+  function net() { return _net; }
+  function netWord(s) { return NET_WORDS[s || _net] || ''; }
+  function onNet(fn) {
+    if (typeof fn !== 'function') return function () {};
+    _netFns.push(fn);
+    return function () { var i = _netFns.indexOf(fn); if (i >= 0) _netFns.splice(i, 1); };
+  }
+  function setNet(s) {
+    if (s === _net) return _net;
+    _net = s;
+    _netFns.forEach(function (fn) { try { fn(s); } catch (_) {} });
+    try { document.dispatchEvent(new CustomEvent('edgames:net', { detail: { state: s } })); } catch (_) {}
+    return _net;
+  }
+
+  /* ── ONE DOOR, ONCE ────────────────────────────────────────────────────
+     Everything that hands out value goes through here. The key is made
+     BEFORE the request and kept until the server confirms, so a retry is the
+     same operation rather than a new one.
+
+     AND WHEN THE CONNECTION GOES, THE CLIENT DOES NOT GUESS. It asks the
+     server what it did with the key. Completed comes back with the original
+     result; not completed comes back as something safe to ask again. There
+     is no third answer and nothing is ever invented here. */
+  function once(kind, ref) {
+    var r0 = ref == null ? '-' : String(ref), key = opKey(kind, r0);
+    return rpc('franchise_once', withSecret({ p_kind: kind, p_op: key, p_ref: ref == null ? null : String(ref) }))
+      .then(function (r) {
+        if (r.ok) {
+          opDone(kind, r0); setNet(NET.SYNCED);
+          var d = r.data || {};
+          return { ok: true, data: d.result || null, already: !!d.already, op: key };
+        }
+        if (r.error !== 'unreachable') { opDone(kind, r0); setNet(NET.SYNCED); return r; }
+        setNet(NET.RECONNECTING);
+        return rpc('franchise_op', withSecret({ p_op: key })).then(function (o) {
+          if (o.ok && o.data && o.data.state === 'completed') {
+            opDone(kind, r0); setNet(NET.SYNCED);
+            return { ok: true, data: o.data.result || null, already: true, op: key, recovered: true };
+          }
+          if (o.ok) {
+            setNet(NET.RETRY);
+            return { ok: false, error: 'not_completed', state: 'not_completed', op: key,
+              message: 'That did not reach the server. Nothing was spent — try again.' };
+          }
+          setNet(NET.OFFLINE);
+          return { ok: false, error: 'unreachable', state: 'unknown', op: key,
+            message: 'Still offline. Nothing is lost — this finishes when you are back.' };
+        });
+      });
+  }
+  /* what the server did with one key, asked directly */
+  function opState(kind, ref) {
+    return rpc('franchise_op', withSecret({ p_op: opKey(kind, ref == null ? '-' : String(ref)) }));
+  }
+  /* the pack already sitting on the table, if a reveal was interrupted */
+  function packPending() { return rpc('franchise_pack_pending', withSecret({})); }
+  function exchangeBuy(listingId) {
+    var id = String(listingId || ''), op = opKey('buy', id);
+    return rpc('franchise_exchange_buy', withSecret({ p_listing: id, p_op: op })).then(function (r) {
+      if (r && r.ok) opDone('buy', id);
+      return r;
+    }).then(moveThen);
+  }
+  /* WHAT HAPPENED TO THAT PURCHASE. Never "maybe": completed, or not. */
+  function marketOp(listingId) {
+    var id = String(listingId || '');
+    return rpc('franchise_market_op', withSecret({ p_op: opKey('buy', id) })).then(function (r) {
+      if (r && r.ok && r.data && r.data.state === 'completed') opDone('buy', id);
+      return r;
+    });
+  }
+  /* one card instance, whole: the athlete, the edition, who has held it and
+     where it plays — assembled by the server from the separate tables */
+  function cardEntity(cardId) { return rpc('franchise_card_entity', { p_card: String(cardId || '') }); }
+  /* how a card came to be in a pair of hands, said in words */
+  var CARD_WORDS = { founding_roster: 'Founding roster', offseason_rookie: 'Signed as a rookie', draft: 'Drafted', free_agent: 'Signed in free agency',
+                     pack: 'Kept from a pack', market: 'Bought on the Exchange', trade: 'Traded for', migration: 'Minted from the record' };
+  function cardsWord(k) { return CARD_WORDS[k] || String(k || '').replace(/_/g, ' '); }
+  function cardMarket(cardId) { return rpc('franchise_card_market', { p_card: String(cardId || '') }); }
+
+  /* ── the living season, season_v1 ──────────────────────────────────────
+     Three reads, and only reads: the server writes the weekly snapshot when
+     a game finishes, so a page cannot ask for a ranking that flatters it.  */
+  var SEASON_VERSION = 'season_v1';
+  /* the power model, mirrored for display — franchise_season_rules() is what
+     applies; this is so a page can print the terms without a round trip */
+  var SEASON_RULES = { win_pct: 26, margin_cap: 21, margin: 10, sos: 8, form: 6,
+                       quality_win: 3.0, bad_loss: -3.5, home_road: 1.5, unplayed_pull: 0.35 };
+  /* the ten races, in the order the server runs them, so a page can lay them
+     out before the first one is scored */
+  var AWARDS = [
+    { key: 'poy',    name: 'Player of the Year' },
+    { key: 'opoy',   name: 'Offensive Player of the Year' },
+    { key: 'dpoy',   name: 'Defensive Player of the Year' },
+    { key: 'qb',     name: 'Quarterback of the Year' },
+    { key: 'rb',     name: 'Back of the Year' },
+    { key: 'wr',     name: 'Receiver of the Year' },
+    { key: 'rush',   name: 'Pass Rusher of the Year' },
+    { key: 'db',     name: 'Defensive Back of the Year' },
+    { key: 'rook',   name: 'Rookie of the Year' },
+    { key: 'clutch', name: 'Clutch Player of the Year' }
+  ];
+  function rankings() { return rpc('franchise_rankings', withSecret({})); }
+  function awards() { return rpc('franchise_awards', withSecret({})); }
+  function championship() { return rpc('franchise_championship', withSecret({})); }
+  /* a movement, said the way a broadcast says it */
+  function moveWord(n) {
+    if (n == null) return 'new';
+    if (n > 0) return 'up ' + n;
+    if (n < 0) return 'down ' + (-n);
+    return 'even';
+  }
   function exchangeComps(position, overall) { return rpc('franchise_exchange_comps', { p_position: String(position || ''), p_overall: overall | 0 }); }
   function exchangeHistory(limit) { return rpc('franchise_exchange_history', withSecret({ p_limit: limit || 20 })); }
 
   function ranks() { return rpc('franchise_rank_board', withSecret({})); }
-  function packOpen() { return rpc('franchise_pack_open', withSecret({})).then(moveThen); }
+  function packOpen() { return once('pack_open').then(moveThen); }
   function packKeep(player) {
-    return rpc('franchise_pack_keep', withSecret({ p_player: String(player || '') })).then(moveThen);
+    return once('pack_keep', String(player || '')).then(moveThen);
   }
   /* turn the whole pack down. The rank is spent either way — that is what
      makes it a decision — but a pack must never be able to block the rest. */
@@ -2399,6 +2562,12 @@
     EXCHANGE_VERSION: EXCHANGE_VERSION, EXCHANGE: EXCHANGE, exchangeFee: exchangeFee,
     exchangeBrowse: exchangeBrowse, exchangeList: exchangeList, exchangeWithdraw: exchangeWithdraw, exchangeBuy: exchangeBuy,
     exchangeComps: exchangeComps, exchangeHistory: exchangeHistory,
+    marketOp: marketOp, cardEntity: cardEntity, cardMarket: cardMarket, opKey: opKey, opDone: opDone, cardsWord: cardsWord, CARD_WORDS: CARD_WORDS,
+    CARDS_VERSION: CARDS_VERSION,
+    rankings: rankings, awards: awards, championship: championship,
+    once: once, opState: opState, packPending: packPending,
+    net: net, onNet: onNet, netWord: netWord, NET: NET, RESUME_VERSION: RESUME_VERSION,
+    AWARDS: AWARDS, SEASON_VERSION: SEASON_VERSION, SEASON_RULES: SEASON_RULES, moveWord: moveWord,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,

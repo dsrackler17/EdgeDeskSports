@@ -54,6 +54,12 @@
   function flow(to, why) { if (FLOW) FLOW.set(to, why); }
   try { window.__edFlow = FLOW; } catch (_) {}
   var busy = false, pendingCall = null, ballX = PT.FIELD.half, lastResult = null;
+  /* ── RESEARCH IQ (read_v1) ───────────────────────────────────────────────
+     Every call you make is frozen before the snap and graded on what you
+     could see — never on what happened. READS holds one entry per decision:
+     the context, the grade, and (separately, afterwards) what the play did. */
+  var RD = window.EDGridironRead || null;
+  var READS = [], pendingRead = null;
   var tipsSeen = {};
   try { tipsSeen = JSON.parse(localStorage.getItem('ed_gridiron_tips') || '{}'); } catch (_) {}
 
@@ -961,10 +967,68 @@
     var defKey = S.aiDefense(game);
     var ps = S.preSnap(game, key, formKey, defKey);
     pendingCall = { type: 'play', play: key, formation: formKey, def: defKey, tempo: tempo };
+    captureRead(key, formKey, ps, sit);
     lineUp(key, formKey, defKey, ps, sit);
     padSnap('Snap');
     seenTip('call');
     autoSnap();
+  }
+  /* ── WHAT YOU COULD SEE WHEN YOU CALLED IT ───────────────────────────────
+     Frozen before the snap: the down, the clock, the look above the field,
+     the men you have, and what you have been leaning on. The outcome is not
+     in here and cannot get in here. */
+  function personnelSummary() {
+    if (!game) return null;
+    var t = G.teamOf(game, me), men = (t && t.players) || [];
+    function best(pos) {
+      var b = null;
+      men.forEach(function (p) {
+        if (p.position !== pos) return;
+        if ((p.depth || 1) > 1 && pos !== 'WR') return;
+        if (!b || (p.overall | 0) > (b.overall | 0)) b = p;
+      });
+      return b;
+    }
+    function avg(pos) {
+      var t2 = 0, n = 0;
+      men.forEach(function (p) { if (p.position === pos && (p.depth || 1) <= 5) { t2 += p.overall | 0; n++; } });
+      return n ? Math.round(t2 / n) : 70;
+    }
+    var rb = best('RB') || {}, qb = best('QB') || {}, wr = best('WR') || {};
+    var rr = rb.ratings || {}, qr = qb.ratings || {};
+    return {
+      rb: { overall: rb.overall | 0, archetype: rb.archetype || '', speed: rr.speed | 0, power: rr.power | 0 },
+      qb: { overall: qb.overall | 0, archetype: qb.archetype || '', arm: qr.arm | 0 },
+      wr: { best: wr.overall | 0 },
+      ol: avg('OL')
+    };
+  }
+  function captureRead(key, formKey, ps, sit) {
+    if (!RD || !game || sit.offense !== me) { pendingRead = null; return; }
+    var them = G.other(me);
+    pendingRead = {
+      ctx: RD.context({
+        sit: { down: sit.down, toGo: sit.toGo, ball: sit.ball, quarter: sit.quarter, clock: sit.clock },
+        preSnap: ps, play: F.play(key) || {}, playKey: key, formation: formKey,
+        scoreFor: game.score[me] | 0, scoreAgainst: game.score[them] | 0,
+        personnel: personnelSummary(),
+        recent: READS.map(function (r) { return r.ctx.concept; }).reverse().slice(0, 8),
+        at: Date.now()
+      }),
+      text: (F.play(key) || {}).name || key
+    };
+    pendingRead.grade = RD.grade(pendingRead.ctx);
+  }
+  /* the play is over; the RESULT is filed beside the grade, never inside it */
+  function fileRead(res) {
+    if (!pendingRead) return null;
+    var e = pendingRead; pendingRead = null;
+    if (!e.grade) return null;
+    e.result = RD.resultScore(res || {}, e.ctx);
+    e.yards = (res && res.yards) | 0;
+    e.text = e.text + ' on ' + e.ctx.down + ' & ' + e.ctx.toGo;
+    READS.push(e);
+    return e;
   }
   function chooseDefense(defKey) {
     if (busy || (FLOW && !FLOW.can('call'))) return;
@@ -1183,6 +1247,11 @@
        run on the grass went into the books as three. */
     var p = (res && res.live) ? commit(res) : commitCoach();
     flow('RESULT', kind);
+    /* THE READ IS FILED HERE, and only here: the grade was decided before the
+       snap, the result is attached to it afterwards, and the two are never
+       allowed to touch. */
+    var readEntry = fileRead(p);
+    if (readEntry) readBit(readEntry);
     if (p) {
       var myColor = kitFor('me').primary || '#3fb883';
       var theirColor = kitFor('opp').primary || '#e2664b';
@@ -1338,6 +1407,30 @@
     setTimeout(function () { el.classList.add('on'); }, wait);
     setTimeout(function () { el.classList.add('out'); }, wait + 2600);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, wait + 3100);
+  }
+  /* ── WHAT THE CALL WAS WORTH ─────────────────────────────────────────────
+     Said on the dead ball, and only when the process and the result have
+     something to argue about — a good read that lost, or a poor one that
+     came off. A call that was sound and worked needs no lecture. */
+  var readSaid = 0;
+  function readBit(e) {
+    if (!RD || !e || !e.grade) return;
+    var v = RD.verdict(e.grade, e.result);
+    if (!v) return;
+    if (v.key === 'both' || v.key === 'neither') return;
+    if (readSaid >= 4) return;
+    readSaid++;
+    var good = v.key === 'process';
+    var old = fieldWrap.querySelector('.bit');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var d = document.createElement('div');
+    d.className = 'bit bit-read';
+    d.style.setProperty('--bc', good ? '#3fb883' : '#f2c744');
+    d.innerHTML = '<i>Research IQ · ' + esc(e.grade.total) + '</i><b>' + esc(v.head) + '</b><br>' + esc(v.line);
+    fieldWrap.appendChild(d);
+    setTimeout(function () { d.classList.add('out'); }, 2800);
+    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 3200);
+    if (GM && GM.track) GM.track('research_read', { total: e.grade.total, band: e.grade.band, result: e.result, verdict: v.key, iq: e.grade.iq });
   }
   /* the round number a man of yours is closing on tonight, if he is close */
   function needsBit(off) {
@@ -2082,7 +2175,9 @@
         + '<span class="pt">' + esc(potg.side === me ? teams.me.abbr : teams.opp.abbr) + '</span></div>'
         + '<div class="pl">' + esc(statLine(potg)) + '</div>' + careerContext(potg) + '</div></div>' : '';
     var prep = ctx.snap && FR.prep ? FR.prep(ctx.snap.week || {}) : null;
-    var researchHtml = (matchup ? '<div class="stg-kv"><span>Key matchup</span>' + esc(matchup) + '</div>' : '')
+    var rep = RD ? RD.report(READS) : null;
+    var researchHtml = (rep ? researchReport(rep) : '')
+      + (matchup ? '<div class="stg-kv"><span>Key matchup</span>' + esc(matchup) + '</div>' : '')
       + (coaching ? '<div class="stg-kv"><span>Coaching</span>' + esc(coaching) + '</div>' : '')
       + (prep && prep.preparation != null ? '<div class="stg-kv"><span>Preparation</span>' + esc(prep.preparation | 0) + '% this week — the Price Its, drills and film that set the team up</div>' : '');
     var stages = [
@@ -2121,6 +2216,37 @@
     var marks = [500, 1000, 2500, 5000, 10000], i;
     for (i = 0; i < marks.length; i++) if (v < marks[i]) return { at: marks[i], left: marks[i] - v };
     return null;
+  }
+  /* ── THE RESEARCH REPORT ─────────────────────────────────────────────────
+     Two numbers, side by side, because they are two different things: what
+     the calls were worth, and what they returned. The best read of the night
+     is not necessarily the play that gained the most. */
+  function researchReport(r) {
+    if (!r || !r.calls) return '';
+    var gap = r.divergence == null ? null : r.divergence;
+    var line = gap == null ? ''
+      : gap >= 8 ? 'You out-coached the scoreboard: the calls were better than the results.'
+      : gap <= -8 ? 'The results flattered the calls tonight.'
+      : 'Process and result agreed tonight.';
+    return '<div class="rq">'
+      + '<div class="rq-two"><div><span>Process score</span><b>' + esc(r.process) + '</b><i>' + esc(r.calls) + ' calls graded</i></div>'
+      + '<div><span>Result score</span><b>' + esc(r.result) + '</b><i>' + esc(r.good_reads) + ' good reads</i></div></div>'
+      + (line ? '<div class="rq-line">' + esc(line) + '</div>' : '')
+      + '<div class="rq-r"><span class="k up">Best read</span><b>' + esc(r.best.text) + '</b>'
+      + '<i>' + esc(r.best.label) + ' · ' + esc(r.best.total) + ' · ' + esc(r.best.note) + '</i></div>'
+      + (r.worst.total < r.best.total
+          ? '<div class="rq-r"><span class="k dn">Worst read</span><b>' + esc(r.worst.text) + '</b>'
+            + '<i>' + esc(r.worst.label) + ' · ' + esc(r.worst.total) + ' · ' + esc(r.worst.note) + '</i></div>' : '')
+      + '<div class="rq-bars">'
+      + rqBar('Matchup recognition', r.matchup) + rqBar('Situational football', r.situational)
+      + rqBar('Personnel', r.personnel) + rqBar('Risk', r.risk) + rqBar('Independence', r.independence)
+      + '</div>'
+      + '<div class="stg-kv"><span>Research IQ</span>+' + esc(r.iq) + ' from the process, whatever the scoreboard did</div>'
+      + '</div>';
+  }
+  function rqBar(name, v) {
+    v = Math.max(0, Math.min(100, v | 0));
+    return '<div class="rq-b"><span>' + esc(name) + '</span><i><u style="width:' + v + '%"></u></i><b>' + esc(v) + '</b></div>';
   }
   /* WHAT TONIGHT DID TO THE SEASON — the franchise's own record and rank from
      its snapshot, the next fixture, and the live record on this device */
@@ -2731,6 +2857,7 @@
   }
   function startPlaying() {
     milestoned = {};
+    READS = []; pendingRead = null; readSaid = 0;
     pre.hidden = true; gd.hidden = false;
     makeStage();
     syncTools(); paintScore(); say('');

@@ -775,9 +775,15 @@ fresh();
       && /EdgeDesk Games$/.test(t) && !/\b(bet|wager|odds|edge|lock)\b/i.test(t), t);
   })();
   /* the client asks, and never decides */
-  has(FJS, "rpc('franchise_play_week', withSecret({}))", 'playing sends nothing but "play" and the identity');
+  /* resume_v1: playing carries an OPERATION KEY as well as the identity, so a
+     dropped connection can be resolved instead of guessed at. It still sends
+     no result, and it is still never queued. */
+  has(FJS, "once('play_week')", 'playing sends nothing but "play", the identity and a key');
+  has(FJS, "p_kind: kind, p_op: key", 'and the key is what makes the retry the same operation');
+  chk('the client never sends an outcome for a game it played',
+    !/franchise_play_week[\s\S]{0,200}p_(score|result|game)/.test(FJS));
   chk('a play is never queued — the player must see the result the moment it exists', !/record\('franchise_play_week'/.test(FJS));
-  has(FJS, "rpc('franchise_start_season', withSecret({}))", 'starting a season is the same');
+  has(FJS, "once('start_season')", 'starting a season is the same');
   has(FJS, "rpc('franchise_schedule', withSecret({ p_number:", 'the schedule is read by season number');
   has(FJS, "rpc('franchise_game', withSecret({ p_game: String(id) }))", 'and a game by id');
   chk('the client never simulates', !/function (sim|simulate|drive|possession|playGame)\b/.test(FJS) && !/rpc\('franchise_sim/.test(FJS));
@@ -2192,8 +2198,8 @@ fresh();
 
   /* the client asks and never decides */
   chk('the client asks the server to open and to keep, and rolls nothing',
-    /function packOpen\(\) \{ return rpc\('franchise_pack_open', withSecret\(\{\}\)\)/.test(FJS)
-    && /function packKeep\(player\) \{[\s\S]{0,140}p_player: String\(player \|\| ''\)/.test(FJS)
+    /function packOpen\(\) \{ return once\('pack_open'\)/.test(FJS)
+    && /function packKeep\(player\) \{[\s\S]{0,140}once\('pack_keep', String\(player \|\| ''\)\)/.test(FJS)
     && !/Math\.random/.test(FJS));
 
   /* THE PAGE (the Vault, packs_v2 — every kind of pack goes through one door) */
@@ -2954,11 +2960,98 @@ fresh();
     has(PACKS, ".vs-art-primetime{", 'and Primetime');
   })();
 
+  /* ═══ 24. ONE DOOR, ONCE ════════════════════════════════════════════════ */
+  chk('the report grew to forty-five rows', /select 45, 'one door, once/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 24, 'one door, once: operation keys and the answer to did it happen'\)/.test(SQL));
+  eq('resume is versioned', F.RESUME_VERSION, 'resume_v1');
+  has(SQL, "'version', 'resume_v1'", 'and the SQL carries the same version');
+  has(README, 'resume_v1', 'the README documents the door');
+  chk('the ledger is one row per key, and the door locks before it decides',
+    /create table if not exists public\.franchise_ops/.test(SQL)
+    && /primary key \(franchise_id, op_key\)/.test(SQL)
+    && /from public\.franchises where id = v_f for update/.test(SQL));
+  chk('a repeated key returns the ORIGINAL result rather than doing the work again',
+    /if found then\s*\n\s*return jsonb_build_object\('ok', true, 'already', true/.test(SQL));
+  chk('the answer to "did it happen" is one of exactly two words, and never a third',
+    /'states', jsonb_build_array\('completed', 'not_completed'\)/.test(SQL)
+    && /'state', 'not_completed', 'kind', null/.test(SQL));
+  chk('the doors that were already exactly-once are named rather than re-plumbed',
+    /'market_purchase',\s+'game_market_txns\.op_key, unique'/.test(SQL)
+    && /'award_grant',\s+'franchise_achievements primary key'/.test(SQL));
+  chk('the client has four connection states and a word for each',
+    /NET = \{ SYNCED: 'synced', OFFLINE: 'offline', RECONNECTING: 'reconnecting', RETRY: 'retry' \}/.test(FJS)
+    && Object.keys(F.NET).length === 4 && ['synced', 'offline', 'reconnecting', 'retry'].every(k => F.netWord(k).length > 3));
+  chk('and it asks the server what happened rather than deciding for itself',
+    /rpc\('franchise_op', withSecret\(\{ p_op: key \}\)\)/.test(FJS)
+    && /state === 'completed'/.test(FJS) && /'not_completed'/.test(FJS));
+  chk('the connection strip is mounted by the shared chrome, on every page',
+    /function netBanner\(\)/.test(JS) && /try \{ netBanner\(\); \} catch/.test(JS)
+    && /\.netb\{/.test(CSS));
+  chk('and being back online only ever means ask again, never it worked',
+    /addEventListener\('online', function \(\) \{ paintNet\('reconnecting'\); \}\)/.test(JS));
+
+  /* ═══ 23. THE LIVING SEASON ═════════════════════════════════════════════ */
+  chk('the report grew to forty-four rows', /select 44, 'the living season/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 23, 'the living season: rankings, award races, the title game'\)/.test(SQL));
+  eq('the season is versioned', F.SEASON_VERSION, 'season_v1');
+  has(SQL, "'version', 'season_v1'", 'and the SQL carries the same version');
+  has(README, 'season_v1', 'the README documents the living season');
+  (function () {
+    /* the published power model is the client's mirror of it, term for term */
+    const rules = (SQL.match(/create or replace function public\.franchise_season_rules\(\)[\s\S]*?\$\$;/) || [''])[0];
+    Object.keys(F.SEASON_RULES).forEach(k => {
+      const m = rules.match(new RegExp("'" + k + "', (-?[0-9.]+)"));
+      chk('the power model mirrors ' + k, !!m && Number(m[1]) === F.SEASON_RULES[k], k + ': ' + (m && m[1]) + ' vs ' + F.SEASON_RULES[k]);
+    });
+    /* the ten races, in the same order, with the same names */
+    F.AWARDS.forEach(a => {
+      chk('the ' + a.key + ' race is the same race on both sides',
+        rules.indexOf("'key', '" + a.key + "'") >= 0 && rules.indexOf("'name', '" + a.name + "'") >= 0, a.key);
+    });
+    eq('five candidates a race, on both sides', (rules.match(/'candidates', (\d+)/) || [])[1], '5');
+  })();
+  chk('the client only ever READS the season: it cannot write a snapshot',
+    /function rankings\(\) \{ return rpc\('franchise_rankings', withSecret\(\{\}\)\); \}/.test(FJS)
+    && /function awards\(\) \{ return rpc\('franchise_awards', withSecret\(\{\}\)\); \}/.test(FJS)
+    && !/franchise_rankings_write|franchise_awards_write|franchise_power_rankings|franchise_award_races/.test(FJS));
+  chk('and the server writes it without being asked, after the season lines',
+    /create constraint trigger franchise_games_snapshot/.test(SQL) && /deferrable initially deferred/.test(SQL));
+  chk('the award score is a rate for the position and never an overall',
+    (() => {
+      const fn = (SQL.match(/create or replace function public\.franchise_award_score\([\s\S]*?\$\$;/) || [''])[0];
+      return fn.length > 200 && !/overall|archetype|rarity|potential/.test(fn) && /\/ g/.test(fn);
+    })());
+  chk('the title game is a game of its own, earned by losing at most once',
+    /create or replace function public\.franchise_championship_earned/.test(SQL)
+    && /add column if not exists championship boolean/.test(SQL)
+    && /The EdgeDesk Championship/.test(SQL));
+  chk('the most valuable man in it is read out of the box score',
+    (() => {
+      const fn = (SQL.match(/create or replace function public\.franchise_championship_mvp\([\s\S]*?\$\$;/) || [''])[0];
+      return fn.length > 200 && !/overall/.test(fn) && /impact/.test(fn);
+    })());
+  chk('GameDay lays out the rankings, the award watch and the title game',
+    /function rankingsSection/.test(GAMEDAY) && /function awardsSection/.test(GAMEDAY)
+    && /function titlePregame/.test(GAMEDAY) && /function titlePostgame/.test(GAMEDAY)
+    && /FR\.rankings\(\)/.test(GAMEDAY) && /FR\.awards\(\)/.test(GAMEDAY) && /FR\.championship\(\)/.test(GAMEDAY));
+  chk('and carries the styles it needs for them', /\.rk-row\{/.test(FCSS) && /\.aw-race\{/.test(FCSS) && /\.ttl-mvp\{/.test(FCSS));
+
+  /* ═══ 22. THE CARD IS NOT THE MAN ═══════════════════════════════════════ */
+  chk('the report grew to forty-three rows', /select 43, 'the card is not the man/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 22, 'the card is not the man: identity, edition, instance, ownership'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 24);
+  eq('the cards are versioned', F.CARDS_VERSION, 'cards_v1');
+  has(SQL, "'version', 'cards_v1'", 'and the SQL carries the same version');
+  has(README, 'cards_v1', 'the README documents the separation');
+
   /* ═══ 21. THE GAME YOU HOLD COUNTS ═══════════════════════════════════════ */
   chk('the report grew to forty-two rows', /select 42, 'the game you hold counts/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 21, 'the game you hold counts: live results, careers, and the Game Day pack'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 21);
+  chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 21);
   /* the economy's live lines, and the mirror's arithmetic */
   eq('a live game pays 60 XP and 25 Credits; a win 40 XP, 25 Credits and a Coach Point', [F.ECONOMY.live_game.xp, F.ECONOMY.live_game.tc, F.ECONOMY.live_win.xp, F.ECONOMY.live_win.tc, F.ECONOMY.live_win.cp].join('/'), '60/25/40/25/1');
   eq('the performance is capped: 30 Credits, 40 XP', F.ECONOMY.live_perf.tc_max + '/' + F.ECONOMY.live_perf.xp_max, '30/40');
@@ -3016,7 +3109,7 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 20, 'the pull record: every pack you opened and the best of them'\)/.test(SQL));
   chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 20);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 21/.test(SQL));
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 24/.test(SQL));
   eq('the pull record is versioned', F.PULLS_VERSION, 'pulls_v1');
   has(SQL, "'version', 'pulls_v1'", 'and the SQL agrees');
   chk('the client reads it through one RPC with the secret and nothing else', /function pulls\(\) \{ return rpc\('franchise_pulls', withSecret\(\{\}\)\); \}/.test(FJS) && typeof F.pulls === 'function');
@@ -3035,7 +3128,7 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 19, 'the lineup, chemistry, and the Exchange'\)/.test(SQL));
   chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 19);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 21/.test(SQL));
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 24/.test(SQL));
   eq('the lineup is versioned', F.LINEUP_VERSION, 'lineup_v1');
   has(SQL, "'version', 'lineup_v1'", 'and the SQL agrees');
   eq('chemistry is versioned', F.CHEMISTRY_VERSION, 'chemistry_v1');
@@ -3085,7 +3178,17 @@ fresh();
     }
   })();
   /* the buy sends a listing id and nothing else — never a price, never a balance */
-  chk('the client buys by listing id alone', /function exchangeBuy\(listingId\) \{ return rpc\('franchise_exchange_buy', withSecret\(\{ p_listing: String\(listingId \|\| ''\) \}\)\)/.test(FJS));
+  chk('the client buys by listing id and an operation key, never a price or a balance',
+    /rpc\('franchise_exchange_buy', withSecret\(\{ p_listing: id, p_op: op \}\)\)/.test(FJS)
+    && !/p_price|p_balance|p_credits/.test(FJS.slice(FJS.indexOf('function exchangeBuy('), FJS.indexOf('function marketOp('))));
+  /* THE SAME QUESTION TWICE IS ONE PURCHASE (cards_v1). A dropped connection
+     retries with the key it used, and asks the server what became of it. */
+  chk('a purchase carries an operation key the device keeps until the server answers',
+    /function opKey\(kind, ref\)/.test(FJS) && /localStorage\.setItem\(k, v\)/.test(FJS)
+    && /if \(r && r\.ok\) opDone\('buy', id\);/.test(FJS));
+  chk('and the client can ask what became of it rather than guessing',
+    /function marketOp\(listingId\)/.test(FJS) && /rpc\('franchise_market_op'/.test(FJS));
+  chk('the key comes from the platform\'s id source, not from a roll', /crypto\.randomUUID/.test(FJS) && !/Math\.random/.test(FJS));
   chk('and the SQL takes no price on a buy', /function public\.franchise_exchange_buy\(p_listing uuid, p_secret text default null\)/.test(SQL));
   chk('a listing is one man, one price, inside bounds the SQL states', /function public\.franchise_exchange_list\(p_player uuid, p_price integer, p_secret text default null\)/.test(SQL)
     && /a price is between % and % Credits/.test(SQL));

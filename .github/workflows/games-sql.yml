@@ -23,6 +23,9 @@ on:
       - 'tools/games/sql/**'
       - 'tools/games/sql_security.test.js'
       - 'tools/games/franchise_sql.test.js'
+      - 'tools/games/cards_sql.test.js'
+      - 'tools/games/season_sql.test.js'
+      - 'tools/games/offline.test.js'
       - 'supabase/issue_reports.sql'
       - 'supabase/billing.sql'
       - 'supabase/stripe_webhook.sql'
@@ -44,6 +47,9 @@ on:
       - 'tools/games/sql/**'
       - 'tools/games/sql_security.test.js'
       - 'tools/games/franchise_sql.test.js'
+      - 'tools/games/cards_sql.test.js'
+      - 'tools/games/season_sql.test.js'
+      - 'tools/games/offline.test.js'
       - 'supabase/issue_reports.sql'
       - 'supabase/billing.sql'
       - 'supabase/stripe_webhook.sql'
@@ -96,6 +102,40 @@ jobs:
           PGPASSWORD: postgres
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/games/franchise_sql.test.js | tee franchise.log
+
+      # THE MARKETPLACE, AND THE ONLY PROMISE THAT MATTERS WHEN MONEY MOVES:
+      # a card has exactly one owner, always, and two buyers racing for it
+      # produce one winner and one clean failure. Needs a real database
+      # because the guarantee is a unique index and a row lock.
+      - name: Run the cards SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/cards_sql.test.js | tee cards.log
+
+      # The season the record actually keeps: a power rating that is not the
+      # standings, ten award races scored on performance, and a title game.
+      - name: Run the season SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/season_sql.test.js | tee season.log
+
+      # OFFLINE AND RETRY, IN A REAL BROWSER. Chromium loads the real pages and
+      # every call it makes runs through psql against this database, so a
+      # connection dropped BEFORE a request lands and one dropped AFTER it
+      # commits are two different tests. Skips loudly if the browser is absent.
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+        continue-on-error: true
+
+      - name: Run the offline and retry suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/offline.test.js | tee offline.log
 
       # Problem reports: the one table `anon` may write to. That concession is
       # only safe if an anonymous reporter cannot read anything back, nobody can
