@@ -12,9 +12,9 @@
    scrollbars match rather than punching a white hole in the page.
    ========================================================================== */
 :root{
-  --bg:#0b0d1f; --surface:#11132f; --surface2:#171a3a; --border:#222852;
-  --text:#eceaf6; --dim:#9095b8; --faint:#787da4;
-  --accent:#c9d94a; --pos:#2fb47c; --neg:#e26044; --warn:#d99a2b; --mdl:#b98cff;
+  --bg:#100e0a; --surface:#191510; --surface2:#221c15; --border:#332a1b;
+  --text:#f1ebdf; --dim:#a29581; --faint:#887e70;
+  --accent:#2fa79a; --pos:#76bd3e; --neg:#e26044; --warn:#d99a2b; --mdl:#d274b0;
   --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --measure:760px;
@@ -35,7 +35,7 @@ a{color:var(--accent)}
 
 /* ---- site chrome --------------------------------------------------------- */
 .ah{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(11,13,31,.92);
+  padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);
   position:sticky;top:0;z-index:20;backdrop-filter:blur(10px)}
 .ah-brand{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.02em;
   font-size:17px;color:var(--text);text-decoration:none}
@@ -119,8 +119,8 @@ a{color:var(--accent)}
 .a-bul.a-dim li{color:var(--dim);font-size:13.5px}
 .a-tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.11em;
   text-transform:uppercase;font-weight:700;border-radius:6px;padding:4px 9px;margin:0 0 12px}
-.a-tag.priced{color:var(--pos);background:rgba(47,180,124,.11);border:1px solid rgba(47,180,124,.3)}
-.a-tag.context{color:var(--mdl);background:rgba(185,140,255,.11);border:1px solid rgba(185,140,255,.3)}
+.a-tag.priced{color:var(--pos);background:rgba(118,189,62,.11);border:1px solid rgba(118,189,62,.3)}
+.a-tag.context{color:var(--mdl);background:rgba(210,116,176,.11);border:1px solid rgba(210,116,176,.3)}
 
 /* ---- the read ------------------------------------------------------------ */
 .a-lede{font-size:17px;line-height:1.68;margin:0 0 13px}
@@ -130,8 +130,8 @@ a{color:var(--accent)}
 .a-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
 .a-card{border:1px solid var(--border);border-radius:13px;background:var(--surface);
   padding:13px 14px;min-width:0}
-.a-card.lead{grid-column:1/-1;background:linear-gradient(180deg,rgba(201,217,74,.10),rgba(201,217,74,0));
-  border-color:rgba(201,217,74,.34)}
+.a-card.lead{grid-column:1/-1;background:linear-gradient(180deg,rgba(47,167,154,.10),rgba(47,167,154,0));
+  border-color:rgba(47,167,154,.34)}
 .a-card.wide{grid-column:span 2}
 .a-card.absent{background:var(--surface2)}
 .a-ck{font-family:var(--mono);font-size:9.8px;letter-spacing:.14em;text-transform:uppercase;
@@ -177,7 +177,7 @@ a{color:var(--accent)}
   text-transform:uppercase;color:var(--text);background:var(--surface2);width:auto}
 .a-c b{font-size:14.5px;font-weight:700}
 .a-c .a-cn{display:block;color:var(--faint);font-size:11px;line-height:1.45;margin-top:2px}
-.a-c.adv{background:rgba(47,180,124,.08)}
+.a-c.adv{background:rgba(118,189,62,.08)}
 .a-c.adv b{color:var(--pos)}
 
 /* ---- edges and cases ----------------------------------------------------- */
@@ -240,7 +240,7 @@ a{color:var(--accent)}
 .a-filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
 .a-filter{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;
   border:1px solid var(--border);border-radius:999px;padding:7px 15px;background:var(--surface)}
-.a-filter.on{color:var(--text);border-color:var(--pos);background:rgba(47,180,124,.1)}
+.a-filter.on{color:var(--text);border-color:var(--pos);background:rgba(118,189,62,.1)}
 .a-sorttabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .a-sorttabs input[type=radio]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
 .a-sorttabs label{font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;
@@ -305,9 +305,9 @@ a{color:var(--accent)}
    loudest thing above the headline rather than a footnote under it.
    ========================================================================== */
 .a-membertag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;
-  text-transform:uppercase;font-weight:700;color:var(--mdl);background:rgba(185,140,255,.12);
-  border:1px solid rgba(185,140,255,.35);border-radius:6px;padding:3px 8px}
-.a-memberwarn{border:1px solid rgba(185,140,255,.3);background:rgba(185,140,255,.07);
+  text-transform:uppercase;font-weight:700;color:var(--mdl);background:rgba(210,116,176,.12);
+  border:1px solid rgba(210,116,176,.35);border-radius:6px;padding:3px 8px}
+.a-memberwarn{border:1px solid rgba(210,116,176,.3);background:rgba(210,116,176,.07);
   border-radius:12px;padding:13px 16px;margin:0 0 22px;font-size:13.5px;line-height:1.6;color:var(--dim)}
 .a-memberwarn a{color:var(--accent)}
 .a-postbody{font-size:17px;line-height:1.72}
@@ -329,11 +329,11 @@ a{color:var(--accent)}
 .a-fmsg{font-size:13px;line-height:1.6;border-radius:10px;padding:11px 13px;margin:12px 0 0;
   white-space:pre-wrap;font-family:var(--mono)}
 .a-fmsg.bad{color:var(--neg);background:rgba(226,96,68,.08);border:1px solid rgba(226,96,68,.3)}
-.a-fmsg.ok{color:var(--pos);background:rgba(47,180,124,.07);border:1px solid rgba(47,180,124,.3)}
+.a-fmsg.ok{color:var(--pos);background:rgba(118,189,62,.07);border:1px solid rgba(118,189,62,.3)}
 /* what pressing Publish will actually do, said before anything is written */
 .a-route{font-size:13.5px;line-height:1.6;border-radius:11px;padding:12px 15px;margin:16px 0 0;
   border:1px solid var(--border);background:var(--surface);color:var(--dim)}
-.a-route.live{border-color:rgba(47,180,124,.4);background:rgba(47,180,124,.07);color:var(--text)}
+.a-route.live{border-color:rgba(118,189,62,.4);background:rgba(118,189,62,.07);color:var(--text)}
 .a-route.queued{border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07);color:var(--text)}
 .a-about code,.a-bul code{font-family:var(--mono);font-size:12px;color:var(--warn);
   background:var(--surface2);border-radius:5px;padding:1px 5px}

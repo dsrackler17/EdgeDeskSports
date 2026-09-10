@@ -116,7 +116,7 @@
      mistaken for the home one. */
   function uniform(theme, away) {
     var t = theme || {};
-    var p = t.primary || '#3fb883', s = t.secondary || '#123326', ink = t.ink || '#06231a';
+    var p = t.primary || '#7cc142', s = t.secondary || '#123326', ink = t.ink || '#06231a';
     /* A KIT IS THREE VALUES, NOT ONE COLOUR. Helmet, jersey and pants have to
        separate at twenty yards or the man reads as one silhouette with a
        number on it — which is exactly what a green helmet over a green jersey
@@ -1449,14 +1449,14 @@
         ctx.fillRect(vbx, vby, vbw, vbh);
         /* the two club marks and the score between them, at the size a screen
            a hundred and sixty yards away actually reads at */
-        ctx.fillStyle = rgba(o.homeTint || o.homeColor || '#3fb883', L.lights ? 0.90 : 0.60);
+        ctx.fillStyle = rgba(o.homeTint || o.homeColor || '#7cc142', L.lights ? 0.90 : 0.60);
         ctx.fillRect(vbx + vbw * 0.06, vby + vbh * 0.24, vbw * 0.16, vbh * 0.44);
         ctx.fillStyle = rgba(o.awayTint || o.awayColor || '#e2664b', L.lights ? 0.90 : 0.60);
         ctx.fillRect(vbx + vbw * 0.78, vby + vbh * 0.24, vbw * 0.16, vbh * 0.44);
         ctx.fillStyle = L.lights ? 'rgba(236,248,242,.60)' : 'rgba(216,230,224,.34)';
         ctx.fillRect(vbx + vbw * 0.28, vby + vbh * 0.28, vbw * 0.16, vbh * 0.36);
         ctx.fillRect(vbx + vbw * 0.56, vby + vbh * 0.28, vbw * 0.16, vbh * 0.36);
-        ctx.fillStyle = rgba(o.homeTint || o.homeColor || '#3fb883', L.lights ? 0.55 : 0.32);
+        ctx.fillStyle = rgba(o.homeTint || o.homeColor || '#7cc142', L.lights ? 0.55 : 0.32);
         ctx.fillRect(vbx, vby + vbh * 0.80, vbw, vbh * 0.12);
         if (L.lights) {
           var vgl = ctx.createRadialGradient(W / 2, vby + vbh / 2, 2, W / 2, vby + vbh / 2, vbw * 0.9);
@@ -1842,7 +1842,7 @@
     }
 
     [-1, 1].forEach(function (side) {
-      var kit = (side < 0 ? o.homeTint : o.awayTint) || (side < 0 ? o.homeColor : o.awayColor) || '#3fb883';
+      var kit = (side < 0 ? o.homeTint : o.awayTint) || (side < 0 ? o.homeColor : o.awayColor) || '#7cc142';
       var out = side < 0 ? -1 : 1;
       var xEdge = side < 0 ? -0.4 : hw + 0.4;      /* the white border */
       var xLine = side < 0 ? -2.6 : hw + 2.6;      /* where the substitutes stand */
@@ -2147,7 +2147,7 @@
       yNear, yFar, o.homeInk);
 
     /* ── THE MIDFIELD MARK ─────────────────────────────────────────────── */
-    midfield(ctx, cam, yNear, o.homeColor || '#3fb883');
+    midfield(ctx, cam, yNear, o.homeColor || '#7cc142');
 
     /* ── YARD LINES ────────────────────────────────────────────────────── */
     for (n = 0; n <= 100; n += 5) {

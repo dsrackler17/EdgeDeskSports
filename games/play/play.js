@@ -267,7 +267,7 @@
   function themeOf(key) {
     var t = null;
     (FR && FR.THEMES ? FR.THEMES : []).forEach(function (x) { if (x.key === key) t = x; });
-    return t || { primary: '#3fb883', secondary: '#123326', ink: '#06231a' };
+    return t || { primary: '#7cc142', secondary: '#123326', ink: '#06231a' };
   }
   /* THE PAINT ON TEN YARDS OF GRASS. A club's deep colour, carrying enough of
      its loud one that the end zone is recognisably theirs from ninety yards
@@ -317,7 +317,7 @@
        you know whose number you are reading before you have read it. */
     function bar(side) {
       return '<span class="sb-bar" style="background:'
-        + esc(kitFor(side === me ? 'me' : 'opp').primary || '#3fb883') + '"></span>';
+        + esc(kitFor(side === me ? 'me' : 'opp').primary || '#7cc142') + '"></span>';
     }
     /* the number that just changed is the one worth looking at */
     var pop = { home: '', away: '' };
@@ -366,7 +366,7 @@
     /* the five up front, as one block of men rather than five loose dots */
     [-4.4, -2.2, 0, 2.2, 4.4].forEach(function (dx) {
       out += '<rect x="' + (cx + dx * kx - 1.6).toFixed(1) + '" y="' + (ly - 4.4).toFixed(1)
-        + '" width="3.2" height="3.4" rx="1.1" fill="rgba(236,234,246,.62)"/>';
+        + '" width="3.2" height="3.4" rx="1.1" fill="rgba(241,235,223,.62)"/>';
     });
 
     var spots = form.spots, slot, paths = '', dots = '';
@@ -390,7 +390,7 @@
           /* a pip where the route ends: the eye finds the break instantly */
           + '<circle cx="' + lx.toFixed(1) + '" cy="' + lyy.toFixed(1) + '" r="1.5" fill="' + ink + '"/>';
       }
-      dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="#eceaf6"/>';
+      dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="#f1ebdf"/>';
     }
     out += paths + dots;
 
@@ -417,7 +417,7 @@
         out += '<path d="M' + (cx - lane * 0.55 - 3.4).toFixed(1) + ',' + (ly - 2).toFixed(1)
           + ' Q' + (cx).toFixed(1) + ',' + (ly + 2.4).toFixed(1) + ' '
           + (cx + lane * 0.8).toFixed(1) + ',' + (ly - 3.2).toFixed(1)
-          + '" fill="none" stroke="rgba(236,234,246,.55)" stroke-width="1.3" '
+          + '" fill="none" stroke="rgba(241,235,223,.55)" stroke-width="1.3" '
           + 'stroke-linecap="round" stroke-dasharray="2.4 2"/>';
       }
     }
@@ -435,7 +435,7 @@
       if (a.blitz) out += '<path d="M' + x.toFixed(1) + ',' + y.toFixed(1) + 'L' + cx + ',' + (ly + 3)
         + '" stroke="#e2664b" stroke-width="1.3" fill="none"/>';
       out += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="'
-        + (a.blitz ? '#e2664b' : a.pos === 'DL' ? '#eceaf6' : '#c9d94a') + '"/>';
+        + (a.blitz ? '#e2664b' : a.pos === 'DL' ? '#f1ebdf' : '#2fa79a') + '"/>';
     });
     return out + '</svg>';
   }
@@ -1094,7 +1094,7 @@
     var look = stage.look();
     readEl.hidden = false;
     /* the rule down its left is the colour of the men who are in it */
-    readEl.style.setProperty('--acc', kitFor(sit.offense === me ? 'opp' : 'me').primary || '#3fb883');
+    readEl.style.setProperty('--acc', kitFor(sit.offense === me ? 'opp' : 'me').primary || '#7cc142');
     readEl.innerHTML = '<b>' + esc(look.name) + '</b>' + esc(Math.round(ps.box) + ' in the box · ' + look.coverage
       + (look.blitz ? ' · pressure' : ''));
     say('');
@@ -1185,7 +1185,7 @@
       if (!el || !el.parentNode) return;
       var u = Math.min(1, (Date.now() - t0) / hold);
       el.style.width = (100 - u * 100) + '%';
-      el.style.background = u > 0.75 ? '#e2664b' : u > 0.45 ? '#d9a441' : '#3fb883';
+      el.style.background = u > 0.75 ? '#e2664b' : u > 0.45 ? '#d9a441' : '#7cc142';
       if (u < 1) requestAnimationFrame(tick);
     })();
   }
@@ -1292,7 +1292,7 @@
     if (readEntry) readBit(readEntry);
     runNote(p);
     if (p) {
-      var myColor = kitFor('me').primary || '#3fb883';
+      var myColor = kitFor('me').primary || '#7cc142';
       var theirColor = kitFor('opp').primary || '#e2664b';
       if (p.touchdown) {
         /* WHO SCORED IS NOT WHO HAS THE BALL NOW. Possession has already
@@ -1464,7 +1464,7 @@
     if (old && old.parentNode) old.parentNode.removeChild(old);
     var d = document.createElement('div');
     d.className = 'bit bit-read';
-    d.style.setProperty('--bc', good ? '#3fb883' : '#f2c744');
+    d.style.setProperty('--bc', good ? '#7cc142' : '#f2c744');
     /* ── THE TWO NUMBERS, SIDE BY SIDE (read_v1 × rush_v1) ──────────────
        The whole point of grading the process apart from the result is lost
        if the panel only ever prints one of them. It now prints both, and
@@ -1810,11 +1810,11 @@
       '<div class="ki-top">' + esc(c.venue) + ' &middot; ' + esc(c.kick) + ' &middot; '
         + esc(c.sky) + ' ' + esc(c.temp) + '&deg;</div>'
       + '<div class="ki-grid">'
-      + '<div class="ki-side"><span class="ki-badge" style="--tc:' + esc(kickKit.primary || '#3fb883') + '">'
+      + '<div class="ki-side"><span class="ki-badge" style="--tc:' + esc(kickKit.primary || '#7cc142') + '">'
         + esc((kick.abbr || '').slice(0, 3)) + '</span>'
         + '<b>' + esc(kick.name || '') + '</b><i>Kicking off</i></div>'
       + '<div class="ki-v">AT</div>'
-      + '<div class="ki-side"><span class="ki-badge" style="--tc:' + esc(recvKit.primary || '#3fb883') + '">'
+      + '<div class="ki-side"><span class="ki-badge" style="--tc:' + esc(recvKit.primary || '#7cc142') + '">'
         + esc((recv.abbr || '').slice(0, 3)) + '</span>'
         + '<b>' + esc(recv.name || '') + '</b><i>Receiving</i></div>'
       + '</div>'
@@ -2000,7 +2000,7 @@
   function scoreHead(label) {
     var them = G.other(me);
     function side(t, sc, key, right) {
-      var col = kitFor(key === me ? 'me' : 'opp').primary || '#3fb883';
+      var col = kitFor(key === me ? 'me' : 'opp').primary || '#7cc142';
       var win = sc > game.score[key === me ? them : me];
       return '<div class="ph-side' + (right ? ' right' : '') + '">'
         + '<span class="ph-bar" style="background:' + esc(col) + '"></span>'
@@ -2014,7 +2014,7 @@
   /* one line of the comparison: a label, both numbers, and a rule split
      between them in the two clubs' colours */
   function compare(rows) {
-    var mc = kitFor('me').primary || '#3fb883', tc = kitFor('opp').primary || '#e2664b';
+    var mc = kitFor('me').primary || '#7cc142', tc = kitFor('opp').primary || '#e2664b';
     return '<div class="cmp">' + rows.map(function (r) {
       /* a team can finish a half with negative yards — six sacks will do it —
          and a bar cannot be a negative length, so the split is taken on what
@@ -2237,7 +2237,7 @@
     var matchup = S.keyMatchup(game, me), coaching = S.coachingImpact(game, me);
     var ctx = seasonContext();
     if (won) { SOUND.td(); buzz('strong'); crowdUp(1, 0.5); }
-    var heroHtml = '<div class="fin-hero' + (won ? ' win' : level ? ' level' : ' loss') + '" style="--tc:' + esc(kitFor('me').primary || '#3fb883') + '">'
+    var heroHtml = '<div class="fin-hero' + (won ? ' win' : level ? ' level' : ' loss') + '" style="--tc:' + esc(kitFor('me').primary || '#7cc142') + '">'
       + (won ? '<span class="fin-glow"></span>' : '')
       + '<div class="fin-tag">Final' + (game.ot ? ' \u00b7 OT' : '') + '</div>'
       + '<div class="fin-word">' + (won ? 'WIN' : level ? 'TIE' : 'LOSS') + '</div>'
@@ -2373,7 +2373,7 @@
       ? rec.w + '\u2013' + rec.l + (rec.t ? '\u2013' + rec.t : '')
       : '';
     var hero = '<div class="fin-hero' + (won ? ' win' : level ? ' level' : ' loss') + '"'
-      + ' style="--tc:' + esc(kitFor('me').primary || '#3fb883') + '">'
+      + ' style="--tc:' + esc(kitFor('me').primary || '#7cc142') + '">'
       + (won ? '<span class="fin-glow"></span>' : '')
       + '<div class="fin-tag">Final' + (game.ot ? ' \u00b7 OT' : '') + '</div>'
       + '<div class="fin-word">' + (won ? 'WIN' : level ? 'TIE' : 'LOSS') + '</div>'
@@ -2786,7 +2786,7 @@
 
     function side(t, kit, star, home) {
       return '<div class="mu-side">'
-        + '<div class="mu-badge" style="--tc:' + esc(kit.primary || '#3fb883') + '">'
+        + '<div class="mu-badge" style="--tc:' + esc(kit.primary || '#7cc142') + '">'
         + clubMark(t.logo) + '<span>' + esc((t.abbr || '???').slice(0, 3)) + '</span></div>'
         + '<div class="mu-name">' + esc(t.city || '') + '</div>'
         + '<div class="mu-club">' + esc(t.name || '') + '</div>'

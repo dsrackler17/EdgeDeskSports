@@ -14,7 +14,7 @@
      the paywall, updating whether we like it or not. This is what makes that true.
      Do not add a gate to this file. -->
 <style>
-:root{--bg:#0b0d1f;--surface:#11132f;--surface2:#171a3a;--border:#222852;--text:#eceaf6;--dim:#9095b8;--faint:#5f6488;--accent:#c9d94a;--on-accent:#1b1f08;--accent2:#dbe875;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d}
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--accent:#2fa79a;--on-accent:#042320;--accent2:#54c4b7;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden;color-scheme:dark;accent-color:var(--accent)}
@@ -26,7 +26,7 @@ a{color:inherit;text-decoration:none}
 .btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .btn.ghost{background:transparent;color:var(--text);border-color:var(--border)}
 .btn.ghost:hover{border-color:var(--faint)}
-nav{position:sticky;top:0;z-index:40;background:rgba(11,13,31,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+nav{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
 .nav-in{display:flex;align-items:center;gap:14px;height:60px}
 .logo{font-weight:800;font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
 .logo small{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--faint);letter-spacing:.14em;text-transform:uppercase}
@@ -42,7 +42,7 @@ h1{font-size:clamp(28px,4.6vw,46px);line-height:1.07;letter-spacing:-.035em;font
 h2{font-size:clamp(19px,2.6vw,26px);letter-spacing:-.025em;font-weight:800;margin:10px 0 0}
 .sub{color:var(--dim);max-width:68ch;margin-top:11px;font-size:14px;line-height:1.62}
 .pill{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--faint)}
-.pill.ok{color:var(--pos);border-color:rgba(47,180,124,.4)}
+.pill.ok{color:var(--pos);border-color:rgba(118,189,62,.4)}
 .pill.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:9px;margin-top:22px}
 .kpi{border:1px solid var(--border);border-radius:9px;padding:12px;background:var(--surface)}
@@ -79,7 +79,7 @@ h2{font-size:clamp(19px,2.6vw,26px);letter-spacing:-.025em;font-weight:800;margi
 .bias-t{width:100%;border-collapse:collapse;font-size:11px}
 .bias-t th{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);font-weight:700}
 .bias-t th:first-child{text-align:left}
-.bias-t td{padding:4px 6px;border-bottom:1px solid rgba(34,40,82,.5);text-align:right;font-family:'JetBrains Mono',monospace}
+.bias-t td{padding:4px 6px;border-bottom:1px solid rgba(51,42,27,.5);text-align:right;font-family:'JetBrains Mono',monospace}
 .bias-t td:first-child{text-align:left;font-family:'Inter',sans-serif}
 .bias-t td.up{color:var(--pos)}
 .bias-t td.dn{color:#e0a3a3}
@@ -98,7 +98,7 @@ footer a:hover{color:var(--text)}
 /* ---- Published briefs: the call as published, the close, the result ---- */
 .edrec-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
 .edrec-chip{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer}
-.edrec-chip.on{border-color:var(--accent);color:var(--text);background:rgba(201,217,74,.12)}
+.edrec-chip.on{border-color:var(--accent);color:var(--text);background:rgba(47,167,154,.12)}
 .edrec-chip .n{color:var(--faint);margin-left:4px}
 .edrec-brief{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-top:12px;overflow:hidden}
 .edrec-bh{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:12px 14px;border-bottom:1px solid var(--border)}
@@ -106,14 +106,14 @@ footer a:hover{color:var(--text)}
 .edrec-bh .ev{color:var(--dim);font-size:13px}
 .edrec-bh .m{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-left:auto}
 .edrec-bh a{color:var(--accent)}
-.edrec-preset{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(201,217,74,.35);border-radius:6px;padding:2px 7px}
+.edrec-preset{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(47,167,154,.35);border-radius:6px;padding:2px 7px}
 .edrec-nobet{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(227,184,77,.4);border-radius:6px;padding:2px 7px}
 .edrec-unlisted{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
-.edrec-pick{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:4px 12px;padding:10px 14px;border-bottom:1px solid rgba(34,40,82,.55);align-items:start}
+.edrec-pick{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:4px 12px;padding:10px 14px;border-bottom:1px solid rgba(51,42,27,.55);align-items:start}
 .edrec-pick:last-child{border-bottom:none}
 .edrec-pick.watch{opacity:.78}
 .edrec-v{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px;letter-spacing:.06em;padding-top:2px}
-.edrec-v.bet{color:var(--pos)}.edrec-v.lean{color:var(--warn)}.edrec-v.wait{color:#b98cff}.edrec-v.pass{color:var(--faint)}.edrec-v.failed{color:var(--neg);font-size:10px}
+.edrec-v.bet{color:var(--pos)}.edrec-v.lean{color:var(--warn)}.edrec-v.wait{color:#d274b0}.edrec-v.pass{color:var(--faint)}.edrec-v.failed{color:var(--neg);font-size:10px}
 .edrec-sel{font-weight:700;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
 .edrec-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:2px}
 .edrec-sub b{color:var(--dim);font-weight:500}
@@ -4291,8 +4291,8 @@ function renderClvHero(series,avg,med,posRate){
     '<span class="big" style="color:'+(up?'var(--pos)':'var(--neg)')+'">'+pct(avg)+'</span>'+
     '<span class="lbl">average CLV over '+series.length+' graded edges \u00b7 median '+pct(med)+' \u00b7 '+rate(posRate)+' beat the close</span></div>'+
     '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;margin-top:14px" preserveAspectRatio="none">'+
-      '<line x1="'+P+'" x2="'+(W-P)+'" y1="'+zero.toFixed(1)+'" y2="'+zero.toFixed(1)+'" stroke="#5f6488" stroke-width="1" stroke-dasharray="3 3"/>'+
-      '<path d="'+d+'" fill="none" stroke="'+(up?'#2fb47c':'#e26044')+'" stroke-width="2"/>'+
+      '<line x1="'+P+'" x2="'+(W-P)+'" y1="'+zero.toFixed(1)+'" y2="'+zero.toFixed(1)+'" stroke="#6f6553" stroke-width="1" stroke-dasharray="3 3"/>'+
+      '<path d="'+d+'" fill="none" stroke="'+(up?'#76bd3e':'#e26044')+'" stroke-width="2"/>'+
     '</svg>'+
     '<div class="cap">Cumulative closing line value across every clean flagged edge, oldest to newest. The dashed line is break-even. '+
     (up?'Above it means the flagged prices beat where the market settled.':'<b style="color:var(--text)">Below it means the flagged prices did not beat the close.</b> That is the current state and it is published for the same reason it would be if it were green.')+'</div></div>';

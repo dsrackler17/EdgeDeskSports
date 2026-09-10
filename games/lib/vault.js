@@ -200,11 +200,11 @@
   /* ── THE PACK'S OWN LOOK ─────────────────────────────────────────────────
      One theme per kind: a colour, a texture word the CSS keys on, a line. */
   var ART = {
-    cache:      { hue: '#3fb883', deep: '#0d2a1e', word: 'GRIDIRON', line: 'Drawn around your own team.' },
-    rookie:     { hue: '#c9d94a', deep: '#0f1d33', word: 'ROOKIE', line: 'Three young men, where you are thin.' },
+    cache:      { hue: '#7cc142', deep: '#0d2a1e', word: 'GRIDIRON', line: 'Drawn around your own team.' },
+    rookie:     { hue: '#2fa79a', deep: '#0f1d33', word: 'ROOKIE', line: 'Three young men, where you are thin.' },
     postseason: { hue: '#d9a441', deep: '#2a2010', word: 'POSTSEASON', line: 'A season seen out.' },
     vault:      { hue: '#f2c744', deep: '#2b1e08', word: 'CHAMPIONSHIP', line: 'Four men. Two kept. One of them Prime.' },
-    scout:      { hue: '#b98cff', deep: '#1d1530', word: "SCOUT'S FIND", line: 'Read the real games well.' },
+    scout:      { hue: '#d274b0', deep: '#1d1530', word: "SCOUT'S FIND", line: 'Read the real games well.' },
     gameday:    { hue: '#e2664b', deep: '#2a140f', word: 'GAME DAY', line: 'Five games you finished yourself.' },
     /* the programs: each its own room — the lab's cold light and speed lines,
        the trench's steel and earth, primetime's night sky and one spotlight */
@@ -361,7 +361,7 @@
       for (i = 0; i < lines.length; i++) {
         L = lines[i];
         L.x += L.speed * dt; if (L.x > 1.1) { L.x = -L.len; L.y = Math.random(); L.fig = figure(); }
-        ctx.strokeStyle = 'rgba(63,184,131,' + (L.a * glow * (1 - dim)) + ')'; ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(124,193,66,' + (L.a * glow * (1 - dim)) + ')'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(L.x * w, L.y * h); ctx.lineTo((L.x + L.len) * w, L.y * h); ctx.stroke();
         ctx.fillStyle = 'rgba(180,220,200,' + (L.a * 1.4 * glow * (1 - dim)) + ')';
         ctx.fillText(L.fig, (L.x + L.len) * w + 6, L.y * h + 4);
@@ -371,7 +371,7 @@
     var confettiBits = [];
     function confetti(n) {
       var i;
-      for (i = 0; i < Math.min(lite ? 60 : 140, n); i++) confettiBits.push({ x: 0.5 + (Math.random() - 0.5) * 0.3, y: 0.35, vx: (Math.random() - 0.5) * 0.9, vy: -0.6 - Math.random() * 0.9, r: Math.random() * 6.28, hue: [art.hue, '#ffffff', '#f2c744', '#c9d94a'][i % 4], life: 2.2 + Math.random() });
+      for (i = 0; i < Math.min(lite ? 60 : 140, n); i++) confettiBits.push({ x: 0.5 + (Math.random() - 0.5) * 0.3, y: 0.35, vx: (Math.random() - 0.5) * 0.9, vy: -0.6 - Math.random() * 0.9, r: Math.random() * 6.28, hue: [art.hue, '#ffffff', '#f2c744', '#2fa79a'][i % 4], life: 2.2 + Math.random() });
     }
     function drawConfetti(dt) {
       var w = canvas.width, h = canvas.height, i, b, keepBits = [];
@@ -784,13 +784,13 @@
      For sharing a pull: the man, his tier, his overall, his signature and
      the EdgeDesk Football mark, drawn on a canvas in the game's own look.
      Nothing of the user is on it. Returns the canvas, or null without a DOM. */
-  var TIER_COLORS = { prospect: '#9095b8', starter: '#c8d0dc', impact: '#c9d94a', prime: '#eceaf6', elite: '#d9a441', apex: '#7a5cff', legend: '#f2c744', mythic: '#ff5c8a' };
+  var TIER_COLORS = { prospect: '#a29581', starter: '#c8d0dc', impact: '#2fa79a', prime: '#f1ebdf', elite: '#d9a441', apex: '#7a5cff', legend: '#f2c744', mythic: '#ff5c8a' };
   function cardImage(man, opts) {
     opts = opts || {};
     var d = root.document; if (!d || !d.createElement) return null;
     var W = 720, H = 1000, cv = d.createElement('canvas'); cv.width = W; cv.height = H;
     var ctx = cv.getContext('2d'); if (!ctx) return null;
-    var pl = plan(man), hue = TIER_COLORS[pl.tier] || '#3fb883', art = artOf(opts.art || 'cache');
+    var pl = plan(man), hue = TIER_COLORS[pl.tier] || '#7cc142', art = artOf(opts.art || 'cache');
     var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0f1420'); g.addColorStop(1, '#05070b');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     /* the tunnel grid */
@@ -806,7 +806,7 @@
     /* the man: a silhouette in the light */
     var beam = ctx.createRadialGradient(W / 2, 470, 20, W / 2, 470, 320); beam.addColorStop(0, 'rgba(255,255,255,.14)'); beam.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = beam; ctx.fillRect(0, 120, W, 700);
-    ctx.fillStyle = '#0a0c1f'; ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3;
+    ctx.fillStyle = '#100d08'; ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(W / 2, 330, 62, 0, 6.2832); ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(W / 2 - 150, 610); ctx.quadraticCurveTo(W / 2 - 150, 400, W / 2, 400); ctx.quadraticCurveTo(W / 2 + 150, 400, W / 2 + 150, 610); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';

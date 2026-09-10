@@ -49,7 +49,7 @@
   function themeOf(t) {
     /* the franchise hands us a theme object; the league hands us a key */
     if (t.theme && typeof t.theme === 'object') return t.theme;
-    return { primary: t.primary || '#3fb883', secondary: '#123326', ink: '#06231a' };
+    return { primary: t.primary || '#7cc142', secondary: '#123326', ink: '#06231a' };
   }
 
   /* what a slot is actually called on a depth chart. The stage names them
