@@ -104,8 +104,10 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .btn:hover{background:var(--cell);text-decoration:none}
 .btn:active{transform:translateY(1px)}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
-.btn-go{background:var(--val);border-color:var(--val);color:#06231a;font-weight:700}
-.btn-go:hover{background:#4ac994;border-color:#4ac994}
+/* The page-level primary action is the BRAND, not a status. --val stays
+   green where it means a genuine success state (.mission.done .chk). */
+.btn-go{background:var(--obs);border-color:var(--obs);color:var(--on-accent);font-weight:700}
+.btn-go:hover{background:#54c4b7;border-color:#54c4b7}
 .btn-ghost{background:transparent}
 .btn-row{display:grid;gap:10px;margin-top:14px}
 @media(min-width:560px){.btn-row.two{grid-template-columns:1fr 1fr}}
