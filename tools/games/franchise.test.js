@@ -775,9 +775,15 @@ fresh();
       && /EdgeDesk Games$/.test(t) && !/\b(bet|wager|odds|edge|lock)\b/i.test(t), t);
   })();
   /* the client asks, and never decides */
-  has(FJS, "rpc('franchise_play_week', withSecret({}))", 'playing sends nothing but "play" and the identity');
+  /* resume_v1: playing carries an OPERATION KEY as well as the identity, so a
+     dropped connection can be resolved instead of guessed at. It still sends
+     no result, and it is still never queued. */
+  has(FJS, "once('play_week')", 'playing sends nothing but "play", the identity and a key');
+  has(FJS, "p_kind: kind, p_op: key", 'and the key is what makes the retry the same operation');
+  chk('the client never sends an outcome for a game it played',
+    !/franchise_play_week[\s\S]{0,200}p_(score|result|game)/.test(FJS));
   chk('a play is never queued — the player must see the result the moment it exists', !/record\('franchise_play_week'/.test(FJS));
-  has(FJS, "rpc('franchise_start_season', withSecret({}))", 'starting a season is the same');
+  has(FJS, "once('start_season')", 'starting a season is the same');
   has(FJS, "rpc('franchise_schedule', withSecret({ p_number:", 'the schedule is read by season number');
   has(FJS, "rpc('franchise_game', withSecret({ p_game: String(id) }))", 'and a game by id');
   chk('the client never simulates', !/function (sim|simulate|drive|possession|playGame)\b/.test(FJS) && !/rpc\('franchise_sim/.test(FJS));
@@ -2192,8 +2198,8 @@ fresh();
 
   /* the client asks and never decides */
   chk('the client asks the server to open and to keep, and rolls nothing',
-    /function packOpen\(\) \{ return rpc\('franchise_pack_open', withSecret\(\{\}\)\)/.test(FJS)
-    && /function packKeep\(player\) \{[\s\S]{0,140}p_player: String\(player \|\| ''\)/.test(FJS)
+    /function packOpen\(\) \{ return once\('pack_open'\)/.test(FJS)
+    && /function packKeep\(player\) \{[\s\S]{0,140}once\('pack_keep', String\(player \|\| ''\)\)/.test(FJS)
     && !/Math\.random/.test(FJS));
 
   /* THE PAGE (the Vault, packs_v2 — every kind of pack goes through one door) */
@@ -2954,6 +2960,37 @@ fresh();
     has(PACKS, ".vs-art-primetime{", 'and Primetime');
   })();
 
+  /* ═══ 24. ONE DOOR, ONCE ════════════════════════════════════════════════ */
+  chk('the report grew to forty-five rows', /select 45, 'one door, once/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 24, 'one door, once: operation keys and the answer to did it happen'\)/.test(SQL));
+  eq('resume is versioned', F.RESUME_VERSION, 'resume_v1');
+  has(SQL, "'version', 'resume_v1'", 'and the SQL carries the same version');
+  has(README, 'resume_v1', 'the README documents the door');
+  chk('the ledger is one row per key, and the door locks before it decides',
+    /create table if not exists public\.franchise_ops/.test(SQL)
+    && /primary key \(franchise_id, op_key\)/.test(SQL)
+    && /from public\.franchises where id = v_f for update/.test(SQL));
+  chk('a repeated key returns the ORIGINAL result rather than doing the work again',
+    /if found then\s*\n\s*return jsonb_build_object\('ok', true, 'already', true/.test(SQL));
+  chk('the answer to "did it happen" is one of exactly two words, and never a third',
+    /'states', jsonb_build_array\('completed', 'not_completed'\)/.test(SQL)
+    && /'state', 'not_completed', 'kind', null/.test(SQL));
+  chk('the doors that were already exactly-once are named rather than re-plumbed',
+    /'market_purchase',\s+'game_market_txns\.op_key, unique'/.test(SQL)
+    && /'award_grant',\s+'franchise_achievements primary key'/.test(SQL));
+  chk('the client has four connection states and a word for each',
+    /NET = \{ SYNCED: 'synced', OFFLINE: 'offline', RECONNECTING: 'reconnecting', RETRY: 'retry' \}/.test(FJS)
+    && Object.keys(F.NET).length === 4 && ['synced', 'offline', 'reconnecting', 'retry'].every(k => F.netWord(k).length > 3));
+  chk('and it asks the server what happened rather than deciding for itself',
+    /rpc\('franchise_op', withSecret\(\{ p_op: key \}\)\)/.test(FJS)
+    && /state === 'completed'/.test(FJS) && /'not_completed'/.test(FJS));
+  chk('the connection strip is mounted by the shared chrome, on every page',
+    /function netBanner\(\)/.test(JS) && /try \{ netBanner\(\); \} catch/.test(JS)
+    && /\.netb\{/.test(CSS));
+  chk('and being back online only ever means ask again, never it worked',
+    /addEventListener\('online', function \(\) \{ paintNet\('reconnecting'\); \}\)/.test(JS));
+
   /* ═══ 23. THE LIVING SEASON ═════════════════════════════════════════════ */
   chk('the report grew to forty-four rows', /select 44, 'the living season/.test(SQL));
   chk('the schema log records the phase',
@@ -3005,7 +3042,7 @@ fresh();
   chk('the report grew to forty-three rows', /select 43, 'the card is not the man/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 22, 'the card is not the man: identity, edition, instance, ownership'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 23);
+  eq('and the client expects it', F.SCHEMA.franchise, 24);
   eq('the cards are versioned', F.CARDS_VERSION, 'cards_v1');
   has(SQL, "'version', 'cards_v1'", 'and the SQL carries the same version');
   has(README, 'cards_v1', 'the README documents the separation');
@@ -3072,7 +3109,7 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 20, 'the pull record: every pack you opened and the best of them'\)/.test(SQL));
   chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 20);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 23/.test(SQL));
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 24/.test(SQL));
   eq('the pull record is versioned', F.PULLS_VERSION, 'pulls_v1');
   has(SQL, "'version', 'pulls_v1'", 'and the SQL agrees');
   chk('the client reads it through one RPC with the secret and nothing else', /function pulls\(\) \{ return rpc\('franchise_pulls', withSecret\(\{\}\)\); \}/.test(FJS) && typeof F.pulls === 'function');
@@ -3091,7 +3128,7 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 19, 'the lineup, chemistry, and the Exchange'\)/.test(SQL));
   chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 19);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 23/.test(SQL));
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 24/.test(SQL));
   eq('the lineup is versioned', F.LINEUP_VERSION, 'lineup_v1');
   has(SQL, "'version', 'lineup_v1'", 'and the SQL agrees');
   eq('chemistry is versioned', F.CHEMISTRY_VERSION, 'chemistry_v1');

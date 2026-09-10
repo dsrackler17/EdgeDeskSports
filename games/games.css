@@ -809,3 +809,23 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .ag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .ag-row .btn{flex:1 1 auto;justify-content:center;text-align:center}
 @media(max-width:380px){.ag-row{flex-direction:column}}
+
+/* ── the connection, said out loud (resume_v1) ─────────────────────────────
+   One strip, four states, and no fifth. It never says a thing worked; it says
+   what the connection is doing, and the page underneath says what the server
+   answered. */
+.netb{
+  position:fixed;left:0;right:0;top:0;z-index:60;
+  padding:7px 12px;text-align:center;
+  font-family:'Inter',system-ui,sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.02em;
+  color:var(--ink);background:var(--est);
+  box-shadow:0 2px 12px rgba(0,0,0,.35);
+}
+.netb-offline{background:var(--neg);color:#fff}
+.netb-reconnecting{background:var(--est);color:var(--ink)}
+.netb-retry{background:var(--obs);color:#fff}
+.netb-synced{background:var(--val);color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){
+  .netb-reconnecting{animation:netbpulse 1.4s ease-in-out infinite}
+}
+@keyframes netbpulse{50%{opacity:.72}}

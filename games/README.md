@@ -3348,6 +3348,46 @@ and every pin in the live harness is untouched: the stick still changes the
 run, power still pays, the tiers still differ in the head. The 800-game check
 is green again.
 
+## One door, once (`resume_v1`)
+
+Everything that hands out value now goes through a door that can be knocked
+on twice, because a phone loses signal in a lift and a tab gets closed
+mid-animation. The two wrong answers are guessing yes and showing a reward
+the server never granted, and guessing no and granting it twice.
+
+The client generates an **operation key** before it asks. `franchise_once()`
+takes the key, locks the franchise row, and looks it up. If the key is on
+`franchise_ops` the work already happened and the **original result** comes
+back, not a new one; if it is not, the work runs and the key is written in the
+same transaction, so there is no window where one is true without the other.
+The lock is what stops two tabs pressing the same button from both finding the
+ledger empty.
+
+Five operations take a key: opening the rank's pack, opening a pack you hold,
+keeping a man from the pack on the table, playing the next game, and starting
+the next season. Four more doors were already exactly-once and stay as they
+are: a purchase (`game_market_txns.op_key`, unique), a live game result
+(`franchise_activity`, unique on franchise/kind/key), an achievement (a primary
+key) and a pack grant (unique on franchise/kind/source).
+
+When the client does not know whether its request left the building it does not
+decide — it asks. `franchise_op()` answers **completed**, with what the
+operation produced, or **not completed**. There is no third answer.
+`franchise_pack_pending()` answers the narrower version of the same question:
+a reveal that was interrupted leaves men on the table, and the page finishes an
+animation it never started rather than opening a second pack.
+
+On screen this is four states and no fifth: **synced**, **offline**,
+**reconnecting** (it may have landed; we are asking), **retry** (the server
+says it did not happen, so asking again is safe). One strip at the top of every
+page shows them. It never says a thing worked.
+
+`tools/games/offline.test.js` holds this to account in a real browser: Chromium
+loads the real pages, the real client library makes the real calls, and the
+calls run through psql against a real database. A drop *before* the request
+lands and a drop *after* it commits are two different tests, and the second one
+is the one that grants a reward twice if you get it wrong.
+
 ## The living season (`season_v1`)
 
 A season used to be a record and a schedule. It is three more things now, and

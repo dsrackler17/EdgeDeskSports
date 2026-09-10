@@ -440,6 +440,53 @@
     _toastT = setTimeout(function () { _toastEl.classList.remove('on'); }, 2600);
   }
 
+  /* ── THE CONNECTION BANNER (resume_v1) ─────────────────────────────────
+     One strip at the top of any page that talks to the server, driven by the
+     franchise layer's four states and nothing else. It says what is true and
+     never that something worked.
+
+       OFFLINE       the request never left the building
+       RECONNECTING  it may have landed; we are asking the server what it did
+       RETRY         the server says it did not happen; asking again is safe
+       SYNCED        shown briefly on the way back, then it goes away
+
+     A page does not have to opt in: mounting the header mounts this. */
+  var _netEl = null, _netOff = null, _netT = null;
+  function netBanner() {
+    var FR = root.EDFranchise;
+    if (!FR || typeof FR.onNet !== 'function' || _netOff) return;
+    var d = root.document;
+    _netEl = d.createElement('div');
+    _netEl.className = 'netb';
+    _netEl.setAttribute('role', 'status');
+    _netEl.setAttribute('aria-live', 'polite');
+    _netEl.hidden = true;
+    d.body.appendChild(_netEl);
+    _netOff = FR.onNet(function (state) { paintNet(state); });
+    paintNet(FR.net());
+    /* the browser's own answer is worth having, but it is not the authority:
+       back online only ever means "ask the server again", never "it worked" */
+    try {
+      root.addEventListener('online', function () { paintNet('reconnecting'); });
+      root.addEventListener('offline', function () { paintNet('offline'); });
+    } catch (_) {}
+  }
+  function paintNet(state) {
+    if (!_netEl) return;
+    var FR = root.EDFranchise, word = (FR && FR.netWord) ? FR.netWord(state) : state;
+    if (_netT) { clearTimeout(_netT); _netT = null; }
+    _netEl.className = 'netb netb-' + state;
+    _netEl.textContent = word;
+    if (state === 'synced') {
+      _netEl.hidden = false;
+      _netT = setTimeout(function () { if (_netEl) _netEl.hidden = true; }, 1400);
+      return;
+    }
+    _netEl.hidden = false;
+  }
+  /* what the strip is saying, for a test and for a page that wants to ask */
+  function netState() { var FR = root.EDFranchise; return FR && FR.net ? FR.net() : 'synced'; }
+
   /* ── chrome ───────────────────────────────────────────────────────────── */
   /* THE FACILITY. /games is a football organization with rooms, and the
      header names the rooms rather than the games: HQ, the War Room, Scouting
@@ -635,6 +682,8 @@
     /* every page mounts the chrome, so every page gets the gate on the one
        link that leaves the game */
     wireAgeGate();
+    /* and the strip that says what the connection is doing (resume_v1) */
+    try { netBanner(); } catch (_) {}
     try { sharedLibs(); } catch (_) {}
   }
 
@@ -1087,6 +1136,7 @@
     pts: pts, line: line, kickoffLabel: kickoffLabel, esc: esc,
     shareText: shareText, shareUrl: shareUrl, share: share,
     toast: toast, header: header, footer: footer, mount: mount, boot: boot,
+    netBanner: netBanner, netState: netState,
     pulse: pulse, summaryNow: summaryNow, chip: chip, moment: moment,
     PRO_AFTER_OPENS: PRO_AFTER_OPENS, proDue: proDue, proMoment: proMoment, wireProMoment: wireProMoment,
     ROOMS: ROOMS, tabs: tabs, franchiseReady: franchiseReady, paintFranchise: paintFranchise,
