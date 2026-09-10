@@ -3490,11 +3490,23 @@ with the real AI calling both sides, roughly 8,500 carries per sample:
 | men who got a hand on him | 1.06 | 1.56 | — |
 
 Two thirds of the runs that cleared twenty used to go forty or more; it is
-**a third** now. The left tail is real and it is not free: **a run play in this game
+**a third** now. And a pile forms where one used not to: at 1.06 men a carry
+the tackle was effectively always one man arriving and the play ending, and it
+is 1.56 now, with 52.5% of carries settled by a single tackler, 36.6% by two
+and 8.9% by three or more. The left tail is real and it is not free: **a run play in this game
 now has a downside**, which is what makes calling one a decision.
 
-**What the front actually does when it gets there**, over three thousand played
-carries — this is the chain the whole pass exists to produce:
+**The left tail is the front winning, not a dice roll.** Over 3,771 played
+carries, sorted by what the front seven actually managed:
+
+| | carries | ypc | lost yardage | stopped |
+| --- | --- | --- | --- | --- |
+| nobody free at the mesh | 2,821 | 4.19 | 3.2% | 6.9% |
+| one free man at the mesh | 950 | 3.95 | 8.5% | 13.5% |
+| two or more free | 92 | 3.40 | 22.8% | 27.2% |
+
+**What the front actually does when it gets there**, on the same sample — this
+is the chain the whole pass exists to produce:
 
 | first contact | carries | ypc | lost yardage | stopped |
 | --- | --- | --- | --- | --- |
@@ -3521,6 +3533,33 @@ that back first. That is the shape of a hole you climbed out of, and the suite
 asserts it in exactly that form: an escape must beat *the carries where the same
 hit was not escaped*, not the sample average, which is a bar that would have
 been claiming penetration costs the offence nothing.
+
+**The man on the card decides which answer he gets.** 2,700 scripted carries
+with the backs, lines and fronts set by hand, everything else held constant:
+
+| the back | ypc | lost | no gain | stopped | YAC a carry | breaks a carry |
+| --- | --- | --- | --- | --- | --- | --- |
+| poor (62 spd / 56 elu / 58 pwr) | 3.24 | 9.6% | 5.9% | 15.4% | 0.64 | 0.11 |
+| average (78 / 75 / 74) | 3.97 | 7.2% | 3.2% | 10.4% | 0.98 | 0.25 |
+| elite (94 / 95 / 90) | **5.29** | 3.4% | 2.0% | **5.4%** | **1.87** | **0.41** |
+
+The elite back is not simply gaining more. He is stopped at a third of the
+rate, he breaks nearly four times as many tackles, and **three times as much of
+his yardage comes after contact**. That is what the brief asked for: the same
+backfield hit is a stuff for one man and a four-yard gain for another.
+
+And the trenches, nine cells, every one of them a different football game:
+
+| | vs poor front | vs average front | vs elite front |
+| --- | --- | --- | --- |
+| **poor line** | 4.32 ypc, 5.2% stopped | 3.59, 19.2% | **2.66, 37.7% stopped, 25.6% lost yardage** |
+| **average line** | 4.80, 1.0% | 4.47, 3.7% | 3.60, 21.2% |
+| **elite line** | 4.79, 1.3% | **5.05 ypc, 1.0% stopped** | 4.20, 4.4% |
+
+A bad line against a great front loses yardage on a quarter of its carries and
+is stopped on better than a third. A great line against an average front is
+stopped on one in a hundred. Neither of those numbers existed before this pass —
+both sides of that table read 0.0% lost yardage.
 
 **What is still open, honestly.** The stuff rate is 8.7% against real football's
 roughly 18%, and 10-yard runs are 3.1% against roughly 11%. Both are the same
