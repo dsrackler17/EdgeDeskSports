@@ -88,6 +88,15 @@
     var handoffAt = play.type !== 'run' ? 0 : play.key === 'counter' ? 0.68 : play.concept === 'draw' ? 0.72 : 0.62;
     var thrown = false, pressureSeen = false, handedOff = false;
     var notes = [];
+    /* ── THE RUN, WRITTEN DOWN AS IT HAPPENS ──────────────────────────────
+       A carry that ends "3 yards" throws away everything that decided it.
+       This record is READ-ONLY — nothing in it is consulted by any decision
+       the engine makes — and it exists so a calibration can be argued from
+       measurements instead of impressions: where the first free defender
+       arrived, how deep, how many men tried and missed, how many were shed,
+       and how much of the gain came before contact and how much after. */
+    var rushLog = { attempts: [], firstContact: null, breaks: 0, misses: 0,
+                    penetrators: 0, freeAtMesh: 0, meshY: null, ybc: null };
     var threwAway = false;
     var bailAt = 0, bailKind = null, bailLane = null, thrownAt = null, poaX = null;
     /* ── WHOSE QUARTERBACK IS THIS ────────────────────────────────────────
@@ -425,6 +434,17 @@
       rb.carry = true; rb.state = 'carry';
       if (qb) { qb.carry = false; qb.state = 'run'; qb.job = { kind: 'watch' }; }
       ball.holder = rb; carrier = rb;
+      /* WHO IS ALREADY THROUGH WHEN THE BALL ARRIVES. A defender in the
+         backfield, unblocked, at the moment of the mesh is the single fact
+         that decides most stuffed runs — and it was never written down. */
+      rushLog.meshY = rb.y;
+      actors.forEach(function (d) {
+        if (d.side !== 'def' || d.state === 'down') return;
+        if (d.y < los - 0.4) {
+          rushLog.penetrators++;
+          if (!d.lock) rushLog.freeAtMesh++;
+        }
+      });
       refreshUser();
       if (events.onHandoff) events.onHandoff(rb);
     }
@@ -1677,7 +1697,22 @@
          play on ninety-six carries in a hundred, which made the whole run
          game one coin flip at the line: lose it and you have two yards, win
          it and nobody was ever within fifteen yards of you again. */
+      /* the attempt, before the roll decides it */
+      var logIt = play.type === 'run' && c.side === 'off' && c.carry;
+      var att = null;
+      if (logIt) {
+        att = { t: Math.round(t * 100) / 100, depth: Math.round((c.y - los) * 10) / 10,
+                pos: d.pos, blocked: !!d.lock, beat: (d.beat || 0) > 0, dive: d.dive > 0,
+                p: Math.round(clamp(p, 0.06, 0.93) * 1000) / 1000,
+                square: Math.round(square * 100) / 100, made: false };
+        rushLog.attempts.push(att);
+        if (!d.lock && rushLog.firstContact == null) {
+          rushLog.firstContact = att;
+          rushLog.ybc = Math.round((c.y - los) * 10) / 10;
+        }
+      }
       if (rand() < clamp(p, 0.06, 0.93)) {
+        if (att) att.made = true;
         /* HOW HARD IT LANDED, for the lens and the thumb: closing speed and
            how square he was. Nothing that decides a yard reads it. */
         lastHit = { x: Math.round(c.x * 100) / 100, y: Math.round(c.y * 100) / 100,
@@ -1711,6 +1746,12 @@
       c.vx *= 0.72; c.vy *= 0.72;
       d.stun = 0.55 + rand() * 0.35;
       d.vx *= 0.2; d.vy *= 0.2;
+      /* A BREAK AND A MISS ARE NOT THE SAME THING. A free defender square on
+         the ball who does not finish was BROKEN; a man reaching past his own
+         blocker, or diving from range, MISSED. The distinction is the whole
+         difference between a back who is hard to bring down and a defence
+         that is out of position. */
+      if (logIt) { if (att && !att.blocked && !att.dive) rushLog.breaks++; else rushLog.misses++; }
       if (!c.broke) { c.broke = 0; }
       c.broke++;
       if (c.broke === 1) notes.push(shortName(c) + ' broke the first one.');
@@ -2063,6 +2104,31 @@
       r.liveTime = Math.round(t * 100) / 100;
       r.throwAt = thrownAt == null ? null : Math.round(thrownAt * 100) / 100;
       r.broke = (c && c.broke) || 0;
+      /* ── THE RUN'S OWN RECORD (rush_v1) ─────────────────────────────────
+         Attached to every run so a distribution can be measured rather than
+         guessed at, and so the box score can one day carry yards before and
+         after contact the way a real one does. Nothing reads it back. */
+      if (play.type === 'run' && kind !== 'incomplete') {
+        var gainedY = r.yards;
+        var ybc = rushLog.ybc;
+        r.rush = {
+          concept: play.concept || null,
+          yards: gainedY,
+          ybc: ybc == null ? gainedY : ybc,
+          yac: ybc == null ? 0 : Math.round((gainedY - ybc) * 10) / 10,
+          contact_depth: rushLog.firstContact ? rushLog.firstContact.depth : null,
+          contact_by: rushLog.firstContact ? rushLog.firstContact.pos : null,
+          backfield_contact: !!(rushLog.firstContact && rushLog.firstContact.depth < 0),
+          attempts: rushLog.attempts.length,
+          broken: rushLog.breaks,
+          missed: rushLog.misses,
+          penetrators: rushLog.penetrators,
+          free_at_mesh: rushLog.freeAtMesh,
+          stuffed: gainedY <= 0,
+          tfl: gainedY < 0,
+          explosive: gainedY >= 20
+        };
+      }
       outcome = r;
       if (events.onEnd) events.onEnd(kind, r);
     }

@@ -523,7 +523,16 @@
            universal ratings uses them; one that does not falls back to what
            it has. */
         str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.pwr == null ? ov : r.pwr) : r.str)),
-        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))),
+        /* ── WHAT A BACK IS, BEYOND FAST ──────────────────────────────────
+           Vision is whether he finds the crease the blocking made; breaking
+           tackles is whether he survives the man who found him first. The
+           card already carries both in its profile — they were simply never
+           handed to the grass, so every back ran the same way and died the
+           same way. */
+        vis: unit(pf && pf.vis != null ? pf.vis : (r.elu == null ? (r.iq == null ? ov : r.iq) : r.elu)),
+        btk: unit(pf && pf.btk != null ? pf.btk
+              : (r.pwr == null ? (r.str == null ? ov : r.str) : Math.round(r.pwr * 0.6 + (r.elu == null ? r.pwr : r.elu) * 0.4)))
       };
     }
     function defMan(pl, pos) {
@@ -540,7 +549,11 @@
         bhk: unit(r.bhk == null ? ov : r.bhk),
         iq: unit(r.iq == null ? ov : r.iq),
         str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.tkl == null ? ov : r.tkl) : r.str)),
-        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))),
+        /* how well he runs the angle and arrives under control: the profile
+           has had this since the player universe was built and the grass has
+           never read it */
+        pur: unit(pf && pf.pur != null ? pf.pur : (r.spd == null ? ov : r.spd))
       };
     }
     function put(pl, pos, side) {
@@ -561,10 +574,12 @@
     env.fallback = {
       off: { spd: liveSpeed('WR', ou.wr.spd), acc: liveAccel('WR', 62), agi: unit(62), pwr: unit(62),
              hnd: unit(ou.wr.hnd), rte: unit(ou.wr.rte), blk: unit(ou.ol.pbk), rbk: unit(ou.ol.rbk),
-             arm: unit(ou.qb.arm), accy: unit(ou.qb.acc), iq: unit(ou.qb.iq), str: unit(62), sta: unit(70) },
+             arm: unit(ou.qb.arm), accy: unit(ou.qb.acc), iq: unit(ou.qb.iq), str: unit(62), sta: unit(70),
+             vis: unit(ou.rb.elu), btk: unit(ou.rb.pwr) },
       def: { spd: liveSpeed('LB', du.lb.spd), acc: liveAccel('LB', 62), agi: unit(62),
              tkl: unit(du.lb.tkl), cov: unit(du.cb.cov), rsh: unit(du.dl.prs),
-             shed: unit(du.dl.rst), bhk: unit(du.s.bhk), iq: unit(du.lb.iq), str: unit(62), sta: unit(70) }
+             shed: unit(du.dl.rst), bhk: unit(du.s.bhk), iq: unit(du.lb.iq), str: unit(62), sta: unit(70),
+             pur: unit(du.lb.spd) }
     };
     return env;
   }
