@@ -143,7 +143,7 @@
       a.engaged = null; a.lock = null; a.rep = 0;
       a.stun = 0; a.moveCool = 0; a.moveT = 0; a.move = null;
       a.react = 0; a.carry = false; a.tryAt = 0; a.grace = 0;
-      a.slipFor = 0; a.recover = 1; a.dragBy = null; a.dragUntil = 0; a.cutback = 0; a.gapPaid = 0;
+      a.slipFor = 0; a.recover = 1; a.dragBy = null; a.dragUntil = 0; a.cutback = 0; a.gapPaid = 0; a.settling = 0; a.settleUntil = 0; a.settleBy = null;
     });
 
     /* ── ASSIGNMENTS ──────────────────────────────────────────────────────
@@ -532,6 +532,12 @@
         var dragger = byId[carrier.dragBy];
         carrier.dragBy = null;
         down(carrier, dragger || null);
+      }
+      /* and the pile stops before the ball is spotted */
+      if (carrier && carrier.settling === 1 && t >= carrier.settleUntil) {
+        var piledBy = byId[carrier.settleBy];
+        carrier.settling = 2;
+        down(carrier, piledBy || null);
       }
       contact(dt);
       /* 10 — is it over */
@@ -1018,6 +1024,20 @@
         a.gapPaid = 1;
         if (a.y < c.y + 0.6) a.recover = 0.40;
       }
+      /* ── SENDING HIM STRAIGHT AT THE BALL ONCE HE IS THROUGH WAS TRIED,
+         AND IT CHANGED NOTHING. The theory was sound: having reached the
+         spot he shot for he falls through to the gap discipline below and
+         holds that depth while the back runs around him, which should make
+         the penetration cosmetic. MEASURED over three thousand played
+         carries with a branch that sent him at the carrier instead — a free
+         man at the mesh became a hit behind the line on 39.9% of carries
+         without it and 37.2% with, and the backfield-contact rate over
+         three hundred played games went 10.2% to 9.9%. It bought nothing.
+         The squeeze below is
+         already carrying him toward the ball; he simply does not get there
+         any sooner by being told to run at it, because a lineman at 7.4
+         yards a second is not catching a back at 9.0 from behind. Left out
+         rather than kept as a branch that does nothing. */
       if (c && c.carry && c !== qb) {
         var declared = c.y > los + 1.0 || Math.abs(c.x - j.x) < 2.6 || t > 2.4;
         if (declared) { pursue(a, c); return; }
@@ -1637,7 +1657,20 @@
        another yard. */
     function integrate(dt) {
       actors.forEach(function (a) {
-        if (a.state === 'down') { a.vx *= 0.80; a.vy *= 0.80; return; }
+        if (a.state === 'down') {
+          /* A PILE STILL HAS SOMEWHERE TO GO for the sixth of a second it
+             takes to reach the ground; every other body that is down is
+             done, and stays where it fell. Forward progress is spotted where
+             he was stopped, so a pile that drifts to the goal line has not
+             scored it. */
+          if (a.settling) {
+            a.vx *= 0.96; a.vy *= 0.96;
+            a.x = clamp(a.x + a.vx * dt, -3, FIELD.width + 3);
+            a.y = Math.min(99.7, a.y + a.vy * dt);
+            return;
+          }
+          a.vx *= 0.80; a.vy *= 0.80; return;
+        }
         var dx = a.tx - a.x, dy = a.ty - a.y, d = len(dx, dy);
         var slow = a.lock ? 0.20 : a.stun > 0 ? 0.30 : a.move === 'truck' ? 0.80 : 1;
         /* ── RECOVERY AFTER EARLY PENETRATION ─────────────────────────────
@@ -1966,7 +1999,22 @@
       var cStr = c.k.str == null ? 0.5 : c.k.str;
       var cAgi = c.k.agi == null ? 0.5 : c.k.agi;
 
-      var control = 0.52
+      /* ── HOW OFTEN THE MAN WHO GOT THERE WINS ──────────────────────────
+         This base is the whole question the brief put: once the blocker
+         interaction is already resolved and a defender is standing in the
+         backfield, how favourably does the collision go for the runner?
+         MEASURED at 0.52 over three thousand played carries, the defender
+         took control of 44% of backfield collisions, which is too kind to a
+         back who has been met by a free man before he reached the line —
+         and it showed up in the aggregate as a stuff rate of seven in a
+         hundred against real football's roughly nineteen.
+
+         Note what this number is NOT. It is not the tackle model: an
+         ordinary tackle downfield still goes through resolveTackle and is
+         untouched by this. It is not a rating: an elite back's answer sits
+         in `escape` below and is subtracted from this, so raising the base
+         raises the floor for everyone and moves nobody past anybody. */
+      var control = 0.60
         + (dTkl - 0.5) * 0.64 + (dStr - cStr) * 0.34 + (dPur - 0.5) * 0.20
         + square * 0.18 + clamp(closing - sp, -3, 3) * 0.032
         - fromMesh * 0.055;
@@ -2221,6 +2269,42 @@
 
     var fumbledBy = null, fumbleForced = null, fumbleKept = false, lastHit = null;
     function down(c, d) {
+      /* ── FALLING FORWARD ──────────────────────────────────────────────
+         A tackle is not a freeze frame. Two men meeting keep moving in the
+         direction of whoever brought more of it to the collision, for about
+         as long as it takes them to reach the ground. The engine had been
+         spotting the ball at the exact instant of contact, which threw away
+         the last of the yards the back's own legs had already earned and
+         made every carry resolve as a hard stop.
+
+         This invents nothing. It is the momentum already in the two bodies:
+         a back running downhill into an arm tackle finishes his stride, the
+         same back met square by a backer coming the other way finishes
+         where he stood, and a defender with a running start puts him back
+         where he came from — which is why a clean stuff, whose whole point
+         is that the runner's velocity was taken from him first, has no pile
+         to speak of and spots at the contact.
+
+         AND IT IS PLAYED, NOT APPLIED. Written first as a single nudge to
+         his spot at the whistle, this was a teleport: the motion QA caught
+         the back jumping as much as 1.2 yards between two frames, which on
+         a phone is a man snapping forward out of the tackle. So the pile
+         resolves on its own clock, the way a wrap already does — he is DOWN
+         and still moving, decelerating, for a sixth of a second, and the
+         whistle waits for him to stop. Same yards, and something a camera
+         can follow. */
+      if (play.type === 'run' && c.side === 'off' && c.carry && !c.settling) {
+        var mC = 0.62 + (c.k.str == null ? 0.5 : c.k.str) * 0.76;
+        var mD = d ? 0.70 + (d.k.str == null ? 0.5 : d.k.str) * 0.80 : 0;
+        var pile = clamp(d ? (mC * c.vy + mD * d.vy) / (mC + mD) : c.vy, -1.6, 7.0);
+        if (pile > 0.6) {
+          c.settling = 1; c.settleUntil = t + 0.24; c.settleBy = d ? d.id : null;
+          c.state = 'down'; c.fell = rand() > 0.5 ? 1 : -1;
+          c.vx *= 0.30; c.vy = pile;
+          if (d) d.state = 'tackle';
+          return;
+        }
+      }
       c.state = 'down'; c.fell = rand() > 0.5 ? 1 : -1;
       if (d) d.state = 'tackle';
       /* a defender brought down with the ball ends the takeaway where he is */

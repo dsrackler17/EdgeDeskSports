@@ -959,6 +959,13 @@
    What the calls were worth, kept beside what they returned, because they
    are two different numbers and the whole point is that they can disagree. */
 .bit.bit-read b{display:inline;font-family:'Space Grotesk',sans-serif;font-size:13px;letter-spacing:.02em}
+/* PROCESS AND RESULT, ON ONE ROW. The two numbers this system exists to keep
+   apart, so a good call that lost two yards reads as exactly that. */
+.bit.bit-read .bit-two{display:flex;align-items:baseline;gap:5px 9px;flex-wrap:wrap;margin-top:5px}
+.bit.bit-read .bit-two em{font-style:normal;font:800 8.5px 'Space Grotesk',sans-serif;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint)}
+.bit.bit-read .bit-two b{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;
+  font-variant-numeric:tabular-nums;color:var(--bc,var(--text))}
 .rq{margin-bottom:10px}
 .rq-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rq-two>div{padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--line2);background:var(--raised);min-width:0}
@@ -979,3 +986,11 @@
 .rq-b u{display:block;height:100%;background:var(--val);text-decoration:none}
 .rq-b b{text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--text)}
 @media(max-width:380px){.rq-b{grid-template-columns:96px 1fr 28px}.rq-two b{font-size:26px}}
+
+/* ── A STOPPED RUN IS THE OTHER SIDE'S PLAY (rush_v2) ──────────────────────
+   The result card is the offence's green. A carry that lost a yard is not
+   the offence's anything, and reading it in the same colour as an eight-yard
+   gain is what made a run with no downside feel like a run with no downside. */
+.res-stuff{border-color:color-mix(in srgb,var(--neg) 45%,transparent)}
+.res-stuff span{color:var(--neg)}
+.res-stuff em{color:var(--neg);letter-spacing:.06em;text-transform:uppercase;font-weight:800}

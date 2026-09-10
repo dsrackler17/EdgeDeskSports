@@ -230,8 +230,29 @@ if (brokeOut.length >= 8) {
   chk('a back who breaks one in the backfield does not simply score',
     100 * brokeOut.filter(r => r.yards >= 40).length / brokeOut.length < 25,
     Math.round(100 * brokeOut.filter(r => r.yards >= 40).length / brokeOut.length) + '% of escapes went 40+');
+  /* ── THE RIGHT COUNTERFACTUAL ─────────────────────────────────────────
+     This used to read `> ypc` — an escape had to beat the average of every
+     carry in the sample, clean ones included — and that is the wrong
+     comparison to make. A man who breaks a tackle behind the line is
+     STARTING FROM MINUS TWO. He has to win back the ground the front
+     already took before he gains a yard, while the overall average is
+     carried by runs where nobody touched him at all. MEASURED across three
+     thousand played carries: a backfield escape is worth 3.04 yards and the
+     average carry 3.68, so the old bar was asserting that penetration
+     costs the offence nothing.
+
+     What actually has to be true is that ESCAPING IT BEATS NOT ESCAPING IT:
+     the same hit, behind the same line, is a stop when he does not get out
+     of it and a play when he does. */
+  const heldIn = rows.filter(r => (r.contacts || []).some(c => c.depth < 0.6)
+                                && !(r.contacts || []).some(c => c.kind === 'broken'));
   chk('though it is worth a great deal when it happens',
-    mean(brokeOut.map(r => r.yards)) > ypc,
+    heldIn.length >= 8 && mean(brokeOut.map(r => r.yards)) > mean(heldIn.map(r => r.yards)) + 1.5,
+    mean(brokeOut.map(r => r.yards)).toFixed(2) + ' when he gets out of it vs '
+      + mean(heldIn.map(r => r.yards)).toFixed(2) + ' when he does not, over ' + heldIn.length + ' held');
+  /* and it is still a hole he is climbing out of, not a head start */
+  chk('but breaking one in the backfield is not better than never being hit there',
+    mean(brokeOut.map(r => r.yards)) < ypc + 1,
     mean(brokeOut.map(r => r.yards)).toFixed(2) + ' vs ' + ypc.toFixed(2) + ' overall');
 } else {
   chk('enough backfield escapes to judge them', false, brokeOut.length + ' escapes in ' + n + ' carries');

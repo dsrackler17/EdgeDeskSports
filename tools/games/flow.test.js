@@ -118,6 +118,19 @@ function liveGame(seed, length, onPlay) {
   }
   eq('a hundred consecutive live snaps book without a refusal', broke, null);
   eq('and all hundred were taken', snaps, 100);
+  /* ── SETTLE WHAT THE HUNDREDTH SNAP LEFT OWING ──────────────────────────
+     The loop stops on a count, and the count can land on a touchdown — which
+     leaves the books mid-sequence through no fault of their own: a try is
+     owed and has not been taken, so the invariants read one try short and say
+     so twice. Take whatever is pending first, and the check then runs on a
+     complete sequence rather than being excused one. */
+  let settle = 0;
+  while (!g.over && g.phase !== 'play' && settle++ < 6) {
+    const c = AU.callFor(g, {});
+    if (c.type === 'play') break;
+    if (!S.step(g, c).ok) break;
+  }
+  chk('and whatever the hundredth snap left owing was settled', g.over || g.phase === 'play', 'phase ' + g.phase);
   const box = G.boxScore(g), v = INV.check(G, g, box);
   /* the game is not over, so the two "over" lines of the invariants are expected,
      and the drive under way is not on the chart yet; everything else must hold */

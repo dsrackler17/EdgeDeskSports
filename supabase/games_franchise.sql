@@ -12934,6 +12934,165 @@ grant execute on function public.franchise_pack_pending(text) to anon, authentic
 select public.games_schema_note('franchise', 24, 'one door, once: operation keys and the answer to did it happen');
 commit;
 
+-- ===========================================================================
+
+-- ===========================================================================
+-- PHASE 25 — WHAT A CARRY WAS (rush_v1)
+--
+-- A career sheet could say a back carried it 214 times for 940 yards and
+-- nothing else. Four-and-a-half a carry. But four-and-a-half a carry is two
+-- completely different players:
+--
+--   • the back whose line hands him four clean yards and who adds half a one
+--   • the back the front meets in the backfield twice a quarter, who is
+--     stopped on one carry in five, and who takes the other four to the
+--     second level himself
+--
+-- The engine now measures the difference on every run — where the first
+-- defender arrived, what the runner did after that, whose tackles he broke
+-- and which carries the front simply won. This phase lets those columns
+-- reach a career, which is all that was missing: the numbers were already
+-- being counted and then dropped on the floor at the door.
+--
+-- Six new keys, each an ordinary non-negative count, bounded exactly like
+-- the eighteen that came before:
+--
+--   ybc      yards before contact           (a carrier)
+--   yac      yards after contact            (a carrier)
+--   brk      tackles broken                 (a carrier)
+--   stuffed  carries stopped at or behind the line   (a carrier)
+--   expl     carries of twenty or more      (a carrier)
+--   stuff    runs stopped at or behind the line      (a defender)
+--
+-- TFL is already carried, on both sides: `tfl` is a defender's line, and a
+-- team's TFL ALLOWED is the opponent's TFL made, so it is never stored twice.
+--
+-- Nothing else about the door changes. The same key still files once, the
+-- same cap still applies, the same shape check still rejects a result that
+-- could not have come from a game. Only the list of columns a line may carry
+-- is longer. Re-created rather than altered because the array is a local
+-- declaration inside the function, not a table anybody can extend.
+-- ===========================================================================
+begin;
+
+create or replace function public.franchise_rush_keys()
+returns jsonb language sql immutable as $$
+  select jsonb_build_object('version', 'rush_v1',
+    'carrier', jsonb_build_array('ybc', 'yac', 'brk', 'stuffed', 'expl'),
+    'defender', jsonb_build_array('tfl', 'stuff'),
+    'means', jsonb_build_object(
+      'ybc', 'yards before first contact',
+      'yac', 'yards after first contact',
+      'brk', 'tackles broken or shed',
+      'stuffed', 'carries stopped at or behind the line',
+      'expl', 'carries of twenty yards or more',
+      'stuff', 'runs stopped at or behind the line',
+      'tfl', 'tackles for loss'));
+$$;
+grant execute on function public.franchise_rush_keys() to anon, authenticated;
+
+create or replace function public.franchise_record_live_game(p_key text, p_game jsonb, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); econ jsonb := public.franchise_economy(); v_day text := public.games_day_key(now());
+  v_diff text; v_len text; v_for integer; v_against integer; v_plays integer; v_yards integer; v_tds integer; v_to integer;
+  v_won boolean; v_tier numeric; v_xp integer := 0; v_tc integer := 0; v_cp integer := 0; v_today integer; v_capped boolean := false;
+  v_kind text; v_existing jsonb; ln jsonb; v_stats jsonb; v_k text; v_val numeric; v_men integer := 0; v_detail jsonb; v_packs integer;
+  v_before jsonb; v_rep jsonb; v_had text[]; v_new_kinds jsonb;
+  -- the eighteen a career already knew, and the six the running game adds
+  allowed text[] := array['games','att','cmp','yds','td','int','car','rush_yds','rush_td','rec','rec_yds','rec_td','tkl','sacks','tfl','pd','fg','fga','xp',
+                          'ybc','yac','brk','stuffed','expl','stuff'];
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  if p_key is null or length(p_key) < 6 or length(p_key) > 120 then raise exception 'that is not a game key' using errcode = '22023'; end if;
+  if p_game is null or jsonb_typeof(p_game) <> 'object' then raise exception 'that is not a game' using errcode = '22023'; end if;
+  v_diff := coalesce(p_game->>'difficulty', 'pro'); v_len := coalesce(p_game->>'length', 'blitz');
+  if v_diff not in ('rookie', 'pro', 'allpro', 'legend') or v_len not in ('arcade', 'blitz', 'quick', 'standard') then
+    raise exception 'that is not a game' using errcode = '22023';
+  end if;
+  begin
+    v_for := (p_game->>'score_for')::int; v_against := (p_game->>'score_against')::int; v_plays := (p_game->>'plays')::int;
+    v_yards := coalesce((p_game->>'yards')::int, 0); v_tds := coalesce((p_game->>'touchdowns')::int, 0); v_to := coalesce((p_game->>'turnovers')::int, 0);
+  exception when others then raise exception 'that is not a game result' using errcode = '22023'; end;
+  -- THE SHAPE OF A RESULT. Not a simulation of the game — a check that the
+  -- numbers could have come from one.
+  if v_for is null or v_against is null or v_plays is null
+     or v_for not between 0 and 99 or v_against not between 0 and 99 or v_plays not between 8 and 250
+     or v_yards not between -60 and 999 or v_tds not between 0 and 15 or v_to not between 0 and 12
+     or v_tds * 6 > v_for then
+    raise exception 'that is not a game result' using errcode = '22023';
+  end if;
+  -- filed once: the same key comes back with what it already paid
+  select detail into v_existing from public.franchise_activity
+   where franchise_id = v_f and kind in ('live_game', 'live_game_extra') and key = p_key;
+  if v_existing is not null then
+    return jsonb_build_object('ok', true, 'already', true, 'result', v_existing, 'capped', coalesce((v_existing->>'capped')::boolean, false),
+      'rewards', jsonb_build_object('xp', 0, 'tc', 0, 'cp', 0), 'rank_gain', 0, 'packs_new', 0,
+      'rank', public.franchise_rank_report(v_f), 'gameday', public.franchise_gameday_progress(v_f), 'totals', public.franchise_totals(v_f));
+  end if;
+  perform 1 from public.franchises where id = v_f for update;
+  select count(*) into v_today from public.franchise_activity where franchise_id = v_f and kind = 'live_game' and day_key = v_day;
+  v_capped := v_today >= (econ->'live_cap'->>'per_day')::int;
+  v_kind := case when v_capped then 'live_game_extra' else 'live_game' end;
+  v_won := v_for > v_against;
+  v_tier := coalesce((econ->'live_tier'->>v_diff)::numeric, 1);
+  if not v_capped then
+    v_xp := (econ->'live_game'->>'xp')::int; v_tc := (econ->'live_game'->>'tc')::int;
+    if v_won then
+      v_xp := v_xp + (econ->'live_win'->>'xp')::int; v_tc := v_tc + (econ->'live_win'->>'tc')::int; v_cp := (econ->'live_win'->>'cp')::int;
+    end if;
+    -- the performance itself, capped: touchdowns and every hundred yards
+    v_tc := v_tc + least((econ->'live_perf'->>'tc_max')::int,
+                         v_tds * (econ->'live_perf'->>'tc_per_td')::int + (greatest(0, v_yards) / 100) * (econ->'live_perf'->>'tc_per_100')::int);
+    v_xp := v_xp + least((econ->'live_perf'->>'xp_max')::int, (greatest(0, v_yards) / 100) * (econ->'live_perf'->>'xp_per_100')::int);
+    v_xp := round(v_xp * v_tier)::int; v_tc := round(v_tc * v_tier)::int;
+  end if;
+  v_before := public.franchise_rank_report(v_f);
+  -- THE MEN: only yours, only the keys a career knows, nothing negative,
+  -- nothing past a season's worth in one game; a stranger's id takes nothing
+  for ln in select x from jsonb_array_elements(coalesce(p_game->'players', '[]'::jsonb)) x limit 60 loop
+    if ln->>'id' is null or ln->>'id' !~ '^[0-9a-fA-F-]{36}$' or jsonb_typeof(ln->'stats') <> 'object' then continue; end if;
+    v_stats := '{}'::jsonb;
+    for v_k, v_val in select key, case when jsonb_typeof(value) = 'number' then (value #>> '{}')::numeric else null end from jsonb_each(ln->'stats') loop
+      if v_k = any(allowed) and v_val is not null and v_val between 0 and 999 then v_stats := v_stats || jsonb_build_object(v_k, floor(v_val)::int); end if;
+    end loop;
+    if v_stats = '{}'::jsonb then continue; end if;
+    update public.game_players set live_stats = public.games_jsonb_sum(live_stats, v_stats), updated_at = now()
+     where id = (ln->>'id')::uuid and franchise_id = v_f and status = 'active';
+    if found then v_men := v_men + 1; end if;
+  end loop;
+  v_detail := jsonb_build_object('key', p_key, 'difficulty', v_diff, 'length', v_len, 'score_for', v_for, 'score_against', v_against,
+    'won', v_won, 'plays', v_plays, 'yards', v_yards, 'touchdowns', v_tds, 'turnovers', v_to,
+    'opponent', left(coalesce(p_game->>'opponent', ''), 60), 'men', v_men, 'capped', v_capped, 'tier', v_tier,
+    'rewards', jsonb_build_object('xp', v_xp, 'tc', v_tc, 'cp', v_cp), 'version', econ->>'version');
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, verified, detail)
+  values (v_f, v_kind, p_key, public.games_week_key(now()), v_day, false, v_detail);
+  if v_xp > 0 then perform public.franchise_credit(v_f, 'xp', v_xp, 'live_game', p_key, 'Game Day, ' || v_for || '–' || v_against); end if;
+  if v_tc > 0 then perform public.franchise_credit(v_f, 'tc', v_tc, 'live_game', p_key, 'Game Day, ' || v_for || '–' || v_against); end if;
+  if v_cp > 0 then perform public.franchise_credit(v_f, 'cp', v_cp, 'live_game', p_key, 'Game Day, won'); end if;
+  -- WHICH PACKS THIS GAME SEALED, not just how many. A live game can earn a
+  -- Game Day Pack and a program pack at the same moment (packs_v4), and a
+  -- panel that names the wrong one is a panel nobody can trust.
+  select coalesce(array_agg(k.kind || ':' || k.source_key), '{}') into v_had
+    from public.franchise_packs k where k.franchise_id = v_f;
+  v_packs := public.franchise_packs_sync(v_f);
+  select coalesce(jsonb_agg(distinct jsonb_build_object('kind', k.kind, 'name', public.franchise_pack_def(k.kind)->>'name')), '[]'::jsonb)
+    into v_new_kinds
+    from public.franchise_packs k
+   where k.franchise_id = v_f and not (k.kind || ':' || k.source_key = any(v_had));
+  v_rep := public.franchise_rank_report(v_f);
+  return jsonb_build_object('ok', true, 'already', false, 'result', v_detail, 'capped', v_capped,
+    'rewards', jsonb_build_object('xp', v_xp, 'tc', v_tc, 'cp', v_cp),
+    'rank', v_rep, 'rank_gain', (v_rep->>'points')::int - (v_before->>'points')::int,
+    'packs_new', v_packs, 'packs_sealed', v_new_kinds, 'gameday', public.franchise_gameday_progress(v_f),
+    'totals', public.franchise_totals(v_f));
+end;
+$$;
+grant execute on function public.franchise_record_live_game(text, jsonb, text) to anon, authenticated;
+
+select public.games_schema_note('franchise', 25, 'what a carry was: yards before and after contact, breaks and stuffs');
+commit;
+
 -- THE NINTH GAME SAYS WHICH KIND IT IS (season_v1). Every page that draws a
 -- game reads this function, and a title game must not arrive looking like a
 -- Tuesday. Re-created here because franchise_games.championship is added in
@@ -13809,5 +13968,29 @@ select 45, 'one door, once (' || (public.franchise_resume_rules()->>'version')
         and has_function_privilege('anon', 'public.franchise_once(text, text, text, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_op(text, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_pack_pending(text)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 46, 'what a carry was (' || (public.franchise_rush_keys()->>'version')
+        || '): yards before and after contact, tackles broken, carries stopped and carries of twenty, on a career sheet',
+  case when public.franchise_rush_keys()->>'version' = 'rush_v1'
+        -- the six new columns reach a career, and the door still bounds them
+        and (select bool_and(p.prosrc like '%''' || k || '''%')
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace,
+                    unnest(array['ybc','yac','brk','stuffed','expl','stuff']) k
+              where n.nspname = 'public' and p.proname = 'franchise_record_live_game')
+        and (select p.prosrc like '%v_val between 0 and 999%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_record_live_game')
+        -- and a carry is still only ever added to the live career, never the
+        -- simulated one, exactly as before the columns were widened
+        and (select p.prosrc like '%set live_stats = public.games_jsonb_sum(live_stats, v_stats)%'
+               and p.prosrc not like '%career_stats = public.games_jsonb_sum%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'franchise_record_live_game')
+        -- a carrier's columns and a defender's are named apart, so a season
+        -- total never adds a back's stopped carries to a tackler's stuffs
+        and not (public.franchise_rush_keys()->'carrier' @> '["stuff"]'::jsonb)
+        and (public.franchise_rush_keys()->'defender' @> '["stuff"]'::jsonb)
+        and has_function_privilege('anon', 'public.franchise_rush_keys()', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;

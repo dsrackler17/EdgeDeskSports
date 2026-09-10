@@ -1026,6 +1026,9 @@
     if (!e.grade) return null;
     e.result = RD.resultScore(res || {}, e.ctx);
     e.yards = (res && res.yards) | 0;
+    /* the run's own record travels with the read, so the panel can say WHY
+       a sound call came to nothing rather than only that it did */
+    e.rush = (res && res.rush) || null;
     e.text = e.text + ' on ' + e.ctx.down + ' & ' + e.ctx.toGo;
     READS.push(e);
     return e;
@@ -1235,6 +1238,41 @@
     return lastResult;
   }
 
+  /* ── WHAT THE RUN GAME HAS ACTUALLY BEEN DOING (rush_v2) ────────────────
+     Commentary that is not counting anything is decoration. This counts the
+     real thing — carries stopped at or behind the line, carries that broke,
+     and the ones a back rescued from a loss — and says it when the number
+     itself is the story. Nothing here is invented: every line is a count of
+     plays that happened, and it speaks at most a few times a game so that
+     when it does the number means something. */
+  var RUN = { stuffs: 0, runs: 0, saved: 0, broke: 0, said: {} };
+  function runNote(p) {
+    if (!p || !p.rush || p.completion) return;
+    var r = p.rush;
+    RUN.runs++;
+    if (r.stuffed) RUN.stuffs++;
+    var beat = (r.contacts || []).some(function (c) { return c.kind === 'broken' || c.kind === 'deflect'; });
+    if (beat) RUN.broke++;
+    /* met behind the line and still gained: the back rescued it */
+    if (beat && r.yards > 2 && r.contact_depth != null && r.contact_depth < 1) RUN.saved++;
+    var who = (p.carrier && (p.carrier.last_name || p.carrier.name)) || 'the back';
+    if (RUN.stuffs === 3 && !RUN.said.three) {
+      RUN.said.three = 1;
+      return say('That is the third run they have stopped at or behind the line.');
+    }
+    if (RUN.saved === 1 && !RUN.said.saved && r.yards >= 4) {
+      RUN.said.saved = 1;
+      return say(who + ' turned a loss into ' + r.yards + '.');
+    }
+    if (r.explosive && RUN.stuffs >= 3 && !RUN.said.finally) {
+      RUN.said.finally = 1;
+      return say('Bottled up all afternoon, and there it goes.');
+    }
+    if (RUN.runs >= 8 && RUN.stuffs === 0 && !RUN.said.clean) {
+      RUN.said.clean = 1;
+      return say('Eight carries and the front has not won one of them.');
+    }
+  }
   function onEnd(kind, res) {
     clearWhistle();
     if (stage && stage.sprint) stage.sprint(false);
@@ -1252,6 +1290,7 @@
        allowed to touch. */
     var readEntry = fileRead(p);
     if (readEntry) readBit(readEntry);
+    runNote(p);
     if (p) {
       var myColor = kitFor('me').primary || '#3fb883';
       var theirColor = kitFor('opp').primary || '#e2664b';
@@ -1426,7 +1465,33 @@
     var d = document.createElement('div');
     d.className = 'bit bit-read';
     d.style.setProperty('--bc', good ? '#3fb883' : '#f2c744');
-    d.innerHTML = '<i>Research IQ · ' + esc(e.grade.total) + '</i><b>' + esc(v.head) + '</b><br>' + esc(v.line);
+    /* ── THE TWO NUMBERS, SIDE BY SIDE (read_v1 × rush_v1) ──────────────
+       The whole point of grading the process apart from the result is lost
+       if the panel only ever prints one of them. It now prints both, and
+       the result in the unit the player actually watched happen — YARDS,
+       not the hundred-point score behind it — because "GOOD READ, and it
+       lost two" is the sentence this system exists to be able to say, and
+       it is a sentence the run game could not produce at all until a carry
+       was allowed to go backwards.
+
+       And when the front is what beat him, it says so: a sound call that
+       met a defender in the backfield is not a bad call, and a player who
+       is told which of the two happened learns something. */
+    var yd = e.yards | 0;
+    var got = yd === 0 ? 'no gain' : (yd > 0 ? '+' + yd : String(yd)) + (Math.abs(yd) === 1 ? ' yard' : ' yards');
+    var why = v.line;
+    var rush = e.rush || null;
+    if (good && rush && rush.stuffed) {
+      why = rush.backfield_contact
+        ? 'They were in the backfield before the handoff. The front won it, not the call.'
+        : 'The look was right. The front simply won the line.';
+    } else if (good && rush && rush.explosive) {
+      why = v.line;
+    }
+    d.innerHTML = '<i>Research IQ</i><b>' + esc(v.head) + '</b>'
+      + '<span class="bit-two"><em>Process</em><b>' + esc(e.grade.total) + '</b>'
+      + '<em>Result</em><b>' + esc(got) + '</b></span>'
+      + '<br>' + esc(why);
     fieldWrap.appendChild(d);
     setTimeout(function () { d.classList.add('out'); }, 2800);
     setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 3200);
@@ -1670,7 +1735,7 @@
     var why = '';
     var block = null;
     (p.notes || []).forEach(function (n) {
-      if (/held the point|beat the block|came free|beat /.test(n)) block = n;
+      if (/held the point|beat the block|came free|beat |blew up the pull|bounce it|broke one in the backfield/.test(n)) block = n;
     });
     if (block) why = block;
     else {
@@ -1679,12 +1744,20 @@
       if (cut > 0) why = c.slice(cut + 3);
       else if (p.notes && p.notes.length) why = p.notes[p.notes.length - 1];
     }
+    /* ── A STOPPED RUN IS A DEFENSIVE PLAY, AND IT SHOULD READ LIKE ONE ──
+       A run that loses a yard used to come up in the same green as one that
+       gained eight, with the same shrug of a caption. The whole point of
+       giving the front a way into the backfield is that the other side did
+       something; the card says so, once, in their colour. */
+    var rush = p.rush || null;
+    var stuffed = !!(rush && rush.stuffed && !p.completion);
     var d = document.createElement('div');
-    d.className = 'res' + (p.big ? ' res-big' : '');
+    d.className = 'res' + (p.big ? ' res-big' : '') + (stuffed ? ' res-stuff' : '');
     d.innerHTML = (who ? '<b>' + esc(who) + '</b>' : '')
       + '<span>' + esc(line) + '</span>'
       + (why ? '<i>' + esc(why.replace(/^[a-z]/, function (m) { return m.toUpperCase(); })) + '</i>' : '')
-      + (p.big ? '<em>Explosive play</em>' : '');
+      + (stuffed ? '<em>' + (rush.tfl ? 'Stuffed · ' + rush.yards + ' yards' : 'Stuffed · no gain') + '</em>'
+         : p.big ? '<em>Explosive play</em>' : '');
     fieldWrap.appendChild(d);
     setTimeout(function () { d.classList.add('out'); }, 1700);
     setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 2300);
@@ -2313,6 +2386,20 @@
       + compare([['Total yards', mine.yards, theirs.yards],
         ['Rushing', mine.rushYards, theirs.rushYards,
           mine.rushYards + ' (' + mine.ypc + ')', theirs.rushYards + ' (' + theirs.ypc + ')'],
+        /* ── WHO WON THE LINE (rush_v1) ────────────────────────────────
+           Rushing yards alone cannot tell you whether four a carry was a
+           line handing him four clean or a back taking them off people.
+           Three rows say it: how far he got before anyone touched him,
+           how far after, and how often the front simply won. Compared on
+           the stuff count INVERTED, because the side with fewer carries
+           stopped is the side that won that row. */
+        ['Before contact', mine.rushYBC, theirs.rushYBC,
+          mine.rushYBC + ' (' + mine.ybcPerCarry + ')', theirs.rushYBC + ' (' + theirs.ybcPerCarry + ')'],
+        ['After contact', mine.rushYAC, theirs.rushYAC,
+          mine.rushYAC + ' (' + mine.yacPerCarry + ')', theirs.rushYAC + ' (' + theirs.yacPerCarry + ')'],
+        ['Runs stopped', theirs.stuffedRuns, mine.stuffedRuns,
+          mine.stuffedRuns + ' (' + mine.stuffRate + '%)', theirs.stuffedRuns + ' (' + theirs.stuffRate + '%)'],
+        ['Tackles for loss', mine.tacklesForLoss, theirs.tacklesForLoss],
         ['Passing', mine.passYards, theirs.passYards,
           mine.comp + '/' + mine.att + ' · ' + mine.passYards,
           theirs.comp + '/' + theirs.att + ' · ' + theirs.passYards],
@@ -2858,6 +2945,7 @@
   function startPlaying() {
     milestoned = {};
     READS = []; pendingRead = null; readSaid = 0;
+    RUN = { stuffs: 0, runs: 0, saved: 0, broke: 0, said: {} };
     pre.hidden = true; gd.hidden = false;
     makeStage();
     syncTools(); paintScore(); say('');

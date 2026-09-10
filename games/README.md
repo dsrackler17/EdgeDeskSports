@@ -3413,11 +3413,149 @@ dies at the snap dies the same way for both men. Buying a realistic stuff rate
 with the promise that the man on the card matters is the wrong trade in a card
 game.
 
-So the engine is unchanged. The number is calibrated and in band on a large
-sample; the distribution is a measured, documented defect with a named
-mechanism, and fixing it properly means making a great back able to beat a
-lineman who won at the snap — a change to contact in the backfield, not to the
-blocking clock, and a pass of its own.
+So the engine was left unchanged at the time. The number was calibrated and in
+band on a large sample; the distribution was a measured, documented defect with
+a named mechanism, and fixing it properly meant making a great back able to beat
+a lineman who won at the snap — a change to contact in the backfield, not to the
+blocking clock, and a pass of its own. That pass is next.
+
+## What a carry was (`rush_v1`)
+
+The pass above closed with a named mechanism and a promise. This is the pass
+that did it, and the promise was kept in the place it was made: **the blocking
+clock is untouched**, no runner was made slower, no tackle was made easier in
+general, and no regression band was widened.
+
+**The actual cause.** It was not the blocking clock. It was that there was no
+code path that put a defender in the backfield at all. Every front-seven
+run-fit landmark sat at the line (`los + 1.1`) or at the second level
+(`los + 3.4`). Across eight real defensive calls at forty inside zones each, the
+count of defenders behind the line at the mesh was **0.00 on every one of the
+eight**, and the stuff rate stayed at zero while yards per carry swung from 2.58
+to 27.90. A front cannot lose a run it is never allowed to win.
+
+**What was built.** Five things, in the order they matter:
+
+1. **Gap penetration.** A front-seven defender in a run fit may now decide,
+   before the snap, to shoot his gap instead of reading it. His chance is the
+   matchup — his hands against the line's run blocking — plus the call's own
+   aggression and whether there is a puller to chase. He aims at a point
+   *behind* the line, reacts at 30% of the usual delay because a man who
+   decided pre-snap is not reading, and slips the first block for a few tenths
+   of a second. At most three per play, fewer on a passive call.
+2. **Backfield contact as its own state.** A defender who reaches the carrier
+   behind the line no longer goes through the ordinary tackle. He goes through
+   `backfieldContact`, which resolves the collision as **one of five things**:
+   a clean **stuff**, a **wrap** that drags him down over a fifth of a second,
+   a **glance** that slows him, a **deflection** that redirects him off his
+   path, or a **broken tackle**. The defender's control of the collision is set
+   against the back's answer to it, so an elite back does not simply gain more
+   yards here — he converts a stuff into a deflection and a deflection into an
+   escape, which is a different play rather than a longer one.
+3. **Guessing wrong costs.** A penetrator who shot the gap the ball did not come
+   through is *behind* it. He stops, turns his hips and chases from depth. Left
+   out, this quietly deleted the run game's ceiling: the longest run in a 200-
+   carry sample fell from 22 yards to 10.
+4. **Concept-specific failure and the runner's answer.** Inside zone dies to
+   interior penetration and is rescued by a cutback; outside zone dies to an
+   edge that is set and is rescued by planting and cutting back inside; a gap
+   scheme dies when the puller's lane is blown up and is rescued by bouncing
+   it. Vision (`VIS`, from elusiveness and hands) decides how well the back
+   reads the crease — a low-vision back's read is noisy, a high-vision back's
+   is not — and it never overrides the thumbs.
+5. **Falling forward.** A tackle is not a freeze frame: the two bodies keep
+   moving in the direction of whoever brought more momentum, and the ball is
+   spotted when the pile stops. Written first as a nudge to the spot at the
+   whistle, this was a **teleport** — the motion QA caught the back jumping 1.2
+   yards between two frames — so the pile resolves on its own clock instead,
+   decelerating over about a quarter of a second while the camera follows it.
+
+**The result, measured.** 300 played games each side of the change, whole games
+with the real AI calling both sides, roughly 8,500 carries per sample:
+
+| | before | after | roughly real football |
+| --- | --- | --- | --- |
+| yards per carry | 5.00 | 4.20 | ~4.3 |
+| **lost yardage** | **0.2%** | **4.7%** | ~10% |
+| no gain | 3.6% | 4.0% | ~6% |
+| **stopped at or behind the line** | **3.8%** | **8.7%** | ~18% |
+| 20 yards or more | 2.6% | 1.8% | ~2% |
+| 40 yards or more | 1.8% | 0.6% | ~0.5% |
+| p5 / p10 / p50 / p90 / p95 | 1 / 1 / 3 / 8 / 10 | 0 / 1 / 4 / 7 / 8 | — |
+| yards before contact | 4.32 | 3.02 | ~2.8 |
+| yards after contact | 0.69 | 1.18 | ~1.6 |
+| first contact behind the line | 0.4% | 10.0% | — |
+| a free defender at the mesh | 0.0% | 24.6% | — |
+| tackles broken a carry | 0.10 | 0.24 | — |
+| men who got a hand on him | 1.06 | 1.56 | — |
+
+Two thirds of the runs that cleared twenty used to go forty or more; it is
+**a third** now. The left tail is real and it is not free: **a run play in this game
+now has a downside**, which is what makes calling one a decision.
+
+**What the front actually does when it gets there**, over three thousand played
+carries — this is the chain the whole pass exists to produce:
+
+| first contact | carries | ypc | lost yardage | stopped |
+| --- | --- | --- | --- | --- |
+| behind the line | 380 | 0.90 | 43.7% | 58.2% |
+| at the line (0–1) | 572 | 1.98 | 0.9% | 17.8% |
+| past the line (1–3) | 868 | 2.54 | 0% | 0% |
+| at the second level (3+) | 1,877 | 6.19 | 0% | 0% |
+| never contacted | 74 | 3.64 | 0% | 0% |
+
+And the five answers separate cleanly. Where the FIRST backfield contact was a:
+
+| | carries | ypc | lost yardage | stopped |
+| --- | --- | --- | --- | --- |
+| clean **stuff** | 216 | −0.85 | 52.8% | 97.7% |
+| **wrap** | 127 | 0.21 | 23.6% | 62.2% |
+| **glance** | 27 | 3.81 | 7.4% | 7.4% |
+| **deflection** | 170 | 3.98 | 7.6% | 8.8% |
+| **broken tackle** | 122 | 3.19 | 9.8% | 13.1% |
+
+Note the bottom three against the 4.20 overall. Beating a man in the backfield
+is worth about **three and a half yards more than not beating him** — and it is
+still short of the average carry, because he started at minus two and had to win
+that back first. That is the shape of a hole you climbed out of, and the suite
+asserts it in exactly that form: an escape must beat *the carries where the same
+hit was not escaped*, not the sample average, which is a bar that would have
+been claiming penetration costs the offence nothing.
+
+**What is still open, honestly.** The stuff rate is 8.7% against real football's
+roughly 18%, and 10-yard runs are 3.1% against roughly 11%. Both are the same
+underlying fact: **half of all carries are still first contacted at the second
+level or beyond**, so the front seven is fully displaced on half of the run
+game. Three fixes for that were built and measured and none of them shipped —
+a linebacker triggering downhill on his read took yards per carry from 4.61 to
+6.08 because committed early he cannot redirect; holding the last-man safety out
+of the run put power runs at 8.04; a delayed deep-safety read put them at 6.03.
+Every one is recorded in the code beside the line it would have changed.
+
+**Where it shows up.** Six columns now reach a career sheet — yards before
+contact, yards after contact, tackles broken, carries stopped, carries of twenty
+or more, and (for a defender) runs stopped — bounded exactly like the eighteen
+that came before them, and a carrier's `stuffed` is deliberately a different key
+from a defender's `stuff` so a season total can never add them together. The
+final box compares the two sides on before-contact, after-contact and runs
+stopped. A back's card carries `BTK` and `VIS`, which are what the live engine
+actually reads when a defender arrives in the backfield, plus his earned YAC,
+explosive and stuff rates once he has twelve carries behind them. The Research
+IQ panel prints **process and result side by side** — *GOOD READ · PROCESS 91 ·
+RESULT −2 yards* — which is a sentence the run game could not produce at all
+until a carry was allowed to go backwards.
+
+**What holds it.** `tools/games/rushing.test.js` is 37 assertions over 756
+scripted carries with the backs, lines and fronts set by hand across low,
+average and elite bands: that a run loses yardage often enough to be a risk,
+that the no-gain happens, that short gains are still the biggest bucket, that
+all five contact answers occur, that an elite front beats a poor line and an
+elite line protects, that the back on the card changes *which answer he gets*,
+and that yards before and after contact add up to the yards he gained. The
+motion QA walks 258,000 frames of 899 live plays looking for teleporting,
+snapping backward, chatter that never settles, collision loops, a carrier
+tackled twice, two whistles, and a ball spotted somewhere the carrier was not —
+clean on all eight. The 10,000-game gate passes with zero violations.
 
 ## One door, once (`resume_v1`)
 

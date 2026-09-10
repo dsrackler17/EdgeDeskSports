@@ -2960,6 +2960,69 @@ fresh();
     has(PACKS, ".vs-art-primetime{", 'and Primetime');
   })();
 
+  /* ═══ 25. WHAT A CARRY WAS ══════════════════════════════════════════════
+     The engine measures where the first defender arrived and what the runner
+     did after that. Until this phase those numbers reached the end of the
+     play and stopped: a career sheet could say 214 carries for 940 yards and
+     nothing about whether the line handed him four clean or he took them
+     himself. Six columns, bounded exactly like the eighteen before them. */
+  chk('the report grew to forty-six rows', /select 46, 'what a carry was/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 25, 'what a carry was: yards before and after contact, breaks and stuffs'\)/.test(SQL));
+  has(SQL, "'version', 'rush_v1'", 'the SQL carries the version');
+  chk('the six new columns reach a career',
+    ['ybc', 'yac', 'brk', 'stuffed', 'expl', 'stuff'].every(k =>
+      new RegExp("allowed text\\[\\][^;]*'" + k + "'").test(SQL)),
+    'allowed list');
+  chk('and the eighteen that were already there still do',
+    ['games', 'att', 'cmp', 'yds', 'td', 'int', 'car', 'rush_yds', 'rush_td', 'rec', 'rec_yds',
+     'rec_td', 'tkl', 'sacks', 'tfl', 'pd', 'fg', 'fga', 'xp'].every(k =>
+      new RegExp("allowed text\\[\\][^;]*'" + k + "'").test(SQL)));
+  chk('a line is still bounded, so a widened list cannot smuggle a season in',
+    /v_val between 0 and 999/.test(SQL));
+  chk('a carrier is stuffed and a defender makes a stuff, and the two never sum together',
+    /'carrier', jsonb_build_array\('ybc', 'yac', 'brk', 'stuffed', 'expl'\)/.test(SQL)
+    && /'defender', jsonb_build_array\('tfl', 'stuff'\)/.test(SQL));
+
+  /* the client writes the same columns the door accepts */
+  (() => {
+    const rb = F.liveLine('RB', { car: 18, ry: 74, rtd: 1, ybc: 41, yac: 33, brk: 5, stuffed: 3, expl: 1, played: true });
+    chk('a back\'s line carries what the run actually was',
+      rb && rb.car === 18 && rb.ybc === 41 && rb.yac === 33 && rb.brk === 5 && rb.stuffed === 3 && rb.expl === 1,
+      JSON.stringify(rb));
+    chk('and before and after contact still add up to the yards he gained',
+      rb && rb.ybc + rb.yac === rb.yds, JSON.stringify(rb));
+    const dl = F.liveLine('DL', { tkl: 6, sack: 1, tfl: 2, stuff: 3, played: true });
+    chk('a lineman\'s line carries the runs he stopped', dl && dl.stuff === 3 && dl.tfl === 2, JSON.stringify(dl));
+    chk('a defender is never given a carrier\'s columns', dl && dl.ybc == null && dl.stuffed == null);
+    const none = F.liveLine('RB', { car: 4, ry: 9, played: true });
+    chk('and a carry with nothing measured writes nothing rather than a zero',
+      none && none.ybc == null && none.brk == null, JSON.stringify(none));
+  })();
+
+  /* what the card says about it */
+  (() => {
+    const elite = F.runProfile({ position: 'RB', ratings: { spd: 94, elu: 95, pwr: 90, hnd: 88 }, overall: 92,
+      live_stats: { games: 4, car: 52, yds: 246, yac: 71, expl: 3, stuffed: 6, brk: 11 } });
+    const poor = F.runProfile({ position: 'RB', ratings: { spd: 62, elu: 56, pwr: 58, hnd: 60 }, overall: 60,
+      live_stats: { games: 4, car: 52, yds: 140, yac: 18, expl: 0, stuffed: 14, brk: 2 } });
+    chk('a card says what it breaks tackles and sees with',
+      elite && elite.traits.length === 2 && elite.traits[0].key === 'btk' && elite.traits[1].key === 'vis',
+      JSON.stringify(elite && elite.traits));
+    chk('and the elite back reads higher in both than the poor one',
+      elite && poor && elite.traits[0].value > poor.traits[0].value && elite.traits[1].value > poor.traits[1].value,
+      JSON.stringify([elite && elite.traits.map(t => t.value), poor && poor.traits.map(t => t.value)]));
+    chk('the earned rates are the ones the run game now measures',
+      elite && elite.rates.map(r => r.key).join(',') === 'yac,expl,stuffed,brk',
+      JSON.stringify(elite && elite.rates.map(r => r.key)));
+    chk('yards after contact a carry is the live line divided by the carries',
+      elite && elite.rates[0].value === Math.round(10 * 71 / 52) / 10, JSON.stringify(elite && elite.rates[0]));
+    chk('a card with too few carries shows what it is instead of a rate nobody can trust',
+      (() => { const few = F.runProfile({ position: 'RB', ratings: { spd: 80, elu: 80, pwr: 80, hnd: 80 }, live_stats: { car: 4 } });
+        return few && few.traits.length === 2 && few.rates.length === 0 && !few.enough; })());
+    chk('and a lineman has no run profile at all', F.runProfile({ position: 'OL', ratings: { rbk: 80 } }) === null);
+  })();
+
   /* ═══ 24. ONE DOOR, ONCE ════════════════════════════════════════════════ */
   chk('the report grew to forty-five rows', /select 45, 'one door, once/.test(SQL));
   chk('the schema log records the phase',
@@ -3042,7 +3105,11 @@ fresh();
   chk('the report grew to forty-three rows', /select 43, 'the card is not the man/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 22, 'the card is not the man: identity, edition, instance, ownership'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 24);
+  /* pinned to an exact 24 until Phase 25, which every later phase would
+     break for no reason: what this row is actually for is that the client
+     knows the phase EXISTS, which is the form the row below it already uses */
+  chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 22,
+    'client is at ' + F.SCHEMA.franchise);
   eq('the cards are versioned', F.CARDS_VERSION, 'cards_v1');
   has(SQL, "'version', 'cards_v1'", 'and the SQL carries the same version');
   has(README, 'cards_v1', 'the README documents the separation');

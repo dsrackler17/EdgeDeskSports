@@ -78,7 +78,8 @@
       'the game you hold counts: live results, careers, and the Game Day pack',
       'the card is not the man: identity, edition, instance, ownership',
       'the living season: rankings, award races, the title game',
-      'one door, once: operation keys and the answer to did it happen'
+      'one door, once: operation keys and the answer to did it happen',
+      'what a carry was: yards before and after contact, breaks and stuffs'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -147,14 +148,26 @@
     m = m || {};
     var o = {};
     function put(k, v) { v = Math.max(0, v | 0); if (v > 0) o[k] = v; }
+    /* ── WHAT A CARRY WAS, not only how far it went (rush_v1) ───────────
+       Yards before contact, yards after it, tackles broken, carries the
+       front stopped and carries that went twenty. Whole numbers only,
+       because a career sheet sums them across a hundred games and the
+       server will not take a fraction. A back who gains four a carry with
+       three of them after contact is a different card from one who gains
+       four untouched, and until now nothing in the game could say so. */
+    function carried(m) {
+      put('ybc', Math.round(m.ybc || 0)); put('yac', Math.round(m.yac || 0));
+      put('brk', m.brk); put('stuffed', m.stuffed); put('expl', m.expl);
+    }
     switch (pos) {
       case 'QB': put('att', m.pa); put('cmp', m.pc); put('yds', m.py); put('td', m.ptd); put('int', m.pint);
-                 put('car', m.car); put('rush_yds', m.ry); put('rush_td', m.rtd); break;
-      case 'RB': put('car', m.car); put('yds', m.ry); put('td', m.rtd); put('rec', m.rec); put('rec_yds', m.recy); put('rec_td', m.rectd); break;
-      case 'WR': case 'TE': put('rec', m.rec); put('yds', m.recy); put('td', m.rectd); put('car', m.car); put('rush_yds', m.ry); break;
+                 put('car', m.car); put('rush_yds', m.ry); put('rush_td', m.rtd); carried(m); break;
+      case 'RB': put('car', m.car); put('yds', m.ry); put('td', m.rtd); put('rec', m.rec); put('rec_yds', m.recy); put('rec_td', m.rectd); carried(m); break;
+      case 'WR': case 'TE': put('rec', m.rec); put('yds', m.recy); put('td', m.rectd); put('car', m.car); put('rush_yds', m.ry); carried(m); break;
       case 'K': put('fg', m.fg); put('fga', m.fga); put('xp', m.xp); break;
       case 'P': case 'OL': break;
-      default: put('tkl', m.tkl); put('sacks', m.sack); put('int', m.int); put('tfl', m.tfl); put('pd', m.pd); break;
+      default: put('tkl', m.tkl); put('sacks', m.sack); put('int', m.int); put('tfl', m.tfl); put('pd', m.pd);
+               put('stuff', m.stuff); break;
     }
     if (!Object.keys(o).length && !m.played) return null;
     o.games = 1;
@@ -532,6 +545,52 @@
     return (PR.SPECIFIC[p.position] || []).map(function (k) { return { key: k, label: PR.LABELS[k], name: PR.NAMES[k], value: pf[k] }; });
   }
 
+  /* ── WHAT THE CARD DOES IN THE RUN GAME (rush_v1) ────────────────────
+     Two halves, and they answer different questions.
+
+     WHAT HE IS: break tackle and vision are not printed on the card — they
+     are derived from the ratings that are (BTK from power and elusiveness,
+     VIS from elusiveness and hands) and they are precisely the two numbers
+     the live engine reads when a defender arrives in the backfield. A pack
+     that hands you a 95 ELU back has handed you a man who gets out of
+     contact he had no business getting out of, and until now nothing on the
+     card said so.
+
+     WHAT HE HAS DONE: yards after contact a carry, the share of his carries
+     the front stopped, and the share that went twenty — earned in the games
+     you played him in, never in the simulated season, and shown only once
+     there are enough carries for the rate to mean anything. */
+  var RUN_MIN_CAR = 12;
+  function runProfile(p) {
+    if (!p || !CARRIES[p.position]) return null;
+    var pf = profileOf(p), c = (p && p.live_stats) || {};
+    var car = +c.car || 0;
+    var traits = [], rates = [];
+    if (pf && PR) {
+      ['btk', 'vis'].forEach(function (k) {
+        if (pf[k] == null) return;
+        traits.push({ key: k, label: PR.LABELS[k], name: PR.NAMES[k], value: pf[k] | 0, word: gradeWord(pf[k]) });
+      });
+    }
+    if (car >= RUN_MIN_CAR) {
+      rates.push({ key: 'yac', label: 'YAC', name: 'Yards after contact, a carry',
+        value: Math.round(10 * (+c.yac || 0) / car) / 10, unit: '' });
+      rates.push({ key: 'expl', label: 'EXPL', name: 'Carries of twenty yards or more',
+        value: Math.round(1000 * (+c.expl || 0) / car) / 10, unit: '%' });
+      rates.push({ key: 'stuffed', label: 'STUFF', name: 'Carries the front stopped at or behind the line',
+        value: Math.round(1000 * (+c.stuffed || 0) / car) / 10, unit: '%' });
+      if (+c.brk) rates.push({ key: 'brk', label: 'BRK', name: 'Tackles broken, a carry',
+        value: Math.round(100 * (+c.brk || 0) / car) / 100, unit: '' });
+    }
+    if (!traits.length && !rates.length) return null;
+    return { traits: traits, rates: rates, carries: car, enough: car >= RUN_MIN_CAR, min: RUN_MIN_CAR };
+  }
+  var CARRIES = { RB: true, QB: true, WR: true, TE: true };
+  function gradeWord(v) {
+    v = v | 0;
+    return v >= 92 ? 'Elite' : v >= 84 ? 'Strong' : v >= 74 ? 'Solid' : v >= 62 ? 'Fair' : 'Poor';
+  }
+
   function playerCard(p, o) {
     o = o || {};
     if (!p) return '';
@@ -560,6 +619,19 @@
       + '<div class="pc-ovr"><b class="mono">' + (p.overall | 0) + '</b><span>OVR</span></div>'
       + '<div class="pc-attrs">' + attrs + '</div>'
       + (uni ? '<div class="pc-uni">' + uni + '</div>' : '')
+      + (function () {
+          var rp = runProfile(p);
+          if (!rp) return '';
+          return '<div class="pc-run">'
+            + rp.traits.map(function (a) {
+                return '<span class="pc-r" title="' + esc(a.name) + '"><i>' + esc(a.label) + '</i><b>' + a.value + '</b><em>' + esc(a.word) + '</em></span>';
+              }).join('')
+            + rp.rates.map(function (a) {
+                return '<span class="pc-r pc-r-earned" title="' + esc(a.name) + '"><i>' + esc(a.label) + '</i><b>' + a.value + esc(a.unit) + '</b></span>';
+              }).join('')
+            + (rp.enough ? '' : '<span class="pc-r pc-r-wait">' + rp.carries + ' of ' + rp.min + ' carries</span>')
+            + '</div>';
+        })()
       + (tr ? '<div class="pc-trait"><span class="k">Trait</span><b>' + esc(tr.name) + '</b><span class="d">' + esc(tr.desc || '') + '</span></div>'
             : '<div class="pc-trait none"><span class="k">Trait</span><span class="d">None yet</span></div>')
       + '<div class="pc-meta">Age ' + (p.age | 0) + ' <span class="sep">·</span> POT ' + (p.potential | 0)
@@ -2520,6 +2592,7 @@
     LOGOS: LOGOS, THEMES: THEMES, OFFENSES: OFFENSES, DEFENSES: DEFENSES, optionOf: optionOf,
     POSITIONS: POSITIONS, POSITION_NAMES: POSITION_NAMES, STARTERS: STARTERS, SIDE: SIDE,
     ATTR_ORDER: ATTR_ORDER, ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, RARITY: RARITY, DEV_TIERS: DEV_TIERS,
+    runProfile: runProfile,
     ACHIEVEMENTS: ACHIEVEMENTS, achievementName: achievementName,
     RATING_WEIGHTS: RATING_WEIGHTS, PREP_VERSION: PREP_VERSION,
     SIM_VERSION: SIM_VERSION, HOME_EDGE: HOME_EDGE, PREP_SWING: PREP_SWING, SCHEME_EDGES: SCHEME_EDGES,

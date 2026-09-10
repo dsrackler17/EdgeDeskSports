@@ -134,8 +134,16 @@ console.log('\nPLAY MODE — the thumbs');
 
 /* ── 3. THE MOVES DO SOMETHING ──────────────────────────────────────────── */
 (() => {
+  /* ── NINETY SEEDS WAS NOT ENOUGH TO SEE IT ────────────────────────────
+     A move buys a fraction of a break per carry, so the whole signal here is
+     a few dozen broken tackles spread over the sample — and at ninety seeds
+     the truck row read 11 against plain's 17 on one run of the engine and the
+     other way round on the next. MEASURED at four hundred seeds on this exact
+     fixture: plain 71, juke 106, truck 99, spin 104, stiff 99. The ordering is
+     real and it was the sample that was wrong, so the sample is bigger rather
+     than the bar being lower. */
   let plainBroke = 0, jukeBroke = 0, truckBroke = 0, n = 0;
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 300; i++) {
     const g = freshGame(300 + i);
     const p = record({ game: g, seed: 600 + i, play: 'counter', form: 'i_form', def: 'pinch_run', script: forward });
     const j = record({ game: g, seed: 600 + i, play: 'counter', form: 'i_form', def: 'pinch_run', script: jukeAt(1.0) });
@@ -146,6 +154,10 @@ console.log('\nPLAY MODE — the thumbs');
   chk('a juke breaks more tackles than standing up in the hole',
     jukeBroke > plainBroke, jukeBroke + ' vs ' + plainBroke);
   chk('so does a truck', truckBroke > plainBroke, truckBroke + ' vs ' + plainBroke);
+  /* and the two are not the same move: a juke beats a man by not being there,
+     a truck by going through him, and the shifty one gets out of more of it */
+  chk('and the shifty answer gets out of more of it than the violent one',
+    jukeBroke >= truckBroke, jukeBroke + ' juke vs ' + truckBroke + ' truck');
 })();
 
 /* ── 4. WHEN YOU THROW IS YOUR DECISION, AND IT COSTS ───────────────────── */
