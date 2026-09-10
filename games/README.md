@@ -3348,6 +3348,77 @@ and every pin in the live harness is untouched: the stick still changes the
 run, power still pays, the tiers still differ in the head. The 800-game check
 is green again.
 
+## The rushing model, measured
+
+The regression band on live yards per carry is 3.0 to 5.6, and a reading of
+**5.53** once put the game a hundredth of a yard from failing it. That reading
+came from the Play Mode block inside the simulation suite, which plays a few
+dozen games — at that size the statistic swings by several tenths between runs.
+
+Measured properly, with the suite's own teams, scheme rotation and counters at
+**400 games**:
+
+| | value |
+| --- | --- |
+| yards per carry | 5.11 |
+| headroom to the ceiling | 0.49 |
+| points per team | 19.3 |
+| yards per play | 5.21 |
+| run share | 45.9% |
+
+The number is inside the 5.0–5.3 target and is not near the ceiling. Nothing
+was changed to make that true and the band was not touched.
+
+**What the distribution says instead.** A separate probe records every carry in
+a live sample — 8,719 of them over 300 games — and it found a real defect that
+the average hides:
+
+| | this game | roughly real football |
+| --- | --- | --- |
+| stopped at or behind the line | 4.1% | ~18% |
+| 10 yards or more | 5.7% | ~11% |
+| 20 yards or more | 2.3% | ~3% |
+| 40 yards or more | 1.49% | ~0.5% |
+| median | 3 | 3–4 |
+| p10 / p25 / p75 / p90 | 1 / 2 / 6 / 8 | — |
+
+Two thirds of the runs that clear twenty yards go forty or more, and almost
+nothing loses yardage. **A run play in this game has very little downside**,
+which is a decision with no cost.
+
+**Where it comes from, and why it is still here.** The cause is in the blocking
+clock: the shortest run block the engine can draw is 0.7 seconds, and the ball
+is not in the back's hands until 0.6 — so the worst rep in the game still
+outlasts the handoff and no defensive lineman is ever in the backfield when the
+ball arrives. Making one is a first-step win, not a rep that slowly runs out.
+
+Four changes were built and measured against that: a first-step loss on the run
+block whose chance is the matchup, a wider block draw, a deeper pursuit lead for
+the last man, and a smaller false step at the second level. Every one of them is
+recorded here because none of them shipped:
+
+| change | stuffed | yards per carry (gate) | cost |
+| --- | --- | --- | --- |
+| baseline | 4.1% | 5.11 | — |
+| first-step loss at 0.30 | 7.3% | 4.74 | below the target band |
+| first-step loss at 0.20 | ~7% | 4.69 | below the target band |
+| every run block at 0.20s | 39.6% | 1.25 | unplayable |
+| deeper pursuit lead | no change to the 40-yard tail | −0.2 | no benefit |
+
+And the cost is not only the average. The suite holds two properties that say a
+card changes what happens: a 96 power-and-feet back gains **1.07 yards** more
+than a 42 on the same inside zone, and finishes a truck **1.27 yards** further.
+The first-step loss cuts those margins to 0.22 and 0.13, because a play that
+dies at the snap dies the same way for both men. Buying a realistic stuff rate
+with the promise that the man on the card matters is the wrong trade in a card
+game.
+
+So the engine is unchanged. The number is calibrated and in band on a large
+sample; the distribution is a measured, documented defect with a named
+mechanism, and fixing it properly means making a great back able to beat a
+lineman who won at the snap — a change to contact in the backfield, not to the
+blocking clock, and a pass of its own.
+
 ## One door, once (`resume_v1`)
 
 Everything that hands out value now goes through a door that can be knocked

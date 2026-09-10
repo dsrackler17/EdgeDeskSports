@@ -893,13 +893,7 @@
          across his own face, and every run that cleared the second level
          went to the house — the long runs in this game averaged fifty yards
          because nobody was ever in front of the ball again. */
-      /* MEASURED: two carries in a hundred cleared twenty yards, and two
-         THIRDS of those went forty or more — once a back was past the second
-         level nobody in the picture ever caught him, because the lead was
-         capped before the angle a deep safety actually needs. A twenty-yard
-         run should be common and a forty-yard run should be rare; capped
-         here, the two were nearly the same event. */
-      var lead = clamp(gap / Math.max(3, a.top), 0, 4.6) * (0.35 + a.k.iq * 0.75);
+      var lead = clamp(gap / Math.max(3, a.top), 0, 3.2) * (0.35 + a.k.iq * 0.75);
       /* ── HE TAKES THE ANGLE HE READS, NOT THE ONE THAT IS THERE ────────
          Every defender was solving the intercept exactly, every frame, for
          the whole snap. Eleven men who never take a false step are not a
@@ -909,7 +903,7 @@
          slow linebacker to the edge is this number. */
       if (a.missAt == null || t > a.missAt) {
         a.missAt = t + 0.45;
-        a.miss = (rand() - 0.5) * 2 * (1 - a.k.iq * 0.72) * 0.66 * dull;
+        a.miss = (rand() - 0.5) * 2 * (1 - a.k.iq * 0.72) * 0.85 * dull;
       }
       /* AND IT ONLY COSTS HIM UP CLOSE. A false step at the point of attack
          is the play; the same step with fifteen yards to work in is one he
@@ -1545,41 +1539,8 @@
                when it mattered, and every carry met a shed lineman at the
                line. Hold the point for about two seconds and the crease is a
                real thing that blocking ratings open and widen. */
-            /* ── AND A RUN BLOCK HAS TO BE ABLE TO LOSE ─────────────────
-               MEASURED OVER 8,719 LIVE CARRIES: four per cent were stopped
-               at or behind the line. Real football stuffs about one run in
-               five. The reason was here — a floor of seven tenths of a
-               second meant the WORST rep in the game still outlasted the
-               handoff, so no defensive lineman was ever in the backfield
-               when the ball got there and a run could not lose before it
-               started. A run play with no downside is not a decision.
-
-               So the draw is wider and it starts lower: a beaten lineman is
-               shed a third of a second in, which is penetration, and the
-               rating spread is worth half again as much as it was, so a
-               front that can block still holds the point. */
-            /* ── AND A RUN BLOCK HAS TO BE ABLE TO LOSE AT THE SNAP ─────
-               MEASURED OVER 8,719 LIVE CARRIES: four per cent of runs were
-               stopped at or behind the line. Real football stuffs about one
-               in five, and the difference was not the tackling — it was that
-               NOBODY WAS EVER IN THE BACKFIELD. Every rep in the game
-               outlasted the handoff, so a defensive lineman could only ever
-               arrive late and downhill of the ball. A run with no downside
-               is not a decision, and a front seven that cannot win at the
-               snap is scenery.
-
-               A tackle for loss is a FIRST-STEP WIN, not a rep that slowly
-               ran out. So each run block is one of two things: the lineman
-               is beaten off the ball and the man is through in a third of a
-               second, or he holds the point for about two. How often it is
-               the first is the matchup and nothing else — a front that can
-               block is beaten at the snap one time in twenty, a bad one
-               closer to two in five. */
-            var quick = clamp(0.30 - runEdge * 1.10, 0.05, 0.42);
             b.rep = play.type === 'run'
-              ? (rand() < quick
-                  ? clamp((0.14 + rand() * 0.42) * (0.85 + runEdge * 0.9), 0.10, 0.75)
-                  : clamp((1.70 + rand() * 1.30) * (0.84 + runEdge * 1.35), 0.55, 3.8))
+              ? clamp((1.55 + rand() * 1.15) * (0.85 + runEdge * 1.2), 0.7, 3.6)
               : clamp(env.pocket * (0.86 + rand() * 0.70) * (0.85 + edge * 1.0), 0.45, 5.6);
             /* ── BUT BLOCKING A LINEBACKER IN SPACE IS NOT BLOCKING A
                   TACKLE ON THE BALL ────────────────────────────────────
@@ -1588,12 +1549,7 @@
                the way and he buys the back a beat; he does not erase him. At
                a full-length rep the climb alone was worth nearly two yards a
                carry and the second level simply stopped existing. */
-            /* AND THE CLIMB IS WORTH A LITTLE MORE THAN IT WAS. With the
-               line able to lose at the snap, the second level is what turns a
-               four-yard carry into a fifteen-yard one; at 0.44 a lineman who
-               climbed erased himself and every crease closed at the same
-               depth. He still does not erase a linebacker — he buys a beat. */
-            if (b.climb === d.id) b.rep *= 0.58;
+            if (b.climb === d.id) b.rep *= 0.44;
             if (d.beat) b.rep *= 0.32;
             d.rep = b.rep;
           }

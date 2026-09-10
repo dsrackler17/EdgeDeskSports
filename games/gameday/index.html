@@ -976,9 +976,18 @@
     });
   }
   function showResult(game,snap,extra){
-    stage.className='card gd';
+    stage.className='card gd'+(game.championship?' gd-ttl':'');
     stage.setAttribute('style',FR.themeVars(snap.franchise.theme));
-    stage.innerHTML=resultCard(game,snap,extra)
+    /* THE TITLE GAME DOES NOT ARRIVE LOOKING LIKE A TUESDAY. The full
+       ceremony — the trophy, the man who won it, the confetti — is the
+       championship section below, drawn from the server's own package; this
+       is the line that tells you which game you just played. */
+    stage.innerHTML=(game.championship
+      ?'<div class="ttl-whistle'+(game.result==='W'?' won':'')+'">'
+        +'<div class="k">'+esc(game.bowl_name||'The EdgeDesk Championship')+'</div>'
+        +'<div class="t">'+(game.result==='W'?'CHAMPIONS':'IT ENDS HERE')+'</div></div>'
+      :'')
+      +resultCard(game,snap,extra)
       +(extra.complete?'<div class="gd-done" style="margin-top:14px"><div class="t">'+esc((extra.season||{}).label||'The season')+' is complete: '+esc(((extra.season||{}).wins|0)+'–'+((extra.season||{}).losses|0))+'.</div>'
         +'<div class="s">The next one starts whenever you say. The careers and the record stay.</div>'
         +'<div class="btn-row"><button class="btn btn-go" type="button" id="startBtn">Start the next season</button></div></div>':'')

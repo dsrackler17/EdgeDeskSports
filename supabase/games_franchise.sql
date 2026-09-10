@@ -12934,6 +12934,23 @@ grant execute on function public.franchise_pack_pending(text) to anon, authentic
 select public.games_schema_note('franchise', 24, 'one door, once: operation keys and the answer to did it happen');
 commit;
 
+-- THE NINTH GAME SAYS WHICH KIND IT IS (season_v1). Every page that draws a
+-- game reads this function, and a title game must not arrive looking like a
+-- Tuesday. Re-created here because franchise_games.championship is added in
+-- Phase 23, well after the original.
+create or replace function public.franchise_game_json(p_game uuid, p_full boolean default true)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('id', g.id, 'season_number', g.season_number, 'week', g.week, 'week_key', g.week_key,
+      'opens_at', g.opens_at, 'open', g.opens_at <= now(), 'opponent', g.opponent, 'home', g.home, 'rival', g.rival,
+      'bowl', g.bowl, 'bowl_name', g.opponent->>'bowl_name', 'championship', g.championship,
+      'status', g.status, 'played_at', g.played_at, 'score_for', g.score_for, 'score_against', g.score_against,
+      'result', g.result, 'ot', coalesce((g.box->>'ot')::boolean, false), 'potg', g.box->'potg',
+      'prep', g.box->'edges'->'prep', 'sim_version', g.sim_version,
+      'injuries', coalesce(g.box->'injuries', '[]'::jsonb),
+      'box', case when p_full then g.box else null end)
+  from public.franchise_games g where g.id = p_game;
+$$;
+
 -- THE REPORT. Every row should say ok.
 -- ===========================================================================
 select 1 as row, 'franchise tables exist' as what,

@@ -1155,11 +1155,21 @@ begin
              else not (v->>'season_complete')::boolean and v->'season'->>'status' = 'playoffs' end
     and (v->'season'->>'week')::int = 8, v->'season'->>'status');
   if jsonb_typeof(v->'bowl') = 'object' then
-    perform pg_temp.ok('the bowl is a ninth game a week later, against a club rated above the franchise',
+    -- SEASON_V1: the ninth game is a bowl, or — when the season lost at most
+    -- once — the title game. Which one it is follows from the record, so the
+    -- assertion follows the record too rather than assuming a simulated season.
+    perform pg_temp.ok('the ninth game is a week later, against a club rated above the franchise',
       (v->'bowl'->>'week')::int = 9 and (v->'bowl'->>'bowl')::boolean
-      and (v->'bowl'->'opponent'->>'bowl_name') like 'The % Bowl'
       and (v->'bowl'->'opponent'->>'overall')::int > (public.franchise_team_rating(fa)->>'overall')::int
       and (v->'bowl'->>'week_key') = public.games_week_key(now() + interval '56 days'), (v->'bowl')::text);
+    perform pg_temp.ok('and it is named for what the record earned: a bowl, or the title game',
+      case when (select public.franchise_championship_earned(wins, losses, weeks)
+                   from public.franchise_seasons where franchise_id = fa and number = 1)
+           then (v->'bowl'->'opponent'->>'bowl_name') = 'The EdgeDesk Championship'
+                and (v->'bowl'->>'championship')::boolean
+           else (v->'bowl'->'opponent'->>'bowl_name') like 'The % Bowl'
+                and not (v->'bowl'->>'championship')::boolean end,
+      (v->'bowl'->'opponent'->>'bowl_name'));
     select opens_at into t0 from public.franchise_games where franchise_id = fa and season_number = 1 and bowl;
     v := public.franchise_play_game(fa, t0);
     perform pg_temp.ok('and playing it completes the season, paid at the bowl''s own rate',
