@@ -3348,6 +3348,62 @@ and every pin in the live harness is untouched: the stick still changes the
 run, power still pays, the tiers still differ in the head. The 800-game check
 is green again.
 
+## The card is not the man (`cards_v1`)
+
+One table used to carry five ideas at once. `game_players` held **who a man
+is** (his name, his body, where he is from), **what his card says** (the
+edition, the rarity, the printed ratings), **who owns him** (a `franchise_id`
+column), **where he plays** (a `depth` number) and, by way of a listing
+pointing straight at him, **whether he is for sale**. The Exchange traded
+that row: a sale was an `UPDATE` of one column on the same record that also
+held his career. There was no way to hold two editions of one man, no way to
+say whose hands a card had been through, and no way to price a card apart
+from the man.
+
+These are separate things now:
+
+| table | what it is |
+| --- | --- |
+| `game_player_identities` | the persistent fictional athlete |
+| `game_card_defs` | a printed edition of that athlete |
+| `game_cards` | one instance of that edition, with its serial |
+| `game_card_ownership` | who holds that instance, right now |
+| `game_card_provenance` | every hand it has passed through |
+| `game_lineup_slots` | where an owned card is playing |
+| `franchise_listings` | a temporary offer of an owned card |
+| `game_market_txns` | a completed transfer, with money |
+| `game_market_prices` | what editions like it have sold for |
+
+`game_players` keeps what is genuinely its own: **the career sheet** — the
+stats, the development, the injuries and the ratings as they have moved
+since the card was printed. Its `franchise_id` and `depth` columns survive
+only as a **read projection** for code that has not been rewritten, and the
+database refuses to let anything write them behind the new tables' back:
+ownership moves through `franchise_card_transfer()` or it does not move, and
+a trigger raises if a statement tries. The schema report and the acceptance
+suite both hold the projection to the ownership record.
+
+**The migration** (`franchise_cards_migrate()`) is idempotent and additive.
+Every existing row is minted an identity, an edition, an instance and an
+ownership record; the lineup is rebuilt from the chart as it stands; every
+listing is pointed at the instance; every sale already on the books becomes a
+transaction and a price. Nothing is deleted, no roster moves, no ledger
+changes, no result changes. Running it twice mints nothing.
+
+**Buying is atomic and idempotent.** A purchase carries an operation key the
+device keeps until the server answers. The listing row is locked, the seller's
+ownership is verified against `game_card_ownership` rather than a column, the
+money moves once, ownership moves through the one door, and the sale is
+written as a transaction and a price. A unique index on the listing is what
+makes a second buyer impossible rather than unlikely: two buyers racing
+produce one winner and one clean refusal. A client whose connection dropped
+asks `franchise_market_op()` with its key and is told **completed** or **not
+completed**, never maybe.
+
+**The adapter** `franchise_card_entity()` hands gameplay one flat object —
+identity, edition, ownership, lineup slot and career — assembled from the
+separate tables rather than read off one conflated row.
+
 ## The programs, and what a passed man is worth (`packs_v4`)
 
 Three more pack programs, each derived from the live games filed at Pro or

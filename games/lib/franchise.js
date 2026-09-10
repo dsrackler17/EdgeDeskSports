@@ -75,7 +75,8 @@
       'the Vault: packs you hold, odds you can read, and a card that remembers',
       'the lineup, chemistry, and the Exchange',
       'the pull record: every pack you opened and the best of them',
-      'the game you hold counts: live results, careers, and the Game Day pack'
+      'the game you hold counts: live results, careers, and the Game Day pack',
+      'the card is not the man: identity, edition, instance, ownership'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -1950,6 +1951,10 @@
   /* ── THE VAULT (packs_v2) ─────────────────────────────────────────────────
      The pack table, mirrored for display; the SQL's franchise_pack_defs() is
      what applies, and the parity test pins these names to it. */
+  /* THE CARD IS NOT THE MAN (cards_v1): the athlete, the edition, the
+     instance, who holds it and where it plays are separate things on the
+     server, and this is the version of that separation. */
+  var CARDS_VERSION = 'cards_v1';
   var PACKS_VERSION = 'packs_v4';
   var PACKS = {
     gridiron_cache:     { name: 'Gridiron Cache', art: 'cache', size: 3, keep: 1, earned: 'every rank you reach' },
@@ -2120,7 +2125,57 @@
   function exchangeList(playerId, price) { return rpc('franchise_exchange_list', withSecret({ p_player: String(playerId || ''), p_price: price | 0 })); }
   function exchangeWithdraw(listingId) { return rpc('franchise_exchange_withdraw', withSecret({ p_listing: String(listingId || '') })); }
   /* a LISTING ID and nothing else: the price and the balance are the server's */
-  function exchangeBuy(listingId) { return rpc('franchise_exchange_buy', withSecret({ p_listing: String(listingId || '') })).then(moveThen); }
+  /* ── BUYING A CARD, ONCE ─────────────────────────────────────────────────
+     A purchase carries an OPERATION KEY: a name for this attempt, made once
+     and kept on the device until the server has answered. A connection that
+     drops mid-buy is retried with the same key and the server hands back the
+     purchase it already made rather than making a second one. Nothing here
+     decides whether it worked — `marketOp` asks. */
+  var OP_N = 0;
+  function opKey(kind, ref) {
+    var k = 'ed_op:' + kind + ':' + ref, v = null;
+    try { v = localStorage.getItem(k); } catch (_) {}
+    if (!v) {
+      /* a name for this attempt, from the platform's own id source — never a
+         roll: the client decides nothing about the outcome, only what to
+         call the question it is asking */
+      var uniq = null;
+      try { uniq = root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : null; } catch (_) {}
+      if (!uniq) {
+        try {
+          var a4 = new Uint8Array(8); root.crypto.getRandomValues(a4);
+          uniq = Array.prototype.map.call(a4, function (n) { return ('0' + n.toString(16)).slice(-2); }).join('');
+        } catch (_) { uniq = Date.now().toString(36) + ':' + (OP_N++); }
+      }
+      v = kind + ':' + ref + ':' + uniq;
+      try { localStorage.setItem(k, v); } catch (_) {}
+    }
+    return v;
+  }
+  function opDone(kind, ref) { try { localStorage.removeItem('ed_op:' + kind + ':' + ref); } catch (_) {} }
+  function exchangeBuy(listingId) {
+    var id = String(listingId || ''), op = opKey('buy', id);
+    return rpc('franchise_exchange_buy', withSecret({ p_listing: id, p_op: op })).then(function (r) {
+      if (r && r.ok) opDone('buy', id);
+      return r;
+    }).then(moveThen);
+  }
+  /* WHAT HAPPENED TO THAT PURCHASE. Never "maybe": completed, or not. */
+  function marketOp(listingId) {
+    var id = String(listingId || '');
+    return rpc('franchise_market_op', withSecret({ p_op: opKey('buy', id) })).then(function (r) {
+      if (r && r.ok && r.data && r.data.state === 'completed') opDone('buy', id);
+      return r;
+    });
+  }
+  /* one card instance, whole: the athlete, the edition, who has held it and
+     where it plays — assembled by the server from the separate tables */
+  function cardEntity(cardId) { return rpc('franchise_card_entity', { p_card: String(cardId || '') }); }
+  /* how a card came to be in a pair of hands, said in words */
+  var CARD_WORDS = { founding_roster: 'Founding roster', offseason_rookie: 'Signed as a rookie', draft: 'Drafted', free_agent: 'Signed in free agency',
+                     pack: 'Kept from a pack', market: 'Bought on the Exchange', trade: 'Traded for', migration: 'Minted from the record' };
+  function cardsWord(k) { return CARD_WORDS[k] || String(k || '').replace(/_/g, ' '); }
+  function cardMarket(cardId) { return rpc('franchise_card_market', { p_card: String(cardId || '') }); }
   function exchangeComps(position, overall) { return rpc('franchise_exchange_comps', { p_position: String(position || ''), p_overall: overall | 0 }); }
   function exchangeHistory(limit) { return rpc('franchise_exchange_history', withSecret({ p_limit: limit || 20 })); }
 
@@ -2399,6 +2454,8 @@
     EXCHANGE_VERSION: EXCHANGE_VERSION, EXCHANGE: EXCHANGE, exchangeFee: exchangeFee,
     exchangeBrowse: exchangeBrowse, exchangeList: exchangeList, exchangeWithdraw: exchangeWithdraw, exchangeBuy: exchangeBuy,
     exchangeComps: exchangeComps, exchangeHistory: exchangeHistory,
+    marketOp: marketOp, cardEntity: cardEntity, cardMarket: cardMarket, opKey: opKey, opDone: opDone, cardsWord: cardsWord, CARD_WORDS: CARD_WORDS,
+    CARDS_VERSION: CARDS_VERSION,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,

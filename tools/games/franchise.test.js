@@ -2954,11 +2954,20 @@ fresh();
     has(PACKS, ".vs-art-primetime{", 'and Primetime');
   })();
 
+  /* ═══ 22. THE CARD IS NOT THE MAN ═══════════════════════════════════════ */
+  chk('the report grew to forty-three rows', /select 43, 'the card is not the man/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 22, 'the card is not the man: identity, edition, instance, ownership'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 22);
+  eq('the cards are versioned', F.CARDS_VERSION, 'cards_v1');
+  has(SQL, "'version', 'cards_v1'", 'and the SQL carries the same version');
+  has(README, 'cards_v1', 'the README documents the separation');
+
   /* ═══ 21. THE GAME YOU HOLD COUNTS ═══════════════════════════════════════ */
   chk('the report grew to forty-two rows', /select 42, 'the game you hold counts/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 21, 'the game you hold counts: live results, careers, and the Game Day pack'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 21);
+  chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 21);
   /* the economy's live lines, and the mirror's arithmetic */
   eq('a live game pays 60 XP and 25 Credits; a win 40 XP, 25 Credits and a Coach Point', [F.ECONOMY.live_game.xp, F.ECONOMY.live_game.tc, F.ECONOMY.live_win.xp, F.ECONOMY.live_win.tc, F.ECONOMY.live_win.cp].join('/'), '60/25/40/25/1');
   eq('the performance is capped: 30 Credits, 40 XP', F.ECONOMY.live_perf.tc_max + '/' + F.ECONOMY.live_perf.xp_max, '30/40');
@@ -3085,7 +3094,17 @@ fresh();
     }
   })();
   /* the buy sends a listing id and nothing else — never a price, never a balance */
-  chk('the client buys by listing id alone', /function exchangeBuy\(listingId\) \{ return rpc\('franchise_exchange_buy', withSecret\(\{ p_listing: String\(listingId \|\| ''\) \}\)\)/.test(FJS));
+  chk('the client buys by listing id and an operation key, never a price or a balance',
+    /rpc\('franchise_exchange_buy', withSecret\(\{ p_listing: id, p_op: op \}\)\)/.test(FJS)
+    && !/p_price|p_balance|p_credits/.test(FJS.slice(FJS.indexOf('function exchangeBuy('), FJS.indexOf('function marketOp('))));
+  /* THE SAME QUESTION TWICE IS ONE PURCHASE (cards_v1). A dropped connection
+     retries with the key it used, and asks the server what became of it. */
+  chk('a purchase carries an operation key the device keeps until the server answers',
+    /function opKey\(kind, ref\)/.test(FJS) && /localStorage\.setItem\(k, v\)/.test(FJS)
+    && /if \(r && r\.ok\) opDone\('buy', id\);/.test(FJS));
+  chk('and the client can ask what became of it rather than guessing',
+    /function marketOp\(listingId\)/.test(FJS) && /rpc\('franchise_market_op'/.test(FJS));
+  chk('the key comes from the platform\'s id source, not from a roll', /crypto\.randomUUID/.test(FJS) && !/Math\.random/.test(FJS));
   chk('and the SQL takes no price on a buy', /function public\.franchise_exchange_buy\(p_listing uuid, p_secret text default null\)/.test(SQL));
   chk('a listing is one man, one price, inside bounds the SQL states', /function public\.franchise_exchange_list\(p_player uuid, p_price integer, p_secret text default null\)/.test(SQL)
     && /a price is between % and % Credits/.test(SQL));

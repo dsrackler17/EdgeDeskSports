@@ -6099,10 +6099,13 @@ begin
   for pl in select * from public.game_players where id = any(t.give_ids) loop
     select coalesce(max(depth), 0) + 1 into v_depth from public.game_players
      where franchise_id = t.to_id and position = pl.position and status = 'active';
+    -- OWNERSHIP MOVES THROUGH THE ONE DOOR (cards_v1); the chart, the number
+    -- and how he arrived follow it
+    perform public.franchise_card_transfer(pl.card_id, t.to_id, 'trade', t.id::text, null);
     update public.game_players
-       set franchise_id = t.to_id, depth = v_depth,
+       set depth = v_depth,
            jersey = case when exists (select 1 from public.game_players o
-                                       where o.franchise_id = t.to_id and o.status = 'active' and o.jersey = pl.jersey)
+                                       where o.franchise_id = t.to_id and o.status = 'active' and o.jersey = pl.jersey and o.id <> pl.id)
                          then public.franchise_free_number(t.to_id, pl.position, pl.id::text) else pl.jersey end,
            -- his season and his career travel with him, untouched
            acquired_source = 'trade', acquired_season = v_real,
@@ -6112,10 +6115,11 @@ begin
   for pl in select * from public.game_players where id = any(t.get_ids) loop
     select coalesce(max(depth), 0) + 1 into v_depth from public.game_players
      where franchise_id = t.from_id and position = pl.position and status = 'active';
+    perform public.franchise_card_transfer(pl.card_id, t.from_id, 'trade', t.id::text, null);
     update public.game_players
-       set franchise_id = t.from_id, depth = v_depth,
+       set depth = v_depth,
            jersey = case when exists (select 1 from public.game_players o
-                                       where o.franchise_id = t.from_id and o.status = 'active' and o.jersey = pl.jersey)
+                                       where o.franchise_id = t.from_id and o.status = 'active' and o.jersey = pl.jersey and o.id <> pl.id)
                          then public.franchise_free_number(t.from_id, pl.position, pl.id::text) else pl.jersey end,
            acquired_source = 'trade', acquired_season = v_real,
            acquired_detail = 'From the ' || v_to_name, updated_at = now()
@@ -11252,6 +11256,666 @@ select public.games_schema_note('franchise', 21, 'the game you hold counts: live
 commit;
 
 -- ===========================================================================
+
+-- ===========================================================================
+-- PHASE 22 — THE CARD IS NOT THE MAN (cards_v1)
+--
+-- Until now one table carried five different ideas at once. `game_players`
+-- held WHO A MAN IS (his name, his body, where he is from), WHAT HIS CARD
+-- SAYS (the edition, the rarity, the printed ratings), WHO OWNS HIM (a
+-- franchise_id column), WHERE HE PLAYS (a depth number) and, by way of a
+-- listing pointing straight at him, WHETHER HE IS FOR SALE. The Exchange
+-- traded that row: a sale was an UPDATE of one column on the same record
+-- that also held his career. There is no way to hold two editions of one
+-- man, no way to say who owned a card before you, and no way to price a
+-- card apart from the man.
+--
+-- These are now separate things:
+--
+--   game_player_identities  the persistent fictional athlete
+--   game_card_defs          a printed edition of that athlete
+--   game_cards              one instance of that edition, with its serial
+--   game_card_ownership     who holds that instance, right now
+--   game_card_provenance    every hand it has passed through
+--   game_lineup_slots       where an owned card is playing
+--   franchise_listings      a temporary offer of an owned card
+--   game_market_txns        a completed transfer, with money
+--   game_market_prices      what editions like it have sold for
+--
+-- `game_players` keeps what is genuinely its own: THE CAREER SHEET. The
+-- stats, the development, the injuries and the ratings as they have moved
+-- since the card was printed. Its franchise_id and depth columns survive
+-- only as a READ PROJECTION for code that has not been rewritten yet, and
+-- the database refuses to let anything write them behind the new tables'
+-- back: ownership moves through franchise_card_transfer() or it does not
+-- move. The parity test holds the projection to the source.
+--
+-- MIGRATION. Idempotent and additive. Every existing row is minted an
+-- identity, an edition, an instance and an ownership record; every open
+-- listing is pointed at the instance; every sold listing becomes a
+-- transaction and a price. Nothing is deleted, nothing is duplicated, no
+-- roster moves, no ledger changes, no result changes.
+-- ===========================================================================
+begin;
+
+create or replace function public.franchise_cards_rules()
+returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'cards_v1',
+    -- what a card can be acquired by, and what it means
+    'acquisition', jsonb_build_object(
+      'founding_roster', 'the founding roster',
+      'offseason_rookie', 'a rookie signed in the offseason',
+      'draft', 'the draft',
+      'free_agent', 'free agency',
+      'pack', 'a pack in the Vault',
+      'market', 'the Exchange',
+      'trade', 'a trade',
+      'migration', 'minted from the record'),
+    -- one athlete, one printed edition, one instance of it: the Vault has
+    -- always said "one of one" and the schema now means it
+    'default_supply', 1);
+$$;
+grant execute on function public.franchise_cards_rules() to anon, authenticated;
+
+-- ── WHO HE IS ────────────────────────────────────────────────────────────
+create table if not exists public.game_player_identities (
+  id              uuid primary key default gen_random_uuid(),
+  identity_seed   text not null,
+  first_name      text not null,
+  last_name       text not null,
+  position        text not null,
+  height_in       integer,
+  weight_lb       integer,
+  hometown        text,
+  archetype       text,
+  base_profile    jsonb not null default '{}'::jsonb,
+  appearance_seed text,
+  born_season     integer,
+  created_at      timestamptz not null default now()
+);
+create unique index if not exists game_player_identities_seed on public.game_player_identities (identity_seed);
+
+-- ── WHAT THE CARD SAYS ───────────────────────────────────────────────────
+create table if not exists public.game_card_defs (
+  id            uuid primary key default gen_random_uuid(),
+  player_id     uuid not null references public.game_player_identities (id) on delete cascade,
+  edition       text not null default 'base',
+  program       text,
+  rarity        text not null,
+  base_overall  integer not null check (base_overall between 1 and 99),
+  attributes    jsonb not null default '{}'::jsonb,
+  art_variant   text,
+  supply_limit  integer,
+  created_at    timestamptz not null default now()
+);
+create unique index if not exists game_card_defs_one_per_edition on public.game_card_defs (player_id, edition);
+create index if not exists game_card_defs_player on public.game_card_defs (player_id);
+
+-- ── ONE OF THEM ──────────────────────────────────────────────────────────
+create table if not exists public.game_cards (
+  id           uuid primary key default gen_random_uuid(),
+  card_def_id  uuid not null references public.game_card_defs (id) on delete cascade,
+  serial_number integer,
+  minted_at    timestamptz not null default now(),
+  metadata     jsonb not null default '{}'::jsonb
+);
+create unique index if not exists game_cards_serial on public.game_cards (card_def_id, serial_number) where serial_number is not null;
+create index if not exists game_cards_def on public.game_cards (card_def_id);
+
+-- ── WHO HOLDS IT ─────────────────────────────────────────────────────────
+-- One row per card, ever. A card cannot be owned twice: the primary key on
+-- card_id is what makes duplicate ownership impossible rather than unlikely.
+create table if not exists public.game_card_ownership (
+  card_id          uuid primary key references public.game_cards (id) on delete cascade,
+  owner_id         uuid references public.franchises (id) on delete cascade,
+  acquired_at      timestamptz not null default now(),
+  acquisition_type text not null default 'migration',
+  acquisition_ref  text
+);
+create index if not exists game_card_ownership_owner on public.game_card_ownership (owner_id);
+
+-- ── EVERY HAND IT HAS PASSED THROUGH ─────────────────────────────────────
+create table if not exists public.game_card_provenance (
+  id               bigserial primary key,
+  card_id          uuid not null references public.game_cards (id) on delete cascade,
+  from_id          uuid references public.franchises (id) on delete set null,
+  to_id            uuid references public.franchises (id) on delete set null,
+  acquisition_type text not null,
+  acquisition_ref  text,
+  price            integer,
+  at               timestamptz not null default now()
+);
+create index if not exists game_card_provenance_card on public.game_card_provenance (card_id, at);
+
+-- ── WHERE IT PLAYS ───────────────────────────────────────────────────────
+-- The lineup is a place, not a number on a man: one row per franchise, per
+-- position, per slot, naming the card that fills it. Maintained from the
+-- career sheet's depth by trigger, so every existing way of setting a
+-- lineup keeps working and the lineup is still queryable as its own thing.
+create table if not exists public.game_lineup_slots (
+  franchise_id uuid not null references public.franchises (id) on delete cascade,
+  position     text not null,
+  slot         integer not null check (slot >= 1),
+  card_id      uuid not null references public.game_cards (id) on delete cascade,
+  updated_at   timestamptz not null default now(),
+  primary key (franchise_id, position, slot)
+);
+create unique index if not exists game_lineup_slots_card on public.game_lineup_slots (card_id);
+
+-- ── WHAT SOLD, AND FOR WHAT ──────────────────────────────────────────────
+create table if not exists public.game_market_txns (
+  id            uuid primary key default gen_random_uuid(),
+  listing_id    uuid references public.franchise_listings (id) on delete set null,
+  card_id       uuid not null references public.game_cards (id) on delete cascade,
+  seller_id     uuid references public.franchises (id) on delete set null,
+  buyer_id      uuid references public.franchises (id) on delete set null,
+  sale_price    integer not null,
+  fee           integer not null default 0,
+  net           integer not null default 0,
+  op_key        text,
+  completed_at  timestamptz not null default now()
+);
+-- ONE TRANSACTION PER LISTING, ENFORCED BY THE DATABASE. Two buyers racing
+-- for the same card cannot both write here; the loser's transaction rolls
+-- back whole.
+create unique index if not exists game_market_txns_listing on public.game_market_txns (listing_id) where listing_id is not null;
+create unique index if not exists game_market_txns_op on public.game_market_txns (op_key) where op_key is not null;
+create index if not exists game_market_txns_card on public.game_market_txns (card_id, completed_at desc);
+create index if not exists game_market_txns_buyer on public.game_market_txns (buyer_id, completed_at desc);
+
+create table if not exists public.game_market_prices (
+  id           bigserial primary key,
+  card_def_id  uuid not null references public.game_card_defs (id) on delete cascade,
+  player_id    uuid not null references public.game_player_identities (id) on delete cascade,
+  position     text not null,
+  overall      integer not null,
+  sale_price   integer not null,
+  sold_at      timestamptz not null default now()
+);
+create index if not exists game_market_prices_def on public.game_market_prices (card_def_id, sold_at desc);
+create index if not exists game_market_prices_comp on public.game_market_prices (position, overall, sold_at desc);
+
+-- the career sheet points at the instance it is the career of
+alter table public.game_players add column if not exists card_id uuid references public.game_cards (id) on delete set null;
+create unique index if not exists game_players_card on public.game_players (card_id) where card_id is not null;
+-- a listing offers a card, not a row of career stats
+alter table public.franchise_listings add column if not exists card_id uuid references public.game_cards (id) on delete cascade;
+create index if not exists franchise_listings_card on public.franchise_listings (card_id);
+
+alter table public.game_player_identities enable row level security;
+alter table public.game_card_defs enable row level security;
+alter table public.game_cards enable row level security;
+alter table public.game_card_ownership enable row level security;
+alter table public.game_card_provenance enable row level security;
+alter table public.game_lineup_slots enable row level security;
+alter table public.game_market_txns enable row level security;
+alter table public.game_market_prices enable row level security;
+-- identities, editions and what things sold for are public knowledge; who
+-- holds what, and what is in a lineup, is the owner's business
+drop policy if exists game_player_identities_read on public.game_player_identities;
+create policy game_player_identities_read on public.game_player_identities for select using (true);
+drop policy if exists game_card_defs_read on public.game_card_defs;
+create policy game_card_defs_read on public.game_card_defs for select using (true);
+drop policy if exists game_cards_read on public.game_cards;
+create policy game_cards_read on public.game_cards for select using (true);
+drop policy if exists game_market_prices_read on public.game_market_prices;
+create policy game_market_prices_read on public.game_market_prices for select using (true);
+drop policy if exists game_card_ownership_mine on public.game_card_ownership;
+create policy game_card_ownership_mine on public.game_card_ownership for select using (public.franchise_is_mine(owner_id));
+drop policy if exists game_lineup_slots_mine on public.game_lineup_slots;
+create policy game_lineup_slots_mine on public.game_lineup_slots for select using (public.franchise_is_mine(franchise_id));
+drop policy if exists game_card_provenance_party on public.game_card_provenance;
+create policy game_card_provenance_party on public.game_card_provenance for select
+  using (public.franchise_is_mine(from_id) or public.franchise_is_mine(to_id));
+drop policy if exists game_market_txns_party on public.game_market_txns;
+create policy game_market_txns_party on public.game_market_txns for select
+  using (public.franchise_is_mine(seller_id) or public.franchise_is_mine(buyer_id));
+
+-- ── MINTING ──────────────────────────────────────────────────────────────
+-- Given a career sheet, make the man, the edition and the instance behind
+-- it, and hand the instance back. Idempotent on the identity seed, so a
+-- second run of the migration mints nothing twice.
+create or replace function public.franchise_card_mint(p public.game_players, p_type text default 'migration', p_ref text default null)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_seed text; v_ident uuid; v_def uuid; v_card uuid; v_body jsonb; v_minted integer; v_prof jsonb;
+begin
+  if p.id is null then return null; end if;
+  v_seed := 'p:' || p.id::text;
+  select id into v_ident from public.game_player_identities where identity_seed = v_seed;
+  if v_ident is null then
+    v_body := public.franchise_body(p.position, p.jersey, p.age, p.stamina, p.last_name);
+    v_prof := public.franchise_profile(p.position, p.ratings, p.overall, p.archetype, p.jersey, p.age, p.stamina, p.last_name);
+    insert into public.game_player_identities
+      (identity_seed, first_name, last_name, position, height_in, weight_lb, hometown, archetype, base_profile, appearance_seed, born_season)
+    values (v_seed, p.first_name, p.last_name, p.position,
+            nullif((v_body->>'height_in')::int, 0), nullif((v_body->>'weight_lb')::int, 0),
+            public.franchise_hometown(p.jersey, p.age, p.stamina, p.last_name, p.first_name),
+            p.archetype, coalesce(v_prof, '{}'::jsonb), v_seed, p.acquired_season)
+    returning id into v_ident;
+  end if;
+  -- the edition is the card as it was PRINTED: the overall he was rolled at,
+  -- from his own first line, not the overall he has since developed into
+  v_minted := coalesce((p.history->0->>'overall')::int, p.overall);
+  select id into v_def from public.game_card_defs where player_id = v_ident and edition = 'base';
+  if v_def is null then
+    insert into public.game_card_defs (player_id, edition, program, rarity, base_overall, attributes, art_variant, supply_limit)
+    values (v_ident, 'base',
+            case when p.pack_id is not null then (select k.kind from public.franchise_packs k where k.id = p.pack_id) else null end,
+            p.rarity, greatest(1, least(99, v_minted)),
+            coalesce(p.history->0->'ratings', p.ratings), public.franchise_card_tier(v_minted),
+            (public.franchise_cards_rules()->>'default_supply')::int)
+    returning id into v_def;
+  end if;
+  select c.id into v_card from public.game_cards c where c.card_def_id = v_def order by c.minted_at limit 1;
+  if v_card is null then
+    insert into public.game_cards (card_def_id, serial_number, minted_at, metadata)
+    values (v_def, 1, coalesce(p.created_at, now()),
+            jsonb_build_object('minted_overall', v_minted, 'acquired_source', p.acquired_source))
+    returning id into v_card;
+  end if;
+  insert into public.game_card_ownership (card_id, owner_id, acquired_at, acquisition_type, acquisition_ref)
+  values (v_card, p.franchise_id, coalesce(p.created_at, now()), coalesce(p_type, 'migration'), p_ref)
+  on conflict (card_id) do nothing;
+  return v_card;
+end;
+$$;
+revoke all on function public.franchise_card_mint(public.game_players, text, text) from public, anon, authenticated;
+
+-- ── THE ONLY DOOR OWNERSHIP MOVES THROUGH ────────────────────────────────
+-- Locks the ownership row, moves it, writes the provenance, and projects the
+-- move onto the legacy column under a transaction-local flag the guard
+-- trigger checks. Nothing else in the schema may change who owns a card.
+create or replace function public.franchise_card_transfer(
+  p_card uuid, p_to uuid, p_type text, p_ref text default null, p_price integer default null)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_from uuid; v_player uuid;
+begin
+  if p_card is null then raise exception 'no card' using errcode = 'P0002'; end if;
+  select owner_id into v_from from public.game_card_ownership where card_id = p_card for update;
+  if not found then raise exception 'that card has no ownership record' using errcode = 'P0002'; end if;
+  update public.game_card_ownership
+     set owner_id = p_to, acquired_at = now(), acquisition_type = p_type, acquisition_ref = p_ref
+   where card_id = p_card;
+  insert into public.game_card_provenance (card_id, from_id, to_id, acquisition_type, acquisition_ref, price)
+  values (p_card, v_from, p_to, p_type, p_ref, p_price);
+  -- the projection: the career sheet follows the card, never the other way
+  perform set_config('edgd.card_transfer', '1', true);
+  update public.game_players set franchise_id = p_to, updated_at = now() where card_id = p_card returning id into v_player;
+  perform set_config('edgd.card_transfer', '', true);
+  return v_player;
+end;
+$$;
+revoke all on function public.franchise_card_transfer(uuid, uuid, text, text, integer) from public, anon, authenticated;
+
+-- ── THE GUARD, AND THE PROJECTION ────────────────────────────────────────
+create or replace function public.game_players_card_trg()
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_card uuid;
+begin
+  if TG_OP = 'INSERT' then
+    -- every career sheet is the career of a card; mint one at the door
+    if NEW.card_id is null then
+      NEW.card_id := public.franchise_card_mint(NEW, coalesce(NEW.acquired_source, 'migration'), NEW.acquired_detail);
+    end if;
+    return NEW;
+  end if;
+  if NEW.franchise_id is distinct from OLD.franchise_id
+     and coalesce(current_setting('edgd.card_transfer', true), '') <> '1' then
+    raise exception 'ownership moves through franchise_card_transfer(), not by writing game_players.franchise_id'
+      using errcode = '55000';
+  end if;
+  return NEW;
+end;
+$$;
+revoke all on function public.game_players_card_trg() from public, anon, authenticated;
+drop trigger if exists game_players_card on public.game_players;
+create trigger game_players_card before insert or update on public.game_players
+  for each row execute function public.game_players_card_trg();
+
+-- the lineup follows the chart, after the fact, so every existing way of
+-- setting a depth keeps working and the slot is still a row of its own
+create or replace function public.game_players_lineup_trg()
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_starters integer;
+begin
+  if NEW.card_id is null then return NEW; end if;
+  delete from public.game_lineup_slots where card_id = NEW.card_id;
+  if NEW.franchise_id is null or NEW.status <> 'active' then return NEW; end if;
+  select coalesce((x->>'starters')::int, 1) into v_starters
+    from jsonb_array_elements(public.franchise_pool_plan()) x where x->>'pos' = NEW.position;
+  if NEW.depth is null or NEW.depth < 1 or NEW.depth > coalesce(v_starters, 1) then return NEW; end if;
+  insert into public.game_lineup_slots (franchise_id, position, slot, card_id, updated_at)
+  values (NEW.franchise_id, NEW.position, NEW.depth, NEW.card_id, now())
+  on conflict (franchise_id, position, slot) do update
+    set card_id = excluded.card_id, updated_at = now();
+  return NEW;
+end;
+$$;
+revoke all on function public.game_players_lineup_trg() from public, anon, authenticated;
+drop trigger if exists game_players_lineup on public.game_players;
+create trigger game_players_lineup after insert or update on public.game_players
+  for each row execute function public.game_players_lineup_trg();
+
+-- ── THE MIGRATION ────────────────────────────────────────────────────────
+-- Every existing row minted, every listing pointed at its card, every sale
+-- already on the books turned into a transaction and a price. Runs whole or
+-- not at all, and a second run does nothing.
+create or replace function public.franchise_cards_migrate()
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare p public.game_players%rowtype; l public.franchise_listings%rowtype;
+  v_cards integer := 0; v_lists integer := 0; v_txns integer := 0; v_slots integer := 0; v_card uuid; v_def uuid; v_ident uuid;
+begin
+  for p in select * from public.game_players where card_id is null order by created_at loop
+    v_card := public.franchise_card_mint(p, coalesce(p.acquired_source, 'migration'), p.acquired_detail);
+    if v_card is not null then
+      perform set_config('edgd.card_transfer', '1', true);
+      update public.game_players set card_id = v_card where id = p.id;
+      perform set_config('edgd.card_transfer', '', true);
+      v_cards := v_cards + 1;
+    end if;
+  end loop;
+  -- the lineup, rebuilt from the chart as it stands
+  insert into public.game_lineup_slots (franchise_id, position, slot, card_id, updated_at)
+  select gp.franchise_id, gp.position, gp.depth, gp.card_id, now()
+    from public.game_players gp
+    join jsonb_array_elements(public.franchise_pool_plan()) x on x->>'pos' = gp.position
+   where gp.card_id is not null and gp.franchise_id is not null and gp.status = 'active'
+     and gp.depth between 1 and coalesce((x->>'starters')::int, 1)
+  on conflict (franchise_id, position, slot) do nothing;
+  get diagnostics v_slots = ROW_COUNT;
+  -- every listing offers the instance the man is
+  update public.franchise_listings l2
+     set card_id = gp.card_id
+    from public.game_players gp
+   where gp.id = l2.player_id and l2.card_id is null and gp.card_id is not null;
+  get diagnostics v_lists = ROW_COUNT;
+  -- and every sale already on the books is a transaction and a price
+  for l in select * from public.franchise_listings where status = 'sold' and card_id is not null
+             and not exists (select 1 from public.game_market_txns t where t.listing_id = franchise_listings.id) loop
+    insert into public.game_market_txns (listing_id, card_id, seller_id, buyer_id, sale_price, fee, net, completed_at, op_key)
+    values (l.id, l.card_id, l.franchise_id, l.buyer_id, l.price, coalesce(l.fee, 0), coalesce(l.net, l.price), coalesce(l.closed_at, now()),
+            'migrate:' || l.id::text)
+    on conflict do nothing;
+    select c.card_def_id, d.player_id into v_def, v_ident
+      from public.game_cards c join public.game_card_defs d on d.id = c.card_def_id where c.id = l.card_id;
+    if v_def is not null then
+      insert into public.game_market_prices (card_def_id, player_id, position, overall, sale_price, sold_at)
+      select v_def, v_ident, coalesce(l.snapshot->>'position', 'QB'), coalesce((l.snapshot->>'overall')::int, 60), l.price, coalesce(l.closed_at, now())
+       where not exists (select 1 from public.game_market_prices h where h.card_def_id = v_def and h.sold_at = coalesce(l.closed_at, now()));
+      v_txns := v_txns + 1;
+    end if;
+  end loop;
+  return jsonb_build_object('ok', true, 'version', public.franchise_cards_rules()->>'version',
+    'cards_minted', v_cards, 'lineup_slots', v_slots, 'listings_linked', v_lists, 'sales_recorded', v_txns,
+    'cards_total', (select count(*) from public.game_cards), 'owned', (select count(*) from public.game_card_ownership where owner_id is not null));
+end;
+$$;
+revoke all on function public.franchise_cards_migrate() from public, anon, authenticated;
+
+select public.franchise_cards_migrate();
+
+-- ── THE COMPATIBILITY ADAPTER ────────────────────────────────────────────
+-- Gameplay wants one flat object. It gets one, assembled from the four
+-- separate things rather than from one conflated row: who he is, what his
+-- card says, who holds it and where it plays.
+create or replace function public.franchise_card_entity(p_card uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'card_id', c.id,
+    'serial', c.serial_number,
+    'minted_at', c.minted_at,
+    'edition', jsonb_build_object('id', d.id, 'name', d.edition, 'program', d.program, 'rarity', d.rarity,
+                                  'base_overall', d.base_overall, 'art', d.art_variant,
+                                  'supply', d.supply_limit, 'serial', c.serial_number,
+                                  'label', case when d.supply_limit = 1 then 'One of one'
+                                                else 'No. ' || coalesce(c.serial_number, 1) || ' of ' || coalesce(d.supply_limit::text, '∞') end),
+    'player', jsonb_build_object('id', i.id, 'first_name', i.first_name, 'last_name', i.last_name,
+                                 'position', i.position, 'archetype', i.archetype, 'hometown', i.hometown,
+                                 'height_in', i.height_in, 'weight_lb', i.weight_lb),
+    'ownership', jsonb_build_object('owner_id', o.owner_id, 'acquired_at', o.acquired_at,
+                                    'acquisition_type', o.acquisition_type, 'acquisition_ref', o.acquisition_ref,
+                                    'hands', (select count(*) from public.game_card_provenance v where v.card_id = c.id)),
+    'lineup', case when s.card_id is null then null else jsonb_build_object('position', s.position, 'slot', s.slot) end,
+    'listing', (select jsonb_build_object('id', l.id, 'price', l.price, 'expires_at', l.expires_at)
+                  from public.franchise_listings l where l.card_id = c.id and l.status = 'open' limit 1),
+    -- the career sheet, as gameplay has always read it
+    'career', case when gp.id is null then null else public.franchise_prospect_json(gp) || public.franchise_profile_of(gp) end)
+    from public.game_cards c
+    join public.game_card_defs d on d.id = c.card_def_id
+    join public.game_player_identities i on i.id = d.player_id
+    left join public.game_card_ownership o on o.card_id = c.id
+    left join public.game_lineup_slots s on s.card_id = c.id
+    left join public.game_players gp on gp.card_id = c.id
+   where c.id = p_card;
+$$;
+grant execute on function public.franchise_card_entity(uuid) to anon, authenticated;
+
+-- what a card has sold for, and what men like it have: the price history is
+-- the card's, the comps are the edition's shape
+create or replace function public.franchise_card_market(p_card uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'sales', coalesce((select jsonb_agg(jsonb_build_object('price', h.sale_price, 'at', h.sold_at) order by h.sold_at desc)
+                         from (select * from public.game_market_prices h2
+                                where h2.card_def_id = (select card_def_id from public.game_cards where id = p_card)
+                                order by h2.sold_at desc limit 10) h), '[]'::jsonb),
+    'comps', (select public.franchise_exchange_comps(i.position, d.base_overall)
+                from public.game_cards c join public.game_card_defs d on d.id = c.card_def_id
+                join public.game_player_identities i on i.id = d.player_id where c.id = p_card),
+    'provenance', coalesce((select jsonb_agg(jsonb_build_object('type', v.acquisition_type, 'price', v.price, 'at', v.at) order by v.at desc)
+                              from public.game_card_provenance v where v.card_id = p_card), '[]'::jsonb));
+$$;
+grant execute on function public.franchise_card_market(uuid) to anon, authenticated;
+
+-- A LISTING SAYS WHAT IS FOR SALE. Re-created here, where the card tables
+-- exist: the board trades an instance, and the tile can print its edition,
+-- its serial, how many hands it has been through and what it has sold for.
+create or replace function public.franchise_listing_json(l public.franchise_listings, p_viewer uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'id', l.id, 'price', l.price, 'status', l.status, 'reason', l.reason,
+    'fee', public.franchise_exchange_fee(l.price), 'net', l.price - public.franchise_exchange_fee(l.price),
+    'created_at', l.created_at, 'expires_at', l.expires_at, 'closed_at', l.closed_at,
+    'mine', l.franchise_id = p_viewer,
+    'seller', (select jsonb_build_object('id', f.id, 'name', f.name, 'city', f.city, 'abbr', f.abbr, 'logo', f.logo, 'theme', f.theme)
+                 from public.franchises f where f.id = l.franchise_id),
+    'buyer', (select jsonb_build_object('name', f.name, 'city', f.city, 'abbr', f.abbr) from public.franchises f where f.id = l.buyer_id),
+    'man', l.snapshot || coalesce((select jsonb_build_object('overall', p.overall, 'age', p.age, 'potential', p.potential,
+                                            'available', public.franchise_is_available(p.status, p.injured_until))
+                                     from public.game_players p where p.id = l.player_id and l.status = 'open'), '{}'::jsonb),
+    'card_id', l.card_id,
+    'card', (select jsonb_build_object('id', c.id, 'serial', c.serial_number, 'minted_at', c.minted_at,
+                      'edition', d.edition, 'program', d.program, 'rarity', d.rarity, 'base_overall', d.base_overall,
+                      'supply', d.supply_limit,
+                      'label', case when d.supply_limit = 1 then 'One of one'
+                                    else 'No. ' || coalesce(c.serial_number, 1) || ' of ' || coalesce(d.supply_limit::text, '?') end,
+                      'hands', (select count(*) from public.game_card_provenance v where v.card_id = c.id),
+                      'sales', coalesce((select jsonb_agg(jsonb_build_object('price', h.sale_price, 'at', h.sold_at) order by h.sold_at desc)
+                                           from public.game_market_prices h where h.card_def_id = d.id), '[]'::jsonb))
+                 from public.game_cards c join public.game_card_defs d on d.id = c.card_def_id where c.id = l.card_id),
+    'asking_reference', public.franchise_signing_cost((l.snapshot->>'overall')::int));
+$$;
+
+-- ── THE EXCHANGE TRADES CARDS ────────────────────────────────────────────
+-- A listing offers an INSTANCE. The seller must still own that instance
+-- when it sells, the money moves once, ownership moves through the one
+-- door, and the sale is written as a transaction and a price. An operation
+-- key makes a repeated request the same purchase rather than a second one.
+create or replace function public.franchise_exchange_list(p_player uuid, p_price integer, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); rules jsonb := public.franchise_exchange_rules(); p public.game_players%rowtype;
+  v_why text; n integer; l public.franchise_listings%rowtype; v_new text[] := '{}'; v_owner uuid;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  perform public.franchise_exchange_sweep();
+  perform 1 from public.franchises where id = v_f for update;
+  if p_price is null or p_price < (rules->>'min_price')::int or p_price > (rules->>'max_price')::int then
+    raise exception 'a price is between % and % Credits', (rules->>'min_price')::int, (rules->>'max_price')::int using errcode = '22023';
+  end if;
+  select count(*) into n from public.franchise_listings where franchise_id = v_f and status = 'open';
+  if n >= (rules->>'max_open')::int then
+    raise exception 'you can have % listings open at once', (rules->>'max_open')::int using errcode = '55000';
+  end if;
+  v_why := public.franchise_exchange_illegal(v_f, p_player);
+  if v_why is not null then raise exception '%', v_why using errcode = '55000'; end if;
+  select * into p from public.game_players where id = p_player for update;
+  -- THE SELLER MUST OWN THE CARD, not merely have the career sheet
+  select owner_id into v_owner from public.game_card_ownership where card_id = p.card_id;
+  if p.card_id is null or v_owner is distinct from v_f then
+    raise exception 'you do not own that card' using errcode = '55000';
+  end if;
+  if exists (select 1 from public.franchise_listings where card_id = p.card_id and status = 'open') then
+    raise exception 'he is already listed' using errcode = '55000';
+  end if;
+  insert into public.franchise_listings (franchise_id, player_id, card_id, price, snapshot, expires_at)
+  values (v_f, p.id, p.card_id, p_price,
+          public.franchise_prospect_json(p) || public.franchise_profile_of(p)
+            || jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'tier', public.franchise_card_tier(p.overall),
+                                  'card_id', p.card_id),
+          now() + ((rules->>'expires_days')::int || ' days')::interval)
+  returning * into l;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'exchange_list', l.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('listing', l.id, 'player', p.id, 'card', p.card_id, 'name', p.first_name || ' ' || p.last_name,
+                             'position', p.position, 'overall', p.overall, 'price', p_price, 'currency', 'tc'))
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('ok', true, 'listing', public.franchise_listing_json(l, v_f),
+    'card', public.franchise_card_entity(p.card_id),
+    'comps', public.franchise_exchange_comps(p.position, p.overall), 'achievements', to_jsonb(v_new));
+end;
+$$;
+
+-- the two-argument door is retired: leaving it beside the three-argument one
+-- makes every existing two-argument call ambiguous
+drop function if exists public.franchise_exchange_buy(uuid, text);
+create or replace function public.franchise_exchange_buy(p_listing uuid, p_secret text default null, p_op text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_b uuid := public.franchise_of(p_secret); mk jsonb := public.franchise_market();
+  l public.franchise_listings%rowtype; p public.game_players%rowtype; fb public.franchises%rowtype; fs public.franchises%rowtype;
+  v_why text; v_fee integer; v_net integer; v_active integer; v_depth integer; ok boolean; v_real integer := public.games_season_of(now());
+  v_new text[] := '{}'; k integer := 0; r record; v_owner uuid; v_txn public.game_market_txns%rowtype; v_def uuid; v_ident uuid;
+  v_op text := nullif(p_op, '');
+begin
+  if v_b is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  -- A REPEATED REQUEST IS THE SAME PURCHASE. A dropped connection asks
+  -- again with the key it used before, and gets the answer it already had.
+  if v_op is not null then
+    select * into v_txn from public.game_market_txns where op_key = v_op;
+    if found then
+      if v_txn.buyer_id is distinct from v_b then raise exception 'that operation belongs to another franchise' using errcode = '55000'; end if;
+      select * into l from public.franchise_listings where id = v_txn.listing_id;
+      return jsonb_build_object('ok', true, 'already', true, 'listing', public.franchise_listing_json(l, v_b),
+        'card', public.franchise_card_entity(v_txn.card_id), 'price', v_txn.sale_price, 'fee', v_txn.fee, 'net', v_txn.net,
+        'currency', 'tc', 'transaction', v_txn.id, 'totals', public.franchise_totals(v_b));
+    end if;
+  end if;
+  select * into l from public.franchise_listings where id = p_listing for update;
+  if not found then raise exception 'no such listing' using errcode = 'P0002'; end if;
+  if l.status <> 'open' then raise exception 'that listing is closed: %', coalesce(l.reason, l.status) using errcode = '55000'; end if;
+  if l.expires_at < now() then
+    update public.franchise_listings set status = 'expired', reason = 'the listing ran out', closed_at = now() where id = l.id;
+    raise exception 'that listing has expired' using errcode = '55000';
+  end if;
+  if l.franchise_id = v_b then raise exception 'that is your own listing' using errcode = '55000'; end if;
+  perform 1 from public.franchises where id in (l.franchise_id, v_b) order by id for update;
+  select * into fs from public.franchises where id = l.franchise_id;
+  select * into fb from public.franchises where id = v_b;
+  select * into p from public.game_players where id = l.player_id for update;
+  -- THE SELLER STILL OWNS THE CARD. Checked against the ownership record,
+  -- not against a column on the career sheet.
+  select owner_id into v_owner from public.game_card_ownership where card_id = coalesce(l.card_id, p.card_id) for update;
+  if v_owner is distinct from l.franchise_id then
+    update public.franchise_listings set status = 'expired', reason = 'the seller no longer holds that card', closed_at = now() where id = l.id;
+    raise exception 'that listing is no longer good: the seller no longer holds that card' using errcode = '55000';
+  end if;
+  v_why := public.franchise_exchange_illegal(l.franchise_id, l.player_id);
+  if v_why is not null then
+    update public.franchise_listings set status = 'expired', reason = v_why, closed_at = now() where id = l.id;
+    raise exception 'that listing is no longer good: %', v_why using errcode = '55000';
+  end if;
+  select count(*) into v_active from public.game_players where franchise_id = v_b and status = 'active';
+  if v_active >= (mk->>'roster_max')::int then
+    raise exception 'the roster is full at %: release a player first', (mk->>'roster_max')::int using errcode = '55000';
+  end if;
+  if fb.team_credits < l.price then
+    raise exception 'not enough Credits: % needed, % on hand', l.price, fb.team_credits using errcode = '55000';
+  end if;
+  v_fee := public.franchise_exchange_fee(l.price); v_net := l.price - v_fee;
+  ok := public.franchise_credit(v_b, 'tc', -l.price, 'exchange_buy', l.id::text, 'Bought ' || p.first_name || ' ' || p.last_name || ' on the Exchange');
+  if not ok then raise exception 'that purchase is already on the books' using errcode = '55000'; end if;
+  perform public.franchise_credit(l.franchise_id, 'tc', v_net, 'exchange_sale', l.id::text,
+    'Sold ' || p.first_name || ' ' || p.last_name || ' on the Exchange (' || v_fee || ' fee)');
+  -- OWNERSHIP MOVES THROUGH THE ONE DOOR
+  perform public.franchise_card_transfer(coalesce(l.card_id, p.card_id), v_b, 'market', l.id::text, l.price);
+  select coalesce(max(depth), 0) + 1 into v_depth from public.game_players where franchise_id = v_b and position = p.position and status = 'active' and id <> p.id;
+  update public.game_players
+     set depth = v_depth,
+         jersey = case when exists (select 1 from public.game_players o where o.franchise_id = v_b and o.status = 'active' and o.jersey = p.jersey and o.id <> p.id)
+                       then public.franchise_free_number(v_b, p.position, p.id::text) else p.jersey end,
+         acquired_source = 'market', acquired_season = v_real,
+         acquired_detail = 'Bought on the Exchange from the ' || fs.name || ' for ' || l.price || ' Credits',
+         history = history || jsonb_build_object('kind', 'sold', 'at', now(), 'price', l.price, 'fee', v_fee,
+                                                 'from', fs.name, 'to', fb.name, 'overall', p.overall),
+         updated_at = now()
+   where id = p.id;
+  for r in select id from public.game_players where franchise_id = l.franchise_id and position = p.position and status = 'active' order by depth, overall desc loop
+    k := k + 1; update public.game_players set depth = k where id = r.id;
+  end loop;
+  update public.franchise_listings set status = 'sold', buyer_id = v_b, fee = v_fee, net = v_net, closed_at = now() where id = l.id returning * into l;
+  -- THE TRANSACTION. The unique index on the listing is what makes a second
+  -- buyer impossible rather than unlikely.
+  insert into public.game_market_txns (listing_id, card_id, seller_id, buyer_id, sale_price, fee, net, op_key)
+  values (l.id, coalesce(l.card_id, p.card_id), l.franchise_id, v_b, l.price, v_fee, v_net, v_op)
+  returning * into v_txn;
+  select c.card_def_id, d.player_id into v_def, v_ident
+    from public.game_cards c join public.game_card_defs d on d.id = c.card_def_id where c.id = coalesce(l.card_id, p.card_id);
+  insert into public.game_market_prices (card_def_id, player_id, position, overall, sale_price)
+  values (v_def, v_ident, p.position, p.overall, l.price);
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_b, 'exchange_buy', l.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('listing', l.id, 'player', p.id, 'card', coalesce(l.card_id, p.card_id), 'name', p.first_name || ' ' || p.last_name,
+                             'position', p.position, 'overall', p.overall, 'price', l.price, 'from', fs.name, 'currency', 'tc')),
+         (l.franchise_id, 'exchange_sale', l.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('listing', l.id, 'player', p.id, 'card', coalesce(l.card_id, p.card_id), 'name', p.first_name || ' ' || p.last_name,
+                             'position', p.position, 'overall', p.overall, 'price', l.price, 'fee', v_fee, 'net', v_net, 'to', fb.name, 'currency', 'tc'))
+  on conflict (franchise_id, kind, key) do nothing;
+  if public.franchise_award(v_b, 'exchange_first_buy', v_real, jsonb_build_object('listing', l.id, 'price', l.price)) then
+    v_new := array_append(v_new, 'exchange_first_buy'); end if;
+  perform public.franchise_award(l.franchise_id, 'exchange_first_sale', v_real, jsonb_build_object('listing', l.id, 'price', l.price));
+  select * into p from public.game_players where id = p.id;
+  return jsonb_build_object('ok', true, 'already', false, 'listing', public.franchise_listing_json(l, v_b),
+    'player', public.franchise_prospect_json(p) || public.franchise_profile_of(p),
+    'card', public.franchise_card_entity(coalesce(l.card_id, p.card_id)),
+    'price', l.price, 'fee', v_fee, 'net', v_net, 'currency', 'tc', 'transaction', v_txn.id,
+    'roster_active', v_active + 1, 'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_b));
+end;
+$$;
+grant execute on function public.franchise_exchange_buy(uuid, text, text) to anon, authenticated;
+
+-- WHAT HAPPENED TO MY PURCHASE. A client whose connection dropped mid-buy
+-- asks with the key it used; the answer is never "maybe".
+create or replace function public.franchise_market_op(p_op text, p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret); t public.game_market_txns%rowtype;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into t from public.game_market_txns where op_key = p_op and buyer_id = v_f;
+  if not found then return jsonb_build_object('ok', true, 'state', 'not_completed', 'op', p_op); end if;
+  return jsonb_build_object('ok', true, 'state', 'completed', 'op', p_op, 'transaction', t.id,
+    'card', public.franchise_card_entity(t.card_id), 'price', t.sale_price, 'fee', t.fee,
+    'completed_at', t.completed_at, 'totals', public.franchise_totals(v_f));
+end;
+$$;
+grant execute on function public.franchise_market_op(text, text) to anon, authenticated;
+
+select public.games_schema_note('franchise', 22, 'the card is not the man: identity, edition, instance, ownership');
+commit;
+
+
 -- THE REPORT. Every row should say ok.
 -- ===========================================================================
 select 1 as row, 'franchise tables exist' as what,
@@ -11981,7 +12645,7 @@ select 40, 'the lineup is ' || (public.franchise_lineup_rules()->>'version') || 
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_listings' and cmd <> 'SELECT')
         and exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'franchise_listings_one_open')
         -- a client sends a listing id or a price of its own to list; the buy takes no price and no balance
-        and has_function_privilege('anon', 'public.franchise_exchange_buy(uuid, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_exchange_buy(uuid, text, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_exchange_list(uuid, integer, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_exchange_browse(text, integer, integer, text, text, integer, integer, text)', 'execute')
         and has_function_privilege('anon', 'public.franchise_exchange_comps(text, integer)', 'execute')
@@ -12025,5 +12689,33 @@ select 42, 'the game you hold counts (' || (public.franchise_economy()->>'versio
                from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'franchise_record_live_game')
         and has_function_privilege('anon', 'public.franchise_record_live_game(text, jsonb, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_gameday_progress(uuid)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 43, 'the card is not the man (' || (public.franchise_cards_rules()->>'version')
+        || '): identities, editions, instances, ownership, lineup slots, listings, transactions and prices, each a table of its own',
+  case when public.franchise_cards_rules()->>'version' = 'cards_v1'
+        -- the six new things exist
+        and (select count(*) from information_schema.tables where table_schema = 'public'
+              and table_name in ('game_player_identities','game_card_defs','game_cards','game_card_ownership',
+                                 'game_lineup_slots','game_market_txns','game_market_prices','game_card_provenance')) = 8
+        -- every career sheet is the career of exactly one instance, and every
+        -- instance has exactly one owner
+        and not exists (select 1 from public.game_players where card_id is null)
+        and not exists (select 1 from public.game_cards c where (select count(*) from public.game_card_ownership o where o.card_id = c.id) <> 1)
+        -- the legacy owner column never drifts from the ownership record
+        and not exists (select 1 from public.game_players p join public.game_card_ownership o on o.card_id = p.card_id
+                         where p.franchise_id is distinct from o.owner_id)
+        -- ownership moves through one door, and nothing else may write it
+        and (select p.prosrc like '%franchise_card_transfer(), not by writing game_players.franchise_id%'
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'game_players_card_trg')
+        and not has_function_privilege('anon', 'public.franchise_card_transfer(uuid, uuid, text, text, integer)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_cards_migrate()', 'execute')
+        -- a listing offers an instance, and a sale can only be written once
+        and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'franchise_listings' and column_name = 'card_id')
+        and exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'game_market_txns_listing')
+        and exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'game_market_txns_op')
+        -- the adapter is public; the doors that move value are not
+        and has_function_privilege('anon', 'public.franchise_card_entity(uuid)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_market_op(text, text)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;
