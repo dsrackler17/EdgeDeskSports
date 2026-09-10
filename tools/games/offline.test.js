@@ -63,12 +63,8 @@ function have(bin) { return cp.spawnSync('sh', ['-c', 'command -v ' + bin], { en
 if (!have('psql')) skip('psql is not installed');
 
 let chromium = null, exePath = null;
-try {
-  chromium = require('/opt/pw-browsers/../node22/lib/node_modules/playwright').chromium;
-} catch (_) {
-  for (const p of ['/opt/node22/lib/node_modules/playwright', 'playwright']) {
-    try { chromium = require(p).chromium; break; } catch (__) {}
-  }
+for (const p of ['playwright', '/opt/node22/lib/node_modules/playwright']) {
+  try { chromium = require(p).chromium; break; } catch (_) {}
 }
 if (!chromium) skip('playwright is not installed');
 try {
