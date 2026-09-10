@@ -76,8 +76,8 @@
 
   /* ---------- tokens ---------- */
   var T = THEME === 'light'
-    ? { bg:'#f6f7f9', surface:'#ffffff', surface2:'#eef0f4', border:'#d8dde5', text:'#14181f', dim:'#5b6472', faint:'#8a93a2', accent:'#2f6fe0', pos:'#1e8f60', neg:'#c74e35', warn:'#a87718', gold:'#8a6d1d' }
-    : { bg:'#0d0f13', surface:'#13161c', surface2:'#191d25', border:'#262c36', text:'#e7eaf0', dim:'#8a93a2', faint:'#5b6472', accent:'#4d8dff', pos:'#2fb47c', neg:'#e26044', warn:'#d99a2b', gold:'#e3b84d' };
+    ? { bg:'#f6f7f9', surface:'#ffffff', surface2:'#eef0f4', border:'#d8dde5', text:'#14181f', dim:'#5f6488', faint:'#9095b8', accent:'#2f6fe0', pos:'#1e8f60', neg:'#c74e35', warn:'#a87718', gold:'#8a6d1d' }
+    : { bg:'#0b0d1f', surface:'#11132f', surface2:'#171a3a', border:'#222852', text:'#eceaf6', dim:'#9095b8', faint:'#5f6488', accent:'#c9d94a', pos:'#2fb47c', neg:'#e26044', warn:'#d99a2b', gold:'#e3b84d' };
 
   var CSS = ''
     + ':host{all:initial}'

@@ -3,8 +3,8 @@
 <title>Reset password — EdgeDesk</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--accent2:#7db0ff;--pos:#2fb47c;--neg:#e26044}
-*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+:root{--bg:#0b0d1f;--surface:#11132f;--surface2:#171a3a;--border:#222852;--text:#eceaf6;--dim:#9095b8;--faint:#5f6488;--accent:#c9d94a;--on-accent:#1b1f08;--accent2:#dbe875;--pos:#2fb47c;--neg:#e26044}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color-scheme:dark;accent-color:var(--accent)}
 .mk{width:11px;height:18px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:2px;transform:skewX(-12deg)}
 .logo{font-weight:800;font-size:17px;display:flex;align-items:center;gap:9px;justify-content:center;margin-bottom:20px}
 .sheet{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 26px}
@@ -14,7 +14,7 @@ h1{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
 .fld label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);font-family:'JetBrains Mono',monospace}
 input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:12px;font-size:15px;font-family:'Inter',sans-serif}
 input:focus{outline:2px solid var(--accent);outline-offset:-1px}
-.btn{width:100%;font-family:'Inter',sans-serif;font-weight:700;font-size:15px;border-radius:9px;padding:13px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#06122b;transition:.15s}
+.btn{width:100%;font-family:'Inter',sans-serif;font-weight:700;font-size:15px;border-radius:9px;padding:13px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);transition:.15s}
 .btn:hover{background:var(--accent2)}
 .btn:disabled{opacity:.6;cursor:default}
 .msg{font-size:12.5px;border-radius:8px;padding:9px 12px;margin-top:12px;display:none;font-family:'JetBrains Mono',monospace}
