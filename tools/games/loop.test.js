@@ -212,7 +212,16 @@ for (let n = 2; n <= 5; n++) {
   chk('game ' + n + ' is filed and credited', last.ok === true && last.already === false && !last.capped && last.rewards.xp > 0, JSON.stringify(last.rewards));
   packsNew += last.packs_new | 0;
 }
-chk('the fifth game at Pro seals a Game Day pack — earned by playing, never bought', packsNew === 1 && last.gameday.packs === 1 && last.gameday.toward === 0, JSON.stringify(last.gameday));
+/* A live game can seal more than one pack in the same moment (packs_v4: the
+   Game Day Pack, and a program the record has just earned), so the server
+   names what it sealed and the page reads the names, never a count. */
+const sealedKinds = (last.packs_sealed || []).map(k => k.kind);
+chk('the fifth game at Pro seals a Game Day pack — earned by playing, never bought',
+  packsNew >= 1 && sealedKinds.indexOf('gameday_pack') >= 0 && last.gameday.packs === 1 && last.gameday.toward === 0,
+  JSON.stringify(last.gameday) + ' ' + JSON.stringify(last.packs_sealed));
+chk('and every pack it sealed comes back with its name, so the panel can say which',
+  (last.packs_sealed || []).length === packsNew && (last.packs_sealed || []).every(k => k.kind && k.name),
+  JSON.stringify(last.packs_sealed));
 home = qj('select public.franchise_home(' + lit(SEC) + ')');
 chk('the home counts the live games and names the weapon kept from the first pack', home.live && home.live.counted === 5 && home.weapon && home.weapon.id === first.kept.id, JSON.stringify(home.live) + ' ' + JSON.stringify(home.weapon || {}).slice(0, 120));
 chk('and knows he has played in your hands since', (home.weapon.games_since | 0) === 5, home.weapon.games_since);

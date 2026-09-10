@@ -2299,7 +2299,18 @@
       html += (GM && GM.rewardPanel) ? GM.rewardPanel(r) : '';
       if (d.capped) html += '<div class="muted">Today\'s ' + esc(d.gameday && d.gameday.cap || 5) + ' credited games are in. This one counts for the record and the careers, not the Credits.</div>';
       if (!d.already && !d.capped) html += '<div class="fr-line"><b>+' + esc(d.rank_gain | 0) + '</b> toward rank ' + esc((rank.rank | 0) + 1) + ' · ' + esc(rank.to_next | 0) + ' to go · a Gridiron Cache waits at every rank</div>';
-      if ((d.packs_new | 0) > 0) html += '<div class="fr-pack"><b>A Game Day pack is sealed in the Vault.</b> Five games finished at Pro or harder. <a class="btn btn-go" href="/games/packs/">Open it in the Vault</a></div>';
+      /* THE PACK THIS GAME SEALED, BY NAME. A live game can earn a Game Day
+         Pack and a program pack in the same moment; naming the wrong one is
+         worse than naming none. */
+      if ((d.packs_new | 0) > 0) {
+        var sealed = (d.packs_sealed || []).map(function (k) { return k && k.name ? k.name : null; }).filter(Boolean);
+        var what = sealed.length ? (sealed.length === 1 ? 'A <b>' + esc(sealed[0]) + '</b> is sealed in the Vault.'
+                                                       : esc(sealed.length) + ' packs are sealed in the Vault: <b>' + sealed.map(esc).join('</b>, <b>') + '</b>.')
+                                : '<b>' + esc(d.packs_new | 0) + ' pack' + ((d.packs_new | 0) === 1 ? ' is' : 's are') + ' sealed in the Vault.</b>';
+        html += '<div class="fr-pack">' + what + ' Earned by the games you played. '
+          + (sealed.length > 1 ? '<a class="btn btn-go" href="/games/packs/">Open them in the Vault</a>'
+                               : '<a class="btn btn-go" href="/games/packs/">Open it in the Vault</a>') + '</div>';
+      }
       else if (gd.per_pack) html += '<div class="fr-line"><b>' + esc(gd.toward | 0) + ' of ' + esc(gd.per_pack) + '</b> live games at Pro or harder toward a Game Day pack'
         + (set.difficulty === 'rookie' ? ' · Rookie games count for the record, not the pack' : '') + '</div>';
       if (d.result && (d.result.men | 0) > 0) html += '<div class="fr-line"><b>' + esc(d.result.men) + '</b> of your men added tonight to the career in your hands</div>';

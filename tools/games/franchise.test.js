@@ -2849,6 +2849,10 @@ fresh();
   has(PACKS, 'Nothing here can be bought', 'the packs page still says nothing is for sale');
   has(README, 'packs_v3', 'the README documents the Vault');
   has(README, 'packs_v4', 'and the programs');
+  chk('a live game names the packs it sealed, and the panel says which rather than guessing',
+    /'packs_sealed', v_new_kinds/.test(SQL) && /where k\.franchise_id = v_f and not \(k\.kind \|\| ':' \|\| k\.source_key = any\(v_had\)\);/.test(SQL)
+    && (function () { const P = fs.readFileSync(G('play/play.js'), 'utf8');
+          return /var sealed = \(d\.packs_sealed \|\| \[\]\)/.test(P) && !/A Game Day pack is sealed in the Vault/.test(P); })());
   /* THE FORMATION VIEW: the roster's own eleven, a slot on a tap, the scheme's word and Saturday's */
   (function formation() {
     const ROSTER_SRC = fs.readFileSync(G('roster/index.html'), 'utf8');
