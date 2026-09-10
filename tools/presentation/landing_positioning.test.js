@@ -14,7 +14,10 @@
         no customer counts, no ROI, no win rate;
      5  live numbers are READ from the committed artifacts, never frozen
         into the page, so marketing cannot drift from the product;
-     6  the unvalidated layers are disclosed on the marketing page too.
+     6  the unvalidated layers are disclosed on the marketing page too;
+     7  a publisher that cites EdgeDesk is credited as exactly that — an
+        independent outlet quoting the numbers, never a partner, a sponsor
+        or an endorsement.
 
    Run: node tools/presentation/landing_positioning.test.js
    =========================================================================== */
@@ -268,6 +271,86 @@ chk('and adds only the two artifact reads',
   'found ' + (IDX.match(/fetch\('football\//g) || []).length);
 chk('no edge function was added for the landing page',
   !/functions\/v1\/[a-z_]*landing/.test(IDX));
+
+/* ======================================================================== */
+/* 10. FEATURED IN — MEDIA ATTRIBUTION, STATED EXACTLY                      */
+/* ======================================================================== */
+/* Stadium Rant's writers cite EdgeDesk's numbers in articles they write and
+   publish on their own site. That is the whole claim, and it is the kind of
+   claim that rots upward: "featured in" becomes "partner of" becomes
+   "official partner of" a couple of well-meaning edits later. So the page
+   has to keep saying the small true thing, and this holds it there. */
+const MED = (function () {
+  const a = IDX.indexOf('id="featured"');
+  return a < 0 ? '' : IDX.slice(a, IDX.indexOf('</section>', a));
+})();
+function plain(h) {
+  return String(h).replace(/<!--[\s\S]*?-->/g, ' ').replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ');
+}
+chk('the featured-in section exists', MED.length > 600, 'length ' + MED.length);
+has(MED, 'Featured in Stadium Rant', 'and names the publisher it was featured in');
+has(MED, 'independent matchup coverage published by <b>Stadium Rant</b>',
+  'as the publisher of that coverage, not as a partner');
+has(MED, 'Stadium Rant is an independent publisher', 'the publisher is called independent');
+has(MED, 'editorial attribution, not a partnership, a sponsorship or a syndication deal',
+  'and the relationship is named by what it is not');
+has(MED, 'EdgeDesk has no say in what they publish', 'and the coverage is not EdgeDesk&rsquo;s to steer');
+has(MED, 'Data and model analysis powered by EdgeDeskSports.com',
+  'the credit is quoted in the publisher&rsquo;s own words');
+
+/* the relationship is never inflated, here or anywhere else on the page */
+[/\bofficial partner\b/i, /\bstadium rant partner\b/i, /\bsponsored by\b/i,
+ /\bin partnership with\b/i, /\bpartnered with\b/i, /\bour partner\b/i,
+ /\bexclusive partner/i, /\bas seen (?:in|on)\b/i, /\bmedia partner\b/i]
+  .forEach(re => chk('the relationship is never inflated to ' + re, !re.test(TEXT),
+    (re.exec(TEXT) || [])[0]));
+
+/* the cited articles are real, named exactly, and every card is the
+   publisher's, not EdgeDesk's */
+[['https://www.stadiumrant.com/akron-wake-forest-odds-value-edgedesk/',
+  'Akron vs. Wake Forest Odds: Why the Numbers Flag Value on the Zips at +2000 (Data by EdgeDesk)'],
+ ['https://www.stadiumrant.com/patriots-vs-seahawks-odds-the-numbers-say-seattle-should-be-favored-by-almost-a-touchdown/',
+  'Patriots vs. Seahawks Odds: The Numbers Say Seattle Should Be Favored by Almost a Touchdown']]
+  .forEach(a => { has(MED, a[0], 'the section links ' + a[1].slice(0, 28));
+                  has(MED, a[1], 'under the headline the publisher gave it'); });
+chk('each card is bylined to the publisher rather than to EdgeDesk',
+  (MED.match(/Published by <span class="wm">Stadium Rant<\/span>/g) || []).length === 2);
+chk('and each card credits EdgeDesk as the data underneath, not as the author',
+  /class="cr">Data by EdgeDesk</.test(MED) && /class="cr">Powered by EdgeDesk research</.test(MED));
+
+/* leaving the site is leaving the site: new tab, severed opener, and the
+   destination named in the link text rather than implied */
+chk('every stadiumrant.com link opens in a new tab with the opener severed', () => {
+  const links = [...IDX.matchAll(/<a\b[^>]*href="https:\/\/www\.stadiumrant\.com[^"]*"[^>]*>/g)].map(m => m[0]);
+  return links.length >= 3
+    && links.every(t => /target="_blank"/.test(t) && /rel="noopener noreferrer"/.test(t));
+}, 'links: ' + (IDX.match(/href="https:\/\/www\.stadiumrant\.com[^"]*"/g) || []).length);
+chk('and each card says which site it is about to open',
+  (MED.match(/Read on stadiumrant\.com/g) || []).length === 2);
+
+/* a credibility signal, not a takeover: one section under the hero, one
+   quiet reference further down, and nothing else */
+chk('the section sits under the hero and before the feature sections',
+  IDX.indexOf('id="featured"') > IDX.indexOf('<header class="hero"')
+  && IDX.indexOf('id="featured"') < IDX.indexOf('id="compress"'));
+chk('the publisher is named once outside that section, not throughout the page', () => {
+  /* TEXT is already script- and style-stripped; the CSS comment beside the
+     section names the publisher too, and a reader never sees it */
+  const all = (TEXT.match(/Stadium Rant/g) || []).length;
+  const inside = (plain(MED).match(/Stadium Rant/g) || []).length;
+  return all - inside === 1;
+});
+has(IDX, 'EdgeDesk research has been featured in independent coverage from',
+  'and that one reference is the smaller credibility line');
+
+/* the three levels of the product are all on the page, and the newest one
+   is described as early rather than as an ecosystem */
+['01 &middot; Research', '02 &middot; Tools', '03 &middot; Published work']
+  .forEach(l => has(MED, l, 'the page names the level ' + plain(l).trim()));
+has(MED, 'This is early, and it is specific: the articles above',
+  'the media layer is not inflated past the two articles that exist');
+lacks(MED, 'writers across the industry', 'and no imaginary contributor network is claimed');
 
 console.log('');
 failures.forEach(f => console.log('  FAIL  ' + f));
