@@ -21,8 +21,8 @@
   "game_time": "2026-09-10T20:35:00.000Z",
   "game_when_label": "2026-09-10 20:35 UTC",
   "published_at": null,
-  "updated_at": "2026-09-09T04:30:49.739Z",
-  "generated_at": "2026-09-10T04:30:12.618Z",
+  "updated_at": "2026-09-10T11:09:50.060Z",
+  "generated_at": "2026-09-10T11:09:50.060Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 2.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -39,7 +39,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 0 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 1 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": null,
   "research": {
     "kind": "NFL_GAME",
@@ -108,8 +108,8 @@
         "note": "Quoted from the perspective of Los Angeles Rams, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 0 absorbed 2026 games.",
-      "sample_games": 0,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 1 absorbed 2026 game.",
+      "sample_games": 1,
       "seeded": true,
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk differs from the market by 2.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -308,8 +308,8 @@
               "a": {
                 "v": "+0.056",
                 "n": 0.056368,
-                "rank": "#6 of 32",
-                "rank_n": 6,
+                "rank": "#7 of 32",
+                "rank_n": 7,
                 "note": null
               },
               "h": {
@@ -322,7 +322,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.065984,
-                "rank_gap": 5
+                "rank_gap": 6
               }
             },
             {
@@ -332,8 +332,8 @@
               "a": {
                 "v": "+0.108",
                 "n": 0.108344,
-                "rank": "#5 of 32",
-                "rank_n": 5,
+                "rank": "#6 of 32",
+                "rank_n": 6,
                 "note": null
               },
               "h": {
@@ -346,7 +346,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.05697600000000003,
-                "rank_gap": 4
+                "rank_gap": 5
               }
             },
             {
@@ -387,14 +387,14 @@
               "h": {
                 "v": "+2.8 pp",
                 "n": 0.027511999999999998,
-                "rank": "#2 of 32",
-                "rank_n": 2,
+                "rank": "#1 of 32",
+                "rank_n": 1,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.023912,
-                "rank_gap": 10
+                "rank_gap": 11
               }
             },
             {
@@ -706,13 +706,13 @@
         },
         {
           "k": "Explosive pass rate",
-          "rank_gap": 10,
+          "rank_gap": 11,
           "gap": 0.023912,
           "lead": "Los Angeles Rams",
           "trail": "San Francisco 49ers",
-          "lead_cell": "+2.8 pp · #2 of 32",
+          "lead_cell": "+2.8 pp · #1 of 32",
           "trail_cell": "+0.4 pp · #12 of 32",
-          "text": "Los Angeles Rams +2.8 pp (#2 of 32) vs San Francisco 49ers +0.4 pp (#12 of 32) — 10 places on the league board."
+          "text": "Los Angeles Rams +2.8 pp (#1 of 32) vs San Francisco 49ers +0.4 pp (#12 of 32) — 11 places on the league board."
         },
         {
           "k": "Defence · EPA allowed per play",
@@ -737,7 +737,7 @@
           "team": "San Francisco 49ers",
           "label": "pass offence",
           "v": "+0.108",
-          "rank": "#5 of 32",
+          "rank": "#6 of 32",
           "note": null
         },
         "def": {
@@ -749,7 +749,7 @@
         },
         "complete": true,
         "net": 0.119352,
-        "read": "San Francisco 49ers’ pass offence rates +0.108 (#5 of 32) and Los Angeles Rams’ pass defence rates +0.011 (#17 of 32). Added the way the model adds them, this pairing sits +0.119 from the league mean, which favours San Francisco 49ers."
+        "read": "San Francisco 49ers’ pass offence rates +0.108 (#6 of 32) and Los Angeles Rams’ pass defence rates +0.011 (#17 of 32). Added the way the model adds them, this pairing sits +0.119 from the league mean, which favours San Francisco 49ers."
       },
       {
         "title": "Los Angeles Rams pass offence vs San Francisco 49ers pass defence",
@@ -877,7 +877,7 @@
           "team": "Los Angeles Rams",
           "label": "explosive passing",
           "v": "+2.8 pp",
-          "rank": "#2 of 32",
+          "rank": "#1 of 32",
           "note": null
         },
         "def": {
@@ -889,7 +889,7 @@
         },
         "complete": true,
         "net": 0.009343999999999998,
-        "read": "Los Angeles Rams’ explosive passing rates +2.8 pp (#2 of 32) and San Francisco 49ers’ explosive passes allowed rates −1.8 pp (#4 of 32). Added the way the model adds them, this pairing sits +0.9 pp from the league mean, which favours Los Angeles Rams."
+        "read": "Los Angeles Rams’ explosive passing rates +2.8 pp (#1 of 32) and San Francisco 49ers’ explosive passes allowed rates −1.8 pp (#4 of 32). Added the way the model adds them, this pairing sits +0.9 pp from the league mean, which favours Los Angeles Rams."
       },
       {
         "title": "San Francisco 49ers explosive running vs Los Angeles Rams explosive runs allowed",
@@ -1052,7 +1052,7 @@
         ],
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
-          "The ratings behind this projection are the trained seeds plus 0 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 1 absorbed 2026 game; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1092,7 +1092,7 @@
         {
           "sev": "HIGH",
           "label": "early-season sample",
-          "text": "Only 0 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
+          "text": "Only 1 game of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
           "widening": null
         },
         {
@@ -1189,13 +1189,13 @@
         },
         {
           "k": "Offence · EPA per play",
-          "a": "+0.056  #6 of 32",
+          "a": "+0.056  #7 of 32",
           "h": "+0.122  #1 of 32",
           "note": null
         },
         {
           "k": "Pass offence · EPA per dropback",
-          "a": "+0.108  #5 of 32",
+          "a": "+0.108  #6 of 32",
           "h": "+0.165  #1 of 32",
           "note": null
         },
@@ -1208,7 +1208,7 @@
         {
           "k": "Explosive pass rate",
           "a": "+0.4 pp  #12 of 32",
-          "h": "+2.8 pp  #2 of 32",
+          "h": "+2.8 pp  #1 of 32",
           "note": "20+ yard pass plays per attempt"
         },
         {
@@ -1280,11 +1280,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 0 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 1 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-10T04:30:12.618Z"
+    "at": "2026-09-10T11:09:50.060Z"
   }
 }
