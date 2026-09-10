@@ -530,9 +530,17 @@
            card already carries both in its profile — they were simply never
            handed to the grass, so every back ran the same way and died the
            same way. */
-        vis: unit(pf && pf.vis != null ? pf.vis : (r.elu == null ? (r.iq == null ? ov : r.iq) : r.elu)),
-        btk: unit(pf && pf.btk != null ? pf.btk
-              : (r.pwr == null ? (r.str == null ? ov : r.str) : Math.round(r.pwr * 0.6 + (r.elu == null ? r.pwr : r.elu) * 0.4)))
+        /* THE CARD FIRST, THE PROFILE SECOND. Both of these are derived in
+           the profile layer from the same two or three ratings — so read the
+           ratings when the card has them, or a card whose numbers change does
+           not change what happens on the grass, which is the one promise a
+           card game has to keep. The formulas are the profile's own. */
+        vis: unit(r.elu != null || r.hnd != null
+              ? (r.elu == null ? ov : r.elu) * 0.5 + (r.hnd == null ? ov : r.hnd) * 0.5
+              : (pf && pf.vis != null ? pf.vis : (r.iq == null ? ov : r.iq))),
+        btk: unit(r.pwr != null || r.elu != null
+              ? (r.pwr == null ? ov : r.pwr) * 0.6 + (r.elu == null ? ov : r.elu) * 0.4
+              : (pf && pf.btk != null ? pf.btk : (r.str == null ? ov : r.str)))
       };
     }
     function defMan(pl, pos) {
@@ -553,7 +561,12 @@
         /* how well he runs the angle and arrives under control: the profile
            has had this since the player universe was built and the grass has
            never read it */
-        pur: unit(pf && pf.pur != null ? pf.pur : (r.spd == null ? ov : r.spd))
+        /* the same rule on the other side: pursuit is speed and the head for
+           the angle, and the card carries both */
+        pur: unit(r.spd != null || r.tkl != null || r.rst != null
+              ? (r.spd == null ? ov : r.spd) * 0.6
+                + (r.rst != null ? r.rst : (r.tkl == null ? ov : r.tkl)) * 0.4
+              : (pf && pf.pur != null ? pf.pur : ov))
       };
     }
     function put(pl, pos, side) {
