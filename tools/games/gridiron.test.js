@@ -660,11 +660,11 @@ function repeat(playKey, defKey, n, extra, opts) {
     'far ' + (cam.fore(70) / cam.lat(70)).toFixed(2) + ' vs near ' + (cam.fore(30) / cam.lat(30)).toFixed(2));
 
   /* the kits are never the same two colours */
-  const home = PA.uniform({ primary: '#3fb883', secondary: '#123326', ink: '#06231a' }, false);
+  const home = PA.uniform({ primary: '#7cc142', secondary: '#123326', ink: '#06231a' }, false);
   const away = PA.uniform({ primary: '#e2664b', secondary: '#3a1611', ink: '#2a0c08' }, true);
   chk('home and away jerseys differ', home.jersey !== away.jersey);
   chk('a shaded colour can be shaded again',
-    /^rgb\(\d+,\d+,\d+\)$/.test(PA.shade(PA.shade('#3fb883', -0.3), 0.4)));
+    /^rgb\(\d+,\d+,\d+\)$/.test(PA.shade(PA.shade('#7cc142', -0.3), 0.4)));
   chk('the number is legible on the jersey', PA.readable('#ffffff') === '#101418'
     && PA.readable('#06231a') === '#ffffff');
 
@@ -740,7 +740,7 @@ function repeat(playKey, defKey, n, extra, opts) {
   chk('the ball draws in the air with a shadow under it', bctx.calls.fill >= 2 && bctx.bad.length === 0);
 
   const actx = recorder();
-  PA.art(actx, cam, [{ pts: [[20, 30], [22, 36], [30, 40]], color: '#3fb883' }]);
+  PA.art(actx, cam, [{ pts: [[20, 30], [22, 36], [30, 40]], color: '#7cc142' }]);
   chk('play art draws a route with an arrow head', actx.calls.stroke >= 1 && actx.calls.fill >= 1);
 
   const mctx = recorder();

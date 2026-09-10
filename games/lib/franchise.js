@@ -249,16 +249,16 @@
     { key: 'bull',   label: 'Bull' },   { key: 'spear',  label: 'Spear' }
   ];
   var THEMES = [
-    { key: 'forest',  label: 'Forest',  primary: '#3fb883', secondary: '#123326', ink: '#06231a' },
-    { key: 'navy',    label: 'Navy',    primary: '#c9d94a', secondary: '#12203a', ink: '#061a3a' },
+    { key: 'forest',  label: 'Forest',  primary: '#7cc142', secondary: '#123326', ink: '#06231a' },
+    { key: 'navy',    label: 'Navy',    primary: '#2fa79a', secondary: '#12203a', ink: '#061a3a' },
     { key: 'crimson', label: 'Crimson', primary: '#e2664b', secondary: '#3a1611', ink: '#2a0c08' },
     { key: 'gold',    label: 'Gold',    primary: '#d9a441', secondary: '#3a2a0e', ink: '#2a1c06' },
     { key: 'slate',   label: 'Slate',   primary: '#a9b6c9', secondary: '#252b36', ink: '#12161d' },
-    { key: 'violet',  label: 'Violet',  primary: '#b98cff', secondary: '#261c40', ink: '#170f2a' },
+    { key: 'violet',  label: 'Violet',  primary: '#d274b0', secondary: '#261c40', ink: '#170f2a' },
     { key: 'teal',    label: 'Teal',    primary: '#3fc1b8', secondary: '#0f2f2d', ink: '#06211f' },
     { key: 'orange',  label: 'Orange',  primary: '#f28c38', secondary: '#3a230e', ink: '#2a1706' },
     { key: 'maroon',  label: 'Maroon',  primary: '#b8405a', secondary: '#33121a', ink: '#240b11' },
-    { key: 'black',   label: 'Black',   primary: '#eceaf6', secondary: '#171a3a', ink: '#0b0d1f' }
+    { key: 'black',   label: 'Black',   primary: '#f1ebdf', secondary: '#221c15', ink: '#100e0a' }
   ];
   var OFFENSES = [
     { key: 'air_raid',   label: 'Air Raid',   blurb: 'Four wide, quick reads, the ball in the air.' },

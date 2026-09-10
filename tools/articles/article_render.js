@@ -67,7 +67,7 @@
     h += '<meta name="description" content="' + esc(o.description) + '">\n';
     h += '<link rel="canonical" href="' + esc(o.canonical) + '">\n';
     h += '<meta name="robots" content="' + robots + '">\n';
-    h += '<meta name="theme-color" content="#0b0d1f">\n';
+    h += '<meta name="theme-color" content="#100e0a">\n';
     h += '<meta name="color-scheme" content="dark">\n';
     h += '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 32 32\'%3E%3Crect width=\'32\' height=\'32\' rx=\'7\' fill=\'%230b0d11\'/%3E%3Cpath d=\'M18 6 L23 6 L14 26 L9 26 Z\' fill=\'%233fb883\'/%3E%3C/svg%3E">\n';
     h += '<meta property="og:type" content="' + (o.og_type || 'article') + '">\n';

@@ -13,7 +13,7 @@
 <title>The Vault | EdgeDesk Games</title>
 <meta name="description" content="The EdgeDesk Vault: every pack your record has earned, the odds printed on each one, and a reveal worth the wait. Earned by playing and by nothing else — nothing here can be bought. Free to play, no real-money wagering.">
 <link rel="canonical" href="https://edgedesksports.com/games/packs">
-<meta name="theme-color" content="#0b0d1f">
+<meta name="theme-color" content="#100e0a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
@@ -37,10 +37,10 @@
 /* games.css has a .vs of its own (the head-to-head strip, a three-column
    grid); the shelf tile shares the letters and must not share the grid */
 .vs-grid>.vs,.vs{position:relative;display:block;grid-template-columns:none;background:var(--cell);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;overflow:hidden;
-  --vh:#3fb883;--vd:#0d2a1e}
+  --vh:#7cc142;--vd:#0d2a1e}
 .vs::before{content:'';position:absolute;inset:0;background:radial-gradient(90% 60% at 100% 0%,color-mix(in srgb,var(--vh) 22%,transparent),transparent 70%);pointer-events:none}
-.vs-art-cache{--vh:#3fb883;--vd:#0d2a1e}.vs-art-rookie{--vh:#c9d94a;--vd:#0f1d33}.vs-art-postseason{--vh:#d9a441;--vd:#2a2010}
-.vs-art-vault{--vh:#f2c744;--vd:#2b1e08}.vs-art-scout{--vh:#b98cff;--vd:#1d1530}.vs-art-gameday{--vh:#e2664b;--vd:#2a140f}
+.vs-art-cache{--vh:#7cc142;--vd:#0d2a1e}.vs-art-rookie{--vh:#2fa79a;--vd:#0f1d33}.vs-art-postseason{--vh:#d9a441;--vd:#2a2010}
+.vs-art-vault{--vh:#f2c744;--vd:#2b1e08}.vs-art-scout{--vh:#d274b0;--vd:#1d1530}.vs-art-gameday{--vh:#e2664b;--vd:#2a140f}
 .vs-art-speed{--vh:#39d5e6;--vd:#07222b}.vs-art-trench{--vh:#d3a26a;--vd:#241a10}.vs-art-primetime{--vh:#ff5c8a;--vd:#22091c}
 .vs-top{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--vh)}
 .vs-top .m{margin-left:auto;color:var(--faint);font-weight:600;letter-spacing:.08em}
@@ -68,7 +68,7 @@
 .vs-earn{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
 .vs-earn li{display:flex;gap:10px;align-items:baseline;font-size:13.5px;line-height:1.4}
 .vs-earn li .k{flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px solid var(--line2)}
-.vs-earn li .k.art-cache{color:#3fb883}.vs-earn li .k.art-rookie{color:#c9d94a}.vs-earn li .k.art-postseason{color:#d9a441}.vs-earn li .k.art-vault{color:#f2c744}.vs-earn li .k.art-scout{color:#b98cff}.vs-earn li .k.art-gameday{color:#e2664b}
+.vs-earn li .k.art-cache{color:#7cc142}.vs-earn li .k.art-rookie{color:#2fa79a}.vs-earn li .k.art-postseason{color:#d9a441}.vs-earn li .k.art-vault{color:#f2c744}.vs-earn li .k.art-scout{color:#d274b0}.vs-earn li .k.art-gameday{color:#e2664b}
 .vs-earn li .k.art-speed{color:#39d5e6}.vs-earn li .k.art-trench{color:#d3a26a}.vs-earn li .k.art-primetime{color:#ff5c8a}
 /* kept men, and a card of one's own */
 .mk-hist .tier{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line2);border-radius:999px;padding:2px 6px;margin-left:6px;color:var(--dim)}

@@ -21,10 +21,10 @@ COMBOS.forEach(function(c){
   var ctx=cv.getContext('2d'); ctx.setTransform(2,0,0,2,0,0);
   var cam=P.camera({w:393,h:560,x:26.6,y:32,back:74,px:13,wide:32,height:1.45*560/13,anchor:.66});
   var scene={tick:2.2,homeColor:'#1c4a30',awayColor:'#57231f',homeInk:'#8ff0c0',awayInk:'#ffb4a0',
-    homeTint:'#3fb883',awayTint:'#c0392b',homeName:'HIGH PLAINS',awayName:'FORGEMEN',
+    homeTint:'#7cc142',awayTint:'#c0392b',homeName:'HIGH PLAINS',awayName:'FORGEMEN',
     light:c[0],weather:c[1],excite:0.5,firstDown:38,los:30};
   P.field(ctx,cam,scene); P.markers(ctx,cam,30,38);
-  var kh=P.uniform({primary:'#3fb883',secondary:'#123326'},false);
+  var kh=P.uniform({primary:'#7cc142',secondary:'#123326'},false);
   var ka=P.uniform({primary:'#c0392b',secondary:'#2a1a1a'},true);
   for(var i=0;i<5;i++){P.player(ctx,{x:20+i*3.3,y:29,pos:'OL',kit:kh,num:70+i,state:'stance',phase:0,face:'back'},cam);}
   for(i=0;i<4;i++){P.player(ctx,{x:21+i*4,y:31.3,pos:'DL',kit:ka,num:90+i,state:'stance',phase:0,face:'front'},cam);}
