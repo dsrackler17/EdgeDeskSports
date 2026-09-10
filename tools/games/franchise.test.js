@@ -3000,6 +3000,37 @@ fresh();
       none && none.ybc == null && none.brk == null, JSON.stringify(none));
   })();
 
+  /* what the PAGE does with it. Static, deliberately: the browser QA played
+     fifty-five user-steered carries in a balanced matchup and produced no
+     stopped run at all, which is ordinary for that fixture (measured at 1.6%
+     there, against 8.7% across three hundred mixed games) and no way to hold
+     a rendering path to account. These say the path exists. */
+  (() => {
+    const PLAYJS = fs.readFileSync(G('play/play.js'), 'utf8');
+    const CSS = fs.readFileSync(G('gridiron.css'), 'utf8');
+    chk('a stopped run is drawn as the defence\'s play, not the offence\'s',
+      /var stuffed = !!\(rush && rush\.stuffed && !p\.completion\);/.test(PLAYJS)
+      && /\(stuffed \? ' res-stuff' : ''\)/.test(PLAYJS)
+      && /Stuffed · ' \+ rush\.yards \+ ' yards' : 'Stuffed · no gain'/.test(PLAYJS));
+    chk('and the page carries a style for it', /\.res-stuff\{/.test(CSS));
+    chk('the run commentary counts what has actually happened and says it once',
+      /function runNote\(p\)/.test(PLAYJS) && /RUN\.said\.three = 1;/.test(PLAYJS)
+      && /if \(RUN\.stuffs === 3/.test(PLAYJS) && /runNote\(p\);/.test(PLAYJS));
+    chk('and it is reset when a new game starts',
+      (PLAYJS.match(/RUN = \{ stuffs: 0/g) || []).length === 2);
+    chk('the Research IQ panel prints the process and the result as two numbers',
+      /<em>Process<\/em>/.test(PLAYJS) && /<em>Result<\/em>/.test(PLAYJS)
+      && /esc\(e\.grade\.total\)/.test(PLAYJS) && /esc\(got\)/.test(PLAYJS)
+      && /yd === 0 \? 'no gain'/.test(PLAYJS));
+    chk('and it names the front when a sound call met one in the backfield',
+      /rush\.backfield_contact/.test(PLAYJS) && /The front won it, not the call\./.test(PLAYJS));
+    chk('the read carries the run record so it can say why',
+      /e\.rush = \(res && res\.rush\) \|\| null;/.test(PLAYJS));
+    chk('the final box compares both sides on who won the line',
+      /'Before contact', mine\.rushYBC/.test(PLAYJS) && /'After contact', mine\.rushYAC/.test(PLAYJS)
+      && /'Runs stopped', theirs\.stuffedRuns, mine\.stuffedRuns/.test(PLAYJS));
+  })();
+
   /* what the card says about it */
   (() => {
     const elite = F.runProfile({ position: 'RB', ratings: { spd: 94, elu: 95, pwr: 90, hnd: 88 }, overall: 92,
