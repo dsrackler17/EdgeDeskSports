@@ -15,12 +15,12 @@
    =========================================================================== */
 
 :root{
-  --ink:#0b0d11;--panel:#12151b;--raised:#1a1e27;--cell:#161a22;
-  --line:#232935;--line2:#2c333f;
-  --text:#e9edf4;--dim:#8b95a6;--faint:#59626f;
+  --ink:#0b0d1f;--panel:#11132f;--raised:#171a3a;--cell:#141734;
+  --line:#222852;--line2:#292f5b;
+  --text:#eceaf6;--dim:#9095b8;--faint:#5f6488;
   --val:#3fb883;            /* the EdgeDesk green */
   --val-dim:#2b7d59;
-  --neg:#e2664b;--est:#d9a441;--obs:#5c9dff;--exp:#9d7bff;
+  --neg:#e2664b;--est:#d9a441;--obs:#c9d94a;--on-accent:#1b1f08;--exp:#b98cff;
   --radius:14px;
   --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 30px rgba(0,0,0,.45);
   --tap:48px;               /* the thumb-friendly minimum, used everywhere */
@@ -33,8 +33,7 @@ body{
   font-family:'Inter',system-ui,-apple-system,sans-serif;
   font-size:15px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;                      /* the page body never scrolls sideways */
-}
+  overflow-x:hidden;                      /* the page body never scrolls sideways */;color-scheme:dark;accent-color:var(--accent)}
 a{color:var(--val);text-decoration:none}
 a:hover{text-decoration:underline}
 h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
@@ -47,7 +46,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 @media(min-width:768px){.wrap{padding:0 24px}}
 
 /* ── header ─────────────────────────────────────────────────────────────── */
-.gh{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.92);
+.gh{position:sticky;top:0;z-index:40;background:rgba(11,13,31,.92);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .gh-in{display:flex;align-items:center;gap:12px;height:56px}
 .gh-logo{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:.06em;
@@ -251,7 +250,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
   font-size:12px;font-weight:800;margin-top:1px}
 .facts .s.p{background:rgba(63,184,131,.16);color:var(--val)}
 .facts .s.m{background:rgba(226,102,75,.16);color:var(--neg)}
-.facts .s.q{background:rgba(139,149,166,.16);color:var(--dim)}
+.facts .s.q{background:rgba(144,149,184,.16);color:var(--dim)}
 
 /* ── Pick 5 ─────────────────────────────────────────────────────────────── */
 .p5{display:grid;gap:12px}
@@ -270,7 +269,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .p5-btn:disabled{cursor:default;opacity:.9}
 .p5-res{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .p5-res.w{color:var(--val)}.p5-res.l{color:var(--neg)}.p5-res.p{color:var(--dim)}
-.p5-bar{position:sticky;bottom:0;z-index:30;background:rgba(11,13,17,.95);
+.p5-bar{position:sticky;bottom:0;z-index:30;background:rgba(11,13,31,.95);
   backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 0;
   padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 .p5-count{text-align:center;font-size:12.5px;color:var(--dim);margin-bottom:8px}
@@ -370,7 +369,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .phase .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
 .phase.live{color:var(--est);border-color:rgba(217,164,65,.4)}
 .phase.done{color:var(--val);border-color:var(--val-dim)}
-.phase.wait{color:var(--obs);border-color:rgba(92,157,255,.35)}
+.phase.wait{color:var(--obs);border-color:rgba(201,217,74,.35)}
 .phase.dead{color:var(--faint)}
 
 /* the sealed-answer notice: the product's integrity promise, stated plainly */
@@ -498,7 +497,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .pulse-chip span{color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* the one interrupting moment: a new level, or the War Room being created */
-.moment{position:fixed;inset:0;z-index:75;background:rgba(11,13,17,.74);display:grid;
+.moment{position:fixed;inset:0;z-index:75;background:rgba(11,13,31,.74);display:grid;
   place-items:center;padding:16px;opacity:0;transition:opacity .25s ease}
 .moment.on{opacity:1}
 .moment-card{background:var(--panel);border:1px solid var(--val-dim);border-radius:var(--radius);
@@ -673,11 +672,11 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .snap-how b{color:var(--text);font-weight:600}
 .snap-how .who{flex:none;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
   font-size:11px;font-weight:800;background:rgba(63,184,131,.16);color:var(--val);margin-top:1px}
-.snap-how .who.b{background:rgba(92,157,255,.16);color:var(--obs)}
+.snap-how .who.b{background:rgba(201,217,74,.16);color:var(--obs)}
 .snap .btn-row{margin-top:12px}
 
 /* the premium moment, once a week, after research interest */
-.pro{border-color:var(--obs);background:linear-gradient(180deg,rgba(92,157,255,.08),transparent)}
+.pro{border-color:var(--obs);background:linear-gradient(180deg,rgba(201,217,74,.08),transparent)}
 .pro .pro-t{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;line-height:1.25}
 .pro p{margin:8px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55}
 
@@ -753,7 +752,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .gtab{display:none}
 @media(max-width:480px){
   .gtab{position:fixed;left:0;right:0;bottom:0;z-index:35;display:grid;grid-template-columns:repeat(5,1fr);
-    background:rgba(11,13,17,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    background:rgba(11,13,31,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
     padding-bottom:env(safe-area-inset-bottom)}
   .gtab a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     min-height:56px;font-size:10.5px;font-weight:600;color:var(--dim);letter-spacing:.02em}
@@ -797,7 +796,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
    Asked once, at the door to the research terminal, and never on arrival at
    a game. A "no" closes it for good. */
 .age-gate{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
-  padding:18px;background:rgba(6,8,11,.72);backdrop-filter:blur(3px)}
+  padding:18px;background:rgba(4,5,15,.72);backdrop-filter:blur(3px)}
 .age-gate.on{display:flex}
 .ag-card{width:100%;max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:16px;
   padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
@@ -823,7 +822,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 }
 .netb-offline{background:var(--neg);color:#fff}
 .netb-reconnecting{background:var(--est);color:var(--ink)}
-.netb-retry{background:var(--obs);color:#fff}
+.netb-retry{background:var(--obs);color:var(--on-accent)}
 .netb-synced{background:var(--val);color:var(--ink)}
 @media (prefers-reduced-motion:no-preference){
   .netb-reconnecting{animation:netbpulse 1.4s ease-in-out infinite}

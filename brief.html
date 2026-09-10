@@ -28,8 +28,11 @@
      the three copies identical).
      =========================================================================== -->
 <style>
-:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#78818f;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--mdl:#9b8cff}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+:root{--bg:#0b0d1f;--surface:#11132f;--surface2:#171a3a;--border:#222852;--text:#eceaf6;--dim:#9095b8;--faint:#787da4;--accent:#c9d94a;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--mdl:#b98cff}
+html,body{margin:0;background:var(--bg);color:var(--text);color-scheme:dark;accent-color:var(--accent);font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+/* printed briefs are dark-on-white paper: keep the light UA scheme there */
+@media print{:root,body{color-scheme:light}}
+
 .wrap{max-width:720px;margin:0 auto;padding:22px 16px 60px}
 .pg-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:12px;color:var(--dim)}
 .pg-top a{color:var(--accent);text-decoration:none}
@@ -113,7 +116,7 @@ a.pg-btn{text-decoration:none;display:inline-block}
 .edb-powered{margin-top:8px!important;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px!important;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)!important}
 .edb-results{margin-top:18px;border-top:1px solid var(--border);padding-top:4px}
 .edb-reslist{margin:0;padding:0;list-style:none}
-.edb-reslist li{padding:8px 0;border-bottom:1px solid rgba(38,44,54,.55);font-size:14px}
+.edb-reslist li{padding:8px 0;border-bottom:1px solid rgba(34,40,82,.55);font-size:14px}
 .edb-reslist li:last-child{border-bottom:none}
 .edb-resv{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800;font-size:11.5px;letter-spacing:.08em;margin-right:4px}
 .edb-resv.bet{color:var(--pos)}.edb-resv.lean{color:var(--warn)}.edb-resv.wait{color:var(--mdl)}.edb-resv.pass{color:var(--faint)}
@@ -4012,7 +4015,7 @@ a.pg-btn{text-decoration:none;display:inline-block}
       try{ navigator.clipboard.writeText(t).then(function(){ toast('Plain text copied'); }, function(){ fallback(t); }); }catch(_){ fallback(t); } }
   };
   function fallback(t){ try{ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Plain text copied'); }catch(_){ toast('Copy failed'); } }
-  function toast(msg){ var d=document.createElement('div'); d.textContent=msg; d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2740;color:#e7eaf0;border:1px solid #2b3b5c;border-radius:10px;padding:9px 14px;font-size:13px;z-index:99'; document.body.appendChild(d); setTimeout(function(){ d.remove(); },1800); }
+  function toast(msg){ var d=document.createElement('div'); d.textContent=msg; d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#141734;color:#eceaf6;border:1px solid #292f5b;border-radius:10px;padding:9px 14px;font-size:13px;z-index:99'; document.body.appendChild(d); setTimeout(function(){ d.remove(); },1800); }
   var s=slug();
   if(!s){ state('<b>No brief selected.</b><br>This link is missing the part that says which brief to open. Ask whoever sent it for the full link.'); return; }
   if(typeof EDPRES==='undefined'){ state('<b>This page could not start up.</b><br>Try reloading. If it keeps happening, the link still works from <a href="./index.html">edgedesksports.com</a>.'); return; }

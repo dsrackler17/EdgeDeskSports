@@ -60,7 +60,7 @@
 .meter .bar{height:8px;border-radius:999px;background:var(--panel);border:1px solid var(--line);overflow:hidden;margin-top:8px}
 .meter .fill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--val-dim),var(--val));
   transition:width .6s cubic-bezier(.2,.8,.3,1)}
-.meter.iq .fill{background:linear-gradient(90deg,#2f5fa8,var(--obs))}
+.meter.iq .fill{background:linear-gradient(90deg,#8a9a2e,var(--obs))}
 .meter.prep .fill{background:linear-gradient(90deg,#8a6a24,var(--est))}
 .meter .s{font-size:11.5px;color:var(--faint);margin-top:6px}
 
@@ -109,7 +109,7 @@
 .pc-rare::before{background:var(--obs)}
 .pc-elite::before{background:var(--est)}
 .pc-elite{border-color:rgba(217,164,65,.45)}
-.pc-rare{border-color:rgba(92,157,255,.35)}
+.pc-rare{border-color:rgba(201,217,74,.35)}
 .pc:hover{border-color:var(--line2)}
 .pc-top{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .pc-num{color:var(--dim)}
@@ -325,8 +325,8 @@
   letter-spacing:.04em;color:var(--text);text-transform:none;margin-bottom:2px}
 .sn-who{font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:4px}
 /* the defensive table reads as the other side of the ball */
-.sn-calls.def button{background:rgba(92,157,255,.07);border-color:rgba(92,157,255,.30)}
-.sn-calls.def button:hover:not(:disabled){border-color:var(--obs);background:rgba(92,157,255,.14)}
+.sn-calls.def button{background:rgba(201,217,74,.07);border-color:rgba(201,217,74,.30)}
+.sn-calls.def button:hover:not(:disabled){border-color:var(--obs);background:rgba(201,217,74,.14)}
 .sn-calls.def .t{color:var(--obs)}
 
 /* ── THE PLAYBOOK (Phase 16) ────────────────────────────────────────────── */
@@ -336,15 +336,15 @@
 .pb-head .tell{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
   border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
 .pb-head .tell.run{color:var(--est);border-color:rgba(217,164,65,.45)}
-.pb-head .tell.pass{color:var(--obs);border-color:rgba(92,157,255,.45)}
+.pb-head .tell.pass{color:var(--obs);border-color:rgba(201,217,74,.45)}
 .pb-means{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.45}
 .sn-calls.pb{margin-top:8px}
 .sn-calls.pb button{background:var(--raised)}
-.sn-calls .trick{border-color:rgba(157,123,255,.45);background:rgba(157,123,255,.07)}
-.sn-calls .trick:hover:not(:disabled){border-color:var(--exp);background:rgba(157,123,255,.14)}
+.sn-calls .trick{border-color:rgba(185,140,255,.45);background:rgba(185,140,255,.07)}
+.sn-calls .trick:hover:not(:disabled){border-color:var(--exp);background:rgba(185,140,255,.14)}
 .sn-calls .trick .t{color:var(--exp)}
 .sn-calls .trick .t em{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--exp);border:1px solid rgba(157,123,255,.45);border-radius:999px;padding:1px 5px;margin-left:5px;vertical-align:middle}
+  color:var(--exp);border:1px solid rgba(185,140,255,.45);border-radius:999px;padding:1px 5px;margin-left:5px;vertical-align:middle}
 
 /* between seasons */
 .gd-done{margin-top:14px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:14px}
@@ -741,8 +741,8 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .st-eff{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;color:var(--val);margin-top:8px}
 .st-eff small{font-family:'Inter',sans-serif;font-size:11.5px;font-weight:500;color:var(--faint);margin-left:4px}
 .st-specs{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
-.st-spec{font-size:10.5px;font-weight:600;color:var(--exp);border:1px solid rgba(155,124,214,.45);
-  border-radius:999px;padding:3px 9px;background:rgba(155,124,214,.07)}
+.st-spec{font-size:10.5px;font-weight:600;color:var(--exp);border:1px solid rgba(185,140,255,.45);
+  border-radius:999px;padding:3px 9px;background:rgba(185,140,255,.07)}
 .st-seat .pc-actions{margin-top:12px}
 .st-seat .pc-actions .btn{min-height:var(--tap)}
 .mk-sum .cp .v{color:var(--exp)}
@@ -842,11 +842,11 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 @keyframes gdw{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .gd-weapon .k{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#04110a;background:var(--val,#3fb883);padding:4px 8px;border-radius:999px}
 .gd-weapon .t{font-family:'Space Grotesk',sans-serif;font-size:17px;line-height:1.2;margin-top:8px}
-.gd-weapon .s{font-size:13px;color:var(--dim,#8b95a6);line-height:1.45;margin-top:4px}
-.gd-weapon .s b{color:var(--text,#e9edf4)}
+.gd-weapon .s{font-size:13px;color:var(--dim,#9095b8);line-height:1.45;margin-top:4px}
+.gd-weapon .s b{color:var(--text,#eceaf6)}
 .gd-weapon .btn-row{margin-top:10px}
 .gd-weapon.quiet{border-color:var(--line,#232a36);background:var(--panel,#0f131a)}
-.gd-weapon.quiet .k{background:var(--line2,#2a3140);color:var(--text,#e9edf4)}
+.gd-weapon.quiet .k{background:var(--line2,#2a3140);color:var(--text,#eceaf6)}
 
 /* ── THE SCOUTING REPORT on Game Day: a module that folds ───────────────── */
 .gd-scout{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--cell)}

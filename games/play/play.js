@@ -366,7 +366,7 @@
     /* the five up front, as one block of men rather than five loose dots */
     [-4.4, -2.2, 0, 2.2, 4.4].forEach(function (dx) {
       out += '<rect x="' + (cx + dx * kx - 1.6).toFixed(1) + '" y="' + (ly - 4.4).toFixed(1)
-        + '" width="3.2" height="3.4" rx="1.1" fill="rgba(233,237,244,.62)"/>';
+        + '" width="3.2" height="3.4" rx="1.1" fill="rgba(236,234,246,.62)"/>';
     });
 
     var spots = form.spots, slot, paths = '', dots = '';
@@ -390,7 +390,7 @@
           /* a pip where the route ends: the eye finds the break instantly */
           + '<circle cx="' + lx.toFixed(1) + '" cy="' + lyy.toFixed(1) + '" r="1.5" fill="' + ink + '"/>';
       }
-      dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="#e9edf4"/>';
+      dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="#eceaf6"/>';
     }
     out += paths + dots;
 
@@ -417,7 +417,7 @@
         out += '<path d="M' + (cx - lane * 0.55 - 3.4).toFixed(1) + ',' + (ly - 2).toFixed(1)
           + ' Q' + (cx).toFixed(1) + ',' + (ly + 2.4).toFixed(1) + ' '
           + (cx + lane * 0.8).toFixed(1) + ',' + (ly - 3.2).toFixed(1)
-          + '" fill="none" stroke="rgba(233,237,244,.55)" stroke-width="1.3" '
+          + '" fill="none" stroke="rgba(236,234,246,.55)" stroke-width="1.3" '
           + 'stroke-linecap="round" stroke-dasharray="2.4 2"/>';
       }
     }
@@ -435,7 +435,7 @@
       if (a.blitz) out += '<path d="M' + x.toFixed(1) + ',' + y.toFixed(1) + 'L' + cx + ',' + (ly + 3)
         + '" stroke="#e2664b" stroke-width="1.3" fill="none"/>';
       out += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.2" fill="'
-        + (a.blitz ? '#e2664b' : a.pos === 'DL' ? '#e9edf4' : '#5c9dff') + '"/>';
+        + (a.blitz ? '#e2664b' : a.pos === 'DL' ? '#eceaf6' : '#c9d94a') + '"/>';
     });
     return out + '</svg>';
   }

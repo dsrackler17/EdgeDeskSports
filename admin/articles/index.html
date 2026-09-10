@@ -38,23 +38,23 @@
      service role never touches this page.
      =========================================================================== -->
 <style>
-:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--mdl:#9b8cff}
+:root{--bg:#0b0d1f;--surface:#11132f;--surface2:#171a3a;--border:#222852;--text:#eceaf6;--dim:#9095b8;--faint:#5f6488;--accent:#c9d94a;--on-accent:#1b1f08;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--mdl:#b98cff}
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 .mono{font-family:'JetBrains Mono',monospace}
 .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
 a{color:var(--accent);text-decoration:none}
-header{border-bottom:1px solid var(--border);background:rgba(13,15,19,.94);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
+header{border-bottom:1px solid var(--border);background:rgba(11,13,31,.94);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
 .hd{display:flex;align-items:center;gap:10px;padding:13px 0;flex-wrap:wrap}
 .logo{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px}
-.logo .mk{width:10px;height:16px;background:linear-gradient(180deg,var(--accent),#7db0ff);border-radius:2px;transform:skewX(-12deg)}
+.logo .mk{width:10px;height:16px;background:linear-gradient(180deg,var(--accent),#dbe875);border-radius:2px;transform:skewX(-12deg)}
 .tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
 .sp{flex:1}
 .who{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
 h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:20px 0 4px;font-weight:600}
 .lede{color:var(--dim);font-size:13px;margin:0 0 14px;line-height:1.6}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
-.btn{background:var(--accent);color:#06122b;border:none;border-radius:9px;font-family:inherit;font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
+.btn{background:var(--accent);color:var(--on-accent);border:none;border-radius:9px;font-family:inherit;font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.sm{padding:6px 10px;font-size:11.5px}
 .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
@@ -78,10 +78,10 @@ th,td{text-align:left;padding:9px 8px;border-top:1px solid var(--border);vertica
 thead th{border-top:0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
 .pill{display:inline-block;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--border);border-radius:5px;padding:2px 7px;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap}
 .pill.published{color:var(--pos);border-color:rgba(47,180,124,.45)}
-.pill.ready{color:var(--accent);border-color:rgba(77,141,255,.45)}
+.pill.ready{color:var(--accent);border-color:rgba(201,217,74,.45)}
 .pill.draft{color:var(--warn);border-color:rgba(217,154,43,.45)}
 .pill.archived{color:var(--faint)}
-.pill.frozen{color:var(--mdl);border-color:rgba(155,140,255,.45)}
+.pill.frozen{color:var(--mdl);border-color:rgba(185,140,255,.45)}
 .pill.pending{color:var(--warn);border-color:rgba(217,154,43,.45)}
 .tabbtn.on{background:var(--surface2);border:1px solid var(--accent);color:var(--text)}
 .acts{display:flex;gap:5px;flex-wrap:wrap}
@@ -94,7 +94,7 @@ dialog{background:var(--bg);color:var(--text);border:1px solid var(--border);bor
 dialog::backdrop{background:rgba(0,0,0,.7)}
 .dlg-hd{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
 .dlg-hd .t{font-weight:700;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#pvFrame{width:100%;height:calc(100% - 50px);border:0;background:#0d0f13}
+#pvFrame{width:100%;height:calc(100% - 50px);border:0;background:#0b0d1f}
 .checkfail{color:var(--warn);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:3px}
 @media(max-width:720px){
   thead{display:none}
