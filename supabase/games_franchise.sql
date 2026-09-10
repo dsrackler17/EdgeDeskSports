@@ -11156,7 +11156,7 @@ declare
   v_diff text; v_len text; v_for integer; v_against integer; v_plays integer; v_yards integer; v_tds integer; v_to integer;
   v_won boolean; v_tier numeric; v_xp integer := 0; v_tc integer := 0; v_cp integer := 0; v_today integer; v_capped boolean := false;
   v_kind text; v_existing jsonb; ln jsonb; v_stats jsonb; v_k text; v_val numeric; v_men integer := 0; v_detail jsonb; v_packs integer;
-  v_before jsonb; v_rep jsonb;
+  v_before jsonb; v_rep jsonb; v_had text[]; v_new_kinds jsonb;
   allowed text[] := array['games','att','cmp','yds','td','int','car','rush_yds','rush_td','rec','rec_yds','rec_td','tkl','sacks','tfl','pd','fg','fga','xp'];
 begin
   if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
@@ -11226,12 +11226,21 @@ begin
   if v_xp > 0 then perform public.franchise_credit(v_f, 'xp', v_xp, 'live_game', p_key, 'Game Day, ' || v_for || '–' || v_against); end if;
   if v_tc > 0 then perform public.franchise_credit(v_f, 'tc', v_tc, 'live_game', p_key, 'Game Day, ' || v_for || '–' || v_against); end if;
   if v_cp > 0 then perform public.franchise_credit(v_f, 'cp', v_cp, 'live_game', p_key, 'Game Day, won'); end if;
+  -- WHICH PACKS THIS GAME SEALED, not just how many. A live game can earn a
+  -- Game Day Pack and a program pack at the same moment (packs_v4), and a
+  -- panel that names the wrong one is a panel nobody can trust.
+  select coalesce(array_agg(k.kind || ':' || k.source_key), '{}') into v_had
+    from public.franchise_packs k where k.franchise_id = v_f;
   v_packs := public.franchise_packs_sync(v_f);
+  select coalesce(jsonb_agg(distinct jsonb_build_object('kind', k.kind, 'name', public.franchise_pack_def(k.kind)->>'name')), '[]'::jsonb)
+    into v_new_kinds
+    from public.franchise_packs k
+   where k.franchise_id = v_f and not (k.kind || ':' || k.source_key = any(v_had));
   v_rep := public.franchise_rank_report(v_f);
   return jsonb_build_object('ok', true, 'already', false, 'result', v_detail, 'capped', v_capped,
     'rewards', jsonb_build_object('xp', v_xp, 'tc', v_tc, 'cp', v_cp),
     'rank', v_rep, 'rank_gain', (v_rep->>'points')::int - (v_before->>'points')::int,
-    'packs_new', v_packs, 'gameday', public.franchise_gameday_progress(v_f),
+    'packs_new', v_packs, 'packs_sealed', v_new_kinds, 'gameday', public.franchise_gameday_progress(v_f),
     'totals', public.franchise_totals(v_f));
 end;
 $$;
