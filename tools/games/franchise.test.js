@@ -2954,11 +2954,58 @@ fresh();
     has(PACKS, ".vs-art-primetime{", 'and Primetime');
   })();
 
+  /* ═══ 23. THE LIVING SEASON ═════════════════════════════════════════════ */
+  chk('the report grew to forty-four rows', /select 44, 'the living season/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 23, 'the living season: rankings, award races, the title game'\)/.test(SQL));
+  eq('the season is versioned', F.SEASON_VERSION, 'season_v1');
+  has(SQL, "'version', 'season_v1'", 'and the SQL carries the same version');
+  has(README, 'season_v1', 'the README documents the living season');
+  (function () {
+    /* the published power model is the client's mirror of it, term for term */
+    const rules = (SQL.match(/create or replace function public\.franchise_season_rules\(\)[\s\S]*?\$\$;/) || [''])[0];
+    Object.keys(F.SEASON_RULES).forEach(k => {
+      const m = rules.match(new RegExp("'" + k + "', (-?[0-9.]+)"));
+      chk('the power model mirrors ' + k, !!m && Number(m[1]) === F.SEASON_RULES[k], k + ': ' + (m && m[1]) + ' vs ' + F.SEASON_RULES[k]);
+    });
+    /* the ten races, in the same order, with the same names */
+    F.AWARDS.forEach(a => {
+      chk('the ' + a.key + ' race is the same race on both sides',
+        rules.indexOf("'key', '" + a.key + "'") >= 0 && rules.indexOf("'name', '" + a.name + "'") >= 0, a.key);
+    });
+    eq('five candidates a race, on both sides', (rules.match(/'candidates', (\d+)/) || [])[1], '5');
+  })();
+  chk('the client only ever READS the season: it cannot write a snapshot',
+    /function rankings\(\) \{ return rpc\('franchise_rankings', withSecret\(\{\}\)\); \}/.test(FJS)
+    && /function awards\(\) \{ return rpc\('franchise_awards', withSecret\(\{\}\)\); \}/.test(FJS)
+    && !/franchise_rankings_write|franchise_awards_write|franchise_power_rankings|franchise_award_races/.test(FJS));
+  chk('and the server writes it without being asked, after the season lines',
+    /create constraint trigger franchise_games_snapshot/.test(SQL) && /deferrable initially deferred/.test(SQL));
+  chk('the award score is a rate for the position and never an overall',
+    (() => {
+      const fn = (SQL.match(/create or replace function public\.franchise_award_score\([\s\S]*?\$\$;/) || [''])[0];
+      return fn.length > 200 && !/overall|archetype|rarity|potential/.test(fn) && /\/ g/.test(fn);
+    })());
+  chk('the title game is a game of its own, earned by losing at most once',
+    /create or replace function public\.franchise_championship_earned/.test(SQL)
+    && /add column if not exists championship boolean/.test(SQL)
+    && /The EdgeDesk Championship/.test(SQL));
+  chk('the most valuable man in it is read out of the box score',
+    (() => {
+      const fn = (SQL.match(/create or replace function public\.franchise_championship_mvp\([\s\S]*?\$\$;/) || [''])[0];
+      return fn.length > 200 && !/overall/.test(fn) && /impact/.test(fn);
+    })());
+  chk('GameDay lays out the rankings, the award watch and the title game',
+    /function rankingsSection/.test(GAMEDAY) && /function awardsSection/.test(GAMEDAY)
+    && /function titlePregame/.test(GAMEDAY) && /function titlePostgame/.test(GAMEDAY)
+    && /FR\.rankings\(\)/.test(GAMEDAY) && /FR\.awards\(\)/.test(GAMEDAY) && /FR\.championship\(\)/.test(GAMEDAY));
+  chk('and carries the styles it needs for them', /\.rk-row\{/.test(FCSS) && /\.aw-race\{/.test(FCSS) && /\.ttl-mvp\{/.test(FCSS));
+
   /* ═══ 22. THE CARD IS NOT THE MAN ═══════════════════════════════════════ */
   chk('the report grew to forty-three rows', /select 43, 'the card is not the man/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 22, 'the card is not the man: identity, edition, instance, ownership'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 22);
+  eq('and the client expects it', F.SCHEMA.franchise, 23);
   eq('the cards are versioned', F.CARDS_VERSION, 'cards_v1');
   has(SQL, "'version', 'cards_v1'", 'and the SQL carries the same version');
   has(README, 'cards_v1', 'the README documents the separation');
@@ -3025,7 +3072,7 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 20, 'the pull record: every pack you opened and the best of them'\)/.test(SQL));
   chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 20);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 21/.test(SQL));
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 23/.test(SQL));
   eq('the pull record is versioned', F.PULLS_VERSION, 'pulls_v1');
   has(SQL, "'version', 'pulls_v1'", 'and the SQL agrees');
   chk('the client reads it through one RPC with the secret and nothing else', /function pulls\(\) \{ return rpc\('franchise_pulls', withSecret\(\{\}\)\); \}/.test(FJS) && typeof F.pulls === 'function');
@@ -3044,7 +3091,7 @@ fresh();
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 19, 'the lineup, chemistry, and the Exchange'\)/.test(SQL));
   chk('and the client expects it, or a later phase', F.SCHEMA.franchise >= 19);
-  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 21/.test(SQL));
+  chk('and the report checks the same number', /\(public\.games_schema\(\)->>'franchise'\)::int = 23/.test(SQL));
   eq('the lineup is versioned', F.LINEUP_VERSION, 'lineup_v1');
   has(SQL, "'version', 'lineup_v1'", 'and the SQL agrees');
   eq('chemistry is versioned', F.CHEMISTRY_VERSION, 'chemistry_v1');

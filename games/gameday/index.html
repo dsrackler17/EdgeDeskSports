@@ -114,6 +114,7 @@
   var esc=G.esc,fmt=FR.fmt;
   var READY=G.boot('gameday');
   var SCHED=null,MINE=null,LADDER=null,TRACKED=false,LADDER_TRACKED=false;
+  var RANKS=null,AWARDS=null,CHAMP=null;   /* season_v1: the league, the races, the title game */
   var VIEW_GAME=(location.search.match(/[?&]game=([0-9a-f-]{36})/i)||[])[1]||null;
   /* a franchise challenge link: /games/gameday/?fc=<token> */
   var VIEW_FC=(location.search.match(/[?&]fc=([a-z0-9]{8,32})/i)||[])[1]||null;
@@ -620,14 +621,150 @@
     wireStage(snap,ph);
     if(!TRACKED){TRACKED=true;G.track('gameday_view',{phase:ph.phase,week:ph.game?ph.game.week:null,season:(snap.season||{}).number});}
   }
+  /* a game just finished: the server has written this week's snapshot, so
+     ask for it again rather than guessing at it here */
+  function seasonReads(){
+    return Promise.all([
+      FR.rankings().then(function(r){if(r.ok&&r.data)RANKS=r.data;}),
+      FR.awards().then(function(r){if(r.ok&&r.data)AWARDS=r.data;}),
+      FR.championship().then(function(r){if(r.ok&&r.data)CHAMP=r.data;})
+    ]).then(renderAfter);
+  }
   function renderAfter(){
     var html='';
+    if(CHAMP&&CHAMP.scheduled)html+=titleSection(CHAMP);
+    if(RANKS&&RANKS.rows&&RANKS.rows.length)html+=rankingsSection(RANKS);
+    if(AWARDS&&AWARDS.races&&AWARDS.races.length)html+=awardsSection(AWARDS);
     if(MINE)html+=challengesSection(MINE);
     if(LADDER)html+=ladderSection(LADDER);
     if(SCHED){html+=scheduleSection(SCHED)+historySection(SCHED);}
     html+=h2hCard();
     after.innerHTML=html;
     if(MINE)wireChallenges();
+  }
+
+  /* ---- season_v1: the league, the races, the title game -------------------
+     Every number below is read from the server's own weekly snapshot. The
+     page does no ranking, no scoring and no picking; it lays out what the
+     record says and names the reason beside it. */
+  function movePill(m,prev){
+    if(prev==null)return '<span class="rk-m new">NEW</span>';
+    if(!m)return '<span class="rk-m even">—</span>';
+    return '<span class="rk-m '+(m>0?'up':'down')+'">'+(m>0?'▲':'▼')+Math.abs(m)+'</span>';
+  }
+  function rankRow(r){
+    var why=(r.why||[])[0]||'';
+    return '<li class="rk-row'+(r.mine?' me':'')+'">'
+      +'<span class="rk-n">'+esc(r.rank|0)+'</span>'
+      +movePill(r.movement,r.previous)
+      +FR.logoSvg(r.logo,24,r.theme)
+      +'<span class="rk-t">'+esc((r.city?r.city+' ':'')+(r.name||''))
+      +'<small>'+esc((r.wins|0)+'–'+(r.losses|0))+(why?' · '+esc(why):'')+'</small></span>'
+      +'<span class="rk-r">'+esc(r.rating)+'</span></li>';
+  }
+  function moverLine(label,r){
+    if(!r)return '';
+    return '<div class="rk-mv"><div class="k">'+esc(label)+'</div>'
+      +'<div class="v">'+esc((r.city?r.city+' ':'')+(r.name||''))+' <em>'+esc(FR.moveWord(r.movement))+' to '+esc(r.rank|0)+'</em></div></div>';
+  }
+  function rankingsSection(rk){
+    var top=(rk.rows||[]).slice(0,10),me=rk.me;
+    var inTop=top.some(function(r){return r.mine;});
+    return '<div class="sec"><div class="sec-h"><h2>EdgeDesk Power Rankings</h2>'
+      +'<span class="m">Week '+esc(rk.week|0)+' · '+esc(rk.label||'')+'</span></div>'
+      +'<div class="card rk">'
+      +'<ul class="rk-list">'+top.map(rankRow).join('')
+      +(!inTop&&me?'<li class="rk-gap">·&nbsp;·&nbsp;·</li>'+rankRow(me):'')+'</ul>'
+      +'<div class="rk-movers">'
+        +moverLine('Biggest jump',rk.biggest_jump)
+        +moverLine('Biggest drop',rk.biggest_drop)
+        +'<div class="rk-mv"><div class="k">Risers</div><div class="v">'+esc((rk.risers||[]).length)+' up · '+esc((rk.fallers||[]).length)+' down</div></div>'
+        +((rk.new_top_ten||[]).length?'<div class="rk-mv"><div class="k">New in the top ten</div><div class="v">'
+          +(rk.new_top_ten||[]).map(function(r){return esc(r.name);}).join(', ')+'</div></div>':'')
+      +'</div>'
+      +'<div class="ftp">The rating is roster strength moved by what has actually happened: record, average margin capped at '
+      +esc((FR.SEASON_RULES||{}).margin_cap||21)+', who you played, recent form, wins over clubs rated above you and losses to clubs well below. It is not a sort by record.</div>'
+      +'</div></div>';
+  }
+  function awardCard(race){
+    var c=(race.candidates||[]);
+    if(!c.length)return '';
+    return '<div class="aw-race"><div class="aw-h"><span class="n">'+esc(race.name)+'</span><span class="b">'+esc(race.basis||'')+'</span></div>'
+      +'<ol class="aw-list">'+c.map(function(x){
+        return '<li'+(x.place===1?' class="lead"':'')+'>'
+          +'<span class="p">'+esc(x.place|0)+'</span>'
+          +movePill(x.movement,x.previous)
+          +'<span class="t">'+esc(x.name)+' <em>'+esc(x.position)+'</em>'
+          +'<small>'+esc(x.line)+' · '+esc(x.team_record)+'</small></span>'
+          +'<span class="s">'+esc(x.score|0)+'</span></li>';
+      }).join('')+'</ol></div>';
+  }
+  function awardsSection(aw){
+    var run=(aw.races||[]).filter(function(r){return (r.candidates||[]).length;});
+    if(!run.length)return '';
+    return '<div class="sec"><div class="sec-h"><h2>Award Watch</h2><span class="m">Week '+esc(aw.week|0)+' · '+esc(run.length)+' races</span></div>'
+      +'<div class="card aw">'+run.map(awardCard).join('')
+      +'<div class="ftp">Every score is a rate for the position, not a total — a back is measured against backs and a corner against corners. '
+      +'No overall is consulted anywhere in it. Scored over '+esc(aw.scope||'the men whose games this record keeps')+'.</div></div></div>';
+  }
+  function titleSection(ch){
+    if(!ch.played)return titlePregame(ch);
+    return titlePostgame(ch);
+  }
+  function titlePregame(ch){
+    var cl=ch.club||{},op=ch.opponent||{},r=cl.rating||{};
+    return '<div class="sec ttl"><div class="sec-h"><h2>'+esc(ch.name||'The EdgeDesk Championship')+'</h2>'
+      +'<span class="m">Week '+esc(ch.week|0)+' · '+esc(ch.label||'')+'</span></div>'
+      +'<div class="card ttl-c">'
+      +'<div class="ttl-vs">'
+        +'<div class="s"><div class="ab">'+esc(cl.abbr)+'</div><div class="n">'+esc(cl.name)+'</div><div class="rc">'+esc(cl.record)+'</div>'
+          +'<div class="rt">OVR '+esc(r.overall)+' · OFF '+esc(r.offense)+' · DEF '+esc(r.defense)+'</div></div>'
+        +'<div class="x">for the title</div>'
+        +'<div class="s"><div class="ab">'+esc(op.abbr)+'</div><div class="n">'+esc(op.name)+'</div><div class="rc">'+esc(op.record||'')+'</div>'
+          +'<div class="rt">OVR '+esc(op.overall)+' · OFF '+esc(op.offense_r)+' · DEF '+esc(op.defense_r)+'</div></div>'
+      +'</div>'
+      +'<div class="ttl-key"><div class="t">Where it turns</div><div class="s">'+esc((ch.key_matchup||{}).text||'')+'. '+esc(ch.edge||'')+'.</div></div>'
+      +((ch.stars||[]).length?'<div class="eyebrow" style="margin-top:14px">The men who got you here</div>'
+        +'<ul class="ttl-stars">'+(ch.stars||[]).slice(0,5).map(function(x){
+          return '<li><span class="t">'+esc(x.name)+' <em>'+esc(x.position)+'</em><small>'+esc(x.line)+'</small></span>'
+            +'<span class="s">'+esc(x.score|0)+'</span></li>';}).join('')+'</ul>':'')
+      +((ch.finalists||[]).length?'<div class="eyebrow" style="margin-top:14px">Award finalists on this roster</div>'
+        +'<ul class="ttl-fin">'+(ch.finalists||[]).map(function(a){
+          return '<li><span class="k">'+esc(a.award)+'</span><span class="v">'+esc(a.name)+' <em>'+esc(a.position)+'</em> · '+esc(a.line)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +'<div class="eyebrow" style="margin-top:14px">The path</div>'
+      +'<ul class="ttl-path">'+(ch.path||[]).map(function(g){
+        return '<li class="'+(g.result==='W'?'w':g.result==='L'?'l':'')+'"><span class="w">Wk '+esc(g.week)+'</span>'
+          +'<span class="o">'+esc(g.opponent||'')+'</span><span class="r">'+esc(g.score||g.status||'')+'</span></li>';
+      }).join('')+'</ul>'
+      +'<div class="ftp">'+esc((ch.stadium||{}).note||'a neutral field')+'. The lineup is introduced before the kick.</div>'
+      +'</div></div>';
+  }
+  function titlePostgame(ch){
+    var f=ch.final||{},mvp=ch.mvp||null,won=!!ch.won;
+    return '<div class="sec ttl'+(won?' won':'')+'"><div class="sec-h"><h2>'+esc(ch.whistle||'')+'</h2>'
+      +'<span class="m">'+esc(ch.name||'')+' · '+esc(ch.label||'')+'</span></div>'
+      +'<div class="card ttl-c">'
+      +(won?'<div class="ttl-conf" aria-hidden="true">'+new Array(13).join('<i></i>')+'</div>':'')
+      +'<div class="ttl-final">'+esc(f['for']|0)+'<span>–</span>'+esc(f.against|0)+'</div>'
+      +'<div class="ttl-head">'+esc(ch.headline||'')+'</div>'
+      +'<ul class="ttl-cel">'+(ch.celebration||[]).map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>'
+      +(ch.trophy?'<div class="ttl-tro"><div class="t">'+esc(ch.trophy.name)+'</div>'
+        +'<div class="s">Presented to '+esc(ch.trophy.presented_to)+' · '+esc(ch.trophy.season)+' · '+esc(ch.trophy.record)+'</div></div>':'')
+      +(mvp?'<div class="ttl-mvp"><div class="k">Most Valuable Player</div>'
+        +'<div class="n">'+esc(mvp.name)+' <em>'+esc(mvp.position)+'</em></div>'
+        +'<div class="s">'+esc(mvp.line)+'</div>'
+        +'<div class="w">'+esc((mvp.why||[]).join(' · '))+'</div>'
+        +'<div class="b">Named from '+esc(mvp.basis||'the box score')+'.</div></div>':'')
+      +((ch.awards||[]).length?'<div class="eyebrow" style="margin-top:14px">The season\'s awards</div>'
+        +'<ul class="ttl-fin">'+(ch.awards||[]).map(function(a){
+          return '<li><span class="k">'+esc(a.award)+'</span><span class="v">'+esc(a.winner)+' <em>'+esc(a.position)+'</em> · '+esc(a.line)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(ch.vault?'<div class="ttl-vault"><div class="t">Championship Vault</div>'
+        +'<div class="s">'+(ch.vault.status==='sealed'?'Sealed and waiting in the Vault.':'Opened.')+'</div>'
+        +'<div class="btn-row"><a class="btn btn-go" href="/games/packs/">Open the Vault</a></div></div>':'')
+      +'<div class="ttl-leg">'+esc((ch.legacy||{}).line||'')+'</div>'
+      +'</div></div>';
   }
   function wireStage(snap,ph){
     var pb=$('playBtn');
@@ -653,7 +790,7 @@
       if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
       showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
       /* the snapshot and the schedule, refreshed from the server */
-      return FR.home().then(function(){return FR.schedule();}).then(function(s){if(s.ok&&s.data){SCHED=s.data;}renderAfter();});
+      return FR.home().then(function(){return FR.schedule();}).then(function(s){if(s.ok&&s.data){SCHED=s.data;}renderAfter();return seasonReads();});
     });
   }
   /* ---- THE DRIVES YOU CALL (Phase 13, snap_v1) ---------------------------
@@ -787,7 +924,7 @@
         if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
         CALLED=null;
         showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
-        return FR.home().then(function(){return FR.schedule();}).then(function(sc){if(sc.ok&&sc.data){SCHED=sc.data;}renderAfter();});
+        return FR.home().then(function(){return FR.schedule();}).then(function(sc){if(sc.ok&&sc.data){SCHED=sc.data;}renderAfter();return seasonReads();});
       }
       /* the server sent back this possession and whatever answered it */
       CALLED={drives:CALLED.drives.concat(d.drive||[]),of:(d.possessions|0)||(d.drives|0),called:d.called|0,
@@ -815,7 +952,7 @@
       if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
       CALLED=null;
       showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
-      return FR.home().then(function(){return FR.schedule();}).then(function(sc){if(sc.ok&&sc.data){SCHED=sc.data;}renderAfter();});
+      return FR.home().then(function(){return FR.schedule();}).then(function(sc){if(sc.ok&&sc.data){SCHED=sc.data;}renderAfter();return seasonReads();});
     });
   }
 
@@ -876,7 +1013,11 @@
     renderStage();
     var loads=[FR.schedule().then(function(s){if(s.ok&&s.data)SCHED=s.data;renderAfter();}),
       FR.challengesMine().then(function(m){if(m.ok&&m.data)MINE=m.data;renderAfter();}),
-      FR.ladder(10).then(function(l){if(l.ok&&l.data)LADDER=l.data;renderAfter();})];
+      FR.ladder(10).then(function(l){if(l.ok&&l.data)LADDER=l.data;renderAfter();}),
+      /* season_v1 — the league table, the races and the title game, all read */
+      FR.rankings().then(function(r){if(r.ok&&r.data)RANKS=r.data;renderAfter();}),
+      FR.awards().then(function(r){if(r.ok&&r.data)AWARDS=r.data;renderAfter();}),
+      FR.championship().then(function(r){if(r.ok&&r.data)CHAMP=r.data;renderAfter();})];
     if(VIEW_GAME)loads.push(FR.game(VIEW_GAME).then(function(r){
       if(r.ok&&r.data){showResult(r.data,FR.snapshot(),{season:null});}
     }));

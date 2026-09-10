@@ -3348,6 +3348,58 @@ and every pin in the live harness is untouched: the stick still changes the
 run, power still pays, the tiers still differ in the head. The 800-game check
 is green again.
 
+## The living season (`season_v1`)
+
+A season used to be a record and a schedule. It is three more things now, and
+every one of them is derived from what has actually happened.
+
+**EdgeDesk Power Rankings.** Not a sort by record. Every club in the league is
+rated from roster strength and then moved by evidence: win percentage, average
+margin capped at 21 so a blowout cannot run away with it, strength of schedule,
+the last three results, wins over clubs rated above you, losses to clubs well
+below, and a little for winning on the road. The weights are published in
+`franchise_season_rules()` so any number on the page can be checked against the
+arithmetic that produced it, and every row carries the reasons it is where it
+is. Your franchise is rated on its results; the other clubs are rated on their
+rosters and on whatever they have shown against you, because that is all the
+record actually knows about them — nothing simulates a game nobody played.
+
+A snapshot is written every week into `franchise_rank_weeks`, so movement is
+this week's rank against the last week that was written down. Risers, fallers,
+the biggest jump, the biggest drop and anyone new in the top ten are all read
+off those two snapshots.
+
+**Award races.** Ten of them, updated weekly into `franchise_award_weeks`, each
+with the five men actually having the seasons. `franchise_award_score()` is
+position-specific and per game: a back is measured against what a back does, a
+corner against what a corner does, and every term is a rate so volume cannot
+win a race on its own. Two multipliers move a score — what the team did and who
+it played — and neither moves it by more than a fifth. **No overall is
+consulted anywhere in it.** Clutch is not a feeling: it is the same score
+computed over the one-score games only, added up out of those games' own box
+scores.
+
+The candidates are the men whose games the record keeps, which is your roster —
+opponents are clubs rather than persistent rosters, so there are no opposing
+candidates to invent, and none are invented.
+
+**The title game.** A winning season still earns its bowl. Losing at most once
+in a full season earns something else: `franchise_games.championship`, an
+opponent that is the strongest club you never played rather than a draw, and a
+game the pages treat like nothing else — a pregame with both records, the path,
+the men who got you there, the award finalists and the lineup introduced; a
+postgame with the whistle, the trophy, confetti, the season summary, the
+Championship Vault and a line in the record book. The Most Valuable Player is
+read out of that game's own box score on the same impact scale the simulator
+uses to name a player of the game. The best card in the game does not win it;
+the man who played best does.
+
+**Nobody writes a snapshot but the server.** A deferred constraint trigger on
+`franchise_games` fires at the end of the transaction that finished a game —
+after the season lines that same transaction is still writing — so whichever
+path played it, the week gets its rankings and its award race exactly once. The
+client has three functions and all three are reads.
+
 ## The card is not the man (`cards_v1`)
 
 One table used to carry five ideas at once. `game_players` held **who a man

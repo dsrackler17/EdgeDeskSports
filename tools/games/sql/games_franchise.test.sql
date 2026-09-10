@@ -2662,11 +2662,28 @@ begin
   perform pg_temp.ok('a winning record earns the bowl rather than ending the season',
     jsonb_typeof(v->'bowl') = 'object' and not (v->>'season_complete')::boolean
     and v->'season'->>'status' = 'playoffs', v->'season'->>'status');
-  perform pg_temp.ok('the bowl is a ninth game, named, a week later, against a club rated above the franchise',
+  -- SEASON_V1: this fixture wins seven outright, so the ninth game is not a
+  -- bowl at all — losing at most once earns the title game, under its own
+  -- name, against the strongest club the season never saw.
+  perform pg_temp.ok('the ninth game is a week later, against a club rated above the franchise',
     (v->'bowl'->>'week')::int = 9 and (v->'bowl'->>'bowl')::boolean
-    and (v->'bowl'->>'bowl_name') like 'The % Bowl'
     and (v->'bowl'->'opponent'->>'overall')::int > (public.franchise_team_rating(bf)->>'overall')::int
     and (v->'bowl'->>'week_key') = public.games_week_key(t0 + interval '7 days'), (v->'bowl')::text);
+  perform pg_temp.ok('a season that lost at most once earns the title game rather than a bowl',
+    (v->'bowl'->>'bowl_name') = 'The EdgeDesk Championship'
+    and (select championship from public.franchise_games where id = (v->'bowl'->>'id')::uuid)
+    and public.franchise_championship_earned(
+          (select wins from public.franchise_seasons where franchise_id = bf and number = 1),
+          (select losses from public.franchise_seasons where franchise_id = bf and number = 1), 8),
+    (v->'bowl'->>'bowl_name'));
+  perform pg_temp.ok('and the title opponent is the strongest club the season never played, not a draw',
+    (select o.strength from public.franchise_games g join public.franchise_opponents o on o.key = g.opponent_key
+      where g.id = (v->'bowl'->>'id')::uuid)
+    = (select max(o.strength) from public.franchise_opponents o
+        where o.key not in (select opponent_key from public.franchise_games
+                             where franchise_id = bf and season_number = 1 and not championship)));
+  perform pg_temp.ok('the record says a title was played for',
+    (select count(*) from public.franchise_activity where franchise_id = bf and kind = 'title_bid') = 1);
   perform pg_temp.ok('the club is one the season did not already play',
     (select count(*) = 1 from public.franchise_games g where g.franchise_id = bf and g.season_number = 1
        and g.opponent_key = (select opponent_key from public.franchise_games where franchise_id = bf and bowl)));

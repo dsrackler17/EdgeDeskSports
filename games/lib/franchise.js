@@ -76,7 +76,8 @@
       'the lineup, chemistry, and the Exchange',
       'the pull record: every pack you opened and the best of them',
       'the game you hold counts: live results, careers, and the Game Day pack',
-      'the card is not the man: identity, edition, instance, ownership'
+      'the card is not the man: identity, edition, instance, ownership',
+      'the living season: rankings, award races, the title game'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -2176,6 +2177,39 @@
                      pack: 'Kept from a pack', market: 'Bought on the Exchange', trade: 'Traded for', migration: 'Minted from the record' };
   function cardsWord(k) { return CARD_WORDS[k] || String(k || '').replace(/_/g, ' '); }
   function cardMarket(cardId) { return rpc('franchise_card_market', { p_card: String(cardId || '') }); }
+
+  /* ── the living season, season_v1 ──────────────────────────────────────
+     Three reads, and only reads: the server writes the weekly snapshot when
+     a game finishes, so a page cannot ask for a ranking that flatters it.  */
+  var SEASON_VERSION = 'season_v1';
+  /* the power model, mirrored for display — franchise_season_rules() is what
+     applies; this is so a page can print the terms without a round trip */
+  var SEASON_RULES = { win_pct: 26, margin_cap: 21, margin: 10, sos: 8, form: 6,
+                       quality_win: 3.0, bad_loss: -3.5, home_road: 1.5, unplayed_pull: 0.35 };
+  /* the ten races, in the order the server runs them, so a page can lay them
+     out before the first one is scored */
+  var AWARDS = [
+    { key: 'poy',    name: 'Player of the Year' },
+    { key: 'opoy',   name: 'Offensive Player of the Year' },
+    { key: 'dpoy',   name: 'Defensive Player of the Year' },
+    { key: 'qb',     name: 'Quarterback of the Year' },
+    { key: 'rb',     name: 'Back of the Year' },
+    { key: 'wr',     name: 'Receiver of the Year' },
+    { key: 'rush',   name: 'Pass Rusher of the Year' },
+    { key: 'db',     name: 'Defensive Back of the Year' },
+    { key: 'rook',   name: 'Rookie of the Year' },
+    { key: 'clutch', name: 'Clutch Player of the Year' }
+  ];
+  function rankings() { return rpc('franchise_rankings', withSecret({})); }
+  function awards() { return rpc('franchise_awards', withSecret({})); }
+  function championship() { return rpc('franchise_championship', withSecret({})); }
+  /* a movement, said the way a broadcast says it */
+  function moveWord(n) {
+    if (n == null) return 'new';
+    if (n > 0) return 'up ' + n;
+    if (n < 0) return 'down ' + (-n);
+    return 'even';
+  }
   function exchangeComps(position, overall) { return rpc('franchise_exchange_comps', { p_position: String(position || ''), p_overall: overall | 0 }); }
   function exchangeHistory(limit) { return rpc('franchise_exchange_history', withSecret({ p_limit: limit || 20 })); }
 
@@ -2456,6 +2490,8 @@
     exchangeComps: exchangeComps, exchangeHistory: exchangeHistory,
     marketOp: marketOp, cardEntity: cardEntity, cardMarket: cardMarket, opKey: opKey, opDone: opDone, cardsWord: cardsWord, CARD_WORDS: CARD_WORDS,
     CARDS_VERSION: CARDS_VERSION,
+    rankings: rankings, awards: awards, championship: championship,
+    AWARDS: AWARDS, SEASON_VERSION: SEASON_VERSION, SEASON_RULES: SEASON_RULES, moveWord: moveWord,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,
