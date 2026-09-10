@@ -54,10 +54,11 @@
   --val:#7cc142;   /* VALIDATED  — proven over a real sample */
   --neg:#e2664b;
   --accent:var(--obs);--on-accent:#042320;
-  /* The brand gradient is ONE hue with light falling across it. A two-hue
-     sweep is the most recognisable marker of a template landing page, and it
-     also dulls the middle of a word where the hues cross. */
-  --brand-lit:#7fd6cb;--brand-shade:#217c73;
+  /* The brand gradient runs accent -> EXPERIMENTAL, teal into rose. Kept as a
+     token rather than four literals so the sweep is one decision: point
+     --brand-lit at a single hue (a lighter teal, say) and every headline and
+     the wordmark go flat together. */
+  --brand-lit:var(--exp);
   /* aliases used by the preserved live-record loader */
   --warn:var(--est);--border:var(--line);
 }
@@ -101,7 +102,7 @@ h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;letter-spacing:-.02em;font-we
 nav{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.84);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav-in{display:flex;align-items:center;gap:10px;padding:13px 0}
 .logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em;font-family:'Space Grotesk',sans-serif}
-.logo .mk{width:10px;height:19px;background:linear-gradient(180deg,var(--brand-lit),var(--brand-shade));border-radius:2px;transform:skewX(-11deg);flex:none}
+.logo .mk{width:10px;height:19px;background:linear-gradient(180deg,var(--obs),var(--brand-lit));border-radius:2px;transform:skewX(-11deg);flex:none}
 .logo small{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:11px;padding:2px 8px;font-weight:600}
 .nav-sp{flex:1}
 .nlink{color:var(--dim);font-size:13.5px;font-weight:500;padding:8px 11px;border-radius:7px;white-space:nowrap}
