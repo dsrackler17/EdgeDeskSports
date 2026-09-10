@@ -175,13 +175,13 @@ chk('the scope of the race is stated rather than invented', /roster/.test(aw.sco
 const big = qj("select public.franchise_award_score('RB','{\"games\":8,\"car\":160,\"yds\":1040,\"td\":11,\"rec\":20,\"rec_yds\":180}'::jsonb, 0.5, 70)");
 const small = qj("select public.franchise_award_score('RB','{\"games\":8,\"car\":60,\"yds\":180,\"td\":1}'::jsonb, 0.5, 70)");
 chk('the back who ran for a thousand outscores the back who ran for a hundred and eighty',
-  big.score > small.score && big.score > 60, big.score + ' vs ' + small.score);
+  big.score > small.score && big.score > 50, big.score + ' vs ' + small.score);
 const volume = qj("select public.franchise_award_score('RB','{\"games\":16,\"car\":400,\"yds\":1300,\"td\":6}'::jsonb, 0.5, 70)");
 const rate = qj("select public.franchise_award_score('RB','{\"games\":8,\"car\":130,\"yds\":900,\"td\":8}'::jsonb, 0.5, 70)");
 chk('volume cannot win a race on its own: the better rate over half the carries wins',
   rate.score > volume.score, rate.score + ' vs ' + volume.score);
-const winner = qj("select public.franchise_award_score('WR','{\"games\":8,\"rec\":56,\"yds\":900,\"td\":9}'::jsonb, 1.0, 70)");
-const loser = qj("select public.franchise_award_score('WR','{\"games\":8,\"rec\":56,\"yds\":900,\"td\":9}'::jsonb, 0.0, 70)");
+const winner = qj("select public.franchise_award_score('WR','{\"games\":8,\"rec\":16,\"yds\":230,\"td\":2}'::jsonb, 1.0, 70)");
+const loser = qj("select public.franchise_award_score('WR','{\"games\":8,\"rec\":16,\"yds\":230,\"td\":2}'::jsonb, 0.0, 70)");
 chk('the team matters, and matters a little: a perfect record is worth under a third',
   winner.score > loser.score && (winner.score - loser.score) / loser.score < 0.35,
   loser.score + ' → ' + winner.score);
@@ -189,8 +189,13 @@ eq('a man who did not play scores nothing', qj("select public.franchise_award_sc
 chk('the score never reads an overall, an archetype or a name',
   q("select p.prosrc !~ 'overall|archetype|first_name' from pg_proc p join pg_namespace n on n.oid = p.pronamespace"
     + " where n.nspname = 'public' and p.proname = 'franchise_award_score'", true) === 't');
-chk('a quarterback is scored against quarterbacks and a corner against corners',
-  qj("select public.franchise_award_refs()").QB === 30 && qj("select public.franchise_award_refs()").CB === 16);
+(function () {
+  const refs = qj('select public.franchise_award_refs()');
+  chk('a quarterback is scored against quarterbacks and a corner against corners',
+    refs.QB === 14 && refs.CB === 12 && refs.RB === 42 && refs.WR === 8.5, JSON.stringify(refs));
+  chk('and the references are far enough apart that a shared scale would have been wrong',
+    refs.RB / refs.WR > 4, refs.RB + ' vs ' + refs.WR);
+})();
 
 /* the rookie race is rookies, by the record and not by a label */
 const rook = aw.races.find(r => r.key === 'rook');

@@ -653,13 +653,19 @@
     return '<span class="rk-m '+(m>0?'up':'down')+'">'+(m>0?'▲':'▼')+Math.abs(m)+'</span>';
   }
   function rankRow(r){
-    var why=(r.why||[])[0]||'';
+    /* A CLUB YOU HAVE NOT PLAYED HAS NO RECORD THE RECORD KNOWS ABOUT, so
+       saying 0–0 and then explaining it in a sentence that does not fit is
+       two lies in one line. It says what it is rated on and stops. */
+    var played=(r.played|0)>0;
+    var line=played
+      ? esc((r.wins|0)+'–'+(r.losses|0))+((r.why||[])[0]?' · '+esc((r.why||[])[0]):'')
+      : 'Roster '+esc(r.roster)+' · not played yet';
     return '<li class="rk-row'+(r.mine?' me':'')+'">'
       +'<span class="rk-n">'+esc(r.rank|0)+'</span>'
       +movePill(r.movement,r.previous)
       +FR.logoSvg(r.logo,24,r.theme)
       +'<span class="rk-t">'+esc((r.city?r.city+' ':'')+(r.name||''))
-      +'<small>'+esc((r.wins|0)+'–'+(r.losses|0))+(why?' · '+esc(why):'')+'</small></span>'
+      +'<small>'+line+'</small></span>'
       +'<span class="rk-r">'+esc(r.rating)+'</span></li>';
   }
   function moverLine(label,r){

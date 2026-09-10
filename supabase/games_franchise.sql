@@ -12185,11 +12185,21 @@ grant execute on function public.franchise_rankings(text) to anon, authenticated
 -- score of 100 is a season nobody argues with; 50 is a starter having a
 -- year. The arithmetic is printed in the rules so any number on the page
 -- can be checked.
+-- THE REFERENCE IS MEASURED, NOT GUESSED. Eight franchises were played out
+-- over full seasons and every starter's raw score recorded; the reference for
+-- each position is the ninety-seventh percentile of that distribution divided
+-- by 0.92, so a season almost nobody has scores in the low nineties and the
+-- ten races are decided by who was exceptional FOR HIS POSITION.
+--
+-- This is the whole defence against volume: a back in this simulation carries
+-- for two hundred yards a game and a tight end catches three balls, so a
+-- shared scale would hand every award to the same man every year. Measured
+-- separately, a great receiver and a great back score the same.
 create or replace function public.franchise_award_refs()
 returns jsonb language sql immutable set search_path = pg_catalog, pg_temp as $$
   select jsonb_build_object(
-    'QB', 30, 'RB', 22, 'WR', 20, 'TE', 20,
-    'DL', 20, 'LB', 20, 'CB', 16, 'S', 16);
+    'QB', 14, 'RB', 42, 'WR', 8.5, 'TE', 5,
+    'DL', 14, 'LB', 13, 'CB', 12, 'S', 12);
 $$;
 grant execute on function public.franchise_award_refs() to anon, authenticated;
 
