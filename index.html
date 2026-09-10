@@ -963,6 +963,48 @@ section.band.lp-quiet{padding:56px 0}
 /* the two new nav links go first when the bar tightens, before hideS kicks in */
 
 
+/* ---------- featured in: independent coverage that cites EdgeDesk ----------
+   Editorial attribution, not a partnership. The publisher is a text
+   wordmark rather than a borrowed logo, every card leaves the site, and
+   the copy never claims Stadium Rant sponsors, owns or publishes here. */
+.lp-media{background:linear-gradient(180deg,rgba(92,157,255,.05),transparent 62%)}
+.lp-med{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+.lp-med-card{display:flex;flex-direction:column;align-items:flex-start;gap:9px;border:1px solid var(--line);border-radius:12px;padding:16px 17px 14px;background:#0b0e13;transition:border-color .15s,background .15s,transform .15s}
+.lp-med-card:hover{border-color:rgba(92,157,255,.42);background:var(--panel);transform:translateY(-2px)}
+.lp-med-card:focus-visible{outline:2px solid var(--obs);outline-offset:3px;border-radius:12px}
+.lp-med-card .pub{display:flex;align-items:center;gap:8px;width:100%;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.lp-med-card .pub .wm{color:var(--text);font-weight:700}
+.lp-med-card .pub .ar{margin-left:auto;font-style:normal;font-size:12px;letter-spacing:0;color:var(--faint);transition:color .15s,transform .15s}
+.lp-med-card:hover .pub .ar{color:var(--obs);transform:translate(1px,-1px)}
+.lp-med-card h3{font-size:15.5px;line-height:1.36;letter-spacing:-.012em;font-weight:600;color:var(--text)}
+.lp-med-card .mt{font-size:12.5px;line-height:1.5;color:var(--dim)}
+.lp-med-card .cr{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--obs);border:1px solid rgba(92,157,255,.3);border-radius:5px;padding:3px 7px}
+.lp-med-card .ext{margin-top:auto;padding-top:2px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.05em;color:var(--dim)}
+.lp-med-card:hover .ext{color:var(--obs)}
+.lp-med-said{margin-top:16px;border-left:2px solid rgba(92,157,255,.4);padding:2px 0 2px 14px;font-size:13.5px;line-height:1.6;color:var(--dim);max-width:70ch}
+.lp-med-said b{color:var(--text);font-weight:600}
+.lp-med-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-top:18px}
+.lp-med-foot .go{color:var(--obs);font-size:13.5px;font-weight:600;border-bottom:1px solid rgba(92,157,255,.45);padding-bottom:1px}
+.lp-med-foot .go:hover{border-bottom-color:var(--obs)}
+.lp-med-note{margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.75;letter-spacing:.03em;color:var(--dim);max-width:80ch}
+.lp-lv{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.lp-lv .l{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#0b0e13}
+.lp-lv .l.on{border-color:rgba(92,157,255,.35);background:linear-gradient(180deg,rgba(92,157,255,.07),transparent)}
+.lp-lv .k{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:6px}
+.lp-lv .l.on .k{color:var(--obs)}
+.lp-lv p{margin:0;font-size:12.5px;line-height:1.55;color:var(--dim)}
+@media(max-width:760px){.lp-med,.lp-lv{grid-template-columns:1fr}}
+@media(max-width:560px){
+  .lp-med-card{padding:14px 15px 13px;gap:8px}
+  .lp-med-card h3{font-size:14.5px}
+  .lp-med-said{margin-top:14px;padding-left:12px;font-size:13px}
+  .lp-med-note{font-size:10px;line-height:1.8}
+}
+@media(prefers-reduced-motion:reduce){
+  .lp-med-card,.lp-med-card .pub .ar{transition:none}
+  .lp-med-card:hover,.lp-med-card:hover .pub .ar{transform:none}
+}
+
 /* ---------- motion ---------- */
 .rv{opacity:0;transform:translateY(12px);transition:opacity .6s ease-out,transform .6s ease-out}
 .rv.in{opacity:1;transform:none}
@@ -1066,6 +1108,77 @@ section.band.lp-quiet{padding:56px 0}
     </div>
   </div>
 </header>
+
+<!-- ================== FEATURED IN: INDEPENDENT COVERAGE ==================
+     Social proof, stated exactly. Stadium Rant is an independent publisher;
+     its writers cite EdgeDesk's numbers in articles they publish on their
+     own site. That is editorial attribution — not a partnership, not a
+     sponsorship, and not EdgeDesk hosting their work. The copy, the cards
+     and the note below all have to keep saying only that.
+
+     It sits directly under the hero so a first-time reader meets one
+     verifiable outside use of the product before the feature sections,
+     and it stays a tight band so it never competes with the hero. -->
+<section class="band tight lp-media" id="featured">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> Featured in Stadium Rant</span>
+      <h2>Independent sports coverage <span class="g">powered by EdgeDesk research.</span></h2>
+      <p>EdgeDesk data and model analysis are being used in independent matchup coverage published by <b>Stadium Rant</b>. Research, not picks &mdash; outside writers breaking down games through fair lines, projections, win probabilities, model-vs-market gaps and documented uncertainty.</p>
+    </div>
+
+    <!-- Every card leaves the site. The publisher line is first, the credit
+         chip is the article's own wording, and the last line names the
+         domain it opens on, so nothing reads as EdgeDesk's own writing. -->
+    <div class="lp-med rv">
+      <a class="lp-med-card" href="https://www.stadiumrant.com/akron-wake-forest-odds-value-edgedesk/" target="_blank" rel="noopener noreferrer">
+        <span class="pub">Published by <span class="wm">Stadium Rant</span><i class="ar" aria-hidden="true">&#8599;</i></span>
+        <h3>Akron vs. Wake Forest Odds: Why the Numbers Flag Value on the Zips at +2000 (Data by EdgeDesk)</h3>
+        <span class="mt">College football &middot; Akron at Wake Forest</span>
+        <span class="cr">Data by EdgeDesk</span>
+        <span class="ext">Read on stadiumrant.com &#8599;</span>
+      </a>
+      <a class="lp-med-card" href="https://www.stadiumrant.com/patriots-vs-seahawks-odds-the-numbers-say-seattle-should-be-favored-by-almost-a-touchdown/" target="_blank" rel="noopener noreferrer">
+        <span class="pub">Published by <span class="wm">Stadium Rant</span><i class="ar" aria-hidden="true">&#8599;</i></span>
+        <h3>Patriots vs. Seahawks Odds: The Numbers Say Seattle Should Be Favored by Almost a Touchdown</h3>
+        <span class="mt">NFL &middot; New England at Seattle</span>
+        <span class="cr">Powered by EdgeDesk research</span>
+        <span class="ext">Read on stadiumrant.com &#8599;</span>
+      </a>
+    </div>
+
+    <p class="lp-med-said rv">The credit is theirs, in their own words: <b>&ldquo;Data and model analysis powered by EdgeDeskSports.com.&rdquo;</b> The numbers those writers quote &mdash; EdgeDesk&rsquo;s own line, the projected score, the win probability, the gap to the market and the limits published beside them &mdash; are the ones on the game page a subscriber opens.</p>
+
+    <div class="lp-med-foot rv">
+      <a class="go" href="https://www.stadiumrant.com/" target="_blank" rel="noopener noreferrer">Visit Stadium Rant &#8594;</a>
+      <button class="btn ghost" onclick="startSubscribe()">Open the research yourself &#8594;</button>
+    </div>
+
+    <p class="lp-med-note rv">Stadium Rant is an independent publisher. Its writers cite EdgeDesk as a data source in articles they write and publish themselves &mdash; editorial attribution, not a partnership, a sponsorship or a syndication deal. EdgeDesk has no say in what they publish and no claim on their conclusions.</p>
+
+    <!-- The three levels of the product, in one strip. Research and Tools
+         are what the rest of the page demonstrates; the third level is what
+         this section is evidence of, and it is deliberately described as
+         early rather than as an ecosystem. -->
+    <div class="rv" style="margin-top:30px">
+      <span class="ey"><b>&#9642;</b> Where the research goes</span>
+      <div class="lp-lv">
+        <div class="l">
+          <span class="k">01 &middot; Research</span>
+          <p>Fair odds, projections, model-vs-market comparisons, the evidence under each number, the uncertainty around it and a public pre-kickoff record.</p>
+        </div>
+        <div class="l">
+          <span class="k">02 &middot; Tools</span>
+          <p>Game research, the model collective, power ratings, matchup research and the free games &mdash; the interactive half of the terminal.</p>
+        </div>
+        <div class="l on">
+          <span class="k">03 &middot; Published work</span>
+          <p>Independent writers using EdgeDesk data as the foundation for their own sports analysis. This is early, and it is specific: the articles above.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ================== WHAT IT REPLACES ==================
      The value is not that this information never existed. It is that a
@@ -1280,6 +1393,7 @@ section.band.lp-quiet{padding:56px 0}
       <div class="w"><b>Model builder</b><p>A second opinion and a market comparison you did not have to build yourself.</p></div>
       <div class="w"><b>Football nerd</b><p>Go absurdly deep, because this is apparently what we have decided to do with Saturdays.</p></div>
     </div>
+    <p class="lp-contact rv">EdgeDesk research has been featured in independent coverage from <a href="https://www.stadiumrant.com/" target="_blank" rel="noopener noreferrer">Stadium Rant</a> &mdash; <a href="#featured">see the articles</a>.</p>
   </div>
 </section>
 
@@ -3365,7 +3479,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   if(!bar||!rail) return;
 
   var CHAPTERS=[
-    ['top','Start'],['compress','Saturday'],['getyou','Terminal'],['steps','How it reads'],
+    ['top','Start'],['featured','Featured'],['compress','Saturday'],['getyou','Terminal'],['steps','How it reads'],
     ['idk','Uncertainty'],['football','The model'],['collective','Collective'],
     ['evidence','Evidence'],['record','Record'],['pricing','Access']
   ];
