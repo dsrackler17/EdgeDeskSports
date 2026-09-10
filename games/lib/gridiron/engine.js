@@ -523,7 +523,24 @@
            universal ratings uses them; one that does not falls back to what
            it has. */
         str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.pwr == null ? ov : r.pwr) : r.str)),
-        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))),
+        /* ── WHAT A BACK IS, BEYOND FAST ──────────────────────────────────
+           Vision is whether he finds the crease the blocking made; breaking
+           tackles is whether he survives the man who found him first. The
+           card already carries both in its profile — they were simply never
+           handed to the grass, so every back ran the same way and died the
+           same way. */
+        /* THE CARD FIRST, THE PROFILE SECOND. Both of these are derived in
+           the profile layer from the same two or three ratings — so read the
+           ratings when the card has them, or a card whose numbers change does
+           not change what happens on the grass, which is the one promise a
+           card game has to keep. The formulas are the profile's own. */
+        vis: unit(r.elu != null || r.hnd != null
+              ? (r.elu == null ? ov : r.elu) * 0.5 + (r.hnd == null ? ov : r.hnd) * 0.5
+              : (pf && pf.vis != null ? pf.vis : (r.iq == null ? ov : r.iq))),
+        btk: unit(r.pwr != null || r.elu != null
+              ? (r.pwr == null ? ov : r.pwr) * 0.6 + (r.elu == null ? ov : r.elu) * 0.4
+              : (pf && pf.btk != null ? pf.btk : (r.str == null ? ov : r.str)))
       };
     }
     function defMan(pl, pos) {
@@ -540,7 +557,16 @@
         bhk: unit(r.bhk == null ? ov : r.bhk),
         iq: unit(r.iq == null ? ov : r.iq),
         str: unit(pf && pf.str != null ? pf.str : (r.str == null ? (r.tkl == null ? ov : r.tkl) : r.str)),
-        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta)))
+        sta: unit(pf && pf.sta != null ? pf.sta : (pl && pl.stamina != null ? pl.stamina : (r.sta == null ? 70 : r.sta))),
+        /* how well he runs the angle and arrives under control: the profile
+           has had this since the player universe was built and the grass has
+           never read it */
+        /* the same rule on the other side: pursuit is speed and the head for
+           the angle, and the card carries both */
+        pur: unit(r.spd != null || r.tkl != null || r.rst != null
+              ? (r.spd == null ? ov : r.spd) * 0.6
+                + (r.rst != null ? r.rst : (r.tkl == null ? ov : r.tkl)) * 0.4
+              : (pf && pf.pur != null ? pf.pur : ov))
       };
     }
     function put(pl, pos, side) {
@@ -561,10 +587,12 @@
     env.fallback = {
       off: { spd: liveSpeed('WR', ou.wr.spd), acc: liveAccel('WR', 62), agi: unit(62), pwr: unit(62),
              hnd: unit(ou.wr.hnd), rte: unit(ou.wr.rte), blk: unit(ou.ol.pbk), rbk: unit(ou.ol.rbk),
-             arm: unit(ou.qb.arm), accy: unit(ou.qb.acc), iq: unit(ou.qb.iq), str: unit(62), sta: unit(70) },
+             arm: unit(ou.qb.arm), accy: unit(ou.qb.acc), iq: unit(ou.qb.iq), str: unit(62), sta: unit(70),
+             vis: unit(ou.rb.elu), btk: unit(ou.rb.pwr) },
       def: { spd: liveSpeed('LB', du.lb.spd), acc: liveAccel('LB', 62), agi: unit(62),
              tkl: unit(du.lb.tkl), cov: unit(du.cb.cov), rsh: unit(du.dl.prs),
-             shed: unit(du.dl.rst), bhk: unit(du.s.bhk), iq: unit(du.lb.iq), str: unit(62), sta: unit(70) }
+             shed: unit(du.dl.rst), bhk: unit(du.s.bhk), iq: unit(du.lb.iq), str: unit(62), sta: unit(70),
+             pur: unit(du.lb.spd) }
     };
     return env;
   }
@@ -1103,7 +1131,19 @@
              thirdAtt: 0, thirdConv: 0, fourthAtt: 0, fourthConv: 0,
              redzoneAtt: 0, redzoneTD: 0, explosive: 0, drives: 0, top: 0,
              punts: 0, puntYards: 0, fgAtt: 0, fgMade: 0, pressures: 0, tacklesForLoss: 0,
-             passTD: 0, rushTD: 0, defTD: 0, timeoutsUsed: 0 };
+             passTD: 0, rushTD: 0, defTD: 0, timeoutsUsed: 0,
+             /* ── HOW THE RUNNING GAME WENT, not just how far it went
+                (rush_v1). A rushing line of 4.4 a carry can be a front that
+                never wins and a back who never breaks anything, or a front
+                that stuffs one in three and a back who makes the other two
+                pay. Those are different football teams and the box score
+                should be able to tell them apart. `rushYBC` and `rushYAC`
+                add to `rushYards` on live plays; a resolved play measures no
+                contact, so it books all of its yards as before-contact and
+                the three counts below stay honest either way, being nothing
+                but the sign of the gain. */
+             rushYBC: 0, rushYAC: 0, rushContact: 0, stuffedRuns: 0, explosiveRuns: 0,
+             tflAllowed: 0, brokenTackles: 0 };
   }
   /* WHICH SIDE A MAN PLAYS FOR is part of his line. Without it the box score
      is a bag of names nobody can add up, and no test can ever say that the
@@ -1121,7 +1161,11 @@
       career: player.career_stats || null, live: player.live_stats || null,
       pa: 0, pc: 0, py: 0, ptd: 0, pint: 0, car: 0, ry: 0, rtd: 0, rec: 0, recy: 0, rectd: 0,
       tkl: 0, sack: 0, sackYards: 0, tfl: 0, int: 0, pd: 0, ff: 0, dtd: 0, fg: 0, fga: 0, xp: 0, xpa: 0,
-      long: 0, longRush: 0, longRec: 0, targets: 0, drops: 0 };
+      long: 0, longRush: 0, longRec: 0, targets: 0, drops: 0,
+      /* the run, on both sides of it: a carrier's yards before and after
+         contact, the tackles he broke, the carries he was stopped on and
+         the ones that went twenty; and for a defender, the runs he stuffed */
+      ybc: 0, yac: 0, brk: 0, stuffed: 0, stuff: 0, expl: 0 };
     if (side && !g.players[k].side) g.players[k].side = side;
     return g.players[k];
   }
@@ -1554,7 +1598,24 @@
       st.carries++; st.rushYards += r.yards;
       var cs = pstat(g, r.carrier, side);
       if (cs) { cs.car++; cs.ry += r.yards; if (r.yards > cs.longRush) cs.longRush = r.yards; }
-      if (r.yards < 0) { dst.tacklesForLoss++; var tfl = pstat(g, r.tackler, def); if (tfl) tfl.tfl++; }
+      if (r.yards < 0) { dst.tacklesForLoss++; st.tflAllowed++; var tfl = pstat(g, r.tackler, def); if (tfl) tfl.tfl++; }
+      /* ── THE RUN'S OWN LINE (rush_v1) ────────────────────────────────
+         Three of these are nothing but the sign of the gain, so they are
+         counted for a simulated carry exactly as for a played one. The two
+         that need a measurement — where he was hit and what he did after —
+         come from the live play's record, and a resolved carry books its
+         whole gain before contact rather than inventing a split. */
+      var rush = r.rush || null;
+      var ybc = rush ? rush.ybc : r.yards, yac = rush ? rush.yac : 0;
+      st.rushYBC += ybc; st.rushYAC += yac;
+      if (rush && rush.contact_depth != null) st.rushContact++;
+      if (rush && rush.broken) { st.brokenTackles += rush.broken; if (cs) cs.brk += rush.broken; }
+      if (cs) { cs.ybc += ybc; cs.yac += yac; }
+      if (r.yards <= 0) {
+        st.stuffedRuns++; if (cs) cs.stuffed++;
+        var stf = pstat(g, r.tackler, def); if (stf) stf.stuff++;
+      }
+      if (r.yards >= 20) { st.explosiveRuns++; if (cs) cs.expl++; }
     }
     var tk = pstat(g, r.tackler, def); if (tk && !r.sack) tk.tkl++;
     if (r.big) st.explosive++;
@@ -1866,6 +1927,13 @@
         punts: st.punts, fg: st.fgMade + '/' + st.fgAtt,
         ypp: st.plays ? Math.round(10 * st.yards / st.plays) / 10 : 0,
         ypc: st.carries ? Math.round(10 * st.rushYards / st.carries) / 10 : 0,
+        /* the running game's shape, in the same columns for both engines */
+        rushYBC: Math.round(10 * st.rushYBC) / 10, rushYAC: Math.round(10 * st.rushYAC) / 10,
+        rushContact: st.rushContact, stuffedRuns: st.stuffedRuns, explosiveRuns: st.explosiveRuns,
+        tflAllowed: st.tflAllowed, tacklesForLoss: op.tflAllowed, brokenTackles: st.brokenTackles,
+        stuffRate: st.carries ? Math.round(1000 * st.stuffedRuns / st.carries) / 10 : 0,
+        ybcPerCarry: st.carries ? Math.round(10 * st.rushYBC / st.carries) / 10 : 0,
+        yacPerCarry: st.carries ? Math.round(10 * st.rushYAC / st.carries) / 10 : 0,
         ypa: st.att ? Math.round(10 * st.passYards / st.att) / 10 : 0,
         compPct: st.att ? Math.round(100 * st.comp / st.att) : 0,
         sackRate: (st.att + st.sacks) ? Math.round(1000 * st.sacks / (st.att + st.sacks)) / 10 : 0
