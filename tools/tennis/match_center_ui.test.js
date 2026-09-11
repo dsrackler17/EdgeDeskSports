@@ -343,6 +343,28 @@ async function paint(tables, opts) {
   has(unlinked, 'BOTH of its participants', 'and states the rule that refused it');
   has(unlinked, 'one_side_unresolved', 'and shows the refusal an owner can act on');
 
+  /* ---- a market link not yet read is not a market link that is absent --- */
+  {
+    const { ctx, els } = sandbox(baseTables({
+      'tennis.live_matches': [liveMatch()],
+      'tennis.match_markets': [{ match_id: 'espn:m1', tournament_id: 'espn:t1', signal_event_id: 'ev1', sport_key: 'tennis_atp',
+        home_sig_key: 'k1', away_sig_key: 'k2', link_method: 'both_names_exact' }]
+    }));
+    await ctx.tnFcMatches();
+    await ctx.tnFcStatus();
+    ctx.TDD.live.sel = 'espn:m1';
+    ctx.TDD.live.open.market = true;
+    const beforeRead = ctx.tnShellHTML();          /* what a tap paints before the link lands */
+    has(beforeRead, 'has not been read yet', 'an unread market link says it is unread');
+    lacks(beforeRead, 'No odds fixture is linked', 'and never claims the match has no fixture');
+    await ctx.tnFcMatchDetail('espn:m1', false);
+    await ctx.tnFcMarket(true);
+    const afterRead = ctx.tnShellHTML();
+    lacks(afterRead, 'has not been read yet', 'once read, the pending state is gone');
+    has(afterRead, 'Side', 'and the market table is drawn');
+    void els;
+  }
+
   /* ---- the overview strip ---------------------------------------------- */
   const s2 = sandbox(baseTables({ 'tennis.live_matches': [liveMatch()] }));
   s2.ctx.TDD.view = 'ATP';

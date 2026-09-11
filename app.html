@@ -13172,11 +13172,18 @@ function tnHeroHTML(m){
       +'<small>de-vigged from the best price at each book. This is the MARKET’s probability, not EdgeDesk’s — there is no EdgeDesk tennis model.</small></div>';
   }else if(mk&&mk.linked){
     h+='<div class="tn-hero-mk mut"><small>Linked to an odds fixture, but no two-way price is currently stored for it.</small></div>';
+  }else if(mk&&mk.pending){
+    h+='<div class="tn-hero-mk mut"><small>Reading the odds link for this match&hellip;</small></div>';
   }
   return h+'</div>';
 }
 function tnMatchMarket(m){
   var L=TDD.live,l=L.links[m.match_id];
+  /* "not linked" is a claim about the data; "not read yet" is a claim about
+     this page. Selecting a match repaints before its link has loaded, and
+     conflating the two would flash "no odds fixture is linked" at a match
+     that has one. */
+  if(l===undefined)return {linked:false,pending:true};
   if(!l)return {linked:false,unlinked:true};
   var R=tnR(),home=L.sig[l.home_sig_key]||null,away=L.sig[l.away_sig_key]||null;
   var s=R.marketSummary(home,away);
@@ -13310,6 +13317,7 @@ function tnMatchupHTML(m,hb,ab){
 }
 function tnMarketHTML(m){
   var R=tnR(),L=TDD.live,mk=tnMatchMarket(m);
+  if(mk.pending)return '<div class="empty">The odds link for this match has not been read yet. Nothing is claimed about it either way until it has.</div>';
   if(!mk.linked){
     var rej=(L.rejections||[]).filter(function(r){
       var hn=R.normName(r.home_team||''),an=R.normName(r.away_team||'');
