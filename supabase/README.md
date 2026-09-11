@@ -386,6 +386,45 @@ then attacks the result — filing a consent under another account, rewriting or
 deleting one, reading another account's rows, and a browser trying to grant
 itself a subscription.
 
+### `comp_trial.sql` — a free trial for one account, that closes itself
+Hands a named account the terminal without sending it through Stripe, and has
+that access **end on a date** rather than on somebody remembering to close it.
+Point it at an email, set the number of days, paste, read the report.
+
+The whole mechanism is one row in `subscriptions`:
+
+| column | value | why |
+| --- | --- | --- |
+| `status` | `trialing` | `pgEntitled()` admits it, but only while the period end is in the future |
+| `price_id` | `comp_trial` | granted here, not bought — and deliberately **not** on `COMP_PRICE_IDS` |
+| `current_period_end` | now + N days | **the lock**, and the only thing enforcing it |
+| `cancel_at_period_end` | `true` | nothing renews this, and it is what makes Settings say "Access ends" instead of promising a $79.99 charge to someone with no card |
+| Stripe ids, `last_event_*` | untouched | nothing was bought; leaving the ordering guard null lets a real subscription later write straight over the row |
+
+**Not `owner_comp`.** That is the other way to grant access by hand and it is
+the wrong one here: a comp is checked *before* any date arithmetic — by
+`subIsComp()` on both pages, by `community_is_entitled()`, and by the webhook,
+which refuses to write over such a row at all. Put a trial end date on one and
+the date is decoration.
+
+Nothing runs when the trial ends. The timestamp simply passes, every
+entitlement check reads the row as lapsed, and the paywall closes over the
+terminal with the checkout button on it. The report proves that half before it
+happens: it reads the row back through the paywall's own predicate *and*
+through `community_is_entitled()`, and says so if the two disagree.
+
+**It refuses to overwrite access somebody already has** — a live Stripe
+subscription, a `past_due` one still inside the retry grace, or an
+`owner_comp`. Writing a deadline over real billing state is a customer locked
+out on a date nobody chose. **And re-running it does not extend the trial**:
+the end date is set once, a second paste reports the date already on the row,
+and `p_restart` is there for when a fresh one is meant.
+
+`stripe_webhook.sql`'s report knows about these rows: row 10 ("locking out an
+active subscriber") excludes them, because a trial that ran its course is the
+outcome the row was written for and not a stale Stripe row stranding a
+customer. Row 11 counts them on their own.
+
 ### `issue_reports.sql` — how a user tells you something is broken
 The terminal has had a feedback form since it was written. It posted to
 `public.feedback`, and **no file here ever created that table** — the
