@@ -2,8 +2,10 @@
 #
 # Every six hours: discover the ATP and WTA tournaments in the window from
 # ESPN's public scoreboard, store tournaments and matches with their provider
-# ids, resolve every SINGLES side to the licensed player record (and say which
-# ones did not resolve), keep every DOUBLES pair whole as a team, link each
+# ids, register every athlete the draw names in the provider directory,
+# resolve every SINGLES side to a player (the licensed record where it has
+# one, the directory otherwise) and say which ones did not resolve, keep
+# every DOUBLES pair whole as a team, link each
 # match to its odds-feed fixture only when both participants match, write the
 # pre-match price history, mark a draw that never closed as stale, and rebuild
 # the baselines for every player in the window. Mondays it rebuilds every
@@ -34,6 +36,7 @@ on:
       - 'tools/tennis/**'
       - 'tools/lib/**'
       - 'supabase/tennis_live_center.sql'
+      - 'supabase/tennis_player_directory.sql'
       - '.github/workflows/tennis-sync.yml'
       - '.github/workflows/tennis-live.yml'
   workflow_dispatch:
@@ -126,6 +129,35 @@ jobs:
           ARGS=""
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
           if [ -n "${{ inputs.tour }}" ]; then ARGS="$ARGS --tour ${{ inputs.tour }}"; fi
+          node tools/tennis/sync_events.js $ARGS
+
+      # The draw is discovered before the players are, because the players are
+      # DERIVED FROM THE DRAW: every side the scoreboard publishes carries an
+      # athlete id, and this turns those into rows. It never writes the
+      # licensed tennis.players record — that stays empty until a cleared feed
+      # is loaded, and the resolver prefers it the moment it has rows.
+      - name: Register the players the provider published
+        if: ${{ github.event_name != 'pull_request' && inputs.verify_only != true }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          if [ -n "${{ inputs.tour }}" ]; then ARGS="$ARGS --tour ${{ inputs.tour }}"; fi
+          node tools/tennis/sync_players.js $ARGS
+
+      # …and then the sides that had nowhere to resolve to when the draw was
+      # written are resolved against the directory that now exists. No source
+      # request is made here; it reads and writes the database only.
+      - name: Resolve the sides that can now be resolved
+        if: ${{ github.event_name != 'pull_request' && inputs.verify_only != true }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          ARGS="--resolve-only"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
           node tools/tennis/sync_events.js $ARGS
 
       - name: Rebuild player baselines

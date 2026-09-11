@@ -592,6 +592,170 @@ chk('the poll clock is deliberately not part of the hash', P.MATCH_MUTABLE.index
   eq('the row carries the sample behind the rate', built[0].obs_matches, 1);
   chk('a row with no licensed record says so', (built[0].notes || []).indexOf('no_career_row') >= 0, JSON.stringify(built[0].notes));
 
+  /* ======================================================================== */
+  /* THE PROVIDER PLAYER DIRECTORY                                            */
+  /* ======================================================================== */
+  const PL = require('./sync_players.js');
+
+  /* --- the shape of a side ------------------------------------------------ */
+  eq('a singles side is one athlete',
+    PL.athletesOfSide('3333', 'Vilius Gaubas', false),
+    [{ provider_athlete_id: '3333', full_name: 'Vilius Gaubas', doubles: false }]);
+  eq('a doubles side registers the two people inside the pair',
+    PL.athletesOfSide('111/222', 'Rohan Bopanna/Matthew Ebden', true).map(a => a.provider_athlete_id + '=' + a.full_name),
+    ['111=Rohan Bopanna', '222=Matthew Ebden']);
+  eq('a pair whose ids and names do not line up is skipped, not guessed',
+    PL.athletesOfSide('111', 'Bopanna/Ebden', true), []);
+  eq('a side with no provider id yields nobody', PL.athletesOfSide('', 'Vilius Gaubas', false), []);
+
+  /* --- the rows it derives ------------------------------------------------ */
+  const DRAW = [
+    { match_id: 'm1', tour: 'ATP', is_doubles: false, home_provider_id: '10', home_name: 'F. Alves',
+      away_provider_id: '11', away_name: 'Vilius Gaubas' },
+    { match_id: 'm2', tour: 'ATP', is_doubles: false, home_provider_id: '10', home_name: 'Felipe Meligeni Alves',
+      away_provider_id: '12', away_name: 'Jaume Munar' },
+    { match_id: 'm3', tour: 'ATP', is_doubles: true, home_provider_id: '10/12', home_name: 'Felipe Meligeni Alves/Jaume Munar',
+      away_provider_id: '13/14', away_name: 'Rohan Bopanna/Matthew Ebden' },
+    { match_id: 'm4', tour: 'WTA', is_doubles: false, home_provider_id: '11', home_name: 'Vilius Gaubas',
+      away_provider_id: '15', away_name: 'Iga Swiatek' }
+  ];
+  const DIR = PL.directoryRows(DRAW, '2026-05-28T10:00:00Z');
+  const byId = {}; DIR.forEach(r => { byId[r.player_id] = r; });
+  eq('every athlete in the draw gets exactly one row', DIR.length, 6);
+  eq('the id is namespaced to the provider so it cannot collide with a licensed id',
+    byId['espn:10'].player_id, 'espn:10');
+  eq('the longest spelling of a name wins over an abbreviation',
+    byId['espn:10'].full_name, 'Felipe Meligeni Alves');
+  chk('a player seen in both formats is marked as both',
+    byId['espn:10'].seen_in_singles === true && byId['espn:10'].seen_in_doubles === true);
+  chk('a doubles-only player is not marked as seen in singles',
+    byId['espn:13'].seen_in_doubles === true && byId['espn:13'].seen_in_singles === false);
+  eq('a player seen on one tour carries that tour', byId['espn:12'].tour, 'ATP');
+  eq('a player seen on both tours is MIXED rather than the last one written',
+    byId['espn:11'].tour, 'MIXED');
+  chk('the pair itself is never a row', !DIR.some(r => String(r.full_name).indexOf('/') >= 0));
+  eq('the derivation is deterministic',
+    JSON.stringify(PL.directoryRows(DRAW, '2026-05-28T10:00:00Z')), JSON.stringify(DIR));
+  chk('every row carries the same keys, so one bulk write is one shape',
+    new Set(DIR.map(r => Object.keys(r).sort().join(','))).size === 1);
+
+  /* --- rankings ----------------------------------------------------------- */
+  const known = {}; DIR.forEach(r => { known[r.player_id] = r; });
+  const patches = PL.rankingPatches([
+    { provider_athlete_id: '11', rank: 61, points: 812, as_of: '2026-05-25' },
+    { provider_athlete_id: '9999', rank: 1, points: 11000, as_of: '2026-05-25' }
+  ], known);
+  eq('a ranked athlete the draw has never shown is not invented', patches.length, 1);
+  eq('and the one in the draw is patched by its directory id', patches[0].player_id, 'espn:11');
+  eq('the rank the feed published is the rank written', patches[0].current_rank, 61);
+
+  /* --- height, where the unit is provable --------------------------------- */
+  eq('feet and inches convert', E.heightCm('6\' 2"', null), 188);
+  eq('a published centimetre value is taken as it stands', E.heightCm('185 cm', null), 185);
+  eq('a raw value in the inches band converts', E.heightCm(null, 73), 185);
+  eq('a raw value too small to be either unit is refused', E.heightCm(null, 42), null);
+  eq('a raw value too large to be either unit is refused', E.heightCm(null, 300), null);
+  eq('nothing published is nothing written', E.heightCm(null, null), null);
+
+  /* --- the licensed record outranks the directory, per player ------------- */
+  const LICENSED = [{ player_id: 'lic-1', full_name: 'Cristian Garin', tour: 'ATP' }];
+  const DIRECTORY = [{ player_id: 'espn:900', full_name: 'Cristian Garin', tour: 'ATP' },
+                     { player_id: 'espn:11', full_name: 'Vilius Gaubas', tour: 'ATP' }];
+  const merged = R.mergePlayerSources(LICENSED, DIRECTORY);
+  eq('a player the licensed record holds appears once, not twice', merged.length, 2);
+  const mix = R.resolvePlayer('Cristian Garin', null, R.buildPlayerIndex(merged), {});
+  eq('and resolves to the LICENSED id', mix.player_id, 'lic-1');
+  chk('so the duplicate never makes the name ambiguous', mix.method !== 'ambiguous', mix.method);
+  eq('a player only the directory holds still resolves',
+    R.resolvePlayer('Vilius Gaubas', null, R.buildPlayerIndex(merged), {}).player_id, 'espn:11');
+  eq('with no licensed record at all the directory carries the whole pool',
+    R.mergePlayerSources([], DIRECTORY).length, 2);
+  eq('and an empty directory changes nothing', R.mergePlayerSources(LICENSED, []).length, 1);
+
+  /* --- the pass that resolves a draw already on file ---------------------- */
+  const dirdb = fakeDb({
+    'tennis.players': [],
+    'tennis.player_directory': [
+      { player_id: 'espn:11', full_name: 'Vilius Gaubas', tour: 'ATP', seen_in_singles: true },
+      { player_id: 'espn:12', full_name: 'Jaume Munar', tour: 'ATP', seen_in_singles: true }
+    ],
+    'tennis.live_matches': [
+      { match_id: 'espn:m1', tour: 'ATP', is_doubles: false, status: 'final',
+        scheduled_at: '2026-05-28T09:00:00Z', home_name: 'Vilius Gaubas', away_name: 'Jaume Munar',
+        home_provider_id: '11', away_provider_id: '12', home_player_id: null, away_player_id: null },
+      { match_id: 'espn:m2', tour: 'ATP', is_doubles: false, status: 'scheduled',
+        scheduled_at: '2026-05-29T09:00:00Z', home_name: 'Vilius Gaubas', away_name: 'Someone Unseen',
+        home_provider_id: '11', away_provider_id: '77', home_player_id: null, away_player_id: null },
+      { match_id: 'espn:m3', tour: 'ATP', is_doubles: true, status: 'scheduled',
+        scheduled_at: '2026-05-29T09:00:00Z', home_name: 'A One/B Two', away_name: 'C Three/D Four',
+        home_provider_id: '20/21', away_provider_id: '22/23', home_player_id: null, away_player_id: null }
+    ]
+  });
+  dirdb.setNow(() => '2026-05-28T10:00:00Z');
+  const rs = await S.run({ commit: true, resolveOnly: true, fromDays: 3, toDays: 21, now: '2026-05-28T10:00:00Z' }, { db: dirdb });
+  eq('the pass resolves the match whose two names are now known', rs.resolved, 1);
+  eq('a match with one side still unknown is written as half, not counted resolved', rs.written, 2);
+  const after = dirdb.rows('tennis', 'live_matches');
+  const m1 = after.find(m => m.match_id === 'espn:m1');
+  eq('the home side now points at the directory row', m1.home_player_id, 'espn:11');
+  eq('and so does the away side', m1.away_player_id, 'espn:12');
+  eq('a finished match keeps the status it had — the pass writes no status', m1.status, 'final');
+  const m2 = after.find(m => m.match_id === 'espn:m2');
+  chk('a side with nobody to resolve to stays unresolved rather than guessing',
+    m2.away_player_id == null, JSON.stringify(m2));
+  chk('and it is reported by name', rs.unmatched.some(u => u.name === 'Someone Unseen'), JSON.stringify(rs.unmatched));
+  const m3 = after.find(m => m.match_id === 'espn:m3');
+  chk('a doubles pair is never resolved to a player',
+    m3.home_player_id == null && m3.away_player_id == null);
+  const dirrs2 = await S.run({ commit: true, resolveOnly: true, fromDays: 3, toDays: 21, now: '2026-05-28T10:00:00Z' }, { db: dirdb });
+  eq('running the pass again resolves nothing new', dirrs2.resolved, 0);
+  eq('and leaves the ids it already wrote alone',
+    dirdb.rows('tennis', 'live_matches').find(m => m.match_id === 'espn:m1').home_player_id, 'espn:11');
+
+  /* a database where only the older contract is installed still resolves what
+     it used to — it just resolves less, and says so */
+  const odb = fakeDb({
+    'tennis.players': [{ player_id: 'lic-1', full_name: 'Vilius Gaubas', tour: 'ATP' }],
+    'tennis.live_matches': [
+      { match_id: 'espn:m1', tour: 'ATP', is_doubles: false, status: 'scheduled',
+        scheduled_at: '2026-05-29T09:00:00Z', home_name: 'Vilius Gaubas', away_name: 'Nobody Known',
+        home_provider_id: '11', away_provider_id: '77', home_player_id: null, away_player_id: null }
+    ]
+  });
+  odb.setNow(() => '2026-05-28T10:00:00Z');
+  const os = await S.run({ commit: true, resolveOnly: true, fromDays: 3, toDays: 21, now: '2026-05-28T10:00:00Z' }, { db: odb });
+  eq('without the directory the licensed side still resolves', os.written, 1);
+  eq('and it resolves to the licensed id',
+    odb.rows('tennis', 'live_matches')[0].home_player_id, 'lic-1');
+
+  /* a server that has never heard of the directory must not end the job: the
+     pool falls back to the licensed record and the operator is told what to
+     run. This is the failure the UFC pipeline shipped without and paid for. */
+  const said = [];
+  const stubDb = {
+    async selectAll(schema, rel) {
+      if (rel === 'player_directory') { const e = new Error('PGRST205: Could not find the table \'tennis.player_directory\' in the schema cache'); throw e; }
+      if (rel === 'players') return [{ player_id: 'lic-1', full_name: 'Vilius Gaubas', tour: 'ATP' }];
+      return [];
+    }
+  };
+  const pooled = await D.playerPool(stubDb, R, (m) => said.push(String(m)));
+  eq('a missing directory leaves the licensed pool intact', pooled.pool.length, 1);
+  chk('and names the file an operator has to run',
+    said.some(m => m.indexOf('tennis_player_directory.sql') >= 0), said.join(' | '));
+
+  const bothGone = { async selectAll() { throw new Error('PGRST205: Could not find the table in the schema cache'); } };
+  let raised = null;
+  try { await D.playerPool(bothGone, R, () => {}); } catch (e) { raised = String(e.message); }
+  chk('but no player source at all is a real failure, not a silent empty pool',
+    raised && /not installed/.test(raised), String(raised));
+
+  const other = { async selectAll() { throw new Error('57014: statement timeout'); } };
+  let raised2 = null;
+  try { await D.playerPool(other, R, () => {}); } catch (e) { raised2 = String(e.message); }
+  chk('and a failure that is not a missing table is never swallowed',
+    raised2 && /statement timeout/.test(raised2), String(raised2));
+
   /* ---- report ---------------------------------------------------------- */
   if (fail) {
     console.log('FAIL | tennis pipeline | ' + fail + ' of ' + (pass + fail) + ' assertions failed');

@@ -22,6 +22,9 @@ const ROOT = path.join(__dirname, '..', '..');
 const SCHEMA = path.join(ROOT, 'supabase', 'tennis_live_center.sql');
 const SHIM = path.join(ROOT, 'tools', 'games', 'sql', 'supabase_shim.sql');
 const SUITE = path.join(__dirname, 'sql', 'tennis_live_center.test.sql');
+/* the short file an operator is handed when the rest is already installed —
+   it must apply on top of the full migration and say the same thing */
+const DIRECTORY = path.join(ROOT, 'supabase', 'tennis_player_directory.sql');
 const DB = 'edgedesk_tennis_sqltest';
 
 const have = (b) => cp.spawnSync('sh', ['-c', 'command -v ' + b], { encoding: 'utf8' }).status === 0;
@@ -75,6 +78,32 @@ try {
     console.error((twice.stderr || '').trim().split('\n').slice(0, 12).join('\n'));
     throw new Error('idempotent');
   }
+  /* The standalone directory file is what an operator actually pastes into the
+     SQL editor when the contract is already installed. It has to apply on top
+     of the full migration, say ok on every row, survive a second run, and
+     leave the full migration's own report untouched. */
+  for (const pass of ['first', 'second']) {
+    const d = psql(conn, ['-d', DB, '-tA', '-F', '|', '-v', 'ON_ERROR_STOP=1', '-f', DIRECTORY]);
+    if (d.status !== 0) {
+      console.log('FAIL | tennis live center SQL | tennis_player_directory.sql did not apply (' + pass + ' run)');
+      console.error((d.stderr || '').trim().split('\n').slice(0, 12).join('\n'));
+      throw new Error('apply');
+    }
+    const dbad = (d.stdout || '').split('\n').filter((l) => /^\d+\|/.test(l) && !/\|ok/.test(l));
+    if (dbad.length) {
+      console.log('FAIL | tennis live center SQL | the directory report is not all ok (' + pass + ' run)');
+      dbad.forEach((l) => console.log('     | ' + l));
+      throw new Error('report');
+    }
+  }
+  const after = psql(conn, ['-d', DB, '-tA', '-F', '|', '-f', SCHEMA]);
+  const abad = (after.stdout || '').split('\n').filter((l) => /^\d+\|/.test(l) && !/\|ok/.test(l));
+  if (abad.length) {
+    console.log('FAIL | tennis live center SQL | the migration report stopped being ok after the directory file ran');
+    abad.forEach((l) => console.log('     | ' + l));
+    throw new Error('report');
+  }
+
   const r = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-f', SUITE]);
   const out = (r.stdout || '') + (r.stderr || '');
   const passed = (out.match(/NOTICE:\s+ok\s/g) || []).length;

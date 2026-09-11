@@ -116,7 +116,7 @@ async function selectIn(db, schema, rel, cols, col, ids, chunk, order) {
 async function run(o, deps) {
   const db = deps.db;
   const now = o.now ? new Date(o.now) : new Date();
-  const summary = { players: 0, rows: 0, observed_players: 0, unresolved_sides: 0, errors: [] };
+  const summary = { players: 0, directory_players: 0, rows: 0, observed_players: 0, unresolved_sides: 0, errors: [] };
 
   let ids = null;
   if (o.players) ids = o.players;
@@ -135,17 +135,36 @@ async function run(o, deps) {
     if (!ids.length) return summary;
   }
 
-  const players = ids
-    ? await selectIn(db, 'tennis', 'players', 'player_id,full_name,tour,country,plays,height_cm,birth_date', 'player_id', ids)
-    : await db.selectAll('tennis', 'players', 'select=player_id,full_name,tour,country,plays,height_cm,birth_date&order=player_id.asc');
+  const pooled = await D.playerPool(db, R, log,
+    { columns: 'player_id,full_name,tour,country,plays,height_cm,birth_date',
+      directoryColumns: 'player_id,full_name,tour,country,plays,height_cm,birth_date,current_rank,rank_points,rank_as_of',
+      ids });
+  const players = pooled.pool;
   summary.players = players.length;
-  if (ids && players.length < ids.length) log(`${ids.length - players.length} of the ${ids.length} id(s) have no tennis.players row — skipped rather than invented`);
+  summary.directory_players = pooled.directory.length;
+  if (ids && players.length < ids.length) log(`${ids.length - players.length} of the ${ids.length} id(s) have no player row in either source — skipped rather than invented`);
 
   const wanted = players.map(p => String(p.player_id));
   const careers = await readSafe(db, 'player_career', 'player_id,wins,losses,matches,win_pct,first_match,last_match', wanted, summary);
   const surface = await readSafe(db, 'player_surface', 'player_id,surface,season,wins,losses,matches,win_pct', wanted, summary, 'player_id.asc');
   const form = await readSafe(db, 'player_form', 'player_id,match_date,opponent_id,won,surface,tourney_name,round', wanted, summary, 'player_id.asc');
   const ranks = await readSafe(db, 'rankings_current', 'player_id,rank,points,as_of', wanted, summary);
+
+  /* The licensed ranking table is the authority. Where it has no row for a
+     player, the directory's own ranking stands in — same shape, marked by
+     its source so nothing downstream mistakes one for the other. A player
+     with neither stays unranked rather than being given a number. */
+  const ranked = new Set(ranks.map(r => String(r.player_id)));
+  let borrowed = 0;
+  pooled.directory.forEach(p => {
+    const id = String(p.player_id);
+    if (ranked.has(id) || !wanted.includes(id)) return;
+    if (p.current_rank == null) return;
+    ranks.push({ player_id: id, rank: p.current_rank, points: p.rank_points == null ? null : p.rank_points,
+                 as_of: p.rank_as_of || null, source: 'directory' });
+    borrowed++;
+  });
+  if (borrowed) log(`${borrowed} ranking(s) came from the provider directory because the licensed table has no row for them`);
 
   /* observed, from what this pipeline watched */
   let observed = {};
