@@ -725,6 +725,130 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .ufc-fcfoot{font-size:10.5px;color:var(--faint);text-align:center;padding:12px 4px 4px;line-height:1.5}
 @media(max-width:520px){.ufc-ksg{grid-template-columns:repeat(3,minmax(0,1fr))}.ufc-ks .v{font-size:13px}.ufc-hero-n{font-size:15px}.ufc-hero-k{font-size:22px}.ufc-read-l{grid-template-columns:78px 1fr}.ufc-unk-i{grid-template-columns:1fr}.ufc-lbls{grid-template-columns:1fr}.ufc-lbls .b{text-align:left}.ufc-lbls .mid{text-align:left}}
 @media(min-width:760px){.ufc-ksg{grid-template-columns:repeat(6,minmax(0,1fr))}}
+/* ---- Tennis Live Match Center. Mobile-first; every class is prefixed .tn-.
+   Tennis needs its own pieces rather than the UFC ones: a set-by-set
+   scoreline with tiebreak superscripts, a serving indicator, and home/away
+   sides instead of red/blue corners. ---- */
+.tn-head{position:sticky;top:0;z-index:6;background:rgba(16,14,10,.94);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.tn-hd-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tn-hd-name{font-weight:800;font-size:15px;letter-spacing:.01em}
+.tn-hd-meta{font-size:11px;color:var(--dim);margin-top:3px}
+.tn-hd-cur{font-size:13px;margin-top:5px;font-weight:600}
+.tn-state{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--dim)}
+.tn-state.live{color:#e0533a;border-color:rgba(224,83,58,.5);background:rgba(224,83,58,.12);animation:ufcPulse 2.4s ease-in-out infinite}
+.tn-state.pre{color:var(--accent);border-color:rgba(47,167,154,.4);background:rgba(47,167,154,.1)}
+.tn-state.final{color:var(--dim)}
+.tn-state.stale{color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.1)}
+.tn-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.tn-chip{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.04em;padding:2px 7px;border-radius:6px;border:1px solid var(--border);color:var(--dim);background:var(--surface2)}
+.tn-chip b{font-weight:700;margin-right:3px}
+.tn-chip.ok{color:var(--pos);border-color:rgba(118,189,62,.35)}
+.tn-chip.warn{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.tn-chip.neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.tn-chip.mut{color:var(--faint)}
+.tn-stale{margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(226,96,68,.14);border:1px solid rgba(226,96,68,.5);color:#ffb3a3;font-size:12px;font-weight:600;line-height:1.45}
+.tn-strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.tn-strip-b{flex:0 0 auto;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:150px;max-width:210px;min-height:48px;padding:7px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.tn-strip-b .mk{font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace;letter-spacing:.05em}
+.tn-strip-b .tx{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tn-strip-b .sb{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tn-strip-b.live{border-color:rgba(224,83,58,.55)}.tn-strip-b.live .mk{color:#e0533a}
+.tn-strip-b.done .tx{color:var(--dim)}.tn-strip-b.done .mk{color:var(--pos)}
+.tn-strip-b.off .tx{text-decoration:line-through;color:var(--faint)}
+.tn-strip-b.on{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+.tn-hero{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}
+.tn-hero-t{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.tn-hero-s{font-size:12.5px;color:var(--text);margin-top:8px;font-weight:600}
+.tn-hero-mk{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:center}
+.tn-hero-mk b{font-size:15px}
+.tn-hero-mk small{display:block;font-family:'Inter',system-ui,sans-serif;font-size:10px;color:var(--faint);margin-top:4px;line-height:1.45}
+.tn-hero-mk.mut small{color:var(--faint)}
+.tn-scorew{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tn-score{border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:15px;width:100%}
+.tn-score th{font-size:9px;font-weight:600;color:var(--faint);letter-spacing:.08em;padding:2px 7px;text-align:center;border-bottom:1px solid var(--border)}
+.tn-score th.who{text-align:left;width:99%}
+.tn-score th.sw{color:var(--dim)}
+.tn-score td{padding:5px 7px;text-align:center;color:var(--dim);min-width:26px}
+.tn-score td.who{text-align:left;font-family:'Inter',system-ui,sans-serif;font-size:14px;font-weight:700;color:var(--text);white-space:nowrap}
+.tn-score td.who small{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);font-weight:400;margin-left:5px}
+.tn-score td.win{color:var(--text);font-weight:700}
+.tn-score td.cur{color:#e0533a;font-weight:700}
+.tn-score td.sw{font-weight:700;color:var(--text);border-left:1px solid var(--border)}
+.tn-score td sup{font-size:9px;color:var(--faint);margin-left:1px}
+.tn-score tr.won td.who{color:var(--pos)}
+.tn-serve{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e0533a;margin-right:6px;vertical-align:middle}
+.tn-pts{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:5px}
+.tn-score-none{font-size:12px;color:var(--faint)}
+.tn-read{background:linear-gradient(180deg,rgba(47,167,154,.07),rgba(47,167,154,.02));border:1px solid rgba(47,167,154,.3);border-radius:12px;padding:11px 12px;margin-bottom:10px}
+.tn-read-h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--accent);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tn-read-l{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px;align-items:start}
+.tn-read-l:last-of-type{border-bottom:none}
+.tn-read-l .k{color:var(--dim);font-size:11px;padding-top:1px}
+.tn-read-l .v{font-weight:600;line-height:1.35}
+.tn-read-l .v small{display:block;font-weight:400;color:var(--faint);font-size:10.5px;margin-top:1px}
+.tn-read-f,.tn-ksf{font-size:10px;color:var(--faint);margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);line-height:1.5}
+.tn-read-empty{font-size:12.5px;color:var(--text);line-height:1.5}
+.tn-tag{font-size:8.5px;font-weight:700;letter-spacing:.04em;background:rgba(47,167,154,.14);color:#2fa79a;border:1px solid rgba(47,167,154,.3);border-radius:20px;padding:1px 7px;text-transform:none}
+.tn-tag.mk{background:rgba(227,184,77,.14);color:#e3b84d;border-color:rgba(227,184,77,.35)}
+.tn-tag.lv{background:rgba(224,83,58,.14);color:#e0533a;border-color:rgba(224,83,58,.35)}
+.tn-ksg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:4px}
+.tn-ks{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center;min-width:0}
+.tn-ks .l{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.tn-ks .v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tn-ks .v .s{color:var(--faint);margin:0 3px;font-weight:400}
+.tn-ks .hl{color:#e0533a}.tn-ks .al{color:#2fa79a}
+.tn-ks .n{font-size:9px;color:var(--faint);margin-top:2px}
+.tn-flags{margin-bottom:10px}
+.tn-sech-lite{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tn-flag{border:1px solid var(--border);border-left:3px solid var(--dim);border-radius:10px;padding:8px 10px;margin-top:6px;background:var(--surface)}
+.tn-flag.home{border-left-color:#e0533a}.tn-flag.away{border-left-color:#2fa79a}
+.tn-flag-h{display:flex;justify-content:space-between;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em}
+.tn-flag-h .code{font-weight:700}
+.tn-flag-h .sev{color:var(--warn)}
+.tn-flag.watch .tn-flag-h .sev{color:var(--faint)}
+.tn-flag-x{font-size:12.5px;margin-top:4px;line-height:1.4}
+.tn-flag-n{display:flex;gap:12px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);margin-top:5px}
+.tn-flag-r{font-size:9.5px;color:var(--faint);margin-top:3px;line-height:1.45}
+.tn-sec{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+.tn-sech{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;color:var(--text);font:inherit;text-align:left;padding:11px 12px;cursor:pointer;min-height:44px}
+.tn-sech .t{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--dim);flex:1 1 auto}
+.tn-sech .ar{color:var(--faint);font-size:12px}
+.tn-sec.open .tn-sech .t{color:var(--text)}
+.tn-secb{padding:0 12px 12px}
+.tn-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tn-rt{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;min-width:520px}
+.tn-rt th{text-align:right;font-weight:600;color:var(--faint);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:4px 6px;border-bottom:1px solid var(--border)}
+.tn-rt th:first-child,.tn-rt th.who,.tn-rt th.src{text-align:left}
+.tn-rt td{text-align:right;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap}
+.tn-rt td.who{text-align:left;font-family:'Inter',system-ui,sans-serif;font-size:11.5px}
+.tn-rt td.who small{color:var(--faint);font-size:9.5px;margin-left:4px}
+.tn-rt td.who em{color:#e0533a;font-style:normal;font-size:9px;letter-spacing:.06em;text-transform:uppercase;margin-left:4px}
+.tn-rt td.src{text-align:left;color:var(--faint);font-size:9.5px;letter-spacing:.05em}
+.tn-rt tr.home td.who{color:#e0533a}.tn-rt tr.away td.who{color:#2fa79a}
+.tn-mt{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px}
+.tn-mt th{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--border);text-align:left}
+.tn-mt th.r{text-align:right}.tn-mt th.mid{text-align:center}
+.tn-mt td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--dim)}
+.tn-mt td.r{text-align:right}
+.tn-mt td.lead{color:var(--text);font-weight:700}
+.tn-mt td.mid{text-align:center;font-family:'Inter',system-ui,sans-serif;font-size:11px;color:var(--dim);white-space:normal;min-width:130px}
+.tn-mt td.mid small{display:block;color:var(--faint);font-size:9.5px;line-height:1.4}
+.tn-style{font-size:11.5px;margin-top:8px;color:var(--text)}
+.tn-style small{display:block;color:var(--faint);font-size:10px;margin-top:2px;line-height:1.45}
+.tn-lab{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;padding:2px 6px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--dim);margin:2px 3px 2px 0}
+.tn-notes{margin-top:8px;font-size:12px;line-height:1.5;color:var(--text)}
+.tn-notes div{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+.tn-notes div:last-child{border-bottom:none}
+.tn-caps{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)}
+.tn-caps-h{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);letter-spacing:.05em}
+.tn-caps-n{font-size:11px;color:var(--faint);margin-top:5px;line-height:1.5}
+.tn-caps-n b{color:var(--dim)}
+.tn-foot{font-size:10.5px;color:var(--faint);text-align:center;padding:12px 4px 4px;line-height:1.55}
+.tn-foot b{font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.tn-foot.ok b{color:var(--pos)}.tn-foot.warn b{color:var(--warn)}.tn-foot.neg b{color:var(--neg)}
+.tn-foot small{display:block;margin-top:3px;color:var(--faint)}
+@media(max-width:520px){.tn-ksg{grid-template-columns:repeat(3,minmax(0,1fr))}.tn-ks .v{font-size:13px}.tn-read-l{grid-template-columns:78px 1fr}.tn-score{font-size:13px}.tn-score td.who{font-size:12.5px}}
+@media(min-width:760px){.tn-ksg{grid-template-columns:repeat(6,minmax(0,1fr))}}
 /* ===== Stats section ===== */
 .stchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:11px;-webkit-overflow-scrolling:touch}
 .stchip{flex:none;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:20px;padding:6px 13px;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
@@ -2622,16 +2746,24 @@ body.focus .dk-focusnote{display:block}
          two sources stay separate on screen on purpose: the record is
          published facts, the engine is a frozen pipeline that grades a slate. -->
     <div id="v-tennis" class="rpanel hide">
-    <div class="row-between fb-panelhd"><h2 style="margin:0">Tennis</h2><span class="spacer"></span><span class="freshness" id="tddFresh">—</span><span class="freshness" id="wtaFresh" style="display:none">—</span><button class="refreshbtn" id="tddRefreshBtn" title="Refresh" aria-label="Refresh tennis research" onclick="tddRefreshClick()">&#8635;</button></div>
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Tennis</h2><span class="spacer"></span><span class="freshness" id="tddFresh">—</span><span class="freshness" id="tddLiveFresh" style="display:none">—</span><span class="freshness" id="wtaFresh" style="display:none">—</span><button class="refreshbtn" id="tddRefreshBtn" title="Refresh" aria-label="Refresh tennis research" onclick="tddRefreshClick()">&#8635;</button></div>
     <div id="tddOverview" class="fb-ov"></div>
     <div id="tddModules">
     <div class="fb-sechd"><span>Research modules</span><span class="r">record &middot; engine</span></div>
-    <div class="stseg fb-seg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')"><b>ATP</b><small>Tour record</small></button><button onclick="tddSetTour('WTA')"><b>WTA</b><small>Tour record</small></button><button onclick="tddSetTour('RESEARCH')"><b>WTA research</b><small>Daily engine</small></button></div>
+    <div class="stseg fb-seg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')"><b>ATP</b><small>Tour record</small></button><button onclick="tddSetTour('WTA')"><b>WTA</b><small>Tour record</small></button><button onclick="tddSetTour('LIVE')"><b>Live Match Center</b><small>On court now</small></button><button onclick="tddSetTour('RESEARCH')"><b>WTA research</b><small>Daily engine</small></button></div>
     <div id="tddRecord">
     <div class="flbanner demo" id="tddBanner">Loading tennis record&hellip;</div>
     <div class="stseg" id="tddSeg" style="margin-bottom:12px"><button class="on" onclick="tddSetSeg('rankings')">Rankings</button><button onclick="tddSetSeg('results')">Results</button><button onclick="tddSetSeg('players')">Players</button></div>
     <input class="stsearch" id="tddQ" placeholder="Search a player&hellip;" style="margin-bottom:12px;display:none" oninput="renderTennis()">
     <div id="tddBody"><div class="empty">Loading&hellip;</div></div>
+    </div>
+    <!-- Live Match Center: the tennis schema's live contract (tournaments,
+         live_matches, match_live_state, match_set_stats, match_markets,
+         market_captures, pipeline_status), filled by the GitHub jobs in
+         tools/tennis/. Its own block so the record and the engine keep every
+         id they already had. -->
+    <div id="tddLive" class="hide">
+    <div id="tddLiveBody"><div class="empty">Loading the match center&hellip;</div></div>
     </div>
     <!-- WTA research engine -->
     <div id="tddResearch" class="hide">
@@ -3174,6 +3306,7 @@ window.mcRefresh=function(){
 </nav>
 
 <script src="/lib/ufc_research.js?v=20260909a"></script>
+<script src="/lib/tennis_research.js?v=20260910a"></script>
 <script>
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
@@ -11935,10 +12068,10 @@ setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on&&!L
 async function sbGetTennis(q,signal){return sbFetch(q,{"accept-profile":"tennis"},signal);}
 
 var TDD_TOURS=['ATP','WTA'];
-/* segment row = the two tour records plus the WTA research engine; view is the
-   selected segment, tour is the last RECORD tour so the engine never becomes a
-   tour of its own */
-var TDD_VIEWS=['ATP','WTA','RESEARCH'];
+/* segment row = the two tour records, the Live Match Center and the WTA
+   research engine; view is the selected segment, tour is the last RECORD tour
+   so neither the match center nor the engine becomes a tour of its own */
+var TDD_VIEWS=['ATP','WTA','LIVE','RESEARCH'];
 var TDD={tour:'ATP',view:'ATP',
   ATP:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''},
   WTA:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''}};
@@ -11975,14 +12108,25 @@ async function loadTennis(force,signal){
 window.tddSetTour=function(view){
   if(view==null)view=TDD.view;                 /* researchGo: keep the current segment */
   if(TDD_VIEWS.indexOf(view)<0)return;
-  var research=(view==='RESEARCH');
-  TDD.view=view;if(!research)TDD.tour=view;
+  var research=(view==='RESEARCH'),live=(view==='LIVE');
+  TDD.view=view;if(!research&&!live)TDD.tour=view;
   var b=$('tddTour').querySelectorAll('button');
   for(var i=0;i<b.length;i++)b[i].classList.toggle('on',TDD_VIEWS[i]===view);
-  var rec=$('tddRecord'),rs=$('tddResearch');
-  if(rec)rec.classList.toggle('hide',research);if(rs)rs.classList.toggle('hide',!research);
-  var f1=$('tddFresh'),f2=$('wtaFresh');   /* rsFreshApply rewrites className, so toggle display */
-  if(f1)f1.style.display=research?'none':'';if(f2)f2.style.display=research?'':'none';
+  var rec=$('tddRecord'),rs=$('tddResearch'),lv=$('tddLive');
+  if(rec)rec.classList.toggle('hide',research||live);
+  if(rs)rs.classList.toggle('hide',!research);
+  if(lv)lv.classList.toggle('hide',!live);
+  var f1=$('tddFresh'),f2=$('wtaFresh'),f3=$('tddLiveFresh');   /* rsFreshApply rewrites className, so toggle display */
+  if(f1)f1.style.display=(research||live)?'none':'';
+  if(f2)f2.style.display=research?'':'none';
+  if(f3)f3.style.display=live?'':'none';
+  /* the match center polls on its own clock; leaving the view stops it */
+  if(TDD.live&&TDD.live.timer){clearInterval(TDD.live.timer);TDD.live.timer=null;}
+  if(live){
+    loadTennisLive(false);
+    TDD.live.timer=setInterval(function(){if(TDD.view==='LIVE'&&!document.hidden)loadTennisLive(false);},20000);
+    return;
+  }
   /* the overview reads both sources, so both load whichever block is showing */
   researchActivate('wta',false);               /* the wta module owns the engine block */
   if(research)return;
@@ -12045,18 +12189,28 @@ function renderTennis(){
       :'<div class="empty">No '+TDD.tour+' match rows ingested yet.</div>';
     return;
   }
+  /* The whole set is filtered and SORTED first, then the page is capped —
+     capping mid-iteration returned whichever 200 the object happened to yield
+     and then sorted those, so a search for a late-alphabet player could come
+     back empty while the player was on file. The cap is also stated rather
+     than silently applied. */
   var q=($('tddQ')&&$('tddQ').value||'').trim().toLowerCase();
-  var list=[];
-  for(var id in t.byId){var p=t.byId[id];
-    if(!q||(p.full_name||'').toLowerCase().indexOf(q)>=0)list.push(p);
-    if(list.length>=200)break;}
-  list.sort(function(a,b){return (a.full_name||'').localeCompare(b.full_name||'');});
+  var all=[];
+  for(var id in t.byId){if(!Object.prototype.hasOwnProperty.call(t.byId,id))continue;
+    var p=t.byId[id];
+    if(!q||(p.full_name||'').toLowerCase().indexOf(q)>=0)all.push(p);}
+  all.sort(function(a,b){return (a.full_name||'').localeCompare(b.full_name||'');});
+  var TDD_PAGE=200,list=all.slice(0,TDD_PAGE);
+  var more=all.length-list.length;
   body.innerHTML=list.length
     ?('<div class="fi-card">'+list.map(function(p){
         return '<div class="atp-row" onclick="tddOpenPlayer(decodeURIComponent(\''+encodeURIComponent(''+tddEnt(p.player_id))+'\'))">'+
           '<span class="atp-nm">'+rsEsc(''+(p.full_name||''))+'<span>'+rsEsc(tddMeta(p))+'</span></span><span class="st-chev">›</span></div>';
-      }).join('')+'</div>')
-    :'<div class="empty">No player matches that search.</div>';
+      }).join('')+'</div>'
+      +'<div class="sidenote" style="margin-top:8px">'+(more>0
+        ?(list.length+' of '+all.length+' '+TDD.tour+' players shown, alphabetically. '+more+' more match'+(more===1?'es':'')+' — narrow the search to reach them.')
+        :(all.length+' '+TDD.tour+' player'+(all.length===1?'':'s')+' on file'+(q?' matching that search':'')+'.'))+'</div>')
+    :'<div class="empty">'+(q?'No player matches that search.':'No player rows ingested for '+TDD.tour+' yet.')+'</div>';
 }
 
 /* ---- player profile: career, surface splits, form, head-to-head ---------- */
@@ -12423,7 +12577,13 @@ function tddMvmHTML(r){
   var c=r.components||{},imp=tddImplied(r.fav_dec),rows=[];
   rows.push({l:'Research score',sub:'wta.research_score · server-side grade · '+tddGradeTxt(r.grade),v:String(r.research_score),c:'mdl',p:true});
   rows.push({l:'Market · favourite',sub:r.fav_name+' · #'+(r.fav_rank!=null?r.fav_rank:'—')+' · ingested book price, raw implied with vig',v:r.fav_dec?((+r.fav_dec).toFixed(2)+(imp!=null?(' · '+Math.round(imp*100)+'%'):'')):'—',c:r.fav_dec?'':'mut'});
-  rows.push({l:'Underdog',sub:r.dog_name+' · #'+(r.dog_rank!=null?r.dog_rank:'—')+' · no price ingested for this side',v:'—',c:'mut'});
+  /* The row used to assert "no price ingested for this side" without looking
+     at the row. If the pipeline stored one, it is shown; only when the column
+     really is empty does the page say so. */
+  var dogDec=(r.dog_dec!=null?r.dog_dec:(r.dog_price!=null?r.dog_price:null));
+  var dogImp=tddImplied(dogDec);
+  rows.push({l:'Underdog',sub:r.dog_name+' · #'+(r.dog_rank!=null?r.dog_rank:'—')+(dogDec!=null?' · ingested book price, raw implied with vig':' · this slate row carries no price for the underdog'),
+    v:dogDec!=null?((+dogDec).toFixed(2)+(dogImp!=null?(' · '+Math.round(dogImp*100)+'%'):'')):'—',c:dogDec!=null?'':'mut'});
   rows.push({l:'Rank gap',sub:'rank arithmetic',v:String(r.rank_gap!=null?r.rank_gap:'—')});
   var chips='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 2px">'+wtaChip('Gap',c.gap||0,20)+wtaChip('Dominance',c.dominance||0,30)+wtaChip('Upset',c.upset||0,20)+wtaChip('Surface',c.surface||0,15)+wtaChip('Form',c.form||0,15)+'</div>';
   var when=(r.tourney_title||'')+(r.surface?(' · '+r.surface):'')+' · slate '+(WTA.slate||'—')+(r.ranking_as_of?(' · rankings as of '+r.ranking_as_of):'');
@@ -12482,30 +12642,70 @@ window.tddDrawerOpen=function(kind){
   rsTkDrawerOpen(tddDrawerHTML(kind));
   try{rsModelsLoad().then(function(){if(rsTkDrawerIsOpen())rsTkDrawerOpen(tddDrawerHTML(kind));});}catch(_){}
 };
+/* "Last refresh" is a fact about a read that happened. When nothing has been
+   read, there is no last refresh, and the old code fell back to Date.now()
+   and printed "0s ago" — the clock reported as freshness. This says never
+   instead, and never mixes the two sources into one stamp: a fresh engine
+   read does not make a month-old tour record look current. */
+function tddStampTxt(at,label){return at?(label+' '+ago(at)):(label+' never');}
+
+/* Every fault the tennis panel can actually observe, each with the reason it
+   is one. The Faults KPI and the health card read the SAME list, so a number
+   in the snapshot can always be accounted for below it. */
+function tddFaults(){
+  var out=[],ts=tddModState('tennis'),ws=tddModState('wta');
+  if(tddIsErr(ws))out.push({k:'research read',v:'the wta schema did not answer ('+ws+')'});
+  if(tddIsErr(ts))out.push({k:'record read',v:'the tennis schema did not answer ('+ts+')'});
+  if(rsTkPipeLevel(WTA.meta)==='neg')out.push({k:'research pipeline',v:'a wta pipeline job last reported a failure'});
+  if(rsTkPipeLevel(tddTennisMeta())==='neg')out.push({k:'tennis pipeline',v:'a tennis pipeline job last reported a failure'});
+  if(TDD.live&&TDD.live.matchesOk===false)out.push({k:'match center',v:'tennis.live_matches did not answer'});
+  if(TDD.live&&TDD.live.statusOk===false)out.push({k:'match center',v:'tennis.pipeline_status did not answer'});
+  if(TDD.live&&TDD.live.mode==='stale')out.push({k:'poller',v:'a match is marked live but nothing has written to it'});
+  return out;
+}
+/* the tennis schema's own job ledger, merged across whichever tours loaded it */
+function tddTennisMeta(){
+  var out={};
+  TDD_TOURS.forEach(function(tour){var m=TDD[tour]&&TDD[tour].meta;if(!m)return;for(var k in m){if(Object.prototype.hasOwnProperty.call(m,k))out[k]=m[k];}});
+  return out;
+}
+
 function tddSystemHTML(){
   var ts=tddModState('tennis'),ws=tddModState('wta'),t=tddT();
   var tf=null,wf=null;try{tf=rsFreshness('tennis');}catch(_){}try{wf=rsFreshness('wta');}catch(_){}
-  var pipe=rsTkPipeLevel(WTA.meta),level='ok',tt,bits=[];
-  if(tddIsErr(ws)){level='neg';tt='Research engine read failed · '+ws;}
-  else if(tddIsErr(ts)){level='neg';tt='Tour record read failed · '+ts;}
-  else if(pipe==='neg'){level='neg';tt='A research pipeline job reported a failure';}
+  var tmeta=tddTennisMeta();
+  var pipe=rsTkPipeLevel(WTA.meta),tpipe=rsTkPipeLevel(tmeta);
+  var faults=tddFaults(),level='ok',tt,bits=[];
+  if(faults.length){level='neg';tt=faults.length===1?('Fault · '+faults[0].v):(faults.length+' faults · '+faults[0].v);}
   else if(!WTA.at&&!t.at){level='mut';tt='Waiting for the data';}
   else{
-    if(wf&&wf.stale)bits.push('research build stale');
-    if(tf&&tf.stale)bits.push('record stale');
-    if(pipe==='warn')bits.push('pipeline warning');
+    /* an absent build time is not a passing build time */
+    if(!wf||!wf.published)bits.push('research build time not published');
+    else if(wf.stale)bits.push('research build stale');
+    if(tf&&!tf.published)bits.push('record ingest time not published');
+    else if(tf&&tf.stale)bits.push('record stale');
+    if(pipe==='warn')bits.push('research pipeline warning');
+    if(tpipe==='warn')bits.push('tennis pipeline warning');
+    if(!Object.keys(tmeta).length)bits.push('the tennis schema publishes no job ledger');
     if(ws==='empty')bits.push('research schema empty');
     if(ts==='empty')bits.push('record empty');
     if(bits.length){level='warn';tt='Attention needed';}
     else tt='All tennis research systems operational';
   }
-  var line=(bits.length?(bits.join(' · ')+' · research still usable · '):'')+'Last refresh '+ago(Math.max(WTA.at||0,t.at||0)||Date.now())+((wf&&wf.published)?(' · research built '+ago(wf.builtAt)):' · research: no build time')+((tf&&tf.published)?(' · record ingest '+ago(tf.builtAt)):'');
+  var line=(bits.length?(bits.join(' · ')+' · research still usable · '):'')
+    +tddStampTxt(WTA.at,'research read')+' · '+tddStampTxt(t.at,'record read')
+    +((wf&&wf.published)?(' · research built '+ago(wf.builtAt)):' · research: no build time')
+    +((tf&&tf.published)?(' · record ingest '+ago(tf.builtAt)):' · record: no ingest time');
   var body=rsTkPipeRows(WTA.meta,'Research pipeline');
+  body+=rsTkPipeRows(tmeta,'Tennis pipeline · sync, poller, baselines');
   var rec='';
   if(t.meta&&(t.meta['last_ingest']||t.meta['rankings_as_of']))rec='<div class="fb-pipe"><div class="fb-pipe-t">Tour record · '+TDD.tour+'</div>'
     +(t.meta['last_ingest']?'<div class="fb-pipe-row"><span class="d"></span><span class="id">last_ingest</span><span class="st">'+stEsc(String(t.meta['last_ingest']).slice(0,19))+'</span><span class="rw"></span></div>':'')
     +(t.meta['rankings_as_of']?'<div class="fb-pipe-row"><span class="d"></span><span class="id">rankings_as_of</span><span class="st">'+stEsc(String(t.meta['rankings_as_of']))+'</span><span class="rw">'+t.rank.length+' rows</span></div>':'')+'</div>';
-  body+=rec+'<div id="rsMeta-wta" class="rs-panelwrap"></div><div id="rsMeta-tennis" class="rs-panelwrap"></div>';
+  body+=rec;
+  if(faults.length)body+='<div class="fb-pipe"><div class="fb-pipe-t">Faults</div>'+faults.map(function(f){
+    return '<div class="fb-pipe-row"><span class="d neg"></span><span class="id">'+stEsc(f.k)+'</span><span class="st neg">'+stEsc(f.v)+'</span><span class="rw"></span></div>';}).join('')+'</div>';
+  body+='<div id="rsMeta-wta" class="rs-panelwrap"></div><div id="rsMeta-tennis" class="rs-panelwrap"></div>';
   return rsTkSysCard({level:level,tt:tt,ts:line,key:'tddSys',body:body});
 }
 function tddOverviewHTML(){
@@ -12513,14 +12713,22 @@ function tddOverviewHTML(){
   var t=tddT(),ws=tddModState('wta');
   if(!WTA.at&&!t.at&&!errs)return rsTkSkel();
   var items=tddTodayItems(),agg=tddClvAgg();
-  var faults=(tddIsErr(ws)?1:0)+(tddIsErr(tddModState('tennis'))?1:0)+(rsTkPipeLevel(WTA.meta)==='neg'?1:0);
-  var upd=ago(Math.max(WTA.at||0,t.at||0)||Date.now());
+  /* one fault list, shared with the health card below, so the count on the
+     snapshot can always be accounted for. It now also sees the tennis
+     schema's own job ledger and the match centre's reads, which the old
+     count could not: a failing tennis pipeline showed as zero faults. */
+  var faultList=tddFaults(),faults=faultList.length;
+  /* "Updated" is a fact about a read that happened; with no read there is no
+     time, and the old fallback to Date.now() printed "0s ago" off the clock */
+  var lastAt=Math.max(WTA.at||0,t.at||0);
+  var upd=lastAt?ago(lastAt):'never';
   var html=errs;
   html+=rsTkSnap({title:'Tennis research',meta:'Updated '+upd+' · '+(WTA.slate?('slate '+WTA.slate):'no slate'),key:'tddSnap',
     kpis:[{n:WTA.at?WTA.day.length:'—',l:'Slate',c:WTA.day.length?'':'mut'},{n:WTA.at?WTA.research.length:'—',l:'Qualify',c:WTA.research.length?'warn':'mut'},{n:WTA.at?WTA.watch.length:'—',l:'Watched',c:WTA.watch.length?'':'mut'},{n:faults,l:'Faults',c:faults?'neg':'pos'}],
-    defs:[['Slate','WTA matches the pipeline researched today.'],['Qualify','Matches that cleared the qualifying grade.'],['Watched','Players on the engine’s watchlist.'],['Faults','Failed reads or pipeline errors.']],
-    how:'<b>Slate</b> is every row of wta.daily_research on the latest slate date. <b>Qualify</b> counts rows the pipeline graded elite, strong or worth watching — research attention, unproven. <b>Watched</b> is wta.watchlist: players the engine keeps returning to, with reliability (share of researched matches graded strong or better) and graded CLV against the close. <b>Faults</b> add failed schema reads and pipeline job failures. '+(agg?('<b>Watchlist CLV:</b> '+rsTkPts(agg.avg*100,2)+'% average over '+agg.n+' graded events, beat close '+Math.round(agg.beat*100)+'% — the only edge evidence on this panel.'):'No graded CLV on the watchlist yet; nothing here is validated.'),
+    defs:[['Slate','WTA matches the pipeline researched today.'],['Qualify','Matches that cleared the qualifying grade.'],['Watched','Players on the engine’s watchlist.'],['Faults','Failed schema reads, failed pipeline jobs on either schema, and a poller that has stopped writing to a live match. Each one is named in System health below.']],
+    how:'<b>Slate</b> is every row of wta.daily_research on the latest slate date. <b>Qualify</b> counts rows the pipeline graded elite, strong or worth watching — research attention, unproven. <b>Watched</b> is wta.watchlist: players the engine keeps returning to, with reliability (share of researched matches graded strong or better) and graded CLV against the close. <b>Faults</b> count failed schema reads, failed pipeline jobs on the wta AND tennis schemas, a live-match table that did not answer, and a poller that has left a match reading LIVE without writing to it. Every fault is named in System health, so the number is always accountable. '+(agg?('<b>Watchlist CLV:</b> '+rsTkPts(agg.avg*100,2)+'% average over '+agg.n+' graded events, beat close '+Math.round(agg.beat*100)+'% — the only edge evidence on this panel.'):'No graded CLV on the watchlist yet; nothing here is validated.'),
     cta:{label:'Open tennis research',onclick:'tddOpenResearch()'}});
+  html+=tddLiveStripHTML();
   html+='<div class="fb-sechd"><span>Today in tennis</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+stEsc(upd)+'</span></div>';
   html+=rsTkToday(items,'tddToday','<div class="fb-quiet">No major research changes since the last refresh.<small>'+(ws==='empty'?'The research schema answers but holds no rows yet.':(ws==='zero-qualifying'?'The pipeline ran and nothing qualified today.':'No researched slate and no record on file.'))+'</small></div>');
   html+='<div class="fb-sechd"><span>Research tools</span></div><div class="fb-tools">'
@@ -12528,13 +12736,61 @@ function tddOverviewHTML(){
     +rsTkTool('watch','Watchlist','Players monitored for reliability and graded CLV.',"tddToolGo('watch')")
     +rsTkTool('rankings','Rankings & results','Latest rankings and licensed results, ATP and WTA.',"tddToolGo('rankings')")
     +rsTkTool('team','Player research','Surface splits, form, career and head-to-head context.',"tddToolGo('players')")
+    +rsTkTool('live','Live Match Center','Matches on court now: score, serve and return counts, set pace and the market beside them.',"tddToolGo('live')")
     +'</div>';
   var fr=tddFocusRow();
   if(fr)html+='<div class="fb-sechd"><span>Market vs research</span><span class="r">tap a match above to compare it</span></div><div class="fb-card">'+tddMvmHTML(fr)+'</div>';
   html+=tddStatusHTML();
   return html;
 }
-function tddOvStamp(){var t=tddT();return [t.at,WTA.at,tddModState('tennis'),tddModState('wta'),TDD.tour,TDD.ov.focus].join('|');}
+/* The overview's live line. It renders only what the match centre has already
+   read; when nothing has been read it says so and asks for the read once,
+   rather than drawing an empty row that looks like "no tennis today". */
+var TDD_LIVE_PEEKED=false;
+function tddLivePeek(){
+  if(TDD_LIVE_PEEKED)return;
+  TDD_LIVE_PEEKED=true;
+  (async function(){
+    try{await tnFcMatches();}catch(e){TDD.live.matchesOk=false;TDD.live.why=(e&&e.message)?String(e.message):'';}
+    try{await tnFcStatus();}catch(_){}
+    try{TDD.live.mode=tnPick(TDD.live.matches).mode;}catch(_){}
+    try{tddRenderOverview(true);}catch(_){}
+  })();
+}
+function tddLiveStripHTML(){
+  var L=TDD.live;
+  if(!L)return '';
+  if(L.matchesOk==null){tddLivePeek();return '';}
+  if(L.matchesOk===false)
+    return '<div class="fb-sechd"><span>On court</span><span class="r">unreadable</span></div>'
+      +'<div class="fb-quiet">The <span class="mono">tennis.live_matches</span> table did not answer'+(L.why?(' ('+stEsc(L.why)+')'):'')
+      +'.<small>That is a read failure, not a quiet day. Nothing is shown in its place.</small></div>';
+  var live=(L.matches||[]).filter(function(m){return m.status==='live';});
+  var soon=(L.matches||[]).filter(function(m){var t=Date.parse(m.scheduled_at||'');return m.status==='scheduled'&&isFinite(t)&&t-Date.now()<=6*3600000&&t-Date.now()>=-6*3600000;});
+  var R=tnR();
+  if(!live.length){
+    var sync=tnStatusOf('tennis_sync');
+    return '<div class="fb-sechd"><span>On court</span><span class="r">'+(soon.length?(soon.length+' due'):'quiet')+'</span></div>'
+      +'<div class="fb-quiet">'+(soon.length?(soon.length+' match'+(soon.length===1?'':'es')+' due within six hours.'):'No tennis match is on court right now.')
+      +'<small>'+(sync&&sync.last_success_at?('The draw sync last succeeded '+tnAgeTxt(Math.round((Date.now()-Date.parse(sync.last_success_at))/1000))+'.'):'The draw sync has not recorded a success yet, so this may be a missing read rather than a quiet day.')+'</small></div>';
+  }
+  var rows=live.slice(0,6).map(function(m){
+    var t=TDD.live.tournaments[m.tournament_id];
+    var score=R?(R.scoreLine(m)||''):'';
+    return '<button class="fb-tool" onclick="tddOpenLive(\''+edAttrJs(m.match_id)+'\')"><span class="ic">'+RS_TK_ICONS.live+'</span>'
+      +'<span class="tx"><span class="tt">'+stEsc((R?R.shortName(m.home_name):m.home_name)+' v '+(R?R.shortName(m.away_name):m.away_name))+'</span>'
+      +'<span class="td">'+stEsc((score?score+' · ':'')+'set '+(m.current_set||1)+(t&&t.name?(' · '+t.name):'')+(m.is_doubles?' · doubles':''))+'</span></span><span class="ar">›</span></button>';
+  }).join('');
+  var stale=(L.mode==='stale');
+  return '<div class="fb-sechd"><span>On court</span><span class="r">'+live.length+' live'+(stale?' · poller stopped':'')+'</span></div>'
+    +'<div class="fb-tools">'+rows+'</div>'
+    +(stale?'<div class="fb-quiet">A match is still marked LIVE but nothing has written to it for '+stEsc(tnAgeTxt(tnLiveAgeS()))+'.<small>The score shown is the last one stored, not the current one.</small></div>':'');
+}
+function tddOvStamp(){
+  var t=tddT(),L=TDD.live||{};
+  var live=(L.matches||[]).filter(function(m){return m.status==='live';}).map(function(m){return m.match_id+':'+(m.sets_home||0)+'-'+(m.sets_away||0)+':'+(m.games_home||0)+'-'+(m.games_away||0);}).join(',');
+  return [t.at,WTA.at,tddModState('tennis'),tddModState('wta'),TDD.tour,TDD.ov.focus,L.matchesOk,L.mode,live].join('|');
+}
 function tddRenderOverview(force){
   var el=$('tddOverview');if(!el)return;
   var s=tddOvStamp();if(!force&&s===TDD.ov.stamp)return;
@@ -12554,10 +12810,16 @@ window.tddOpenResearch=function(favId){
   rsTkScrollTo(el||$('tddModules'));
 };
 window.tddOpenWatch=function(){window.tddSetTour('RESEARCH');window.wtaSetSeg('watchlist');rsTkScrollTo($('tddModules'));};
+window.tddOpenLive=function(matchId){
+  window.tddSetTour('LIVE');
+  if(matchId)setTimeout(function(){try{window.tnSelect(matchId);}catch(_){}},60);
+  rsTkScrollTo($('tddModules'));
+};
 window.tddOpenResults=function(){if(TDD.view==='RESEARCH')window.tddSetTour(TDD.tour);window.tddSetSeg('results');rsTkScrollTo($('tddModules'));};
 window.tddToolGo=function(k){
   if(k==='research'){window.tddOpenResearch();return;}
   if(k==='watch'){window.tddOpenWatch();return;}
+  if(k==='live'){window.tddOpenLive();return;}
   if(TDD.view==='RESEARCH')window.tddSetTour(TDD.tour);
   if(k==='rankings')window.tddSetSeg('rankings');
   else{window.tddSetSeg('players');var q=$('tddQ');if(q)setTimeout(function(){try{q.focus();}catch(_){}},400);}
@@ -12567,7 +12829,619 @@ window.tddFocusMatch=function(favId){
   TDD.ov.focus=String(favId);tddRenderOverview(true);
   var el=document.querySelector('#tddOverview .fb-mvm-h');if(el)rsTkScrollTo(el.parentNode);
 };
-window.tddRefreshClick=function(){rsTkRefresh('tddRefreshBtn',['tennis','wta']);};
+window.tddRefreshClick=function(){
+  if(TDD.view==='LIVE'){tnRefresh();return;}
+  rsTkRefresh('tddRefreshBtn',['tennis','wta']);
+};
+
+
+/* ═══ TENNIS LIVE MATCH CENTER ═══════════════════════════════════════════
+   Reads the contract supabase/tennis_live_center.sql defines and the GitHub
+   jobs in tools/tennis/ fill: tennis.tournaments, tennis.live_matches,
+   tennis.match_live_state, tennis.match_set_stats, tennis.match_snapshots,
+   tennis.player_baselines, tennis.match_markets, tennis.market_captures and
+   tennis.pipeline_status. Every rule it applies — name folding, the doubles
+   rule, the first-point boundary, the health thresholds, the research flags —
+   lives in lib/tennis_research.js and is the same code the pipeline runs and
+   the tests hold.
+
+   Three things are kept apart on every screen and never blur:
+     MARKET FACT        what the odds capture stored (price, fair, movement)
+     LIVE MATCH DATA    what the provider published (aces, serves, breaks)
+     EDGEDESK RESEARCH  what EdgeDesk computed from the two, labelled as such
+
+   There is no EdgeDesk tennis model. The one probability on screen is the
+   market's, de-vigged, and says so. Serve and return baselines are EdgeDesk's
+   OWN observations from matches this pipeline watched — the licensed record
+   carries no point-level serve data — so they start empty and always carry
+   their sample. Nothing here is a recommendation.
+   ════════════════════════════════════════════════════════════════════════ */
+TDD.live={tournaments:{},matches:[],byMatch:{},states:{},sets:{},snaps:{},baselines:{},links:{},sig:{},captures:{},
+  status:[],statusOk:null,rejections:null,sel:null,at:0,marketAt:0,marketOk:null,loading:null,open:{},why:'',
+  matchesOk:null,mode:'none',timer:null,day:null};
+function tnR(){return window.EDTennisResearch||null;}
+function tnNow(){return Date.now();}
+var TN_DASH='—';
+
+/* ---- reads ----------------------------------------------------------------- */
+var TN_TOUR_COLS='tournament_id,provider_tournament_id,tour,name,short_name,level,surface,indoor,venue,city,country,start_date,end_date,draw_size,state,matches_total,matches_completed,matches_live,source_updated_at,updated_at';
+var TN_MATCH_COLS='match_id,tournament_id,provider_match_id,tour,round,round_order,match_order,court,is_doubles,best_of,scheduled_at,home_provider_id,away_provider_id,home_name,away_name,home_player_id,away_player_id,home_seed,away_seed,home_rank,away_rank,status,status_detail,current_set,sets_home,sets_away,games_home,games_away,points_home,points_away,set_scores,server_side,winner_side,result_type,result_detail,first_point_at,first_live_seen_at,close_bound_source,completed_at,source_updated_at,updated_at';
+var TN_BASE_COLS='player_id,full_name,tour,built_at,builder_version,matches_on_file,dated_matches,record_available,career_wins,career_losses,career_matches,career_win_pct,last_match_at,days_since_last_match,matches_last_365,matches_last_28,current_streak,form_last10_wins,form_last10_sample,rank,rank_points,hard_win_pct,hard_matches,clay_win_pct,clay_matches,grass_win_pct,grass_matches,carpet_win_pct,carpet_matches,surface_splits,obs_matches,obs_hold_pct,obs_break_pct,obs_first_serve_pct,obs_first_serve_won_pct,obs_second_serve_won_pct,obs_service_points_won_pct,obs_return_points_won_pct,obs_ace_per_service_game,obs_df_per_service_game,obs_bp_saved_pct,obs_bp_converted_pct,obs_tiebreaks_won,obs_tiebreaks_played,obs_deciding_sets_won,obs_deciding_sets_played,obs_set_profile,style_labels,style_rules_version,notes';
+var TN_BACK_MS=2*86400000, TN_FWD_MS=2*86400000, TN_LIVE_STALE_MS=15*60*1000;
+
+function tnIn(ids){return '('+ids.map(function(i){return '%22'+encodeURIComponent(i)+'%22';}).join(',')+')';}
+
+async function tnFcMatches(signal){
+  var from=new Date(tnNow()-TN_BACK_MS).toISOString(),to=new Date(tnNow()+TN_FWD_MS).toISOString();
+  var ms=await sbGetTennis('live_matches?select='+TN_MATCH_COLS+'&scheduled_at=gte.'+from+'&scheduled_at=lte.'+to+'&order=scheduled_at.asc,match_order.asc&limit=400',signal);
+  TDD.live.matches=ms||[];TDD.live.matchesOk=true;
+  TDD.live.byMatch={};TDD.live.matches.forEach(function(m){TDD.live.byMatch[m.match_id]=m;});
+  var tids=[];TDD.live.matches.forEach(function(m){if(m.tournament_id&&tids.indexOf(m.tournament_id)<0)tids.push(m.tournament_id);});
+  if(tids.length){
+    try{
+      var ts=[];
+      for(var i=0;i<tids.length;i+=25)ts=ts.concat(await sbGetTennis('tournaments?select='+TN_TOUR_COLS+'&tournament_id=in.'+tnIn(tids.slice(i,i+25))+'&limit=60',signal)||[]);
+      TDD.live.tournaments={};ts.forEach(function(t){TDD.live.tournaments[t.tournament_id]=t;});
+    }catch(_){}
+  }
+  return TDD.live.matches;
+}
+async function tnFcStatus(signal){
+  try{TDD.live.status=(await sbGetTennis('pipeline_status?select=job,run_id,scope,status,started_at,heartbeat_at,finished_at,last_success_at,last_source_at,source_latency_ms,consecutive_failures,polls,writes,github_run_url,message,details,seconds_since_heartbeat,seconds_since_success,seconds_since_source',signal))||[];TDD.live.statusOk=true;}
+  catch(e){TDD.live.status=null;TDD.live.statusOk=false;}
+}
+function tnStatusOf(job){var s=TDD.live.status||[];for(var i=0;i<s.length;i++)if(s[i].job===job)return s[i];return null;}
+
+async function tnFcMatchDetail(matchId,force){
+  if(!matchId)return;
+  var L=TDD.live;
+  if(force||L.states[matchId]===undefined){
+    try{var st=await sbGetTennis('match_live_state?select=*&match_id=eq.'+encodeURIComponent(matchId)+'&limit=4');
+      var by={};(st||[]).forEach(function(s){by[s.side]=s;});L.states[matchId]=by;}
+    catch(e){L.states[matchId]=null;}
+  }
+  if(force||L.sets[matchId]===undefined){
+    try{L.sets[matchId]=(await sbGetTennis('match_set_stats?select=*&match_id=eq.'+encodeURIComponent(matchId)+'&order=set_number.asc,side.asc&limit=20'))||[];}
+    catch(e){L.sets[matchId]=null;}
+  }
+  if(force||L.snaps[matchId]===undefined){
+    try{L.snaps[matchId]=(await sbGetTennis('match_snapshots?select=side,captured_at,status,current_set,sets_won,games_won,is_serving,aces,double_faults,first_serves_in,first_serves_total,service_games_played,service_games_won,break_points_faced,break_points_saved,break_points_won,break_points_total,total_points_won&match_id=eq.'+encodeURIComponent(matchId)+'&order=captured_at.asc&limit=600'))||[];}
+    catch(e){L.snaps[matchId]=null;}
+  }
+  if(force||L.captures[matchId]===undefined){
+    try{L.captures[matchId]=(await sbGetTennis('market_captures?select=sig_key,side,book,capture_at,market_state,set_number,score,best_dec,sharp_fair,consensus_fair,n_books,has_sharp,source&match_id=eq.'+encodeURIComponent(matchId)+'&order=capture_at.asc&limit=800'))||[];}
+    catch(e){L.captures[matchId]=null;}
+  }
+  var m=L.byMatch[matchId];
+  if(m&&L.links[matchId]===undefined){
+    try{var lk=await sbGetTennis('match_markets?select=match_id,tournament_id,signal_event_id,sport_key,home_team,away_team,home_selection,away_selection,home_sig_key,away_sig_key,other_sig_keys,commence_time,link_method,linked_at&match_id=eq.'+encodeURIComponent(matchId)+'&limit=1');
+      L.links[matchId]=(lk&&lk[0])||null;}
+    catch(e){L.links[matchId]=null;}
+  }
+  if(m&&!m.is_doubles){
+    var ids=[m.home_player_id,m.away_player_id].filter(function(x){return x&&!L.baselines[x];});
+    if(ids.length){try{var bl=await sbGetTennis('player_baselines?select='+TN_BASE_COLS+'&player_id=in.'+tnIn(ids)+'&limit=4');
+      (bl||[]).forEach(function(b){L.baselines[b.player_id]=b;});}catch(_){}}
+  }
+}
+async function tnFcMarket(force){
+  var L=TDD.live,l=L.links[L.sel],keys=[];
+  if(l){[l.home_sig_key,l.away_sig_key].forEach(function(s){if(s)keys.push(s);});}
+  if(!keys.length){L.marketOk=null;return;}
+  if(!force&&L.marketAt&&(tnNow()-L.marketAt)<60000)return;
+  try{
+    var rows=await sbGet('signals?select=sig_key,event_id,sport_key,market,selection,point,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,first_sharp_fair,first_has_sharp,sharp_fair,consensus_fair,edge,n_books,has_sharp,last_seen_at,closing_sharp_fair,closed_at&sig_key=in.'+tnIn(keys)+'&limit=40')||[];
+    rows.forEach(function(r){L.sig[r.sig_key]=r;});
+    L.marketOk=true;L.marketAt=tnNow();
+  }catch(e){L.marketOk=false;L.marketAt=tnNow();}
+}
+async function tnFcRejections(){
+  try{TDD.live.rejections=(await sbGetTennis('market_rejections?select=signal_event_id,sig_key,home_team,away_team,selection,market,reason,detail,first_seen_at,last_seen_at,seen_count&order=last_seen_at.desc&limit=25'))||[];}catch(_){TDD.live.rejections=null;}
+}
+
+/* ---- which match, and what state the day is in ------------------------------
+   The newest row is not evidence about the present. A match is LIVE only when
+   its status says so AND something wrote it recently; a match marked live that
+   nothing has touched for a quarter of an hour is shown as STALE, not live. */
+function tnWrote(m){var t=m&&(m.source_updated_at||m.updated_at)?Date.parse(m.source_updated_at||m.updated_at):NaN;return isFinite(t)?(tnNow()-t):NaN;}
+function tnSched(m){var t=m&&m.scheduled_at?Date.parse(m.scheduled_at):NaN;return isFinite(t)?(tnNow()-t):NaN;}
+function tnPick(ms){
+  var live=[],staleLive=[],next=[],recent=[];
+  (ms||[]).forEach(function(m){
+    var w=tnWrote(m),age=tnSched(m);
+    if(m.status==='live'){ if(isFinite(w)&&w<=TN_LIVE_STALE_MS)live.push(m); else staleLive.push(m); return; }
+    if(m.status==='scheduled'){ if(isFinite(age)&&age<=6*3600000)next.push(m); return; }
+    if(m.status==='final'||m.status==='walkover'){ if(isFinite(age)&&age>=-3600000)recent.push(m); return; }
+  });
+  function order(a,b){var x=(a.match_order||99)-(b.match_order||99);return x||String(a.match_id).localeCompare(String(b.match_id));}
+  if(live.length)return {list:live.sort(order),mode:'live'};
+  if(next.length)return {list:next.sort(function(a,b){return tnSched(b)-tnSched(a);}),mode:'upcoming'};
+  if(recent.length)return {list:recent.sort(function(a,b){return tnSched(a)-tnSched(b);}),mode:'final'};
+  if(staleLive.length)return {list:staleLive.sort(order),mode:'stale'};
+  return {list:[],mode:'none'};
+}
+/* every match worth showing in the strip today, in order of play */
+function tnStripList(){
+  var ms=TDD.live.matches||[];
+  var keep=ms.filter(function(m){
+    if(m.status==='live')return true;
+    var age=tnSched(m);
+    if(!isFinite(age))return m.status==='scheduled';
+    return age>=-18*3600000&&age<=30*3600000;
+  });
+  var rank={live:0,scheduled:1,final:2,walkover:2,postponed:3,cancelled:4,unknown:3};
+  return keep.sort(function(a,b){
+    var r=(rank[a.status]==null?5:rank[a.status])-(rank[b.status]==null?5:rank[b.status]);
+    if(r)return r;
+    var t=Date.parse(a.scheduled_at||'')-Date.parse(b.scheduled_at||'');
+    if(t)return t;
+    return (a.match_order||99)-(b.match_order||99);
+  });
+}
+function tnDefaultMatch(){
+  var p=tnPick(TDD.live.matches);
+  if(p.list.length)return p.list[0].match_id;
+  var strip=tnStripList();
+  return strip.length?strip[0].match_id:null;
+}
+
+/* ---- freshness and health --------------------------------------------------- */
+function tnLiveStamp(){
+  var t=0,L=TDD.live,sel=L.sel;
+  var by=sel?L.states[sel]:null;
+  if(by)['home','away'].forEach(function(s){var r=by[s];if(r&&r.updated_at){var x=Date.parse(r.updated_at);if(x>t)t=x;}});
+  var run=tnStatusOf('tennis_live');
+  if(run&&run.heartbeat_at){var h=Date.parse(run.heartbeat_at);if(h>t)t=h;}
+  if(!t){(L.matches||[]).forEach(function(m){if(m.status==='live'&&m.source_updated_at){var x=Date.parse(m.source_updated_at);if(x>t)t=x;}});}
+  return t||0;
+}
+function tnLiveAgeS(){var t=tnLiveStamp();return t?Math.round((tnNow()-t)/1000):null;}
+function tnMarketAgeS(){
+  var t=0;Object.keys(TDD.live.sig).forEach(function(k){var r=TDD.live.sig[k];if(r&&r.last_seen_at){var x=Date.parse(r.last_seen_at);if(x>t)t=x;}});
+  return t?Math.round((tnNow()-t)/1000):null;
+}
+function tnEventAgeS(){
+  var s=tnStatusOf('tennis_sync'),t=s&&s.last_success_at?Date.parse(s.last_success_at):NaN;
+  if(!isFinite(t)){var m=TDD.live.byMatch[TDD.live.sel];t=m&&m.source_updated_at?Date.parse(m.source_updated_at):NaN;}
+  return isFinite(t)?Math.round((tnNow()-t)/1000):null;
+}
+function tnHistoryAgeS(){
+  var t=0,any=false;
+  Object.keys(TDD.live.baselines).forEach(function(k){var b=TDD.live.baselines[k];if(b&&b.built_at){any=true;var x=Date.parse(b.built_at);if(!t||x<t)t=x;}});
+  if(!any){var s=tnStatusOf('tennis_baselines');if(s&&s.last_success_at)t=Date.parse(s.last_success_at);}
+  return t?Math.round((tnNow()-t)/1000):null;
+}
+function tnPhase(){
+  var m=TDD.live.mode;
+  if(m==='live')return 'live';
+  if(m==='upcoming'||m==='stale')return 'window';
+  if(m==='final')return 'window';
+  return 'idle';
+}
+function tnHealth(){
+  var R=tnR();if(!R)return null;
+  var run=tnStatusOf('tennis_live');
+  return R.healthLevel({phase:tnPhase(),liveAgeS:tnLiveAgeS(),marketAgeS:tnMarketAgeS(),marketOk:TDD.live.marketOk,
+    eventAgeS:tnEventAgeS(),historyAgeS:tnHistoryAgeS(),
+    consecutiveFailures:(run&&run.status==='running')?(run.consecutive_failures||0):0});
+}
+function tnAgeTxt(s){var R=tnR();return R?R.ageLabel(s):TN_DASH;}
+function tnFreshChip(label,ageS,th,phase){
+  var R=tnR(),lvl=R?R.domainLevel(ageS,th):'OFFLINE';
+  var cls=lvl==='HEALTHY'?'ok':(lvl==='DEGRADED'?'warn':'neg');
+  if(phase==='idle'&&label==='Live')cls='mut';
+  return '<span class="tn-chip '+cls+'"><b>'+label+'</b> '+(ageS==null?'never':tnAgeTxt(ageS))+'</span>';
+}
+function tnChipsHTML(phase){
+  var R=tnR();if(!R)return '';
+  return '<div class="tn-chips">'+tnFreshChip('Live',tnLiveAgeS(),R.HEALTH.live,phase)+tnFreshChip('Market',tnMarketAgeS(),R.HEALTH.market,phase)
+    +tnFreshChip('Draw',tnEventAgeS(),R.HEALTH.event,phase)+tnFreshChip('History',tnHistoryAgeS(),R.HEALTH.history,phase)+'</div>';
+}
+
+/* ---- small helpers ----------------------------------------------------------- */
+function tnNum(v){return (v==null||!isFinite(+v))?TN_DASH:String(+v);}
+function tnPair(w,t){if(w==null&&t==null)return TN_DASH;if(w!=null&&t==null)return String(w);if(w==null)return TN_DASH+'/'+t;return w+'/'+t;}
+function tnPct(v,dp){return (v==null||!isFinite(+v))?TN_DASH:((+v*100).toFixed(dp==null?0:dp)+'%');}
+function tnRatioPct(w,t){if(w==null||t==null||+t<=0)return TN_DASH;return Math.round(+w/+t*100)+'%';}
+function tnShort(n){var R=tnR();return R?R.shortName(n):String(n||'');}
+function tnAm(dec){var R=tnR();return (typeof GE!=='undefined'&&GE.fmtPrice&&dec!=null)?GE.fmtPrice(+dec):(R?R.fmtDecAsAm(dec):TN_DASH);}
+function tnDerived(t){return '<span class="tn-tag">'+stEsc(t||'EdgeDesk research')+'</span>';}
+function tnMarketTag(){return '<span class="tn-tag mk">Market fact</span>';}
+function tnLiveTag(){return '<span class="tn-tag lv">Live match data</span>';}
+function tnSec(key,title,tag,body,opts){
+  opts=opts||{};
+  var open=TDD.live.open[key]!==undefined?!!TDD.live.open[key]:!!opts.openDefault;
+  return '<section class="tn-sec'+(open?' open':'')+'"><button class="tn-sech" aria-expanded="'+(open?'true':'false')+'" onclick="tnToggle(\''+key+'\')"><span class="t">'+stEsc(title)+'</span>'+(tag||'')+'<span class="ar">'+(open?'▾':'▸')+'</span></button>'+(open?'<div class="tn-secb">'+body+'</div>':'')+'</section>';
+}
+function tnTournamentOf(m){return (m&&TDD.live.tournaments[m.tournament_id])||null;}
+function tnBaseline(pid){return (pid&&TDD.live.baselines[pid])||null;}
+function tnStateTxt(mode){return mode==='live'?'LIVE':(mode==='upcoming'?'PRE':(mode==='final'?'FINAL':(mode==='stale'?'STALE':TN_DASH)));}
+function tnSideName(m,side){return side==='home'?m.home_name:m.away_name;}
+function tnSeedTxt(m,side){
+  var s=side==='home'?m.home_seed:m.away_seed,r=side==='home'?m.home_rank:m.away_rank;
+  var bits=[];
+  if(s!=null&&String(s)!=='')bits.push('['+stEsc(String(s))+']');
+  if(r!=null)bits.push('#'+r);
+  return bits.join(' ');
+}
+function tnResultTxt(m){
+  if(m.status!=='final'&&m.status!=='walkover')return '';
+  var w=m.winner_side?tnShort(tnSideName(m,m.winner_side)):null;
+  var kind=m.result_type==='retirement'?'ret.':(m.result_type==='walkover'?'w/o':(m.result_type==='default'?'def.':(m.result_type==='abandoned'?'abandoned':'')));
+  if(!w)return kind?('Finished · '+kind):'Result pending — the provider has not published a winner';
+  return w+' won'+(kind?(' ('+kind+')'):'');
+}
+
+/* ---- the scoreline ----------------------------------------------------------
+   Drawn from the match's own set_scores, with a set counted to a player only
+   when the engine says that set is finished. Leading 2-1 in a set in progress
+   is not a set won, and this table never claims it is. */
+function tnScoreTableHTML(m){
+  var R=tnR();if(!R)return '';
+  var sets=R.setsFrom(m);
+  if(!sets.length)return '<div class="tn-score-none">No set has been played yet.</div>';
+  var head='<tr><th class="who"></th>'+sets.map(function(s){return '<th>'+s.set+'</th>';}).join('')+'<th class="sw">Sets</th></tr>';
+  var sw=R.setsWon(m);
+  function row(side){
+    var nm=tnShort(tnSideName(m,side))||(side==='home'?'Home':'Away');
+    var serving=(m.status==='live'&&m.server_side===side);
+    var cells=sets.map(function(s,i){
+      var v=side==='home'?s.home:s.away,o=side==='home'?s.away:s.home;
+      var tb=side==='home'?s.home_tb:s.away_tb,otb=side==='home'?s.away_tb:s.home_tb;
+      var done=R.setComplete(sets,i,m);
+      var win=done&&v!=null&&o!=null&&v>o;
+      var cur=(m.status==='live'&&m.current_set===s.set);
+      return '<td class="'+(win?'win':'')+(cur?' cur':'')+'">'+(v==null?TN_DASH:v)
+        +((tb!=null&&otb!=null)?'<sup>'+Math.min(tb,otb)+'</sup>':'')+'</td>';
+    }).join('');
+    return '<tr class="'+(m.winner_side===side?'won':'')+'"><td class="who">'+(serving?'<i class="tn-serve" title="serving"></i>':'')+stEsc(nm)
+      +(tnSeedTxt(m,side)?(' <small>'+tnSeedTxt(m,side)+'</small>'):'')+'</td>'+cells
+      +'<td class="sw">'+(side==='home'?sw.home:sw.away)+'</td></tr>';
+  }
+  var pts='';
+  if(m.status==='live'&&(m.points_home!=null||m.points_away!=null))
+    pts='<div class="tn-pts">Game '+stEsc(String(m.points_home==null?TN_DASH:m.points_home))+' – '+stEsc(String(m.points_away==null?TN_DASH:m.points_away))+'</div>';
+  return '<div class="tn-scorew"><table class="tn-score">'+head+row('home')+row('away')+'</table></div>'+pts;
+}
+
+/* ---- the shell --------------------------------------------------------------- */
+function tnShellHTML(){
+  var R=tnR();
+  if(!R)return '<div class="empty">The tennis research engine (lib/tennis_research.js) did not load, so the Match Center cannot render. Reload the page.</div>';
+  var L=TDD.live;
+  if(L.matchesOk===false)return tnNoMatchHTML('unreachable');
+  var sel=L.byMatch[L.sel]||null;
+  if(!sel)return tnNoMatchHTML('none');
+  return tnHeaderHTML(sel)+tnStripHTML()+tnHeroHTML(sel)+tnMatchHTML(sel)+tnFootHTML();
+}
+function tnNoMatchHTML(why){
+  var st=tnStatusOf('tennis_sync'),run=tnStatusOf('tennis_live');
+  var head='<div class="tn-head"><div class="tn-hd-row"><span class="tn-hd-name">Tennis Live Match Center</span><span class="tn-state mut">'+(why==='unreachable'?'OFFLINE':'NO MATCH')+'</span></div>'+tnChipsHTML('idle')+'</div>';
+  var body;
+  if(why==='unreachable'){
+    body='<div class="empty">The <span class="mono">tennis.live_matches</span> table did not answer'+(TDD.live.why?' <span class="mono">('+stEsc(TDD.live.why)+')</span>':'')
+      +'. Either the migration <span class="mono">supabase/tennis_live_center.sql</span> has not been run or the schema is not exposed to the anon role. Nothing is shown in its place.</div>';
+  }else{
+    var bits=[];
+    if(st&&st.last_success_at)bits.push('The draw sync last succeeded '+tnAgeTxt(Math.round((tnNow()-Date.parse(st.last_success_at))/1000))+'.');
+    else if(st)bits.push('The draw sync has run but never recorded a success'+(st.message?(' — '+stEsc(String(st.message).slice(0,140))):'')+'.');
+    else bits.push('The draw sync (<span class="mono">tools/tennis/sync_events.js</span>) has not recorded a run yet, so nothing has been loaded.');
+    if(run&&run.heartbeat_at)bits.push('The poller last beat '+tnAgeTxt(Math.round((tnNow()-Date.parse(run.heartbeat_at))/1000))+'.');
+    body='<div class="empty">No tennis match is on court, due within six hours, or finished in the last day and a half.<br>'+bits.join(' ')+'</div>';
+  }
+  return head+body+tnFootHTML();
+}
+function tnHeaderHTML(m){
+  var R=tnR(),L=TDD.live,mode=L.mode,phase=tnPhase(),t=tnTournamentOf(m);
+  var cls=mode==='live'?'live':(mode==='upcoming'?'pre':(mode==='final'?'final':'stale'));
+  var name=t?(t.name||t.short_name||'Tournament'):'Tennis';
+  var loc=t?[t.city,t.country].filter(Boolean).join(', '):'';
+  var meta=[t&&t.tour,t&&t.surface?(t.surface+' court'):null,loc,t&&t.level].filter(Boolean).join(' · ');
+  var liveN=(L.matches||[]).filter(function(x){return x.status==='live';}).length;
+  var doneN=(L.matches||[]).filter(function(x){return x.status==='final'||x.status==='walkover';}).length;
+  var when='';try{when=whenLabel(m.scheduled_at);}catch(_){}
+  var h='<div class="tn-head"><div class="tn-hd-row"><span class="tn-hd-name">'+stEsc(name)+'</span><span class="tn-state '+cls+'">'+tnStateTxt(mode)+'</span></div>';
+  if(meta)h+='<div class="tn-hd-meta">'+stEsc(meta)+'</div>';
+  h+='<div class="tn-hd-cur">'+(liveN?(liveN+' match'+(liveN===1?'':'es')+' on court'):(mode==='upcoming'?('Next on court '+stEsc(when)):(doneN?(doneN+' finished today'):'Nothing on court')))+'</div>';
+  h+=tnChipsHTML(phase);
+  if(mode==='stale')h+='<div class="tn-stale">A match is still marked LIVE but nothing has written to it for '+tnAgeTxt(tnLiveAgeS())+'. The poller is not running. The score below is the last one stored, not the current one.</div>';
+  return h+'</div>';
+}
+function tnStripHTML(){
+  var L=TDD.live,list=tnStripList();
+  if(!list.length)return '';
+  return '<div class="tn-strip">'+list.map(function(m){
+    var cls=m.status==='live'?'live':((m.status==='final'||m.status==='walkover')?'done':(m.status==='cancelled'||m.status==='postponed'?'off':''));
+    var R=tnR(),score=R?(R.scoreLine(m)||''):'';
+    var mark=m.status==='live'?('● SET '+(m.current_set||'?')):(m.status==='final'?'FINAL':(m.status==='walkover'?'W/O':(m.status==='cancelled'?'CANCELLED':(m.status==='postponed'?'POSTPONED':(m.round||'—')))));
+    return '<button class="tn-strip-b '+cls+(L.sel===m.match_id?' on':'')+'" onclick="tnSelect(\''+edAttrJs(m.match_id)+'\')">'
+      +'<span class="mk">'+stEsc(mark)+'</span>'
+      +'<span class="tx">'+stEsc(tnShort(m.home_name)+' v '+tnShort(m.away_name))+'</span>'
+      +'<span class="sb">'+stEsc(score||(m.court||m.round||''))+(m.is_doubles?' · DOUBLES':'')+'</span></button>';
+  }).join('')+'</div>';
+}
+function tnHeroHTML(m){
+  var R=tnR(),t=tnTournamentOf(m);
+  var sub=[m.round,m.court,m.best_of?('best of '+m.best_of):null,m.is_doubles?'doubles':null].filter(Boolean).join(' · ');
+  var status=m.status==='live'?('On court · set '+(m.current_set||1)):(m.status==='scheduled'?('Scheduled '+(function(){try{return whenLabel(m.scheduled_at);}catch(_){return '';}})()):tnResultTxt(m));
+  var h='<div class="tn-hero"><div class="tn-hero-t">'+stEsc(sub||'Match')+'</div>'+tnScoreTableHTML(m)+'<div class="tn-hero-s">'+stEsc(status)+(m.status_detail&&m.status!=='live'?(' · '+stEsc(m.status_detail)):'')+'</div>';
+  var mk=tnMatchMarket(m);
+  if(mk&&mk.linked&&mk.devig&&mk.devig.home!=null){
+    h+='<div class="tn-hero-mk">'+tnMarketTag()+' <b>'+tnPct(mk.devig.home,1)+'</b> '+stEsc(tnShort(m.home_name))
+      +' · <b>'+tnPct(mk.devig.away,1)+'</b> '+stEsc(tnShort(m.away_name))
+      +'<small>de-vigged from the best price at each book. This is the MARKET’s probability, not EdgeDesk’s — there is no EdgeDesk tennis model.</small></div>';
+  }else if(mk&&mk.linked){
+    h+='<div class="tn-hero-mk mut"><small>Linked to an odds fixture, but no two-way price is currently stored for it.</small></div>';
+  }
+  return h+'</div>';
+}
+function tnMatchMarket(m){
+  var L=TDD.live,l=L.links[m.match_id];
+  if(!l)return {linked:false,unlinked:true};
+  var R=tnR(),home=L.sig[l.home_sig_key]||null,away=L.sig[l.away_sig_key]||null;
+  var s=R.marketSummary(home,away);
+  s.linked=true;s.link=l;s.rows={home:home,away:away};s.unreadable=(L.marketOk===false);
+  return s;
+}
+
+/* ---- the selected match ------------------------------------------------------ */
+function tnMatchHTML(m){
+  var R=tnR(),L=TDD.live;
+  var by=L.states[m.match_id]||null;
+  var home=by?by.home:null,away=by?by.away:null;
+  var hb=tnBaseline(m.home_player_id),ab=tnBaseline(m.away_player_id);
+  var out='';
+  out+=tnReadHTML(m,home,away,hb,ab);
+  out+=tnKpiHTML(m,home,away);
+  out+=tnFlagsHTML(m,home,away,hb,ab);
+  out+=tnSec('sets','Set by set',tnLiveTag(),tnSetsHTML(m),{openDefault:m.status==='live'});
+  out+=tnSec('matchup','Matchup · the record',tnDerived('EdgeDesk arithmetic'),tnMatchupHTML(m,hb,ab),{openDefault:m.status!=='live'});
+  out+=tnSec('market','Market',tnMarketTag(),tnMarketHTML(m),{openDefault:false});
+  out+=tnSec('unknown','What is not known',null,tnUnknownHTML(m,home,away,hb,ab),{openDefault:false});
+  out+=tnSec('method','How this is computed',null,tnMethodHTML(),{openDefault:false});
+  return out;
+}
+function tnReadHTML(m,home,away,hb,ab){
+  var R=tnR(),mk=tnMatchMarket(m);
+  var marketCtx=null;
+  if(mk&&mk.linked&&mk.devig&&mk.devig.home!=null)
+    marketCtx={line:tnPct(mk.devig.home,1)+' '+tnShort(m.home_name)+' · '+tnPct(mk.devig.away,1)+' '+tnShort(m.away_name),detail:'de-vigged best price — the market’s number, not EdgeDesk’s'};
+  var read=R.liveRead({match:m,home:home,away:away,homeBase:hb,awayBase:ab,market:marketCtx});
+  if(read.empty){
+    var why=m.status==='live'
+      ? 'The poller has the score but the provider has published no statistics for this match yet. Serve and return numbers appear the moment it does; nothing is estimated in the meantime.'
+      : (m.status==='scheduled'
+        ? 'The match has not started. Nothing is read from a match that has not been played.'
+        : 'No statistics were ever published for this match, so there is no live read to give. The scoreline above is the whole of what the provider carried.');
+    return '<div class="tn-read"><div class="tn-read-h">'+tnLiveTag()+' live read</div><div class="tn-read-empty">'+why+'</div></div>';
+  }
+  return '<div class="tn-read"><div class="tn-read-h">'+tnLiveTag()+' live read '+tnDerived('EdgeDesk research')+'</div>'
+    +read.lines.map(function(l){return '<div class="tn-read-l"><span class="k">'+stEsc(l.k)+'</span><span class="v">'+stEsc(l.v)+(l.d?('<small>'+stEsc(l.d)+'</small>'):'')+'</span></div>';}).join('')
+    +'<div class="tn-read-f">Counts published by the provider, compared with EdgeDesk’s own observed baselines where it has them. Every rule is in lib/tennis_research.js. Nothing here is a recommendation.</div></div>';
+}
+function tnKpiHTML(m,home,away){
+  if(!home&&!away)return '';
+  function cell(label,hv,av,note){
+    return '<div class="tn-ks"><div class="l">'+stEsc(label)+'</div><div class="v"><span class="hl">'+hv+'</span><span class="s">/</span><span class="al">'+av+'</span></div>'+(note?('<div class="n">'+stEsc(note)+'</div>'):'')+'</div>';
+  }
+  var h=home||{},a=away||{};
+  var out='<div class="tn-ksg">';
+  out+=cell('Aces',tnNum(h.aces),tnNum(a.aces));
+  out+=cell('Double faults',tnNum(h.double_faults),tnNum(a.double_faults));
+  out+=cell('First serve in',tnRatioPct(h.first_serves_in,h.first_serves_total),tnRatioPct(a.first_serves_in,a.first_serves_total));
+  out+=cell('Held',tnPair(h.service_games_won,h.service_games_played),tnPair(a.service_games_won,a.service_games_played));
+  out+=cell('Break pts won',tnPair(h.break_points_won,h.break_points_total),tnPair(a.break_points_won,a.break_points_total));
+  out+=cell('Break pts saved',tnPair(h.break_points_saved,h.break_points_faced),tnPair(a.break_points_saved,a.break_points_faced));
+  out+='</div><div class="tn-ksf">'+stEsc(tnShort(m.home_name))+' left of the slash, '+stEsc(tnShort(m.away_name))+' right. A dash is a field the provider did not publish for this match — it is not a zero.</div>';
+  return out;
+}
+function tnFlagsHTML(m,home,away,hb,ab){
+  var R=tnR();
+  var flags=R.flagsFor({match:m,home:home,away:away,homeBase:hb,awayBase:ab});
+  if(!flags.length)return '';
+  function who(side){return side==='home'?tnShort(m.home_name):(side==='away'?tnShort(m.away_name):'');}
+  return '<div class="tn-flags"><div class="tn-sech-lite">'+tnDerived('EdgeDesk research')+' research flags · '+stEsc(R.FLAG_RULES.version)+'</div>'
+    +flags.map(function(f){
+      var nums=[];
+      if(f.current!=null)nums.push('now '+f.current);
+      if(f.baseline!=null)nums.push('baseline '+f.baseline);
+      if(f.sample)nums.push(f.sample);
+      return '<div class="tn-flag '+(f.side==='home'?'home':(f.side==='away'?'away':''))+' '+stEsc(f.severity||'watch')+'">'
+        +'<div class="tn-flag-h"><span class="code">'+stEsc(f.title||f.code)+'</span><span class="sev">'+stEsc(f.severity||'watch')+'</span></div>'
+        +'<div class="tn-flag-x">'+stEsc(f.explain||'')+'</div>'
+        +(nums.length?('<div class="tn-flag-n"><span>'+nums.map(function(n){return stEsc(String(n));}).join('</span><span>')+'</span></div>'):'')
+        +'<div class="tn-flag-r">'+stEsc(f.threshold||'')+(f.side?(' · '+stEsc(who(f.side))):'')+'</div></div>';
+    }).join('')
+    +'<div class="tn-ksf">A flag is a threshold crossing in published counts. It describes data, never a physical state: a dropped first-serve percentage is a number, not an injury, and no retirement is ever predicted.</div></div>';
+}
+function tnSetsHTML(m){
+  var R=tnR(),rows=TDD.live.sets[m.match_id];
+  if(rows===null)return '<div class="empty">The set table did not answer this refresh.</div>';
+  if(!rows||!rows.length)return '<div class="empty">No per-set statistics are stored for this match yet. The poller writes a set row as soon as the provider publishes a count for it, and derives the rest from the difference between snapshots.</div>';
+  var lean=R.setLean(rows);
+  var hp=R.setPace(rows,'home'),ap=R.setPace(rows,'away');
+  var sets=hp.map(function(x){return x.set;});
+  ap.forEach(function(x){if(sets.indexOf(x.set)<0)sets.push(x.set);});
+  sets.sort(function(a,b){return a-b;});
+  function find(list,n){for(var i=0;i<list.length;i++)if(list[i].set===n)return list[i];return null;}
+  var head='<tr><th class="who">Set</th><th>Games</th><th>Held</th><th>1st in</th><th>Svc pts</th><th>Rtn pts</th><th>Aces</th><th>DF</th><th class="src">Source</th></tr>';
+  var body='';
+  sets.forEach(function(n){
+    [['home',hp,m.home_name],['away',ap,m.away_name]].forEach(function(p){
+      var r=find(p[1],n);if(!r)return;
+      body+='<tr class="'+p[0]+'"><td class="who">'+n+' <small>'+stEsc(tnShort(p[2]))+'</small>'+(r.status==='in_progress'?' <em>in progress</em>':'')+'</td>'
+        +'<td>'+tnNum(r.gamesWon)+'</td><td>'+tnPct(r.holdPct)+'</td><td>'+tnPct(r.firstServePct)+'</td>'
+        +'<td>'+tnPct(r.servicePointsWonPct)+'</td><td>'+tnPct(r.returnPointsWonPct)+'</td>'
+        +'<td>'+tnNum(r.aces)+'</td><td>'+tnNum(r.doubleFaults)+'</td>'
+        +'<td class="src">'+(r.source==='provider'?'provider':'derived')+'</td></tr>';
+    });
+  });
+  var note=(lean&&lean.length)?('<div class="tn-notes">'+lean.map(function(l){
+    var nm=l.side==='home'?tnShort(m.home_name):(l.side==='away'?tnShort(m.away_name):null);
+    var txt=nm?('Set '+l.set+(l.complete?'':' (in progress)')+': '+nm+' ahead on '+(l.basis||[]).join(' and ')):('Set '+l.set+': level on '+(l.basis||[]).join(' and '));
+    return '<div>'+stEsc(txt)+'</div>';}).join('')+'</div>'):'';
+  return '<div class="tn-tw"><table class="tn-rt">'+head+body+'</table></div>'+note
+    +'<div class="tn-ksf">A row marked <b>derived</b> is the difference between the cumulative totals this pipeline stored at each set boundary, not a figure the provider published per set. A row marked <b>provider</b> came from the feed as a set split.</div>';
+}
+function tnMatchupHTML(m,hb,ab){
+  var R=tnR();
+  if(m.is_doubles)
+    return '<div class="empty">This is a doubles match. A pair is a team, and the record on file is per player, so no team baseline is shown rather than one invented by averaging two players.</div>';
+  if(!hb&&!ab)
+    return '<div class="empty">Neither side has a baseline row yet. The builder (<span class="mono">tools/tennis/build_baselines.js</span>) writes one per player from the licensed record; until it has run for these two there is nothing to compare and nothing is guessed in its place.</div>';
+  var rows=R.matchupRows(m,hb,ab);
+  var head='<tr><th class="who">'+stEsc(tnShort(m.home_name))+'</th><th class="mid">vs</th><th class="who r">'+stEsc(tnShort(m.away_name))+'</th></tr>';
+  var body=rows.map(function(r){
+    return '<tr><td class="'+(r.lead==='home'?'lead':'')+'">'+(r.home==null?TN_DASH:stEsc(String(r.home)))+'</td>'
+      +'<td class="mid">'+stEsc(r.label)+(r.note?('<small>'+stEsc(r.note)+'</small>'):'')+'</td>'
+      +'<td class="r '+(r.lead==='away'?'lead':'')+'">'+(r.away==null?TN_DASH:stEsc(String(r.away)))+'</td></tr>';
+  }).join('');
+  var styles='';
+  [[hb,m.home_name],[ab,m.away_name]].forEach(function(p){
+    var b=p[0];if(!b)return;
+    var labels=(b.style_labels||[]);
+    styles+='<div class="tn-style"><b>'+stEsc(tnShort(p[1]))+'</b> '+(labels.length?labels.map(function(l){return '<span class="tn-lab">'+stEsc(l)+'</span>';}).join(''):'<span class="mut">no label earned its sample</span>')
+      +'<small>'+(b.obs_matches?(b.obs_matches+' match'+(b.obs_matches===1?'':'es')+' observed by EdgeDesk'):'no match observed by EdgeDesk yet — serve labels need observed matches and none is guessed')+'</small></div>';
+  });
+  var col=R.styleCollision(hb,ab);
+  return '<div class="tn-tw"><table class="tn-mt">'+head+body+'</table></div>'+styles
+    +(col&&col.length?('<div class="tn-notes">'+col.map(function(c){return '<div>'+stEsc(c)+'</div>';}).join('')+'</div>'):'')
+    +'<div class="tn-ksf">Career, surface and form are counts over the licensed record on file — they describe what is ingested, not necessarily a full career. Style labels follow documented rules ('+stEsc(R.STYLE_RULES.version)+') and a serve label is only earned from matches EdgeDesk itself watched.</div>';
+}
+function tnMarketHTML(m){
+  var R=tnR(),L=TDD.live,mk=tnMatchMarket(m);
+  if(!mk.linked){
+    var rej=(L.rejections||[]).filter(function(r){
+      var hn=R.normName(r.home_team||''),an=R.normName(r.away_team||'');
+      return hn===R.normName(m.home_name||'')||an===R.normName(m.away_name||'')||hn===R.normName(m.away_name||'')||an===R.normName(m.home_name||'');
+    });
+    return '<div class="empty">No odds fixture is linked to this match. A fixture links only when BOTH of its participants resolve to these two sides, and a doubles fixture may only link to a doubles match — a half match is refused rather than guessed.'
+      +(rej.length?('<div class="tn-notes">'+rej.slice(0,4).map(function(r){return '<div>'+stEsc((r.home_team||'?')+' vs '+(r.away_team||'?'))+' — refused: '+stEsc(r.reason)+(r.detail?(' ('+stEsc(r.detail)+')'):'')+'</div>';}).join('')+'</div>'):'')
+      +'</div>';
+  }
+  if(mk.unreadable)return '<div class="empty">The match is linked to fixture <span class="mono">'+stEsc(mk.link.signal_event_id)+'</span> but the odds table did not answer this refresh. That is a read failure, not an absence of prices.</div>';
+  var out='<div class="tn-tw"><table class="tn-rt"><tr><th class="who">Side</th><th>Best</th><th>Book</th><th>Open</th><th>Move</th><th>Fair</th><th>Books</th></tr>';
+  [['home',m.home_name],['away',m.away_name]].forEach(function(p){
+    var s=mk[p[0]],mv=s&&s.movement;
+    var fair=s?(s.sharp_fair!=null?s.sharp_fair:s.consensus_fair):null;
+    out+='<tr><td class="who">'+stEsc(tnShort(p[1]))+'</td>'
+      +'<td>'+(s&&s.now!=null?tnAm(s.now):TN_DASH)+'</td>'
+      +'<td>'+(s&&s.book?stEsc(String(s.book)):TN_DASH)+'</td>'
+      +'<td>'+(s&&s.open!=null?tnAm(s.open):TN_DASH)+'</td>'
+      +'<td>'+(mv&&mv.pp!=null?((mv.dir==='toward'?'→ ':(mv.dir==='away'?'← ':''))+mv.pp.toFixed(1)+'pp'):TN_DASH)+'</td>'
+      +'<td>'+(fair!=null?tnPct(fair,1):TN_DASH)+(s&&s.has_sharp?'':'<small class="mut"> consensus</small>')+'</td>'
+      +'<td>'+(s&&s.n_books!=null?s.n_books:TN_DASH)+'</td></tr>';
+  });
+  out+='</table></div>';
+  if(mk.devig&&mk.devig.vig!=null)
+    out+='<div class="tn-caps-n">Two-way vig '+tnPct(mk.devig.vig,1)+' over '+(mk.nBooks!=null?mk.nBooks:'—')+' book'+(mk.nBooks===1?'':'s')+'. The de-vigged split is the market’s estimate, and the only probability on this page.</div>';
+  out+=tnCaptureHTML(m);
+  out+='<div class="tn-ksf">Prices are the odds feed’s stored facts. <b>Fair</b> is the de-vigged two-way probability, which is the MARKET’s estimate and not EdgeDesk’s — there is no EdgeDesk tennis model, so no edge is claimed here.</div>';
+  return out;
+}
+function tnCaptureHTML(m){
+  var R=tnR(),caps=TDD.live.captures[m.match_id];
+  if(caps===null)return '<div class="tn-notes"><div>The price history did not answer this refresh.</div></div>';
+  if(!caps||!caps.length)return '<div class="tn-notes"><div>No price has been captured for this match yet.</div></div>';
+  var pre=caps.filter(function(c){return c.market_state==='PRE';}),live=caps.filter(function(c){return c.market_state==='LIVE';});
+  var bound=R.closeBound(m);
+  var boundTxt=bound.at?('first point observed '+(function(){try{return whenLabel(new Date(bound.at).toISOString());}catch(_){return '';}})()):'';
+  var src=m.close_bound_source==='observed_first_point'
+    ? 'The boundary is the last poll that still saw this match not started, so every PRE capture is provably pre-match.'
+    : (m.close_bound_source==='scheduled_start'
+      ? 'No poller saw this match before the first ball, so the weaker SCHEDULED START is used as the boundary and is labelled as such. A capture after it is LIVE.'
+      : 'This match has not started, so every capture so far is pre-match.');
+  var l=TDD.live.links[m.match_id]||null;
+  function refFor(side){
+    var key=l?(side==='home'?l.home_sig_key:l.away_sig_key):null;
+    var mine=caps.filter(function(c){return key?c.sig_key===key:c.side===side;});
+    return R.closingReference(mine,m);
+  }
+  var rh=refFor('home'),ra=refFor('away');
+  var out='<div class="tn-caps"><div class="tn-caps-h">'+pre.length+' pre-match capture'+(pre.length===1?'':'s')+' · '+live.length+' live'+(boundTxt?(' · '+stEsc(boundTxt)):'')+'</div>'
+    +'<div class="tn-caps-n">'+src+' A price captured after the first ball is a LIVE price and can never become a pre-match close.</div>';
+  [['home',rh,m.home_name],['away',ra,m.away_name]].forEach(function(p){
+    var r=p[1];
+    if(r&&r.available)
+      out+='<div class="tn-caps-n"><b>'+stEsc(tnShort(p[2]))+' close</b> '+(r.dec!=null?tnAm(r.dec):TN_DASH)+' · fair '+tnPct(r.fair,1)
+        +' · captured '+Math.round((r.leadMs||0)/60000)+'m before the first point'+(r.book?(' at '+stEsc(String(r.book))):'')+'.</div>';
+    else
+      out+='<div class="tn-caps-n"><b>'+stEsc(tnShort(p[2]))+' close</b> not established — '+stEsc((r&&r.reason)||'no capture qualifies')+'. No close is claimed rather than one borrowed from a live price.</div>';
+  });
+  return out+'</div>';
+}
+function tnUnknownHTML(m,home,away,hb,ab){
+  var R=tnR(),items=R.unknowns({match:m,home:home,away:away,homeBase:hb,awayBase:ab});
+  var missing=R.missingLiveFields(home,away);
+  var out='';
+  if(items.length)out+='<div class="tn-notes">'+items.map(function(x){return '<div><b>'+stEsc(x.k)+'</b> '+stEsc(x.v)+'</div>';}).join('')+'</div>';
+  if(missing.length)out+='<div class="tn-notes"><div><b>Not published by the provider for this match:</b> '+stEsc(missing.join(', '))+'. Each is absent, not zero.</div></div>';
+  if(!out)out='<div class="empty">Every field this page draws on is present for this match.</div>';
+  return out+'<div class="tn-ksf">This section exists so the page can be read without assuming a blank is a zero. EdgeDesk holds no point-level serve history from the licensed record, so a player it has never watched has no serve baseline at all.</div>';
+}
+function tnMethodHTML(){
+  var R=tnR();
+  return '<div class="tn-notes">'
+    +'<div><b>Where the data comes from.</b> GitHub Actions run <span class="mono">tools/tennis/sync_events.js</span> and <span class="mono">tools/tennis/live_poll.js</span>, which write to the <span class="mono">tennis</span> schema over PostgREST with a service role held only in repository secrets. This page reads that schema with the anon key through its public select policies. No Edge Function is involved and no privileged credential reaches the browser.</div>'
+    +'<div><b>Identity.</b> A side resolves to the licensed player record by provider id, exact name, name-order swap, first-and-last, initial-and-surname, or a unique surname — and stops there. A surname two players share is an unresolved side, not a guess. A doubles pair is a team and is never resolved to one of its players.</div>'
+    +'<div><b>The market boundary.</b> <span class="mono">first_point_at</span> is the last poll that still saw a match not started. A capture at or before it is PRE; anything after is LIVE and can never become a pre-match close.</div>'
+    +'<div><b>Baselines.</b> Career, surface and form are counts over the licensed record. Serve and return baselines (<span class="mono">obs_*</span>) are EdgeDesk’s own, accumulated only from matches this pipeline watched, and always shown with their sample.</div>'
+    +'<div><b>Flags and labels.</b> Deterministic thresholds, versioned '+stEsc(R.FLAG_RULES.version)+' and '+stEsc(R.STYLE_RULES.version)+'. The same code runs in the pipeline tests.</div>'
+    +'<div><b>What is not here.</b> There is no EdgeDesk tennis model. The only probability shown is the market’s, de-vigged. Nothing on this page is a recommendation.</div>'
+    +'</div>';
+}
+function tnFootHTML(){
+  var R=tnR(),h=tnHealth(),run=tnStatusOf('tennis_live'),sync=tnStatusOf('tennis_sync');
+  var lvl=h?h.level:'OFFLINE';
+  var cls=lvl==='HEALTHY'?'ok':(lvl==='OFFLINE'||lvl==='STALE'?'neg':'warn');
+  var bits=[];
+  if(run)bits.push('poller '+stEsc(run.status)+(run.scope?(' ['+stEsc(run.scope)+']'):'')+(run.heartbeat_at?(' · beat '+tnAgeTxt(Math.round((tnNow()-Date.parse(run.heartbeat_at))/1000))):''));
+  else bits.push('the poller has never recorded a run');
+  if(sync)bits.push('draw sync '+stEsc(sync.status)+(sync.last_success_at?(' · ok '+tnAgeTxt(Math.round((tnNow()-Date.parse(sync.last_success_at))/1000))):' · never succeeded'));
+  else bits.push('the draw sync has never recorded a run');
+  if(TDD.live.statusOk===false)bits.push('tennis.pipeline_status did not answer');
+  return '<div class="tn-foot '+cls+'"><b>'+stEsc(lvl)+'</b> '+(h&&h.why?stEsc(h.why):'')+'<small>'+bits.join(' · ')+'</small></div>';
+}
+
+/* ---- wiring ------------------------------------------------------------------ */
+window.tnToggle=function(key){TDD.live.open[key]=!TDD.live.open[key];tnRepaint();};
+window.tnSelect=async function(id){
+  var L=TDD.live;
+  if(!id||!L.byMatch[id])return;
+  L.sel=id;L.marketAt=0;tnRepaint();
+  await tnFcMatchDetail(id,false);
+  await tnFcMarket(true);
+  tnRepaint();
+  var el=$('tddLiveBody');if(el)rsTkScrollTo(el);
+};
+window.tnRefresh=function(){TDD.live.marketAt=0;loadTennisLive(true);};
+function tnRepaint(){if(TDD.view!=='LIVE')return;var b=$('tddLiveBody');if(b)b.innerHTML=tnShellHTML();}
+
+async function loadTennisLive(force){
+  var body=$('tddLiveBody');if(!body)return;
+  var L=TDD.live;
+  if(L.loading)return L.loading;
+  L.loading=(async function(){
+    var reachable=true;
+    try{await tnFcMatches();}catch(e){reachable=false;L.matchesOk=false;L.why=(e&&e.message)?String(e.message):'';}
+    await tnFcStatus();
+    if((typeof edIsOwner==='function')&&edIsOwner()&&L.rejections===null){try{await tnFcRejections();}catch(_){}}
+    if(!reachable){L.sel=null;L.at=tnNow();body.innerHTML=tnShellHTML();return;}
+    var pick=tnPick(L.matches);
+    L.mode=pick.mode;
+    if(!L.sel||!L.byMatch[L.sel]||force)L.sel=tnDefaultMatch();
+    if(!L.sel){L.at=tnNow();body.innerHTML=tnShellHTML();return;}
+    var sel=L.byMatch[L.sel];
+    await tnFcMatchDetail(L.sel,!!(sel&&sel.status==='live'));
+    await tnFcMarket(!!force);
+    L.at=tnNow();
+    body.innerHTML=tnShellHTML();
+    var f=$('tddLiveFresh');
+    if(f){var la=tnLiveAgeS();f.textContent=(la==null)?'live feed: never':('live '+tnAgeTxt(la));
+      f.className='freshness'+((L.mode==='stale'||(la!=null&&la>240&&L.mode==='live'))?' rs-stale':'');}
+  })().catch(function(e){L.why=(e&&e.message)?String(e.message):'';}).then(function(){L.loading=null;});
+  return L.loading;
+}
 
 async function sbGetCfb(q,signal){return sbFetch(q,{"accept-profile":"cfb"},signal);}
 async function cfbFetchAll(sel,ord,signal){return rsFetchAll('cfb',sel,ord||'team',25,signal);}

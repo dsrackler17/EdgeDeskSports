@@ -1,0 +1,110 @@
+# EdgeDesk Tennis — the background sync.
+#
+# Every six hours: discover the ATP and WTA tournaments in the window from
+# ESPN's public scoreboard, store tournaments and matches with their provider
+# ids, resolve every SINGLES side to the licensed player record (and say which
+# ones did not resolve), keep every DOUBLES pair whole as a team, link each
+# match to its odds-feed fixture only when both participants match, write the
+# pre-match price history, mark a draw that never closed as stale, and rebuild
+# the baselines for every player in the window. Mondays it rebuilds every
+# player on file.
+#
+# NO EDGE FUNCTION IS INVOLVED. The job writes over PostgREST with the service
+# role this repository already holds (SB_SERVICE_ROLE / SB_URL — the same
+# secrets the settle, schedule and UFC jobs use). The browser reads the result
+# through the anon/RLS door like every other research table.
+#
+# It is IDEMPOTENT: a tournament already on file is updated in place by its
+# provider id, a price already captured is not captured again, and a run on
+# which nothing changed writes what it read.
+name: Tennis sync
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'     # the draw, the players, the market
+    - cron: '53 8 * * 1'       # Mondays: every player's baseline, not just the ones in the window
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Write to the database. Unchecked is a dry run that says what it would do.'
+        type: boolean
+        required: false
+        default: true
+      baselines:
+        description: 'Which player baselines to rebuild'
+        type: choice
+        options: [upcoming, all, none]
+        required: false
+        default: upcoming
+      tour:
+        description: 'Limit to one tour (atp or wta). Blank = both.'
+        required: false
+        default: ''
+      verify_only:
+        description: 'Only prove the source answers. Writes nothing at all.'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # Two syncs writing the same draw race each other into the same upsert.
+  group: tennis-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The matching, market and first-point rules must pass before anything is written
+        run: node tools/tennis/tennis.test.js
+
+      # A probe failure is worth seeing in the log but must not stop the sync:
+      # the sync reports each tour's own failure, one tour answering is a
+      # usable day, and a draw already on file is better than no run at all.
+      - name: Prove the source answers before anything is written
+        run: node tools/tennis/sync_events.js --verify || echo "::warning::the source probe did not come back clean — the sync will report what it could read"
+
+      - name: Stop here when this run was dispatched to check the source only
+        if: ${{ inputs.verify_only == true }}
+        run: |
+          echo "verify_only was requested — the source was probed and nothing was written."
+          exit 0
+
+      - name: Sync tournaments, matches, players and markets
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be written."
+            exit 1
+          fi
+          ARGS=""
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          if [ -n "${{ inputs.tour }}" ]; then ARGS="$ARGS --tour ${{ inputs.tour }}"; fi
+          node tools/tennis/sync_events.js $ARGS
+
+      - name: Rebuild player baselines
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          MODE="${{ inputs.baselines }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "53 8 * * 1" ]; then MODE=all; else MODE=upcoming; fi
+          fi
+          if [ -z "$MODE" ]; then MODE=upcoming; fi
+          if [ "$MODE" = "none" ]; then echo "baselines skipped by request"; exit 0; fi
+          ARGS="--$MODE"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          node tools/tennis/build_baselines.js $ARGS
