@@ -1,0 +1,127 @@
+# EdgeDesk Tennis — on court.
+#
+# GitHub's scheduler cannot poll every twenty seconds and is not asked to.
+# Every half hour a GATE job reads the draw on file and asks one question:
+# is any TOUR-DAY on court right now, or inside its window? When the answer is
+# no, the run ends in seconds. When it is yes, a POLL job starts for each such
+# tour-day and STAYS ALIVE: it takes a lock on that tour-day in the database so
+# no second poller can write against it, then reads the tour's scoreboard,
+# normalises it, writes it, sleeps ~20 seconds, and repeats until the day is
+# settled.
+#
+# WHY A TOUR-DAY. The provider files tennis as one scoreboard per tour per day
+# carrying every tournament's live matches at once, so a poller per tournament
+# would fetch the same document five times. The gate emits a matrix of tour-days
+# and each gets one runner.
+#
+# RECOVERY. The lock has a TTL, so a job that dies without releasing it is
+# fenced out for two and a half minutes, not forever. A source failure backs off
+# and keeps the run alive; ninety minutes of failure ends the run so the next
+# gate starts a fresh one. A day that outlasts the runner's limit hands off: the
+# poller dispatches this workflow again for the same tour-day before it exits,
+# and the job-level concurrency group (one per tour-day) means at most one such
+# run is ever queued behind it. workflow_dispatch with a tour is the manual
+# recovery when the gate's own reading is wrong.
+#
+# Writes use the service role from repository secrets (SB_SERVICE_ROLE /
+# SB_URL). No credential reaches the browser; no Edge Function is involved.
+name: Tennis live
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      tour:
+        description: 'Tour to poll (atp or wta). Blank = let the gate decide.'
+        required: false
+        default: ''
+      day:
+        description: 'UTC day to poll (YYYY-MM-DD). Blank = today.'
+        required: false
+        default: ''
+      continuation:
+        description: 'Set by a poller handing off at its time limit.'
+        required: false
+        default: 'false'
+      max_minutes:
+        description: 'How long the poller may stay alive (GitHub caps a job at 360).'
+        required: false
+        default: '330'
+
+permissions:
+  contents: read
+  actions: write   # the poller dispatches its own continuation
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: tennis-live-gate
+      cancel-in-progress: false
+    outputs:
+      found: ${{ steps.gate.outputs.found }}
+      matrix: ${{ steps.gate.outputs.matrix }}
+      summary: ${{ steps.gate.outputs.summary }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Is any tour on court?
+        id: gate
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set."
+            exit 1
+          fi
+          ARGS=""
+          if [ -n "${{ inputs.tour }}" ]; then ARGS="--tour ${{ inputs.tour }}"; fi
+          if [ -n "${{ inputs.day }}" ]; then ARGS="$ARGS --day ${{ inputs.day }}"; fi
+          node tools/tennis/live_gate.js $ARGS
+
+  poll:
+    needs: gate
+    if: needs.gate.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.gate.outputs.matrix) }}
+    concurrency:
+      # one live poller per tour-day; a second run for the same day queues
+      # behind the first (and only one may queue), which is also how a
+      # hand-off at the time limit becomes the next run
+      group: tennis-live-${{ matrix.lock_key }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The first-point, restart and dedup rules must pass before a live write
+        run: node tools/tennis/tennis.test.js
+
+      - name: Confirm the draw — matches, sides, market links
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          node tools/tennis/sync_events.js --commit --tour "${{ matrix.tour }}" --from-days 2 --to-days 2 --no-stale \
+            || echo "::warning::pre-poll sync failed; polling with the draw as last stored"
+
+      - name: Poll ${{ matrix.lock_key }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TENNIS_LIVE_WORKFLOW: tennis-live.yml
+        run: |
+          MAX="${{ inputs.max_minutes }}"
+          if [ -z "$MAX" ]; then MAX=330; fi
+          node tools/tennis/live_poll.js --tour "${{ matrix.tour }}" --day "${{ matrix.day }}" --max-minutes "$MAX"
