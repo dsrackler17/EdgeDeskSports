@@ -369,6 +369,37 @@ eq('nothing at all is not a missing contract', D.explain(null), null);
 eq('the contract is named once, in one place', D.CONTRACT, 'tennis_live_center.sql');
 
 /* ======================================================================== */
+/* 9c. THE WIRE RULE A REAL WRITE TAUGHT US                                 */
+/* ======================================================================== */
+/* The first production write failed with PGRST102 "All object keys must
+   match": PostgREST requires every object in one bulk write to carry the same
+   keys, and a real draw holds both a finished match (which has a winner) and a
+   scheduled one (which does not). The fake database used to accept anything,
+   so the suite passed while production did not. */
+const PG = require('../lib/pgrest.js');
+
+const mixedDraw = S.tournamentRows(parsed[0], '2026-05-28T11:00:00Z').matches;
+chk('a real draw genuinely holds more than one row shape',
+  new Set(mixedDraw.map(m => Object.keys(m).sort().join(','))).size > 1,
+  'shapes: ' + new Set(mixedDraw.map(m => Object.keys(m).sort().join(','))).size);
+const shaped = PG.byKeyShape(mixedDraw);
+chk('grouping makes every group internally uniform',
+  shaped.every(g => { const sig = Object.keys(g[0]).sort().join(','); return g.every(r => Object.keys(r).sort().join(',') === sig); }));
+eq('and loses no row', shaped.reduce((n, g) => n + g.length, 0), mixedDraw.length);
+
+/* The safety property that rules out the obvious wrong fix. Padding the
+   missing keys with null would reopen a finished match: reconcileMatches drops
+   `status` precisely so a merge cannot overwrite it. Omission must survive. */
+const reopened = S.reconcileMatches(
+  [{ match_id: 'espn:8000001', status: 'final', winner_side: 'home' }],
+  [{ match_id: 'espn:8000001', status: 'scheduled', current_set: null, tournament_id: 't' }],
+  '2026-05-28T11:00:00Z');
+chk('the row that must not reopen a final match omits status', !('status' in reopened.upserts[0]), JSON.stringify(reopened.upserts[0]));
+const reopenedShaped = PG.byKeyShape(reopened.upserts);
+chk('and grouping leaves it omitted rather than nulling it',
+  reopenedShaped.every(g => g.every(r => !('status' in r))), JSON.stringify(reopenedShaped));
+
+/* ======================================================================== */
 /* 10. THE GATE                                                             */
 /* ======================================================================== */
 const NOW = Date.parse('2026-05-28T13:00:00Z');

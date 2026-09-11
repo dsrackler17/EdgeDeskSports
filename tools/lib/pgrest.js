@@ -105,11 +105,23 @@ function client(cfg, fetchImpl, opts) {
       if (!rows || !rows.length) return [];
       const out = [];
       const size = o.chunk || 400;
-      for (let i = 0; i < rows.length; i += size) {
-        const q = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : '';
-        const prefer = (o.ignoreDuplicates ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates') + ',' + (o.returning === false ? 'return=minimal' : 'return=representation');
-        const r = await call('POST', schema, `${rel}${q}`, rows.slice(i, i + size), { prefer }, `UPSERT ${schema}.${rel}`);
-        if (Array.isArray(r)) out.push(...r);
+      /* PostgREST requires every object in one bulk write to carry the SAME
+         keys, and answers a mixed array with PGRST102 "All object keys must
+         match". Callers legitimately build rows of different shapes — a
+         finished match carries a winner and a scheduled one does not — so the
+         batch is split by shape rather than padded.
+
+         Padding would be the wrong fix: an omitted key is often deliberate.
+         sync_events drops `status` from a row precisely so a merge cannot
+         reopen a finished match, and writing null there would both wipe the
+         status and violate its not-null constraint. Omission has to survive. */
+      for (const group of byKeyShape(rows)) {
+        for (let i = 0; i < group.length; i += size) {
+          const q = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : '';
+          const prefer = (o.ignoreDuplicates ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates') + ',' + (o.returning === false ? 'return=minimal' : 'return=representation');
+          const r = await call('POST', schema, `${rel}${q}`, group.slice(i, i + size), { prefer }, `UPSERT ${schema}.${rel}`);
+          if (Array.isArray(r)) out.push(...r);
+        }
       }
       return out;
     },
@@ -212,5 +224,18 @@ function contractHint(err, sqlFile) {
          ' once in the Supabase SQL editor and check that every row of its report reads ok';
 }
 
+/* Rows grouped so that every row in a group carries exactly the same keys.
+   Insertion order is preserved within a group, and the groups come back in the
+   order their shapes were first seen, so a write stays deterministic. */
+function byKeyShape(rows) {
+  const groups = new Map();
+  (rows || []).forEach(function (r) {
+    const sig = Object.keys(r).sort().join('\u0000');
+    if (!groups.has(sig)) groups.set(sig, []);
+    groups.get(sig).push(r);
+  });
+  return Array.from(groups.values());
+}
+
 module.exports = {
-  notInstalled, contractHint, config, client, inList, runLedger, writeMeta, sleep, DEFAULT_URL };
+  notInstalled, contractHint, byKeyShape, config, client, inList, runLedger, writeMeta, sleep, DEFAULT_URL };

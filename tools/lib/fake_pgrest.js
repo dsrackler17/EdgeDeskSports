@@ -20,6 +20,8 @@
    =========================================================================== */
 'use strict';
 
+const P = require('./pgrest.js');
+
 function parseQuery(q) {
   const out = { filters: [], order: null, limit: null, offset: 0, select: null };
   String(q || '').split('&').forEach(part => {
@@ -108,6 +110,27 @@ function fakePgrest(seed, opts) {
     async selectAll(schema, rel, q) { stats.requests++; return query(schema, rel, q); },
     async upsert(schema, rel, rows, onConflict, o) {
       o = o || {}; stats.requests++; stats.writes++;
+      /* THE WIRE RULE THIS FAKE USED TO LET THROUGH. Real PostgREST answers a
+         bulk write whose objects carry different keys with PGRST102 "All
+         object keys must match". This stand-in accepted anything, so the whole
+         tennis suite passed while the first production write failed on exactly
+         that: a batch holding a scheduled match and a finished one.
+
+         So the batch is split by shape through the SAME shared function the
+         real client uses, and each group is then checked. If that function
+         ever stops grouping correctly, these suites break instead of
+         production. */
+      const groups = P.byKeyShape(rows);
+      groups.forEach(g => {
+        const sig = Object.keys(g[0]).sort().join(',');
+        g.forEach(r => {
+          if (Object.keys(r).sort().join(',') !== sig) {
+            const e = new Error(`UPSERT ${schema}.${rel} -> 400: {"code":"PGRST102","message":"All object keys must match"}`);
+            e.status = 400;
+            throw e;
+          }
+        });
+      });
       const keys = String(onConflict || '').split(',').map(s => s.trim()).filter(Boolean);
       const t = tbl(schema, rel), out = [];
       rows.forEach(r => {
