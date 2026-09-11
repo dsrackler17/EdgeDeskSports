@@ -3,7 +3,7 @@
  "version": 1,
  "season": 2026,
  "week": null,
- "generated_at": "2026-09-09T13:15:59.058Z",
+ "generated_at": "2026-09-11T17:19:46.850Z",
  "method": {
   "results": "opponent-adjusted scoring margin, margins capped at 28, home advantage measured from the season itself",
   "carryover": "prior seasons decayed at 0.55 and scaled by the MEASURED season-on-season slope",
@@ -122,6 +122,111 @@
   2023
  ],
  "team_count": 138,
+ "conference_coverage": {
+  "rated": 138,
+  "with_conference": 138,
+  "source": "cfbfastR-data schedules 2026"
+ },
+ "conferences": [
+  {
+   "id": "acc",
+   "label": "ACC",
+   "source_label": "ACC",
+   "group": "p4",
+   "known": true,
+   "teams": 17
+  },
+  {
+   "id": "big12",
+   "label": "Big 12",
+   "source_label": "Big 12",
+   "group": "p4",
+   "known": true,
+   "teams": 16
+  },
+  {
+   "id": "bigten",
+   "label": "Big Ten",
+   "source_label": "Big Ten",
+   "group": "p4",
+   "known": true,
+   "teams": 18
+  },
+  {
+   "id": "sec",
+   "label": "SEC",
+   "source_label": "SEC",
+   "group": "p4",
+   "known": true,
+   "teams": 16
+  },
+  {
+   "id": "american",
+   "label": "American",
+   "source_label": "American Athletic",
+   "group": "other",
+   "known": true,
+   "teams": 14
+  },
+  {
+   "id": "cusa",
+   "label": "Conference USA",
+   "source_label": "Conference USA",
+   "group": "other",
+   "known": true,
+   "teams": 10
+  },
+  {
+   "id": "mac",
+   "label": "MAC",
+   "source_label": "Mid-American",
+   "group": "other",
+   "known": true,
+   "teams": 13
+  },
+  {
+   "id": "mwc",
+   "label": "Mountain West",
+   "source_label": "Mountain West",
+   "group": "other",
+   "known": true,
+   "teams": 10
+  },
+  {
+   "id": "pac12",
+   "label": "Pac-12",
+   "source_label": "Pac-12",
+   "group": "other",
+   "known": true,
+   "teams": 8
+  },
+  {
+   "id": "sunbelt",
+   "label": "Sun Belt",
+   "source_label": "Sun Belt",
+   "group": "other",
+   "known": true,
+   "teams": 14
+  },
+  {
+   "id": "independents",
+   "label": "Independents",
+   "source_label": "FBS Independents",
+   "group": "independent",
+   "known": true,
+   "teams": 2
+  }
+ ],
+ "p4_scope": {
+  "ids": [
+   "acc",
+   "big12",
+   "bigten",
+   "sec"
+  ],
+  "season_used": 2025,
+  "basis": "the 2025 Power 4 membership — the latest season the trained universe carries. 2026 realignment is NOT reflected in this grouping, and each team’s conference itself still comes from the 2026 schedule feed."
+ },
  "notes": [
   "no high-impact availability on file — that component is zero for every team"
  ],
@@ -198,7 +303,15 @@
    ],
    "key": "notredame",
    "team": "Notre Dame",
-   "rank": 1
+   "rank": 1,
+   "canonical_key": "notredame",
+   "division": "fbs",
+   "conference": "Independents",
+   "conference_id": "independents",
+   "conference_source": "FBS Independents",
+   "fbs_group": "independent",
+   "group_rank": 1,
+   "conference_rank": 1
   },
   {
    "rating": 14.54,
@@ -272,7 +385,15 @@
    ],
    "key": "usc",
    "team": "USC",
-   "rank": 2
+   "rank": 2,
+   "canonical_key": "usc",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 1,
+   "conference_rank": 1
   },
   {
    "rating": 14.01,
@@ -346,7 +467,15 @@
    ],
    "key": "ohiostate",
    "team": "Ohio State",
-   "rank": 3
+   "rank": 3,
+   "canonical_key": "ohiostate",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 2,
+   "conference_rank": 2
   },
   {
    "rating": 13.9,
@@ -420,7 +549,15 @@
    ],
    "key": "georgia",
    "team": "Georgia",
-   "rank": 4
+   "rank": 4,
+   "canonical_key": "georgia",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 3,
+   "conference_rank": 1
   },
   {
    "rating": 13.38,
@@ -494,7 +631,15 @@
    ],
    "key": "miami",
    "team": "Miami",
-   "rank": 5
+   "rank": 5,
+   "canonical_key": "miami",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 4,
+   "conference_rank": 1
   },
   {
    "rating": 12.5,
@@ -568,7 +713,15 @@
    ],
    "key": "indiana",
    "team": "Indiana",
-   "rank": 6
+   "rank": 6,
+   "canonical_key": "indiana",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 5,
+   "conference_rank": 3
   },
   {
    "rating": 12.44,
@@ -642,7 +795,15 @@
    ],
    "key": "smu",
    "team": "SMU",
-   "rank": 7
+   "rank": 7,
+   "canonical_key": "smu",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 6,
+   "conference_rank": 2
   },
   {
    "rating": 11.22,
@@ -716,7 +877,15 @@
    ],
    "key": "oregon",
    "team": "Oregon",
-   "rank": 8
+   "rank": 8,
+   "canonical_key": "oregon",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 7,
+   "conference_rank": 4
   },
   {
    "rating": 10.46,
@@ -790,7 +959,15 @@
    ],
    "key": "olemiss",
    "team": "Ole Miss",
-   "rank": 9
+   "rank": 9,
+   "canonical_key": "olemiss",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 8,
+   "conference_rank": 2
   },
   {
    "rating": 9.89,
@@ -864,7 +1041,15 @@
    ],
    "key": "texas",
    "team": "Texas",
-   "rank": 10
+   "rank": 10,
+   "canonical_key": "texas",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 9,
+   "conference_rank": 3
   },
   {
    "rating": 9.51,
@@ -938,7 +1123,15 @@
    ],
    "key": "byu",
    "team": "BYU",
-   "rank": 11
+   "rank": 11,
+   "canonical_key": "byu",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 10,
+   "conference_rank": 1
   },
   {
    "rating": 9.08,
@@ -1012,7 +1205,15 @@
    ],
    "key": "texasaandm",
    "team": "Texas A&M",
-   "rank": 12
+   "rank": 12,
+   "canonical_key": "texasam",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 11,
+   "conference_rank": 4
   },
   {
    "rating": 8.89,
@@ -1086,7 +1287,15 @@
    ],
    "key": "texastech",
    "team": "Texas Tech",
-   "rank": 13
+   "rank": 13,
+   "canonical_key": "texastech",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 12,
+   "conference_rank": 2
   },
   {
    "rating": 8.87,
@@ -1160,7 +1369,15 @@
    ],
    "key": "iowa",
    "team": "Iowa",
-   "rank": 14
+   "rank": 14,
+   "canonical_key": "iowa",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 13,
+   "conference_rank": 5
   },
   {
    "rating": 8.85,
@@ -1234,7 +1451,15 @@
    ],
    "key": "michigan",
    "team": "Michigan",
-   "rank": 15
+   "rank": 15,
+   "canonical_key": "michigan",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 14,
+   "conference_rank": 6
   },
   {
    "rating": 8.41,
@@ -1308,7 +1533,15 @@
    ],
    "key": "alabama",
    "team": "Alabama",
-   "rank": 16
+   "rank": 16,
+   "canonical_key": "alabama",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 15,
+   "conference_rank": 5
   },
   {
    "rating": 8.35,
@@ -1382,7 +1615,15 @@
    ],
    "key": "pennstate",
    "team": "Penn State",
-   "rank": 17
+   "rank": 17,
+   "canonical_key": "pennstate",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 16,
+   "conference_rank": 7
   },
   {
    "rating": 7.91,
@@ -1456,7 +1697,15 @@
    ],
    "key": "utah",
    "team": "Utah",
-   "rank": 18
+   "rank": 18,
+   "canonical_key": "utah",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 17,
+   "conference_rank": 3
   },
   {
    "rating": 7.48,
@@ -1530,7 +1779,15 @@
    ],
    "key": "washington",
    "team": "Washington",
-   "rank": 19
+   "rank": 19,
+   "canonical_key": "washington",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 18,
+   "conference_rank": 8
   },
   {
    "rating": 7.33,
@@ -1604,7 +1861,15 @@
    ],
    "key": "missouri",
    "team": "Missouri",
-   "rank": 20
+   "rank": 20,
+   "canonical_key": "missouri",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 19,
+   "conference_rank": 6
   },
   {
    "rating": 7.3,
@@ -1678,7 +1943,15 @@
    ],
    "key": "clemson",
    "team": "Clemson",
-   "rank": 21
+   "rank": 21,
+   "canonical_key": "clemson",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 20,
+   "conference_rank": 3
   },
   {
    "rating": 7.18,
@@ -1752,7 +2025,15 @@
    ],
    "key": "oklahoma",
    "team": "Oklahoma",
-   "rank": 22
+   "rank": 22,
+   "canonical_key": "oklahoma",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 21,
+   "conference_rank": 7
   },
   {
    "rating": 6.69,
@@ -1826,7 +2107,15 @@
    ],
    "key": "tennessee",
    "team": "Tennessee",
-   "rank": 23
+   "rank": 23,
+   "canonical_key": "tennessee",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 22,
+   "conference_rank": 8
   },
   {
    "rating": 6.23,
@@ -1900,7 +2189,15 @@
    ],
    "key": "tcu",
    "team": "TCU",
-   "rank": 24
+   "rank": 24,
+   "canonical_key": "tcu",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 23,
+   "conference_rank": 4
   },
   {
    "rating": 6.02,
@@ -1974,7 +2271,15 @@
    ],
    "key": "memphis",
    "team": "Memphis",
-   "rank": 25
+   "rank": 25,
+   "canonical_key": "memphis",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 1,
+   "conference_rank": 1
   },
   {
    "rating": 5.75,
@@ -2048,7 +2353,15 @@
    ],
    "key": "arizona",
    "team": "Arizona",
-   "rank": 26
+   "rank": 26,
+   "canonical_key": "arizona",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 24,
+   "conference_rank": 5
   },
   {
    "rating": 5.55,
@@ -2122,7 +2435,15 @@
    ],
    "key": "kansasstate",
    "team": "Kansas State",
-   "rank": 27
+   "rank": 27,
+   "canonical_key": "kansasstate",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 25,
+   "conference_rank": 6
   },
   {
    "rating": 5.29,
@@ -2196,7 +2517,15 @@
    ],
    "key": "louisville",
    "team": "Louisville",
-   "rank": 28
+   "rank": 28,
+   "canonical_key": "louisville",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 26,
+   "conference_rank": 4
   },
   {
    "rating": 5.27,
@@ -2265,7 +2594,15 @@
    ],
    "key": "navy",
    "team": "Navy",
-   "rank": 29
+   "rank": 29,
+   "canonical_key": "navy",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 2,
+   "conference_rank": 2
   },
   {
    "rating": 5.25,
@@ -2339,7 +2676,15 @@
    ],
    "key": "nebraska",
    "team": "Nebraska",
-   "rank": 30
+   "rank": 30,
+   "canonical_key": "nebraska",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 27,
+   "conference_rank": 9
   },
   {
    "rating": 5.19,
@@ -2413,7 +2758,15 @@
    ],
    "key": "vanderbilt",
    "team": "Vanderbilt",
-   "rank": 31
+   "rank": 31,
+   "canonical_key": "vanderbilt",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 28,
+   "conference_rank": 9
   },
   {
    "rating": 4.92,
@@ -2487,7 +2840,15 @@
    ],
    "key": "southcarolina",
    "team": "South Carolina",
-   "rank": 32
+   "rank": 32,
+   "canonical_key": "southcarolina",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 29,
+   "conference_rank": 10
   },
   {
    "rating": 4.76,
@@ -2561,7 +2922,15 @@
    ],
    "key": "arizonastate",
    "team": "Arizona State",
-   "rank": 33
+   "rank": 33,
+   "canonical_key": "arizonastate",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 30,
+   "conference_rank": 7
   },
   {
    "rating": 4.58,
@@ -2635,7 +3004,15 @@
    ],
    "key": "lsu",
    "team": "LSU",
-   "rank": 34
+   "rank": 34,
+   "canonical_key": "lsu",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 31,
+   "conference_rank": 11
   },
   {
    "rating": 4.41,
@@ -2709,7 +3086,15 @@
    ],
    "key": "duke",
    "team": "Duke",
-   "rank": 35
+   "rank": 35,
+   "canonical_key": "duke",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 32,
+   "conference_rank": 5
   },
   {
    "rating": 4.32,
@@ -2783,7 +3168,15 @@
    ],
    "key": "boisestate",
    "team": "Boise State",
-   "rank": 36
+   "rank": 36,
+   "canonical_key": "boisestate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 3,
+   "conference_rank": 1
   },
   {
    "rating": 4.14,
@@ -2857,7 +3250,15 @@
    ],
    "key": "floridastate",
    "team": "Florida State",
-   "rank": 37
+   "rank": 37,
+   "canonical_key": "floridastate",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 33,
+   "conference_rank": 6
   },
   {
    "rating": 4.12,
@@ -2931,7 +3332,15 @@
    ],
    "key": "kansas",
    "team": "Kansas",
-   "rank": 38
+   "rank": 38,
+   "canonical_key": "kansas",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 34,
+   "conference_rank": 8
   },
   {
    "rating": 4,
@@ -3005,7 +3414,15 @@
    ],
    "key": "rutgers",
    "team": "Rutgers",
-   "rank": 39
+   "rank": 39,
+   "canonical_key": "rutgers",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 35,
+   "conference_rank": 10
   },
   {
    "rating": 3.97,
@@ -3079,7 +3496,15 @@
    ],
    "key": "illinois",
    "team": "Illinois",
-   "rank": 40
+   "rank": 40,
+   "canonical_key": "illinois",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 36,
+   "conference_rank": 11
   },
   {
    "rating": 3.79,
@@ -3153,7 +3578,15 @@
    ],
    "key": "unlv",
    "team": "UNLV",
-   "rank": 41
+   "rank": 41,
+   "canonical_key": "unlv",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 4,
+   "conference_rank": 1
   },
   {
    "rating": 3.72,
@@ -3222,7 +3655,15 @@
    ],
    "key": "army",
    "team": "Army",
-   "rank": 42
+   "rank": 42,
+   "canonical_key": "army",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 5,
+   "conference_rank": 3
   },
   {
    "rating": 3.65,
@@ -3296,7 +3737,15 @@
    ],
    "key": "virginia",
    "team": "Virginia",
-   "rank": 43
+   "rank": 43,
+   "canonical_key": "virginia",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 37,
+   "conference_rank": 7
   },
   {
    "rating": 3.59,
@@ -3370,7 +3819,15 @@
    ],
    "key": "georgiatech",
    "team": "Georgia Tech",
-   "rank": 44
+   "rank": 44,
+   "canonical_key": "georgiatech",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 38,
+   "conference_rank": 8
   },
   {
    "rating": 3.32,
@@ -3444,7 +3901,15 @@
    ],
    "key": "minnesota",
    "team": "Minnesota",
-   "rank": 45
+   "rank": 45,
+   "canonical_key": "minnesota",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 39,
+   "conference_rank": 12
   },
   {
    "rating": 3.28,
@@ -3518,7 +3983,15 @@
    ],
    "key": "florida",
    "team": "Florida",
-   "rank": 46
+   "rank": 46,
+   "canonical_key": "florida",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 40,
+   "conference_rank": 12
   },
   {
    "rating": 3.27,
@@ -3592,7 +4065,15 @@
    ],
    "key": "tulane",
    "team": "Tulane",
-   "rank": 47
+   "rank": 47,
+   "canonical_key": "tulane",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 6,
+   "conference_rank": 4
   },
   {
    "rating": 3.09,
@@ -3666,7 +4147,15 @@
    ],
    "key": "virginiatech",
    "team": "Virginia Tech",
-   "rank": 48
+   "rank": 48,
+   "canonical_key": "virginiatech",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 41,
+   "conference_rank": 9
   },
   {
    "rating": 2.97,
@@ -3740,7 +4229,15 @@
    ],
    "key": "pittsburgh",
    "team": "Pittsburgh",
-   "rank": 49
+   "rank": 49,
+   "canonical_key": "pittsburgh",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 42,
+   "conference_rank": 10
   },
   {
    "rating": 2.95,
@@ -3814,7 +4311,15 @@
    ],
    "key": "iowastate",
    "team": "Iowa State",
-   "rank": 50
+   "rank": 50,
+   "canonical_key": "iowastate",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 43,
+   "conference_rank": 9
   },
   {
    "rating": 2.93,
@@ -3888,7 +4393,15 @@
    ],
    "key": "ncstate",
    "team": "NC State",
-   "rank": 51
+   "rank": 51,
+   "canonical_key": "ncstate",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 44,
+   "conference_rank": 11
   },
   {
    "rating": 2.87,
@@ -3938,7 +4451,15 @@
    ],
    "key": "northdakotastate",
    "team": "North Dakota State",
-   "rank": 52
+   "rank": 52,
+   "canonical_key": "northdakotastate",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 7,
+   "conference_rank": 2
   },
   {
    "rating": 2.8,
@@ -4012,7 +4533,15 @@
    ],
    "key": "jamesmadison",
    "team": "James Madison",
-   "rank": 53
+   "rank": 53,
+   "canonical_key": "jamesmadison",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 8,
+   "conference_rank": 1
   },
   {
    "rating": 2.74,
@@ -4086,7 +4615,15 @@
    ],
    "key": "auburn",
    "team": "Auburn",
-   "rank": 54
+   "rank": 54,
+   "canonical_key": "auburn",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 45,
+   "conference_rank": 13
   },
   {
    "rating": 2.54,
@@ -4160,7 +4697,15 @@
    ],
    "key": "sanjosestate",
    "team": "San José State",
-   "rank": 55
+   "rank": 55,
+   "canonical_key": "sanjosestate",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 9,
+   "conference_rank": 3
   },
   {
    "rating": 2.45,
@@ -4234,7 +4779,15 @@
    ],
    "key": "utsa",
    "team": "UTSA",
-   "rank": 56
+   "rank": 56,
+   "canonical_key": "utsa",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 10,
+   "conference_rank": 5
   },
   {
    "rating": 2.23,
@@ -4308,7 +4861,15 @@
    ],
    "key": "southflorida",
    "team": "South Florida",
-   "rank": 57
+   "rank": 57,
+   "canonical_key": "southflorida",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 11,
+   "conference_rank": 6
   },
   {
    "rating": 2.08,
@@ -4382,7 +4943,15 @@
    ],
    "key": "northwestern",
    "team": "Northwestern",
-   "rank": 58
+   "rank": 58,
+   "canonical_key": "northwestern",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 46,
+   "conference_rank": 13
   },
   {
    "rating": 2.05,
@@ -4456,7 +5025,15 @@
    ],
    "key": "maryland",
    "team": "Maryland",
-   "rank": 59
+   "rank": 59,
+   "canonical_key": "maryland",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 47,
+   "conference_rank": 14
   },
   {
    "rating": 2.01,
@@ -4530,7 +5107,15 @@
    ],
    "key": "eastcarolina",
    "team": "East Carolina",
-   "rank": 60
+   "rank": 60,
+   "canonical_key": "eastcarolina",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 12,
+   "conference_rank": 7
   },
   {
    "rating": 1.51,
@@ -4604,7 +5189,15 @@
    ],
    "key": "texasstate",
    "team": "Texas State",
-   "rank": 61
+   "rank": 61,
+   "canonical_key": "texasstate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 13,
+   "conference_rank": 2
   },
   {
    "rating": 1.48,
@@ -4678,7 +5271,15 @@
    ],
    "key": "wisconsin",
    "team": "Wisconsin",
-   "rank": 62
+   "rank": 62,
+   "canonical_key": "wisconsin",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 48,
+   "conference_rank": 15
   },
   {
    "rating": 1.43,
@@ -4747,7 +5348,15 @@
    ],
    "key": "airforce",
    "team": "Air Force",
-   "rank": 63
+   "rank": 63,
+   "canonical_key": "airforce",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 14,
+   "conference_rank": 4
   },
   {
    "rating": 1.4,
@@ -4821,7 +5430,15 @@
    ],
    "key": "houston",
    "team": "Houston",
-   "rank": 64
+   "rank": 64,
+   "canonical_key": "houston",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 49,
+   "conference_rank": 10
   },
   {
    "rating": 1.4,
@@ -4895,7 +5512,15 @@
    ],
    "key": "washingtonstate",
    "team": "Washington State",
-   "rank": 65
+   "rank": 65,
+   "canonical_key": "washingtonstate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 15,
+   "conference_rank": 3
   },
   {
    "rating": 1.39,
@@ -4969,7 +5594,15 @@
    ],
    "key": "kentucky",
    "team": "Kentucky",
-   "rank": 66
+   "rank": 66,
+   "canonical_key": "kentucky",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 50,
+   "conference_rank": 14
   },
   {
    "rating": 1.38,
@@ -5043,7 +5676,15 @@
    ],
    "key": "baylor",
    "team": "Baylor",
-   "rank": 67
+   "rank": 67,
+   "canonical_key": "baylor",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 51,
+   "conference_rank": 11
   },
   {
    "rating": 1.3,
@@ -5117,7 +5758,15 @@
    ],
    "key": "fresnostate",
    "team": "Fresno State",
-   "rank": 68
+   "rank": 68,
+   "canonical_key": "fresnostate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 16,
+   "conference_rank": 4
   },
   {
    "rating": 0.99,
@@ -5191,7 +5840,15 @@
    ],
    "key": "olddominion",
    "team": "Old Dominion",
-   "rank": 69
+   "rank": 69,
+   "canonical_key": "olddominion",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 17,
+   "conference_rank": 2
   },
   {
    "rating": 0.73,
@@ -5265,7 +5922,15 @@
    ],
    "key": "california",
    "team": "California",
-   "rank": 70
+   "rank": 70,
+   "canonical_key": "california",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 52,
+   "conference_rank": 12
   },
   {
    "rating": 0.69,
@@ -5339,7 +6004,15 @@
    ],
    "key": "ucla",
    "team": "UCLA",
-   "rank": 71
+   "rank": 71,
+   "canonical_key": "ucla",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 53,
+   "conference_rank": 16
   },
   {
    "rating": 0.41,
@@ -5413,7 +6086,15 @@
    ],
    "key": "louisiana",
    "team": "Louisiana",
-   "rank": 72
+   "rank": 72,
+   "canonical_key": "louisiana",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 18,
+   "conference_rank": 3
   },
   {
    "rating": 0.32,
@@ -5487,7 +6168,15 @@
    ],
    "key": "cincinnati",
    "team": "Cincinnati",
-   "rank": 73
+   "rank": 73,
+   "canonical_key": "cincinnati",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 54,
+   "conference_rank": 12
   },
   {
    "rating": 0.03,
@@ -5561,7 +6250,15 @@
    ],
    "key": "miamioh",
    "team": "Miami (OH)",
-   "rank": 74
+   "rank": 74,
+   "canonical_key": "miamioh",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 19,
+   "conference_rank": 1
   },
   {
    "rating": -0.03,
@@ -5635,7 +6332,15 @@
    ],
    "key": "ohio",
    "team": "Ohio",
-   "rank": 75
+   "rank": 75,
+   "canonical_key": "ohio",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 20,
+   "conference_rank": 2
   },
   {
    "rating": -0.14,
@@ -5709,7 +6414,15 @@
    ],
    "key": "syracuse",
    "team": "Syracuse",
-   "rank": 76
+   "rank": 76,
+   "canonical_key": "syracuse",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 55,
+   "conference_rank": 13
   },
   {
    "rating": -0.29,
@@ -5783,7 +6496,15 @@
    ],
    "key": "wakeforest",
    "team": "Wake Forest",
-   "rank": 77
+   "rank": 77,
+   "canonical_key": "wakeforest",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 56,
+   "conference_rank": 14
   },
   {
    "rating": -0.43,
@@ -5857,7 +6578,15 @@
    ],
    "key": "arkansasstate",
    "team": "Arkansas State",
-   "rank": 78
+   "rank": 78,
+   "canonical_key": "arkansasstate",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 21,
+   "conference_rank": 4
   },
   {
    "rating": -0.56,
@@ -5931,7 +6660,15 @@
    ],
    "key": "ucf",
    "team": "UCF",
-   "rank": 79
+   "rank": 79,
+   "canonical_key": "ucf",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 57,
+   "conference_rank": 13
   },
   {
    "rating": -0.63,
@@ -6005,7 +6742,15 @@
    ],
    "key": "georgiasouthern",
    "team": "Georgia Southern",
-   "rank": 80
+   "rank": 80,
+   "canonical_key": "georgiasouthern",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 22,
+   "conference_rank": 5
   },
   {
    "rating": -0.87,
@@ -6079,7 +6824,15 @@
    ],
    "key": "toledo",
    "team": "Toledo",
-   "rank": 81
+   "rank": 81,
+   "canonical_key": "toledo",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 23,
+   "conference_rank": 3
   },
   {
    "rating": -0.9,
@@ -6153,7 +6906,15 @@
    ],
    "key": "bostoncollege",
    "team": "Boston College",
-   "rank": 82
+   "rank": 82,
+   "canonical_key": "bostoncollege",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 58,
+   "conference_rank": 15
   },
   {
    "rating": -0.95,
@@ -6227,7 +6988,15 @@
    ],
    "key": "marshall",
    "team": "Marshall",
-   "rank": 83
+   "rank": 83,
+   "canonical_key": "marshall",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 24,
+   "conference_rank": 6
   },
   {
    "rating": -1.19,
@@ -6301,7 +7070,15 @@
    ],
    "key": "arkansas",
    "team": "Arkansas",
-   "rank": 84
+   "rank": 84,
+   "canonical_key": "arkansas",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 59,
+   "conference_rank": 15
   },
   {
    "rating": -1.5,
@@ -6375,7 +7152,15 @@
    ],
    "key": "colorado",
    "team": "Colorado",
-   "rank": 85
+   "rank": 85,
+   "canonical_key": "colorado",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 60,
+   "conference_rank": 14
   },
   {
    "rating": -1.5,
@@ -6449,7 +7234,15 @@
    ],
    "key": "westernmichigan",
    "team": "Western Michigan",
-   "rank": 86
+   "rank": 86,
+   "canonical_key": "westernmichigan",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 25,
+   "conference_rank": 4
   },
   {
    "rating": -1.62,
@@ -6523,7 +7316,15 @@
    ],
    "key": "northtexas",
    "team": "North Texas",
-   "rank": 87
+   "rank": 87,
+   "canonical_key": "northtexas",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 26,
+   "conference_rank": 8
   },
   {
    "rating": -1.77,
@@ -6597,7 +7398,15 @@
    ],
    "key": "mississippistate",
    "team": "Mississippi State",
-   "rank": 88
+   "rank": 88,
+   "canonical_key": "mississippistate",
+   "division": "fbs",
+   "conference": "SEC",
+   "conference_id": "sec",
+   "conference_source": "SEC",
+   "fbs_group": "p4",
+   "group_rank": 61,
+   "conference_rank": 16
   },
   {
    "rating": -1.98,
@@ -6671,7 +7480,15 @@
    ],
    "key": "troy",
    "team": "Troy",
-   "rank": 89
+   "rank": 89,
+   "canonical_key": "troy",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 27,
+   "conference_rank": 7
   },
   {
    "rating": -2.26,
@@ -6745,7 +7562,15 @@
    ],
    "key": "purdue",
    "team": "Purdue",
-   "rank": 90
+   "rank": 90,
+   "canonical_key": "purdue",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 62,
+   "conference_rank": 17
   },
   {
    "rating": -2.42,
@@ -6819,7 +7644,15 @@
    ],
    "key": "jacksonvillestate",
    "team": "Jacksonville State",
-   "rank": 91
+   "rank": 91,
+   "canonical_key": "jacksonvillestate",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 28,
+   "conference_rank": 1
   },
   {
    "rating": -2.86,
@@ -6869,7 +7702,15 @@
    ],
    "key": "sacramentostate",
    "team": "Sacramento State",
-   "rank": 92
+   "rank": 92,
+   "canonical_key": "sacramentostate",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 29,
+   "conference_rank": 5
   },
   {
    "rating": -2.87,
@@ -6943,7 +7784,15 @@
    ],
    "key": "northcarolina",
    "team": "North Carolina",
-   "rank": 93
+   "rank": 93,
+   "canonical_key": "northcarolina",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 63,
+   "conference_rank": 16
   },
   {
    "rating": -3.34,
@@ -7017,7 +7866,15 @@
    ],
    "key": "newmexico",
    "team": "New Mexico",
-   "rank": 94
+   "rank": 94,
+   "canonical_key": "newmexico",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 30,
+   "conference_rank": 5
   },
   {
    "rating": -3.39,
@@ -7091,7 +7948,15 @@
    ],
    "key": "sandiegostate",
    "team": "San Diego State",
-   "rank": 95
+   "rank": 95,
+   "canonical_key": "sandiegostate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 31,
+   "conference_rank": 5
   },
   {
    "rating": -3.44,
@@ -7153,7 +8018,15 @@
    ],
    "key": "missouristate",
    "team": "Missouri State",
-   "rank": 96
+   "rank": 96,
+   "canonical_key": "missouristate",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 32,
+   "conference_rank": 2
   },
   {
    "rating": -3.49,
@@ -7227,7 +8100,15 @@
    ],
    "key": "louisianatech",
    "team": "Louisiana Tech",
-   "rank": 97
+   "rank": 97,
+   "canonical_key": "louisianatech",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 33,
+   "conference_rank": 8
   },
   {
    "rating": -3.52,
@@ -7301,7 +8182,15 @@
    ],
    "key": "southalabama",
    "team": "South Alabama",
-   "rank": 98
+   "rank": 98,
+   "canonical_key": "southalabama",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 34,
+   "conference_rank": 9
   },
   {
    "rating": -3.6,
@@ -7375,7 +8264,15 @@
    ],
    "key": "michiganstate",
    "team": "Michigan State",
-   "rank": 99
+   "rank": 99,
+   "canonical_key": "michiganstate",
+   "division": "fbs",
+   "conference": "Big Ten",
+   "conference_id": "bigten",
+   "conference_source": "Big Ten",
+   "fbs_group": "p4",
+   "group_rank": 64,
+   "conference_rank": 18
   },
   {
    "rating": -3.85,
@@ -7449,7 +8346,15 @@
    ],
    "key": "liberty",
    "team": "Liberty",
-   "rank": 100
+   "rank": 100,
+   "canonical_key": "liberty",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 35,
+   "conference_rank": 3
   },
   {
    "rating": -4.13,
@@ -7523,7 +8428,15 @@
    ],
    "key": "uconn",
    "team": "UConn",
-   "rank": 101
+   "rank": 101,
+   "canonical_key": "uconn",
+   "division": "fbs",
+   "conference": "Independents",
+   "conference_id": "independents",
+   "conference_source": "FBS Independents",
+   "fbs_group": "independent",
+   "group_rank": 2,
+   "conference_rank": 2
   },
   {
    "rating": -4.17,
@@ -7597,7 +8510,15 @@
    ],
    "key": "westernkentucky",
    "team": "Western Kentucky",
-   "rank": 102
+   "rank": 102,
+   "canonical_key": "westernkentucky",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 36,
+   "conference_rank": 4
   },
   {
    "rating": -4.48,
@@ -7671,7 +8592,15 @@
    ],
    "key": "wyoming",
    "team": "Wyoming",
-   "rank": 103
+   "rank": 103,
+   "canonical_key": "wyoming",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 37,
+   "conference_rank": 6
   },
   {
    "rating": -4.76,
@@ -7745,7 +8674,15 @@
    ],
    "key": "oregonstate",
    "team": "Oregon State",
-   "rank": 104
+   "rank": 104,
+   "canonical_key": "oregonstate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 38,
+   "conference_rank": 6
   },
   {
    "rating": -4.83,
@@ -7819,7 +8756,15 @@
    ],
    "key": "westvirginia",
    "team": "West Virginia",
-   "rank": 105
+   "rank": 105,
+   "canonical_key": "westvirginia",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 65,
+   "conference_rank": 15
   },
   {
    "rating": -4.85,
@@ -7893,7 +8838,15 @@
    ],
    "key": "easternmichigan",
    "team": "Eastern Michigan",
-   "rank": 106
+   "rank": 106,
+   "canonical_key": "easternmichigan",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 39,
+   "conference_rank": 6
   },
   {
    "rating": -5.1,
@@ -7955,7 +8908,15 @@
    ],
    "key": "delaware",
    "team": "Delaware",
-   "rank": 107
+   "rank": 107,
+   "canonical_key": "delaware",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 40,
+   "conference_rank": 5
   },
   {
    "rating": -5.61,
@@ -8029,7 +8990,15 @@
    ],
    "key": "rice",
    "team": "Rice",
-   "rank": 108
+   "rank": 108,
+   "canonical_key": "rice",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 41,
+   "conference_rank": 9
   },
   {
    "rating": -5.69,
@@ -8103,7 +9072,15 @@
    ],
    "key": "newmexicostate",
    "team": "New Mexico State",
-   "rank": 109
+   "rank": 109,
+   "canonical_key": "newmexicostate",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 42,
+   "conference_rank": 6
   },
   {
    "rating": -5.73,
@@ -8177,7 +9154,15 @@
    ],
    "key": "temple",
    "team": "Temple",
-   "rank": 110
+   "rank": 110,
+   "canonical_key": "temple",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 43,
+   "conference_rank": 10
   },
   {
    "rating": -6.25,
@@ -8251,7 +9236,15 @@
    ],
    "key": "appstate",
    "team": "App State",
-   "rank": 111
+   "rank": 111,
+   "canonical_key": "appstate",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 44,
+   "conference_rank": 10
   },
   {
    "rating": -6.65,
@@ -8325,7 +9318,15 @@
    ],
    "key": "floridainternational",
    "team": "Florida International",
-   "rank": 112
+   "rank": 112,
+   "canonical_key": "floridainternational",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 45,
+   "conference_rank": 7
   },
   {
    "rating": -7.15,
@@ -8399,7 +9400,15 @@
    ],
    "key": "coastalcarolina",
    "team": "Coastal Carolina",
-   "rank": 113
+   "rank": 113,
+   "canonical_key": "coastalcarolina",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 46,
+   "conference_rank": 11
   },
   {
    "rating": -7.19,
@@ -8473,7 +9482,15 @@
    ],
    "key": "centralmichigan",
    "team": "Central Michigan",
-   "rank": 114
+   "rank": 114,
+   "canonical_key": "centralmichigan",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 47,
+   "conference_rank": 7
   },
   {
    "rating": -7.25,
@@ -8541,7 +9558,15 @@
    ],
    "key": "kennesawstate",
    "team": "Kennesaw State",
-   "rank": 115
+   "rank": 115,
+   "canonical_key": "kennesawstate",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 48,
+   "conference_rank": 8
   },
   {
    "rating": -7.54,
@@ -8615,7 +9640,15 @@
    ],
    "key": "floridaatlantic",
    "team": "Florida Atlantic",
-   "rank": 116
+   "rank": 116,
+   "canonical_key": "floridaatlantic",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 49,
+   "conference_rank": 11
   },
   {
    "rating": -7.57,
@@ -8689,7 +9722,15 @@
    ],
    "key": "northernillinois",
    "team": "Northern Illinois",
-   "rank": 117
+   "rank": 117,
+   "canonical_key": "northernillinois",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 50,
+   "conference_rank": 7
   },
   {
    "rating": -7.59,
@@ -8763,7 +9804,15 @@
    ],
    "key": "akron",
    "team": "Akron",
-   "rank": 118
+   "rank": 118,
+   "canonical_key": "akron",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 51,
+   "conference_rank": 8
   },
   {
    "rating": -7.86,
@@ -8837,7 +9886,15 @@
    ],
    "key": "stanford",
    "team": "Stanford",
-   "rank": 119
+   "rank": 119,
+   "canonical_key": "stanford",
+   "division": "fbs",
+   "conference": "ACC",
+   "conference_id": "acc",
+   "conference_source": "ACC",
+   "fbs_group": "p4",
+   "group_rank": 66,
+   "conference_rank": 17
   },
   {
    "rating": -7.99,
@@ -8911,7 +9968,15 @@
    ],
    "key": "oklahomastate",
    "team": "Oklahoma State",
-   "rank": 120
+   "rank": 120,
+   "canonical_key": "oklahomastate",
+   "division": "fbs",
+   "conference": "Big 12",
+   "conference_id": "big12",
+   "conference_source": "Big 12",
+   "fbs_group": "p4",
+   "group_rank": 67,
+   "conference_rank": 16
   },
   {
    "rating": -8.29,
@@ -8985,7 +10050,15 @@
    ],
    "key": "georgiastate",
    "team": "Georgia State",
-   "rank": 121
+   "rank": 121,
+   "canonical_key": "georgiastate",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 52,
+   "conference_rank": 12
   },
   {
    "rating": -8.66,
@@ -9059,7 +10132,15 @@
    ],
    "key": "buffalo",
    "team": "Buffalo",
-   "rank": 122
+   "rank": 122,
+   "canonical_key": "buffalo",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 53,
+   "conference_rank": 9
   },
   {
    "rating": -8.68,
@@ -9133,7 +10214,15 @@
    ],
    "key": "ballstate",
    "team": "Ball State",
-   "rank": 123
+   "rank": 123,
+   "canonical_key": "ballstate",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 54,
+   "conference_rank": 10
   },
   {
    "rating": -8.77,
@@ -9207,7 +10296,15 @@
    ],
    "key": "nevada",
    "team": "Nevada",
-   "rank": 124
+   "rank": 124,
+   "canonical_key": "nevada",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 55,
+   "conference_rank": 8
   },
   {
    "rating": -8.86,
@@ -9281,7 +10378,15 @@
    ],
    "key": "tulsa",
    "team": "Tulsa",
-   "rank": 125
+   "rank": 125,
+   "canonical_key": "tulsa",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 56,
+   "conference_rank": 12
   },
   {
    "rating": -8.87,
@@ -9355,7 +10460,15 @@
    ],
    "key": "coloradostate",
    "team": "Colorado State",
-   "rank": 126
+   "rank": 126,
+   "canonical_key": "coloradostate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 57,
+   "conference_rank": 7
   },
   {
    "rating": -8.87,
@@ -9429,7 +10542,15 @@
    ],
    "key": "ulmonroe",
    "team": "UL Monroe",
-   "rank": 127
+   "rank": 127,
+   "canonical_key": "ulmonroe",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 58,
+   "conference_rank": 13
   },
   {
    "rating": -9.15,
@@ -9503,7 +10624,15 @@
    ],
    "key": "uab",
    "team": "UAB",
-   "rank": 128
+   "rank": 128,
+   "canonical_key": "uab",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 59,
+   "conference_rank": 13
   },
   {
    "rating": -9.23,
@@ -9577,7 +10706,15 @@
    ],
    "key": "utahstate",
    "team": "Utah State",
-   "rank": 129
+   "rank": 129,
+   "canonical_key": "utahstate",
+   "division": "fbs",
+   "conference": "Pac-12",
+   "conference_id": "pac12",
+   "conference_source": "Pac-12",
+   "fbs_group": "other",
+   "group_rank": 60,
+   "conference_rank": 8
   },
   {
    "rating": -9.45,
@@ -9651,7 +10788,15 @@
    ],
    "key": "southernmiss",
    "team": "Southern Miss",
-   "rank": 130
+   "rank": 130,
+   "canonical_key": "southernmiss",
+   "division": "fbs",
+   "conference": "Sun Belt",
+   "conference_id": "sunbelt",
+   "conference_source": "Sun Belt",
+   "fbs_group": "other",
+   "group_rank": 61,
+   "conference_rank": 14
   },
   {
    "rating": -9.65,
@@ -9725,7 +10870,15 @@
    ],
    "key": "middletennessee",
    "team": "Middle Tennessee",
-   "rank": 131
+   "rank": 131,
+   "canonical_key": "middletennessee",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 62,
+   "conference_rank": 9
   },
   {
    "rating": -9.99,
@@ -9799,7 +10952,15 @@
    ],
    "key": "samhouston",
    "team": "Sam Houston",
-   "rank": 132
+   "rank": 132,
+   "canonical_key": "samhouston",
+   "division": "fbs",
+   "conference": "Conference USA",
+   "conference_id": "cusa",
+   "conference_source": "Conference USA",
+   "fbs_group": "other",
+   "group_rank": 63,
+   "conference_rank": 10
   },
   {
    "rating": -10.23,
@@ -9873,7 +11034,15 @@
    ],
    "key": "hawaii",
    "team": "Hawai'i",
-   "rank": 133
+   "rank": 133,
+   "canonical_key": "hawaii",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 64,
+   "conference_rank": 9
   },
   {
    "rating": -10.88,
@@ -9947,7 +11116,15 @@
    ],
    "key": "bowlinggreen",
    "team": "Bowling Green",
-   "rank": 134
+   "rank": 134,
+   "canonical_key": "bowlinggreen",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 65,
+   "conference_rank": 11
   },
   {
    "rating": -11.01,
@@ -10021,7 +11198,15 @@
    ],
    "key": "kentstate",
    "team": "Kent State",
-   "rank": 135
+   "rank": 135,
+   "canonical_key": "kentstate",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 66,
+   "conference_rank": 12
   },
   {
    "rating": -11.08,
@@ -10095,7 +11280,15 @@
    ],
    "key": "utep",
    "team": "UTEP",
-   "rank": 136
+   "rank": 136,
+   "canonical_key": "utep",
+   "division": "fbs",
+   "conference": "Mountain West",
+   "conference_id": "mwc",
+   "conference_source": "Mountain West",
+   "fbs_group": "other",
+   "group_rank": 67,
+   "conference_rank": 10
   },
   {
    "rating": -14.55,
@@ -10169,7 +11362,15 @@
    ],
    "key": "massachusetts",
    "team": "Massachusetts",
-   "rank": 137
+   "rank": 137,
+   "canonical_key": "massachusetts",
+   "division": "fbs",
+   "conference": "MAC",
+   "conference_id": "mac",
+   "conference_source": "Mid-American",
+   "fbs_group": "other",
+   "group_rank": 68,
+   "conference_rank": 13
   },
   {
    "rating": -17.37,
@@ -10243,9 +11444,17 @@
    ],
    "key": "charlotte",
    "team": "Charlotte",
-   "rank": 138
+   "rank": 138,
+   "canonical_key": "charlotte",
+   "division": "fbs",
+   "conference": "American",
+   "conference_id": "american",
+   "conference_source": "American Athletic",
+   "fbs_group": "other",
+   "group_rank": 69,
+   "conference_rank": 14
   }
  ],
- "digest": "56336772220346a3",
+ "digest": "6869ef74a1d81822",
  "failed_seasons": []
 }

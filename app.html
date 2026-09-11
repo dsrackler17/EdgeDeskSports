@@ -1372,6 +1372,44 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rsharp p{margin:0 0 6px;font-size:10.5px;line-height:1.5;color:var(--dim)}
 .rsharp p:last-child{margin-bottom:0}
 
+/* ===== FBS board control surface =====
+   The expansion from a 95-game Power 4 board to the whole FBS needed filters,
+   and a pile of wrapping buttons would have eaten the screen above the only
+   thing anyone came for. So: one dense terminal row per filter, label on the
+   left, chips scrolling horizontally on the right. On a phone each row scrolls
+   on its own instead of wrapping into six lines of buttons, and the board
+   stays where it was. */
+.fbs-filters{display:flex;flex-direction:column;gap:3px;margin:2px 0 8px;padding:6px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.fbs-frow{display:flex;align-items:center;gap:8px;min-width:0}
+.fbs-flab{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.09em;color:var(--faint);flex:none;width:78px;text-align:right}
+/* the fade is the affordance: a chip row that runs past the edge has to LOOK
+   like it runs past the edge, or a phone reader never finds the MAC */
+.fbs-frow{position:relative}
+.fbs-frow::after{content:'';position:absolute;right:0;top:0;bottom:0;width:22px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(16,14,10,0),var(--bg))}
+.fbs-fset{display:flex;gap:4px;overflow-x:auto;padding:2px 0;flex:1;min-width:0;scrollbar-width:thin}
+.fbs-fset::-webkit-scrollbar{height:3px}
+.fbs-fset::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.fbs-chip{flex:none;background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:999px;padding:4px 9px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.02em;cursor:pointer;white-space:nowrap;line-height:1.4}
+.fbs-chip:hover{color:var(--text);border-color:var(--dim)}
+.fbs-chip.on{background:rgba(47,167,154,.14);border-color:rgba(47,167,154,.5);color:var(--accent)}
+.fbs-chip.reset{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.fbs-chip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fbs-confmenu{margin:2px 0 2px 86px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;display:flex;flex-direction:column;gap:4px}
+.fbs-confgrp{display:flex;align-items:center;gap:8px;min-width:0}
+.fbs-counts{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:10.5px;color:var(--dim);margin:0 0 8px}
+.fbs-count b{color:var(--text);font-weight:700}
+.fbs-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.03em;border:1px solid var(--border);border-radius:4px;padding:1px 4px;margin-right:3px;color:var(--dim);white-space:nowrap;vertical-align:middle}
+.fbs-badge.g-p4{color:var(--accent);border-color:rgba(47,167,154,.4)}
+.fbs-badge.g-independent{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.fbs-badge.fcs{color:var(--faint)}
+.fbs-confcell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@media(max-width:560px){
+  .fbs-flab{width:auto;min-width:52px;font-size:8.5px;text-align:left}
+  .fbs-confmenu{margin-left:0}
+  .fbs-counts{gap:2px 10px;font-size:10px}
+}
+
 /* ===== Settings ===== */
 .set-wrap{display:grid;grid-template-columns:212px 1fr;gap:18px;align-items:start}
 .set-nav{position:sticky;top:12px;display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px}
@@ -2710,7 +2748,7 @@ body.focus .dk-focusnote{display:block}
     <div class="flbanner demo" id="fbBanner">Loading football engine&hellip;</div>
     <div id="fbModules">
     <div class="fb-sechd"><span>Research modules</span><span class="r">NFL &middot; FBS</span></div>
-    <div class="stseg fb-seg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')"><b>NFL</b><small>Matchups</small></button><button onclick="fbSetSport('cfb')"><b>CFB Rosters</b><small>Teams &amp; depth</small></button><button onclick="fbSetSport('p4')"><b>CFB Power 4</b><small>Power ratings</small></button><button onclick="fbSetSport('players')"><b>Players</b><small>Quality &amp; matchups</small></button><button onclick="fbSetSport('rankings')"><b>Rankings</b><small>ETSR &amp; national</small></button></div>
+    <div class="stseg fb-seg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')"><b>NFL</b><small>Matchups</small></button><button onclick="fbSetSport('cfb')"><b>CFB Rosters</b><small>Teams &amp; depth</small></button><button onclick="fbSetSport('p4')"><b>FBS Football</b><small>All conferences</small></button><button onclick="fbSetSport('players')"><b>Players</b><small>Quality &amp; matchups</small></button><button onclick="fbSetSport('rankings')"><b>Rankings</b><small>ETSR &amp; national</small></button></div>
     <div id="fbCtl" style="display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div id="fbBody"><div class="empty">Loading&hellip;</div></div>
     </div>
@@ -19054,7 +19092,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var mr=sig?window.ucRead(sig):null;
       var why='The football model makes '+r.home+' '+fbHomeLine(r.p.model.fair_spread)+' where the market has '+r.home+' '+fbHomeLine(r.mkt.spread_line)+', a '+Math.abs(r.gapS).toFixed(1)+'-point disagreement leaning '+side+'. '
         +(sig&&sig.edge!=null?(sig.edge>0?'The market-pricing engine sees only '+pctS(sig.edge)+' value on that side':'The market-pricing engine sees no value on that side'):'The market-pricing engine has no flagged price on that side')+'. That disagreement deserves research rather than automatic action.';
-      var badges=badge('Model only','mdl')+badge(r.sport==='p4'?'Power 4 model':'NFL model','mdl')+(r.warn&&r.warn.length?badge('Data warning','warn'):'')+(r.thin?badge('Thin sample','warn'):'')+(mr?evidenceHTML(mr,false):'');
+      var badges=badge('Model only','mdl')+badge(r.sport==='p4'?'FBS model':'NFL model','mdl')+(r.warn&&r.warn.length?badge('Data warning','warn'):'')+(r.thin?badge('Thin sample','warn'):'')+(mr?evidenceHTML(mr,false):'');
       return {kind:'football',r:r,sig:sig,key:'fb|'+r.sport+'|'+r.gid,sel:side+' (model lean)',sport:r.sport==='p4'?'CFB':'NFL',
         meta:[(r.sport==='p4'?'CFB':'NFL'),'Spread',r.away+' @ '+r.home,r.t?whenLabel(new Date(r.t).toISOString()):''].filter(Boolean).join(' · '),
         nums:[{k:'Market',v:r.home+' '+fbHomeLine(r.mkt.spread_line)},{k:'Model',v:r.home+' '+fbHomeLine(r.p.model.fair_spread),c:'mdl'},{k:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'mdl'},{k:'Market edge',v:sig&&sig.edge!=null?pctS(sig.edge):'none',c:sig&&sig.edge>0?'pos':'mut'}],
@@ -19427,7 +19465,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       else if(fbLoading)opsHtml='<div class="empty" style="padding:16px">Loading the football model so the desk can compare it with the market…</div>';
       else if(!fbOn)opsHtml='<div class="empty" style="padding:16px"><b>No model read loaded yet.</b><br>Open Football to load the engine; the desk then lists the largest spread and total disagreements, QB uncertainty and data warnings here.<div style="margin-top:10px"><button class="rbtn" onclick="researchGo(\'football\')">Open Football</button></div></div>';
       else opsHtml='<div class="empty" style="padding:16px"><b>No research opportunity on the slate.</b><br>The model and the market agree within a point everywhere a market number exists, and no data warning is open. Nothing to force.</div>';
-      var mods=[['football','Football','NFL + FBS model, rosters, Power 4 ratings'],['ufc','UFC','Fighter records, live fight center'],['tennis','Tennis','ATP/WTA record, WTA daily engine'],['stats','Stats','Teams, players, leaders, projections'],['lab','Lab','Model inspection, sensitivity, autopsy, calibration']];
+      var mods=[['football','Football','NFL + FBS model, rosters, FBS ratings'],['ufc','UFC','Fighter records, live fight center'],['tennis','Tennis','ATP/WTA record, WTA daily engine'],['stats','Stats','Teams, players, leaders, projections'],['lab','Lab','Model inspection, sensitivity, autopsy, calibration']];
       host.innerHTML='<div class="rd-hero"><div class="dk-ey">Research desk <span class="st">experimental context, not edges</span></div><div class="t">Understand the matchup behind the number.</div><div class="s">Where should I research? The cards below are the largest live disagreements and the most important data warnings the modules already compute. Each one opens the module that owns it.</div></div>'
         +'<div class="dk-h">Active research opportunities'+(fbOn?' <span class="n">model '+esc(agoS(FB.at))+'</span>':'')+'</div>'+opsHtml
         +'<div class="dk-h">Modules</div><div class="rd-mods">'+mods.map(function(m){return '<button class="rd-mod" onclick="researchGo(\''+m[0]+'\')"><b>'+m[1]+'</b><small>'+esc(m[2])+'</small></button>';}).join('')+'</div>'
@@ -32123,12 +32161,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
                          :(window.fbBriefGame&&window.fbBriefGame(rq)); }catch(_){ research=null; }
       if(!research){
         return pubSay('<div class="brief-note">EdgeDesk has no research payload for this game right now, so there is nothing to publish. Open the '
-          +(isNfl?'NFL':'Power 4')+' board once so the ratings and the slate are loaded, then try again.</div>');
+          +(isNfl?'NFL':'FBS Football')+' board once so the ratings and the slate are loaded, then try again.</div>');
       }
       var meta=A.model.gameMetaFrom(research, sport);
       if(!meta.game_id){
         return pubSay('<div class="brief-note">This game is not on the loaded schedule, so it has no id to file an article under — and an article without one would be a second record for the same matchup the next time the pipeline runs. Open the '
-          +(isNfl?'NFL':'Power 4')+' board and reopen the brief.</div>');
+          +(isNfl?'NFL':'FBS Football')+' board and reopen the brief.</div>');
       }
       var rec;
       try{ rec=A.model.build(research, meta, {status:'draft'}); }
@@ -34157,14 +34195,14 @@ function fbHealthOwns(id){
   return id.indexOf('nfl_')===0||id==='engine_tests_nfl';
 }
 function fbHealthBoardOf(id){
-  if(id.indexOf('p4_')===0||id==='engine_tests_p4')return 'CFB Power 4';
+  if(id.indexOf('p4_')===0||id==='engine_tests_p4')return 'CFB (FBS)';
   if(id.indexOf('nfl_')===0||id==='engine_tests_nfl')return 'NFL';
   return 'Football';
 }
 function fbHealthHTML(){
   var h=FB.health,body='',worst='pass';
   function bump(st){if(st==='fail')worst='fail';else if(st==='warn'&&worst!=='fail')worst='warn';}
-  var boardName=FB.sport==='p4'?'Power 4':(FB.sport==='cfb'?'Rosters':'NFL');
+  var boardName=FB.sport==='p4'?'FBS Football':(FB.sport==='cfb'?'Rosters':'NFL');
   if(!h){
     bump('warn');
     body+='<p style="margin:0 0 6px">The daily self-check has not published a run this app can read '
@@ -34191,7 +34229,7 @@ function fbHealthHTML(){
       body+='<p style="margin:0 0 6px" class="mut">Learned in that run: '+(L.p4.absorbed||0)+' of '+(L.p4.completed_in_feed||0)
         +' completed games absorbed'+(L.p4.data_through?(' (through '+fbEsc(L.p4.data_through)+')'):'')+'.</p>';
     }else if(FB.sport==='cfb'){
-      body+='<p style="margin:0 0 6px" class="mut">The daily self-check exercises the NFL and Power 4 data paths; this Rosters view reads the same weekly ESPN sync the Power 4 talent layer uses.</p>';
+      body+='<p style="margin:0 0 6px" class="mut">The daily self-check exercises the NFL and FBS data paths; this Rosters view reads the same weekly ESPN sync the FBS board’s talent layer uses.</p>';
     }
     ownFails.concat(ownWarns).slice(0,6).forEach(function(c){
       body+='<p style="margin:0 0 4px;color:'+fbHealthColor(c.status)+'">'+fbHealthGlyph(c.status)+' '
@@ -35088,24 +35126,38 @@ function fbRatingsBoard(sport){
    uncertainty. Nothing is ever substituted with a guess, and this module
    writes nothing to the database.
    ========================================================================= */
-FB.p4 = {state:null,up:[],notes:[],gate:null,season:null,absorbed:0,
+/* `up` is the CANONICAL SLATE: every scheduled game with at least one active
+   FBS team inside the window, one row per game, whatever conference either
+   side plays in. `uni` is the season's FBS universe (team identity, season
+   conference, program group) that the slate and every filter read from.
+   `filters` is a VIEW over that slate and never a second data request —
+   nothing below is fetched twice because a reader picked a conference. */
+FB.p4 = {state:null,up:[],uni:null,slateDrop:null,notes:[],gate:null,season:null,absorbed:0,
   roster:{},rosterSeason:null,rosterAsOf:null,rosterNote:null,lines:{},sig:{},weather:{},
-  loadedAt:0,engineErr:null};
+  loadedAt:0,engineErr:null,
+  filters:{group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'},
+  confOpen:false};
 
 var FBP4_LOOKAHEAD_D = 10;
 function FBP4_URL_SCHED(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_'+y+'.csv';}
 function FBP4_URL_ROSTER(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/rosters/csv/cfb_rosters_'+y+'.csv';}
 
 function fbP4Ensure(){
-  if(window.EDCfbP4&&window.EDCfbP4Params)return Promise.resolve();
+  if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
     .then(function(){return fbScript('football/cfb_p4/engine.js');})
+    /* the FBS universe: team identity, season conference, program group and
+       the canonical slate. It gates the board because a board that cannot
+       say which teams are FBS this season cannot honestly claim to cover
+       them — see football/fbs/fbs.js */
+    .then(function(){return fbScript('football/fbs/fbs.js');})
     /* the v1.1 calibration and v1.2 experiment records are display-only and
        optional: they change no number, so a missing artifact must not gate
        the board */
     .then(function(){return fbScript('football/cfb_p4/calibration.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/v12_correction.js').catch(function(){});})
-    .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('Power 4 engine loaded but globals missing'); });
+    .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('FBS engine loaded but globals missing');
+      if(!window.EDFbs)throw new Error('the FBS universe (team identity + conferences) failed to load'); });
 }
 function fbP4Season(){
   var d=new Date(),y=d.getFullYear(),m=d.getMonth();
@@ -35321,7 +35373,7 @@ function fbRostersRender(host){
     +'(fetched '+fbEsc(String(M.retrieved_at).slice(0,10))+'), '+M.with_continuity+' with continuity diffed against '
     +(M.prev_season!=null?M.prev_season:'—')+'. Status is observed from athlete-id diffs: '
     +'<span style="color:var(--pos)">returning</span> · <span style="color:var(--warn)">transfer</span> (with the program they left) · new to the covered set. '
-    +'No player is rated — production and recruiting pedigree are in no public feed. The Power 4 board’s talent layer reads these same rosters.</div>';
+    +'No player is rated — production and recruiting pedigree are in no public feed. The FBS board’s talent layer reads these same rosters.</div>';
   html+='<div style="margin:10px 0"><select onchange="fbRostersPick(this.value)" '
     +'style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px 10px;font:inherit">'
     +'<option value=""'+(FB.espn.sel?'':' selected')+' disabled>Pick a team — all '+M.team_names.length+' FBS programs</option>'
@@ -35329,7 +35381,7 @@ function fbRostersRender(host){
       return '<option value="'+fbEsc(t.name)+'"'+(FB.espn.sel===t.name?' selected':'')+'>'+fbEsc(t.name)+'</option>';
     }).join('')+'</select></div>';
   if(FB.espn.sel)html+=fbRostersTeamHTML(FB.espn.sel);
-  else html+='<div class="empty">Pick a program above to see its full roster — or open a game on the CFB Power 4 board and hit “Rosters head-to-head”.</div>';
+  else html+='<div class="empty">Pick a program above to see its full roster — or open a game on the FBS Football board and hit “Rosters head-to-head”.</div>';
   host.innerHTML=html;
 }
 
@@ -35514,13 +35566,19 @@ function fbP4Schedule(season,signal){
    and the shipped seed table when it does not: a team the model has a
    seed rating for is an FBS team by construction. */
 function fbP4IsFbs(division,teamName){
+  var P=window.EDCfbP4Params;
+  var known=(P&&P.rating&&P.rating.seed_ratings)||null;
+  /* one implementation, in the FBS universe module, so the board, the
+     coverage gate and the offline export cannot disagree about which
+     teams are FBS */
+  if(window.EDFbs)return window.EDFbs.isFbsDivision(division,teamName,{knownFbs:known});
   var d=String(division==null?'':division).toLowerCase().trim();
   if(d==='fbs'||d.indexOf('bowl')>=0||d==='i-a'||d==='ia')return true;
   if(d==='fcs'||d.indexOf('championship')>=0||d==='i-aa'||d==='iaa'||d==='ii'||d==='iii')return false;
   if(d&&d!=='fbs')return false;
-  var P=window.EDCfbP4Params,E=window.EDCfbP4;
-  if(!P||!E||!P.rating||!P.rating.seed_ratings)return true;
-  return Object.prototype.hasOwnProperty.call(P.rating.seed_ratings,E.normKey(teamName));
+  var E=window.EDCfbP4;
+  if(!known||!E)return true;
+  return Object.prototype.hasOwnProperty.call(known,E.normKey(teamName));
 }
 
 function fbP4Load(force,signal){
@@ -35572,23 +35630,44 @@ function fbP4Load(force,signal){
     return chain.then(function(){
       S.state=st;
       if(!S.sched)return;
-      var now=Date.now(),hi=now+FBP4_LOOKAHEAD_D*864e5;
-      var P4=(P.universe&&P.universe.p4_conferences)||['SEC','Big Ten','Big 12','ACC'];
-      function isP4(c){return P4.indexOf(c)>=0;}
-      S.up=[];
-      S.sched.rows.forEach(function(r){
-        if(r.completed)return;
-        var t=Date.parse(r.start_date);
-        if(!isFinite(t)||t<now-6*3600e3||t>hi)return;
-        if(!isP4(r.home_conference)&&!isP4(r.away_conference))return;
-        S.up.push({g:r,t:t});
-      });
-      S.up.sort(function(a,b){return a.t-b.t;});
-      /* every Power 4 game inside the window stays on the board. An earlier
+      /* ── THE CANONICAL FBS SLATE ──────────────────────────────────────
+         Every scheduled game with at least one ACTIVE FBS team inside the
+         window. The board used to drop any game in which neither side was
+         Power 4 — one line, `if(!isP4(home)&&!isP4(away))return;` — and
+         that single condition is what made a 160-game week render as 95.
+         It is gone at the source rather than compensated for downstream:
+         program group and conference are now a VIEW over this one slate,
+         so a reader filtering to the MAC is looking at the same rows, not
+         at a second fetch. Smaller-market games were never missing from
+         the feed, the engine or the rating state — only from the board. */
+      S.uni=window.EDFbs.buildUniverse({rows:S.sched.rows,season:cur,
+        source:S.schedSrc,params:P,knownFbs:(P.rating&&P.rating.seed_ratings)||null});
+      var built=window.EDFbs.buildSlate({rows:S.sched.rows,universe:S.uni,
+        now:Date.now(),lookaheadDays:FBP4_LOOKAHEAD_D});
+      S.up=built.items;
+      S.slateDrop=built.dropped;
+      var D=S.uni.diagnostics;
+      /* An identity the universe could not resolve is a VISIBLE data fault,
+         never a quiet disappearance from the board. */
+      if(D.unmapped_teams.length)S.notes.push(D.unmapped_teams.length+' team name'
+        +(D.unmapped_teams.length===1?'':'s')+' in the '+S.schedSrc+' feed could not be resolved to a canonical identity ('
+        +D.unmapped_teams.slice(0,4).map(function(x){return x.name;}).join(', ')+'). Their games are still on the board and flagged, never dropped.');
+      if(D.missing_conference.length)S.notes.push(D.missing_conference.length+' FBS program'
+        +(D.missing_conference.length===1?'':'s')+' carry no conference in this feed ('
+        +D.missing_conference.slice(0,4).map(function(x){return x.team;}).join(', ')
+        +'). They stay on the board, outside every conference filter, rather than being classified by guess.');
+      if(D.unexpected_conferences.length)S.notes.push('Unrecognised conference label'
+        +(D.unexpected_conferences.length===1?'':'s')+' in this feed: '
+        +D.unexpected_conferences.map(function(x){return x.label;}).join(', ')
+        +'. Shown as the feed spells them; the naming map should learn them.');
+      if(D.conflicting_conferences.length)S.notes.push(D.conflicting_conferences.length+' program'
+        +(D.conflicting_conferences.length===1?'':'s')+' appear in two different conferences inside the same season feed ('
+        +D.conflicting_conferences.slice(0,3).map(function(x){return x.team;}).join(', ')+') — a source conflict, reported rather than resolved by guess.');
+      /* every eligible game inside the window stays on the board. An earlier
          build kept only the first 30 by kickoff, which silently dropped the
          back half of a full Saturday slate — the header said 30 GAMES and
          nothing said the rest existed. */
-      if(!S.up.length)S.notes.push('No Power 4 game kicks off inside the next '+FBP4_LOOKAHEAD_D
+      if(!S.up.length)S.notes.push('No game involving an FBS team kicks off inside the next '+FBP4_LOOKAHEAD_D
         +' days in the '+S.schedSrc+' feed.');
       /* per-team season index for the engine's schedule-stress layer:
          every game a team plays this season, in kickoff order, with
@@ -35608,9 +35687,23 @@ function fbP4Load(force,signal){
   }).then(function(){
     var ids=FB.p4.up.map(function(u){return u.g.game_id;}).filter(Boolean);
     if(!ids.length)return [];
-    return sbFetch('lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline&game_id=in.('
-      +ids.map(encodeURIComponent).join(',')+')',{'accept-profile':'cfb'},signal)
-      .catch(function(){FB.p4.notes.push('cfb.lines not reachable — book context comes only from live captured quotes.');return [];});
+    /* the all-FBS slate is three to four times the old Power 4 one, so the
+       id list is chunked: a single `in.(...)` of every game id is a URL long
+       enough for a proxy to truncate, and a truncated filter comes back as a
+       SHORTER answer rather than an error — games silently losing their book
+       number with nothing on screen saying why. */
+    var chunks=[],CH=60,i;
+    for(i=0;i<ids.length;i+=CH)chunks.push(ids.slice(i,i+CH));
+    var failed=0;
+    return Promise.all(chunks.map(function(c){
+      return sbFetch('lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline&game_id=in.('
+        +c.map(encodeURIComponent).join(',')+')',{'accept-profile':'cfb'},signal)
+        .catch(function(){failed++;return [];});
+    })).then(function(parts){
+      if(failed)FB.p4.notes.push('cfb.lines not reachable for '+failed+' of '+chunks.length
+        +' request'+(chunks.length===1?'':'s')+' — those games take book context only from live captured quotes.');
+      return [].concat.apply([],parts);
+    });
   }).then(function(lines){
     var by={};(lines||[]).forEach(function(l){
       var c=by[l.game_id];
@@ -35623,14 +35716,36 @@ function fbP4Load(force,signal){
     /* weather is fetched for every game on the board (open-meteo is keyless
        and the forecast horizon covers the whole lookahead window) */
     var P=window.EDCfbP4Params,V=(P.universe&&P.universe.venues)||{};
-    var jobs=FB.p4.up.map(function(u){
+    /* BOUNDED CONCURRENCY. The all-FBS slate is 150+ games where the Power 4
+       one was 90, and firing every forecast at a keyless public API at once
+       is how a rate limiter turns "weather" into "weather for the first
+       forty games" — which the engine would read as a missing input on the
+       rest rather than as a throttle. Eight at a time, and a venue the
+       trained universe does not carry is simply not requested. */
+    var queue=[],noVenue=[];
+    FB.p4.up.forEach(function(u){
+      if(u.g.neutral_site)return;
       var vk=fbP4Key(u.g.home_team),ven=V[vk]||null;
-      if(u.g.neutral_site)return Promise.resolve();
-      return fbP4Weather(ven,u.g.start_date).then(function(w){
-        if(w)FB.p4.weather[u.g.game_id]=w;
-      });
+      if(!ven){noVenue.push(u.g.home_team);return;}
+      queue.push({u:u,ven:ven});
     });
-    return Promise.all(jobs);
+    if(noVenue.length){
+      var uniq=[];noVenue.forEach(function(n){if(uniq.indexOf(n)<0)uniq.push(n);});
+      FB.p4.notes.push('No venue coordinates are on file for '+uniq.slice(0,5).join(', ')
+        +(uniq.length>5?(' and '+(uniq.length-5)+' more'):'')
+        +', so the weather layer is blind at those home games. The engine widens its outcome range instead of assuming a forecast.');
+    }
+    var next=0;
+    function worker(){
+      if(next>=queue.length)return Promise.resolve();
+      var job=queue[next++];
+      return fbP4Weather(job.ven,job.u.g.start_date).then(function(w){
+        if(w)FB.p4.weather[job.u.g.game_id]=w;
+      }).then(worker,worker);
+    }
+    var lanes=[],li;
+    for(li=0;li<Math.min(8,queue.length);li++)lanes.push(worker());
+    return Promise.all(lanes);
   }).then(function(){
     FB.p4.loadedAt=Date.now();
   }).catch(function(e){
@@ -35717,13 +35832,53 @@ function fbP4LineFault(u,spreadLine){
   if(fair==null)return null;
   return M.orientationFault(fair,spreadLine,{bound:21,reconcile:7});
 }
+/* One team index per load, shared by the odds join and the rating lookups.
+   Built from the season's own universe, so a program that joined FBS this
+   year is resolvable the week it appears. */
+function fbP4TeamIx(){
+  var S=FB.p4;
+  if(!S.uni||!window.EDFbs)return null;
+  if(!S._ix||S._ixAt!==S.loadedAt||S._ixUni!==S.uni){
+    S._ix=window.EDFbs.teamIndex(S.uni);S._ixAt=S.loadedAt;S._ixUni=S.uni;
+  }
+  return S._ix;
+}
+/* Captured quotes that resolved to no game on the board. A smaller program
+   is exactly where a schedule feed and a book feed disagree about a name,
+   so the misses are COUNTED and shown rather than silently costing a game
+   its market number. */
+function fbP4OddsMisses(){
+  var S=FB.p4,ix=fbP4TeamIx(),out=[],k;
+  if(!ix)return out;
+  var onBoard={};
+  (S.up||[]).forEach(function(u){onBoard[String(u.g.game_id)]=1;});
+  for(k in S.sig)if(S.sig.hasOwnProperty(k)){
+    var e=S.sig[k];
+    var matched=false;
+    for(var i=0;i<(S.up||[]).length;i++){
+      if(window.EDFbs.matchesEvent(e,S.up[i],ix)){matched=true;break;}
+    }
+    if(matched)continue;
+    var rh=window.EDFbs.resolveTeam(e.home,ix),ra=window.EDFbs.resolveTeam(e.away,ix);
+    out.push({event:(e.away||'?')+' @ '+(e.home||'?'),kickoff:e.t,
+      home_resolved:rh&&rh.key||null,away_resolved:ra&&ra.key||null,
+      reason:(!rh||!rh.key)?('home name did not resolve'+(rh&&rh.ambiguous?(' (ambiguous: '+rh.ambiguous.join(' / ')+')'):''))
+        :((!ra||!ra.key)?('away name did not resolve'+(ra&&ra.ambiguous?(' (ambiguous: '+ra.ambiguous.join(' / ')+')'):''))
+          :'both names resolved but no scheduled game on this board matches them inside 36 hours')});
+  }
+  return out;
+}
 function fbP4Market(u){
-  var g=u.g,out={spread_line:null,total_line:null,quotes_h2h:null,book:null,as_of:null,stale:false};
-  var hN=fbNorm(g.home_team),ev=null,k;
+  var g=u.g,out={spread_line:null,total_line:null,quotes_h2h:null,book:null,as_of:null,stale:false,
+    status:'NO MARKET',match:null};
+  var ix=fbP4TeamIx(),ev=null,k;
+  /* BOTH sides must resolve to this game's own teams, by the FBS universe's
+     alias resolver — a bare prefix test is how "Miami (OH) RedHawks" ends up
+     priced against Miami Florida, and across a full FBS slate both are on
+     the board in the same week. */
   for(k in FB.p4.sig)if(FB.p4.sig.hasOwnProperty(k)){
     var e2=FB.p4.sig[k];
-    if(fbNorm(e2.home).indexOf(hN)===0&&fbNorm(e2.away).indexOf(fbNorm(g.away_team))===0
-      &&Math.abs(Date.parse(e2.t)-u.t)<36*3600e3){ev=e2;break;}
+    if(ix&&window.EDFbs.matchesEvent(e2,u,ix)){ev=e2;out.match='captured quote, both teams resolved';break;}
   }
   var m=ev?fbMarketFromEvent(ev,ev.home):null;
   var line=FB.p4.lines[g.game_id];
@@ -35752,6 +35907,13 @@ function fbP4Market(u){
     out.spread_line=null;
     out.book=(out.book?out.book+' · ':'')+'spread dropped (opposite convention)';
   }
+  /* ONE market status, computed once, used by the row, the card, the counts
+     and every export — so the board, the workbook and the API can never
+     disagree about whether a game has a price. A missing quote is NO MARKET;
+     it is never a zero line. */
+  out.status=out.spread_fault?'DATA FAULT'
+    :(out.spread_line==null?'NO MARKET':(out.stale?'STALE QUOTE':'LIVE'));
+  out.age_hours=out.as_of?Math.round((Date.now()-Date.parse(out.as_of))/3600e3):null;
   return out;
 }
 /* Schedule geometry for one side of one game, computed from the season
@@ -35846,13 +36008,14 @@ function fbP4Request(u,opts){
     season:g.season,week:g.week,state:FB.p4.state,
     game:{home:g.home_team,away:g.away_team,neutral_site:g.neutral_site,
       venue_id:g.venue_id,kickoff:g.start_date,
-      /* the same classifier the slate builder uses — the strict === here is
-         what flattened the whole board when the feed's division vocabulary
+      /* the SAME classification the slate builder made, reused rather than
+         recomputed — the strict === an earlier build used here is what
+         flattened the whole board when the feed's division vocabulary
          changed: every team read non-FBS, the engine derated everyone to
          the FCS floor, and TCU -11 became TCU -0.8 with nothing on screen
-         saying why */
-      home_fbs:fbP4IsFbs(g.home_division,g.home_team),
-      away_fbs:fbP4IsFbs(g.away_division,g.away_team)},
+         saying why. One classifier, one answer, one place to fix. */
+      home_fbs:(u.meta?u.meta.home.is_fbs:fbP4IsFbs(g.home_division,g.home_team)),
+      away_fbs:(u.meta?u.meta.away.is_fbs:fbP4IsFbs(g.away_division,g.away_team))},
     teams:{
       /* qb stays null on purpose: college football publishes no depth chart
          EdgeDesk trusts, so naming a starter would be a guess dressed as an
@@ -35902,7 +36065,17 @@ var FBP4_CSV_HEAD=['season','week','game_id','kickoff_local','away_team','home_t
 'contrib_rating','contrib_hfa','contrib_qb','contrib_matchup','contrib_conference',
 'contrib_travel','contrib_schedule','contrib_injury','contrib_rivalry',
 'primary_driver_1','primary_driver_2','primary_driver_3','counterargument_1',
-'unavailable_inputs','data_quality_notes'];
+'unavailable_inputs','data_quality_notes',
+/* ---- FBS coverage columns, APPENDED so every existing consumer's column
+   positions are untouched. A row now carries who is playing on the canonical
+   identity, what conference each program is in THIS season, which program
+   group, what kind of game it is, and the model and market states the board
+   itself renders — so the site, the download, the API and the Collective can
+   be reconciled row for row instead of eyeballed. */
+'home_team_id','away_team_id','home_conference_id','away_conference_id',
+'home_fbs_group','away_fbs_group','home_division','away_division',
+'matchup_type','is_conference_game','model_status','data_completeness',
+'market_status','quote_timestamp','board_status'];
 
 function fbP4Basis(){
   var m=window.EDCfbP4Params.validation_summary&&window.EDCfbP4Params.validation_summary.market;
@@ -35919,6 +36092,34 @@ function fbP4Contrib(p,key){
 /* The row's VALUES, once. The CSV quotes them and the workbook types them,
    but neither builds its own: a column that meant one thing in the file and
    another in the sheet would be a difference nobody could see. */
+/* The FBS coverage tail, built once from the SAME classification the board
+   renders. It is appended to every row whatever the projection status, so a
+   game the model refused still exports its identity, its conferences and its
+   market state — the rows the site shows and the rows a consumer downloads
+   reconcile under the same filters. */
+var FBP4_FBS_TAIL_N=15;
+function fbP4FbsTail(u,p,mkt){
+  var g=u.g,m=u.meta||(window.EDFbs&&FB.p4.uni?window.EDFbs.classifyGame(g,FB.p4.uni):null);
+  var ctx=(p&&p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
+  var st=fbP4StatusFor(p,mkt||{});
+  return [
+    (m&&m.home.key)||fbP4Key(g.home_team)||'',
+    (m&&m.away.key)||fbP4Key(g.away_team)||'',
+    (m&&m.home.conference_id)||'',
+    (m&&m.away.conference_id)||'',
+    (m&&m.home.group)||'',
+    (m&&m.away.group)||'',
+    (m&&(m.home.is_fbs?'fbs':'non-fbs'))||'',
+    (m&&(m.away.is_fbs?'fbs':'non-fbs'))||'',
+    (m&&m.matchup_type)||'',
+    m?String(!!m.is_conference_game):'',
+    (p&&p.status)||'NO_PREDICTION',
+    (ctx&&ctx.information_missing!=null)?Math.round((1-ctx.information_missing)*1000)/10:'',
+    (mkt&&mkt.status)||'NO MARKET',
+    (mkt&&mkt.as_of)||'',
+    st.t
+  ];
+}
 function fbP4RowValues(u){
   var g=u.g;
   var r2=function(v){return v==null?'':Math.round(v*100)/100;};
@@ -35929,13 +36130,15 @@ function fbP4RowValues(u){
   try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(e){p={status:'BLOCKED',reason:(e&&e.message)||'engine threw'};}
   var kick=String(g.start_date||'');
   var base=[g.season,g.week,g.game_id,kick?(kick.slice(0,10)+' '+kick.slice(11,16)):'',g.away_team,g.home_team];
+  var tailAt=FBP4_CSV_HEAD.length-FBP4_FBS_TAIL_N;
   if(!p||p.status!=='PREDICTED'){
     var row=base.slice();while(row.length<FBP4_CSV_HEAD.length)row.push('');
     row[6]=window.EDCfbP4Params.model_version;row[7]=window.EDCfbP4Params.feature_version;
     row[34]=p?p.status:'NO_PREDICTION';row[35]='true';row[36]=new Date().toISOString();
     row[44]='UTC';row[45]=g.neutral_site?'true':'false';row[46]=g.venue||'';
     row[47]=g.home_conference||'';row[48]=g.away_conference||'';
-    row[FBP4_CSV_HEAD.length-1]=(p&&(p.reason||(p.missing||[]).join('; ')))||'';
+    row[tailAt-1]=(p&&(p.reason||(p.missing||[]).join('; ')))||'';
+    fbP4FbsTail(u,p,mkt).forEach(function(v,i){row[tailAt+i]=v;});
     return row;
   }
   var m=p.model,sc=p.scores,cov=p.cover,ov=p.over;
@@ -35977,15 +36180,18 @@ function fbP4RowValues(u){
     (ex.primary_drivers[2]||{}).text||'',(ex.counterarguments[0]||{}).text||'',
     ex.unpredictable_variables.map(function(x){return x.item;}).join('; '),
     ex.data_quality.map(function(x){return x.text;}).join('; ')
-  ]);
+  ]).concat(fbP4FbsTail(u,p,mkt));
 }
 function fbP4CsvRow(u){return fbP4RowValues(u).map(fbCsvQuote).join(',');}
 window.fbP4CsvDownload=function(){
   var S=FB.p4;
-  if(!S.up.length){alert('No Power 4 games on the board to export yet.');return;}
+  if(!S.up.length){alert('No FBS games on the board to export yet.');return;}
+  var X=fbP4ExportItems();
+  if(!X.items.length){alert('No games match the current filters, so there is nothing to export. '
+    +'Reset the filters to take the whole '+S.up.length+'-game FBS slate.');return;}
   var lines=[FBP4_CSV_HEAD.join(',')];
-  S.up.forEach(function(u){lines.push(fbP4CsvRow(u));});
-  var name='edgedesk_cfb_p4_'+S.season+'_upcoming.csv';
+  X.items.forEach(function(u){lines.push(fbP4CsvRow(u));});
+  var name='edgedesk_fbs_'+S.season+'_'+fbP4ExportSlug()+'.csv';
   var blob=new Blob([lines.join('\n')+'\n'],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();
@@ -36066,8 +36272,9 @@ function fbP4DriverRow(v,kickMs){
 }
 function fbP4Workbook(){
   var S=FB.p4,X=EDXlsx.S,I=fbP4Ix(),tz=fbTzLabel();
+  var EX=fbP4ExportItems();
   var board=[],drivers=[],raw=[],leans=0,passes=0,noMkt=0,gapSum=0,gapN=0;
-  S.up.forEach(function(u){
+  EX.items.forEach(function(u){
     var v=fbP4RowValues(u),kick=fbParseUtc(u.g&&u.g.start_date);
     board.push(fbP4BoardRow(v,kick));
     drivers.push(fbP4DriverRow(v,kick));
@@ -36081,6 +36288,7 @@ function fbP4Workbook(){
   });
   var kpi=fbXlKpiStrip([
     ['Games',board.length],
+    ['FBS Slate',EX.rows.length],
     ['Research Leans',leans],
     ['Pass / Low Conf.',passes],
     ['No Market',noMkt],
@@ -36093,9 +36301,14 @@ function fbP4Workbook(){
     name:'Board',freeze:6,filter:'A6:'+bLast+'6',cols:FBP4_BOARD_W,
     merges:['A1:'+bLast+'1','A2:'+bLast+'2'].concat(kpi.merges),
     rows:[
-      [{v:'EdgeDesk CFB Power 4 \u2014 '+S.season+' Research Board',k:'s',s:X.TITLE}],
+      [{v:'EdgeDesk FBS Football \u2014 '+S.season+' Research Board \u00b7 '+EX.scope,k:'s',s:X.TITLE}],
       [{v:'Research context, not edges. This model is UNPROVEN versus the closing market \u2014 use the '
-        +'board to surface disagreements worth researching, never as automatic betting advice.',k:'s',s:X.MUTED}],
+        +'board to surface disagreements worth researching, never as automatic betting advice. '
+        +(EX.filtered
+          ? ('This file is the FILTERED view: '+board.length+' of the '+EX.rows.length
+             +'-game FBS slate, under '+EX.scope+'. Reset the board\u2019s filters to export the whole slate.')
+          : ('This file is the whole FBS slate for this window: '+board.length+' game'
+             +(board.length===1?'':'s')+' with at least one active FBS program.')),k:'s',s:X.MUTED}],
       kpi.labels,kpi.values,[],
       fbXlHead(bHead)
     ].concat(board)
@@ -36127,16 +36340,19 @@ function fbP4Workbook(){
     ].concat(raw)
   };
   return {sheets:[boardSheet,driversSheet,rawSheet],
-          name:'edgedesk_cfb_p4_'+S.season+'_upcoming.xlsx',
-          games:board.length};
+          name:'edgedesk_fbs_'+S.season+'_'+fbP4ExportSlug()+'.xlsx',
+          games:board.length,total:EX.rows.length,filtered:EX.filtered,scope:EX.scope};
 }
 window.fbP4XlsxDownload=function(){
-  if(!FB.p4.up.length){alert('No Power 4 games on the board to export yet.');return;}
+  if(!FB.p4.up.length){alert('No FBS games on the board to export yet.');return;}
+  if(!fbP4ExportItems().items.length){alert('No games match the current filters, so there is nothing to export. '
+    +'Reset the filters to take the whole '+FB.p4.up.length+'-game FBS slate.');return;}
   fbP4PostOut('<span class="ec mut">Building the workbook\u2026</span>');
   var wb=fbP4Workbook();
   fbXlSave(wb.sheets,wb.name);
   fbP4PostOut('<span class="ec mut">Downloaded <span class="mono">'+fbEsc(wb.name)+'</span> \u2014 '
-    +wb.games+' game'+(wb.games===1?'':'s')+' across Board, Drivers and Raw Export.</span>');
+    +wb.games+(wb.filtered?(' of '+wb.total):'')+' game'+(wb.games===1?'':'s')
+    +(wb.filtered?(' ('+fbEsc(wb.scope)+')'):'')+' across Board, Drivers and Raw Export.</span>');
 };
 
 /* ---- posting a slate to the Model Collective ---------------------------
@@ -36319,10 +36535,24 @@ function fbP4KeyEnsure(){
    the schema its own uploader builds. Derived from the same projection the
    CSV export uses, so the two doors cannot disagree about what this model
    said. A game the engine could not project is skipped rather than sent
-   half-filled. */
+   half-filled.
+
+   THE SLATE IS THE BOARD'S. Since the board covers the whole FBS, so does
+   this: the rows posted are the rows on screen, under the same filters and
+   the same window, which is what makes the site's count, the download, the
+   API answer and the Collective wall reconcile instead of merely look
+   similar.
+
+   TWO SHAPES, ON PURPOSE. `rows` carries the FBS coverage fields alongside
+   the proven ones; `lean` is the schema the ingest has always taken. The
+   ingest's row validator lives in the database, not in this repo, so the
+   sync DRY-RUNS the enriched rows and falls back to the lean ones if the
+   server refuses them — a richer row is never allowed to cost a creator
+   their slate, and the reader is told which shape went. */
 function fbP4WireRows(){
-  var rows=[],skipped=[];
-  (FB.p4.up||[]).forEach(function(u){
+  var rows=[],lean=[],skipped=[];
+  var EX=fbP4ExportItems();
+  EX.items.forEach(function(u){
     var g=u.g,p;
     try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(e){p=null;}
     if(!p||p.status!=='PREDICTED'){skipped.push((g.away_team||'?')+' @ '+(g.home_team||'?'));return;}
@@ -36344,6 +36574,23 @@ function fbP4WireRows(){
     if(cov&&cov.win!=null)o.cover_probability=cov.win;
     if(sGap!=null&&Math.abs(sGap)>1e-9)o.pick_side=sGap>0?'home':'away';
     if(p.scores&&p.scores.confidence!=null)o.confidence=Math.round(p.scores.confidence);
+    /* the lean row is a COPY taken before enrichment, so the fallback is the
+       exact schema that has always posted rather than a stripped-down guess */
+    var leanRow={},lk;
+    for(lk in o)if(o.hasOwnProperty(lk))leanRow[lk]=o[lk];
+    lean.push(leanRow);
+    var mt=u.meta,ctx=(p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
+    if(mt){
+      o.home_team_id=mt.home.key;o.away_team_id=mt.away.key;
+      o.home_conference=mt.home.conference;o.away_conference=mt.away.conference;
+      o.home_conference_id=mt.home.conference_id;o.away_conference_id=mt.away.conference_id;
+      o.home_fbs_group=mt.home.group;o.away_fbs_group=mt.away.group;
+      o.matchup_type=mt.matchup_type;o.is_conference_game=!!mt.is_conference_game;
+    }
+    o.model_status=p.status;
+    if(ctx&&ctx.information_missing!=null)o.data_completeness=Math.round((1-ctx.information_missing)*1000)/1000;
+    o.market_status=(mkt&&mkt.status)||'NO MARKET';
+    if(mkt&&mkt.as_of)o.quote_timestamp=mkt.as_of;
     rows.push(o);
   });
   /* never post a row that contradicts itself */
@@ -36351,7 +36598,28 @@ function fbP4WireRows(){
   part.bad.forEach(function(o){
     skipped.push(o.away_team+' @ '+o.home_team+' (pick disagrees with its own numbers)');
   });
-  return {rows:part.good,skipped:skipped,inconsistent:part.bad};
+  /* the lean copies of exactly the rows that survived the consistency test */
+  var keep={};part.good.forEach(function(o){keep[o.game_ref]=1;});
+  var leanGood=lean.filter(function(o){return keep[o.game_ref];});
+  return {rows:part.good,lean:leanGood,skipped:skipped,inconsistent:part.bad,
+    slate_total:EX.rows.length,filtered:EX.filtered,scope:EX.scope};
+}
+/* Post (or dry-run) the enriched rows, and fall back to the proven schema if
+   the server's row validator refuses a field it has never seen. The answer
+   says which shape was accepted, so nobody has to guess later why a column
+   is missing from the wall. */
+async function fbP4IngestRows(path,key,env,built){
+  var res=await fbP4Ingest(path,key,env);
+  if(res.ok)return {res:res,shape:'fbs'};
+  var code=(res.body&&res.body.error&&res.body.error.code)||'';
+  if(code!=='invalid_payload'||!built.lean||!built.lean.length)return {res:res,shape:'fbs'};
+  var lenv={},k;for(k in env)if(env.hasOwnProperty(k))lenv[k]=env[k];
+  lenv.rows=built.lean;
+  var res2=await fbP4Ingest(path,key,lenv);
+  return {res:res2,shape:'lean',
+    note:'The Collective refused the FBS coverage fields (conference, program group, matchup type, '
+      +'market status), so this went on the schema it has always taken. The same fields are in the '
+      +'CSV and the workbook\u2019s Raw Export sheet, which is what the slate uploader maps.'};
 }
 
 /* Which model on the account this college slate belongs to.
@@ -36469,6 +36737,9 @@ window.fbP4ApiRetract=async function(){
   /* Scope the retract to the week on screen when the board is a single
      week: the endpoint would otherwise consider the whole season, which is
      a far larger blast radius than the operator is looking at. */
+  /* the weeks the BOARD currently shows. The retract has no `built` slate of
+     its own — it removes what is stored — so it scopes to the window on
+     screen, which is the blast radius the operator is looking at. */
   var wks={},wkOne=null,wkN=0;
   (FB.p4.up||[]).forEach(function(u){var w=u.g&&u.g.week;if(w!=null&&!wks[w]){wks[w]=1;wkOne=+w;wkN++;}});
   if(wkN===1)env.week=wkOne;
@@ -36771,7 +37042,7 @@ window.fbP4ApiSync=async function(){
      post as EdgeDesk. This is not what makes posting safe — the
      submission key and the ingest endpoint are (see edIsOwner). */
   if(!edIsOwner())return;
-  if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
+  if(!FB.p4.up.length){alert('No FBS games on the board to post yet.');return;}
   var bad=fbP4LineSanity();
   if(bad){
     fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Not syncing.</b> All '+bad.n
@@ -36798,14 +37069,23 @@ window.fbP4ApiSync=async function(){
      it is filed under rather than being turned away. */
   var env={season:FB.p4.season,data_origin:'live',sport:'CFB',rows:built.rows};
   if(who.model)env.model=who.model;
+  /* the week the POSTED rows belong to, not the week the whole window spans:
+     a filtered slate that is all week 3 must not be filed under week 2 */
   var wks={},wkOne=null,wkN=0;
-  (FB.p4.up||[]).forEach(function(u){var w=u.g&&u.g.week;if(w!=null&&!wks[w]){wks[w]=1;wkOne=+w;wkN++;}});
+  built.rows.forEach(function(r){var w=r.week;if(w!=null&&!wks[w]){wks[w]=1;wkOne=+w;wkN++;}});
   if(wkN===1)env.week=wkOne;
 
-  /* 1. would this slate even post? */
-  fbP4PostOut('<span class="ec mut">Dry-running '+built.rows.length+' game'+(built.rows.length===1?'':'s')+'\u2026</span>');
-  var dry;
-  try{dry=await fbP4Ingest('/v1/projections/dry-run',key,env);}
+  /* 1. would this slate even post? The dry run is also where the enriched
+        FBS row shape is PROVEN: if the server refuses it, the fallback runs
+        here and the post below goes on whatever the dry run accepted. */
+  fbP4PostOut('<span class="ec mut">Dry-running '+built.rows.length+' game'+(built.rows.length===1?'':'s')
+    +(built.filtered?(' ('+fbEsc(built.scope)+' \u2014 '+built.slate_total+' on the full FBS slate)'):'')+'\u2026</span>');
+  var dry,shape='fbs',shapeNote='';
+  try{
+    var attempt=await fbP4IngestRows('/v1/projections/dry-run',key,env,built);
+    dry=attempt.res;shape=attempt.shape;shapeNote=attempt.note||'';
+    if(shape==='lean')env.rows=built.lean;
+  }
   catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
   if(dry.status===401){fbP4Key$clear();FBP4_MODEL_CACHE=null;
     fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten. Copy it again and retry.</span>');return;}
@@ -36834,6 +37114,11 @@ window.fbP4ApiSync=async function(){
   var pb2=pres.body||{};
   fbP4PostOut('<span class="ec"><b>Synced:</b> '+fbEsc(fbCollectiveCounts(pb2)||'no counts returned')+'</span>'
     +fbCollectiveReceiptNote(pb2)
+    +'<div class="ec mut" style="margin-top:4px">'+built.rows.length+' of '+built.slate_total
+    +' game'+(built.slate_total===1?'':'s')+' on the '+FB.p4.season+' FBS slate'
+    +(built.filtered?(' \u2014 filtered to '+fbEsc(built.scope)):'')+'.'
+    +(shape==='lean'?(' '+fbEsc(shapeNote)):' Each row carries its conferences, program groups, matchup type, model status and market status.')
+    +'</div>'
     +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length+' game'+(built.skipped.length===1?'':'s')+' skipped (no projection).</div>':''));
 };
 /* Dry run, then post — never post without the dry run passing first. The
@@ -36844,7 +37129,7 @@ window.fbP4ApiPost=async function(live){
      post as EdgeDesk. This is not what makes posting safe — the
      submission key and the ingest endpoint are (see edIsOwner). */
   if(!edIsOwner())return;
-  if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
+  if(!FB.p4.up.length){alert('No FBS games on the board to post yet.');return;}
   var bad=fbP4LineSanity();
   if(bad){
     fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Not posting.</b> All '+bad.n
@@ -36913,7 +37198,7 @@ window.fbP4PostToCollective=function(){
      post as EdgeDesk. This is not what makes posting safe — the
      submission key and the ingest endpoint are (see edIsOwner). */
   if(!edIsOwner())return;
-  if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
+  if(!FB.p4.up.length){alert('No FBS games on the board to post yet.');return;}
   /* The Collective's record is public and graded; a slate built on inverted
      lines does not belong on it. The downloads stay available so the numbers
      can still be inspected. */
@@ -36936,7 +37221,7 @@ window.fbP4PostToCollective=function(){
   },600);
 };
 function fbP4CtlHTML(){
-  var n=FB.p4.up.length;
+  var EX=fbP4ExportItems(),n=EX.items.length,tot=EX.rows.length;
   /* posting this model's slate to the Collective is how EdgeDesk is RUN, not
      how it is used — the operator's controls, their key and the paragraph
      explaining the pipeline are all drawn only for an operator. See
@@ -36960,8 +37245,10 @@ function fbP4CtlHTML(){
       ? '<span class="ec mut">cfb.lines read as <b>margin</b> \u00b7 <a href="#" onclick="fbP4SetLinesConv(\'betting\');return false;">use betting</a></span>'
       : '')
     +(op?'<div id="fbp4PostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>':'')
-    +'<span class="ec mut">'+n+' Power 4 game'+(n===1?'':'s')
-    +' · one row per game, same columns as the NFL export · research, unproven</span>'
+    +'<span class="ec mut">'+n+(EX.filtered?(' of '+tot):'')+' FBS game'+(n===1?'':'s')
+    +(EX.filtered?(' · '+fbEsc(EX.scope)):'')
+    +' · one row per game, the NFL export’s columns plus conference, program group, matchup type and market status'
+    +' · exports and Collective posts carry exactly the rows on screen · research, unproven</span>'
     +fbP4LineWarnHTML()
     +(op?fbP4PostNoteHTML():fbP4ExportNoteHTML());
 }
@@ -36972,7 +37259,13 @@ function fbP4ExportNoteHTML(){
     +'<b>Taking the board with you.</b> <b>Download Excel</b> hands you a workbook: a <b>Board</b> '
     +'sheet that is this screen, a <b>Drivers</b> sheet with the model’s reasoning where it has '
     +'room to be read, and the <b>Raw Export</b> sheet — the full '+FBP4_CSV_HEAD.length
-    +'-column export, unchanged. <b>CSV (raw)</b> is that last sheet on its own. Both are research '
+    +'-column export, unchanged — the NFL export’s columns, the model’s extra outputs, and the '
+    +'FBS coverage columns (<span class="mono">home_conference</span>, <span class="mono">home_fbs_group</span>, '
+    +'<span class="mono">matchup_type</span>, <span class="mono">is_conference_game</span>, '
+    +'<span class="mono">model_status</span>, <span class="mono">data_completeness</span>, '
+    +'<span class="mono">market_status</span>, <span class="mono">quote_timestamp</span>). '
+    +'<b>CSV (raw)</b> is that last sheet on its own. Both carry exactly the rows the board is showing, so a '
+    +'download reconciles with the counts above it. Both are research '
     +'exports of numbers this engine has not validated against a closing line.</div>';
 }
 function fbP4PostNoteHTML(){
@@ -37459,12 +37752,96 @@ function fbGxUnit(gid){
   return out;
 }
 
+/* ═══ WHO IS PLAYING, AND WHAT KIND OF GAME IS THIS ═══════════════════════
+   Everything a reader needs to judge a discrepancy in a game they have never
+   heard of: both conferences, the program group, the matchup type, each
+   side's place on the one all-FBS rating scale and how much evidence is
+   behind it, how complete the model's inputs were, and how old the market
+   number is. A large gap in a small-market game should be FINDABLE and it
+   must never read as a pick — so the block ends by saying plainly what a
+   gap here usually is. */
+function fbP4SideRating(side){
+  var t=fbEdrFor(side.name);
+  if(!t)return '<span class="v mut">not rated — EdgeDesk holds no results or roster for this program</span>';
+  var C=t.components||{};
+  var g=C.results?C.results.games:0;
+  var cc=fbEdrConf(t);
+  return '<span class="v">'+fbPts(t.rating)+' <span class="mut">#'+t.rank+' of '
+    +((FB.edr.data&&FB.edr.data.team_count)||'?')+' FBS'
+    +(cc&&t.conference_rank?(' · #'+t.conference_rank+' in the '+fbEsc(cc.label)):'')
+    +(t.group_rank&&t.fbs_group?(' · #'+t.group_rank+' '+fbEsc(window.EDFbs.GROUP_LABEL[t.fbs_group]||t.fbs_group)):'')
+    +' · '+g+' g absorbed'
+    +(C.roster&&C.roster.available?(' · roster '+fbPts(C.roster.points)):' · no roster adjustment on file')
+    +'</span></span>';
+}
+function fbP4MatchupHTML(u,p){
+  var g=u.g,m=u.meta,h='';
+  if(!m)return '';
+  function row(l,v){return '<div class="gd-line"><span class="l">'+l+'</span>'+v+'</div>';}
+  h+=row(fbEsc(m.away.name),'<span class="v">'+(m.away.conference?fbEsc(m.away.conference):'<span class="mut">no conference on file</span>')
+    +(m.away.group_label?(' <span class="mut">· '+fbEsc(m.away.group_label)+'</span>'):'')
+    +(m.away.is_fbs?'':' <span class="fbs-badge fcs">FCS</span>')+'</span>');
+  h+=row(fbEsc(m.home.name),'<span class="v">'+(m.home.conference?fbEsc(m.home.conference):'<span class="mut">no conference on file</span>')
+    +(m.home.group_label?(' <span class="mut">· '+fbEsc(m.home.group_label)+'</span>'):'')
+    +(m.home.is_fbs?'':' <span class="fbs-badge fcs">FCS</span>')+'</span>');
+  h+=row('matchup type','<span class="v">'+fbEsc(m.matchup_label)
+    +' <span class="mut">· '+fbEsc(m.conference_basis)+'</span></span>');
+  var seenConf={};
+  [m.home,m.away].forEach(function(side){
+    if(!side.is_fbs||!side.conference_id||seenConf[side.conference_id])return;
+    seenConf[side.conference_id]=1;
+    h+=fbP4ConfRecordHTML(side.conference_id,side.conference);
+  });
+  h+='<div class="gd-sec">EdgeDesk FBS rating · one scale, every program</div>';
+  h+=row(fbEsc(m.away.name),fbP4SideRating(m.away));
+  h+=row(fbEsc(m.home.name),fbP4SideRating(m.home));
+  /* data completeness and market provenance, on the card rather than buried */
+  var ctx=(p&&p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
+  if(ctx&&ctx.information_missing!=null){
+    var cpc=Math.round((1-ctx.information_missing)*100);
+    h+=row('data completeness','<span class="v"><span style="color:'+(cpc>=60?'var(--pos)':(cpc>=30?'var(--warn)':'var(--neg)'))+'">'
+      +cpc+'%</span> <span class="mut">share of the model’s input contract that reached this projection</span></span>');
+  }
+  var mkt=(FB.p4._mkt&&FB.p4._mkt[String(g.game_id)])||fbP4Market(u);
+  h+=row('market quote',mkt.spread_line!=null
+    ? ('<span class="v">'+fbEsc(mkt.book||'joined')+(mkt.age_hours!=null?(' <span class="mut">captured '+mkt.age_hours+'h ago</span>'):'')
+        +(mkt.stale?' <span class="mut" style="color:var(--dim)">· STALE QUOTE by this board’s age policy</span>':'')+'</span>')
+    : ('<span class="v mut">NO MARKET — no valid quote exists for this game'
+        +(mkt.spread_fault?', and the one joined row was dropped for pointing the opposite way':'')
+        +'. A missing quote is never read as a zero line.</span>'));
+  /* what is honestly missing for a non-power or non-FBS participant */
+  var gaps=[];
+  if(!m.home.is_fbs||!m.away.is_fbs)gaps.push('One participant is not an FBS program. EdgeDesk does not manufacture an FBS-quality '
+    +'rating for an unrated opponent: the engine prices it through its single solved non-FBS bucket, and the game is held at '
+    +'THIN DATA rather than graded, whatever the size of the gap.');
+  if(m.home.is_fbs&&m.away.is_fbs){
+    var thin=[];
+    [m.home,m.away].forEach(function(s){
+      var t=fbEdrFor(s.name),C=t&&t.components;
+      var gp=(C&&C.results)?C.results.games:0;
+      if(!t)thin.push(s.name+' carries no EdgeDesk rating at all');
+      else if(gp<=1)thin.push(s.name+' has '+gp+' game absorbed this season, so its number is almost entirely preseason belief');
+    });
+    if(thin.length)gaps.push(thin.join('; ')+'.');
+  }
+  if(!FB.p4.weather[g.game_id]&&!g.neutral_site)gaps.push('No forecast is joined for this venue, so the weather layer is blind here '
+    +'and the outcome range is wider for it.');
+  if(gaps.length)h+='<div class="gd-modelnote">'+gaps.map(fbEsc).join(' ')+'</div>';
+  h+='<div class="gd-modelnote">Research, not picks. A large model–market gap in a smaller-market game is exactly what this board '
+    +'exists to surface — and with this model’s record it is more often missing information than an edge. Fewer books post these games, '
+    +'less enrichment data exists for these programs, and the completeness number above is the honest measure of how much the model '
+    +'actually knew. Nothing here is a recommendation.</div>';
+  return h;
+}
 function fbP4Card(u){
-  var g=u.g,E=window.EDCfbP4;
+  var g=u.g,E=window.EDCfbP4,m=u.meta;
   var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
   if(!p){try{p=E.projectGame(fbP4Request(u));}catch(err){p={status:'BLOCKED',reason:(err&&err.message)||'engine threw'};}}
+  var confLine=m
+    ? ((m.away.conference||'—')+' at '+(m.home.conference||'—')+' · '+m.matchup_label)
+    : ((g.away_conference||'')+' at '+(g.home_conference||''));
   var head='<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div>'
-    +'<div class="mdl-card-when">'+fbEsc(g.away_conference||'')+' at '+fbEsc(g.home_conference||'')
+    +'<div class="mdl-card-when">'+fbEsc(confLine)
     +' · wk '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>';
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card">'+head+'<div class="gd-nodata">'+fbEsc(p.status)+': '
@@ -37539,6 +37916,8 @@ function fbP4Card(u){
      Every block below is the same data the flat list carried; what changed is
      the order a reader meets it in, and what is open by default. */
   var body=fbGxSummary(u,p,gid)
+    +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
+      'who is playing, on one all-FBS scale')
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
     +fbGxSec(gid,'wrong','Why this number could be wrong',fbGxWrong(p),true)
     +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
@@ -37584,7 +37963,7 @@ function fbP4EdgeTag(cls){
 
    EDR IS RESEARCH CONTEXT. No bet is priced from it: the Power 4 engine's own
    rating state still produces every line on this board. */
-FB.edr={data:null,error:null,at:0,_p:null,index:null};
+FB.edr={data:null,error:null,at:0,_p:null,index:null,scope:'all',confPick:null};
 function fbEdrLoad(){
   var R=FB.edr;
   if(R.data&&Date.now()-R.at<15*60000)return Promise.resolve(R.data);
@@ -37596,7 +37975,17 @@ function fbEdrLoad(){
   }).then(function(j){
     R.data=j;R.error=null;R.at=Date.now();R._p=null;
     R.index=null;
-    if(j&&j.teams){R.index={};j.teams.forEach(function(t){R.index[t.key]=t;});}
+    /* indexed by BOTH keys. The rating job folds "&" to "and"
+       ("texasaandm") while the engine and the schedule feed drop it
+       ("texasam"), so Texas A&M's rating was unreachable from every board
+       lookup. The dataset now publishes `canonical_key` and both spellings
+       point at the same row. */
+    if(j&&j.teams){R.index={};j.teams.forEach(function(t){
+      R.index[t.key]=t;
+      if(t.canonical_key)R.index[t.canonical_key]=t;
+      var nk=window.EDFbs?window.EDFbs.normKey(t.team):null;
+      if(nk&&!R.index[nk])R.index[nk]=t;
+    });}
     return j;
   }).catch(function(e){R.error=String(e&&e.message||e).slice(0,80);R._p=null;return null;});
   return R._p;
@@ -37613,6 +38002,104 @@ function fbEdrFor(name){
   var best=null,bl=0,j;
   for(j in R.index){if(j.length>=3&&k.indexOf(j)===0&&j.length>bl){best=R.index[j];bl=j.length;}}
   return best;
+}
+/* ═══ THE MODEL'S MEASURED RECORD, PER CONFERENCE ══════════════════════════
+   The thing a reader of a Sun Belt game most needs to know is not that the
+   model exists — it is how well this model has actually done in the Sun Belt.
+   The shipped error dashboard already carries that, by home conference, over
+   the 2015-2025 walk-forward: it is the same artifact the Lab renders, read
+   here so a conference view can state its own record instead of quoting the
+   league-wide number at a reader who is not looking at the league.
+
+   It corrects a plausible assumption, too. The model is NOT measurably worse
+   in the smaller conferences — over that window the MAC is its second-best
+   home conference and the ACC and Big 12 its worst two. The board can say so
+   because the number is on file, not because it would be a nice story. */
+FB.p4slices={data:null,err:null,_p:null};
+function fbP4Slices(){
+  var S=FB.p4slices;
+  if(S.data||S.err)return Promise.resolve(S.data);
+  if(S._p)return S._p;
+  S._p=fetch('football/cfb_p4/research/report/error_slices.json',{cache:'no-cache'})
+    .then(function(r){if(!r.ok)throw new Error('slices '+r.status);return r.json();})
+    .then(function(j){S.data=j;S._p=null;return j;})
+    .catch(function(e){S.err=String(e&&e.message||e).slice(0,80);S._p=null;return null;});
+  return S._p;
+}
+try{ fbP4Slices(); }catch(_){}
+/* the slice for one conference, matched on the SOURCE label the dashboard
+   was generated with — never on the display name, which is EdgeDesk's */
+function fbP4ConfRecord(confId){
+  var d=FB.p4slices.data;
+  if(!d||!d.by_home_conference||!confId||!window.EDFbs)return null;
+  var tbl=d.by_home_conference,k;
+  for(k in tbl)if(tbl.hasOwnProperty(k)){
+    if(window.EDFbs.conference(k).id===confId)return {conference:k,slice:tbl[k],overall:d.overall||null};
+  }
+  return null;
+}
+function fbP4ConfRecordHTML(confId,label){
+  var r=fbP4ConfRecord(confId);
+  if(!r)return '';
+  var sl=r.slice,ov=r.overall;
+  return '<div class="gd-line"><span class="l">the record in the '+fbEsc(label)+'</span><span class="v mut">'
+    +'held-out spread MAE '+sl.mae_raw+' vs the closing market '+sl.mae_market
+    +' over '+sl.n+' home games'
+    +(sl.ats_raw_1plus?(' · '+sl.ats_raw_1plus.win_pct+'% ATS at 1+ points of disagreement (n='+sl.ats_raw_1plus.n+')'):'')
+    +(ov?(' · league-wide '+ov.mae_raw+' vs '+ov.mae_market):'')
+    +'. The model does not beat the close here either — this is what "unproven" means for this conference specifically.'
+    +'</span></div>';
+}
+
+/* ---- the rating, taken apart by scope ---------------------------------
+   ONE connected scale. Every view below is a FILTER over the same ranked
+   list — no subgroup is ever re-rated or rescaled, so a team's number means
+   the same thing (points against an average FBS team) in every one of them.
+   That is the whole point: a Sun Belt team at +2.1 and an SEC team at +2.1
+   are the same team, and the board's line is priced off that same scale. */
+function fbEdrTeams(){
+  var d=FB.edr.data;
+  return (d&&d.teams)||[];
+}
+/* A rating row's conference: the dataset's own field when the weekly build
+   has published one, else this season's schedule-derived universe. Never a
+   stored list — alignment changes every winter. */
+function fbEdrConf(t){
+  if(!t)return null;
+  if(t.conference_id)return {id:t.conference_id,label:t.conference,group:t.fbs_group};
+  var S=FB.p4;
+  if(S.uni&&window.EDFbs){
+    var u=S.uni.teams[t.canonical_key||fbP4Key(t.team)];
+    if(u&&u.conference&&u.conference.id)return {id:u.conference.id,label:u.conference.label,group:u.group};
+  }
+  return null;
+}
+var FBEDR_SCOPES=[['all','All FBS'],['p4','Power 4'],['other','Other FBS'],['conf','Conference']];
+window.fbEdrScope=function(v){
+  FB.edr.scope=v;
+  if(v!=='conf')FB.edr.confPick=null;
+  try{window.renderFootball();}catch(_){}
+};
+window.fbEdrConfPick=function(id){
+  FB.edr.scope='conf';FB.edr.confPick=id||null;
+  try{window.renderFootball();}catch(_){}
+};
+function fbEdrScoped(){
+  var scope=FB.edr.scope||'all',pick=FB.edr.confPick||null;
+  var all=fbEdrTeams(),out=[],i;
+  for(i=0;i<all.length;i++){
+    var t=all[i],c=fbEdrConf(t);
+    if(scope==='p4'&&(!c||c.group!=='p4'))continue;
+    if(scope==='other'&&(!c||c.group!=='other'))continue;
+    if(scope==='conf'){
+      /* "Conference" is a prompt, not a silent all-FBS list: showing the
+         whole field under a control labelled Conference would be telling a
+         reader they are looking at one conference when they are not. */
+      if(!pick||!c||c.id!==pick)continue;
+    }
+    out.push(t);
+  }
+  return {rows:out,scope:scope,pick:pick};
 }
 try{ fbEdrLoad(); }catch(_){}
 
@@ -37687,46 +38174,134 @@ function fbEdrGameHTML(g){
     out+='<div class="gd-line"><span class="l">confidence</span><span class="v mut">'
       +(Math.min(a.confidence,h.confidence)*100).toFixed(0)+'% — the lower of the two</span></div>';
     out+='<div class="gd-line"><span class="l">what this is</span><span class="v mut">research context. '
-      +'The line on this board comes from the Power 4 engine, not from this number.</span></div>';
+      +'The line on this board comes from the engine’s own all-FBS rating state, not from this number.</span></div>';
   }
   if(h)out+='<div class="gd-sec">'+fbEsc(h.team)+'</div>'+fbEdrDetail(h);
   if(a)out+='<div class="gd-sec">'+fbEsc(a.team)+'</div>'+fbEdrDetail(a);
   return out;
 }
 
+/* ═══ EDGEDESK FBS RATING ══════════════════════════════════════════════════
+   One primary rating section, one baseline, four views of it.
+
+   The board used to carry two rating panels that told different stories: an
+   "EdgeDesk Rating · top 25" claiming 138 FBS teams, and a "Power 4 engine
+   state" panel captioned "this is what the board's lines are priced from".
+   A reader could only conclude the non-Power games were priced off something
+   narrower. They were not, and they never were: the engine's rating state
+   seeds 136 programs and absorbs every FBS result, so it carries all 138
+   active FBS teams — the Power 4 label was describing the BOARD's old
+   filter, not the scale underneath it. The label is corrected here, the two
+   panels are made to say what they actually are, and the second one is kept
+   as a clearly-named DIAGNOSTIC rather than a rival ranking. */
+function fbEdrScopeNote(sc){
+  if(sc.scope==='all')return 'every active FBS program on one connected scale';
+  if(sc.scope==='p4')return 'the same all-FBS scale, filtered to Power 4 programs — nothing is re-rated inside the group';
+  if(sc.scope==='other')return 'the same all-FBS scale, filtered to non-power FBS programs — nothing is re-rated inside the group';
+  return 'the same all-FBS scale, filtered to one conference — nothing is re-rated inside it';
+}
 function fbP4Ratings(){
   var out='';
   var d=FB.edr.data;
   if(d&&d.teams&&d.teams.length){
-    out+='<div class="gd-sec">EdgeDesk Rating · top 25 (points vs an average FBS team)</div>'
-      +'<div class="gd-line"><span class="l">how it reweights itself</span><span class="v mut">'+fbEdrHeadline()+'</span></div>'
-      +d.teams.slice(0,25).map(function(t){
-        var C=t.components||{};
-        var why=C.results?(C.results.games+' g'):'preseason';
-        if(C.roster&&C.roster.available&&Math.abs(C.roster.points)>=1)why+=' · roster '+fbPts(C.roster.points);
-        if(C.availability&&C.availability.available)why+=' · out '+fbPts(C.availability.points);
-        return '<div class="gd-line"><span class="l">'+t.rank+'. '+fbEsc(t.team)+'</span>'
-          +'<span class="v">'+fbPts(t.rating)+' <span class="mut">'+fbEsc(why)+'</span></span></div>';
-      }).join('')
+    var sc=fbEdrScoped(),rows=sc.rows;
+    var confs=[],seen={},i;
+    for(i=0;i<d.teams.length;i++){
+      var c=fbEdrConf(d.teams[i]);
+      if(c&&c.id&&!seen[c.id]){seen[c.id]=1;confs.push(c);}
+    }
+    var GORD={p4:0,other:1,independent:2};
+    confs.sort(function(x,y){
+      var gx=GORD[x.group]==null?9:GORD[x.group],gy=GORD[y.group]==null?9:GORD[y.group];
+      return gx-gy||String(x.label).localeCompare(String(y.label));
+    });
+    out+='<div class="gd-sec">EdgeDesk FBS Rating — top 25 <span class="mut">· points versus an average FBS team</span></div>';
+    /* SCOPE CONTROLS — a view switch, never a rebuild */
+    out+='<div class="fbs-filters" style="border-top:none"><div class="fbs-frow"><span class="fbs-flab">SCOPE</span><div class="fbs-fset">';
+    FBEDR_SCOPES.forEach(function(s){
+      out+=fbP4Chip((FB.edr.scope||'all')===s[0],s[1],'fbEdrScope(\''+s[0]+'\')');
+    });
+    out+='</div></div>';
+    if((FB.edr.scope||'all')==='conf'){
+      out+='<div class="fbs-frow"><span class="fbs-flab">CONFERENCE</span><div class="fbs-fset">';
+      confs.forEach(function(c){
+        out+=fbP4Chip(FB.edr.confPick===c.id,c.label,'fbEdrConfPick(\''+fbEsc(c.id)+'\')');
+      });
+      out+='</div></div>';
+    }
+    out+='</div>';
+    out+='<div class="gd-line"><span class="l">what this view is</span><span class="v mut">'
+      +fbEsc(fbEdrScopeNote(sc))+' · '+rows.length+' of '+d.teams.length+' rated programs</span></div>'
+      +(sc.scope==='conf'&&sc.pick
+        ? fbP4ConfRecordHTML(sc.pick,(fbEdrConf(rows[0])||{label:sc.pick}).label)
+        : '')
+      +'<div class="gd-line"><span class="l">how it reweights itself</span><span class="v mut">'+fbEdrHeadline()+'</span></div>';
+    if(!rows.length){
+      out+='<div class="gd-line"><span class="l">'+fbEsc((FB.edr.scope||'all')==='conf'&&!FB.edr.confPick
+        ?'pick a conference above':'no rated program matches this view')
+        +'</span><span class="v mut">the full list is still there — switch scope back to All FBS</span></div>';
+    }
+    out+=rows.slice(0,25).map(function(t,ix){
+      var C=t.components||{},cc=fbEdrConf(t);
+      var why=C.results?(C.results.games+' g absorbed'):'preseason · 0 g';
+      if(C.roster&&C.roster.available&&Math.abs(C.roster.points)>=1)why+=' · roster '+fbPts(C.roster.points);
+      if(C.availability&&C.availability.available)why+=' · out '+fbPts(C.availability.points);
+      /* rank INSIDE the view is shown first when the view is filtered, with
+         the overall FBS rank alongside it, so the two can never be confused */
+      var lead=(sc.scope==='all')?(t.rank+'.')
+        :((ix+1)+'. <span class="mut">#'+t.rank+' FBS</span>');
+      return '<div class="gd-line"><span class="l">'+lead+' '+fbEsc(t.team)
+        +(cc?(' <span class="fbs-badge'+(cc.group?(' g-'+cc.group):'')+'">'+fbEsc(cc.label)+'</span>'):'')
+        +'</span><span class="v">'+fbPts(t.rating)+' <span class="mut">'+fbEsc(why)+'</span></span></div>';
+    }).join('')
       +'<div class="gd-line"><span class="l">what it does not measure</span><span class="v mut">'
       +fbEsc(((d.method&&d.method.not_included)||[]).join(' · '))+'</span></div>'
       +'<div class="gd-line"><span class="l">rebuilt</span><span class="v mut">'
       +fbEsc(String(d.generated_at||'').slice(0,16).replace('T',' '))+' UTC · week '+fbEsc(String(d.week==null?'—':d.week))
-      +' · '+d.team_count+' teams · weekly in CI</span></div>';
+      +' · '+d.team_count+' active FBS programs across '+confs.length+' conferences · weekly in CI</span></div>';
   } else if(FB.edr.error){
-    out+='<div class="gd-sec">EdgeDesk Rating</div><div class="gd-line"><span class="l">rating</span>'
+    out+='<div class="gd-sec">EdgeDesk FBS Rating</div><div class="gd-line"><span class="l">rating</span>'
       +'<span class="v mut">could not be read ('+fbEsc(FB.edr.error)+'). Nothing is shown rather than something invented.</span></div>';
   }
-  /* the engine's OWN rating state stays on screen underneath, because it — not
-     EDR — is what every line on this board is priced from */
-  var st=FB.p4.state;
+  /* THE ENGINE STATE, as a diagnostic and labelled as one. It is a different
+     quantity from the EdgeDesk Rating above — trained seeds carried forward
+     and updated game by game, which is what the board's spreads are priced
+     from — and it covers the same all-FBS universe. Two numbers, both
+     all-FBS, and the panel now says which is which instead of implying the
+     board is priced off a narrower scale. */
+  var st=FB.p4.state,S=FB.p4;
   if(st){
-    var rows=[],t;
-    for(t in st.r)if(st.r.hasOwnProperty(t))rows.push([t,st.r[t],st.n[t]||0]);
-    rows.sort(function(x,y){return y[1]-x[1];});
-    out+='<div class="gd-sec">Power 4 engine state · top 25 (this is what the board’s lines are priced from)</div>'
-      +rows.slice(0,25).map(function(r,i){return '<div class="gd-line"><span class="l">'+(i+1)+'. '+fbEsc(r[0])+'</span>'
-        +'<span class="v mut">'+fbPts(r[1])+' <span class="mut">'+r[2]+' g</span></span></div>';}).join('');
+    var srows=[],t,rated=0,fbsRated=0,uni=S.uni;
+    for(t in st.r)if(st.r.hasOwnProperty(t)){
+      srows.push([t,st.r[t],st.n[t]||0]);
+      rated++;
+      if(uni&&uni.teams[t]&&uni.teams[t].division==='fbs')fbsRated++;
+    }
+    srows.sort(function(x,y){return y[1]-x[1];});
+    var fbsTot=uni?uni.counts.fbs_teams:null;
+    out+='<div class="gd-sec">Engine state · diagnostic <span class="mut">· the rating the board’s lines are actually priced from</span></div>'
+      +'<div class="gd-line"><span class="l">scope</span><span class="v mut">'
+      +rated+' programs carry a rating in this state'
+      +(fbsTot!=null?(', covering '+fbsRated+' of the '+fbsTot+' active FBS programs in the '+fbEsc(String(S.schedSrc||'schedule'))+' feed'):'')
+      +'. This is not the EdgeDesk Rating above: it is the trained seed table carried forward and updated game by game, '
+      +'on the same all-FBS scale, and it is what every spread on this board comes from. '
+      +'“g in state” is the whole sample the seed carries, not this season’s games — the rating above counts those separately.</span></div>'
+      +srows.slice(0,25).map(function(r,i){
+        var u=uni?uni.teams[r[0]]:null;
+        return '<div class="gd-line"><span class="l">'+(i+1)+'. '+fbEsc(u?u.name:r[0])
+          +(u&&u.conference&&u.conference.label?(' <span class="fbs-badge'+(u.group?(' g-'+u.group):'')+'">'+fbEsc(u.conference.label)+'</span>'):'')
+          +'</span><span class="v mut">'+fbPts(r[1])
+          +' <span class="mut">'+r[2]+' g in state</span></span></div>';}).join('');
+    if(fbsTot!=null&&fbsRated<fbsTot){
+      var missing=[];
+      for(var mk in uni.teams)if(uni.teams.hasOwnProperty(mk)){
+        if(uni.teams[mk].division==='fbs'&&!Object.prototype.hasOwnProperty.call(st.r,mk))missing.push(uni.teams[mk].name);
+      }
+      out+='<div class="gd-line"><span class="l">not yet in the state</span><span class="v mut">'
+        +fbEsc(missing.slice(0,8).join(', '))+(missing.length>8?(' and '+(missing.length-8)+' more'):'')
+        +' — no trained seed and no absorbed game yet. Their matchups stay on the board and are refused a graded projection '
+        +'rather than being given a default rating.</span></div>';
+    }
   }
   return out;
 }
@@ -37783,41 +38358,408 @@ function fbP4StatusStrip(){
     +chip('MODEL','UNPROVEN · RESEARCH','var(--mdl)')
     +chip('HEALTH',hTxt,hCol)+'</div>';
 }
+/* ═══ THE BOARD'S CONTROL SURFACE ══════════════════════════════════════════
+   Four independent filters over ONE slate. They compose: picking the MAC
+   does not disturb the sort, and asking for conference games only does not
+   quietly drop the status filter. Every one of them is a VIEW — no filter
+   fetches anything, and a game whose two teams both match a selected
+   conference is still one row, because the slate is keyed by game.
+
+   The state lives in the URL's query string so a view is shareable: the
+   research router owns the hash, so this owns `?fbs_*` and leaves the hash
+   exactly as it found it. */
+var FBP4_FILTER_DEFAULTS={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
+var FBP4_STATUSES=['RESEARCH','INVESTIGATE','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
+var FBP4_SORTS=[['kick','Kickoff'],['gap','Largest gap'],['conf','Conference'],['status','Status']];
+var FBP4_MARKETS=[['all','Any market state'],['with','With a market'],['without','No market'],['stale','Stale quote only']];
+
+function fbP4QueryParse(search){
+  var out={},s=String(search||'').replace(/^\?/,''),parts=s?s.split('&'):[],i,kv;
+  for(i=0;i<parts.length;i++){
+    if(!parts[i])continue;
+    kv=parts[i].split('=');
+    try{out[decodeURIComponent(kv[0])]=decodeURIComponent((kv[1]||'').replace(/\+/g,' '));}
+    catch(_){out[kv[0]]=kv[1]||'';}
+  }
+  return out;
+}
+function fbP4QueryBuild(obj){
+  var parts=[],k;
+  for(k in obj)if(obj.hasOwnProperty(k)&&obj[k]!=null&&obj[k]!=='')
+    parts.push(encodeURIComponent(k)+'='+encodeURIComponent(obj[k]));
+  return parts.length?('?'+parts.join('&')):'';
+}
+/* which conferences exist in THIS season's dataset — never a fixed list */
+function fbP4Conferences(){
+  var S=FB.p4;
+  return (S.uni&&S.uni.conferences)||[];
+}
+function fbP4ConfKnown(id){
+  var cs=fbP4Conferences();
+  for(var i=0;i<cs.length;i++)if(cs[i].id===id)return cs[i];
+  return null;
+}
+function fbP4FiltersRead(){
+  var q=fbP4QueryParse(typeof location!=='undefined'?location.search:''),f={},k;
+  for(k in FBP4_FILTER_DEFAULTS)if(FBP4_FILTER_DEFAULTS.hasOwnProperty(k))
+    f[k]=(FBP4_FILTER_DEFAULTS[k]&&FBP4_FILTER_DEFAULTS[k].slice)?FBP4_FILTER_DEFAULTS[k].slice():FBP4_FILTER_DEFAULTS[k];
+  if(q.fbs_group&&['all','p4','other','independent'].indexOf(q.fbs_group)>=0)f.group=q.fbs_group;
+  if(q.fbs_matchup&&['all','conference','non_conference','fbs_fcs'].indexOf(q.fbs_matchup)>=0)f.matchup=q.fbs_matchup;
+  if(q.fbs_market&&['all','with','without','stale'].indexOf(q.fbs_market)>=0)f.market=q.fbs_market;
+  if(q.fbs_sort&&['kick','gap','conf','status'].indexOf(q.fbs_sort)>=0)f.sort=q.fbs_sort;
+  if(q.fbs_status&&FBP4_STATUSES.indexOf(q.fbs_status)>=0)f.status=q.fbs_status;
+  if(q.fbs_conf)f.conferences=String(q.fbs_conf).split(',').map(function(x){return x.trim();}).filter(Boolean);
+  return f;
+}
+function fbP4FiltersWrite(){
+  var f=FB.p4.filters;
+  try{
+    var q=fbP4QueryParse(location.search);
+    delete q.fbs_group;delete q.fbs_conf;delete q.fbs_matchup;delete q.fbs_status;delete q.fbs_market;delete q.fbs_sort;
+    if(f.group!=='all')q.fbs_group=f.group;
+    if(f.conferences&&f.conferences.length)q.fbs_conf=f.conferences.join(',');
+    if(f.matchup!=='all')q.fbs_matchup=f.matchup;
+    if(f.status!=='all')q.fbs_status=f.status;
+    if(f.market!=='all')q.fbs_market=f.market;
+    if(f.sort!=='kick')q.fbs_sort=f.sort;
+    history.replaceState(null,'',location.pathname+fbP4QueryBuild(q)+(location.hash||''));
+  }catch(_){}
+}
+/* the filters are read from the URL exactly once per load, so a shared link
+   restores the view and a later click does not keep re-reading a stale query */
+function fbP4FiltersEnsure(){
+  var S=FB.p4;
+  if(!S._filtersRead){S.filters=fbP4FiltersRead();S._filtersRead=true;}
+  /* a conference id that is not in this season's dataset is dropped rather
+     than silently emptying the board */
+  if(S.uni&&S.filters.conferences.length){
+    var keep=[],i;
+    for(i=0;i<S.filters.conferences.length;i++)
+      if(fbP4ConfKnown(S.filters.conferences[i]))keep.push(S.filters.conferences[i]);
+    if(keep.length!==S.filters.conferences.length)S.filters.conferences=keep;
+  }
+  return S.filters;
+}
+window.fbP4SetFilter=function(kind,val){
+  var f=fbP4FiltersEnsure();
+  if(kind==='conf_all')f.conferences=[];
+  else if(kind==='conf'){
+    var i=f.conferences.indexOf(val);
+    if(i>=0)f.conferences.splice(i,1);else f.conferences.push(val);
+  }
+  else if(FBP4_FILTER_DEFAULTS.hasOwnProperty(kind))f[kind]=val;
+  fbP4FiltersWrite();
+  try{window.renderFootball();}catch(_){}
+};
+window.fbP4FilterReset=function(){
+  FB.p4.filters={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
+  fbP4FiltersWrite();
+  try{window.renderFootball();}catch(_){}
+};
+window.fbP4ConfMenu=function(){
+  FB.p4.confOpen=!FB.p4.confOpen;
+  try{window.renderFootball();}catch(_){}
+};
+window.fbP4Notes=function(){
+  FB.p4.notesOpen=!FB.p4.notesOpen;
+  try{window.renderFootball();}catch(_){}
+};
+
+/* one row's operational state, computed once and reused by the row, the
+   counts, the filters and every export */
+function fbP4Row(u){
+  var S=FB.p4,gid=String(u.g.game_id);
+  var p=S._proj&&S._proj[gid],mkt=(S._mkt&&S._mkt[gid])||{};
+  var st=fbP4StatusFor(p,mkt);
+  var gap=(p&&p.status==='PREDICTED'&&mkt.spread_line!=null)
+    ?Math.abs(p.model.fair_spread-mkt.spread_line):null;
+  var ctx=(p&&p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
+  return {u:u,gid:gid,p:p,mkt:mkt,st:st,gap:gap,meta:u.meta,
+    completeness:(ctx&&ctx.information_missing!=null)?(1-ctx.information_missing):null};
+}
+/* the per-game projection and market join, computed once per load. The render
+   fills these; an export or a Collective post can be triggered before a
+   render has run on the current slate, so it is filled on demand here rather
+   than letting every row read AWAITING DATA in a downloaded file. */
+function fbP4EnsureProj(){
+  var S=FB.p4;
+  if(S._projAt===S.loadedAt&&S._proj&&S._mkt)return;
+  S._proj={};S._mkt={};S._projAt=S.loadedAt;
+  (S.up||[]).forEach(function(u){
+    var gid=String(u.g.game_id);
+    S._mkt[gid]=fbP4Market(u);
+    try{S._proj[gid]=window.EDCfbP4.projectGame(fbP4Request(u));}
+    catch(err){S._proj[gid]={status:'BLOCKED',reason:(err&&err.message)||'engine threw'};}
+  });
+}
+function fbP4Rows(){
+  var S=FB.p4,out=[];
+  fbP4EnsureProj();
+  (S.up||[]).forEach(function(u){out.push(fbP4Row(u));});
+  return out;
+}
+/* WHAT AN EXPORT CONTAINS: exactly the rows on screen. The site's count, the
+   downloaded rows, the API rows and the Collective rows have to reconcile
+   under the SAME filters and the same schedule window, so the filters are
+   not a display trick that the file quietly ignores. */
+function fbP4ExportItems(){
+  var rows=fbP4Rows(),vis=fbP4Visible(rows);
+  return {items:vis.map(function(r){return r.u;}),rows:rows,visible:vis,
+    filtered:vis.length!==rows.length,scope:fbP4ScopeLabel()};
+}
+function fbP4ExportSlug(){
+  var f=fbP4FiltersEnsure(),bits=[];
+  if(f.group!=='all')bits.push(f.group);
+  if(f.conferences.length)bits.push(f.conferences.join('-'));
+  if(f.matchup!=='all')bits.push(f.matchup);
+  if(f.market!=='all')bits.push('mkt-'+f.market);
+  if(f.status!=='all')bits.push(String(f.status).toLowerCase().replace(/\s+/g,'-'));
+  return bits.length?bits.join('_'):'all-fbs';
+}
+function fbP4MarketPass(r,mode){
+  if(mode==='with')return r.mkt.spread_line!=null;
+  if(mode==='without')return r.mkt.spread_line==null;
+  if(mode==='stale')return !!r.mkt.stale;
+  return true;
+}
+function fbP4Visible(rows){
+  var f=fbP4FiltersEnsure(),out=[],i;
+  for(i=0;i<rows.length;i++){
+    var r=rows[i];
+    if(!window.EDFbs.matches(r.meta,{group:f.group,conferences:f.conferences,matchup:f.matchup}))continue;
+    if(f.status!=='all'&&r.st.t!==f.status)continue;
+    if(!fbP4MarketPass(r,f.market))continue;
+    out.push(r);
+  }
+  var ord=FBP4_STATUSES;
+  if(f.sort==='gap')out.sort(function(a,b){
+    var ga=a.gap==null?-1:a.gap,gb=b.gap==null?-1:b.gap;
+    return gb-ga||a.u.t-b.u.t;});
+  else if(f.sort==='conf')out.sort(function(a,b){
+    var ca=(a.meta.home.conference||'~')+'|'+(a.meta.away.conference||'~');
+    var cb=(b.meta.home.conference||'~')+'|'+(b.meta.away.conference||'~');
+    return ca.localeCompare(cb)||a.u.t-b.u.t;});
+  else if(f.sort==='status')out.sort(function(a,b){
+    return (ord.indexOf(a.st.t)-ord.indexOf(b.st.t))||a.u.t-b.u.t;});
+  else out.sort(function(a,b){return a.u.t-b.u.t;});
+  return out;
+}
+/* Every number on screen is counted from the canonical dataset, here, once.
+   Nothing about the slate size is written into the page as a constant. */
+function fbP4Counts(rows,visible){
+  var c={total:rows.length,visible:visible.length,with_market:0,research:0,thin:0,
+    no_market:0,faults:0,stale:0,fbs_fcs:0,conference:0,non_conference:0,projected:0};
+  visible.forEach(function(r){
+    if(r.mkt.spread_line!=null)c.with_market++;
+    if(r.st.t==='NO MARKET')c.no_market++;
+    if(r.st.t==='THIN DATA')c.thin++;
+    if(r.st.t==='DATA FAULT')c.faults++;
+    if(r.st.t==='STALE QUOTE')c.stale++;
+    if(r.st.t==='RESEARCH'||r.st.t==='INVESTIGATE')c.research++;
+    if(r.p&&r.p.status==='PREDICTED')c.projected++;
+    if(r.meta.matchup_type==='fbs_fcs')c.fbs_fcs++;
+    else if(r.meta.matchup_type==='conference')c.conference++;
+    else if(r.meta.matchup_type==='non_conference')c.non_conference++;
+  });
+  return c;
+}
+function fbP4ScopeLabel(){
+  var f=fbP4FiltersEnsure();
+  if(f.conferences.length){
+    if(f.conferences.length<=2)return f.conferences.map(function(id){
+      var c=fbP4ConfKnown(id);return (c?c.label:id).toUpperCase();}).join(' + ');
+    return f.conferences.length+' CONFERENCES';
+  }
+  return (window.EDFbs.GROUP_LABEL[f.group]||'All FBS').toUpperCase();
+}
+/* The week the board is actually showing. The window spans a week boundary
+   most Saturdays, so it names both rather than picking one and being wrong
+   about the other half of the slate. */
+function fbP4WeekLabel(rows){
+  var wks=[],i;
+  for(i=0;i<rows.length;i++){
+    var w=rows[i].u.g.week;
+    if(w!=null&&wks.indexOf(w)<0)wks.push(w);
+  }
+  if(!wks.length)return '—';
+  wks.sort(function(a,b){return a-b;});
+  return wks.length===1?String(wks[0]):(wks[0]+'–'+wks[wks.length-1]);
+}
+function fbP4Chip(on,label,onclick,title){
+  return '<button class="fbs-chip'+(on?' on':'')+'" onclick="'+onclick+'"'
+    +(title?(' title="'+fbEsc(title)+'"'):'')+'>'+fbEsc(label)+'</button>';
+}
+function fbP4FilterBarHTML(rows,visible){
+  var f=fbP4FiltersEnsure(),S=FB.p4;
+  var confs=fbP4Conferences();
+  var h='<div class="fbs-filters">';
+  /* PROGRAM GROUP */
+  h+='<div class="fbs-frow"><span class="fbs-flab">GROUP</span><div class="fbs-fset">';
+  window.EDFbs.GROUPS.forEach(function(g){
+    h+=fbP4Chip(f.group===g.id,g.label,'fbP4SetFilter(\'group\',\''+g.id+'\')',
+      g.id==='p4'?('Power 4 membership: '+((S.uni&&S.uni.p4&&S.uni.p4.basis)||'')):'');
+  });
+  h+='</div></div>';
+  /* CONFERENCE — populated from this season's dataset, multi-select */
+  var sel=f.conferences.length;
+  h+='<div class="fbs-frow"><span class="fbs-flab">CONFERENCE</span><div class="fbs-fset">'
+    +fbP4Chip(!sel,'All conferences','fbP4SetFilter(\'conf_all\')')
+    +'<button class="fbs-chip'+(sel?' on':'')+'" onclick="fbP4ConfMenu()">'
+    +(sel?(sel+' selected'):'Pick conferences')+' <span class="mut">'+(S.confOpen?'▾':'▸')+'</span></button>';
+  f.conferences.forEach(function(id){
+    var c=fbP4ConfKnown(id);
+    h+='<button class="fbs-chip on" onclick="fbP4SetFilter(\'conf\',\''+fbEsc(id)+'\')" title="Remove this conference">'
+      +fbEsc(c?c.label:id)+' ×</button>';
+  });
+  h+='</div></div>';
+  if(S.confOpen){
+    h+='<div class="fbs-confmenu">';
+    ['p4','other','independent'].forEach(function(grp){
+      var mine=confs.filter(function(c){return c.group===grp;});
+      if(!mine.length)return;
+      h+='<div class="fbs-confgrp"><span class="fbs-flab">'+fbEsc((window.EDFbs.GROUP_LABEL[grp]||grp).toUpperCase())+'</span><div class="fbs-fset">';
+      mine.forEach(function(c){
+        var n=0;rows.forEach(function(r){if(r.meta.conference_ids.indexOf(c.id)>=0)n++;});
+        h+='<button class="fbs-chip'+(f.conferences.indexOf(c.id)>=0?' on':'')
+          +'" onclick="fbP4SetFilter(\'conf\',\''+fbEsc(c.id)+'\')">'+fbEsc(c.label)
+          +' <span class="mut">'+n+'</span></button>';
+      });
+      h+='</div></div>';
+    });
+    var unk=confs.filter(function(c){return !c.known;});
+    if(unk.length)h+='<div class="fbs-confgrp"><span class="fbs-flab">UNRECOGNISED LABEL</span><div class="fbs-fset">'
+      +unk.map(function(c){return '<span class="ec mut">'+fbEsc(c.source_label)+'</span>';}).join('')+'</div></div>';
+    h+='</div>';
+  }
+  /* MATCHUP TYPE — kept separate from "conference" on purpose: one is who
+     is playing, the other is what kind of game it is */
+  h+='<div class="fbs-frow"><span class="fbs-flab">MATCHUP</span><div class="fbs-fset">';
+  window.EDFbs.MATCHUPS.forEach(function(m){
+    h+=fbP4Chip(f.matchup===m.id,m.label,'fbP4SetFilter(\'matchup\',\''+m.id+'\')');
+  });
+  h+='</div></div>';
+  /* RESEARCH CONTROLS — market availability, status, sort */
+  h+='<div class="fbs-frow"><span class="fbs-flab">MARKET</span><div class="fbs-fset">';
+  FBP4_MARKETS.forEach(function(m){
+    h+=fbP4Chip(f.market===m[0],m[1],'fbP4SetFilter(\'market\',\''+m[0]+'\')');
+  });
+  h+='</div></div>';
+  h+='<div class="fbs-frow"><span class="fbs-flab">STATUS</span><div class="fbs-fset">'
+    +fbP4Chip(f.status==='all','Any status','fbP4SetFilter(\'status\',\'all\')');
+  FBP4_STATUSES.forEach(function(s){
+    var n=0;rows.forEach(function(r){if(r.st.t===s)n++;});
+    if(!n&&f.status!==s)return;
+    h+=fbP4Chip(f.status===s,s+' ('+n+')','fbP4SetFilter(\'status\',\''+fbEsc(s)+'\')');
+  });
+  h+='</div></div>';
+  h+='<div class="fbs-frow"><span class="fbs-flab">SORT</span><div class="fbs-fset">';
+  FBP4_SORTS.forEach(function(s){
+    h+=fbP4Chip(f.sort===s[0],s[1],'fbP4SetFilter(\'sort\',\''+s[0]+'\')');
+  });
+  var dirty=f.group!=='all'||f.conferences.length||f.matchup!=='all'||f.status!=='all'||f.market!=='all'||f.sort!=='kick';
+  if(dirty)h+='<button class="fbs-chip reset" onclick="fbP4FilterReset()">Reset filters</button>';
+  h+='</div></div>';
+  h+='</div>';
+  return h;
+}
+function fbP4CountsHTML(c){
+  function cell(label,v,color){
+    return '<span class="fbs-count"><b'+(color?(' style="color:'+color+'"'):'')+'>'+v+'</b> <span class="mut">'+fbEsc(label)+'</span></span>';
+  }
+  return '<div class="fbs-counts mono">'
+    +cell('on the FBS slate',c.total)
+    +cell('shown',c.visible)
+    +cell('with a market quote',c.with_market)
+    +cell('research-grade',c.research,'var(--accent)')
+    +cell('thin data',c.thin,'var(--dim)')
+    +cell('no market',c.no_market,'var(--faint)')
+    +cell('data faults',c.faults,c.faults?'var(--neg)':null)
+    +'</div>';
+}
+/* An empty board must say WHICH filter emptied it — "no games" is not an
+   answer a reader can act on. */
+function fbP4EmptyHTML(rows,c){
+  var f=fbP4FiltersEnsure();
+  if(!rows.length)return '<div class="empty">No game involving an FBS team kicks off inside the next '
+    +FB_LOOKAHEAD_D_P4()+' days in this schedule feed.</div>';
+  if(f.conferences.length===1){
+    var cf=fbP4ConfKnown(f.conferences[0]);
+    var n=0;rows.forEach(function(r){if(r.meta.conference_ids.indexOf(f.conferences[0])>=0)n++;});
+    if(!n)return '<div class="empty">'+fbEsc(cf?cf.label:f.conferences[0])
+      +' has no game in this window. The rest of the FBS slate is still here — clear the conference filter to see it.</div>';
+  }
+  if(f.market==='with')return '<div class="empty">No market is currently available for the games that match these filters. '
+    +'A missing quote is shown as NO MARKET, never as a zero line — switch MARKET back to “Any market state” to see them.</div>';
+  if(f.market==='stale')return '<div class="empty">Every joined quote in this view is current — nothing here is running on a stale capture.</div>';
+  if(f.status!=='all')return '<div class="empty">No game in this view currently reads '+fbEsc(f.status)+'.</div>';
+  if(f.matchup!=='all'){
+    var ml=window.EDFbs.MATCHUP_LABEL[f.matchup]||f.matchup;
+    return '<div class="empty">No '+fbEsc(String(ml).toLowerCase())+' on this week’s slate matches the other filters.</div>';
+  }
+  return '<div class="empty">No games match these filters. '
+    +rows.length+' game'+(rows.length===1?' is':'s are')+' on the full FBS slate — reset the filters to see them.</div>';
+}
+function FB_LOOKAHEAD_D_P4(){return FBP4_LOOKAHEAD_D;}
+/* a compact conference badge where there is room for one */
+function fbP4ConfBadge(side){
+  if(!side||!side.conference)return '';
+  /* the full name on hover, because a two-badge cell clips the longer
+     conference names and a clipped badge a reader cannot expand is worse
+     than no badge at all */
+  return '<span class="fbs-badge'+(side.group?(' g-'+side.group):'')+'" title="'
+    +fbEsc(side.name+' · '+side.conference+(side.group_label?(' · '+side.group_label):''))+'">'
+    +fbEsc(side.conference)+'</span>';
+}
 function fbP4BoardHTML(){
   var S=FB.p4;
-  var wk=S.up.length?S.up[0].g.week:'—';
+  var rows=fbP4Rows(),visible=fbP4Visible(rows),c=fbP4Counts(rows,visible);
+  var wk=fbP4WeekLabel(visible.length?visible:rows);
   var sync=new Date(S.loadedAt||Date.now());
   var head='<div class="mono" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--dim);margin-bottom:4px">'
-    +'<span><b style="color:var(--text)">EDGEDESK // FOOTBALL OPERATIONS</b> · POWER 4 · WEEK '+fbEsc(String(wk))+' · '+S.up.length+' GAMES</span>'
+    +'<span><b style="color:var(--text)">EDGEDESK // FBS FOOTBALL OPERATIONS</b> · '+fbEsc(fbP4ScopeLabel())
+    +' · WEEK '+fbEsc(String(wk))+' · '+c.visible+' OF '+c.total+' GAMES</span>'
     +'<span>LAST SYNC '+('0'+sync.getHours()).slice(-2)+':'+('0'+sync.getMinutes()).slice(-2)+'</span></div>';
-  var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 116px 122px 46px 100px;gap:2px 8px;align-items:center';
-  var html=head+fbP4StatusStrip()
-    +'<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:620px">'
+  var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 46px 100px;gap:2px 8px;align-items:center';
+  var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
+  if(!visible.length)return html+fbP4EmptyHTML(rows,c);
+  html+='<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:700px">'
     +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
-    +'<span></span><span>KICK</span><span>GAME</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
-  S.up.forEach(function(u){
-    var g=u.g,gid=String(g.game_id);
-    var p=S._proj[gid],mkt=S._mkt[gid]||{};
-    var st=fbP4StatusFor(p,mkt);
+    +'<span></span><span>KICK</span><span>GAME</span><span>CONFERENCE</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
+  visible.forEach(function(r){
+    var u=r.u,g=u.g,gid=r.gid,p=r.p,mkt=r.mkt,st=r.st,m=r.meta;
     var model=(p&&p.status==='PREDICTED')?fbP4Line(g.home_team,p.model.fair_spread):'—';
     var market=(mkt.spread_line!=null)?fbP4Line(g.home_team,mkt.spread_line):'—';
-    var gap=(p&&p.status==='PREDICTED'&&mkt.spread_line!=null)
-      ?Math.abs(p.model.fair_spread-mkt.spread_line).toFixed(1):'—';
+    var gap=r.gap==null?'—':r.gap.toFixed(1);
+    var conf=(m.away.conference===m.home.conference&&m.away.conference)
+      ? fbP4ConfBadge(m.home)
+      : (fbP4ConfBadge(m.away)+fbP4ConfBadge(m.home));
     html+='<div onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:1px solid var(--border);padding:7px 2px;color:var(--text)">'
       +'<span id="p4arr-'+fbEsc(gid)+'" style="color:var(--faint)">▸</span>'
       +'<span class="mut">'+fbP4KickLabel(u.t)+'</span>'
-      +'<span>'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)+'</span>'
+      +'<span>'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)
+      +(m.matchup_type==='fbs_fcs'?' <span class="fbs-badge fcs">FCS</span>':'')+'</span>'
+      +'<span class="fbs-confcell">'+conf+'</span>'
       +'<span>'+model+'</span>'
       +'<span class="mut">'+market+'</span>'
       +'<span>'+gap+'</span>'
       +'<span style="color:'+st.c+'">'+st.t+'</span></div>'
       +'<div id="p4gate-'+fbEsc(gid)+'"></div>';
   });
-  html+='</div></div>'
-    +'<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
-    +'DATA FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge. '
-    +'THIN DATA marks games the model refuses to grade (an unrated opponent); STALE QUOTE means the only market number is an old capture. '
-    +'Click a row for the full gate: projection, drivers, data completeness, and the rosters head-to-head.</div>';
+  html+='</div></div>';
+  /* a conference view states the model's own record IN THAT CONFERENCE,
+     rather than quoting a league-wide number at a reader who is not looking
+     at the league */
+  var f1=fbP4FiltersEnsure();
+  if(f1.conferences.length===1){
+    var c1=fbP4ConfKnown(f1.conferences[0]);
+    var rec=c1?fbP4ConfRecordHTML(c1.id,c1.label):'';
+    if(rec)html+='<div style="margin-top:6px">'+rec+'</div>';
+  }
+  html+='<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
+    +'DATA FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge, '
+    +'and that is most true in the smaller-market games this board now carries, where fewer books post a number and less enrichment data exists. '
+    +'THIN DATA marks games the model refuses to grade (an unrated or non-FBS opponent); STALE QUOTE means the only market number is an old capture; NO MARKET means no valid quote exists — never a zero line. '
+    +'Click a row for the full gate: projection, conferences, drivers, data completeness, and the rosters head-to-head.</div>';
   return html;
 }
 function fbP4Render(host){
@@ -37825,23 +38767,48 @@ function fbP4Render(host){
   /* the load guard can mark the board "loaded" on a timeout while the engine
      itself never arrived; render an honest gate rather than throwing on a
      missing global */
-  if(!window.EDCfbP4||!window.EDCfbP4Params){
-    host.innerHTML='<div class="flbanner demo">The Power 4 engine did not finish loading'
+  if(!window.EDCfbP4||!window.EDCfbP4Params||!window.EDFbs){
+    host.innerHTML='<div class="flbanner demo">The FBS engine did not finish loading'
       +(S.engineErr?(': '+fbEsc(S.engineErr)):'.')
       +' Nothing is projected from a partial load — refresh to retry.</div>';
     return;
   }
   if(S.engineErr){
-    host.innerHTML='<div class="flbanner demo">⛔ Power 4 engine unavailable: '+fbEsc(S.engineErr)
+    host.innerHTML='<div class="flbanner demo">⛔ FBS engine unavailable: '+fbEsc(S.engineErr)
       +'. Nothing is shown rather than something invented.</div>';return;
   }
-  if(!S.loadedAt){host.innerHTML='<div class="empty">Loading the Power 4 model…</div>';return;}
+  if(!S.loadedAt){host.innerHTML='<div class="empty">Loading the FBS model…</div>';return;}
   var html='';   /* record card -> Model status drawer; health -> System Health */
   if(S.gate)html+='<div class="flbanner demo" style="margin-bottom:10px">'+fbEsc(S.gate)+'</div>';
   var notes=S.notes.slice();
   if(S.rosterNote)notes.push(S.rosterNote);
-  if(S.schedSrc)notes.push('Schedule source: '+S.schedSrc+' · '+S.absorbed+' completed games absorbed into the ratings since the trained seeds.');
-  if(notes.length)html+='<div class="flbanner demo" style="margin-bottom:10px">'+notes.map(fbEsc).join('<br>')+'</div>';
+  if(S.schedSrc)notes.push('Schedule source: '+S.schedSrc+' · '+S.absorbed+' completed games absorbed into the ratings since the trained seeds'
+    +(S.uni?(' · '+S.uni.counts.fbs_teams+' active FBS programs across '+S.uni.conferences.length+' conferences, derived from this feed'):'')+'.');
+  var misses=fbP4OddsMisses();
+  if(misses.length)notes.push(misses.length+' captured NCAAF quote'+(misses.length===1?'':'s')
+    +' could not be joined to a game on this board ('
+    +misses.slice(0,3).map(function(x){return x.event;}).join('; ')
+    +(misses.length>3?('; and '+(misses.length-3)+' more'):'')
+    +'). Those games show NO MARKET rather than a number matched on a guess.');
+  /* THE NOTES ARE A DRAWER, NOT A WALL. Every one of them is a real
+     disclosure — where the schedule came from, which rosters are missing,
+     which venues have no forecast, which captured quotes would not join —
+     and the expansion made the list longer. On a phone, six sentences of
+     provenance above the board pushed the only thing anyone opened this for
+     off the first screen. So the first one stays visible, the rest fold, and
+     the count is on the toggle: nothing is hidden, it is just not shouted. */
+  if(notes.length){
+    var open=!!S.notesOpen;
+    html+='<div class="flbanner demo" style="margin-bottom:10px">'
+      +fbEsc(notes[0])
+      +(notes.length>1
+        ? ((open?('<br>'+notes.slice(1).map(fbEsc).join('<br>')):'')
+           +'<div style="margin-top:5px"><button class="fbs-chip" onclick="fbP4Notes()">'
+           +(open?'Hide':('Show '+(notes.length-1)+' more data note'+(notes.length===2?'':'s')))
+           +'</button></div>')
+        : '')
+      +'</div>';
+  }
   if(!S.up.length){host.innerHTML=html+fbP4Ratings();return;}
   /* one projection + market join per game per render, shared by the board
      rows and the gates a click opens */
@@ -37887,7 +38854,7 @@ function fbRecDisagrees(cls){
   return !!r&&r!=='PASS'&&r!=='NO_MARKET'&&r!=='PASS_LOW_CONFIDENCE';
 }
 /* normalised rows over every game the module is monitoring: the NFL slate
-   (always) and the Power 4 slate (once that board has been opened) */
+   (always) and the whole FBS slate (once that board has been opened) */
 function fbGameRows(){
   var rows=[];
   if(FB.at&&FB.nfl.state&&window.EDFootball){
@@ -38278,7 +39245,7 @@ function fbFinderHTML(rows,q){
     +' value="'+fbEsc(q)+'" oninput="fbFindInput(this.value)"></div>';
   if(!list.length){
     h+='<div class="rs-find-n">'+(q
-      ? 'No game on the board matches “'+fbEsc(q)+'”. The board holds the next '+FB_LOOKAHEAD_D+' days of NFL, plus the Power 4 slate once that board has been opened.'
+      ? 'No game on the board matches “'+fbEsc(q)+'”. The board holds the next '+FB_LOOKAHEAD_D+' days of NFL, plus the whole FBS slate once that board has been opened.'
       : 'No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.')+'</div>';
     return h;
   }
@@ -38378,7 +39345,7 @@ function fbOverviewHTML(){
      stamp in that header instead (fbRenderFresh). */
   var html=rsTkSnap({title:'',meta:'',key:'fbSnap',
     kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Review',c:s.cand?'':'mut'},{n:s.dis,l:'Disagree',c:s.dis?'warn':'mut'},{n:s.faults,l:'Faults',c:s.faults?'neg':'pos'}],
-    how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus the Power 4 slate once that board has been opened. <b>Review</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Disagree</b> uses the engine’s own research-lean classification: 2+ pts of disagreement on the spread or total — research attention, unproven by the model’s own record. <b>Faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts Power 4).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
+    how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus every game with an FBS team on the college slate once that board has been opened. <b>Review</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Disagree</b> uses the engine’s own research-lean classification: 2+ pts of disagreement on the spread or total — research attention, unproven by the model’s own record. <b>Faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts FBS).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
     foot:fbStartHereHTML()});
   html+='<div class="fb-sechd"><span>Today in football</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+fbEsc(ago(FB.at))+'</span></div>';
   html+=rsTkToday(items,'fbToday','<div class="fb-quiet">No major research changes since the last refresh.'+(s.games?'':'<small>No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector on the NFL board to scan any week.</small>')+'</div>');
@@ -40403,7 +41370,7 @@ function fbBriefGame(q){
     } else {
       projection={priced:false,
         absent_reason:(p&&(p.reason||(p.missing||[]).join(', ')))
-          ||'this game is not on EdgeDesk’s upcoming Power 4 slate, so the game model has not produced a number for it',
+          ||'this game is not on EdgeDesk’s upcoming FBS slate, so the game model has not produced a number for it',
         note:'EdgeDesk has not priced this matchup yet. The team ratings, position groups and roster research below are computed from the committed rankings build and do not depend on the game model.'};
     }
 

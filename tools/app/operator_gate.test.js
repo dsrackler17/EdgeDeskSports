@@ -99,12 +99,17 @@ function ctlCtx(isOwner) {
   const src = APP.slice(APP.indexOf('function fbP4CtlHTML(){'), APP.indexOf('/* ---- rendering ----'));
   const c = { console, JSON, String, Number, Array, Math, Error,
     FB: { p4: { up: [{}, {}, {}] } },
-    FBP4_CSV_HEAD: new Array(80),
+    FBP4_CSV_HEAD: new Array(95),
     edIsOwner: () => isOwner,
     fbP4KeyMasked: () => 'mck_live_K3e2…1ZSq',
     fbEsc: s => String(s == null ? '' : s),
     fbP4LinesConv: () => 'betting',
-    fbP4LineWarnHTML: () => '' };
+    fbP4LineWarnHTML: () => '',
+    /* the control row states how many of the FBS slate a download would
+       carry, which the board answers from its own filtered view. That view
+       is the FBS board's business and has its own suite; here it is supplied
+       so the OPERATOR GATE is what is under test. */
+    fbP4ExportItems: () => ({ items: [{}, {}, {}], rows: [{}, {}, {}], filtered: false, scope: 'ALL FBS' }) };
   c.window = c; vm.createContext(c); vm.runInContext(src, c, { filename: 'app.html:p4-ctl' });
   return c;
 }
@@ -122,8 +127,11 @@ const OWN = ctlCtx(true).fbP4CtlHTML();
  'Posting to the Collective', 'mck_live', 'forget', 'fbp4PostOut']
   .forEach(t => has(OWN, t, 'an operator still sees "' + t + '"'));
 
-/* -- what BOTH keep: the ask was about posting, not about exports ------- */
-['Download Excel', 'CSV (raw)', 'Power 4 game', 'research, unproven'].forEach(t => {
+/* -- what BOTH keep: the ask was about posting, not about exports -------
+   "FBS game", not "Power 4 game": the board covers every conference now, and
+   a control row that still counted Power 4 games would be describing a
+   product that no longer exists. The gate itself is unchanged. */
+['Download Excel', 'CSV (raw)', 'FBS game', 'research, unproven'].forEach(t => {
   has(CUST, t, 'a customer keeps "' + t + '"');
   has(OWN, t, 'and so does an operator');
 });

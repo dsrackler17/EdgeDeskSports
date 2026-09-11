@@ -21,8 +21,10 @@
      --week N        one week
      --upcoming      games kicking off in the next 10 days (default)
      --all           the whole season
-     --p4-only       restrict to games involving a Power 4 team (default on;
-                     pass --all-fbs to include every FBS game)
+     --p4-only       restrict to games involving a Power 4 team. OFF by
+                     default: this export covers the whole FBS, the same
+                     slate the board renders, and the flag is kept only so a
+                     Power 4 sheet can still be produced deliberately.
      --schedule PATH a local schedules CSV or URL, for a season the public
                      mirror has not published yet
      --lines PATH    a local CSV of book numbers, columns:
@@ -58,6 +60,9 @@ var HERE = __dirname;
 global.window = global.window || global;
 require(path.join(HERE, 'params.js'));
 var E = require(path.join(HERE, 'engine.js'));
+/* the FBS universe: team identity, season conference and program group. The
+   same module the board and the coverage gate read. */
+var FBS = require(path.join(HERE, '..', 'fbs', 'fbs.js'));
 var P = global.window.EDCfbP4Params;
 
 var SCHED_URL = function (y) {
@@ -68,7 +73,7 @@ var LOOKAHEAD_DAYS = 10;
 
 /* ------------------------------------------------------------------ args */
 function parseArgs(argv) {
-  var a = { scope: 'upcoming', p4Only: true };
+  var a = { scope: 'upcoming', p4Only: false };
   for (var i = 2; i < argv.length; i++) {
     var k = argv[i];
     if (k === '--season') a.season = parseInt(argv[++i], 10);
@@ -159,7 +164,52 @@ var P4_HEAD = ['kickoff_tz', 'neutral_site', 'venue', 'home_conference', 'away_c
   'primary_driver_1', 'primary_driver_2', 'primary_driver_3',
   'counterargument_1', 'unavailable_inputs', 'data_quality_notes'];
 
-var HEAD = NFL_HEAD.concat(P4_HEAD);
+/* the FBS coverage block, appended AFTER both so a consumer that maps by
+   position keeps working. Byte-identical in name and order to app.html's
+   FBP4_CSV_HEAD tail — a sheet built here and one built in the browser have
+   to line up column for column or the Collective's uploader would be
+   mapping two different files. */
+var FBS_HEAD = ['home_team_id', 'away_team_id', 'home_conference_id', 'away_conference_id',
+  'home_fbs_group', 'away_fbs_group', 'home_division', 'away_division',
+  'matchup_type', 'is_conference_game', 'model_status', 'data_completeness',
+  'market_status', 'quote_timestamp', 'board_status'];
+
+var HEAD = NFL_HEAD.concat(P4_HEAD).concat(FBS_HEAD);
+var FBS_AT = NFL_HEAD.length + P4_HEAD.length;
+
+/* the board's own operational read, restated here so the file and the screen
+   cannot disagree about a game's status. Mirrors fbP4StatusFor in app.html. */
+function boardStatus(p, mkt) {
+  if (!p || p.status !== 'PREDICTED') return 'AWAITING DATA';
+  if (!mkt || mkt.spread_line == null) return 'NO MARKET';
+  if (p.edge && p.edge.spread && p.edge.spread.recommendation === 'PASS_LOW_CONFIDENCE') return 'THIN DATA';
+  if (mkt.stale) return 'STALE QUOTE';
+  var gap = Math.abs(p.model.fair_spread - mkt.spread_line);
+  if (gap > 21) return 'DATA FAULT';
+  if (gap >= 7) return 'INVESTIGATE';
+  return 'RESEARCH';
+}
+function fbsTail(g, p, mkt, universe) {
+  var m = universe ? FBS.classifyGame(g, universe) : null;
+  var ctx = (p && p.layers && p.layers.uncertainty && p.layers.uncertainty.context) || null;
+  return [
+    (m && m.home.key) || FBS.normKey(g.home_team) || '',
+    (m && m.away.key) || FBS.normKey(g.away_team) || '',
+    (m && m.home.conference_id) || '',
+    (m && m.away.conference_id) || '',
+    (m && m.home.group) || '',
+    (m && m.away.group) || '',
+    (m && (m.home.is_fbs ? 'fbs' : 'non-fbs')) || '',
+    (m && (m.away.is_fbs ? 'fbs' : 'non-fbs')) || '',
+    (m && m.matchup_type) || '',
+    m ? String(!!m.is_conference_game) : '',
+    (p && p.status) || 'NO_PREDICTION',
+    (ctx && ctx.information_missing != null) ? Math.round((1 - ctx.information_missing) * 1000) / 10 : '',
+    (mkt && mkt.spread_line != null) ? (mkt.stale ? 'STALE QUOTE' : 'LIVE') : 'NO MARKET',
+    (mkt && mkt.as_of) || '',
+    boardStatus(p, mkt)
+  ];
+}
 
 var BASIS = (function () {
   var m = P.validation_summary && P.validation_summary.market;
@@ -243,7 +293,7 @@ function contrib(p, key) {
   return c ? r2(c.points) : '';
 }
 
-function csvRow(g, p, mkt, refSource, basis) {
+function csvRow(g, p, mkt, refSource, basis, universe) {
   var kick = String(g.start_date || '');
   var kickFmt = kick ? kick.slice(0, 10) + ' ' + kick.slice(11, 16) : '';
   var base = [g.season, g.week, g.game_id, kickFmt, g.away_team, g.home_team];
@@ -263,7 +313,8 @@ function csvRow(g, p, mkt, refSource, basis) {
     row[NFL_HEAD.length + 2] = g.venue || '';
     row[NFL_HEAD.length + 3] = g.home_conference || '';
     row[NFL_HEAD.length + 4] = g.away_conference || '';
-    row[HEAD.length - 1] = (p && (p.reason || (p.missing || []).join('; '))) || '';
+    row[FBS_AT - 1] = (p && (p.reason || (p.missing || []).join('; '))) || '';
+    fbsTail(g, p, mkt, universe).forEach(function (v, i) { row[FBS_AT + i] = v; });
     return row.map(q).join(',');
   }
 
@@ -338,7 +389,7 @@ async function main() {
   /* state: seeded, then advanced season by season on real results */
   var state = E.newState();
   var seededThrough = state.seededThrough;
-  var absorbed = 0, snapshots = {}, slate = [];
+  var absorbed = 0, snapshots = {}, slate = [], universe = null;
   var replay = a.season <= seededThrough;
   var firstSeason = seededThrough + 1;
 
@@ -377,8 +428,16 @@ async function main() {
       console.error('[warn] ' + y + ' schedule unavailable; its results are not absorbed');
       continue;
     }
-    var rows = parseCsv(text).map(normRow)
-      .filter(function (r) { return r.home_division === 'fbs' || r.away_division === 'fbs'; });
+    var raw = parseCsv(text).map(normRow);
+    /* the SEASON'S OWN universe, for the target season only — a past season's
+       alignment must never label this one's conferences */
+    if (y === a.season) universe = FBS.buildUniverse({ rows: raw, season: y,
+      source: 'cfbfastR-data schedules ' + y, params: P,
+      knownFbs: (P.rating && P.rating.seed_ratings) || null });
+    var rows = raw.filter(function (r) {
+      return FBS.isFbsDivision(r.home_division, r.home_team, { knownFbs: P.rating.seed_ratings })
+        || FBS.isFbsDivision(r.away_division, r.away_team, { knownFbs: P.rating.seed_ratings });
+    });
     rows.sort(function (x, z) { return String(x.start_date).localeCompare(String(z.start_date)); });
 
     for (var i = 0; i < rows.length; i++) {
@@ -469,14 +528,24 @@ async function main() {
         ? null : p.model.fair_total - mkt.total_line;
     }
     out.push(csvRow(g, p, mkt, played ? (refSource + ' — graded from the pregame snapshot')
-      : refSource, played ? 'pregame snapshot (state before kickoff, earlier results only)' : basis));
+      : refSource, played ? 'pregame snapshot (state before kickoff, earlier results only)' : basis,
+      universe));
   });
 
   var scopeLabel = a.scope === 'all' ? 'season' : a.scope === 'week' ? ('week' + a.week) : 'upcoming';
-  var name = a.out || ('edgedesk_cfb_p4_' + a.season + '_' + scopeLabel + '.csv');
+  var name = a.out || ('edgedesk_' + (a.p4Only ? 'cfb_p4' : 'fbs') + '_' + a.season + '_' + scopeLabel + '.csv');
   fs.writeFileSync(name, out.join('\n') + '\n');
+  var byType = {};
+  items.forEach(function (g) {
+    var m = universe ? FBS.classifyGame(g, universe) : null;
+    if (m) byType[m.matchup_type] = (byType[m.matchup_type] || 0) + 1;
+  });
   console.error('[write] ' + name + '  ' + items.length + ' games, '
-    + HEAD.length + ' columns');
+    + HEAD.length + ' columns'
+    + (universe ? ('  ' + JSON.stringify(byType)) : ''));
+  if (universe) console.error('[scope] ' + (a.p4Only ? 'Power 4 only (--p4-only)' : 'the whole FBS')
+    + ' · ' + universe.counts.fbs_teams + ' active FBS programs across '
+    + universe.conferences.length + ' conferences, derived from the ' + a.season + ' schedule feed');
   console.error('[basis] ' + basis);
   console.error('[record] ' + BASIS);
 }

@@ -20,11 +20,22 @@ football/
   research/     the full reproducible training pipeline + backtest report
   INTEGRATION.md  how this plugs into the existing EdgeDesk/Supabase stack
 
-  cfb_p4/       the CFB POWER 4 INTELLIGENCE MODEL — a separate, deeper engine
-                for the SEC / Big Ten / Big 12 / ACC, with its own five-layer
-                architecture (strength, talent, situation, matchup,
-                uncertainty), its own parameters, and its own backtest against
-                a real CFB line archive. See cfb_p4/README.md.
+  cfb_p4/       the CFB INTELLIGENCE MODEL — a separate, deeper engine with
+                its own five-layer architecture (strength, talent, situation,
+                matchup, uncertainty), its own parameters, and its own
+                backtest against a real CFB line archive. Named `cfb_p4` for
+                the tier it was BUILT FOR; it has always priced the whole
+                FBS — 136 seeded programs, conference strength for all
+                eleven conferences, and a held-out record measured over every
+                FBS-vs-FBS game rather than the power conferences alone.
+                See cfb_p4/README.md.
+
+  fbs/          the FBS UNIVERSE — who is FBS this season, which conference
+                they are in THIS season, which program group that puts them
+                in, what belongs on the weekly slate and what kind of game
+                each one is. Derived from the season's own schedule feed,
+                never from a stored list, plus the CI gate that fails on a
+                real coverage regression. See fbs/README.md.
 
   rankings/     the NATIONAL TEAM RANKINGS pipeline — talent + opponent-
                 adjusted performance + a measured SPECIAL TEAMS unit -> ETSR,
@@ -83,8 +94,30 @@ What IS validated out of sample:
 ```
 node football/tests.js           # exit 0 = green (69 checks incl. parity goldens)
 node football/cfb_p4/tests.js    # exit 0 = green (92 checks incl. parity goldens)
+node football/fbs/fbs.test.js    # the FBS universe: identity, conference, slate
+node tools/football/fbs_board_ui.test.js   # the board, cut out of app.html
+node tools/football/fbs_board.e2e.js       # the board in Chromium, 1280px and 390px
 node football/health/health.test.js   # the line guard and the orientation rules
 ```
+
+## FBS coverage
+
+The college board covers **every scheduled game with at least one active FBS
+team** — not only the games with a Power 4 participant. The slate, the
+conference filters, the ratings views and every export read one canonical
+universe built from the season's own schedule feed:
+
+```
+npm run cfb:fbs          # rebuild football/fbs/coverage.json + slate.json
+npm run cfb:fbs:check    # every coverage check, writing nothing
+npm run cfb:fbs:test     # the unit + board suites
+```
+
+The gate runs inside `football-weekly-build.yml` before anything is
+committed, and refuses to publish on a real coverage regression: an FBS
+program with no identity or no conference, an FBS-vs-FBS game missing from
+the rating state, a duplicated game, an FCS opponent quietly graded, an
+eligible game dropped. Full record: `fbs/README.md`.
 
 ## Daily self-check & model health
 
@@ -149,7 +182,7 @@ wrong-shaped dataset.
 In the app, CFB lives entirely under the Football tab: the **CFB Rosters**
 segment browses every FBS team's player-level roster (each player's
 observed status — returning, transfer with the program they left, or new
-to the covered set), and every Power 4 game card opens a **Rosters
+to the covered set), and every game card on the FBS board opens a **Rosters
 head-to-head** panel: five players to watch per side (ordered by position
 value — EdgeDesk view weights, not trained parameters — seniority, portal
 status and the previous program's seed rating) plus a position-by-position
@@ -188,7 +221,7 @@ The layer feeds a matchup matrix, scheme edges, a **run-defence gate**, a
 player edge board, a seeded Monte Carlo simulator, a sensitivity analysis and a
 **Linemaker view** that keeps RAW MODEL, PLAYER-ADJUSTED, SCHEME-ADJUSTED,
 SIMULATION and MARKET as five separate numbers. It lives in the Football tab's
-**Players** segment and under every Power 4 game card.
+**Players** segment and under every game card on the FBS board.
 
 **It changes no projection anywhere in EdgeDesk.** Held out on 2024-2025, the
 player layer moves spread MAE by 0.018 points (paired p = 0.40, and worse in

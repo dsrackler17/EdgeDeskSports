@@ -51,6 +51,11 @@ const FP = global.window.EDFootballParams;
 require(path.join(REPO, 'football', 'cfb_p4', 'params.js'));
 const E4 = require(path.join(REPO, 'football', 'cfb_p4', 'engine.js'));
 const P4 = global.window.EDCfbP4Params;
+/* the FBS universe: who is FBS this season, which conference, which games
+   belong on the slate. The browser reads the same module, so a health check
+   built on a different slate than the board's would be checking the wrong
+   board. */
+const FBS = require(path.join(REPO, 'football', 'fbs', 'fbs.js'));
 
 /* Read-only anon key — the identical public-safe key app.html already ships
    to every browser; RLS allows select only. Overridable for a fork. */
@@ -482,15 +487,39 @@ async function p4Section(out) {
   }
   if (!curSched) return;
 
-  /* upcoming P4 slate: project and guard */
-  const P4CONF = (P4.universe && P4.universe.p4_conferences) || ['SEC', 'Big Ten', 'Big 12', 'ACC'];
-  const now = Date.now(), hi = now + LOOKAHEAD_D * 864e5;
-  const up = curSched.rows.filter(r => {
-    if (r.completed) return false;
-    const t = Date.parse(r.start_date);
-    if (!isFinite(t) || t < now - 6 * 3600e3 || t > hi) return false;
-    return P4CONF.indexOf(r.home_conference) >= 0 || P4CONF.indexOf(r.away_conference) >= 0;
-  }).sort((a, b) => String(a.start_date).localeCompare(String(b.start_date))).slice(0, 30);
+  /* THE UPCOMING SLATE THE BOARD ACTUALLY RENDERS: every game with at least
+     one active FBS team, not just the games with a Power 4 participant. The
+     board stopped gating on Power 4, and a health check that still only
+     exercised Power 4 games would have gone on passing while two thirds of
+     the board was broken. Built through the same FBS universe module the
+     browser uses, so the two cannot drift.
+
+     THE CAP IS A SAMPLE, NOT A FILTER. This job runs daily against live
+     feeds and a 160-game projection sweep is minutes of work for a check;
+     it takes an EVENLY SPACED sample across the whole slate rather than the
+     first N by kickoff, so every conference and every matchup type is
+     exercised instead of whichever games happen to kick off first. */
+  const universe = FBS.buildUniverse({ rows: curSched.rows, season: cur,
+    source: curSched.src || null, params: P4,
+    knownFbs: (P4.rating && P4.rating.seed_ratings) || null });
+  const built = FBS.buildSlate({ rows: curSched.rows, universe,
+    now: Date.now(), lookaheadDays: LOOKAHEAD_D });
+  const slate = built.items;
+  const CAP = 60;
+  const up = slate.length <= CAP ? slate.map(i => i.g)
+    : Array.from({ length: CAP }, (_, i) => slate[Math.floor(i * slate.length / CAP)].g);
+  const metaOf = {};
+  slate.forEach(i => { metaOf[String(i.g.game_id)] = i.meta; });
+  check('p4_universe', 'CFB: the FBS universe resolves from this season\u2019s own feed',
+    (universe.diagnostics.unmapped_teams.length || universe.diagnostics.missing_conference.length
+      || universe.diagnostics.conflicting_conferences.length) ? 'fail' : 'pass',
+    (universe.diagnostics.unmapped_teams.length || universe.diagnostics.missing_conference.length
+      || universe.diagnostics.conflicting_conferences.length)
+      ? `${universe.diagnostics.unmapped_teams.length} unmapped team(s), `
+        + `${universe.diagnostics.missing_conference.length} without a conference, `
+        + `${universe.diagnostics.conflicting_conferences.length} in two conferences at once`
+      : `${universe.counts.fbs_teams} active FBS programs across ${universe.conferences.length} conferences `
+        + `· ${slate.length} game(s) on the slate, ${up.length} sampled`);
 
   let lines = {}, linesNote = null;
   const ids = up.map(u => u.game_id).filter(Boolean);
@@ -525,7 +554,8 @@ async function p4Section(out) {
       p = E4.projectGame({ season: cur, week: g.week, state: st,
         game: { home: g.home_team, away: g.away_team, neutral_site: g.neutral_site,
           venue_id: g.venue_id, kickoff: g.start_date,
-          home_fbs: p4IsFbs(g.home_division, g.home_team), away_fbs: p4IsFbs(g.away_division, g.away_team) },
+          home_fbs: (metaOf[String(g.game_id)] || {}).home ? metaOf[String(g.game_id)].home.is_fbs : p4IsFbs(g.home_division, g.home_team),
+          away_fbs: (metaOf[String(g.game_id)] || {}).away ? metaOf[String(g.game_id)].away.is_fbs : p4IsFbs(g.away_division, g.away_team) },
         teams: {
           home: { conference: g.home_conference, roster: hR, qb: null, injuries: null, news: null, coaching: null, schedule: null },
           away: { conference: g.away_conference, roster: aR, qb: null, injuries: null, news: null, coaching: null, schedule: null }
@@ -553,12 +583,15 @@ async function p4Section(out) {
       guardRows.push({ label: `${g.away_team} @ ${g.home_team}`, model: m.fair_spread, market: mkt.spread_line });
     }
   }
-  check('p4_projections', 'CFB P4: upcoming slate projects to sane numbers',
+  const byType = {};
+  up.forEach(g => { const m = metaOf[String(g.game_id)]; if (m) byType[m.matchup_type] = (byType[m.matchup_type] || 0) + 1; });
+  check('p4_projections', 'CFB: upcoming FBS slate projects to sane numbers',
     insane.length ? 'fail' : 'pass',
     insane.length ? insane.slice(0, 5).join('; ')
-      : (up.length ? `${predicted}/${up.length} upcoming P4 games PREDICTED, all inside bounds`
+      : (up.length ? `${predicted}/${up.length} sampled FBS games PREDICTED, all inside bounds`
         + ` · roster bundles joined on ${rostered}/${up.length}`
-        : 'no P4 game inside the next ' + LOOKAHEAD_D + ' days'));
+        + ` · ${JSON.stringify(byType)}`
+        : 'no FBS game inside the next ' + LOOKAHEAD_D + ' days'));
   out.lines.p4 = lineGuard('p4_lines', 'CFB P4', guardRows, GUARD.p4);
 }
 

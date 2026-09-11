@@ -1,7 +1,36 @@
 # EdgeDesk CFB Power 4 Intelligence Model
 
-A projection and betting-research engine built for the SEC, Big Ten, Big 12 and
-ACC — deliberately **not** the NFL model with college logos on it.
+A projection and betting-research engine for college football — deliberately
+**not** the NFL model with college logos on it.
+
+### "Power 4" is the name it was built under, not the games it covers
+
+The tier the model was *designed around* is the SEC, Big Ten, Big 12 and ACC,
+and the directory keeps that name because renaming a trained artifact would
+make its own provenance harder to trace. What the engine actually prices has
+always been wider, and it is worth stating plainly because the board used to
+imply otherwise:
+
+* `params.rating.seed_ratings` seeds **136 programs**, every FBS team the
+  2025 season carried — not 68.
+* `params.conference.by_season` carries strength for **all eleven** FBS
+  conferences, every season back to 2001.
+* The held-out record below is measured over **every FBS-vs-FBS game** in the
+  window (`research/backtest_engine.js` filters on `home_fbs && away_fbs`,
+  never on conference), and `research/report/error_slices.json` publishes MAE
+  **by home conference for all eleven of them**.
+* An FBS team the state has never seen is **refused**, not given a default —
+  so a genuinely new program is honestly unrated rather than quietly priced.
+
+Over 2015–2025 the model is not measurably worse in the smaller conferences:
+its best home conferences by MAE are the SEC (12.59), the Pac-12 (12.63) and
+the **MAC (12.73)**; its worst are the **Big 12 (13.39)** and the **ACC
+(13.34)**. The board surfaces that per-conference record wherever a reader
+narrows to one conference.
+
+Who is FBS in a given season, and which conference they play in that season,
+is not this directory's business — it is `football/fbs/`, derived from the
+season's own schedule feed.
 
 ```
 football/cfb_p4/
