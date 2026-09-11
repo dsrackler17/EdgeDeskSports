@@ -417,16 +417,24 @@ async function pollOnce(ctx) {
     }
   }
 
-  /* 3. market captures for every linked side, each minute */
-  if (ctx.links.length && (!state.lastMarketAt || nowMs - state.lastMarketAt >= MARKET_EVERY_S * 1000)) {
+  /* 3. market captures, each minute, for the links THIS POLL SAW.
+
+     The link table holds every linked match on file, not just today's. Asking
+     the odds feed about all of them would be dozens of requests a minute for
+     matches this runner is not watching and cannot tag a capture against — a
+     capture's PRE/LIVE state is decided by its own match's first point, so a
+     match the poll did not see has nothing to decide it. */
+  const byId = {};
+  nextMatches.forEach(m => { byId[m.match_id] = m; });
+  const mine = ctx.links.filter(l => byId[l.match_id]);
+  if (mine.length && (!state.lastMarketAt || nowMs - state.lastMarketAt >= MARKET_EVERY_S * 1000)) {
     try {
-      const keys = [].concat(...ctx.links.map(l => [l.home_sig_key, l.away_sig_key].filter(Boolean)));
+      const keys = [].concat(...mine.map(l => [l.home_sig_key, l.away_sig_key].filter(Boolean)));
       if (keys.length) {
         const sig = [];
         for (let i = 0; i < keys.length; i += 30) sig.push(...await db.select('public', 'signals', `select=${SIGNAL_COLS}&sig_key=in.${D.inList(keys.slice(i, i + 30))}`));
-        const byId = {}; nextMatches.forEach(m => { byId[m.match_id] = m; });
-        const caps = S.captureRows(ctx.links.filter(l => byId[l.match_id]), sig, byId).filter(c => c.source === 'signals');
-        if (caps.length && !o.dryRun) { await db.upsert('tennis', 'market_captures', caps, 'sig_key,capture_at', { ignoreDuplicates: true, returning: false }); writes.captures += caps.length; }
+        const caps = S.captureRows(mine, sig, byId).filter(c => c.source === 'signals');
+        if (caps.length && !o.dryRun) { await db.upsert('tennis', 'market_captures', caps, 'sig_key,capture_at', { ignoreDuplicates: true, returning: false, chunk: 200 }); writes.captures += caps.length; }
       }
       state.lastMarketAt = nowMs; state.marketOk = true;
     } catch (e) { state.marketOk = false; state.lastMarketError = String(e && e.message || e); }
