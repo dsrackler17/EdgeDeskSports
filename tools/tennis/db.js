@@ -6,9 +6,28 @@
 const P = require('../lib/pgrest.js');
 
 const SCHEMA = 'tennis';
+const CONTRACT = 'tennis_live_center.sql';
+
+/* A failure an operator can act on, or null. Until the contract is installed
+   every tennis job fails on its first read, and a raw schema-cache error names
+   the symptom rather than the fix. Printed as a GitHub error annotation so it
+   lands on the run summary instead of halfway down a log. */
+function explain(err) {
+  const hint = P.contractHint(err, CONTRACT);
+  if (!hint) return null;
+  return hint;
+}
+function reportFailure(tag, err) {
+  const hint = explain(err);
+  if (hint) console.error('::error::' + tag + ': ' + hint);
+  return !!hint;
+}
 
 module.exports = {
   SCHEMA,
+  CONTRACT,
+  explain,
+  reportFailure,
   config: P.config,
   client: P.client,
   inList: P.inList,

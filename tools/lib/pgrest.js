@@ -187,4 +187,30 @@ async function writeMeta(db, schema, entries) {
   }
 }
 
-module.exports = { config, client, inList, runLedger, writeMeta, sleep, DEFAULT_URL };
+/* WHEN THE CONTRACT IS NOT INSTALLED.
+
+   PostgREST answers a missing table with a schema-cache error, and a missing
+   schema with a different one. Both mean the same thing to an operator —
+   the migration has not been run — and neither says so. The UFC pipeline
+   already paid for this once: a production run stopped on "permission denied
+   for table meta" and the log said nothing about which file to run.
+
+   This distinguishes "the contract is not there" from "the read failed", so a
+   job can name the one file that fixes it instead of printing a symptom. */
+var NOT_INSTALLED = /PGRST205|PGRST106|PGRST202|42P01|3F000|schema cache|could not find the (table|relation)|does not exist|unknown schema/i;
+
+function notInstalled(err) {
+  if (!err) return false;
+  var s = String(err.message || err);
+  return NOT_INSTALLED.test(s);
+}
+
+/* One line an operator can act on, or null when this is not that failure. */
+function contractHint(err, sqlFile) {
+  if (!notInstalled(err)) return null;
+  return 'the ' + sqlFile + ' contract is not installed in this database — run supabase/' + sqlFile +
+         ' once in the Supabase SQL editor and check that every row of its report reads ok';
+}
+
+module.exports = {
+  notInstalled, contractHint, config, client, inList, runLedger, writeMeta, sleep, DEFAULT_URL };
