@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-11T13:43:57.475Z",
+  "generated_at": "2026-09-11T23:26:08.254Z",
   "ok": true,
-  "last_ok_at": "2026-09-11T13:43:57.475Z",
+  "last_ok_at": "2026-09-11T23:26:08.254Z",
   "run": {
-    "trigger": "schedule",
+    "trigger": "push",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -43,9 +43,9 @@
       "orientation_faults": []
     },
     "p4": {
-      "compared": 1,
-      "median_gap": 3.59,
-      "max_gap": 3.59,
+      "compared": 2,
+      "median_gap": 4.09,
+      "max_gap": 4.09,
       "outliers": [],
       "orientation_faults": []
     }
@@ -85,7 +85,7 @@
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "29/29 upcoming games PREDICTED, all inside bounds"
+      "detail": "30/30 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
@@ -142,51 +142,57 @@
       "detail": "cfb_p4_v1.2.0 · frame matches v1.1 (n 7845) · preseason rejected · home-dog rejected · movement rejected"
     },
     {
+      "id": "p4_universe",
+      "label": "CFB: the FBS universe resolves from this season’s own feed",
+      "status": "pass",
+      "detail": "138 active FBS programs across 11 conferences · 160 game(s) on the slate, 60 sampled"
+    },
+    {
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "1 of 30 upcoming games have a book number"
+      "detail": "2 of 60 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
-      "label": "CFB P4: upcoming slate projects to sane numbers",
+      "label": "CFB: upcoming FBS slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 20/30"
+      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 37/60 · {\"fbs_fcs\":23,\"non_conference\":31,\"conference\":6}"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "1 lines inside plausible bounds"
+      "detail": "2 lines inside plausible bounds"
     },
     {
       "id": "p4_lines_orientation",
       "label": "CFB P4: market lines point the right way",
       "status": "pass",
-      "detail": "1 joined line(s), none reconciled by negation"
+      "detail": "2 joined line(s), none reconciled by negation"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 3.59 pts over 1 games, max 3.59"
+      "detail": "median gap 4.09 pts over 2 games, max 4.09"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-11T13:43:57.475Z",
+    "daily_check_last_run": "2026-09-11T23:26:08.254Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-11T13:43:57.475Z",
+    "engine_tests_last_run": "2026-09-11T23:26:08.254Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-11T13:43:57.475Z",
+    "nfl_ingest_last_run": "2026-09-11T23:26:08.254Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 2,
-    "p4_ingest_last_run": "2026-09-11T13:43:57.475Z",
+    "p4_ingest_last_run": "2026-09-11T23:26:08.254Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 99,
-    "projection_guard_last_run": "2026-09-11T13:43:57.475Z",
+    "projection_guard_last_run": "2026-09-11T23:26:08.254Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-11T13:43:57.475Z",
+    "line_guard_last_run": "2026-09-11T23:26:08.254Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 29
+    "row_count_line_guard": 30
   }
 }
