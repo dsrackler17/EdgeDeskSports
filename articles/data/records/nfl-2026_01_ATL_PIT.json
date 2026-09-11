@@ -23,8 +23,8 @@
   "game_time": "2026-09-13T13:00:00.000Z",
   "game_when_label": "2026-09-13 13:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-10T20:47:43.099Z",
-  "generated_at": "2026-09-11T04:28:53.978Z",
+  "updated_at": "2026-09-11T11:10:08.004Z",
+  "generated_at": "2026-09-11T11:10:08.004Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 4.7 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 1 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 2 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": null,
   "research": {
     "kind": "NFL_GAME",
@@ -110,8 +110,8 @@
         "note": "Quoted from the perspective of Pittsburgh Steelers, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 1 absorbed 2026 game.",
-      "sample_games": 1,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 2 absorbed 2026 games.",
+      "sample_games": 2,
       "seeded": true,
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk differs from the market by 4.7 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -347,14 +347,14 @@
               "h": {
                 "v": "+0.017",
                 "n": 0.017152,
-                "rank": "#11 of 32",
-                "rank_n": 11,
+                "rank": "#12 of 32",
+                "rank_n": 12,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.032912,
-                "rank_gap": 9
+                "rank_gap": 8
               }
             },
             {
@@ -388,8 +388,8 @@
               "a": {
                 "v": "+0.5 pp",
                 "n": 0.00532,
-                "rank": "#13 of 32",
-                "rank_n": 13,
+                "rank": "#12 of 32",
+                "rank_n": 12,
                 "note": null
               },
               "h": {
@@ -402,7 +402,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.006912,
-                "rank_gap": 8
+                "rank_gap": 7
               }
             }
           ]
@@ -720,23 +720,23 @@
         },
         {
           "k": "Run offence · EPA per carry",
-          "rank_gap": 9,
+          "rank_gap": 8,
           "gap": 0.032912,
           "lead": "Pittsburgh Steelers",
           "trail": "Atlanta Falcons",
-          "lead_cell": "+0.017 · #11 of 32",
+          "lead_cell": "+0.017 · #12 of 32",
           "trail_cell": "−0.016 · #20 of 32",
-          "text": "Pittsburgh Steelers +0.017 (#11 of 32) vs Atlanta Falcons −0.016 (#20 of 32) — 9 places on the league board."
+          "text": "Pittsburgh Steelers +0.017 (#12 of 32) vs Atlanta Falcons −0.016 (#20 of 32) — 8 places on the league board."
         },
         {
           "k": "Explosive run rate",
-          "rank_gap": 8,
+          "rank_gap": 7,
           "gap": 0.006912,
           "lead": "Pittsburgh Steelers",
           "trail": "Atlanta Falcons",
           "lead_cell": "+1.2 pp · #5 of 32",
-          "trail_cell": "+0.5 pp · #13 of 32",
-          "text": "Pittsburgh Steelers +1.2 pp (#5 of 32) vs Atlanta Falcons +0.5 pp (#13 of 32) — 8 places on the league board."
+          "trail_cell": "+0.5 pp · #12 of 32",
+          "text": "Pittsburgh Steelers +1.2 pp (#5 of 32) vs Atlanta Falcons +0.5 pp (#12 of 32) — 7 places on the league board."
         }
       ],
       "measured": [],
@@ -811,7 +811,7 @@
           "team": "Pittsburgh Steelers",
           "label": "run offence",
           "v": "+0.017",
-          "rank": "#11 of 32",
+          "rank": "#12 of 32",
           "note": null
         },
         "def": {
@@ -823,7 +823,7 @@
         },
         "complete": true,
         "net": 0.044448,
-        "read": "Pittsburgh Steelers’ run offence rates +0.017 (#11 of 32) and Atlanta Falcons’ run defence rates +0.027 (#25 of 32). Added the way the model adds them, this pairing sits +0.044 from the league mean, which favours Pittsburgh Steelers."
+        "read": "Pittsburgh Steelers’ run offence rates +0.017 (#12 of 32) and Atlanta Falcons’ run defence rates +0.027 (#25 of 32). Added the way the model adds them, this pairing sits +0.044 from the league mean, which favours Pittsburgh Steelers."
       },
       {
         "title": "Atlanta Falcons pass protection vs Pittsburgh Steelers pass rush",
@@ -911,7 +911,7 @@
           "team": "Atlanta Falcons",
           "label": "explosive running",
           "v": "+0.5 pp",
-          "rank": "#13 of 32",
+          "rank": "#12 of 32",
           "note": null
         },
         "def": {
@@ -923,7 +923,7 @@
         },
         "complete": true,
         "net": -0.013072000000000002,
-        "read": "Atlanta Falcons’ explosive running rates +0.5 pp (#13 of 32) and Pittsburgh Steelers’ explosive runs allowed rates −1.8 pp (#2 of 32). Added the way the model adds them, this pairing sits −1.3 pp from the league mean, which favours Pittsburgh Steelers."
+        "read": "Atlanta Falcons’ explosive running rates +0.5 pp (#12 of 32) and Pittsburgh Steelers’ explosive runs allowed rates −1.8 pp (#2 of 32). Added the way the model adds them, this pairing sits −1.3 pp from the league mean, which favours Pittsburgh Steelers."
       },
       {
         "title": "Pittsburgh Steelers explosive running vs Atlanta Falcons explosive runs allowed",
@@ -1067,7 +1067,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 1 absorbed 2026 game; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 2 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1106,7 +1106,7 @@
         {
           "sev": "HIGH",
           "label": "early-season sample",
-          "text": "Only 1 game of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
+          "text": "Only 2 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
           "widening": null
         },
         {
@@ -1222,7 +1222,7 @@
         {
           "k": "Run offence · EPA per carry",
           "a": "−0.016  #20 of 32",
-          "h": "+0.017  #11 of 32",
+          "h": "+0.017  #12 of 32",
           "note": null
         },
         {
@@ -1233,7 +1233,7 @@
         },
         {
           "k": "Explosive run rate",
-          "a": "+0.5 pp  #13 of 32",
+          "a": "+0.5 pp  #12 of 32",
           "h": "+1.2 pp  #5 of 32",
           "note": "10+ yard runs per carry"
         },
@@ -1300,11 +1300,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 1 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 2 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-11T04:28:53.978Z"
+    "at": "2026-09-11T11:10:08.004Z"
   }
 }

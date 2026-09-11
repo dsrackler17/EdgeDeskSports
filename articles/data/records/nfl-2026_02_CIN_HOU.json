@@ -23,8 +23,8 @@
   "game_time": "2026-09-20T13:00:00.000Z",
   "game_when_label": "2026-09-20 13:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-10T11:09:50.060Z",
-  "generated_at": "2026-09-11T04:28:53.978Z",
+  "updated_at": "2026-09-11T11:10:08.004Z",
+  "generated_at": "2026-09-11T11:10:08.004Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 2.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 1 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 2 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": null,
   "research": {
     "kind": "NFL_GAME",
@@ -110,8 +110,8 @@
         "note": "Quoted from the perspective of Houston Texans, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 1 absorbed 2026 game.",
-      "sample_games": 1,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 2 absorbed 2026 games.",
+      "sample_games": 2,
       "seeded": true,
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk differs from the market by 2.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -228,14 +228,14 @@
               "h": {
                 "v": "+0.097",
                 "n": 0.09728,
-                "rank": "#5 of 32",
-                "rank_n": 5,
+                "rank": "#4 of 32",
+                "rank_n": 4,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.117248,
-                "rank_gap": 15
+                "rank_gap": 16
               }
             },
             {
@@ -1063,7 +1063,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 1 absorbed 2026 game; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 2 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1103,7 +1103,7 @@
         {
           "sev": "HIGH",
           "label": "early-season sample",
-          "text": "Only 1 game of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
+          "text": "Only 2 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
           "widening": null
         },
         {
@@ -1189,7 +1189,7 @@
         {
           "k": "Net EPA per play",
           "a": "−0.020  #20 of 32",
-          "h": "+0.097  #5 of 32",
+          "h": "+0.097  #4 of 32",
           "note": "offence EPA per play minus defence EPA allowed per play — the engine’s own net_epa half"
         },
         {
@@ -1297,11 +1297,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 1 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 2 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-11T04:28:53.978Z"
+    "at": "2026-09-11T11:10:08.004Z"
   }
 }
