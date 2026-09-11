@@ -32,6 +32,7 @@
    provider gives their ids.
 
      node tools/tennis/sync_players.js                  # dry run
+     node tools/tennis/sync_players.js --verify         # probe the source only
      node tools/tennis/sync_players.js --commit         # write
      node tools/tennis/sync_players.js --commit --enrich 200 --rankings
    =========================================================================== */
@@ -44,10 +45,11 @@ const D = require('./db.js');
 function log(...a) { if (!process.env.TENNIS_QUIET) console.log('[tennis-players]', ...a); }
 
 function parseArgs(argv) {
-  const o = { commit: false, enrich: 60, rankings: true, backDays: 21, fwdDays: 28, now: null, tours: null };
+  const o = { commit: false, verify: false, enrich: 60, rankings: true, backDays: 21, fwdDays: 28, now: null, tours: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i], next = () => argv[++i];
     if (a === '--commit') o.commit = true;
+    else if (a === '--verify') o.verify = true;
     else if (a === '--enrich') o.enrich = Number(next());
     else if (a === '--no-enrich') o.enrich = 0;
     else if (a === '--no-rankings') o.rankings = false;
@@ -116,6 +118,70 @@ function rankingPatches(ranked, known) {
     out.push({ player_id: id, current_rank: r.rank != null ? r.rank : null,
       rank_points: r.points != null ? r.points : null, rank_as_of: r.as_of || null });
   });
+  return out;
+}
+
+/* PROVE THE TWO NEW ENDPOINTS ANSWER, on a real runner, touching no database.
+
+   This exists because the UFC adapter shipped code that was correct and that
+   ESPN's edge answered 403 to from GitHub's runners — a thing only a runner
+   could show. The athlete and rankings endpoints are new here and had never
+   been observed answering from one, so the pull-request probe now asks them.
+
+   It takes a live athlete id from the scoreboard rather than hard-coding one,
+   so it cannot rot. Exit 0 = both answered. Exit 2 = they did not, which is
+   worth seeing in review but is not a broken pipeline: the directory still
+   carries id, name, tour and format from the scoreboard, and enrichment and
+   ranking are additive on top of that. */
+async function verify(o, deps) {
+  const src = (deps || {}).source || E.source({ fetchImpl: (deps || {}).fetchImpl });
+  const now = o.now ? new Date(o.now) : new Date();
+  const out = { scoreboard: null, athlete: null, rankings: null, ok: false };
+
+  for (const tour of (o.tours || E.TOURS)) {
+    const label = tour.toUpperCase();
+    let athleteId = null;
+    try {
+      const r = await src.scoreboard(tour, now.getTime() - o.backDays * 86400000, now.getTime() + o.fwdDays * 86400000);
+      const rows = directoryRows([].concat.apply([], r.tournaments.map(t => t.matches.map(m =>
+        Object.assign({ tour: t.tour }, m)))), now.toISOString());
+      const singles = rows.filter(x => x.seen_in_singles);
+      out.scoreboard = { via: r.via, tournaments: r.tournaments.length, athletes: rows.length };
+      log(`${label} scoreboard via ${r.via}: ${r.tournaments.length} tournament(s) carrying ${rows.length} athlete(s), ${singles.length} in singles`);
+      if (singles.length) athleteId = singles[0].provider_athlete_id;
+    } catch (e) {
+      log(`${label} scoreboard did not answer: ${String(e && e.message || e).slice(0, 200)}`);
+      continue;
+    }
+
+    if (athleteId) {
+      const a = await src.athlete(tour, athleteId);
+      if (a && a.athlete) {
+        out.athlete = { tour: label, via: a.via, id: athleteId, fields: Object.keys(a.athlete).filter(k => a.athlete[k] != null) };
+        log(`  athlete ${athleteId} via ${a.via}: ${out.athlete.fields.join(', ') || 'answered but described nothing'}`);
+      } else {
+        log(`  athlete ${athleteId} was not described: ${(a && a.tried || []).map(t => t.via + ' -> ' + (t.status || t.error)).join('; ')}`);
+      }
+    } else {
+      log('  no singles athlete in the window to ask about');
+    }
+
+    try {
+      const rk = await src.rankings(tour);
+      if (rk && rk.rows && rk.rows.length) {
+        out.rankings = { tour: label, via: rk.via, ranked: rk.rows.length };
+        log(`  ${label} rankings via ${rk.via}: ${rk.rows.length} ranked athlete(s), top is ${rk.rows[0].provider_athlete_id} at ${rk.rows[0].rank}`);
+      } else {
+        log(`  ${label} rankings: ${(rk && rk.tried || []).map(t => t.via + ' -> ' + (t.status || t.error)).join('; ') || 'no shape answered'}`);
+      }
+    } catch (e) { log(`  ${label} rankings failed: ${String(e && e.message || e).slice(0, 160)}`); }
+
+    if (out.athlete && out.rankings) break;
+  }
+
+  out.ok = !!(out.athlete && out.rankings);
+  if (out.ok) log('both enrichment endpoints answered from this runner');
+  else log('the directory will still be built from the scoreboard; enrichment and ranking are additive');
   return out;
 }
 
@@ -192,6 +258,13 @@ async function run(o, deps) {
 
 async function main() {
   const o = parseArgs(process.argv.slice(2));
+  if (o.verify) {
+    try {
+      const v = await verify(o, {});
+      process.exit(v.ok ? 0 : 2);
+    } catch (e) { console.error('[tennis-players] probe failed: ' + (e && e.stack || e)); process.exit(1); }
+    return;
+  }
   const cfg = D.config();
   if (!cfg) { console.error('No service credential (EDGD_SB_SERVICE + EDGD_SB_URL).'); process.exit(1); }
   const db = D.client(cfg);
@@ -222,5 +295,5 @@ async function main() {
   process.exit(code);
 }
 
-module.exports = { parseArgs, directoryId, athletesOfSide, directoryRows, rankingPatches, run };
+module.exports = { parseArgs, directoryId, athletesOfSide, directoryRows, rankingPatches, verify, run };
 if (require.main === module) main();

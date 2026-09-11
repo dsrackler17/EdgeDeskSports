@@ -728,6 +728,39 @@ chk('the poll clock is deliberately not part of the hash', P.MATCH_MUTABLE.index
   eq('and it resolves to the licensed id',
     odb.rows('tennis', 'live_matches')[0].home_player_id, 'lic-1');
 
+  /* --- the probe that asks the two new endpoints on a real runner --------- */
+  {
+    const asked = [];
+    const probeSrc = {
+      async scoreboard(tour) {
+        asked.push('scoreboard:' + tour);
+        return { via: 'day', tournaments: [{ tour: 'ATP', matches: [
+          { tour: 'ATP', is_doubles: false, home_provider_id: '4321', home_name: 'Vilius Gaubas',
+            away_provider_id: '4322', away_name: 'Jaume Munar' }
+        ] }] };
+      },
+      async athlete(tour, id) { asked.push('athlete:' + tour + ':' + id); return { athlete: { country: 'LTU', height_cm: 188 }, via: 'web-v3' }; },
+      async rankings(tour) { asked.push('rankings:' + tour); return { rows: [{ provider_athlete_id: '4321', rank: 61 }], via: 'site-v2' }; }
+    };
+    const v = await PL.verify({ backDays: 21, fwdDays: 28, now: '2026-05-28T10:00:00Z', tours: ['atp'] }, { source: probeSrc });
+    chk('the probe asks the athlete endpoint with an id it took from the scoreboard',
+      asked.indexOf('athlete:atp:4321') >= 0, asked.join(' | '));
+    chk('and it asks the rankings endpoint', asked.indexOf('rankings:atp') >= 0, asked.join(' | '));
+    chk('both answering is a clean probe', v.ok === true, JSON.stringify(v));
+
+    const quiet = {
+      async scoreboard() { return { via: 'day', tournaments: [{ tour: 'ATP', matches: [
+        { tour: 'ATP', is_doubles: false, home_provider_id: '1', home_name: 'A Player',
+          away_provider_id: '2', away_name: 'B Player' }] }] }; },
+      async athlete() { return { athlete: null, via: null, tried: [{ via: 'web-v3', status: 404 }] }; },
+      async rankings() { return { rows: [], via: null, tried: [{ via: 'site-v2', status: 403 }] }; }
+    };
+    const v2 = await PL.verify({ backDays: 21, fwdDays: 28, now: '2026-05-28T10:00:00Z', tours: ['atp'] }, { source: quiet });
+    chk('an endpoint that will not answer is reported, not thrown', v2.ok === false, JSON.stringify(v2));
+    chk('and the scoreboard leg still counts the athletes it found',
+      v2.scoreboard && v2.scoreboard.athletes === 2, JSON.stringify(v2.scoreboard));
+  }
+
   /* a server that has never heard of the directory must not end the job: the
      pool falls back to the licensed record and the operator is told what to
      run. This is the failure the UFC pipeline shipped without and paid for. */

@@ -110,6 +110,25 @@ jobs:
           fi
           exit $code
 
+      # The athlete and rankings endpoints are the newest thing here and the
+      # only ones a runner had never asked. This asks them, taking a live
+      # athlete id from the scoreboard rather than hard-coding one. A feed
+      # that will not describe a player is a warning, not a failure: the
+      # directory is still built from the scoreboard and enrichment is
+      # additive on top of it.
+      - name: Probe the enrichment endpoints on a runner (writes nothing)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          set +e
+          node tools/tennis/sync_players.js --verify
+          code=$?
+          set -e
+          if [ "$code" = "2" ]; then
+            echo "::warning::the scoreboard answered but the athlete/rankings endpoints did not — the directory will carry id, name, tour and format only"
+            exit 0
+          fi
+          exit $code
+
       # A step cannot end a job, so this only SAYS what happened; the write
       # steps below carry the guard that actually keeps them out.
       - name: Say plainly that nothing will be written
