@@ -29,6 +29,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const E = require('./edr.js');
+/* the one canonical answer to "who is FBS and what conference are they in
+   THIS season" — the same module the board, the coverage gate and the
+   exports read, so a rating row and a board row can never disagree about a
+   program's conference. */
+const FBS = require('../fbs/fbs.js');
 
 const DIR = __dirname;
 const ROSTER_DIR = path.join(DIR, '..', 'rosters');
@@ -37,6 +42,16 @@ const SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-d
 const SEASONS_BACK = 5;
 
 function defaultSeason() { const d = new Date(); return (d.getMonth() <= 1) ? d.getFullYear() - 1 : d.getFullYear(); }
+/* the trained universe carries the per-season Power 4 membership the grouping
+   is resolved from. Optional: without it the structural default is used and
+   the dataset says which basis it got. */
+function p4Params() {
+  try {
+    global.window = global.window || global;
+    require('../cfb_p4/params.js');
+    return global.EDCfbP4Params || null;
+  } catch (_) { return null; }
+}
 function readJson(f, fb) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return fb; } }
 function digestOf(o) { return crypto.createHash('sha1').update(JSON.stringify(o)).digest('hex').slice(0, 16); }
 const TRUE = v => /^(true|1|t|yes)$/i.test(String(v == null ? '' : v).trim());
@@ -158,6 +173,7 @@ function writeIfChanged(file, ds) {
 /* ---- pure: everything above, assembled ---------------------------------- */
 function buildDataset(seasonGames, rosters, availability, opts) {
   const notes = [];
+  const universe = opts.universe || null;
   const seasonRatings = {}, seasonMeta = {};
   const seasons = Object.keys(seasonGames).map(Number).sort((a, b) => a - b);
   for (const s of seasons) {
@@ -194,6 +210,45 @@ function buildDataset(seasonGames, rosters, availability, opts) {
     bundles: aggs, rosterOpts: rOpts, availability, names
   });
 
+  /* ---- season conference, group and canonical identity --------------------
+     EDR keys fold "&" to "and" ("Texas A&M" -> texasaandm) while the engine,
+     the rankings pipeline and the schedule feed drop it ("texasam"). Those
+     are both defensible and they are NOT the same string, so Texas A&M's
+     rating was unreachable from every other artifact in the repo. The key
+     rule is left exactly as it is — it is documented and tested — and a
+     `canonical_key` is published alongside it so one team is one team across
+     every join. Conference and group come from the SEASON'S OWN schedule
+     feed, never a stored list, because alignment changes every winter. */
+  const ix = universe ? FBS.teamIndex(universe) : null;
+  let conferenced = 0, unresolved = [];
+  for (const t of teams) {
+    const hit = ix ? (FBS.resolveTeam(t.team, ix) || FBS.resolveTeam(t.key, ix)) : null;
+    const u = hit && hit.key ? universe.teams[hit.key] : null;
+    t.canonical_key = (u && u.key) || FBS.normKey(t.team) || t.key;
+    t.division = u ? u.division : null;
+    t.conference = u && u.conference ? u.conference.label : null;
+    t.conference_id = u && u.conference ? u.conference.id : null;
+    t.conference_source = u && u.conference ? u.conference.source_label : null;
+    t.fbs_group = u ? u.group : null;
+    if (t.conference_id) conferenced++;
+    else unresolved.push(t.team);
+  }
+  /* rank INSIDE each group and conference, off the same connected scale —
+     no subgroup is ever re-rated, it is only re-ordered */
+  const groupSeen = {}, confSeen = {};
+  for (const t of teams) {
+    if (t.fbs_group) { groupSeen[t.fbs_group] = (groupSeen[t.fbs_group] || 0) + 1; t.group_rank = groupSeen[t.fbs_group]; }
+    else t.group_rank = null;
+    if (t.conference_id) { confSeen[t.conference_id] = (confSeen[t.conference_id] || 0) + 1; t.conference_rank = confSeen[t.conference_id]; }
+    else t.conference_rank = null;
+  }
+  if (universe && unresolved.length) notes.push(unresolved.length + ' rated program'
+    + (unresolved.length === 1 ? '' : 's') + ' could not be matched to the ' + season
+    + ' schedule feed, so they carry no conference: ' + unresolved.slice(0, 6).join(', ')
+    + '. They keep their rating and sit outside every conference view.');
+  if (!universe) notes.push('the ' + season + ' schedule feed was unavailable when this was built, '
+    + 'so no conference or program group is attached to any rating');
+
   if (!carryover.pairs.length) notes.push('carryover could not be measured — only one season of results is on file');
   if (!Object.keys(aggs).length) notes.push('no roster bundles on file — the roster component is blind');
   if (!Object.keys(availability || {}).length) notes.push('no high-impact availability on file — that component is zero for every team');
@@ -215,7 +270,14 @@ function buildDataset(seasonGames, rosters, availability, opts) {
     },
     carryover, season_meta: seasonMeta, roster_field: rOpts,
     seasons_used: seasons, prior_seasons_applied: priorSeasons,
-    team_count: teams.length, notes
+    /* DERIVED, every build. Nothing here is a constant: the day a program
+       joins or leaves the FBS this number moves on its own. */
+    team_count: teams.length,
+    conference_coverage: { rated: teams.length, with_conference: conferenced,
+      source: universe ? universe.source : null },
+    conferences: universe ? universe.conferences : null,
+    p4_scope: universe ? universe.p4 : null,
+    notes
   };
   const ds = Object.assign({}, head, { teams });
   /* the digest covers everything the app reads EXCEPT the clock, so a rerun
@@ -236,13 +298,24 @@ async function main() {
     else if (v === '--dry') dry = true;
   }
   const seasonGames = {}, failed = [];
+  let universe = null;
   for (let s = season - back + 1; s <= season; s++) {
     try {
       const txt = await fetchText(SCHED(s));
       if (txt == null) { failed.push({ season: s, error: 'not published' }); continue; }
-      const g = gamesFromCsv(parseCsv(txt));
+      const rows = parseCsv(txt);
+      const g = gamesFromCsv(rows);
       if (g.length) seasonGames[s] = g;
       else failed.push({ season: s, error: 'no completed games yet' });
+      /* the TARGET season's own feed is what says who is FBS and in which
+         conference — a historical season's alignment must never leak into
+         this one's */
+      if (s === season) {
+        universe = FBS.buildUniverse({ rows, season: s,
+          source: `cfbfastR-data schedules ${s}`, params: p4Params() });
+        console.error(`[rating] ${s} universe: ${universe.counts.fbs_teams} FBS programs, `
+          + `${universe.conferences.length} conferences (${universe.p4.basis})`);
+      }
       console.error(`[rating] ${s}: ${g.length} completed games`);
     } catch (e) {
       failed.push({ season: s, error: String(e.message).slice(0, 120) });
@@ -268,7 +341,7 @@ async function main() {
   } catch (e) { console.error('[rating] rosters: ' + e.message); }
 
   const availability = availabilityByTeam(readJson(AVAIL, null));
-  const ds = buildDataset(seasonGames, rosters, availability, { season, week, now: new Date().toISOString() });
+  const ds = buildDataset(seasonGames, rosters, availability, { season, week, universe, now: new Date().toISOString() });
   ds.failed_seasons = failed;
 
   const top = ds.teams.slice(0, 5).map(t => `${t.rank}. ${t.team} ${t.rating > 0 ? '+' : ''}${t.rating}`).join(' · ');

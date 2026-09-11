@@ -1,0 +1,377 @@
+{
+ "version": "edgedesk_fbs_universe_v1.0.0",
+ "season": 2026,
+ "source": "cfbfastR-data schedules 2026",
+ "generated_at": "2026-09-11T22:25:41.545Z",
+ "counts": {
+  "fbs_teams": 138,
+  "non_fbs_teams": 100,
+  "conferences": 11,
+  "rows": 888
+ },
+ "p4": {
+  "ids": [
+   "acc",
+   "big12",
+   "bigten",
+   "sec"
+  ],
+  "season_used": 2025,
+  "basis": "the 2025 Power 4 membership — the latest season the trained universe carries. 2026 realignment is NOT reflected in this grouping, and each team’s conference itself still comes from the 2026 schedule feed."
+ },
+ "conferences": [
+  {
+   "id": "acc",
+   "label": "ACC",
+   "source_label": "ACC",
+   "group": "p4",
+   "known": true,
+   "teams": 17
+  },
+  {
+   "id": "big12",
+   "label": "Big 12",
+   "source_label": "Big 12",
+   "group": "p4",
+   "known": true,
+   "teams": 16
+  },
+  {
+   "id": "bigten",
+   "label": "Big Ten",
+   "source_label": "Big Ten",
+   "group": "p4",
+   "known": true,
+   "teams": 18
+  },
+  {
+   "id": "sec",
+   "label": "SEC",
+   "source_label": "SEC",
+   "group": "p4",
+   "known": true,
+   "teams": 16
+  },
+  {
+   "id": "american",
+   "label": "American",
+   "source_label": "American Athletic",
+   "group": "other",
+   "known": true,
+   "teams": 14
+  },
+  {
+   "id": "cusa",
+   "label": "Conference USA",
+   "source_label": "Conference USA",
+   "group": "other",
+   "known": true,
+   "teams": 10
+  },
+  {
+   "id": "mac",
+   "label": "MAC",
+   "source_label": "Mid-American",
+   "group": "other",
+   "known": true,
+   "teams": 13
+  },
+  {
+   "id": "mwc",
+   "label": "Mountain West",
+   "source_label": "Mountain West",
+   "group": "other",
+   "known": true,
+   "teams": 10
+  },
+  {
+   "id": "pac12",
+   "label": "Pac-12",
+   "source_label": "Pac-12",
+   "group": "other",
+   "known": true,
+   "teams": 8
+  },
+  {
+   "id": "sunbelt",
+   "label": "Sun Belt",
+   "source_label": "Sun Belt",
+   "group": "other",
+   "known": true,
+   "teams": 14
+  },
+  {
+   "id": "independents",
+   "label": "Independents",
+   "source_label": "FBS Independents",
+   "group": "independent",
+   "known": true,
+   "teams": 2
+  }
+ ],
+ "unmapped_teams": [],
+ "ambiguous_aliases": [],
+ "missing_conference": [],
+ "unexpected_conferences": [],
+ "conflicting_conferences": [],
+ "fbs_teams_without_rating": [],
+ "duplicate_games": [],
+ "games_missing_projection": [],
+ "odds_unmatched": [],
+ "slate": {
+  "total": 160,
+  "by_group": {
+   "p4": 95,
+   "other": 99,
+   "independent": 4
+  },
+  "by_matchup": {
+   "fbs_fcs": 54,
+   "non_conference": 86,
+   "conference": 20
+  },
+  "by_conference": {
+   "acc": 25,
+   "bigten": 33,
+   "big12": 29,
+   "sec": 26,
+   "pac12": 16,
+   "sunbelt": 28,
+   "american": 24,
+   "mac": 26,
+   "cusa": 19,
+   "independents": 4,
+   "mwc": 16
+  }
+ },
+ "ok": true,
+ "lookahead_days": 10,
+ "absorbed_games": 99,
+ "engine": {
+  "model_version": "edgedesk_cfb_p4_v1.0.0",
+  "trained_through": 2025
+ },
+ "projection_status": {
+  "PREDICTED": 160
+ },
+ "spread_recommendation": {
+  "NO_MARKET": 160
+ },
+ "checks": [
+  {
+   "name": "every active FBS team resolves to a canonical identity",
+   "ok": true,
+   "detail": {
+    "unmapped": 0,
+    "fbs_teams": 138
+   }
+  },
+  {
+   "name": "every active FBS team carries a conference or Independent classification",
+   "ok": true,
+   "detail": {
+    "without": []
+   }
+  },
+  {
+   "name": "every FBS-vs-FBS game has both teams in the rating state",
+   "ok": true,
+   "detail": {
+    "unrated": []
+   }
+  },
+  {
+   "name": "no canonical game appears twice on the slate",
+   "ok": true,
+   "detail": {
+    "duplicates": [],
+    "dropped_as_duplicate": 0
+   }
+  },
+  {
+   "name": "games with no Power 4 participant are on the slate",
+   "ok": true,
+   "detail": {
+    "non_power_games": 65,
+    "total": 160,
+    "example": [
+     "South Florida @ Army",
+     "App State @ East Carolina",
+     "Wofford @ Kent State"
+    ]
+   }
+  },
+  {
+   "name": "a game between two different conferences is never a conference game",
+   "ok": true,
+   "detail": {
+    "wrong": []
+   }
+  },
+  {
+   "name": "every conference game has exactly one shared, non-independent conference",
+   "ok": true,
+   "detail": {
+    "conference_games": 20,
+    "wrong": 0
+   }
+  },
+  {
+   "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
+   "ok": true,
+   "detail": {
+    "fbs_fcs_games": 54,
+    "graded": []
+   }
+  },
+  {
+   "name": "a game with no quote produces no line, no gap and no spread edge",
+   "ok": true,
+   "detail": {
+    "offenders": [],
+    "n": 0
+   }
+  },
+  {
+   "name": "the market layer is present and able to separate a live quote from a stale one",
+   "ok": true,
+   "detail": {
+    "orientation_guard": true,
+    "projects": true
+   }
+  },
+  {
+   "name": "the slate the board renders and the slate the export writes are the same list",
+   "ok": true,
+   "detail": {
+    "slate": 160,
+    "audit_total": 160
+   }
+  },
+  {
+   "name": "selecting two conferences never duplicates a game",
+   "ok": true,
+   "detail": {
+    "pairs_tested": 55,
+    "problem": null
+   }
+  },
+  {
+   "name": "a program that changed conference reads its OWN season in each season's universe",
+   "ok": true,
+   "detail": {
+    "tested": true,
+    "prior_season": 2025,
+    "realigned": 9,
+    "moves": [
+     {
+      "team": "UTEP",
+      "from": "Conference USA",
+      "to": "Mountain West"
+     },
+     {
+      "team": "Fresno State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Boise State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Texas State",
+      "from": "Sun Belt",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Northern Illinois",
+      "from": "MAC",
+      "to": "Mountain West"
+     },
+     {
+      "team": "Colorado State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Utah State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     },
+     {
+      "team": "Louisiana Tech",
+      "from": "Conference USA",
+      "to": "Sun Belt"
+     },
+     {
+      "team": "San Diego State",
+      "from": "Mountain West",
+      "to": "Pac-12"
+     }
+    ]
+   }
+  },
+  {
+   "name": "the active FBS count comes from the feed, not from a stored number",
+   "ok": true,
+   "detail": {
+    "derived": 138,
+    "universe": 138
+   }
+  }
+ ],
+ "failures": [],
+ "season_aware": {
+  "tested": true,
+  "prior_season": 2025,
+  "realigned": 9,
+  "moves": [
+   {
+    "team": "UTEP",
+    "from": "Conference USA",
+    "to": "Mountain West"
+   },
+   {
+    "team": "Fresno State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Boise State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Texas State",
+    "from": "Sun Belt",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Northern Illinois",
+    "from": "MAC",
+    "to": "Mountain West"
+   },
+   {
+    "team": "Colorado State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Utah State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   },
+   {
+    "team": "Louisiana Tech",
+    "from": "Conference USA",
+    "to": "Sun Belt"
+   },
+   {
+    "team": "San Diego State",
+    "from": "Mountain West",
+    "to": "Pac-12"
+   }
+  ]
+ }
+}

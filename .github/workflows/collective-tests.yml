@@ -33,6 +33,11 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The FBS universe: team identity, season conference, program grouping
+      # and the canonical slate. The board suite reads the renderer out of
+      # app.html, so a change to either has to be able to trigger the job.
+      - 'football/fbs/**'
+      - 'tools/football/fixtures/**'
       # The player quality layer's own modules and the app.html panel that
       # renders them. The panel suite reads the renderer out of app.html
       # rather than a copy, so a change to either has to be able to trigger it.
@@ -71,6 +76,11 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The FBS universe: team identity, season conference, program grouping
+      # and the canonical slate. The board suite reads the renderer out of
+      # app.html, so a change to either has to be able to trigger the job.
+      - 'football/fbs/**'
+      - 'tools/football/fixtures/**'
       # The player quality layer's own modules and the app.html panel that
       # renders them. The panel suite reads the renderer out of app.html
       # rather than a copy, so a change to either has to be able to trigger it.
@@ -154,6 +164,21 @@ jobs:
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective
         run: node tools/collective/app_sync.test.js
+
+      # THE FBS UNIVERSE. Who is FBS this season, what conference they are in
+      # THIS season, which program group that puts them in, what belongs on
+      # the canonical weekly slate and what kind of game each one is. Every
+      # board filter, every export column and the coverage gate read this, so
+      # it is held on its own before anything that depends on it runs.
+      - name: The FBS universe resolves identity, conference and the slate
+        run: node football/fbs/fbs.test.js
+
+      # The board itself, cut out of app.html and run against a real schedule
+      # fixture: the slate is not Power 4 gated, the filters compose, a game
+      # never appears twice, the counts reconcile with the export, and the
+      # ratings views share one baseline.
+      - name: The FBS board covers every conference and its filters compose
+        run: node tools/football/fbs_board_ui.test.js
 
       # The player quality + scheme matchup layer: the rules its ratings are
       # not allowed to break (a missing input never becoming a zero, no rating
@@ -285,6 +310,25 @@ jobs:
       # browser the sync half still runs and the page half says SKIPPED.
       - name: The sync twice, and the page on the deployed wire
         run: node tools/collective/cfb_current_week.e2e.js
+
+      # THE BOARD IN A REAL BROWSER, desktop and phone. The unit suites prove
+      # the rules; this proves the RENDER — every conference present, the
+      # filters driving the real DOM, the URL carrying a shared view, and the
+      # control surface not wrapping into a wall of buttons at 390px.
+      #
+      # The browser is installed because without it the suite skips, and a
+      # step that runs, reports success and proves nothing is worse than no
+      # step. `continue-on-error` on the INSTALL only: a runner that cannot
+      # fetch Chromium still gets a loud SKIPPED from the suite, while a
+      # browser that loads the board and finds it broken still fails the job.
+      - name: Install Chromium for the board's browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+        continue-on-error: true
+
+      - name: The FBS board renders and filters at desktop and mobile widths
+        run: node tools/football/fbs_board.e2e.js
 
       - name: Settle matching
         run: node tools/collective/settle_finals.test.js

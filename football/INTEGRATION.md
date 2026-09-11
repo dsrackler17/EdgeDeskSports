@@ -62,7 +62,7 @@ logic inside one function for no benefit.
 ## Frontend integration (this change, live now)
 
 * New **Football** research module (research shell, `#research/football`):
-  NFL + CFB + **CFB Power 4** boards computed client-side by
+  NFL + **FBS Football** (all eleven conferences) boards computed client-side by
   `football/engine.js` and `football/cfb_p4/engine.js` from the
   same public sources the training pipeline uses (nflverse / cfbfastR-data,
   both CORS-open), matched to live `signals` quotes where capture covers the
@@ -77,9 +77,37 @@ logic inside one function for no benefit.
 * Nothing else changes: MLB, UFC, WTA, tennis, golf, Collective, odds,
   grading, settlement and AI behavior are untouched.
 
-## The CFB Power 4 model (`football/cfb_p4/`)
+## The CFB model (`football/cfb_p4/`) and the FBS universe (`football/fbs/`)
 
-The Power 4 engine is a SEPARATE bundle — its own `engine.js`, `params.js`,
+### Scope, stated once
+
+The board covers **every scheduled game with at least one active FBS team**,
+across all eleven FBS conferences and both independents. It is not restricted
+to games involving a Power 4 program, and the directory name `cfb_p4` refers
+to the tier the model was BUILT FOR, not the games it prices: the engine seeds
+136 programs, carries conference strength for every conference, and its
+held-out record is measured over every FBS-vs-FBS game.
+
+Who is FBS in a season, and which conference they play in that season, comes
+from `football/fbs/` — derived from the season's own schedule feed, never from
+a stored list, because realignment moves programs every winter. A deployment
+that wants the same slate the browser renders should build it the same way:
+
+```js
+const FBS = require('./football/fbs/fbs.js');
+const universe = FBS.buildUniverse({ rows, season, params: EDCfbP4Params });
+const slate    = FBS.buildSlate({ rows, universe, now: Date.now(), lookaheadDays: 10 });
+```
+
+`football/fbs/slate.json` is that slate as a committed artifact, one row per
+game, carrying `home_team_id`, `away_team_id`, both conferences and
+conference ids, both program groups, `matchup_type`, `is_conference_game`,
+`model_status`, `data_completeness`, `market_status` and `quote_timestamp`.
+`football/fbs/coverage.json` is the machine-readable diagnostic beside it.
+
+### The engine bundle
+
+The CFB engine is a SEPARATE bundle — its own `engine.js`, `params.js`,
 `goldens.json` and `tests.js` — and it plugs in the same way, with two
 differences worth knowing before deploying it server-side:
 
@@ -103,9 +131,9 @@ faked in their absence.
 NOT use it — it uses the public cfbfastR-data line archive, which carries
 opening numbers as well as closing ones.
 
-## Posting Power 4 slates to the Model Collective
+## Posting FBS slates to the Model Collective
 
-The Power 4 board's **Post to Collective** button downloads the slate and opens
+The FBS board's **Post to Collective** button downloads the slate and opens
 `collective/#dashboard`. It deliberately does NOT post on the reader's behalf:
 posting is an account action against their own creator profile, and the model,
 week and data-origin choices belong to them.
@@ -127,7 +155,10 @@ already in its synonym table:
 | `spread_pick` | pick side |
 | `confidence` | confidence |
 
-Columns the uploader does not recognise are ignored, so the Power 4 extras ride
+Columns the uploader does not recognise are ignored, so the model's extras and
+the FBS coverage columns (`home_conference`, `home_fbs_group`, `matchup_type`,
+`is_conference_game`, `model_status`, `data_completeness`, `market_status`,
+`quote_timestamp`) ride
 along harmlessly.
 
 ### Two doors, and they are not the same function
@@ -249,7 +280,7 @@ chunk, before anything is touched.
 refusal as fatal and returned before posting. The removal had changed nothing
 and the post was still valid, but a board whose games already had stored rows
 could not reach the Collective **at all**. One server-side rule took the NFL and
-Power 4 sync offline.
+the FBS sync offline.
 
 **What changed instead: the rule.** The Collective now shows and grades each
 model's **latest live submission received before the lock**, 30 minutes before
@@ -482,25 +513,25 @@ Function, writes nothing to the database, and needs no secret.**
 | surface | where | what it reads |
 |---|---|---|
 | **Players** segment | Football tab, fourth segment | `football/players/current.json`, `index.json`, `teams/<key>.json` |
-| **Player quality & matchup** panel | under every Power 4 game card | the same files, plus the Power 4 engine's own projection for the game |
+| **Player quality & matchup** panel | under every game card on the FBS board | the same files, plus the engine's own projection for the game |
 
 Both lazy-load their module bundle (`config.js`, `epir.js`, `units.js`,
 `scheme.js`, `matchup.js`, `sim.js`, `params.js`) on first open, exactly as the
-Power 4 board loads its own engine.
+the FBS board loads its own engine.
 
 ### The coupling rules it keeps
 
 * **It is a fourth independent engine, not a change to the first three.** A
   failed nflverse load no longer blanks the Players segment (the loader's
   failure handler now exempts `players` the way it already exempted `p4`), and
-  a failed player build cannot touch the NFL board, the Power 4 board or the
+  a failed player build cannot touch the NFL board, the FBS board or the
   CFB Rosters browser. Each renders its own gate.
 * **It joins on the same team key as everything else.** `EDPlayerRating.teamKey`
   is byte-identical to `EDCfbP4.normKey`, and `players.test.js` cross-checks
   them on the names two normalisers actually disagree about (Texas A&M, San
   José State, Hawai'i). A divergence here would silently lose a team rather
   than error, which is why it is a test and not a comment.
-* **It prices nothing.** Its walk-forward says it does not beat the Power 4
+* **It prices nothing.** Its walk-forward says it does not beat the CFB
   rating core out of sample, so `params.js` ships
   `calibration.*.points_applied: false` and the Linemaker view renders the
   player and scheme rungs flat on the raw model with the p-value on screen.
@@ -512,7 +543,7 @@ Power 4 board loads its own engine.
 ### Server-side adoption path, if it is ever wanted
 
 Nothing here needs the server. If the layer ever earns `points_applied: true`,
-the natural adoption is the one this document already specifies for the Power 4
+the natural adoption is the one this document already specifies for the CFB
 engine: publish the player-adjusted fair line into `model_predictions` under a
 distinct `model_version` (`edgedesk_player_v1`) beside — never instead of — the
 existing rows, so the two records grade separately and the older one keeps its

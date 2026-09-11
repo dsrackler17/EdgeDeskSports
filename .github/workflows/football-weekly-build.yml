@@ -212,6 +212,18 @@ jobs:
           ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
           ${{ github.event.inputs.rewrite_history == 'true' && '--rewrite-history' || '' }}
 
+      # THE FBS COVERAGE GATE. The board claims to carry every game involving
+      # an active FBS team; this is the job allowed to say that is no longer
+      # true. It rebuilds the universe from the season's own schedule feed,
+      # replays the state the browser replays, and fails on a real coverage
+      # regression — an unmapped program, a conference that vanished, an
+      # eligible game dropped, a duplicate, an FCS opponent quietly graded.
+      # It also writes the machine-readable diagnostic the site links to.
+      - name: FBS coverage gate
+        if: steps.go.outputs.run == 'true'
+        run: node football/fbs/build_coverage.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
       # Re-run against what was actually written. The first pass proved the code
       # is sound; this proves the DATA is.
       - name: Suites (after)
@@ -245,6 +257,14 @@ jobs:
             if (!hist.snapshots.length) fail('no weekly snapshot is on file');
             const reg = require('./football/validation/feature-status.json');
             const moved = reg.features.filter(f => f.may_move_lines);
+            const cov = require('./football/fbs/coverage.json');
+            if (!cov.ok) fail(cov.failures.length + ' FBS coverage check(s) failed: '
+              + cov.failures.map(f => f.name).join('; '));
+            if (!(cov.counts.fbs_teams > 120)) fail('only ' + cov.counts.fbs_teams + ' active FBS programs resolved');
+            if (!(cov.conferences.length >= 10)) fail('only ' + cov.conferences.length + ' conferences resolved');
+            console.log('     FBS coverage: ' + cov.counts.fbs_teams + ' programs, '
+              + cov.conferences.length + ' conferences, ' + cov.slate.total + ' games on the slate '
+              + JSON.stringify(cov.slate.by_group));
             console.log('ok — ' + r.team_count + ' teams, ' + p.player_count + ' players, '
               + r.season + ' ' + r.week_label + ', ' + moved.length + ' validated feature(s)');
             console.log('     read ' + fresh.completed_games + ' completed games ('
@@ -264,7 +284,8 @@ jobs:
                   football/players/snapshots football/players/candidates \
                   football/data/box football/rankings/current.json \
                   football/rankings/snapshots football/rankings/params.js \
-                  football/rankings/history.json football/rankings/health.json
+                  football/rankings/history.json football/rankings/health.json \
+                  football/fbs/coverage.json football/fbs/slate.json
           if git diff --cached --quiet; then
             echo 'nothing changed — quiet day, no commit'
             exit 0

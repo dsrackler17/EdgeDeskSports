@@ -93,10 +93,25 @@ const row = i => FX.rows[i];
 const kickOf = r => global.fbParseUtc(r.raw[FX.raw_head.indexOf('kickoff_local')]);
 
 /* ---- the sanity of the slice itself ------------------------------------ */
-chk('the raw export is still the 80 columns the fixture was built from',
-  global.FBP4_CSV_HEAD.length === FX.raw_head.length
-  && global.FBP4_CSV_HEAD.join('|') === FX.raw_head.join('|'),
-  { got: global.FBP4_CSV_HEAD.length, want: FX.raw_head.length });
+/* THE FIXTURE'S COLUMNS ARE STILL THE EXPORT'S FIRST COLUMNS, in name and in
+   order. The FBS expansion APPENDED its coverage columns (conference,
+   program group, matchup type, model and market status) rather than
+   interleaving them, precisely so a consumer that maps by position — this
+   fixture included — keeps working. That is a stronger statement than the
+   old length check, not a weaker one: every original column must still be
+   exactly where it was, and the new ones are only allowed at the end. */
+chk('every column the fixture was built from is still in place, in order',
+  FX.raw_head.every((h, i) => global.FBP4_CSV_HEAD[i] === h),
+  { firstDrift: FX.raw_head.map((h, i) => (global.FBP4_CSV_HEAD[i] === h ? null : { at: i, got: global.FBP4_CSV_HEAD[i], want: h })).filter(Boolean)[0] });
+chk('anything added to the export was added AFTER them, never among them',
+  global.FBP4_CSV_HEAD.length >= FX.raw_head.length,
+  { got: global.FBP4_CSV_HEAD.length, fixture: FX.raw_head.length });
+chk('the appended block is the FBS coverage schema the board renders',
+  ['home_team_id', 'away_team_id', 'home_conference_id', 'away_conference_id',
+   'home_fbs_group', 'away_fbs_group', 'matchup_type', 'is_conference_game',
+   'model_status', 'data_completeness', 'market_status', 'quote_timestamp']
+    .every(c => global.FBP4_CSV_HEAD.indexOf(c) >= FX.raw_head.length),
+  { added: global.FBP4_CSV_HEAD.slice(FX.raw_head.length) });
 chk('the fixture carries rows to check', FX.rows.length >= 5);
 
 /* ---- the Board sheet --------------------------------------------------- */
