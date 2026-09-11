@@ -56,3 +56,33 @@ The provider files tennis as one scoreboard per tour per day carrying every tour
 live matches together. One poller therefore covers a whole tour-day, and the lock is keyed
 the same way (`atp:2026-05-28`) so two runners can never both drive it. Polling per
 tournament would fetch the same document five times over.
+
+## What a runner had to teach us
+
+None of this could be settled from a laptop. A pull-request probe against the live feed
+returned the following, and three things in it changed the design:
+
+| tour | shape | tournaments | matches |
+|---|---|---|---|
+| ATP | day | 1 | 478 |
+| ATP | range | 5 | 820 |
+| WTA | day | 4 | 601 |
+| WTA | range | 17 | 1349 |
+
+**The same event answers under both tours.** The US Open came back from the ATP scoreboard
+and the WTA scoreboard as the same provider id carrying the same 478 competitions. Two rows
+would collide on one primary key and flip the tournament's tour on every run. So a match
+takes its tour from the draw bucket it is filed under (`Men's Singles` → ATP), a tournament
+whose matches span both is `MIXED`, and the two answers are merged into one row.
+
+**Exactly one poller owns each row.** Otherwise the ATP and WTA runners would write the
+same 478 matches over each other twenty seconds apart. Ownership follows the match's own
+tour; a mixed-doubles match belongs to no single tour, so one is named as its owner by
+convention rather than left to a race.
+
+**A poller writes what moved.** A slam day carries hundreds of matches, nearly all of them
+unchanged between polls. A content hash over the mutable fields decides, and the poll clock
+is deliberately not part of it.
+
+**The sync asks for a range; the poller asks for a day.** The range returned five times the
+tournaments over the same window, so discovery tries it first.

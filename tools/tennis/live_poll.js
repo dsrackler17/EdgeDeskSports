@@ -249,8 +249,21 @@ function tournamentTouch(t, nowIso) {
 
 function stripInternal(m) {
   const out = Object.assign({}, m);
-  ['inline_stats', 'grouping', 'provider_tournament_id', 'updated_at', 'ingested_at'].forEach(k => { delete out[k]; });
+  ['inline_stats', 'grouping', 'tour_source', 'provider_tournament_id', 'updated_at', 'ingested_at'].forEach(k => { delete out[k]; });
   return out;
+}
+
+/* The fields a poll can change. source_updated_at is deliberately NOT among
+   them: it moves every poll, and hashing it would make every row dirty. */
+const MATCH_MUTABLE = ['status', 'status_detail', 'current_set', 'sets_home', 'sets_away', 'games_home', 'games_away',
+  'points_home', 'points_away', 'server_side', 'winner_side', 'result_type', 'result_detail',
+  'first_point_at', 'close_bound_source', 'completed_at', 'home_name', 'away_name', 'home_player_id', 'away_player_id',
+  'round', 'court', 'best_of', 'scheduled_at', 'match_order', 'tour'];
+function matchHash(m) {
+  const o = {};
+  MATCH_MUTABLE.forEach(k => { o[k] = m[k] == null ? '' : m[k]; });
+  o.set_scores = JSON.stringify(m.set_scores || []);
+  return hashOf(o);
 }
 
 /* ---- one poll ------------------------------------------------------------- */
@@ -264,13 +277,24 @@ async function pollOnce(ctx) {
   const unmapped = {};
   let statErrors = 0, latency = res.latency;
 
-  /* 1. every tournament the day carries, and every match under it */
+  /* 1. every tournament the day carries, and every match THIS TOUR OWNS.
+
+     A runner showed the provider returning a combined event (the US Open)
+     from both the atp and the wta scoreboard as the same id carrying the same
+     478 competitions. Two pollers would then write the same rows over each
+     other twenty seconds apart. So each match is owned by exactly one tour —
+     read from the draw bucket it is filed under — and a poller writes only
+     what it owns. Mixed doubles belongs to no single tour, so one is named as
+     its owner by convention (E.ownerTour). */
   const nextMatches = [], byTournament = {};
   const seenTournaments = [];
+  const wantTour = String(ctx.tour || '').toUpperCase();
+  let notMine = 0;
   (res.tournaments || []).forEach(t => {
     const rows = S.tournamentRows(t, nowIso);
     seenTournaments.push(rows.tournament);
     rows.matches.forEach(m => {
+      if (E.ownerTour(m.tour) !== wantTour) { notMine++; return; }
       const prev = state.matches[m.match_id];
       /* identity belongs to the sync: the poller carries it forward, never re-derives it */
       if (prev) {
@@ -294,9 +318,20 @@ async function pollOnce(ctx) {
     await db.upsert('tennis', 'tournaments', seenTournaments.map(t => tournamentTouch(t, nowIso)), 'tournament_id', { returning: false });
     writes.tournaments += seenTournaments.length;
   }
-  if (!o.dryRun && nextMatches.length) {
-    await db.upsert('tennis', 'live_matches', nextMatches.map(stripInternal), 'match_id', { returning: false });
-    writes.matches += nextMatches.length;
+  /* WRITE WHAT MOVED. A slam day carries hundreds of matches, almost all of
+     them unchanged between polls; upserting every one of them every twenty
+     seconds would be hundreds of writes a minute for nothing. A content hash
+     over the mutable fields decides. The first poll of a run writes every row
+     it owns, because the hash is not yet known for any of them. */
+  const dirty = nextMatches.filter(m => {
+    const h = matchHash(m);
+    if (state.matchHash[m.match_id] === h) return false;
+    state.matchHash[m.match_id] = h;
+    return true;
+  });
+  if (!o.dryRun && dirty.length) {
+    await db.upsert('tennis', 'live_matches', dirty.map(stripInternal), 'match_id', { returning: false, chunk: 200 });
+    writes.matches += dirty.length;
   }
   const changed = nextMatches.filter(m => state.matchStatus[m.match_id] !== m.status);
   nextMatches.forEach(m => { state.matches[m.match_id] = Object.assign({}, state.matches[m.match_id] || {}, m); state.matchStatus[m.match_id] = m.status; });
@@ -422,7 +457,7 @@ async function pollOnce(ctx) {
     ? `${R.shortName(lead.home_name)} vs ${R.shortName(lead.away_name)} ${R.scoreLine(lead) || ''} · ${live.length} live, ${doneCount} done, ${scheduled} to come`
     : `${live.length} live, ${doneCount} done, ${scheduled} to come`;
   return { matches: nextMatches, tournaments: seenTournaments, anyLive, done, writes, latency, statErrors, unmapped, message, via: res.via,
-    counts: { live: live.length, done: doneCount, scheduled } };
+    counts: { live: live.length, done: doneCount, scheduled, written: dirty.length, other_tour: notMine } };
 }
 
 const SIGNAL_COLS = 'sig_key,event_id,sport_key,market,selection,point,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,sharp_fair,consensus_fair,n_books,has_sharp,last_seen_at';
@@ -451,13 +486,24 @@ function statsFromSummary(json, providerMatchId, side) {
 }
 
 /* ---- startup state, from the database ------------------------------------- */
+/* The tour labels one poller owns. A mixed-doubles row carries tour MIXED and
+   is owned by exactly one tour (E.ownerTour), so the owner must LOAD it too —
+   otherwise a restart would not know its first point and would fall back to
+   the weaker scheduled-start bound on a match it had been watching. */
+function ownedTours(tour) {
+  const t = String(tour || '').toUpperCase();
+  const mine = [t];
+  if (E.ownerTour('MIXED') === t) mine.push('MIXED');
+  return mine;
+}
+
 async function loadState(db, tour, dayIso) {
-  const state = { matches: {}, matchStatus: {}, lastPreSeen: {}, setEnds: {}, finalDone: {}, statMisses: {},
+  const state = { matches: {}, matchStatus: {}, matchHash: {}, lastPreSeen: {}, setEnds: {}, finalDone: {}, statMisses: {},
     tournaments: {}, lastMarketAt: 0, lastRollupAt: 0, marketOk: null };
   const from = new Date(Date.parse(dayIso + 'T00:00:00Z') - 36 * 3600000).toISOString();
   const to = new Date(Date.parse(dayIso + 'T00:00:00Z') + 60 * 3600000).toISOString();
   const rows = await db.selectAll('tennis', 'live_matches',
-    `select=*&tour=eq.${encodeURIComponent(String(tour).toUpperCase())}&scheduled_at=gte.${from}&scheduled_at=lte.${to}&order=match_id.asc`);
+    `select=*&tour=in.${D.inList(ownedTours(tour))}&scheduled_at=gte.${from}&scheduled_at=lte.${to}&order=match_id.asc`);
   rows.forEach(m => {
     state.matches[m.match_id] = m;
     state.matchStatus[m.match_id] = m.status;
@@ -544,7 +590,7 @@ async function run(o, deps) {
         Object.keys(r.unmapped).forEach(k => { unmappedAll[k] = (unmappedAll[k] || 0) + r.unmapped[k]; });
         interval = r.anyLive ? LIVE_INTERVAL_S : IDLE_INTERVAL_S;
         summary.message = r.message; lastCounts = r.counts;
-        log(`${r.message} · ${r.via} ${r.latency}ms${r.statErrors ? ' · ' + r.statErrors + ' stat fetch error(s)' : ''}`);
+        log(`${r.message} · ${r.via} ${r.latency}ms · ${r.counts.written} row(s) written${r.counts.other_tour ? ', ' + r.counts.other_tour + ' left to the other tour' : ''}${r.statErrors ? ' · ' + r.statErrors + ' stat fetch error(s)' : ''}`);
         await ledger.beat({ polls: summary.polls, writes: summary.writes, consecutive_failures: 0, last_success_at: clock(), last_source_at: clock(),
           source_latency_ms: r.latency, message: r.message,
           details: { tour, day, counts: r.counts, via: r.via, unmapped_keys: unmappedAll, stat_errors: r.statErrors,
@@ -609,6 +655,6 @@ async function main() {
 }
 
 module.exports = { parseArgs, fixtureSource, applyFirstPoint, diffStats, setEndsFromSnapshots, setRowsFromEnds, setRowsFromProvider,
-  tournamentRollup, statsFromSummary, pollOnce, loadState, run, hashOf, gamesInSet, SET_FIELDS, SNAP_FIELDS,
+  tournamentRollup, statsFromSummary, pollOnce, loadState, ownedTours, run, hashOf, matchHash, gamesInSet, SET_FIELDS, SNAP_FIELDS, MATCH_MUTABLE,
   LOCK_TTL_S, LIVE_INTERVAL_S, IDLE_INTERVAL_S, MARKET_EVERY_S, TERMINAL };
 if (require.main === module) main();

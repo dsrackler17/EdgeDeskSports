@@ -142,6 +142,34 @@ function groupingLabel(g) {
   const s = g.grouping || g;
   return str((s && (s.shortName || s.name || s.displayName || s.slug)) || null);
 }
+/* WHICH TOUR A MATCH BELONGS TO, from the draw bucket it is filed under.
+   A runner showed why this matters: ESPN's atp scoreboard and its wta
+   scoreboard both return the US Open as the SAME event id carrying the SAME
+   478 competitions — men's singles, women's singles, every doubles draw. The
+   tour that answered is therefore not the tour a match is played on, and
+   trusting it would file every women's match as ATP (and let two pollers
+   write the same rows).
+
+   MIXED is real (mixed doubles) and is kept as itself. A label the classifier
+   does not recognise falls back to the tour that answered and is reported, so
+   an operator extends this with evidence rather than a guess. */
+function tourOfGrouping(label, feedTour) {
+  const s = String(label == null ? '' : label).toLowerCase();
+  if (/mixed/.test(s)) return 'MIXED';
+  if (/\bwomen|\bwta\b|ladies|girls/.test(s)) return 'WTA';
+  if (/\bmen|\batp\b|boys/.test(s)) return 'ATP';
+  return TOUR_LABEL[feedTour] || 'OTHER';
+}
+
+/* Which tour's poller owns a match, so exactly one runner writes each row.
+   A mixed-doubles match belongs to no single tour, so one is named as its
+   owner by convention: the first tour in TOURS. Stated rather than emergent. */
+function ownerTour(matchTour) {
+  const t = String(matchTour || '').toUpperCase();
+  if (t === 'ATP' || t === 'WTA') return t;
+  return TOUR_LABEL[TOURS[0]];
+}
+
 function bestOfFrom(c, tour) {
   const n = intOrNull(c && c.format && c.format.sets && (c.format.sets.count != null ? c.format.sets.count : c.format.sets.value));
   if (n === 3 || n === 5) return n;
@@ -149,7 +177,7 @@ function bestOfFrom(c, tour) {
 }
 
 /* One competition -> one match. */
-function parseMatch(c, ev, groupLabel, idx) {
+function parseMatch(c, ev, groupLabel, idx, feedTour) {
   if (!c || !Array.isArray(c.competitors) || c.competitors.length < 2) return null;
   const comps = c.competitors.slice().sort((a, b) => (numOrNull(a.order) || 99) - (numOrNull(b.order) || 99));
   const home = sideOf(comps[0]), away = sideOf(comps[1]);
@@ -169,6 +197,8 @@ function parseMatch(c, ev, groupLabel, idx) {
     provider_tournament_id: str(ev.id),
     round: roundOf(c) || (groupLabel || null),
     grouping: groupLabel || null,
+    tour: tourOfGrouping(groupLabel, feedTour),
+    tour_source: /mixed|women|wta|men|atp|ladies|boys|girls/i.test(String(groupLabel || '')) ? 'grouping' : 'feed',
     is_doubles: doubles,
     best_of: bestOfFrom(c),
     court: str((c.venue && (c.venue.fullName || c.venue.name)) || c.court || null),
@@ -212,16 +242,23 @@ function parseTournament(ev, tour) {
   }
   const venue = (ev.venue) || (comps[0] && comps[0].c && comps[0].c.venue) || {};
   const addr = venue.address || ev.address || {};
-  const matches = comps.map((x, i) => parseMatch(x.c, ev, x.g, i)).filter(Boolean);
+  const matches = comps.map((x, i) => parseMatch(x.c, ev, x.g, i, tour)).filter(Boolean);
   const anyLive = matches.some(m => m.status === 'live');
   const allDone = matches.length > 0 && matches.every(m => ['final', 'walkover', 'cancelled'].includes(m.status));
   let state = 'scheduled';
   if (anyLive) state = 'live';
   else if (allDone) state = 'final';
   const season = ev.season || {};
+  /* A combined event (a slam) carries both draws. Its own tour is what its
+     matches say, not what answered: two draws means MIXED. */
+  const tours = {};
+  matches.forEach(m => { if (m.tour === 'ATP' || m.tour === 'WTA') tours[m.tour] = true; });
+  const seen = Object.keys(tours);
+  const eventTour = seen.length > 1 ? 'MIXED' : (seen[0] || TOUR_LABEL[tour] || 'OTHER');
   return {
     provider_tournament_id: str(ev.id),
-    tour: TOUR_LABEL[tour] || 'OTHER',
+    tour: eventTour,
+    feed_tour: TOUR_LABEL[tour] || 'OTHER',
     name: str(ev.name || ev.shortName),
     short_name: str(ev.shortName),
     level: str((ev.tournament && (ev.tournament.level || ev.tournament.type)) || (season.slug) || null),
@@ -419,11 +456,46 @@ function inWindow(t, fromMs, toMs) {
   if (!isFinite(d)) return true;              /* an undated tournament is kept, never silently dropped */
   return d >= fromMs - 21 * 86400000 && d <= toMs + 86400000;
 }
+/* THE SHAPE THAT ANSWERS THE QUESTION BEING ASKED. A runner measured all
+   three against the live feed: for one tour, `day` returned 1 tournament and
+   `range` returned 5 over the same window, with `plain` matching `day`. The
+   sync asks about a WINDOW, so it asks for the range first and falls back to
+   the narrower shapes; the poller asks about TODAY and has its own day()
+   request. Whichever shape answered is recorded either way. */
 function discoveryAttempts(tour, fromMs, toMs) {
-  const out = [{ via: 'day', url: scoreboardDayUrl(tour, Date.now()) }];
-  out.push({ via: 'range', url: scoreboardRangeUrl(tour, fromMs, toMs) });
-  out.push({ via: 'plain', url: scoreboardPlainUrl(tour) });
-  return out;
+  return [
+    { via: 'range', url: scoreboardRangeUrl(tour, fromMs, toMs) },
+    { via: 'day', url: scoreboardDayUrl(tour, Date.now()) },
+    { via: 'plain', url: scoreboardPlainUrl(tour) }
+  ];
+}
+
+/* THE SAME EVENT, ANSWERED TWICE. A runner showed the US Open coming back
+   from both the atp and the wta scoreboard as provider id 189-2026 with the
+   same 478 competitions. Two rows would collide on the same primary key and
+   flip the tournament's tour on every run, so the two answers are merged into
+   one: matches unioned by their own provider id, and the tour set to what the
+   merged draw actually contains. */
+function mergeTournaments(list) {
+  const by = {}, order = [];
+  (list || []).forEach(t => {
+    if (!t) return;
+    const k = String(t.provider_tournament_id);
+    const prev = by[k];
+    if (!prev) { by[k] = t; order.push(k); return; }
+    const seen = {};
+    prev.matches.forEach(m => { seen[String(m.provider_match_id)] = true; });
+    t.matches.forEach(m => { if (!seen[String(m.provider_match_id)]) { prev.matches.push(m); seen[String(m.provider_match_id)] = true; } });
+    const tours = {};
+    prev.matches.forEach(m => { if (m.tour === 'ATP' || m.tour === 'WTA') tours[m.tour] = true; });
+    const kinds = Object.keys(tours);
+    prev.tour = kinds.length > 1 ? 'MIXED' : (kinds[0] || prev.tour);
+    prev.feed_tour = [prev.feed_tour, t.feed_tour].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join('+');
+    prev.groupings = (prev.groupings || []).concat(t.groupings || []).filter((x, i, a) => a.indexOf(x) === i);
+    if (t.state === 'live') prev.state = 'live';
+    ['surface', 'venue', 'city', 'country', 'level', 'draw_size', 'end_date'].forEach(f => { if (prev[f] == null && t[f] != null) prev[f] = t[f]; });
+  });
+  return order.map(k => by[k]);
 }
 
 function source(opts) {
@@ -480,6 +552,7 @@ function source(opts) {
           out.byTour[tour] = { via: r.via, tournaments: r.tournaments.length, totalSeen: r.totalSeen };
         } catch (e) { out.errors.push({ tour, error: String(e && e.message || e).slice(0, 200), tried: e.tried || null }); }
       }
+      out.tournaments = mergeTournaments(out.tournaments);
       if (!out.tournaments.length && out.errors.length === (tours || TOURS).length) {
         const err = new Error('no tour answered: ' + out.errors.map(x => x.tour + ' ' + x.error).join(' | '));
         err.byTour = out.byTour; err.errors = out.errors;
@@ -511,4 +584,4 @@ function source(opts) {
 
 module.exports = { ESPN_API, ESPN_WEB_API, TOURS, TOUR_LABEL, scoreboardDayUrl, scoreboardRangeUrl, scoreboardPlainUrl, summaryUrl,
   fetchJson, parseScoreboard, parseTournament, parseMatch, statusOf, sideOf, STAT_ALIASES, STAT_FIELDS, STAT_IGNORE, COMPOSITE,
-  normalizeStats, setSplits, flattenStats, isPeriodSplit, discoveryAttempts, inWindow, source, keyOf, pctFrom };
+  normalizeStats, setSplits, flattenStats, isPeriodSplit, tourOfGrouping, ownerTour, mergeTournaments, discoveryAttempts, inWindow, source, keyOf, pctFrom };

@@ -264,6 +264,36 @@ eq('a first-serve count is stored as a count', [ns.stats.first_serves_in, ns.sta
 eq('nothing in the fixture is left unmapped', Object.keys(ns.unmapped), []);
 const splits = E.setSplits(pm.inline_stats.home);
 eq('the per-set split is still readable on its own', splits[1].service_games_won, 3);
+eq('a match takes its tour from the draw bucket it is filed under', pm.tour, 'ATP');
+eq('and says whether that came from the bucket or the feed', pm.tour_source, 'grouping');
+eq('a women\u2019s draw under the men\u2019s scoreboard is still WTA', E.tourOfGrouping("Women's Singles", 'atp'), 'WTA');
+eq('mixed doubles is kept as itself', E.tourOfGrouping('Mixed Doubles', 'atp'), 'MIXED');
+eq('a bucket the classifier does not know falls back to the tour that answered', E.tourOfGrouping('Qualifying', 'wta'), 'WTA');
+eq('exactly one tour owns a mixed-doubles row', E.ownerTour('MIXED'), 'ATP');
+eq('and each tour owns its own', [E.ownerTour('ATP'), E.ownerTour('WTA')], ['ATP', 'WTA']);
+
+/* A runner showed the provider returning the US Open from BOTH tour
+   scoreboards as the same id with the same competitions. Two rows would
+   collide on one primary key and flip the tournament's tour every run. */
+function slamDoc(tour) {
+  return F.day({ tour: tour, tournaments: [{ id: '189-2026', name: 'US Open', start: '2026-08-24T09:00Z', groupings: {
+    "Men's Singles": [{ id: 'ms1', status: 'live', set: 2, home: { id: 'a', name: 'Novak Djokovic', sets: [6, 1] }, away: { id: 'b', name: 'Carlos Alcaraz', sets: [3, 2] } }],
+    "Women's Singles": [{ id: 'ws1', status: 'pre', home: { id: 'c', name: 'Venus Williams', sets: [] }, away: { id: 'd', name: 'Ann Fixture', sets: [] } }],
+    'Mixed Doubles': [{ id: 'xd1', status: 'pre', home: { id: 'e', pair: [{ id: 'f', name: 'P One' }, { id: 'g', name: 'P Two' }], sets: [] }, away: { id: 'h', pair: [{ id: 'i', name: 'P Three' }, { id: 'j', name: 'P Four' }], sets: [] } }]
+  } }] });
+}
+const bothTours = E.parseScoreboard(slamDoc('atp'), 'atp').concat(E.parseScoreboard(slamDoc('wta'), 'wta'));
+eq('the same event answered by two tours arrives twice', bothTours.length, 2);
+const merged = E.mergeTournaments(bothTours);
+eq('and is merged into one tournament row', merged.length, 1);
+eq('whose tour is what its draws actually contain', merged[0].tour, 'MIXED');
+eq('carrying every match once', merged[0].matches.length, 3);
+eq('and recording which feeds answered', merged[0].feed_tour, 'ATP+WTA');
+eq('each match keeps the tour of its own draw',
+  merged[0].matches.map(m => m.tour), ['ATP', 'WTA', 'MIXED']);
+eq('so exactly one poller writes each of them',
+  merged[0].matches.map(m => E.ownerTour(m.tour)), ['ATP', 'WTA', 'ATP']);
+
 eq('a status the feed never sends parses to unknown rather than crashing', E.statusOf({}).status, 'unknown');
 eq('a retirement is read as one', E.statusOf({ type: { name: 'STATUS_RETIRED', state: 'post', completed: true } }).resultType, 'retirement');
 eq('a walkover is read as one', E.statusOf({ type: { name: 'STATUS_WALKOVER', state: 'post', completed: true } }).status, 'walkover');
@@ -328,6 +358,16 @@ eq('the tour-day with play on it comes first', gate[0].lock_key, 'atp:2026-05-28
 eq('a second tour on the same day gets its own runner', gate.length, 2);
 chk('a tour-day a week away is not polled', !gate.some(g => g.day === '2026-06-04'));
 eq('a quiet database asks for no runner', G.pick([], NOW).length, 0);
+/* a slam day: the mixed draw is driven by exactly one of the two runners */
+const slamGate = G.pick([
+  { match_id: 'a', tour: 'ATP', status: 'live', scheduled_at: '2026-08-24T13:00:00Z', tournament_id: 't1' },
+  { match_id: 'b', tour: 'WTA', status: 'live', scheduled_at: '2026-08-24T13:00:00Z', tournament_id: 't1' },
+  { match_id: 'c', tour: 'MIXED', status: 'scheduled', scheduled_at: '2026-08-24T17:00:00Z', tournament_id: 't1' }
+], Date.parse('2026-08-24T15:00:00Z'));
+eq('a combined event gives each tour one runner and no third', slamGate.map(g => g.lock_key), ['atp:2026-08-24', 'wta:2026-08-24']);
+eq('and the mixed draw is counted under exactly one of them', slamGate.map(g => g.matches), [2, 1]);
+eq('the runner that owns mixed also loads it back after a restart', P.ownedTours('atp'), ['ATP', 'MIXED']);
+eq('and the other one does not', P.ownedTours('wta'), ['WTA']);
 eq('the lock key is the tour and the day', G.lockKey('ATP', '2026-05-28'), 'atp:2026-05-28');
 
 /* ======================================================================== */
@@ -369,6 +409,11 @@ eq('a draw that has finished is final',
   P.tournamentRollup({ tournament_id: 't1', state: 'live' }, [{ status: 'final' }, { status: 'walkover' }], 'x').state, 'final');
 eq('the same content hashes the same twice', P.hashOf({ a: 1, b: 2 }), P.hashOf({ b: 2, a: 1 }));
 chk('different content hashes differently', P.hashOf({ a: 1 }) !== P.hashOf({ a: 2 }));
+
+const mA = { match_id: 'm', status: 'live', current_set: 2, set_scores: [{ home: 6, away: 3 }], source_updated_at: 'A' };
+chk('a later poll of an unchanged match hashes the same', P.matchHash(mA) === P.matchHash(Object.assign({}, mA, { source_updated_at: 'B' })));
+chk('a game won changes the hash', P.matchHash(mA) !== P.matchHash(Object.assign({}, mA, { games_home: 3 })));
+chk('the poll clock is deliberately not part of the hash', P.MATCH_MUTABLE.indexOf('source_updated_at') < 0);
 
 /* ======================================================================== */
 /* 12. END TO END, ON AN IN-MEMORY DATABASE                                 */
@@ -433,6 +478,31 @@ chk('different content hashes differently', P.hashOf({ a: 1 }) !== P.hashOf({ a:
   pdb.rows('tennis', 'meta').forEach(m => { meta[m.key] = m.value; });
   eq('the poller publishes its own status to the meta ledger', meta.tennis_live_last_status, 'ok');
   eq('and the scope it polled', meta.tennis_live_last_scope, 'atp:2026-05-28');
+
+  /* ---- a combined event: one owner per row, and only what moved --------- */
+  const sdb = fakeDb({});
+  let stick = Date.parse('2026-08-24T15:00:00Z');
+  const sclock = () => new Date(stick).toISOString();
+  sdb.setNow(sclock);
+  const ssrc = { async day(tour) { return { tournaments: E.parseScoreboard(slamDoc(tour), tour), latency: 4, via: 'fixture' }; } };
+  const sctx = { db: sdb, src: ssrc, o: { dryRun: false }, now: sclock, tour: 'atp', day: '2026-08-24',
+    dayMs: Date.parse('2026-08-24T12:00:00Z'), lockKey: 'atp:2026-08-24', links: [],
+    state: await P.loadState(sdb, 'atp', '2026-08-24') };
+  const first = await P.pollOnce(sctx);
+  eq('the ATP poller takes the men’s and the mixed rows', first.counts.written, 2);
+  eq('and leaves the women’s row to the WTA poller', first.counts.other_tour, 1);
+  eq('so only the rows it owns are on file', sdb.count('tennis', 'live_matches'), 2);
+  stick += 20000;
+  const second = await P.pollOnce(sctx);
+  eq('a second poll of an unchanged draw writes nothing', second.counts.written, 0);
+  eq('and adds no rows', sdb.count('tennis', 'live_matches'), 2);
+  const wctx = Object.assign({}, sctx, { tour: 'wta', lockKey: 'wta:2026-08-24', state: await P.loadState(sdb, 'wta', '2026-08-24') });
+  const wfirst = await P.pollOnce(wctx);
+  eq('the WTA poller takes exactly the row the ATP poller left', wfirst.counts.written, 1);
+  eq('and between them every match is written once', sdb.count('tennis', 'live_matches'), 3);
+  const tours = {};
+  sdb.rows('tennis', 'live_matches').forEach(m => { tours[m.tour] = (tours[m.tour] || 0) + 1; });
+  eq('each row carries the tour of its own draw', tours, { ATP: 1, MIXED: 1, WTA: 1 });
 
   /* ---- a restart mid-match keeps the strict boundary -------------------- */
   const rdb = fakeDb({ 'tennis.live_matches': pdb.rows('tennis', 'live_matches'), 'tennis.tournaments': pdb.rows('tennis', 'tournaments'),

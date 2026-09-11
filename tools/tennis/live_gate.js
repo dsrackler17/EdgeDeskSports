@@ -28,6 +28,7 @@
 
 const fs = require('fs');
 const D = require('./db.js');
+const E = require('./espn.js');
 
 const AHEAD_MS = 90 * 60 * 1000;        /* start polling this long before the first match */
 const LATE_MS = 14 * 3600 * 1000;       /* keep polling this long after the last one is due */
@@ -59,7 +60,9 @@ function pick(matches, nowMs) {
   const groups = {};
   (matches || []).forEach(m => {
     if (!['scheduled', 'live'].includes(m.status)) return;
-    const tour = String(m.tour || '').toLowerCase();
+    /* the tour that OWNS the row, not the label on it: a mixed-doubles match
+       carries tour MIXED and is driven by exactly one poller */
+    const tour = String(E.ownerTour(m.tour) || '').toLowerCase();
     if (!tour) return;
     const day = dayOf(m.scheduled_at, nowMs);
     const k = lockKey(tour, day);

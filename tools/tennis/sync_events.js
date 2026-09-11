@@ -84,7 +84,10 @@ function tournamentRows(t, nowIso) {
   const matches = t.matches.map(m => {
     const row = {
       match_id: matchId(m.provider_match_id), tournament_id: tid, provider: 'espn', provider_match_id: String(m.provider_match_id),
-      tour: t.tour, round: m.round, match_order: m.match_order, court: m.court,
+      /* the match's OWN tour, read from the draw bucket it is filed under —
+         a combined event returns men's and women's matches together, so the
+         tournament's tour is not a match's tour */
+      tour: m.tour || t.tour, round: m.round, match_order: m.match_order, court: m.court,
       is_doubles: !!m.is_doubles, best_of: m.best_of, scheduled_at: m.scheduled_at,
       home_provider_id: m.home_provider_id, away_provider_id: m.away_provider_id,
       home_name: m.home_name, away_name: m.away_name,
@@ -296,7 +299,7 @@ async function run(o, deps) {
   const allMatches = [], matchesById = {}, tournamentsById = {}, liveIds = new Set();
   for (const t of parsed) {
     const rows = tournamentRows(t, nowIso);
-    const existing = await db.select('tennis', 'live_matches', `select=match_id,tournament_id,provider,provider_match_id,status,status_detail,first_point_at,scheduled_at&tournament_id=eq.${encodeURIComponent(rows.tournament.tournament_id)}`);
+    const existing = await db.selectAll('tennis', 'live_matches', `select=match_id,tournament_id,provider,provider_match_id,status,status_detail,first_point_at,scheduled_at&tournament_id=eq.${encodeURIComponent(rows.tournament.tournament_id)}&order=match_id.asc`);
     const rec = reconcileMatches(existing, rows.matches, nowIso);
     const res = resolveMatches(rec.upserts, index, aliases);
     summary.resolved += rec.upserts.filter(m => !m.is_doubles && m.home_player_id && m.away_player_id).length;
@@ -309,8 +312,11 @@ async function run(o, deps) {
     rec.upserts.forEach(m => { matchesById[m.match_id] = Object.assign({}, (existing || []).find(x => x.match_id === m.match_id) || {}, m); });
     if (o.commit) {
       await db.upsert('tennis', 'tournaments', [rows.tournament], 'tournament_id', { returning: false });
-      if (rec.upserts.length) await db.upsert('tennis', 'live_matches', rec.upserts, 'match_id', { returning: false });
-      if (rec.cancelled.length) await db.upsert('tennis', 'live_matches', rec.cancelled, 'match_id', { returning: false });
+      /* a slam's scoreboard carries its whole draw — a runner measured 478
+         competitions under one event id — so the write is chunked rather than
+         sent as one request the gateway would refuse */
+      if (rec.upserts.length) await db.upsert('tennis', 'live_matches', rec.upserts, 'match_id', { returning: false, chunk: 200 });
+      if (rec.cancelled.length) await db.upsert('tennis', 'live_matches', rec.cancelled, 'match_id', { returning: false, chunk: 200 });
       if (res.aliasRows.length) { summary.aliases += await writeAliases(db, res.aliasRows, summary); res.aliasRows.forEach(a => { aliases[a.alias_key] = a.player_id; }); }
     } else {
       summary.aliases += res.aliasRows.length;
