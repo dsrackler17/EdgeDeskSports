@@ -608,6 +608,45 @@ chk('the poll clock is deliberately not part of the hash', P.MATCH_MUTABLE.index
     PL.athletesOfSide('111', 'Bopanna/Ebden', true), []);
   eq('a side with no provider id yields nobody', PL.athletesOfSide('', 'Vilius Gaubas', false), []);
 
+  /* AN ENTRANT WHO IS NOT YET A PERSON.
+
+     The provider fields non-positive athlete ids for a qualifier, a bye, a
+     slot nobody has won. A real runner showed id -3 standing in a SINGLES
+     match on the ATP draw and on the WTA draw in the same week — and since
+     one provider id is one person in one global namespace, that settles it:
+     it is not a person. Admitting it would collapse every placeholder in
+     every draw into a single player and resolve every such side to it. */
+  chk('a positive integer is an athlete id', R.isProviderAthleteId('4321'));
+  chk('a negative id is not', !R.isProviderAthleteId('-3'));
+  chk('zero is not', !R.isProviderAthleteId('0'));
+  chk('something that is not a number at all is not', !R.isProviderAthleteId('12a'));
+  chk('nothing is not', !R.isProviderAthleteId(null) && !R.isProviderAthleteId(''));
+  eq('a placeholder singles entrant is never a directory row',
+    PL.athletesOfSide('-3', 'Qualifier', false), []);
+  eq('a pair with a placeholder in it is not a formed pair',
+    PL.athletesOfSide('-1/222', 'Qualifier/Matthew Ebden', true), []);
+  eq('the same placeholder across two tours still yields nobody',
+    PL.directoryRows([
+      { tour: 'ATP', is_doubles: false, home_provider_id: '-3', home_name: 'Qualifier',
+        away_provider_id: '-3', away_name: 'Qualifier' },
+      { tour: 'WTA', is_doubles: false, home_provider_id: '-3', home_name: 'Qualifier',
+        away_provider_id: '900', away_name: 'Iga Swiatek' }
+    ], '2026-05-28T10:00:00Z').map(r => r.player_id), ['espn:900']);
+
+  /* and the alias path cannot mint one either: an alias keyed on a
+     placeholder would point every future qualifier at one player */
+  {
+    const ix = R.buildPlayerIndex([{ player_id: 'p-1', full_name: 'Qualifier', tour: 'ATP' }]);
+    const ms = [{ match_id: 'm', tour: 'ATP', is_doubles: false,
+      home_name: 'Qualifier', home_provider_id: '-3',
+      away_name: 'Qualifier', away_provider_id: '-4' }];
+    const res = S.resolveMatches(ms, ix, {});
+    chk('no alias is written for a placeholder id',
+      !res.aliasRows.some(a => a.alias_key.indexOf('espn:-') === 0), JSON.stringify(res.aliasRows));
+    chk('and a placeholder id in an alias table is not honoured',
+      R.resolvePlayer('Someone', '-3', ix, { 'espn:-3': 'p-1' }).method !== 'provider_id');
+  }
+
   /* --- the rows it derives ------------------------------------------------ */
   const DRAW = [
     { match_id: 'm1', tour: 'ATP', is_doubles: false, home_provider_id: '10', home_name: 'F. Alves',
@@ -747,6 +786,17 @@ chk('the poll clock is deliberately not part of the hash', P.MATCH_MUTABLE.index
       asked.indexOf('athlete:atp:4321') >= 0, asked.join(' | '));
     chk('and it asks the rankings endpoint', asked.indexOf('rankings:atp') >= 0, asked.join(' | '));
     chk('both answering is a clean probe', v.ok === true, JSON.stringify(v));
+
+    const withPlaceholders = {
+      async scoreboard() { return { via: 'day', tournaments: [{ tour: 'ATP', matches: [
+        { tour: 'ATP', is_doubles: false, home_provider_id: '-3', home_name: 'Qualifier',
+          away_provider_id: '4321', away_name: 'Vilius Gaubas' }] }] }; },
+      async athlete() { return { athlete: { country: 'LTU' }, via: 'web-v3' }; },
+      async rankings() { return { rows: [{ provider_athlete_id: '4321', rank: 61 }], via: 'site-v2' }; }
+    };
+    const v3 = await PL.verify({ backDays: 21, fwdDays: 28, now: '2026-05-28T10:00:00Z', tours: ['atp'] }, { source: withPlaceholders });
+    eq('the probe counts what the id rule turned away', v3.scoreboard.refused, 1);
+    eq('and the athlete it asks about is a real one, not the placeholder', v3.athlete.id, '4321');
 
     const quiet = {
       async scoreboard() { return { via: 'day', tournaments: [{ tour: 'ATP', matches: [

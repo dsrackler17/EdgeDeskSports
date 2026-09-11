@@ -56,6 +56,15 @@ alter table tennis.player_directory add  constraint tennis_directory_provider_ke
 alter table tennis.player_directory drop constraint if exists tennis_directory_tour_shape;
 alter table tennis.player_directory add  constraint tennis_directory_tour_shape
   check (tour is null or tour in ('ATP','WTA','MIXED','OTHER'));
+-- A provider athlete id is a POSITIVE INTEGER in one global namespace. The
+-- feed also carries non-positive ids for entrants who are not yet a person —
+-- a qualifier, a bye, a slot nobody has won. The same one turns up on both
+-- tours in the same week, so it cannot be an identity: admitting it would
+-- collapse every placeholder in every draw into a single player. The database
+-- refuses it too, so no future writer can reintroduce it.
+alter table tennis.player_directory drop constraint if exists tennis_directory_athlete_id_shape;
+alter table tennis.player_directory add  constraint tennis_directory_athlete_id_shape
+  check (provider_athlete_id ~ '^[0-9]+$' and provider_athlete_id::bigint > 0);
 alter table tennis.player_directory drop constraint if exists tennis_directory_id_shape;
 alter table tennis.player_directory add  constraint tennis_directory_id_shape check (player_id like '%:%');
 
@@ -104,7 +113,8 @@ union all select 5, 'row level security is on',
             then 'ok' else 'CHECK THIS' end
 union all select 6, 'constraints and indexes installed',
        case when (select count(*) from pg_constraint
-                   where conname in ('tennis_directory_provider_key','tennis_directory_tour_shape','tennis_directory_id_shape')) = 3
+                   where conname in ('tennis_directory_provider_key','tennis_directory_tour_shape',
+                                     'tennis_directory_id_shape','tennis_directory_athlete_id_shape')) = 4
              and to_regclass('tennis.tennis_directory_name_idx') is not null
             then 'ok' else 'CHECK THIS' end
 union all select 7, 'the LICENSED record is untouched by this file',

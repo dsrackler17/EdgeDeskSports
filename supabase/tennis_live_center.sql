@@ -512,6 +512,16 @@ create table if not exists tennis.player_directory (
   constraint tennis_directory_tour_shape check (tour is null or tour in ('ATP','WTA','MIXED','OTHER')),
   constraint tennis_directory_id_shape check (player_id like '%:%')
 );
+-- A provider athlete id is a POSITIVE INTEGER in one global namespace. The
+-- feed also carries non-positive ids for entrants who are not yet a person —
+-- a qualifier, a bye, a slot nobody has won. The same one turns up on both
+-- tours in the same week, so it cannot be an identity: admitting it would
+-- collapse every placeholder in every draw into a single player. Added
+-- separately from the table so a database that already has the table gets it
+-- too, and so a re-run never fails on a constraint that exists.
+alter table tennis.player_directory drop constraint if exists tennis_directory_athlete_id_shape;
+alter table tennis.player_directory add  constraint tennis_directory_athlete_id_shape
+  check (provider_athlete_id ~ '^[0-9]+$' and provider_athlete_id::bigint > 0);
 create index if not exists tennis_directory_name_idx on tennis.player_directory (lower(full_name));
 create index if not exists tennis_directory_enriched_idx on tennis.player_directory (enriched_at nulls first);
 drop trigger if exists tennis_directory_touch on tennis.player_directory;

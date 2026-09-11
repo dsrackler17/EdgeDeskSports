@@ -75,10 +75,17 @@ function athletesOfSide(providerId, name, isDoubles) {
   const id = providerId == null ? '' : String(providerId);
   const nm = name == null ? '' : String(name);
   if (!id || !nm) return [];
-  if (!isDoubles && !R.isDoublesName(nm) && id.indexOf('/') < 0) return [{ provider_athlete_id: id, full_name: nm, doubles: false }];
+  if (!isDoubles && !R.isDoublesName(nm) && id.indexOf('/') < 0) {
+    /* a qualifier, a bye, a slot nobody has won yet — not a person, and
+       never a directory row, however many draws it turns up in */
+    if (!R.isProviderAthleteId(id)) return [];
+    return [{ provider_athlete_id: String(id).trim(), full_name: nm, doubles: false }];
+  }
   const ids = id.split('/').map(x => x.trim()).filter(Boolean);
   const names = R.splitDoubles(nm);
   if (ids.length < 2 || ids.length !== names.length) return [];
+  /* a pair with a placeholder in it is not a formed pair */
+  if (!ids.every(R.isProviderAthleteId)) return [];
   return ids.map((x, i) => ({ provider_athlete_id: x, full_name: names[i], doubles: true }));
 }
 
@@ -143,11 +150,25 @@ async function verify(o, deps) {
     let athleteId = null;
     try {
       const r = await src.scoreboard(tour, now.getTime() - o.backDays * 86400000, now.getTime() + o.fwdDays * 86400000);
-      const rows = directoryRows([].concat.apply([], r.tournaments.map(t => t.matches.map(m =>
-        Object.assign({ tour: t.tour }, m)))), now.toISOString());
+      const matches = [].concat.apply([], r.tournaments.map(t => t.matches.map(m =>
+        Object.assign({ tour: t.tour }, m))));
+      const rows = directoryRows(matches, now.toISOString());
       const singles = rows.filter(x => x.seen_in_singles);
-      out.scoreboard = { via: r.via, tournaments: r.tournaments.length, athletes: rows.length };
+      /* what the id rule turned away, named rather than counted: these are the
+         entrants who are not yet a person, and seeing them is how we know the
+         rule is still aimed at the right thing */
+      const refused = {};
+      matches.forEach(m => [[m.home_provider_id, m.home_name], [m.away_provider_id, m.away_name]].forEach(p => {
+        String(p[0] == null ? '' : p[0]).split('/').forEach(part => {
+          const id = part.trim();
+          if (id && !R.isProviderAthleteId(id)) refused[id] = p[1];
+        });
+      }));
+      const refusedIds = Object.keys(refused).sort();
+      out.scoreboard = { via: r.via, tournaments: r.tournaments.length, athletes: rows.length, refused: refusedIds.length };
       log(`${label} scoreboard via ${r.via}: ${r.tournaments.length} tournament(s) carrying ${rows.length} athlete(s), ${singles.length} in singles`);
+      if (refusedIds.length) log(`  ${refusedIds.length} id(s) refused as not-a-person: ` +
+        refusedIds.slice(0, 8).map(id => id + ' = ' + refused[id]).join(', ') + (refusedIds.length > 8 ? ', …' : ''));
       if (singles.length) athleteId = singles[0].provider_athlete_id;
     } catch (e) {
       log(`${label} scoreboard did not answer: ${String(e && e.message || e).slice(0, 200)}`);

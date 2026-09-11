@@ -300,6 +300,20 @@ begin
   perform pg_temp.ok('an id with no provider namespace is refused, so it can never
                       collide with a licensed id', failed);
 
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name)
+        values ('espn:-3', '-3', 'Qualifier');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('an entrant who is not yet a person (a negative provider id)
+                      is refused, so every qualifier in every draw can never
+                      collapse into one player', failed);
+
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name)
+        values ('espn:0', '0', 'TBD');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('and so is a zero id', failed);
+
   perform pg_temp.as_anon();
   select count(*) into n from tennis.player_directory;
   perform pg_temp.ok('anon reads the directory', n = 1);

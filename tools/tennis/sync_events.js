@@ -151,8 +151,10 @@ function resolveMatches(matches, index, aliases) {
         return;
       }
       const conf = ['exact', 'provider_id', 'name_order', 'first_last', 'initial_last', 'surname'].indexOf(r.method) >= 0 ? r.method : 'exact';
-      if (pid && r.method !== 'provider_id')
-        aliasRows.push({ alias_key: 'espn:' + String(pid), player_id: r.player_id, display_name: name, tour: m.tour || null, source: 'sync', confidence: conf });
+      /* an alias keyed on a placeholder id would point every future qualifier
+         at this one player, so it is never written */
+      if (R.isProviderAthleteId(pid) && r.method !== 'provider_id')
+        aliasRows.push({ alias_key: 'espn:' + String(pid).trim(), player_id: r.player_id, display_name: name, tour: m.tour || null, source: 'sync', confidence: conf });
       const nk = R.normName(name);
       if (nk && r.method !== 'exact' && r.method !== 'alias')
         aliasRows.push({ alias_key: 'name:' + nk, player_id: r.player_id, display_name: name, tour: m.tour || null, source: 'sync', confidence: conf });
