@@ -30,7 +30,7 @@
 -- Nothing here is reachable from a browser. RLS is on and no client role has
 -- any grant: the webhook writes with the service role, which bypasses RLS.
 --
--- Idempotent, additive, ends in a report. Rows 1-10 should each say ok.
+-- Idempotent, additive, ends in a report. Rows 1-11 should each say ok.
 -- Run it BEFORE deploying supabase/functions/stripe_webhook.
 -- ===========================================================================
 
@@ -202,13 +202,31 @@ union all select 9, 'hand-made subscription rows, for the record',
 -- be counted here: pgEntitled() returns true on price_id = 'owner_comp' before
 -- it looks at a date at all. Counting one would report a lockout that is not
 -- happening, and send somebody looking for a bug in the paywall.
+--
+-- AN EXPIRED COMP TRIAL IS NOT A LOCKOUT EITHER, for a different reason.
+-- `price_id = 'comp_trial'` (supabase/comp_trial.sql) is access granted in this
+-- database with a deadline written into `current_period_end`, and that date
+-- being in the past is the deadline ARRIVING — the outcome the row was created
+-- to produce. This check exists to find a stale Stripe row stranding somebody
+-- who is paying; counting trials that simply ran their course turns every one
+-- of them into a red row nobody should act on, and a report that cries wolf
+-- gets ignored on the day it is right. Row 11 counts them on their own, where
+-- the number means what it says.
 union all select 10, 'rows currently locking out an active subscriber',
        case when (select count(*) from public.subscriptions
                    where status in ('active','trialing') and current_period_end < now()
-                     and coalesce(price_id,'') <> 'owner_comp') = 0
+                     and coalesce(price_id,'') not in ('owner_comp','comp_trial')) = 0
             then 'ok (none)'
             else 'CHECK THIS — ' || (select count(*) from public.subscriptions
                    where status in ('active','trialing') and current_period_end < now()
-                     and coalesce(price_id,'') <> 'owner_comp')::text
+                     and coalesce(price_id,'') not in ('owner_comp','comp_trial'))::text
               || ' active rows have a past period end and are being refused by the paywall' end
+union all select 11, 'comped trials, for the record',
+       'ok (' || (select count(*) from public.subscriptions
+                   where coalesce(price_id,'') = 'comp_trial'
+                     and current_period_end is not null and current_period_end < now())::text
+              || ' run out, ' || (select count(*) from public.subscriptions
+                   where coalesce(price_id,'') = 'comp_trial'
+                     and (current_period_end is null or current_period_end >= now()))::text
+              || ' still open)'
 order by row;
