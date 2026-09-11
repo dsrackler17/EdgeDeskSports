@@ -450,6 +450,122 @@ function setSplits(raw) {
   return out;
 }
 
+/* ---- players: the provider's own directory -------------------------------- */
+
+/* The athlete endpoints, tried in order. ESPN has moved tennis athletes between
+   its site and web APIs before, so both shapes are attempted and whichever
+   answers is recorded on the row. A player the feed will not describe keeps the
+   id and name the scoreboard already gave, and every other column stays null. */
+function athleteUrls(tour, athleteId) {
+  const id = encodeURIComponent(String(athleteId));
+  return [
+    { via: 'web-v3', url: `${ESPN_WEB_API}/apis/common/v3/sports/tennis/${tour}/athletes/${id}` },
+    { via: 'site-v2', url: `${ESPN_API}/apis/site/v2/sports/tennis/${tour}/athletes/${id}` }
+  ];
+}
+function rankingsUrls(tour) {
+  return [
+    { via: 'site-v2', url: `${ESPN_API}/apis/site/v2/sports/tennis/${tour}/rankings` },
+    { via: 'web-v2', url: `${ESPN_WEB_API}/apis/site/v2/sports/tennis/${tour}/rankings` }
+  ];
+}
+
+/* Find the first value under any of these keys, anywhere in the document. The
+   athlete payload nests differently between the two APIs, so a walk beats a
+   fixed path — but it stops at the first hit and never guesses a type. */
+function dig(node, keys, depth) {
+  depth = depth == null ? 0 : depth;
+  if (!node || typeof node !== 'object' || depth > 6) return undefined;
+  for (const k of keys) if (node[k] != null && typeof node[k] !== 'object') return node[k];
+  for (const k of keys) if (node[k] != null && typeof node[k] === 'object') {
+    const v = node[k].displayValue != null ? node[k].displayValue : (node[k].name != null ? node[k].name : undefined);
+    if (v != null && typeof v !== 'object') return v;
+  }
+  const kids = Array.isArray(node) ? node : Object.keys(node).map(k => node[k]);
+  for (const kid of kids) {
+    if (kid && typeof kid === 'object') {
+      const v = dig(kid, keys, depth + 1);
+      if (v !== undefined) return v;
+    }
+  }
+  return undefined;
+}
+
+/* HEIGHT. ESPN publishes it as a display string ("6' 2\"") in some shapes and a
+   bare number in others, and the number's unit is not stated. Rather than
+   assume, the value is only converted when it falls in a range that can only be
+   one unit: 120-230 is centimetres, 48-90 is inches. Anything else is left null
+   rather than stored wrong. */
+function heightCm(display, raw) {
+  const d = display == null ? '' : String(display);
+  const fi = /^\s*(\d)\s*'\s*(\d{1,2})?\s*"?\s*$/.exec(d);
+  if (fi) {
+    const inches = (+fi[1]) * 12 + (fi[2] ? +fi[2] : 0);
+    return Math.round(inches * 2.54);
+  }
+  const cm = /^\s*(\d{2,3})\s*cm\s*$/i.exec(d);
+  if (cm) return +cm[1];
+  const n = Number(raw != null ? raw : d);
+  if (!isFinite(n) || n <= 0) return null;
+  if (n >= 120 && n <= 230) return Math.round(n);
+  if (n >= 48 && n <= 90) return Math.round(n * 2.54);
+  return null;
+}
+
+function dateOnlyOrNull(v) {
+  if (!v) return null;
+  const t = Date.parse(v);
+  return isFinite(t) ? new Date(t).toISOString().slice(0, 10) : null;
+}
+
+/* One athlete document -> the columns the directory holds. Everything is
+   optional: the caller already has a usable row without any of it. */
+function parseAthlete(json) {
+  if (!json || typeof json !== 'object') return null;
+  const a = json.athlete && typeof json.athlete === 'object' ? json.athlete : json;
+  const out = {
+    full_name: str(dig(a, ['fullName', 'displayName', 'name'])) || null,
+    display_name: str(dig(a, ['displayName'])) || null,
+    short_name: str(dig(a, ['shortName'])) || null,
+    country: str(dig(a, ['citizenship', 'country'])) || null,
+    country_code: str(dig(a, ['countryCode', 'abbreviation'])) || null,
+    plays: str(dig(a, ['hand', 'plays', 'playingHand'])) || null,
+    height_cm: heightCm(dig(a, ['displayHeight']), dig(a, ['height'])),
+    weight_kg: null,
+    birth_date: dateOnlyOrNull(dig(a, ['dateOfBirth', 'birthDate', 'dob'])),
+    turned_pro: intOrNull(dig(a, ['turnedPro', 'proYear', 'debutYear']))
+  };
+  const w = Number(dig(a, ['weight']));
+  if (isFinite(w) && w > 0) out.weight_kg = (w >= 40 && w <= 160) ? Math.round(w) : (w >= 90 && w <= 350 ? Math.round(w * 0.453592) : null);
+  const any = Object.keys(out).some(k => out[k] != null);
+  return any ? out : null;
+}
+
+/* A rankings document -> [{provider_athlete_id, rank, points, as_of}]. */
+function parseRankings(json) {
+  const out = [];
+  if (!json || typeof json !== 'object') return out;
+  const asOf = dateOnlyOrNull(dig(json, ['lastUpdated', 'asOf', 'date']));
+  (function walk(node, depth) {
+    if (!node || typeof node !== 'object' || depth > 6) return;
+    if (Array.isArray(node)) { node.forEach(x => walk(x, depth + 1)); return; }
+    const ath = node.athlete || node.competitor;
+    const rank = node.current != null ? node.current : (node.rank != null ? node.rank : null);
+    if (ath && ath.id != null && rank != null && isFinite(Number(rank))) {
+      out.push({ provider_athlete_id: String(ath.id),
+        full_name: str(ath.displayName || ath.fullName || ath.name) || null,
+        rank: intOrNull(rank),
+        points: intOrNull(node.points != null ? node.points : node.statistics && node.statistics.points),
+        as_of: asOf });
+      return;
+    }
+    Object.keys(node).forEach(k => walk(node[k], depth + 1));
+  })(json, 0);
+  const seen = {}, uniq = [];
+  out.forEach(r => { if (!seen[r.provider_athlete_id]) { seen[r.provider_athlete_id] = true; uniq.push(r); } });
+  return uniq;
+}
+
 /* ---- discovery ------------------------------------------------------------ */
 function inWindow(t, fromMs, toMs) {
   const d = t && t.start_date ? Date.parse(t.start_date) : NaN;
@@ -560,6 +676,33 @@ function source(opts) {
       }
       return out;
     },
+    /* One athlete, best-effort. Returns null rather than throwing when the feed
+       simply will not describe this player: the directory row is still valid. */
+    async athlete(tour, athleteId) {
+      const tried = [];
+      for (const a of athleteUrls(tour, athleteId)) {
+        try {
+          const r = await fetchJson(a.url, fetchImpl, timeoutMs);
+          const parsed = parseAthlete(r.json);
+          if (parsed) return { athlete: parsed, via: a.via, latency: r.latency };
+          tried.push({ via: a.via, status: 200, error: 'answered but carried no athlete fields' });
+        } catch (e) { tried.push({ via: a.via, status: (e && e.status) || null, error: String(e && e.message || e).slice(0, 120) }); }
+      }
+      return { athlete: null, via: null, tried };
+    },
+    /* A tour's current rankings, best-effort. */
+    async rankings(tour) {
+      const tried = [];
+      for (const a of rankingsUrls(tour)) {
+        try {
+          const r = await fetchJson(a.url, fetchImpl, timeoutMs);
+          const rows = parseRankings(r.json);
+          if (rows.length) return { rows, via: a.via, latency: r.latency };
+          tried.push({ via: a.via, status: 200, error: 'answered but carried no ranked athlete' });
+        } catch (e) { tried.push({ via: a.via, status: (e && e.status) || null, error: String(e && e.message || e).slice(0, 120) }); }
+      }
+      return { rows: [], via: null, tried };
+    },
     async probe(fromMs, toMs) {
       const out = [];
       for (const tour of TOURS) {
@@ -584,4 +727,5 @@ function source(opts) {
 
 module.exports = { ESPN_API, ESPN_WEB_API, TOURS, TOUR_LABEL, scoreboardDayUrl, scoreboardRangeUrl, scoreboardPlainUrl, summaryUrl,
   fetchJson, parseScoreboard, parseTournament, parseMatch, statusOf, sideOf, STAT_ALIASES, STAT_FIELDS, STAT_IGNORE, COMPOSITE,
-  normalizeStats, setSplits, flattenStats, isPeriodSplit, tourOfGrouping, ownerTour, mergeTournaments, discoveryAttempts, inWindow, source, keyOf, pctFrom };
+  normalizeStats, setSplits, flattenStats, isPeriodSplit, tourOfGrouping, ownerTour, mergeTournaments,
+  athleteUrls, rankingsUrls, parseAthlete, parseRankings, heightCm, dig, discoveryAttempts, inWindow, source, keyOf, pctFrom };

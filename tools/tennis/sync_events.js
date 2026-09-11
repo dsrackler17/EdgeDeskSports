@@ -45,7 +45,7 @@ const SIGNAL_COLS = 'sig_key,event_id,sport_key,market,selection,point,commence_
 function log(...a) { if (!process.env.TENNIS_QUIET) console.log('[tennis-sync]', ...a); }
 
 function parseArgs(argv) {
-  const o = { commit: false, verify: false, fromDays: 3, toDays: 21, fixture: null, market: true, tours: null, now: null, stale: true, tournament: null };
+  const o = { commit: false, verify: false, fromDays: 3, toDays: 21, fixture: null, market: true, tours: null, now: null, stale: true, tournament: null, resolveOnly: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i], next = () => argv[++i];
     if (a === '--commit') o.commit = true;
@@ -57,6 +57,7 @@ function parseArgs(argv) {
     else if (a === '--no-stale') o.stale = false;
     else if (a === '--tour') o.tours = [String(next()).toLowerCase()];
     else if (a === '--tournament') o.tournament = next();
+    else if (a === '--resolve-only') o.resolveOnly = true;
     else if (a === '--now') o.now = next();
   }
   return o;
@@ -150,8 +151,10 @@ function resolveMatches(matches, index, aliases) {
         return;
       }
       const conf = ['exact', 'provider_id', 'name_order', 'first_last', 'initial_last', 'surname'].indexOf(r.method) >= 0 ? r.method : 'exact';
-      if (pid && r.method !== 'provider_id')
-        aliasRows.push({ alias_key: 'espn:' + String(pid), player_id: r.player_id, display_name: name, tour: m.tour || null, source: 'sync', confidence: conf });
+      /* an alias keyed on a placeholder id would point every future qualifier
+         at this one player, so it is never written */
+      if (R.isProviderAthleteId(pid) && r.method !== 'provider_id')
+        aliasRows.push({ alias_key: 'espn:' + String(pid).trim(), player_id: r.player_id, display_name: name, tour: m.tour || null, source: 'sync', confidence: conf });
       const nk = R.normName(name);
       if (nk && r.method !== 'exact' && r.method !== 'alias')
         aliasRows.push({ alias_key: 'name:' + nk, player_id: r.player_id, display_name: name, tour: m.tour || null, source: 'sync', confidence: conf });
@@ -252,7 +255,63 @@ async function writeAliases(db, rows, summary) {
 
 /* ---- the run --------------------------------------------------------------- */
 
+/* A resolution pass over the draw ALREADY ON FILE. No source request is made:
+   this exists because the player pool grows after the matches do — the
+   directory is derived from the very names these matches carry — so a side
+   that had nowhere to resolve to at discovery time can resolve on the pass
+   that follows. It writes only the two id columns and the aliases it learned,
+   never a status, so it can never reopen a match that has finished. */
+async function resolveOnly(o, deps) {
+  const db = deps.db;
+  const now = o.now ? new Date(o.now) : new Date();
+  const summary = { tournaments: 0, matches: 0, doubles: 0, cancelled: 0, resolved: 0, unmatched: [], aliases: 0,
+    links: 0, rejections: 0, captures: 0, stale: 0, written: 0, errors: [], mode: 'resolve-only' };
+  if (!db) { summary.errors.push('no database credential'); return summary; }
+
+  const from = new Date(now.getTime() - o.fromDays * 86400000).toISOString();
+  const to = new Date(now.getTime() + o.toDays * 86400000).toISOString();
+  const inWindow = await db.selectAll('tennis', 'live_matches',
+    `select=match_id,tour,is_doubles,home_name,away_name,home_provider_id,away_provider_id,home_player_id,away_player_id` +
+    `&is_doubles=is.false&scheduled_at=gte.${from}&scheduled_at=lte.${to}&order=match_id.asc`);
+  /* the "still missing a side" filter is applied here rather than in the
+     query so this reads the same on every PostgREST version */
+  const open = inWindow.filter(m => !m.home_player_id || !m.away_player_id);
+  summary.matches = open.length;
+  if (!open.length) { log('every singles side in the window is already resolved'); return summary; }
+
+  const { pool } = await D.playerPool(db, R, log);
+  const index = R.buildPlayerIndex(pool);
+  const aliases = {};
+  (await db.selectAll('tennis', 'player_aliases', 'select=alias_key,player_id&order=alias_key.asc')).forEach(a => { aliases[a.alias_key] = String(a.player_id); });
+
+  const before = open.map(m => ({ h: m.home_player_id || null, a: m.away_player_id || null }));
+  const res = resolveMatches(open, index, aliases);
+  const moved = [];
+  open.forEach((m, i) => {
+    const h = m.home_player_id || null, a = m.away_player_id || null;
+    /* a resolution is only ever ADDED here: a side that already carried an id
+       keeps it, so this pass can never overwrite a curated one with a guess */
+    const nh = before[i].h || h, na = before[i].a || a;
+    if (nh === before[i].h && na === before[i].a) return;
+    moved.push({ match_id: m.match_id, home_player_id: nh, away_player_id: na });
+  });
+  /* a match whose ONE missing side resolved is progress and is written, but it
+     is not yet a resolved match: `resolved` counts only the ones with both */
+  summary.written = moved.length;
+  summary.resolved = moved.filter(m => m.home_player_id && m.away_player_id).length;
+  summary.unmatched = res.unmatched;
+  log(`${open.length} unresolved singles match(es) on file \u2192 ${summary.resolved} fully resolved, ${moved.length - summary.resolved} half, ${res.unmatched.length} name(s) still with nowhere to go`);
+  res.unmatched.slice(0, 25).forEach(u => log(`  unresolved: ${u.name} (${u.provider_id || 'no id'}) — ${u.reason}`));
+  if (res.unmatched.length > 25) log(`  …and ${res.unmatched.length - 25} more`);
+
+  if (o.commit && moved.length) await db.upsert('tennis', 'live_matches', moved, 'match_id', { returning: false, chunk: 200 });
+  else if (moved.length) log(`  would write ${moved.length} resolved side pair(s)`);
+  if (o.commit && res.aliasRows.length) summary.aliases = await writeAliases(db, res.aliasRows, summary);
+  return summary;
+}
+
 async function run(o, deps) {
+  if (o.resolveOnly) return resolveOnly(o, deps || {});
   deps = deps || {};
   const now = o.now ? new Date(o.now) : new Date();
   const nowIso = now.toISOString(), nowMs = now.getTime();
@@ -289,11 +348,11 @@ async function run(o, deps) {
   if (!db) { summary.errors.push('no database credential'); return summary; }
 
   /* 2. players and aliases, once */
-  const players = await db.selectAll('tennis', 'players', 'select=player_id,full_name,tour&order=player_id.asc');
+  const { pool: players } = await D.playerPool(db, R, log);
   const index = R.buildPlayerIndex(players);
   const aliases = {};
   (await db.selectAll('tennis', 'player_aliases', 'select=alias_key,player_id&order=alias_key.asc')).forEach(a => { aliases[a.alias_key] = String(a.player_id); });
-  log(`${players.length} players on file, ${Object.keys(aliases).length} aliases`);
+  log(`${Object.keys(aliases).length} alias(es) on file`);
 
   /* 3. tournaments and matches */
   const allMatches = [], matchesById = {}, tournamentsById = {}, liveIds = new Set();
@@ -408,6 +467,6 @@ async function main() {
   process.exit(code);
 }
 
-module.exports = { parseArgs, tournamentRows, reconcileMatches, resolveMatches, linkMarkets, captureRows, staleTournaments,
+module.exports = { parseArgs, tournamentRows, reconcileMatches, resolveMatches, resolveOnly, linkMarkets, captureRows, staleTournaments,
   writeAliases, run, tournamentId, matchId, STALE_AFTER_MS, KNOWN_CONFIDENCE };
 if (require.main === module) main();

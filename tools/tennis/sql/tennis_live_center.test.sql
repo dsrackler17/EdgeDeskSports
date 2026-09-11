@@ -275,6 +275,68 @@ begin
   select count(*) into n from tennis.match_markets;
   perform pg_temp.ok('deleting a tournament takes its market links', n = 0);
 
+  -- ── 7b. the provider player directory ───────────────────────────────────
+  perform pg_temp.as_owner();
+  insert into tennis.player_directory(player_id, provider_athlete_id, full_name, tour, seen_in_singles)
+    values ('espn:11', '11', 'Vilius Gaubas', 'ATP', true);
+  perform pg_temp.ok('the pipeline can register a player the provider published', true);
+
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name)
+        values ('espn:12', '11', 'Someone Else');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('one provider athlete id cannot become two directory rows', failed);
+
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name, tour)
+        values ('espn:13', '13', 'A Player', 'ITF');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('a tour outside the contract is refused', failed);
+
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name)
+        values ('bare-id', '14', 'A Player');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('an id with no provider namespace is refused, so it can never
+                      collide with a licensed id', failed);
+
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name)
+        values ('espn:-3', '-3', 'Qualifier');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('an entrant who is not yet a person (a negative provider id)
+                      is refused, so every qualifier in every draw can never
+                      collapse into one player', failed);
+
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name)
+        values ('espn:0', '0', 'TBD');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('and so is a zero id', failed);
+
+  perform pg_temp.as_anon();
+  select count(*) into n from tennis.player_directory;
+  perform pg_temp.ok('anon reads the directory', n = 1);
+
+  failed := false;
+  begin insert into tennis.player_directory(player_id, provider_athlete_id, full_name)
+        values ('espn:99', '99', 'Invented Person');
+  exception when others then failed := true; end;
+  perform pg_temp.ok('anon cannot add a player', failed);
+
+  failed := false;
+  begin update tennis.player_directory set current_rank = 1 where player_id = 'espn:11';
+  exception when others then failed := true; end;
+  perform pg_temp.ok('anon cannot rewrite a ranking', failed);
+
+  failed := false;
+  begin delete from tennis.player_directory where player_id = 'espn:11';
+  exception when others then failed := true; end;
+  perform pg_temp.ok('anon cannot remove a player', failed);
+
+  perform pg_temp.as_owner();
+  delete from tennis.player_directory where player_id = 'espn:11';
+
   -- ── 8. the licensed record is not touched by any of this ────────────────
   perform pg_temp.as_owner();
   select count(*) into n from information_schema.tables
