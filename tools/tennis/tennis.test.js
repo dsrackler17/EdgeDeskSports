@@ -17,6 +17,7 @@ const S = require('./sync_events.js');
 const B = require('./build_baselines.js');
 const G = require('./live_gate.js');
 const P = require('./live_poll.js');
+const D = require('./db.js');
 const F = require('./fixtures/make_day.js');
 const { fakeDb } = require('./fake_db.js');
 
@@ -343,6 +344,29 @@ eq('a tournament with live play is never marked stale',
   S.staleTournaments([{ tournament_id: 't1', state: 'live', end_date: '2026-05-20' }], Date.parse('2026-05-28T00:00:00Z'), new Set(['t1'])), []);
 eq('a finished tournament is left alone',
   S.staleTournaments([{ tournament_id: 't1', state: 'final', end_date: '2026-05-20' }], Date.parse('2026-05-28T00:00:00Z'), new Set()), []);
+
+/* ======================================================================== */
+/* 9b. A CONTRACT THAT IS NOT INSTALLED YET                                 */
+/* ======================================================================== */
+/* Until the migration is run, every tennis job fails on its first read. The
+   failure must name the one file that fixes it — the UFC pipeline already
+   paid for a production stop whose log said only "permission denied for
+   table meta". */
+function pgErr(msg, status) { const e = new Error(msg); e.status = status; return e; }
+const MISSING_TABLE = pgErr('GET tennis.live_matches -> 404: {"code":"PGRST205","message":"Could not find the table \'tennis.live_matches\' in the schema cache"}', 404);
+const MISSING_SCHEMA = pgErr('GET tennis.tournaments -> 406: {"code":"PGRST106","message":"The schema must be one of the following"}', 406);
+const UNDEFINED_TABLE = pgErr('42P01 relation "tennis.live_matches" does not exist');
+
+chk('a table missing from the schema cache is a missing contract', !!D.explain(MISSING_TABLE));
+chk('a schema that is not exposed is the same thing to an operator', !!D.explain(MISSING_SCHEMA));
+chk('so is an undefined_table from PostgreSQL itself', !!D.explain(UNDEFINED_TABLE));
+chk('the explanation names the file to run', /supabase\/tennis_live_center\.sql/.test(D.explain(MISSING_TABLE)), D.explain(MISSING_TABLE));
+chk('and says to check its report', /report reads ok/.test(D.explain(MISSING_TABLE)));
+eq('a permission failure is NOT a missing contract', D.explain(pgErr('permission denied for table meta', 401)), null);
+eq('a network failure is NOT a missing contract', D.explain(new Error('fetch failed')), null);
+eq('a rate limit is NOT a missing contract', D.explain(pgErr('429 too many requests', 429)), null);
+eq('nothing at all is not a missing contract', D.explain(null), null);
+eq('the contract is named once, in one place', D.CONTRACT, 'tennis_live_center.sql');
 
 /* ======================================================================== */
 /* 10. THE GATE                                                             */

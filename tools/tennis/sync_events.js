@@ -393,8 +393,16 @@ async function main() {
     }
     if (o.verify && !s.tournaments) { console.error('The source answered but carried no tournament in the window.'); code = 2; }
   } catch (e) {
+    D.reportFailure('tennis-sync', e);
     console.error('[tennis-sync] failed: ' + (e && e.stack || e));
-    if (ledger) { await ledger.finish('error', String(e && e.message || e).slice(0, 400)); await D.writeMeta(db, { tennis_sync_last_run: new Date().toISOString(), tennis_sync_last_status: 'error' }); }
+    /* the ledger lives in the same contract, so writing to it after a
+       not-installed failure would only raise a second one */
+    if (ledger && !D.explain(e)) {
+      try {
+        await ledger.finish('error', String(e && e.message || e).slice(0, 400));
+        await D.writeMeta(db, { tennis_sync_last_run: new Date().toISOString(), tennis_sync_last_status: 'error' });
+      } catch (_) {}
+    }
     code = 1;
   }
   process.exit(code);

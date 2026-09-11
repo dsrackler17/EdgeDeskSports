@@ -137,4 +137,9 @@ async function main() {
 }
 
 module.exports = { pick, parseArgs, lockKey, dayOf, AHEAD_MS, LATE_MS, MAX_TOUR_DAYS };
-if (require.main === module) main().catch(e => { console.error('[tennis-gate] failed: ' + (e && e.stack || e)); output({ found: 'false', matrix: '{"include":[]}' }); process.exit(1); });
+if (require.main === module) main().catch(e => {
+  D.reportFailure('tennis-gate', e);
+  console.error('[tennis-gate] failed: ' + (e && e.stack || e));
+  output({ found: 'false', matrix: '{"include":[]}' });
+  process.exit(1);
+});

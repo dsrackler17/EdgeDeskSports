@@ -207,8 +207,14 @@ async function main() {
       await D.writeMeta(db, { tennis_baselines_last_run: new Date().toISOString(), tennis_baselines_last_status: status, row_count_tennis_baselines: s.rows });
     }
   } catch (e) {
+    D.reportFailure('tennis-baselines', e);
     console.error('[tennis-baselines] failed: ' + (e && e.stack || e));
-    if (ledger) { await ledger.finish('error', String(e && e.message || e).slice(0, 400)); await D.writeMeta(db, { tennis_baselines_last_run: new Date().toISOString(), tennis_baselines_last_status: 'error' }); }
+    if (ledger && !D.explain(e)) {
+      try {
+        await ledger.finish('error', String(e && e.message || e).slice(0, 400));
+        await D.writeMeta(db, { tennis_baselines_last_run: new Date().toISOString(), tennis_baselines_last_status: 'error' });
+      } catch (_) {}
+    }
     code = 1;
   }
   process.exit(code);

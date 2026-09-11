@@ -657,6 +657,7 @@ async function main() {
     log(`${s.status}: ${s.message} (${s.polls} polls, ${s.failures} failures)`);
     process.exit(s.status === 'error' ? 1 : 0);
   } catch (e) {
+    D.reportFailure('tennis-live', e);
     console.error('[tennis-live] failed: ' + (e && e.stack || e));
     process.exit(1);
   }
