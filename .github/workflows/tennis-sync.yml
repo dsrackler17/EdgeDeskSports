@@ -23,6 +23,19 @@ on:
   schedule:
     - cron: '23 */6 * * *'     # the draw, the players, the market
     - cron: '53 8 * * 1'       # Mondays: every player's baseline, not just the ones in the window
+  # A pull request that touches the tennis pipeline runs the suites and PROBES
+  # THE SOURCE on a real runner, writing nothing. This is not decoration: the
+  # UFC adapter shipped correct-looking code that ESPN's edge answered 403 to
+  # from GitHub's runners, and only a runner could show it. A source shape that
+  # changed under us is worth seeing in review rather than at 3am.
+  pull_request:
+    paths:
+      - 'lib/tennis_research.js'
+      - 'tools/tennis/**'
+      - 'tools/lib/**'
+      - 'supabase/tennis_live_center.sql'
+      - '.github/workflows/tennis-sync.yml'
+      - '.github/workflows/tennis-live.yml'
   workflow_dispatch:
     inputs:
       commit:
@@ -47,9 +60,11 @@ on:
         default: false
 
 concurrency:
-  # Two syncs writing the same draw race each other into the same upsert.
-  group: tennis-sync
-  cancel-in-progress: false
+  # Two syncs writing the same draw race each other into the same upsert. A
+  # pull-request probe writes nothing, so it gets its own group per branch
+  # rather than queueing behind the scheduled writer.
+  group: tennis-sync-${{ github.event_name == 'pull_request' && github.ref || 'write' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -72,15 +87,34 @@ jobs:
       # the sync reports each tour's own failure, one tour answering is a
       # usable day, and a draw already on file is better than no run at all.
       - name: Prove the source answers before anything is written
+        if: ${{ github.event_name != 'pull_request' }}
         run: node tools/tennis/sync_events.js --verify || echo "::warning::the source probe did not come back clean — the sync will report what it could read"
 
-      - name: Stop here when this run was dispatched to check the source only
-        if: ${{ inputs.verify_only == true }}
+      # On a pull request the probe is the point, so its outcome is not
+      # swallowed: every discovery shape is tried and printed per tour, a
+      # source that answers nothing at all fails the job, and a window that
+      # genuinely holds no tournament is a warning rather than a failure.
+      - name: Probe the source on a runner (writes nothing)
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
-          echo "verify_only was requested — the source was probed and nothing was written."
-          exit 0
+          set +e
+          node tools/tennis/sync_events.js --verify
+          code=$?
+          set -e
+          if [ "$code" = "2" ]; then
+            echo "::warning::the source answered but carried no tournament in the window"
+            exit 0
+          fi
+          exit $code
+
+      # A step cannot end a job, so this only SAYS what happened; the write
+      # steps below carry the guard that actually keeps them out.
+      - name: Say plainly that nothing will be written
+        if: ${{ github.event_name == 'pull_request' || inputs.verify_only == true }}
+        run: echo "This run probed the source. Nothing is written to the database."
 
       - name: Sync tournaments, matches, players and markets
+        if: ${{ github.event_name != 'pull_request' && inputs.verify_only != true }}
         env:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
@@ -95,6 +129,7 @@ jobs:
           node tools/tennis/sync_events.js $ARGS
 
       - name: Rebuild player baselines
+        if: ${{ github.event_name != 'pull_request' && inputs.verify_only != true }}
         env:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
