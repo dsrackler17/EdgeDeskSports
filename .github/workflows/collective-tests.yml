@@ -37,6 +37,7 @@ on:
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
       - 'football/fbs/**'
+      - 'tools/football/fixtures/**'
       # The player quality layer's own modules and the app.html panel that
       # renders them. The panel suite reads the renderer out of app.html
       # rather than a copy, so a change to either has to be able to trigger it.
@@ -79,6 +80,7 @@ on:
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
       - 'football/fbs/**'
+      - 'tools/football/fixtures/**'
       # The player quality layer's own modules and the app.html panel that
       # renders them. The panel suite reads the renderer out of app.html
       # rather than a copy, so a change to either has to be able to trigger it.
@@ -313,6 +315,18 @@ jobs:
       # the rules; this proves the RENDER — every conference present, the
       # filters driving the real DOM, the URL carrying a shared view, and the
       # control surface not wrapping into a wall of buttons at 390px.
+      #
+      # The browser is installed because without it the suite skips, and a
+      # step that runs, reports success and proves nothing is worse than no
+      # step. `continue-on-error` on the INSTALL only: a runner that cannot
+      # fetch Chromium still gets a loud SKIPPED from the suite, while a
+      # browser that loads the board and finds it broken still fails the job.
+      - name: Install Chromium for the board's browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+        continue-on-error: true
+
       - name: The FBS board renders and filters at desktop and mobile widths
         run: node tools/football/fbs_board.e2e.js
 

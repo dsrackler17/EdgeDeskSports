@@ -53,15 +53,30 @@ function finish() {
   process.exit(0);
 }
 
-/* ---- the schedule the board will be given ------------------------------ */
+/* ---- the schedule the board will be given ------------------------------
+   The warm cache the coverage gate writes when it is present; the committed
+   fixture otherwise. The fixture is the SAME feed with the unread columns
+   dropped, so a runner with no network still drives the real 138-program,
+   eleven-conference board rather than a skipped step that proves nothing. */
 const CACHE_DIR = path.join(ROOT, 'football', 'fbs', '.cache');
+const FIXTURE = path.join(__dirname, 'fixtures', 'fbs_schedule_sample.csv');
+let FIXTURE_SEASON = null;
+if (fs.existsSync(FIXTURE)) {
+  const second = fs.readFileSync(FIXTURE, 'utf8').split('\n')[1] || '';
+  const m = second.match(/,(\d{4}),/);
+  if (m) FIXTURE_SEASON = +m[1];
+}
 function cachedSchedule(season) {
   const f = path.join(CACHE_DIR, 'cfb_schedules_' + season + '.csv');
-  return fs.existsSync(f) ? fs.readFileSync(f) : null;
+  if (fs.existsSync(f)) return fs.readFileSync(f);
+  if (FIXTURE_SEASON === +season) return fs.readFileSync(FIXTURE);
+  return null;
 }
 const SEASON = (() => { const d = new Date(); return (d.getMonth() <= 1) ? d.getFullYear() - 1 : d.getFullYear(); })();
 if (!cachedSchedule(SEASON)) {
-  console.log('SKIPPED: no cached ' + SEASON + ' schedule (run `npm run cfb:fbs` once)');
+  console.log('SKIPPED: no ' + SEASON + ' schedule on disk'
+    + (FIXTURE_SEASON ? ' (the committed fixture is ' + FIXTURE_SEASON + ')' : '')
+    + ' — run `npm run cfb:fbs` once, or refresh tools/football/fixtures/');
   process.exit(0);
 }
 
