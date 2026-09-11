@@ -463,6 +463,61 @@ create trigger tennis_player_baselines_touch before update on tennis.player_base
 -- fixture's participants resolved to the match's two sides. A doubles fixture
 -- is stored as doubles and never linked to a singles match.
 -- ---------------------------------------------------------------------------
+-- ───────────────────────────────────────────────────────────────────────────
+-- THE PROVIDER PLAYER DIRECTORY.
+--
+-- The licensed record (tennis.players) is the authority on who a player is,
+-- and this file does not touch it. But that record is empty in this project,
+-- and the archive that would fill it is CC BY-NC-SA — non-commercial — which
+-- is a licensing question for a human, not something a pipeline may decide.
+-- Meanwhile every match the provider publishes already carries an athlete id
+-- and a name, and 1,234 singles sides had nowhere to resolve to.
+--
+-- So this is a DIRECTORY, not a record: who the provider says is playing,
+-- keyed in the provider's own namespace ('espn:<athlete id>') so it can never
+-- collide with a licensed id. The resolver prefers the licensed record wherever
+-- it has rows and falls back to this; the day a cleared feed is loaded, it wins
+-- automatically and nothing here has to be unpicked.
+--
+-- Every column says where it came from. Nothing is inferred: a field the feed
+-- does not publish stays null.
+-- ───────────────────────────────────────────────────────────────────────────
+create table if not exists tennis.player_directory (
+  player_id            text primary key,           -- 'espn:<athlete id>'
+  provider             text not null default 'espn',
+  provider_athlete_id  text not null,
+  full_name            text not null,
+  display_name         text,
+  short_name           text,
+  tour                 text,
+  country              text,
+  country_code         text,
+  plays                text,                       -- hand, only where published
+  height_cm            integer,
+  weight_kg            integer,
+  birth_date           date,
+  turned_pro           integer,
+  current_rank         integer,
+  rank_points          integer,
+  rank_as_of           date,
+  seen_in_doubles      boolean not null default false,
+  seen_in_singles      boolean not null default false,
+  first_seen_at        timestamptz not null default now(),
+  last_seen_at         timestamptz,
+  source               text not null default 'espn',
+  source_detail        text,                       -- which request shape answered
+  enriched_at          timestamptz,                -- null until the athlete endpoint answered
+  updated_at           timestamptz not null default now(),
+  constraint tennis_directory_provider_key unique (provider, provider_athlete_id),
+  constraint tennis_directory_tour_shape check (tour is null or tour in ('ATP','WTA','MIXED','OTHER')),
+  constraint tennis_directory_id_shape check (player_id like '%:%')
+);
+create index if not exists tennis_directory_name_idx on tennis.player_directory (lower(full_name));
+create index if not exists tennis_directory_enriched_idx on tennis.player_directory (enriched_at nulls first);
+drop trigger if exists tennis_directory_touch on tennis.player_directory;
+create trigger tennis_directory_touch before update on tennis.player_directory
+  for each row execute function tennis.touch_updated_at();
+
 create table if not exists tennis.match_markets (
   match_id         text primary key references tennis.live_matches(match_id) on delete cascade,
   tournament_id    text not null,
@@ -662,7 +717,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['tournaments','live_matches','match_live_state','match_set_stats','match_snapshots',
-                           'player_aliases','player_baselines','match_markets','market_captures',
+                           'player_aliases','player_baselines','player_directory','match_markets','market_captures',
                            'market_rejections','pipeline_runs'] loop
     execute format('alter table tennis.%I enable row level security', t);
     execute format('revoke insert, update, delete, truncate, references, trigger on tennis.%I from anon, authenticated', t);
@@ -740,6 +795,12 @@ union all select 12, 'snapshot, capture and link constraints installed',
 union all select 13, 'service_role may write the tennis.meta ledger',
        case when has_table_privilege('service_role', 'tennis.meta', 'INSERT')
              and has_table_privilege('service_role', 'tennis.meta', 'UPDATE') then 'ok' else 'CHECK THIS' end
+union all select 13.5, 'the provider player directory exists, is readable and is client-read-only',
+       case when to_regclass('tennis.player_directory') is not null
+             and has_table_privilege('anon', 'tennis.player_directory', 'SELECT')
+             and not has_table_privilege('anon', 'tennis.player_directory', 'INSERT')
+             and not has_table_privilege('anon', 'tennis.player_directory', 'UPDATE')
+            then 'ok' else 'CHECK THIS' end
 union all select 14, 'the licensed record is untouched by this file',
        case when to_regclass('tennis.players') is null then 'ok (record not installed here)'
             else 'ok (no table the record owns is altered above)' end
