@@ -29,6 +29,7 @@ on:
       - 'supabase/issue_reports.sql'
       - 'supabase/billing.sql'
       - 'supabase/stripe_webhook.sql'
+      - 'supabase/referral_codes.sql'
       - 'tools/app/sql/**'
       - 'tools/app/issue_reports_sql.test.js'
       - 'tools/app/billing_sql.test.js'
@@ -56,6 +57,7 @@ on:
       - 'supabase/issue_reports.sql'
       - 'supabase/billing.sql'
       - 'supabase/stripe_webhook.sql'
+      - 'supabase/referral_codes.sql'
       - 'tools/app/sql/**'
       - 'tools/app/issue_reports_sql.test.js'
       - 'tools/app/billing_sql.test.js'
@@ -154,7 +156,11 @@ jobs:
         run: node tools/app/issue_reports_sql.test.js | tee issues.log
 
       # The signup path's floor: the consent write that gates checkout, and the
-      # subscriptions row that IS the product and no browser may write.
+      # subscriptions row that IS the product and no browser may write. Also
+      # the referral report, which is read periodically and BELIEVED — so the
+      # question asked of it here is whether any number on it can be wrong: a
+      # subscription dropped off it, a sale credited to the wrong code, an
+      # invoice counted twice, revenue that arrived and is on no line.
       - name: Run the billing SQL suite
         env:
           PGPASSWORD: postgres
