@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-12T13:08:46.913Z",
+ "generated_at": "2026-09-12T22:24:40.487Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,43 +119,43 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 155,
+  "total": 141,
   "by_group": {
-   "p4": 90,
-   "other": 99,
+   "p4": 81,
+   "other": 91,
    "independent": 4
   },
   "by_matchup": {
-   "non_conference": 84,
-   "fbs_fcs": 51,
-   "conference": 20
+   "non_conference": 76,
+   "fbs_fcs": 46,
+   "conference": 19
   },
   "by_conference": {
-   "bigten": 32,
-   "sec": 25,
-   "big12": 28,
-   "pac12": 16,
-   "acc": 21,
-   "sunbelt": 28,
-   "american": 24,
-   "mac": 26,
-   "cusa": 19,
+   "sec": 23,
+   "cusa": 18,
+   "big12": 25,
+   "mac": 25,
+   "bigten": 27,
+   "acc": 18,
    "independents": 4,
+   "pac12": 15,
+   "american": 21,
+   "sunbelt": 25,
    "mwc": 16
   }
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 99,
+ "absorbed_games": 105,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 155
+  "PREDICTED": 141
  },
  "spread_recommendation": {
-  "NO_MARKET": 155
+  "NO_MARKET": 141
  },
  "checks": [
   {
@@ -192,12 +192,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 65,
-    "total": 155,
+    "non_power_games": 60,
+    "total": 141,
     "example": [
-     "South Florida @ Army",
-     "App State @ East Carolina",
-     "Wofford @ Kent State"
+     "Colgate @ Central Michigan",
+     "Holy Cross @ Miami (OH)",
+     "Stony Brook @ Ball State"
     ]
    }
   },
@@ -212,7 +212,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 20,
+    "conference_games": 19,
     "wrong": 0
    }
   },
@@ -220,7 +220,7 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 51,
+    "fbs_fcs_games": 46,
     "graded": []
    }
   },
@@ -244,8 +244,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 155,
-    "audit_total": 155
+    "slate": 141,
+    "audit_total": 141
    }
   },
   {
