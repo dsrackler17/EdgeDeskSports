@@ -340,9 +340,17 @@ function appCtx(opts) {
      the right answer, not a failure to retry. */
   const REFUSAL = HOOK.slice(iComp, iComp + 700);
   chk('the refusal is acknowledged with 200 so Stripe stops retrying',
-    /status:\s*200/.test(REFUSAL), REFUSAL.slice(0, 300));
+    /json\(\{ ok: true, ignored: 'comped_subscription' \}, 200\)/.test(REFUSAL),
+    REFUSAL.slice(0, 300));
   chk('and it says which account and why, in the log',
     /console\.log\(/.test(REFUSAL) && /comped/.test(REFUSAL));
+  /* A COMP WAS NEVER SOLD, so no discount code can have brought it in. The
+     referral write added later must sit BEHIND this guard — otherwise an event
+     carrying a promo code would stamp a partner on an account that was granted
+     access here and never bought anything, and the partner report would show a
+     sale that does not exist. */
+  chk('and the referral attribution is behind the comp guard, so a comp is never credited to a code',
+    iComp > 0 && HOOK.indexOf('let referral = null;') > iComp);
 
   /* ====================================================================== */
   /* 7. THE COLUMN HAS TO EXIST                                             */

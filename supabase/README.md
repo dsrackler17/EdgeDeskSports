@@ -386,6 +386,58 @@ then attacks the result — filing a consent under another account, rewriting or
 deleting one, reading another account's rows, and a browser trying to grant
 itself a subscription.
 
+### `referral_codes.sql` — which subscriptions came in through which code
+Answers one question and refuses to answer any others: *who signed up through
+this code, are they still active, and how much money has actually arrived from
+them.* A discount code and an attribution log — no partner login, no payout run,
+no dashboard.
+
+**Not `referrals`.** That table is a different measurement: first-touch LINK
+attribution, captured in the browser from `?ref=` and frozen at account
+creation. This is CHECKOUT attribution, read from Stripe's own `promotion_code`
+on the session that took the money and written by the webhook under the service
+role. They disagree often and legitimately — somebody can arrive on a partner's
+link and redeem a different code — so they are kept apart and neither stands in
+for the other.
+
+* `referral_codes` — the codes handed out and who each belongs to.
+  Configuration only, so it cannot go stale against the sales it describes. A
+  retired code keeps its row: deleting it would orphan every sale it made.
+  Holding the `promo_…` id is what lets the webhook name a code with no Stripe
+  call at all.
+* five columns on `subscriptions` — `referral_code`, `referred_partner` (a
+  snapshot of the partner name **as it stood at the sale**),
+  `stripe_promotion_code_id`, `stripe_coupon_id`, `referral_source`. **The
+  promotion code id is the discriminator, not the coupon**: two codes can share
+  one coupon, so "a discount was applied" does not say who sent the customer.
+* `referral_code_report` — signups, still-active and received revenue per code.
+* `referral_signups` — the same, one row per customer, for "who".
+
+**No number on it is invented.** Every subscription is on the report exactly
+once: no code reports as `(unattributed)`, a discount that could not be named
+gets its own line rather than the unattributed pile, and invoices matching no
+subscription row get a line too — so the report's total is the ledger's total.
+Revenue is GROSS, summed from the `invoice.payment_succeeded` payloads the
+webhook actually received, deduplicated per invoice; `charge.refunded` is not a
+handled event, so no refund is in the ledger and none is subtracted. The report
+says which window it can see rather than implying it can see all of them.
+
+`still_active` is `pgEntitled()` from `app.html`, which
+`community_posts.sql` already restates as `community_is_entitled()`. Three
+copies is three chances to drift, so `referral_entitlement_agrees()` compares
+two of them on real rows — as a function rather than an expression in the
+report, because a call is resolved by the PARSER and a `to_regprocedure` guard
+around one does not save a project that never ran that file (the trap
+`site_articles.sql` documents).
+
+Run it **after** `billing.sql` and `stripe_webhook.sql`; it names both if
+they are missing rather than failing on a missing relation. Rows 1–13 should
+each say `ok`. Applied twice and attacked on a real PostgreSQL by
+`tools/app/billing_sql.test.js` with `tools/app/sql/referral_codes.test.sql`.
+The Stripe half — creating the coupon, the promotion code and the dry run in
+test mode before any of it touches live money — is
+`functions/stripe_webhook/README.md` §8–10.
+
 ### `comp_trial.sql` — a free trial for one account, that closes itself
 Hands a named account the terminal without sending it through Stripe, and has
 that access **end on a date** rather than on somebody remembering to close it.

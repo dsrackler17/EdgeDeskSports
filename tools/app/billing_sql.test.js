@@ -18,6 +18,12 @@
    exists` no-ops there, so every column is added independently; without that
    the migration would appear to succeed and the insert would go on failing.
 
+   supabase/referral_codes.sql rides along, because it adds columns to the same
+   `subscriptions` table and its report is read and BELIEVED. Its own suite asks
+   whether a number on that report can be wrong: a subscription dropped off it,
+   a sale credited to the wrong code, an invoice counted twice, revenue that
+   arrived and is on no line at all.
+
    Same shape and same skip behaviour as tools/games/sql_security.test.js —
    without PostgreSQL it skips loudly and passes, so a bare Node checkout is
    still green. CI runs it with a database.
@@ -36,8 +42,13 @@ const SCHEMA = path.join(ROOT, 'supabase', 'billing.sql');
    subscriptions), so the two are applied and tested together — which is also
    the order an operator must run them in. */
 const WEBHOOK = path.join(ROOT, 'supabase', 'stripe_webhook.sql');
+/* Runs third, and says so itself: its two guards refuse to install over a
+   project that has not had the other two. */
+const REFERRAL = path.join(ROOT, 'supabase', 'referral_codes.sql');
+const COMMUNITY = path.join(ROOT, 'supabase', 'community_posts.sql');
 const SHIM = path.join(ROOT, 'tools', 'games', 'sql', 'supabase_shim.sql');
 const SUITE = path.join(__dirname, 'sql', 'billing.test.sql');
+const REF_SUITE = path.join(__dirname, 'sql', 'referral_codes.test.sql');
 const DB = 'edgedesk_billing_sqltest';
 
 const have = (b) => cp.spawnSync('sh', ['-c', 'command -v ' + b], { encoding: 'utf8' }).status === 0;
@@ -74,7 +85,7 @@ let code = 0;
 try {
   psql(conn, ['-d', DB, '-q', '-c',
     "create schema if not exists auth; create extension if not exists pgcrypto;"]);
-  for (const f of [SHIM, SCHEMA, WEBHOOK]) {
+  for (const f of [SHIM, SCHEMA, WEBHOOK, REFERRAL]) {
     const r = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', f]);
     if (r.status !== 0) {
       console.log('FAIL | billing SQL | ' + path.basename(f) + ' did not apply');
@@ -103,6 +114,37 @@ try {
     throw new Error('idempotent');
   }
 
+  /* The referral file's own report, and its own second run. */
+  const refRep = psql(conn, ['-d', DB, '-tA', '-F', '|', '-f', REFERRAL]);
+  const refBad = (refRep.stdout || '').split('\n')
+    .filter((l) => /^\d+\|/.test(l) && !/\|ok/.test(l));
+  if (refRep.status !== 0 || refBad.length) {
+    console.log('FAIL | billing SQL | referral_codes.sql did not report all ok');
+    refBad.forEach((l) => console.log('     | ' + l));
+    console.error((refRep.stderr || '').trim().split('\n').slice(0, 8).join('\n'));
+    throw new Error('report');
+  }
+
+  /* THE THIRD COPY OF pgEntitled(). The report's `still_active` restates a rule
+     that app.html and community_posts.sql already state, and three copies is
+     three chances to drift. Rather than writing a FOURTH copy here, the shipped
+     definition is lifted out of community_posts.sql and applied on its own —
+     if the two ever disagree about who has access, referral_entitlement_agrees()
+     says so and this fails. */
+  const csrc = fs.readFileSync(COMMUNITY, 'utf8');
+  const a = csrc.indexOf('create or replace function public.community_is_entitled');
+  const b = csrc.indexOf('$$;', a);
+  if (a < 0 || b < 0) {
+    console.log('FAIL | billing SQL | could not find community_is_entitled in ' + path.basename(COMMUNITY));
+    throw new Error('suite');
+  }
+  const ent = psql(conn, ['-d', DB, '-q', '-v', 'ON_ERROR_STOP=1', '-c', csrc.slice(a, b + 3)]);
+  if (ent.status !== 0) {
+    console.log('FAIL | billing SQL | the shipped community_is_entitled would not apply');
+    console.error((ent.stderr || '').trim().split('\n').slice(0, 8).join('\n'));
+    throw new Error('suite');
+  }
+
   const r = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-f', SUITE]);
   const out = (r.stdout || '') + (r.stderr || '');
   let passed = (out.match(/NOTICE:\s+ok\s/g) || []).length;
@@ -115,6 +157,37 @@ try {
     console.log('FAIL | billing SQL | only ' + passed + ' assertions ran — the suite exited early');
     throw new Error('short');
   }
+
+  /* The referral report, attacked. Runs on the same database, after the suite
+     above, so it sees a realistic table rather than an empty one. */
+  const rr = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-f', REF_SUITE]);
+  const rout = (rr.stdout || '') + (rr.stderr || '');
+  const rpassed = (rout.match(/NOTICE:\s+ok\s/g) || []).length;
+  if (rr.status !== 0 || /FAIL:/.test(rout)) {
+    console.log('FAIL | billing SQL | referral report | ' + rpassed + ' passed before the failure');
+    console.error(rout.split('\n').filter((l) => /FAIL|ERROR/.test(l)).slice(0, 8).join('\n'));
+    throw new Error('suite');
+  }
+  if (rpassed < 28) {
+    console.log('FAIL | billing SQL | referral report | only ' + rpassed +
+      ' assertions ran — the suite exited early');
+    throw new Error('short');
+  }
+  passed += rpassed;
+
+  /* With rows on the table and the shipped predicate installed, the migration's
+     own row 11 is now a real comparison rather than "nothing to compare". */
+  const agree = psql(conn, ['-d', DB, '-tA', '-c', 'select public.referral_entitlement_agrees()']);
+  if (!/^ok/.test((agree.stdout || '').trim())) {
+    console.log('FAIL | billing SQL | the report and the paywall disagree about who has access');
+    console.log('     | ' + (agree.stdout || agree.stderr || '').trim());
+    throw new Error('suite');
+  }
+  if (/not installed/.test(agree.stdout || '')) {
+    console.log('FAIL | billing SQL | the entitlement cross-check did not actually run');
+    throw new Error('suite');
+  }
+  passed += 1;
   /* THE SHAPE A DASHBOARD-BUILT PROJECT IS ACTUALLY IN. A partial, hand-made
      table holding rows: `create table if not exists` no-ops against it, so
      unless every column is added independently the migration reports success
