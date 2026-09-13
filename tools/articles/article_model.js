@@ -44,7 +44,7 @@
      facts, and collapsing them is what made every automated article look
      like an unfinished one. Only `published` (and legacy `updated`) is
      public; the rest never render and never reach a sitemap. */
-  var STATUSES = ['draft', 'ready', 'published', 'updated', 'manual_review', 'archived'];
+  var STATUSES = ['draft', 'ready', 'ready_too_late', 'published', 'updated', 'manual_review', 'archived'];
 
   var SPORTS = {
     CFB: { slug: 'college-football', label: 'College Football', short: 'CFB',

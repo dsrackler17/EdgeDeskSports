@@ -387,6 +387,142 @@ If a blocking condition appears on a live article, the condition is recorded and
 the operator is told — but the status stays `published`. Withdrawing a live page
 is an operator's decision, not a cron job's.
 
+## 7a2 — Publication windows: no more ninety-minute cliff
+
+The pregame floor used to be one line:
+
+```js
+if (leadH * 60 < (cfg.pregame_min_lead_minutes || 90)) { ...refuse... }
+```
+
+A complete, factually clean article scoring 100 was refused at 89 minutes
+exactly as it would have been at one minute — and the refusal was recorded as a
+**failure**. Wrong twice over: the article was not defective, and forty-five
+minutes before kickoff is an ordinary time to read pregame research.
+
+There are now three windows, in `tools/editorial/windows.js`:
+
+| window | when | what happens |
+| --- | --- | --- |
+| `normal` | more than `pregame_normal_lead_minutes` (90) | publish on the existing rules |
+| `late_window` | between the minimum (20) and normal | **refresh, revalidate, then publish** |
+| `final_window` | inside `pregame_minimum_publish_lead_minutes` (20) | held with a reason; an operator may force it |
+| `after_kickoff` | kickoff has passed | never published, never forcible |
+
+`not_due` is the fourth answer and means "not yet" — the per-window lead (a
+Sunday early game opens sixteen hours out, Monday night seven) has not arrived.
+
+### Configuration
+
+```
+pregame_normal_lead_minutes: 90
+pregame_minimum_publish_lead_minutes: 20
+```
+
+in `articles/data/editorial/featured.json` → `settings`. `windows.js` is the
+only reader; the pregame phase, the dispatcher, the backfill and the health
+panel all resolve through it, so there is no second copy of `90` to drift.
+
+The old `pregame_min_lead_minutes` is still honoured as the minimum when the
+new keys are absent, so a store configured before this change keeps the
+behaviour its operator chose.
+
+**Bad configuration fails safely and loudly.** A minimum above the normal lead
+would make the late window negative, every article would fall through to the
+final window, and nothing would publish — a silent outage. `validate()` refuses
+it, `classify()` returns nothing publishable, and the health panel goes ERROR.
+A key that is *present but unreadable* (`"soon"`) is an error too, not a silent
+fall back to the default: running a policy the operator did not write is the
+same class of bug as a control that saves nowhere.
+
+### The late-window refresh
+
+`tools/editorial/refresh.js`. Only what actually rots near kickoff is
+re-verified — the market line and total, the availability report, and whether
+the fixture is still happening at the time and place it was scheduled. The
+stable research (ratings, schedule strength, season form) is left alone.
+
+**It never touches the original snapshot.** Snapshots are content-addressed, so
+a refresh is a *new* file with `role: "publication"`, pointing back at the one
+it refreshed. Two artefacts answer two different questions:
+
+* `research` — what EdgeDesk believed when it committed. **This is what the
+  postgame audit grades**, via `STORE.researchSnapshot()`.
+* `publication` — what was actually true when the article went public. This is
+  what closing-line value will need.
+
+Grading the audit against the publication snapshot would let EdgeDesk mark its
+own homework with figures it learned after committing, which is exactly the
+self-flattery the result-vs-process system exists to prevent.
+
+A refresh that cannot reach the terminal returns `stale` and the article is
+**held**, not published with two-hour-old prices under a fresh timestamp.
+
+### What the record remembers
+
+```json
+"timing": {
+  "publication_window": "late_window",
+  "classified_window": "late_window",
+  "scheduled_kickoff": "2026-09-13T16:25:00.000Z",
+  "minutes_before_kickoff": 45,
+  "published_at": "...",
+  "refreshed": true
+}
+```
+
+`forced` when an operator overrode the final window. Nothing on the public page
+ever mentions the hour: the reader is getting fresher numbers, not worse ones.
+
+## 7g — Editorial health
+
+```
+node tools/editorial/health.js          the panel, as text
+node tools/editorial/health.js --json
+```
+
+`tools/editorial/health.js` derives the lifecycle **once**, from the same
+stores the pipeline writes, and every run writes the result to
+`articles/data/editorial/health.json`. The admin console **renders that file**
+rather than re-deriving anything, so the panel and the orchestrator cannot
+drift apart. A panel that guesses is a panel that lies the first time the
+pipeline changes.
+
+**HEALTHY / DEGRADED / ERROR is about the system, not about one article.**
+
+* **ERROR** — the dispatcher is dead (≥16 missed ticks), has never run, or the
+  window configuration is invalid. Nothing can be published.
+* **DEGRADED** — the dispatcher is late (≥4 missed ticks), retries are elevated
+  or exhausted, or records are stale.
+* **HEALTHY** — everything else.
+
+One article in `manual_review` is the system *working* — it found something and
+said so — and deliberately does **not** turn the panel red. If it did, the
+panel would stop meaning anything and the operator would stop looking at it.
+
+### The next action
+
+`HEALTH.nextAction()` gives one canonical answer per game, in words an operator
+can act on: `publish at 2026-09-13T13:20:00Z`, `refresh late-window data and
+publish`, `manual force required`, `waiting for kickoff`, `waiting for final`,
+`waiting for a stable box score`, `generate postgame`, `retry at …`, `manual
+review required`, `complete`. The UI prints it; it does not compute it.
+
+### Postgame debt
+
+Every committed game that has been played and has no published postgame article
+appears in `debt`, with a state (`waiting_final`, `waiting_stats`,
+`postgame_due`, `generating_postgame`, `manual_review`, `retry_pending`) and a
+next action. It cannot vanish because the board moved on, generation failed
+once, or a tick was skipped — the invariant is asserted in
+`windows.test.js` §11.
+
+### Stale detection
+
+Reported, never silently repaired: `ready_past_kickoff`,
+`generating_too_long`, `retry_overdue`, `waiting_stats_too_long`,
+`published_without_route`.
+
 ## 7b — The dispatcher, and the first-run problem
 
 The job runs **every fifteen minutes** and is almost always free.

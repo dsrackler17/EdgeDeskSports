@@ -100,7 +100,7 @@ alter table public.site_articles add column if not exists created_at timestamptz
 -- means anything.
 alter table public.site_articles drop constraint if exists site_articles_status_ck;
 alter table public.site_articles add constraint site_articles_status_ck
-  check (status in ('draft', 'ready', 'published', 'updated', 'manual_review', 'archived'));
+  check (status in ('draft', 'ready', 'ready_too_late', 'published', 'updated', 'manual_review', 'archived'));
 
 -- A public URL belongs to ONE article. Enforced here as well as in the
 -- generator, because two rows racing for one slug is exactly the case a

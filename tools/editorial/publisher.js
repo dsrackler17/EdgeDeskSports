@@ -61,10 +61,10 @@ const QUALITY = require('./quality.js');
      updated        legacy, carried so old records still load. Treated as
                     published everywhere public. */
 const STATUS = {
-  DRAFT: 'draft', READY: 'ready', PUBLISHED: 'published',
+  DRAFT: 'draft', READY: 'ready', READY_TOO_LATE: 'ready_too_late', PUBLISHED: 'published',
   MANUAL_REVIEW: 'manual_review', ARCHIVED: 'archived', UPDATED: 'updated',
 };
-const ALL_STATUSES = [STATUS.DRAFT, STATUS.READY, STATUS.PUBLISHED,
+const ALL_STATUSES = [STATUS.DRAFT, STATUS.READY, STATUS.READY_TOO_LATE, STATUS.PUBLISHED,
   STATUS.MANUAL_REVIEW, STATUS.ARCHIVED, STATUS.UPDATED];
 
 /* A status that a reader can reach. */
@@ -72,12 +72,17 @@ const PUBLIC_STATUSES = [STATUS.PUBLISHED, STATUS.UPDATED];
 function isPublic(rec) { return !!rec && PUBLIC_STATUSES.indexOf(rec.status) >= 0; }
 
 const TRANSITIONS = {
-  draft:         ['draft', 'ready', 'manual_review', 'archived'],
-  ready:         ['ready', 'published', 'draft', 'manual_review', 'archived'],
-  published:     ['published', 'updated', 'archived', 'draft'],
-  updated:       ['updated', 'published', 'archived', 'draft'],
-  manual_review: ['manual_review', 'ready', 'draft', 'published', 'archived'],
-  archived:      ['archived', 'draft'],
+  draft:          ['draft', 'ready', 'ready_too_late', 'manual_review', 'archived'],
+  ready:          ['ready', 'ready_too_late', 'published', 'draft', 'manual_review', 'archived'],
+  /* READY_TOO_LATE is a TIMING hold, not a defect: complete, validated
+     research that arrived inside the final pregame floor. An operator may
+     still force it out, so `published` is reachable; once the game starts it
+     simply stays where it is and the game is audited instead. */
+  ready_too_late: ['ready_too_late', 'published', 'archived', 'manual_review', 'draft'],
+  published:      ['published', 'updated', 'archived', 'draft'],
+  updated:        ['updated', 'published', 'archived', 'draft'],
+  manual_review:  ['manual_review', 'ready', 'draft', 'published', 'archived'],
+  archived:       ['archived', 'draft'],
 };
 function canTransition(from, to) {
   if (ALL_STATUSES.indexOf(to) < 0) return false;

@@ -62,8 +62,22 @@ const DEFAULT_SETTINGS = {
     NFL: { thursday_night: 9, sunday_night: 7, monday_night: 7, sunday_early: 16, sunday_late: 16, default: 12 },
     CFB: { saturday_night: 12, saturday_afternoon: 14, saturday_early: 16, friday_night: 10, thursday_night: 9, default: 14 }
   },
-  /* and the window inside which a pregame article may still be published */
+  /* THE PUBLICATION WINDOWS. More than `normal` minutes to kickoff publishes
+     on the ordinary rules; between `minimum` and `normal` is the LATE WINDOW,
+     which publishes only after the time-sensitive data is refreshed and
+     revalidated; inside `minimum` is held for an operator with the reason
+     stated. tools/editorial/windows.js is the only thing that reads these —
+     there is no second copy of 90 anywhere. */
+  pregame_normal_lead_minutes: 90,
+  pregame_minimum_publish_lead_minutes: 20,
+  /* the pre-late-window name, still honoured as the minimum when the two keys
+     above are absent, so a store configured before this change keeps the
+     behaviour its operator chose instead of silently adopting a new number */
   pregame_min_lead_minutes: 90,
+  /* how long the dispatcher may go between board rescores before one is due */
+  select_interval_hours: 6,
+  /* the cadence the health panel judges the dispatcher against */
+  dispatcher_interval_minutes: 15,
   /* how long after a final to wait for a provider's box score to settle */
   postgame_settle_minutes: 20,
   /* how many core team statistics must be published on both sides */
@@ -158,6 +172,30 @@ function saveSnapshot(snap) {
   writeJson(file, snap);
   return { written: true, file };
 }
+/* SNAPSHOT ROLES.
+
+   `research`    the original analytical commitment — what EdgeDesk believed
+                 when it first committed to the game. This is the one the
+                 postgame audit grades against, and nothing may displace it.
+   `publication` a late-window refresh: the time-sensitive facts as they stood
+                 when the article actually went public. Useful for closing-line
+                 value and for asking whether research published nearer kickoff
+                 carries better information.
+
+   THE DISTINCTION IS LOAD-BEARING. Snapshots are content-addressed, so a
+   refresh is a NEW file rather than a mutation — the original is never
+   touched. But latestSnapshot() returns the newest by capture time, and the
+   postgame audit called it: adding publication snapshots without this would
+   have silently switched the audit from grading the original thesis to
+   grading a refreshed one, which is precisely the self-flattery the whole
+   result-vs-process system exists to prevent. A snapshot with no role is
+   `research`, because every snapshot written before this change was one. */
+const SNAPSHOT_ROLE = { RESEARCH: 'research', PUBLICATION: 'publication' };
+function roleOf(snap) {
+  return (snap && snap.role === SNAPSHOT_ROLE.PUBLICATION)
+    ? SNAPSHOT_ROLE.PUBLICATION : SNAPSHOT_ROLE.RESEARCH;
+}
+
 /* The snapshot a game's article was written from — the LATEST captured before
    kickoff, which is the one the article cites. */
 function snapshotsFor(key) {
@@ -169,6 +207,17 @@ function snapshotsFor(key) {
 }
 function latestSnapshot(key) {
   const all = snapshotsFor(key);
+  return all.length ? all[all.length - 1] : null;
+}
+/* THE ORIGINAL ANALYTICAL COMMITMENT. What the postgame audit must grade
+   against, whatever was captured later. */
+function researchSnapshot(key) {
+  const all = snapshotsFor(key).filter(s => roleOf(s) === SNAPSHOT_ROLE.RESEARCH);
+  return all.length ? all[0] : null;
+}
+/* What was true when the article actually went public, if it was refreshed. */
+function publicationSnapshot(key) {
+  const all = snapshotsFor(key).filter(s => roleOf(s) === SNAPSHOT_ROLE.PUBLICATION);
   return all.length ? all[all.length - 1] : null;
 }
 
@@ -334,6 +383,13 @@ function appendRuns(entries, opts) {
    and tries again. A factual-integrity failure is not going to fix itself by
    being retried — it goes to manual review and stops consuming attempts. */
 const RETRIES = path.join(DIR, 'retries.json');
+/* THE HEALTH SNAPSHOT the operator console reads. Written by the pipeline at
+   the end of every run from tools/editorial/health.js, so the admin page
+   renders the SAME derivation the orchestrator used rather than re-deriving
+   the lifecycle from status strings and drifting away from it. */
+const HEALTH_FILE = path.join(DIR, 'health.json');
+function saveHealth(h) { writeJson(HEALTH_FILE, h); return HEALTH_FILE; }
+function loadHealth() { return readJson(HEALTH_FILE, null); }
 const RETRY_BACKOFF_MINUTES = [5, 15, 45, 120, 360];   /* then give up */
 const RETRY_MAX = RETRY_BACKOFF_MINUTES.length;
 
@@ -402,9 +458,11 @@ module.exports = {
   ROOT, DIR, SNAPSHOTS, RESULTS, AUDITS, FEATURED, RIVALRIES, LESSONS, REVIEWS, RUNS,
   DEFAULT_SETTINGS, RUN_LOG_MAX, RETRIES, RETRY_BACKOFF_MINUTES, RETRY_MAX,
   loadRetries, saveRetries, retryKey, retryDue, retryFailed, retryCleared,
+  HEALTH_FILE, saveHealth, loadHealth,
   readJson, writeJson, fileKey,
   loadFeatured, settings, saveFeatured, featuredByKey, loadRivalries,
   snapshotFile, loadSnapshot, saveSnapshot, snapshotsFor, latestSnapshot, committedGames,
+  SNAPSHOT_ROLE, roleOf, researchSnapshot, publicationSnapshot,
   resultFile, loadResult, saveResult, allResults,
   auditFile, loadAudit, saveAudit, allAudits,
   loadLessons, saveLessons, loadReviews, saveReviews,

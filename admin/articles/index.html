@@ -103,6 +103,15 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
 }
 
 /* ---- the editorial screen ------------------------------------------------ */
+/* THE PIPELINE TABLE. One row per active or committed game; it scrolls
+   sideways on a phone rather than crushing eleven columns into 390px. */
+.tblwrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-weight:600;color:var(--faint);padding:7px 9px;
+  border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td.note{color:var(--faint);max-width:280px}
 .erow{border:1px solid var(--border);border-radius:11px;background:var(--surface);margin:8px 0}
 .erow>summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:11px 14px;cursor:pointer;
   font-size:13.5px;list-style:none}
@@ -227,6 +236,22 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
       that week’s cap — or when you feature it by hand, which outranks both. Every score below is itemised:
       open a row to see exactly what earned it, and where each input came from.
     </p>
+    <!-- EDITORIAL HEALTH. Rendered from articles/data/editorial/health.json,
+         which tools/editorial/health.js writes at the end of every pipeline
+         run. The page PRINTS that derivation rather than re-deriving the
+         lifecycle from status strings, so the panel and the orchestrator
+         cannot drift apart. -->
+    <h2>Editorial system</h2>
+    <div class="card" id="eHealth" style="padding:12px 14px;margin-bottom:14px">
+      <p class="lede" style="margin:0">Loading the health snapshot…</p>
+    </div>
+
+    <h2>Active pipeline</h2>
+    <div class="card" style="padding:6px 12px 12px;margin-bottom:16px">
+      <div id="ePipeline"><p class="lede" style="margin:14px 0">Loading…</p></div>
+    </div>
+
+    <h2>The board</h2>
     <div class="toolbar">
       <select id="eSport"><option value="">All sports</option><option value="CFB">College football</option><option value="NFL">NFL</option></select>
       <select id="eStatus">
@@ -698,7 +723,111 @@ function renderEditorial(){
       +'</div></div></details>';
   }).join('');
 }
-document.getElementById('eReload').onclick=loadEditorial;
+/* ---------------------------------------------------------------- health */
+/* NOTHING HERE IS COMPUTED IN THE BROWSER. Every number, state and next
+   action is read from health.json exactly as the pipeline derived it. The one
+   thing the page adds is formatting. */
+let EHEALTH=null;
+async function loadHealth(){
+  try{
+    const r=await fetch('/articles/data/editorial/health.json?'+Date.now(),{cache:'no-store'});
+    EHEALTH=r.ok?await r.json():null;
+  }catch(_){ EHEALTH=null; }
+  renderHealth(); renderPipeline();
+}
+function rel(iso){
+  if(!iso)return '—';
+  const m=Math.round((Date.now()-Date.parse(iso))/60000);
+  if(!isFinite(m))return esc(iso);
+  if(Math.abs(m)<1)return 'just now';
+  if(m>0)return m<60?m+'m ago':Math.round(m/60)+'h ago';
+  return 'in '+(Math.abs(m)<60?Math.abs(m)+'m':Math.round(Math.abs(m)/60)+'h');
+}
+function renderHealth(){
+  const el=document.getElementById('eHealth');
+  if(!EHEALTH){
+    el.innerHTML='<p class="lede" style="margin:0">No health snapshot yet. It is written by every pipeline run — '
+      +'<code class="mono">node tools/editorial/run.js all</code>.</p>';
+    return;
+  }
+  const h=EHEALTH, tone=h.status==='HEALTHY'?'featured':(h.status==='DEGRADED'?'considered':'excluded');
+  const c=h.counts||{}, s=h.settings||{}, d=h.dispatcher||{};
+  const count=(k,label)=>'<span class="stat"><b>'+esc(c[k]==null?0:c[k])+'</b> '+esc(label)+'</span>';
+  el.innerHTML=
+    '<div class="toolbar" style="margin:0 0 10px">'
+      +'<span class="pill '+tone+'" style="font-size:13px">'+esc(h.status)+'</span>'
+      +(h.reasons&&h.reasons.length?'<span class="note">'+h.reasons.map(esc).join(' · ')+'</span>':'')
+    +'</div>'
+    +'<div class="toolbar" style="margin:0 0 10px;flex-wrap:wrap">'
+      +'<span class="stat">dispatcher <b>'+esc(rel(d.last_run_at))+'</b></span>'
+      +'<span class="stat">next <b>'+esc(rel(d.next_expected_at))+'</b></span>'
+      +'<span class="stat">cadence <b>'+esc(d.cadence_minutes)+'m</b></span>'
+      +'<span class="pill '+(s.auto_publish_pregame?'featured':'excluded')+'">pregame auto-publish '+(s.auto_publish_pregame?'ON':'OFF')+'</span>'
+      +'<span class="pill '+(s.auto_publish_postgame?'featured':'excluded')+'">postgame auto-publish '+(s.auto_publish_postgame?'ON':'OFF')+'</span>'
+      +'<span class="stat">normal lead <b>'+esc(s.normal_lead_minutes)+'m</b></span>'
+      +'<span class="stat">minimum lead <b>'+esc(s.minimum_lead_minutes)+'m</b></span>'
+    +'</div>'
+    /* READ-ONLY AND SAID SO. There is no persistent write path for these, and
+       a control that saves somewhere the pipeline never reads is the exact bug
+       this system already shipped once. */
+    +'<p class="note" style="margin:0 0 10px">These are read-only here. They live in '
+      +'<code class="mono">'+esc(s.source||'articles/data/editorial/featured.json')+'</code>'
+      +' and the pipeline reads them from there.</p>'
+    +(h.config&&h.config.ok===false
+      ? '<p class="note" style="color:var(--bad)"><b>Configuration error:</b> '
+        +(h.config.errors||[]).map(e=>esc(e.why)).join('; ')+'</p>' : '')
+    +'<div class="toolbar" style="flex-wrap:wrap;margin:0">'
+      +count('published_today','published today')
+      +count('pregame_published_today','pregame')
+      +count('postgame_published_today','postgame')
+      +count('waiting_for_window','waiting for window')
+      +count('late_window_candidates','late-window')
+      +count('waiting_for_kickoff_or_final','waiting for kickoff/final')
+      +count('waiting_for_stats','waiting for stats')
+      +count('generating','generating')
+      +count('ready','ready')
+      +count('ready_too_late','too late to publish')
+      +count('manual_review','manual review')
+      +count('retries_pending','retries pending')
+      +count('failed','failed')
+      +count('postgame_debt','postgame debt')
+    +'</div>'
+    +((h.stale||[]).length
+      ? '<p class="note" style="margin:10px 0 0"><b>Stale:</b> '
+        +h.stale.map(x=>esc(x.id)+' — '+esc(x.why)).join('<br>')+'</p>' : '');
+}
+function renderPipeline(){
+  const el=document.getElementById('ePipeline');
+  if(!EHEALTH||!(EHEALTH.games||[]).length){
+    el.innerHTML='<p class="lede" style="margin:14px 0">Nothing active.</p>';
+    return;
+  }
+  const debt={}; (EHEALTH.debt||[]).forEach(d=>{debt[d.key]=d;});
+  el.innerHTML='<div class="tblwrap"><table class="tbl"><thead><tr>'
+    +['Game','Sport','Kickoff','Phase','Article','Status','Timing','Quality','Last action','Next action','Reason']
+      .map(h=>'<th>'+h+'</th>').join('')
+    +'</tr></thead><tbody>'
+    +EHEALTH.games.map(g=>{
+      const st=g.article_status||g.postgame_status||'—';
+      const dd=debt[g.key];
+      return '<tr>'
+        +'<td><b>'+esc(g.game)+'</b></td>'
+        +'<td>'+esc(g.sport)+'</td>'
+        +'<td class="mono">'+esc(fmt(g.game_time))+'</td>'
+        +'<td>'+esc(g.phase)+(dd?' <span class="pill considered">'+esc(dd.state)+'</span>':'')+'</td>'
+        +'<td>'+(g.article?'<code class="mono">'+esc(g.article)+'</code>':'—')+'</td>'
+        +'<td><span class="pill '+(st==='published'?'featured':(st==='manual_review'?'excluded':'considered'))+'">'+esc(st)+'</span></td>'
+        +'<td>'+(g.timing?esc(g.timing):(g.minutes_before_kickoff!=null?esc(g.minutes_before_kickoff)+'m':'—'))+'</td>'
+        +'<td>'+(g.quality==null?'—':esc(g.quality))+'</td>'
+        +'<td class="note">'+esc(g.last_action||'—')+'</td>'
+        +'<td><b>'+esc(g.next_action)+'</b></td>'
+        +'<td class="note">'+esc(g.next_action_reason||'')+'</td>'
+      +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+}
+
+document.getElementById('eReload').onclick=()=>{loadEditorial();loadHealth();};
 document.getElementById('eSport').onchange=renderEditorial;
 document.getElementById('eStatus').onchange=renderEditorial;
 
@@ -784,7 +913,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>{
       document.getElementById('tab-'+t).classList.toggle('hide',b.dataset.tab!==t);
     });
     if(b.dataset.tab==='community')loadCommunity();
-    if(b.dataset.tab==='editorial')loadEditorial();
+    if(b.dataset.tab==='editorial'){loadEditorial();loadHealth();}
   };
 });
 document.getElementById('cReload').onclick=loadCommunity;

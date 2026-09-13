@@ -54,6 +54,8 @@ const GRAPHIC = require('./graphic.js');
 const POST = require('./postgame_model.js');
 const FETCH = require('./fetch_results.js');
 const PUBLISH = require('./publisher.js');
+const WINDOWS = require('./windows.js');
+const REFRESH = require('./refresh.js');
 const STORE = require('./store.js');
 
 function arg(name, fb) {
@@ -218,18 +220,27 @@ async function phasePregame(host) {
     if (!isFinite(kick)) { record('pregame', key, false, 'no usable kickoff time'); continue; }
     const leadH = (kick - nowMs) / 3600000;
 
-    /* SCHEDULING. Each window has its own lead time, configurable in
-       articles/data/editorial/featured.json without touching code. A game
-       further out than its lead is not late — it is not due yet. */
-    const want = leadFor(cfg, g);
-    if (leadH > want) {
-      record('pregame', key, true, 'not due yet: ' + leadH.toFixed(1) + 'h out, this window publishes at ' + want + 'h',
-        { skipped: true });
+    /* THE PUBLICATION WINDOW — see tools/editorial/windows.js. This used to be
+       a single 90-minute cliff that recorded a FAILURE for a perfectly good
+       article at 89 minutes. There are now three windows, and only one of
+       them stops the article existing at all. */
+    const cls = WINDOWS.classify({
+      kickoff_ms: kick, now_ms: nowMs, settings: cfg, due_at_minutes: leadFor(cfg, g) * 60,
+    });
+    if (!cls.config_ok) {
+      record('pregame', key, false, cls.reason, { config_errors: cls.config_errors });
       continue;
     }
-    if (leadH * 60 < (cfg.pregame_min_lead_minutes || 90)) {
-      record('pregame', key, false, 'too close to kickoff: ' + Math.round(leadH * 60)
-        + ' minutes left, the floor is ' + cfg.pregame_min_lead_minutes);
+    if (cls.window === WINDOWS.WINDOW.NOT_DUE) {
+      record('pregame', key, true, cls.reason, { skipped: true, window: cls.window });
+      continue;
+    }
+    /* AFTER KICKOFF — never a new pregame article, and never a back-dated one.
+       The commitment that already exists is preserved and the game stays owed
+       an audit; there is simply nothing new to publish. */
+    if (cls.window === WINDOWS.WINDOW.AFTER_KICKOFF) {
+      record('pregame', key, true, cls.reason,
+        { skipped: true, window: cls.window, minutes_before_kickoff: cls.minutes_before_kickoff });
       continue;
     }
     if (!FORCE && STORE.alreadyDone(runs, key, 'pregame_published')) {
@@ -297,11 +308,88 @@ async function phasePregame(host) {
       const verdict = AMODEL.publishable(rec);
       rec.checks = { ok: verdict.ok, failed: verdict.failed.map(f => ({ id: f.id, why: f.why })), at: NOW };
       if (verdict.ok && q.publishable) rec.status = 'ready';
+      /* the gate result the publisher will be handed; the late window
+         re-runs it below and replaces this */
+      let gate = q;
 
       if (!q.publishable) {
         record('pregame_validation', key, false, q.hold_reason, { score: q.score });
       } else {
         record('pregame_validation', key, true, 'quality ' + q.score, { score: q.score });
+      }
+
+      /* ---- THE LATE WINDOW. Between the minimum and the normal lead an
+         article is still legitimate pregame research, but the market and the
+         availability report are the parts that rot this close in, so they are
+         re-verified before it goes out. A refresh that cannot reach anything
+         holds the article rather than publishing two-hour-old prices under a
+         fresh timestamp. */
+      let timing = WINDOWS.timingFor(cls, { now: NOW, refreshed: false });
+      if (cls.window === WINDOWS.WINDOW.LATE) {
+        const ref = REFRESH.refresh({
+          committed_research: snap.research, live_research: research,
+          game: meta, snapshot: snap, article_id: id, now: NOW,
+          market_source: host.marketSourceFor(g.sport, g.game_id),
+          sources: sourceList(host, g), generation_version: 'editorial_late_window',
+        });
+        if (!ref.ok) {
+          record('pregame_refresh', key, false, ref.reasons.join('; '), { state: ref.state });
+          rec.publish_state = { ok: false, at: NOW, blocking: [{ id: 'late_window_refresh', why: ref.reasons[0] }],
+            warnings: [], hold_reason: 'late_window_refresh' };
+          rec.timing = timing;
+          if (!DRY) { ASTORE.save(rec); byId[id] = rec; articles.push(rec); }
+          return { action: 'held', why: ref.reasons[0], score: q.score, slug: rec.slug,
+            window: cls.window };
+        }
+        /* THE REFRESHED FACTS ARE A SECOND SNAPSHOT, never an edit to the
+           first: the original is the analytical commitment the postgame audit
+           grades, and it stays exactly as it was. */
+        if (ref.snapshot && !DRY) {
+          try { STORE.saveSnapshot(ref.snapshot); } catch (e) { /* identical content is a no-op */ }
+        }
+        rec.publication_snapshot_id = ref.snapshot ? ref.snapshot.snapshot_id : null;
+        timing = WINDOWS.timingFor(cls, { now: NOW, refreshed: true });
+        record('pregame_refresh', key, true,
+          ref.state === 'refreshed' ? ref.reasons.join('; ') : 'time-sensitive data re-verified, unchanged',
+          { state: ref.state, changes: ref.changes, publication_snapshot: rec.publication_snapshot_id });
+
+        /* RE-RUN THE GATE ON THE REFRESHED RECORD. The whole point of
+           refreshing is that something may have moved, so the integrity and
+           quality checks are run again rather than trusted from before. */
+        const q2 = QUALITY.inspect(rec, { now: NOW });
+        rec.quality = { score: q2.score, publishable: q2.publishable,
+          manual_review_required: q2.manual_review_required, hold_reason: q2.hold_reason,
+          integrity_failed: q2.integrity_failed, craft_failed: q2.craft_failed, at: NOW };
+        gate = q2;
+        if (!q2.publishable) {
+          record('pregame_validation', key, false,
+            'after the late-window refresh: ' + q2.hold_reason, { score: q2.score });
+        }
+      }
+      rec.timing = timing;
+
+      /* ---- THE FINAL WINDOW. Inside the minimum lead nothing publishes
+         automatically. This is NOT an error and NOT a failed article: it is
+         complete, validated research that arrived too close to kickoff to go
+         out honestly on its own. It is kept, its snapshot is kept, the game
+         stays owed a postgame audit, and an operator may force it. */
+      if (cls.window === WINDOWS.WINDOW.FINAL && !FORCE) {
+        rec.status = 'ready_too_late';
+        rec.publish_state = { ok: false, at: NOW, blocking: [],
+          warnings: [], hold_reason: 'inside final pregame publication floor' };
+        record('pregame_window', key, true, cls.reason,
+          { window: cls.window, minutes_before_kickoff: cls.minutes_before_kickoff,
+            forcible: true, score: q.score });
+        if (!DRY) { ASTORE.save(rec); byId[id] = rec; articles.push(rec); }
+        return { action: 'ready_too_late', slug: rec.slug, score: q.score, status: rec.status,
+          theses: rec.theses.length, window: cls.window, why: cls.reason };
+      }
+      if (cls.window === WINDOWS.WINDOW.FINAL && FORCE) {
+        timing = WINDOWS.timingFor(cls, { now: NOW, refreshed: timing.refreshed, forced: true });
+        rec.timing = timing;
+        record('pregame_window', key, true,
+          'forced by an operator inside the final window (' + cls.minutes_before_kickoff + ' minutes to kickoff)',
+          { window: 'forced' });
       }
 
       /* ---- THE PUBLISHER. One path, and it is the same one the postgame
@@ -320,11 +408,18 @@ async function phasePregame(host) {
       }
       /* `prior` is the record as stored, so an unchanged republish leaves
          updated_at alone and a real edit moves it. */
-      const pub = PUBLISH.publish(rec, { now: NOW, quality: q, others: articles, previous: prior });
+      const pub = PUBLISH.publish(rec, { now: NOW, quality: gate, others: articles, previous: prior });
       rec = pub.record;
       if (pub.ok) {
-        record('pregame_published', key, true, rec.slug + ' (' + pub.action + ')',
-          { slug: rec.slug, score: q.score, url: rec.canonical_url, action: pub.action });
+        /* the timing block the later analytics read: which window it went out
+           in, how many minutes before kickoff, and whether it was refreshed */
+        rec.timing = Object.assign({}, timing, { published_at: rec.published_at });
+        record('pregame_published', key, true,
+          rec.slug + ' (' + pub.action + ', ' + rec.timing.publication_window + ', '
+            + rec.timing.minutes_before_kickoff + 'm before kickoff)',
+          { slug: rec.slug, score: q.score, url: rec.canonical_url, action: pub.action,
+            window: rec.timing.publication_window,
+            minutes_before_kickoff: rec.timing.minutes_before_kickoff });
         action = pub.action;
       } else {
         record('pregame_published', key, false, pub.reason,
@@ -346,11 +441,9 @@ async function phasePregame(host) {
   return out;
 }
 
-function leadFor(cfg, g) {
-  const byWindow = (cfg.pregame_lead_hours || {})[g.sport] || {};
-  return byWindow[g.window_key] != null ? byWindow[g.window_key]
-    : (byWindow.default != null ? byWindow.default : 12);
-}
+/* Kept as an hours-returning wrapper because the log lines print hours; the
+   policy itself lives in windows.js so the health panel reads the same one. */
+function leadFor(cfg, g) { return WINDOWS.leadMinutesFor(cfg, g) / 60; }
 function featuredSummary(g) {
   return { editorial_priority: g.editorial_priority, status: g.status,
     window_label: g.window_label, window_key: g.window_key, national_window: g.national_window,
@@ -416,7 +509,13 @@ async function phasePostgame() {
       record('postgame', key, true, 'already published in an earlier run', { skipped: true });
       continue;
     }
-    const snap = STORE.latestSnapshot(key);
+    /* THE ORIGINAL ANALYTICAL COMMITMENT, never a later publication snapshot.
+       A late-window refresh writes a SECOND snapshot recording what was true
+       when the article went public; grading the audit against that instead of
+       the original would let EdgeDesk mark its own homework with figures it
+       learned after committing. researchSnapshot() is explicit about which
+       one this is. */
+    const snap = STORE.researchSnapshot(key) || STORE.latestSnapshot(key);
     if (!snap) {
       record('postgame', key, false,
         'no pregame snapshot for this game — there is nothing to audit the result against, and a postgame article without one would be a recap');
@@ -607,7 +706,7 @@ async function main() {
     if (!due.due) {
       log('nothing is due: ' + due.summary);
       record('dispatch', null, true, 'nothing due — ' + due.summary, { skipped: true });
-      if (!DRY) STORE.appendRuns(entries, { now: NOW });
+      if (!DRY) { STORE.appendRuns(entries, { now: NOW }); writeHealth(); }
       return { ok: true, due: false, entries };
     }
     log('due: ' + due.summary);
@@ -640,9 +739,10 @@ async function main() {
   if (PHASE === 'memory' || PHASE === 'all') phaseMemory();
 
   if (!DRY) {
-      STORE.appendRuns(entries, { now: NOW });
-      if (retriesDirty) STORE.saveRetries(RETRIES, { now: NOW });
-    }
+    STORE.appendRuns(entries, { now: NOW });
+    if (retriesDirty) STORE.saveRetries(RETRIES, { now: NOW });
+    writeHealth();
+  }
   const failed = entries.filter(e => !e.ok);
   log('\n' + entries.length + ' step(s) logged, ' + failed.length + ' not ok');
   failed.slice(0, 12).forEach(e => log('  ' + pad(e.step, 20) + pad(e.key || '', 30) + e.reason));
@@ -693,13 +793,26 @@ function phaseBackfill() {
         record('backfill', key, false, rec.slug + ': no usable kickoff time');
         continue;
       }
-      const leadMin = (kick - nowMs) / 60000;
-      if (leadMin < (cfg.pregame_min_lead_minutes || 90)) {
-        record('backfill', key, true, rec.slug + ': '
-          + (leadMin < 0
-            ? 'the game kicked off ' + Math.round(-leadMin) + ' minutes ago — a preview published after its own game is worthless, so it is left unpublished'
-            : 'only ' + Math.round(leadMin) + ' minutes to kickoff, under the ' + (cfg.pregame_min_lead_minutes || 90) + '-minute floor'),
-          { skipped: true });
+      const cls = WINDOWS.classify({ kickoff_ms: kick, now_ms: nowMs, settings: cfg });
+      if (cls.window === WINDOWS.WINDOW.AFTER_KICKOFF) {
+        record('backfill', key, true, rec.slug
+          + ': the game kicked off ' + Math.abs(cls.minutes_before_kickoff)
+          + ' minutes ago — a preview published after its own game is worthless, so it is left unpublished',
+          { skipped: true, window: cls.window });
+        continue;
+      }
+      if (cls.window === WINDOWS.WINDOW.FINAL && !FORCE) {
+        record('backfill', key, true, rec.slug + ': ' + cls.reason,
+          { skipped: true, window: cls.window, forcible: true });
+        continue;
+      }
+      /* a backfill cannot reach the research terminal (it runs offline), so it
+         never publishes into the late window on stale prices — that needs the
+         refresh, which needs the terminal */
+      if (cls.window === WINDOWS.WINDOW.LATE && !FORCE) {
+        record('backfill', key, true, rec.slug
+          + ': in the late window, which needs a live refresh the backfill cannot do — the next pipeline run will handle it',
+          { skipped: true, window: cls.window });
         continue;
       }
     }
@@ -721,6 +834,17 @@ function phaseBackfill() {
   out.forEach(r => log('  ' + pad(r.action, 14) + pad(r.slug, 52)
     + (r.score != null ? 'quality ' + r.score : '') + (r.why ? '  — ' + r.why : '')));
   return out;
+}
+
+/* The operator console reads this file rather than re-deriving the lifecycle,
+   so the panel and the pipeline can never disagree about what is happening. */
+function writeHealth() {
+  try {
+    const HEALTH = require('./health.js');
+    STORE.saveHealth(HEALTH.snapshot({ now: NOW }));
+  } catch (e) {
+    log('  [health] could not write the health snapshot: ' + (e && e.message));
+  }
 }
 
 /* ==================================================================== */
@@ -757,8 +881,11 @@ function whatIsDue(now) {
       const kick = Date.parse(g.game_time);
       if (!isFinite(kick)) return;
       const leadH = (kick - nowMs) / 3600000;
-      if (leadH > leadFor(cfg, g)) return;                              /* not due yet */
-      if (leadH * 60 < (cfg.pregame_min_lead_minutes || 90)) return;    /* too close */
+      const cls = WINDOWS.classify({ kickoff_ms: kick, now_ms: nowMs, settings: cfg,
+        due_at_minutes: leadFor(cfg, g) * 60 });
+      /* NORMAL and LATE are both work; NOT_DUE, FINAL and AFTER_KICKOFF are
+         not. The late window is the whole point of waking every 15 minutes. */
+      if (WINDOWS.AUTO_PUBLISHABLE.indexOf(cls.window) < 0) return;
       if (STORE.alreadyDone(runs, g.key, 'pregame_published')) return;
       if (!STORE.retryDue(retries, g.key, 'pregame', now).due) return;
       pregame.push(g.key);
