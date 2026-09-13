@@ -512,6 +512,25 @@ that disagree, which is far worse than a late article.
 Until step 3 the function returns **503** and says the token is missing — it
 never reports success while scheduling nothing.
 
+**Order does not matter, and that is deliberate.** `editorial.yml` learned its
+`source` input in the same change that added this function, so a project that
+deploys the function before that change reaches `main` is pointing it at a
+workflow that does not accept the input. GitHub answers
+`422 Unexpected inputs provided: ["source"]` to every tick, and the primary
+scheduler would be dead from the day it was installed over a piece of
+metadata.
+
+So a 422 naming an unexpected input is retried once without it. The poke lands;
+the run records its source as the workflow's default (`manual`) instead of
+`supabase_cron`, so `EDITORIAL HEALTH` shows the primary as missing while the
+articles keep publishing. The function's `reason` says exactly that and names
+the ref whose workflow is behind — a silent fallback would hide a version
+mismatch worth fixing. It clears itself when the ref carries the input.
+
+A 422 for any other reason — a workflow with no `workflow_dispatch` trigger, a
+disabled one — is reported as an error without a second call, because dropping
+the inputs would fail identically.
+
 ### Heartbeats
 
 Every invocation writes to `public.editorial_heartbeats`: `scheduler_source`,

@@ -139,22 +139,58 @@ export async function run(): Promise<Result> {
   }
 
   // ---- poke the one canonical dispatcher --------------------------------
-  const res = await fetch(
-    `https://api.github.com/repos/${ghRepo}/actions/workflows/${workflow}/dispatches`,
-    {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${ghToken}`,
-        accept: 'application/vnd.github+json',
-        'content-type': 'application/json',
-        'user-agent': 'edgedesk-editorial-cron',
+  const dispatch = (body: Record<string, unknown>) =>
+    fetch(
+      `https://api.github.com/repos/${ghRepo}/actions/workflows/${workflow}/dispatches`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${ghToken}`,
+          accept: 'application/vnd.github+json',
+          'content-type': 'application/json',
+          'user-agent': 'edgedesk-editorial-cron',
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify({ ref, inputs: { source: 'supabase_cron' } }),
-    },
-  );
+    );
+
+  let res = await dispatch({ ref, inputs: { source: 'supabase_cron' } });
+  let fellBack = '';
+
+  // THE DEPLOYMENT GAP. `source` is metadata — it records on the heartbeat
+  // which scheduler woke the dispatcher — and the workflow on `ref` only
+  // learned to accept it in the same change that added this function. Deploy
+  // this before that branch merges, or point it at a ref that predates it, and
+  // GitHub answers 422 `Unexpected inputs provided: ["source"]` to every tick.
+  //
+  // A scheduler that is permanently dead because of a metadata field is the
+  // exact failure this function exists to remove, so it retries once without
+  // the input. The run then records its source as the workflow's default
+  // rather than as the primary scheduler — a worse heartbeat, not a missing
+  // article — and the reason says so, because a silent fallback would hide
+  // a real version mismatch an operator should fix.
+  if (res.status === 422) {
+    const why = await res.text().catch(() => '');
+    if (/unexpected inputs/i.test(why)) {
+      res = await dispatch({ ref });
+      fellBack = ' (without the `source` input: the workflow on '
+        + ref + ' does not accept it yet — ' + why.replace(/\s+/g, ' ').slice(0, 120) + ')';
+    } else {
+      return {
+        ok: false,
+        action: 'error',
+        reason: `workflow_dispatch -> 422`,
+        detail: why.slice(0, 300),
+      };
+    }
+  }
 
   if (res.status === 204) {
-    return { ok: true, action: 'dispatched', reason: `${workflow} dispatched on ${ref}` };
+    return {
+      ok: true,
+      action: 'dispatched',
+      reason: `${workflow} dispatched on ${ref}${fellBack}`,
+    };
   }
   const body = await res.text().catch(() => '');
   return {

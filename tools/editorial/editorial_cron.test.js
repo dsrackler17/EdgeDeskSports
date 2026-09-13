@@ -51,6 +51,10 @@ globalThis.Deno = { env: { get: k => ENV[k] } };   /* no serve: the server stays
 let SETTINGS_ROWS = [{ dispatcher_enabled: true, editorial_enabled: true }];
 let HEARTBEAT_ROWS = [];
 let DISPATCH_STATUS = 204;
+let DISPATCH_BODY = '';
+/* A workflow that predates the `source` input: GitHub answers 422 to a POST
+   carrying it and 204 to the same POST without it. Set by section 6. */
+let REJECT_UNKNOWN_INPUTS = false;
 const SEEN = [];
 function jsonRes(status, body) {
   return {
@@ -66,7 +70,18 @@ globalThis.fetch = async function (url, init) {
   if (u.includes('/rest/v1/editorial_settings')) return jsonRes(200, SETTINGS_ROWS);
   if (u.includes('/rest/v1/editorial_heartbeats')) return jsonRes(200, HEARTBEAT_ROWS);
   if (u.includes('/actions/workflows/') && u.endsWith('/dispatches')) {
-    return jsonRes(DISPATCH_STATUS, DISPATCH_STATUS === 204 ? '' : 'refused');
+    if (REJECT_UNKNOWN_INPUTS) {
+      const sent = JSON.parse((init && init.body) || '{}');
+      const keys = Object.keys(sent.inputs || {});
+      if (keys.length) {
+        return jsonRes(422, JSON.stringify({
+          message: 'Unexpected inputs provided: ["' + keys.join('","') + '"]',
+          documentation_url: 'https://docs.github.com/rest',
+        }));
+      }
+      return jsonRes(204, '');
+    }
+    return jsonRes(DISPATCH_STATUS, DISPATCH_STATUS === 204 ? '' : (DISPATCH_BODY || 'refused'));
   }
   return jsonRes(404, 'unexpected ' + u);
 };
@@ -91,6 +106,8 @@ const FN = path.join(__dirname, '..', '..', 'supabase', 'functions', 'editorial_
     SETTINGS_ROWS = [{ dispatcher_enabled: true, editorial_enabled: true }];
     HEARTBEAT_ROWS = [];
     DISPATCH_STATUS = 204;
+    DISPATCH_BODY = '';
+    REJECT_UNKNOWN_INPUTS = false;
     SEEN.length = 0;
     ENV.EDITORIAL_GH_TOKEN = 'gh-token';
   }
@@ -191,6 +208,47 @@ const FN = path.join(__dirname, '..', '..', 'supabase', 'functions', 'editorial_
   out = await run();
   chk('so is a 404 — a wrong repo or workflow name must not look like success',
     out.ok === false && out.action === 'error');
+
+  /* ==================================================================== */
+  section('6. A WORKFLOW THAT PREDATES THE `source` INPUT STILL GETS POKED');
+  /* ==================================================================== */
+  /* THE DEPLOYMENT GAP, and it is not hypothetical: the `source` input and
+     this function were added in the same change, so between deploying the
+     function and merging that change the workflow on `main` does not accept
+     the input. GitHub answers 422 to every tick, and a scheduler that is
+     permanently dead over a metadata field is the exact failure this function
+     exists to remove. */
+  reset();
+  REJECT_UNKNOWN_INPUTS = true;
+  out = await run();
+  eq('it still dispatches', out.action, 'dispatched');
+  chk('and reports success', out.ok === true, JSON.stringify(out));
+
+  const tries = SEEN.filter(s => s.url.endsWith('/dispatches'));
+  eq('it tried twice', tries.length, 2);
+  const first = JSON.parse(tries[0].body || '{}');
+  const second = JSON.parse(tries[1].body || '{}');
+  eq('the first attempt carried the source', first.inputs && first.inputs.source, 'supabase_cron');
+  chk('the retry dropped the inputs entirely',
+    second.inputs === undefined, JSON.stringify(second));
+  eq('and kept the ref', second.ref, 'main');
+
+  /* THE FALLBACK IS NOT SILENT. A worse heartbeat is the cost; an operator
+     who cannot see that the workflow is behind would never fix it. */
+  chk('the reason says the input was dropped', /source/.test(out.reason), out.reason);
+  chk('and names the ref whose workflow is behind', /main/.test(out.reason), out.reason);
+
+  /* A 422 THAT IS NOT AN INPUT MISMATCH IS STILL AN ERROR. Retrying a
+     disabled or non-existent workflow without inputs would fail identically
+     and cost a second call to say so. */
+  reset();
+  DISPATCH_STATUS = 422;
+  DISPATCH_BODY = JSON.stringify({ message: 'Workflow does not have workflow_dispatch trigger' });
+  out = await run();
+  chk('an unrelated 422 is reported', out.ok === false && out.action === 'error',
+    JSON.stringify(out));
+  chk('with the body', /workflow_dispatch trigger/.test(String(out.detail)), out.detail);
+  eq('and it did not retry', SEEN.filter(s => s.url.endsWith('/dispatches')).length, 1);
 
   /* ------------------------------------------------------------------ */
   console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | editorial cron | '
