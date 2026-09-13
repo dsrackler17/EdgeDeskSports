@@ -323,11 +323,54 @@
         rows: p.rows || [], reads: list(p.reads, 6) };
     }).filter(function (p) { return p.title && (p.rows.length || p.reads.length); });
   }
-  function casesSection(r) {
+  /* THE CASE FOR EACH TEAM, MINUS WHAT THE PAGE HAS ALREADY SAID.
+
+     The payload's `cases` block and its `advantages` block are built from the
+     same measured gaps, so a bullet here was frequently the same sentence the
+     edges section had already published a screen earlier — twice on the page,
+     word for word, three or four times per article. Nothing was wrong with
+     either section; they simply overlapped, and a reader reading both in
+     sequence read the same line twice.
+
+     So the already-published lines are dropped here, by exact text, and a
+     column left with nothing is dropped with them. No sentence is rewritten
+     and nothing new is introduced: this only removes a repeat. `already` is
+     the set of texts the edges section put on the page. */
+  function casesSection(r, already) {
     var c = r.cases;
     if (!c || (!c.favourite && !c.underdog)) return null;
+    var seen = already || Object.create(null);
+    function trim(side) {
+      if (!side) return null;
+      var all = (side.bullets || []).filter(Boolean);
+      var bullets = all.filter(function (b) {
+        var k = dedupeKey(b);
+        return !(k && seen[k]);
+      });
+      if (bullets.length) return Object.assign({}, side, { bullets: bullets });
+      if (!all.length) return null;
+      /* A COLUMN WHOSE EVERY LINE IS ALREADY ON THE PAGE SAYS SO rather than
+         disappearing. Dropping it outright left "The case for each team" with
+         one team in it, which reads as EdgeDesk having nothing to say for the
+         other one — the opposite of what happened. */
+      return Object.assign({}, side, { bullets: [],
+        elsewhere: 'Everything supporting ' + txt(side.team || 'this side')
+          + ' in this matchup is set out above, in the pricing drivers and the measured edges. It is not repeated here.' });
+    }
+    var fav = trim(c.favourite), dog = trim(c.underdog);
+    if (!fav && !dog) return null;
+    /* and a section in which NEITHER side has anything new is not a section */
+    if (!(fav && fav.bullets.length) && !(dog && dog.bullets.length)) return null;
     return { kind: 'cases', title: 'The case for each team',
-      favourite: c.favourite, underdog: c.underdog, note: txt(c.note) };
+      favourite: fav, underdog: dog, note: txt(c.note) };
+  }
+  /* Text, with the punctuation and the label prefix that differ between the
+     two blocks removed, so "Explosive run rate: X vs Y — 13 places" and
+     "Explosive run rate X vs Y — 13 places" are recognised as one line. */
+  function dedupeKey(s) {
+    var t = txt(s);
+    if (!t) return null;
+    return t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   }
 
   /* -------------------------------------------- what could change the read */
@@ -511,6 +554,15 @@
       terminal_url: SITE + '/app.html' + S.terminal,
       hub_url: SITE + S.hub,
       status: STATUSES.indexOf(opts.status) >= 0 ? opts.status : 'draft',
+      /* PREGAME BY DEFAULT, AND SAID OUT LOUD. The editorial system stores a
+         postgame analysis of the same game in this same store, under the same
+         renderer and the same sitemap, and the two are told apart by this
+         field rather than by which folder they came from. See
+         tools/editorial/postgame_model.js. */
+      article_type: 'pregame',
+      /* filled in by the editorial pipeline once the postgame half exists, so
+         a pregame page can carry "see what actually happened" */
+      related: opts.related || null,
       frozen: false,
       frozen_at: null,
       author: AUTHOR,
@@ -541,11 +593,29 @@
     push(snapshotSection(r));
     push(pricingSection(r));
     push(breakdownSection(r));
-    push(edgesSection(r, awayName, homeName));
+    var edges = edgesSection(r, awayName, homeName);
+    push(edges);
     push(matchupsSection(r));
     panelSections(r).forEach(push);
     push(rosterSection(r));
-    push(casesSection(r));
+    /* what the edges section has already put on the page, so the cases
+       section does not publish the same line a second time */
+    var published = Object.create(null);
+    if (edges) {
+      ['away', 'home', 'measured'].forEach(function (side) {
+        (edges[side] || []).forEach(function (x) {
+          var k = dedupeKey(x && x.text); if (k) published[k] = true;
+          var k2 = dedupeKey((x && x.k ? x.k + ' ' : '') + (x && x.text || '')); if (k2) published[k2] = true;
+        });
+      });
+    }
+    /* the pricing drivers, too: a "case for" bullet is frequently a driver
+       line the pricing section printed with its own points column */
+    ((r.drivers && r.drivers.rows) || []).forEach(function (d) {
+      var k = dedupeKey(d && d.text); if (k) published[k] = true;
+      var k2 = dedupeKey((d && d.text || '') + ' ' + (d && d.points || '') + ' pts'); if (k2) published[k2] = true;
+    });
+    push(casesSection(r, published));
     push(uncertaintySection(r));
     push(marketSection(r));
     return {
@@ -577,8 +647,37 @@
       }
     };
   }
+  /* ------------------------------------------------------ the type registry */
+  /* ONE STORE, TWO KINDS OF ARTICLE. A postgame analysis is a different
+     document with different sections and different publication checks, but it
+     is the same KIND of thing: a record with a slug, a canonical URL, a
+     publication state and a page. Giving it its own store would have meant a
+     second build, a second sitemap and a second place for a URL to be minted,
+     which is the duplication this repository exists not to have.
+
+     So the type-specific half is registered rather than branched on. The
+     editorial module calls registerType('postgame', …) when it loads, and
+     both Node (through tools/articles/store.js, which requires it) and the
+     browser (which loads both scripts) get the same dispatch. A record of an
+     unregistered type falls back to the pregame builders, so a store read
+     before the editorial module loaded renders SOMETHING rather than
+     throwing — and checks() reports the type as unregistered so nothing in
+     that state can publish. */
+  var TYPES = Object.create(null);
+  function registerType(type, impl) {
+    if (!type || !impl || typeof impl.articleFor !== 'function') {
+      throw new Error('an article type needs at least an articleFor()');
+    }
+    TYPES[String(type)] = impl;
+    return impl;
+  }
+  function typeOf(rec) { return String((rec && rec.article_type) || 'pregame'); }
+  function implFor(rec) { return TYPES[typeOf(rec)] || null; }
+
   /* What goes to disk: everything but the derived half. */
   function compact(rec) {
+    var impl = implFor(rec);
+    if (impl && impl.compact) return impl.compact(rec);
     var c = Object.assign({}, rec);
     delete c.article;
     return c;
@@ -588,7 +687,8 @@
     if (!rec) return rec;
     if (rec.article && rec.article.sections) return rec;
     var full = Object.assign({}, rec);
-    full.article = articleFor(full);
+    var impl = implFor(full);
+    full.article = impl ? impl.articleFor(full) : articleFor(full);
     return full;
   }
 
@@ -655,6 +755,18 @@
   function checks(rec) {
     var out = [];
     function chk(id, ok, why) { out.push({ id: id, ok: !!ok, why: why }); }
+    /* a record of a registered non-pregame type is checked by that type's own
+       rules; an UNREGISTERED type fails one check and therefore cannot
+       publish, which is the safe direction */
+    var t = typeOf(rec);
+    if (t !== 'pregame') {
+      var impl = TYPES[t];
+      if (!impl || typeof impl.checks !== 'function') {
+        return [{ id: 'article_type', ok: false,
+          why: 'article_type "' + t + '" has no registered publication checks in this process, so nothing can vouch for this record' }];
+      }
+      return impl.checks(rec);
+    }
     var a = rec && rec.article || {};
     var r = rec && rec.research || {};
     var p = r.projection || {};
@@ -743,6 +855,7 @@
      published number never silently changes under its own timestamp. */
   function isFrozen(rec, now) {
     if (rec && rec.frozen) return true;
+    if (rec && typeOf(rec) !== 'pregame') return true;
     var t = rec && rec.game_time ? Date.parse(rec.game_time) : NaN;
     if (!isFinite(t)) return false;
     return (now ? new Date(now).getTime() : Date.now()) >= t;
@@ -753,6 +866,14 @@
   function refresh(rec, research, game, opts) {
     opts = opts || {};
     var now = opts.now ? new Date(opts.now).toISOString() : new Date().toISOString();
+    /* A POSTGAME RECORD IS NOT REFRESHABLE. It describes a game that already
+       happened, out of a snapshot that is immutable by construction; there is
+       nothing for newer research to change and re-running build() on it with a
+       pregame payload would silently turn it back into a pregame article. */
+    if (typeOf(rec) !== 'pregame') {
+      return { record: rec, changed: false,
+        reason: 'a ' + typeOf(rec) + ' article is a record of something that already happened and is never refreshed from live research' };
+    }
     if (isFrozen(rec, now)) {
       var frozen = Object.assign({}, rec);
       if (!frozen.frozen) { frozen.frozen = true; frozen.frozen_at = frozen.frozen_at || rec.game_time; }
@@ -809,8 +930,9 @@
     teamSlug: teamSlug, slugFor: slugFor, uniqueSlug: uniqueSlug, aliasFor: aliasFor,
     headlineFor: headlineFor, seoTitleFor: seoTitleFor, seoDescriptionFor: seoDescriptionFor,
     build: build, articleFor: articleFor, compact: compact, hydrate: hydrate,
+    registerType: registerType, typeOf: typeOf, TYPES: TYPES,
     shortName: shortName, gameMetaFrom: gameMetaFrom,
-    checks: checks, publishable: publishable, flattenText: flattenText,
+    checks: checks, publishable: publishable, flattenText: flattenText, dedupeKey: dedupeKey,
     publish: publish, unpublish: unpublish, archive: archive,
     isFrozen: isFrozen, refresh: refresh, bottomLine: bottomLine
   };

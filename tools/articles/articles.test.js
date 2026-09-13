@@ -419,12 +419,30 @@ PUBLISHED.forEach(r => {
 section('11. REGENERATION, UPDATES AND THE FREEZE');
 /* ======================================================================== */
 (function () {
-  const base = bySlug('missouri-vs-kansas-2026');
-  const meta = { sport: 'CFB', game_id: base.game_id, home: base.home_team, away: base.away_team,
-    kickoff: base.game_time, venue: base.venue, week: base.week, season: base.season };
+  /* THE FIXTURE IS REBASED, NOT PINNED TO A DATE THAT HAS PASSED.
+
+     This section used to drive the committed missouri-vs-kansas record
+     directly with a hard-coded `now` of 2026-09-09. That worked until the
+     game kicked off: once the pipeline froze the stored record, every
+     refresh assertion here failed — not because the freeze was wrong, but
+     because a test that asserts "a game still ahead of us is not frozen"
+     against a game now in the past is asserting nothing about the code.
+
+     So the REAL research payload is kept (that is what holds this against
+     live model output) and the KICKOFF is rebased ten days past a fixed NOW.
+     Every assertion below is the same assertion, and none of them expires.
+     The genuinely frozen committed record is then asserted separately, at
+     the bottom, where being in the past is the point. */
+  const NOW = '2026-09-09T00:00:00Z';
+  const AHEAD = new Date(Date.parse(NOW) + 10 * 864e5).toISOString();
+  const stored = bySlug('missouri-vs-kansas-2026');
+  const meta = { sport: 'CFB', game_id: stored.game_id, home: stored.home_team, away: stored.away_team,
+    kickoff: AHEAD, venue: stored.venue, week: stored.week, season: stored.season };
+  const base = MODEL.publish(MODEL.build(stored.research, meta,
+    { now: '2026-09-08T00:00:00Z', status: 'published' }), '2026-09-08T00:00:00Z');
 
   /* the same research twice changes nothing but the "we looked" stamp */
-  const same = MODEL.refresh(base, base.research, meta, { now: '2026-09-09T00:00:00Z' });
+  const same = MODEL.refresh(base, base.research, meta, { now: NOW });
   eq('re-reading unchanged research changes nothing', same.changed, false);
   eq('and published_at is untouched', same.record.published_at, base.published_at);
   eq('and updated_at is untouched', same.record.updated_at, base.updated_at);
@@ -434,7 +452,7 @@ section('11. REGENERATION, UPDATES AND THE FREEZE');
   const moved = JSON.parse(JSON.stringify(base.research));
   moved.projection.fair_spread_text = 'Kansas +6.1';
   moved.projection.confidence_pct = 47;
-  const out = MODEL.refresh(base, moved, meta, { now: '2026-09-09T00:00:00Z' });
+  const out = MODEL.refresh(base, moved, meta, { now: NOW });
   eq('a changed projection is a change', out.changed, true);
   eq('and updated_at moves with it', out.record.updated_at, '2026-09-09T00:00:00.000Z');
   eq('while published_at does not', out.record.published_at, base.published_at);
@@ -448,9 +466,10 @@ section('11. REGENERATION, UPDATES AND THE FREEZE');
   eq('nor its id', out.record.id, base.id);
 
   /* the freeze */
-  chk('a game still ahead of us is not frozen', !MODEL.isFrozen(base, '2026-09-09T00:00:00Z'));
-  chk('a game that has kicked off is frozen', MODEL.isFrozen(base, '2026-09-13T00:00:00Z'));
-  const after = MODEL.refresh(base, moved, meta, { now: '2026-09-13T00:00:00Z' });
+  chk('a game still ahead of us is not frozen', !MODEL.isFrozen(base, NOW));
+  const afterKick = new Date(Date.parse(AHEAD) + 864e5).toISOString();
+  chk('a game that has kicked off is frozen', MODEL.isFrozen(base, afterKick));
+  const after = MODEL.refresh(base, moved, meta, { now: afterKick });
   eq('a frozen article refuses the newer research', after.changed, false);
   eq('and keeps the number it published', after.record.fair_spread_text, base.fair_spread_text);
   eq('and is marked frozen', after.record.frozen, true);
@@ -458,6 +477,17 @@ section('11. REGENERATION, UPDATES AND THE FREEZE');
   /* freezing is exactly at kickoff, not before and not a day later */
   chk('the freeze starts at kickoff', MODEL.isFrozen(base, base.game_time));
   chk('and not a second earlier', !MODEL.isFrozen(base, new Date(Date.parse(base.game_time) - 1000).toISOString()));
+
+  /* AND THE COMMITTED RECORD ITSELF, whose game really has been played: it
+     must be frozen and must refuse newer research, whatever today's date is. */
+  if (Date.parse(stored.game_time) < Date.now()) {
+    chk('the committed record for a played game is frozen', MODEL.isFrozen(stored));
+    const refused = MODEL.refresh(stored, moved, { sport: 'CFB', game_id: stored.game_id,
+      home: stored.home_team, away: stored.away_team, kickoff: stored.game_time,
+      week: stored.week, season: stored.season }, {});
+    eq('and refuses the newer research', refused.changed, false);
+    eq('and keeps the number it published', refused.record.fair_spread_text, stored.fair_spread_text);
+  }
 })();
 
 /* ======================================================================== */

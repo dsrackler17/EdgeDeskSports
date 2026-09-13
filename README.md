@@ -37,6 +37,28 @@ sharp book (default Pinnacle), and flags any outcome where the best price across
 books beats that fair line. `EV% = fair × best_decimal − 1`. A de-vig + line-shop
 scanner — sport-agnostic, no per-sport model needed.
 
+## Research articles, and the audit that follows them
+`/articles` is the public half of the research terminal: one page per matchup,
+carrying EdgeDesk's own fair spread, what moved the number, where each team has
+a measured edge, and an itemised account of what the model could not see. See
+[`articles/README.md`](articles/README.md).
+
+For the games that matter, a second system closes the loop. Before the game it
+freezes exactly what EdgeDesk said, in a snapshot identified by a hash of
+itself. After the game it loads that snapshot back, grades every claim against
+the box score, and publishes a postgame analysis that reports two things
+separately and lets them disagree: **did the number land**, and **was the
+reasoning any good**. A winning bet on a broken thesis is published as exactly
+that, and "what EdgeDesk got wrong" is printed whether the number won or lost.
+
+Every finding is stored as a machine-readable research lesson, so at the end of
+a season the platform can answer questions like *which of our drivers fails
+most often* and *what share of our winning numbers came with reasoning the game
+contradicted*. No model weight is ever changed from one game; a contradicted
+claim opens a review candidate, and only a person closes one.
+
+See [`tools/editorial/README.md`](tools/editorial/README.md).
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means

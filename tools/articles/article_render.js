@@ -332,7 +332,10 @@
     [s.favourite, s.underdog].forEach(function (c) {
       if (!c) return;
       h += '<div class="a-edgecol"><h3 class="a-h3">' + esc(c.heading || ('The case for ' + (c.team || ''))) + '</h3>'
-        + '<ul class="a-bul">' + (c.bullets || []).map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul></div>';
+        + ((c.bullets || []).length
+          ? '<ul class="a-bul">' + c.bullets.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul>'
+          : '<p class="a-note">' + esc(c.elsewhere) + '</p>')
+        + '</div>';
     });
     return h + '</div></section>';
   }
@@ -388,10 +391,170 @@
     return h + '</section>';
   }
 
+  /* ====================================================================
+     POSTGAME SECTIONS.
+
+     A postgame analysis is the same kind of record as a pregame article and
+     is rendered by the same file, for the same reason the store is shared:
+     one head, one chrome, one sitemap, one set of accessibility rules. What
+     it adds is five section kinds the pregame half has no use for.
+
+     The audit table is the important one. It is a real <table> with a real
+     header row because it is tabular data a screen reader has to be able to
+     navigate, and because the verdict column is the single thing a reader
+     came for. The verdicts are printed verbatim from the record; nothing
+     here abbreviates, colours away or reorders them.
+     ==================================================================== */
+  function verdictClass(v) {
+    return 'a-vd a-vd-' + String(v || '').toLowerCase().replace(/[^a-z]+/g, '-');
+  }
+  function thesisAuditHTML(s) {
+    var h = '<section class="a-sec a-audit">' + secHead(s.title, null, anchorId(s.title));
+    if (s.lede) h += '<p class="a-lede">' + esc(s.lede) + '</p>';
+    if (s.tally && s.tally.headline) {
+      h += '<p class="a-tally"><b>' + esc(s.tally.headline) + '</b>'
+        + (s.tally.not_observable ? ' <span class="a-dim">· ' + esc(s.tally.not_observable)
+          + ' could not be graded from the statistics published for this game</span>' : '') + '</p>';
+    }
+    h += '<div class="a-tblwrap"><table class="a-tbl a-audittbl"><thead><tr>'
+      + '<th scope="col">What EdgeDesk said before the game</th>'
+      + '<th scope="col">Verdict</th>'
+      + '<th scope="col">What the statistics show</th></tr></thead><tbody>';
+    (s.rows || []).forEach(function (r) {
+      h += '<tr><td class="a-claim"><span class="a-cat">' + esc(String(r.category || '').replace(/_/g, ' ')) + '</span>'
+        + esc(r.claim) + '</td>'
+        + '<td class="a-verdict"><span class="' + verdictClass(r.evaluation) + '">' + esc(r.evaluation) + '</span></td>'
+        + '<td class="a-obs">' + esc(r.observed || '—')
+        + (r.why ? '<span class="a-why">' + esc(r.why) + '</span>' : '')
+        + (r.sample_note ? '<span class="a-why">' + esc(r.sample_note) + '</span>' : '')
+        + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    if ((s.legend || []).length) {
+      h += '<dl class="a-legend">';
+      s.legend.forEach(function (l) {
+        h += '<dt><span class="' + verdictClass(l.k) + '">' + esc(l.k) + '</span></dt><dd>' + esc(l.v) + '</dd>';
+      });
+      h += '</dl>';
+    }
+    return h + '</section>';
+  }
+  function processHTML(s) {
+    var h = '<section class="a-sec a-process">' + secHead(s.title, null, anchorId(s.title));
+    h += '<div class="a-quad">'
+      + '<div class="a-quadcell"><span class="a-quadk">Bet result</span><b class="a-quadv">' + esc(s.bet || '—') + '</b></div>'
+      + '<div class="a-quadcell"><span class="a-quadk">Process grade</span><b class="a-quadv">' + esc(s.process || '—') + '</b></div>'
+      + '</div>';
+    if (s.verdict) h += '<p class="a-verdictline">' + esc(s.verdict) + '</p>';
+    (s.reasons || []).forEach(function (r) { h += '<p>' + esc(r) + '</p>'; });
+    if ((s.questions || []).length) {
+      h += '<dl class="a-qa">';
+      s.questions.forEach(function (q) { h += '<dt>' + esc(q.q) + '</dt><dd>' + esc(q.a) + '</dd>'; });
+      h += '</dl>';
+    }
+    if (s.note) h += '<p class="a-note">' + esc(s.note) + '</p>';
+    return h + '</section>';
+  }
+  function scorecardHTML(s) {
+    var h = '<section class="a-sec a-scorecard">' + secHead(s.title, null, anchorId(s.title));
+    /* Each row is a CLAIM and what was OBSERVED, on two lines. They used to be
+       one string joined with a dash, which read as a paragraph and was a table. */
+    function panel(title, items, cls) {
+      var b = '<div class="a-scard ' + cls + '"><h3>' + esc(title) + '</h3><ul>';
+      (items || []).forEach(function (i) {
+        var row = (typeof i === 'string') ? { claim: i } : (i || {});
+        b += '<li><span class="a-sclaim">' + esc(row.claim) + '</span>'
+          + (row.observed ? '<span class="a-sobs">' + esc(row.observed) + '</span>' : '')
+          + (row.why ? '<span class="a-swhy">' + esc(row.why) + '</span>' : '')
+          + '</li>';
+      });
+      return b + '</ul></div>';
+    }
+    h += '<div class="a-scards">'
+      + panel(s.market_title, s.market, 'a-scard-mkt')
+      + panel(s.right_title, s.right, 'a-scard-right')
+      + panel(s.wrong_title, s.wrong, 'a-scard-wrong')
+      + '</div>';
+    if (s.rule) h += '<p class="a-note">' + esc(s.rule) + '</p>';
+    return h + '</section>';
+  }
+  function watchedHTML(s) {
+    var h = '<section class="a-sec a-watched">' + secHead(s.title, null, anchorId(s.title));
+    if (s.lede) h += '<p class="a-lede">' + esc(s.lede) + '</p>';
+    h += '<ul class="a-watchlist">';
+    (s.rows || []).forEach(function (r) {
+      h += '<li><p class="a-watchq">' + esc(r.watch) + '</p>'
+        + '<p class="a-watcha"><span class="' + verdictClass(r.evaluation) + '">' + esc(r.evaluation) + '</span> '
+        + esc(r.observed) + '</p></li>';
+    });
+    return h + '</ul></section>';
+  }
+  function lessonsHTML(s) {
+    var h = '<section class="a-sec a-lessons">' + secHead(s.title, null, anchorId(s.title));
+    if (s.lede) h += '<p class="a-lede">' + esc(s.lede) + '</p>';
+    h += '<ul class="a-lessonlist">';
+    (s.rows || []).forEach(function (r) {
+      h += '<li class="a-lesson a-sev-' + esc(r.severity) + '">'
+        + '<div class="a-lessonhead"><span class="a-cat">' + esc(String(r.category || '').replace(/_/g, ' ')) + '</span>'
+        + '<span class="a-sev">' + esc(r.severity) + '</span>'
+        + (r.review ? '<span class="a-review">model review candidate</span>' : '') + '</div>'
+        + '<p class="a-lessontext">' + esc(r.lesson) + '</p>'
+        + '<p class="a-lessonmeta"><b>Expected:</b> ' + esc(r.expectation) + '</p>'
+        + '<p class="a-lessonmeta"><b>Observed:</b> ' + esc(r.result) + '</p>'
+        + (r.investigation ? '<p class="a-lessonmeta"><b>Suggested investigation:</b> ' + esc(r.investigation) + '</p>' : '')
+        + '</li>';
+    });
+    h += '</ul>';
+    if ((s.how || []).length) {
+      h += '<h3 class="a-subh">' + esc(s.how_title) + '</h3>';
+      s.how.forEach(function (p) { h += '<p>' + esc(p) + '</p>'; });
+    }
+    if ((s.next || []).length) {
+      h += '<h3 class="a-subh">' + esc(s.next_title) + '</h3><ul class="a-nextlist">';
+      s.next.forEach(function (p) { h += '<li>' + esc(p) + '</li>'; });
+      h += '</ul>';
+    }
+    return h + '</section>';
+  }
+
+  /* A BLOCK OF MODEL-DRAFTED PROSE, LABELLED AS ONE. The label is on the page
+     rather than only in the methodology note: a reader is entitled to know
+     which paragraphs a language model wrote, and a platform whose whole claim
+     is transparency cannot make that a footnote. */
+  function narrativeHTML(s) {
+    var h = '<section class="a-sec a-narr">' + secHead(s.title, null, anchorId(s.title));
+    (s.paragraphs || []).forEach(function (p) { h += '<p>' + esc(p) + '</p>'; });
+    if (s.label) h += '<p class="a-narrlabel">' + esc(s.label) + '</p>';
+    return h + '</section>';
+  }
+
+  /* THE LINK BETWEEN THE TWO HALVES. A pregame page that has a postgame
+     analysis says so at the top; a postgame page always points back. It is a
+     plain anchor with real text, so it works for a crawler and with scripts
+     off, and it is the single most useful internal link either page has. */
+  function relatedHTML(rec) {
+    var r = rec.related;
+    if (!r) return '';
+    if (rec.article_type === 'postgame' && r.pregame_url) {
+      return '<nav class="a-related a-related-back" aria-label="The original research">'
+        + '<a href="' + esc(r.pregame_url) + '"><span class="a-relk">Before the game</span>'
+        + '<span class="a-relv">Read our original pregame research →</span></a></nav>';
+    }
+    if (rec.article_type !== 'postgame' && r.postgame_url) {
+      return '<nav class="a-related a-related-fwd" aria-label="The postgame analysis">'
+        + '<a href="' + esc(r.postgame_url) + '"><span class="a-relk">After the game</span>'
+        + '<span class="a-relv">See what actually happened →</span></a></nav>';
+    }
+    return '';
+  }
+
   var SECTION_HTML = {
     read: readHTML, snapshot: snapshotHTML, pricing: pricingHTML, breakdown: breakdownHTML,
     edges: edgesHTML, matchups: matchupsHTML, panel: panelHTML, roster: rosterHTML,
-    cases: casesHTML, uncertainty: uncertaintyHTML, market: marketHTML
+    cases: casesHTML, uncertainty: uncertaintyHTML, market: marketHTML,
+    /* postgame */
+    thesis_audit: thesisAuditHTML, process: processHTML, scorecard: scorecardHTML,
+    watched: watchedHTML, lessons: lessonsHTML, narrative: narrativeHTML
   };
 
   /* ------------------------------------------------------------ the hero */
@@ -402,9 +565,20 @@
     var h = '<header class="a-hero">';
     h += '<div class="a-eyebrow"><a href="' + esc('/articles/' + rec.sport_slug) + '">' + esc(a.eyebrow) + '</a>'
       + (a.status ? '<span class="a-status">' + esc(a.status) + '</span>' : '')
+      + (a.bet ? '<span class="a-betres">' + esc(a.bet) + '</span>' : '')
       + (a.confidence != null ? '<span class="a-conf">' + esc(a.confidence) + '% data confidence</span>' : '') + '</div>';
     h += '<h1 class="a-h1">' + esc(a.headline) + '</h1>';
     if (a.standfirst) h += '<p class="a-standfirst">' + esc(a.standfirst) + '</p>';
+    /* THE FINAL SCORE, on a postgame page, above everything. It is the first
+       thing a reader wants and the last thing the rest of the page is about. */
+    if (a.final && a.final.home && a.final.away) {
+      h += '<div class="a-final"><div class="a-finalside"><span class="a-finalt">' + esc(a.final.away.team)
+        + '</span><b class="a-finalp">' + esc(a.final.away.points) + '</b></div>'
+        + '<span class="a-finalsep">–</span>'
+        + '<div class="a-finalside"><span class="a-finalt">' + esc(a.final.home.team)
+        + '</span><b class="a-finalp">' + esc(a.final.home.points) + '</b></div>'
+        + '<span class="a-finalk">Final</span></div>';
+    }
     h += '<div class="a-gamebar"><div class="a-matchup">' + esc(a.matchup) + '</div>';
     if (rec.game_time) h += '<div class="a-when"><time datetime="' + esc(iso(rec.game_time)) + '">' + esc(dateLabel(rec.game_time)) + '</time></div>';
     if (bits.length) h += '<div class="a-gmeta">' + esc(bits.join(' · ')) + '</div>';
@@ -497,6 +671,19 @@
     if (!rec.neutral_site) ev.homeTeam = { '@type': 'SportsTeam', name: rec.home_team };
     if (!rec.neutral_site) ev.awayTeam = { '@type': 'SportsTeam', name: rec.away_team };
     if (rec.venue) ev.location = { '@type': 'Place', name: rec.venue };
+    /* A GAME THAT HAS BEEN PLAYED IS NOT "SCHEDULED". Saying so, and carrying
+       the final score, is the difference between structured data that
+       describes the page and structured data that contradicts it. */
+    var fin = rec.article && rec.article.hero && rec.article.hero.final;
+    if (rec.article_type === 'postgame' && fin) {
+      ev.eventStatus = 'https://schema.org/EventScheduled';
+      ev.competitor = [
+        { '@type': 'SportsTeam', name: rec.away_team },
+        { '@type': 'SportsTeam', name: rec.home_team }
+      ];
+      ev.subjectOf = { '@type': 'Article', '@id': rec.canonical_url };
+      ev.description = rec.away_team + ' ' + fin.away.points + ', ' + rec.home_team + ' ' + fin.home.points + ' (final).';
+    }
     out.push(ev);
 
     out.push({
@@ -518,6 +705,7 @@
       + '<a href="/articles/' + esc(rec.sport_slug) + '">' + esc(rec.sport_label) + '</a> <span>›</span> '
       + '<span aria-current="page">' + esc(rec.away_team + ' at ' + rec.home_team) + '</span></nav>';
     h += heroHTML(rec);
+    h += relatedHTML(rec);
     h += shareHTML(rec);
     h += tocHTML(rec);
     (rec.article.sections || []).forEach(function (s) {
@@ -525,7 +713,16 @@
       if (fn) h += fn(s);
     });
     h += bottomHTML(rec.article.bottom_line);
+    h += relatedHTML(rec);
     h += ctaHTML(rec);
+    /* PART 15 — the methodology notice. Rendered from the record so it says
+       what is true of THIS page: which snapshot it read, which providers the
+       statistics came from, and when. */
+    if (((rec.article.footer || {}).methodology || []).length) {
+      h += '<section class="a-method"><h2 class="a-methodh">Methodology and transparency</h2>';
+      rec.article.footer.methodology.forEach(function (p) { h += '<p>' + esc(p) + '</p>'; });
+      h += '</section>';
+    }
     if (rec.article.footer && rec.article.footer.source) {
       h += '<p class="a-source">' + esc(rec.article.footer.source) + '</p>';
     }
@@ -577,16 +774,24 @@
   /* -------------------------------------------------------------- the hub */
   function cardHTML(rec) {
     var when = rec.game_time ? dateLabel(rec.game_time, { timeZoneName: undefined }) : null;
-    var h = '<article class="a-cardart" data-sport="' + esc(rec.sport_slug) + '" data-kick="' + esc(iso(rec.game_time) || '') + '">';
+    var h = '<article class="a-cardart" data-sport="' + esc(rec.sport_slug) + '"'
+      + ' data-type="' + esc(rec.article_type || 'pregame') + '"'
+      + ' data-kick="' + esc(iso(rec.game_time) || '') + '">';
     h += '<a class="a-cardlink" href="/articles/' + esc(rec.slug) + '">';
+    var isPost = rec.article_type === 'postgame';
     h += '<div class="a-cardtop"><span class="a-cardsport">' + esc(rec.sport_label) + '</span>'
+      + '<span class="a-cardtype' + (isPost ? ' post' : '') + '">' + (isPost ? 'Postgame' : 'Pregame') + '</span>'
       + (rec.model_status ? '<span class="a-status">' + esc(rec.model_status) + '</span>' : '')
+      + (isPost && rec.grading && rec.grading.bet_headline ? '<span class="a-betres">' + esc(rec.grading.bet_headline) + '</span>' : '')
       + (rec.confidence != null ? '<span class="a-conf">' + esc(rec.confidence) + '%</span>' : '') + '</div>';
     if (rec.hero_image) h += '<img class="a-cardimg" src="' + esc(rec.hero_image) + '" alt="" loading="lazy" width="640" height="360">';
     h += '<h3 class="a-cardh">' + esc(rec.away_team + ' vs. ' + rec.home_team) + '</h3>';
     h += '<p class="a-cardsum">' + esc(rec.excerpt) + '</p>';
     h += '<div class="a-cardmeta">';
-    if (rec.fair_spread_text) h += '<span class="a-cardline">' + esc(rec.fair_spread_text) + '</span>';
+    var fin = isPost && rec.result && rec.result.home_score != null
+      ? rec.away_team + ' ' + rec.result.away_score + ' — ' + rec.home_team + ' ' + rec.result.home_score : null;
+    if (fin) h += '<span class="a-cardline">' + esc(fin) + '</span>';
+    else if (rec.fair_spread_text) h += '<span class="a-cardline">' + esc(rec.fair_spread_text) + '</span>';
     if (when) h += '<span>Kickoff ' + esc(when) + '</span>';
     if (rec.published_at) h += '<span>Published ' + esc(dayLabel(rec.published_at)) + '</span>';
     if (rec.updated_at && rec.published_at && rec.updated_at !== rec.published_at) h += '<span>Updated ' + esc(dayLabel(rec.updated_at)) + '</span>';
@@ -659,23 +864,37 @@
     if (!recs.length) {
       h += '<p class="a-nodata">No article is published in this section yet. EdgeDesk publishes one per matchup once the research clears its own publication checks — never a placeholder.</p>';
     } else {
+      /* THE BEFORE/AFTER PAIR IS THE PRODUCT, so the hub can be read as
+         either half. Each list is rendered server-side into its own div and a
+         radio input swaps which one is visible — no JavaScript, no layout
+         shift, and a crawler sees every card in the markup. */
+      var pre = byPublished.filter(function (r) { return r.article_type !== 'postgame'; });
+      var post = byPublished.filter(function (r) { return r.article_type === 'postgame'; });
       h += '<div class="a-sortpanel">';
       h += '<h2 class="a-h2" id="latest-research">Latest research</h2>';
       h += '<div class="a-sorttabs">'
         + '<input type="radio" name="a-sort" id="sort-latest" checked><label for="sort-latest">Most recent research</label>'
         + '<input type="radio" name="a-sort" id="sort-upcoming"><label for="sort-upcoming">Upcoming games</label>'
+        + (post.length ? '<input type="radio" name="a-sort" id="sort-pregame"><label for="sort-pregame">Pregame research</label>'
+          + '<input type="radio" name="a-sort" id="sort-postgame"><label for="sort-postgame">Postgame analysis</label>' : '')
         + '<input type="radio" name="a-sort" id="sort-updated"><label for="sort-updated">Recently published</label>'
         + '<div class="a-list a-list-latest">' + byPublished.map(cardHTML).join('') + '</div>'
         + '<div class="a-list a-list-upcoming">'
         + (upcoming.length ? upcoming.map(cardHTML).join('')
           : '<p class="a-nodata">Every published article in this section is for a game that has already kicked off.</p>')
         + '</div>'
+        + (post.length
+          ? '<div class="a-list a-list-pregame">' + (pre.length ? pre.map(cardHTML).join('')
+              : '<p class="a-nodata">No pregame research is published in this section yet.</p>') + '</div>'
+            + '<div class="a-list a-list-postgame">' + post.map(cardHTML).join('') + '</div>'
+          : '')
         + '<div class="a-list a-list-updated">' + byUpdated.map(cardHTML).join('') + '</div>'
         + '</div></div>';
     }
     h += '<section class="a-about"><h2 class="a-h2">How to read an EdgeDesk article</h2>'
       + '<p>Every article on this page is built from the same research the EdgeDesk terminal runs: one model, one set of numbers, published with its own confidence and its own gaps. EdgeDesk prices a game before it looks at a sportsbook, says which inputs moved the number and which did not, and names what it could not measure.</p>'
       + '<p><b>Research, not picks.</b> Nothing here is a wager, a recommendation or advice. A model status of <code>THIN DATA</code>, <code>INVESTIGATE</code> or <code>UNPROVEN</code> means exactly what it says, and EdgeDesk leaves it on the page rather than dressing it up.</p>'
+      + '<p><b>Featured games get both halves.</b> Before the game, what EdgeDesk thought and why. After it, what actually happened — with every pregame claim graded against the box score, and the bet result reported separately from whether the reasoning held up. A number that landed on a broken thesis is published as exactly that.</p>'
       + '<p><a class="a-ctabtn" href="/app.html#research/football">Open the EdgeDesk research terminal</a></p></section>';
     h += '</main>' + siteFooter() + '\n</body>\n</html>\n';
     return h;
@@ -684,6 +903,9 @@
   return {
     SITE: SITE, esc: esc, head: head, anchorId: anchorId,
     structuredData: structuredData, articlePage: articlePage, aliasPage: aliasPage,
+    relatedHTML: relatedHTML, thesisAuditHTML: thesisAuditHTML, processHTML: processHTML,
+    narrativeHTML: narrativeHTML,
+    scorecardHTML: scorecardHTML, lessonsHTML: lessonsHTML, watchedHTML: watchedHTML,
     hubPage: hubPage, cardHTML: cardHTML, articleBody: articleBody, dateLabel: dateLabel
   };
 });

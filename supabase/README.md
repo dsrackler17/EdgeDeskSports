@@ -544,6 +544,50 @@ that had never applied `issue_reports.sql` the whole file stopped at that
 statement and the article system could not be installed at all. Report rows
 1–12 should each say `ok`; row 12 says CHECK THIS until you add yourself.
 
+### `editorial_system.sql` — featured games, snapshots, audits and lessons
+The half of the editorial system an operator touches: which games earn a
+permanent research trail, the immutable capture of what EdgeDesk said before
+each one, the verdict on every claim afterwards, the bet result and the process
+grade **side by side**, the research lessons, the open model-review candidates,
+and the run log. The RECORD of all of it is the repository
+(`articles/data/editorial/**`, written by `tools/editorial/`); this is where a
+decision made from a phone lives, and the next pipeline run honours it.
+
+**Two rules here are enforced by the database itself, because neither is a
+statement about a ROW and so neither can be an RLS policy.**
+
+1. **A pregame snapshot is immutable.** Its id is a content hash of the
+   research it captured, and every postgame audit on the site rests on that
+   state not having moved. `editorial_snapshots` therefore has **no UPDATE
+   policy for anybody**, no delete grant, a check that a capture cannot
+   postdate kickoff, and a trigger that refuses an edit or a delete **including
+   from the service role the pipeline itself runs as** — which is the point,
+   since the pipeline is the thing doing the writing.
+2. **Only a person closes a model-review candidate.** A candidate is a question
+   with evidence attached, raised automatically when a published claim carrying
+   real weight is contradicted by a game. `editorial_reviews_guard()` requires
+   a disposition, a note of at least twenty characters and an author before
+   `status` may become `closed`; reopening clears all three. Nothing in this
+   schema or this repository changes a model weight from one of these rows.
+
+What the public may read is exactly what a published article already shows: the
+snapshot, audit, grade and lessons behind a row in `site_articles` whose status
+is `published`, and nothing else. The run log and the review queue are
+operational and are not public at all.
+
+It has **one prerequisite and says so at the top**: `site_articles.sql`, because
+that public-read boundary is an RLS policy referencing `site_articles` and a
+policy body is parsed when the policy is created. Without the check the file
+would stop four hundred lines in with `relation "public.site_articles" does not
+exist`, which is true and useless — the same class of trap
+`site_articles.sql`'s own carry-over records, caught in the other direction.
+
+Report rows 1–13 should each say `ok`. Applied and attacked on a real
+PostgreSQL by `tools/editorial/editorial_sql.test.js` (`npm run editorial:sql`),
+which applies it twice, proves it refuses to half-install without its one
+dependency, and then comes at both triggers as the owner, as anon, as a
+signed-in reader and as the operator.
+
 ### `community_posts.sql` — member posts, and who may publish one
 Anyone with an EdgeDesk account may WRITE; only an entitled subscriber may
 PUBLISH without an editor reading the post first. That is a statement about a

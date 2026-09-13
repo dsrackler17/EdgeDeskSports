@@ -310,7 +310,14 @@ async function open(opts) {
         conference_game: !!u.g.conference_game, week: u.g.week == null ? null : +u.g.week,
         season: +u.g.season,
         home_conference: u.g.home_conference || null, away_conference: u.g.away_conference || null,
-        home_division: u.g.home_division || null, away_division: u.g.away_division || null
+        home_division: u.g.home_division || null, away_division: u.g.away_division || null,
+        /* THE SCHEDULE ROW'S OWN WORD ON WHAT KIND OF GAME THIS IS. cfbfastR
+           carries `season_type` and a free-text `notes` that names a
+           conference championship, a playoff round or a bowl. The editorial
+           system reads those rather than inferring a stage from a week
+           number, which cannot tell Week 0 from a title game. */
+        season_type: u.g.season_type || null,
+        notes: u.g.notes || null
       });
     });
     (win.FB.nfl.up || []).forEach(function (u) {
@@ -321,7 +328,26 @@ async function open(opts) {
         venue: g.stadium || null, neutral_site: String(g.location || '').toLowerCase() === 'neutral',
         division_game: String(g.div_game) === '1', week: g.week == null ? null : +g.week,
         season: +g.season, roof: g.roof || null, surface: g.surface || null,
-        game_type: g.game_type || 'REG'
+        game_type: g.game_type || 'REG',
+        /* THE KICKOFF AS THE FEED WRITES IT. `kickoff_ms` above is the board's
+           own parse, and the board parses "gameday T gametime" with no zone —
+           so on a UTC runner a 20:15 Eastern kickoff becomes 20:15 UTC and a
+           Monday night game reads as a Monday afternoon one. That is harmless
+           for a board that only orders games by it and wrong for anything
+           that asks WHICH WINDOW a game is in. nflverse carries the Eastern
+           weekday and wall clock as their own columns; they are the
+           authority, and tools/editorial/featured.js uses them. */
+        weekday: g.weekday || null,
+        gametime_et: g.gametime || null,
+        gameday: g.gameday || null,
+        /* the provider's own event id, which is the clean join to a box score */
+        espn_id: g.espn || null,
+        /* the consensus closing numbers the feed publishes, for CLV after the
+           game. Carried, never used as EdgeDesk's own number. */
+        nflverse_spread_line: g.spread_line == null ? null : +g.spread_line,
+        nflverse_total_line: g.total_line == null ? null : +g.total_line,
+        away_rest: g.away_rest == null ? null : +g.away_rest,
+        home_rest: g.home_rest == null ? null : +g.home_rest
       });
     });
     out.sort((a, b) => a.kickoff_ms - b.kickoff_ms);

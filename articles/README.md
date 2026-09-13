@@ -198,6 +198,52 @@ that work without it.
 
 ---
 
+# The editorial system
+
+The pages above are what EdgeDesk **thinks**. For the games that matter, a
+second system publishes what EdgeDesk **thought**, and then grades it against
+what happened.
+
+```
+   featured game  ──▶  immutable snapshot  ──▶  pregame research article
+                                   │                        │
+                              ── kickoff ──                 │
+                                   │                        │
+   box score + final  ──▶  thesis audit  ──▶  postgame analysis  ◀── linked
+```
+
+A postgame analysis is **a record in this same store**, told apart by
+`article_type`. It is rendered by the same renderer, listed in the same hubs,
+written into the same sitemap and held by the same checks — plus its own. There
+is no second article system, no second builder and no second place a URL can
+come from.
+
+| | pregame research | postgame analysis |
+| --- | --- | --- |
+| lives at | `/articles/<slug>` | `/articles/<slug>-postgame-analysis` |
+| `article_type` | `pregame` | `postgame` |
+| built from | the live research payload | an immutable snapshot + the box score |
+| freezes | at kickoff | born frozen |
+| refreshed | until kickoff | never |
+
+**The one thing it is for.** The postgame article grades the bet result and the
+quality of the reasoning **separately**, and they are allowed to disagree. A
+winning number built on a thesis the game contradicted is published as exactly
+that, in the hero, in the audit table and in the bottom line. "What EdgeDesk
+got wrong" is a required section and is not dropped because the number landed.
+
+Everything about it — the selection engine, the fact ledger, the readiness
+gate, the four quadrants, the research memory, the language-model boundary, the
+operator controls and how to add a sport — is in
+[`tools/editorial/README.md`](../tools/editorial/README.md).
+
+```bash
+npm run editorial:run        # score the board, snapshot, audit, publish
+npm run editorial:test       # the offline suite
+```
+
+---
+
 # Member posts
 
 A second, separate thing living under the same `/articles/` roof, and the

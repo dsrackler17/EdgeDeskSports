@@ -48,6 +48,7 @@ function chk(name, cond, detail) {
 function eq(name, got, want) { return chk(name, got === want, 'got ' + JSON.stringify(got) + ', wanted ' + JSON.stringify(want)); }
 function has(hay, needle, name) { return chk(name, String(hay).indexOf(needle) >= 0, 'missing: ' + JSON.stringify(needle)); }
 function skip(name, why) { skipped++; console.log('  SKIPPED: ' + name + ' — ' + why); }
+function note(why) { console.log('  NOTE: ' + why); }
 function section(t) { console.log('\n' + t); }
 
 /* ======================================================================== */
@@ -134,8 +135,32 @@ section('2. BOOTING THE RESEARCH TERMINAL, HEADLESS');
      written here. A number that changed since the article was published is a
      legitimate update; a number that DISAGREES with the payload inside the
      same run is the bug this file exists for. */
-  const wanted = STORE.published();
-  if (!wanted.length) skip('parity', 'nothing is published in the store');
+  /* THE PUBLISHED RECORDS FIRST — and, when none of them is still on the
+     board, any stored record that IS.
+
+     Every published article is eventually for a game that has kicked off, at
+     which point it leaves the lookahead window and there is nothing live to
+     compare it with. This section then checked nothing and failed on its own
+     "at least one" assertion — not because the pipeline had broken, but
+     because a Sunday had happened. That is a test expiring, not a test
+     working.
+
+     What this section is actually for is holding a STORED RECORD against the
+     research the terminal produces right now: same numbers, same id, same
+     slug, both doors. Whether that record happens to be published is
+     incidental to the check, so when no published one is available the same
+     round trip runs on a record that is. The published ones stay first, and
+     the report says which kind was used. */
+  const published = STORE.published();
+  if (!published.length) skip('parity', 'nothing is published in the store');
+  const onBoard = r => slate.some(g => (g.sport.toLowerCase() + '-' + g.game_id) === r.id);
+  const livePublished = published.filter(onBoard);
+  const wanted = livePublished.length ? published
+    : published.concat(STORE.loadAll().filter(r => r.status !== 'published' && onBoard(r)).slice(0, 3));
+  if (!livePublished.length) {
+    note('every published article is for a game that has already kicked off; '
+      + 'the live-parity round trip runs on stored records still on the board instead');
+  }
   let checked = 0;
 
   for (const rec of wanted) {
@@ -148,7 +173,15 @@ section('2. BOOTING THE RESEARCH TERMINAL, HEADLESS');
     checked++;
 
     const meta = GEN.gameMetaFor(entry, research);
-    const built = MODEL.build(research, meta, { now: rec.published_at, status: 'published',
+    /* A FIXED `now` FOR BOTH DOORS. build() stamps updated_at and generated_at
+       from the clock when it is not given one, and a published record supplies
+       its own published_at — but a record that is not published yet has none,
+       so the two builds below landed microseconds apart and the field-for-field
+       comparison failed on two timestamps that are supposed to move. Pinning it
+       is what makes that comparison about the RECORD rather than about how fast
+       the machine is. */
+    const at = rec.published_at || rec.generated_at || '2026-01-01T00:00:00.000Z';
+    const built = MODEL.build(research, meta, { now: at, status: 'published',
       published_at: rec.published_at, market_source: host.marketSourceFor(entry.sport, entry.game_id) });
     const p = research.projection || {};
 
@@ -173,7 +206,7 @@ section('2. BOOTING THE RESEARCH TERMINAL, HEADLESS');
        two disagree the same game gets two records — two slugs, two URLs, and
        an article that appears twice. */
     const fromBriefAlone = MODEL.build(research, MODEL.gameMetaFrom(research, entry.sport),
-      { now: rec.published_at, status: 'published', published_at: rec.published_at,
+      { now: at, status: 'published', published_at: rec.published_at,
         market_source: host.marketSourceFor(entry.sport, entry.game_id) });
     eq(rec.slug + ': the terminal and the pipeline build the same id', fromBriefAlone.id, built.id);
     eq(rec.slug + ': the same slug', fromBriefAlone.slug, built.slug);
@@ -196,7 +229,8 @@ section('2. BOOTING THE RESEARCH TERMINAL, HEADLESS');
       !MODEL.FORBIDDEN.test(MODEL.flattenText(built)),
       (MODEL.flattenText(built).match(MODEL.FORBIDDEN) || [''])[0]);
   }
-  chk('at least one published article was checked against live research', checked > 0);
+  chk('at least one stored record was checked against live research', checked > 0,
+    wanted.length + ' candidate(s) considered, ' + slate.length + ' game(s) on the board');
 
   /* ====================================================================== */
   section('4. THE PIPELINE ON A GAME IT HAS NEVER SEEN');
