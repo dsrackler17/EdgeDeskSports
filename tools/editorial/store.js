@@ -68,9 +68,16 @@ const DEFAULT_SETTINGS = {
   postgame_settle_minutes: 20,
   /* how many core team statistics must be published on both sides */
   postgame_min_core_metrics: 5,
-  /* publish automatically, or generate and hold for a person */
-  auto_publish_pregame: false,
-  auto_publish_postgame: false,
+  /* AUTO-PUBLISH IS THE DEFAULT, and these exist to turn it OFF.
+     They shipped `false`, which meant the pipeline generated a snapshot, an
+     article, a thesis set and an audit for every featured game and then left
+     all of it in draft forever. A research trail nobody can read is not a
+     research trail. An article that passes generation, factual integrity and
+     the quality floor is published without a person; everything that fails
+     one of those goes to manual_review with the condition named. Set either
+     to false to go back to holding, per sport-half, without touching code. */
+  auto_publish_pregame: true,
+  auto_publish_postgame: true,
   /* the quality floor below which nothing publishes automatically */
   quality_floor: 70
 };
@@ -163,6 +170,54 @@ function snapshotsFor(key) {
 function latestSnapshot(key) {
   const all = snapshotsFor(key);
   return all.length ? all[all.length - 1] : null;
+}
+
+/* EVERY GAME EDGEDESK HAS COMMITTED TO, newest capture first — read off the
+   snapshots themselves rather than off the board.
+
+   WHY THIS EXISTS. The postgame phase used to iterate featured.json, and
+   featured.json is rebuilt every run from the CURRENT slate: a game that has
+   been played falls off the board within a day or so and its row is dropped
+   entirely. So the sequence was — game featured, pregame article published,
+   game kicks off, game finishes, board drops it, next `select` run rewrites
+   featured.json without it, and the postgame phase never sees the game again.
+   The audit half of the product could not fire at all, and nothing said so,
+   because from the pipeline's point of view there was simply no such game.
+
+   A snapshot is the durable record of the commitment: it is written at
+   capture, it is immutable, and it is keyed by the same game key. Anything
+   with a snapshot is owed an audit, whether or not the schedule feed still
+   carries the fixture. */
+function committedGames() {
+  if (!fs.existsSync(SNAPSHOTS)) return [];
+  const byKey = Object.create(null);
+  fs.readdirSync(SNAPSHOTS).filter(f => f.endsWith('.json')).forEach(f => {
+    const s = readJson(path.join(SNAPSHOTS, f), null);
+    if (!s || !s.key) return;
+    const prev = byKey[s.key];
+    if (!prev || String(s.captured_at) > String(prev.captured_at)) byKey[s.key] = s;
+  });
+  return Object.keys(byKey).map(k => {
+    const s = byKey[k];
+    const g = s.game || {};
+    return {
+      key: k,
+      sport: s.sport || g.sport || (k.split(':')[0] || null),
+      game_id: s.game_id != null ? s.game_id : g.game_id,
+      home_team: g.home_team || g.home || null,
+      away_team: g.away_team || g.away || null,
+      game_time: s.kickoff || g.kickoff || g.game_time || null,
+      season: g.season != null ? g.season : null,
+      week: g.week != null ? g.week : null,
+      venue: g.venue || null,
+      neutral_site: !!g.neutral_site,
+      /* it came from a snapshot, so it was featured when it was captured */
+      status: 'featured',
+      from_snapshot: true,
+      snapshot_id: s.snapshot_id || null,
+      captured_at: s.captured_at || null,
+    };
+  }).sort((a, b) => String(b.captured_at).localeCompare(String(a.captured_at)));
 }
 
 /* -------------------------------------------------------------- results */
@@ -268,6 +323,74 @@ function appendRuns(entries, opts) {
    log is the lock: a step that has already succeeded for a given key in the
    current phase is not run again, which is what stops a cron job firing twice
    from producing two articles. */
+/* ------------------------------------------------------------ the retries */
+/* WHY A LEDGER RATHER THAN A COUNTER IN THE RUN LOG. A transient failure —
+   a provider timing out, a box score not posted yet, the odds feed briefly
+   down — must not become a permanent one, and must not be retried in a tight
+   loop either. This records per (game, step): how many attempts, when the
+   last one was, when the next one is allowed, and what the last error said.
+
+   THE TWO KINDS OF FAILURE ARE NOT THE SAME. A transient failure backs off
+   and tries again. A factual-integrity failure is not going to fix itself by
+   being retried — it goes to manual review and stops consuming attempts. */
+const RETRIES = path.join(DIR, 'retries.json');
+const RETRY_BACKOFF_MINUTES = [5, 15, 45, 120, 360];   /* then give up */
+const RETRY_MAX = RETRY_BACKOFF_MINUTES.length;
+
+function loadRetries() {
+  const j = readJson(RETRIES, null);
+  return (j && j.entries && typeof j.entries === 'object') ? j.entries : {};
+}
+function saveRetries(entries, opts) {
+  opts = opts || {};
+  writeJson(RETRIES, {
+    schema: 'edgedesk_editorial_retries_v1',
+    generated_at: opts.now || new Date().toISOString(),
+    entries: entries || {}
+  });
+}
+function retryKey(key, step) { return String(key) + '|' + String(step); }
+
+/* May this (game, step) be attempted right now? */
+function retryDue(entries, key, step, now) {
+  const e = (entries || {})[retryKey(key, step)];
+  if (!e) return { due: true, attempt: 0 };
+  if (e.exhausted) return { due: false, attempt: e.attempt_count || 0, reason: 'retries exhausted: ' + (e.last_error || 'unknown') };
+  if (!e.next_retry_at) return { due: true, attempt: e.attempt_count || 0 };
+  const t = Date.parse(now || new Date().toISOString());
+  const n = Date.parse(e.next_retry_at);
+  if (isFinite(n) && t < n) {
+    return { due: false, attempt: e.attempt_count || 0,
+      reason: 'backing off until ' + e.next_retry_at + ' after ' + (e.attempt_count || 0)
+        + ' attempt(s): ' + (e.last_error || 'unknown') };
+  }
+  return { due: true, attempt: e.attempt_count || 0 };
+}
+
+/* Record a transient failure and schedule the next attempt. */
+function retryFailed(entries, key, step, error, now) {
+  const k = retryKey(key, step);
+  const at = now || new Date().toISOString();
+  const prev = entries[k] || { attempt_count: 0 };
+  const attempt = (prev.attempt_count || 0) + 1;
+  const mins = RETRY_BACKOFF_MINUTES[Math.min(attempt - 1, RETRY_MAX - 1)];
+  const exhausted = attempt >= RETRY_MAX;
+  entries[k] = {
+    key: String(key), step: String(step),
+    attempt_count: attempt,
+    last_attempt_at: at,
+    next_retry_at: exhausted ? null : new Date(Date.parse(at) + mins * 60000).toISOString(),
+    last_error: String(error || 'unknown').slice(0, 300),
+    exhausted: exhausted,
+  };
+  return entries[k];
+}
+/* A step that finally worked clears its own ledger line. */
+function retryCleared(entries, key, step) {
+  delete entries[retryKey(key, step)];
+  return entries;
+}
+
 function alreadyDone(runs, key, step, opts) {
   opts = opts || {};
   const since = opts.since ? Date.parse(opts.since) : 0;
@@ -277,10 +400,11 @@ function alreadyDone(runs, key, step, opts) {
 
 module.exports = {
   ROOT, DIR, SNAPSHOTS, RESULTS, AUDITS, FEATURED, RIVALRIES, LESSONS, REVIEWS, RUNS,
-  DEFAULT_SETTINGS, RUN_LOG_MAX,
+  DEFAULT_SETTINGS, RUN_LOG_MAX, RETRIES, RETRY_BACKOFF_MINUTES, RETRY_MAX,
+  loadRetries, saveRetries, retryKey, retryDue, retryFailed, retryCleared,
   readJson, writeJson, fileKey,
   loadFeatured, settings, saveFeatured, featuredByKey, loadRivalries,
-  snapshotFile, loadSnapshot, saveSnapshot, snapshotsFor, latestSnapshot,
+  snapshotFile, loadSnapshot, saveSnapshot, snapshotsFor, latestSnapshot, committedGames,
   resultFile, loadResult, saveResult, allResults,
   auditFile, loadAudit, saveAudit, allAudits,
   loadLessons, saveLessons, loadReviews, saveReviews,

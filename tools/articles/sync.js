@@ -90,6 +90,46 @@ function recordFrom(row) {
   return { ok: true, rec: out };
 }
 
+/* THE PUBLISHING SETTINGS, which the operator changes in a browser.
+
+   THE GAP THIS CLOSES. /admin/articles has an auto-publish checkbox. It
+   PATCHes public.site_article_settings and always has. Nothing in tools/ has
+   ever read that table — generate.js reads store.settings().auto_publish out
+   of the committed index — so the operator could tick the box, watch it save,
+   and the scheduled job would carry on doing exactly what it did before. A
+   control that does nothing is worse than no control, because it is believed.
+
+   The row is the authority when it is reachable; the committed settings are
+   the fallback when it is not, which is also what keeps this working on a
+   machine with no network. */
+async function fetchSettings() {
+  const url = SB_URL + '/rest/v1/site_article_settings'
+    + '?select=auto_publish,auto_publish_min_lead_minutes,auto_publish_max_lead_days&id=eq.1';
+  const r = await fetch(url, { headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY } });
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    const e = new Error('site_article_settings read ' + r.status + (body ? ': ' + body.slice(0, 200) : ''));
+    e.status = r.status;
+    throw e;
+  }
+  const rows = await r.json();
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+/* Which of the settings the browser owns. Anything not listed here stays
+   whatever the committed store says. */
+const SYNCED_SETTINGS = ['auto_publish', 'auto_publish_min_lead_minutes', 'auto_publish_max_lead_days'];
+
+function settingsDelta(remote, localSettings) {
+  const changes = {};
+  if (!remote) return changes;
+  SYNCED_SETTINGS.forEach(k => {
+    if (!(k in remote) || remote[k] === null || remote[k] === undefined) return;
+    if (localSettings[k] !== remote[k]) changes[k] = remote[k];
+  });
+  return changes;
+}
+
 async function main() {
   let rows = [];
   try {
@@ -128,14 +168,29 @@ async function main() {
     written.push({ id: rec.id, slug: rec.slug, status: rec.status, was: have ? have.status : 'new' });
   });
 
-  if (WRITE && written.length) STORE.saveIndex(STORE.loadAll());
+  /* ---- the publishing settings the operator owns in the browser ---- */
+  let settingChanges = {};
+  try {
+    const remote = await fetchSettings();
+    settingChanges = settingsDelta(remote, STORE.settings());
+  } catch (e) {
+    log('site_article_settings not read (' + (e && e.message) + '); the committed settings stand');
+  }
+
+  if (WRITE && (written.length || Object.keys(settingChanges).length)) {
+    STORE.saveIndex(STORE.loadAll(),
+      Object.keys(settingChanges).length ? { settings: settingChanges } : undefined);
+  }
 
   log(rows.length + ' published row(s) read · ' + written.length + ' into the store · '
     + unchanged.length + ' already current · ' + skipped.length + ' skipped'
     + (WRITE ? '' : ' (DRY RUN — pass --write)'));
   written.forEach(w => log('  ' + (w.was === 'new' ? 'new    ' : 'update ') + w.slug + '  → ' + w.status));
   skipped.forEach(sk => log('  skip   ' + (sk.slug || sk.id) + ' — ' + sk.why));
-  return { read: rows.length, written, skipped, unchanged, reachable: true };
+  Object.keys(settingChanges).forEach(k =>
+    log('  setting ' + k + ' → ' + settingChanges[k] + ' (from the admin console)'));
+  return { read: rows.length, written, skipped, unchanged, reachable: true,
+    settings: settingChanges };
 }
 
 if (require.main === module) {

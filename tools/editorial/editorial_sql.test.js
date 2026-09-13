@@ -114,6 +114,25 @@ try {
     "select to_regprocedure('public.site_article_is_admin()') is not null"]);
   ok('and shares that file’s operator allowlist rather than building a second one',
     (bareHasFn.stdout || '').trim() === 't', bareHasFn.stdout);
+
+  /* THE PUBLISHER'S SIXTH STATE. `manual_review` exists because an article a
+     person has to look at and an article generation has not finished with are
+     different facts; the operator queue is meaningless if they share `draft`.
+     The status column is CHECK-constrained, so the constraint has to know
+     about it or every held article is refused by the database. */
+  const holdOk = psql(conn, ['-d', BARE, '-tAc',
+    "insert into public.site_articles (id, game_id, sport, slug, title, article, home_team, away_team, canonical_url, status) "
+    + "values ('t-hold','g-hold','NFL','t-hold','Held','{}'::jsonb,'H','A',"
+    + "'https://edgedesksports.com/articles/t-hold','manual_review') returning status"]);
+  ok('a manual_review row is accepted by the status constraint',
+    holdOk.status === 0 && /(^|\n)manual_review(\n|$)/.test(holdOk.stdout || ''),
+    holdOk.stderr || holdOk.stdout);
+  const bogus = psql(conn, ['-d', BARE, '-tAc',
+    "insert into public.site_articles (id, game_id, sport, slug, title, article, home_team, away_team, canonical_url, status) "
+    + "values ('t-bogus','g-bogus','NFL','t-bogus','Bogus','{}'::jsonb,'H','A',"
+    + "'https://edgedesksports.com/articles/t-bogus','whatever')"]);
+  ok('and a status outside the six is still refused', bogus.status !== 0,
+    'the constraint accepted an unknown status');
   drop(BARE);
 
   /* ---------------------------------------------------------------------- */

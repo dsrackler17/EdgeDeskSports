@@ -495,7 +495,14 @@ section('12. THE LIFECYCLE');
 /* ======================================================================== */
 (function () {
   const base = bySlug('rutgers-vs-boston-college-2026');
-  eq('the five states are the five states', MODEL.STATUSES.join(','), 'draft,ready,published,updated,archived');
+  /* SIX, since the editorial publisher: `manual_review` is not a draft. An
+     article generation has not finished with and an article a person has to
+     look at are different facts, and the operator queue is meaningless if
+     they share a state. Only `published` (and legacy `updated`) is public. */
+  eq('the six states are the six states', MODEL.STATUSES.join(','),
+    'draft,ready,published,updated,manual_review,archived');
+  chk('manual_review is not a public state',
+    ['published', 'updated'].indexOf('manual_review') < 0);
   const d = MODEL.unpublish(base, '2026-09-09T00:00:00Z');
   eq('unpublishing returns it to draft', d.status, 'draft');
   eq('and keeps the original publication date on the record', d.published_at, base.published_at);
@@ -593,7 +600,7 @@ section('15. THE DATABASE CONTRACT');
   has(S, 'set search_path = public, pg_temp', 'with a pinned search path');
   has(S, 'revoke all on public.site_article_admins from anon, authenticated', 'the allowlist is unreachable from a browser');
   has(S, 'create unique index if not exists site_articles_slug_uk', 'one slug, one article, enforced in the database');
-  has(S, "check (status in ('draft', 'ready', 'published', 'updated', 'archived'))", 'the five states are constrained');
+  has(S, "check (status in ('draft', 'ready', 'published', 'updated', 'manual_review', 'archived'))", 'the six states are constrained');
   has(S, 'site_articles_published_shape_ck', 'a published row must carry a URL and a date');
   has(S, 'new.updated_at := now()', 'updated_at is stamped by a trigger, not by a browser');
   chk('no service-role credential appears in the migration', !/service_role\s*=|sb_secret/.test(S));

@@ -43,10 +43,29 @@ name: Editorial system
 
 on:
   schedule:
-    # Every two hours at :25 — offset from publish-articles.yml (:10 every
-    # third hour) and settle-finals.yml (:00 hourly) so three jobs are not
-    # racing each other into the same commit on a Sunday evening.
-    - cron: '25 */2 * * *'
+    # EVERY FIFTEEN MINUTES, and almost always free.
+    #
+    # This was '25 */2 * * *'. Two hours is far too coarse for a job whose
+    # whole purpose is to notice things: a deployment that landed at :26 sat
+    # idle until :25 of the hour after next, and a game whose publication
+    # window opened just after a tick published up to two hours late.
+    #
+    # It is affordable because the run is a DISPATCHER first. With --if-due it
+    # reads featured.json, the snapshots, the run log and the retry ledger —
+    # all files already on disk — decides whether anything is owed, and exits
+    # without booting the research terminal or touching a feed when nothing
+    # is. That costs about 75ms. Only a tick that actually has work to do pays
+    # for the feed downloads.
+    - cron: '*/15 * * * *'
+  # A CHANGE TO THE PIPELINE RUNS THE PIPELINE. Without this a deployment is
+  # only noticed by the next tick. The job's own commits touch articles/ and
+  # the sitemaps, never tools/editorial/, so this cannot retrigger itself.
+  push:
+    branches: [main]
+    paths:
+      - 'tools/editorial/**'
+      - 'tools/articles/**'
+      - '.github/workflows/editorial.yml'
   workflow_dispatch:
     inputs:
       phase:
@@ -55,7 +74,7 @@ on:
         options: ['all', 'select', 'pregame', 'postgame', 'memory']
         default: 'all'
       auto_publish:
-        description: 'Publish what passes every check (otherwise generate and hold for an operator)'
+        description: 'Force publishing even if the stored auto-publish switches are off (they default ON)'
         type: boolean
         default: false
       game:
@@ -101,6 +120,7 @@ jobs:
       - name: The editorial system must pass before it publishes
         run: |
           node tools/editorial/editorial.test.js
+          node tools/editorial/publisher.test.js
           node tools/articles/articles.test.js
 
       # What the operator published or unpublished from a browser, first, so a
@@ -113,6 +133,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           ARGS="--network"
+          # An operator who pressed the button means it: run the phases
+          # unconditionally. A scheduled or push-triggered run asks the
+          # dispatcher first and exits cheaply when nothing is owed.
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then ARGS="$ARGS --if-due"; fi
           if [ "${{ github.event.inputs.auto_publish }}" = "true" ]; then ARGS="$ARGS --auto"; fi
           if [ -n "${{ github.event.inputs.game }}" ]; then ARGS="$ARGS --game ${{ github.event.inputs.game }}"; fi
           if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
@@ -152,18 +176,13 @@ jobs:
 
       # THE RUN LOG IS THE ANSWER TO "WHY DID THIS GAME NOT GET AN ARTICLE?"
       # and it is worth having in the summary as well as in the commit.
+      #
+      # The redirect used to read >> "\$GITHUB_STEP_SUMMARY". Inside double
+      # quotes bash reads \$ as a literal dollar, so every run wrote a file
+      # named '$GITHUB_STEP_SUMMARY' into the repository root and the job
+      # summary came out empty. It is $GITHUB_STEP_SUMMARY, unescaped.
       - name: Report
         if: ${{ !cancelled() }}
         run: |
-          node -e "
-            const R = require('./articles/data/editorial/runs.json');
-            const last = R.runs[R.runs.length - 1];
-            const mine = R.runs.filter(r => r.run === (last && last.run));
-            const failed = mine.filter(r => !r.ok);
-            console.log('| step | game | outcome |');
-            console.log('| --- | --- | --- |');
-            mine.slice(-40).forEach(r => console.log('| ' + r.step + ' | ' + (r.key || '—') + ' | ' +
-              (r.ok ? '' : '**not ok** — ') + String(r.reason || 'ok').replace(/\|/g, '/') + ' |'));
-            console.log('');
-            console.log(mine.length + ' step(s), ' + failed.length + ' not ok.');
-          " >> "\$GITHUB_STEP_SUMMARY" 2>/dev/null || echo 'no run log to report' >> "\$GITHUB_STEP_SUMMARY"
+          node tools/editorial/report.js >> "$GITHUB_STEP_SUMMARY" \
+            || echo 'no run log to report' >> "$GITHUB_STEP_SUMMARY"
