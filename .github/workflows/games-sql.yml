@@ -191,6 +191,15 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/editorial/editorial_sql.test.js | tee editorial.log
 
+      # The editorial RUNTIME schema: settings validation, the audit trail, the
+      # lease (raced from two real processes) and the RLS that stops a browser
+      # holding the dispatcher lease. All of it is behaviour only a database
+      # can promise, so only a database can prove it.
+      - name: Run the editorial runtime SQL suite
+        env:
+          PGHOST: /var/run/postgresql
+        run: node tools/editorial/runtime_sql.test.js | tee editorial_runtime.log
+
       # The UFC Live Fight Center contract: public reads, no client writes, the
       # per-event poller lock, the dedup constraints and the cascade — the
       # guarantees the browser and the GitHub jobs both depend on.
@@ -214,7 +223,7 @@ jobs:
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log ufc.log tennis.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log ufc.log tennis.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1

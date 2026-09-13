@@ -105,6 +105,10 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
 /* ---- the editorial screen ------------------------------------------------ */
 /* THE PIPELINE TABLE. One row per active or committed game; it scrolls
    sideways on a phone rather than crushing eleven columns into 390px. */
+.esetgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 18px}
+.esetrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.esetrow input[type=number]{width:84px;flex:0 0 auto}
 .tblwrap{overflow-x:auto}
 .tbl{width:100%;border-collapse:collapse;font-size:12.5px}
 .tbl th{text-align:left;font-weight:600;color:var(--faint);padding:7px 9px;
@@ -245,6 +249,15 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
     <div class="card" id="eHealth" style="padding:12px 14px;margin-bottom:14px">
       <p class="lede" style="margin:0">Loading the health snapshot…</p>
     </div>
+
+    <!-- SETTINGS. Editable only because public.editorial_settings exists and
+         RLS lets an operator write it: UI → authenticated PATCH → database →
+         the dispatcher reads it on its next run. The database CHECK constraint
+         is the real gate; the form validates only to give a better message. -->
+    <div class="card" id="eSettings" style="padding:12px 14px;margin-bottom:16px">
+      <p class="lede" style="margin:0">Loading settings…</p>
+    </div>
+    <div class="msg" id="eSetMsg"></div>
 
     <h2>Active pipeline</h2>
     <div class="card" style="padding:6px 12px 12px;margin-bottom:16px">
@@ -723,6 +736,101 @@ function renderEditorial(){
       +'</div></div></details>';
   }).join('');
 }
+/* -------------------------------------------------------------- settings */
+/* THE ONE PLACE AN OPERATOR CHANGES RUNTIME BEHAVIOUR.
+   Every control here writes to public.editorial_settings and nowhere else.
+   The pipeline resolves database > repository defaults > environment override,
+   so what is saved here is what the next dispatcher run obeys — there is no
+   sync step and no committed file to keep in step. */
+let ESET=null, ESET_AUDIT=[];
+const ESET_FIELDS=[
+  {k:'editorial_enabled',      t:'bool', label:'Editorial system enabled',
+   note:'Off pauses ALL autonomous work. Public pages stay public; nothing is unpublished.'},
+  {k:'dispatcher_enabled',     t:'bool', label:'Dispatcher enabled',
+   note:'Off stops scheduled runs; a manual run still works.'},
+  {k:'auto_publish_pregame',   t:'bool', label:'Pregame auto-publish'},
+  {k:'auto_publish_postgame',  t:'bool', label:'Postgame auto-publish'},
+  {k:'retry_enabled',          t:'bool', label:'Retries enabled'},
+  {k:'pregame_normal_lead_minutes', t:'int', label:'Normal publish lead (min)',
+   note:'Above this, publish on the ordinary rules.'},
+  {k:'pregame_minimum_publish_lead_minutes', t:'int', label:'Minimum publish lead (min)',
+   note:'Below this nothing auto-publishes; between the two is the late window.'},
+  {k:'postgame_settle_minutes',t:'int', label:'Postgame settle delay (min)'},
+  {k:'quality_floor',          t:'int', label:'Quality floor'},
+];
+async function loadSettings(){
+  const el=document.getElementById('eSettings');
+  try{
+    const rows=await sbSelect('editorial_settings?select=*&id=eq.1');
+    ESET=Array.isArray(rows)&&rows.length?rows[0]:null;
+  }catch(e){ ESET=null;
+    el.innerHTML='<p class="lede" style="margin:0">Settings table not readable ('+esc(e.message)
+      +'). Run <code class="mono">supabase/editorial_runtime.sql</code>; until then the pipeline uses the committed defaults.</p>';
+    return;
+  }
+  try{ ESET_AUDIT=await sbSelect('editorial_settings_audit?select=*&order=changed_at.desc&limit=8'); }
+  catch(_){ ESET_AUDIT=[]; }
+  renderSettings();
+}
+function renderSettings(){
+  const el=document.getElementById('eSettings');
+  if(!ESET){el.innerHTML='<p class="lede" style="margin:0">No settings row.</p>';return;}
+  el.innerHTML='<div class="toolbar" style="margin:0 0 10px"><b>Runtime settings</b>'
+    +'<span class="note">public.editorial_settings — the dispatcher reads this, not the repository</span></div>'
+    +'<div class="esetgrid">'
+    +ESET_FIELDS.map(f=>{
+      const v=ESET[f.k];
+      const ctl=f.t==='bool'
+        ? '<input type="checkbox" data-eset="'+f.k+'"'+(v?' checked':'')+'>'
+        : '<input type="number" data-eset="'+f.k+'" value="'+esc(v)+'" min="0" step="1">';
+      return '<label class="esetrow"><span>'+esc(f.label)
+        +(f.note?'<span class="note" style="display:block">'+esc(f.note)+'</span>':'')
+        +'</span>'+ctl+'</label>';
+    }).join('')
+    +'</div>'
+    +'<div class="toolbar" style="margin:10px 0 0">'
+      +'<button class="btn sm good" id="eSetSave">Save settings</button>'
+      +'<button class="btn sm ghost" id="eSetReload">Discard</button>'
+      +'<span class="note">last changed '+esc(fmt(ESET.updated_at))+'</span>'
+    +'</div>'
+    +(ESET_AUDIT.length
+      ? '<p class="note" style="margin:10px 0 0"><b>Recent changes</b><br>'
+        +ESET_AUDIT.map(a=>esc(fmt(a.changed_at))+' · '+esc(a.field)+': '
+          +esc(a.old_value)+' → '+esc(a.new_value)).join('<br>')+'</p>'
+      : '');
+  document.getElementById('eSetReload').onclick=loadSettings;
+  document.getElementById('eSetSave').onclick=saveSettings;
+}
+async function saveSettings(){
+  const msg=document.getElementById('eSetMsg');
+  const patch={};
+  ESET_FIELDS.forEach(f=>{
+    const el=document.querySelector('[data-eset="'+f.k+'"]');
+    if(!el)return;
+    patch[f.k]= f.t==='bool' ? !!el.checked : Number(el.value);
+  });
+  /* Client-side validation is for the MESSAGE only. The database constraint is
+     the actual gate, so a bad value cannot get in even past a modified page. */
+  if(!(patch.pregame_normal_lead_minutes>patch.pregame_minimum_publish_lead_minutes)){
+    msg.className='msg bad';
+    msg.textContent='The normal lead must be greater than the minimum publish lead, '
+      +'or there is no late window and nothing publishes automatically.';
+    return;
+  }
+  if(patch.pregame_minimum_publish_lead_minutes<0){
+    msg.className='msg bad'; msg.textContent='The minimum publish lead cannot be negative.'; return;
+  }
+  try{
+    await sbWrite('editorial_settings?id=eq.1','PATCH',patch);
+    msg.className='msg good';
+    msg.textContent='Saved. The next dispatcher run will use these values.';
+    await loadSettings(); await loadHealth();
+  }catch(e){
+    msg.className='msg bad';
+    msg.textContent='Refused: '+e.message;
+  }
+}
+
 /* ---------------------------------------------------------------- health */
 /* NOTHING HERE IS COMPUTED IN THE BROWSER. Every number, state and next
    action is read from health.json exactly as the pipeline derived it. The one
@@ -827,7 +935,7 @@ function renderPipeline(){
     +'</tbody></table></div>';
 }
 
-document.getElementById('eReload').onclick=()=>{loadEditorial();loadHealth();};
+document.getElementById('eReload').onclick=()=>{loadEditorial();loadHealth();loadSettings();};
 document.getElementById('eSport').onchange=renderEditorial;
 document.getElementById('eStatus').onchange=renderEditorial;
 
@@ -913,7 +1021,7 @@ document.querySelectorAll('.tabbtn').forEach(b=>{
       document.getElementById('tab-'+t).classList.toggle('hide',b.dataset.tab!==t);
     });
     if(b.dataset.tab==='community')loadCommunity();
-    if(b.dataset.tab==='editorial'){loadEditorial();loadHealth();}
+    if(b.dataset.tab==='editorial'){loadEditorial();loadHealth();loadSettings();}
   };
 });
 document.getElementById('cReload').onclick=loadCommunity;

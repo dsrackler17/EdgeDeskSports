@@ -93,7 +93,14 @@ const DEFAULT_SETTINGS = {
   auto_publish_pregame: true,
   auto_publish_postgame: true,
   /* the quality floor below which nothing publishes automatically */
-  quality_floor: 70
+  quality_floor: 70,
+  /* WHAT COUNTS AS A MATERIAL LATE CHANGE. Below these a moved number is
+     recorded and displayed but does not earn a regenerated article; at or
+     above them the affected interpretation is rebuilt and revalidated.
+     tools/editorial/freshness.js is the only reader. */
+  material_spread_points: 1.0,
+  material_total_points: 2.0,
+  material_kickoff_minutes: 15
 };
 
 function readJson(file, fallback) {
