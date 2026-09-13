@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-12T13:02:33.756Z",
+  "generated_at": "2026-09-13T13:52:20.471Z",
   "ok": true,
-  "last_ok_at": "2026-09-12T13:02:33.756Z",
+  "last_ok_at": "2026-09-13T13:52:20.471Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -28,9 +28,9 @@
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
-      "completed_in_feed": 99,
-      "absorbed": 99,
-      "data_through": "2026-09-07",
+      "completed_in_feed": 185,
+      "absorbed": 185,
+      "data_through": "2026-09-13",
       "schedule_source": "cfbfastR-data schedules 2026"
     }
   },
@@ -43,9 +43,9 @@
       "orientation_faults": []
     },
     "p4": {
-      "compared": 1,
-      "median_gap": 3.59,
-      "max_gap": 3.59,
+      "compared": 0,
+      "median_gap": null,
+      "max_gap": null,
       "outliers": [],
       "orientation_faults": []
     }
@@ -121,7 +121,7 @@
       "id": "p4_ingest",
       "label": "CFB P4: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "99/99 absorbed, data through 2026-09-07"
+      "detail": "185/185 absorbed, data through 2026-09-13"
     },
     {
       "id": "p4_roster",
@@ -145,54 +145,54 @@
       "id": "p4_universe",
       "label": "CFB: the FBS universe resolves from this season’s own feed",
       "status": "pass",
-      "detail": "138 active FBS programs across 11 conferences · 155 game(s) on the slate, 60 sampled"
+      "detail": "138 active FBS programs across 11 conferences · 75 game(s) on the slate, 60 sampled"
     },
     {
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "1 of 60 upcoming games have a book number"
+      "detail": "0 of 60 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
       "label": "CFB: upcoming FBS slate projects to sane numbers",
       "status": "pass",
-      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 44/60 · {\"non_conference\":33,\"fbs_fcs\":16,\"conference\":11}"
+      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 47/60 · {\"conference\":14,\"fbs_fcs\":13,\"non_conference\":33}"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "1 lines inside plausible bounds"
+      "detail": "no market lines to test"
     },
     {
       "id": "p4_lines_orientation",
       "label": "CFB P4: market lines point the right way",
       "status": "pass",
-      "detail": "1 joined line(s), none reconciled by negation"
+      "detail": "no market lines to test"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 3.59 pts over 1 games, max 3.59"
+      "detail": "no market number joined to any upcoming game — nothing to compare"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-12T13:02:33.756Z",
+    "daily_check_last_run": "2026-09-13T13:52:20.471Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-12T13:02:33.756Z",
+    "engine_tests_last_run": "2026-09-13T13:52:20.471Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-12T13:02:33.756Z",
+    "nfl_ingest_last_run": "2026-09-13T13:52:20.471Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 2,
-    "p4_ingest_last_run": "2026-09-12T13:02:33.756Z",
+    "p4_ingest_last_run": "2026-09-13T13:52:20.471Z",
     "p4_ingest_last_status": "ok",
-    "row_count_p4_ingest": 99,
-    "projection_guard_last_run": "2026-09-12T13:02:33.756Z",
+    "row_count_p4_ingest": 185,
+    "projection_guard_last_run": "2026-09-13T13:52:20.471Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-12T13:02:33.756Z",
+    "line_guard_last_run": "2026-09-13T13:52:20.471Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 29
+    "row_count_line_guard": 28
   }
 }
