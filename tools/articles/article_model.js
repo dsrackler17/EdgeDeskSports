@@ -45,6 +45,12 @@
      like an unfinished one. Only `published` (and legacy `updated`) is
      public; the rest never render and never reach a sitemap. */
   var STATUSES = ['draft', 'ready', 'ready_too_late', 'published', 'updated', 'manual_review', 'archived'];
+  /* Fields the editorial layer owns. They are carried through refresh()
+     untouched: they describe where the article came from and what happened to
+     it, not what the model currently thinks. */
+  var EDITORIAL_FIELDS = ['snapshot_id', 'publication_snapshot_id', 'timing',
+    'featured', 'theses', 'quality', 'publish_state', 'related',
+    'manual_review_required', 'manual_review_reason'];
 
   var SPORTS = {
     CFB: { slug: 'college-football', label: 'College Football', short: 'CFB',
@@ -897,6 +903,20 @@
     next.aliases = rec.aliases || [];
     next.canonical_url = rec.canonical_url;
     next.id = rec.id;
+    /* PROVENANCE AND LIFECYCLE SURVIVE A RESEARCH REFRESH.
+       build() knows nothing about the editorial layer, so a plain refresh
+       rebuilt the record without these and silently deleted them. The ordinary
+       publish-articles job refreshes every game on the board, so an article the
+       editorial system had published lost its link to the snapshot it cites,
+       the theses it committed to, and the timing block recording which window
+       it went out in — observed on green-bay-packers-vs-minnesota-vikings-2026,
+       refreshed at 16:09 and stripped of all four.
+       None of these are research. Newer research has nothing to say about which
+       snapshot an article was built from or when it was published, so a
+       research refresh has no business touching them. */
+    EDITORIAL_FIELDS.forEach(function (f) {
+      if (rec[f] !== undefined) next[f] = rec[f];
+    });
     var before = comparable(rec), after = comparable(next);
     if (before === after) {
       var same = Object.assign({}, rec);
