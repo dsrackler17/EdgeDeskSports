@@ -1,0 +1,96 @@
+{
+  "schema": "edgedesk_model_review_candidates_v1",
+  "generated_at": "2026-09-13T20:41:25.405Z",
+  "open": 3,
+  "count": 3,
+  "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
+  "candidates": [
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:market:market_gap price",
+      "sport": "NFL",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-13T20:41:25.405Z",
+      "updated_at": "2026-09-13T20:41:25.405Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_01_BUF_HOU:contradicted:market",
+          "game_id": "2026_01_BUF_HOU",
+          "season": 2026,
+          "week": 1,
+          "team": "Houston Texans",
+          "expectation": "2 published claims said the same thing: EdgeDesk makes it Houston Texans -0.5 where the market has Houston Texans +1.5 at nflverse reference — a 2.0 points disagreement. EdgeDesk prices this game at Houston Texans -0.5 with a fair total of 45.9, which makes Houston Texans the better team here by that margin on this field.",
+          "result": "Houston Texans lost by 5. Houston Texans lost by 5 where EdgeDesk projected a 0.5-point edge.",
+          "severity": "high",
+          "at": "2026-09-13T20:41:25.405Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:explosiveness:advantage",
+      "sport": "NFL",
+      "category": "explosiveness",
+      "question": "Does EdgeDesk’s explosiveness handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-13T20:41:25.405Z",
+      "updated_at": "2026-09-13T20:41:25.405Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_01_BUF_HOU:contradicted:explosiveness",
+          "game_id": "2026_01_BUF_HOU",
+          "season": 2026,
+          "week": 1,
+          "team": "Houston Texans",
+          "expectation": "Houston Texans holds the largest measured edge in this matchup: Houston Texans −1.6 pp (#4 of 32) vs Buffalo Bills +2.9 pp (#31 of 32) — 27 places on the league board.",
+          "result": "Houston Texans 5.22 yards per play against Buffalo Bills 7.87.",
+          "severity": "high",
+          "at": "2026-09-13T20:41:25.405Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:scoring:general",
+      "sport": "NFL",
+      "category": "scoring",
+      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-13T20:41:25.405Z",
+      "updated_at": "2026-09-13T20:41:25.405Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_01_BUF_HOU:total_miss",
+          "game_id": "2026_01_BUF_HOU",
+          "season": 2026,
+          "week": 1,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 45.9.",
+          "result": "The game finished with 67 points, an error of 21.1.",
+          "severity": "high",
+          "at": "2026-09-13T20:41:25.405Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    }
+  ]
+}
