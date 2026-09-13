@@ -37,6 +37,17 @@ on:
       - 'supabase/community_posts.sql'
       - 'tools/articles/sql/**'
       - 'tools/articles/community_sql.test.js'
+      # THE EDITORIAL SCHEMAS. This job has run editorial_sql.test.js since the
+      # editorial system shipped, but neither the schema nor the suite was ever
+      # in this list — so a change to the SQL did not trigger the job that
+      # tests it, and the only reason it ever ran was that the same pushes
+      # happened to touch site_articles.sql. That is the same defect
+      # collective-tests.yml records in its own header: a PR touching only a
+      # test file went green without executing it.
+      - 'supabase/editorial_system.sql'
+      - 'supabase/editorial_runtime.sql'
+      - 'tools/editorial/editorial_sql.test.js'
+      - 'tools/editorial/runtime_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -65,6 +76,17 @@ on:
       - 'supabase/community_posts.sql'
       - 'tools/articles/sql/**'
       - 'tools/articles/community_sql.test.js'
+      # THE EDITORIAL SCHEMAS. This job has run editorial_sql.test.js since the
+      # editorial system shipped, but neither the schema nor the suite was ever
+      # in this list — so a change to the SQL did not trigger the job that
+      # tests it, and the only reason it ever ran was that the same pushes
+      # happened to touch site_articles.sql. That is the same defect
+      # collective-tests.yml records in its own header: a PR touching only a
+      # test file went green without executing it.
+      - 'supabase/editorial_system.sql'
+      - 'supabase/editorial_runtime.sql'
+      - 'tools/editorial/editorial_sql.test.js'
+      - 'tools/editorial/runtime_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -197,7 +219,8 @@ jobs:
       # can promise, so only a database can prove it.
       - name: Run the editorial runtime SQL suite
         env:
-          PGHOST: /var/run/postgresql
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/editorial/runtime_sql.test.js | tee editorial_runtime.log
 
       # The UFC Live Fight Center contract: public reads, no client writes, the
