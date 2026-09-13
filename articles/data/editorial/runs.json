@@ -1,7 +1,7 @@
 {
   "schema": "edgedesk_editorial_runs_v1",
-  "generated_at": "2026-09-13T19:09:50.442Z",
-  "kept": 274,
+  "generated_at": "2026-09-13T20:15:41.617Z",
+  "kept": 302,
   "max": 400,
   "note": "The editorial pipeline’s own log, newest last, bounded to the last 400 entries. Every step every run takes appears here whether it succeeded or not, so \"why did this game not get an article?\" has an answer.",
   "runs": [
@@ -2876,6 +2876,308 @@
     {
       "run": "run_mu06upd6",
       "at": "2026-09-13T19:09:50.442Z",
+      "phase": "all",
+      "step": "memory",
+      "key": null,
+      "ok": true,
+      "reason": "0 lessons over 0 graded games"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "config",
+      "key": null,
+      "ok": true,
+      "reason": "editorial_settings not read (editorial_settings?select=*&id=eq.1 -> 404: {\"code\":\"PGRST205\",\"details\":null,\"hint\":\"Perhaps you meant the table 'publi); the committed defaults are in force",
+      "reachable": false
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "dispatch",
+      "key": null,
+      "ok": true,
+      "reason": "2 postgame audit(s) ready",
+      "due": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "lease",
+      "key": null,
+      "ok": true,
+      "reason": "no dispatcher lease (no service credential: editorial_claim is a server-side call)",
+      "lease": false
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "select",
+      "key": null,
+      "ok": true,
+      "reason": "98 scored, 11 featured",
+      "scored": 98,
+      "featured": 11
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_01_DEN_KC",
+      "ok": true,
+      "reason": "not due yet: 24.0h out, this window publishes at 7h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_01_DAL_NYG",
+      "ok": true,
+      "reason": "already published in an earlier run",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_02_DET_BUF",
+      "ok": true,
+      "reason": "not due yet: 96.0h out, this window publishes at 9h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "CFB:401856688",
+      "ok": true,
+      "reason": "not due yet: 147.2h out, this window publishes at 12h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_01_GB_MIN",
+      "ok": true,
+      "reason": "the game has already started — a pregame article is never published after kickoff",
+      "skipped": true,
+      "window": "after_kickoff",
+      "minutes_before_kickoff": -231
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_02_NYG_LA",
+      "ok": true,
+      "reason": "not due yet: 192.0h out, this window publishes at 7h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "not due yet: 264.0h out, this window publishes at 9h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "CFB:401858225",
+      "ok": true,
+      "reason": "not due yet: 99.2h out, this window publishes at 9h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "CFB:401856811",
+      "ok": true,
+      "reason": "not due yet: 123.7h out, this window publishes at 10h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "not due yet: 168.1h out, this window publishes at 7h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "pregame",
+      "key": "NFL:2026_02_JAX_DEN",
+      "ok": true,
+      "reason": "not due yet: 163.8h out, this window publishes at 16h",
+      "skipped": true,
+      "window": "not_due"
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_01_DAL_NYG",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame_readiness",
+      "key": "NFL:2026_01_GB_MIN",
+      "ok": false,
+      "reason": "no source has called the game final; 0-0 is not a football final; only 0 of the 8 core team statistics are published on both sides; 5 are required before an article may claim to explain the game",
+      "conflict": false,
+      "missing": [
+        "total_yards",
+        "yards_per_play",
+        "third_down_pct",
+        "turnovers",
+        "first_downs",
+        "net_pass_yards",
+        "rush_yards",
+        "possession_seconds"
+      ]
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame_readiness",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": false,
+      "reason": "no source has called the game final",
+      "conflict": false,
+      "missing": []
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_01_DEN_KC",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_02_DET_BUF",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "CFB:401856688",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_02_NYG_LA",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "CFB:401858225",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "CFB:401856811",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_02_JAX_DEN",
+      "ok": true,
+      "reason": "the game has not kicked off yet",
+      "skipped": true
+    },
+    {
+      "run": "run_mu097e41",
+      "at": "2026-09-13T20:15:41.617Z",
       "phase": "all",
       "step": "memory",
       "key": null,
