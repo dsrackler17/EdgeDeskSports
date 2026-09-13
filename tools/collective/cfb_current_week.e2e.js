@@ -42,19 +42,17 @@ function chk(name, ok, detail) {
 }
 
 /* ---------------------------------------------------------------- the world
-   Week 1: the real 58 finished games out of the committed settlement record
-   (their ids, so the page can grade them from that file), unsettled in the
-   DATABASE the way they really are, kicked off last week -- the Monday game
-   inside the old 36-hour lookback so the deployed rule answers Week 1.
+   Week 1: the finished games in the committed settlement record (their ids, so
+   the page can grade them from that file), unsettled in the DATABASE the way
+   they really are, kicked off last week -- the Monday game inside the old
+   36-hour lookback so the deployed rule answers Week 1. The record grows every
+   hour, so NOTHING below counts it by hand; see the note on W1.
    Week 2: ten games, Thursday to Saturday, one to three days ahead.
    Week 3: three games the week after. Nothing is loaded for 2 or 3 until the
    sync runs. */
 const RECORD = JSON.parse(fs.readFileSync(path.join(ROOT, 'collective', 'settled', 'CFB_2026.json'), 'utf8'));
-const W1 = Object.keys(RECORD.games).map((id, i) => {
-  const g = RECORD.games[id];
-  return { id, home: g.home, away: g.away, kickoff_at: i === 0 ? T(-26) : T(-84 + (i % 7) * 3) };
-});
-/* the one game the record has that ESPN never carried, held as it really is */
+/* Weeks 2 and 3 are INVENTED fixtures: ten and three fixtures the mock feed
+   serves as upcoming, which the sync is supposed to create. */
 const W2 = [
   ['SMU', 'Baylor', 1.6, '401'], ['Idaho', 'Utah', 1.9, '402'], ['Boise State', 'Oregon', 2.5, '403'],
   ['Kansas State', 'Arizona', 2.6, '404'], ['Iowa', 'Iowa State', 3.3, '405'], ['Michigan', 'Oklahoma', 3.4, '406'],
@@ -66,6 +64,44 @@ const W3 = [
 ].map(([away, home, days, id]) => ({ away, home, kickoff_at: T(days * 24), espn_id: id, week: 3 }));
 
 const code = n => String(n).toUpperCase().replace(/[^A-Z0-9]+/g, '').slice(0, 10);
+
+/* WEEK 1 IS EVERY SETTLED GAME IN THE COMMITTED RECORD -- EXCEPT ANY FIXTURE
+   WEEK 2 OR 3 ALREADY CLAIMS.
+
+   The record is written by the hourly settle job and grows all season, so
+   everything about this fixture has to be derived from it rather than counted
+   by hand. Two things went wrong when it was not:
+
+     1  three expectations were literals from the day this was written (58, 58
+        and 59) and went red the first time a 59th game was settled. They now
+        read W1.length.
+     2  worse, and the reason for this filter: as the record filled in, real
+        settled games started arriving with the SAME PAIRINGS as the invented
+        Week 2 fixtures -- Idaho @ Utah and Boise State @ Oregon in that
+        orientation, Iowa/Iowa State, Michigan/Oklahoma and Texas/Ohio State
+        reversed. The sync matches a fixture to a held game by its pairing
+        inside the season, so instead of CREATING those Week 2 games it moved
+        the Week 1 rows into Week 2 -- and the counts, the week assignments
+        and the wall all disagreed with what the test meant to assert.
+
+   Excluding them here makes the collision impossible by construction, at any
+   size the record ever reaches, without weakening a single assertion: Week 1
+   is still real settled games carrying their real ids, which is what lets the
+   page grade them from that file. */
+const CLAIMED = new Set();
+W2.concat(W3).forEach(g => {
+  CLAIMED.add(code(g.away) + '|' + code(g.home));
+  CLAIMED.add(code(g.home) + '|' + code(g.away));   /* either orientation */
+});
+const W1 = Object.keys(RECORD.games)
+  .filter(id => {
+    const g = RECORD.games[id];
+    return !CLAIMED.has(code(g.away) + '|' + code(g.home));
+  })
+  .map((id, i) => {
+    const g = RECORD.games[id];
+    return { id, home: g.home, away: g.away, kickoff_at: i === 0 ? T(-26) : T(-84 + (i % 7) * 3) };
+  });
 
 /* ------------------------------------------------------ the database (mock)
    PostgREST-shaped, over the collective schema: enough of the filter
@@ -317,7 +353,8 @@ function serve(handler, withBody) {
     store.games.filter(g => g.week === 2).every(g => /^espn:\d+$/.test(g.external_ref || '')) && store.games.filter(g => g.week === 2).length === W2.length);
   chk('SYNC 1  the Week 1 games it already held were given their provider id in place, same rows',
     store.games.filter(g => g.week === 1 && g.external_ref).length === W1.length
-      && store.games.filter(g => g.week === 1).every(g => W1.some(x => x.id === g.id) || g.id === ORPHAN.id) && /changed: 58 updated/.test(r1.out),
+      && store.games.filter(g => g.week === 1).every(g => W1.some(x => x.id === g.id) || g.id === ORPHAN.id)
+      && new RegExp('changed: ' + W1.length + ' updated').test(r1.out),
     { withRef: store.games.filter(g => g.week === 1 && g.external_ref).length });
   chk('SYNC 1  the one held game the feed never carried is reported, not deleted',
     /WASHINGTO2 @ WASHINGTON .* is held but the feed does not carry it/.test(r1.out) && store.games.some(g => g.id === ORPHAN.id) && !store.games.find(g => g.id === ORPHAN.id).external_ref);
@@ -449,7 +486,7 @@ function serve(handler, withBody) {
   console.log('   W1 stats:', JSON.stringify(w1.stats));
   chk('UI  W1 still works and is labelled history, naming Week 2 as Current', /WEEK 1/.test(w1.tag) && /history\. Current is Week 2\./.test(w1.tag), w1.tag);
   chk('UI  W1 shows last week\'s games, every one with its final from the settlement record',
-    /of 59/.test(w1.stats['Games covered'] || '') && w1.cards.length === 12 && w1.fin === w1.cards.length
+    new RegExp('of ' + (W1.length + 1) + '\\b').test(w1.stats['Games covered'] || '') && w1.cards.length === 12 && w1.fin === w1.cards.length
       && w1.cards.every(c => Object.values(RECORD.games).some(g => c === `${g.away} @ ${g.home}`) || c === 'WASHINGTO2 @ WASHINGTON'),
     { fin: w1.fin, cards: w1.cards.slice(0, 4), stats: w1.stats });
   chk('UI  W1\'s projections are counted on W1, not on Week 2', (w1.stats['Projections on the slate'] || '').trim() === '6' && w1.on === '1');
