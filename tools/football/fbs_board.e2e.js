@@ -217,9 +217,39 @@ function serve(handler) {
       conferences: window.FB.p4.uni.conferences.map(c => c.id),
       labels: window.FB.p4.uni.conferences.map(c => c.label),
       p4: window.FB.p4.uni.p4.ids,
+      /* what the feed offered, and every reason a row is not on the board */
+      feedRows: ((window.FB.p4.sched || {}).rows || []).length,
+      dropped: window.FB.p4.slateDrop,
       visibleRows: document.querySelectorAll('[id^="p4gate-"]').length };
   });
-  chk('the browser really loaded the whole FBS slate', state.slate > 100, state.slate);
+  /* THE BOARD IS THE WHOLE SLATE, AND EVERY ABSENCE IS ACCOUNTED FOR.
+
+     This used to read `state.slate > 100`, which was a proxy for the
+     regression it actually guards: the board once dropped any game in which
+     neither side was Power 4 — one line, `if(!isP4(home)&&!isP4(away))return;`
+     — and that is what made a 160-game week render as 95.
+
+     A magnitude is the wrong instrument for that. The upcoming slate is a
+     live window over a real schedule, so it is large on a Wednesday and small
+     on the Sunday after a full Saturday: it was 75 the day this changed, and
+     the check failed for the season being where it was rather than for
+     anything being wrong.
+
+     What must be true on every day of the year is that the board carries
+     EVERY row the feed offered except those dropped for a reason the module
+     names — completed, outside the window, no FBS team, a duplicate, or no
+     kickoff. A P4-only filter reappearing could not balance this sum, so this
+     catches the same regression and cannot expire. */
+  chk('the board carries games at all', state.slate > 0, state.slate);
+  chk('every row the feed offered is on the board or dropped for a named reason',
+    (function () {
+      const d = state.dropped;
+      if (!d) return false;
+      const accounted = state.slate + d.completed + d.outside_window + d.no_fbs
+        + d.duplicate + d.no_kickoff;
+      return accounted === state.feedRows;
+    })(),
+    { slate: state.slate, feedRows: state.feedRows, dropped: state.dropped });
   chk('and the whole FBS universe', state.fbsTeams > 120, state.fbsTeams);
   chk('every conference in the feed is on the board', state.conferences.length >= 10, state.labels);
   chk('the board renders one row per game', state.visibleRows === state.slate,
@@ -288,7 +318,20 @@ function serve(handler) {
   });
   chk('no game is rendered twice under a filter', dupes === 0, dupes);
 
-  /* a row opens its research card, and the card carries the conference */
+  /* A ROW OPENS ITS RESEARCH CARD.
+
+     From the UNFILTERED board, deliberately. This used to run with "Other
+     FBS" and "Conference games" still applied from the checks above, and
+     whether that pair matches anything depends on which games happen to be
+     inside the ten-day window today — on the Sunday after a full Saturday it
+     matched nothing, so there was no row to click and all four card checks
+     failed for the calendar rather than for the card. The board itself is
+     never empty (asserted above), so resetting first makes these four
+     checks about the card, which is what they are for. */
+  await clickChip('Reset filters');
+  await page.waitForTimeout(250);
+  const rowsForCard = await page.evaluate(() => document.querySelectorAll('[id^="p4arr-"]').length);
+  chk('the unfiltered board offers a row to open', rowsForCard > 0, rowsForCard);
   await page.evaluate(() => {
     const r = document.querySelector('[id^="p4arr-"]');
     if (r) r.parentElement.click();
