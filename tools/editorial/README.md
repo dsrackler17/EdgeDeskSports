@@ -474,6 +474,169 @@ A refresh that cannot reach the terminal returns `stale` and the article is
 `forced` when an operator overrode the final window. Nothing on the public page
 ever mentions the hour: the reader is getting fresher numbers, not worse ones.
 
+## 7h — The schedulers
+
+**The dispatcher is no longer dependent on GitHub waking up.**
+
+GitHub's scheduler is degraded on this repository. Measured, not assumed: on
+2026-09-13 the editorial workflow logged **zero** scheduled runs between 12:58
+and 17:03 across two different cron expressions, while every other scheduled
+workflow showed the same ~4.5 hour gap — `settle-finals` is hourly and went
+11:24 → 15:54. A publisher that must notice a 20–90 minute window cannot be
+built on that.
+
+```
+supabase pg_cron  ──►  editorial_cron (edge fn)  ──►  workflow_dispatch  ──►  editorial.yml
+github schedule   ──────────────────────────────────────────────────────►    (backup)
+github workflow_run ────────────────────────────────────────────────────►    (backup)
+github push       ──────────────────────────────────────────────────────►    (backup)
+operator          ──────────────────────────────────────────────────────►    (manual)
+```
+
+**One canonical dispatcher.** The edge function does *not* run the pipeline —
+it cannot, because the pipeline boots the football module out of `app.html` in
+a Node VM and commits to this repository. It pokes the existing workflow. A
+second pipeline in an edge runtime would give EdgeDesk two editorial systems
+that disagree, which is far worse than a late article.
+
+### Operator steps (these cannot be done from the repository)
+
+```
+1  Enable pg_cron and pg_net          Supabase dashboard → Database → Extensions
+2  supabase functions deploy editorial_cron --no-verify-jwt
+3  supabase secrets set EDITORIAL_GH_TOKEN=<PAT with actions:write on this repo>
+4  psql -f supabase/editorial_runtime.sql
+5  psql -f supabase/editorial_cron.sql   (see its header for the two settings)
+```
+
+Until step 3 the function returns **503** and says the token is missing — it
+never reports success while scheduling nothing.
+
+**Order does not matter, and that is deliberate.** `editorial.yml` learned its
+`source` input in the same change that added this function, so a project that
+deploys the function before that change reaches `main` is pointing it at a
+workflow that does not accept the input. GitHub answers
+`422 Unexpected inputs provided: ["source"]` to every tick, and the primary
+scheduler would be dead from the day it was installed over a piece of
+metadata.
+
+So a 422 naming an unexpected input is retried once without it. The poke lands;
+the run records its source as the workflow's default (`manual`) instead of
+`supabase_cron`, so `EDITORIAL HEALTH` shows the primary as missing while the
+articles keep publishing. The function's `reason` says exactly that and names
+the ref whose workflow is behind — a silent fallback would hide a version
+mismatch worth fixing. It clears itself when the ref carries the input.
+
+A 422 for any other reason — a workflow with no `workflow_dispatch` trigger, a
+disabled one — is reported as an error without a second call, because dropping
+the inputs would fail identically.
+
+### Heartbeats
+
+Every invocation writes to `public.editorial_heartbeats`: `scheduler_source`,
+`started_at`, `completed_at`, `duration_ms`, `ok`, `actions_considered`,
+`actions_executed`, `error`. Written even when the run finds nothing to do,
+because "no scheduler is running" and "there was no work" used to look
+identical.
+
+Health grades **primary** (`supabase_cron`) and **backup** (anything GitHub)
+separately:
+
+| state | meaning |
+| --- | --- |
+| HEALTHY | the primary is arriving |
+| DEGRADED | the primary has stopped but the backup is still invoking the dispatcher |
+| ERROR | nothing is successfully invoking it |
+| PAUSED | an operator turned `editorial_enabled` off — not a fault |
+
+### Leases
+
+Several schedulers invoking one dispatcher is the design, so the dispatcher is
+safe to run twice. `public.editorial_leases` holds expiry-based leases claimed
+through `editorial_claim()`:
+
+* **atomic** — the conflict is resolved inside one statement, so two workers
+  racing produce exactly one winner (proved from two real processes)
+* **self-healing** — a worker that dies releases by doing nothing
+* **un-stealable** — `editorial_release()` only affects what you hold
+* **not a global stop** — `job:pregame:NFL:A` and `job:pregame:NFL:B` are
+  different keys, so independent games still run in parallel
+
+The dispatcher takes `dispatcher`; the expensive per-game steps take
+`job:<step>:<game>`. Article-level idempotency already guaranteed one *page*;
+the lease stops two workers paying for the same provider fetch and model call.
+
+**No credential means no coordination, not no run.** A laptop with no service
+role proceeds uncoordinated and says so, because the pipeline has always been
+runnable offline.
+
+## 7i — Settings: one source of truth
+
+```
+1  public.editorial_settings          PRODUCTION TRUTH — what the admin writes
+2  featured.json → settings           bootstrap and offline fallback only
+3  EDGD_* environment variables       explicit deployment override
+```
+
+Resolved once per run in `tools/editorial/runtime.js`, which records **where
+each value came from**, so the health panel shows the truth rather than a file
+the runtime is not reading. A key that is present but unreadable (`"soon"`) is
+reported and ignored, never silently coerced.
+
+Validated **in the database**, so no client-side check can be bypassed:
+`normal > minimum`, `minimum >= 0`, sane ranges, and a `quality_floor` inside
+0–100. Every change writes an audit row with the old and new value and who
+made it.
+
+The admin console edits these directly: UI → authenticated PATCH → database →
+the next dispatcher run obeys it. No sync step, no committed file to keep in
+step, and RLS means only an operator can write.
+
+### The kill switch
+
+`editorial_enabled = false` pauses all autonomous work. The dispatcher still
+heartbeats, health reports **PAUSED** rather than ERROR, already-public pages
+stay public and every immutable record is untouched. `dispatcher_enabled` stops
+scheduled runs separately while leaving a manual run available.
+
+## 7j — The freshness layer
+
+`tools/editorial/freshness.js` replaced the broad re-run of the research
+terminal. It asks narrow questions of named sources:
+
+| field | source |
+| --- | --- |
+| `fixture.status` / `kickoff` / `venue` | ESPN scoreboard |
+| `market.line` / `total` / `book` | the research market block |
+| `availability.out` / `qb` | nflverse injury report · EdgeDesk availability |
+
+Every field carries `value`, `provider`, `retrieved_at` and a status of
+`ok` / `unavailable` / `unsupported`.
+
+**A blind spot is not a non-change.** A source that could not be read is
+reported separately from one that did not move — not knowing whether the line
+moved and knowing it did not are different facts, and only one is safe to
+publish on. College availability with `LIMITED` coverage is `unavailable`,
+because absence of a report is not a report of no absences.
+
+### Material change
+
+| rule | default |
+| --- | --- |
+| `spread_moved` | ≥ 1.0 points |
+| `total_moved` | ≥ 2.0 points |
+| `kickoff_moved` | ≥ 15 minutes |
+| `starting_qb_changed`, `player_ruled_out`, `venue_changed` | always |
+| `fixture_postponed` | always, and **blocking** |
+
+Material → the affected interpretation is rebuilt and revalidated before
+publishing. Immaterial → the number is updated and recorded, no regeneration.
+Every decision names its rule and shows the arithmetic.
+
+**The original thesis is never revised.** The research snapshot is the
+analytical commitment the postgame audit grades; the freshness layer describes
+current conditions at publication. Two different claims, kept apart.
+
 ## 7g — Editorial health
 
 ```

@@ -36,7 +36,7 @@ const PUB = require('./publisher.js');
 const WINDOWS = require('./windows.js');
 const FEATURED = require('./featured.js');
 
-const HEALTH = { HEALTHY: 'HEALTHY', DEGRADED: 'DEGRADED', ERROR: 'ERROR' };
+const HEALTH = { HEALTHY: 'HEALTHY', DEGRADED: 'DEGRADED', ERROR: 'ERROR', PAUSED: 'PAUSED' };
 
 /* How long a thing may sit in a state before it is stuck rather than busy. */
 const STALE = {
@@ -140,17 +140,70 @@ function snapshot(opts) {
   const retries = opts.retries || STORE.loadRetries();
   const records = opts.records || ASTORE.loadAll();
   const committed = opts.committed || STORE.committedGames();
+  /* Heartbeats and the settings SOURCE map come from the runtime; the caller
+     supplies them because health.js stays synchronous and offline-safe. */
+  const beats = opts.heartbeats || [];
+  const sources = opts.sources || {};
+  const settingsReachable = opts.settings_reachable === true;
 
   const cfgCheck = WINDOWS.validate(cfg);
 
-  /* ---- the dispatcher's own pulse ---- */
+  /* ---- THE SCHEDULERS, from actual heartbeats ----
+     A heartbeat is written by EVERY invocation, including the ones that found
+     nothing to do. Inferring the pulse from the run log (which only exists
+     when a run acted) made "no scheduler is running" and "there was no work"
+     look identical; they are not.
+
+     PRIMARY is the Supabase cron. BACKUP is anything GitHub. A primary that
+     has stopped while a backup is still arriving is DEGRADED — the system is
+     still publishing, just on the slower path — and only silence from
+     everything is an ERROR. */
+  const PRIMARY = ['supabase_cron'];
+  const BACKUP = ['github_schedule', 'github_workflow_run', 'github_push'];
+  function lastOf(list, wantOk) {
+    const hit = beats.filter(b => b && list.indexOf(b.scheduler_source) >= 0
+      && (!wantOk || b.ok === true))
+      .sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))[0];
+    return hit || null;
+  }
+  const primaryOk = lastOf(PRIMARY, true), primaryAny = lastOf(PRIMARY, false);
+  const backupOk = lastOf(BACKUP, true), backupAny = lastOf(BACKUP, false);
+  const cadence = cfg.dispatcher_interval_minutes || 15;
+
+  /* The run log remains the fallback pulse for a deployment with no database,
+     so an offline operator still sees something true. */
   const dispatchRuns = runs.filter(r => r && (r.step === 'dispatch' || r.step === 'select'
     || r.step === 'pregame' || r.step === 'postgame'));
-  const lastRunAt = dispatchRuns.length
+  const lastLoggedAt = dispatchRuns.length
     ? dispatchRuns.map(r => r.at).sort().slice(-1)[0] : null;
-  const cadence = cfg.dispatcher_interval_minutes || 15;
+
+  const anyBeat = [primaryOk, backupOk].filter(Boolean)
+    .sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))[0];
+  const lastRunAt = (anyBeat && anyBeat.started_at) || lastLoggedAt;
   const sinceRun = minsSince(lastRunAt, nowMs);
   const nextRunAt = lastRunAt ? new Date(ms(lastRunAt) + cadence * 60000).toISOString() : null;
+
+  const schedulers = {
+    primary: {
+      name: 'supabase_cron',
+      last_success_at: primaryOk ? primaryOk.started_at : null,
+      last_attempt_at: primaryAny ? primaryAny.started_at : null,
+      minutes_since: primaryOk ? minsSince(primaryOk.started_at, nowMs) : null,
+      next_expected_at: primaryOk
+        ? new Date(ms(primaryOk.started_at) + (cfg.primary_interval_minutes || 10) * 60000).toISOString()
+        : null,
+      healthy: !!(primaryOk && minsSince(primaryOk.started_at, nowMs)
+        < (cfg.primary_interval_minutes || 10) * STALE.dispatcher_missed_ticks),
+    },
+    backup: {
+      name: 'github actions',
+      last_success_at: backupOk ? backupOk.started_at : null,
+      last_attempt_at: backupAny ? backupAny.started_at : null,
+      minutes_since: backupOk ? minsSince(backupOk.started_at, nowMs) : null,
+      healthy: !!(backupOk && minsSince(backupOk.started_at, nowMs) < cadence * STALE.dispatcher_dead_ticks),
+    },
+    heartbeats_seen: beats.length,
+  };
 
   /* ---- records this system owns ---- */
   const mine = records.filter(r => r && (r.snapshot_id || AMODEL.typeOf(r) === 'postgame'));
@@ -306,26 +359,55 @@ function snapshot(opts) {
     fail('the publication-window configuration is invalid: '
       + cfgCheck.errors.map(e => e.why).join('; '));
   }
-  if (lastRunAt == null) {
+  /* PAUSED IS NOT BROKEN, and it is reported before anything else so an
+     operator is never hunting a fault they caused on purpose. */
+  const paused = cfg.editorial_enabled === false;
+  const dispatcherOff = cfg.dispatcher_enabled === false;
+
+  if (beats.length) {
+    /* WITH HEARTBEATS the verdict is about the schedulers themselves. */
+    if (!schedulers.primary.healthy && !schedulers.backup.healthy) {
+      fail('no scheduler is successfully invoking the dispatcher'
+        + (schedulers.primary.last_success_at
+          ? ' (primary last succeeded ' + schedulers.primary.minutes_since + 'm ago)'
+          : ' (the primary scheduler has never succeeded)'));
+    } else if (!schedulers.primary.healthy) {
+      degrade('the primary scheduler is not running'
+        + (schedulers.primary.last_success_at
+          ? ' (last success ' + schedulers.primary.minutes_since + 'm ago)'
+          : ' (it has never succeeded)')
+        + '; the GitHub backup is still invoking the dispatcher');
+    }
+  } else if (lastRunAt == null) {
     fail('the dispatcher has never run');
   } else if (sinceRun >= cadence * STALE.dispatcher_dead_ticks) {
     fail('the dispatcher has not run for ' + sinceRun + ' minutes (cadence is ' + cadence + ')');
   } else if (sinceRun >= cadence * STALE.dispatcher_missed_ticks) {
     degrade('the dispatcher last ran ' + sinceRun + ' minutes ago (cadence is ' + cadence + ')');
   }
+  if (dispatcherOff) degrade('the dispatcher is switched off by an operator');
   if (counts.failed > 0) degrade(counts.failed + ' step(s) have exhausted their retries');
   if (counts.retries_pending > 2) degrade(counts.retries_pending + ' step(s) are backing off');
   if (stale.length) degrade(stale.length + ' record(s) are in a stale state');
   /* DELIBERATELY NOT A DEGRADE: manual_review is the system working. */
 
+  /* PAUSED is its own state, never ERROR. An operator who stopped the system
+     on purpose must not be shown a fault, or the panel teaches them to ignore
+     red. A genuine fault underneath still shows in `reasons`. */
   return {
     generated_at: nowIso,
-    status, reasons,
+    status: paused ? 'PAUSED' : status,
+    paused,
+    reasons: paused
+      ? ['EDITORIAL PAUSED BY OPERATOR — no generation, no publication; already-public pages are unaffected']
+        .concat(reasons)
+      : reasons,
     config: { ok: cfgCheck.ok, errors: cfgCheck.errors, policy: cfgCheck.policy },
     dispatcher: {
       last_run_at: lastRunAt, minutes_since: sinceRun,
       cadence_minutes: cadence, next_expected_at: nextRunAt,
     },
+    schedulers,
     settings: {
       auto_publish_pregame: cfg.auto_publish_pregame !== false,
       auto_publish_postgame: cfg.auto_publish_postgame !== false,
@@ -336,8 +418,16 @@ function snapshot(opts) {
          write path for these, so the panel shows them and says where they
          live; a control that saves somewhere the pipeline never reads is the
          exact bug this system already had once. */
-      editable: false,
-      source: 'articles/data/editorial/featured.json → settings',
+      editorial_enabled: cfg.editorial_enabled !== false,
+      dispatcher_enabled: cfg.dispatcher_enabled !== false,
+      /* WHERE EACH VALUE ACTUALLY CAME FROM. The panel used to print the
+         committed file while the runtime read something else; it now shows the
+         resolved source per field, so "database" means the database. */
+      sources,
+      editable: settingsReachable,
+      source: settingsReachable
+        ? 'public.editorial_settings (database)'
+        : 'articles/data/editorial/featured.json → settings (the database was not reachable)',
     },
     counts, games, debt, stale,
   };

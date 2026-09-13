@@ -56,6 +56,8 @@ const FETCH = require('./fetch_results.js');
 const PUBLISH = require('./publisher.js');
 const WINDOWS = require('./windows.js');
 const REFRESH = require('./refresh.js');
+const FRESH = require('./freshness.js');
+const RUNTIME = require('./runtime.js');
 const STORE = require('./store.js');
 
 function arg(name, fb) {
@@ -73,6 +75,17 @@ const DO_NARRATE = !!arg('narrate', false);
 const DRY = !!arg('dry', false);
 const QUIET = !!arg('quiet', false);
 const IF_DUE = !!arg('if-due', false);
+/* WHO WOKE US. Recorded on every heartbeat so scheduler health is measured
+   from what actually invoked the dispatcher rather than inferred. */
+const SOURCE = (function () {
+  const v = arg('source', null);
+  const legal = ['supabase_cron', 'github_schedule', 'github_workflow_run',
+    'github_push', 'manual', 'admin', 'test'];
+  return (v && v !== true && legal.indexOf(v) >= 0) ? v : 'manual';
+})();
+/* This process, for the lease. A second worker must never look like us. */
+const WORKER = (process.env.GITHUB_RUN_ID ? 'gha-' + process.env.GITHUB_RUN_ID : 'local')
+  + '-' + process.pid + '-' + Math.random().toString(36).slice(2, 8);
 const NOW = arg('now', null) && arg('now', null) !== true
   ? new Date(arg('now', null)).toISOString() : new Date().toISOString();
 
@@ -91,6 +104,22 @@ function record(step, key, ok, reason, extra) {
   entries.push(e);
   return e;
 }
+/* THE RUNTIME CONFIGURATION, resolved once per run.
+   Precedence is database > repository defaults > environment override, decided
+   in tools/editorial/runtime.js. Until resolve() has run this holds the
+   committed defaults so anything reading it early still gets sane values; the
+   offline suites never reach the database at all. */
+/* one runtime client for leases, shared by the dispatcher and the jobs */
+const JOBS = RUNTIME.client({});
+const LEASE_KEY = 'dispatcher';
+const LEASE_TTL_SECONDS = 900;   /* fifteen minutes: longer than a run, shorter than a tick */
+let heldLease = false;
+
+let CFG = STORE.settings();
+let CFG_SOURCES = {};
+let CFG_NOTES = [];
+function settings() { return CFG; }
+
 /* THE RETRY LEDGER, loaded once per run and written once at the end. */
 const RETRIES = STORE.loadRetries();
 let retriesDirty = false;
@@ -104,7 +133,8 @@ let retriesDirty = false;
    dropped on the floor. Five attempts over about nine hours, then it stops
    and says why. A FACTUAL failure never reaches here: the publisher turns
    those into manual_review, which no amount of retrying would clear. */
-async function step(name, key, fn) {
+async function step(name, key, fn, opts) {
+  opts = opts || {};
   if (key && !FORCE) {
     const gate = STORE.retryDue(RETRIES, key, name, NOW);
     if (!gate.due) {
@@ -112,11 +142,30 @@ async function step(name, key, fn) {
       return null;
     }
   }
+  /* ---- THE JOB CLAIM -------------------------------------------------
+     Only for the steps that actually cost something — a provider fetch, a
+     research build, a model call. "I own this game's pregame work until T."
+     A different game is a different key, so independent work still runs in
+     parallel; the same game cannot be worked twice at once. The claim is a
+     lease, so a worker that dies frees it by doing nothing.
+     No credential means no claiming, which is how a laptop still runs. */
+  let claimed = false;
+  const jobKey = opts.claim && key ? 'job:' + name + ':' + key : null;
+  if (jobKey && !DRY) {
+    try {
+      claimed = await JOBS.claim(jobKey, WORKER, opts.ttl || 600, { step: name, key, at: NOW });
+      if (!claimed) {
+        record(name, key, true, 'another worker holds this job', { skipped: true, claimed_by: 'other' });
+        return null;
+      }
+    } catch (_) { /* no service credential: proceed uncoordinated, as before */ }
+  }
   try {
     const out = await fn();
     if (key && STORE.retryKey(key, name) in RETRIES) {
       STORE.retryCleared(RETRIES, key, name); retriesDirty = true;
     }
+    if (claimed) { try { await JOBS.release(jobKey, WORKER); } catch (_) {} }
     return out;
   } catch (e) {
     const msg = e && e.message ? String(e.message).slice(0, 300) : String(e);
@@ -130,6 +179,7 @@ async function step(name, key, fn) {
     }
     record(name, key, false, 'threw: ' + msg + note, { error: true, transient: true });
     log('  ' + pad('FAILED', 12) + pad(name, 18) + (key || '') + ' — ' + msg + note);
+    if (claimed) { try { await JOBS.release(jobKey, WORKER); } catch (_) {} }
     return null;
   }
 }
@@ -203,7 +253,7 @@ function ranksFromRankings() {
    build (or refresh) the article record, extract the theses, run the quality
    gate, and publish or hold. */
 async function phasePregame(host) {
-  const cfg = STORE.settings();
+  const cfg = settings();
   const rows = STORE.loadFeatured().games.filter(FEATURED.isFeatured)
     .filter(g => g.pregame_enabled !== false)
     .filter(g => !ONLY || ONLY === true || g.key === ONLY);
@@ -349,6 +399,51 @@ async function phasePregame(host) {
         }
         rec.publication_snapshot_id = ref.snapshot ? ref.snapshot.snapshot_id : null;
         timing = WINDOWS.timingFor(cls, { now: NOW, refreshed: true });
+
+        /* ---- THE FRESHNESS LAYER: narrow, named, with provenance ----
+           The snapshot above records WHAT was true at publication. This asks
+           the sharper question — which of the few facts that actually move
+           near kickoff moved, from which named source, and does the movement
+           deserve a regenerated article or merely an updated number.
+
+           Every field carries its own provider and retrieved_at, and a source
+           that could not be read is reported as a BLIND SPOT rather than as
+           "unchanged": not knowing whether the line moved and knowing it did
+           not are different facts, and only one of them is safe to publish
+           on. */
+        const teamCode = g.home_code || (g.home_team || '').slice(0, 3).toUpperCase();
+        const fOpts = { team_code: teamCode, team_name: g.home_team };
+        const before = FRESH.observe({ sport: g.sport, home: g.home_team },
+          Object.assign({ research: snap.research }, fOpts));
+        const after = FRESH.observe({ sport: g.sport, home: g.home_team },
+          Object.assign({ research: research, fixture: null }, fOpts));
+        const cmp = FRESH.compare(before, after);
+        const mat = FRESH.materiality(cmp.changes, { rules: {
+          material_spread_points: cfg.material_spread_points,
+          material_total_points: cfg.material_total_points,
+          material_kickoff_minutes: cfg.material_kickoff_minutes,
+        } });
+        rec.freshness = {
+          at: NOW, fields: after, changes: cmp.changes, blind: cmp.blind,
+          material: mat.material, rules_hit: mat.hits, minor: mat.minor,
+          summary: mat.summary,
+        };
+        record('pregame_freshness', key, !mat.blocking,
+          mat.summary + (cmp.blind.length ? ' · ' + cmp.blind.length + ' field(s) unavailable' : ''),
+          { material: mat.material, changes: cmp.changes.length, blind: cmp.blind.map(b => b.field) });
+
+        /* A BLOCKING MATERIAL CHANGE — a postponement — is not publishable at
+           any quality score. */
+        if (mat.blocking) {
+          rec.publish_state = { ok: false, at: NOW,
+            blocking: mat.hits.filter(h => h.blocking).map(h => ({ id: h.rule, why: h.why })),
+            warnings: [], hold_reason: mat.hits.filter(h => h.blocking).map(h => h.rule).join(', ') };
+          rec.timing = timing;
+          if (!DRY) { ASTORE.save(rec); byId[id] = rec; articles.push(rec); }
+          return { action: 'held', why: mat.hits.filter(h => h.blocking)[0].why,
+            score: q.score, slug: rec.slug, window: cls.window };
+        }
+
         record('pregame_refresh', key, true,
           ref.state === 'refreshed' ? ref.reasons.join('; ') : 'time-sensitive data re-verified, unchanged',
           { state: ref.state, changes: ref.changes, publication_snapshot: rec.publication_snapshot_id });
@@ -397,7 +492,7 @@ async function phasePregame(host) {
          against the assembled record and either moves the status to
          published or to manual_review with the condition named — there is
          no branch here that leaves a valid article sitting in draft. */
-      const wantAuto = AUTO || STORE.settings().auto_publish_pregame;
+      const wantAuto = AUTO || settings().auto_publish_pregame;
       if (!wantAuto) {
         record('pregame_generated', key, true,
           rec.slug + ' — auto-publish is switched off for pregame articles',
@@ -429,7 +524,7 @@ async function phasePregame(host) {
       if (!DRY) { ASTORE.save(rec); byId[id] = rec; articles.push(rec); }
       return { action, slug: rec.slug, score: q.score, status: rec.status,
         theses: rec.theses.length, why: pub.ok ? null : pub.reason };
-    });
+    }, { claim: true, ttl: 900 });
     if (res) out.push(Object.assign({ key }, res));
   }
 
@@ -469,7 +564,7 @@ function sourceList(host, g) {
    grade result versus process, extract lessons, build the article, gate on
    quality, and publish or hold. */
 async function phasePostgame() {
-  const cfg = STORE.settings();
+  const cfg = settings();
   /* WHAT IS OWED AN AUDIT — every game EdgeDesk captured a snapshot for,
      unioned with the featured board.
 
@@ -618,7 +713,7 @@ async function phasePostgame() {
       /* ---- THE PUBLISHER, and LINK THE TWO HALVES ---- */
       /* Same single path as the pregame half: the postgame article is not a
          second kind of publication with its own rules. */
-      const wantAuto = AUTO || STORE.settings().auto_publish_postgame;
+      const wantAuto = AUTO || settings().auto_publish_postgame;
       let pub = { ok: false, action: 'generated', record: rec, blocking: [], warnings: [] };
       if (!wantAuto) {
         record('postgame_generated', key, true,
@@ -657,7 +752,7 @@ async function phasePostgame() {
       return { action: wantAuto ? (pub.ok ? pub.action : 'manual_review') : 'generated',
         slug: rec.slug, score: q.score, status: rec.status, why: pub.ok ? null : (pub.reason || null),
         bet: graded.bet_headline, process: graded.process_headline, lessons: lessons.length };
-    });
+    }, { claim: true, ttl: 900 });
     if (res) out.push(Object.assign({ key }, res));
   }
 
@@ -686,7 +781,69 @@ function phaseMemory() {
 /* ==================================================================== */
 async function main() {
   log('EdgeDesk editorial pipeline · phase=' + PHASE + ' · ' + NOW
-    + (DRY ? ' · DRY RUN' : '') + (NETWORK ? ' · network' : ' · offline'));
+    + (DRY ? ' · DRY RUN' : '') + (NETWORK ? ' · network' : ' · offline')
+    + ' · woken by ' + SOURCE);
+
+  const startedMs = Date.now();
+  const rt = RUNTIME.client({});
+  let beat = null;
+
+  /* ---- THE HEARTBEAT ------------------------------------------------- */
+  /* Written by EVERY invocation, including the ones that find nothing to do.
+     Health used to infer the dispatcher's pulse from the run log, which only
+     exists when a run acted — so "no scheduler is running" and "there was no
+     work" looked identical. They are not, and an operator needs to tell them
+     apart within one tick, not after a missed publication. */
+  if (!DRY) {
+    try { beat = await rt.heartbeatStart(SOURCE, { phase: PHASE, worker: WORKER }); }
+    catch (e) { log('  [heartbeat] not recorded: ' + (e && e.message)); }
+  }
+  async function finish(out) {
+    if (beat != null) {
+      try {
+        await rt.heartbeatFinish(beat, Object.assign(
+          { duration_ms: Date.now() - startedMs }, out || {}));
+      } catch (e) { log('  [heartbeat] not closed: ' + (e && e.message)); }
+    }
+    if (heldLease && !DRY) {
+      try { await rt.release(LEASE_KEY, WORKER); } catch (_) { /* it expires anyway */ }
+    }
+    return out;
+  }
+
+  /* ---- THE CONFIGURATION --------------------------------------------- */
+  const resolved = await RUNTIME.resolve({ client: rt, offline: DRY && !NETWORK ? false : false });
+  CFG = resolved.settings; CFG_SOURCES = resolved.sources; CFG_NOTES = resolved.notes;
+  if (!resolved.reachable) {
+    record('config', null, true, resolved.notes[0] || 'the committed defaults are in force',
+      { reachable: false });
+    log('  [config] ' + (resolved.notes[0] || 'committed defaults'));
+  } else {
+    log('  [config] database settings in force'
+      + (CFG_NOTES.length ? ' · ' + CFG_NOTES.join('; ') : ''));
+  }
+
+  /* ---- THE KILL SWITCH ----------------------------------------------- */
+  /* PAUSED IS NOT BROKEN. The dispatcher still heartbeats, the health panel
+     still reports, already-public pages stay public and every immutable record
+     is untouched — there is simply no new generation and no publication. */
+  if (CFG.editorial_enabled === false) {
+    log('EDITORIAL PAUSED BY OPERATOR — no generation, no publication');
+    record('paused', null, true,
+      'editorial_enabled is false: the system is paused by an operator, not failing',
+      { paused: true, source: CFG_SOURCES.editorial_enabled });
+    if (!DRY) { STORE.appendRuns(entries, { now: NOW }); writeHealth(); }
+    return await finish({ ok: true, paused: true, considered: 0, executed: 0, entries });
+  }
+  if (CFG.dispatcher_enabled === false && SOURCE !== 'manual' && SOURCE !== 'admin') {
+    log('the dispatcher is switched off; only a manual run proceeds');
+    record('paused', null, true, 'dispatcher_enabled is false', { paused: true });
+    if (!DRY) {
+      STORE.appendRuns(entries, { now: NOW });
+      writeHealth(await healthExtras(rt, resolved.reachable));
+    }
+    return await finish({ ok: true, paused: true, considered: 0, executed: 0, entries });
+  }
 
   let host = null;
   /* ---- THE DISPATCHER ----------------------------------------------- */
@@ -706,11 +863,43 @@ async function main() {
     if (!due.due) {
       log('nothing is due: ' + due.summary);
       record('dispatch', null, true, 'nothing due — ' + due.summary, { skipped: true });
-      if (!DRY) { STORE.appendRuns(entries, { now: NOW }); writeHealth(); }
-      return { ok: true, due: false, entries };
+      if (!DRY) {
+        STORE.appendRuns(entries, { now: NOW });
+        writeHealth(await healthExtras(rt, resolved.reachable));
+      }
+      return await finish({ ok: true, due: false, considered: 0, executed: 0, entries });
     }
     log('due: ' + due.summary);
     record('dispatch', null, true, due.summary, { due: true });
+  }
+
+  /* ---- THE DISPATCHER LEASE ------------------------------------------ */
+  /* SEVERAL SCHEDULERS INVOKING ONE DISPATCHER IS THE DESIGN. Article-level
+     idempotency already guarantees one PAGE; it does not stop two workers
+     paying for the same provider fetch and the same model call at the same
+     moment. The lease is short and expiry-based, so a worker that dies
+     releases it by doing nothing and no cleanup job is needed.
+     A run that cannot take the lease is NOT a failure — somebody else is
+     already doing the work. */
+  if (!DRY) {
+    try {
+      heldLease = await rt.claim(LEASE_KEY, WORKER, LEASE_TTL_SECONDS,
+        { phase: PHASE, source: SOURCE, at: NOW });
+      if (!heldLease) {
+        log('another worker holds the dispatcher lease; standing down');
+        record('lease', null, true, 'another worker holds the dispatcher lease — standing down',
+          { skipped: true, worker: WORKER });
+        STORE.appendRuns(entries, { now: NOW });
+        return await finish({ ok: true, skipped: 'lease', considered: 0, executed: 0, entries });
+      }
+      record('lease', null, true, 'dispatcher lease held by ' + WORKER, { worker: WORKER });
+    } catch (e) {
+      /* NO CREDENTIAL IS NOT A LOCK FAILURE. A machine with no service role
+         cannot coordinate, and refusing to run would make the pipeline
+         unrunnable locally. It proceeds and says the lease was not taken. */
+      record('lease', null, true, 'no dispatcher lease (' + (e && e.message ? String(e.message).slice(0, 90) : e) + ')',
+        { lease: false });
+    }
   }
 
   const needsHost = PHASE === 'select' || PHASE === 'pregame' || PHASE === 'all';
@@ -723,7 +912,8 @@ async function main() {
         if (retriesDirty) STORE.saveRetries(RETRIES, { now: NOW });
       }
       log('\nthe research terminal would not boot — nothing was generated');
-      return { ok: false };
+      return await finish({ ok: false, considered: entries.length, executed: 0,
+        error: 'the research terminal would not boot' });
     }
     if (host.notes.refused.length) {
       log('  ' + host.notes.refused.length + ' source(s) not reachable in this run');
@@ -741,12 +931,15 @@ async function main() {
   if (!DRY) {
     STORE.appendRuns(entries, { now: NOW });
     if (retriesDirty) STORE.saveRetries(RETRIES, { now: NOW });
-    writeHealth();
+    writeHealth(await healthExtras(rt, resolved.reachable));
   }
   const failed = entries.filter(e => !e.ok);
   log('\n' + entries.length + ' step(s) logged, ' + failed.length + ' not ok');
   failed.slice(0, 12).forEach(e => log('  ' + pad(e.step, 20) + pad(e.key || '', 30) + e.reason));
-  return { ok: true, entries };
+  const executed = entries.filter(e => /_published$|_generated$|_snapshot$|^backfill$/.test(e.step) && e.ok).length;
+  return await finish({ ok: true, entries,
+    considered: entries.length, executed,
+    error: failed.length ? failed[0].step + ': ' + failed[0].reason : null });
 }
 
 /* ==================================================================== */
@@ -767,7 +960,7 @@ async function main() {
    numbers look better. A postgame audit has no such expiry: it is a record of
    what happened, and it is worth publishing whenever it is ready. */
 function phaseBackfill() {
-  const cfg = STORE.settings();
+  const cfg = settings();
   const nowMs = Date.parse(NOW);
   const all = ASTORE.loadAll();
   /* the records this system owns: anything carrying a snapshot, plus every
@@ -838,13 +1031,23 @@ function phaseBackfill() {
 
 /* The operator console reads this file rather than re-deriving the lifecycle,
    so the panel and the pipeline can never disagree about what is happening. */
-function writeHealth() {
+function writeHealth(extra) {
   try {
     const HEALTH = require('./health.js');
-    STORE.saveHealth(HEALTH.snapshot({ now: NOW }));
+    STORE.saveHealth(HEALTH.snapshot(Object.assign({
+      now: NOW, settings: CFG, sources: CFG_SOURCES,
+    }, extra || {})));
   } catch (e) {
     log('  [health] could not write the health snapshot: ' + (e && e.message));
   }
+}
+/* The heartbeats the panel grades the schedulers from. Read once, at the end,
+   so the snapshot includes this very run. A database that cannot be reached
+   yields none and the panel falls back to the run log. */
+async function healthExtras(rt, reachable) {
+  const out = { settings_reachable: reachable };
+  try { out.heartbeats = await rt.recentHeartbeats(60); } catch (_) { out.heartbeats = []; }
+  return out;
 }
 
 /* ==================================================================== */
@@ -854,7 +1057,7 @@ function writeHealth() {
    featured.json, the snapshots, the run log and the retry ledger; it opens no
    socket and boots nothing, so it is safe to call every few minutes. */
 function whatIsDue(now) {
-  const cfg = STORE.settings();
+  const cfg = settings();
   const nowMs = Date.parse(now);
   const runs = STORE.loadRuns();
   const retries = STORE.loadRetries();

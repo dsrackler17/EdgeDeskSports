@@ -121,6 +121,10 @@ on:
         description: 'Call the language model for connective prose (needs ANTHROPIC_API_KEY)'
         type: boolean
         default: false
+      source:
+        description: 'Who is waking the dispatcher (recorded on the heartbeat)'
+        type: string
+        default: 'manual'
 
 permissions:
   contents: write
@@ -154,6 +158,8 @@ jobs:
           node tools/editorial/editorial.test.js
           node tools/editorial/publisher.test.js
           node tools/editorial/windows.test.js
+          node tools/editorial/runtime.test.js
+          node tools/editorial/editorial_cron.test.js
           node tools/articles/articles.test.js
 
       # What the operator published or unpublished from a browser, first, so a
@@ -166,10 +172,27 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           ARGS="--network"
-          # An operator who pressed the button means it: run the phases
-          # unconditionally. A scheduled or push-triggered run asks the
-          # dispatcher first and exits cheaply when nothing is owed.
-          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then ARGS="$ARGS --if-due"; fi
+          # WHO WOKE US, recorded on the heartbeat so scheduler health is
+          # measured from what actually invoked the dispatcher. The Supabase
+          # cron pokes workflow_dispatch and passes source=supabase_cron, which
+          # is how the primary and backup schedulers are told apart.
+          case "${{ github.event_name }}" in
+            schedule)     SRC=github_schedule ;;
+            workflow_run) SRC=github_workflow_run ;;
+            push)         SRC=github_push ;;
+            *)            SRC="${{ github.event.inputs.source }}" ;;
+          esac
+          case "$SRC" in
+            supabase_cron|github_schedule|github_workflow_run|github_push|manual|admin) ;;
+            *) SRC=manual ;;
+          esac
+          ARGS="$ARGS --source $SRC"
+          # A run the SUPABASE CRON asked for is the primary scheduler doing its
+          # job, so it uses the dispatcher gate exactly like a scheduled run. An
+          # operator pressing the button means it and runs the phases outright.
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ] || [ "$SRC" = "supabase_cron" ]; then
+            ARGS="$ARGS --if-due"
+          fi
           if [ "${{ github.event.inputs.auto_publish }}" = "true" ]; then ARGS="$ARGS --auto"; fi
           if [ -n "${{ github.event.inputs.game }}" ]; then ARGS="$ARGS --game ${{ github.event.inputs.game }}"; fi
           if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
