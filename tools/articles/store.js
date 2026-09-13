@@ -123,6 +123,7 @@ function buildIndex(records, opts) {
       published: recs.filter(r => r.status === 'published').length,
       ready: recs.filter(r => r.status === 'ready').length,
       draft: recs.filter(r => r.status === 'draft').length,
+      manual_review: recs.filter(r => r.status === 'manual_review').length,
       archived: recs.filter(r => r.status === 'archived').length,
       pregame: recs.filter(r => MODEL.typeOf(r) === 'pregame').length,
       postgame: recs.filter(r => MODEL.typeOf(r) === 'postgame').length

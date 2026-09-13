@@ -90,11 +90,17 @@ alter table public.site_articles add column if not exists status text not null d
 alter table public.site_articles add column if not exists frozen boolean not null default false;
 alter table public.site_articles add column if not exists created_at timestamptz not null default now();
 
--- The five states the product actually has. A row outside them is a bug that
+-- The six states the product actually has. A row outside them is a bug that
 -- would otherwise reach a reader as a blank page.
+--
+-- `manual_review` was added with the editorial publisher: an article held by a
+-- blocking condition is NOT a draft. A draft is an article generation has not
+-- finished with; a manual_review row is complete, validated and refused, and
+-- the operator console has to be able to tell them apart to show a queue that
+-- means anything.
 alter table public.site_articles drop constraint if exists site_articles_status_ck;
 alter table public.site_articles add constraint site_articles_status_ck
-  check (status in ('draft', 'ready', 'published', 'updated', 'archived'));
+  check (status in ('draft', 'ready', 'published', 'updated', 'manual_review', 'archived'));
 
 -- A public URL belongs to ONE article. Enforced here as well as in the
 -- generator, because two rows racing for one slug is exactly the case a

@@ -53,6 +53,7 @@ const NARRATE = require('./narrate.js');
 const GRAPHIC = require('./graphic.js');
 const POST = require('./postgame_model.js');
 const FETCH = require('./fetch_results.js');
+const PUBLISH = require('./publisher.js');
 const STORE = require('./store.js');
 
 function arg(name, fb) {
@@ -69,6 +70,7 @@ const FORCE = !!arg('force', false);
 const DO_NARRATE = !!arg('narrate', false);
 const DRY = !!arg('dry', false);
 const QUIET = !!arg('quiet', false);
+const IF_DUE = !!arg('if-due', false);
 const NOW = arg('now', null) && arg('now', null) !== true
   ? new Date(arg('now', null)).toISOString() : new Date().toISOString();
 
@@ -87,14 +89,45 @@ function record(step, key, ok, reason, extra) {
   entries.push(e);
   return e;
 }
+/* THE RETRY LEDGER, loaded once per run and written once at the end. */
+const RETRIES = STORE.loadRetries();
+let retriesDirty = false;
+
 /* Every step goes through this, so one game blowing up never takes a run with
-   it and the failure is a logged failure rather than a stack trace. */
+   it and the failure is a logged failure rather than a stack trace.
+
+   A THROW IS TREATED AS TRANSIENT. Something that threw — a provider timing
+   out, a feed briefly down, a socket reset — gets a bounded backoff and a
+   later attempt rather than being retried every fifteen minutes forever or
+   dropped on the floor. Five attempts over about nine hours, then it stops
+   and says why. A FACTUAL failure never reaches here: the publisher turns
+   those into manual_review, which no amount of retrying would clear. */
 async function step(name, key, fn) {
-  try { return await fn(); }
-  catch (e) {
-    record(name, key, false, 'threw: ' + (e && e.message ? String(e.message).slice(0, 300) : String(e)),
-      { error: true });
-    log('  ' + pad('FAILED', 12) + pad(name, 18) + (key || '') + ' — ' + (e && e.message));
+  if (key && !FORCE) {
+    const gate = STORE.retryDue(RETRIES, key, name, NOW);
+    if (!gate.due) {
+      record(name, key, true, gate.reason, { skipped: true, retry: true, attempt: gate.attempt });
+      return null;
+    }
+  }
+  try {
+    const out = await fn();
+    if (key && STORE.retryKey(key, name) in RETRIES) {
+      STORE.retryCleared(RETRIES, key, name); retriesDirty = true;
+    }
+    return out;
+  } catch (e) {
+    const msg = e && e.message ? String(e.message).slice(0, 300) : String(e);
+    let note = '';
+    if (key) {
+      const r = STORE.retryFailed(RETRIES, key, name, msg, NOW);
+      retriesDirty = true;
+      note = r.exhausted
+        ? ' — attempt ' + r.attempt_count + ' of ' + STORE.RETRY_MAX + ', giving up'
+        : ' — attempt ' + r.attempt_count + ', next try ' + r.next_retry_at;
+    }
+    record(name, key, false, 'threw: ' + msg + note, { error: true, transient: true });
+    log('  ' + pad('FAILED', 12) + pad(name, 18) + (key || '') + ' — ' + msg + note);
     return null;
   }
 }
@@ -263,27 +296,44 @@ async function phasePregame(host) {
         integrity_failed: q.integrity_failed, craft_failed: q.craft_failed, at: NOW };
       const verdict = AMODEL.publishable(rec);
       rec.checks = { ok: verdict.ok, failed: verdict.failed.map(f => ({ id: f.id, why: f.why })), at: NOW };
-      if (rec.status === 'draft' && verdict.ok && q.publishable) rec.status = 'ready';
-      if (rec.status === 'ready' && !(verdict.ok && q.publishable)) rec.status = 'draft';
+      if (verdict.ok && q.publishable) rec.status = 'ready';
 
       if (!q.publishable) {
         record('pregame_validation', key, false, q.hold_reason, { score: q.score });
-        if (!DRY) { ASTORE.save(rec); byId[id] = rec; }
-        return { action: 'held', why: q.hold_reason, score: q.score, slug: rec.slug };
-      }
-      record('pregame_validation', key, true, 'quality ' + q.score, { score: q.score });
-
-      /* ---- publish, or hold for a person ---- */
-      if (AUTO || STORE.settings().auto_publish_pregame) {
-        rec = AMODEL.publish(rec, NOW);
-        record('pregame_published', key, true, rec.slug, { slug: rec.slug, score: q.score });
-        action = 'published';
       } else {
-        record('pregame_generated', key, true, rec.slug + ' — held for an operator (auto-publish off)',
+        record('pregame_validation', key, true, 'quality ' + q.score, { score: q.score });
+      }
+
+      /* ---- THE PUBLISHER. One path, and it is the same one the postgame
+         half and the backfill use. It re-runs every blocking condition
+         against the assembled record and either moves the status to
+         published or to manual_review with the condition named — there is
+         no branch here that leaves a valid article sitting in draft. */
+      const wantAuto = AUTO || STORE.settings().auto_publish_pregame;
+      if (!wantAuto) {
+        record('pregame_generated', key, true,
+          rec.slug + ' — auto-publish is switched off for pregame articles',
           { slug: rec.slug, score: q.score });
+        if (!DRY) { ASTORE.save(rec); byId[id] = rec; articles.push(rec); }
+        return { action: 'generated', slug: rec.slug, score: q.score, status: rec.status,
+          theses: rec.theses.length, why: 'auto-publish off' };
+      }
+      /* `prior` is the record as stored, so an unchanged republish leaves
+         updated_at alone and a real edit moves it. */
+      const pub = PUBLISH.publish(rec, { now: NOW, quality: q, others: articles, previous: prior });
+      rec = pub.record;
+      if (pub.ok) {
+        record('pregame_published', key, true, rec.slug + ' (' + pub.action + ')',
+          { slug: rec.slug, score: q.score, url: rec.canonical_url, action: pub.action });
+        action = pub.action;
+      } else {
+        record('pregame_published', key, false, pub.reason,
+          { slug: rec.slug, score: q.score, blocking: pub.blocking.map(b => b.id) });
+        action = 'manual_review';
       }
       if (!DRY) { ASTORE.save(rec); byId[id] = rec; articles.push(rec); }
-      return { action, slug: rec.slug, score: q.score, status: rec.status, theses: rec.theses.length };
+      return { action, slug: rec.slug, score: q.score, status: rec.status,
+        theses: rec.theses.length, why: pub.ok ? null : pub.reason };
     });
     if (res) out.push(Object.assign({ key }, res));
   }
@@ -327,8 +377,26 @@ function sourceList(host, g) {
    quality, and publish or hold. */
 async function phasePostgame() {
   const cfg = STORE.settings();
-  const rows = STORE.loadFeatured().games.filter(FEATURED.isFeatured)
-    .filter(g => g.postgame_enabled !== false)
+  /* WHAT IS OWED AN AUDIT — every game EdgeDesk captured a snapshot for,
+     unioned with the featured board.
+
+     The board alone was wrong and silently so: featured.json is rebuilt from
+     the CURRENT slate every run, and a played game leaves the slate within a
+     day. A game could be featured, get its pregame article published, be
+     played, drop off the board, and then never be audited — the postgame
+     phase iterated a list the game was no longer on. The snapshot is the
+     durable commitment, so it is the authority here; the board only adds
+     games that have not been captured yet. An operator's postgame_enabled:
+     false still wins over both. */
+  const board = STORE.loadFeatured().games.filter(FEATURED.isFeatured);
+  const disabled = Object.create(null);
+  STORE.loadFeatured().games.forEach(g => {
+    if (g && g.postgame_enabled === false) disabled[g.key] = true;
+  });
+  const seen = Object.create(null);
+  const rows = STORE.committedGames().concat(board)
+    .filter(g => g && g.key && !seen[g.key] && (seen[g.key] = true))
+    .filter(g => !disabled[g.key])
     .filter(g => !ONLY || ONLY === true || g.key === ONLY);
   const runs = STORE.loadRuns();
   const nowMs = Date.parse(NOW);
@@ -448,13 +516,27 @@ async function phasePostgame() {
           { lessons: lessons.length });
       }
 
-      /* ---- publish, and LINK THE TWO HALVES ---- */
-      if (AUTO || STORE.settings().auto_publish_postgame) {
-        rec = AMODEL.publish(rec, NOW);
-        record('postgame_published', key, true, rec.slug, { slug: rec.slug, score: q.score });
-      } else {
-        record('postgame_generated', key, true, rec.slug + ' — held for an operator (auto-publish off)',
+      /* ---- THE PUBLISHER, and LINK THE TWO HALVES ---- */
+      /* Same single path as the pregame half: the postgame article is not a
+         second kind of publication with its own rules. */
+      const wantAuto = AUTO || STORE.settings().auto_publish_postgame;
+      let pub = { ok: false, action: 'generated', record: rec, blocking: [], warnings: [] };
+      if (!wantAuto) {
+        record('postgame_generated', key, true,
+          rec.slug + ' — auto-publish is switched off for postgame articles',
           { slug: rec.slug, score: q.score });
+      } else {
+        const storedAll = ASTORE.loadAll();
+        const storedPost = storedAll.filter(x => x && x.id === rec.id)[0] || null;
+        pub = PUBLISH.publish(rec, { now: NOW, quality: q, others: storedAll, previous: storedPost });
+        rec = pub.record;
+        if (pub.ok) {
+          record('postgame_published', key, true, rec.slug + ' (' + pub.action + ')',
+            { slug: rec.slug, score: q.score, url: rec.canonical_url, action: pub.action });
+        } else {
+          record('postgame_published', key, false, pub.reason,
+            { slug: rec.slug, score: q.score, blocking: pub.blocking.map(b => b.id) });
+        }
       }
       if (!DRY) {
         ASTORE.save(rec);
@@ -473,15 +555,15 @@ async function phasePostgame() {
           record('link_pregame', key, true, pre.slug + ' → ' + rec.slug, {});
         }
       }
-      return { action: (AUTO || STORE.settings().auto_publish_postgame) ? 'published' : 'generated',
-        slug: rec.slug, score: q.score, status: rec.status,
+      return { action: wantAuto ? (pub.ok ? pub.action : 'manual_review') : 'generated',
+        slug: rec.slug, score: q.score, status: rec.status, why: pub.ok ? null : (pub.reason || null),
         bet: graded.bet_headline, process: graded.process_headline, lessons: lessons.length };
     });
     if (res) out.push(Object.assign({ key }, res));
   }
 
   if (!DRY && out.length) ASTORE.saveIndex(ASTORE.loadAll(), { now: NOW });
-  log('\nPOSTGAME · ' + rows.length + ' featured game(s) considered, ' + out.length + ' acted on');
+  log('\nPOSTGAME · ' + rows.length + ' committed game(s) considered, ' + out.length + ' acted on');
   out.forEach(r => log('  ' + pad(r.action, 11) + pad(r.slug || r.key, 52)
     + (r.bet ? pad(r.bet + ' / ' + r.process, 22) : '')
     + (r.score != null ? 'quality ' + r.score : '') + (r.why ? '  — ' + r.why : '')));
@@ -508,12 +590,39 @@ async function main() {
     + (DRY ? ' · DRY RUN' : '') + (NETWORK ? ' · network' : ' · offline'));
 
   let host = null;
+  /* ---- THE DISPATCHER ----------------------------------------------- */
+  /* Nothing below this point is cheap: booting the research terminal
+     downloads the schedule feeds and the ratings. So when the caller asks
+     --if-due we work out OFFLINE, from files already on disk, whether there
+     is anything to do, and exit without booting if there is not.
+
+     That is what lets the job run every fifteen minutes instead of every two
+     hours. The old two-hour cron meant a deployment that landed at :26 waited
+     until :25 of the hour after next before the system noticed it existed,
+     and a Sunday-morning game whose window opened at :30 published ninety
+     minutes late. A quarter-hourly tick that costs a few milliseconds when
+     idle is strictly better than an hourly one that costs a feed download. */
+  if (IF_DUE) {
+    const due = whatIsDue(NOW);
+    if (!due.due) {
+      log('nothing is due: ' + due.summary);
+      record('dispatch', null, true, 'nothing due — ' + due.summary, { skipped: true });
+      if (!DRY) STORE.appendRuns(entries, { now: NOW });
+      return { ok: true, due: false, entries };
+    }
+    log('due: ' + due.summary);
+    record('dispatch', null, true, due.summary, { due: true });
+  }
+
   const needsHost = PHASE === 'select' || PHASE === 'pregame' || PHASE === 'all';
   if (needsHost) {
     host = await step('boot', null, () => HOST.open({ network: NETWORK, quiet: QUIET }));
     if (!host) {
       record('boot', null, false, 'the research terminal would not boot; nothing was generated');
-      if (!DRY) STORE.appendRuns(entries, { now: NOW });
+      if (!DRY) {
+        STORE.appendRuns(entries, { now: NOW });
+        if (retriesDirty) STORE.saveRetries(RETRIES, { now: NOW });
+      }
       log('\nthe research terminal would not boot — nothing was generated');
       return { ok: false };
     }
@@ -527,17 +636,160 @@ async function main() {
   if (PHASE === 'select' || PHASE === 'all') await phaseSelect(host);
   if (PHASE === 'pregame' || PHASE === 'all') await phasePregame(host);
   if (PHASE === 'postgame' || PHASE === 'all') await phasePostgame();
+  if (PHASE === 'backfill') phaseBackfill();
   if (PHASE === 'memory' || PHASE === 'all') phaseMemory();
 
-  if (!DRY) STORE.appendRuns(entries, { now: NOW });
+  if (!DRY) {
+      STORE.appendRuns(entries, { now: NOW });
+      if (retriesDirty) STORE.saveRetries(RETRIES, { now: NOW });
+    }
   const failed = entries.filter(e => !e.ok);
   log('\n' + entries.length + ' step(s) logged, ' + failed.length + ' not ok');
   failed.slice(0, 12).forEach(e => log('  ' + pad(e.step, 20) + pad(e.key || '', 30) + e.reason));
   return { ok: true, entries };
 }
 
-module.exports = { main, phaseSelect, phasePregame, phasePostgame, phaseMemory,
-  leadFor, ranksFromRankings, featuredSummary };
+/* ==================================================================== */
+/* PHASE 5 — BACKFILL                                                    */
+/* ==================================================================== */
+/* Run everything the editorial system already generated through the
+   publisher once.
+
+   WHY IT IS NEEDED ONCE. The pipeline generated articles for weeks with
+   publication switched off, so the store holds complete, validated records
+   sitting at `ready` that a reader has never been able to reach. Flipping the
+   switch only helps the NEXT game; these need walking through the same door.
+
+   WHY IT IS NOT "PUBLISH EVERYTHING". A pregame preview for a game that has
+   already kicked off is worthless to a reader and dishonest to publish under
+   today's date — the whole point of a pregame article is that it predates the
+   game. Those are skipped with the reason stated, not published to make the
+   numbers look better. A postgame audit has no such expiry: it is a record of
+   what happened, and it is worth publishing whenever it is ready. */
+function phaseBackfill() {
+  const cfg = STORE.settings();
+  const nowMs = Date.parse(NOW);
+  const all = ASTORE.loadAll();
+  /* the records this system owns: anything carrying a snapshot, plus every
+     postgame article */
+  const mine = all.filter(r => r && (r.snapshot_id || AMODEL.typeOf(r) === 'postgame'))
+    .filter(r => !ONLY || ONLY === true || (r.featured && r.featured.key === ONLY));
+  const out = [];
+
+  for (const rec of mine) {
+    const key = (rec.featured && rec.featured.key) || rec.id;
+    if (PUBLISH.isPublic(rec)) {
+      record('backfill', key, true, rec.slug + ' is already public', { skipped: true });
+      continue;
+    }
+    if (rec.status === 'archived') {
+      record('backfill', key, true, rec.slug + ' was archived on purpose', { skipped: true });
+      continue;
+    }
+    const type = AMODEL.typeOf(rec);
+    if (type === 'pregame') {
+      const kick = Date.parse(rec.game_time);
+      if (!isFinite(kick)) {
+        record('backfill', key, false, rec.slug + ': no usable kickoff time');
+        continue;
+      }
+      const leadMin = (kick - nowMs) / 60000;
+      if (leadMin < (cfg.pregame_min_lead_minutes || 90)) {
+        record('backfill', key, true, rec.slug + ': '
+          + (leadMin < 0
+            ? 'the game kicked off ' + Math.round(-leadMin) + ' minutes ago — a preview published after its own game is worthless, so it is left unpublished'
+            : 'only ' + Math.round(leadMin) + ' minutes to kickoff, under the ' + (cfg.pregame_min_lead_minutes || 90) + '-minute floor'),
+          { skipped: true });
+        continue;
+      }
+    }
+    const q = QUALITY.inspect(rec, { now: NOW });
+    const pub = PUBLISH.publish(rec, { now: NOW, quality: q, others: all, previous: rec });
+    if (pub.ok) {
+      record('backfill', key, true, pub.record.slug + ' published (' + pub.action + ')',
+        { slug: pub.record.slug, url: pub.record.canonical_url, score: q.score });
+      out.push({ key, slug: pub.record.slug, action: pub.action, score: q.score });
+    } else {
+      record('backfill', key, false, pub.record.slug + ': ' + pub.reason,
+        { slug: pub.record.slug, blocking: pub.blocking.map(b => b.id) });
+      out.push({ key, slug: pub.record.slug, action: 'manual_review', why: pub.reason });
+    }
+    if (!DRY) ASTORE.save(pub.record);
+  }
+  if (!DRY && out.length) ASTORE.saveIndex(ASTORE.loadAll(), { now: NOW });
+  log('\nBACKFILL · ' + mine.length + ' editorial record(s) considered, ' + out.length + ' acted on');
+  out.forEach(r => log('  ' + pad(r.action, 14) + pad(r.slug, 52)
+    + (r.score != null ? 'quality ' + r.score : '') + (r.why ? '  — ' + r.why : '')));
+  return out;
+}
+
+/* ==================================================================== */
+/* THE DISPATCH DECISION — offline, from files already on disk           */
+/* ==================================================================== */
+/* Returns what (if anything) this moment owes the pipeline. It reads
+   featured.json, the snapshots, the run log and the retry ledger; it opens no
+   socket and boots nothing, so it is safe to call every few minutes. */
+function whatIsDue(now) {
+  const cfg = STORE.settings();
+  const nowMs = Date.parse(now);
+  const runs = STORE.loadRuns();
+  const retries = STORE.loadRetries();
+  const featured = STORE.loadFeatured();
+  const reasons = [];
+
+  /* SELECT — the board is rescored when the stored decision has gone stale.
+     A slate that has not been looked at for six hours may have picked up new
+     games, moved kickoffs or moved lines. */
+  const staleHours = cfg.select_interval_hours != null ? cfg.select_interval_hours : 6;
+  const generatedAt = featured.generated_at ? Date.parse(featured.generated_at) : NaN;
+  const selectDue = !isFinite(generatedAt) || (nowMs - generatedAt) / 3600000 >= staleHours;
+  if (selectDue) {
+    reasons.push(!isFinite(generatedAt) ? 'no featured board yet'
+      : 'the board was scored ' + ((nowMs - generatedAt) / 3600000).toFixed(1) + 'h ago');
+  }
+
+  /* PREGAME — any featured game inside its publication window that has not
+     been published and is not backing off from a failure. */
+  const pregame = [];
+  featured.games.filter(FEATURED.isFeatured)
+    .filter(g => g.pregame_enabled !== false)
+    .forEach(g => {
+      const kick = Date.parse(g.game_time);
+      if (!isFinite(kick)) return;
+      const leadH = (kick - nowMs) / 3600000;
+      if (leadH > leadFor(cfg, g)) return;                              /* not due yet */
+      if (leadH * 60 < (cfg.pregame_min_lead_minutes || 90)) return;    /* too close */
+      if (STORE.alreadyDone(runs, g.key, 'pregame_published')) return;
+      if (!STORE.retryDue(retries, g.key, 'pregame', now).due) return;
+      pregame.push(g.key);
+    });
+  if (pregame.length) reasons.push(pregame.length + ' pregame article(s) in window');
+
+  /* POSTGAME — any committed game that has finished, allowing the settle
+     delay, and has not been audited. */
+  const postgame = [];
+  const settleMin = cfg.postgame_settle_minutes || 20;
+  STORE.committedGames().forEach(g => {
+    const kick = Date.parse(g.game_time);
+    if (!isFinite(kick)) return;
+    /* a game cannot be final before it has plausibly finished: kickoff plus a
+       conservative game length plus the settle delay */
+    if (nowMs < kick + (3.5 * 3600000) + settleMin * 60000) return;
+    if (STORE.alreadyDone(runs, g.key, 'postgame_published')) return;
+    if (!STORE.retryDue(retries, g.key, 'postgame', now).due) return;
+    postgame.push(g.key);
+  });
+  if (postgame.length) reasons.push(postgame.length + ' postgame audit(s) ready');
+
+  const due = selectDue || pregame.length > 0 || postgame.length > 0;
+  return {
+    due, select: selectDue, pregame, postgame,
+    summary: due ? reasons.join('; ') : 'no board rescore, no article in window, no audit ready',
+  };
+}
+
+module.exports = { main, phaseSelect, phasePregame, phasePostgame, phaseMemory, phaseBackfill,
+  leadFor, ranksFromRankings, featuredSummary, whatIsDue };
 
 if (require.main === module) {
   main().then(r => process.exit(r && r.ok === false ? 1 : 0)).catch(e => {

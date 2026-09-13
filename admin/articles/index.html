@@ -650,6 +650,17 @@ function renderEditorial(){
     '<span>'+EROWS.length+' scored</span><span>'+feat+' featured</span>'
     +'<span>floor NFL '+(((ESETTINGS.thresholds)||{}).NFL??'—')+' · CFB '+(((ESETTINGS.thresholds)||{}).CFB??'—')+'</span>'
     +'<span>cap NFL '+(((ESETTINGS.weekly_caps)||{}).NFL??'—')+' · CFB '+(((ESETTINGS.weekly_caps)||{}).CFB??'—')+'</span>'
+    /* AUTO-PUBLISH STATE, stated rather than implied. These two switches decide
+       whether a validated article reaches a reader, so an operator looking at
+       this screen should never have to guess which way they are set. They live
+       in articles/data/editorial/featured.json -> settings and there is no
+       browser toggle for them on purpose: a control that writes somewhere the
+       pipeline does not read is worse than no control, which is exactly the
+       bug the auto-publish checkbox on the Articles tab used to be. */
+    +'<span class="pill '+(ESETTINGS.auto_publish_pregame===false?'excluded':'featured')+'">'
+      +'pregame auto-publish '+(ESETTINGS.auto_publish_pregame===false?'OFF':'ON')+'</span>'
+    +'<span class="pill '+(ESETTINGS.auto_publish_postgame===false?'excluded':'featured')+'">'
+      +'postgame auto-publish '+(ESETTINGS.auto_publish_postgame===false?'OFF':'ON')+'</span>'
     +'<span>'+(ELIVE?'live decisions connected':'live table unavailable — showing the committed store')+'</span>';
 
   if(!rows.length){

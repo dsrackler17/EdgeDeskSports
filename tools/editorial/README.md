@@ -297,6 +297,178 @@ number is a number a reader can see.
 
 ---
 
+## 7a — Publication: the publisher, and why it is one file
+
+**`publisher.js` is the only way an article becomes public.** Nothing else may
+set `status = 'published'`. The pregame phase, the postgame phase, the backfill
+and any future operator action all call the same `publish()`.
+
+Before this existed, publication was two inline lines in the pregame phase and
+two more in the postgame phase:
+
+```js
+if (AUTO || STORE.settings().auto_publish_pregame) {
+  rec = AMODEL.publish(rec, NOW);
+```
+
+Two copies of a decision is two places for it to drift, and neither copy checked
+anything — the flag was the whole gate. Worse, the flag shipped `false`, so the
+system generated snapshots, articles, theses and audits for every featured game
+and left all of it in draft. **A research trail nobody can read is not a research
+trail.**
+
+### The default is publish
+
+`auto_publish_pregame` and `auto_publish_postgame` default to **true**. An
+article that passes generation, factual integrity and the quality floor goes
+public with no person in the path. Manual review is what happens when a stated
+condition fires, not what happens by default.
+
+Set either to `false` in `articles/data/editorial/featured.json` → `settings` to
+go back to holding, per half, without touching code. The Editorial tab of
+`/admin/articles` shows which way both switches are set.
+
+### What blocks, and what only warns
+
+**Blocking** — publishing would put something false, broken or duplicated in
+front of a reader:
+
+| id | meaning |
+| --- | --- |
+| `generation_complete` | the article has no sections |
+| `title`, `slug`, `canonical` | the document has no headline or no usable URL |
+| `seo_description_present` | no meta description at all |
+| `model_checks` | the article model's own per-type checks failed |
+| `factual_integrity` | a figure on the page does not trace to the snapshot, the result record or our own arithmetic |
+| `quality_floor` | the craft score is below 70 |
+| `snapshot` | a pregame article citing no snapshot, or a postgame article carrying none |
+| `final_data`, `final_completed` | a postgame article with no final score, or one no source called final |
+| `no_duplicate` | another article for the same game and type is already published |
+| `archived`, `operator_hold` | somebody withdrew it or asked for review on purpose |
+
+**Warning** — recorded, visible, and does *not* stop publication: meta
+description length, and every craft check (`seo_title_length`, `repetition`,
+`thin_sections`, …). A meta description eight characters longer than preferred
+has never made an article wrong. A gate nothing can pass is not a gate.
+
+### The state machine
+
+```
+draft ──► ready ──► published ──► archived
+  │         │            │
+  └─────────┴──► manual_review ──► ready
+```
+
+* **`draft`** — generation is incomplete, or validation has not run. *Not*
+  "an automated article at rest", which is what it used to mean.
+* **`ready`** — validated and publishable; waiting only on its window.
+* **`published`** — public. The page exists and the sitemap lists it.
+* **`manual_review`** — a blocking condition a person has to clear. Distinct
+  from `draft` on purpose: "nobody has looked at this" and "this needs a human"
+  are different facts, and the operator queue is meaningless if they share a
+  state.
+* **`archived`** — withdrawn. A cron job never republishes it.
+
+Only `published` is public. `canTransition()` enforces the arrows;
+`supabase/site_articles.sql` constrains the same six values in the database.
+
+### Idempotency
+
+`publish()` on an already-published record keeps the original `published_at`,
+leaves `updated_at` alone unless the document actually changed, and returns
+`unchanged`. Two cron runs racing the same game produce one article with one
+publication date. The comparison is against the **stored** record, passed as
+`opts.previous` — comparing the input to a copy of itself can only ever answer
+"unchanged".
+
+### An already-published article is never yanked offline
+
+If a blocking condition appears on a live article, the condition is recorded and
+the operator is told — but the status stays `published`. Withdrawing a live page
+is an operator's decision, not a cron job's.
+
+## 7b — The dispatcher, and the first-run problem
+
+The job runs **every fifteen minutes** and is almost always free.
+
+It used to run every two hours. That meant a deployment landing at :26 sat idle
+until :25 of the hour after next, and a game whose publication window opened
+just after a tick published up to two hours late.
+
+Quarter-hourly is affordable because the run is a **dispatcher first**. With
+`--if-due` it reads `featured.json`, the snapshots, the run log and the retry
+ledger — all files already on disk — works out whether anything is owed, and
+exits *without booting the research terminal or touching a feed* when nothing
+is. That costs about 75 ms. Only a tick with real work pays for the downloads.
+
+```
+node tools/editorial/run.js all --if-due --network
+```
+
+A push to `tools/editorial/**` or `tools/articles/**` also triggers the job, so
+a deployment is noticed at once rather than at the next tick. The job's own
+commits touch `articles/` and the sitemaps, never `tools/`, so it cannot
+retrigger itself.
+
+Work is due when the board has not been scored for `select_interval_hours`
+(default 6), or a featured game is inside its publication window and unpublished,
+or a committed game has finished and has not been audited.
+
+## 7c — Retries
+
+`articles/data/editorial/retries.json` records, per game and step:
+`attempt_count`, `last_attempt_at`, `next_retry_at`, `last_error`.
+
+**The two kinds of failure are not the same.** Something that *threw* — a
+provider timing out, a feed briefly down, a socket reset — is transient: it backs
+off over 5, 15, 45, 120 and 360 minutes and then stops, saying why. A **factual**
+failure is not going to fix itself by being retried, so the publisher turns it
+into `manual_review`, which no amount of retrying would clear. A step that
+finally succeeds clears its own ledger line.
+
+## 7d — The postgame phase does not read the board
+
+`phasePostgame` iterates **`STORE.committedGames()`** — every game with a stored
+snapshot — unioned with the current featured board.
+
+This matters more than it looks. `featured.json` is rebuilt from the *current*
+slate on every run, and a played game leaves the slate within a day. The original
+sequence was: game featured → pregame article published → game played → board
+drops it → the next `select` rewrites `featured.json` without it → **the postgame
+phase never sees the game again.** The audit half of the product could not fire
+at all, and nothing said so, because from the pipeline's point of view there was
+no such game.
+
+A snapshot is the durable record of the commitment. Anything with one is owed an
+audit, whether or not the schedule feed still carries the fixture.
+
+## 7e — Backfill
+
+```
+node tools/editorial/run.js backfill
+```
+
+Runs everything already generated through the publisher once — needed because
+the store holds complete, validated records that sat at `ready` while publishing
+was off.
+
+It is **not** "publish everything". A pregame preview for a game that has already
+kicked off is worthless to a reader and dishonest to publish under today's date,
+so those are skipped with the reason stated rather than published to make the
+numbers look better. A postgame audit has no such expiry.
+
+## 7f — Where publication is reported
+
+```
+node tools/editorial/report.js
+```
+
+One table per article — type, status, whether it is public, quality score, and
+for anything held, the condition that held it. **"Held" is never an answer on its
+own**: it is `manual_review: factual_integrity` or `waiting_stats` or
+`backing off until … after 2 attempts`, and it is in the job summary, in
+`runs.json`, and on the record itself under `publish_state`.
+
 ## 8 — Operator controls
 
 `/admin/articles` → **Editorial**:

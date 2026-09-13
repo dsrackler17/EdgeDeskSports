@@ -39,7 +39,12 @@
   var ORG = 'EdgeDesk Sports';
   var AUTHOR = 'EdgeDesk Research';
 
-  var STATUSES = ['draft', 'ready', 'published', 'updated', 'archived'];
+  /* THE LEGAL STATES. `manual_review` is distinct from `draft` on purpose:
+     "nobody has looked at this yet" and "this needs a person" are different
+     facts, and collapsing them is what made every automated article look
+     like an unfinished one. Only `published` (and legacy `updated`) is
+     public; the rest never render and never reach a sitemap. */
+  var STATUSES = ['draft', 'ready', 'published', 'updated', 'manual_review', 'archived'];
 
   var SPORTS = {
     CFB: { slug: 'college-football', label: 'College Football', short: 'CFB',
