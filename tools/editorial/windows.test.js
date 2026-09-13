@@ -551,6 +551,63 @@ section('11. THE POSTGAME-DEBT INVARIANT');
   chk('and a next action', h.debt.every(d => !!d.next_action));
 })();
 
+/* ======================================================================== */
+section('12. A RESEARCH REFRESH MUST NOT STRIP THE EDITORIAL LAYER');
+/* ======================================================================== */
+/* THE BUG THIS CATCHES, observed in production. The ordinary publish-articles
+   job refreshes every game on the board through AMODEL.refresh(), which
+   rebuilds the record via build(). build() knows nothing about the editorial
+   layer, and refresh() carried over only slug, aliases, canonical_url and id —
+   so an article the editorial system had published lost its snapshot_id, its
+   theses, its featured block and its timing.
+
+   green-bay-packers-vs-minnesota-vikings-2026 was published at 12:20, refreshed
+   at 16:09, and had all four silently deleted. The postgame audit survived only
+   because it reads the snapshot FILES rather than the record — but the timing
+   block PART 4 exists to preserve was destroyed, and the health panel stopped
+   recognising the article as one the system owns. */
+(function () {
+  const sc = FIX.SCENARIOS[0];
+  /* a kickoff AHEAD of the clock: the freeze rule is a separate guarantee and
+     would otherwise mask what this section is testing */
+  const META = Object.assign({}, FIX.META, { kickoff: iso(KICK) });
+  const rec = AMODEL.build(sc.research, META, { now: iso(at(180)), status: 'published' });
+  rec.published_at = iso(at(180));
+  rec.snapshot_id = 'snap_original';
+  rec.publication_snapshot_id = 'snap_publication';
+  rec.timing = { publication_window: 'late_window', minutes_before_kickoff: 45, refreshed: true };
+  rec.theses = [{ id: 't1', claim: 'a claim' }, { id: 't2', claim: 'another' }];
+  rec.featured = { key: 'NFL:FIX', editorial_priority: 62 };
+  rec.related = { postgame_slug: 'x-postgame-analysis' };
+  rec.quality = { score: 100, publishable: true };
+
+  const out = AMODEL.refresh(rec, sc.research, META, { now: iso(at(120)) });
+  const r = out.record;
+
+  eq('the snapshot the article cites survives', r.snapshot_id, 'snap_original');
+  eq('so does the publication snapshot', r.publication_snapshot_id, 'snap_publication');
+  eq('the timing block survives', r.timing && r.timing.publication_window, 'late_window');
+  eq('including the minutes before kickoff', r.timing && r.timing.minutes_before_kickoff, 45);
+  eq('the theses survive', (r.theses || []).length, 2);
+  eq('the featured decision survives', r.featured && r.featured.key, 'NFL:FIX');
+  eq('the cross-link survives', r.related && r.related.postgame_slug, 'x-postgame-analysis');
+  eq('and the publication date is untouched', r.published_at, iso(at(180)));
+
+  /* AND IT STILL REFRESHES THE RESEARCH — this must not become a no-op. */
+  const moved = JSON.parse(JSON.stringify(sc.research));
+  moved.market.market = 'Seattle Seahawks -9';
+  const out2 = AMODEL.refresh(rec, moved, META, { now: iso(at(120)) });
+  chk('newer research still reaches the record', out2.changed === true, out2.reason);
+  eq('and the editorial fields still survive that', out2.record.snapshot_id, 'snap_original');
+  eq('with the timing intact', out2.record.timing.publication_window, 'late_window');
+
+  /* A RECORD THAT NEVER HAD THEM DOES NOT GAIN EMPTY ONES. */
+  const plain = AMODEL.build(sc.research, META, { now: iso(at(180)), status: 'draft' });
+  const out3 = AMODEL.refresh(plain, sc.research, META, { now: iso(at(120)) });
+  chk('a record with no editorial fields does not gain empty ones',
+    out3.record.snapshot_id === undefined && out3.record.timing === undefined);
+})();
+
 /* ------------------------------------------------------------------ report */
 console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | publication windows + health | '
   + pass + ' passed' + (fail ? ', ' + fail + ' failed' : ' assertions'));
