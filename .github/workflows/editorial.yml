@@ -1,0 +1,169 @@
+# EdgeDesk — the automated editorial system.
+#
+# The research already exists: the terminal prices every game on the board and
+# tools/articles/ turns that into a public article. THIS job adds the half that
+# makes the articles worth keeping — it picks the games that deserve a
+# permanent research trail, freezes what EdgeDesk said before each one, and
+# after the game audits that against what actually happened.
+#
+# WHAT A RUN DOES
+#   select    score every game on the board, apply the floor and the weekly
+#             cap, and store the decision with its itemised reasons. An
+#             operator's FEATURE or UNFEATURE survives this.
+#   pregame   for each featured game inside its lead-time window: capture an
+#             immutable research snapshot, build the article record, extract
+#             the falsifiable theses, run the quality gate, publish or hold.
+#   postgame  for each featured game that has finished: fetch the result AND
+#             the box score, refuse anything that is only a scoreboard, audit
+#             every pregame claim, grade the bet result and the process grade
+#             SEPARATELY, store the research lessons, publish or hold, and
+#             link the two articles to each other.
+#   memory    rebuild the aggregate the lessons answer.
+#
+# THEN the ordinary article build runs, because a postgame record is a record
+# in the same store and its page is built by the same builder.
+#
+# IT NEVER PUBLISHES A FABRICATED SUBSTITUTE. Missing odds, no projection, a
+# postponed game, a box score that is not ready, two providers disagreeing, a
+# failed narration, a failed quality check — each is a stated reason in the run
+# log and a held article. articles/data/editorial/runs.json is committed, so
+# "why did this game not get an article?" always has an answer in the history.
+#
+# SECRETS
+#   none are required. The schedule feeds, the ESPN box score and the
+#   settlement record are all public and keyless.
+#   ANTHROPIC_API_KEY  optional. With it, the postgame article carries four
+#                      short passages of connective prose drafted by a model
+#                      from a structured payload of EdgeDesk's own figures and
+#                      validated against them; a figure, a verdict or a name
+#                      the payload did not contain discards the whole draft.
+#                      Without it the same article publishes with EdgeDesk's
+#                      deterministic prose and identical numbers.
+name: Editorial system
+
+on:
+  schedule:
+    # Every two hours at :25 — offset from publish-articles.yml (:10 every
+    # third hour) and settle-finals.yml (:00 hourly) so three jobs are not
+    # racing each other into the same commit on a Sunday evening.
+    - cron: '25 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'Which phase to run'
+        type: choice
+        options: ['all', 'select', 'pregame', 'postgame', 'memory']
+        default: 'all'
+      auto_publish:
+        description: 'Publish what passes every check (otherwise generate and hold for an operator)'
+        type: boolean
+        default: false
+      game:
+        description: 'One game only, e.g. NFL:2026_01_NE_SEA. Blank = all.'
+        type: string
+        default: ''
+      force:
+        description: 'Ignore the idempotency log for the named game (use with a game key)'
+        type: boolean
+        default: false
+      narrate:
+        description: 'Call the language model for connective prose (needs ANTHROPIC_API_KEY)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  # Two runs capturing a snapshot for the same game race each other into the
+  # same file. The snapshot id is a content hash so the race is harmless, but
+  # the article record and the run log are not, so they are serialised.
+  group: editorial
+  cancel-in-progress: false
+
+jobs:
+  editorial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # THE SYSTEM MUST PASS BEFORE IT IS ALLOWED TO WRITE A PAGE. An editorial
+      # pipeline that has stopped agreeing with its own grading rules is worse
+      # than one that did not run: it would publish an audit nobody can trust,
+      # and an audit nobody can trust is the only thing this product sells.
+      - name: The editorial system must pass before it publishes
+        run: |
+          node tools/editorial/editorial.test.js
+          node tools/articles/articles.test.js
+
+      # What the operator published or unpublished from a browser, first, so a
+      # decision made on a phone reaches the same run.
+      - name: Pull what was published from a browser
+        run: node tools/articles/sync.js --write
+
+      - name: Run the editorial pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ARGS="--network"
+          if [ "${{ github.event.inputs.auto_publish }}" = "true" ]; then ARGS="$ARGS --auto"; fi
+          if [ -n "${{ github.event.inputs.game }}" ]; then ARGS="$ARGS --game ${{ github.event.inputs.game }}"; fi
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          # Narration is opt-in twice over: the flag AND a key. With no key the
+          # pipeline says so in the run log and publishes the same article.
+          if [ "${{ github.event.inputs.narrate }}" = "true" ] && [ -n "$ANTHROPIC_API_KEY" ]; then
+            ARGS="$ARGS --narrate"
+          fi
+          PHASE="${{ github.event.inputs.phase }}"
+          node tools/editorial/run.js "${PHASE:-all}" $ARGS
+
+      # The article records the editorial system just wrote are ordinary
+      # records; the ordinary builder renders them, the ordinary sitemap lists
+      # them, and the ordinary checks hold them.
+      - name: Build the public pages, the hubs and the sitemap
+        run: node tools/articles/build_articles.js
+
+      - name: Publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add articles sitemap.xml sitemap-articles.xml
+          if git diff --cached --quiet; then
+            echo 'the editorial system changed nothing this run'
+            exit 0
+          fi
+          N=$(node -e "const f=require('./articles/data/editorial/featured.json');console.log(f.counts.featured)" 2>/dev/null || echo '?')
+          git commit -m "editorial: featured games, research snapshots and postgame audits (${N} featured)"
+          # a concurrent push to main loses the race politely, not the work
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the editorial run after 4 attempts'
+          exit 1
+
+      # THE RUN LOG IS THE ANSWER TO "WHY DID THIS GAME NOT GET AN ARTICLE?"
+      # and it is worth having in the summary as well as in the commit.
+      - name: Report
+        if: ${{ !cancelled() }}
+        run: |
+          node -e "
+            const R = require('./articles/data/editorial/runs.json');
+            const last = R.runs[R.runs.length - 1];
+            const mine = R.runs.filter(r => r.run === (last && last.run));
+            const failed = mine.filter(r => !r.ok);
+            console.log('| step | game | outcome |');
+            console.log('| --- | --- | --- |');
+            mine.slice(-40).forEach(r => console.log('| ' + r.step + ' | ' + (r.key || '—') + ' | ' +
+              (r.ok ? '' : '**not ok** — ') + String(r.reason || 'ok').replace(/\|/g, '/') + ' |'));
+            console.log('');
+            console.log(mine.length + ' step(s), ' + failed.length + ' not ok.');
+          " >> "\$GITHUB_STEP_SUMMARY" 2>/dev/null || echo 'no run log to report' >> "\$GITHUB_STEP_SUMMARY"

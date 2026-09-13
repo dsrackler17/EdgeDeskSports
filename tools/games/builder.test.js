@@ -246,7 +246,15 @@ if (good.json) {
    names to the ones this repository actually uses. ------------------------- */
 (() => {
   const WF = path.join(ROOT, '.github', 'workflows');
-  const ALLOWED = ['SB_SERVICE_ROLE', 'SB_URL', 'COLLECTIVE_ADMIN_REFRESH_TOKEN', 'GITHUB_TOKEN'];
+  /* ANTHROPIC_API_KEY is the one entry here that is OPTIONAL by design, and it
+     is allowed because the failure mode this guard exists to catch cannot
+     happen to it: editorial.yml tests the value is non-empty before it passes
+     the narration flag, and tools/editorial/run.js publishes the identical
+     article with EdgeDesk's own deterministic prose when it is absent. An
+     empty string there is a designed-for state that the run log names, not a
+     job silently doing nothing. */
+  const ALLOWED = ['SB_SERVICE_ROLE', 'SB_URL', 'COLLECTIVE_ADMIN_REFRESH_TOKEN', 'GITHUB_TOKEN',
+    'ANTHROPIC_API_KEY'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));

@@ -28,6 +28,14 @@ const fs = require('fs');
 const path = require('path');
 
 const MODEL = require('./article_model.js');
+/* THE STORE HOLDS BOTH KINDS OF ARTICLE. A postgame analysis is a record in
+   articles/data/records/ like any other, told apart by `article_type`, and
+   article_model.js dispatches its sections and its publication checks through
+   a type registry. Requiring the editorial model HERE — in the one file every
+   Node consumer of the store already loads — is what guarantees the registry
+   is populated before anything reads a record, rather than leaving each CLI
+   to remember. See tools/articles/article_model.js registerType(). */
+require('../editorial/postgame_model.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const DATA = path.join(ROOT, 'articles', 'data');
@@ -115,17 +123,25 @@ function buildIndex(records, opts) {
       published: recs.filter(r => r.status === 'published').length,
       ready: recs.filter(r => r.status === 'ready').length,
       draft: recs.filter(r => r.status === 'draft').length,
-      archived: recs.filter(r => r.status === 'archived').length
+      archived: recs.filter(r => r.status === 'archived').length,
+      pregame: recs.filter(r => MODEL.typeOf(r) === 'pregame').length,
+      postgame: recs.filter(r => MODEL.typeOf(r) === 'postgame').length
     },
     articles: recs.map(r => ({
       id: r.id, slug: r.slug, aliases: r.aliases || [], sport: r.sport, sport_slug: r.sport_slug,
+      article_type: MODEL.typeOf(r), related: r.related || null,
       game_id: r.game_id, status: r.status, title: r.title, excerpt: r.excerpt,
       home_team: r.home_team, away_team: r.away_team, game_time: r.game_time,
       published_at: r.published_at, updated_at: r.updated_at, generated_at: r.generated_at,
       model_status: r.model_status, confidence: r.confidence, priced: r.priced,
       fair_spread_text: r.fair_spread_text, fair_total: r.fair_total,
       hero_image: r.hero_image, canonical_url: r.canonical_url, frozen: !!r.frozen,
-      model_version: r.model_version
+      model_version: r.model_version,
+      /* the postgame half carries the two figures a hub card and the operator
+         console both want without loading a megabyte of payload */
+      bet_result: r.grading ? r.grading.bet_headline : null,
+      process_grade: r.grading ? r.grading.process_headline : null,
+      snapshot_id: r.snapshot_id || null
     })).sort((a, b) => (Date.parse(b.published_at || b.updated_at || 0) || 0) - (Date.parse(a.published_at || a.updated_at || 0) || 0))
   };
 }

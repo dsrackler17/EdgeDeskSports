@@ -101,6 +101,38 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
   tr{display:block;border-top:1px solid var(--border);padding:8px 0}
   td{display:block;border:0;padding:3px 0}
 }
+
+/* ---- the editorial screen ------------------------------------------------ */
+.erow{border:1px solid var(--border);border-radius:11px;background:var(--surface);margin:8px 0}
+.erow>summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:11px 14px;cursor:pointer;
+  font-size:13.5px;list-style:none}
+.erow>summary::-webkit-details-marker{display:none}
+.erow[open]>summary{border-bottom:1px solid var(--border)}
+.epri{font-weight:700;color:var(--accent);min-width:46px;font-size:15px}
+.esport{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--faint);font-weight:700}
+.ewin{color:var(--dim);font-size:12px}
+.ebody{padding:12px 14px}
+.ecomp{margin:0;padding:0 0 0 16px;font-size:12.5px;line-height:1.6}
+.ecomp li{margin:0 0 7px;color:var(--dim)}
+.ecomp b{color:var(--text)}
+.erunlist{max-height:420px;overflow:auto;margin:6px 0}
+.erun{display:flex;gap:10px;padding:7px 4px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:baseline}
+.erun.bad .estep{color:var(--neg)}
+.erun .estep{font-size:11px;color:var(--dim);min-width:170px}
+.erun .ekey{color:var(--faint);min-width:190px;font-family:var(--mono);font-size:11px}
+.erun .ereason{color:var(--dim);flex:1}
+.ememory{margin:0;display:grid;gap:3px 0}
+.ememory dt{font-weight:700;font-size:13.5px;color:var(--text);margin-top:10px}
+.ememory dt:first-child{margin-top:0}
+.ememory dd{margin:0;font-size:13px;color:var(--dim);line-height:1.6}
+/* the editorial screen reuses the page's own .pill, with the three states
+   this tab adds */
+.pill.featured{color:var(--pos);border-color:rgba(118,189,62,.45)}
+.pill.considered{color:var(--dim)}
+.pill.excluded{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.pill.operator{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.pill.open,.pill.reopened{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.pill.closed{color:var(--faint)}
 </style>
 </head>
 <body>
@@ -129,6 +161,7 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
 
   <div class="toolbar" style="margin-top:16px">
     <button class="btn sm tabbtn on" data-tab="research">Research articles</button>
+    <button class="btn sm tabbtn ghost" data-tab="editorial">Editorial <span id="eCount"></span></button>
     <button class="btn sm tabbtn ghost" data-tab="community">Member posts <span id="cQueueCount"></span></button>
   </div>
 
@@ -174,6 +207,72 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
       <b>6.</b> Before kickoff the pipeline re-reads the research; a changed projection moves <code class="mono">updated_at</code>, an unchanged one moves nothing. After kickoff the record <b>freezes</b>.
     </p>
   </div>
+  </section>
+
+  <!-- THE EDITORIAL SYSTEM ----------------------------------------------
+       Which games earn a permanent research trail, what EdgeDesk said before
+       each one, what happened, and what the two together taught.
+
+       EVERYTHING ON THIS SCREEN IS A DECISION, NEVER A COMPUTATION. The
+       scores, the snapshots, the audits and the lessons are produced by
+       tools/editorial/ — it needs the football engine and three feeds, so it
+       runs in a job rather than in a browser. What an operator changes here
+       is whether a game is covered and whether an article goes out. The
+       controls that need the pipeline say so and give the command. -->
+  <section id="tab-editorial" class="hide">
+    <h2>Featured games</h2>
+    <p class="lede">
+      EdgeDesk prices every game on the board and writes about the ones worth a permanent research trail.
+      A game is featured when its <b>editorial priority</b> clears the floor for its sport <i>and</i> it is inside
+      that week’s cap — or when you feature it by hand, which outranks both. Every score below is itemised:
+      open a row to see exactly what earned it, and where each input came from.
+    </p>
+    <div class="toolbar">
+      <select id="eSport"><option value="">All sports</option><option value="CFB">College football</option><option value="NFL">NFL</option></select>
+      <select id="eStatus">
+        <option value="featured" selected>Featured</option>
+        <option value="">Everything scored</option>
+        <option value="considered">Considered, not featured</option>
+        <option value="excluded">Excluded by an operator</option>
+      </select>
+      <button class="btn sm ghost" id="eReload">Reload</button>
+      <span class="sp"></span>
+      <span class="stat" id="eStats"></span>
+    </div>
+    <div class="card" style="padding:6px 12px 12px"><div id="eList"><p class="lede" style="margin:14px 0">Loading…</p></div></div>
+    <div class="msg" id="eMsg"></div>
+
+    <h2>The last editorial run</h2>
+    <p class="lede">
+      One line per step per game, whatever happened. The <b>not ok</b> lines are the useful ones: this is where
+      “why did that game not get an article?” is answered.
+    </p>
+    <div class="card" style="padding:6px 12px 12px"><div id="eRuns"><p class="lede" style="margin:14px 0">Loading…</p></div></div>
+
+    <h2>Model-review candidates</h2>
+    <p class="lede">
+      A candidate is <b>a question with evidence attached</b>, raised automatically when a published claim carrying
+      real weight was contradicted by a game. Nothing in EdgeDesk changes a model weight from one of these, and only
+      a person closes one — with a disposition and a note, which the database itself requires.
+    </p>
+    <div class="card" style="padding:6px 12px 12px"><div id="eReviews"><p class="lede" style="margin:14px 0">Loading…</p></div></div>
+
+    <h2>The research memory</h2>
+    <div class="card"><div id="eMemory"><p class="lede" style="margin:0">Loading…</p></div></div>
+
+    <h2>Running it</h2>
+    <div class="card">
+      <p class="lede" style="margin:0">
+        <b>Score the slate</b> <code class="mono">npm run editorial:select</code> — rank every game, apply the floor and the cap. Your FEATURE and UNFEATURE survive it.<br>
+        <b>Pregame</b> <code class="mono">npm run editorial:pregame</code> — capture the immutable snapshot, write the article, run the quality gate.<br>
+        <b>Postgame</b> <code class="mono">npm run editorial:postgame</code> — fetch the box score, audit every claim, grade result against process, store the lessons.<br>
+        <b>Everything, live</b> <code class="mono">npm run editorial:run</code> · <b>and publish what passes</b> <code class="mono">npm run editorial:publish</code><br>
+        <b>One game</b> <code class="mono">node tools/editorial/run.js postgame --game NFL:2026_01_NE_SEA --force --network</code><br>
+        <b>Regenerate an article</b> — the same command with <code class="mono">--force</code>: it ignores the idempotency log for that game and rewrites the record in place. The URL never moves.<br>
+        <b>Preview before publishing</b> <code class="mono">npm run articles:preview</code> then open <code class="mono">/articles/_preview/&lt;slug&gt;/</code> (noindex, in no sitemap).<br>
+        Or run the <b>Editorial system</b> workflow from GitHub Actions, which takes a phase, a game key and the publish switch as inputs.
+      </p>
+    </div>
   </section>
 
   <!-- MEMBER POSTS ------------------------------------------------------
@@ -492,6 +591,177 @@ document.getElementById('autoPub').onchange=async function(){
 /* ======================================================================== */
 /* MEMBER POSTS                                                             */
 /* ======================================================================== */
+/* ==========================================================================
+   THE EDITORIAL SCREEN.
+
+   It reads the COMMITTED store first — articles/data/editorial/*.json, the
+   same files the pipeline wrote and the build reads — and overlays the live
+   tables where this account can reach them. Same merge the research tab makes
+   and for the same reason: the repository is where the content is, the
+   database is where a decision made from a phone is, and a disagreement about
+   a decision resolves to the database with the row saying so.
+
+   NOTHING HERE COMPUTES A SCORE, A VERDICT OR A GRADE. Every number on this
+   screen was produced by tools/editorial/ and is displayed.
+   ========================================================================== */
+let EROWS = [], ERUNS = [], EREVIEWS = [], EMEM = null, ELIVE = false;
+
+async function loadEditorial(){
+  msg('eMsg','');
+  document.getElementById('eList').innerHTML='<p class="lede" style="margin:14px 0">Loading…</p>';
+  let store={games:[],settings:{},counts:{}};
+  try{ store=await (await fetch('/articles/data/editorial/featured.json?t='+Date.now())).json(); }catch(e){}
+  try{ ERUNS=(await (await fetch('/articles/data/editorial/runs.json?t='+Date.now())).json()).runs||[]; }catch(e){ ERUNS=[]; }
+  try{ EREVIEWS=(await (await fetch('/articles/data/editorial/reviews.json?t='+Date.now())).json()).candidates||[]; }catch(e){ EREVIEWS=[]; }
+  try{ EMEM=await (await fetch('/articles/data/editorial/memory.json?t='+Date.now())).json(); }catch(e){ EMEM=null; }
+
+  /* the live decision table, when this account can read it */
+  let live=[]; ELIVE=false;
+  try{
+    live=await sbSelect('editorial_featured_games?select=key,manual_override,operator_note,pregame_enabled,postgame_enabled,status,overridden_at&limit=800');
+    ELIVE=true;
+  }catch(e){}
+  const liveByKey=Object.create(null);
+  live.forEach(r=>{liveByKey[r.key]=r;});
+
+  EROWS=(store.games||[]).map(g=>{
+    const l=liveByKey[g.key]||null;
+    return Object.assign({},g,{
+      live:l,
+      manual_override:(l&&l.manual_override!==undefined&&l.manual_override!==null)?l.manual_override:g.manual_override,
+      pregame_enabled:l?l.pregame_enabled:g.pregame_enabled,
+      postgame_enabled:l?l.postgame_enabled:g.postgame_enabled,
+      state:(l&&l.status)||g.status,
+      state_source:(l&&l.status&&l.status!==g.status)?'live':'repo'
+    });
+  });
+  ESETTINGS=store.settings||{};
+  document.getElementById('eCount').textContent=EROWS.filter(r=>r.state==='featured').length?('('+EROWS.filter(r=>r.state==='featured').length+')'):'';
+  renderEditorial(); renderRuns(); renderReviews(); renderMemory();
+}
+let ESETTINGS={};
+
+function renderEditorial(){
+  const sp=document.getElementById('eSport').value, st=document.getElementById('eStatus').value;
+  const rows=EROWS.filter(r=>(!sp||r.sport===sp)&&(!st||r.state===st))
+    .sort((a,b)=>(b.editorial_priority-a.editorial_priority)||String(a.game_time).localeCompare(String(b.game_time)));
+  const feat=EROWS.filter(r=>r.state==='featured').length;
+  document.getElementById('eStats').innerHTML=
+    '<span>'+EROWS.length+' scored</span><span>'+feat+' featured</span>'
+    +'<span>floor NFL '+(((ESETTINGS.thresholds)||{}).NFL??'—')+' · CFB '+(((ESETTINGS.thresholds)||{}).CFB??'—')+'</span>'
+    +'<span>cap NFL '+(((ESETTINGS.weekly_caps)||{}).NFL??'—')+' · CFB '+(((ESETTINGS.weekly_caps)||{}).CFB??'—')+'</span>'
+    +'<span>'+(ELIVE?'live decisions connected':'live table unavailable — showing the committed store')+'</span>';
+
+  if(!rows.length){
+    document.getElementById('eList').innerHTML='<p class="lede" style="margin:14px 0">Nothing matches. Run <code class="mono">npm run editorial:select</code> to score the current board.</p>';
+    return;
+  }
+  document.getElementById('eList').innerHTML=rows.map(r=>{
+    const comps=(r.priority_components||[]).filter(c=>c.points).map(c=>
+      '<li><b>+'+esc(c.points)+'</b> '+esc(c.label)+'<span class="mono" style="display:block;color:var(--faint);font-size:11px">'
+      +esc(c.tier)+(c.detail?' · '+esc(c.detail):'')+'</span></li>').join('');
+    const zero=(r.priority_components||[]).filter(c=>!c.points).map(c=>
+      '<li style="color:var(--faint)">'+esc(c.label)+(c.detail?' — '+esc(c.detail):'')+'</li>').join('');
+    return '<details class="erow"><summary>'
+      +'<span class="mono epri">'+esc(r.editorial_priority)+'</span>'
+      +'<span class="esport">'+esc(r.sport)+'</span>'
+      +'<b>'+esc(r.away_team||r.away_code)+' at '+esc(r.home_team||r.home_code)+'</b>'
+      +'<span class="ewin">'+esc(r.window_label||'')+(r.stage_label?' · '+esc(r.stage_label):'')+'</span>'
+      +'<span class="pill '+esc(r.state)+'">'+esc(r.state)+'</span>'
+      +(r.manual_override?'<span class="pill operator">operator: '+esc(r.manual_override)+'</span>':'')
+      +'</summary><div class="ebody">'
+      +'<p class="note" style="margin:0 0 8px">'+esc(fmt(r.game_time))+(r.kickoff_et?' · '+esc(r.kickoff_et):'')
+      +(r.venue?' · '+esc(r.venue):'')+(r.selection_note?' — '+esc(r.selection_note):'')+'</p>'
+      +'<ul class="ecomp">'+comps+zero+'</ul>'
+      +'<p class="note">'+esc(r.network_note||'')+'</p>'
+      +'<div class="toolbar" style="margin:8px 0 0">'
+      +(r.manual_override==='feature'
+        ?'<button class="btn sm ghost" data-eact="clear" data-key="'+esc(r.key)+'">Clear override</button>'
+        :'<button class="btn sm good" data-eact="feature" data-key="'+esc(r.key)+'">Feature</button>')
+      +(r.manual_override==='unfeature'
+        ?'<button class="btn sm ghost" data-eact="clear" data-key="'+esc(r.key)+'">Clear override</button>'
+        :'<button class="btn sm danger" data-eact="unfeature" data-key="'+esc(r.key)+'">Unfeature</button>')
+      +'<button class="btn sm ghost" data-eact="pregame" data-key="'+esc(r.key)+'">'+(r.pregame_enabled===false?'Enable pregame':'Disable pregame')+'</button>'
+      +'<button class="btn sm ghost" data-eact="postgame" data-key="'+esc(r.key)+'">'+(r.postgame_enabled===false?'Enable postgame':'Disable postgame')+'</button>'
+      +'<button class="btn sm ghost" data-eact="copy" data-key="'+esc(r.key)+'">Copy regenerate command</button>'
+      +'</div></div></details>';
+  }).join('');
+}
+document.getElementById('eReload').onclick=loadEditorial;
+document.getElementById('eSport').onchange=renderEditorial;
+document.getElementById('eStatus').onchange=renderEditorial;
+
+/* An operator's decision is a WRITE TO THE DECISION TABLE, never an edit to a
+   committed file: the next pipeline run reads it and honours it. With the
+   table unreachable the button says so rather than pretending. */
+document.getElementById('eList').addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-eact]'); if(!b)return;
+  ev.preventDefault();
+  const key=b.dataset.key, act=b.dataset.eact;
+  const row=EROWS.filter(r=>r.key===key)[0]; if(!row)return;
+  if(act==='copy'){
+    const cmd='node tools/editorial/run.js all --game '+key+' --force --network';
+    try{ await navigator.clipboard.writeText(cmd); msg('eMsg','Copied: '+cmd,'ok'); }
+    catch(e){ msg('eMsg',cmd,'ok'); }
+    return;
+  }
+  if(!ELIVE){ msg('eMsg','The decision table is not reachable from this account, so this change cannot be saved. Run supabase/editorial_system.sql, or edit articles/data/editorial/featured.json in the repository.'); return; }
+  const patch={key:key,game_id:row.game_id,sport:row.sport,away_team:row.away_team,home_team:row.home_team,
+    game_time:row.game_time,editorial_priority:row.editorial_priority,auto_selected:!!row.auto_selected};
+  if(act==='feature')patch.manual_override='feature';
+  if(act==='unfeature')patch.manual_override='unfeature';
+  if(act==='clear')patch.manual_override=null;
+  if(act==='pregame')patch.pregame_enabled=(row.pregame_enabled===false);
+  if(act==='postgame')patch.postgame_enabled=(row.postgame_enabled===false);
+  b.disabled=true;
+  try{
+    await sbWrite('editorial_featured_games?on_conflict=key','POST',patch,'resolution=merge-duplicates,return=representation');
+    msg('eMsg','Saved. The next editorial run honours it.','ok');
+    await loadEditorial();
+  }catch(e){ msg('eMsg','Could not save: '+(e&&e.message)); b.disabled=false; }
+});
+
+function renderRuns(){
+  const el=document.getElementById('eRuns');
+  if(!ERUNS.length){ el.innerHTML='<p class="lede" style="margin:14px 0">No editorial run has been recorded yet.</p>'; return; }
+  const last=ERUNS[ERUNS.length-1].run;
+  const mine=ERUNS.filter(r=>r.run===last);
+  const failed=mine.filter(r=>!r.ok);
+  el.innerHTML='<p class="note" style="margin:8px 0">'+esc(last)+' · '+esc(fmt(mine[0]&&mine[0].at))+' · '
+    +mine.length+' step(s), <b>'+failed.length+'</b> not ok</p>'
+    +'<div class="erunlist">'+mine.slice().reverse().map(r=>
+      '<div class="erun'+(r.ok?'':' bad')+'"><span class="mono estep">'+esc(r.step)+'</span>'
+      +'<span class="ekey">'+esc(r.key||'—')+'</span>'
+      +'<span class="ereason">'+esc(r.reason||(r.ok?'ok':'failed'))+'</span></div>').join('')+'</div>';
+}
+
+function renderReviews(){
+  const el=document.getElementById('eReviews');
+  const open=EREVIEWS.filter(c=>c.status!=='closed');
+  if(!EREVIEWS.length){ el.innerHTML='<p class="lede" style="margin:14px 0">No model-review candidate has been raised. That is the normal state.</p>'; return; }
+  el.innerHTML='<p class="note" style="margin:8px 0">'+open.length+' open of '+EREVIEWS.length+'</p>'
+    +EREVIEWS.map(c=>'<details class="erow"><summary>'
+      +'<span class="pill '+esc(c.status)+'">'+esc(c.status)+'</span>'
+      +'<b>'+esc(c.category)+'</b><span class="ewin">'+esc(c.sport||'')+'</span>'
+      +'<span class="mono">'+esc(c.occurrences||0)+'×</span></summary><div class="ebody">'
+      +'<p style="margin:0 0 8px">'+esc(c.question)+'</p>'
+      +(c.note?'<p class="note">'+esc(c.note)+'</p>':'')
+      +'<ul class="ecomp">'+(c.evidence||[]).map(e=>'<li><b>'+esc(e.game_id)+'</b> '+esc(e.expectation||'')
+      +'<span style="display:block;color:var(--faint);font-size:11px">'+esc(e.result||'')+'</span></li>').join('')+'</ul>'
+      +'<p class="note">'+esc(c.rule||'')+'</p>'
+      +(c.status==='closed'?'<p class="note">Closed as <b>'+esc(c.disposition||'')+'</b>: '+esc(c.disposition_note||'')+'</p>':'')
+      +'</div></details>').join('');
+}
+
+function renderMemory(){
+  const el=document.getElementById('eMemory');
+  if(!EMEM){ el.innerHTML='<p class="lede" style="margin:0">No research memory has been built yet. Run <code class="mono">npm run editorial:memory</code>.</p>'; return; }
+  const q=EMEM.answers||{};
+  el.innerHTML='<p class="note" style="margin:0 0 10px">'+esc(EMEM.lessons)+' lesson(s) over '+esc(EMEM.graded_games)+' graded game(s) · minimum sample '+esc(EMEM.min_sample)+'</p>'
+    +'<dl class="ememory">'+Object.keys(q).map(k=>'<dt>'+esc(k)+'</dt><dd>'+esc(q[k])+'</dd>').join('')+'</dl>'
+    +'<p class="note">'+esc(EMEM.caveat||'')+'</p>';
+}
+
 const CM=(window.EDART&&window.EDART.community)||null;
 const CCOLS='id,slug,title,body,sport,article_slug,author_name,author_id,status,published_at,created_at,updated_at,flagged_terms,moderation_note';
 let CROWS=[];
@@ -499,9 +769,11 @@ let CROWS=[];
 document.querySelectorAll('.tabbtn').forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll('.tabbtn').forEach(x=>{x.classList.toggle('on',x===b);x.classList.toggle('ghost',x!==b);});
-    document.getElementById('tab-research').classList.toggle('hide',b.dataset.tab!=='research');
-    document.getElementById('tab-community').classList.toggle('hide',b.dataset.tab!=='community');
+    ['research','editorial','community'].forEach(t=>{
+      document.getElementById('tab-'+t).classList.toggle('hide',b.dataset.tab!==t);
+    });
     if(b.dataset.tab==='community')loadCommunity();
+    if(b.dataset.tab==='editorial')loadEditorial();
   };
 });
 document.getElementById('cReload').onclick=loadCommunity;
