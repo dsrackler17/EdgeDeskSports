@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-13T04:58:58.164Z",
+ "generated_at": "2026-09-13T13:53:51.102Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,43 +119,43 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 109,
+  "total": 75,
   "by_group": {
-   "p4": 66,
-   "other": 70,
+   "p4": 48,
+   "other": 46,
    "independent": 2
   },
   "by_matchup": {
-   "fbs_fcs": 32,
-   "non_conference": 61,
-   "conference": 16
+   "conference": 14,
+   "fbs_fcs": 18,
+   "non_conference": 43
   },
   "by_conference": {
-   "sec": 18,
-   "acc": 14,
-   "big12": 21,
-   "bigten": 22,
-   "mac": 15,
-   "pac12": 12,
-   "cusa": 14,
-   "american": 16,
-   "mwc": 13,
-   "sunbelt": 23,
+   "acc": 12,
+   "big12": 14,
+   "bigten": 16,
+   "cusa": 9,
+   "sunbelt": 14,
+   "sec": 11,
+   "american": 12,
+   "mac": 13,
+   "pac12": 8,
+   "mwc": 7,
    "independents": 2
   }
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 125,
+ "absorbed_games": 185,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 109
+  "PREDICTED": 75
  },
  "spread_recommendation": {
-  "NO_MARKET": 109
+  "NO_MARKET": 75
  },
  "checks": [
   {
@@ -192,12 +192,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 43,
-    "total": 109,
+    "non_power_games": 27,
+    "total": 75,
     "example": [
-     "Southern Utah @ Colorado State",
-     "Tulsa @ Sam Houston",
-     "Illinois State @ Northern Illinois"
+     "Coastal Carolina @ Delaware",
+     "North Texas @ Texas State",
+     "Wyoming @ Central Michigan"
     ]
    }
   },
@@ -212,7 +212,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 16,
+    "conference_games": 14,
     "wrong": 0
    }
   },
@@ -220,7 +220,7 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 32,
+    "fbs_fcs_games": 18,
     "graded": []
    }
   },
@@ -244,8 +244,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 109,
-    "audit_total": 109
+    "slate": 75,
+    "audit_total": 75
    }
   },
   {
@@ -275,13 +275,13 @@
       "to": "Pac-12"
      },
      {
-      "team": "Texas State",
-      "from": "Sun Belt",
+      "team": "Boise State",
+      "from": "Mountain West",
       "to": "Pac-12"
      },
      {
-      "team": "Boise State",
-      "from": "Mountain West",
+      "team": "Texas State",
+      "from": "Sun Belt",
       "to": "Pac-12"
      },
      {
@@ -338,13 +338,13 @@
     "to": "Pac-12"
    },
    {
-    "team": "Texas State",
-    "from": "Sun Belt",
+    "team": "Boise State",
+    "from": "Mountain West",
     "to": "Pac-12"
    },
    {
-    "team": "Boise State",
-    "from": "Mountain West",
+    "team": "Texas State",
+    "from": "Sun Belt",
     "to": "Pac-12"
    },
    {
