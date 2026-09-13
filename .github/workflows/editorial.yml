@@ -56,7 +56,39 @@ on:
     # without booting the research terminal or touching a feed when nothing
     # is. That costs about 75ms. Only a tick that actually has work to do pays
     # for the feed downloads.
-    - cron: '*/15 * * * *'
+    #
+    # THE MINUTES ARE DELIBERATE. GitHub's own documentation says the schedule
+    # event is delayed "during periods of high loads", and names the start of
+    # every hour as the worst of them. '*/15' includes minute 0 and put this
+    # job in that stampede along with everything else in the repository.
+    #
+    # Observed, not assumed: between 12:58 and 16:35 this workflow logged ZERO
+    # scheduled runs while Publish research articles (16:09), Availability sync
+    # (16:07) and Injury sync (16:20) all fired. Scheduling works here; a
+    # quarter-hourly cron on the quarter-hours does not.
+    - cron: '7,22,37,52 * * * *'
+
+  # AND A FLOOR THAT DOES NOT DEPEND ON THE SCHEDULER AT ALL.
+  #
+  # A dropped cron slot is invisible: nothing fails, the work simply does not
+  # happen, and a game's publication window closes while the job that would
+  # have filled it was never started. These four jobs demonstrably fire on
+  # their own schedules, so chaining off them gives the editorial dispatcher a
+  # guaranteed heartbeat no matter what the scheduler does with our own cron.
+  #
+  # It is free: with --if-due the run reads files already on disk, decides
+  # nothing is owed, and exits in about 75ms without booting the research
+  # terminal. Running it more often costs nothing and missing a window costs an
+  # article.
+  workflow_run:
+    workflows:
+      - 'Settle finished games'
+      - 'Publish research articles'
+      - 'Injury sync'
+      - 'Availability sync'
+    types: [completed]
+    branches: [main]
+
   # A CHANGE TO THE PIPELINE RUNS THE PIPELINE. Without this a deployment is
   # only noticed by the next tick. The job's own commits touch articles/ and
   # the sitemaps, never tools/editorial/, so this cannot retrigger itself.
