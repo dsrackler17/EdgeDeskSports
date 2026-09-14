@@ -191,8 +191,26 @@ function installMarketSnapshot(win, quotes) {
     const rows = [];
     const at = q.captured_at || null;
     if (q.spread && q.spread.point != null && q.spread.selection) {
-      rows.push({ market: 'spreads', selection: q.spread.selection, point: +q.spread.point,
+      /* BOTH SIDES, BECAUSE THE LIVE CAPTURE HAS BOTH SIDES.
+         public.signals writes one row per selection, so a priced game reaches
+         the board as the home row and the away row of the same handicap, and
+         the board's reader (fbMarketFromEvent) looks for the HOME row and
+         negates it. A replay that carried only the captured side therefore
+         joined about half a college slate and silently dropped the rest.
+         A point spread is one number with two ends: -2.5 on one team IS +2.5
+         on the other. Mirroring it is arithmetic on the captured fact, not a
+         second price — the book, the timestamp and the handicap are the ones
+         that were captured, and no juice is stated on either side. */
+      const norm = function (v) { return String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]+/g, ''); };
+      const sel = q.spread.selection;
+      const other = norm(sel) === norm(q.home) ? q.away : (norm(sel) === norm(q.away) ? q.home : null);
+      const point = +q.spread.point;
+      rows.push({ market: 'spreads', selection: sel, point: point,
         best_book: q.spread.book || null, last_seen_at: at, first_seen_at: at });
+      if (other) {
+        rows.push({ market: 'spreads', selection: other, point: point === 0 ? 0 : -point,
+          best_book: q.spread.book || null, last_seen_at: at, first_seen_at: at });
+      }
     }
     if (q.total && q.total.point != null) {
       rows.push({ market: 'totals', selection: 'Over', point: +q.total.point,
@@ -367,4 +385,4 @@ async function open(opts) {
   };
 }
 
-module.exports = { open, FEEDS, CACHE_DIR, cacheNameFor, ROOT };
+module.exports = { open, installMarketSnapshot, FEEDS, CACHE_DIR, cacheNameFor, ROOT };

@@ -24,11 +24,16 @@
    | reader interest      |  0–10   | window, ranks, rivalry — SECONDARY      |
    | uncertainty          | −18–0   | unmeasured inputs, missing feeds, early season |
 
-   AND FOUR HARD REFUSALS, which are not scores:
+   AND FIVE HARD REFUSALS, which are not scores:
 
      not_priced             the model published no fair spread
      checks_failed          the record's own publication checks did not pass
      already_started        kickoff is behind us
+     evidence_too_thin      the payload cannot supply the two evidence
+                            sentences a featured game prints. A team the model
+                            holds below its own confidence floor carries no
+                            rank, so there is no comparison to draw and no
+                            measured advantage to name.
      gap_outruns_evidence   a large discrepancy standing on thin data. This is
                             the rule the brief asks for by name. Such a game is
                             NOT quietly dropped — it is excluded with a stated
@@ -288,6 +293,64 @@ function overallRow(ev, sport) {
   return ev.strength_rows.filter(r => r.cat === cat)[0] || ev.strength_rows[0] || null;
 }
 
+/* ----------------------------------------- what a game can be explained with */
+/* THE THREE SENTENCES A FEATURED GAME GETS, CHOSEN ONCE.
+
+   compose.js turns each of these into one evidence sentence and the edition's
+   validator refuses a featured game carrying fewer than two of them. Choosing
+   here and writing there means the two can never disagree: the run that picks
+   a game has already established that the prose exists for it.
+
+   The first source is the only one that can go missing on an otherwise
+   complete payload. EdgeDesk withholds a RANK below its own confidence floor —
+   the rating is published, the position on the board is not — so a game with a
+   team the model cannot place has no comparison sentence to write, and usually
+   no measured advantage either, because an advantage is a distance between two
+   positions. That is the model saying it cannot see one of these teams well
+   enough, and the honest answer is to leave the game out rather than feature a
+   one-sentence read. */
+function rankPct(rankText) {
+  const m = /#\s*(\d+)\s*of\s*(\d+)/i.exec(String(rankText || ''));
+  if (!m) return null;
+  const pool = Number(m[2]);
+  return pool > 0 ? Number(m[1]) / pool : null;
+}
+/* How much a complete matchup separates the two units. `net` is the NFL
+   payload's own added value; the college payload publishes ranks instead, so
+   the fallback is the distance between the two units' positions in their own
+   position groups. Neither number is computed here. */
+function matchupStrength(m) {
+  const n = num(m && m.net);
+  if (n != null) return Math.abs(n);
+  const a = rankPct(m && m.att && m.att.rank);
+  const d = rankPct(m && m.def && m.def.rank);
+  if (a == null || d == null) return 0;
+  return Math.abs(d - a);
+}
+function evidenceSources(ev, sport) {
+  const row = overallRow(ev, sport);
+  const compare = (row && row.a && row.h && txt(row.a.rank) && txt(row.h.rank)) ? row : null;
+  const matchup = (ev.complete_matchups || []).slice()
+    .sort((a, b) => matchupStrength(b) - matchupStrength(a))[0] || null;
+  const advantage = (ev.advantages_home || []).concat(ev.advantages_away || [])
+    .filter(a => a && a.k && a.lead && a.trail)
+    .sort((a, b) => (num(b.rank_gap) || 0) - (num(a.rank_gap) || 0))[0] || null;
+  const driver = (ev.drivers || []).slice()
+    .sort((a, b) => Math.abs(num(b.points_n) || 0) - Math.abs(num(a.points_n) || 0))[0] || null;
+  const out = {
+    compare: compare,
+    matchup: (matchup && txt(matchup.read)) ? matchup : null,
+    advantage: advantage || null,
+    driver: driver || null,
+  };
+  out.count = (out.compare ? 1 : 0) + (out.matchup ? 1 : 0) + (out.advantage ? 1 : 0);
+  out.missing = [];
+  if (!out.compare) out.missing.push(row ? 'no ranked comparison — a team is below EdgeDesk\u2019s own confidence floor and carries no rank' : 'no team-strength row');
+  if (!out.matchup) out.missing.push('no complete matchup read');
+  if (!out.advantage) out.missing.push('no measured advantage');
+  return out;
+}
+
 function hoursBetween(a, b) {
   const t1 = Date.parse(a), t2 = typeof b === 'number' ? b : Date.parse(b);
   if (!Number.isFinite(t1) || !Number.isFinite(t2)) return null;
@@ -488,6 +551,16 @@ function refusalsFor(ev, cand, sport, cfg, nowMs, conf, view) {
         + ', below the ' + floor + ' floor a gap this size has to clear'
         + (ev.market_stale ? ' · the quoted price is stale' : '')
         + (ev.sample_games != null && ev.sample_games < 3 ? ' · only ' + ev.sample_games + ' games absorbed this season' : '') });
+  }
+  /* A FEATURED GAME HAS TO BE EXPLICABLE. Two evidence sentences is the
+     edition's own floor, checked again by validate.js on the composed draft;
+     refusing here means the floor is met by choosing a different game rather
+     than by holding the whole edition. */
+  const sources = evidenceSources(ev, sport);
+  if (sources.count < 2) {
+    out.push({ id: 'evidence_too_thin',
+      why: 'the published research supports fewer than two evidence sentences',
+      detail: sources.missing.join(' \u00b7 ') });
   }
   void S;
   return out;
@@ -690,7 +763,8 @@ function rank(opts) {
 module.exports = {
   SCHEMA, SPORTS, DEFAULTS,
   signedNumber, marketLineText, spreadView,
-  evidenceFor, overallRow, confidenceFor, componentsFor, refusalsFor,
+  evidenceFor, overallRow, evidenceSources, matchupStrength, rankPct,
+  confidenceFor, componentsFor, refusalsFor,
   MODEL_LEVEL_UNCERTAINTY, isModelLevel, gameLevelUncertainty, modelLevelUncertainty, gapSupport,
   conferencesOf, thresholdsFor,
   scoreOne, rank,

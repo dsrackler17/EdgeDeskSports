@@ -659,12 +659,22 @@ section('16. THE STORE');
     chk(r.slug + ': the payload is structured, not an HTML blob',
       JSON.stringify(r.article).indexOf('<div') < 0 && JSON.stringify(r.article).indexOf('<p>') < 0);
   });
-  /* the market snapshot, where one was used, is disclosed */
+  /* THE MARKET SNAPSHOT, WHERE ONE WAS USED, IS DISCLOSED.
+     On the record for every game that replayed a quote, and on the PAGE for
+     every one of those that has a page. Asking an unpublished record for its
+     page read the disclosure off an empty string and failed 47 times the day
+     the newsletter pipeline started joining college quotes — a record with no
+     page is not an undisclosed page. */
   const withMarket = RECORDS.filter(r => r.market_source);
   chk('a replayed sportsbook quote is disclosed on the record', withMarket.length > 0);
   withMarket.forEach(r => {
-    has(pageOf(r.slug) || '', 'replayed from a committed snapshot', r.slug + ': and disclosed on the page');
     has(r.market_source, 'not EdgeDesk', r.slug + ': and says whose number it is');
+  });
+  const publishedWithMarket = withMarket.filter(r => r.status === 'published' && pageOf(r.slug));
+  chk('and a published page is actually covered by that check',
+    publishedWithMarket.length > 0, String(publishedWithMarket.length));
+  publishedWithMarket.forEach(r => {
+    has(pageOf(r.slug), 'replayed from a committed snapshot', r.slug + ': and disclosed on the page');
   });
 })();
 

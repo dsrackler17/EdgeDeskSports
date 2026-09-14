@@ -142,6 +142,18 @@ jobs:
         if: ${{ github.event.inputs.skip_refresh != 'true' }}
         run: node tools/articles/generate.js --network --quiet
 
+      # A REFRESHED RECORD AND A STALE PAGE ARE A FAILING REPOSITORY. The
+      # records this run just rewrote carry the market-source disclosure, and
+      # articles.test.js reads that disclosure off the PUBLISHED page. Leaving
+      # the pages behind turned the repository red — 47 records disclosing a
+      # replayed quote that no page mentioned — and the suite that caught it is
+      # this workflow's own pre-flight gate, so the next scheduled edition
+      # would have refused to start. The editorial workflow already rebuilds
+      # after it writes records; so does this one.
+      - name: Rebuild the pages behind the refreshed records
+        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        run: node tools/articles/build_articles.js
+
       - name: Build, validate and (if the gate is open) send
         env:
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
@@ -159,7 +171,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add articles/data/newsletter articles/data/records articles/data/index.json articles/data/market || true
+          git add articles sitemap.xml sitemap-articles.xml || true
           if git diff --cached --quiet; then
             echo 'the newsletter changed nothing this run'
             exit 0
