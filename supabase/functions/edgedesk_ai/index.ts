@@ -15412,6 +15412,66 @@ export function teamishPhrases(text: string): string[] {
   return out.slice(0, 4);
 }
 
+/* Capitalised SINGLE words that could name a program. Handed to the card
+   resolver exactly as the multi-word phrases are, and asserted about only
+   after that lookup succeeds. Ordinary sentence words are excluded by the same
+   NOT_A_NAME list, so "Anything worth betting?" contributes nothing. */
+export function bareTeamWords(text: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const re = /\b([A-Z][A-Za-z'&.()-]{2,})/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(String(text ?? ""))) != null) {
+    const w = m[1].replace(/[.,;:!?]+$/, "").trim();
+    const k = normName(w);
+    if (!k || seen.has(k) || NOT_A_NAME.has(k)) continue;
+    seen.add(k);
+    out.push(w);
+  }
+  return out.slice(0, 5);
+}
+
+/**
+ * One bare word, read against the card.
+ *
+ * Exactly one game => the same resolution a full phrase would have produced.
+ * More than one => the SPORT is settled and the GAME is not, which is reported
+ * as an ambiguity to ask about rather than resolved by picking the first.
+ */
+function bareWordRead(
+  words: string[], games: any[], ix: any, carriedGameId: string | null, none: MatchupResolution,
+): MatchupResolution {
+  for (const w of words) {
+    const r = EDINTEL.resolveTeam(w, ix);
+    if (!r?.key) continue;
+    const hits = games.filter((g: any) =>
+      EDINTEL.canonKey(g.home_id, g.home_team) === r.key || EDINTEL.canonKey(g.away_id, g.away_team) === r.key);
+    if (!hits.length) continue;
+    /* A carried subject that this word is consistent with keeps its game —
+       "how does Texas State look now?" on turn four is the same game. */
+    const carried = carriedGameId ? hits.find((h: any) => String(h.game_id) === String(carriedGameId)) : null;
+    const hit = carried ?? (hits.length === 1 ? hits[0] : null);
+    if (hit) {
+      return {
+        state: "RESOLVED", named: [w], sport: "americanfootball_ncaaf", game_id: String(hit.game_id),
+        home: hit.home_team, away: hit.away_team,
+        home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
+        away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
+        kickoff: hit.kickoff ?? null,
+        source: "football/fbs/slate.json" + (carried ? " (carried subject)" : ""), note: null,
+      };
+    }
+    return {
+      ...none, state: "AMBIGUOUS_ON_CARD", named: [w], sport: "americanfootball_ncaaf",
+      note: `"${w}" is a college football program on the card EdgeDesk publishes, and it appears in `
+        + `${hits.length} scheduled games in this window (${hits.map((h: any) => `${h.away_team} @ ${h.home_team}`).join(", ")}). `
+        + `The SPORT is settled — this is a college football question and must not be answered from any other `
+        + `sport's board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.`,
+    };
+  }
+  return none;
+}
+
 export interface MatchupResolution {
   /** 'RESOLVED' | 'NOT_ON_ANY_CARD' | 'RETRIEVAL_FAILED' | 'NONE_NAMED' */
   state: string;
@@ -15444,6 +15504,11 @@ export async function resolveNamedMatchup(
      lapses on turn two and the open board takes the wheel again. */
   const fromQ = matchupFromText(question);
   const named = fromQ.length === 2 ? fromQ : (carried.length === 2 ? carried.slice() : []);
+  /* Which of the two it was. The trace said "named in this message" for a
+     matchup the reader had not mentioned in four turns, which is a true
+     statement about the resolver and a false one about the conversation. */
+  const cameFromCarry = fromQ.length !== 2 && carried.length === 2;
+  const SRC = (base: string) => base + (cameFromCarry ? " (carried subject)" : "");
 
   /* ONE TEAM IS THE SAME BUG WITH ONE NAME. "How does Texas State look this
      week?" has no "vs" for matchupFromText to find, and reaches exactly the
@@ -15454,6 +15519,16 @@ export async function resolveNamedMatchup(
      Deliberately conservative: a name that resolves to two programs, or that
      matches a club in the sport already in scope, is left alone. */
   const soloNames = named.length === 2 ? [] : teamishPhrases(question);
+  /* SINGLE BARE WORDS ARE LOOKED UP TOO — BUT ONLY TO ESTABLISH THE SPORT.
+     teamishPhrases deliberately refuses one-word names because "Miami" alone
+     is two programs and "Thoughts" is none. That was right about picking a
+     GAME and wrong about everything else: a question that says "Miami" and
+     nothing else fell through to NONE_NAMED, and the sport was then taken from
+     whatever board was open — so a college question became a baseball one in
+     silence, which is the one outcome the brief forbids outright. A bare word
+     that names a program on the card therefore settles the SPORT and reports
+     the game as ambiguous; it never selects one. */
+  const soloWords = named.length === 2 ? [] : bareTeamWords(question);
   const none: MatchupResolution = {
     state: "NONE_NAMED", named: [], sport: null, game_id: null, home: null, away: null,
     home_id: null, away_id: null, kickoff: null, source: null, note: null,
@@ -15469,8 +15544,8 @@ export async function resolveNamedMatchup(
      trusted: it is re-looked-up against the published card below exactly as a
      freshly named matchup is, and a id that matches no scheduled game is
      dropped without a word. */
-  const wantCarriedGame = named.length !== 2 && !soloNames.length && !!carriedGameId;
-  if (named.length !== 2 && !soloNames.length && !wantCarriedGame) return none;
+  const wantCarriedGame = named.length !== 2 && !soloNames.length && !soloWords.length && !!carriedGameId;
+  if (named.length !== 2 && !soloNames.length && !soloWords.length && !wantCarriedGame) return none;
 
   const art = await dal.getFbsSlateArtifact();
   if (wantCarriedGame && art.games.length) {
@@ -15514,7 +15589,7 @@ export async function resolveNamedMatchup(
           game_id: hit.game_id, home: hit.home_team, away: hit.away_team,
           home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
           away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
-          kickoff: hit.kickoff, source: "football/fbs/slate.json", note: null,
+          kickoff: hit.kickoff, source: SRC("football/fbs/slate.json"), note: null,
         };
       }
     }
@@ -15546,7 +15621,14 @@ export async function resolveNamedMatchup(
     /* A name that looks like a team and is on no card is NOT a finding worth
        interrupting for — the reader may have meant a player, another sport, or
        nothing in particular. Fall through silently. */
-    return none;
+    return bareWordRead(soloWords, games, ix, carriedGameId, none);
+  }
+  if (named.length !== 2 && soloWords.length && art.games.length) {
+    const games = art.games.map((g: any) => ({
+      game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
+      home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null,
+    }));
+    return bareWordRead(soloWords, games, EDINTEL.fbsIndexFor(games), carriedGameId, none);
   }
 
   return {
@@ -15699,6 +15781,19 @@ export function researchContextOf(input: {
 
   /* A matchup that was NAMED and is on no card is an ambiguity to report, not
      a licence to answer about something else. */
+  /* The sport is known and the game is not. This must NOT fall through to the
+     open board: "never silently default to MLB" is the whole point of it. */
+  if (matchup.state === "AMBIGUOUS_ON_CARD") {
+    ctx.sport = matchup.sport;
+    ctx.sport_source = "a program named in this message, found on the published college football card";
+    ctx.team_names = matchup.named.slice();
+    ctx.ambiguity = {
+      state: "AMBIGUOUS_GAME",
+      question: matchup.note ?? "Which game is meant?",
+      candidates: matchup.named.slice(),
+    };
+    return ctx;
+  }
   if (matchup.state === "NOT_ON_ANY_CARD" || matchup.state === "RETRIEVAL_FAILED") {
     ctx.ambiguity = {
       state: matchup.state,
@@ -15858,8 +15953,34 @@ async function runResearch(
      question asked with a baseball game open would look up "Baltimore Orioles
      vs New York Yankees" on the FBS card, fail to find it, and fire the
      clarification path on a question that named no matchup at all. */
+  /* AN EXPLICIT LEAGUE WORD IN THIS MESSAGE OUTRANKS THE CARRIED SUBJECT.
+     "Forget that — what do the MLB pitching matchups look like tonight?" names
+     no team, so the carry fired and the conversation stayed in college
+     football: the reader said the word MLB and was answered about a football
+     game. The precedence is explicit-current-message FIRST, and the subject a
+     conversation is on is not more explicit than the sport the reader just
+     named. A carry into a sport the reader has just switched away from is
+     dropped here rather than re-resolved downstream. */
+  const saidSport = detectSport(question);
+  const carriedSport = state.subject?.sport ?? null;
+  const switchedAway = saidSport.confidence === "EXPLICIT" && !!saidSport.sport
+    && !!carriedSport && saidSport.sport !== carriedSport;
+  if (switchedAway) {
+    data_path.subject_dropped = {
+      was: { sport: carriedSport, game_id: state.subject?.game_id ?? null },
+      because: saidSport.via,
+      note: "The reader named a different league in this message, so the matchup the conversation was on is no "
+        + "longer the subject. A topic change replaces the subject; it does not queue behind it.",
+    };
+    state.subject = null;
+    state.namedMatchup = [];
+    state.teams = [];
+    state.sport = null;
+  }
+
   const namedMatchup = await resolveNamedMatchup(
-    question, dal, state.namedMatchup ?? [], state.subject?.game_id ?? null);
+    question, dal, switchedAway ? [] : (state.namedMatchup ?? []),
+    switchedAway ? null : (state.subject?.game_id ?? null));
   if (namedMatchup.state !== "NONE_NAMED") {
     data_path.named_matchup = {
       state: namedMatchup.state, named: namedMatchup.named, sport: namedMatchup.sport,
@@ -16078,20 +16199,28 @@ async function runResearch(
      board. The order below is strictly most-certain-first: an intent that only
      exists for one sport, then an explicit league word, then the loaded signal,
      then conversation state, then — last, and only as a tiebreak — board order. */
-  const sportKey: string | null = sportOfIntent(plan.intent) ?? plan.sport
-    ?? (slateIndex && slateIndex.index.length ? earlySport : null)
-    ?? focus?.sport_key ?? state.sport ?? (slateRows[0]?.sport_key ?? null);
+  /* ONE AUTHORITY, NOT A FOURTH CHAIN.
+     This was a third independent answer to "which sport is this", running
+     after the slate index and reachable through `state.sport` — so a reader
+     who said the word MLB got a context that said baseball and a `sportKey`
+     that said college football, because the conversation state still held the
+     previous subject. Two chains that disagree is the whole shape of the
+     reported failure; the research context already applies the stated
+     precedence and is the thing every other consumer reads, so it decides
+     here too. Board order survives only as the last resort it always was,
+     for a question that resolved no sport at all. */
+  const sportKey: string | null = ctx.sport
+    ?? focus?.sport_key ?? (slateRows[0]?.sport_key ?? null);
   const mod = sportModule(sportKey);
   const imod = intelligenceModule(sportKey);
   data_path.sport_resolution = {
     resolved: sportKey,
-    via: sportOfIntent(plan.intent) ? `intent "${plan.intent}" exists only for this sport`
-      : plan.sport ? "the question named its league explicitly"
-      : (slateIndex && slateIndex.index.length) ? `the slate index found ${slateIndex.index.length} scheduled games for it`
+    via: ctx.sport ? ctx.sport_source
       : focus?.sport_key ? "the signal the user has open"
-      : state.sport ? "conversation state"
       : slateRows.length ? "board order (weakest — the top of the board is not the subject)"
       : "unresolved",
+    /* Stated so a disagreement between the two is visible rather than silent. */
+    research_context_sport: ctx.sport,
     module: imod ? { label: imod.label, league: imod.league, status: imod.status } : null,
   };
 
@@ -16470,7 +16599,25 @@ async function runResearch(
          subject and is withheld rather than appended. Withheld, not deleted:
          the count travels so the answer can say the card was ranked without
          showing rows the reader did not ask for. */
-      if (ctx.single_game) {
+      /* A NAMED MATCHUP THAT DID NOT RESOLVE SHOWS NOTHING IN ITS PLACE.
+         "Texas State vs Boise State" is two real programs that are not playing
+         each other. The honest answer is to say so and ask; what must never
+         happen is a decision card for some OTHER game appearing underneath
+         that sentence, which is the substitution the whole report is about. */
+      if (ctx.ambiguity) {
+        for (const d of decisions) {
+          guard.decisions_withheld.push({
+            game: String(d.matchup ?? d.game_id ?? "?"),
+            why: "the matchup in the question did not resolve, so no other game may be shown in its place",
+          });
+        }
+        decisions = [];
+        for (const pk of packets) guard.packets_withheld.push(String((pk as any)?.game_id ?? "?"));
+        packets = [];
+        guard.ok = false;
+        guard.state = ctx.ambiguity.state;
+        guard.sentence = ctx.ambiguity.question;
+      } else if (ctx.single_game) {
         const keep = decisions.filter((d: any) => matchesContext(ctx, d));
         for (const d of decisions) {
           if (!keep.includes(d)) {
@@ -18475,6 +18622,10 @@ export async function handle(req: Request): Promise<Response> {
          of data_path — it is the fact every other statement is measured
          against, and the offline answer renderer opens with it. */
       slate_state: research?.slate_state ?? null,
+      /* The resolved scope and what it withheld, so a test can assert on the
+         filter rather than on the absence of a string in the prose. */
+      research_context: research?.context ?? null,
+      context_guard: research?.context_guard ?? null,
       slate_source: research?.slate_source ?? null,
       coverage_metrics: (research as any)?.coverage_metrics ?? null,
       league: research?.sport_module?.league ?? null,
