@@ -2532,6 +2532,312 @@ if (typeof sandbox.localGrade === 'function') try {
   chk('the page no longer claims a grade it computed came from the settlement run',
     !/Graded by the Collective against its own closing lines/.test(CODE),
     'that sentence sat directly above a record this page may have graded itself');
+
+  /* =====================================================================
+     THE TEN-CHARACTER TEAM NAME, which is where the ATS record went.
+
+     The Collective's schedule stores team names cut to ten characters, and
+     every lookup into the odds feed was an EXACT match on that stored
+     string. So "Mississippi" (MISSISSIPP) and "West Virginia" (WESTVIRGIN)
+     never found their own market row, never took a closing line, and had no
+     against-the-spread result -- on a page that was showing their margin
+     errors in the next column. In the committed 2026 college record, 61 of
+     142 team names are exactly ten characters long and only 29 of 104
+     finished games have both names comfortably inside the cut.
+     ===================================================================== */
+  chk('the page defines the close-join functions this section tests',
+    ['teamsAgreeTrunc', 'looseMarketFor', 'marketFor', 'marketClose', 'marketCloseTotal',
+     'kickoffsAgree', 'atsReason', 'atsMissingText', 'logTally'
+    ].every(function (n) { return typeof sandbox[n] === 'function'; }),
+    { missing: ['teamsAgreeTrunc', 'looseMarketFor', 'marketFor', 'marketClose',
+        'marketCloseTotal', 'kickoffsAgree', 'atsReason', 'atsMissingText', 'logTally']
+        .filter(function (n) { return typeof sandbox[n] !== 'function'; }) });
+
+  chk('a ten-character truncation reaches the name it was cut from',
+    G.teamsAgreeTrunc('MISSISSIPP', 'Mississippi') &&
+    G.teamsAgreeTrunc('WESTVIRGIN', 'West Virginia') &&
+    G.teamsAgreeTrunc('FLORIDASTA', 'Florida State') &&
+    G.teamsAgreeTrunc('NORTHCAROL', 'North Carolina'));
+  chk('and a name that is not a truncation of it is still refused',
+    !G.teamsAgreeTrunc('MISSISSIPP', 'Missouri') &&
+    !G.teamsAgreeTrunc('NORTHTEXAS', 'North Carolina') &&
+    !G.teamsAgreeTrunc('GEORGIA', 'Georgia Tech') === false,
+    'GEORGIA is a real prefix of Georgia Tech: the PAIR is what refuses it, not the name');
+  chk('short codes may only latch onto other short codes, never onto a spelled-out name',
+    G.teamsAgreeTrunc('LAR', 'LA') && !G.teamsAgreeTrunc('LAR', 'LAC') &&
+    !G.teamsAgreeTrunc('NE', 'NO') && !G.teamsAgreeTrunc('LA', 'Lafayette'));
+
+  (function theJoin() {
+    var day = '2026-09-05T16:00:00Z';
+    var board = { games: [
+      { event_id: 'e1', home: 'Mississippi', away: 'Kentucky', commence_time: day,
+        closing: { 'spread:home': { line: -6.5 }, total: { line: 48.5 } } },
+      { event_id: 'e2', home: 'Mississippi State', away: 'Arizona', commence_time: day,
+        closing: { 'spread:home': { line: -3 } } },
+      { event_id: 'e3', home: 'West Virginia', away: 'Coastal Carolina', commence_time: day,
+        closing: { 'spread:home': { line: -7 } } }
+    ] };
+    var g = { game_id: 7, home: 'MISSISSIPP', away: 'KENTUCKY', kickoff_at: day };
+    chk('a truncated home name finds its market row when the PAIR is unique',
+      G.marketClose(G.marketFor(board, g)) === -6.5);
+    chk('and the stored closing TOTAL comes with it, never the current one',
+      G.marketCloseTotal(G.marketFor(board, g)) === 48.5 &&
+      G.marketCloseTotal({ closing: {}, consensus: { total: 50 } }) === null);
+    chk('a truncation that fits two rows equally is not matched at all',
+      G.marketFor(board, { game_id: 8, home: 'MISSISSIPP', away: 'ARIZONA',
+        kickoff_at: day }) === null ||
+      G.marketClose(G.marketFor(board, { game_id: 8, home: 'MISSISSIPP', away: 'ARIZONA',
+        kickoff_at: day })) === -3,
+      'the away side disambiguates: ARIZONA only plays Mississippi State that day');
+    chk('an ambiguous PAIR is refused rather than guessed',
+      (function () {
+        var two = { games: [
+          { home: 'North Carolina', away: 'TCU', commence_time: day, closing: { 'spread:home': { line: -1 } } },
+          { home: 'North Carolina State', away: 'TCU', commence_time: day, closing: { 'spread:home': { line: -9 } } }
+        ] };
+        return G.marketFor(two, { home: 'NORTHCAROL', away: 'TCU', kickoff_at: day }) === null;
+      })());
+    /* the guard that makes a wrong close impossible rather than merely
+       unlikely: a prefix rule allowed to guess at BOTH teams at once can land
+       a whole game on another row */
+    chk('a truncated match needs one side to be exactly right',
+      (function () {
+        var b = { games: [{ home: 'Miami (OH)', away: 'Georgia Tech', commence_time: day,
+          closing: { 'spread:home': { line: -4 } } }] };
+        /* GEORGIA prefixes Georgia Tech and MIAMI prefixes Miami (OH): both
+           sides guessed, and both wrong */
+        return G.marketFor(b, { home: 'MIAMI', away: 'GEORGIA', kickoff_at: day }) === null
+          /* pin either side and the other may be a truncation */
+          && G.marketFor(b, { home: 'MIAMIOH', away: 'GEORGIATEC', kickoff_at: day }) !== null;
+      })());
+    chk('a row on a different weekend is not this game\'s close',
+      G.marketFor(board, { home: 'MISSISSIPP', away: 'KENTUCKY',
+        kickoff_at: '2026-10-17T16:00:00Z' }) === null);
+    chk('a night game one calendar day apart between two feeds still joins',
+      G.kickoffsAgree('2026-09-06T02:30:00Z', '2026-09-05T21:30:00-05:00', 1));
+    chk('the server-side link still wins outright when the feed carries one',
+      (function () {
+        var linked = { games: [{ collective_game_id: 7, home: 'Somebody Else', away: 'Nobody',
+          commence_time: day, closing: { 'spread:home': { line: -2.5 } } }] };
+        linked.find = function (q) {
+          return q && q.game_id === 7 ? linked.games[0] : null; };
+        return G.marketClose(G.marketFor(linked, g)) === -2.5;
+      })());
+    chk('a board with no stored close yields nothing rather than the live number',
+      G.marketClose(G.marketFor({ games: [{ home: 'Mississippi', away: 'Kentucky',
+        commence_time: day, closing: {}, consensus: { spread: -6.5 } }] }, g)) === null);
+  })();
+
+  /* =====================================================================
+     WHY A GAME HAS NO ATS RESULT -- four states, four answers.
+     ===================================================================== */
+  (function reasons() {
+    var withClose = gm({ hs: 24, as: 17, close: -3, models: [] });
+    var noClose = gm({ hs: 24, as: 17, close: null, models: [] });
+    chk('a finished game with no captured close says so',
+      G.atsReason(noClose, mr({ pick_side: 'home', projected_spread: -7 })) === 'no_close');
+    chk('a model sitting exactly on the close named no side, and that is a different reason',
+      G.atsReason(withClose, mr({ projected_spread: -3 })) === 'no_side');
+    chk('a late row is excluded by rule, not by an absent number',
+      G.atsReason(withClose, mr({ pick_side: 'home', late: true })) === 'excluded_late');
+    chk('a locked row and backfilled data each say which they are',
+      G.atsReason(withClose, mr({ pick_side: 'home', locked: true })) === 'excluded_locked' &&
+      G.atsReason(withClose, mr({ pick_side: 'home', data_origin: 'backfill' })) === 'excluded_origin');
+    chk('a game that has not finished is not an ungraded ATS pick',
+      G.atsReason(gm({ kickoff: FUTURE, models: [] }), mr({ pick_side: 'home' })) === 'not_final');
+    chk('a row that DOES have an ATS result has no reason to give',
+      G.atsReason(withClose, mr({ pick_side: 'home', projected_spread: -7 })) === null);
+    chk('the breakdown names every bucket that has games in it, biggest first',
+      G.atsMissingText({ no_close: 83, no_side: 2, excluded_late: 1 }) ===
+        '83 with no captured closing line, 2 where the model named no side, 1 submitted after the lock' &&
+      G.atsMissingText({}) === '' && G.atsMissingText({ no_close: 0 }) === '');
+    /* a phrase that follows a count must carry no comma of its own, or the
+       list reads as twice as many items as it has */
+    chk('no reason in the list register contains a comma of its own',
+      Object.keys(G.ATS_REASON_LIST).every(function (k) {
+        return G.ATS_REASON_LIST[k].indexOf(',') < 0; }) &&
+      Object.keys(G.ATS_REASON_LIST).length === Object.keys(G.ATS_REASON).length,
+      G.ATS_REASON_LIST);
+  })();
+
+  /* =====================================================================
+     THREE SAMPLES, NEVER ONE. An ATS count of zero is not a statement
+     about the margin error in the next column.
+     ===================================================================== */
+  (function samples() {
+    var games = [
+      /* graded ATS, margin and Brier */
+      gm({ id: 'a', hs: 24, as: 17, close: -3,
+        models: [mr({ pick_side: 'home', projected_spread: -7, home_win_probability: 0.7 })] }),
+      /* no close: margin and Brier only */
+      gm({ id: 'b', hs: 31, as: 10, close: null,
+        models: [mr({ pick_side: 'home', projected_spread: -7, home_win_probability: 0.7 })] }),
+      /* no close and no probability: margin only */
+      gm({ id: 'c', hs: 14, as: 20, close: null,
+        models: [mr({ pick_side: 'away', projected_spread: 2 })] })
+    ];
+    var rec = G.modelRecord(games, 'c', 'm');
+    chk('each metric carries its own sample and they are allowed to differ',
+      rec.ats_n === 1 && rec.margin_n === 3 && rec.brier_n === 2 && rec.games === 3,
+      rec);
+    chk('and the ungraded ATS games are counted and attributed',
+      rec.ats_missing_n === 2 && rec.ats_missing.no_close === 2 && rec.ats_missing.no_side === 0,
+      rec.ats_missing);
+    chk('a model with a full margin column and no closes is not "0 graded" everywhere',
+      (function () {
+        var r2 = G.modelRecord(games.slice(1), 'c', 'm');
+        return r2.ats_n === 0 && r2.win_pct === null && r2.margin_n === 2 && r2.brier_n === 1;
+      })());
+  })();
+
+  /* =====================================================================
+     RECONCILIATION. A season-shaped sweep in the exact reported state --
+     91 played games, 8 of them with a captured close -- read three ways:
+     the record, the game log, and the standings row. They have to agree,
+     before and after the missing closes are recovered.
+     ===================================================================== */
+  (function reconcile() {
+    /* Deterministic, so the expected numbers below are arithmetic rather
+       than a fixture nobody can check: game i is home by (i % 21) - 7, the
+       model always picks home, and the close is -3 on the games that have
+       one. cover = margin + close. */
+    function season(withCloseUpTo) {
+      var out = [];
+      for (var i = 0; i < 91; i++) {
+        var margin = (i % 21) - 7;           /* -7 .. +13, and 0 for i%21===7 */
+        var hs = 20 + Math.max(0, margin), as = 20 + Math.max(0, -margin);
+        out.push(gm({ id: 'g' + i, week: 1 + Math.floor(i / 30),
+          hs: hs, as: as,
+          close: i < withCloseUpTo ? -3 : null,
+          models: [mr({ pick_side: 'home', projected_spread: -4, home_win_probability: 0.6 })] }));
+      }
+      return out;
+    }
+    function expected(list) {
+      var w = 0, l = 0, p = 0;
+      list.forEach(function (g) {
+        var r = G.finalResult(g);
+        if (!r || r.closing_spread == null) return;
+        var cover = r.margin + r.closing_spread;
+        if (cover === 0) p++; else if (cover > 0) w++; else l++;
+      });
+      return { w: w, l: l, p: p };
+    }
+
+    var eight = season(8);
+    var rec8 = G.modelRecord(eight, 'c', 'm');
+    var exp8 = expected(eight);
+    chk('the cumulative record is exactly the sum of the individual games',
+      rec8.wins === exp8.w && rec8.losses === exp8.l && rec8.pushes === exp8.p,
+      { record: [rec8.wins, rec8.losses, rec8.pushes], games: [exp8.w, exp8.l, exp8.p] });
+    chk('with 8 of 91 games carrying a close, 83 are ungraded ATS and named as such',
+      rec8.games === 91 && rec8.ats_n === exp8.w + exp8.l + exp8.p &&
+      rec8.ats_missing_n === 91 - rec8.ats_n && rec8.ats_missing.no_close === 91 - rec8.ats_n,
+      { played: rec8.games, ats: rec8.ats_n, missing: rec8.ats_missing });
+    chk('the margin and Brier samples are the whole 91 either way',
+      rec8.margin_n === 91 && rec8.brier_n === 91 - eight.filter(function (g) {
+        return G.finalResult(g).margin === 0; }).length,
+      { margin_n: rec8.margin_n, brier_n: rec8.brier_n });
+    chk('win percentage excludes pushes',
+      rec8.win_pct === (rec8.wins + rec8.losses ? rec8.wins / (rec8.wins + rec8.losses) : null));
+
+    var log8 = G.localGameLog(eight, 'c', 'm');
+    var tal8 = G.logTally(log8);
+    chk('the game log adds up to the same record, row for row',
+      tal8.n === 91 && tal8.wins === rec8.wins && tal8.losses === rec8.losses &&
+      tal8.pushes === rec8.pushes && tal8.ungraded === rec8.ats_missing_n &&
+      tal8.margin_n === rec8.margin_n && tal8.brier_n === rec8.brier_n,
+      { log: [tal8.wins, tal8.losses, tal8.pushes, tal8.ungraded], rec: [rec8.wins, rec8.losses, rec8.pushes, rec8.ats_missing_n] });
+    chk('and every ungraded row on the log says which reason it is',
+      log8.filter(function (r) { return r.pick_result == null; })
+        .every(function (r) { return r.ats_reason === 'no_close'; }));
+
+    var st8 = G.localRankings(eight, eight, [{ creator_slug: 'c', model_slug: 'm',
+      creator_name: 'C', model_name: 'M', sport: 'CFB' }], null).standings[0];
+    chk('the standings row is the same record the model page and the log show',
+      st8 && st8.record.wins === rec8.wins && st8.record.losses === rec8.losses &&
+      st8.record.pushes === rec8.pushes && st8.record.ats_n === rec8.ats_n &&
+      st8.margin_mae_n === rec8.margin_n && st8.brier_n === rec8.brier_n);
+    chk('a model with no ATS result is still ON the standings, on its other numbers',
+      (function () {
+        var none = season(0);
+        var r = G.localRankings(none, none, [{ creator_slug: 'c', model_slug: 'm',
+          creator_name: 'C', model_name: 'M', sport: 'CFB' }], null);
+        return r.standings.length === 1 && r.standings[0].record.ats_n === 0 &&
+          r.standings[0].margin_mae != null && r.boards.win_pct.length === 0 &&
+          r.boards.margin_mae.length === 1;
+      })(),
+      'an empty Win % board must not empty the other two');
+
+    /* ---- and once the closes are recovered ---------------------------- */
+    var all = season(91);
+    var recAll = G.modelRecord(all, 'c', 'm'), expAll = expected(all);
+    chk('recovering the closes grows the SAMPLE and nothing else moves',
+      recAll.wins === expAll.w && recAll.losses === expAll.l && recAll.pushes === expAll.p &&
+      recAll.ats_n === 91 && recAll.ats_missing_n === 0 &&
+      recAll.margin_n === rec8.margin_n && recAll.brier_n === rec8.brier_n,
+      { before: [rec8.wins, rec8.losses, rec8.pushes], after: [recAll.wins, recAll.losses, recAll.pushes] });
+    chk('the first eight games keep exactly the grades they already had',
+      (function () {
+        var a = G.localGameLog(eight, 'c', 'm').filter(function (r) { return r.pick_result != null; });
+        var b = G.localGameLog(all, 'c', 'm');
+        var byLabel = {};
+        b.forEach(function (r) { byLabel[r.label + r.kickoff_at + r.final] = r.pick_result; });
+        return a.length > 0 && a.every(function (r) {
+          return byLabel[r.label + r.kickoff_at + r.final] === r.pick_result; });
+      })(),
+      'a wider sample must never re-decide a game that was already graded');
+  })();
+
+  /* =====================================================================
+     ONE RESULT PER GAME. A revision, and a settlement landing on top of a
+     grade this page computed, must REPLACE -- never add a second row.
+     ===================================================================== */
+  (function oneRowPerGame() {
+    var revised = gm({ id: 'r1', hs: 28, as: 21, close: -3, models: [
+      mr({ pick_side: 'home', projected_spread: -7, movement_n: 3 }),
+      mr({ pick_side: 'away', projected_spread: 2 })          /* a later revision */
+    ] });
+    var rec = G.modelRecord([revised], 'c', 'm');
+    chk('two submissions on one game are one graded result, the first one served',
+      rec.ats_n === 1 && rec.wins === 1 && rec.losses === 0 && rec.games === 1, rec);
+    chk('and the log carries one row for that game, not two',
+      G.localGameLog([revised], 'c', 'm').length === 1);
+
+    var same = gm({ id: 'd1', hs: 28, as: 21, close: -3,
+      models: [mr({ pick_side: 'home', projected_spread: -7 })] });
+    var dup = [same, JSON.parse(JSON.stringify(same))];
+    chk('the same game arriving twice in a sweep is counted once',
+      G.modelRecord(dup, 'c', 'm').ats_n === 1 && G.localGameLog(dup, 'c', 'm').length === 1);
+
+    var settled = gm({ id: 's1', hs: 28, as: 21, close: -3, models: [
+      mr({ pick_side: 'home', projected_spread: -7,
+        grade: { pick_result: 'loss', margin_error: 2, brier: null } }) ] });
+    var sr = G.modelRecord([settled], 'c', 'm');
+    chk('a settled grade REPLACES the one this page worked out, never adds to it',
+      sr.ats_n === 1 && sr.losses === 1 && sr.wins === 0 && sr.live === 0,
+      'the page would have graded this a win; the settlement run says loss and the run is the record');
+    chk('and a settlement written against a 0-0 placeholder is set aside instead',
+      (function () {
+        var ph = gm({ id: 'p1', hs: 28, as: 21, close: -3, models: [
+          mr({ pick_side: 'home', projected_spread: -7,
+            grade: { pick_result: 'loss', margin_error: 28, brier: null } }) ] });
+        ph.settled_placeholder = true;
+        var r = G.modelRecord([ph], 'c', 'm');
+        return r.wins === 1 && r.losses === 0 && r.live === 1;
+      })());
+  })();
+
+  /* =====================================================================
+     SEASON SCOPE. A record is of one season, and the sweep that builds it
+     is keyed by sport and season.
+     ===================================================================== */
+  chk('the season sweep is cached per sport AND season, so two seasons cannot merge',
+    /SEASON_GAMES\[key\]/.test(CODE) && /var key=sport\+'\|'\+season/.test(CODE));
+  chk('a football season is named for the year it starts in',
+    G.seasonOfKickoff('2026-09-05T16:00:00Z') === 2026 &&
+    G.seasonOfKickoff('2027-01-08T00:00:00Z') === 2026 &&
+    G.seasonOfKickoff('2027-08-30T00:00:00Z') === 2027);
 } catch (e) {
   chk('the grading section runs to the end without throwing', false,
     { threw: String((e && e.stack) || e) });

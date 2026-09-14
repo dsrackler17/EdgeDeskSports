@@ -332,8 +332,14 @@ jobs:
       - name: The FBS board renders and filters at desktop and mobile widths
         run: node tools/football/fbs_board.e2e.js
 
-      - name: Settle matching
+      - name: Settle matching, and the captured closes it goes back for
         run: node tools/collective/settle_finals.test.js
+
+      # The reconciliation reads the PAGE's arithmetic rather than a second
+      # copy of it, so this is also the test that the tool and the site cannot
+      # drift apart into two different records.
+      - name: A model's cumulative ATS record equals the sum of its games
+        run: node tools/collective/reconcile_ats.test.js
 
       # DEEP ENGINE, SIMPLE ANSWER. The presentation layer that turns the
       # deterministic verdict into the 5-second card and the publisher brief.

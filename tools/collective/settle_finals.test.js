@@ -277,7 +277,12 @@ chk('without the flag, the newest pre-lock row per model counts',
   })());
 
 /* The database door, driven end to end against a fake PostgREST. */
-(async () => {
+/* Both async drives are AWAITED before the report. They used to be bare
+   IIFEs beside a synchronous report at the end of the file, so every
+   assertion inside them landed after process.exit and was never counted --
+   a suite reporting ALL GREEN over a block it had not waited for. */
+const DRIVES = [];
+DRIVES.push((async () => {
   const calls = [];
   const SCHEMA = { definitions: {
     games: { properties: { id: {}, home_score: {}, away_score: {}, closing_spread: {}, closing_total: {}, status: {}, kickoff_at: {} } },
@@ -415,7 +420,7 @@ chk('without the flag, the newest pre-lock row per model counts',
     up2 && up2.body);
   chk('DEPLOYED SHAPE  running it twice writes the same row twice, never a second one',
     realCalls.filter(c => c.method === 'POST' && c.url.indexOf('/game_results') >= 0).every(c => /on_conflict=game_id/.test(c.url)));
-})().catch(e => chk('the database door drive did not crash', false, String(e && e.stack || e)));
+})().catch(e => chk('the database door drive did not crash', false, String(e && e.stack || e))));
 
 /* The committed record. */
 chk('the record file is named by sport and season',
@@ -437,8 +442,28 @@ chk('the record file is named by sport and season',
   const moved = S.mergeRecord(first.record, 'CFB', 2026,
     [S.recordEntry(game, { home_score: 48, away_score: 17 }, null, 'collective')], '2026-08-31T00:00:00Z');
   chk('a changed fact is written and the moment the record first saw the game is kept',
-    moved.changed && moved.record.games.g1.away_score === 17 && moved.record.games.g1.closing_spread === null &&
+    moved.changed && moved.record.games.g1.away_score === 17 &&
     moved.record.games.g1.settled_at === '2026-08-30T00:00:00Z' && moved.record.generated_at === '2026-08-31T00:00:00Z');
+  /* THE CLOSE IS NOT BLANKED BY A RUN THAT FOUND NONE. One odds outage on an
+     hourly job used to erase a captured closing line out of the committed
+     file, taking every against-the-spread result graded on it with it -- and
+     the next run reads the file it just emptied, so the loss is permanent. */
+  chk('a run that found no close keeps the one the record already holds',
+    moved.record.games.g1.closing_spread === -7.5 &&
+    moved.record.games.g1.closing_total === 52.5 &&
+    moved.record.games.g1.close_source === 'collective_odds',
+    moved.record.games.g1);
+  const recap = S.mergeRecord(first.record, 'CFB', 2026,
+    [S.recordEntry(game, TCU_FINAL, { closing_spread: -8, closing_total: 51, source: 'collective_odds' }, 'espn+cfbfastR')],
+    '2026-08-31T00:00:00Z');
+  chk('a close the run DID find still replaces the one on file',
+    recap.changed && recap.record.games.g1.closing_spread === -8 && recap.record.games.g1.closing_total === 51);
+  const noClose = S.mergeRecord(null, 'CFB', 2026,
+    [S.recordEntry(game, TCU_FINAL, { closing_spread: null, closing_total: null, source: 'collective' }, 'espn')],
+    '2026-08-31T00:00:00Z');
+  chk('close_source names a close, never an attempt that came back empty',
+    noClose.record.games.g1.closing_spread === null && noClose.record.games.g1.close_source === null,
+    noClose.record.games.g1);
   const ph = S.mergeRecord(first.record, 'CFB', 2026,
     [S.recordEntry({ ...game, game_id: 'g9' }, { home_score: 0, away_score: 0 }, null, 'collective')], '2026-08-31T00:00:00Z');
   chk('a 0-0 never enters the record, whatever wrote it',
@@ -578,6 +603,179 @@ chk('when no source has the game, it says which ones it asked',
 chk('--verify never writes and never asks for a close',
   S.parseArgs(['--verify']).verify === true && S.parseArgs(['--verify']).commit === false);
 
-fails.forEach(f => console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : '')));
-console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
-process.exit(fail === 0 ? 0 : 1);
+/* ---- the close has to reach the SETTLE, not only the record ------------
+   A close is what turns a settled game into an against-the-spread result in
+   the database row and in every projection graded against it. Recovering it
+   only for the committed record would leave the server's own grades blank on
+   the same games the site can grade, which is two records for one season. */
+(() => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, 'settle_finals.js'), 'utf8');
+  const body = src.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  chk('the board pass runs BEFORE anything is settled, and rebuilds the settle body',
+    /batch\.filter\(b => !b\.close\)/.test(body) &&
+    /b\.body = settleBody\(b\.game, b\.meta, b\.close\)/.test(body) &&
+    body.indexOf('batch.filter(b => !b.close)') < body.indexOf('await settleDirect('),
+    'a close found after the row is written has to be backfilled one game at a time');
+  chk('a game asked by name at settle time is not asked again in the same run',
+    /if \(settledNow\[String\(v\.game\.game_id\)\]\) continue;/.test(body));
+  chk('the record pass looks for a close on every entry that has none, whoever settled it',
+    /byId\.forEach\(v => \{[\s\S]{0,200}wantClose\.push\(v\)/.test(body));
+  chk('only the STORED closing object is ever read, never a live consensus',
+    !/consensus/.test(body.split('function closeFromBoardRow')[1].split('\n}')[0]));
+})();
+
+/* =========================================================================
+   THE CAPTURED CLOSE THE PER-GAME ROUTE COULD NOT NAME.
+
+   The committed record carries a close on 15 of 15 NFL games and 0 of 104
+   CFB games, and every one of those entries went through the same
+   /v1/<league>/closing/<collective_game_id> call. NFL team names are two-
+   and three-letter codes; the Collective's schedule cuts college names to
+   TEN CHARACTERS, so any join on the stored string misses. The number is on
+   the odds board under the feed's own spelling, and these are the rules for
+   getting to it without ever guessing which game it belongs to.
+   ========================================================================= */
+const DAY = '2026-09-05T16:00:00Z';
+const BOARD = [
+  { event_id: 'e1', home: 'Mississippi', away: 'Kentucky', commence_time: DAY,
+    closing: { 'spread:home': { line: -6.5 }, total: { line: 48.5 } },
+    consensus: { spread: -9 } },
+  { event_id: 'e2', home: 'Mississippi State', away: 'Arizona', commence_time: DAY,
+    closing: { 'spread:home': { line: -3 } } },
+  { event_id: 'e3', home: 'West Virginia', away: 'Coastal Carolina', commence_time: DAY,
+    closing: {}, consensus: { spread: -7 } },
+];
+chk('a truncated college name reaches its board row through the pair',
+  (() => {
+    const hit = S.findBoardRow({ home: 'MISSISSIPP', away: 'KENTUCKY', kickoff_at: DAY }, BOARD);
+    return hit && hit.row.event_id === 'e1' && hit.matched_by === 'truncated';
+  })());
+chk('an exact pair is matched as exact and never goes near the truncation rule',
+  (() => {
+    const hit = S.findBoardRow({ home: 'Mississippi', away: 'Kentucky', kickoff_at: DAY }, BOARD);
+    return hit && hit.matched_by === 'exact';
+  })());
+chk('two rows that both fit the truncation are not matched at all',
+  S.findBoardRow({ home: 'NORTHCAROL', away: 'TCU', kickoff_at: DAY }, [
+    { home: 'North Carolina', away: 'TCU', commence_time: DAY, closing: { 'spread:home': { line: -1 } } },
+    { home: 'North Carolina State', away: 'TCU', commence_time: DAY, closing: { 'spread:home': { line: -9 } } },
+  ]) === null);
+chk('a truncated board match needs one side to be exactly right',
+  S.findBoardRow({ home: 'MIAMI', away: 'GEORGIA', kickoff_at: DAY }, [
+    { home: 'Miami (OH)', away: 'Georgia Tech', commence_time: DAY,
+      closing: { 'spread:home': { line: -4 } } }]) === null,
+  'GEORGIA prefixes Georgia Tech and MIAMI prefixes Miami (OH): both sides guessed');
+chk('...and with one side pinned exactly, the other may be a truncation',
+  (() => {
+    const hit = S.findBoardRow({ home: 'MIAMIOH', away: 'GEORGIATEC', kickoff_at: DAY }, [
+      { home: 'Miami (OH)', away: 'Georgia Tech', commence_time: DAY,
+        closing: { 'spread:home': { line: -4 } } }]);
+    return !!hit;
+  })());
+chk('a row on another weekend is not this game\'s close',
+  S.findBoardRow({ home: 'MISSISSIPP', away: 'KENTUCKY', kickoff_at: '2026-10-17T16:00:00Z' }, BOARD) === null);
+chk('only the STORED close is read; a live consensus is never a closing line',
+  S.closeFromBoardRow(BOARD[0]).closing_spread === -6.5 &&
+  S.closeFromBoardRow(BOARD[0]).closing_total === 48.5 &&
+  S.closeFromBoardRow(BOARD[2]) === null,
+  'e3 has a consensus of -7 and no stored close: it must yield nothing');
+
+/* ---- one board request per week, never one per game --------------------- */
+DRIVES.push((async () => {
+  const asked = [];
+  const realFetch = global.fetch;
+  global.fetch = async (url) => {
+    asked.push(String(url));
+    return { ok: true, status: 200, text: async () => JSON.stringify({ games: BOARD }) };
+  };
+  try {
+    const games = [
+      { game_id: 'g1', home: 'MISSISSIPP', away: 'KENTUCKY', week: 2, kickoff_at: DAY },
+      { game_id: 'g2', home: 'WESTVIRGIN', away: 'COASTALCAR', week: 2, kickoff_at: DAY },
+      { game_id: 'g3', home: 'MISSISSIPP', away: 'KENTUCKY', week: 3, kickoff_at: DAY },
+    ];
+    const got = await S.closesFromBoard('CFB', 2026, games, null, () => {});
+    chk('two weeks is two board requests, not three per-game ones',
+      asked.length === 2 && asked.every(u => /\/collective_odds\/v1\/ncaaf\/odds\?/.test(u)),
+      asked);
+    chk('the recovered close is the stored one, and a game with none stays missing',
+      got.g1 && got.g1.close.closing_spread === -6.5 && got.g1.matched_by === 'truncated' &&
+      !got.g2,
+      got);
+  } finally { global.fetch = realFetch; }
+
+  /* ---- THE HISTORICAL REPAIR: safe, idempotent, audit trail intact ------ */
+  const fs = require('fs'), path = require('path'), os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'settled-'));
+  const file = path.join(dir, 'CFB_2026.json');
+  const base = {
+    schema: S.RECORD_SCHEMA, sport: 'CFB', season: 2026,
+    generated_at: '2026-09-06T00:00:00Z', rule: 'r',
+    games: {
+      g1: { away: 'KENTUCKY', away_score: 17, close_source: null, closing_home_ml_prob: null,
+            closing_spread: null, closing_total: null, home: 'MISSISSIPP', home_score: 24,
+            kickoff_at: DAY, label: 'KENTUCKY @ MISSISSIPP', score_source: 'espn+cfbfastR',
+            settled_at: '2026-09-06T00:00:00Z', week: 2 },
+      g2: { away: 'COASTALCAR', away_score: 24, close_source: null, closing_home_ml_prob: null,
+            closing_spread: null, closing_total: null, home: 'WESTVIRGIN', home_score: 31,
+            kickoff_at: DAY, label: 'COASTALCAR @ WESTVIRGIN', score_source: 'espn+cfbfastR',
+            settled_at: '2026-09-06T00:00:00Z', week: 2 },
+      g3: { away: 'TCU', away_score: 14, close_source: 'collective_odds', closing_home_ml_prob: null,
+            closing_spread: -7.5, closing_total: 52.5, home: 'BAYLOR', home_score: 28,
+            kickoff_at: DAY, label: 'TCU @ BAYLOR', score_source: 'espn+cfbfastR',
+            settled_at: '2026-09-06T00:00:00Z', week: 2 },
+    },
+  };
+  fs.writeFileSync(file, JSON.stringify(base, null, 1) + '\n');
+  const askedPerGame = [];
+  const opts = {
+    perGame: async (id) => { askedPerGame.push(id); return null; },
+    board: async () => BOARD,
+  };
+  const r1 = await S.backfillCloses(dir, 'CFB', 2026, opts);
+  const after = JSON.parse(fs.readFileSync(file, 'utf8'));
+  chk('the repair fills only the nulls and asks about nothing else',
+    r1.wanted === 2 && r1.recovered === 1 && r1.still_missing === 1 &&
+    askedPerGame.sort().join(',') === 'g1,g2',
+    r1);
+  chk('the recovered close is written and named by where it came from',
+    after.games.g1.closing_spread === -6.5 && after.games.g1.closing_total === 48.5 &&
+    after.games.g1.close_source === 'collective_odds_board', after.games.g1);
+  chk('a game the sources could not answer for is left exactly as it was',
+    after.games.g2.closing_spread === null && after.games.g2.close_source === null);
+  chk('a close already on file is never asked about, moved, or blanked',
+    after.games.g3.closing_spread === -7.5 && after.games.g3.close_source === 'collective_odds' &&
+    askedPerGame.indexOf('g3') < 0);
+  chk('no score, team, week or kickoff is touched by the repair',
+    ['away', 'away_score', 'home', 'home_score', 'week', 'kickoff_at', 'label', 'score_source']
+      .every(k => JSON.stringify(after.games.g1[k]) === JSON.stringify(base.games.g1[k])));
+  chk('the audit trail survives: settled_at is when the record FIRST saw the game',
+    after.games.g1.settled_at === '2026-09-06T00:00:00Z');
+
+  const before2 = fs.readFileSync(file, 'utf8');
+  const r2 = await S.backfillCloses(dir, 'CFB', 2026, opts);
+  chk('running the repair again is a no-op, byte for byte',
+    r2.wanted === 1 && r2.recovered === 0 && r2.changed === false &&
+    fs.readFileSync(file, 'utf8') === before2, r2);
+
+  const r3 = await S.backfillCloses(dir, 'CFB', 2026, { perGame: null, board: null });
+  chk('with no source reachable the repair changes nothing and says so',
+    r3.wanted === 1 && r3.recovered === 0 && r3.still_missing === 1 &&
+    fs.readFileSync(file, 'utf8') === before2, r3);
+  chk('a missing record file is reported, never created empty',
+    (await S.backfillCloses(dir, 'NFL', 2026, {})).reason === 'no_record_file' &&
+    !fs.existsSync(path.join(dir, 'NFL_2026.json')));
+  chk('--backfill-closes is a flag of its own and does not imply --commit',
+    S.parseArgs(['--backfill-closes']).backfillCloses === true &&
+    S.parseArgs(['--backfill-closes']).commit === false);
+  fs.rmSync(dir, { recursive: true, force: true });
+})().catch(e => chk('the close-recovery drive did not crash', false, String(e && e.stack || e))));
+
+Promise.all(DRIVES).then(report, report);
+
+function report() {
+
+  fails.forEach(f => console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : '')));
+  console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail === 0 ? 0 : 1);
+}
