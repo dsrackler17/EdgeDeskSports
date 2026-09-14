@@ -474,4 +474,60 @@ begin
      where field = 'sending_enabled' and changed_by::text = current_setting('nl.operator')));
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- THE INSTALL REPORT. It answers the launch questions from catalogue state,
+-- so what it must never do is answer one of them with a credential.
+-- ---------------------------------------------------------------------------
+do $$
+declare st jsonb; flat text;
+begin
+  st := public.newsletter_install_status();
+  perform pg_temp.chk('the install report names the launch gate',
+    st->'gate' ? 'sending_enabled');
+  perform pg_temp.chk('it reports every contract table',
+    (select count(*) from jsonb_object_keys(st->'tables')) = 8
+    and not exists (select 1 from jsonb_each(st->'tables') where value::text = 'false'));
+  perform pg_temp.chk('it reports every contract function',
+    not exists (select 1 from jsonb_each(st->'functions') where value::text = 'false'));
+  perform pg_temp.chk('it says pg_cron is not installed on a database without it',
+    (st->'cron'->>'present') = 'false' and (st->'cron'->>'why') like '%pg_cron%');
+  perform pg_temp.chk('it counts subscribers without listing them',
+    st->'counts' ? 'subscribers_confirmed' and not (st::text ilike '%@example.com%'));
+
+  -- the two settings the cron job body reads are reported as set / not set,
+  -- and the key itself never leaves the database through this door
+  perform set_config('edgedesk.service_key', 'super-secret-service-key', false);
+  perform set_config('edgedesk.project_url', 'https://example.supabase.co', false);
+  flat := public.newsletter_install_status()::text;
+  perform pg_temp.chk('a set service key reports as set',
+    (public.newsletter_install_status()->'db_settings'->>'edgedesk.service_key') = 'set');
+  perform pg_temp.chk('and the service key itself is never returned',
+    flat not like '%super-secret-service-key%');
+  perform set_config('edgedesk.service_key', '', false);
+  perform pg_temp.chk('an unset service key reports as not set',
+    (public.newsletter_install_status()->'db_settings'->>'edgedesk.service_key') = 'not set');
+end $$;
+
+set role anon;
+do $$ begin
+  begin
+    perform public.newsletter_install_status();
+    perform pg_temp.chk('a browser could read the install report', false);
+  exception when insufficient_privilege then
+    perform pg_temp.chk('a browser cannot read the install report', true);
+  end;
+end $$;
+reset role;
+
+set role authenticated;
+do $$ begin
+  begin
+    perform public.newsletter_install_status();
+    perform pg_temp.chk('a signed-in reader could read the install report', false);
+  exception when insufficient_privilege then
+    perform pg_temp.chk('a signed-in reader cannot read the install report either', true);
+  end;
+end $$;
+reset role;
+
 do $$ begin raise notice 'ALL NEWSLETTER SQL CHECKS PASSED'; end $$;

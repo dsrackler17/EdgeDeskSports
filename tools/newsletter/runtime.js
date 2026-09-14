@@ -104,6 +104,14 @@ function client(opts) {
   return {
     enabled, hasService: !!service, url,
 
+    /* WHAT IS INSTALLED, ASKED OF THE DATABASE. Service role only, both here
+       and in the grant: it is a deployment question. Returns null rather than
+       throwing when there is no credential, so `doctor` can say so plainly. */
+    async installStatus() {
+      if (!enabled || !service) return null;
+      return rpc('newsletter_install_status', {});
+    },
+
     async readSettings() {
       if (!enabled || !service) return null;
       const rows = await call('newsletter_settings?select=*&id=eq.1', { method: 'GET' }, true);

@@ -57,7 +57,7 @@ on:
       phase:
         description: 'Which phase to run'
         type: choice
-        options: ['all', 'build', 'send', 'preview', 'test', 'rank', 'due']
+        options: ['all', 'build', 'send', 'preview', 'test', 'rank', 'due', 'doctor']
         default: 'all'
       sport:
         description: 'One sport only (CFB or NFL). Blank = both.'
@@ -124,7 +124,7 @@ jobs:
       # anon key. Without the secret this step says so and changes nothing,
       # and the edition is built from whatever snapshot is committed.
       - name: Refresh the book-quote snapshot from the odds capture
-        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        if: ${{ github.event.inputs.skip_refresh != 'true' && github.event.inputs.phase != 'doctor' }}
         env:
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SB_URL: ${{ secrets.SB_URL }}
@@ -139,7 +139,7 @@ jobs:
       # run will read. Same generator the article system runs; no number on a
       # newsletter was computed by this job.
       - name: Refresh the research records
-        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        if: ${{ github.event.inputs.skip_refresh != 'true' && github.event.inputs.phase != 'doctor' }}
         run: node tools/articles/generate.js --network --quiet
 
       # A REFRESHED RECORD AND A STALE PAGE ARE A FAILING REPOSITORY. The
@@ -151,13 +151,17 @@ jobs:
       # would have refused to start. The editorial workflow already rebuilds
       # after it writes records; so does this one.
       - name: Rebuild the pages behind the refreshed records
-        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        if: ${{ github.event.inputs.skip_refresh != 'true' && github.event.inputs.phase != 'doctor' }}
         run: node tools/articles/build_articles.js
 
       - name: Build, validate and (if the gate is open) send
         env:
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SB_URL: ${{ secrets.SB_URL }}
+          # `doctor` reads the sending domain's DNS state from the Resend
+          # ACCOUNT, because those records are account-specific and the account
+          # is the only correct source for them. It prints the records and
+          # never the key.
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           PHASE="${{ github.event.inputs.phase }}"
@@ -167,7 +171,9 @@ jobs:
           if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           node tools/newsletter/run.js "${PHASE:-all}" $ARGS
 
+      # `doctor` reads state and writes nothing. It must not be able to commit.
       - name: Commit the edition and the rendered preview
+        if: ${{ github.event.inputs.phase != 'doctor' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

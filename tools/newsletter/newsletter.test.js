@@ -1247,6 +1247,36 @@ section('7 — the provider');
        articles.test.js — which is this workflow's own pre-flight gate. A run
        that refreshed records and left the pages behind therefore broke the
        next run's ability to start at all. */
+    /* THE READ-ONLY INSPECTION. `doctor` answers the launch questions from
+       live state instead of from memory, so it must refresh nothing, commit
+       nothing, and above all print no credential. */
+    chk('the workflow offers the read-only doctor phase', /'doctor'\]/.test(wf), wf.slice(wf.indexOf('options:'), wf.indexOf('options:') + 120));
+    chk('doctor refreshes nothing',
+      (wf.match(/github\.event\.inputs\.phase != 'doctor'/g) || []).length >= 4);
+    chk('doctor cannot commit',
+      /Commit the edition[\s\S]{0,120}phase != 'doctor'/.test(wf));
+    const runJs = fs.readFileSync(path.join(ROOT, 'tools', 'newsletter', 'run.js'), 'utf8');
+    const doctor = runJs.slice(runJs.indexOf("phase === 'doctor'"), runJs.indexOf("build / send / all / preview"));
+    chk('the doctor phase exists', doctor.length > 500, String(doctor.length));
+    chk('it reports the service key as set or not set, never its value',
+      /ds\['edgedesk\.service_key'\]/.test(doctor));
+    /* the credential is READ in exactly one place, an authorization header,
+       and reaches no log line. The name of the variable may of course be
+       printed; its value may not. */
+    const envReads = doctor.split(/process\.env\./).slice(1);
+    chk('the service role is read only into an authorization header',
+      envReads.every(after => /^(SB_SERVICE_ROLE|SUPABASE_SERVICE_ROLE_KEY)/.test(after) === false
+        || /authorization/.test(doctor.slice(Math.max(0, doctor.indexOf('process.env.' + after.slice(0, 16)) - 120),
+          doctor.indexOf('process.env.' + after.slice(0, 16)) + 40))),
+      envReads.map(x => x.slice(0, 40)).join(' /// '));
+    chk('it never prints the provider key',
+      /pcfg\.apiKey \? 'present' : 'ABSENT'/.test(doctor)
+      && !/\+ pcfg\.apiKey/.test(doctor.replace(/'Bearer ' \+ pcfg\.apiKey/g, '')),
+      'the key is used as a bearer token and reported as present/absent');
+    chk('it reads the sending domain from the account rather than naming records itself',
+      /\/domains/.test(doctor) && /account-specific/.test(doctor));
+    chk('it writes nothing', !/STORE\.(append|save)/.test(doctor) && !/upsertEdition|patchEdition/.test(doctor));
+
     const iBuild = wf.indexOf('node tools/articles/build_articles.js');
     chk('the workflow rebuilds the pages behind the records it refreshed', iBuild > 0);
     chk('\u2026after it has regenerated them', iBuild > iGenerate,
