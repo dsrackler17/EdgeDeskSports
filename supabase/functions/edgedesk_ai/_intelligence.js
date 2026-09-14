@@ -49,6 +49,10 @@
   var PACKET_SCHEMA = 'edgedesk_game_evidence_v1';
   var LEDGER_SCHEMA = 'edgedesk_recommendation_v1';
   var DECISIONS = ['BET CANDIDATE', 'WATCH', 'PASS', 'INSUFFICIENT DATA'];
+  /* Not a decision. The absence of one, named, so it can never be read as a
+     judgement about a selection — and deliberately NOT in DECISIONS, so the
+     ledger's own validator refuses to record it as though the desk decided. */
+  var DECISIONS_DISABLED = 'DECISIONS DISABLED';
 
   /* ====================================================================== */
   /* THE FBS TEAM RESOLVER — COPIED FROM football/fbs/fbs.js, NOT REWRITTEN. */
@@ -310,6 +314,20 @@
     /* The EV floor a price must clear before a decision may be actionable.
        Tracks the browser engine's REAL_FLOOR so the two halves of the product
        cannot disagree about the same number. */
+    /* THE KILL SWITCH, AS A SWITCH.
+       This used to be documented as `configure({ ev_floor: 1 })` — set the
+       expected-value floor to 100% per unit and nothing can clear it. That is
+       a threshold pressed into service as a control, and it is the wrong shape
+       three ways over. It only reaches a verdict through one branch, which is
+       conditioned on an expected value EXISTING, and for college spreads under
+       RESEARCH_LEAN there usually is none. What it does produce is PASS — a
+       substantive betting judgement meaning "evaluated, and not worth it at
+       this price" — when the truth is that the desk is not making decisions at
+       all. And it writes ev_floor: 1 into the ledger's config_used, so rows
+       recorded during the shutdown claim a floor that was never a policy.
+       An operator turning the decision layer off should not have to reason
+       about any of that. */
+    decisions_enabled: true,
     ev_floor: 0.005,
     /* How much better than the floor a price must be before the decision is
        allowed to read as a candidate rather than a lean. */
@@ -2028,6 +2046,30 @@
    */
   function decide(o) {
     o = o || {};
+
+    /* THE SWITCH, READ FIRST AND ALONE.
+       Before any gate, any price, any probability. A disabled decision layer
+       does not evaluate and then decline — it does not evaluate. Returning
+       PASS here would assert that this selection was weighed and rejected,
+       which is a claim about a bet nobody made. */
+    if (CONFIG.decisions_enabled === false) {
+      return {
+        decision: null,
+        decision_state: DECISIONS_DISABLED,
+        decisions_enabled: false,
+        strength: null,
+        why: 'EdgeDesk\u2019s decision layer is switched off, so no recommendation was produced for this '
+          + 'selection. This is NOT a judgement about the bet: nothing was evaluated, nothing was rejected, '
+          + 'and there is no price at which this would have been a candidate. Research and retrieval are '
+          + 'unaffected \u2014 the evidence below is real.',
+        blockers: [], notes: [], gates: {}, price: null, model: null, disagreement: null,
+        what_would_change_it: ['An operator re-enabling the decision layer (EDINTEL.configure({ decisions_enabled: true })).'],
+        experimental: false,
+        may_publish_to_ledger: false,
+        config_used: { decisions_enabled: false }
+      };
+    }
+
     var blockers = [], notes = [], gates = {};
     var fair = o.fair || null;
     var qs = o.quote_state || null;
@@ -2566,6 +2608,7 @@
 
   return {
     VERSION: VERSION, PACKET_SCHEMA: PACKET_SCHEMA, LEDGER_SCHEMA: LEDGER_SCHEMA, DECISIONS: DECISIONS,
+    DECISIONS_DISABLED: DECISIONS_DISABLED, decisionsEnabled: function () { return CONFIG.decisions_enabled !== false; },
     configure: configure, config: config,
     num: num, toMs: toMs, normName: normName, normMarket: normMarket, marketLabel: marketLabel, titleCase: titleCase,
     americanToDec: americanToDec, decToAmerican: decToAmerican, fmtAmerican: fmtAmerican,

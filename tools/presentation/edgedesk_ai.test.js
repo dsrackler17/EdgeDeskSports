@@ -92,7 +92,14 @@ function req(body, qs, method) {
   {
     const r = await m.handle(req(null, '?probe=1', 'GET'));
     const j = await r.json();
-    chk('probe answers with the build', r.status === 200 && /r5-presentation/.test(j.build), j.build);
+    /* Compared against the module's own constant rather than a literal: a
+       hardcoded build string fails on every release for no reason, and proves
+       nothing about whether the probe reports the build that is SERVING. */
+    chk('probe answers with the build', r.status === 200 && j.build === m.BUILD, { got: j.build, want: m.BUILD });
+    chk('and the build identifies the function and a revision',
+      /^edgedesk_ai-\d{4}-\d{2}-\d{2}-r\d+/.test(String(j.build || '')), j.build);
+    chk('the probe says whether the decision layer is switched on',
+      typeof j.decisions_enabled === 'boolean', j.decisions_enabled);
     chk('probe reports presentation modes', j.presentation && j.presentation.library_loaded === true && j.presentation.modes.length === 4);
     chk('probe made no network calls', calls.length === 0, calls.length);
   }

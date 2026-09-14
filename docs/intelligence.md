@@ -467,7 +467,7 @@ existing contract.
 | The function only | Redeploy the previous `index.ts`. The client tolerates a response with no `decisions` / `evidence_packets` — those fields render nothing when absent |
 | The client only | Republish the previous `app.html`. The function's additive fields are simply ignored |
 | The ledger | `drop view public.recommendation_record; drop table public.recommendation_ledger cascade;` Answers are unaffected; only measurement stops |
-| The kernel, in place | `EDINTEL.configure({ ev_floor: 1 })` makes every decision PASS without a code change — a kill switch for the decision layer that leaves retrieval and research intact |
+| The kernel, in place | `EDGEDESK_DECISIONS_ENABLED=0` on the deployment (or `EDINTEL.configure({ decisions_enabled: false })`) stops the desk producing recommendations while retrieval, research and the evidence packets carry on unchanged. `decide()` returns `decision: null` with `decision_state: 'DECISIONS DISABLED'`, the ledger refuses the row, and the answer says the layer is off. The earlier advice here was `configure({ ev_floor: 1 })`; that is a threshold pressed into service as a control and it is withdrawn — it reaches a verdict through one branch conditioned on an expected value existing, it produces PASS (a judgement about a bet nobody weighed), and it writes a floor of 1 into the ledger's `config_used` |
 
 **Not reversible from the app:** `recommendation_ledger` rows. That is the
 point — deletion is blocked by a trigger, and dropping the table is a deliberate

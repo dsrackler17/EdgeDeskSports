@@ -3068,6 +3068,10 @@ export function ledgerRowsFor(
   const now = ctx.now ?? Date.now();
   const rows: any[] = [];
   for (const d of decisions) {
+    /* A switched-off decision layer produced no decision, so there is nothing
+       to track. Publishing a row here would put a shutdown on the record as
+       though the desk had weighed the selection. */
+    if (!d.decision || (d as any).decisions_enabled === false) continue;
     if (d.decision === "INSUFFICIENT DATA") continue;
     if (!d.price || d.price.offered_decimal == null) continue;
     const e = EDINTEL.ledgerEntry({
@@ -11480,6 +11484,10 @@ const EDPRES: any = (globalThis as any).EDPRES;
   var PACKET_SCHEMA = 'edgedesk_game_evidence_v1';
   var LEDGER_SCHEMA = 'edgedesk_recommendation_v1';
   var DECISIONS = ['BET CANDIDATE', 'WATCH', 'PASS', 'INSUFFICIENT DATA'];
+  /* Not a decision. The absence of one, named, so it can never be read as a
+     judgement about a selection — and deliberately NOT in DECISIONS, so the
+     ledger's own validator refuses to record it as though the desk decided. */
+  var DECISIONS_DISABLED = 'DECISIONS DISABLED';
 
   /* ====================================================================== */
   /* THE FBS TEAM RESOLVER — COPIED FROM football/fbs/fbs.js, NOT REWRITTEN. */
@@ -11741,6 +11749,20 @@ const EDPRES: any = (globalThis as any).EDPRES;
     /* The EV floor a price must clear before a decision may be actionable.
        Tracks the browser engine's REAL_FLOOR so the two halves of the product
        cannot disagree about the same number. */
+    /* THE KILL SWITCH, AS A SWITCH.
+       This used to be documented as `configure({ ev_floor: 1 })` — set the
+       expected-value floor to 100% per unit and nothing can clear it. That is
+       a threshold pressed into service as a control, and it is the wrong shape
+       three ways over. It only reaches a verdict through one branch, which is
+       conditioned on an expected value EXISTING, and for college spreads under
+       RESEARCH_LEAN there usually is none. What it does produce is PASS — a
+       substantive betting judgement meaning "evaluated, and not worth it at
+       this price" — when the truth is that the desk is not making decisions at
+       all. And it writes ev_floor: 1 into the ledger's config_used, so rows
+       recorded during the shutdown claim a floor that was never a policy.
+       An operator turning the decision layer off should not have to reason
+       about any of that. */
+    decisions_enabled: true,
     ev_floor: 0.005,
     /* How much better than the floor a price must be before the decision is
        allowed to read as a candidate rather than a lean. */
@@ -13459,6 +13481,30 @@ const EDPRES: any = (globalThis as any).EDPRES;
    */
   function decide(o) {
     o = o || {};
+
+    /* THE SWITCH, READ FIRST AND ALONE.
+       Before any gate, any price, any probability. A disabled decision layer
+       does not evaluate and then decline — it does not evaluate. Returning
+       PASS here would assert that this selection was weighed and rejected,
+       which is a claim about a bet nobody made. */
+    if (CONFIG.decisions_enabled === false) {
+      return {
+        decision: null,
+        decision_state: DECISIONS_DISABLED,
+        decisions_enabled: false,
+        strength: null,
+        why: 'EdgeDesk\u2019s decision layer is switched off, so no recommendation was produced for this '
+          + 'selection. This is NOT a judgement about the bet: nothing was evaluated, nothing was rejected, '
+          + 'and there is no price at which this would have been a candidate. Research and retrieval are '
+          + 'unaffected \u2014 the evidence below is real.',
+        blockers: [], notes: [], gates: {}, price: null, model: null, disagreement: null,
+        what_would_change_it: ['An operator re-enabling the decision layer (EDINTEL.configure({ decisions_enabled: true })).'],
+        experimental: false,
+        may_publish_to_ledger: false,
+        config_used: { decisions_enabled: false }
+      };
+    }
+
     var blockers = [], notes = [], gates = {};
     var fair = o.fair || null;
     var qs = o.quote_state || null;
@@ -13997,6 +14043,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
 
   return {
     VERSION: VERSION, PACKET_SCHEMA: PACKET_SCHEMA, LEDGER_SCHEMA: LEDGER_SCHEMA, DECISIONS: DECISIONS,
+    DECISIONS_DISABLED: DECISIONS_DISABLED, decisionsEnabled: function () { return CONFIG.decisions_enabled !== false; },
     configure: configure, config: config,
     num: num, toMs: toMs, normName: normName, normMarket: normMarket, marketLabel: marketLabel, titleCase: titleCase,
     americanToDec: americanToDec, decToAmerican: decToAmerican, fmtAmerican: fmtAmerican,
@@ -14042,7 +14089,19 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-const BUILD = "edgedesk_ai-2026-09-03-r5-presentation";
+export const BUILD = "edgedesk_ai-2026-09-14-r6-cfb-market-join";
+
+/* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
+   `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
+   while leaving retrieval, research and the evidence packets exactly as they
+   are. It is read once here and pushed into the kernel at startup, so one
+   setting governs the board, the desk and the ledger together. The old advice
+   -- configure an expected-value floor of 1 -- is gone: a threshold is not a
+   switch, and it produced PASS, which is a verdict about a bet rather than the
+   absence of one. */
+const DECISIONS_ENABLED = !/^(0|false|off|no)$/i.test(
+  (Deno.env.get("EDGEDESK_DECISIONS_ENABLED") ?? "1").trim(),
+);
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 /* The reasoning model. This layer retrieves evidence and asks the model to
@@ -14074,6 +14133,8 @@ const SITE_BASE = Deno.env.get("EDGEDESK_SITE_BASE") ?? "https://edgedesksports.
    the size of the gap. Registering here, once per isolate, means every
    decision in this process is governed by it. */
 try { EDINTEL.loadSnapshotValidation("americanfootball_ncaaf"); } catch { /* the kernel is additive; never fail a request for it */ }
+/* One setting governs the board, the desk and the ledger together. */
+try { EDINTEL.configure({ decisions_enabled: DECISIONS_ENABLED }); } catch { /* same */ }
 
 /* ── THE SAME FLOOR AND THE SAME CLOCK AS THE DETERMINISTIC ENGINE ────────
    attackThesis, crossMarketFlags and scout each carried their own default
@@ -16561,6 +16622,100 @@ let LAST_MEMORY_WRITE: Record<string, unknown> | null = null;
    failure is the one failure that must not stay silent. */
 let LAST_LEDGER_WRITE: Record<string, unknown> | null = null;
 
+export interface LedgerWrite {
+  state: "RECORDED" | "NOT_RECORDED" | "NOTHING_TO_RECORD" | "NOT_CONFIGURED" | "DECISIONS_DISABLED";
+  rows: number;
+  status: number | null;
+  detail: string | null;
+  /* The sentence a reader must see when tracking did not happen. A decision
+     published without a record is not a tracked decision, and an interface that
+     shows the recommendation while quietly dropping the row is claiming a
+     measurement it does not have. */
+  notice: string | null;
+  at: string;
+}
+
+/**
+ * Publish the decisions to the ledger and REPORT WHETHER IT WORKED.
+ *
+ * This used to ride along with the fire-and-forget memory write: the POST was
+ * issued after the response had gone, its failure was swallowed with everything
+ * else, and the only trace was a field on ?probe=1 that nobody reads while
+ * looking at an answer. The answer therefore showed a recommendation and said
+ * nothing about the fact that it had not been recorded anywhere.
+ *
+ * The ledger is still never a dependency of the answer -- a failure here does
+ * not fail the response -- but it is now awaited, small and bounded (one POST,
+ * at most 25 rows), and its outcome travels back with the answer so the
+ * interface can say "not recorded" instead of implying tracking it does not
+ * have.
+ */
+export async function publishLedger(
+  auth: string, rows: any[], fetchImpl?: typeof fetch,
+): Promise<LedgerWrite> {
+  const at = new Date().toISOString();
+  if (!EDINTEL.decisionsEnabled()) {
+    return { state: "DECISIONS_DISABLED", rows: 0, status: null, detail: null, at,
+      notice: "EdgeDesk's decision layer is switched off, so there was no decision to record." };
+  }
+  if (!rows || !rows.length) {
+    return { state: "NOTHING_TO_RECORD", rows: 0, status: null, detail: null, at, notice: null };
+  }
+  if (!SUPABASE_URL) {
+    return { state: "NOT_CONFIGURED", rows: rows.length, status: null, at,
+      detail: "SUPABASE_URL is not set on this deployment",
+      notice: "TRACKING UNAVAILABLE: this deployment has no database configured, so this decision was NOT recorded "
+        + "and will not appear in the published record." };
+  }
+  const f = fetchImpl ?? fetch;
+  const payload = rows.slice(0, 25).map((r: any) => ({
+    schema: r.schema, kind: r.kind, entry_key: r.entry_key, supersedes: r.supersedes,
+    sport: r.sport, game_id: r.game_id, matchup: r.matchup, kickoff: r.kickoff,
+    market: r.market, selection: r.selection, handicap: r.handicap,
+    odds_decimal: r.odds_decimal, odds_american: r.odds_american, book: r.book,
+    quote_captured_at: r.quote_captured_at,
+    decision: r.decision, strength: r.strength,
+    probability: r.probability, probability_source: r.probability_source,
+    expected_value: r.expected_value, price_limit_american: r.price_limit_american,
+    evidence_version: r.evidence_version, evidence_packet_id: r.evidence_packet_id,
+    model_version: r.model_version, engine_version: r.engine_version,
+    decision_config: r.decision_config, mode: r.mode, published_at: r.published_at,
+  }));
+  try {
+    const res = await f(`${SUPABASE_URL}/rest/v1/recommendation_ledger?on_conflict=entry_key`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY, authorization: auth,
+        "content-type": "application/json",
+        prefer: "resolution=ignore-duplicates,return=minimal",
+      },
+      body: JSON.stringify(payload),
+    });
+    const ok = res.status >= 200 && res.status < 300;
+    const detail = ok ? null : (await res.text().catch(() => "")).slice(0, 300);
+    const out: LedgerWrite = {
+      state: ok ? "RECORDED" : "NOT_RECORDED", rows: payload.length, status: res.status, detail, at,
+      notice: ok ? null
+        : "TRACKING UNAVAILABLE: EdgeDesk could not write this decision to the recommendation ledger "
+          + `(HTTP ${res.status}), so it was NOT recorded and will not appear in the published record. `
+          + (detail && /relation|does not exist|schema cache/i.test(detail)
+            ? "The ledger table is missing on this deployment — supabase/recommendation_ledger.sql has not been applied."
+            : "This is an operational fault, not a change to the recommendation."),
+    };
+    LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
+    return out;
+  } catch (e) {
+    const detail = String((e as Error)?.message ?? e).slice(0, 300);
+    const out: LedgerWrite = {
+      state: "NOT_RECORDED", rows: payload.length, status: null, detail, at,
+      notice: "TRACKING UNAVAILABLE: the write to the recommendation ledger failed (" + detail + "), so this "
+        + "decision was NOT recorded and will not appear in the published record.",
+    };
+    LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
+    return out;
+  }
+}
+
 /* Writes the session under the CALLER's JWT, so RLS decides what is allowed.
    Never blocks the response and never fails the request. */
 async function rememberSession(
@@ -16730,31 +16885,9 @@ async function rememberSession(
        If the table does not exist the POST fails, the failure is swallowed
        like every other memory write, and the answer is unaffected — the ledger
        is a measurement layer, never a dependency of the response. */
-    if (research.ledger_rows && research.ledger_rows.length) {
-      const rows = research.ledger_rows.slice(0, 25).map((r: any) => ({
-        schema: r.schema, kind: r.kind, entry_key: r.entry_key, supersedes: r.supersedes,
-        sport: r.sport, game_id: r.game_id, matchup: r.matchup, kickoff: r.kickoff,
-        market: r.market, selection: r.selection, handicap: r.handicap,
-        odds_decimal: r.odds_decimal, odds_american: r.odds_american, book: r.book,
-        quote_captured_at: r.quote_captured_at,
-        decision: r.decision, strength: r.strength,
-        probability: r.probability, probability_source: r.probability_source,
-        expected_value: r.expected_value, price_limit_american: r.price_limit_american,
-        evidence_version: r.evidence_version, evidence_packet_id: r.evidence_packet_id,
-        model_version: r.model_version, engine_version: r.engine_version,
-        decision_config: r.decision_config, mode: r.mode, published_at: r.published_at,
-      }));
-      const lres = await post("recommendation_ledger?on_conflict=entry_key", rows, false,
-        "resolution=ignore-duplicates,return=minimal");
-      LAST_LEDGER_WRITE = {
-        at: new Date().toISOString(), status: lres.status,
-        ok: lres.status >= 200 && lres.status < 300, rows: rows.length,
-        detail: lres.status >= 300
-          ? (await lres.text().catch(() => "")).slice(0, 300)
-            + " — if this mentions a missing relation, run supabase/recommendation_ledger.sql."
-          : null,
-      };
-    }
+    /* The recommendation ledger is NOT written here. It is written on the
+       response path by publishLedger(), awaited, so a failure can be shown to
+       the reader instead of swallowed with the rest of the memory writes. */
 
     // Structured findings — claims bound to the record that produced them.
     // Nothing the model wrote is ever stored here; only extracted evidence.
@@ -16866,6 +16999,9 @@ export async function handle(req: Request): Promise<Response> {
       build: BUILD,
       model: MODEL,
       research_enabled: RESEARCH_ENABLED,
+      /* The first thing to check when the desk stops recommending: whether it
+         was told to. An explicit boolean, not a threshold to be interpreted. */
+      decisions_enabled: EDINTEL.decisionsEnabled(),
       mlb_live_fallback: MLB_FALLBACK,
       min_pattern_n: MIN_PATTERN_N,
       evidence_max_chars: evidenceMax(),
@@ -17216,6 +17352,19 @@ export async function handle(req: Request): Promise<Response> {
     answer = parsed.answer || answer;
     presentation = applyAiCopyTo(presentation, parsed.copy, research, parsed.error);
 
+    /* THE LEDGER IS AWAITED; EVERYTHING ELSE IS NOT.
+       A recommendation shown without being recorded is a recommendation nobody
+       can measure later, so its write outcome travels back with the answer and
+       the interface says "not recorded" rather than implying tracking. It is
+       still not a dependency: a failure here changes the notice, never the
+       decision and never the answer. */
+    const ledger = await publishLedger(auth, research?.ledger_rows ?? [])
+      .catch((e): LedgerWrite => ({
+        state: "NOT_RECORDED", rows: (research?.ledger_rows ?? []).length, status: null,
+        detail: String((e as Error)?.message ?? e).slice(0, 200), at: new Date().toISOString(),
+        notice: "TRACKING UNAVAILABLE: the recommendation ledger write failed, so this decision was NOT recorded.",
+      }));
+
     // Fire-and-forget memory write.
     const remember = rememberSession(auth, body, research, answer);
     const rt = (globalThis as any).EdgeRuntime;
@@ -17225,6 +17374,9 @@ export async function handle(req: Request): Promise<Response> {
       answer,
       model: data?.model ?? MODEL,
       cached: false,
+      /* Additive, and the only place a reader learns that a decision they can
+         see was not written down. */
+      ledger,
       // Additive. Older clients ignore it; the panel can render a research trace.
       research: researchSummary(research, plan),
       /* Additive. The structured decision card: deterministic fields from

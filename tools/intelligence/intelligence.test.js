@@ -744,5 +744,90 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       av2 && av2.missing === true && /not the same as nobody being hurt/.test(av2.reason || ''), av2);
   }
 
+  /* =====================================================================
+     21. THE KILL SWITCH IS A SWITCH, NOT A THRESHOLD.
+     The documented shutdown was `configure({ ev_floor: 1 })`. That reaches a
+     verdict through ONE branch, conditioned on an expected value existing —
+     and under RESEARCH_LEAN a college spread usually has none. What it does
+     produce is PASS, which asserts the bet was weighed and rejected.
+     ===================================================================== */
+  {
+    const live = {
+      market: 'spreads', selection: 'North Texas', game_status: 'scheduled',
+      evidence: [{ field: 'quote' }, { field: 'fair' }],
+      quote: { market: 'spreads', dec: 1.95, captured_at: new Date().toISOString(), book: 'DraftKings' },
+      fair: { fair_probability: 0.532, method: 'SHARP_REFERENCE_DEVIG', sharp: true, label: 'Pinnacle de-vig fair' },
+      confirmation: { independent_families: 3, sharp_confirmed: true },
+    };
+    const on = I.decide(live);
+    chk('with the layer on, a decision is produced', I.DECISIONS.indexOf(on.decision) >= 0, on.decision);
+
+    I.configure({ decisions_enabled: false });
+    const off = I.decide(live);
+    eq('with the layer off, there is no decision at all', off.decision, null);
+    eq('and the absence is named', off.decision_state, I.DECISIONS_DISABLED);
+    chk('it is explicitly NOT a judgement about the bet',
+      /NOT a judgement about the bet/.test(off.why || ''), off.why);
+    chk('no PASS is fabricated', off.decision !== 'PASS');
+    chk('and no price is offered at which it would have been a candidate',
+      off.price === null && !/price/i.test(String(off.what_would_change_it || '')), off.what_would_change_it);
+    eq('it may not be written to the ledger', off.may_publish_to_ledger, false);
+    chk('and the ledger validator refuses it by name',
+      I.ledgerEntry({ decision: off.decision_state, game_id: 'g', market: 'spreads', selection: 'X' }).ok === false);
+    chk('research is untouched by the switch',
+      I.slateState({ scheduled_games: 7, games_with_quotes: 4, games_with_executable_price: 1, games_with_signals: 1 }).may_research === true);
+    chk('the shutdown does not forge a config the desk never ran',
+      off.config_used.ev_floor === undefined, off.config_used);
+    I.configure({ decisions_enabled: true });
+    eq('and it switches back on', I.decisionsEnabled(), true);
+  }
+
+  /* =====================================================================
+     22. A DECISION THAT WAS NOT RECORDED SAYS SO.
+     The ledger write rode along with the fire-and-forget memory write: the
+     POST went out after the response, its failure was swallowed, and the
+     answer showed a recommendation while implying a record that did not
+     exist.
+     ===================================================================== */
+  {
+    const row = {
+      schema: 'edgedesk_recommendation_v1', kind: 'RECOMMENDATION', entry_key: 'k1',
+      game_id: 'g1', market: 'spreads', selection: 'X', decision: 'BET CANDIDATE',
+      mode: 'FORWARD', odds_decimal: 1.95, published_at: new Date().toISOString(),
+    };
+    const ok = await m.publishLedger('Bearer t', [row], async () => ({ status: 201, text: async () => '' }));
+    eq('a successful write is RECORDED', ok.state, 'RECORDED');
+    eq('and carries no notice, because there is nothing to warn about', ok.notice, null);
+
+    const missing = await m.publishLedger('Bearer t', [row], async () => ({
+      status: 404, text: async () => '{"message":"relation \"public.recommendation_ledger\" does not exist"}',
+    }));
+    eq('a failed write is NOT_RECORDED', missing.state, 'NOT_RECORDED');
+    chk('and says tracking is unavailable in words a reader will understand',
+      /TRACKING UNAVAILABLE/.test(missing.notice || '') && /was NOT recorded/.test(missing.notice || ''), missing.notice);
+    chk('a missing table names the migration that fixes it',
+      /recommendation_ledger\.sql has not been applied/.test(missing.notice || ''), missing.notice);
+    chk('and it is called an operational fault, not a change to the recommendation',
+      /operational fault|has not been applied/.test(missing.notice || ''), missing.notice);
+
+    const threw = await m.publishLedger('Bearer t', [row], async () => { throw new Error('network down'); });
+    eq('a thrown write is still reported rather than swallowed', threw.state, 'NOT_RECORDED');
+    chk('with the underlying reason attached', /network down/.test(threw.notice || ''), threw.notice);
+
+    eq('nothing to record is its own state',
+      (await m.publishLedger('Bearer t', [])).state, 'NOTHING_TO_RECORD');
+
+    I.configure({ decisions_enabled: false });
+    const offw = await m.publishLedger('Bearer t', [row], async () => ({ status: 201, text: async () => '' }));
+    eq('a switched-off layer writes nothing at all', offw.state, 'DECISIONS_DISABLED');
+    eq('and records no rows', offw.rows, 0);
+    I.configure({ decisions_enabled: true });
+
+    /* And the client renders it. */
+    const appHtml = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'app.html'), 'utf8');
+    chk('the app renders the tracking notice next to the decisions',
+      /function ledgerNoticeHTML/.test(appHtml) && /\+ledgerNoticeHTML\(d\)\+/.test(appHtml));
+  }
+
   done();
 })().catch((e) => { console.error('CRASH', e && e.stack || e); process.exit(1); });

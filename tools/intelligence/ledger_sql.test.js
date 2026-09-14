@@ -42,6 +42,13 @@ chk('the reporting view never sums forward and backtest', /group by r\.mode/.tes
 chk('the view counts pushes into the stake but not the win rate',
   /amount_staked/.test(SQL) && /result in \('win','loss'\)\)/.test(SQL));
 chk('the view flags an insufficient sample', /sufficient_sample/.test(SQL));
+chk('official corrections are an appended kind, not an edit',
+  /check \(kind in \('RECOMMENDATION','UPDATE','CORRECTION'\)\)/.test(SQL));
+chk('a correction must name its target, its reason and its source',
+  /recommendation_ledger_correction_shape/.test(SQL));
+chk('and must point at a row that exists', /recommendation_ledger_correction_trg/.test(SQL));
+chk('the record view reads the corrected outcome', /coalesce\(x\.result, o\.result\)/.test(SQL));
+chk('and still keeps what was originally published', /result_as_published/.test(SQL));
 
 /* ═══ LIVE ═════════════════════════════════════════════════════════════════ */
 function findPgBin() {
@@ -192,6 +199,46 @@ try {
   chk('a pushed stake is still counted as staked', staked === '3', staked);
   chk('a void is not counted as staked', staked === '3', staked);
   chk('a small sample is flagged as insufficient', suff === 'false' || suff === 'f', suff);
+  /* ---- OFFICIAL CORRECTIONS ------------------------------------------------
+     A graded outcome is never rewritten, and official results still change. A
+     correction is an appended row; both facts stay in the table. */
+  err = mustFail("update public.recommendation_ledger set result='win' where entry_key='m2'");
+  chk('a recorded outcome cannot be rewritten in place',
+    !!err && /already carries result/.test(err), err && err.slice(0, 160));
+
+  err = mustFail(`insert into public.recommendation_ledger
+    (entry_key, kind, supersedes, game_id, market, selection, decision, mode, odds_decimal, result, correction_reason, correction_source)
+    values ('c-orphan','CORRECTION','no-such-row','g4','spreads','A','BET CANDIDATE','FORWARD',1.9524,'win','x','y')`);
+  chk('a correction naming a row that does not exist is refused',
+    !!err && /corrects nothing|correction/.test(err), err && err.slice(0, 200));
+
+  err = mustFail(`insert into public.recommendation_ledger
+    (entry_key, kind, supersedes, game_id, market, selection, decision, mode, odds_decimal, result)
+    values ('c-bare','CORRECTION','m2','g4','spreads','A','BET CANDIDATE','FORWARD',1.9524,'win')`);
+  chk('a correction with no stated reason or source is refused',
+    !!err && /correction_shape|violates check/.test(err), err && err.slice(0, 200));
+
+  psql(`insert into public.recommendation_ledger
+    (entry_key, kind, supersedes, sport, game_id, market, selection, decision, mode, odds_decimal, result, correction_reason, correction_source)
+    values ('c1','CORRECTION','m2','americanfootball_ncaaf','g4','spreads','A','BET CANDIDATE','FORWARD',1.9524,'win',
+            'the conference reversed a scoring decision on review and the final margin changed sides',
+            'official conference statement 2026-09-15')`);
+  const orig = psql("select coalesce(result,'null') from public.recommendation_ledger where entry_key='m2'");
+  chk('the ORIGINAL row still says exactly what it said when published', orig === 'loss', orig);
+  const rec2 = psql(`select wins||'|'||losses||'|'||n_corrected
+    from public.recommendation_record where mode='FORWARD' and market='spreads' and decision='BET CANDIDATE'`);
+  chk('the record reads the corrected outcome', rec2.split('|')[0] === '2' && rec2.split('|')[1] === '0', rec2);
+  chk('and counts the correction rather than absorbing it', rec2.split('|')[2] === '1', rec2);
+
+  psql(`insert into public.recommendation_ledger
+    (entry_key, kind, supersedes, sport, game_id, market, selection, decision, mode, odds_decimal, result, correction_reason, correction_source, corrected_at)
+    values ('c2','CORRECTION','m2','americanfootball_ncaaf','g4','spreads','A','BET CANDIDATE','FORWARD',1.9524,'void',
+            'the game was subsequently ruled a no contest', 'official conference statement 2026-09-16', now() + interval '1 hour')`);
+  const rec3 = psql(`select wins||'|'||voids from public.recommendation_record
+    where mode='FORWARD' and market='spreads' and decision='BET CANDIDATE'`);
+  chk('a second correction supersedes the first, and the first is still on file',
+    rec3 === '1|2' && psql("select count(*) from public.recommendation_ledger where supersedes='m2'") === '2', rec3);
+
   const modes = psql("select string_agg(distinct mode, ',' order by mode) from public.recommendation_record");
   chk('backtests appear as their own population, never merged', modes === 'BACKTEST,FORWARD', modes);
   const btWins = psql("select wins from public.recommendation_record where mode='BACKTEST'");

@@ -35,7 +35,7 @@ create table if not exists public.recommendation_ledger (
   id                    bigserial primary key,
   schema                text        not null default 'edgedesk_recommendation_v1',
   kind                  text        not null default 'RECOMMENDATION'
-                          check (kind in ('RECOMMENDATION','UPDATE')),
+                          check (kind in ('RECOMMENDATION','UPDATE','CORRECTION')),
   entry_key             text        not null,
   supersedes            text        null,
 
@@ -94,6 +94,68 @@ alter table public.recommendation_ledger
 alter table public.recommendation_ledger
   add constraint recommendation_ledger_no_lookahead
   check (mode <> 'FORWARD' or kickoff is null or published_at <= kickoff);
+
+-- ---------------------------------------------------------------------------
+-- OFFICIAL RESULT CORRECTIONS, AS APPENDED EVENTS.
+--
+-- Immutability was solving the right problem the wrong way round. A graded
+-- outcome must never be quietly rewritten -- that is how a losing record turns
+-- into a winning one -- but official results DO get corrected: a scoring change
+-- after review, a game ruled a no-contest, a book voiding a market it settled
+-- in error. A ledger that makes those impossible is not honest either; it just
+-- carries a number everyone knows is wrong and cannot say so.
+--
+-- So the original row stays exactly as written, forever, and the correction is
+-- a NEW row: kind='CORRECTION', supersedes=<original entry_key>, carrying the
+-- corrected result and the reason it changed. Both rows are in the table. The
+-- history is the point.
+--
+-- recommendation_record reads the corrected outcome where one exists and counts
+-- the corrections separately, so measurement reflects what actually happened
+-- while the correction itself stays visible rather than absorbed.
+-- ---------------------------------------------------------------------------
+alter table public.recommendation_ledger
+  add column if not exists correction_reason text null,
+  add column if not exists correction_source text null,
+  add column if not exists corrected_at      timestamptz null;
+
+-- A correction has to say what it corrects and why. Nothing else may.
+alter table public.recommendation_ledger
+  drop constraint if exists recommendation_ledger_correction_shape;
+alter table public.recommendation_ledger
+  add constraint recommendation_ledger_correction_shape
+  check (
+    (kind <> 'CORRECTION')
+    or (supersedes is not null and result is not null
+        and correction_reason is not null and correction_source is not null)
+  );
+
+alter table public.recommendation_ledger
+  drop constraint if exists recommendation_ledger_correction_only;
+alter table public.recommendation_ledger
+  add constraint recommendation_ledger_correction_only
+  check (kind = 'CORRECTION' or correction_reason is null);
+
+-- A correction must point at a row that exists. Without this a typo in
+-- `supersedes` produces a correction that silently corrects nothing.
+create or replace function public.recommendation_ledger_correction_target()
+returns trigger language plpgsql as $$
+begin
+  if new.kind <> 'CORRECTION' then return new; end if;
+  if not exists (select 1 from public.recommendation_ledger o
+                 where o.entry_key = new.supersedes and o.kind = 'RECOMMENDATION') then
+    raise exception
+      'recommendation_ledger correction % names supersedes=% and no RECOMMENDATION row carries that entry_key. A correction that corrects nothing is worse than none.',
+      new.entry_key, new.supersedes;
+  end if;
+  if new.corrected_at is null then new.corrected_at := now(); end if;
+  return new;
+end $$;
+
+drop trigger if exists recommendation_ledger_correction_trg on public.recommendation_ledger;
+create trigger recommendation_ledger_correction_trg
+  before insert on public.recommendation_ledger
+  for each row execute function public.recommendation_ledger_correction_target();
 
 create index if not exists recommendation_ledger_user_idx    on public.recommendation_ledger (user_id, published_at desc);
 create index if not exists recommendation_ledger_game_idx    on public.recommendation_ledger (game_id, market, selection);
@@ -187,6 +249,29 @@ grant usage, select on sequence public.recommendation_ledger_id_seq to authentic
 -- both. ROI is on amount staked.
 -- ---------------------------------------------------------------------------
 create or replace view public.recommendation_record as
+  with corrected as (
+    -- The LATEST correction per original, if any. Corrections are appended, so
+    -- a row can be corrected more than once and the most recent one stands.
+    select distinct on (c.supersedes)
+      c.supersedes as entry_key, c.result as result, c.corrected_at
+    from public.recommendation_ledger c
+    where c.kind = 'CORRECTION'
+    order by c.supersedes, c.corrected_at desc, c.created_at desc
+  ),
+  r as (
+    -- Every originally published recommendation, wearing its corrected result
+    -- where one was appended. The original row is untouched on disk; this is a
+    -- read-time overlay, which is the only way both facts survive.
+    select
+      o.mode, o.sport, o.market, o.decision, o.odds_decimal, o.probability,
+      o.clv, o.beat_close, o.kind,
+      coalesce(x.result, o.result) as result,
+      o.result                     as result_as_published,
+      (x.entry_key is not null)    as was_corrected
+    from public.recommendation_ledger o
+    left join corrected x on x.entry_key = o.entry_key
+    where o.kind = 'RECOMMENDATION'
+  )
   select
     r.mode,
     r.sport,
@@ -230,15 +315,17 @@ create or replace view public.recommendation_record as
     end                                                   as brier,
     count(*) filter (where r.probability is not null and r.result in ('win','loss')) as n_brier,
     -- the honesty gate: below this the point estimate means nothing
-    (count(*) filter (where r.result in ('win','loss')) >= 100) as sufficient_sample
-  from public.recommendation_ledger r
-  where r.kind = 'RECOMMENDATION'
+    (count(*) filter (where r.result in ('win','loss')) >= 100) as sufficient_sample,
+    count(*) filter (where r.was_corrected)               as n_corrected
+  from r
   group by r.mode, r.sport, r.market, r.decision;
 
 grant select on public.recommendation_record to authenticated;
 
 comment on view public.recommendation_record is
   'Forward and backtest populations are separate rows and must never be summed. '
-  'A win rate with n_decided under 100 is not evidence of anything; sufficient_sample says so.';
+  'A win rate with n_decided under 100 is not evidence of anything; sufficient_sample says so. '
+  'Outcomes reflect appended CORRECTION rows where they exist; the original rows are never edited, '
+  'and n_corrected counts how many results in this population were officially corrected.';
 
 commit;
