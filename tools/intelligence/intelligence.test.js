@@ -518,10 +518,20 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       chk('previous games are present', away.previous_games.missing === false, away.previous_games);
       const games = away.previous_games.value || [];
       chk('each previous game carries the opponent’s strength',
-        games.length > 0 && games.every((g) => 'opponent_sp_plus' in g), games[0]);
+        games.length > 0 && games.every((g) => 'opponent_sp_plus_now' in g), games[0]);
       const fcs = games.find((g) => /Nicholls/.test(g.opponent));
       chk('a blowout over a weak opponent carries that opponent’s rating',
-        fcs && fcs.opponent_sp_plus < -10, fcs);
+        fcs && fcs.opponent_sp_plus_now < -10, fcs);
+      /* WHEN the rating was true, not just what it says. cfb.ratings is keyed
+         (season, team) with no week column, so the number is where the opponent
+         stands NOW — a good answer to "how good were they really" and the wrong
+         one for "what was knowable then". */
+      chk('and the rating is named for the time it describes',
+        games.every((g) => g.opponent_rating_time_basis === 'AS_ASSESSED_NOW'), games[0]);
+      chk('the contemporary version is declared absent rather than implied',
+        games.every((g) => 'opponent_sp_plus_at_the_time' in g && g.opponent_sp_plus_at_the_time === null), games[0]);
+      chk('and the note says the database holds no historical version',
+        /no week and no as-of column/.test(away.previous_games.note || ''), away.previous_games.note);
       chk('rest days are derived from the schedule', away.rest_days.missing === false && away.rest_days.value > 0, away.rest_days);
       chk('SP+ defence is labelled lower-is-better',
         /LOWER is better/.test(away.sp_plus_defense.note || ''), away.sp_plus_defense.note);
@@ -827,6 +837,76 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     const appHtml = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'app.html'), 'utf8');
     chk('the app renders the tracking notice next to the decisions',
       /function ledgerNoticeHTML/.test(appHtml) && /\+ledgerNoticeHTML\(d\)\+/.test(appHtml));
+  }
+
+  /* =====================================================================
+     23. A MARKET NUMBER DOES NOT PROMOTE AN UNVALIDATED GAP.
+     Connecting cfb.lines gives most of the college card a number to compare
+     the model against for the first time. The ceiling that existed when
+     there was nothing to compare against has to survive that.
+     ===================================================================== */
+  {
+    const v = I.validationFor('americanfootball_ncaaf', 'spreads');
+    eq('the college spread ceiling is still WATCH', v.max_decision, 'WATCH');
+    eq('and model expected value is still refused', v.may_produce_model_ev, false);
+    chk('the model is still marked experimental in this market', v.experimental === true, v);
+
+    /* A consensus line: a real market number, and still not a price. */
+    const mk = I.resolveMarket({
+      signals: [], lines: [{ provider: 'consensus', spread: -3, over_under: 57.5, home_moneyline: -160, away_moneyline: 135 }],
+      home_selection: 'Texas State', away_selection: 'North Texas', model_home_line: 2.4,
+    });
+    eq('a consensus row is a LINE, not a price', mk.market_status, 'LINE ONLY');
+    eq('so nothing executable comes out of it', mk.has_executable_price, false);
+    eq('and no spread odds are invented for either side', mk.spread.odds_decimal, null);
+    chk('the moneyline de-vig is allowed, because BOTH sides are real numbers',
+      mk.moneyline.devig && mk.moneyline.devig.ok === true, mk.moneyline.devig);
+    eq('but it is still not actionable, because it has no book and no timestamp', mk.moneyline.actionable, false);
+
+    /* The gap itself must refuse to become a probability. */
+    const gap = I.ev({ dec: null, p_win: null });
+    chk('a line difference alone yields no expected value',
+      gap === null || gap.ev == null, gap);
+    const d = I.decide({
+      market: 'spreads', selection: 'North Texas', game_status: 'scheduled',
+      evidence: [{ field: 'line' }],
+      model: { market: 'spreads', line: 2.4, win_probability: 0.6 }, thesis_rests_on_model: true,
+    });
+    chk('a model thesis on a line-only game never reaches BET CANDIDATE', d.decision !== 'BET CANDIDATE', d.decision);
+    eq('and produces no model expected value', d.price ? d.price.model_ev : null, null);
+
+    const p = (await (await m.handle(req({ mode: 'chat', question: 'Which CFB games are worth betting this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'))).json()).prompt || '';
+    chk('the prompt says a gap is not an edge, in this market, with the number',
+      /A GAP IS NOT AN EDGE/.test(p) && /49\.94% against the close over 2,599 games/.test(p), 
+      p.slice(p.indexOf('A GAP IS NOT AN EDGE'), p.indexOf('A GAP IS NOT AN EDGE') + 200));
+  }
+
+  /* =====================================================================
+     24. A RETROSPECTIVE RATING IS NOT HISTORICAL EVIDENCE.
+     ===================================================================== */
+  {
+    const now = I.ratingTimeBasis({ basis: 'AS_ASSESSED_NOW', source: 'cfb.ratings', event_when: '2026-08-30', for_evaluation: true });
+    chk('a current rating attached to a past game is named as such',
+      /AS IT STANDS NOW/.test(now.sentence) && /not as it stood on 2026-08-30/.test(now.sentence), now.sentence);
+    chk('it is still the right number for reading that result', now.usable_for_reading_a_past_result === true);
+    chk('and the wrong number for evaluating a past decision', now.usable_for_leakage_free_evaluation === false);
+    chk('which is stated rather than left to be inferred',
+      /EXCLUDED FROM ANY LEAKAGE-FREE CLAIM/.test(now.evaluation_note || '')
+      && /may not be described as out-of-sample/.test(now.evaluation_note || ''), now.evaluation_note);
+    chk('and the absence of a historical version is disclosed, not hidden',
+      /no week and no as-of column/.test(now.sentence), now.sentence);
+
+    const then = I.ratingTimeBasis({ basis: 'AT_THE_TIME', source: 'archive', event_when: '2026-08-30' });
+    chk('a genuinely contemporary rating IS usable for evaluation', then.usable_for_leakage_free_evaluation === true);
+
+    /* And the leakage check knows about it, which a timestamp alone cannot. */
+    const clean = I.validateNoLookahead({ published_at: '2026-09-01T00:00:00Z', kickoff: '2026-09-02T00:00:00Z' });
+    chk('a row with clean timestamps and no stated basis is clean', clean.clean === true, clean.problems);
+    const leaky = I.validateNoLookahead({ published_at: '2026-09-01T00:00:00Z', kickoff: '2026-09-02T00:00:00Z', rating_time_basis: 'AS_ASSESSED_NOW' });
+    chk('but the same row evaluated with today’s ratings is NOT leakage-free',
+      leaky.clean === false && /not available when it was published/.test(leaky.why || ''), leaky.problems);
+    chk('and leakage_free is reported as its own field', leaky.leakage_free === false);
   }
 
   done();

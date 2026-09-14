@@ -4889,6 +4889,19 @@ export class Dal {
       note: "Read, not assumed. A team with no record is UNKNOWN, never healthy.",
     };
 
+    /* Stated ONCE, attached everywhere a past opponent's rating appears. */
+    const ratingBasis = EDINTEL.ratingTimeBasis({
+      basis: "AS_ASSESSED_NOW", source: `cfb.ratings (SP+, season ${season})`, for_evaluation: false,
+    });
+    path.rating_time_basis = {
+      basis: ratingBasis.basis,
+      historical_versions_available: false,
+      why: "cfb.ratings is keyed (season, team) with no week or as-of column, so this database carries no "
+        + "historical version of a rating. Opponent strength on a PAST game is therefore a retrospective "
+        + "assessment, not what was knowable at the time.",
+      usable_for_leakage_free_evaluation: ratingBasis.usable_for_leakage_free_evaluation,
+    };
+
     const F = EDINTEL.fact, MISS = EDINTEL.missingFact;
     const packets = shortlist.map((g) => {
       const side = (t: string) => {
@@ -4923,8 +4936,15 @@ export class Dal {
             margin: own != null && them != null ? own - them : null,
             result: own != null && them != null ? (own > them ? "W" : own < them ? "L" : "T") : null,
             conference_game: p.conference_game === true,
-            opponent_sp_plus: oppSp ? num(oppSp.rating) : null,
-            opponent_sp_rank: oppSp ? num(oppSp.ranking) : null,
+            /* NAMED FOR WHEN IT IS TRUE. cfb.ratings is keyed (season, team)
+               with no week and no as-of column, so this is where the opponent
+               stands NOW, not where they stood the day this game was played.
+               Calling it `opponent_sp_plus` invited exactly the reading that
+               makes a past recommendation look better than it was. */
+            opponent_sp_plus_now: oppSp ? num(oppSp.rating) : null,
+            opponent_sp_rank_now: oppSp ? num(oppSp.ranking) : null,
+            opponent_sp_plus_at_the_time: null,
+            opponent_rating_time_basis: "AS_ASSESSED_NOW",
             opponent_conference: isHome ? p.away_conference : p.home_conference,
           };
         });
@@ -4968,7 +4988,8 @@ export class Dal {
           previous_games: prev.length
             ? F(prev, {
               source: "cfb.games", basis: `completed ${season} games, most recent first`,
-              note: "Each previous game carries the OPPONENT's SP+ rating, so the same result can be read against who it came against.",
+              note: "Each previous game carries the OPPONENT's SP+ rating, so the same result can be read against "
+                + "who it came against. " + ratingBasis.sentence,
             })
             : MISS("no completed games on file for this team this season — early-season ratings are mostly preseason prior", "cfb.games"),
           games_played: F(played.length, { source: "cfb.games" }),
@@ -14025,6 +14046,68 @@ const EDPRES: any = (globalThis as any).EDPRES;
    * before it was published, is leakage and is excluded with a reason rather
    * than quietly included.
    */
+  /* ====================================================================== */
+  /* WHEN A RATING WAS TRUE, WHICH IS NOT THE SAME AS WHAT IT SAYS NOW       */
+  /*                                                                        */
+  /* The packets attach each previous opponent's SP+ rating so a 45-point    */
+  /* win can be read against who it came against. That rating comes from     */
+  /* cfb.ratings, whose key is (season, team): ONE row per program per       */
+  /* season, carrying where the rating stands NOW. There is no week column   */
+  /* and no as-of column, so this database holds no historical version of a  */
+  /* rating at all.                                                          */
+  /*                                                                        */
+  /* That makes the number a RETROSPECTIVE assessment, and it is a perfectly */
+  /* good one for the question "how good was that opponent, really?" -- it   */
+  /* has more information than any contemporary rating did. It is the WRONG  */
+  /* number for "what did EdgeDesk know at the time", and attaching it to a  */
+  /* past recommendation as though it had been available then is lookahead   */
+  /* wearing a timestamp. Both readings are legitimate; conflating them is   */
+  /* not, so the basis travels with the number.                              */
+  /* ====================================================================== */
+
+  var RATING_TIME_BASES = ['AS_ASSESSED_NOW', 'AT_THE_TIME', 'UNKNOWN'];
+
+  /**
+   * Describe the time basis of a rating attached to a past event.
+   *
+   * @param o.basis        'AS_ASSESSED_NOW' | 'AT_THE_TIME' | 'UNKNOWN'
+   * @param o.source       where the rating came from
+   * @param o.event_when   the date of the thing the rating is attached to
+   * @param o.for_evaluation  true when this feeds a backtest or a graded record
+   */
+  function ratingTimeBasis(o) {
+    o = o || {};
+    var basis = RATING_TIME_BASES.indexOf(o.basis) >= 0 ? o.basis : 'UNKNOWN';
+    var src = clean(o.source) || 'the ratings source';
+    var when = clean(o.event_when);
+    var now = basis === 'AS_ASSESSED_NOW';
+    return {
+      basis: basis,
+      source: src,
+      /* The one thing a consumer must not do with a retrospective rating. */
+      usable_for_reading_a_past_result: basis !== 'UNKNOWN',
+      usable_for_leakage_free_evaluation: basis === 'AT_THE_TIME',
+      sentence: now
+        ? 'This opponent rating is SP+ AS IT STANDS NOW, from ' + src + ', not as it stood '
+          + (when ? 'on ' + when : 'at the time of that game') + '. '
+          + 'It is keyed on (season, team) with no week and no as-of column, so this database carries no '
+          + 'historical version of it. Read it as "how good was that opponent, really" -- a question it '
+          + 'answers better than any contemporary rating could, because it has seen the whole season. '
+          + 'It is NOT what EdgeDesk knew at the time and must not be used to judge a past recommendation '
+          + 'as though it had been.'
+        : basis === 'AT_THE_TIME'
+          ? 'This opponent rating is the version that was current ' + (when ? 'on ' + when : 'at the time of that game')
+            + ', from ' + src + ', so it is what was actually knowable then.'
+          : 'The time basis of this rating is unknown, so it may be neither a contemporary view nor a '
+            + 'reliable retrospective one. It is not used to evaluate a past recommendation.',
+      evaluation_note: o.for_evaluation && basis !== 'AT_THE_TIME'
+        ? 'EXCLUDED FROM ANY LEAKAGE-FREE CLAIM: a retrospective rating attached to a past decision is '
+          + 'information that did not exist when the decision was made. Any accuracy figure computed with it '
+          + 'is optimistic by an unknown amount and may not be described as out-of-sample.'
+        : null
+    };
+  }
+
   function validateNoLookahead(row) {
     var pub = toMs(row && row.published_at);
     var kick = toMs(row && row.kickoff);
@@ -14034,9 +14117,19 @@ const EDPRES: any = (globalThis as any).EDPRES;
     if (row && row.mode === 'BACKTEST') problems.push('a backtest, which is measured in its own population');
     var closeAt = toMs(row && row.closing_captured_at);
     if (closeAt != null && pub != null && closeAt < pub) problems.push('graded against a closing price captured before publication');
+    /* A clean timestamp is not a clean evaluation. A row whose EVIDENCE carries
+       ratings as they stand now was judged with information that did not exist
+       when it was published, and no timestamp check can see that. */
+    var rb = row && row.rating_time_basis;
+    if (rb && rb !== 'AT_THE_TIME') {
+      problems.push('evaluated against opponent ratings ' + (rb === 'AS_ASSESSED_NOW'
+        ? 'as they stand NOW rather than as they stood at the time'
+        : 'of unknown vintage') + ', which is information that was not available when it was published');
+    }
     return {
       clean: problems.length === 0,
       problems: problems,
+      leakage_free: problems.length === 0,
       why: problems.length ? 'Excluded from the forward record: ' + problems.join('; ') + '.' : null
     };
   }
@@ -14059,6 +14152,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
+    ratingTimeBasis: ratingTimeBasis, RATING_TIME_BASES: RATING_TIME_BASES,
     normKey: normKey, aliasKey: aliasKey, resolveTeam: resolveTeam, matchesEvent: matchesEvent,
     teamIndex: teamIndex, expandState: expandState, TEAM_ALIASES: TEAM_ALIASES,
     SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,
@@ -16132,7 +16226,19 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
         + "Never describe a side as healthy, clean, fully available or at full strength unless the state is NO_REPORTED_INJURIES. "
         + "Availability is evidence a reader weighs; it NEVER moves the projection, because EdgeDesk has no validated adjustment for it.\n"
         + "6. WHY THE MODEL DIFFERS FROM THE MARKET, when both exist — and then the diagnostic checks, before any talk of value.\n"
-        + "7. THE STRONGEST EVIDENCE AGAINST YOUR OWN CONCLUSION, and the ONE missing fact most likely to reverse it.\n"
+        + "   A GAP IS NOT AN EDGE, AND CONNECTING A MARKET NUMBER DOES NOT CHANGE THAT. Most college games on this card "
+        + "carry a CONSENSUS LINE and no price. Subtracting the model from that line gives a difference in POINTS. It is not a "
+        + "probability, it is not an expected value, and it does not become either because a number is now available to subtract "
+        + "from. EdgeDesk's own record for this model on college spreads is 49.94% against the close over 2,599 games (p=0.53), "
+        + "which is why the spread ceiling is WATCH and why model expected value is refused in this market. Say what the gap IS — "
+        + "a points disagreement between two estimates, one of which has not beaten the closing line — and say what would have to "
+        + "be true for it to be real.\n"
+        + "7. WHEN A RATING WAS TRUE. previous_games carries `opponent_sp_plus_now`, not `opponent_sp_plus`, because "
+        + "cfb.ratings is keyed (season, team) with no week column: it is where that opponent stands TODAY, having seen the whole "
+        + "season, and `opponent_sp_plus_at_the_time` is null because this database holds no historical version. That makes it the "
+        + "BETTER number for \"how good was that opponent, really\" and the WRONG number for \"what did anyone know at the time\". "
+        + "Never judge a past recommendation with it, and never describe a figure computed from it as out-of-sample or leakage-free.\n"
+        + "8. THE STRONGEST EVIDENCE AGAINST YOUR OWN CONCLUSION, and the ONE missing fact most likely to reverse it.\n"
         + "Distinguish, in your wording, between an OBSERVED FACT (a result, a quote, a roster line), a MODEL ESTIMATE (SP+, the board's projection) and YOUR OWN INFERENCE. "
         + "Never invent a matchup explanation to rationalise a projection: if you cannot say WHY from the evidence in front of you, say the projection is unexplained.",
       );
