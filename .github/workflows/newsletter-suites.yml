@@ -1,0 +1,67 @@
+# EdgeDesk — the newsletter suites, on the change rather than on the send.
+#
+# WHY THIS FILE EXISTS. `newsletter.test.js` is the offline suite that holds
+# the scheduling clock, the selection engine, the composer, the validator, the
+# market join and the whole send path — nearly three hundred assertions — and
+# NOTHING ran it on a pull request. Its only caller was newsletter.yml's
+# pre-flight step, which checks out `main`, so a pull request that rewrote the
+# send path showed zero checks and merged on nobody's word but the author's.
+# A break then surfaced at the next scheduled edition, where the choices are
+# to hold the week or to send something wrong.
+#
+# It runs the same three suites newsletter.yml runs before it is allowed to
+# email anybody, in the same order, so a green pull request is evidence about
+# the thing the pre-flight will later demand rather than a different check
+# that happens to pass.
+#
+# Offline: no network, no credentials, nothing written. The SQL contract is
+# held separately by games-sql.yml against a real PostgreSQL.
+name: Newsletter suites
+
+on:
+  pull_request:
+    paths:
+      - 'tools/newsletter/**'
+      - 'tools/articles/**'
+      - 'tools/editorial/**'
+      - 'supabase/newsletter.sql'
+      - '.github/workflows/newsletter.yml'
+      - '.github/workflows/newsletter-suites.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/newsletter/**'
+      - 'tools/articles/**'
+      - 'tools/editorial/**'
+      - 'supabase/newsletter.sql'
+      - '.github/workflows/newsletter.yml'
+      - '.github/workflows/newsletter-suites.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: newsletter-suites-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The order newsletter.yml uses: the newsletter first, because it is the
+      # thing being changed, then the two systems it quotes.
+      - name: The newsletter — clock, selection, copy, validation, market, send path
+        run: node tools/newsletter/newsletter.test.js
+
+      - name: The editorial system the newsletter shares its quality gate with
+        run: node tools/editorial/editorial.test.js
+
+      - name: The article system the newsletter quotes
+        run: node tools/articles/articles.test.js

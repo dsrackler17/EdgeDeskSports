@@ -192,10 +192,40 @@ jobs:
             exit 0
           fi
           git commit -m 'newsletter: build the week-ahead editions and record what was sent'
-          # a concurrent push to main loses the race politely, not the work
+          # WHY THIS IS NOT `git pull --rebase` IN A LOOP.
+          #
+          # It was, and the first real run it raced lost everything. A
+          # concurrent push (the editorial job writes articles/ too) made the
+          # rebase conflict on articles/data/index.json and sitemap.xml; the
+          # rebase stopped with unmerged files; and every remaining attempt
+          # then failed with "Pulling is not possible because you have
+          # unmerged files" — four attempts burnt on a state the first one
+          # created, and the run failed.
+          #
+          # A conflict here is never a merge problem, because every path this
+          # step commits is a GENERATED artefact: editions, previews, records,
+          # pages, the manifest and the sitemaps. Two runs that both
+          # regenerated them do not disagree about intent, and the newer
+          # generation is the current truth. So the retry rebuilds the commit
+          # on top of whatever main now is, taking OUR version of exactly the
+          # files we changed and main's version of everything else — which is
+          # deterministic and cannot conflict.
+          MINE=$(git diff --name-only HEAD~1 HEAD)
           for i in 1 2 3 4; do
             git push origin main && exit 0
-            git pull --rebase origin main || true
+            SAVED=$(git rev-parse HEAD)
+            git rebase --abort 2>/dev/null || true
+            git merge --abort 2>/dev/null || true
+            git reset -q --hard "$SAVED"
+            git fetch origin main
+            git checkout -q -B main origin/main
+            printf '%s\n' "$MINE" | tr '\n' '\0' | xargs -0 -r git checkout "$SAVED" -- 2>/dev/null || true
+            git add articles sitemap.xml sitemap-articles.xml || true
+            if git diff --cached --quiet; then
+              echo 'another run already committed these artefacts; nothing left to push'
+              exit 0
+            fi
+            git commit -q -m 'newsletter: build the week-ahead editions and record what was sent'
             sleep $((2 ** i))
           done
           echo 'could not push the newsletter run after 4 attempts'
