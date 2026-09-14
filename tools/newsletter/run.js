@@ -104,6 +104,47 @@ function candidates() {
     .map(SLATE.fromRecord)
     .filter(Boolean);
 }
+/* THE PAYLOAD THE VALIDATOR READS, PUT BACK BEFORE IT IS ASKED FOR IT.
+   THIS IS WHY NO EDITION COULD EVER BE SENT.
+
+   The build attaches `g.research` to every featured game, and validate.js
+   derives the set of SUPPORTED FIGURES from it — every number the copy prints
+   has to appear in the research it was built from, or the edition prints a
+   statistic nobody can trace. That payload is then deliberately dropped
+   before the edition is stored, so the committed file does not carry the same
+   research twice.
+
+   Nothing put it back. sendBody re-validates the stored edition before it
+   hands anything to the provider, and it re-validated a body whose research
+   was gone: the supported set came out empty and EVERY figure read as
+   unsupported. The first real test send died on exactly that —
+   `revalidation_failed (INTEGRITY: unsupported_statistic)` on 68, 47, -1.1,
+   42.8, 67, 59.1, 62, 71.4 — and a production send would have died the same
+   way. The launch gate would have opened onto a pipeline that refuses
+   everything.
+
+   Re-read from the record store rather than stored alongside the body,
+   because re-validating against a set derived from the same build is a
+   tautology. Reading the CURRENT record is what revalidation is for: if a
+   figure the edition printed is no longer supported by the research behind
+   it, that edition IS stale in substance and refusing it is correct. */
+function attachResearch(edition) {
+  const byKey = Object.create(null);
+  ASTORE.loadAll().forEach(r => {
+    if (!r || !r.sport || r.game_id == null) return;
+    byKey[String(r.sport).toUpperCase() + ':' + r.game_id] = r;
+  });
+  const missing = [];
+  (edition.games || []).forEach(g => {
+    if (g.research) return;
+    const rec = byKey[g.key]
+      || byKey[String(g.sport || edition.sport || '').toUpperCase() + ':' + g.game_id];
+    if (rec && rec.research) g.research = rec.research;
+    else missing.push(g.key || String(g.game_id));
+  });
+  return missing;
+}
+
 function publishedIds() {
   const idx = ASTORE.loadIndex();
   const out = Object.create(null);
@@ -518,7 +559,16 @@ async function sendBody(edition, opts, lease) {
   }
   /* A GAME THAT KICKED OFF WHILE THE EDITION WAITED invalidates the edition.
      Re-validating here rather than trusting the build is the difference
-     between a late send and a wrong one. */
+     between a late send and a wrong one. The research the validator reads is
+     put back first — storage drops it, and without it every figure in the
+     copy reads as unsupported. */
+  const researchMissing = attachResearch(edition);
+  if (researchMissing.length) {
+    return Object.assign({ sent: false, reason: 'research_unavailable',
+      detail: 'the record store no longer holds the research behind '
+        + researchMissing.length + ' featured game(s) (' + researchMissing.slice(0, 4).join(', ')
+        + '), so this edition\u2019s figures cannot be verified' }, outcomeBase);
+  }
   const revalidate = VALIDATE.validate(edition, {
     now, published_ids: publishedIds(),
     rendered: { html: edition.html_free, text: edition.text_free },
@@ -1107,4 +1157,4 @@ if (require.main === module) {
   main().catch(e => { console.error(e && e.stack ? e.stack : e); process.exit(1); });
 }
 
-module.exports = { build, send, persist, candidates, publishedIds, dueFor, snapshotsFor };
+module.exports = { build, send, persist, candidates, publishedIds, attachResearch, dueFor, snapshotsFor };

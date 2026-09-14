@@ -1240,6 +1240,80 @@ section('7 — the provider');
         { settings: { test_recipients: ['ops@example.com'] } },
         { test: true, dry: false, driver: 'console' })).past_window) == null);
 
+    /* THE ONE THAT MEANT NO EDITION COULD EVER BE SENT.
+
+       The build attaches `g.research` to every featured game and validate.js
+       derives the set of supported figures from it. Storage drops that
+       payload so the committed file does not carry the same research twice —
+       and nothing put it back before sendBody re-validated. The supported set
+       came out empty, every number in the copy read as unsupported, and the
+       first real test send died on
+       `revalidation_failed (INTEGRITY: unsupported_statistic)`. A production
+       send would have died identically: the launch gate would have opened
+       onto a pipeline that refuses everything.
+
+       Asserted against the COMMITTED editions and the REAL record store,
+       because that is the shape the bug lived in — a fixture with research
+       already attached cannot see it. */
+    {
+      const FS = require('fs');
+      const REPO = path.join(__dirname, '..', '..');
+      const EDIR = path.join(REPO, 'articles', 'data', 'newsletter', 'editions');
+      const PDIR = path.join(REPO, 'articles', 'data', 'newsletter', 'previews');
+      const stored = FS.existsSync(EDIR)
+        ? FS.readdirSync(EDIR).filter(f => /\.json$/.test(f)) : [];
+      let checked = 0;
+      const unsupported = [];
+      const lostResearch = [];
+      stored.forEach(f => {
+        const key = f.replace(/\.json$/, '');
+        const htmlFile = path.join(PDIR, key + '.html');
+        const textFile = path.join(PDIR, key + '.txt');
+        if (!FS.existsSync(htmlFile) || !FS.existsSync(textFile)) return;
+        const ed = JSON.parse(FS.readFileSync(path.join(EDIR, f), 'utf8'));
+        if (!(ed.games || []).length) return;
+        chk(key + ': storage really does drop the research payload',
+          (ed.games || []).every(g => !g.research));
+        const missing = RUN.attachResearch(ed);
+        if (missing.length) { lostResearch.push(key + ': ' + missing.join(', ')); return; }
+        ed.html_free = FS.readFileSync(htmlFile, 'utf8');
+        ed.text_free = FS.readFileSync(textFile, 'utf8');
+        const v = VALIDATE.validate(ed, {
+          now: Date.parse(ed.data_cutoff_at || ed.composed_at || ed.built_at) || NOW,
+          published_ids: {},
+          rendered: { html: ed.html_free, text: ed.text_free },
+          renderOpts: { site: 'https://edgedesksports.com',
+            mailing_address: 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423' },
+        });
+        checked++;
+        (v.integrity_failed || []).forEach(x => {
+          if (x.id === 'unsupported_statistic') unsupported.push(key + ': ' + x.detail);
+        });
+      });
+      chk('a stored edition is actually checked by this', checked > 0,
+        checked + ' checked, ' + lostResearch.length + ' had no research to re-attach');
+      chk('re-attaching the research makes every figure traceable again',
+        unsupported.length === 0, unsupported.slice(0, 3).join(' | '));
+    }
+
+    /* AND WHEN IT CANNOT BE RE-ATTACHED, the send says so by name rather than
+       reporting every number in the email as an invented statistic. */
+    const dbNoRec = fakeDb({ eligible: people3 });
+    const orphan = Object.assign({}, sendableEdition, {
+      games: (sendableEdition.games || []).map(g => {
+        const copy = Object.assign({}, g); delete copy.research;
+        copy.key = 'NFL:not-a-real-game'; copy.game_id = 'not-a-real-game';
+        return copy;
+      }),
+    });
+    const sOrphan = await RUN.send(orphan, {
+      resolved: resolvedFor(dbNoRec), now: NOW, log: () => {}, dry: true, env: {},
+    });
+    chk('an edition whose research is gone is refused by name',
+      sOrphan.sent === false && sOrphan.reason === 'research_unavailable', JSON.stringify(sOrphan));
+    chk('\u2026and says which games it could not verify',
+      /not-a-real-game/.test(sOrphan.detail || ''), sOrphan.detail);
+
     /* the kill switch is re-read at send time, not trusted from the build */
     const db5 = fakeDb({ eligible: people3 });
     const s5 = await runSend(db5, { sending_enabled: false });
