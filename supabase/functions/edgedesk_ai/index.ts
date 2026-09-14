@@ -7857,6 +7857,11 @@ export function scout(slateRows: any[], floor = 0.02, staleMin = 45): ScoutItem[
 /* Structured, not six raw chat lines: "what about the bullpen?" has to know
    which game is still in focus. */
 export interface ConvoState {
+  /** A matchup the CONVERSATION named, as two raw names. Never the loaded
+      packet's own teams: those are what the reader has open, not what they
+      asked about, and conflating the two makes an ordinary question about the
+      open game look like a matchup that is missing from another sport's card. */
+  namedMatchup?: string[];
   teams: string[];
   sport: string | null;
   eventId: string | null;
@@ -7902,6 +7907,7 @@ export function deriveState(
     sport: null, eventId: plan.entities.eventId, lastIntent: plan.intent,
   };
   if (!st.teams.length && prev?.teams?.length) st.teams = prev.teams.slice();
+  if (!st.namedMatchup?.length && prev?.namedMatchup?.length) st.namedMatchup = prev.namedMatchup.slice();
   if (!st.eventId && prev?.eventId) st.eventId = prev.eventId;
   if (!st.sport && prev?.sport) st.sport = prev.sport;
 
@@ -7932,6 +7938,7 @@ export function deriveState(
   if (packet?.sport_key && (namedBefore.length !== 2 || packetNamesIt)) st.sport = packet.sport_key;
   if (namedBefore.length === 2 && !packetNamesIt) {
     st.teams = namedBefore;
+    st.namedMatchup = namedBefore;
     /* The sport is NOT asserted here — resolveNamedMatchup settles that
        against a real card. Only the subject is carried. */
     st.sport = null;
@@ -14366,7 +14373,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-14-r7-matchup-routing";
+export const BUILD = "edgedesk_ai-2026-09-14-r8-matchup-routing-fix";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -15211,6 +15218,34 @@ function needsFromCfb(plan: Plan, wants: (s: string) => boolean): Set<string> {
    sides", answered from the same published artifact the board renders.
    ======================================================================== */
 
+/* Capitalised multi-word phrases that could name a team, for the single-team
+   lookup above. This asserts nothing: every phrase it returns is handed to the
+   card resolver, and a phrase that resolves to no scheduled game is dropped
+   without a word. Single bare words are excluded — "Miami" alone is genuinely
+   ambiguous and "Thoughts" is not a team at all. */
+export function teamishPhrases(text: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const re = /\b([A-Z][A-Za-z'&.()-]*(?:[ ](?:of|and|&|the)?[ ]?[A-Z][A-Za-z'&.()-]*)+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(String(text ?? ""))) != null) {
+    let words = m[1].replace(MATCHUP_LEAD, "").replace(/[.,;:!?]+$/, "").trim().split(/\s+/);
+    /* A capitalised word at the start of a sentence is part of the sentence,
+       not part of the name: "Is North Texas worth a look?" captures "Is North
+       Texas", and "isnorthtexas" resolves to nothing at all. Ordinary words
+       are trimmed from BOTH ends until a real phrase is left. */
+    while (words.length && NOT_A_NAME.has(normName(words[0]))) words = words.slice(1);
+    while (words.length && NOT_A_NAME.has(normName(words[words.length - 1]))) words = words.slice(0, -1);
+    if (words.length < 2 || words.length > 4) continue;
+    const phrase = words.join(" ");
+    const k = normName(phrase);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(phrase);
+  }
+  return out.slice(0, 4);
+}
+
 export interface MatchupResolution {
   /** 'RESOLVED' | 'NOT_ON_ANY_CARD' | 'RETRIEVAL_FAILED' | 'NONE_NAMED' */
   state: string;
@@ -15243,11 +15278,21 @@ export async function resolveNamedMatchup(
      lapses on turn two and the open board takes the wheel again. */
   const fromQ = matchupFromText(question);
   const named = fromQ.length === 2 ? fromQ : (carried.length === 2 ? carried.slice() : []);
+
+  /* ONE TEAM IS THE SAME BUG WITH ONE NAME. "How does Texas State look this
+     week?" has no "vs" for matchupFromText to find, and reaches exactly the
+     same dead end: the only team resolver in this function knows MLB clubs,
+     "Texas State" becomes the Texas Rangers, and the sport is decided by
+     whatever board is open. So a single name gets the same treatment — an
+     UNAMBIGUOUS lookup against the published card, never a guess.
+     Deliberately conservative: a name that resolves to two programs, or that
+     matches a club in the sport already in scope, is left alone. */
+  const soloNames = named.length === 2 ? [] : teamishPhrases(question);
   const none: MatchupResolution = {
     state: "NONE_NAMED", named: [], sport: null, game_id: null, home: null, away: null,
     home_id: null, away_id: null, kickoff: null, source: null, note: null,
   };
-  if (named.length !== 2) return none;
+  if (named.length !== 2 && !soloNames.length) return none;
 
   const art = await dal.getFbsSlateArtifact();
   if (art.error && !art.games.length) {
@@ -15282,6 +15327,36 @@ export async function resolveNamedMatchup(
       }
     }
   }
+  /* ---- one named team, resolved to exactly one game on the card -------- */
+  if (named.length !== 2 && soloNames.length && art.games.length) {
+    const games = art.games.map((g: any) => ({
+      game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
+      home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null,
+    }));
+    const ix = EDINTEL.fbsIndexFor(games);
+    for (const phrase of soloNames) {
+      const r = EDINTEL.resolveTeam(phrase, ix);
+      if (!r?.key) continue;
+      const hits = games.filter((g: any) =>
+        EDINTEL.canonKey(g.home_id, g.home_team) === r.key || EDINTEL.canonKey(g.away_id, g.away_team) === r.key);
+      /* Two games for one program in the same window is a scheduling artefact
+         or a bad match; either way it is not a single answer. */
+      if (hits.length !== 1) continue;
+      const hit = hits[0];
+      return {
+        state: "RESOLVED", named: [phrase], sport: "americanfootball_ncaaf",
+        game_id: hit.game_id, home: hit.home_team, away: hit.away_team,
+        home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
+        away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
+        kickoff: hit.kickoff, source: "football/fbs/slate.json", note: null,
+      };
+    }
+    /* A name that looks like a team and is on no card is NOT a finding worth
+       interrupting for — the reader may have meant a player, another sport, or
+       nothing in particular. Fall through silently. */
+    return none;
+  }
+
   return {
     ...none, state: "NOT_ON_ANY_CARD", named,
     note: `"${named[0]}" and "${named[1]}" were named as a matchup, and no scheduled game with BOTH of those `
@@ -15322,7 +15397,12 @@ async function runResearch(
      which meant the game someone had open outranked the game they asked
      about — and a question naming two college programs was answered with
      baseball. One memoised read; nothing sport-specific has been fetched yet. */
-  const namedMatchup = await resolveNamedMatchup(question, dal, state.teams);
+  /* ONLY what the conversation NAMED is carried. Passing state.teams would
+     hand the loaded packet's own clubs to the resolver, so an ordinary
+     question asked with a baseball game open would look up "Baltimore Orioles
+     vs New York Yankees" on the FBS card, fail to find it, and fire the
+     clarification path on a question that named no matchup at all. */
+  const namedMatchup = await resolveNamedMatchup(question, dal, state.namedMatchup ?? []);
   if (namedMatchup.state !== "NONE_NAMED") {
     data_path.named_matchup = {
       state: namedMatchup.state, named: namedMatchup.named, sport: namedMatchup.sport,

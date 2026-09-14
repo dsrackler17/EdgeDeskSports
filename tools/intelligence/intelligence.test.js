@@ -1271,5 +1271,68 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     }
   }
 
+  /* =====================================================================
+     31. ONE TEAM IS THE SAME BUG WITH ONE NAME.
+     "How does Texas State look this week?" has no "vs" to find, and hits the
+     identical dead end: the only team resolver here knows MLB clubs, so
+     "Texas State" becomes the Texas Rangers and the open board picks the
+     sport. Same lookup discipline, one name.
+     ===================================================================== */
+  {
+    const MLB_BOARD = {
+      game: { matchup: 'Baltimore Orioles @ New York Yankees', sport: 'MLB', sport_key: 'baseball_mlb',
+        away: 'Baltimore Orioles', home: 'New York Yankees', event_id: 'mlb-1' },
+      sport_key: 'baseball_mlb', board_scope: { sport: 'baseball_mlb', label: 'today' },
+    };
+    for (const q of ['How does Texas State look this week?', 'Is North Texas worth a look?', 'Thoughts on Texas State?']) {
+      const fx = FX.build();
+      clearCache(); route = FX.router(fx);
+      const j = await (await m.handle(req({ mode: 'chat', question: q, packet: MLB_BOARD, history: [] }, '?dry=1'))).json();
+      eq(`"${q}" resolves to college football`, j.sport, 'americanfootball_ncaaf');
+      eq(`"${q}" retrieves the same sport it reports`, j.data_path.slate_index.sport, 'americanfootball_ncaaf');
+      eq(`"${q}" finds the one game that team is on`, (j.data_path.named_matchup || {}).game_id, '401858900');
+      chk(`"${q}" carries no baseball club`,
+        !(j.entities.teams || []).some((t) => /Orioles|Yankees|Rangers/.test(t)), j.entities.teams);
+    }
+
+    /* THE EXTRACTOR ASSERTS NOTHING — every phrase goes to the card resolver,
+       and the conversational questions must produce none at all. */
+    const none = ['Any CFB matchups look good?', 'What price makes it a pass?', 'Who have they played?',
+      'Did opponent quality inflate their numbers?', 'What is the strongest argument against that lean?'];
+    none.forEach((q) => chk(`"${q}" yields no team phrase`, m.teamishPhrases(q).length === 0, m.teamishPhrases(q)));
+    chk('a leading sentence word is trimmed, not kept',
+      JSON.stringify(m.teamishPhrases('Is North Texas worth a look?')) === '["North Texas"]',
+      m.teamishPhrases('Is North Texas worth a look?'));
+    eq('a lone bare word is never a team phrase', m.teamishPhrases('Thoughts on Miami?').length, 0);
+
+    /* A TEAMISH PHRASE ON NO CARD FALLS THROUGH SILENTLY — it is not a finding
+       worth interrupting for, because the reader may have meant a player. */
+    {
+      const fx = FX.build();
+      clearCache(); route = FX.router(fx);
+      const j = await (await m.handle(req({ mode: 'chat', question: 'How does Slippery Rock look this week?',
+        packet: MLB_BOARD, history: [] }, '?dry=1'))).json();
+      eq('an unknown single name does not fire the clarification path',
+        (j.data_path.named_matchup || { state: 'NONE_NAMED' }).state, 'NONE_NAMED');
+      chk('and no clarifying question is demanded',
+        !/ASK ONE SHORT CLARIFYING QUESTION/.test(j.prompt || ''));
+    }
+
+    /* AND THE OPEN PACKET'S OWN TEAMS ARE NEVER TREATED AS A NAMED MATCHUP.
+       Passing them to the card resolver made an ordinary question asked with a
+       baseball game open look up "Orioles vs Yankees" on the FBS slate, fail,
+       and demand a clarification for a matchup nobody named. */
+    {
+      const fx = FX.build();
+      clearCache(); route = FX.router(fx);
+      const j = await (await m.handle(req({ mode: 'chat', question: 'What do you make of this one?',
+        packet: MLB_BOARD, history: [] }, '?dry=1'))).json();
+      eq('an ordinary question on the open game names no matchup',
+        (j.data_path.named_matchup || { state: 'NONE_NAMED' }).state, 'NONE_NAMED');
+      chk('and is not interrupted by a clarification',
+        !/ASK ONE SHORT CLARIFYING QUESTION/.test(j.prompt || ''));
+    }
+  }
+
   done();
 })().catch((e) => { console.error('CRASH', e && e.stack || e); process.exit(1); });
