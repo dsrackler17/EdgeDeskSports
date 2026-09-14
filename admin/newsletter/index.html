@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Newsletter operations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE OPERATOR'S NEWSLETTER CONSOLE.
+
+     WHAT IT CAN DO AND WHAT IT DELIBERATELY CANNOT — the same split the
+     article manager makes, for the same reason. The pipeline boots the real
+     football module and commits to the repository; neither is possible from a
+     browser. So this screen owns the DECISIONS and the VISIBILITY, never the
+     work:
+
+       SEE        next scheduled edition per sport, data freshness and cutoff,
+                  the games selected and WHY each one was, the rendered HTML
+                  and plain text, the eligible recipient count, the edition's
+                  status and hold reason, and delivery counts with provider
+                  errors.
+       PAUSE      the global kill switch and a switch per sport.
+       LAUNCH     the one-time gate: sending_enabled.
+       TEST       ask the pipeline for a test send to the stored addresses.
+       RETRY      re-run failed and ambiguous deliveries with the same
+                  idempotency keys.
+
+     NO SUBSCRIBER ADDRESS IS EVER ON THIS SCREEN. It cannot be: the table has
+     row level security on with no select policy for anybody, and every read
+     here is a security-definer function that returns counts and MASKED
+     addresses. An operator does not need the list, so the console cannot
+     become one.
+
+     TRIGGERING A RUN is a GitHub workflow_dispatch, which needs a token this
+     page does not have and must never have. The buttons therefore WRITE A
+     REQUEST — a settings change or a run-log row — and the scheduled pipeline
+     acts on it, which is also what stops a browser from being able to send
+     email to anybody.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--cell:#1e1913;--border:#332a1b;--border2:#3a3124;
+      --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--accent:#2fa79a;--on-accent:#042320;
+      --pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--mdl:#d274b0}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+a{color:var(--accent);text-decoration:none}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0}
+.logo{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px}
+.logo .mk{width:10px;height:16px;background:linear-gradient(180deg,var(--accent),#54c4b7);border-radius:2px;transform:skewX(-12deg)}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}
+.who{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h3{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:9px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:740px){.grid2{grid-template-columns:1fr}}
+.kv{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(51,42,27,.7);font-size:13px;align-items:baseline}
+.kv:last-child{border:none}
+.kv .k{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.05em;min-width:150px;flex:none}
+.kv .v{font-family:'JetBrains Mono',monospace;font-size:13px;flex:1;word-break:break-word}
+.pill{font-size:9px;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--border2);border-radius:5px;padding:2px 7px;color:var(--dim);flex:none;font-family:'JetBrains Mono',monospace}
+.pill.ok{color:var(--pos);border-color:rgba(118,189,62,.45)}
+.pill.bad{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.pill.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.pill.mdl{color:var(--mdl);border-color:rgba(210,116,176,.45)}
+.btn{background:var(--accent);color:var(--on-accent);border:none;border-radius:9px;font-family:inherit;font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
+.btn.sm{padding:6px 10px;font-size:12px}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border2)}
+.btn.danger{background:transparent;color:var(--neg);border:1px solid rgba(226,96,68,.45)}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tog{width:44px;height:25px;border-radius:99px;border:1px solid var(--border2);background:var(--cell);position:relative;cursor:pointer;flex:none}
+.tog i{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:var(--faint);transition:.15s}
+.tog.on{border-color:var(--accent);background:rgba(47,167,154,.2)}
+.tog.on i{left:21px;background:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:6px 8px 6px 0;font-weight:600}
+td{padding:7px 8px 7px 0;border-top:1px solid rgba(51,42,27,.7);vertical-align:top;font-family:'JetBrains Mono',monospace}
+.msg{font-size:12.5px;border-radius:8px;padding:9px 12px;margin-top:10px;font-family:'JetBrains Mono',monospace;display:none;line-height:1.5}
+.msg.err{display:block;background:rgba(226,96,68,.1);border:1px solid rgba(226,96,68,.35);color:var(--neg)}
+.msg.ok{display:block;background:rgba(118,189,62,.1);border:1px solid rgba(118,189,62,.35);color:var(--pos)}
+.hide{display:none}
+input[type=email],input[type=password],input[type=text]{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:11px;font-size:15px;font-family:'Inter',sans-serif}
+.prev{background:#fff;border:1px solid var(--border);border-radius:9px;width:100%;height:620px}
+pre.txt{background:var(--cell);border:1px solid var(--border);border-radius:9px;padding:14px;overflow:auto;max-height:620px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.55;white-space:pre-wrap;color:var(--dim)}
+.tabs{display:flex;gap:7px;margin:12px 0}
+.tab{font-size:12px;font-weight:600;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;font-family:inherit}
+.tab.on{background:var(--surface2);border-color:var(--accent);color:var(--text)}
+.reasons{font-size:12px;color:var(--dim);line-height:1.6}
+.reasons b{color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11.5px}
+</style>
+</head>
+<body>
+
+<header><div class="wrap hd">
+  <span class="logo"><span class="mk"></span>EdgeDesk</span>
+  <span class="tag">Newsletter ops</span>
+  <span class="sp"></span>
+  <span class="who mono" id="who"></span>
+</div></header>
+
+<div class="wrap">
+
+<div id="gate" class="card">
+  <h3>Operator sign-in</h3>
+  <p style="color:var(--dim);font-size:13px;margin-bottom:12px">This console reads through your own
+  account. Row level security decides what you can see; an account that is not on the operator
+  allowlist sees nothing, not an error it could learn from.</p>
+  <div style="display:flex;flex-direction:column;gap:9px;max-width:380px">
+    <input id="gEmail" type="email" placeholder="you@email.com" autocomplete="email">
+    <input id="gPass" type="password" placeholder="password" autocomplete="current-password">
+    <button class="btn" id="gGo">Sign in</button>
+  </div>
+  <div class="msg" id="gMsg"></div>
+</div>
+
+<div id="app" class="hide">
+
+  <h2>Sending</h2>
+  <div class="card">
+    <h3>The launch gate and the kill switches <span class="pill" id="gatePill">—</span></h3>
+    <p style="color:var(--dim);font-size:13px;margin-bottom:6px">
+      <b style="color:var(--text)">Sending is off until it is turned on here.</b> While it is off the
+      pipeline still builds, validates, previews and stores every edition — which is what the
+      pre-launch period should look like. Turning it on is a one-time gate; after that a valid
+      edition sends on its own schedule with no approval.</p>
+    <div class="kv"><span class="k">Global sending</span><span class="v" style="display:flex;gap:10px;align-items:center">
+      <button class="tog" id="togSend"><i></i></button><span id="lblSend" class="mono"></span></span></div>
+    <div class="kv"><span class="k">College football</span><span class="v" style="display:flex;gap:10px;align-items:center">
+      <button class="tog" id="togCfb"><i></i></button><span id="lblCfb" class="mono"></span></span></div>
+    <div class="kv"><span class="k">NFL</span><span class="v" style="display:flex;gap:10px;align-items:center">
+      <button class="tog" id="togNfl"><i></i></button><span id="lblNfl" class="mono"></span></span></div>
+    <div class="kv"><span class="k">Dispatcher</span><span class="v" style="display:flex;gap:10px;align-items:center">
+      <button class="tog" id="togDisp"><i></i></button><span id="lblDisp" class="mono"></span></span></div>
+    <div class="kv"><span class="k">Sender</span><span class="v" id="vFrom">—</span></div>
+    <div class="kv"><span class="k">Reply-to</span><span class="v" id="vReply">—</span></div>
+    <div class="kv"><span class="k">Footer address</span><span class="v" id="vAddr">—</span></div>
+    <div class="kv"><span class="k">Test recipients</span><span class="v" id="vTest">—</span></div>
+    <div class="msg" id="setMsg"></div>
+  </div>
+
+  <h2>Audience</h2>
+  <div class="card">
+    <h3>Recipients</h3>
+    <div class="grid2">
+      <div>
+        <div class="kv"><span class="k">Confirmed</span><span class="v" id="sConf">—</span></div>
+        <div class="kv"><span class="k">Pending confirmation</span><span class="v" id="sPend">—</span></div>
+        <div class="kv"><span class="k">Unsubscribed</span><span class="v" id="sUnsub">—</span></div>
+      </div>
+      <div>
+        <div class="kv"><span class="k">Eligible · CFB</span><span class="v" id="eCfb">—</span></div>
+        <div class="kv"><span class="k">Eligible · NFL</span><span class="v" id="eNfl">—</span></div>
+        <div class="kv"><span class="k">Suppressed</span><span class="v" id="sSupp">—</span></div>
+      </div>
+    </div>
+    <p style="color:var(--faint);font-size:11.5px;margin-top:10px">
+      Eligible = consent recorded and confirmed, wants this sport, and not on the suppression list.
+      It is recomputed at send time, so a bounce recorded a minute ago is already excluded.
+      No address is shown on this screen and none can be.</p>
+  </div>
+
+  <h2>Editions</h2>
+  <!-- The opened edition's detail renders here rather than being prepended to
+       the list, so clicking three editions leaves one card rather than three. -->
+  <div id="detail"></div>
+  <div id="editions"></div>
+
+  <h2>Preview</h2>
+  <div class="card">
+    <h3>Rendered edition <span class="pill" id="prevKey">—</span></h3>
+    <p style="color:var(--dim);font-size:12.5px">The stored bodies, exactly as the provider would be
+    handed them. The per-recipient unsubscribe and preference URLs are placeholders here because they
+    are substituted per address at send time — which is what makes one stored edition reproducible.</p>
+    <div class="tabs">
+      <button class="tab on" data-p="html">HTML</button>
+      <button class="tab" data-p="text">Plain text</button>
+      <button class="tab" data-p="member">Member variant</button>
+    </div>
+    <iframe class="prev" id="prevFrame" sandbox="" title="Rendered newsletter"></iframe>
+    <pre class="txt hide" id="prevText"></pre>
+  </div>
+
+  <h2>Run log</h2>
+  <div class="card"><table id="runs"><thead><tr>
+    <th>When</th><th>Sport</th><th>Phase</th><th>Edition</th><th>Result</th></tr></thead>
+    <tbody></tbody></table></div>
+
+</div>
+</div>
+
+<script>
+/* The same project and public key every page ships. Reads and writes carry the
+   OPERATOR'S OWN bearer token; the service role never touches this page. */
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_nl_admin_session';
+var SESSION = null, OVERVIEW = null, EDITION = null, PREV = 'html';
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+  return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function say(el, kind, text) { el.className = 'msg ' + kind; el.textContent = text; }
+
+function loadSession() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
+function saveSession(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
+
+async function api(path, init) {
+  var t = (SESSION && SESSION.access_token) || SB_KEY;
+  var r = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({}, init, {
+    headers: Object.assign({ apikey: SB_KEY, authorization: 'Bearer ' + t,
+      'content-type': 'application/json' }, (init && init.headers) || {}) }));
+  var txt = await r.text();
+  if (!r.ok) throw new Error(r.status + ': ' + txt.slice(0, 200));
+  return txt ? JSON.parse(txt) : null;
+}
+function rpc(name, body) { return api('rpc/' + name, { method: 'POST', body: JSON.stringify(body || {}) }); }
+
+/* ------------------------------------------------------------- sign in --- */
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  $('gGo').disabled = true;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; saveSession(j);
+    await boot();
+  } catch (e) { say($('gMsg'), 'err', String(e.message || e)); }
+  $('gGo').disabled = false;
+};
+
+/* ----------------------------------------------------------- rendering --- */
+function statusPill(s) {
+  var cls = s === 'sent' ? 'ok' : (s === 'held' || s === 'failed') ? 'bad'
+    : s === 'ready' ? 'mdl' : s === 'sending' ? 'warn' : '';
+  return '<span class="pill ' + cls + '">' + esc(s) + '</span>';
+}
+function when(v) { return v ? String(v).replace('T', ' ').slice(0, 16) + 'Z' : '—'; }
+
+function renderSettings() {
+  var s = (OVERVIEW && OVERVIEW.settings) || {};
+  function tog(id, on, label) {
+    $(id).classList.toggle('on', !!on);
+    $(label).textContent = on ? 'on' : 'PAUSED';
+    $(label).style.color = on ? 'var(--pos)' : 'var(--neg)';
+  }
+  tog('togSend', s.sending_enabled, 'lblSend');
+  tog('togCfb', s.cfb_enabled, 'lblCfb');
+  tog('togNfl', s.nfl_enabled, 'lblNfl');
+  tog('togDisp', s.dispatcher_enabled, 'lblDisp');
+  $('gatePill').textContent = s.sending_enabled ? 'LIVE' : 'GATE CLOSED';
+  $('gatePill').className = 'pill ' + (s.sending_enabled ? 'ok' : 'warn');
+  $('vFrom').textContent = (s.from_name || '') + ' <' + (s.from_email || '') + '>';
+  $('vReply').textContent = s.reply_to_email || '—';
+  $('vAddr').textContent = s.mailing_address || '—';
+  $('vTest').textContent = (s.test_recipients && s.test_recipients.length)
+    ? s.test_recipients.length + ' address(es) stored' : 'none stored';
+}
+
+function renderAudience() {
+  var o = OVERVIEW || {}, sub = o.subscribers || {}, el = o.eligible || {}, sp = o.suppressions || {};
+  $('sConf').textContent = sub.confirmed == null ? '—' : sub.confirmed;
+  $('sPend').textContent = sub.pending == null ? '—' : sub.pending;
+  $('sUnsub').textContent = sub.unsubscribed == null ? '—' : sub.unsubscribed;
+  $('eCfb').textContent = el.CFB == null ? '—' : el.CFB;
+  $('eNfl').textContent = el.NFL == null ? '—' : el.NFL;
+  $('sSupp').textContent = Object.keys(sp).length
+    ? Object.keys(sp).map(function (k) { return k + ' ' + sp[k]; }).join(' · ') : '0';
+}
+
+function renderEditions() {
+  var host = $('editions');
+  var eds = (OVERVIEW && OVERVIEW.editions) || [];
+  if (!eds.length) {
+    host.innerHTML = '<div class="card"><p style="color:var(--dim);font-size:13px">'
+      + 'No edition has been built yet. The pipeline writes one on its next scheduled run, '
+      + 'or run <span class="mono">npm run newsletter:build</span>.</p></div>';
+    return;
+  }
+  host.innerHTML = eds.map(function (e) {
+    var counts = e.counts || {};
+    var countLine = Object.keys(counts).length
+      ? Object.keys(counts).map(function (k) { return k + ' ' + counts[k]; }).join(' · ') : 'no deliveries yet';
+    return '<div class="card">'
+      + '<h3>' + esc(e.edition_key) + ' ' + statusPill(e.status)
+      + (e.hold_reason ? ' <span class="pill bad">' + esc(e.hold_reason) + '</span>' : '') + '</h3>'
+      + (e.subject ? '<div class="kv"><span class="k">Subject</span><span class="v">' + esc(e.subject) + '</span></div>' : '')
+      + (e.preview_text ? '<div class="kv"><span class="k">Preview text</span><span class="v">' + esc(e.preview_text) + '</span></div>' : '')
+      + '<div class="kv"><span class="k">Scheduled</span><span class="v">' + when(e.scheduled_at) + ' · window closes ' + when(e.deadline_at) + '</span></div>'
+      + '<div class="kv"><span class="k">Data cutoff</span><span class="v">' + when(e.data_cutoff_at) + '</span></div>'
+      + '<div class="kv"><span class="k">Games</span><span class="v">' + (e.game_count == null ? '—' : e.game_count) + '</span></div>'
+      + '<div class="kv"><span class="k">Eligible recipients</span><span class="v">' + (e.eligible_recipients == null ? '—' : e.eligible_recipients) + '</span></div>'
+      + '<div class="kv"><span class="k">Deliveries</span><span class="v">' + esc(countLine) + '</span></div>'
+      + '<div class="kv"><span class="k">Content hash</span><span class="v">' + esc(e.content_hash || '—') + '</span></div>'
+      + (e.hold_detail ? '<div class="kv"><span class="k">Reason</span><span class="v">' + esc(e.hold_detail) + '</span></div>' : '')
+      + (e.lease_owner ? '<div class="kv"><span class="k">Lease</span><span class="v">' + esc(e.lease_owner) + ' until ' + when(e.lease_expires_at) + '</span></div>' : '')
+      + '<div class="row">'
+      + '<button class="btn sm" onclick="openEdition(\'' + esc(e.edition_key) + '\')">Open</button>'
+      + '<button class="btn sm ghost" onclick="dispatch(\'preview\',\'' + esc(e.sport) + '\')">Rebuild preview</button>'
+      + '<button class="btn sm ghost" onclick="testSend(\'' + esc(e.sport) + '\')">Send a test</button>'
+      + '<button class="btn sm ghost" onclick="dispatch(\'retry\',\'' + esc(e.sport) + '\')">Retry failed deliveries</button>'
+      + '</div>'
+      + '<div class="msg" id="msg-' + esc(e.sport) + '"></div>'
+      + '</div>';
+  }).join('');
+}
+
+function renderSelection(ed) {
+  var sel = ed.selection || {};
+  var host = document.createElement('div');
+  var rows = (sel.refused || []).slice(0, 8).map(function (r) {
+    return '<div><b>' + esc(r.matchup || r.key) + '</b> — '
+      + esc((r.reasons || []).map(function (x) { return x.id + ': ' + x.why; }).join('; ')) + '</div>';
+  }).join('');
+  host.innerHTML = '<div class="card"><h3>Why these games</h3>'
+    + '<div class="kv"><span class="k">Considered</span><span class="v">' + (sel.considered == null ? '—' : sel.considered) + '</span></div>'
+    + '<div class="kv"><span class="k">Qualified</span><span class="v">' + (sel.qualified == null ? '—' : sel.qualified) + '</span></div>'
+    + '<div class="kv"><span class="k">With a market number</span><span class="v">'
+      + (((sel.coverage || {}).with_market) == null ? '—' : sel.coverage.with_market) + '</span></div>'
+    + '<div class="kv"><span class="k">Thresholds</span><span class="v">'
+      + esc(JSON.stringify(sel.settings || {})) + '</span></div>'
+    + (sel.note ? '<div class="kv"><span class="k">Note</span><span class="v">' + esc(sel.note) + '</span></div>' : '')
+    + (rows ? '<h3 style="margin-top:14px">Refused, with the reason</h3><div class="reasons">' + rows + '</div>' : '')
+    + '</div>';
+  return host.innerHTML;
+}
+
+window.openEdition = async function (key) {
+  var out = await rpc('newsletter_admin_edition', { p_edition_key: key });
+  if (!out || !out.ok) return;
+  EDITION = out;
+  var e = out.edition || {};
+  $('prevKey').textContent = key;
+  paintPreview();
+  var host = $('detail');
+  host.innerHTML = renderSelection(e);
+  var errs = out.errors || [];
+  var counts = out.delivery_counts || {};
+  host.insertAdjacentHTML('afterbegin',
+    '<div class="card"><h3>Delivery — ' + esc(key) + '</h3>'
+    + '<div class="kv"><span class="k">Per state</span><span class="v">'
+      + (Object.keys(counts).length ? esc(Object.keys(counts).map(function (k) { return k + ' ' + counts[k]; }).join(' · ')) : 'no deliveries yet')
+      + '</span></div>'
+    + '<p style="color:var(--faint);font-size:11.5px;margin-top:8px">Provider acceptance is not delivery: '
+      + '<span class="mono">accepted</span>, <span class="mono">delivered</span>, <span class="mono">bounced</span>, '
+      + '<span class="mono">complained</span> and <span class="mono">unsubscribed</span> are tracked separately.</p>'
+    + (errs.length ? '<table style="margin-top:10px"><thead><tr><th>Address</th><th>State</th><th>Tries</th><th>Error</th></tr></thead><tbody>'
+        + errs.map(function (x) { return '<tr><td>' + esc(x.email_masked) + '</td><td>' + esc(x.status)
+          + (x.ambiguous ? ' <span class="pill warn">ambiguous</span>' : '') + '</td><td>' + esc(x.attempts)
+          + '</td><td>' + esc(x.last_error || '') + '</td></tr>'; }).join('') + '</tbody></table>'
+      : '<p style="color:var(--dim);font-size:12.5px;margin-top:8px">No provider errors recorded.</p>')
+    + '</div>');
+};
+
+function paintPreview() {
+  var e = (EDITION && EDITION.edition) || {};
+  var frame = $('prevFrame'), text = $('prevText');
+  if (PREV === 'text') {
+    frame.classList.add('hide'); text.classList.remove('hide');
+    text.textContent = e.text_free || '(no plain text stored)';
+    return;
+  }
+  frame.classList.remove('hide'); text.classList.add('hide');
+  var html = PREV === 'member' ? e.html_member : e.html_free;
+  frame.srcdoc = html || '<p style="font-family:sans-serif;padding:20px">No rendered body stored for this edition.</p>';
+}
+Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+  b.onclick = function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (x) { x.classList.remove('on'); });
+    b.classList.add('on'); PREV = b.getAttribute('data-p'); paintPreview();
+  };
+});
+
+function renderRuns() {
+  var body = document.querySelector('#runs tbody');
+  var runs = (OVERVIEW && OVERVIEW.runs) || [];
+  body.innerHTML = runs.length ? runs.map(function (r) {
+    return '<tr><td>' + when(r.at) + '</td><td>' + esc(r.sport || '—') + '</td><td>' + esc(r.phase)
+      + '</td><td>' + esc(r.edition_key || '—') + '</td><td>'
+      + (r.ok ? '<span class="pill ok">ok</span>' : '<span class="pill bad">' + esc(r.reason || 'held') + '</span>')
+      + '</td></tr>';
+  }).join('') : '<tr><td colspan="5" style="color:var(--dim)">No runs recorded yet.</td></tr>';
+}
+
+/* ------------------------------------------------------------- switches --- */
+async function setPatch(patch) {
+  try {
+    var s = await rpc('newsletter_admin_set', { p_patch: patch });
+    OVERVIEW.settings = s;
+    renderSettings();
+    say($('setMsg'), 'ok', 'Saved. ' + Object.keys(patch).join(', '));
+  } catch (e) { say($('setMsg'), 'err', String(e.message || e)); }
+}
+$('togSend').onclick = function () {
+  var on = !((OVERVIEW.settings || {}).sending_enabled);
+  /* THE ONE CONTROL THAT NEEDS A SECOND THOUGHT. Everything else here is
+     reversible in a way that costs nothing; opening this gate means the next
+     valid edition goes to every confirmed subscriber with no further approval. */
+  if (on && !confirm('Open the launch gate?\n\nFrom this point a valid edition sends automatically to every '
+    + 'confirmed subscriber at 10:00 America/Chicago, with no further approval. Confirm the sending domain '
+    + 'is verified and a test email has been reviewed first.')) return;
+  setPatch({ sending_enabled: on });
+};
+$('togCfb').onclick = function () { setPatch({ cfb_enabled: !((OVERVIEW.settings || {}).cfb_enabled) }); };
+$('togNfl').onclick = function () { setPatch({ nfl_enabled: !((OVERVIEW.settings || {}).nfl_enabled) }); };
+$('togDisp').onclick = function () { setPatch({ dispatcher_enabled: !((OVERVIEW.settings || {}).dispatcher_enabled) }); };
+
+/* ------------------------------------------------- the operator controls --
+   A BROWSER CANNOT SEND EMAIL AND MUST NOT BE ABLE TO. These buttons ask the
+   newsletter edge function to start the pipeline; it checks THIS operator's
+   own token against newsletter_is_admin() before it touches the GitHub token,
+   which this page has never held. The work still happens in the one canonical
+   pipeline, so a button here and a scheduled run do exactly the same thing. */
+var NL_ENDPOINT = SB_URL + '/functions/v1/newsletter';
+async function dispatch(phase, sport, extra) {
+  var box = $('msg-' + sport) || $('setMsg');
+  say(box, 'ok', 'Asking the pipeline to run ' + phase + '…');
+  try {
+    var r = await fetch(NL_ENDPOINT + '/dispatch', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json',
+        authorization: 'Bearer ' + ((SESSION && SESSION.access_token) || '') },
+      body: JSON.stringify(Object.assign({ phase: phase, sport: sport }, extra || {})) });
+    var j = await r.json();
+    if (j && j.ok) {
+      say(box, 'ok', phase + ' started. The run takes a few minutes; reload this page when it finishes.');
+    } else {
+      say(box, 'err', j && j.reason === 'not_authorised'
+        ? 'This account is not on the operator allowlist.'
+        : j && j.reason === 'no_gh_token'
+          ? 'NEWSLETTER_GH_TOKEN is not set on the edge function, so the pipeline cannot be started from here.'
+          : 'Could not start the run: ' + ((j && j.reason) || r.status));
+    }
+  } catch (e) { say(box, 'err', 'Could not reach the newsletter function: ' + String(e.message || e)); }
+}
+window.dispatch = dispatch;
+window.testSend = function (sport) {
+  var stored = ((OVERVIEW.settings || {}).test_recipients || []);
+  var to = prompt('Send a TEST edition.\n\n'
+    + (stored.length ? stored.length + ' test address(es) are stored and will receive it.\n'
+                     : 'No test address is stored.\n')
+    + '\nAdd one more address (optional), or leave blank:', '');
+  if (to === null) return;
+  dispatch('test', sport, to ? { to: to.trim() } : {});
+};
+
+/* ----------------------------------------------------------------- boot --- */
+async function boot() {
+  try {
+    OVERVIEW = await rpc('newsletter_admin_overview', {});
+  } catch (e) {
+    say($('gMsg'), 'err', 'This account cannot read the newsletter console. '
+      + 'An operator must add it to public.site_article_admins. (' + String(e.message || e) + ')');
+    return;
+  }
+  $('gate').classList.add('hide');
+  $('app').classList.remove('hide');
+  var u = null;
+  try { u = JSON.parse(atob((SESSION.access_token.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) {}
+  $('who').textContent = (u && u.email) || 'operator';
+  renderSettings(); renderAudience(); renderEditions(); renderRuns();
+  var first = (OVERVIEW.editions || [])[0];
+  if (first) openEdition(first.edition_key);
+}
+
+SESSION = loadSession();
+if (SESSION && SESSION.access_token) boot();
+</script>
+</body>
+</html>

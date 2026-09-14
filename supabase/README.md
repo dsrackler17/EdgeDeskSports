@@ -588,6 +588,58 @@ which applies it twice, proves it refuses to half-install without its one
 dependency, and then comes at both triggers as the owner, as anon, as a
 signed-in reader and as the operator.
 
+### `newsletter.sql` — the weekly research email
+Consent, suppression, editions, per-recipient deliveries, provider events and
+the switches, for the two weekly research emails (`tools/newsletter/`). Requires
+`site_articles.sql` first: it reuses `site_article_is_admin()` rather than
+building a second notion of who an operator is, and says so in its first
+statement rather than failing four hundred lines in.
+
+**Four rules the database enforces itself**, because a rule a client can forget
+is not a rule:
+
+1. **Sending is off until somebody turns it on.** `sending_enabled` defaults to
+   false. A freshly applied migration cannot email anybody, whatever the
+   pipeline believes; editions still build, validate and preview while it is
+   off, which is exactly what the pre-launch period should look like.
+2. **One edition per sport, season, slate week and scheduled date** — a unique
+   index, not a convention. Two schedulers that both fire at 10:00 race for one
+   row and exactly one wins.
+3. **One delivery row per (edition, address).** A retry that has already been
+   accepted for a recipient cannot become a second email to them, because the
+   second row cannot exist.
+4. **A provider event is processed once** — the event id is unique, so a
+   webhook redelivery is a no-op rather than a second bounce.
+
+**And one rule enforced by the absence of a grant: no client role can read a
+subscriber address.** Not anonymous, not a signed-in reader, not an operator.
+`newsletter_subscribers` has row level security on and **no select policy for
+anybody**; every legitimate read is a security-definer function returning the
+caller's own row, an aggregate, or a masked address. An operator console shows
+counts and `a***@example.com`, which is everything an operator needs and nothing
+a stolen session would want.
+
+The confirmation token is stored as a **digest** — it proves control of a
+mailbox, so it must be impossible to reconstruct from the table. The *manage*
+token, which only unsubscribes or changes a sport preference, is stored raw,
+because every sent email has to carry it and a digest would make the unsubscribe
+link unbuildable. The asymmetry is deliberate and the column comment says why.
+
+Tested against a real PostgreSQL by `tools/newsletter/newsletter_sql.test.js`
+(`npm run newsletter:sql`), which applies the file twice, applies it to a bare
+project, and attacks it as anon, as a signed-in reader and as the operator.
+
+### `newsletter_cron.sql` — the primary newsletter scheduler
+pg_cron calling `functions/newsletter_cron` across 13:00–19:00 UTC on Monday and
+Tuesday, for the reason `editorial_cron.sql` documents: GitHub's scheduler is
+degraded on this repository and an email due at 10:00 local cannot be built on
+it. **The cron line is not the schedule.** 10:00 America/Chicago is 15:00 UTC in
+summer and 16:00 in winter, so the job fires often and
+`tools/newsletter/schedule.js` decides whether an edition is actually owed,
+converting the wall clock with the zone database. Daylight saving becomes a
+property of that database rather than of somebody remembering to edit a cron
+line twice a year.
+
 ### `community_posts.sql` — member posts, and who may publish one
 Anyone with an EdgeDesk account may WRITE; only an entitled subscriber may
 PUBLISH without an editor reading the post first. That is a statement about a

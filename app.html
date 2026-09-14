@@ -15274,15 +15274,85 @@ function renderSetEdge(){
   return out;
 }
 
+/* ===== THE RESEARCH NEWSLETTER, from the account that is signed in =====
+   Two weekly research emails exist now: College Football on Monday and NFL on
+   Tuesday, both at 10:00 America/Chicago. This panel is the account holder's
+   own control over them, and the two things it is careful about are the two
+   things a marketing preference screen usually gets wrong:
+
+     1  AN ACCOUNT IS NOT CONSENT. Nothing is subscribed because somebody has
+        a subscription or an account. The row in public.newsletter_subscribers
+        is created the moment a switch here is turned on, with the source and
+        the timestamp, and not before.
+     2  THE TABLE IS UNREADABLE FROM A BROWSER. There is no select policy on
+        it for any client role. Both calls below are security-definer
+        functions that act on auth.uid() alone and return a MASKED address.
+
+   `NLPREF` is the last state read back, so the toggles render optimistically
+   and settle on what the server actually stored. */
+var NLPREF=null,NLBUSY=false;
+async function nlRpc(name,body){
+  var t=await edToken();
+  var r=await fetch(SB_URL+"/rest/v1/rpc/"+name,{method:"POST",
+    headers:{apikey:SB_KEY,authorization:"Bearer "+t,"content-type":"application/json"},
+    body:JSON.stringify(body||{})});
+  if(!r.ok)throw new Error("newsletter "+r.status);
+  var txt=await r.text();return txt?JSON.parse(txt):null;
+}
+window.__nlLoad=async function(){
+  try{ NLPREF=await nlRpc('newsletter_my_preferences',{}); }
+  catch(e){ NLPREF={ok:false,reason:'unreachable'}; }
+  if(SET_ACTIVE==='notifications')renderSettings();
+};
+window.__nlSet=async function(cfb,nfl){
+  if(NLBUSY)return; NLBUSY=true;
+  var prev=NLPREF;
+  NLPREF=Object.assign({},NLPREF||{},{wants_cfb:cfb,wants_nfl:nfl,subscribed:(cfb||nfl)});
+  renderSettings();
+  try{ NLPREF=await nlRpc('newsletter_set_my_preferences',
+        {p_wants_cfb:!!cfb,p_wants_nfl:!!nfl,p_source:'account_settings'}); }
+  catch(e){ NLPREF=Object.assign({},prev||{},{ok:false,reason:'save_failed'}); }
+  NLBUSY=false; renderSettings();
+};
 function renderSetNotif(){
-  return setGate('No notification delivery exists',
-    'EdgeDesk has <b>no email sender, no push service and no device tokens</b>. Toggling alerts here would store a preference that nothing reads and nothing sends \u2014 so the switches are not shown. Wiring this needs a delivery provider plus a worker that watches for new edges.',
+  if(NLPREF===null){ setTimeout(window.__nlLoad,0);
+    return setCard('EdgeDesk research newsletter',null,
+      setRow('Loading','<span class="set-val">\u2026</span>')); }
+
+  var cfb=!!(NLPREF&&NLPREF.wants_cfb), nfl=!!(NLPREF&&NLPREF.wants_nfl);
+  var note=null;
+  if(NLPREF&&NLPREF.ok===false){
+    note=NLPREF.reason==='account_email_unverified'
+      ? 'Confirm your account email address first \u2014 EdgeDesk does not send research email to an address it has not verified.'
+      : NLPREF.reason==='address_suppressed'
+        ? 'This address previously bounced or reported a message as spam, so it is suppressed. Contact support to clear it.'
+        : NLPREF.reason==='save_failed'
+          ? 'That change did not save. Try again.'
+          : 'The newsletter service could not be reached.';
+  }
+
+  var out=setCard('EdgeDesk research newsletter',
+    'Five to ten upcoming games worth your own research time, with EdgeDesk\u2019s number beside the market\u2019s and what the model could not see. Research, not picks.',
+    setRow('College Football Week Ahead',
+      '<button class="set-tog'+(cfb?' on':'')+'" onclick="__nlSet('+(!cfb)+','+nfl+')"><i></i></button>',
+      'Mondays, 10:00 AM America/Chicago')+
+    setRow('NFL Week Ahead',
+      '<button class="set-tog'+(nfl?' on':'')+'" onclick="__nlSet('+cfb+','+(!nfl)+')"><i></i></button>',
+      'Tuesdays, 10:00 AM America/Chicago, after Monday Night Football')+
+    setRow('Sent to',
+      '<span class="set-val">'+stEsc((NLPREF&&NLPREF.email_masked)||'\u2014')+'</span>',
+      'Your account address. Turning both switches off unsubscribes you; every email also carries a one-click unsubscribe.')+
+    (note?setRow('Status','<span class="set-val">'+stEsc(note)+'</span>'):''));
+
+  return out+
+  setGate('No push or per-edge alerts',
+    'EdgeDesk has <b>no push service and no device tokens</b>, and does not email on individual edges. The weekly research editions above are the only email it sends; toggling anything else here would store a preference that nothing reads.',
     'NOT BUILT')+
   setCard('What you can rely on today',null,
     setRow('In-app refresh','<span class="set-val pos">Live</span>','Edges re-price on the capture cron and the tab refreshes every 60s')+
-    setRow('Email alerts','<span class="set-val">Not available</span>')+
+    setRow('Weekly research email','<span class="set-val'+((cfb||nfl)?' pos':'')+'">'+((cfb||nfl)?'On':'Off')+'</span>','Monday college football, Tuesday NFL')+
     setRow('Push notifications','<span class="set-val">Not available</span>')+
-    setRow('Weekly recap','<span class="set-val">Not available</span>'));
+    setRow('Per-edge alerts','<span class="set-val">Not available</span>'));
 }
 
 function renderSetDisplay(){

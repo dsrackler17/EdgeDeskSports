@@ -1,0 +1,159 @@
+# EdgeDesk — the autonomous weekly research newsletter.
+#
+# TWO EDITIONS, BOTH AT 10:00 AMERICA/CHICAGO:
+#   Monday   College Football Week Ahead
+#   Tuesday  NFL Week Ahead, published after Monday Night Football
+#
+# THE CRON IS A HEARTBEAT, NOT THE SCHEDULE. 10:00 in Chicago is 15:00 UTC for
+# most of the year and 16:00 UTC from November to March, so no single cron line
+# is right all season. This job therefore fires repeatedly across the plausible
+# window and tools/newsletter/schedule.js decides whether an edition is
+# actually owed — converting the Chicago wall clock to an instant with the
+# runtime's own zone database. Daylight saving becomes a property of that
+# database rather than of somebody remembering to edit a cron line twice a year.
+#
+# A TICK WITH NOTHING OWED IS CHEAP: the pipeline reads the article records
+# already on disk, sees that no edition is due, writes a held row and exits.
+#
+# WHAT A RUN DOES
+#   1. refresh every article record from the research terminal, because the
+#      newsletter quotes what the terminal says and a stale record is a stale
+#      newsletter. This is the same generator the article system runs.
+#   2. build  — resolve the upcoming slate from the schedule's own season and
+#      week columns, rank the candidates on evidence rather than raw gaps,
+#      draft, render both variants, validate, and store the edition with the
+#      exact research and market snapshot it was built from.
+#   3. send   — only if the launch gate (newsletter_settings.sending_enabled)
+#      is open. Re-checks every gate, resolves eligibility LIVE against
+#      consent, sport preference and the suppression list, and records an
+#      outcome per recipient.
+#   4. commit the edition and the rendered preview, so every send is a diff.
+#
+# SENDING IS OFF UNTIL SOMEBODY TURNS IT ON. `sending_enabled` defaults to
+# false in the database. Until it is true this workflow builds, validates,
+# previews and commits editions and sends nothing — which is exactly what the
+# pre-launch period should look like.
+#
+# SECRETS
+#   SB_SERVICE_ROLE    required to read settings, resolve recipients and record
+#                      deliveries. Without it the job still builds and commits
+#                      an edition and refuses to send, saying so.
+#   RESEND_API_KEY     required to hand an edition to the provider.
+#   SB_URL             optional; defaults to the project the rest of the repo uses.
+name: Research newsletter
+
+on:
+  schedule:
+    # Monday and Tuesday, across 13:00–19:00 UTC: 08:00–13:00 Central in
+    # winter, 07:00–14:00 in summer. That covers the 10:00 send and its
+    # four-hour retry window in both halves of the year, with margin.
+    #
+    # THE MINUTES ARE DELIBERATE, for the reason editorial.yml documents:
+    # GitHub's own documentation names the start of every hour as the worst
+    # time for a scheduled event, and '*/20' includes minute 0.
+    - cron: '13,33,53 13-19 * * 1,2'
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'Which phase to run'
+        type: choice
+        options: ['all', 'build', 'send', 'preview', 'test', 'rank', 'due']
+        default: 'all'
+      sport:
+        description: 'One sport only (CFB or NFL). Blank = both.'
+        type: string
+        default: ''
+      to:
+        description: 'Test send: one address, in addition to the stored test recipients'
+        type: string
+        default: ''
+      force:
+        description: 'Ignore the due-ness and staleness gates (still honours the kill switch)'
+        type: boolean
+        default: false
+      skip_refresh:
+        description: 'Do not re-run the article generator first'
+        type: boolean
+        default: false
+      source:
+        description: 'Who is waking the pipeline (recorded on the run log)'
+        type: string
+        default: 'manual'
+
+permissions:
+  contents: write
+
+concurrency:
+  # Two runs building the same edition race into the same file and the same
+  # row. The database lease makes the send safe; this makes the build cheap.
+  group: newsletter
+  cancel-in-progress: false
+
+jobs:
+  newsletter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # THE SYSTEM MUST PASS BEFORE IT IS ALLOWED TO EMAIL ANYBODY. A pipeline
+      # that has stopped agreeing with its own scheduling, selection or
+      # validation rules is worse than one that did not run: a newsletter
+      # cannot be unsent.
+      - name: The newsletter system must pass before it sends
+        run: |
+          node tools/newsletter/newsletter.test.js
+          node tools/editorial/editorial.test.js
+          node tools/articles/articles.test.js
+
+      # The newsletter quotes what the research terminal says, so the records
+      # are refreshed from it first. Same generator the article system runs;
+      # no number on a newsletter was computed by this job.
+      - name: Refresh the research records
+        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        run: node tools/articles/generate.js --network --quiet
+
+      - name: Build, validate and (if the gate is open) send
+        env:
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          SB_URL: ${{ secrets.SB_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          PHASE="${{ github.event.inputs.phase }}"
+          ARGS=""
+          if [ -n "${{ github.event.inputs.sport }}" ]; then ARGS="$ARGS --sport ${{ github.event.inputs.sport }}"; fi
+          if [ -n "${{ github.event.inputs.to }}" ]; then ARGS="$ARGS --to ${{ github.event.inputs.to }}"; fi
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          node tools/newsletter/run.js "${PHASE:-all}" $ARGS
+
+      - name: Commit the edition and the rendered preview
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add articles/data/newsletter articles/data/records articles/data/index.json articles/data/market || true
+          if git diff --cached --quiet; then
+            echo 'the newsletter changed nothing this run'
+            exit 0
+          fi
+          git commit -m 'newsletter: build the week-ahead editions and record what was sent'
+          # a concurrent push to main loses the race politely, not the work
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the newsletter run after 4 attempts'
+          exit 1
+
+      # THE RUN LOG IS THE ANSWER TO "WHY DID THIS EDITION NOT GO OUT?"
+      - name: Report
+        if: ${{ !cancelled() }}
+        run: |
+          node tools/newsletter/run.js report >> "$GITHUB_STEP_SUMMARY" \
+            || echo 'no newsletter run log to report' >> "$GITHUB_STEP_SUMMARY"

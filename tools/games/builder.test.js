@@ -253,8 +253,15 @@ if (good.json) {
      article with EdgeDesk's own deterministic prose when it is absent. An
      empty string there is a designed-for state that the run log names, not a
      job silently doing nothing. */
+  /* RESEND_API_KEY is the newsletter's email provider credential. It is listed
+     for the same reason ANTHROPIC_API_KEY is: an empty value cannot make the
+     job silently do nothing. tools/newsletter/provider.js refuses the send
+     with `RESEND_API_KEY is not set`, every recipient's delivery row records
+     that as a non-ambiguous failure, and the run log and the operator console
+     both show it. A missing key here is a loud, named state rather than a
+     newsletter that quietly never went out. */
   const ALLOWED = ['SB_SERVICE_ROLE', 'SB_URL', 'COLLECTIVE_ADMIN_REFRESH_TOKEN', 'GITHUB_TOKEN',
-    'ANTHROPIC_API_KEY'];
+    'ANTHROPIC_API_KEY', 'RESEND_API_KEY'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));
