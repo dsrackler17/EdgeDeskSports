@@ -2190,6 +2190,16 @@ const NOT_A_NAME = new Set([
   "january", "february", "march", "april", "may", "june", "july", "august",
   "september", "october", "november", "december",
   "best", "worst", "top", "compare", "vs", "versus", "and", "or", "for", "with", "against",
+  /* ORDINARY WORDS THAT OPEN A SENTENCE. "Anything worth betting?" put
+     ANYTHING on the roster-resolution queue as a candidate person, alongside
+     the two teams the reader had just named. A capitalised word is not a
+     surname just because it starts a clause. */
+  "anything", "something", "anyone", "someone", "nothing", "nobody", "everything", "everyone",
+  "any", "some", "none", "all", "both", "either", "neither", "there", "here", "then", "than",
+  "worth", "betting", "bet", "bets", "value", "edge", "edges", "pick", "picks", "play", "plays",
+  "line", "lines", "odds", "price", "prices", "spread", "total", "moneyline", "market", "markets",
+  "game", "games", "matchup", "matchups", "slate", "board", "week", "weekend", "season",
+  "thoughts", "think", "look", "looks", "anything's", "whats", "hows",
 ]);
 
 /**
@@ -3155,6 +3165,7 @@ export class Dal {
      wants the same artifact and re-fetching it per game would spend the whole
      research budget on one file. */
   private _avail: { meta: any; byTeam: Map<string, any>; error: string | null } | null = null;
+  private _fbs: { meta: any; games: any[]; error: string | null } | null = null;
   log: { table: string; ms: number; rows: number; error: string | null }[] = [];
 
   constructor(o: DalOpts) {
@@ -3432,6 +3443,10 @@ export class Dal {
    * build output committed to the site, not a table.
    */
   async getFbsSlateArtifact(): Promise<{ meta: any; games: any[]; error: string | null }> {
+    /* Memoised for the same reason the availability read is: the sport probe,
+       the slate index and the cross-check all want this one file, and paying
+       for it three times would spend the research budget on one artifact. */
+    if (this._fbs) return this._fbs;
     if (this.calls >= this.budget) return { meta: null, games: [], error: "research budget exhausted before the slate artifact could be read" };
     this.calls++;
     const url = `${SITE_BASE.replace(/\/+$/, "")}/football/fbs/slate.json`;
@@ -3445,18 +3460,18 @@ export class Dal {
         const err = `HTTP ${r.status} from ${url}`;
         this.log.push({ table: "fbs/slate.json", ms: Date.now() - t0, rows: 0, error: err });
         this.note("fbs/slate.json", false, err);
-        return { meta: null, games: [], error: err };
+        return (this._fbs = { meta: null, games: [], error: err });
       }
       const j = await r.json();
       const games = Array.isArray(j?.games) ? j.games : [];
       this.log.push({ table: "fbs/slate.json", ms: Date.now() - t0, rows: games.length, error: null });
       this.note("fbs/slate.json", true, null, games.length);
-      return { meta: j, games, error: null };
+      return (this._fbs = { meta: j, games, error: null });
     } catch (e) {
       const err = String((e as Error)?.message ?? e);
       this.log.push({ table: "fbs/slate.json", ms: Date.now() - t0, rows: 0, error: err });
       this.note("fbs/slate.json", false, err);
-      return { meta: null, games: [], error: err };
+      return (this._fbs = { meta: null, games: [], error: err });
     }
   }
 
@@ -7891,12 +7906,36 @@ export function deriveState(
   if (!st.sport && prev?.sport) st.sport = prev.sport;
 
   // A loaded signal packet always wins — it is what the user is looking at.
+  /* THE CONVERSATION OUTRANKS THE OPEN TAB, ONCE IT HAS NAMED SOMETHING ELSE.
+     A loaded packet is a strong signal — it is what the reader is looking at —
+     but it is not stronger than the game they just asked about. A reader with
+     a baseball game open who asks about North Texas vs Texas State and then
+     says "who have they played?" means the college game; letting the packet
+     win on every turn dragged the conversation back to baseball on the first
+     follow-up, which is the same production failure one turn later. */
+  const namedHere = matchupFromText(question);
+  const namedBefore = namedHere.length === 2 ? namedHere : (() => {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const pair = matchupFromText(String(history[i]?.content ?? ""));
+      if (pair.length === 2) return pair;
+    }
+    return [] as string[];
+  })();
+
   const g = packet?.game;
-  if (g?.matchup && typeof g.matchup === "string") {
+  const packetNamesIt = !!(g?.matchup && namedBefore.length === 2
+    && namedBefore.every((t) => normName(String(g.matchup)).includes(normName(t))));
+  if (g?.matchup && typeof g.matchup === "string" && (namedBefore.length !== 2 || packetNamesIt)) {
     const t = resolveTeams(g.matchup);
     if (t.length) st.teams = t;
   }
-  if (packet?.sport_key) st.sport = packet.sport_key;
+  if (packet?.sport_key && (namedBefore.length !== 2 || packetNamesIt)) st.sport = packet.sport_key;
+  if (namedBefore.length === 2 && !packetNamesIt) {
+    st.teams = namedBefore;
+    /* The sport is NOT asserted here — resolveNamedMatchup settles that
+       against a real card. Only the subject is carried. */
+    st.sport = null;
+  }
 
   /* Fall back to whatever the last few turns were about — INSIDE THIS
      CONVERSATION'S SPORT.
@@ -14327,7 +14366,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-14-r6-cfb-market-join";
+export const BUILD = "edgedesk_ai-2026-09-14-r7-matchup-routing";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -15142,6 +15181,116 @@ function needsFromCfb(plan: Plan, wants: (s: string) => boolean): Set<string> {
   return n;
 }
 
+/* ========================================================================
+   AN EXPLICIT MATCHUP IS A SPORT SIGNAL, AND IT OUTRANKS THE OPEN BOARD.
+
+   THE PRODUCTION FAILURE THIS EXISTS TO END. A reader with an MLB game open
+   asked "What do you think about North Texas vs Texas State this week?
+   Anything worth betting?" and got baseball. Every step was individually
+   defensible and the result was nonsense:
+
+     - classify() resolves teams through resolveTeams, which knows ONLY MLB
+       clubs. "Texas State" reached the TEXAS RANGERS through the alias
+       "texas", so a question naming two college programs produced a baseball
+       team and nothing else.
+     - earlySport read `packet.game.sport_key` — the game the user happened to
+       have open — ahead of anything in the question. The matchup the reader
+       actually asked about had no vote.
+     - with the sport settled as baseball, scopeTeamsToSport KEPT the Rangers
+       (it only drops a cross-league alias once the sport is known to be
+       something else), so retrieval went and fetched pitchers, bullpens and
+       park factors.
+     - the CFB card was never read, so the matchup was reported ABSENT, and an
+       unrelated board was offered in its place.
+
+   The fix is not a longer alias table. It is that a matchup named in the
+   question gets RESOLVED AGAINST A REAL CARD before any sport-specific read
+   happens, and that resolution outranks the open board. What makes this safe
+   is that it is a lookup, not a guess: the question is never "do these sound
+   like college teams" but "is there a scheduled game with both of these
+   sides", answered from the same published artifact the board renders.
+   ======================================================================== */
+
+export interface MatchupResolution {
+  /** 'RESOLVED' | 'NOT_ON_ANY_CARD' | 'RETRIEVAL_FAILED' | 'NONE_NAMED' */
+  state: string;
+  named: string[];
+  sport: string | null;
+  game_id: string | null;
+  home: string | null;
+  away: string | null;
+  home_id: string | null;
+  away_id: string | null;
+  kickoff: string | null;
+  source: string | null;
+  /** What the answer must say when this did not resolve. */
+  note: string | null;
+}
+
+/**
+ * Resolve a matchup named in the question against the cards EdgeDesk publishes.
+ *
+ * One read, memoised, already inside the research budget. Both sides must
+ * resolve to the SAME scheduled game through the board's own FBS resolver —
+ * the rule that keeps "Miami (OH)" off Miami Florida's number — so a half
+ * match resolves nothing rather than something plausible.
+ */
+export async function resolveNamedMatchup(
+  question: string, dal: Dal, carried: string[] = [],
+): Promise<MatchupResolution> {
+  /* A follow-up names nothing — "who have they played?" — so the subject the
+     conversation established is used instead. Without this the resolution
+     lapses on turn two and the open board takes the wheel again. */
+  const fromQ = matchupFromText(question);
+  const named = fromQ.length === 2 ? fromQ : (carried.length === 2 ? carried.slice() : []);
+  const none: MatchupResolution = {
+    state: "NONE_NAMED", named: [], sport: null, game_id: null, home: null, away: null,
+    home_id: null, away_id: null, kickoff: null, source: null, note: null,
+  };
+  if (named.length !== 2) return none;
+
+  const art = await dal.getFbsSlateArtifact();
+  if (art.error && !art.games.length) {
+    return {
+      ...none, state: "RETRIEVAL_FAILED", named,
+      note: `"${named[0]}" and "${named[1]}" were named, but the published FBS card could not be read `
+        + `(${art.error}), so EdgeDesk cannot tell whether that game exists. This is a RETRIEVAL failure, `
+        + `not a finding that the matchup is absent, and it may not be reported as one.`,
+    };
+  }
+  if (art.games.length) {
+    const games = art.games.map((g: any) => ({
+      game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
+      home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null,
+    }));
+    const ix = EDINTEL.fbsIndexFor(games);
+    const a = EDINTEL.resolveTeam(named[0], ix), b = EDINTEL.resolveTeam(named[1], ix);
+    if (a?.key && b?.key) {
+      /* Either orientation: a reader writes "A vs B" without caring who is home. */
+      const hit = games.find((g: any) => {
+        const hk = EDINTEL.canonKey(g.home_id, g.home_team), ak = EDINTEL.canonKey(g.away_id, g.away_team);
+        return (hk === a.key && ak === b.key) || (hk === b.key && ak === a.key);
+      });
+      if (hit) {
+        return {
+          state: "RESOLVED", named, sport: "americanfootball_ncaaf",
+          game_id: hit.game_id, home: hit.home_team, away: hit.away_team,
+          home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
+          away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
+          kickoff: hit.kickoff, source: "football/fbs/slate.json", note: null,
+        };
+      }
+    }
+  }
+  return {
+    ...none, state: "NOT_ON_ANY_CARD", named,
+    note: `"${named[0]}" and "${named[1]}" were named as a matchup, and no scheduled game with BOTH of those `
+      + `sides is on any card EdgeDesk publishes (${art.games.length} games were checked on the FBS slate). `
+      + `Ask which teams and which week are meant. Do NOT answer about a different game, do NOT fall back to `
+      + `whatever board is open, and do NOT retrieve another sport's evidence in its place.`,
+  };
+}
+
 async function runResearch(
   plan: Plan, state: ConvoState, packet: any, dal: Dal, question = "",
 ): Promise<ResearchOut> {
@@ -15166,8 +15315,51 @@ async function runResearch(
      it is the difference between answering about the 75 games on screen and
      answering about some other window. */
   const boardScope: SlateScopeRequest = (packet && typeof packet.board_scope === "object" && packet.board_scope) || {};
-  const earlySport: string | null = sportOfIntent(plan.intent) ?? plan.sport
+
+  /* ---- 0a. THE MATCHUP THE QUESTION NAMES, RESOLVED FIRST ---------------
+     Ahead of the open board, because a reader who names two teams is asking
+     about those two teams. This used to sit below `packet.game.sport_key`,
+     which meant the game someone had open outranked the game they asked
+     about — and a question naming two college programs was answered with
+     baseball. One memoised read; nothing sport-specific has been fetched yet. */
+  const namedMatchup = await resolveNamedMatchup(question, dal, state.teams);
+  if (namedMatchup.state !== "NONE_NAMED") {
+    data_path.named_matchup = {
+      state: namedMatchup.state, named: namedMatchup.named, sport: namedMatchup.sport,
+      game_id: namedMatchup.game_id, home_id: namedMatchup.home_id, away_id: namedMatchup.away_id,
+      source: namedMatchup.source, note: namedMatchup.note,
+      /* Stated as data so no downstream reader has to infer it from a sport
+         that silently changed underneath them. */
+      overrode_open_board: namedMatchup.state === "RESOLVED"
+        && !!(packet?.game?.sport_key ?? (boardScope as any).sport)
+        && (packet?.game?.sport_key ?? (boardScope as any).sport) !== namedMatchup.sport,
+    };
+  }
+
+  const earlySport: string | null = namedMatchup.sport
+    ?? sportOfIntent(plan.intent) ?? plan.sport
     ?? (packet?.game?.sport_key ?? null) ?? (boardScope as any).sport ?? state.sport ?? null;
+
+  /* A resolved matchup also replaces the board's scope: the reader asked about
+     THAT game, so the card researched is the card it is on. */
+  if (namedMatchup.state === "RESOLVED") {
+    /* The whole scope moves, not just the sport. Leaving the overridden
+       board's label behind produced "7 CFB games scheduled in today" — the
+       MLB board's word for its own window, on a college card. A scope is a
+       sport AND a window and they have to travel together. */
+    const overrode = (boardScope as any).sport && (boardScope as any).sport !== namedMatchup.sport;
+    (boardScope as any).sport = namedMatchup.sport;
+    if (overrode) {
+      delete (boardScope as any).label;
+      delete (boardScope as any).week;
+      delete (boardScope as any).season;
+      delete (boardScope as any).group;
+      delete (boardScope as any).conferences;
+      delete (boardScope as any).game_ids;
+    }
+    state.sport = namedMatchup.sport;
+    state.teams = [namedMatchup.away!, namedMatchup.home!];
+  }
   if ((boardScope as any).sport || num(boardScope.week) != null) {
     data_path.board_scope = {
       ...boardScope,
@@ -15337,7 +15529,26 @@ async function runResearch(
      silently applied: "the name matched baseball and the question is not
      baseball" is a resolution failure worth seeing, not a tidy-up. */
   const teamScope = scopeTeamsToSport(plan.entities.team_matches ?? [], sportKey);
-  if (teamScope.rejected.length) {
+  /* A MATCHUP RESOLVED AGAINST A REAL CARD IS NOT OVERWRITTEN BY AN ALIAS MISS.
+     These two names came from a scheduled game, with both sides resolved by
+     the board's own resolver. scopeTeamsToSport works on the MLB club table,
+     which knows nothing about them, so its (correct) empty answer used to wipe
+     them out — leaving the entity scope blank on a question that named its two
+     teams explicitly. The stronger identity wins. */
+  if (namedMatchup.state === "RESOLVED") {
+    state.teams = [namedMatchup.away!, namedMatchup.home!];
+    teamKeys = state.teams.map((t) => t.toLowerCase());
+    data_path.entity_scope = {
+      sport: sportKey,
+      resolved_from: namedMatchup.source,
+      teams: state.teams,
+      canonical_ids: { away: namedMatchup.away_id, home: namedMatchup.home_id },
+      game_id: namedMatchup.game_id,
+      rejected: teamScope.rejected.map((m) => `${m.name} (matched only on "${m.via}", an alias shared across leagues)`),
+      note: "The matchup named in the question was resolved against the published card, so its two teams ARE the "
+        + "entity scope. Any club claimed through a cross-league alias is listed as rejected rather than used.",
+    };
+  } else if (teamScope.rejected.length) {
     state.teams = teamScope.teams;
     teamKeys = state.teams.map((t) => t.toLowerCase());
     data_path.entity_scope = {
@@ -15819,7 +16030,36 @@ async function runResearch(
       for (const r of v.rows) if (r?.name) roster.add(String(r.name));
     }
   }
-  const hints = plan.entities.player_hints ?? [];
+  /* A TEAM IS NOT A PERSON. playerHints() runs before anything is resolved, so
+     "North Texas" and "Texas State" reach it as two capitalised words apiece
+     and look exactly like surnames. Once the matchup HAS resolved — and once
+     the slate index knows which teams are on this card — those names are
+     teams, and putting them on the roster-resolution queue only produces
+     three unresolved "players" in a report the reader then has to discount. */
+  const teamish = new Set<string>();
+  for (const t of state.teams) teamish.add(normName(t));
+  if (namedMatchup.state === "RESOLVED") {
+    for (const t of namedMatchup.named) teamish.add(normName(t));
+    for (const t of [namedMatchup.home, namedMatchup.away]) if (t) teamish.add(normName(t));
+  }
+  for (const g of slateIndex?.index ?? []) {
+    teamish.add(normName(g.home_team)); teamish.add(normName(g.away_team));
+  }
+  const hints = (plan.entities.player_hints ?? []).filter((h) => {
+    const k = normName(h);
+    if (teamish.has(k)) return false;
+    /* "Texas" out of "Texas State" is a prefix of a team on this card, not a
+       person, and resolving it against a roster is how a program becomes a
+       quarterback. */
+    for (const t of teamish) if (t.startsWith(k + " ") || t.endsWith(" " + k)) return false;
+    return true;
+  });
+  if (hints.length !== (plan.entities.player_hints ?? []).length) {
+    data_path.player_hints_dropped = {
+      dropped: (plan.entities.player_hints ?? []).filter((h) => !hints.includes(h)),
+      why: "these name teams on this card, or parts of them, and were not put on the roster-resolution queue",
+    };
+  }
   const players = hints.length ? resolvePlayers(hints, [...roster]) : [];
   if (players.length) {
     data_path.player_resolution = {
@@ -16303,6 +16543,40 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
        are no CFB matchups to evaluate on this slate" while the board beside
        it showed 75 games. The schedule is read separately from the prices and
        is stated first, so the two can never be collapsed again. */
+    /* ── THE MATCHUP THE READER NAMED ────────────────────────────────────
+       First, above everything, because when it does not resolve every block
+       below it is about some OTHER game and the answer has to say so instead
+       of quietly using them. */
+    const nm: any = (research.data_path as any)?.named_matchup;
+    if (nm && nm.state !== "NONE_NAMED") {
+      if (nm.state === "RESOLVED") {
+        parts.push(
+          `THE MATCHUP THIS QUESTION IS ABOUT: ${nm.named.join(" vs ")} — resolved to game ${nm.game_id} `
+          + `(${nm.away_id} at ${nm.home_id}) on ${nm.source}, sport ${nm.sport}.\n`
+          + (nm.overrode_open_board
+            ? `The reader had a DIFFERENT sport open on their board. They asked about this game, so this game is `
+              + `what was researched. Do not answer about whatever was on screen.\n`
+            : "")
+          + `Answer about THIS game. Other games on the card are context you may mention; they are not the answer.`,
+        );
+      } else {
+        parts.push(
+          `THE MATCHUP THIS QUESTION NAMES DID NOT RESOLVE — and this governs your whole answer.\n`
+          + `${nm.note}\n`
+          + (nm.state === "RETRIEVAL_FAILED"
+            ? `THIS IS A RETRIEVAL FAILURE, NOT AN ABSENT GAME. You do not know whether that matchup exists. `
+              + `Say that EdgeDesk could not read the card, not that the game is not on it.\n`
+            : `EdgeDesk read the card and no game carries BOTH of those sides. That is a real finding about the `
+              + `card, and it is still not a reason to answer about something else.\n`)
+          + `ASK ONE SHORT CLARIFYING QUESTION and stop. Name what you looked at and what you need — the two `
+          + `teams, and the week. You may NOT: answer about a different matchup, present the slate or a ranked `
+          + `board as though it were the answer, recommend any other game, or retrieve and narrate another `
+          + `sport's evidence. A reader who asked about one game and is handed a different sport's board has `
+          + `been given a wrong answer dressed as a helpful one.`,
+        );
+      }
+    }
+
     if (research.slate_state) {
       const st = research.slate_state;
       parts.push(
