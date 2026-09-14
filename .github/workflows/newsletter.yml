@@ -94,6 +94,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # ALWAYS main, WHICHEVER BRANCH DISPATCHED THIS. The job commits the
+      # edition it builds back to main, so it has to build from main or it
+      # would push a branch's articles there.
+      #
+      # THE CONSEQUENCE, WHICH COST AN HOUR ONCE: dispatching this workflow
+      # from a branch runs the WORKFLOW FILE from that branch against main's
+      # CODE. A run on a feature branch therefore proves nothing about that
+      # branch, and a suite that fails here is failing on main. To exercise a
+      # change to the pipeline itself, merge it first.
       - uses: actions/checkout@v5
         with:
           ref: main
