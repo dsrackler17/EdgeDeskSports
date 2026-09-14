@@ -79,7 +79,10 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
      ===================================================================== */
   {
     const fx = FX.build();
-    clearCache(); route = FX.router(fx, { signals: [] });
+    /* BOTH market sources empty. The board resolves a market from captured
+       signals OR cfb.lines, so emptying only the first would leave the other
+       one answering and test a different state than the name claims. */
+    clearCache(); route = FX.router(fx, { signals: [], lines: [] });
     const r = await m.handle(req({ mode: 'chat', question: 'Any CFB matchups look good this week?',
       packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
     const j = await r.json();
@@ -88,7 +91,11 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     eq('and classifies the slate as quoted-less, not empty', st && st.state, 'GAMES_NO_QUOTES');
     eq('the slate scope denominator comes from the schedule', j.slate_scope && j.slate_scope.expected_games, fx.slate.games.length);
     const p = j.prompt || '';
-    chk('the prompt states the real game count', /\d+ CFB games are scheduled/.test(p), p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 200));
+    chk('the prompt states the real game count',
+      new RegExp(fx.slate.games.length + ' CFB games are scheduled').test(p),
+      p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 200));
+    chk('and says both market sources were checked, not just signals',
+      /NONE of them carries a market number from either source/.test(p), p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 400));
     chk('the prompt forbids the "no games" claim outright',
       p.indexOf('YOU MAY NOT CLAIM THAT THERE ARE NO GAMES TO EVALUATE') >= 0);
     chk('and tells the analyst to research them anyway',
@@ -244,7 +251,9 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     const j = await r.json();
     delete ENV.EDGEDESK_EVIDENCE_MAX;
     const p = j.prompt || '';
-    chk('the slate scope survives truncation', p.indexOf('THE SLATE') >= 0 && /\d+ CFB games are scheduled/.test(p));
+    chk('the slate scope survives truncation',
+      p.indexOf('THE SLATE') >= 0
+      && new RegExp(fx.slate.games.length + ' CFB games (are )?scheduled').test(p));
     chk('withheld items are reported', p.indexOf('EVIDENCE WITHHELD') >= 0);
     chk('the unseen subjects are NAMED, not just counted',
       p.indexOf('SUBJECTS WITH NO EVIDENCE IN THIS MESSAGE AT ALL') >= 0);
@@ -509,10 +518,29 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       chk('previous games are present', away.previous_games.missing === false, away.previous_games);
       const games = away.previous_games.value || [];
       chk('each previous game carries the opponent’s strength',
-        games.length > 0 && games.every((g) => 'opponent_sp_plus' in g), games[0]);
+        games.length > 0 && games.every((g) => 'opponent_sp_plus_now' in g), games[0]);
       const fcs = games.find((g) => /Nicholls/.test(g.opponent));
       chk('a blowout over a weak opponent carries that opponent’s rating',
-        fcs && fcs.opponent_sp_plus < -10, fcs);
+        fcs && fcs.opponent_sp_plus_now < -10, fcs);
+      /* WHEN the rating was true, not just what it says. cfb.ratings is keyed
+         (season, team) with no week column, so the number is where the opponent
+         stands NOW — a good answer to "how good were they really" and the wrong
+         one for "what was knowable then". */
+      chk('and the rating is named for the time it describes',
+        games.every((g) => g.opponent_rating_time_basis === 'AS_ASSESSED_NOW'), games[0]);
+      chk('the contemporary version is declared absent rather than implied',
+        games.every((g) => 'opponent_sp_plus_at_the_time' in g && g.opponent_sp_plus_at_the_time === null), games[0]);
+      chk('and the note says the database holds no historical version',
+        /no week and no as-of column/.test(away.previous_games.note || ''), away.previous_games.note);
+      /* A rename is only done when its consumers move with it. Both of these
+         read the field and would have shown nothing at all — silently — while
+         every assertion above went on passing. */
+      const APP = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'app.html'), 'utf8');
+      chk('the app reads the renamed field', /opponent_sp_plus_now/.test(APP));
+      chk('and labels it as a rating from NOW rather than from then',
+        /as it stands now<\/b> attached/.test(APP) && /no historical version is on file/.test(APP));
+      const ANS = require('fs').readFileSync(require('path').join(__dirname, 'answer.js'), 'utf8');
+      chk('the offline renderer reads it too, and says NOW', /opponent_sp_plus_now/.test(ANS) && /SP\+ NOW/.test(ANS));
       chk('rest days are derived from the schedule', away.rest_days.missing === false && away.rest_days.value > 0, away.rest_days);
       chk('SP+ defence is labelled lower-is-better',
         /LOWER is better/.test(away.sp_plus_defense.note || ''), away.sp_plus_defense.note);
@@ -548,8 +576,28 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       { researched: (j.evidence_packets || []).length });
     chk('eligibility and priority are reported separately',
       (j.slate_ranking || []).every((x) => 'eligible' in x && 'priority' in x));
-    chk('an unquoted game is ineligible but still ranked',
-      (j.slate_ranking || []).some((x) => !x.eligible && /no book EdgeDesk captures is quoting/.test(x.reason || '')));
+    /* THREE STATES, NOT TWO. Collapsing "carries a consensus line" into "no
+       market" is what made a 46-game board read as one game, so the ranking
+       is asserted on the states themselves rather than on a reason string. */
+    const rk = j.slate_ranking || [];
+    const byStatus = (st) => rk.filter((x) => x.market_status === st);
+    chk('a priced game is eligible', byStatus('PRICED').length > 0 && byStatus('PRICED').every((x) => x.eligible), byStatus('PRICED')[0]);
+    chk('a line-only game is ineligible for a priced recommendation but still researchable',
+      byStatus('LINE ONLY').length > 0
+      && byStatus('LINE ONLY').every((x) => x.eligible === false && x.researchable === true),
+      byStatus('LINE ONLY')[0]);
+    chk('and its reason names the missing half rather than the whole market',
+      byStatus('LINE ONLY').every((x) => /consensus market LINE but no executable price/.test(x.ineligible_reason || '')),
+      (byStatus('LINE ONLY')[0] || {}).ineligible_reason);
+    chk('a game with no number from either source is neither eligible nor researchable',
+      byStatus('NO MARKET').length > 0
+      && byStatus('NO MARKET').every((x) => !x.eligible && !x.researchable
+        && /not a captured price, not a consensus line/.test(x.ineligible_reason || '')),
+      (byStatus('NO MARKET')[0] || {}).ineligible_reason);
+    chk('every ranked game lands in exactly one of the three states',
+      rk.length > 0 && rk.every((x) => ['PRICED', 'PRICED (STALE)', 'LINE ONLY', 'NO MARKET'].indexOf(x.market_status) >= 0));
+    chk('an ineligible game can still out-rank an eligible one on interest',
+      rk.some((x) => !x.eligible && x.priority > 0), rk.filter((x) => !x.eligible).slice(0, 2));
     const p = j.prompt || '';
     chk('the prompt distinguishes the index from the shortlist',
       /THESE ARE THE ONLY GAMES YOU RESEARCHED IN DEPTH/.test(p));
@@ -571,6 +619,413 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       j.data_path.board_scope && j.data_path.board_scope.week === 3, j.data_path.board_scope);
     chk('and the prompt tells the analyst to stay inside it',
       /ACTIVE BOARD SCOPE/.test(j.prompt || ''));
+  }
+
+  /* =====================================================================
+     18. THE BOOK AND THE SCHEDULE DO NOT SPELL A PROGRAM THE SAME WAY.
+     The observed failure, and the one that caused every other CFB symptom:
+     the FBS board showed 75 games and 46 with market quotes while
+     Intelligence reported no CFB matchups. The capture writes "North Texas
+     Mean Green"; the schedule writes "North Texas". A join on normalised
+     strings matches NOTHING and reports the emptiness as an absent market.
+     tools/newsletter/market.js recorded the same failure: "a live run read
+     410 college signal rows and joined zero".
+     ===================================================================== */
+  {
+    const games = [
+      { game_id: 'g1', home_team: 'Texas State', away_team: 'North Texas', home_id: 'texasstate', away_id: 'northtexas', kickoff: '2026-09-20T23:00:00Z' },
+      { game_id: 'g2', home_team: 'Wake Forest', away_team: 'Miami', home_id: 'wakeforest', away_id: 'miami', kickoff: '2026-09-20T20:00:00Z' },
+      { game_id: 'g3', home_team: 'Ohio State', away_team: 'Ohio', home_id: 'ohiostate', away_id: 'ohio', kickoff: '2026-09-20T18:00:00Z' },
+    ];
+    const sig = (h, a, t) => ({ home_team: h, away_team: a, commence_time: t || '2026-09-20T20:00:00Z' });
+    const j = I.joinSignalsToGames({
+      games,
+      signals: [
+        sig('Texas State Bobcats', 'North Texas Mean Green', '2026-09-20T23:00:00Z'),
+        sig('Wake Forest Demon Deacons', 'Miami Hurricanes'),
+        sig('Wake Forest Demon Deacons', 'Miami (OH) RedHawks'),
+        sig('Ohio State Buckeyes', 'Ohio Bobcats', '2026-09-20T18:00:00Z'),
+        sig('Alabama Crimson Tide', 'Auburn Tigers'),
+        sig('Texas State Bobcats', 'North Texas Mean Green', '2026-09-27T23:00:00Z'),
+      ],
+    });
+    chk('a book’s nickname resolves to the school the schedule names',
+      (j.by_game.g1 || []).length === 1, j.by_game.g1);
+    chk('and so does a full book name on a ranked program',
+      (j.by_game.g2 || []).length === 1, j.by_game.g2);
+    /* The trap fbs.js names: "Ohio" must never swallow "Ohio State", and
+       neither Miami may take the other's number. */
+    chk('Miami Ohio does NOT take Miami Florida’s number',
+      (j.by_game.g2 || []).every((r) => !/RedHawks/.test(r.away_team)), j.by_game.g2);
+    chk('Ohio and Ohio State stay two different programs',
+      (j.by_game.g3 || []).length === 1
+      && /Ohio Bobcats/.test((j.by_game.g3 || [{}])[0].away_team || ''), j.by_game.g3);
+    chk('a fixture for a game not on this card is refused, not attached',
+      j.unresolved_names.indexOf('Alabama Crimson Tide') >= 0, j.unresolved_names);
+    chk('a kickoff a week away is refused even when both teams resolve',
+      /kickoff/.test(Object.keys(j.refusal_reasons).join(' ')), j.refusal_reasons);
+    eq('three of the six rows joined', j.signals_joined, 3);
+    eq('and the other three are refused and counted, not lost', j.signals_refused, 3);
+
+    /* ZERO JOINED OUT OF MANY READ IS A JOIN FAULT, AND MUST SAY SO. */
+    const none = I.joinSignalsToGames({
+      games, signals: [sig('Alabama Crimson Tide', 'Auburn Tigers'), sig('Boise State Broncos', 'Fresno State Bulldogs')],
+    });
+    chk('reading rows and joining none is reported as a JOIN FAULT',
+      /JOIN FAULT/.test(none.diagnosis) && /not an absence of markets/.test(none.diagnosis), none.diagnosis);
+    chk('an empty read is NOT called a join fault',
+      !/JOIN FAULT/.test(I.joinSignalsToGames({ games, signals: [] }).diagnosis));
+    chk('the resolver is named rather than described', /fbs\.js/.test(none.resolver), none.resolver);
+  }
+
+  /* =====================================================================
+     19. THE BOARD'S TWO MARKET SOURCES, RECONCILED END TO END.
+     The board resolves a market from captured signals OR cfb.lines
+     (fbP4Market). Counting only the first is what turned a 46-market card
+     into one. All three counts must survive to the client and the prompt.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    clearCache(); route = FX.router(fx);
+    const r = await m.handle(req({ mode: 'chat', question: 'Which CFB games are worth betting this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
+    const j = await r.json();
+    const si = j.data_path.slate_index;
+    eq('every scheduled game is indexed from the schedule', si.slate_state.scheduled, fx.slate.games.length);
+    eq('the consensus source is read for the WHOLE card, not just a shortlist',
+      si.cfb_lines.game_ids_tried, fx.slate.games.length);
+    eq('games carrying a market NUMBER counts both sources', si.cfb_lines.games_with_a_line, 4);
+    eq('games carrying an EXECUTABLE price is the smaller number',
+      si.cfb_lines.games_with_an_executable_price, 1);
+    chk('the captured join is reported separately from the consensus join',
+      si.signal_join && si.signal_join.signals_joined > 0, si.signal_join);
+    const ms = j.data_path.slate_ranking.market_states;
+    eq('and the ranking agrees with the index on lines', (ms['LINE ONLY'] || 0) + (ms['PRICED'] || 0) + (ms['PRICED (STALE)'] || 0), 4);
+    eq('and on prices', (ms['PRICED'] || 0) + (ms['PRICED (STALE)'] || 0), 1);
+    eq('the schedule cross-check agrees with the artifact', j.data_path.slate_index.cross_check.agrees, true);
+    const p = j.prompt || '';
+    chk('the prompt carries all three counts, not one',
+      /games carrying a market number: 4/.test(p) && /games carrying an executable price: 1/.test(p), 
+      p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 500));
+    chk('and states that a consensus line is not a price',
+      /consensus line is a number, not a price|not a price to bet into/i.test(p));
+    /* The permission sentence must use the PRICED count, not the market-number
+       count: four lines and one price is permission to recommend one game. */
+    chk('the recommendation permission is granted on priced games only',
+      /Priced recommendations are possible on the 1 game carrying an executable price, and on those only/.test(p),
+      p.slice(p.indexOf('Priced recommendations'), p.indexOf('Priced recommendations') + 160));
+  }
+
+  /* =====================================================================
+     20. AVAILABILITY IS CONNECTED, AND ITS EMPTINESS IS NOT "HEALTHY".
+     football/availability/ is a real scheduled pipeline over 138 programs.
+     What it currently carries — zero verified records, no official report
+     anywhere, two of three sources failing per team — is itself the finding,
+     and the one thing it may never become is a clean injury sheet.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    clearCache(); route = FX.router(fx);
+    const r = await m.handle(req({ mode: 'chat', question: 'Analyze North Texas versus Texas State.',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
+    const j = await r.json();
+    const dp = j.data_path.game_evidence || j.data_path.cfb_evidence || {};
+    chk('the availability artifact is read, not skipped',
+      (dp.availability && dp.availability.teams_indexed > 0), dp.availability);
+    const pk = (j.evidence_packets || []).find((p) => /North Texas/.test(JSON.stringify(p.sections.identity)));
+    chk('a packet was built', !!pk);
+    if (pk) {
+      const av = pk.sections.matchup.away.availability;
+      chk('availability is attached to each side', av && av.missing === false, av);
+      const v = (av && av.value) || {};
+      chk('its state is one of the five', I.AVAIL_STATES.indexOf(v.state) >= 0, v.state);
+      chk('an empty report is UNKNOWN, never a clean sheet', v.state === 'UNKNOWN', v.state);
+      chk('and it says so in words a reader cannot misread',
+        /THIS IS UNKNOWN, NOT HEALTHY/.test(v.sentence || ''), v.sentence);
+      chk('the claim "no reported injuries" is explicitly withheld', v.may_claim_healthy === false, v);
+      chk('availability never moves the projection', v.may_adjust_projection === false, v);
+      chk('the failed sources are counted rather than hidden',
+        v.sources_checked > 0 && v.sources_failed > 0, v);
+      chk('the artifact is named as the source', /availability\/current\.json/.test(av.source || ''), av.source);
+      chk('and its age is carried so staleness is visible', typeof v.artifact_age_hours === 'number', v);
+    }
+    const p = j.prompt || '';
+    chk('the prompt gives the five states and their meanings',
+      /NO_REPORTED_INJURIES an OFFICIAL report was read/.test(p) && /UNKNOWN\s+EdgeDesk looked/.test(p));
+    chk('and forbids the healthy claim outside the one state that earns it',
+      /Never describe a side as healthy, clean, fully available or at full strength unless the state is NO_REPORTED_INJURIES/.test(p));
+    chk('the old blanket claim that no availability feed exists is gone',
+      !/NO injury report exists for this sport in EdgeDesk/.test(p));
+
+    /* A FAILED READ IS A THIRD THING, not a report and not an absence. */
+    clearCache(); route = FX.router(fx, { avail: null });
+    const r2 = await m.handle(req({ mode: 'chat', question: 'Analyze North Texas versus Texas State.',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
+    const j2 = await r2.json();
+    const pk2 = (j2.evidence_packets || [])[0];
+    const av2 = pk2 && pk2.sections.matchup.away.availability;
+    chk('a failed availability read is declared missing with a reason',
+      av2 && av2.missing === true && /not the same as nobody being hurt/.test(av2.reason || ''), av2);
+  }
+
+  /* =====================================================================
+     21. THE KILL SWITCH IS A SWITCH, NOT A THRESHOLD.
+     The documented shutdown was `configure({ ev_floor: 1 })`. That reaches a
+     verdict through ONE branch, conditioned on an expected value existing —
+     and under RESEARCH_LEAN a college spread usually has none. What it does
+     produce is PASS, which asserts the bet was weighed and rejected.
+     ===================================================================== */
+  {
+    const live = {
+      market: 'spreads', selection: 'North Texas', game_status: 'scheduled',
+      evidence: [{ field: 'quote' }, { field: 'fair' }],
+      quote: { market: 'spreads', dec: 1.95, captured_at: new Date().toISOString(), book: 'DraftKings' },
+      fair: { fair_probability: 0.532, method: 'SHARP_REFERENCE_DEVIG', sharp: true, label: 'Pinnacle de-vig fair' },
+      confirmation: { independent_families: 3, sharp_confirmed: true },
+    };
+    const on = I.decide(live);
+    chk('with the layer on, a decision is produced', I.DECISIONS.indexOf(on.decision) >= 0, on.decision);
+
+    I.configure({ decisions_enabled: false });
+    const off = I.decide(live);
+    eq('with the layer off, there is no decision at all', off.decision, null);
+    eq('and the absence is named', off.decision_state, I.DECISIONS_DISABLED);
+    chk('it is explicitly NOT a judgement about the bet',
+      /NOT a judgement about the bet/.test(off.why || ''), off.why);
+    chk('no PASS is fabricated', off.decision !== 'PASS');
+    chk('and no price is offered at which it would have been a candidate',
+      off.price === null && !/price/i.test(String(off.what_would_change_it || '')), off.what_would_change_it);
+    eq('it may not be written to the ledger', off.may_publish_to_ledger, false);
+    chk('and the ledger validator refuses it by name',
+      I.ledgerEntry({ decision: off.decision_state, game_id: 'g', market: 'spreads', selection: 'X' }).ok === false);
+    chk('research is untouched by the switch',
+      I.slateState({ scheduled_games: 7, games_with_quotes: 4, games_with_executable_price: 1, games_with_signals: 1 }).may_research === true);
+    chk('the shutdown does not forge a config the desk never ran',
+      off.config_used.ev_floor === undefined, off.config_used);
+    I.configure({ decisions_enabled: true });
+    eq('and it switches back on', I.decisionsEnabled(), true);
+  }
+
+  /* =====================================================================
+     22. A DECISION THAT WAS NOT RECORDED SAYS SO.
+     The ledger write rode along with the fire-and-forget memory write: the
+     POST went out after the response, its failure was swallowed, and the
+     answer showed a recommendation while implying a record that did not
+     exist.
+     ===================================================================== */
+  {
+    const row = {
+      schema: 'edgedesk_recommendation_v1', kind: 'RECOMMENDATION', entry_key: 'k1',
+      game_id: 'g1', market: 'spreads', selection: 'X', decision: 'BET CANDIDATE',
+      mode: 'FORWARD', odds_decimal: 1.95, published_at: new Date().toISOString(),
+    };
+    const ok = await m.publishLedger('Bearer t', [row], async () => ({ status: 201, text: async () => '' }));
+    eq('a successful write is RECORDED', ok.state, 'RECORDED');
+    eq('and carries no notice, because there is nothing to warn about', ok.notice, null);
+
+    const missing = await m.publishLedger('Bearer t', [row], async () => ({
+      status: 404, text: async () => '{"message":"relation \"public.recommendation_ledger\" does not exist"}',
+    }));
+    eq('a failed write is NOT_RECORDED', missing.state, 'NOT_RECORDED');
+    chk('and says tracking is unavailable in words a reader will understand',
+      /TRACKING UNAVAILABLE/.test(missing.notice || '') && /was NOT recorded/.test(missing.notice || ''), missing.notice);
+    chk('a missing table names the migration that fixes it',
+      /recommendation_ledger\.sql has not been applied/.test(missing.notice || ''), missing.notice);
+    chk('and it is called an operational fault, not a change to the recommendation',
+      /operational fault|has not been applied/.test(missing.notice || ''), missing.notice);
+
+    const threw = await m.publishLedger('Bearer t', [row], async () => { throw new Error('network down'); });
+    eq('a thrown write is still reported rather than swallowed', threw.state, 'NOT_RECORDED');
+    chk('with the underlying reason attached', /network down/.test(threw.notice || ''), threw.notice);
+
+    eq('nothing to record is its own state',
+      (await m.publishLedger('Bearer t', [])).state, 'NOTHING_TO_RECORD');
+
+    I.configure({ decisions_enabled: false });
+    const offw = await m.publishLedger('Bearer t', [row], async () => ({ status: 201, text: async () => '' }));
+    eq('a switched-off layer writes nothing at all', offw.state, 'DECISIONS_DISABLED');
+    eq('and records no rows', offw.rows, 0);
+    I.configure({ decisions_enabled: true });
+
+    /* And the client renders it. */
+    const appHtml = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'app.html'), 'utf8');
+    chk('the app renders the tracking notice next to the decisions',
+      /function ledgerNoticeHTML/.test(appHtml) && /\+ledgerNoticeHTML\(d\)\+/.test(appHtml));
+  }
+
+  /* =====================================================================
+     23. A MARKET NUMBER DOES NOT PROMOTE AN UNVALIDATED GAP.
+     Connecting cfb.lines gives most of the college card a number to compare
+     the model against for the first time. The ceiling that existed when
+     there was nothing to compare against has to survive that.
+     ===================================================================== */
+  {
+    const v = I.validationFor('americanfootball_ncaaf', 'spreads');
+    eq('the college spread ceiling is still WATCH', v.max_decision, 'WATCH');
+    eq('and model expected value is still refused', v.may_produce_model_ev, false);
+    chk('the model is still marked experimental in this market', v.experimental === true, v);
+
+    /* A consensus line: a real market number, and still not a price. */
+    const mk = I.resolveMarket({
+      signals: [], lines: [{ provider: 'consensus', spread: -3, over_under: 57.5, home_moneyline: -160, away_moneyline: 135 }],
+      home_selection: 'Texas State', away_selection: 'North Texas', model_home_line: 2.4,
+    });
+    eq('a consensus row is a LINE, not a price', mk.market_status, 'LINE ONLY');
+    eq('so nothing executable comes out of it', mk.has_executable_price, false);
+    eq('and no spread odds are invented for either side', mk.spread.odds_decimal, null);
+    chk('the moneyline de-vig is allowed, because BOTH sides are real numbers',
+      mk.moneyline.devig && mk.moneyline.devig.ok === true, mk.moneyline.devig);
+    eq('but it is still not actionable, because it has no book and no timestamp', mk.moneyline.actionable, false);
+
+    /* The gap itself must refuse to become a probability. */
+    const gap = I.ev({ dec: null, p_win: null });
+    chk('a line difference alone yields no expected value',
+      gap === null || gap.ev == null, gap);
+    const d = I.decide({
+      market: 'spreads', selection: 'North Texas', game_status: 'scheduled',
+      evidence: [{ field: 'line' }],
+      model: { market: 'spreads', line: 2.4, win_probability: 0.6 }, thesis_rests_on_model: true,
+    });
+    chk('a model thesis on a line-only game never reaches BET CANDIDATE', d.decision !== 'BET CANDIDATE', d.decision);
+    eq('and produces no model expected value', d.price ? d.price.model_ev : null, null);
+
+    const p = (await (await m.handle(req({ mode: 'chat', question: 'Which CFB games are worth betting this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'))).json()).prompt || '';
+    chk('the prompt says a gap is not an edge, in this market, with the number',
+      /A GAP IS NOT AN EDGE/.test(p) && /49\.94% against the close over 2,599 games/.test(p), 
+      p.slice(p.indexOf('A GAP IS NOT AN EDGE'), p.indexOf('A GAP IS NOT AN EDGE') + 200));
+  }
+
+  /* =====================================================================
+     24. A RETROSPECTIVE RATING IS NOT HISTORICAL EVIDENCE.
+     ===================================================================== */
+  {
+    const now = I.ratingTimeBasis({ basis: 'AS_ASSESSED_NOW', source: 'cfb.ratings', event_when: '2026-08-30', for_evaluation: true });
+    chk('a current rating attached to a past game is named as such',
+      /AS IT STANDS NOW/.test(now.sentence) && /not as it stood on 2026-08-30/.test(now.sentence), now.sentence);
+    chk('it is still the right number for reading that result', now.usable_for_reading_a_past_result === true);
+    chk('and the wrong number for evaluating a past decision', now.usable_for_leakage_free_evaluation === false);
+    chk('which is stated rather than left to be inferred',
+      /EXCLUDED FROM ANY LEAKAGE-FREE CLAIM/.test(now.evaluation_note || '')
+      && /may not be described as out-of-sample/.test(now.evaluation_note || ''), now.evaluation_note);
+    chk('and the absence of a historical version is disclosed, not hidden',
+      /no week and no as-of column/.test(now.sentence), now.sentence);
+
+    const then = I.ratingTimeBasis({ basis: 'AT_THE_TIME', source: 'archive', event_when: '2026-08-30' });
+    chk('a genuinely contemporary rating IS usable for evaluation', then.usable_for_leakage_free_evaluation === true);
+
+    /* And the leakage check knows about it, which a timestamp alone cannot. */
+    const clean = I.validateNoLookahead({ published_at: '2026-09-01T00:00:00Z', kickoff: '2026-09-02T00:00:00Z' });
+    chk('a row with clean timestamps and no stated basis is clean', clean.clean === true, clean.problems);
+    const leaky = I.validateNoLookahead({ published_at: '2026-09-01T00:00:00Z', kickoff: '2026-09-02T00:00:00Z', rating_time_basis: 'AS_ASSESSED_NOW' });
+    chk('but the same row evaluated with today’s ratings is NOT leakage-free',
+      leaky.clean === false && /not available when it was published/.test(leaky.why || ''), leaky.problems);
+    chk('and leakage_free is reported as its own field', leaky.leakage_free === false);
+  }
+
+  /* =====================================================================
+     25. A PACKET ARRIVES ENTIRE OR IS NAMED AS ABSENT.
+     The packet block was a blind slice at 90,000 characters. Five researched
+     games ran past it, so the fifth packet was severed mid-object while the
+     header above it went on claiming five — the same failure as "361 items,
+     130 withheld", one layer in.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    clearCache(); route = FX.router(fx);
+    const j = await (await m.handle(req({ mode: 'chat', question: 'Any CFB matchups look good this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'))).json();
+    const p = j.prompt || '';
+    /* The section only. Later blocks have their own budgets and their own
+       truncation, and this assertion is about THIS one. */
+    const secOf = (txt) => {
+      const a = txt.indexOf('RESEARCHED MATCHUPS');
+      const b = txt.indexOf('\n\n', a);
+      return a < 0 ? '' : txt.slice(a, b < 0 ? txt.length : b);
+    };
+    const block = secOf(p);
+    const bodies = (block.match(/"sections":\{/g) || []).length;
+    const header = /RESEARCHED MATCHUPS — (\d+) versioned evidence packet/.exec(block);
+    chk('the header counts what was actually delivered, not what was built',
+      header && Number(header[1]) === bodies, { header: header && header[1], bodies });
+    chk('and every delivered packet is complete JSON, not a severed tail',
+      (() => { try { JSON.parse(block.slice(block.indexOf('[{'))); return true; } catch (_) { return false; } })());
+    chk('no packet is cut off mid-object', !/…\[truncated at \d+ chars\]/.test(block), block.slice(-120));
+
+    /* Squeeze it until packets genuinely cannot fit, and check what it says. */
+    ENV.EDGEDESK_EVIDENCE_MAX = '30000';
+    clearCache();
+    const j2 = await (await m.handle(req({ mode: 'chat', question: 'Any CFB matchups look good this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'))).json();
+    delete ENV.EDGEDESK_EVIDENCE_MAX;
+    const p2 = j2.prompt || '';
+    chk('a tight budget still delivers whole packets',
+      !/…\[truncated at \d+ chars\]/.test(secOf(p2)));
+    chk('and if one does not fit, it is named rather than silently dropped',
+      (() => { const b2 = secOf(p2); const h = /RESEARCHED MATCHUPS — (\d+) versioned/.exec(b2);
+        const n = (b2.match(/"sections":\{/g) || []).length;
+        return h && Number(h[1]) === n && (!/did NOT FIT/.test(b2) || /You do NOT have their evidence/.test(b2)); })());
+    chk('the evidence block still names what it withheld rather than going quiet',
+      !/EVIDENCE WITHHELD/.test(p2) || /SUBJECTS WITH NO EVIDENCE IN THIS MESSAGE AT ALL/.test(p2));
+  }
+
+  /* =====================================================================
+     26. THE WHOLE REAL CARD, RECONCILED.
+     Scenario 19 checks the counts on a seven-game fixture. This runs the
+     desk's market resolution over the REAL committed 75-game slate — the same
+     artifact the board renders — so the shape the user actually saw (75
+     scheduled, most carrying a market number, far fewer carrying a price) is
+     reproduced from the real file rather than from numbers typed in.
+     ===================================================================== */
+  {
+    const slate = FX.SLATE;
+    chk('the committed card is the size the board showed', slate.games.length === 75, slate.games.length);
+
+    /* cfb.lines.spread is a BETTING number, the convention the artifact
+       publishes model_home_line in, so a correctly stored row IS that number.
+       Building the fixture the other way round is what a bad ingest looks
+       like, and both are run here. */
+    const linesFor = (offset, invert) => {
+      const L = {};
+      slate.games.forEach((g, i) => {
+        if (i % 5 === 3 || g.model_home_line == null) return;   /* a fifth carry no line */
+        const spread = g.model_home_line + offset;
+        L[g.game_id] = [{ game_id: g.game_id, provider: 'consensus',
+          spread: invert ? -spread : spread, over_under: 55.5, home_moneyline: -150, away_moneyline: 130 }];
+      });
+      return L;
+    };
+    const runCard = (L) => {
+      const out = { lined: 0, priced: 0, none: 0, faults: 0, devig: 0, mirrored: 0 };
+      slate.games.forEach((g) => {
+        const mk = I.resolveMarket({ signals: [], lines: L[g.game_id] || [],
+          home_selection: g.home_team, away_selection: g.away_team, model_home_line: g.model_home_line });
+        if (mk.has_market_line) out.lined++; else out.none++;
+        if (mk.has_executable_price) out.priced++;
+        if (mk.spread.fault) out.faults++;
+        if (mk.moneyline.devig && mk.moneyline.devig.ok) out.devig++;
+        if (mk.spread.odds_decimal != null || mk.spread.odds_american != null) out.mirrored++;
+      });
+      return out;
+    };
+
+    const good = runCard(linesFor(1.5, false));
+    eq('every game on the card is accounted for', good.lined + good.none, slate.games.length);
+    chk('most of the card carries a market NUMBER, as the board shows', good.lined > 50, good);
+    eq('and none of it carries an executable price without a captured quote', good.priced, 0);
+    eq('a correctly oriented card produces no convention faults', good.faults, 0);
+    chk('a two-sided consensus moneyline IS de-vigged, because both sides are real',
+      good.devig === good.lined && good.devig > 50, good);
+    eq('and NO spread price is ever mirrored from the other side of a handicap', good.mirrored, 0);
+
+    /* The same card stored the wrong way round. The guard must catch the rows
+       big enough to catch and must never flip one. */
+    const bad = runCard(linesFor(1.5, true));
+    chk('an inverted table has most of its spreads dropped rather than flipped',
+      bad.faults > 30, bad);
+    eq('and dropping a spread never invents an executable price', bad.priced, 0);
+    chk('the games still count as carrying a market, because the total and the moneyline survive',
+      bad.lined === good.lined, { bad: bad.lined, good: good.lined });
   }
 
   done();

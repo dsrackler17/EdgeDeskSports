@@ -159,7 +159,8 @@ function render(j, question) {
           + ' · rest ' + (t.rest_days.value != null ? t.rest_days.value + 'd' : 'n/a'));
         (t.previous_games.value || []).forEach((g) => {
           L.push('        ' + g.date + ' ' + g.venue + ' vs ' + g.opponent + '  ' + g.points_for + '-' + g.points_against
-            + ' ' + g.result + '   (opponent SP+ ' + (g.opponent_sp_plus != null ? g.opponent_sp_plus : 'n/a') + ')');
+            + ' ' + g.result + '   (opponent SP+ NOW '
+            + ((g.opponent_sp_plus_now != null ? g.opponent_sp_plus_now : g.opponent_sp_plus) ?? 'n/a') + ')');
         });
       });
       L.push('    SP+ gap (home minus away): ' + (mu.sp_plus_gap.value != null ? mu.sp_plus_gap.value : 'n/a')

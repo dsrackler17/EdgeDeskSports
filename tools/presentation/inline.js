@@ -13,6 +13,16 @@
                                   the model-validation gate, the ledger.
        hosts: edgedesk_ai/index.ts, app.html
 
+     fbs.js  EDFBSKEY + EDFBSRESOLVE — the team resolver and its alias table,
+                                  the ONLY thing that can join a book's
+                                  "North Texas Mean Green" to a schedule's
+                                  "North Texas". Copied INTO _intelligence.js
+                                  (and so on into the two hosts above) rather
+                                  than re-implemented, because a second alias
+                                  table is a board and a desk that disagree
+                                  about who is playing.
+       hosts: edgedesk_ai/_intelligence.js
+
    Each host carries the marker pair and this replaces everything between them
    with the canonical block, byte for byte. presentation_sync.test.js fails
    when a host drifts, so the fix is always "edit the canonical file, run
@@ -26,6 +36,22 @@ const ROOT = path.join(__dirname, '..', '..');
 const FN = path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai');
 
 const LIBS = [
+  /* ORDER MATTERS. The FBS resolver's host is _intelligence.js, which is
+     itself the source EDINTEL is copied FROM, so the two resolver blocks must
+     land before EDINTEL is read — one pass then carries a fbs.js edit all the
+     way to index.ts and app.html. */
+  {
+    name: 'EDFBSKEY',
+    src: path.join(ROOT, 'football', 'fbs', 'fbs.js'),
+    start: '/*__EDFBSKEY_START__*/', end: '/*__EDFBSKEY_END__*/',
+    hosts: [path.join(FN, '_intelligence.js')],
+  },
+  {
+    name: 'EDFBSRESOLVE',
+    src: path.join(ROOT, 'football', 'fbs', 'fbs.js'),
+    start: '/*__EDFBSRESOLVE_START__*/', end: '/*__EDFBSRESOLVE_END__*/',
+    hosts: [path.join(FN, '_intelligence.js')],
+  },
   {
     name: 'EDPRES',
     src: path.join(FN, '_presentation.js'),

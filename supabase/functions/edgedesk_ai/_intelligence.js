@@ -49,6 +49,234 @@
   var PACKET_SCHEMA = 'edgedesk_game_evidence_v1';
   var LEDGER_SCHEMA = 'edgedesk_recommendation_v1';
   var DECISIONS = ['BET CANDIDATE', 'WATCH', 'PASS', 'INSUFFICIENT DATA'];
+  /* Not a decision. The absence of one, named, so it can never be read as a
+     judgement about a selection — and deliberately NOT in DECISIONS, so the
+     ledger's own validator refuses to record it as though the desk decided. */
+  var DECISIONS_DISABLED = 'DECISIONS DISABLED';
+
+  /* ====================================================================== */
+  /* THE FBS TEAM RESOLVER — COPIED FROM football/fbs/fbs.js, NOT REWRITTEN. */
+  /*                                                                        */
+  /* This is the whole reason Intelligence said "no CFB matchups" on a board */
+  /* showing 75 games and 46 markets. The odds capture writes the BOOK's     */
+  /* name for a program — "North Texas Mean Green", "Miami (OH) RedHawks" —  */
+  /* and the college schedule writes the school alone — "North Texas",       */
+  /* "Miami". A server that joins those two feeds on a normalised string     */
+  /* joins NOTHING, and reports that emptiness as an absence of markets.     */
+  /* tools/newsletter/market.js hit exactly this and says so: "a live run    */
+  /* read 410 college signal rows and joined zero, and every refusal said    */
+  /* no_slate_game_with_both_teams".                                         */
+  /*                                                                        */
+  /* The board never had that bug because it resolves through EDFbs. So the  */
+  /* resolver is COPIED here by tools/presentation/inline.js rather than     */
+  /* re-implemented: one alias table, one prefix rule, and a board and a     */
+  /* desk that cannot disagree about who is playing.                        */
+  /* ====================================================================== */
+  /*__EDFBSKEY_START__*/
+  /* SHARED WITH THE EDGE FUNCTION. tools/presentation/inline.js copies this
+     block verbatim into supabase/functions/edgedesk_ai/_intelligence.js, which
+     is itself copied into index.ts and app.html. The odds capture writes book
+     names ("North Texas Mean Green") and the college schedule writes school
+     names ("North Texas"), so a server that compares normalised strings joins
+     NOTHING — the failure tools/newsletter/market.js documents as "410 college
+     signal rows and joined zero". One resolver, one alias table, copied rather
+     than re-implemented, so the board and the desk cannot disagree about who
+     is playing. presentation_sync.test.js fails on drift. */
+  var ACCENTS = { 'é': 'e', 'í': 'i', 'á': 'a', 'ó': 'o',
+    'ú': 'u', 'ñ': 'n', '’': "'", '‘': "'" };
+  function normKey(name) {
+    if (name == null) return null;
+    var s = String(name).trim().toLowerCase(), out = '', i, c;
+    for (i = 0; i < s.length; i++) { c = s.charAt(i); out += (ACCENTS[c] || c); }
+    out = out.replace(/[^a-z0-9]+/g, '');
+    return out || null;
+  }
+
+  /* A LOOSER key, for joining feeds that decorate the school name with a
+     nickname ("Ohio Bobcats" for "Ohio") or an ampersand ("Texas A&M" ->
+     "texasaandm" in one artifact, "texasam" in another). Used ONLY for
+     alias resolution, never as a team's identity. */
+  function aliasKey(name) {
+    if (name == null) return null;
+    var s = String(name).trim().toLowerCase(), out = '', i, c;
+    for (i = 0; i < s.length; i++) { c = s.charAt(i); out += (ACCENTS[c] || c); }
+    out = out.replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
+    return out || null;
+  }
+
+  /*__EDFBSKEY_END__*/
+
+  /*__EDFBSRESOLVE_START__*/
+  var TEAM_ALIASES = {
+    appstate: ['appalachian state', 'appalachian st', 'app st'],
+    hawaii: ["hawai'i", 'hawaii', 'hawaii rainbow warriors', 'university of hawaii'],
+    sanjosestate: ['san jose state', 'san jose st', 'sjsu'],
+    miamioh: ['miami ohio', 'miami (ohio)', 'miami oh', 'miami (oh)', 'miami redhawks', 'miami-ohio'],
+    miami: ['miami fl', 'miami (fl)', 'miami florida', 'miami (florida)', 'miami hurricanes', 'miami-florida'],
+    olemiss: ['mississippi', 'ole miss rebels'],
+    massachusetts: ['umass', 'u mass', 'mass'],
+    southernmiss: ['southern mississippi', 'southern miss', 'so miss', 'usm'],
+    uconn: ['connecticut'],
+    ulmonroe: ['louisiana monroe', 'louisiana-monroe', 'ul monroe', 'ulm', 'la monroe'],
+    louisiana: ['louisiana lafayette', 'louisiana-lafayette', 'ul lafayette', 'ull', 'la lafayette',
+      'louisiana ragin cajuns'],
+    ncstate: ['north carolina state', 'n c state', 'nc st'],
+    utsa: ['texas san antonio', 'texas-san antonio', 'ut san antonio'],
+    utep: ['texas el paso', 'texas-el paso', 'ut el paso'],
+    floridainternational: ['fiu', 'florida intl'],
+    floridaatlantic: ['fau'],
+    uab: ['alabama birmingham', 'alabama-birmingham', 'ala birmingham'],
+    ucf: ['central florida'],
+    southflorida: ['usf'],
+    smu: ['southern methodist'],
+    tcu: ['texas christian'],
+    byu: ['brigham young'],
+    lsu: ['louisiana state'],
+    pittsburgh: ['pitt'],
+    texasam: ['texas a&m', 'texas a and m', 'texas am', 'texas a m', 'texas aandm', 'texasaandm'],
+    samhouston: ['sam houston state', 'sam houston st', 'shsu'],
+    jacksonvillestate: ['jax state', 'jacksonville st'],
+    usc: ['southern california', 'southern cal'],
+    unlv: ['nevada las vegas', 'nevada-las vegas', 'las vegas'],
+    nevada: ['nevada reno', 'nevada-reno'],
+    middletennessee: ['middle tennessee state', 'middle tennessee st', 'mtsu'],
+    westernkentucky: ['wku'],
+    northernillinois: ['niu'],
+    charlotte: ['north carolina charlotte', 'unc charlotte'],
+    olddominion: ['odu'],
+    coastalcarolina: ['ccu'],
+    bowlinggreen: ['bowling green state'],
+    kentstate: ['kent'],
+    sacramentostate: ['sac state', 'sacramento st', 'csu sacramento'],
+    northdakotastate: ['ndsu', 'north dakota st'],
+    missouristate: ['missouri st'],
+    kennesawstate: ['kennesaw st'],
+    georgiasouthern: ['ga southern'],
+    georgiastate: ['ga state'],
+    mississippistate: ['miss state', 'mississippi st'],
+    northcarolina: ['unc'],
+    fresnostate: ['fresno st'],
+    boisestate: ['boise st'],
+    arizonastate: ['arizona st'],
+    michiganstate: ['michigan st'],
+    oklahomastate: ['oklahoma st'],
+    oregonstate: ['oregon st'],
+    washingtonstate: ['washington st'],
+    pennstate: ['penn st'],
+    iowastate: ['iowa st'],
+    kansasstate: ['kansas st'],
+    floridastate: ['florida st'],
+    coloradostate: ['colorado st'],
+    sandiegostate: ['san diego st'],
+    utahstate: ['utah st'],
+    texasstate: ['texas st'],
+    arkansasstate: ['arkansas st'],
+    ballstate: ['ball st'],
+    newmexicostate: ['new mexico st'],
+    louisianatech: ['la tech'],
+    virginiatech: ['va tech'],
+    eastcarolina: ['ecu'],
+    westvirginia: ['wvu']
+  };
+  /* the reverse map, keyed the loose way so "Texas A&M" and "Texas AandM"
+     both land on the same row */
+  var ALIAS_TO_KEY = {};
+  (function () {
+    var k, i;
+    for (k in TEAM_ALIASES) if (Object.prototype.hasOwnProperty.call(TEAM_ALIASES, k)) {
+      for (i = 0; i < TEAM_ALIASES[k].length; i++) ALIAS_TO_KEY[aliasKey(TEAM_ALIASES[k][i])] = k;
+    }
+  })();
+
+  /* "Boise St" and "Boise St." are the same school as "Boise State"; the
+     expansion is tried only AFTER the exact and alias passes fail, so it can
+     never overrule a real name. */
+  function expandState(name) {
+    var s = String(name == null ? '' : name);
+    var out = s.replace(/(^|[^a-z])st\.?($|[^a-z])/gi, function (m, a, b) { return a + 'State' + b; });
+    return out === s ? null : out;
+  }
+
+  function teamIndex(universe) {
+    var ix = { byKey: {}, byAlias: {}, keys: [], prefixes: [], universe: universe };
+    if (!universe || !universe.teams) return ix;
+    var i, k, t;
+    for (i = 0; i < universe.order.length; i++) {
+      k = universe.order[i]; t = universe.teams[k];
+      ix.byKey[k] = t;
+      ix.byAlias[aliasKey(t.name)] = k;
+      for (var a = 0; a < t.aliases.length; a++) ix.byAlias[aliasKey(t.aliases[a])] = k;
+      ix.keys.push(k);
+    }
+    for (k in ALIAS_TO_KEY) if (Object.prototype.hasOwnProperty.call(ALIAS_TO_KEY, k)) {
+      if (ix.byKey[ALIAS_TO_KEY[k]] && !ix.byAlias[k]) ix.byAlias[k] = ALIAS_TO_KEY[k];
+    }
+    ix.keys.sort(function (x, y) { return y.length - x.length || x.localeCompare(y); });
+    /* The prefix pass runs over canonical keys AND known aliases together:
+       a book writes "UMass Minutemen" and "Pitt Panthers", which are a
+       nickname stuck onto an ALIAS, not onto the school's schedule name. */
+    var seen = {};
+    function addPrefix(s, key) {
+      if (!s || s.length < 3 || seen[s + '|' + key]) return;
+      seen[s + '|' + key] = 1;
+      ix.prefixes.push({ s: s, key: key });
+    }
+    for (i = 0; i < ix.keys.length; i++) addPrefix(ix.keys[i], ix.keys[i]);
+    for (k in ix.byAlias) if (Object.prototype.hasOwnProperty.call(ix.byAlias, k)) addPrefix(k, ix.byAlias[k]);
+    ix.prefixes.sort(function (x, y) { return y.s.length - x.s.length || x.s.localeCompare(y.s); });
+    return ix;
+  }
+
+  function resolveTeam(name, ix, opts) {
+    opts = opts || {};
+    if (!ix || !name) return null;
+    var k = normKey(name);
+    if (k && ix.byKey[k]) return { key: k, team: ix.byKey[k], how: 'exact', ambiguous: null };
+    var ak = aliasKey(name);
+    if (ak && ix.byAlias[ak]) return { key: ix.byAlias[ak], team: ix.byKey[ix.byAlias[ak]], how: 'alias', ambiguous: null };
+    var ex = expandState(name);
+    if (ex) {
+      var ek = normKey(ex), eak = aliasKey(ex);
+      if (ek && ix.byKey[ek]) return { key: ek, team: ix.byKey[ek], how: 'state-expansion', ambiguous: null };
+      if (eak && ix.byAlias[eak]) return { key: ix.byAlias[eak], team: ix.byKey[ix.byAlias[eak]], how: 'state-expansion', ambiguous: null };
+    }
+    /* longest unambiguous prefix, over canonical keys and aliases together.
+       `ix.prefixes` is longest-first, so the first hit is the longest; a
+       SECOND hit of the same length pointing at a DIFFERENT school is a tie
+       and resolves to nothing — "Ohio" must never swallow "Ohio State", and
+       Miami Florida must never take Miami Ohio's number. */
+    if (!ak || ak.length < (opts.minPrefix == null ? 3 : opts.minPrefix)) return null;
+    var best = null, tie = null, i, c;
+    for (i = 0; i < ix.prefixes.length; i++) {
+      c = ix.prefixes[i];
+      if (ak.indexOf(c.s) !== 0) continue;
+      if (!best) { best = c; continue; }
+      if (c.s.length === best.s.length) { if (c.key !== best.key) { tie = c; } continue; }
+      break;                                     /* shorter than `best`: stop */
+    }
+    if (!best) return null;
+    if (tie) return { key: null, team: null, how: 'ambiguous', ambiguous: [best.key, tie.key] };
+    return { key: best.key, team: ix.byKey[best.key], how: 'prefix', matched: best.s, ambiguous: null };
+  }
+
+  /* Does this captured odds event describe this scheduled game? Both sides
+     must resolve to the game's own teams and the kickoffs must agree. A
+     half match is not a match: a quote joined on the home team alone is how
+     a book's Ohio number ends up priced against Ohio State. */
+  function matchesEvent(ev, item, ix, opts) {
+    opts = opts || {};
+    if (!ev || !item) return false;
+    var windowMs = opts.windowMs == null ? 36 * 3600e3 : opts.windowMs;
+    var hk = item.meta ? item.meta.home.key : normKey(item.g && item.g.home_team);
+    var ak = item.meta ? item.meta.away.key : normKey(item.g && item.g.away_team);
+    var rh = resolveTeam(ev.home, ix), ra = resolveTeam(ev.away, ix);
+    if (!rh || !ra || !rh.key || !ra.key) return false;
+    if (rh.key !== hk || ra.key !== ak) return false;
+    var t = Date.parse(ev.t);
+    if (!isFinite(t) || !isFinite(item.t)) return false;
+    return Math.abs(t - item.t) < windowMs;
+  }
+  /*__EDFBSRESOLVE_END__*/
 
   /* ------------------------------------------------------------------ util */
   function num(v) { if (v == null || v === '') return null; var n = +v; return isFinite(n) ? n : null; }
@@ -64,6 +292,14 @@
   }
   function uniq(a) { var s = [], i; for (i = 0; i < (a || []).length; i++) if (a[i] != null && s.indexOf(a[i]) < 0) s.push(a[i]); return s; }
   function pct(v, dp) { var n = num(v); return n == null ? null : (n * 100).toFixed(dp == null ? 1 : dp) + '%'; }
+  /* Name comparison for side resolution. Same shape as the resolver in the
+     edge function and the FBS universe: accents folded, punctuation dropped,
+     whitespace collapsed. A display label is compared, never trusted as an id. */
+  function normName(v) {
+    var t = String(v == null ? '' : v).toLowerCase();
+    try { t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { /* older runtimes */ }
+    return t.replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
   function pp(v, dp) { var n = num(v); return n == null ? null : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp == null ? 1 : dp) + ' pp'; }
 
   /* ==================================================================== */
@@ -78,6 +314,20 @@
     /* The EV floor a price must clear before a decision may be actionable.
        Tracks the browser engine's REAL_FLOOR so the two halves of the product
        cannot disagree about the same number. */
+    /* THE KILL SWITCH, AS A SWITCH.
+       This used to be documented as `configure({ ev_floor: 1 })` — set the
+       expected-value floor to 100% per unit and nothing can clear it. That is
+       a threshold pressed into service as a control, and it is the wrong shape
+       three ways over. It only reaches a verdict through one branch, which is
+       conditioned on an expected value EXISTING, and for college spreads under
+       RESEARCH_LEAN there usually is none. What it does produce is PASS — a
+       substantive betting judgement meaning "evaluated, and not worth it at
+       this price" — when the truth is that the desk is not making decisions at
+       all. And it writes ev_floor: 1 into the ledger's config_used, so rows
+       recorded during the shutdown claim a floor that was never a policy.
+       An operator turning the decision layer off should not have to reason
+       about any of that. */
+    decisions_enabled: true,
     ev_floor: 0.005,
     /* How much better than the floor a price must be before the decision is
        allowed to read as a candidate rather than a lean. */
@@ -836,6 +1086,572 @@
   }
 
   /* ==================================================================== */
+  /* THE MARKET RESOLVER — a LINE and a PRICE are not the same object      */
+  /*                                                                       */
+  /* THE MISTAKE THIS EXISTS TO END                                        */
+  /*   football/fbs/slate.json carries "market_status": "NOT JOINED IN     */
+  /*   THIS BUILD" on every game, and its own note says why: "Market       */
+  /*   quotes are joined live in the browser from captured signals and     */
+  /*   cfb.lines." An earlier reading of that artifact concluded the       */
+  /*   application had no college prices at all. It was wrong. The board   */
+  /*   resolves a market for roughly two games in three, and it does it    */
+  /*   from TWO sources in priority order (fbP4Market in app.html):        */
+  /*                                                                       */
+  /*     1. a captured `signals` row, matched to the game through the FBS  */
+  /*        universe's alias resolver with BOTH teams required to resolve  */
+  /*     2. cfb.lines — the ingested CollegeFootballData consensus, keyed  */
+  /*        on the CFBD game_id                                            */
+  /*     3. the captured row again, marked stale, if neither of the above  */
+  /*                                                                       */
+  /*   Counting only (1) is why the research desk reported one quoted game */
+  /*   on a card the board showed as forty-six.                            */
+  /*                                                                       */
+  /* THE DISTINCTION THAT HAS TO SURVIVE                                   */
+  /*   A cfb.lines row carries a spread, a total and two moneylines. It    */
+  /*   carries NO BOOK and NO TIMESTAMP. It is a LINE: a number to compare */
+  /*   a model against. It is NOT an executable price, and no expected     */
+  /*   value may ever be computed from one.                                */
+  /*                                                                       */
+  /*   A captured signals row carries a decimal price, the book offering   */
+  /*   it and the moment it was seen. That is a PRICE.                     */
+  /*                                                                       */
+  /*   Both are markets. Only one can be bet into. Everything below keeps  */
+  /*   them apart, and NOTHING here invents the missing half: a spread     */
+  /*   handicap yields no per-side odds, and mirroring it into a synthetic */
+  /*   -110 on both sides would manufacture an executable price out of a   */
+  /*   number that never had one.                                          */
+  /* ==================================================================== */
+
+  /* The board's own windows, restated so the two halves agree.
+     A captured PRICE is actionable inside quote_ttl_min. A consensus LINE has
+     no timestamp at all and is research context for as long as the board
+     considers the card live — 72h, matching FBP4_QUOTE_FRESH_MS. */
+  CONFIG.line_research_window_min = 72 * 60;
+  /* The spread-convention constants the engine uses. Same numbers, because it
+     is the same question: does negating this row reconcile it with the model? */
+  CONFIG.orientation_bound_pts = 21;
+  CONFIG.orientation_reconcile_pts = 7;
+
+  /**
+   * A joined market number that only agrees with the model once it is negated
+   * is a row stored in the opposite convention, not a disagreement about
+   * football. It is DROPPED and named — never flipped, because a row nobody
+   * can vouch for is not made trustworthy by guessing which way round it was
+   * meant to be. Same rule, same constants as EDCfbP4.market.orientationFault.
+   */
+  function orientationFault(modelNumber, marketNumber, opts) {
+    opts = opts || {};
+    var m = num(modelNumber), k = num(marketNumber);
+    if (m == null || k == null) return null;
+    var bound = num(opts.bound) != null ? num(opts.bound) : CONFIG.orientation_bound_pts;
+    var reconcile = num(opts.reconcile) != null ? num(opts.reconcile) : CONFIG.orientation_reconcile_pts;
+    var asIs = Math.abs(m - k), flipped = Math.abs(m + k);
+    if (!(asIs > bound) || !(flipped <= reconcile) || !(flipped < asIs)) return null;
+    return {
+      model: m, market: k, gap: r2(asIs), gap_if_negated: r2(flipped),
+      bound: bound, reconcile: reconcile,
+      basis: 'This market number disagrees with the model by ' + r2(asIs) + ' points, and negating it reconciles '
+        + 'them to ' + r2(flipped) + '. That is one row stored in the opposite spread convention, not a '
+        + 'disagreement about football. The number is DROPPED rather than flipped.'
+    };
+  }
+
+  /** cfb.lines.spread -> the engine's margin convention, per the declaration. */
+  function lineToMargin(spread, convention) {
+    var v = num(spread);
+    if (v == null) return null;
+    return convention === 'margin' ? v : -v;
+  }
+
+  /**
+   * Resolve one game's market from every source that legitimately has one.
+   *
+   * @param o.signals   captured rows already matched to THIS game
+   * @param o.lines     cfb.lines rows for this game_id
+   * @param o.model_home_line  the engine's projection as the FBS slate artifact
+   *                    publishes it: home side, BETTING convention, negative for
+   *                    a home favourite. Negated internally for the orientation
+   *                    check. It never becomes a market number.
+   * @param o.model_margin  the same projection in the engine's MARGIN convention
+   *                    (positive = home favoured), i.e. projectGame's fair_spread.
+   *                    Pass whichever one you actually hold; if both, this wins.
+   * @param o.lines_convention 'betting' (default, negate) or 'margin'
+   */
+  /* ====================================================================== */
+  /* AVAILABILITY — AND THE ONE RULE THAT MATTERS                            */
+  /*                                                                        */
+  /* College football has no universal injury report. football/availability/ */
+  /* says so in its own README and publishes four DIFFERENT findings that    */
+  /* must never collapse into one another:                                   */
+  /*                                                                        */
+  /*   verified flags     a trusted source named a player and a designation  */
+  /*   no reported injuries   an OFFICIAL report was read and listed nobody  */
+  /*   partial coverage   some players verified, no universal report exists  */
+  /*   no verified data   EdgeDesk looked and found nothing it would publish */
+  /*                                                                        */
+  /* The last one is NOT the first one. A team with no report on file is     */
+  /* UNKNOWN. It is not healthy, it is not clean, and no sentence produced   */
+  /* from this data may imply that it is. That is the whole reason this      */
+  /* function exists rather than a field read.                               */
+  /* ====================================================================== */
+
+  var AVAIL_STATES = ['VERIFIED_FLAGS', 'NO_REPORTED_INJURIES', 'PARTIAL', 'UNKNOWN', 'NOT_RETRIEVED'];
+  /* How old an availability read may be before it stops describing today.
+     A designation is a weekly artefact; past this it is history. */
+  var AVAIL_STALE_H = 72;
+
+  /**
+   * One team's availability, classified rather than described.
+   *
+   * @param o.record   the team's row from football/availability/current.json
+   * @param o.team     the team name, for the sentence
+   * @param o.generated_at the artifact's own build time
+   * @param o.now      clock
+   */
+  function availabilityRead(o) {
+    o = o || {};
+    var rec = o.record || null;
+    var team = clean(o.team) || 'this team';
+    var gen = toMs(o.generated_at);
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var ageH = gen == null ? null : Math.round((now - gen) / 3600e3);
+    var stale = ageH != null && ageH > AVAIL_STALE_H;
+
+    if (!rec) {
+      return finishAvail('NOT_RETRIEVED', {
+        team: team, players: [], quarterbacks: [],
+        sentence: 'No availability record was retrieved for ' + team + '. That is a RETRIEVAL result, not a '
+          + 'medical one: it says nothing about whether anyone is hurt.',
+        age_hours: ageH, stale: stale, quality: null, counts: null,
+        official_report_found: null, sources_checked: null, sources_failed: null
+      });
+    }
+
+    var counts = rec.counts || {};
+    var records = num(counts.records) || 0;
+    var flagged = num(counts.flagged) || 0;
+    var quality = clean(rec.dataQuality) || 'NONE';
+    var official = rec.official_report_found === true;
+    var checked = num(rec.sources_checked) || 0;
+    var failed = num(rec.sources_failed) || 0;
+    var players = rec.players || [];
+    var qbs = players.filter(function (pl) {
+      return String(pl.position || pl.pos || '').toUpperCase().indexOf('QB') === 0;
+    });
+
+    var state, sentence;
+    if (flagged > 0 || records > 0) {
+      state = quality === 'STRONG' ? 'VERIFIED_FLAGS' : 'PARTIAL';
+      sentence = records + ' availability record' + (records === 1 ? '' : 's') + ' on file for ' + team
+        + ' (' + flagged + ' carrying doubt), data quality ' + quality
+        + (official ? ', from an official report' : ', from unofficial sources')
+        + '. Players NOT named here are UNREPORTED, not confirmed fit.';
+    } else if (official) {
+      state = 'NO_REPORTED_INJURIES';
+      sentence = 'An OFFICIAL availability report was read for ' + team + ' and it listed nobody. '
+        + 'That is a positive finding and the only circumstance in which "no reported injuries" is a fact '
+        + 'rather than an absence.';
+    } else {
+      state = 'UNKNOWN';
+      sentence = 'No availability record is on file for ' + team + '. EdgeDesk checked ' + checked
+        + ' source' + (checked === 1 ? '' : 's') + (failed ? ' and ' + failed + ' failed' : '')
+        + ', found no official report, and published nothing. '
+        + 'THIS IS UNKNOWN, NOT HEALTHY: nobody has been confirmed fit and no injury has been ruled out. '
+        + 'Do not describe this team as healthy, clean or fully available.';
+    }
+    if (stale && state !== 'NOT_RETRIEVED') {
+      sentence += ' The availability build is ' + ageH + ' hours old, past the ' + AVAIL_STALE_H
+        + '-hour window in which a weekly designation still describes today, so treat it as history.';
+    }
+
+    return finishAvail(state, {
+      team: team, quality: quality, counts: counts,
+      players: players, quarterbacks: qbs,
+      official_report_found: official, sources_checked: checked, sources_failed: failed,
+      age_hours: ageH, stale: stale, sentence: sentence
+    });
+  }
+
+  function finishAvail(state, o) {
+    return {
+      state: state, team: o.team, sentence: o.sentence,
+      data_quality: o.quality, counts: o.counts,
+      players: o.players, quarterbacks: o.quarterbacks,
+      official_report_found: o.official_report_found,
+      sources_checked: o.sources_checked, sources_failed: o.sources_failed,
+      artifact_age_hours: o.age_hours, stale: o.stale,
+      /* THE TWO PERMISSIONS, SAID AS DATA SO NO CONSUMER HAS TO INFER THEM. */
+      may_claim_healthy: state === 'NO_REPORTED_INJURIES',
+      may_adjust_projection: false,
+      adjustment_note: 'EdgeDesk does not move a projection on availability evidence. The engine prices an '
+        + 'injury report only when it is given one in its own contract (player, position, starter, snap share, '
+        + 'severity, status, replacement quality), and the college dataset carries neither snap share nor '
+        + 'replacement quality. An unvalidated adjustment invented here would be a number with no backtest '
+        + 'behind it, so availability is EVIDENCE A READER WEIGHS and never an automatic edit to the model.',
+      source: 'football/availability/current.json (schema edgedesk_cfb_availability_v1)'
+    };
+  }
+
+  /* ====================================================================== */
+  /* JOINING A BOOK'S FIXTURES TO A SCHEDULE'S GAMES                         */
+  /* ====================================================================== */
+
+  /**
+   * A resolver index built from the games themselves.
+   *
+   * fbs.js's teamIndex() wants a universe. The FBS slate artifact already
+   * publishes the canonical key for every side (`home_team_id`), which is what
+   * a universe would have produced, so the index is built from the card rather
+   * than from a second copy of the FBS membership tables. A universe of only
+   * this week's teams is also a SMALLER chance of an ambiguous prefix, which
+   * is the newsletter's own reasoning for doing it this way.
+   *
+   * @param games [{home_team, away_team, home_id?, away_id?}]
+   */
+  /* A published canonical key ("northtexas") or nothing. A numeric id is a
+     DATABASE row id — cfb.games stores those in the same field name — and
+     using one as a team key would index a team under "247" and resolve
+     nothing to it. Never inferred from the value beyond this: all digits is
+     not a team key, everything else is taken as published. */
+  function canonKey(id, name) {
+    var v = clean(id);
+    if (v && !/^[0-9]+$/.test(v)) return v;
+    return normKey(name);
+  }
+
+  function fbsIndexFor(games) {
+    var universe = { teams: {}, order: [] };
+    (games || []).forEach(function (g) {
+      [[g.home_team, g.home_id], [g.away_team, g.away_id]].forEach(function (pair) {
+        var name = clean(pair[0]);
+        if (!name) return;
+        /* The published id when there is one, the canonical key otherwise.
+           Never a guess: a row with neither is skipped, not invented. */
+        var key = canonKey(pair[1], name);
+        if (!key || universe.teams[key]) return;
+        universe.teams[key] = { key: key, name: name, aliases: [] };
+        universe.order.push(key);
+      });
+    });
+    /* THE PREFIX TRAP, WHICH A CARD-SIZED UNIVERSE MAKES WORSE RATHER THAN
+       BETTER. fbs.js resolves an unknown spelling by longest unambiguous
+       prefix, and a tie between two schools resolves to nothing. That rule
+       only protects "Miami (OH) RedHawks" from taking Miami Florida's number
+       while BOTH Miamis are in the universe. Build the universe from one
+       week's card and Miami Ohio is usually absent — so `miamiohredhawks`
+       finds only `miami`, resolves cleanly, and the wrong game gets priced.
+       A quote on the wrong team is a fabricated market, which is worse than a
+       reported miss.
+
+       So every program the curated alias table knows about is seeded as a
+       competing key even when it is not playing. `miamioh` is then the longer
+       prefix and wins; no game on the card carries that key, so the row is
+       REFUSED and counted. The seed can only ever cause a refusal — it adds
+       no game and joins nothing. */
+    Object.keys(TEAM_ALIASES).forEach(function (key) {
+      if (universe.teams[key]) return;
+      universe.teams[key] = { key: key, name: key, aliases: TEAM_ALIASES[key], off_card: true };
+      universe.order.push(key);
+    });
+    return teamIndex(universe);
+  }
+
+  /**
+   * Join captured odds rows to scheduled games, by the BOARD'S OWN RULE.
+   *
+   * matchesEvent's contract, unchanged: both sides must resolve to this game's
+   * own teams and the kickoffs must agree inside a bounded window. A half
+   * match is refused — a quote joined on the home team alone is how a book's
+   * Ohio number ends up priced against Ohio State.
+   *
+   * Every refusal is COUNTED AND NAMED. A join that silently drops rows is
+   * indistinguishable from a feed with no rows, and telling those two apart is
+   * the entire point: 410 rows joined to nothing was reported to the reader as
+   * "there are no CFB matchups to evaluate".
+   *
+   * @param o.signals  captured rows: {home_team, away_team, commence_time, ...}
+   * @param o.games    schedule rows: {game_id, home_team, away_team, kickoff}
+   * @param o.window_ms  kickoff tolerance (default 36h, matchesEvent's own)
+   * @returns {by_game, joined, unjoined, diagnosis}
+   */
+  function joinSignalsToGames(o) {
+    o = o || {};
+    var games = o.games || [], sigs = o.signals || [];
+    var windowMs = num(o.window_ms) != null ? num(o.window_ms) : 36 * 3600e3;
+    var ix = fbsIndexFor(games);
+    var byGame = {}, reasons = {}, unresolvedNames = {};
+    var memo = Object.create(null);
+    function res(name) {
+      var n = clean(name);
+      if (!n) return null;
+      if (memo[n] === undefined) memo[n] = resolveTeam(n, ix);
+      return memo[n];
+    }
+    /* Each game under the key pair ITS OWN names resolve to, so a row and a
+       game are compared on the same footing rather than one raw and one
+       resolved. */
+    var pairIx = {};
+    games.forEach(function (g) {
+      var hk = canonKey(g.home_id, g.home_team);
+      var ak = canonKey(g.away_id, g.away_team);
+      if (!hk || !ak) return;
+      var t = toMs(g.kickoff);
+      (pairIx[ak + '|' + hk] = pairIx[ak + '|' + hk] || []).push({ game: g, t: t });
+    });
+    function note(why) { reasons[why] = (reasons[why] || 0) + 1; }
+
+    sigs.forEach(function (r) {
+      var rh = res(r.home_team), ra = res(r.away_team);
+      if (!rh || !rh.key || !ra || !ra.key) {
+        note(rh && rh.how === 'ambiguous' || ra && ra.how === 'ambiguous'
+          ? 'a team name resolved ambiguously and was refused rather than guessed'
+          : 'a team name on the book fixture resolves to no team on this card');
+        [r.home_team, r.away_team].forEach(function (n) {
+          var rr = res(n); if (!rr || !rr.key) unresolvedNames[clean(n)] = (unresolvedNames[clean(n)] || 0) + 1;
+        });
+        return;
+      }
+      var cand = pairIx[ra.key + '|' + rh.key];
+      if (!cand || !cand.length) { note('both teams resolved, but no game on this card has them in this orientation'); return; }
+      var t = toMs(r.commence_time);
+      var hit = null;
+      cand.forEach(function (c) {
+        if (t == null || c.t == null) { if (!hit) hit = c; return; }
+        if (Math.abs(t - c.t) < windowMs && !hit) hit = c;
+      });
+      if (!hit) { note('both teams resolved, but the book kickoff and the schedule kickoff differ by more than the window'); return; }
+      var gid = String(hit.game.game_id);
+      (byGame[gid] = byGame[gid] || []).push(r);
+    });
+
+    var joined = 0, k;
+    for (k in byGame) if (Object.prototype.hasOwnProperty.call(byGame, k)) joined += byGame[k].length;
+    var unresolved = Object.keys(unresolvedNames).sort(function (a, b) {
+      return unresolvedNames[b] - unresolvedNames[a];
+    }).slice(0, 12);
+
+    return {
+      by_game: byGame,
+      games_with_signals: Object.keys(byGame).length,
+      signals_read: sigs.length,
+      signals_joined: joined,
+      signals_refused: sigs.length - joined,
+      refusal_reasons: reasons,
+      unresolved_names: unresolved,
+      /* THE SENTENCE THAT HAD TO EXIST. Zero joined out of a non-empty read is
+         a JOIN fault, and saying so is what stops it being reported as an
+         empty market. */
+      diagnosis: !sigs.length
+        ? 'The capture returned no rows for this sport and window, so there was nothing to join.'
+        : joined === 0
+          ? 'JOIN FAULT: ' + sigs.length + ' captured rows were read and NONE joined to a game on this card. '
+            + 'That is a name-resolution failure, not an absence of markets, and it may not be reported as one.'
+          : joined + ' of ' + sigs.length + ' captured rows joined to ' + Object.keys(byGame).length + ' games on this card.',
+      resolver: 'football/fbs/fbs.js resolveTeam + matchesEvent rule (exact, alias, state expansion, longest unambiguous prefix)'
+    };
+  }
+
+  function resolveMarket(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var conv = o.lines_convention === 'margin' ? 'margin' : 'betting';
+    var sigs = o.signals || [];
+    var lines = o.lines || [];
+    var notes = [];
+
+    /* cfb.lines prefers the consensus provider where one exists, exactly as
+       the board and the daily health check both do. */
+    var line = null;
+    lines.forEach(function (l) {
+      if (!line || String(l.provider || '').toLowerCase().indexOf('consensus') >= 0) line = l;
+    });
+
+    function capturedFor(marketKey, wantSide) {
+      var hit = null;
+      sigs.forEach(function (s) {
+        if (normMarket(s.market) !== marketKey) return;
+        if (wantSide && String(s.selection || '').toLowerCase().indexOf(wantSide) < 0) return;
+        if (num(s.best_dec) == null) return;
+        if (!hit || String(s.last_seen_at || '') > String(hit.last_seen_at || '')) hit = s;
+      });
+      return hit;
+    }
+
+    /* ---- SPREAD --------------------------------------------------------- */
+    var spread = { line: null, source: null, book: null, provider: null, observed_at: null,
+      executable: false, odds_american: null, odds_decimal: null, selection: null,
+      handicap: null, side: null, freshness: null, fault: null, why: null };
+    var capS = capturedFor('spreads');
+    if (capS) {
+      var qs = quoteState({ captured_at: capS.last_seen_at, now: now, market: 'spreads', kickoff: o.kickoff });
+      /* The board's own margin convention: a home selection at -3 means the
+         home side must win by more than 3, which is a +3 margin line. The
+         captured row's `point` is on the SELECTION, so it is oriented here. */
+      spread.selection = capS.selection;
+      spread.handicap = num(capS.point);
+      spread.odds_decimal = num(capS.best_dec);
+      spread.odds_american = fmtAmerican(decToAmerican(num(capS.best_dec)));
+      spread.book = capS.best_book || null;
+      spread.observed_at = capS.last_seen_at || null;
+      spread.source = 'signals';
+      spread.executable = true;
+      spread.freshness = qs;
+      spread.actionable = qs.actionable;
+      /* THE HANDICAP MIRRORS; THE ODDS DO NOT.
+         A spread handicap is one number seen from two ends: home -7 and away
+         +7 are the same line, by definition, so deriving the margin line from
+         whichever side was captured is arithmetic and not invention. The PRICE
+         is the opposite case — the two sides are quoted independently and are
+         routinely different — so no odds are ever mirrored here, and a side
+         EdgeDesk did not capture has no price at all.
+         The board's convention: margin = -(home handicap) = (away handicap). */
+      var _sideHome = o.home_selection && normName(capS.selection) === normName(o.home_selection);
+      var _sideAway = o.away_selection && normName(capS.selection) === normName(o.away_selection);
+      spread.side = _sideHome ? 'home' : _sideAway ? 'away' : null;
+      spread.line = _sideHome ? -num(capS.point) : _sideAway ? num(capS.point) : null;
+      if (spread.line == null) {
+        notes.push('A spread price was captured for "' + capS.selection + '", but it could not be resolved to '
+          + 'either side of this game, so no margin line is derived from it. The price stands; the line does not.');
+      }
+      spread.why = 'A captured price: a real book, a real number and the moment it was seen.';
+    }
+    if (spread.line == null && line && num(line.spread) != null) {
+      spread.line = lineToMargin(line.spread, conv);
+      spread.source = spread.source || 'cfb.lines';
+      spread.provider = line.provider || 'consensus';
+      /* THE HALF THAT DOES NOT EXIST. A consensus spread is a handicap with
+         no per-side odds attached, so there is nothing to bet into and
+         nothing to compute an expected value from. Mirroring it into a
+         synthetic price on both sides would invent exactly the thing that is
+         missing, so it is left null and said out loud. */
+      if (!capS) {
+        spread.executable = false;
+        spread.odds_american = null;
+        spread.odds_decimal = null;
+        spread.observed_at = null;
+        spread.actionable = false;
+        spread.why = 'A CONSENSUS LINE from cfb.lines. It carries no book, no per-side odds and no timestamp, '
+          + 'so it is a number to compare a model against and NOT a price to bet into. No expected value can be '
+          + 'computed from it, and no per-side price is invented for it.';
+        notes.push('The spread on this game is a consensus line, not an executable price.');
+      }
+    }
+    /* Orientation, last, on whichever number survived.
+
+       THE TWO NUMBERS POINT OPPOSITE WAYS, SO BOTH ARE NAMED.
+       `spread.line` above is in the engine's MARGIN convention: positive means
+       the home side is favoured by that many points, which is what
+       projectGame() emits as fair_spread and what the board's own line-fault
+       check compares against. The FBS slate artifact publishes the other one:
+       build_coverage.js writes `model_home_line = -fair_spread`, a BETTING
+       number, negative for a home favourite.
+
+       Comparing one against the other without saying so INVERTS this check.
+       Pittsburgh's model line of -19.82 against a correctly joined consensus
+       -19.5 reads as a 39.3-point disagreement that reconciles to 0.3 under
+       negation — the exact signature of a convention fault — so every large,
+       correctly oriented line on the card is dropped as broken. That is the
+       same undercount this function exists to end, arriving through the guard
+       meant to prevent it.
+
+       So the caller states which number it holds and neither is inferred from
+       values, because inferring a convention from values is what produced
+       every board bug this project has had. */
+    var modelMargin = num(o.model_margin);
+    if (modelMargin == null && num(o.model_home_line) != null) modelMargin = -num(o.model_home_line);
+    if (spread.line != null && modelMargin != null) {
+      var f = orientationFault(modelMargin, spread.line);
+      if (f) {
+        spread.fault = f;
+        spread.line = null;
+        spread.why = f.basis;
+        notes.push('The joined spread was dropped as a convention fault: ' + f.basis);
+      }
+    }
+
+    /* ---- TOTAL ---------------------------------------------------------- */
+    var total = { line: null, source: null, provider: null, book: null, observed_at: null,
+      executable: false, odds_american: null, actionable: false, freshness: null, why: null };
+    var capT = capturedFor('totals');
+    if (capT) {
+      var qt = quoteState({ captured_at: capT.last_seen_at, now: now, market: 'totals', kickoff: o.kickoff });
+      total.line = num(capT.point);
+      total.source = 'signals';
+      total.book = capT.best_book || null;
+      total.odds_american = fmtAmerican(decToAmerican(num(capT.best_dec)));
+      total.observed_at = capT.last_seen_at || null;
+      total.executable = true;
+      total.freshness = qt;
+      total.actionable = qt.actionable;
+      total.selection = capT.selection;
+      total.why = 'A captured price.';
+    } else if (line && num(line.over_under) != null) {
+      total.line = num(line.over_under);
+      total.source = 'cfb.lines';
+      total.provider = line.provider || 'consensus';
+      total.why = 'A CONSENSUS TOTAL from cfb.lines: a number, with no book, no per-side odds and no timestamp.';
+      notes.push('The total on this game is a consensus line, not an executable price.');
+    }
+
+    /* ---- MONEYLINE ------------------------------------------------------
+       The one place a consensus row DOES carry two-sided prices. That makes a
+       de-vig arithmetically possible, and the result is a genuine consensus
+       fair probability — with no timestamp, so it is research, never an
+       action. It is NOT synthesised from the spread. */
+    var ml = { home_american: null, away_american: null, source: null, provider: null,
+      executable: false, actionable: false, devig: null, observed_at: null, why: null };
+    var capM = capturedFor('h2h');
+    if (capM) {
+      var qm = quoteState({ captured_at: capM.last_seen_at, now: now, market: 'h2h', kickoff: o.kickoff });
+      ml.source = 'signals';
+      ml.selection = capM.selection;
+      ml.odds_american = fmtAmerican(decToAmerican(num(capM.best_dec)));
+      ml.book = capM.best_book || null;
+      ml.observed_at = capM.last_seen_at || null;
+      ml.executable = true;
+      ml.actionable = qm.actionable;
+      ml.freshness = qm;
+      ml.why = 'A captured moneyline price.';
+    } else if (line && num(line.home_moneyline) != null && num(line.away_moneyline) != null) {
+      ml.home_american = num(line.home_moneyline);
+      ml.away_american = num(line.away_moneyline);
+      ml.source = 'cfb.lines';
+      ml.provider = line.provider || 'consensus';
+      ml.devig = devigTwoWay(americanToDec(ml.home_american), americanToDec(ml.away_american));
+      ml.executable = false;
+      ml.actionable = false;
+      ml.observed_at = null;
+      ml.why = 'Two-sided CONSENSUS moneylines from cfb.lines. Both sides are real numbers, so a de-vig is '
+        + 'legitimate and gives a consensus fair probability — but the row carries no book and no timestamp, '
+        + 'so it is research context and can never be an action. It is NOT derived from the spread.';
+    }
+
+    var hasPrice = !!(spread.executable || total.executable || ml.executable);
+    /* A captured price is a market whether or not its handicap resolved to a
+       side. The earlier version tested only for a LINE, so a game with a real
+       executable price and an unresolved side came back "NO MARKET" — the same
+       shape of undercount this whole function exists to end, one level in. */
+    var hasLine = hasPrice || spread.line != null || total.line != null || ml.devig != null;
+    var actionable = !!(spread.actionable || total.actionable || ml.actionable);
+
+    return {
+      spread: spread, total: total, moneyline: ml,
+      /* THE THREE COUNTS THE BOARD AND THE DESK MUST AGREE ON. */
+      has_market_line: hasLine,
+      has_executable_price: hasPrice,
+      has_actionable_price: actionable,
+      market_status: !hasLine ? 'NO MARKET' : hasPrice ? (actionable ? 'PRICED' : 'PRICED (STALE)') : 'LINE ONLY',
+      lines_convention: conv,
+      sources: uniq([spread.source, total.source, ml.source]),
+      notes: notes,
+      /* Said once, here, so no consumer has to rediscover it. */
+      contract: 'has_market_line counts games with a NUMBER to compare a model against, which is what the FBS '
+        + 'board counts as having a market. has_executable_price counts games with a real book price that could '
+        + 'be bet into. They are different questions and the second is always the smaller number.'
+    };
+  }
+
+  /* ==================================================================== */
   /* THE VALIDATION SNAPSHOT                                               */
   /*                                                                       */
   /* The browser can read football/cfb_p4/params.js directly and should:   */
@@ -888,7 +1704,7 @@
   /* required to use, so the distinction cannot be lost in narration.      */
   /* ==================================================================== */
 
-  var SLATE_STATES = ['OK', 'GAMES_NO_SIGNALS', 'GAMES_NO_QUOTES', 'PARTIAL_COVERAGE', 'NO_SCHEDULED_GAMES', 'RETRIEVAL_FAILED'];
+  var SLATE_STATES = ['OK', 'GAMES_NO_SIGNALS', 'LINES_NO_PRICES', 'GAMES_NO_QUOTES', 'PARTIAL_COVERAGE', 'NO_SCHEDULED_GAMES', 'RETRIEVAL_FAILED'];
 
   /**
    * Classify the slate from counts that were established SEPARATELY.
@@ -901,7 +1717,13 @@
   function slateState(o) {
     o = o || {};
     var scheduled = num(o.scheduled_games);
+    /* `quoted` is games with a MARKET NUMBER — the count the board shows.
+       `priced` is the subset with a real book price that could be bet into.
+       They are different questions and conflating them is how a card with
+       forty-six market numbers was described as having one. */
     var quoted = num(o.games_with_quotes) || 0;
+    var priced = num(o.games_with_executable_price);
+    if (priced == null) priced = quoted;
     var signalled = num(o.games_with_signals) || 0;
     var errors = o.errors || [];
     var src = clean(o.schedule_source) || 'the schedule source';
@@ -925,8 +1747,19 @@
     if (quoted === 0) {
       return finish('GAMES_NO_QUOTES', scheduled,
         scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' ' + (scheduled === 1 ? 'is' : 'are') + ' scheduled in ' + scope + ' according to ' + src
-        + ', and NONE of them carries a captured market quote. There are games; there are no prices. '
+        + ', and NONE of them carries a market number from either source. There are games; there are no lines and no prices. '
         + 'Every game can be researched and discussed. None of them can produce a priced recommendation.');
+    }
+    /* Lines but no prices: the ordinary state of a college card. Every game
+       can be compared against the model; none can be bet into. Saying "no
+       market" here would be as wrong as saying "no games". */
+    if (priced === 0) {
+      return finish('LINES_NO_PRICES', scheduled,
+        scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' scheduled in ' + scope + ' according to ' + src
+        + '; ' + quoted + ' carr' + (quoted === 1 ? 'ies' : 'y') + ' a market NUMBER to compare against; '
+        + 'NONE carries an executable price with a book, per-side odds and a capture time. '
+        + 'A consensus line is a number, not a price: it can be researched and compared, and it cannot be bet into. '
+        + 'Rank and discuss all ' + quoted + '; recommend none of them at a price.');
     }
     if (signalled === 0) {
       return finish('GAMES_NO_SIGNALS', scheduled,
@@ -934,10 +1767,14 @@
         + 'but EdgeDesk has flagged NO signal on any of them. A signal is a priced opportunity EdgeDesk chose to flag; its absence means nothing was flagged, not that nothing is on. '
         + 'Research every game; recommend none on signal grounds.');
     }
-    if (quoted < scheduled || signalled < quoted) {
+    if (quoted < scheduled || priced < quoted || signalled < priced) {
       return finish('PARTIAL_COVERAGE', scheduled,
-        scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' scheduled in ' + scope + '; ' + quoted + ' carr' + (quoted === 1 ? 'ies' : 'y') + ' a quote; ' + signalled + ' carr' + (signalled === 1 ? 'ies' : 'y') + ' a flagged signal. '
-        + 'Any statement about the slate covers ' + scheduled + ' games; any statement about PRICES covers ' + quoted + '.');
+        scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' scheduled in ' + scope + '; '
+        + quoted + ' carr' + (quoted === 1 ? 'ies' : 'y') + ' a market number; '
+        + priced + ' carr' + (priced === 1 ? 'ies' : 'y') + ' an executable price; '
+        + signalled + ' carr' + (signalled === 1 ? 'ies' : 'y') + ' a flagged signal. '
+        + 'A statement about the slate covers ' + scheduled + ' games; about MARKETS, ' + quoted
+        + '; about PRICES YOU COULD BET INTO, ' + priced + '.');
     }
     return finish('OK', scheduled,
       scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' scheduled in ' + scope + ', all quoted, ' + signalled + ' with a flagged signal.');
@@ -947,6 +1784,8 @@
         state: state,
         scheduled_games: scheduled,
         games_with_quotes: quoted,
+        games_with_market_line: quoted,
+        games_with_executable_price: priced,
         games_with_signals: signalled,
         games_known: n,
         schedule_source: o.schedule_source || null,
@@ -957,7 +1796,9 @@
            the prompt can forbid it literally rather than in general terms. */
         forbidden_claim: state === 'NO_SCHEDULED_GAMES' ? null
           : 'that there are no games to evaluate, or that the slate is empty',
-        may_recommend: state === 'OK' || state === 'PARTIAL_COVERAGE',
+        /* A priced recommendation needs a price, not a line. */
+        may_recommend: (state === 'OK' || state === 'PARTIAL_COVERAGE') && priced > 0,
+        may_compare_to_model: quoted > 0,
         may_research: state !== 'NO_SCHEDULED_GAMES'
       };
     }
@@ -1205,6 +2046,30 @@
    */
   function decide(o) {
     o = o || {};
+
+    /* THE SWITCH, READ FIRST AND ALONE.
+       Before any gate, any price, any probability. A disabled decision layer
+       does not evaluate and then decline — it does not evaluate. Returning
+       PASS here would assert that this selection was weighed and rejected,
+       which is a claim about a bet nobody made. */
+    if (CONFIG.decisions_enabled === false) {
+      return {
+        decision: null,
+        decision_state: DECISIONS_DISABLED,
+        decisions_enabled: false,
+        strength: null,
+        why: 'EdgeDesk\u2019s decision layer is switched off, so no recommendation was produced for this '
+          + 'selection. This is NOT a judgement about the bet: nothing was evaluated, nothing was rejected, '
+          + 'and there is no price at which this would have been a candidate. Research and retrieval are '
+          + 'unaffected \u2014 the evidence below is real.',
+        blockers: [], notes: [], gates: {}, price: null, model: null, disagreement: null,
+        what_would_change_it: ['An operator re-enabling the decision layer (EDINTEL.configure({ decisions_enabled: true })).'],
+        experimental: false,
+        may_publish_to_ledger: false,
+        config_used: { decisions_enabled: false }
+      };
+    }
+
     var blockers = [], notes = [], gates = {};
     var fair = o.fair || null;
     var qs = o.quote_state || null;
@@ -1725,6 +2590,68 @@
    * before it was published, is leakage and is excluded with a reason rather
    * than quietly included.
    */
+  /* ====================================================================== */
+  /* WHEN A RATING WAS TRUE, WHICH IS NOT THE SAME AS WHAT IT SAYS NOW       */
+  /*                                                                        */
+  /* The packets attach each previous opponent's SP+ rating so a 45-point    */
+  /* win can be read against who it came against. That rating comes from     */
+  /* cfb.ratings, whose key is (season, team): ONE row per program per       */
+  /* season, carrying where the rating stands NOW. There is no week column   */
+  /* and no as-of column, so this database holds no historical version of a  */
+  /* rating at all.                                                          */
+  /*                                                                        */
+  /* That makes the number a RETROSPECTIVE assessment, and it is a perfectly */
+  /* good one for the question "how good was that opponent, really?" -- it   */
+  /* has more information than any contemporary rating did. It is the WRONG  */
+  /* number for "what did EdgeDesk know at the time", and attaching it to a  */
+  /* past recommendation as though it had been available then is lookahead   */
+  /* wearing a timestamp. Both readings are legitimate; conflating them is   */
+  /* not, so the basis travels with the number.                              */
+  /* ====================================================================== */
+
+  var RATING_TIME_BASES = ['AS_ASSESSED_NOW', 'AT_THE_TIME', 'UNKNOWN'];
+
+  /**
+   * Describe the time basis of a rating attached to a past event.
+   *
+   * @param o.basis        'AS_ASSESSED_NOW' | 'AT_THE_TIME' | 'UNKNOWN'
+   * @param o.source       where the rating came from
+   * @param o.event_when   the date of the thing the rating is attached to
+   * @param o.for_evaluation  true when this feeds a backtest or a graded record
+   */
+  function ratingTimeBasis(o) {
+    o = o || {};
+    var basis = RATING_TIME_BASES.indexOf(o.basis) >= 0 ? o.basis : 'UNKNOWN';
+    var src = clean(o.source) || 'the ratings source';
+    var when = clean(o.event_when);
+    var now = basis === 'AS_ASSESSED_NOW';
+    return {
+      basis: basis,
+      source: src,
+      /* The one thing a consumer must not do with a retrospective rating. */
+      usable_for_reading_a_past_result: basis !== 'UNKNOWN',
+      usable_for_leakage_free_evaluation: basis === 'AT_THE_TIME',
+      sentence: now
+        ? 'This opponent rating is SP+ AS IT STANDS NOW, from ' + src + ', not as it stood '
+          + (when ? 'on ' + when : 'at the time of that game') + '. '
+          + 'It is keyed on (season, team) with no week and no as-of column, so this database carries no '
+          + 'historical version of it. Read it as "how good was that opponent, really" -- a question it '
+          + 'answers better than any contemporary rating could, because it has seen the whole season. '
+          + 'It is NOT what EdgeDesk knew at the time and must not be used to judge a past recommendation '
+          + 'as though it had been.'
+        : basis === 'AT_THE_TIME'
+          ? 'This opponent rating is the version that was current ' + (when ? 'on ' + when : 'at the time of that game')
+            + ', from ' + src + ', so it is what was actually knowable then.'
+          : 'The time basis of this rating is unknown, so it may be neither a contemporary view nor a '
+            + 'reliable retrospective one. It is not used to evaluate a past recommendation.',
+      evaluation_note: o.for_evaluation && basis !== 'AT_THE_TIME'
+        ? 'EXCLUDED FROM ANY LEAKAGE-FREE CLAIM: a retrospective rating attached to a past decision is '
+          + 'information that did not exist when the decision was made. Any accuracy figure computed with it '
+          + 'is optimistic by an unknown amount and may not be described as out-of-sample.'
+        : null
+    };
+  }
+
   function validateNoLookahead(row) {
     var pub = toMs(row && row.published_at);
     var kick = toMs(row && row.kickoff);
@@ -1734,17 +2661,28 @@
     if (row && row.mode === 'BACKTEST') problems.push('a backtest, which is measured in its own population');
     var closeAt = toMs(row && row.closing_captured_at);
     if (closeAt != null && pub != null && closeAt < pub) problems.push('graded against a closing price captured before publication');
+    /* A clean timestamp is not a clean evaluation. A row whose EVIDENCE carries
+       ratings as they stand now was judged with information that did not exist
+       when it was published, and no timestamp check can see that. */
+    var rb = row && row.rating_time_basis;
+    if (rb && rb !== 'AT_THE_TIME') {
+      problems.push('evaluated against opponent ratings ' + (rb === 'AS_ASSESSED_NOW'
+        ? 'as they stand NOW rather than as they stood at the time'
+        : 'of unknown vintage') + ', which is information that was not available when it was published');
+    }
     return {
       clean: problems.length === 0,
       problems: problems,
+      leakage_free: problems.length === 0,
       why: problems.length ? 'Excluded from the forward record: ' + problems.join('; ') + '.' : null
     };
   }
 
   return {
     VERSION: VERSION, PACKET_SCHEMA: PACKET_SCHEMA, LEDGER_SCHEMA: LEDGER_SCHEMA, DECISIONS: DECISIONS,
+    DECISIONS_DISABLED: DECISIONS_DISABLED, decisionsEnabled: function () { return CONFIG.decisions_enabled !== false; },
     configure: configure, config: config,
-    num: num, toMs: toMs, normMarket: normMarket, marketLabel: marketLabel, titleCase: titleCase,
+    num: num, toMs: toMs, normName: normName, normMarket: normMarket, marketLabel: marketLabel, titleCase: titleCase,
     americanToDec: americanToDec, decToAmerican: decToAmerican, fmtAmerican: fmtAmerican,
     impliedProb: impliedProb, devigTwoWay: devigTwoWay,
     ev: ev, breakEvenProb: breakEvenProb, priceForEv: priceForEv, minPlayableDec: minPlayableDec,
@@ -1755,6 +2693,12 @@
     validationSnapshot: validationSnapshot, loadSnapshotValidation: loadSnapshotValidation,
     fairMethod: fairMethod, confirmationRead: confirmationRead,
     quoteTtlMin: quoteTtlMin, quoteState: quoteState, applyRefresh: applyRefresh,
+    orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
+    fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
+    availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
+    ratingTimeBasis: ratingTimeBasis, RATING_TIME_BASES: RATING_TIME_BASES,
+    normKey: normKey, aliasKey: aliasKey, resolveTeam: resolveTeam, matchesEvent: matchesEvent,
+    teamIndex: teamIndex, expandState: expandState, TEAM_ALIASES: TEAM_ALIASES,
     SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,
     disagreementDiagnostics: disagreementDiagnostics,
     ATTENTION_TIERS: ATTENTION_TIERS, attentionTier: attentionTier, researchPriority: researchPriority,
