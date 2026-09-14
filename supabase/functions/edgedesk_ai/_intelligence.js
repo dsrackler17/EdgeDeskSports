@@ -1160,6 +1160,121 @@
    * @param o.lines_convention 'betting' (default, negate) or 'margin'
    */
   /* ====================================================================== */
+  /* AVAILABILITY — AND THE ONE RULE THAT MATTERS                            */
+  /*                                                                        */
+  /* College football has no universal injury report. football/availability/ */
+  /* says so in its own README and publishes four DIFFERENT findings that    */
+  /* must never collapse into one another:                                   */
+  /*                                                                        */
+  /*   verified flags     a trusted source named a player and a designation  */
+  /*   no reported injuries   an OFFICIAL report was read and listed nobody  */
+  /*   partial coverage   some players verified, no universal report exists  */
+  /*   no verified data   EdgeDesk looked and found nothing it would publish */
+  /*                                                                        */
+  /* The last one is NOT the first one. A team with no report on file is     */
+  /* UNKNOWN. It is not healthy, it is not clean, and no sentence produced   */
+  /* from this data may imply that it is. That is the whole reason this      */
+  /* function exists rather than a field read.                               */
+  /* ====================================================================== */
+
+  var AVAIL_STATES = ['VERIFIED_FLAGS', 'NO_REPORTED_INJURIES', 'PARTIAL', 'UNKNOWN', 'NOT_RETRIEVED'];
+  /* How old an availability read may be before it stops describing today.
+     A designation is a weekly artefact; past this it is history. */
+  var AVAIL_STALE_H = 72;
+
+  /**
+   * One team's availability, classified rather than described.
+   *
+   * @param o.record   the team's row from football/availability/current.json
+   * @param o.team     the team name, for the sentence
+   * @param o.generated_at the artifact's own build time
+   * @param o.now      clock
+   */
+  function availabilityRead(o) {
+    o = o || {};
+    var rec = o.record || null;
+    var team = clean(o.team) || 'this team';
+    var gen = toMs(o.generated_at);
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var ageH = gen == null ? null : Math.round((now - gen) / 3600e3);
+    var stale = ageH != null && ageH > AVAIL_STALE_H;
+
+    if (!rec) {
+      return finishAvail('NOT_RETRIEVED', {
+        team: team, players: [], quarterbacks: [],
+        sentence: 'No availability record was retrieved for ' + team + '. That is a RETRIEVAL result, not a '
+          + 'medical one: it says nothing about whether anyone is hurt.',
+        age_hours: ageH, stale: stale, quality: null, counts: null,
+        official_report_found: null, sources_checked: null, sources_failed: null
+      });
+    }
+
+    var counts = rec.counts || {};
+    var records = num(counts.records) || 0;
+    var flagged = num(counts.flagged) || 0;
+    var quality = clean(rec.dataQuality) || 'NONE';
+    var official = rec.official_report_found === true;
+    var checked = num(rec.sources_checked) || 0;
+    var failed = num(rec.sources_failed) || 0;
+    var players = rec.players || [];
+    var qbs = players.filter(function (pl) {
+      return String(pl.position || pl.pos || '').toUpperCase().indexOf('QB') === 0;
+    });
+
+    var state, sentence;
+    if (flagged > 0 || records > 0) {
+      state = quality === 'STRONG' ? 'VERIFIED_FLAGS' : 'PARTIAL';
+      sentence = records + ' availability record' + (records === 1 ? '' : 's') + ' on file for ' + team
+        + ' (' + flagged + ' carrying doubt), data quality ' + quality
+        + (official ? ', from an official report' : ', from unofficial sources')
+        + '. Players NOT named here are UNREPORTED, not confirmed fit.';
+    } else if (official) {
+      state = 'NO_REPORTED_INJURIES';
+      sentence = 'An OFFICIAL availability report was read for ' + team + ' and it listed nobody. '
+        + 'That is a positive finding and the only circumstance in which "no reported injuries" is a fact '
+        + 'rather than an absence.';
+    } else {
+      state = 'UNKNOWN';
+      sentence = 'No availability record is on file for ' + team + '. EdgeDesk checked ' + checked
+        + ' source' + (checked === 1 ? '' : 's') + (failed ? ' and ' + failed + ' failed' : '')
+        + ', found no official report, and published nothing. '
+        + 'THIS IS UNKNOWN, NOT HEALTHY: nobody has been confirmed fit and no injury has been ruled out. '
+        + 'Do not describe this team as healthy, clean or fully available.';
+    }
+    if (stale && state !== 'NOT_RETRIEVED') {
+      sentence += ' The availability build is ' + ageH + ' hours old, past the ' + AVAIL_STALE_H
+        + '-hour window in which a weekly designation still describes today, so treat it as history.';
+    }
+
+    return finishAvail(state, {
+      team: team, quality: quality, counts: counts,
+      players: players, quarterbacks: qbs,
+      official_report_found: official, sources_checked: checked, sources_failed: failed,
+      age_hours: ageH, stale: stale, sentence: sentence
+    });
+  }
+
+  function finishAvail(state, o) {
+    return {
+      state: state, team: o.team, sentence: o.sentence,
+      data_quality: o.quality, counts: o.counts,
+      players: o.players, quarterbacks: o.quarterbacks,
+      official_report_found: o.official_report_found,
+      sources_checked: o.sources_checked, sources_failed: o.sources_failed,
+      artifact_age_hours: o.age_hours, stale: o.stale,
+      /* THE TWO PERMISSIONS, SAID AS DATA SO NO CONSUMER HAS TO INFER THEM. */
+      may_claim_healthy: state === 'NO_REPORTED_INJURIES',
+      may_adjust_projection: false,
+      adjustment_note: 'EdgeDesk does not move a projection on availability evidence. The engine prices an '
+        + 'injury report only when it is given one in its own contract (player, position, starter, snap share, '
+        + 'severity, status, replacement quality), and the college dataset carries neither snap share nor '
+        + 'replacement quality. An unvalidated adjustment invented here would be a number with no backtest '
+        + 'behind it, so availability is EVIDENCE A READER WEIGHS and never an automatic edit to the model.',
+      source: 'football/availability/current.json (schema edgedesk_cfb_availability_v1)'
+    };
+  }
+
+  /* ====================================================================== */
   /* JOINING A BOOK'S FIXTURES TO A SCHEDULE'S GAMES                         */
   /* ====================================================================== */
 
@@ -2465,6 +2580,7 @@
     quoteTtlMin: quoteTtlMin, quoteState: quoteState, applyRefresh: applyRefresh,
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
+    availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
     normKey: normKey, aliasKey: aliasKey, resolveTeam: resolveTeam, matchesEvent: matchesEvent,
     teamIndex: teamIndex, expandState: expandState, TEAM_ALIASES: TEAM_ALIASES,
     SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,

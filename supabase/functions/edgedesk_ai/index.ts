@@ -3147,6 +3147,10 @@ export class Dal {
   budget: number;
   mlbFallback: boolean;
   private callerKey: string;
+  /* One availability read per request, memoised: every packet in a slate answer
+     wants the same artifact and re-fetching it per game would spend the whole
+     research budget on one file. */
+  private _avail: { meta: any; byTeam: Map<string, any>; error: string | null } | null = null;
   log: { table: string; ms: number; rows: number; error: string | null }[] = [];
 
   constructor(o: DalOpts) {
@@ -3449,6 +3453,62 @@ export class Dal {
       this.log.push({ table: "fbs/slate.json", ms: Date.now() - t0, rows: 0, error: err });
       this.note("fbs/slate.json", false, err);
       return { meta: null, games: [], error: err };
+    }
+  }
+
+  /**
+   * football/availability/current.json — the college availability layer.
+   *
+   * SAME TRANSPORT AS THE SLATE, for the same reason: this is a committed
+   * artifact the site already publishes, so the desk reads what the reader is
+   * looking at rather than a second pipeline that could disagree with it. One
+   * read per request, cached, and it costs one call against the budget like
+   * every other read — a research budget that quietly excluded some reads
+   * would not be a budget.
+   *
+   * WHAT IT CURRENTLY CARRIES IS ITSELF A FINDING. College football has no
+   * universal injury report; the artifact's own README says EdgeDesk publishes
+   * nothing it cannot verify, and at the time of writing every one of the 138
+   * programs is LIMITED with zero player records. That is reported as UNKNOWN
+   * and never as healthy.
+   */
+  async getAvailabilityArtifact(): Promise<{ meta: any; byTeam: Map<string, any>; error: string | null }> {
+    if (this._avail) return this._avail;
+    if (this.calls >= this.budget) {
+      return { meta: null, byTeam: new Map(), error: "research budget exhausted before the availability artifact could be read" };
+    }
+    this.calls++;
+    const url = `${SITE_BASE.replace(/\/+$/, "")}/football/availability/current.json`;
+    const t0 = Date.now();
+    try {
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
+      const r = await this.f(url, { signal: ctrl?.signal, headers: { accept: "application/json" } });
+      if (timer) clearTimeout(timer);
+      if (!r.ok) {
+        const err = `HTTP ${r.status} from ${url}`;
+        this.log.push({ table: "availability/current.json", ms: Date.now() - t0, rows: 0, error: err });
+        this.note("availability/current.json", false, err);
+        return (this._avail = { meta: null, byTeam: new Map(), error: err });
+      }
+      const j = await r.json();
+      const byTeam = new Map<string, any>();
+      /* Keyed EVERY way the artifact spells a program, because the slate joins
+         on the school name and this file is keyed on the ESPN team id. */
+      for (const rec of Object.values<any>(j?.teams ?? {})) {
+        for (const n of [rec?.team_name, rec?.team_display, rec?.team_abbr]) {
+          const k = EDINTEL.normKey(n);
+          if (k && !byTeam.has(k)) byTeam.set(k, rec);
+        }
+      }
+      this.log.push({ table: "availability/current.json", ms: Date.now() - t0, rows: byTeam.size, error: null });
+      this.note("availability/current.json", true, null, byTeam.size);
+      return (this._avail = { meta: j, byTeam, error: null });
+    } catch (e) {
+      const err = String((e as Error)?.message ?? e);
+      this.log.push({ table: "availability/current.json", ms: Date.now() - t0, rows: 0, error: err });
+      this.note("availability/current.json", false, err);
+      return (this._avail = { meta: null, byTeam: new Map(), error: err });
     }
   }
 
@@ -4810,12 +4870,36 @@ export class Dal {
       }
     }
 
+    /* ---- C7. the college availability layer ----------------------------
+       One read for the whole shortlist, not one per game. What it carries is
+       itself the finding: 138 programs, and at the time of writing not one
+       verified record among them. That is reported as UNKNOWN. */
+    const avail = await this.getAvailabilityArtifact();
+    const availBy = avail.byTeam, availMeta = avail.meta;
+    path.availability = {
+      teams_indexed: availBy.size, error: avail.error,
+      generated_at: availMeta?.generated_at ?? null,
+      records: availMeta?.records ?? null, flagged: availMeta?.flagged ?? null,
+      teams_with_official: availMeta?.teams_with_official ?? null,
+      coverage: availMeta?.coverage ?? null,
+      note: "Read, not assumed. A team with no record is UNKNOWN, never healthy.",
+    };
+
     const F = EDINTEL.fact, MISS = EDINTEL.missingFact;
     const packets = shortlist.map((g) => {
       const side = (t: string) => {
         const k = teamKey(t);
         const spr = spBy.get(k) ?? null;
         const rr = recBy.get(k) ?? null;
+        /* The availability record for THIS team, classified. EDINTEL.normKey is
+           the FBS resolver's own key function, so this joins on the same rule
+           the board and the odds join use rather than a fourth one. */
+        const av = availMeta || availBy.size
+          ? EDINTEL.availabilityRead({
+            record: availBy.get(EDINTEL.normKey(t)) ?? null, team: t,
+            generated_at: availMeta?.generated_at ?? null, now,
+          })
+          : null;
         const played = (byTeamGames.get(k) ?? []).slice().sort((a, b) =>
           String(b.start_date ?? "").localeCompare(String(a.start_date ?? "")));
         /* PREVIOUS GAMES WITH OPPONENT STRENGTH ATTACHED. A 45-point win is a
@@ -4910,9 +4994,35 @@ export class Dal {
           turnover_margin: MISS("not ingested for college football; season turnover counts may appear in season_stats but carry no opponent adjustment", "—"),
           red_zone: MISS("not ingested for college football", "—"),
           pace_and_possessions: MISS("not ingested for college football", "—"),
-          injuries: MISS(
-            "EdgeDesk ingests NO college football injury report, depth chart or availability feed. "
-            + "This absence is not a clean injury sheet and must never be presented as one.", "—"),
+          /* AVAILABILITY, READ RATHER THAN ASSUMED.
+             This used to say EdgeDesk ingests no college availability feed at
+             all. That was wrong: football/availability/ is a real, scheduled
+             pipeline over 138 programs. What it currently CARRIES is the
+             finding — no verified records, no official reports, two of three
+             sources failing — and availabilityRead() states that as UNKNOWN
+             with its reasons attached. A team nobody has reported on is not a
+             team that has been cleared. */
+          availability: av
+            ? F({
+              state: av.state, sentence: av.sentence, data_quality: av.data_quality,
+              counts: av.counts, quarterbacks_flagged: av.quarterbacks,
+              official_report_found: av.official_report_found,
+              sources_checked: av.sources_checked, sources_failed: av.sources_failed,
+              artifact_age_hours: av.artifact_age_hours, stale: av.stale,
+              may_claim_healthy: av.may_claim_healthy,
+              may_adjust_projection: av.may_adjust_projection,
+            }, {
+              source: av.source,
+              observed_at: availMeta?.generated_at ?? null,
+              note: av.sentence + " " + av.adjustment_note,
+            })
+            : MISS("the availability artifact could not be read on this request, so nothing is known either way "
+              + "about who is available — which is not the same as nobody being hurt",
+              "football/availability/current.json"),
+          injuries: av && av.state === "VERIFIED_FLAGS"
+            ? F(av.players, { source: av.source, observed_at: availMeta?.generated_at ?? null,
+              note: "Players NOT named here are UNREPORTED, not confirmed fit." })
+            : MISS(av ? av.sentence : "no availability record retrieved", "football/availability/current.json"),
         };
       };
 
@@ -12481,6 +12591,121 @@ const EDPRES: any = (globalThis as any).EDPRES;
    * @param o.lines_convention 'betting' (default, negate) or 'margin'
    */
   /* ====================================================================== */
+  /* AVAILABILITY — AND THE ONE RULE THAT MATTERS                            */
+  /*                                                                        */
+  /* College football has no universal injury report. football/availability/ */
+  /* says so in its own README and publishes four DIFFERENT findings that    */
+  /* must never collapse into one another:                                   */
+  /*                                                                        */
+  /*   verified flags     a trusted source named a player and a designation  */
+  /*   no reported injuries   an OFFICIAL report was read and listed nobody  */
+  /*   partial coverage   some players verified, no universal report exists  */
+  /*   no verified data   EdgeDesk looked and found nothing it would publish */
+  /*                                                                        */
+  /* The last one is NOT the first one. A team with no report on file is     */
+  /* UNKNOWN. It is not healthy, it is not clean, and no sentence produced   */
+  /* from this data may imply that it is. That is the whole reason this      */
+  /* function exists rather than a field read.                               */
+  /* ====================================================================== */
+
+  var AVAIL_STATES = ['VERIFIED_FLAGS', 'NO_REPORTED_INJURIES', 'PARTIAL', 'UNKNOWN', 'NOT_RETRIEVED'];
+  /* How old an availability read may be before it stops describing today.
+     A designation is a weekly artefact; past this it is history. */
+  var AVAIL_STALE_H = 72;
+
+  /**
+   * One team's availability, classified rather than described.
+   *
+   * @param o.record   the team's row from football/availability/current.json
+   * @param o.team     the team name, for the sentence
+   * @param o.generated_at the artifact's own build time
+   * @param o.now      clock
+   */
+  function availabilityRead(o) {
+    o = o || {};
+    var rec = o.record || null;
+    var team = clean(o.team) || 'this team';
+    var gen = toMs(o.generated_at);
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var ageH = gen == null ? null : Math.round((now - gen) / 3600e3);
+    var stale = ageH != null && ageH > AVAIL_STALE_H;
+
+    if (!rec) {
+      return finishAvail('NOT_RETRIEVED', {
+        team: team, players: [], quarterbacks: [],
+        sentence: 'No availability record was retrieved for ' + team + '. That is a RETRIEVAL result, not a '
+          + 'medical one: it says nothing about whether anyone is hurt.',
+        age_hours: ageH, stale: stale, quality: null, counts: null,
+        official_report_found: null, sources_checked: null, sources_failed: null
+      });
+    }
+
+    var counts = rec.counts || {};
+    var records = num(counts.records) || 0;
+    var flagged = num(counts.flagged) || 0;
+    var quality = clean(rec.dataQuality) || 'NONE';
+    var official = rec.official_report_found === true;
+    var checked = num(rec.sources_checked) || 0;
+    var failed = num(rec.sources_failed) || 0;
+    var players = rec.players || [];
+    var qbs = players.filter(function (pl) {
+      return String(pl.position || pl.pos || '').toUpperCase().indexOf('QB') === 0;
+    });
+
+    var state, sentence;
+    if (flagged > 0 || records > 0) {
+      state = quality === 'STRONG' ? 'VERIFIED_FLAGS' : 'PARTIAL';
+      sentence = records + ' availability record' + (records === 1 ? '' : 's') + ' on file for ' + team
+        + ' (' + flagged + ' carrying doubt), data quality ' + quality
+        + (official ? ', from an official report' : ', from unofficial sources')
+        + '. Players NOT named here are UNREPORTED, not confirmed fit.';
+    } else if (official) {
+      state = 'NO_REPORTED_INJURIES';
+      sentence = 'An OFFICIAL availability report was read for ' + team + ' and it listed nobody. '
+        + 'That is a positive finding and the only circumstance in which "no reported injuries" is a fact '
+        + 'rather than an absence.';
+    } else {
+      state = 'UNKNOWN';
+      sentence = 'No availability record is on file for ' + team + '. EdgeDesk checked ' + checked
+        + ' source' + (checked === 1 ? '' : 's') + (failed ? ' and ' + failed + ' failed' : '')
+        + ', found no official report, and published nothing. '
+        + 'THIS IS UNKNOWN, NOT HEALTHY: nobody has been confirmed fit and no injury has been ruled out. '
+        + 'Do not describe this team as healthy, clean or fully available.';
+    }
+    if (stale && state !== 'NOT_RETRIEVED') {
+      sentence += ' The availability build is ' + ageH + ' hours old, past the ' + AVAIL_STALE_H
+        + '-hour window in which a weekly designation still describes today, so treat it as history.';
+    }
+
+    return finishAvail(state, {
+      team: team, quality: quality, counts: counts,
+      players: players, quarterbacks: qbs,
+      official_report_found: official, sources_checked: checked, sources_failed: failed,
+      age_hours: ageH, stale: stale, sentence: sentence
+    });
+  }
+
+  function finishAvail(state, o) {
+    return {
+      state: state, team: o.team, sentence: o.sentence,
+      data_quality: o.quality, counts: o.counts,
+      players: o.players, quarterbacks: o.quarterbacks,
+      official_report_found: o.official_report_found,
+      sources_checked: o.sources_checked, sources_failed: o.sources_failed,
+      artifact_age_hours: o.age_hours, stale: o.stale,
+      /* THE TWO PERMISSIONS, SAID AS DATA SO NO CONSUMER HAS TO INFER THEM. */
+      may_claim_healthy: state === 'NO_REPORTED_INJURIES',
+      may_adjust_projection: false,
+      adjustment_note: 'EdgeDesk does not move a projection on availability evidence. The engine prices an '
+        + 'injury report only when it is given one in its own contract (player, position, starter, snap share, '
+        + 'severity, status, replacement quality), and the college dataset carries neither snap share nor '
+        + 'replacement quality. An unvalidated adjustment invented here would be a number with no backtest '
+        + 'behind it, so availability is EVIDENCE A READER WEIGHS and never an automatic edit to the model.',
+      source: 'football/availability/current.json (schema edgedesk_cfb_availability_v1)'
+    };
+  }
+
+  /* ====================================================================== */
   /* JOINING A BOOK'S FIXTURES TO A SCHEDULE'S GAMES                         */
   /* ====================================================================== */
 
@@ -13786,6 +14011,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
     quoteTtlMin: quoteTtlMin, quoteState: quoteState, applyRefresh: applyRefresh,
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
+    availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
     normKey: normKey, aliasKey: aliasKey, resolveTeam: resolveTeam, matchesEvent: matchesEvent,
     teamIndex: teamIndex, expandState: expandState, TEAM_ALIASES: TEAM_ALIASES,
     SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,
@@ -15835,7 +16061,15 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
         + "2. HOW OPPONENT QUALITY CHANGES THE READING. strength_of_schedule is on both sides. College schedules are wildly unequal; an unadjusted season stat compared across conferences is close to meaningless without it.\n"
         + "3. WHICH SIDE OF THE BALL DECIDES IT. SP+ splits into offence and defence and SP+ DEFENCE IS POINTS ALLOWED, so lower is better. Compare one side's offence against the other's defence, not offence against offence.\n"
         + "4. WHAT THE DATA CANNOT TELL YOU. Turnovers, garbage time, explosive plays, success rate, pace and red-zone finishing are NOT ingested for college football. If a recent result looks distorted, say you cannot test that rather than asserting or denying it.\n"
-        + "5. PERSONNEL. A roster is not a depth chart, and NO injury report exists for this sport in EdgeDesk. Never present the absence of injury data as a clean injury sheet.\n"
+        + "5. PERSONNEL AND AVAILABILITY. A roster is ROSTER PRESENCE, not a depth chart: being listed does not mean a player starts, plays, or is fit. "
+        + "The packet carries an `availability` block per side from EdgeDesk's own college availability layer, and its `state` is the thing to read, never the emptiness around it:\n"
+        + "   VERIFIED_FLAGS       named players carry designations. Players NOT named are UNREPORTED, not confirmed fit.\n"
+        + "   NO_REPORTED_INJURIES an OFFICIAL report was read and listed nobody. This is the ONLY state in which you may say a side has no reported injuries.\n"
+        + "   PARTIAL              some players verified; college football has no universal report, so the rest is unknown.\n"
+        + "   UNKNOWN              EdgeDesk looked and published nothing. THIS IS NOT HEALTHY. Nobody has been cleared and no injury has been ruled out.\n"
+        + "   NOT_RETRIEVED        the artifact could not be read on this request. A retrieval result, not a medical one.\n"
+        + "Never describe a side as healthy, clean, fully available or at full strength unless the state is NO_REPORTED_INJURIES. "
+        + "Availability is evidence a reader weighs; it NEVER moves the projection, because EdgeDesk has no validated adjustment for it.\n"
         + "6. WHY THE MODEL DIFFERS FROM THE MARKET, when both exist — and then the diagnostic checks, before any talk of value.\n"
         + "7. THE STRONGEST EVIDENCE AGAINST YOUR OWN CONCLUSION, and the ONE missing fact most likely to reverse it.\n"
         + "Distinguish, in your wording, between an OBSERVED FACT (a result, a quote, a roster line), a MODEL ESTIMATE (SP+, the board's projection) and YOUR OWN INFERENCE. "

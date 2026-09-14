@@ -692,5 +692,57 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       /consensus line is a number, not a price|not a price to bet into/i.test(p));
   }
 
+  /* =====================================================================
+     20. AVAILABILITY IS CONNECTED, AND ITS EMPTINESS IS NOT "HEALTHY".
+     football/availability/ is a real scheduled pipeline over 138 programs.
+     What it currently carries — zero verified records, no official report
+     anywhere, two of three sources failing per team — is itself the finding,
+     and the one thing it may never become is a clean injury sheet.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    clearCache(); route = FX.router(fx);
+    const r = await m.handle(req({ mode: 'chat', question: 'Analyze North Texas versus Texas State.',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
+    const j = await r.json();
+    const dp = j.data_path.game_evidence || j.data_path.cfb_evidence || {};
+    chk('the availability artifact is read, not skipped',
+      (dp.availability && dp.availability.teams_indexed > 0), dp.availability);
+    const pk = (j.evidence_packets || []).find((p) => /North Texas/.test(JSON.stringify(p.sections.identity)));
+    chk('a packet was built', !!pk);
+    if (pk) {
+      const av = pk.sections.matchup.away.availability;
+      chk('availability is attached to each side', av && av.missing === false, av);
+      const v = (av && av.value) || {};
+      chk('its state is one of the five', I.AVAIL_STATES.indexOf(v.state) >= 0, v.state);
+      chk('an empty report is UNKNOWN, never a clean sheet', v.state === 'UNKNOWN', v.state);
+      chk('and it says so in words a reader cannot misread',
+        /THIS IS UNKNOWN, NOT HEALTHY/.test(v.sentence || ''), v.sentence);
+      chk('the claim "no reported injuries" is explicitly withheld', v.may_claim_healthy === false, v);
+      chk('availability never moves the projection', v.may_adjust_projection === false, v);
+      chk('the failed sources are counted rather than hidden',
+        v.sources_checked > 0 && v.sources_failed > 0, v);
+      chk('the artifact is named as the source', /availability\/current\.json/.test(av.source || ''), av.source);
+      chk('and its age is carried so staleness is visible', typeof v.artifact_age_hours === 'number', v);
+    }
+    const p = j.prompt || '';
+    chk('the prompt gives the five states and their meanings',
+      /NO_REPORTED_INJURIES an OFFICIAL report was read/.test(p) && /UNKNOWN\s+EdgeDesk looked/.test(p));
+    chk('and forbids the healthy claim outside the one state that earns it',
+      /Never describe a side as healthy, clean, fully available or at full strength unless the state is NO_REPORTED_INJURIES/.test(p));
+    chk('the old blanket claim that no availability feed exists is gone',
+      !/NO injury report exists for this sport in EdgeDesk/.test(p));
+
+    /* A FAILED READ IS A THIRD THING, not a report and not an absence. */
+    clearCache(); route = FX.router(fx, { avail: null });
+    const r2 = await m.handle(req({ mode: 'chat', question: 'Analyze North Texas versus Texas State.',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
+    const j2 = await r2.json();
+    const pk2 = (j2.evidence_packets || [])[0];
+    const av2 = pk2 && pk2.sections.matchup.away.availability;
+    chk('a failed availability read is declared missing with a reason',
+      av2 && av2.missing === true && /not the same as nobody being hurt/.test(av2.reason || ''), av2);
+  }
+
   done();
 })().catch((e) => { console.error('CRASH', e && e.stack || e); process.exit(1); });

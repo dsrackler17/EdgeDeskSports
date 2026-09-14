@@ -15,6 +15,11 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/fbs/slate.json'), 'utf8'));
+/* The REAL committed availability artifact. Its current contents are the
+   finding these tests pin: 138 programs, zero verified records, no official
+   report anywhere. A fixture with invented injuries would prove the opposite
+   of what needs proving. */
+const AVAIL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/availability/current.json'), 'utf8'));
 
 /* Relative to the clock, so freshness is genuinely exercised. */
 function build(now) {
@@ -137,7 +142,7 @@ function build(now) {
     }, over || {});
   }
 
-  return { now, kickoff, slate, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
+  return { now, kickoff, slate, avail: AVAIL, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
 }
 
 /**
@@ -152,6 +157,9 @@ function router(fx, opts) {
   const lines = opts.lines === undefined ? fx.lines : opts.lines;
   return function (u) {
     if (u.indexOf('/football/fbs/slate.json') >= 0) return opts.slate === null ? null : (opts.slate || fx.slate);
+    if (u.indexOf('/football/availability/current.json') >= 0) {
+      return opts.avail === null ? null : (opts.avail || fx.avail);
+    }
     if (u.indexOf('/signals?') >= 0) return signals;
     /* cfb.lines is read with a chunked game_id=in.(...) filter, so the fixture
        honours the filter rather than returning the whole table: a router that
@@ -173,4 +181,4 @@ function router(fx, opts) {
   };
 }
 
-module.exports = { build, router, SLATE };
+module.exports = { build, router, SLATE, AVAIL };
