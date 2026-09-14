@@ -1105,5 +1105,171 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       /manufacturing an objection to look balanced|manufacture an objection to look balanced/.test(p));
   }
 
+  /* =====================================================================
+     28. THE PRODUCTION FAILURE, VERBATIM.
+
+     Observed in the live product, with an MLB game open on the board:
+
+       "What do you think about North Texas vs Texas State this week?
+        Anything worth betting?"
+
+     came back resolved as baseball_mlb, with North Texas, Texas State AND
+     "Anything" listed as unresolved entities, MLB pitchers and bullpens
+     retrieved, the requested matchup reported ABSENT, and an unrelated
+     mixed-sport board offered instead.
+
+     Every one of those is asserted against here, at the exact sentence.
+     ===================================================================== */
+  {
+    const Q = 'What do you think about North Texas vs Texas State this week? Anything worth betting?';
+    const MLB_BOARD = {
+      game: { matchup: 'Baltimore Orioles @ New York Yankees', sport: 'MLB', sport_key: 'baseball_mlb',
+        commence: '2026-09-15T23:05:00Z', away: 'Baltimore Orioles', home: 'New York Yankees', event_id: 'mlb-1' },
+      sport_key: 'baseball_mlb', market_key: 'spreads',
+      board_scope: { sport: 'baseball_mlb', label: 'today' },
+    };
+
+    /* ---- the classifier's own answer, before anything is retrieved ------ */
+    const plan = m.classify(Q, 'chat');
+    chk('"Anything" is not a person', (plan.entities.player_hints || []).indexOf('Anything') < 0,
+      plan.entities.player_hints);
+    chk('and neither is "worth" or "betting"',
+      !(plan.entities.player_hints || []).some((h) => /^(worth|betting|week|game)$/i.test(h)),
+      plan.entities.player_hints);
+    /* The alias collision itself is unchanged and still recorded — the fix is
+       that it no longer decides the sport, not that it stopped happening. */
+    chk('"Texas State" still reaches the Texas Rangers through an MLB alias',
+      m.resolveTeamsDetailed(Q).some((t) => t.name === 'Texas Rangers' && t.ambiguous === true),
+      m.resolveTeamsDetailed(Q));
+    eq('and that alias is dropped once the sport is college football',
+      m.scopeTeamsToSport(m.resolveTeamsDetailed(Q), 'americanfootball_ncaaf').teams.length, 0);
+
+    /* ---- the whole path, with a BASEBALL GAME OPEN ---------------------- */
+    for (const [label, packet] of [
+      ['an MLB game open on the board', MLB_BOARD],
+      ['no board context at all', {}],
+      ['a CFB board already open', { board_scope: SCOPE }],
+    ]) {
+      const fx = FX.build();
+      clearCache(); route = FX.router(fx);
+      const j = await (await m.handle(req({ mode: 'chat', question: Q, packet, history: [] }, '?dry=1'))).json();
+      const nm = j.data_path.named_matchup;
+
+      eq(`[${label}] the sport is college football`, j.sport, 'americanfootball_ncaaf');
+      eq(`[${label}] and retrieval used that sport too, not the board's`,
+        j.data_path.slate_index.sport, 'americanfootball_ncaaf');
+      chk(`[${label}] the named matchup resolved against the published card`,
+        nm && nm.state === 'RESOLVED' && nm.source === 'football/fbs/slate.json', nm);
+      eq(`[${label}] to a canonical game id`, nm && nm.game_id, '401858900');
+      chk(`[${label}] with canonical team ids on both sides`,
+        nm && nm.away_id === 'northtexas' && nm.home_id === 'texasstate', nm);
+      chk(`[${label}] the two teams ARE the entity scope`,
+        (j.entities.teams || []).length === 2
+        && j.entities.teams.indexOf('North Texas') >= 0 && j.entities.teams.indexOf('Texas State') >= 0,
+        j.entities.teams);
+      eq(`[${label}] no baseball club is carried`,
+        (j.entities.teams || []).filter((t) => /Rangers|Orioles|Yankees/.test(t)).length, 0);
+      eq(`[${label}] nothing is treated as an unresolved person`,
+        (j.entities.players || []).length, 0);
+      chk(`[${label}] the requested matchup is RESEARCHED, not reported absent`,
+        (j.evidence_packets || []).some((p) => p.packet_id === '401858900:v1'),
+        (j.evidence_packets || []).map((p) => p.packet_id));
+      chk(`[${label}] the slate is not reported empty`,
+        j.slate_state && j.slate_state.state !== 'NO_SCHEDULED_GAMES', j.slate_state && j.slate_state.state);
+      chk(`[${label}] the prompt names the matchup as the subject`,
+        /THE MATCHUP THIS QUESTION IS ABOUT: North Texas vs Texas State/.test(j.prompt || ''));
+      /* The window moves with the sport. Keeping the overridden board's label
+         produced "7 CFB games scheduled in today" — a baseball board's word
+         for its own window, printed over a college card. */
+      chk(`[${label}] and the scope window is not the overridden board's`,
+        !/scheduled in today/.test(j.slate_state.sentence || ''), j.slate_state.sentence);
+    }
+
+    /* The override is REPORTED, not silent. */
+    {
+      const fx = FX.build();
+      clearCache(); route = FX.router(fx);
+      const j = await (await m.handle(req({ mode: 'chat', question: Q, packet: MLB_BOARD, history: [] }, '?dry=1'))).json();
+      eq('overriding the open board is recorded as data', j.data_path.named_matchup.overrode_open_board, true);
+      chk('and the prompt tells the analyst it happened',
+        /reader had a DIFFERENT sport open on their board/.test(j.prompt || ''));
+      chk('the MLB board scope is still echoed, so nothing is hidden',
+        !!j.data_path.board_scope, j.data_path.board_scope);
+    }
+  }
+
+  /* =====================================================================
+     29. WHEN THE MATCHUP DOES NOT RESOLVE, ASK — DO NOT SUBSTITUTE.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    const MLB_BOARD = { sport_key: 'baseball_mlb', board_scope: { sport: 'baseball_mlb', label: 'today' } };
+
+    clearCache(); route = FX.router(fx);
+    const gone = await (await m.handle(req({ mode: 'chat',
+      question: 'What about Slippery Rock vs Podunk Tech this week? Anything worth betting?',
+      packet: MLB_BOARD, history: [] }, '?dry=1'))).json();
+    const nmg = gone.data_path.named_matchup;
+    eq('a matchup on no card is NOT_ON_ANY_CARD', nmg.state, 'NOT_ON_ANY_CARD');
+    chk('both names are carried so the reader can see what was looked for',
+      nmg.named.length === 2 && /Slippery Rock/.test(nmg.named.join(' ')), nmg.named);
+    chk('the prompt asks ONE short clarifying question',
+      /ASK ONE SHORT CLARIFYING QUESTION and stop/.test(gone.prompt || ''));
+    chk('and forbids answering about a different matchup',
+      /may NOT: answer about a different matchup/.test(gone.prompt || ''));
+    chk('and forbids presenting a board as the answer',
+      /present the slate or a ranked board as though it were the answer/.test(gone.prompt || ''));
+    chk('and forbids retrieving another sport in its place',
+      /retrieve and narrate another\s+sport’s evidence|retrieve and narrate another sport's evidence/.test(gone.prompt || '')
+      || /another sport/.test(gone.prompt || ''));
+    chk('it says how many games were actually checked',
+      /\d+ games were checked on the FBS slate/.test(nmg.note || ''), nmg.note);
+
+    /* A CARD THAT CANNOT BE READ IS A THIRD THING. */
+    clearCache(); route = FX.router(fx, { slate: null });
+    const broke = await (await m.handle(req({ mode: 'chat',
+      question: 'What do you think about North Texas vs Texas State this week? Anything worth betting?',
+      packet: MLB_BOARD, history: [] }, '?dry=1'))).json();
+    eq('an unreadable card is RETRIEVAL_FAILED, not an absent game',
+      broke.data_path.named_matchup.state, 'RETRIEVAL_FAILED');
+    chk('and the prompt refuses to call it absent',
+      /RETRIEVAL FAILURE, NOT AN ABSENT GAME/.test(broke.prompt || ''));
+    chk('the reason names what could not be read',
+      /could not be read/.test(broke.data_path.named_matchup.note || ''), broke.data_path.named_matchup.note);
+    chk('and it is explicitly not reportable as an absence',
+      /may not be reported as one/.test(broke.data_path.named_matchup.note || ''));
+  }
+
+  /* =====================================================================
+     30. AND THE FOLLOW-UPS KEEP IT, WITH THE BASEBALL BOARD STILL OPEN.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    const MLB_BOARD = {
+      game: { matchup: 'Baltimore Orioles @ New York Yankees', sport: 'MLB', sport_key: 'baseball_mlb',
+        commence: '2026-09-15T23:05:00Z', away: 'Baltimore Orioles', home: 'New York Yankees', event_id: 'mlb-1' },
+      sport_key: 'baseball_mlb', board_scope: { sport: 'baseball_mlb', label: 'today' },
+    };
+    const history = [];
+    const seq = [
+      'What do you think about North Texas vs Texas State this week? Anything worth betting?',
+      'Who have they played?',
+      'What price makes it a pass?',
+    ];
+    for (let i = 0; i < seq.length; i++) {
+      clearCache(); route = FX.router(fx);
+      const j = await (await m.handle(req({ mode: 'chat', question: seq[i],
+        packet: MLB_BOARD, history: history.slice(-8) }, '?dry=1'))).json();
+      eq(`follow-up ${i + 1} stays on college football`, j.sport, 'americanfootball_ncaaf');
+      chk(`follow-up ${i + 1} keeps the matchup ("${seq[i]}")`,
+        (j.evidence_packets || []).some((p) => p.packet_id === '401858900:v1'),
+        (j.evidence_packets || []).map((p) => p.packet_id));
+      chk(`follow-up ${i + 1} never drifts to the open baseball game`,
+        !(j.entities.teams || []).some((t) => /Orioles|Yankees|Rangers/.test(t)), j.entities.teams);
+      history.push({ role: 'user', content: seq[i] });
+      history.push({ role: 'assistant', content: 'ok' });
+    }
+  }
+
   done();
 })().catch((e) => { console.error('CRASH', e && e.stack || e); process.exit(1); });
