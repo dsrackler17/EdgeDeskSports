@@ -636,6 +636,15 @@
     push(resultSection(rec));
     push(narrativeSection(rec, 'opening'));
     push(expectedSection(rec));
+    /* WHY EDGEDESK PRICED IT THERE, built from the frozen research inside the
+       snapshot rather than from anything current. A postgame page shows the
+       pregame call's numbers, so it owes the reader the same two labels the
+       pregame page owes: which drivers moved the priced number, and which
+       context did not. Omitting them let a page display model pricing with
+       nothing saying what was priced and what was only context. */
+    if (AMODEL.pricingSection && rec.snapshot && rec.snapshot.research) {
+      push(AMODEL.pricingSection(rec.snapshot.research));
+    }
     push(happenedSection(rec));
     push(turnedSection(rec));
     push(narrativeSection(rec, 'why_it_turned'));
@@ -646,14 +655,22 @@
     push(lessonsSection(rec));
     push(narrativeSection(rec, 'closing'));
 
+    /* THE LINKS A POSTGAME PAGE OWES ARE THE PREGAME ONES PLUS ITS OWN, not
+       a separate set. This page had its own list, and the first postgame
+       article to publish failed the site-wide internal-linking checks
+       because of it — no power-ratings link, no cross-sport hub, and the
+       standing CTA line missing. The standard set now comes from
+       AMODEL.internalLinks() so the two types cannot drift again. */
     var links = [
       rec.related && rec.related.pregame_url
         ? { label: 'Read our original pregame research →', href: rec.related.pregame_url, primary: true } : null,
-      { label: 'Explore more ' + S.label + ' research', href: S.hub },
-      { label: 'EdgeDesk’s public record', href: '/record.html' },
-      { label: 'All EdgeDesk research articles', href: '/articles' },
-      { label: 'Open the full EdgeDesk research terminal', href: '/app.html' + S.terminal }
+      { label: 'EdgeDesk’s public record', href: '/record.html' }
     ].filter(Boolean);
+    var seen = Object.create(null);
+    links.forEach(function (l) { seen[l.href] = true; });
+    (AMODEL.internalLinks ? AMODEL.internalLinks(S) : []).forEach(function (l) {
+      if (!seen[l.href]) { seen[l.href] = true; links.push(l); }
+    });
 
     return {
       hero: {
@@ -677,6 +694,7 @@
       bottom_line: { kind: 'bottom_line', title: 'The EdgeDesk bottom line', paragraphs: bottomLine(rec) },
       cta: {
         line: 'Every game EdgeDesk features gets both halves: what it thought, then what it learned.',
+        prompt: 'Research the matchup. Then price it.',
         button: 'Open full EdgeDesk research',
         href: SITE + '/app.html' + S.terminal,
         links: links
