@@ -746,6 +746,7 @@ export function detectSport(question: string): { sport: string | null; via: stri
 }
 
 export const MODE_OF_INTENT: Record<string, Mode> = {
+  attention_split: "SLATE",
   worst_pitchers: "MATCHUP", exploitable_pitchers: "MATCHUP", best_pitchers: "MATCHUP",
   team_efficiency: "MATCHUP",
   best_matchups: "MATCHUP", offense: "MATCHUP", research_matchup: "DEEP",
@@ -2298,16 +2299,20 @@ export function classify(question: string, mode?: string): Plan {
 
   const P = (intent: string, depth: Depth, steps: string[], why: string): Plan => ({
     intent, mode: modeOfIntent(intent), depth, sport: null, steps, entities,
-    /* SLATE was given 12 reads — FEWER than DEEP's 14 — while being the depth
-       that retrieves the most: board, card, the three-table pitcher join,
-       usage, season pitching, season offense, bullpen, weather, CLV history
-       plus its exact count, and then whatever the adaptive second pass needs.
-       That is ~13 before a single probe or fallback, so a full MLB slate
-       reliably hit "research budget exhausted before this read" partway
-       through and the analyst reported the tail of the card as missing data.
-       A slate sweep is the widest thing this engine does and is budgeted as
-       such; QUICK and STANDARD are untouched, so a cheap question stays cheap. */
-    budget: depth === "QUICK" ? 4 : depth === "STANDARD" ? 8 : depth === "DEEP" ? 14 : depth === "SLATE" ? 20 : 24,
+    /* BUDGETS ARE SIZED FOR THE RETRIEVAL THAT ACTUALLY HAPPENS.
+       These were set when a turn read the board and a feature table or two.
+       Staged retrieval spends more and spends it better: stage A costs two
+       reads (the published slate plus the database cross-check) before the
+       market join, and stage C costs four batched reads plus a bounded roster
+       fan-out. On the old STANDARD budget of 8 a college question ran out
+       during stage C and reported records and season stats as missing — which
+       was honest but wrong, because the data was there and the lookup never
+       ran. "EdgeDesk did not look" and "the data is not there" are different
+       answers with different fixes, and a budget that produces the first while
+       printing the second is the worst of both.
+       QUICK stays cheap on purpose: a price question needs the signal row and
+       nothing else. */
+    budget: depth === "QUICK" ? 5 : depth === "STANDARD" ? 16 : depth === "DEEP" ? 22 : depth === "SLATE" ? 28 : 32,
     why,
   });
 
@@ -2573,10 +2578,492 @@ export function classify(question: string, mode?: string): Plan {
      merely mentioned "today" answered with zero pitcher coverage — which is
      exactly how "worst pitching matchups today?" reported 0/30. The fallthrough
      now pulls the matchup layer too; the retrieval budget still caps the cost. */
+  /* ATTENTION AND PROFILE. "Separate the lower-profile games from the
+     nationally prominent ones" is a slate question about the whole card, and it
+     had no intent at all — it fell through to `unknown` at STANDARD depth, which
+     researched three games thinly and answered a card-wide question from them.
+     It is a SLATE sweep, and the attention tiers it needs are computed over the
+     whole index rather than over a shortlist. */
+  if (/\b(lower|low|small|smaller|little)[- ]?(profile|attention|market|known)\b/.test(q)
+    || /\b(high|big|large|national|nationally)[- ]?(profile|attention|prominent|prominence)\b/.test(q)
+    || /\b(separate|split|group|divide|contrast)\b[\s\S]{0,40}\b(profile|attention|prominent|marquee|primetime)\b/.test(q)
+    || has("marquee", "under the radar", "off the radar", "overlooked games"))
+    return P("attention_split", "SLATE",
+      ["slate", "cfb_intelligence", "team_efficiency", "matchup_context", "market"],
+      "Attention categories across the whole card — an editorial grouping, computed over every game, never a claim about how softly anything is priced.");
+
   if (has("slate", "today", "tonight", "board", "card"))
     return P("slate_overview", "SLATE", ["slate", "market", "matchup", "pitchers", "pitcher_features", "opponent_offense", "team_efficiency", "quarterback", "matchup_context", "park"], "Board-level overview.");
 
   return P("unknown", "STANDARD", ["slate", "focus_signal", "market", "matchup", "pitcher_features", "opponent_offense"], "Unclassified — retrieve the board, the matchup layer and any focused signal, then answer from what is there.");
+}
+
+
+/* ========================================================================
+   THE SHARED GAME REPOSITORY — types and normalizers.
+
+   One normalized game shape, whatever source produced it, so the eligibility
+   rules, the evidence builder and the prompt all speak about the same object.
+   A field a source does not carry stays null; nothing is inferred to fill a
+   column, because a filled column is indistinguishable from an observed one
+   three layers downstream.
+   ======================================================================== */
+
+export interface SlateGame {
+  /** The board's own id where there is one — ESPN/cfbfastR for CFB. */
+  game_id: string;
+  /** The ingested CollegeFootballData id, when identity resolved to one. */
+  cfb_game_id: string | null;
+  source: string;
+  season: number | null;
+  week: number | null;
+  kickoff: string | null;
+  home_team: string;
+  away_team: string;
+  home_id: string | null;
+  away_id: string | null;
+  home_conference: string | null;
+  away_conference: string | null;
+  home_group: string | null;
+  away_group: string | null;
+  neutral_site: boolean | null;
+  venue: string | null;
+  matchup: string;
+  status: string;
+  /** Poll rank, where a poll ranks them. An ATTENTION input, never a quality one. */
+  home_rank?: number | null;
+  away_rank?: number | null;
+  /** The board engine's own projection, carried verbatim and never recomputed. */
+  model_home_line: number | null;
+  model_total: number | null;
+  model_status: string | null;
+  model_completeness: number | null;
+  /** The market, joined ON to the schedule rather than standing in for it. */
+  quote: {
+    event_id: string; market: string; selection: string; point: number | null;
+    dec: number | null; book: string | null; captured_at: string | null;
+  } | null;
+  has_quote: boolean;
+  has_signal: boolean;
+  signals: any[];
+}
+
+export interface SlateScopeRequest {
+  season?: number | null;
+  week?: number | null;
+  label?: string | null;
+  /** Conference / group filters the board had applied, echoed back. */
+  conferences?: string[] | null;
+  group?: string | null;
+  /** Explicit ids the board wants scoped to, when the user is on a filter. */
+  game_ids?: string[] | null;
+}
+
+export interface SlateIndexResult {
+  index: SlateGame[];
+  state: any;
+  source: string | null;
+  source_label: string;
+  scope_label: string;
+  path: Record<string, unknown>;
+  errors: string[];
+}
+
+/** The published FBS slate row -> the shared shape. Field names are the
+    artifact's own (schema edgedesk_fbs_slate_v1); nothing is renamed by guess. */
+export function normalizeFbsArtifactGame(g: any, meta: any): SlateGame {
+  return {
+    game_id: String(g.game_id),
+    cfb_game_id: null,
+    source: "football/fbs/slate.json",
+    season: num(g.season) ?? num(meta?.season),
+    week: num(g.week),
+    kickoff: g.kickoff ?? null,
+    home_team: String(g.home_team ?? ""),
+    away_team: String(g.away_team ?? ""),
+    home_id: g.home_team_id ?? null,
+    away_id: g.away_team_id ?? null,
+    home_conference: g.home_conference ?? null,
+    away_conference: g.away_conference ?? null,
+    home_group: g.home_fbs_group ?? null,
+    away_group: g.away_fbs_group ?? null,
+    neutral_site: g.neutral_site === true,
+    venue: g.venue ?? null,
+    matchup: `${g.away_team} @ ${g.home_team}`,
+    status: "scheduled",
+    /* The artifact publishes the model line from the HOME side, negative for a
+       home favourite, exactly as engine.js emits it. Carried verbatim: this
+       layer does not recompute a projection and does not change its sign. */
+    model_home_line: num(g.model_home_line),
+    model_total: num(g.model_fair_total),
+    model_status: g.model_status ?? null,
+    model_completeness: num(g.data_completeness),
+    quote: null, has_quote: false, has_signal: false, signals: [],
+  };
+}
+
+/** A cfb.games row -> the shared shape. */
+export function normalizeCfbGameRow(g: any): SlateGame {
+  return {
+    game_id: String(g.game_id),
+    cfb_game_id: String(g.game_id),
+    source: "cfb.games",
+    season: num(g.season), week: num(g.week),
+    kickoff: g.start_date ?? null,
+    home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
+    home_id: g.home_id != null ? String(g.home_id) : null,
+    away_id: g.away_id != null ? String(g.away_id) : null,
+    home_conference: g.home_conference ?? null, away_conference: g.away_conference ?? null,
+    home_group: null, away_group: null,
+    neutral_site: g.neutral_site === true, venue: g.venue ?? null,
+    matchup: `${g.away_team} @ ${g.home_team}`,
+    status: g.completed === true ? "final" : "scheduled",
+    model_home_line: null, model_total: null, model_status: null, model_completeness: null,
+    quote: null, has_quote: false, has_signal: false, signals: [],
+  };
+}
+
+/**
+ * Which side of a spread a selection sits on, and what the handicap MEANS.
+ *
+ * The orientation bug this guards against is the quietest one in the product:
+ * a model line stated from the home side compared against a book handicap
+ * stated on the named selection produces a gap that is wrong by twice the
+ * line, and every sentence built on it reads perfectly. Both numbers are put
+ * on the SAME side here, once, and the side is named in the output.
+ */
+export function orientToSelection(o: {
+  selection: string; home_team: string; away_team: string;
+  point: number | null; model_home_line: number | null;
+}): {
+  side: "home" | "away" | null;
+  selection_handicap: number | null;
+  model_selection_line: number | null;
+  market_selection_line: number | null;
+  note: string;
+} {
+  const sel = normName(o.selection), h = normName(o.home_team), a = normName(o.away_team);
+  let side: "home" | "away" | null = null;
+  if (sel && h && sel === h) side = "home";
+  else if (sel && a && sel === a) side = "away";
+  else if (sel && h.endsWith(" " + sel) && !a.endsWith(" " + sel)) side = "home";
+  else if (sel && a.endsWith(" " + sel) && !h.endsWith(" " + sel)) side = "away";
+  if (!side) {
+    return { side: null, selection_handicap: null, model_selection_line: null, market_selection_line: null,
+      note: `"${o.selection}" could not be resolved to either side of ${o.away_team} @ ${o.home_team}, so no orientation is asserted.` };
+  }
+  const point = num(o.point);
+  const mhl = num(o.model_home_line);
+  /* The model line is published from the home side. Flipping it for an away
+     selection is a sign change and nothing else — but it is the sign change
+     that makes the comparison legitimate. */
+  const modelSel = mhl == null ? null : (side === "home" ? mhl : -mhl);
+  return {
+    side,
+    selection_handicap: point,
+    model_selection_line: modelSel == null ? null : +modelSel.toFixed(2),
+    market_selection_line: point,
+    note: `${o.selection} is the ${side} side. Both the model line and the book handicap are stated from that side, `
+      + `so a favourite is negative in both. ${modelSel != null && point != null
+        ? `Model ${modelSel.toFixed(1)} against a book ${point > 0 ? "+" : ""}${point}.`
+        : "One of the two numbers is missing, so no gap is computed."}`,
+  };
+}
+
+
+/* ========================================================================
+   STAGE B — DETERMINISTIC ELIGIBILITY AND RESEARCH PRIORITY.
+
+   Runs over the compact slate index, before a single detailed read. It is
+   pure code over owned fields: no model, no language, no probability. What it
+   produces is an ORDER and an ELIGIBILITY, and those are different things —
+   a game can be the most interesting thing on the card and still be ineligible
+   for a recommendation because nobody is quoting it.
+   ======================================================================== */
+
+export interface ShortlistRow {
+  game: SlateGame;
+  eligible: boolean;
+  ineligible_reason: string | null;
+  priority: number;
+  priority_band: "HIGH" | "MEDIUM" | "LOW";
+  drivers: { points: number; why: string }[];
+  attention: any;
+  disagreement: any | null;
+  quote_state: any | null;
+}
+
+export function rankSlate(index: SlateGame[], opts: { now?: number; sport?: string | null } = {}): ShortlistRow[] {
+  const now = opts.now ?? Date.now();
+  return index.map((g) => {
+    const drivers: { points: number; why: string }[] = [];
+    let score = 0;
+    const add = (n: number, why: string) => { score += n; drivers.push({ points: n, why }); };
+
+    const attention = EDINTEL.attentionTier({
+      home_group: g.home_group, away_group: g.away_group,
+      home_rank: g.home_rank, away_rank: g.away_rank,
+      neutral_site: g.neutral_site,
+      book_count: g.signals.length ? num(g.signals[0].n_books) : null,
+    });
+
+    /* The market side, where one exists. */
+    const q = g.quote;
+    const quoteState = q
+      ? EDINTEL.quoteState({ captured_at: q.captured_at, market: q.market, kickoff: g.kickoff })
+      : null;
+
+    /* Model versus market, oriented onto the SAME side before it is measured.
+       An unoriented comparison is wrong by twice the line and reads perfectly,
+       which is why the orientation is computed rather than assumed. */
+    let disagreement: any = null;
+    const spread = g.signals.find((r: any) => EDINTEL.normMarket(r.market) === "spreads" && num(r.point) != null);
+    if (spread && g.model_home_line != null) {
+      const o = orientToSelection({
+        selection: String(spread.selection ?? ""), home_team: g.home_team, away_team: g.away_team,
+        point: num(spread.point), model_home_line: g.model_home_line,
+      });
+      if (o.model_selection_line != null && o.market_selection_line != null) {
+        disagreement = EDINTEL.disagreementDiagnostics({
+          model_line: o.model_selection_line, market_line: o.market_selection_line, market: "spreads",
+        });
+        disagreement.orientation = o;
+      }
+    }
+
+    /* ---- ELIGIBILITY. A recommendation needs a live, priced market. ------ */
+    let eligible = true, reason: string | null = null;
+    if (g.status === "final") { eligible = false; reason = "the game is already final"; }
+    else if (!g.has_quote) { eligible = false; reason = "no book EdgeDesk captures is quoting this game, so there is no price to recommend"; }
+    else if (quoteState && !quoteState.actionable) {
+      eligible = false;
+      reason = `the only quote on file is ${quoteState.status.toLowerCase()} (${quoteState.age_min}m old against a ${quoteState.limit_min}m limit), so nothing here is actionable until it refreshes`;
+    }
+
+    /* ---- PRIORITY. Which games repay attention, eligible or not. --------- */
+    if (disagreement && disagreement.level === "LARGE") add(3, `the board's model and the market disagree by ${disagreement.gap} points`);
+    if (disagreement && disagreement.level === "EXTREME") add(2, `a ${disagreement.gap}-point disagreement, large enough to suspect a data fault rather than value`);
+    if (g.has_signal) add(3, "EdgeDesk has flagged a priced signal on this game");
+    else if (g.has_quote) add(1, "the game is quoted but nothing has been flagged on it");
+    if (quoteState && quoteState.status === "STALE") add(1, `the only quote is ${quoteState.age_min} minutes old; a refresh would settle whether anything here is live`);
+    if (attention.tier === "NATIONAL") add(1, "a nationally prominent matchup, so the market is likely to be well attended");
+    if (g.model_completeness != null && g.model_completeness < 0.5) {
+      add(1, `the board's own input completeness for this game is ${Math.round(g.model_completeness * 100)}%, so its projection is thin`);
+    }
+    if (g.kickoff) {
+      const hrs = (Date.parse(g.kickoff) - now) / 3600000;
+      if (Number.isFinite(hrs) && hrs > 0 && hrs < 48) add(1, "kicks off inside 48 hours, so the market is at its most informative");
+    }
+
+    return {
+      game: g, eligible, ineligible_reason: reason,
+      priority: score,
+      priority_band: score >= 6 ? "HIGH" : score >= 3 ? "MEDIUM" : "LOW",
+      drivers, attention, disagreement, quote_state: quoteState,
+    };
+  }).sort((a, b) => {
+    /* Eligible games first — a recommendation can only come from one — then by
+       priority. Within a tie, the earlier kickoff, because it decides sooner. */
+    if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+    if (b.priority !== a.priority) return b.priority - a.priority;
+    return String(a.game.kickoff ?? "").localeCompare(String(b.game.kickoff ?? ""));
+  });
+}
+
+/** The scope sentence an answer must open with, built from the ranking. */
+export function scopeSentence(index: SlateGame[], ranked: ShortlistRow[], scopeLabel: string, sourceLabel: string, shortlisted: number): string {
+  const eligible = ranked.filter((r) => r.eligible).length;
+  const quoted = index.filter((g) => g.has_quote).length;
+  return `Scope: ${scopeLabel}. ${index.length} game${index.length === 1 ? "" : "s"} on the card from ${sourceLabel}; `
+    + `${quoted} carr${quoted === 1 ? "ies" : "y"} a captured quote; ${eligible} ${eligible === 1 ? "is" : "are"} eligible for a priced recommendation; `
+    + `${shortlisted} received detailed research. Refreshed ${new Date().toISOString()}.`;
+}
+
+
+/* ========================================================================
+   THE DECISION PASS — deterministic, one per quoted selection.
+
+   Every number here was computed by EDINTEL or copied from the pipeline. The
+   model never sees this function's inputs and never produces its outputs; it
+   explains what this decided, and if it disagrees with the decision it is
+   wrong by construction.
+   ======================================================================== */
+
+export interface GameDecision {
+  game_id: string;
+  matchup: string;
+  kickoff: string | null;
+  market: string;
+  selection: string;
+  handicap: number | null;
+  side: "home" | "away" | null;
+  decision: string;
+  strength: string | null;
+  why: string;
+  blockers: string[];
+  price: any;
+  gates: any;
+  model: any;
+  disagreement: any;
+  what_would_change_it: string[];
+  experimental: boolean;
+  attention: any;
+  evidence_gaps: { field: string; why: string }[];
+  evidence_packet_id: string | null;
+  research_priority: any;
+}
+
+export function decideSlate(
+  ranked: ShortlistRow[], packets: any[], opts: { sport: string | null; now?: number } = { sport: null },
+): GameDecision[] {
+  const now = opts.now ?? Date.now();
+  const packetBy = new Map<string, any>();
+  for (const p of packets ?? []) packetBy.set(String(p.game_id), p);
+  const out: GameDecision[] = [];
+
+  for (const r of ranked) {
+    const g = r.game;
+    if (!g.signals.length) continue;
+    for (const sig of g.signals) {
+      const market = EDINTEL.normMarket(sig.market);
+      const fair = EDINTEL.fairMethod(sig);
+      const conf = EDINTEL.confirmationRead(sig);
+      const qs = EDINTEL.quoteState({ captured_at: sig.last_seen_at, market: sig.market, kickoff: g.kickoff });
+      const orient = orientToSelection({
+        selection: String(sig.selection ?? ""), home_team: g.home_team, away_team: g.away_team,
+        point: num(sig.point), model_home_line: g.model_home_line,
+      });
+      const validation = EDINTEL.validationFor(opts.sport, market);
+
+      /* The model's number, oriented onto the same side as the book's. A
+         disagreement measured across two different sides is wrong by twice the
+         line and reads perfectly, which is why the orientation is explicit. */
+      let disagreement: any = null;
+      if (orient.model_selection_line != null && orient.market_selection_line != null && market === "spreads") {
+        disagreement = EDINTEL.disagreementDiagnostics({
+          model_line: orient.model_selection_line, market_line: orient.market_selection_line, market,
+        });
+        disagreement.orientation = orient;
+      } else if (market === "totals" && g.model_total != null && num(sig.point) != null) {
+        disagreement = EDINTEL.disagreementDiagnostics({
+          model_line: g.model_total, market_line: num(sig.point), market,
+        });
+      }
+
+      /* Does the THESIS rest on the model? It does when the model is the only
+         thing arguing for this side — a large disagreement with no independent
+         market case. That distinction is what routes it through the validation
+         gate, which for CFB spreads caps it at WATCH however big the gap. */
+      const thesisRestsOnModel = !!(disagreement && disagreement.level !== "ORDINARY" && !fair.sharp);
+
+      /* WHAT A DECISION ACTUALLY REQUIRES DEPENDS ON WHAT THE THESIS RESTS ON.
+         A market thesis — a reference book's own de-vigged price, beaten at a
+         real book — is complete without any matchup evidence at all: the
+         evidence IS the market. Requiring a matchup packet for it blocked a
+         perfectly sound price edge with "matchup_evidence missing" and turned
+         a price question into an INSUFFICIENT DATA answer about a slate.
+         A MODEL thesis is the opposite: the model is making a claim about the
+         football, so the football inputs are required and their absence is a
+         genuine blocker. */
+      const required_missing: { field: string; why: string }[] = [];
+      const soft_gaps: { field: string; why: string }[] = [];
+      const pkt = packetBy.get(String(g.game_id));
+      if (!pkt) {
+        (thesisRestsOnModel ? required_missing : soft_gaps).push({
+          field: "matchup_evidence",
+          why: "this game was not researched in depth on this turn"
+            + (thesisRestsOnModel
+              ? ", and this thesis rests on the model's read of the football rather than on a market price, so the matchup inputs are required"
+              : ". The thesis rests on the market price, which is complete without it — but the matchup was not examined and the answer should say so."),
+        });
+      } else {
+        const m = pkt.sections?.matchup;
+        for (const side of ["home", "away"] as const) {
+          if (m?.[side]?.sp_plus_overall?.missing && m?.[side]?.previous_games?.missing) {
+            (thesisRestsOnModel ? required_missing : soft_gaps).push({
+              field: `${side}_team_quality`,
+              why: `neither an opponent-adjusted rating nor a completed game is on file for ${m?.[side]?.team?.value ?? side}`,
+            });
+          }
+        }
+      }
+
+      const d = EDINTEL.decide({
+        fair, confirmation: conf, quote_state: qs,
+        quote: { dec: num(sig.best_dec), book: sig.best_book, market: sig.market,
+          selection: sig.selection, handicap: num(sig.point) },
+        game_status: g.status, validation, disagreement,
+        thesis_rests_on_model: thesisRestsOnModel,
+        required_missing,
+        edge_remaining: (num(sig.first_edge) && num(sig.edge) != null && num(sig.first_edge)! > 0)
+          ? Math.max(0, Math.min(1, num(sig.edge)! / num(sig.first_edge)!)) : null,
+        model: (orient.model_selection_line != null || g.model_total != null)
+          ? { line: market === "totals" ? g.model_total : orient.model_selection_line, market }
+          : null,
+        push_distribution_key: opts.sport ? `${opts.sport}|margin_resid` : null,
+      });
+
+      out.push({
+        game_id: g.game_id, matchup: g.matchup, kickoff: g.kickoff,
+        market, selection: String(sig.selection ?? ""), handicap: num(sig.point), side: orient.side,
+        decision: d.decision, strength: d.strength, why: d.why, blockers: d.blockers,
+        price: d.price, gates: d.gates, model: d.model, disagreement: d.disagreement,
+        what_would_change_it: d.what_would_change_it, experimental: d.experimental,
+        attention: r.attention,
+        /* Gaps that do NOT block this decision but that the answer must still
+           name. An unstated gap reads as a considered-and-dismissed factor. */
+        evidence_gaps: soft_gaps,
+        evidence_packet_id: pkt ? pkt.packet_id : null,
+        research_priority: { score: r.priority, band: r.priority_band, drivers: r.drivers },
+      });
+    }
+  }
+  /* Candidates first, then watches, then the rest. Within a tier, by expected
+     return — which is a RANKING of already-decided rows, not a new number. */
+  const rank: Record<string, number> = { "BET CANDIDATE": 0, WATCH: 1, PASS: 2, "INSUFFICIENT DATA": 3 };
+  return out.sort((a, b) => {
+    const ra = rank[a.decision] ?? 9, rb = rank[b.decision] ?? 9;
+    if (ra !== rb) return ra - rb;
+    return (num(b.price?.market_ev) ?? -99) - (num(a.price?.market_ev) ?? -99);
+  });
+}
+
+/**
+ * The ledger rows a turn would publish.
+ *
+ * BUILT, not written: the caller decides whether to persist. Only an
+ * ACTIONABLE decision is publishable — a PASS is a real answer and worth
+ * recording, but a row whose price was never live is not a recommendation and
+ * must not enter a record that is later measured as though it were.
+ */
+export function ledgerRowsFor(
+  decisions: GameDecision[], ctx: { sport: string | null; model_version?: string | null; engine_version?: string | null; now?: number },
+): any[] {
+  const now = ctx.now ?? Date.now();
+  const rows: any[] = [];
+  for (const d of decisions) {
+    if (d.decision === "INSUFFICIENT DATA") continue;
+    if (!d.price || d.price.offered_decimal == null) continue;
+    const e = EDINTEL.ledgerEntry({
+      sport: ctx.sport, game_id: d.game_id, matchup: d.matchup, kickoff: d.kickoff,
+      market: d.market, selection: d.selection, handicap: d.handicap,
+      odds_decimal: d.price.offered_decimal, book: d.price.book,
+      quote_captured_at: d.gates?.freshness?.captured_at ?? null,
+      decision: d.decision, strength: d.strength,
+      probability: d.price.fair_probability,
+      probability_source: d.price.fair_label,
+      expected_value: d.price.market_ev,
+      price_limit_american: d.price.price_limit_american,
+      evidence_version: d.evidence_packet_id,
+      evidence_packet_id: d.evidence_packet_id,
+      model_version: ctx.model_version ?? null,
+      engine_version: ctx.engine_version ?? BUILD,
+      decision_config: d.gates ? { ...(d as any).config_used ?? {} } : null,
+      mode: "FORWARD", now,
+    });
+    if (e.ok) rows.push(e);
+  }
+  return rows;
 }
 
 /* --------------------------------------------------- data access layer */
@@ -2837,11 +3324,31 @@ export class Dal {
     }
     rows = positives.concat(rows.filter((r: any) => !r.edge_still_positive));
 
-    const out = rows.map((r) => ev({
-      source: "signals", entity: `${r.away_team} @ ${r.home_team}`, field: "signal",
-      value: r, status: "VERIFIED", relevance: "market",
-      source_timestamp: r.last_seen_at, freshness: freshnessOf("odds", r.last_seen_at),
-    }));
+    /* THE ANCHOR AND THE CLOCK TRAVEL WITH EVERY ROW.
+       A raw signal row carries `sharp_fair` — a column capture fills from the
+       CONSENSUS whenever no reference book quotes — so handing the row over
+       unannotated invites exactly the claim this repair removes. The honest
+       method and the quote's age are attached here, once, so no downstream
+       reader has to re-derive either. */
+    const out = rows.map((r) => {
+      const fm = EDINTEL.fairMethod(r);
+      const qs = EDINTEL.quoteState({ captured_at: r.last_seen_at, market: r.market, kickoff: r.commence_time });
+      return ev({
+        source: "signals", entity: `${r.away_team} @ ${r.home_team}`, field: "signal",
+        value: {
+          ...r,
+          fair_method: fm.method, fair_label: fm.label, fair_is_sharp: fm.sharp,
+          fair_sentence: fm.sentence, reference_book: fm.reference_book,
+          contributing_reference_quotes: fm.contributing_quotes,
+          quote_status: qs.status, quote_age_min: qs.age_min, quote_actionable: qs.actionable,
+          quote_note: qs.why,
+        },
+        status: "VERIFIED", relevance: "market",
+        source_timestamp: r.last_seen_at, freshness: freshnessOf("odds", r.last_seen_at),
+        note: `${fm.sentence} ${qs.why}`
+          + (qs.actionable ? "" : " This price is NOT actionable; it is the last one EdgeDesk observed."),
+      });
+    });
     if (_dropped) {
       out.push(ev({
         source: "signals", entity: null, field: "slate_filtered", relevance: "market",
@@ -2854,6 +3361,255 @@ export class Dal {
     return { rows, ev: out };
   }
 
+
+  /* ==================================================================== */
+  /* THE SLATE REPOSITORY — one authoritative answer to "what games exist" */
+  /*                                                                       */
+  /* THE FAILURE THIS EXISTS TO END                                        */
+  /*   The FBS board renders 75 games and Intelligence answered "there are */
+  /*   no CFB matchups to evaluate on this slate". Both statements were    */
+  /*   produced from owned data, and neither was lying — they were reading */
+  /*   DIFFERENT REPOSITORIES. The board builds its universe in the        */
+  /*   browser from the cfbfastR schedule feed through football/fbs/fbs.js */
+  /*   and publishes it as football/fbs/slate.json. Intelligence asked the */
+  /*   `signals` table, which holds PRICED FLAGGED OPPORTUNITIES and holds */
+  /*   nothing at all for a sport nobody has flagged this week. An empty   */
+  /*   signals query became "no games", and 75 real matchups disappeared.  */
+  /*                                                                       */
+  /* WHAT THIS DOES INSTEAD                                                */
+  /*   Games are discovered from a SCHEDULE source, always, before any     */
+  /*   question about prices is asked. Quotes and signals are then joined  */
+  /*   ONTO that universe and counted separately, so "no game", "no quote" */
+  /*   and "no signal" can never again collapse into one sentence.         */
+  /*                                                                       */
+  /*   The board's own published artifact is the primary source for CFB    */
+  /*   precisely because it IS what the board renders: same builder, same  */
+  /*   identities, same game ids. cfb.games is read alongside it as a      */
+  /*   cross-check, and a disagreement between them is reported as a data  */
+  /*   fault rather than silently resolved in favour of whichever answered */
+  /*   first.                                                              */
+  /* ==================================================================== */
+
+  /**
+   * The FBS slate artifact the board publishes.
+   *
+   * Static, versioned, and the same bytes the browser renders. Read over HTTP
+   * rather than from the database because that is where it lives — it is a
+   * build output committed to the site, not a table.
+   */
+  async getFbsSlateArtifact(): Promise<{ meta: any; games: any[]; error: string | null }> {
+    if (this.calls >= this.budget) return { meta: null, games: [], error: "research budget exhausted before the slate artifact could be read" };
+    this.calls++;
+    const url = `${SITE_BASE.replace(/\/+$/, "")}/football/fbs/slate.json`;
+    const t0 = Date.now();
+    try {
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
+      const r = await this.f(url, { signal: ctrl?.signal, headers: { accept: "application/json" } });
+      if (timer) clearTimeout(timer);
+      if (!r.ok) {
+        const err = `HTTP ${r.status} from ${url}`;
+        this.log.push({ table: "fbs/slate.json", ms: Date.now() - t0, rows: 0, error: err });
+        this.note("fbs/slate.json", false, err);
+        return { meta: null, games: [], error: err };
+      }
+      const j = await r.json();
+      const games = Array.isArray(j?.games) ? j.games : [];
+      this.log.push({ table: "fbs/slate.json", ms: Date.now() - t0, rows: games.length, error: null });
+      this.note("fbs/slate.json", true, null, games.length);
+      return { meta: j, games, error: null };
+    } catch (e) {
+      const err = String((e as Error)?.message ?? e);
+      this.log.push({ table: "fbs/slate.json", ms: Date.now() - t0, rows: 0, error: err });
+      this.note("fbs/slate.json", false, err);
+      return { meta: null, games: [], error: err };
+    }
+  }
+
+  /**
+   * The compact, COMPLETE slate index — stage A of staged retrieval.
+   *
+   * Compact on purpose. This is one small row per game for the whole card, and
+   * it is what the eligibility and priority rules run over. Detailed evidence
+   * is fetched afterwards, and only for the games that survive. Sending the
+   * whole database into one prompt and hoping it fits is exactly how 130 items
+   * got withheld for size while the answer claimed to have compared the slate.
+   */
+  async getSlateIndex(sportKey: string | null, scope: SlateScopeRequest = {}): Promise<SlateIndexResult> {
+    const path: Record<string, unknown> = { sport: sportKey, requested_scope: scope };
+    const index: SlateGame[] = [];
+    const errors: string[] = [];
+    let source: string | null = null;
+    let sourceLabel = "";
+
+    /* ---- A1. the schedule universe -------------------------------------- */
+    if (sportKey === "americanfootball_ncaaf") {
+      const art = await this.getFbsSlateArtifact();
+      path.fbs_artifact = {
+        error: art.error, games: art.games.length,
+        schema: art.meta?.schema ?? null, version: art.meta?.version ?? null,
+        season: art.meta?.season ?? null, generated_at: art.meta?.generated_at ?? null,
+        source: art.meta?.source ?? null, lookahead_days: art.meta?.lookahead_days ?? null,
+        counts: art.meta?.counts ?? null,
+      };
+      if (art.error) errors.push(`the published FBS slate could not be read (${art.error})`);
+      for (const g of art.games) {
+        index.push(normalizeFbsArtifactGame(g, art.meta));
+      }
+      if (index.length) {
+        source = "football/fbs/slate.json";
+        sourceLabel = `the FBS board's own published slate (${art.meta?.source ?? "cfbfastR schedules"}, generated ${art.meta?.generated_at ?? "unknown"})`;
+      }
+
+      /* ---- A2. the database cross-check --------------------------------- */
+      const season = num(scope.season) ?? num(art.meta?.season) ?? seasonFor("americanfootball_ncaaf");
+      let q = `games?select=game_id,season,week,season_type,start_date,completed,neutral_site,conference_game,`
+        + `venue,home_id,home_team,home_conference,away_id,away_team,away_conference`
+        + `&season=eq.${season}&completed=is.false&order=start_date.asc&limit=400`;
+      if (num(scope.week) != null) q += `&week=eq.${num(scope.week)}`;
+      const db = await this.read(q, "schedule", "cfb");
+      path.cfb_games = { rows: db.rows.length, error: db.error, season, week: num(scope.week) ?? null };
+      if (db.error) errors.push(`cfb.games could not be read (${db.error})`);
+
+      if (!index.length && db.rows.length) {
+        for (const g of db.rows) index.push(normalizeCfbGameRow(g));
+        source = "cfb.games";
+        sourceLabel = `the ingested CollegeFootballData schedule (cfb.games, season ${season})`;
+      } else if (index.length && db.rows.length) {
+        /* Both answered. The board artifact stays authoritative because it is
+           literally what the reader is looking at; the database count is
+           reported alongside it, and a gap between them is a FINDING. */
+        const inWindow = db.rows.filter((r: any) => {
+          const t = Date.parse(String(r.start_date ?? ""));
+          return Number.isFinite(t) && t >= Date.now() - 6 * 3600_000
+            && t <= Date.now() + (num(art.meta?.lookahead_days) ?? 10) * 86400_000;
+        });
+        path.cross_check = {
+          artifact_games: index.length, cfb_games_in_same_window: inWindow.length,
+          agrees: Math.abs(inWindow.length - index.length) <= 2,
+          note: Math.abs(inWindow.length - index.length) <= 2
+            ? "The board's published slate and the ingested schedule agree on the size of this card."
+            : `The board's published slate carries ${index.length} games in this window and cfb.games carries ${inWindow.length}. `
+              + `That is a real disagreement between two owned sources and is reported rather than resolved by picking one. `
+              + `The board artifact is used because it is what the reader is looking at.`,
+        };
+        if (!(path.cross_check as any).agrees) {
+          errors.push(`the two schedule sources disagree on the size of this card (${index.length} vs ${inWindow.length})`);
+        }
+        /* Carry the database game_id onto the artifact rows where the identity
+           resolves, so cfb.lines, cfb.roster and the rest can be joined. */
+        const byPair = new Map<string, any>();
+        for (const r of db.rows) byPair.set(`${normName(r.away_team)}|${normName(r.home_team)}`, r);
+        for (const g of index) {
+          const hit = byPair.get(`${normName(g.away_team)}|${normName(g.home_team)}`);
+          if (hit) { g.cfb_game_id = String(hit.game_id); g.week = g.week ?? num(hit.week); }
+        }
+      }
+    } else if (sportKey) {
+      /* Every other sport: the multisport schedule table. Same contract — the
+         universe comes from a schedule, never from the price rows. */
+      const days = [etDay(0), etDay(1), etDay(2)];
+      const g = await this.read(
+        `games?select=game_id,game_date,home_team,away_team,start_time,status`
+        + `&sport_key=eq.${encodeURIComponent(sportKey)}&game_date=in.(${days.join(",")})`
+        + `&order=start_time.asc&limit=200`, "schedule");
+      path.games = { rows: g.rows.length, error: g.error, days };
+      if (g.error) errors.push(`games could not be read (${g.error})`);
+      for (const r of g.rows) {
+        if (String(r.status ?? "").toLowerCase() === "final") continue;
+        index.push({
+          game_id: String(r.game_id), cfb_game_id: null, source: "games",
+          season: null, week: null, kickoff: r.start_time ?? null,
+          home_team: r.home_team, away_team: r.away_team,
+          home_id: null, away_id: null, home_conference: null, away_conference: null,
+          home_group: null, away_group: null, neutral_site: null, venue: null,
+          matchup: `${r.away_team} @ ${r.home_team}`,
+          status: r.status ?? "scheduled",
+          model_home_line: null, model_total: null, model_status: null, model_completeness: null,
+          quote: null, has_quote: false, has_signal: false, signals: [],
+        });
+      }
+      if (index.length) { source = "games"; sourceLabel = "the multisport schedule table"; }
+    }
+
+    /* ---- A2b. poll rank, the one attention input EdgeDesk actually holds --
+       Attention tiers without rankings collapse to one bucket, which answers
+       "separate the lower-profile games from the prominent ones" by saying
+       everything is lower-profile. One cheap read fixes it. A poll is an
+       opinion about past results and is used here ONLY to say how much
+       attention a game gets — never as a measure of quality. */
+    if (sportKey === "americanfootball_ncaaf" && index.length) {
+      const rk = await this.read(
+        "rankings?select=season,week,poll,team,rank&order=week.desc.nullslast&limit=200", "team_stats", "cfb");
+      path.rankings = { rows: rk.rows.length, error: rk.error };
+      if (rk.rows.length) {
+        const ap = rk.rows.filter((r: any) => String(r.poll ?? "").includes("AP"));
+        const pool = ap.length ? ap : rk.rows;
+        const maxWk = pool.reduce((a: number, r: any) => Math.max(a, num(r.week) ?? 0), 0);
+        const rankBy = new Map<string, number>();
+        for (const r of pool) {
+          if (num(r.week) !== maxWk || !r.team || num(r.rank) == null) continue;
+          rankBy.set(normName(r.team), num(r.rank)!);
+        }
+        for (const g of index) {
+          g.home_rank = rankBy.get(normName(g.home_team)) ?? null;
+          g.away_rank = rankBy.get(normName(g.away_team)) ?? null;
+        }
+        path.rankings_applied = { week: maxWk, ranked_teams: rankBy.size };
+      }
+    }
+
+    /* ---- A3. join the market onto that universe, and COUNT IT SEPARATELY - */
+    let quoted = 0, signalled = 0;
+    if (index.length && sportKey) {
+      const sig = await this.read(
+        `signals?select=event_id,sport_key,market,selection,point,best_dec,first_best_dec,best_book,`
+        + `sharp_fair,sharp_book_fair,consensus_fair,reference_type,reference_book,edge,first_edge,`
+        + `n_books,n_books_eff,has_sharp,corrob_n,corrob_ref,pin_dec,pin_opp_dec,qual_tier,qual_reason,`
+        + `flagged_at,flagged_best_dec,home_team,away_team,commence_time,first_seen_at,last_seen_at`
+        + `&sport_key=eq.${encodeURIComponent(sportKey)}`
+        + `&commence_time=gte.${new Date(Date.now() - 6 * 3600_000).toISOString()}`
+        + `&commence_time=lte.${new Date(Date.now() + 14 * 86400_000).toISOString()}&limit=900`, "");
+      path.signals = { rows: sig.rows.length, error: sig.error };
+      if (sig.error) errors.push(`signals could not be read (${sig.error})`);
+
+      const byPair = new Map<string, any[]>();
+      for (const r of sig.rows) {
+        const k = `${normName(r.away_team)}|${normName(r.home_team)}`;
+        byPair.set(k, [...(byPair.get(k) ?? []), r]);
+      }
+      for (const g of index) {
+        const rows = byPair.get(`${normName(g.away_team)}|${normName(g.home_team)}`) ?? [];
+        if (!rows.length) continue;
+        g.signals = rows;
+        g.has_quote = rows.some((r: any) => num(r.best_dec) != null);
+        g.has_signal = rows.some((r: any) => r.flagged_at != null && num(r.flagged_best_dec) != null);
+        if (g.has_quote) quoted++;
+        if (g.has_signal) signalled++;
+        const best = rows.slice().sort((a: any, b: any) =>
+          String(b.last_seen_at ?? "").localeCompare(String(a.last_seen_at ?? "")))[0];
+        if (best) g.quote = { event_id: best.event_id, market: best.market, selection: best.selection,
+          point: best.point, dec: num(best.best_dec), book: best.best_book, captured_at: best.last_seen_at };
+      }
+    }
+
+    /* ---- A4. the state, classified rather than inferred ------------------ */
+    const scopeLabel = scope.label
+      ?? (num(scope.week) != null ? `week ${num(scope.week)}` : `the next ${sportKey === "americanfootball_ncaaf" ? 10 : 3} days`);
+    const state = EDINTEL.slateState({
+      scheduled_games: index.length ? index.length : (errors.length ? null : 0),
+      games_with_quotes: quoted,
+      games_with_signals: signalled,
+      errors,
+      schedule_source: sourceLabel || source,
+      scope_label: scopeLabel,
+      sport_label: SPORT_INTELLIGENCE[sportKey ?? ""]?.label ?? sportKey ?? "this sport",
+    });
+    path.slate_state = { state: state.state, scheduled: index.length, quoted, signalled, source };
+
+    return { index, state, source, source_label: sourceLabel, scope_label: scopeLabel, path, errors };
+  }
+
   /** The sharp reference on a specific signal: Pinnacle print + book spread. */
   async getSharpReference(eventId: string, market?: string, selection?: string): Promise<Evidence[]> {
     let q = `signals?select=event_id,market,selection,has_sharp,pin_dec,pin_opp_dec,sharp_fair,consensus_fair,n_books,n_books_eff,corrob_n,last_seen_at&event_id=eq.${encodeURIComponent(eventId)}`;
@@ -2862,16 +3618,28 @@ export class Dal {
     q += "&order=last_seen_at.desc.nullslast&limit=4";
     const { rows, error } = await this.read(q, "");
     if (error || !rows.length) return [unavailable("signals", "sharp_reference", error ?? "no signal row for this selection", eventId)];
-    return rows.map((r) => ev({
-      source: "signals", entity: eventId, field: "sharp_reference", value: {
-        has_sharp: r.has_sharp, pinnacle_dec: r.pin_dec, pinnacle_opp_dec: r.pin_opp_dec,
-        sharp_fair: r.sharp_fair, consensus_fair: r.consensus_fair,
-        n_books: r.n_books, n_books_eff: r.n_books_eff, corrob_n: r.corrob_n,
-      },
-      status: r.has_sharp ? "VERIFIED" : "PARTIAL",
-      source_timestamp: r.last_seen_at, freshness: freshnessOf("odds", r.last_seen_at),
-      relevance: "sharp", note: r.has_sharp ? undefined : "Pinnacle does not print this exact side — the fair line rests on softer books.",
-    }));
+    return rows.map((r) => {
+      const fm = EDINTEL.fairMethod(r);
+      const cf = EDINTEL.confirmationRead(r);
+      return ev({
+        source: "signals", entity: eventId, field: "sharp_reference", value: {
+          fair_method: fm.method, fair_label: fm.label, fair_is_sharp: fm.sharp,
+          reference_book: fm.reference_book, reference_type: fm.reference_type,
+          /* The quotes that ACTUALLY produced the number, named. An empty list
+             on a method claiming a sharp anchor is itself the finding. */
+          contributing_reference_quotes: fm.contributing_quotes,
+          two_way_devig: fm.two_way,
+          sharp_book_fair: fm.sharp_book_fair, consensus_fair: fm.consensus_fair,
+          fair_probability: fm.fair_probability, fair_american: fm.fair_american,
+          independent_families: cf.independent_families, total_books: cf.total_books,
+          corroboration: cf.corroboration, sharp_confirmed: cf.sharp_confirmed,
+        },
+        status: fm.sharp ? "VERIFIED" : "PARTIAL",
+        source_timestamp: r.last_seen_at, freshness: freshnessOf("odds", r.last_seen_at),
+        relevance: "sharp",
+        note: `${fm.sentence} ${cf.sentence} ${cf.caveat}`,
+      });
+    });
   }
 
   /** Per-book quotes behind a signal, when capture stored them. */
@@ -3800,6 +4568,356 @@ export class Dal {
 
     path.emitted = out.length;
     return { ev: out, path };
+  }
+
+
+  /* ==================================================================== */
+  /* STAGE C — DETAILED EVIDENCE, FOR THE SHORTLIST ONLY                   */
+  /*                                                                       */
+  /* The whole point of staging. Stage A produced one small row per game    */
+  /* for the entire card; stage B ranked it deterministically; this fetches */
+  /* the expensive layers for the handful of games that survived, in        */
+  /* BATCHED reads rather than per-game fan-out.                            */
+  /*                                                                       */
+  /* Every fact it emits carries a source and a time context, and every     */
+  /* fact it cannot get stays null with the reason attached. A college      */
+  /* football packet has real holes — there is no per-play efficiency feed  */
+  /* and no injury report in this project — and the holes are declared      */
+  /* rather than papered over with a season average wearing the clothes of  */
+  /* an observation.                                                        */
+  /* ==================================================================== */
+
+  async getCfbGameEvidence(
+    shortlist: SlateGame[], opts: { season?: number | null; now?: number } = {},
+  ): Promise<{ packets: any[]; path: Record<string, unknown> }> {
+    const path: Record<string, unknown> = { shortlist: shortlist.map((g) => g.matchup) };
+    const now = opts.now ?? Date.now();
+    const season = opts.season ?? seasonFor("americanfootball_ncaaf");
+    if (!shortlist.length) return { packets: [], path: { ...path, note: "nothing was shortlisted" } };
+
+    const teams = Array.from(new Set(shortlist.flatMap((g) => [g.home_team, g.away_team]).filter(Boolean)));
+    const teamKey = (t: unknown) => normName(t);
+    const inList = (xs: string[]) =>
+      xs.map((t) => `"${String(t).replace(/"/g, '""')}"`).join(",");
+
+    /* ---- C1. completed games this season: what they have DEMONSTRATED --- */
+    const done = await this.read(
+      `games?select=game_id,season,week,start_date,completed,neutral_site,conference_game,venue,`
+      + `home_team,home_points,home_conference,away_team,away_points,away_conference`
+      + `&season=eq.${season}&completed=is.true&order=start_date.asc&limit=1200`, "historical", "cfb");
+    path.completed_games = { rows: done.rows.length, error: done.error, season };
+
+    /* ---- C2. SP+ — the opponent-adjusted axis this sport actually has --- */
+    const sp = await this.read(
+      `ratings?select=season,team,conference,rating,ranking,offense_rating,offense_ranking,`
+      + `defense_rating,defense_ranking,special_teams_rating,sos&season=eq.${season}&limit=400`,
+      "team_stats", "cfb");
+    path.sp_plus = { rows: sp.rows.length, error: sp.error };
+    const spBy = new Map<string, any>();
+    for (const r of sp.rows) spBy.set(teamKey(r.team), r);
+
+    /* ---- C3. records --------------------------------------------------- */
+    const rec = await this.read(
+      `records?select=season,team,total_wins,total_losses,total_ties,conf_wins,conf_losses`
+      + `&season=eq.${season}&limit=400`, "team_stats", "cfb");
+    path.records = { rows: rec.rows.length, error: rec.error };
+    const recBy = new Map<string, any>();
+    for (const r of rec.rows) recBy.set(teamKey(r.team), r);
+
+    /* ---- C4. season aggregates, for the teams in scope only ------------- */
+    const ts = await this.read(
+      `team_season_stats?select=season,team,stat_name,stat_value&season=eq.${season}`
+      + `&team=in.(${encodeURIComponent(inList(teams)).replace(/%2C/g, ",")})&limit=900`,
+      "team_stats", "cfb");
+    path.team_season_stats = { rows: ts.rows.length, error: ts.error, teams: teams.length };
+    const statsBy = new Map<string, Record<string, unknown>>();
+    const vocab = new Set<string>();
+    for (const r of ts.rows) {
+      if (!r.team || !r.stat_name) continue;
+      vocab.add(String(r.stat_name));
+      const o = statsBy.get(teamKey(r.team)) ?? {};
+      o[String(r.stat_name)] = num(r.stat_value) ?? r.stat_value;
+      statsBy.set(teamKey(r.team), o);
+    }
+    path.stat_vocabulary = [...vocab].sort();
+
+    /* ---- C5. rosters — presence, never a depth chart -------------------- */
+    /* THE ROSTER IS THE LEAST DECISIVE LAYER AND THE MOST EXPENSIVE ONE.
+       It is per-team, so a five-game shortlist is ten reads — more than every
+       other layer in this function combined. It is read last, only for the
+       teams in the games that lead the shortlist, and only while there is
+       budget left that the batched layers did not need. A roster EdgeDesk
+       did not read is reported as not read, which is a different sentence
+       from "no roster on file" and is the one that is true. */
+    const rosterBy = new Map<string, any>();
+    const rosterTeams = teams.slice(0, Math.max(2, Math.min(10, this.budget - this.calls - 1)));
+    if (rosterTeams.length < teams.length) {
+      path.roster_scope = {
+        read: rosterTeams.length, of: teams.length,
+        note: "The roster fan-out is bounded by the remaining retrieval budget. The teams not read are reported as "
+          + "NOT READ rather than as having no roster.",
+      };
+      for (const t of teams.slice(rosterTeams.length)) {
+        rosterBy.set(teamKey(t), { error: "not read — the retrieval budget was spent on the layers that decide more" });
+      }
+    }
+    for (const t of rosterTeams) {
+      const rs = await this.read(
+        `roster?select=first_name,last_name,position,jersey,year&team=eq.${encodeURIComponent(t)}`
+        + `&limit=200`, "player_stats", "cfb");
+      if (rs.error || !rs.rows.length) { rosterBy.set(teamKey(t), { error: rs.error ?? "no roster rows on file" }); continue; }
+      rosterBy.set(teamKey(t), {
+        players: rs.rows.length,
+        quarterbacks: rs.rows.filter((p: any) => String(p.position ?? "").toUpperCase() === "QB")
+          .map((p: any) => ({ name: `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim(), year: p.year, jersey: p.jersey })),
+      });
+    }
+    path.rosters = { teams_read: rosterBy.size };
+
+    /* ---- C6. consensus book lines, for market context only -------------- */
+    const ids = shortlist.map((g) => g.cfb_game_id).filter(Boolean) as string[];
+    const linesBy = new Map<string, any[]>();
+    if (ids.length) {
+      const ln = await this.read(
+        `lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline`
+        + `&game_id=in.(${ids.map(encodeURIComponent).join(",")})&limit=200`, "", "cfb");
+      path.lines = { rows: ln.rows.length, error: ln.error };
+      for (const l of ln.rows) linesBy.set(String(l.game_id), [...(linesBy.get(String(l.game_id)) ?? []), l]);
+    }
+
+    /* ---- build one packet per shortlisted game -------------------------- */
+    const byTeamGames = new Map<string, any[]>();
+    for (const g of done.rows) {
+      for (const side of ["home", "away"] as const) {
+        const t = teamKey(side === "home" ? g.home_team : g.away_team);
+        byTeamGames.set(t, [...(byTeamGames.get(t) ?? []), g]);
+      }
+    }
+
+    const F = EDINTEL.fact, MISS = EDINTEL.missingFact;
+    const packets = shortlist.map((g) => {
+      const side = (t: string) => {
+        const k = teamKey(t);
+        const spr = spBy.get(k) ?? null;
+        const rr = recBy.get(k) ?? null;
+        const played = (byTeamGames.get(k) ?? []).slice().sort((a, b) =>
+          String(b.start_date ?? "").localeCompare(String(a.start_date ?? "")));
+        /* PREVIOUS GAMES WITH OPPONENT STRENGTH ATTACHED. A 45-point win is a
+           different fact against a top-20 defence than against an FCS side, and
+           the SP+ rating of the opponent is what lets the answer say which. */
+        const prev = played.slice(0, 5).map((p: any) => {
+          const isHome = teamKey(p.home_team) === k;
+          const opp = isHome ? p.away_team : p.home_team;
+          const oppSp = spBy.get(teamKey(opp)) ?? null;
+          const own = num(isHome ? p.home_points : p.away_points);
+          const them = num(isHome ? p.away_points : p.home_points);
+          return {
+            date: p.start_date ? String(p.start_date).slice(0, 10) : null,
+            week: num(p.week), opponent: opp,
+            venue: p.neutral_site ? "neutral" : isHome ? "home" : "away",
+            points_for: own, points_against: them,
+            margin: own != null && them != null ? own - them : null,
+            result: own != null && them != null ? (own > them ? "W" : own < them ? "L" : "T") : null,
+            conference_game: p.conference_game === true,
+            opponent_sp_plus: oppSp ? num(oppSp.rating) : null,
+            opponent_sp_rank: oppSp ? num(oppSp.ranking) : null,
+            opponent_conference: isHome ? p.away_conference : p.home_conference,
+          };
+        });
+        /* REST DAYS, DERIVED FROM THE SCHEDULE ITSELF. Not ingested anywhere,
+           and computable exactly from two dates, so it is computed rather than
+           declared missing. */
+        const last = played[0]?.start_date ? Date.parse(String(played[0].start_date)) : NaN;
+        const kick = g.kickoff ? Date.parse(g.kickoff) : NaN;
+        const restDays = Number.isFinite(last) && Number.isFinite(kick)
+          ? Math.round((kick - last) / 86400000) : null;
+        const ros = rosterBy.get(k) ?? null;
+        const stats = statsBy.get(k) ?? null;
+
+        const SRC_SP = "cfb.ratings (CollegeFootballData SP+)";
+        return {
+          team: F(t, { source: "football/fbs/slate.json" }),
+          record: rr
+            ? F(`${rr.total_wins ?? 0}-${rr.total_losses ?? 0}`, {
+              source: "cfb.records", basis: `season ${season}`,
+              note: "A record is an outcome of a schedule, not a measure of quality.",
+            })
+            : MISS("no record row on file for this team this season", "cfb.records"),
+          conference_record: rr && rr.conf_wins != null
+            ? F(`${rr.conf_wins}-${rr.conf_losses}`, { source: "cfb.records" })
+            : MISS("no conference record on file", "cfb.records"),
+          sp_plus_overall: spr ? F(num(spr.rating), {
+            source: SRC_SP, unit: "points per game above average",
+            note: "EXTERNAL MODEL. Attribute it to CollegeFootballData; it is not an EdgeDesk number and may not be converted into a spread or a probability.",
+          }) : MISS("no SP+ row on file for this team this season", "cfb.ratings"),
+          sp_plus_rank: spr ? F(num(spr.ranking), { source: SRC_SP }) : MISS("no SP+ row", "cfb.ratings"),
+          sp_plus_offense: spr ? F(num(spr.offense_rating), { source: SRC_SP, note: "Higher is better." }) : MISS("no SP+ row", "cfb.ratings"),
+          sp_plus_defense: spr ? F(num(spr.defense_rating), {
+            source: SRC_SP,
+            note: "SP+ defence is measured in points allowed, so LOWER is better. The sign is opposite to the offensive rating.",
+          }) : MISS("no SP+ row", "cfb.ratings"),
+          sp_plus_special_teams: spr ? F(num(spr.special_teams_rating), { source: SRC_SP }) : MISS("no SP+ row", "cfb.ratings"),
+          strength_of_schedule: spr ? F(num(spr.sos), {
+            source: SRC_SP,
+            note: "College schedules are wildly unequal, so an unadjusted season stat compared across conferences is close to meaningless without this.",
+          }) : MISS("no SP+ row", "cfb.ratings"),
+          previous_games: prev.length
+            ? F(prev, {
+              source: "cfb.games", basis: `completed ${season} games, most recent first`,
+              note: "Each previous game carries the OPPONENT's SP+ rating, so the same result can be read against who it came against.",
+            })
+            : MISS("no completed games on file for this team this season — early-season ratings are mostly preseason prior", "cfb.games"),
+          games_played: F(played.length, { source: "cfb.games" }),
+          rest_days: restDays != null
+            ? F(restDays, { source: "cfb.games (derived)", unit: "days since the last kickoff",
+              basis: "computed from the two schedule dates, not ingested" })
+            : MISS("no previous game on file, so rest cannot be computed", "cfb.games (derived)"),
+          season_stats: stats && Object.keys(stats).length
+            ? F(stats, {
+              source: "cfb.team_season_stats", basis: `season ${season} aggregates`,
+              note: "SEASON TOTALS AND COUNTS. No pace adjustment and no opponent adjustment. Not efficiency.",
+            })
+            : MISS("no season stat rows on file for this team", "cfb.team_season_stats"),
+          quarterbacks: ros && ros.quarterbacks
+            ? F(ros.quarterbacks, {
+              source: "cfb.roster",
+              note: "ROSTER PRESENCE, NOT A DEPTH CHART. Being listed does not mean a player starts, plays, or is healthy.",
+            })
+            : MISS(ros?.error ?? "no roster on file for this team", "cfb.roster"),
+          /* The gaps, declared by name so their absence cannot read as a clean sheet. */
+          per_play_efficiency: MISS(
+            "EPA per play and success rate are NOT ingested for college football — per-game CollegeFootballData calls exceed the free tier. "
+            + "Do not substitute points per game, a record or a poll ranking for them.", "—"),
+          explosive_play_rate: MISS("not ingested for college football", "—"),
+          success_rate: MISS("not ingested for college football", "—"),
+          pressure_and_sacks: MISS("not ingested for college football", "—"),
+          turnover_margin: MISS("not ingested for college football; season turnover counts may appear in season_stats but carry no opponent adjustment", "—"),
+          red_zone: MISS("not ingested for college football", "—"),
+          pace_and_possessions: MISS("not ingested for college football", "—"),
+          injuries: MISS(
+            "EdgeDesk ingests NO college football injury report, depth chart or availability feed. "
+            + "This absence is not a clean injury sheet and must never be presented as one.", "—"),
+        };
+      };
+
+      const home = side(g.home_team), away = side(g.away_team);
+      const quotes = g.signals.map((r: any) => {
+        const fm = EDINTEL.fairMethod(r);
+        const qs = EDINTEL.quoteState({ captured_at: r.last_seen_at, market: r.market, kickoff: g.kickoff });
+        const orient = orientToSelection({
+          selection: String(r.selection ?? ""), home_team: g.home_team, away_team: g.away_team,
+          point: num(r.point), model_home_line: g.model_home_line,
+        });
+        return {
+          market: r.market, selection: r.selection, handicap: num(r.point),
+          side: orient.side, orientation_note: orient.note,
+          odds_decimal: num(r.best_dec), odds_american: EDINTEL.fmtAmerican(EDINTEL.decToAmerican(num(r.best_dec))),
+          book: r.best_book, captured_at: r.last_seen_at,
+          quote_status: qs.status, quote_age_min: qs.age_min, actionable: qs.actionable,
+          fair_method: fm.method, fair_label: fm.label, fair_probability: fm.fair_probability,
+          contributing_reference_quotes: fm.contributing_quotes,
+          model_selection_line: orient.model_selection_line,
+        };
+      });
+
+      const attention = EDINTEL.attentionTier({
+        home_group: g.home_group, away_group: g.away_group,
+        home_rank: g.home_rank, away_rank: g.away_rank,
+        neutral_site: g.neutral_site, book_count: g.signals.length ? num(g.signals[0].n_books) : null,
+      });
+
+      return EDINTEL.evidencePacket({
+        game_id: g.game_id, sport: "americanfootball_ncaaf", version: 1, now,
+        identity: {
+          matchup: F(g.matchup, { source: g.source }),
+          game_id: F(g.game_id, { source: g.source }),
+          cfb_game_id: g.cfb_game_id ? F(g.cfb_game_id, { source: "cfb.games" }) : MISS("identity did not resolve to an ingested CollegeFootballData game", "cfb.games"),
+          kickoff: g.kickoff ? F(g.kickoff, { source: g.source, observed_at: g.kickoff }) : MISS("no kickoff time on the schedule row", g.source),
+          venue: g.venue ? F(g.venue, { source: g.source }) : MISS("no venue on the schedule row", g.source),
+          neutral_site: F(g.neutral_site === true, { source: g.source }),
+          week: g.week != null ? F(g.week, { source: g.source }) : MISS("no week on the schedule row", g.source),
+          status: F(g.status, { source: g.source }),
+          home_team: F(g.home_team, { source: g.source }), away_team: F(g.away_team, { source: g.source }),
+          home_conference: g.home_conference ? F(g.home_conference, { source: g.source }) : MISS("no conference on file", g.source),
+          away_conference: g.away_conference ? F(g.away_conference, { source: g.source }) : MISS("no conference on file", g.source),
+          attention_tier: F(attention.tier, { source: "derived", note: attention.caveat }),
+        },
+        model: {
+          home_line: g.model_home_line != null
+            ? F(g.model_home_line, {
+              source: "football/cfb_p4 engine via " + g.source, unit: "points, from the HOME side",
+              note: "Negative is a home favourite. Carried verbatim from the board's own projection; this layer does not recompute it.",
+            })
+            : MISS("the board did not project this game", g.source),
+          total: g.model_total != null ? F(g.model_total, { source: "football/cfb_p4 engine via " + g.source, unit: "points" })
+            : MISS("the board did not project a total for this game", g.source),
+          status: g.model_status ? F(g.model_status, { source: g.source }) : MISS("no model status on the row", g.source),
+          data_completeness: g.model_completeness != null
+            ? F(g.model_completeness, { source: g.source, unit: "0-1",
+              note: "The board's own measure of how much of its input layer was populated for this game." })
+            : MISS("no completeness figure on the row", g.source),
+          validation: F(EDINTEL.validationFor("americanfootball_ncaaf", "spreads").limitations, {
+            source: "the model's own validation_summary",
+            note: "The record that governs what this projection is allowed to become.",
+          }),
+        },
+        market: quotes.length
+          ? {
+            quotes: F(quotes, { source: "signals", note: "Each quote carries its own capture time, freshness and fair-price method." }),
+            consensus_book_lines: linesBy.get(String(g.cfb_game_id)) ?? null
+              ? F(linesBy.get(String(g.cfb_game_id)), {
+                source: "cfb.lines",
+                note: "CONSENSUS BOOK NUMBERS FOR CONTEXT ONLY. Not Pinnacle, not EdgeDesk's captured prices, and they carry no timestamp. Never compute an edge against one.",
+              })
+              : MISS("no consensus book line on file for this game", "cfb.lines"),
+          }
+          : {
+            quotes: MISS("no captured market quote for this game — it is on the schedule and not on any book EdgeDesk captures", "signals"),
+            consensus_book_lines: linesBy.get(String(g.cfb_game_id))
+              ? F(linesBy.get(String(g.cfb_game_id)), { source: "cfb.lines", note: "Context only; carries no timestamp and is not a price EdgeDesk stands behind." })
+              : MISS("no consensus book line on file for this game", "cfb.lines"),
+          },
+        matchup: {
+          home: home, away: away,
+          sp_plus_gap: (home.sp_plus_overall.value != null && away.sp_plus_overall.value != null)
+            ? F(+(home.sp_plus_overall.value - away.sp_plus_overall.value).toFixed(2), {
+              source: "cfb.ratings (derived by subtraction)", unit: "points",
+              note: "A difference of two EXTERNAL model ratings. It is not a spread, not a probability and not an edge, and it must never be converted into one.",
+            })
+            : MISS("SP+ is missing for at least one side, so no comparison is possible", "cfb.ratings"),
+        },
+        situation: {
+          rest_advantage: (home.rest_days.value != null && away.rest_days.value != null)
+            ? F(+(home.rest_days.value - away.rest_days.value).toFixed(0), {
+              source: "cfb.games (derived)", unit: "days, positive means the home side is better rested",
+            })
+            : MISS("rest could not be computed for at least one side", "cfb.games (derived)"),
+          weather: MISS(
+            "No weather is ingested for college football venues on the server. The browser board fetches a forecast per venue; "
+            + "this layer does not, and reports the gap rather than guessing.", "—"),
+          travel: MISS("no travel distance is ingested for college football", "—"),
+        },
+        previous_games: { note: F("Both sides' previous games are under matchup.home.previous_games and matchup.away.previous_games, each with its opponent's SP+ attached.", { source: "cfb.games" }) },
+        personnel: {
+          home_quarterbacks: home.quarterbacks, away_quarterbacks: away.quarterbacks,
+          depth_chart: MISS("EdgeDesk ingests no college football depth chart. A roster says who is on the team, not who plays.", "—"),
+          injuries: MISS("EdgeDesk ingests no college football injury report. Their absence is not a clean injury sheet.", "—"),
+          roster_continuity: MISS("returning production and transfer-portal flow are not written into the cfb schema by the current ingest", "cfb.returning_production"),
+        },
+        efficiency: {
+          home_season_stats: home.season_stats, away_season_stats: away.season_stats,
+          per_play: MISS(
+            "Per-play efficiency (EPA per play, success rate, explosive rate) is NOT ingested for college football — "
+            + "per-game CollegeFootballData calls exceed the free tier. Do not substitute points per game, a win-loss "
+            + "record or a poll ranking for it. SP+ is the opponent-adjusted axis this sport actually has; say which "
+            + "one you used.", "—"),
+        },
+      });
+    });
+
+    path.packets = packets.length;
+    path.missing_per_packet = packets.map((p: any) => ({ game: p.game_id, missing: p.missing.length, present: p.completeness.fields_present }));
+    return { packets, path };
   }
 
   /* ==================================================================== */
@@ -5325,6 +6443,22 @@ export const REQUIREMENTS: Record<string, Requirement[]> = {
     R("cfb_book_line", "OPTIONAL", "global"),
   ];
   REQUIREMENTS.cfb_what_changed = REQUIREMENTS.what_changed;
+
+  /* An attention split is a question about the WHOLE card, so it needs the
+     schedule complete and the identity resolved. It deliberately does NOT
+     require a price: a lower-profile game with no quote still belongs in the
+     answer, and requiring one would quietly drop exactly the games the
+     question is about. */
+  REQUIREMENTS.attention_split = [
+    R("slate_index", "REQUIRED", "global", {
+      note: "Every game on the card, from a schedule source. A grouping that covers only the quoted games answers a different question.",
+    }),
+    R("cfb_game", "IMPORTANT", "slate"),
+    R("cfb_ranking", "IMPORTANT", "global", {
+      note: "Rankings are one of the few attention inputs EdgeDesk actually holds.",
+    }),
+    R("signal", "OPTIONAL", "global"),
+  ];
 
   /* ---- COLLEGE BASKETBALL. Tempo-free or nothing. */
   const CBB_CORE = (extra: Requirement[] = []): Requirement[] => [
@@ -10096,6 +11230,1750 @@ export function deriveState(history: any[], plan: Plan, packet: any, prev?: Conv
 const EDPRES: any = (globalThis as any).EDPRES;
 
 /* ========================================================================
+   PART 1c — INTELLIGENCE KERNEL (slate state, provenance, decisions).
+   Inlined from supabase/functions/edgedesk_ai/_intelligence.js by
+   `node tools/presentation/inline.js`, the same way PART 1b is. Do not edit
+   between the markers here; edit the canonical file and re-run the inliner.
+
+   EDPRES translates a decision. EDINTEL OWNS it: what a slate actually is,
+   what a fair price actually rests on, whether a quote is still live, whether
+   a defensible probability exists for a market at all, and what decision the
+   evidence supports. Every number in a recommendation comes from here or from
+   the deterministic pipeline; none of it comes from the model.
+   ======================================================================= */
+// deno-lint-ignore-file
+/*__EDINTEL_START__*/
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDINTEL = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 1;
+  var PACKET_SCHEMA = 'edgedesk_game_evidence_v1';
+  var LEDGER_SCHEMA = 'edgedesk_recommendation_v1';
+  var DECISIONS = ['BET CANDIDATE', 'WATCH', 'PASS', 'INSUFFICIENT DATA'];
+
+  /* ------------------------------------------------------------------ util */
+  function num(v) { if (v == null || v === '') return null; var n = +v; return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function clean(v) { return str(v).replace(/\s+/g, ' ').trim(); }
+  function r4(v) { var n = num(v); return n == null ? null : Math.round(n * 1e4) / 1e4; }
+  function r2(v) { var n = num(v); return n == null ? null : Math.round(n * 100) / 100; }
+  function toMs(t) {
+    if (t == null || t === '') return null;
+    if (typeof t === 'number') return isFinite(t) ? t : null;
+    var ms = Date.parse(String(t));
+    return isFinite(ms) ? ms : null;
+  }
+  function uniq(a) { var s = [], i; for (i = 0; i < (a || []).length; i++) if (a[i] != null && s.indexOf(a[i]) < 0) s.push(a[i]); return s; }
+  function pct(v, dp) { var n = num(v); return n == null ? null : (n * 100).toFixed(dp == null ? 1 : dp) + '%'; }
+  function pp(v, dp) { var n = num(v); return n == null ? null : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp == null ? 1 : dp) + ' pp'; }
+
+  /* ==================================================================== */
+  /* CONFIGURATION — every threshold explicit, every one overridable.      */
+  /*                                                                       */
+  /* Nothing below is a universal betting truth and none of it is asserted */
+  /* as one. These are EdgeDesk's operating limits, named so they can be   */
+  /* argued with, moved, or measured. configure() merges an override map   */
+  /* so a deployment can move a limit without editing this file.           */
+  /* ==================================================================== */
+  var CONFIG = {
+    /* The EV floor a price must clear before a decision may be actionable.
+       Tracks the browser engine's REAL_FLOOR so the two halves of the product
+       cannot disagree about the same number. */
+    ev_floor: 0.005,
+    /* How much better than the floor a price must be before the decision is
+       allowed to read as a candidate rather than a lean. */
+    candidate_ev: 0.02,
+    /* Quote freshness, in minutes, by market family. A pregame side moves more
+       slowly than a total on a short board; both move faster than a future. */
+    quote_ttl_min: { h2h: 90, spreads: 90, totals: 90, futures: 720, _default: 90 },
+    /* Past this multiple of its TTL a quote is not merely aging, it is stale
+       and may not support an actionable conclusion at all. */
+    stale_multiple: 1,
+    /* A quote whose age cannot be established is treated as unverified rather
+       than as fresh. The conservative direction, always. */
+    unknown_age_is_actionable: false,
+    /* Minimum independent book families behind a fair price before the number
+       is treated as corroborated. Families, not books: cloned lines from one
+       feed are one opinion however many brands carry it. */
+    min_independent_families: 3,
+    /* A model-versus-market gap this large or larger triggers the diagnostic
+       checklist rather than a recommendation. In points of spread or total. */
+    disagreement_points: 3,
+    /* Above this, EdgeDesk treats the disagreement as a suspected data fault
+       and refuses to treat it as value at all. */
+    disagreement_points_hard: 7,
+    /* A market whose validation record does not clear these may never produce
+       a BET CANDIDATE on model grounds alone. */
+    min_validation_n: 500,
+    max_validation_p: 0.05,
+    /* How much of the detection edge must survive before a candidate stands. */
+    min_edge_remaining: 0.4,
+    /* Kickoff guard: inside this many minutes a pregame price is not treated
+       as reliably available. */
+    min_minutes_to_kickoff: 2
+  };
+  function configure(over) {
+    if (!over) return CONFIG;
+    for (var k in over) if (Object.prototype.hasOwnProperty.call(over, k)) {
+      if (k === 'quote_ttl_min' && over[k] && typeof over[k] === 'object') {
+        for (var m in over[k]) if (Object.prototype.hasOwnProperty.call(over[k], m)) CONFIG.quote_ttl_min[m] = over[k][m];
+      } else CONFIG[k] = over[k];
+    }
+    return CONFIG;
+  }
+  function config() { return CONFIG; }
+
+  /* ==================================================================== */
+  /* ODDS MATHEMATICS                                                      */
+  /*                                                                       */
+  /* All of it deterministic, all of it reversible, none of it a model.    */
+  /* The one formula that matters, stated once and implemented once:       */
+  /*                                                                       */
+  /*     EV per unit staked = P(win) x (d - 1) - P(loss)                   */
+  /*                                                                       */
+  /* A push returns the stake and contributes ZERO profit, so it is not a  */
+  /* loss and must not be folded into one. P(win) + P(loss) + P(push) = 1. */
+  /* ==================================================================== */
+
+  function americanToDec(am) {
+    var a = num(am);
+    if (a == null || a === 0) return null;
+    return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a);
+  }
+  function decToAmerican(dec) {
+    var d = num(dec);
+    if (d == null || d <= 1) return null;
+    return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1));
+  }
+  function fmtAmerican(am) {
+    var a = num(am);
+    if (a == null) return null;
+    a = Math.round(a);
+    return (a > 0 ? '+' : '') + a;
+  }
+  /** The raw implied probability of a decimal price, vig included. */
+  function impliedProb(dec) { var d = num(dec); return (d == null || d <= 1) ? null : 1 / d; }
+
+  /**
+   * Strip the vig from a two-way market.
+   *
+   * `proportional` (the default, also called multiplicative) divides each raw
+   * implied probability by the overround. It is the method the rest of this
+   * stack uses and the one every number here is comparable with. It assumes
+   * the book's margin is applied evenly across both sides, which is known to
+   * be false at long prices — favourite-longshot bias puts more of the margin
+   * on the longshot — so a de-vigged number on a heavy favourite is the least
+   * trustworthy one this function produces. That limitation is returned WITH
+   * the answer rather than left for the reader to remember.
+   */
+  function devigTwoWay(decA, decB, method) {
+    var a = impliedProb(decA), b = impliedProb(decB);
+    if (a == null || b == null) {
+      return { ok: false, method: null, p_a: null, p_b: null, overround: null,
+        why: 'A two-way de-vig needs both sides of the market. Only ' + (a == null && b == null ? 'neither side' : 'one side') + ' is on file.' };
+    }
+    var over = a + b;
+    if (!(over > 0.9) || over > 1.6) {
+      return { ok: false, method: null, p_a: null, p_b: null, overround: r4(over),
+        why: 'The two prices imply a book overround of ' + over.toFixed(3) + ', which is not a coherent two-way market. One of the sides is stale, mispaired or a placeholder.' };
+    }
+    var m = method === 'additive' ? 'additive' : 'proportional';
+    var pa, pb;
+    if (m === 'additive') { var half = (over - 1) / 2; pa = a - half; pb = b - half; }
+    else { pa = a / over; pb = b / over; }
+    if (!(pa > 0 && pa < 1 && pb > 0 && pb < 1)) {
+      return { ok: false, method: m, p_a: null, p_b: null, overround: r4(over),
+        why: 'De-vigging these two prices produced a value outside 0-1, so it is not a probability.' };
+    }
+    return {
+      ok: true, method: m, p_a: r4(pa), p_b: r4(pb), overround: r4(over),
+      vig_points: r4(over - 1),
+      limitation: 'Proportional de-vig assumes the margin is spread evenly across both sides. Favourite-longshot bias means it is not, so the de-vigged number on a heavy favourite carries the most error.'
+    };
+  }
+
+  /**
+   * Expected value per unit staked, pushes handled correctly.
+   *
+   * Returns null rather than a number whenever an input is missing, because a
+   * missing probability is the single commonest way a plausible EV gets
+   * manufactured out of nothing.
+   */
+  function ev(o) {
+    o = o || {};
+    var d = num(o.dec) != null ? num(o.dec) : americanToDec(o.american);
+    var pw = num(o.p_win), pp_ = num(o.p_push) || 0;
+    if (d == null || d <= 1 || pw == null) {
+      return { ev: null, p_win: pw, p_push: pp_ || null, p_loss: null, dec: d,
+        why: d == null || d <= 1 ? 'No usable price.' : 'No outcome probability, so there is no expected value to compute. A line difference alone is not a probability.' };
+    }
+    if (pw < 0 || pw > 1 || pp_ < 0 || pp_ > 1 || pw + pp_ > 1 + 1e-9) {
+      return { ev: null, p_win: pw, p_push: pp_, p_loss: null, dec: d,
+        why: 'The supplied probabilities do not form a distribution (win + push exceeds 1).' };
+    }
+    var pl = Math.max(0, 1 - pw - pp_);
+    var e = pw * (d - 1) - pl;
+    return {
+      ev: r4(e), p_win: r4(pw), p_push: r4(pp_), p_loss: r4(pl), dec: r4(d),
+      formula: 'EV = P(win) x (d - 1) - P(loss); a push returns the stake and adds zero profit',
+      why: null
+    };
+  }
+
+  /** The win probability at which this price breaks even, pushes included. */
+  function breakEvenProb(dec, pPush) {
+    var d = num(dec), q = num(pPush) || 0;
+    if (d == null || d <= 1) return null;
+    return r4((1 - q) / d);
+  }
+  /** The decimal price at which a given probability earns exactly `target` EV. */
+  function priceForEv(pWin, pPush, target) {
+    var pw = num(pWin), q = num(pPush) || 0, t = num(target) || 0;
+    if (pw == null || pw <= 0) return null;
+    return r4((t + 1 - q) / pw);
+  }
+  /** The worst price still clearing the floor: below this the bet is off. */
+  function minPlayableDec(pWin, pPush, floor) {
+    return priceForEv(pWin, pPush, floor == null ? CONFIG.ev_floor : floor);
+  }
+
+  /* ==================================================================== */
+  /* EMPIRICAL DISTRIBUTIONS — for pushes, and for nothing else by default */
+  /*                                                                       */
+  /* A push probability is a real, computable quantity the moment a margin  */
+  /* distribution exists, and a fabricated one is indistinguishable from a  */
+  /* real one in the output. So distributions are REGISTERED, with their    */
+  /* training period and scope attached, and a market with no registered    */
+  /* distribution returns null and says why.                               */
+  /* ==================================================================== */
+  var DISTRIBUTIONS = {};
+
+  /**
+   * Register an empirical distribution.
+   *
+   * `pmf` is a map of integer outcome -> probability. `basis` must name what it
+   * was fitted on and over what period; a registration without one is refused,
+   * because an undocumented distribution is the thing this whole layer exists
+   * to prevent.
+   */
+  function registerDistribution(key, spec) {
+    if (!key || !spec || !spec.pmf || !spec.basis || !spec.window) {
+      return { ok: false, why: 'A distribution must carry a pmf, a fitted window and a basis naming what it was fitted on. It is refused without them.' };
+    }
+    var total = 0, k;
+    for (k in spec.pmf) if (Object.prototype.hasOwnProperty.call(spec.pmf, k)) total += num(spec.pmf[k]) || 0;
+    if (!(total > 0.95 && total < 1.05)) return { ok: false, why: 'The supplied pmf sums to ' + total.toFixed(4) + ', which is not a distribution.' };
+    DISTRIBUTIONS[key] = {
+      key: key, pmf: spec.pmf, window: spec.window, basis: spec.basis,
+      sport: spec.sport || null, quantity: spec.quantity || null,
+      sigma: num(spec.sigma), limitations: spec.limitations || null,
+      calibration: spec.calibration || null, registered_at: new Date().toISOString()
+    };
+    return { ok: true, key: key, mass: r4(total) };
+  }
+  function distribution(key) { return DISTRIBUTIONS[key] || null; }
+  function distributions() { var o = [], k; for (k in DISTRIBUTIONS) if (Object.prototype.hasOwnProperty.call(DISTRIBUTIONS, k)) o.push(DISTRIBUTIONS[k]); return o; }
+  function clearDistributions() { DISTRIBUTIONS = {}; }
+
+  /**
+   * P(exact push) at a handicap.
+   *
+   * Only a whole-number handicap can push, and only when a registered
+   * distribution can say how often the margin lands exactly there. A half-point
+   * line returns a hard zero with the reason; an integer line with no
+   * distribution returns NULL, not zero — "cannot be computed" and "cannot
+   * happen" are different answers and collapsing them quietly overstates EV.
+   */
+  function pushProbability(o) {
+    o = o || {};
+    var h = num(o.handicap);
+    if (h == null) return { p_push: 0, possible: false, method: 'no handicap', why: 'A moneyline cannot push on the number.' };
+    if (Math.abs(h % 1) > 1e-9) return { p_push: 0, possible: false, method: 'half-point line', why: 'A half-point handicap cannot land exactly on the number, so a push is impossible.' };
+    var d = o.distribution_key ? DISTRIBUTIONS[o.distribution_key] : null;
+    if (!d) {
+      return { p_push: null, possible: true, method: null,
+        why: 'This is a whole-number handicap, so a push is possible, but no empirical margin distribution is registered for this sport and market. The push probability is UNKNOWN — it is not zero, and expected value computed as though it were zero is overstated.' };
+    }
+    /* The registered pmf is a distribution over the model residual — how far
+       the real margin lands from the projection. A push needs the RESULT to
+       land on the number, which is the residual landing on the distance
+       between the projection and the number. */
+    var centre = num(o.centre);
+    if (centre == null) {
+      return { p_push: null, possible: true, method: d.key,
+        why: 'A distribution is registered but no projected centre was supplied, so there is nothing to measure the handicap against.' };
+    }
+    var offset = Math.round(h - centre);
+    var p = num(d.pmf[String(offset)]);
+    if (p == null) {
+      /* Off the tabulated support. The tails are thin by construction, so this
+         is a genuinely small number rather than an unknown one — but it is
+         reported as a bound, not as a point estimate. */
+      return { p_push: 0, possible: true, method: d.key, bounded: true,
+        why: 'The required residual (' + offset + ') is outside the tabulated support of ' + d.key + ', where the observed mass was zero over ' + d.window + '. Treated as a bound of zero rather than a measurement.' };
+    }
+    return {
+      p_push: r4(p), possible: true, method: d.key, offset: offset,
+      basis: d.basis, window: d.window, limitations: d.limitations,
+      why: null
+    };
+  }
+
+  /* ==================================================================== */
+  /* MODEL VALIDATION REGISTRY                                             */
+  /*                                                                       */
+  /* The question "may this model's disagreement become a recommendation?" */
+  /* has a recorded answer for EdgeDesk's own football model, and the      */
+  /* answer is mostly no. It is recorded here so the decision layer can    */
+  /* obey it instead of rediscovering it, and so every number the model    */
+  /* touches carries the record that governs it.                           */
+  /*                                                                       */
+  /* NOTHING HERE IS ASSERTED. Every field is transcribed from the model's */
+  /* own validation_summary, which is generated by its training job. A     */
+  /* sport and market with no entry gets NO probability and NO model EV —  */
+  /* absence of a record is not permission.                                */
+  /* ==================================================================== */
+  var MODEL_VALIDATION = {};
+
+  function registerValidation(sport, market, rec) {
+    MODEL_VALIDATION[sport + '|' + market] = rec;
+    return rec;
+  }
+  /**
+   * What is known about this model's performance in this market.
+   *
+   * Returns a record with an explicit TIER:
+   *   PROBABILITY  — a calibrated outcome probability exists and may feed EV
+   *   DIRECTIONAL  — a measured directional edge exists, too weak for EV
+   *   RESEARCH     — measured and NOT better than the market; research only
+   *   UNVALIDATED  — nothing measured; no model number may leave this layer
+   */
+  function validationFor(sport, market) {
+    var m = normMarket(market);
+    var rec = MODEL_VALIDATION[sport + '|' + m] || MODEL_VALIDATION[sport + '|_any'] || null;
+    if (rec) return rec;
+    return {
+      sport: sport || null, market: m, tier: 'UNVALIDATED',
+      beats_market: null, n: null, window: null,
+      may_produce_probability: false, may_produce_model_ev: false, max_decision: 'WATCH',
+      basis: 'No validation record is registered for this sport and market.',
+      limitations: 'An unvalidated model may inform research priority and may be quoted as an estimate. It may not become a probability, an expected value, or a reason to bet.'
+    };
+  }
+  function normMarket(m) {
+    var s = clean(m).toLowerCase();
+    if (s === 'ml' || s === 'moneyline' || s === 'h2h') return 'h2h';
+    if (s === 'spread' || s === 'spreads' || s === 'ats') return 'spreads';
+    if (s === 'total' || s === 'totals' || s === 'ou' || s === 'o/u') return 'totals';
+    return s || 'h2h';
+  }
+  function marketLabel(m) {
+    var s = normMarket(m);
+    return s === 'h2h' ? 'Moneyline' : s === 'spreads' ? 'Spread' : s === 'totals' ? 'Total' : (m == null ? null : String(m));
+  }
+
+  /**
+   * Load a football model's own validation_summary into the registry.
+   *
+   * Transcription only: every value comes from the artifact, and a field the
+   * artifact does not carry stays null. This is what lets the decision layer
+   * say "the model's own walk-forward record says it does not beat the close"
+   * with a citation instead of an opinion.
+   */
+  function loadFootballValidation(sport, params, calibration) {
+    if (!params || !params.validation_summary) return null;
+    var V = params.validation_summary, M = V.market || {};
+    var out = [];
+    var beats = M.beats_closing_line === true;
+    var maxTier = clean(M.max_tier) || null;
+
+    /* --- moneyline: a calibrated win probability, out of sample ---------- */
+    var wp = V.winprob || (M.engine_replay && M.engine_replay.winprob) || null;
+    if (wp && num(wp.brier) != null) {
+      var cal = V.calibration || null;
+      var worst = null;
+      if (cal && cal.length) {
+        cal.forEach(function (b) {
+          var gap = Math.abs((num(b.p_obs) || 0) - (num(b.p_pred) || 0));
+          if (!worst || gap > worst.gap) worst = { bin: b.bin, gap: gap, pred: num(b.p_pred), obs: num(b.p_obs), n: num(b.n) };
+        });
+      }
+      out.push(registerValidation(sport, 'h2h', {
+        sport: sport, market: 'h2h', tier: 'PROBABILITY',
+        beats_market: beats, n: num(wp.n), window: wp.window || M.window || null,
+        brier: num(wp.brier), log_loss: num(wp.log_loss), sigma: num(wp.sigma),
+        calibration: cal,
+        worst_calibration_bin: worst ? { bin: worst.bin, predicted: r4(worst.pred), observed: r4(worst.obs), n: worst.n, gap_pp: r2(worst.gap * 100) } : null,
+        may_produce_probability: true,
+        /* EV is allowed, and it is labelled EXPERIMENTAL for as long as the
+           model does not beat the close. A calibrated probability is a real
+           thing; being better than the market is a different claim. */
+        may_produce_model_ev: true,
+        experimental: !beats,
+        max_decision: beats ? 'BET CANDIDATE' : 'WATCH',
+        basis: (wp.basis || '') + ' Model ' + (params.model_version || 'unknown') + ', ' + (V.firewall && V.firewall.headline_test ? 'headline test ' + V.firewall.headline_test : 'window ' + (wp.window || '?')) + '.',
+        limitations: 'Brier ' + num(wp.brier) + ' over n=' + num(wp.n) + '. '
+          + (worst ? 'Worst-calibrated band ' + worst.bin + ': predicted ' + r4(worst.pred) + ' against an observed ' + r4(worst.obs) + ' over n=' + worst.n + '. ' : '')
+          + (beats ? '' : 'The model does NOT beat the closing line, so a probability edge measured against a soft price is not evidence of an edge against the market.')
+      }));
+    }
+
+    /* --- spread: measured, and measured to be no better than the close --- */
+    var ats = M.ats_vs_close || null;
+    if (ats) {
+      var atsRows = [], key;
+      for (key in ats) if (Object.prototype.hasOwnProperty.call(ats, key)) {
+        atsRows.push({ gap: num(key), n: num(ats[key].n), win_pct: num(ats[key].win_pct), p: num(ats[key].binom_p_one_sided) });
+      }
+      atsRows.sort(function (a, b) { return a.gap - b.gap; });
+      var best = null;
+      atsRows.forEach(function (r) { if (r.p != null && r.n >= CONFIG.min_validation_n && (!best || r.p < best.p)) best = r; });
+      var sig = best && best.p != null && best.p <= CONFIG.max_validation_p;
+      out.push(registerValidation(sport, 'spreads', {
+        sport: sport, market: 'spreads', tier: sig ? 'DIRECTIONAL' : 'RESEARCH',
+        beats_market: beats, n: atsRows.length ? atsRows[0].n : null,
+        window: M.window || null,
+        by_gap: atsRows, best_gap: best,
+        mae_model: num(M.spread_mae_model), mae_market: num(M.spread_mae_market) != null ? num(M.spread_mae_market) : num(M.spread_mae_closing_market),
+        may_produce_probability: false, may_produce_model_ev: false,
+        experimental: true,
+        max_decision: 'WATCH',
+        basis: 'The model’s own walk-forward record against the closing line over ' + (M.window || 'the test window') + '.',
+        limitations: 'Against the close the model wins '
+          + atsRows.map(function (r) { return r.win_pct + '% at ' + r.gap + '+ points (n=' + r.n + ', p=' + r.p + ')'; }).join(', ')
+          + '. ' + (sig ? 'One gap band clears significance; the rest do not.'
+            : 'No band is significant and the win rate DEGRADES as the disagreement grows, which is the opposite of what a real edge looks like. A spread gap is therefore a research signal and a diagnostic trigger, never a reason to bet.')
+      }));
+    }
+
+    /* --- total: a small, documented, one-directional effect -------------- */
+    var ou = M.ou_vs_close || null;
+    if (ou) {
+      var ouRows = [], k2;
+      for (k2 in ou) if (Object.prototype.hasOwnProperty.call(ou, k2)) {
+        ouRows.push({ gap: num(k2), n: num(ou[k2].n), win_pct: num(ou[k2].win_pct), p: num(ou[k2].binom_p_one_sided) });
+      }
+      ouRows.sort(function (a, b) { return a.gap - b.gap; });
+      var bestOu = null;
+      ouRows.forEach(function (r) { if (r.p != null && r.n >= CONFIG.min_validation_n && (!bestOu || r.p < bestOu.p)) bestOu = r; });
+      var ouSig = bestOu && bestOu.p != null && bestOu.p <= CONFIG.max_validation_p;
+      out.push(registerValidation(sport, 'totals', {
+        sport: sport, market: 'totals', tier: ouSig ? 'DIRECTIONAL' : 'RESEARCH',
+        beats_market: beats, n: ouRows.length ? ouRows[0].n : null, window: M.window || null,
+        by_gap: ouRows, best_gap: bestOu,
+        mae_model: num(M.total_mae_model), mae_market: num(M.total_mae_market) != null ? num(M.total_mae_market) : num(M.total_mae_closing_market),
+        may_produce_probability: false, may_produce_model_ev: false,
+        experimental: true, max_decision: 'WATCH',
+        basis: 'The model’s own walk-forward record against the closing total over ' + (M.window || 'the test window') + '.',
+        limitations: 'Against the close the model wins '
+          + ouRows.map(function (r) { return r.win_pct + '% at ' + r.gap + '+ points (n=' + r.n + ', p=' + r.p + ')'; }).join(', ')
+          + '. ' + (ouSig ? 'The effect strengthens with the size of the disagreement and clears significance at n=' + bestOu.n + ', p=' + bestOu.p + ' — a small measured directional edge, not a probability. It may raise research priority and may not produce an expected value.'
+            : 'Nothing here clears significance.')
+      }));
+    }
+
+    /* The residual distributions, registered for push probability. */
+    if (params.distributions && params.distributions.margin_resid_pmf) {
+      registerDistribution(sport + '|margin_resid', {
+        pmf: params.distributions.margin_resid_pmf,
+        sigma: params.distributions.sigma_margin,
+        sport: sport, quantity: 'model margin residual, in points',
+        window: (V.firewall && V.firewall.distributional) ? V.firewall.distributional : 'see the model’s firewall record',
+        basis: 'Empirical residual of the published model spread against the realised margin, tabulated by the model’s own training job. '
+          + ((params.data_provenance && params.data_provenance.schedules) || ''),
+        limitations: 'Fitted on the model’s training seasons and applied unchanged. It describes the spread of outcomes around THIS model’s projection and is not a market-implied distribution.'
+      });
+    }
+    if (params.distributions && params.distributions.total_resid_pmf) {
+      registerDistribution(sport + '|total_resid', {
+        pmf: params.distributions.total_resid_pmf,
+        sigma: params.distributions.sigma_total,
+        sport: sport, quantity: 'model total residual, in points',
+        window: (V.firewall && V.firewall.distributional) ? V.firewall.distributional : 'see the model’s firewall record',
+        basis: 'Empirical residual of the published model total against the realised total.',
+        limitations: 'Fitted on the model’s training seasons and applied unchanged.'
+      });
+    }
+
+    /* The close-anticipation record, when the calibration artifact carries
+       one. This is the ONE market claim the football model has actually
+       earned, so it is registered as its own capability rather than being
+       folded into a spread edge it does not have. */
+    if (calibration && calibration.clv_proxy_vs_open) {
+      registerValidation(sport, '_close_anticipation', {
+        sport: sport, market: '_close_anticipation', tier: 'DIRECTIONAL',
+        beats_market: false,
+        by_gap: Object.keys(calibration.clv_proxy_vs_open).map(function (g) {
+          var r = calibration.clv_proxy_vs_open[g];
+          return { gap: num(g), n: num(r.n), moved_toward_model_pct: num(r.moved_toward_model_pct) };
+        }).sort(function (a, b) { return a.gap - b.gap; }),
+        may_produce_probability: false, may_produce_model_ev: false,
+        experimental: true, max_decision: 'WATCH',
+        basis: calibration.basis || 'walk-forward replay recorded in the model’s calibration artifact',
+        limitations: 'This says the CLOSE tends to move toward the model when the model disagrees with the OPEN. '
+          + 'It is a statement about line movement, not about results, and it is measured against the opening line rather than against the price EdgeDesk actually has. '
+          + 'It raises research priority. It is not an edge and it is not a probability.'
+      });
+    }
+    return { registered: out.length, max_tier: maxTier, beats_market: beats };
+  }
+
+  /**
+   * A model win probability, but only where one is permitted.
+   *
+   * The margin residual distribution turns a projected margin into P(win) by
+   * integrating the residual past the number. That arithmetic is always
+   * possible; whether the ANSWER means anything is the question the validation
+   * registry exists to settle, and this function refuses rather than guesses.
+   */
+  function modelWinProbability(o) {
+    o = o || {};
+    var sport = o.sport, market = normMarket(o.market);
+    var v = validationFor(sport, market);
+    if (!v.may_produce_probability) {
+      return { p: null, permitted: false, validation: v,
+        why: 'EdgeDesk holds no validated outcome probability for ' + (marketLabel(market) || market) + ' in this sport, so none is produced. '
+          + v.limitations };
+    }
+    var margin = num(o.model_margin);           /* projected margin, subject side */
+    var handicap = num(o.handicap) || 0;         /* 0 for a moneyline */
+    var key = o.distribution_key || (sport + '|margin_resid');
+    var d = DISTRIBUTIONS[key];
+    if (margin == null) return { p: null, permitted: true, validation: v, why: 'No projected margin on file for this side.' };
+    if (!d) return { p: null, permitted: true, validation: v, why: 'No margin distribution is registered for ' + sport + ', so a projected margin cannot be turned into a probability.' };
+    /* Cover requires margin + residual > handicap-adjusted target. */
+    var need = handicap;                         /* points the side must beat */
+    var pWin = 0, pPush = 0, k, off, mass;
+    for (k in d.pmf) if (Object.prototype.hasOwnProperty.call(d.pmf, k)) {
+      off = num(k); mass = num(d.pmf[k]) || 0;
+      var outcome = margin + off;
+      if (outcome > need + 1e-9) pWin += mass;
+      else if (Math.abs(outcome - need) <= 1e-9) pPush += mass;
+    }
+    return {
+      p: r4(pWin), p_push: r4(pPush), permitted: true, validation: v,
+      method: 'empirical margin-residual integration over ' + key,
+      distribution: { key: key, window: d.window, basis: d.basis, limitations: d.limitations },
+      experimental: v.experimental === true,
+      why: null
+    };
+  }
+
+  /* ==================================================================== */
+  /* FAIR PRICE PROVENANCE                                                 */
+  /*                                                                       */
+  /* THE BUG THIS REPLACES, stated plainly so it cannot come back:         */
+  /*                                                                       */
+  /*   var fairP = e.sharp_fair; var fairSrc = 'Pinnacle de-vig fair';     */
+  /*   if (fairP == null) { fairP = e.consensus_fair; fairSrc = '...'; }   */
+  /*                                                                       */
+  /* The label was chosen by WHICH COLUMN WAS POPULATED. Capture writes    */
+  /* `sharp_fair` from the consensus whenever no reference book quotes, so */
+  /* a row with has_sharp=false and a populated sharp_fair was labelled    */
+  /* "Pinnacle de-vig fair" — while the same row's reasons_against said    */
+  /* "no sharp (Pinnacle) confirmation on this exact side". One row, two   */
+  /* contradictory claims, both generated from owned data.                 */
+  /*                                                                       */
+  /* Capture v9 already records the truth: `reference_type`, and           */
+  /* `sharp_book_fair` which is NULL whenever there was no reference book. */
+  /* This reads those, and it is the ONLY place the phrase can be made.    */
+  /* ==================================================================== */
+
+  var METHODS = {
+    SHARP_REFERENCE_DEVIG: {
+      short: 'sharp reference de-vig',
+      sharp: true,
+      why: 'A reference book quoted this exact selection at this exact number, and the fair price is its own two-way price with the vig removed.'
+    },
+    ROBUST_CONSENSUS_MEDIAN: {
+      short: 'multi-book consensus',
+      sharp: false,
+      why: 'No reference book quoted this selection, so the fair price is the de-vigged median of the independent books that did. It is a screening number, not a sharp read.'
+    },
+    SHARP_CLAIMED_UNVERIFIED: {
+      short: 'anchor claimed but not evidenced',
+      sharp: false,
+      why: 'The row claims a sharp reference but carries no reference-book number to prove it, so it is treated as a consensus and reported as unverified.'
+    },
+    NO_FAIR: { short: 'no fair price', sharp: false, why: 'No fair price is stored on this row, so there is nothing to price the number against.' },
+    UNKNOWN: {
+      short: 'anchor unknown',
+      sharp: false,
+      why: 'This row was written before capture recorded which reference produced the fair price. It is not guessed: unknown is the honest answer, and it resolves on the next capture pass.'
+    }
+  };
+
+  /**
+   * What this fair price ACTUALLY rests on.
+   *
+   * `scope` is 'live' (the current board) or 'entry' (what was true when the
+   * row was priced). Grading must use 'entry' — CLV is measured from the entry
+   * price, so asking "was it sharp-anchored" about a graded row is a question
+   * about the moment of pricing, not about now.
+   */
+  function fairMethod(row, scope) {
+    row = row || {};
+    var entry = scope === 'entry';
+    var refType = clean(entry ? (row.first_reference_type || row.reference_type) : row.reference_type).toLowerCase() || null;
+    var hasSharp = entry
+      ? (row.first_has_sharp === true || row.first_has_sharp === 'true')
+      : (row.has_sharp === true || row.has_sharp === 'true');
+    var hasSharpKnown = entry ? (row.first_has_sharp != null) : (row.has_sharp != null);
+    var bookFair = num(entry ? (row.first_sharp_book_fair != null ? row.first_sharp_book_fair : row.sharp_book_fair) : row.sharp_book_fair);
+    var anchored = num(entry ? (row.first_sharp_fair != null ? row.first_sharp_fair : row.sharp_fair) : row.sharp_fair);
+    var consensus = num(row.consensus_fair);
+    var refBook = clean(row.reference_book) || null;
+    var pin = num(row.pin_dec), pinOpp = num(row.pin_opp_dec);
+
+    var method, fair, label;
+    if (anchored == null && consensus == null) {
+      method = 'NO_FAIR'; fair = null;
+    } else if (refType === 'sharp' && bookFair != null) {
+      method = 'SHARP_REFERENCE_DEVIG'; fair = anchored != null ? anchored : bookFair;
+    } else if (refType === 'sharp' && bookFair == null) {
+      method = 'SHARP_CLAIMED_UNVERIFIED'; fair = anchored != null ? anchored : consensus;
+    } else if (refType === 'robust_consensus' || refType === 'none') {
+      method = 'ROBUST_CONSENSUS_MEDIAN'; fair = anchored != null ? anchored : consensus;
+    } else if (refType == null && hasSharpKnown && hasSharp && bookFair != null) {
+      /* A legacy row with no reference_type but a real reference-book number is
+         still evidenced, and refusing it would throw away a true fact. */
+      method = 'SHARP_REFERENCE_DEVIG'; fair = anchored != null ? anchored : bookFair;
+    } else if (refType == null && hasSharpKnown && !hasSharp) {
+      method = 'ROBUST_CONSENSUS_MEDIAN'; fair = anchored != null ? anchored : consensus;
+    } else if (refType == null && hasSharpKnown && hasSharp && bookFair == null) {
+      method = 'SHARP_CLAIMED_UNVERIFIED'; fair = anchored != null ? anchored : consensus;
+    } else {
+      method = 'UNKNOWN'; fair = anchored != null ? anchored : consensus;
+    }
+
+    var M = METHODS[method];
+    if (method === 'SHARP_REFERENCE_DEVIG') {
+      label = (refBook ? titleCase(refBook) : 'Sharp reference') + ' de-vig fair';
+    } else if (method === 'ROBUST_CONSENSUS_MEDIAN') {
+      label = 'multi-book consensus fair (no sharp reference)';
+    } else if (method === 'SHARP_CLAIMED_UNVERIFIED') {
+      label = 'consensus fair (a sharp anchor is claimed but not evidenced)';
+    } else if (method === 'NO_FAIR') {
+      label = 'no fair price on file';
+    } else {
+      label = 'fair price of unrecorded origin';
+    }
+
+    /* The reference quotes that ACTUALLY contributed, named rather than
+       implied. An empty list on a sharp method is itself a finding. */
+    var contributing = [];
+    if (method === 'SHARP_REFERENCE_DEVIG') {
+      if (pin != null) contributing.push({ book: refBook || 'reference book', side: 'this selection', dec: r4(pin), american: fmtAmerican(decToAmerican(pin)) });
+      if (pinOpp != null) contributing.push({ book: refBook || 'reference book', side: 'the other side', dec: r4(pinOpp), american: fmtAmerican(decToAmerican(pinOpp)) });
+    }
+    var twoWay = (method === 'SHARP_REFERENCE_DEVIG' && pin != null && pinOpp != null)
+      ? devigTwoWay(pin, pinOpp) : null;
+
+    return {
+      method: method,
+      sharp: M.sharp,
+      label: label,
+      short: M.short,
+      why: M.why,
+      fair_probability: r4(fair),
+      fair_decimal: fair && fair > 0 ? r4(1 / fair) : null,
+      fair_american: fair && fair > 0 ? fmtAmerican(decToAmerican(1 / fair)) : null,
+      reference_book: method === 'SHARP_REFERENCE_DEVIG' ? refBook : null,
+      reference_type: refType,
+      sharp_book_fair: r4(bookFair),
+      consensus_fair: r4(consensus),
+      contributing_quotes: contributing,
+      two_way: twoWay,
+      /* The sentence a reader gets. It never claims more than the row proves. */
+      sentence: method === 'SHARP_REFERENCE_DEVIG'
+        ? 'Fair price from ' + (refBook ? titleCase(refBook) : 'the sharp reference') + '’s own two-way quote with the vig removed'
+          + (contributing.length ? ' (' + contributing.map(function (c) { return c.side + ' ' + c.american; }).join(', ') + ')' : '') + '.'
+        : method === 'ROBUST_CONSENSUS_MEDIAN'
+          ? 'Fair price from the de-vigged median of the independent books quoting this selection. No sharp reference quoted it, so this is a screening number.'
+          : method === 'SHARP_CLAIMED_UNVERIFIED'
+            ? 'This row claims a sharp anchor but carries no reference-book price to evidence it. Treated as a consensus and flagged.'
+            : method === 'NO_FAIR'
+              ? 'No fair price is on file for this selection.'
+              : 'The origin of this fair price was not recorded. It is reported as unknown rather than guessed.',
+      scope: entry ? 'entry' : 'live'
+    };
+  }
+  function titleCase(s) {
+    return clean(s).replace(/\b([a-z])/g, function (m2) { return m2.toUpperCase(); });
+  }
+
+  /**
+   * What the book count does and does not prove.
+   *
+   * Six books quoting the same number is six observations of one opinion when
+   * they share a feed. This returns the honest read and refuses to let a count
+   * stand in for independent sharp confirmation.
+   */
+  function confirmationRead(row) {
+    row = row || {};
+    var fm = fairMethod(row);
+    var books = num(row.n_books);
+    var families = num(row.n_books_eff) != null ? num(row.n_books_eff) : books;
+    var corrob = num(row.corrob_n) || 0;
+    var corrobRef = clean(row.corrob_ref) || null;
+    var bits = [];
+    if (fm.sharp) bits.push('A sharp reference' + (fm.reference_book ? ' (' + titleCase(fm.reference_book) + ')' : '') + ' is quoting this exact selection.');
+    else bits.push('No sharp reference is quoting this selection, so the fair price rests on softer books.');
+    if (families != null) {
+      bits.push(families + ' independent book ' + (families === 1 ? 'family' : 'families') + ' stand behind the fair price'
+        + (books != null && books !== families ? ' (' + books + ' quotes in total, de-duplicated to ' + families + ')' : '') + '.');
+    }
+    if (corrob) bits.push('Corroborated at ' + corrob + ' level' + (corrob === 1 ? '' : 's') + ' against the ' + (corrobRef === 'pinnacle' ? 'sharp reference' : 'book median') + '.');
+    return {
+      sharp_confirmed: fm.sharp === true,
+      independent_families: families,
+      total_books: books,
+      corroboration: corrob,
+      corroboration_reference: corrobRef,
+      sufficient_families: families != null && families >= CONFIG.min_independent_families,
+      sentence: bits.join(' '),
+      /* Said explicitly because the temptation to read one as the other is the
+         whole reason this function exists. */
+      caveat: 'Book count is not sharp confirmation. Books sharing a pricing feed move together, so a high count can be one opinion repeated. Independent confirmation is the reference book quoting the same side, and that is reported separately above.'
+    };
+  }
+
+  /* ==================================================================== */
+  /* QUOTE STATE — is this price still a price?                            */
+  /* ==================================================================== */
+
+  function quoteTtlMin(market, over) {
+    var m = normMarket(market);
+    var t = over && over[m] != null ? over[m] : CONFIG.quote_ttl_min[m];
+    return num(t) != null ? num(t) : CONFIG.quote_ttl_min._default;
+  }
+
+  /**
+   * Classify a quote by age and say whether it may support an action.
+   *
+   * A stale price is not deleted and not hidden — research keeps it, with its
+   * timestamp — but `actionable` goes false and stays false until a refresh
+   * lands. That single boolean is what stops a 2,126-minute-old number from
+   * appearing under "top opportunities".
+   */
+  function quoteState(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var at = toMs(o.captured_at);
+    var ageMin = at != null ? Math.max(0, (now - at) / 60000) : num(o.age_min);
+    var limit = quoteTtlMin(o.market, o.ttl_override);
+    var hard = limit * (num(o.stale_multiple) != null ? num(o.stale_multiple) : CONFIG.stale_multiple);
+    var kickoff = toMs(o.kickoff);
+    var minsToKick = kickoff != null ? (kickoff - now) / 60000 : null;
+
+    var status, why, actionable;
+    if (ageMin == null) {
+      status = 'UNKNOWN';
+      why = 'This quote carries no capture timestamp, so its age cannot be established. It is treated as unverified rather than as current.';
+      actionable = CONFIG.unknown_age_is_actionable === true;
+    } else if (ageMin >= hard) {
+      status = 'STALE';
+      why = 'Last captured ' + Math.round(ageMin) + ' minutes ago, past the ' + limit + '-minute limit for a ' + (marketLabel(o.market) || 'market') + ' quote. This is the last price EdgeDesk observed, not a price that is currently available.';
+      actionable = false;
+    } else if (ageMin >= limit / 2) {
+      status = 'AGING';
+      why = 'Captured ' + Math.round(ageMin) + ' minutes ago, inside the ' + limit + '-minute limit but past half of it. Confirm it is still on the board before acting.';
+      actionable = true;
+    } else {
+      status = 'CURRENT';
+      why = 'Captured ' + Math.round(ageMin) + ' minute' + (Math.round(ageMin) === 1 ? '' : 's') + ' ago.';
+      actionable = true;
+    }
+
+    var kickBlock = null;
+    if (minsToKick != null && minsToKick < 0) {
+      kickBlock = 'This game has already started. A pregame price is not available.';
+      actionable = false; status = status === 'CURRENT' ? 'STARTED' : status;
+    } else if (minsToKick != null && minsToKick < CONFIG.min_minutes_to_kickoff) {
+      kickBlock = 'Kickoff is under ' + CONFIG.min_minutes_to_kickoff + ' minutes away; a pregame price is not reliably available.';
+      actionable = false;
+    }
+
+    return {
+      status: status,
+      age_min: ageMin == null ? null : Math.round(ageMin * 10) / 10,
+      limit_min: limit,
+      captured_at: at != null ? new Date(at).toISOString() : null,
+      minutes_to_kickoff: minsToKick == null ? null : Math.round(minsToKick),
+      actionable: actionable && !kickBlock,
+      why: kickBlock ? why + ' ' + kickBlock : why,
+      kickoff_block: kickBlock,
+      /* Research always keeps it. Only the ACTION is withdrawn. */
+      research_usable: true,
+      research_note: status === 'STALE' || status === 'UNKNOWN'
+        ? 'Keep this quote for research with its timestamp attached. Do not describe it as currently available and do not build a price conclusion on it.'
+        : null
+    };
+  }
+
+  /**
+   * The result of trying to refresh a quote before acting on it.
+   *
+   * A failed refresh is NOT the same as a fresh quote and NOT the same as no
+   * quote. It leaves the last observation standing, with its age, and with
+   * actionability withdrawn — which is exactly what a person needs to know.
+   */
+  function applyRefresh(prev, refreshed, o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    if (refreshed && refreshed.ok) {
+      var st = quoteState({ captured_at: refreshed.captured_at || now, now: now, market: o.market, kickoff: o.kickoff });
+      return {
+        quote: refreshed.quote, state: st, refreshed: true, changed: !!refreshed.changed,
+        note: refreshed.changed ? 'The price changed on refresh; the decision below is against the NEW number.' : 'Refreshed and unchanged.'
+      };
+    }
+    var stale = quoteState({ captured_at: prev && prev.captured_at, now: now, market: o.market, kickoff: o.kickoff });
+    stale.actionable = false;
+    stale.status = stale.status === 'CURRENT' ? 'UNCONFIRMED' : stale.status;
+    stale.why = 'The refresh did not complete (' + ((refreshed && refreshed.why) || 'no reason recorded') + '). ' + stale.why
+      + ' The last observed price is retained for research; it is NOT described as currently available or actionable.';
+    return { quote: prev, state: stale, refreshed: false, changed: false, note: stale.why };
+  }
+
+  /* ==================================================================== */
+  /* THE VALIDATION SNAPSHOT                                               */
+  /*                                                                       */
+  /* The browser can read football/cfb_p4/params.js directly and should:   */
+  /* loadFootballValidation() against the live artifact is always current. */
+  /* The edge function cannot — that artifact is a 573KB browser file that */
+  /* is not deployed with the function — so the validation record it needs */
+  /* is TRANSCRIBED here, stamped with the model version it came from.     */
+  /*                                                                       */
+  /* A transcription is only honest if drift is caught, so                 */
+  /* tools/intelligence/intelligence.test.js re-reads the real artifact    */
+  /* and fails when these numbers stop matching it. Retraining the model   */
+  /* therefore fails CI until the snapshot is refreshed, which is the      */
+  /* correct order of events: a stale validation record would let the      */
+  /* decision layer permit something the new model has not earned.         */
+  /* ==================================================================== */
+  var FOOTBALL_SNAPSHOT = {
+    "americanfootball_ncaaf": {"model_version":"edgedesk_cfb_p4_v1.0.0","built_at":"2026-08-22T17:43:03+00:00","calibration_version":"cfb_p4_cal_v1.1.0","validation_summary":{"market":{"window":"2022-2025","n_games":3127,"spread_mae_model":12.769,"spread_mae_market":12.015,"total_mae_model":12.913,"total_mae_market":12.501,"ats_vs_close":{"1":{"n":2599,"wins":1298,"win_pct":49.94,"binom_p_one_sided":0.5313},"2":{"n":2140,"wins":1053,"win_pct":49.21,"binom_p_one_sided":0.7754},"3":{"n":1652,"wins":790,"win_pct":47.82,"binom_p_one_sided":0.9638},"4":{"n":1261,"wins":594,"win_pct":47.11,"binom_p_one_sided":0.9814},"6":{"n":722,"wins":335,"win_pct":46.4,"binom_p_one_sided":0.9757},"0.5":{"n":2829,"wins":1399,"win_pct":49.45,"binom_p_one_sided":0.7263},"1.5":{"n":2366,"wins":1178,"win_pct":49.79,"binom_p_one_sided":0.5895}},"ou_vs_close":{"1":{"n":2529,"wins":1298,"win_pct":51.32,"binom_p_one_sided":0.0947},"2":{"n":1995,"wins":1039,"win_pct":52.08,"binom_p_one_sided":0.0332},"3":{"n":1543,"wins":811,"win_pct":52.56,"binom_p_one_sided":0.0235},"4":{"n":1108,"wins":592,"win_pct":53.43,"binom_p_one_sided":0.0121},"6":{"n":516,"wins":283,"win_pct":54.84,"binom_p_one_sided":0.0155},"0.5":{"n":2812,"wins":1447,"win_pct":51.46,"binom_p_one_sided":0.0633},"1.5":{"n":2265,"wins":1174,"win_pct":51.83,"binom_p_one_sided":0.0424}},"beats_closing_line":false,"max_tier":"RESEARCH_LEAN"},"winprob":{"n":3113,"window":"2022-2025","sigma":14.9,"brier":0.19016,"log_loss":0.55878,"basis":"sigma fitted on 2014-2021 and applied here unchanged"},"calibration":[{"bin":"0.0-0.1","n":36,"p_pred":0.068,"p_obs":0.083},{"bin":"0.1-0.2","n":107,"p_pred":0.154,"p_obs":0.112},{"bin":"0.2-0.3","n":217,"p_pred":0.253,"p_obs":0.249},{"bin":"0.3-0.4","n":288,"p_pred":0.352,"p_obs":0.344},{"bin":"0.4-0.5","n":360,"p_pred":0.449,"p_obs":0.397},{"bin":"0.5-0.6","n":408,"p_pred":0.55,"p_obs":0.551},{"bin":"0.6-0.7","n":477,"p_pred":0.65,"p_obs":0.591},{"bin":"0.7-0.8","n":461,"p_pred":0.75,"p_obs":0.74},{"bin":"0.8-0.9","n":434,"p_pred":0.847,"p_obs":0.82},{"bin":"0.9-1.0","n":325,"p_pred":0.944,"p_obs":0.945}],"firewall":{"layer_a":"ratings, venue HFA, travel, rivalry, conference — tuned 2001-2013","layer_b":"efficiency, matchup, blend curve, QB, schedule, total — tuned 2014-2019","layer_c":"roster continuity, volatility, confidence — tuned 2018-2021","distributional":"sigma, the residual PMFs and the spread-conditioned margin table — fitted 2014-2021, never on the headline window. Fitting sigma by maximum likelihood on 2022-2025 and then quoting that fit's own Brier score as held-out evidence is what an earlier build did; it is corrected here and the honest number is 0.19016 against the in-sample optimum of 0.17899.","headline_test":"2022-2025, untouched by every layer including the distributional one"}},"distributions":{"sigma_margin":14.9,"sigma_total":17.25,"margin_resid_pmf":{"0":0.022523,"1":0.027928,"2":0.024144,"3":0.026306,"4":0.022703,"5":0.022523,"6":0.02018,"7":0.020901,"8":0.021802,"9":0.01964,"10":0.02,"11":0.014955,"12":0.017297,"13":0.014955,"14":0.015135,"15":0.013153,"16":0.016396,"17":0.01045,"18":0.012072,"19":0.010811,"20":0.010631,"21":0.008829,"22":0.008288,"23":0.008108,"24":0.00955,"25":0.007928,"26":0.005946,"27":0.005225,"28":0.005225,"29":0.003604,"30":0.006847,"31":0.004505,"32":0.003604,"33":0.003423,"34":0.002342,"35":0.002162,"36":0.001622,"37":0.001802,"38":0.001982,"39":0.001622,"40":0.000721,"41":0.001441,"42":0.000541,"43":0.000901,"44":0.000541,"45":0.000541,"46":0.000721,"47":0.00036,"-49":0.000721,"-48":0.00018,"-47":0.00036,"-46":0.000721,"-45":0.000901,"-44":0.001261,"-43":0.001622,"-42":0.001441,"-41":0.001261,"-40":0.001441,"-39":0.002523,"-38":0.002523,"-37":0.002162,"-36":0.002883,"-35":0.002342,"-34":0.003604,"-33":0.004324,"-32":0.004685,"-31":0.004324,"-30":0.006847,"-29":0.005946,"-28":0.007387,"-27":0.007387,"-26":0.007387,"-25":0.007387,"-24":0.008829,"-23":0.01027,"-22":0.01045,"-21":0.011171,"-20":0.012973,"-19":0.01027,"-18":0.012613,"-17":0.016036,"-16":0.013694,"-15":0.017297,"-14":0.017117,"-13":0.01982,"-12":0.017297,"-11":0.018378,"-10":0.022883,"-9":0.021802,"-8":0.023964,"-7":0.025225,"-6":0.022883,"-5":0.025946,"-4":0.025946,"-3":0.023784,"-2":0.023423,"-1":0.023423},"total_resid_pmf":{"0":0.025627,"1":0.023642,"2":0.024544,"3":0.023281,"4":0.021657,"5":0.025447,"6":0.018589,"7":0.021296,"8":0.017325,"9":0.017867,"10":0.016964,"11":0.017506,"12":0.016604,"13":0.018228,"14":0.009746,"15":0.013355,"16":0.015521,"17":0.013355,"18":0.012092,"19":0.009746,"20":0.009926,"21":0.009024,"22":0.007399,"23":0.008663,"24":0.006858,"25":0.008121,"26":0.005956,"27":0.005956,"28":0.008121,"29":0.004512,"30":0.00379,"31":0.005414,"32":0.004512,"33":0.002527,"34":0.00397,"35":0.002346,"36":0.003609,"37":0.001624,"38":0.001805,"39":0.001263,"40":0.002346,"41":0.001624,"42":0.001263,"43":0.000902,"44":0.002346,"45":0.002166,"46":0.001444,"47":0.001444,"48":0.001263,"49":0.000902,"-49":0.00018,"-45":0.00018,"-44":0.000541,"-42":0.000902,"-41":0.000541,"-40":0.000722,"-39":0.000902,"-38":0.001985,"-37":0.001444,"-36":0.002888,"-35":0.001805,"-34":0.002888,"-33":0.00397,"-32":0.003429,"-31":0.004873,"-30":0.006497,"-29":0.006136,"-28":0.00758,"-27":0.007941,"-26":0.006497,"-25":0.009746,"-24":0.008121,"-23":0.010648,"-22":0.010828,"-21":0.012994,"-20":0.01155,"-19":0.012633,"-18":0.012272,"-17":0.016062,"-16":0.018408,"-15":0.016423,"-14":0.015521,"-13":0.020754,"-12":0.021296,"-11":0.020032,"-10":0.018589,"-9":0.024364,"-8":0.024003,"-7":0.027071,"-6":0.021476,"-5":0.027071,"-4":0.023101,"-3":0.023822,"-2":0.025447,"-1":0.022379}},"data_provenance":{"schedules":"sportsdataverse/cfbfastR-data schedules/csv/cfb_schedules_YYYY.csv (2001-2025; CollegeFootballData-sourced results, venue, attendance, neutral-site and season-accurate conference membership)","betting":"sportsdataverse/cfbfastR-data betting/csv/cfb_line_odds.csv.gz (2006-2025; spread, total and moneyline, OPENING and closing, multiple books including Pinnacle). This archive is the reason a real CFB market backtest exists at all — the repo previously stated that no public CFB line archive existed, and that was wrong."},"clv_proxy_vs_open":{"1":{"n":6866,"moved_toward_model_pct":53.54},"2":{"n":5444,"moved_toward_model_pct":54.21},"3":{"n":4214,"moved_toward_model_pct":54.7},"5":{"n":2313,"moved_toward_model_pct":56.07}},"calibration_basis":"cold shipped-engine replay 2002-2025 without the live efficiency feed (matchup layer unavailable, matching how the browser runs between trainings) · closing/opening lines from the cfbfastR-data betting archive"}
+  };
+
+  /** The transcribed record for a sport, or null when none is carried. */
+  function validationSnapshot(sport) { return FOOTBALL_SNAPSHOT[sport] || null; }
+
+  /**
+   * Register the transcribed record. Idempotent, and the live artifact always
+   * wins: a host that can read params.js should call loadFootballValidation()
+   * instead, and doing both is safe because the second call overwrites.
+   */
+  function loadSnapshotValidation(sport) {
+    var snap = FOOTBALL_SNAPSHOT[sport];
+    if (!snap) return { registered: 0, why: "no transcribed validation record for " + sport };
+    var r = loadFootballValidation(sport, {
+      validation_summary: snap.validation_summary,
+      distributions: snap.distributions,
+      data_provenance: snap.data_provenance,
+      model_version: snap.model_version
+    }, { clv_proxy_vs_open: snap.clv_proxy_vs_open, basis: snap.calibration_basis });
+    if (r) r.source = "transcribed snapshot of " + snap.model_version + " (built " + snap.built_at + ")";
+    return r;
+  }
+
+  /* ==================================================================== */
+  /* SLATE STATE — five different empties, and they are not the same       */
+  /*                                                                       */
+  /* "There are no CFB matchups to evaluate on this slate" was produced by */
+  /* a board showing 75 games, because the only question anyone asked was  */
+  /* "did the signals query return rows". An empty signals query means no  */
+  /* PRICED SIGNAL. It says nothing whatever about whether games exist.    */
+  /*                                                                       */
+  /* This separates them, and hands back the exact sentence the answer is  */
+  /* required to use, so the distinction cannot be lost in narration.      */
+  /* ==================================================================== */
+
+  var SLATE_STATES = ['OK', 'GAMES_NO_SIGNALS', 'GAMES_NO_QUOTES', 'PARTIAL_COVERAGE', 'NO_SCHEDULED_GAMES', 'RETRIEVAL_FAILED'];
+
+  /**
+   * Classify the slate from counts that were established SEPARATELY.
+   *
+   * `scheduled` must come from a schedule source — never from the rows that
+   * happened to come back with quotes attached. Counting retrieved rows
+   * against retrieved rows always reports complete, which is how a
+   * half-ingested card looked finished.
+   */
+  function slateState(o) {
+    o = o || {};
+    var scheduled = num(o.scheduled_games);
+    var quoted = num(o.games_with_quotes) || 0;
+    var signalled = num(o.games_with_signals) || 0;
+    var errors = o.errors || [];
+    var src = clean(o.schedule_source) || 'the schedule source';
+    var scope = clean(o.scope_label) || 'this window';
+    var sportLabel = clean(o.sport_label) || 'this sport';
+
+    if (errors.length && scheduled == null) {
+      return finish('RETRIEVAL_FAILED', 0,
+        'The schedule retrieval for ' + sportLabel + ' failed (' + errors.slice(0, 2).join('; ') + '), so EdgeDesk cannot say how many games are on ' + scope + '. '
+        + 'This is a retrieval failure, NOT an empty slate. Do not state that there are no games.');
+    }
+    if (scheduled === 0) {
+      return finish('NO_SCHEDULED_GAMES', 0,
+        'No ' + sportLabel + ' games are scheduled in ' + scope + ' according to ' + src + '. This is a genuine empty slate.');
+    }
+    if (scheduled == null) {
+      return finish('RETRIEVAL_FAILED', 0,
+        'No schedule source answered for ' + sportLabel + ', so the number of games on ' + scope + ' is unknown. '
+        + 'An unknown count is not zero. Do not state that there are no games.');
+    }
+    if (quoted === 0) {
+      return finish('GAMES_NO_QUOTES', scheduled,
+        scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' ' + (scheduled === 1 ? 'is' : 'are') + ' scheduled in ' + scope + ' according to ' + src
+        + ', and NONE of them carries a captured market quote. There are games; there are no prices. '
+        + 'Every game can be researched and discussed. None of them can produce a priced recommendation.');
+    }
+    if (signalled === 0) {
+      return finish('GAMES_NO_SIGNALS', scheduled,
+        scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' ' + (scheduled === 1 ? 'is' : 'are') + ' scheduled in ' + scope + ' and ' + quoted + ' carr' + (quoted === 1 ? 'ies' : 'y') + ' a market quote, '
+        + 'but EdgeDesk has flagged NO signal on any of them. A signal is a priced opportunity EdgeDesk chose to flag; its absence means nothing was flagged, not that nothing is on. '
+        + 'Research every game; recommend none on signal grounds.');
+    }
+    if (quoted < scheduled || signalled < quoted) {
+      return finish('PARTIAL_COVERAGE', scheduled,
+        scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' scheduled in ' + scope + '; ' + quoted + ' carr' + (quoted === 1 ? 'ies' : 'y') + ' a quote; ' + signalled + ' carr' + (signalled === 1 ? 'ies' : 'y') + ' a flagged signal. '
+        + 'Any statement about the slate covers ' + scheduled + ' games; any statement about PRICES covers ' + quoted + '.');
+    }
+    return finish('OK', scheduled,
+      scheduled + ' ' + sportLabel + ' game' + (scheduled === 1 ? '' : 's') + ' scheduled in ' + scope + ', all quoted, ' + signalled + ' with a flagged signal.');
+
+    function finish(state, n, sentence) {
+      return {
+        state: state,
+        scheduled_games: scheduled,
+        games_with_quotes: quoted,
+        games_with_signals: signalled,
+        games_known: n,
+        schedule_source: o.schedule_source || null,
+        scope_label: o.scope_label || null,
+        errors: errors,
+        sentence: sentence,
+        /* The claim that may never be made from this state. Carried as data so
+           the prompt can forbid it literally rather than in general terms. */
+        forbidden_claim: state === 'NO_SCHEDULED_GAMES' ? null
+          : 'that there are no games to evaluate, or that the slate is empty',
+        may_recommend: state === 'OK' || state === 'PARTIAL_COVERAGE',
+        may_research: state !== 'NO_SCHEDULED_GAMES'
+      };
+    }
+  }
+
+  /* ==================================================================== */
+  /* COVERAGE — three different questions, three different denominators    */
+  /*                                                                       */
+  /* The UI showed several disagreeing percentages because three separate  */
+  /* things were all called "completeness": how many reads succeeded, how  */
+  /* much of what the question NEEDS is present, and how much of what was  */
+  /* retrieved actually reached the model. They are different numbers and  */
+  /* they are supposed to differ. Naming them is the fix.                  */
+  /* ==================================================================== */
+
+  /**
+   * @param spec.required  [{field, tier, per, applicable}]
+   * @param spec.present   {field: count}
+   * @param spec.universe  {entities: n, games: n}
+   * @param spec.retrieval {attempted, succeeded, empty, failed}
+   * @param spec.delivery  {included, withheld, withheld_subjects}
+   */
+  function coverageReport(spec) {
+    spec = spec || {};
+    var req = spec.required || [];
+    var present = spec.present || {};
+    var uni = spec.universe || {};
+    var ret = spec.retrieval || null;
+    var del = spec.delivery || null;
+
+    var rows = [], notApplicable = [];
+    req.forEach(function (r) {
+      if (r.applicable === false) { notApplicable.push({ field: r.field, why: r.why || 'not available for this sport by design' }); return; }
+      var denom = r.per === 'entity' ? (num(uni.entities) || 0)
+        : r.per === 'game' ? (num(uni.games) || 0)
+          : 1;
+      if (denom === 0 && r.per !== 'one') { notApplicable.push({ field: r.field, why: 'nothing in scope to measure this against' }); return; }
+      var have = Math.min(num(present[r.field]) || 0, denom);
+      rows.push({
+        field: r.field, tier: r.tier || 'IMPORTANT', per: r.per || 'one',
+        have: have, of: denom,
+        denominator: r.per === 'entity' ? 'teams/players in scope' : r.per === 'game' ? 'games in scope' : 'the question',
+        complete: have >= denom,
+        label: r.field + ' ' + have + '/' + denom + ' ' + (r.per === 'entity' ? 'teams' : r.per === 'game' ? 'games' : '')
+      });
+    });
+
+    function ratio(tier) {
+      var t = rows.filter(function (r) { return r.tier === tier; });
+      if (!t.length) return null;
+      var d = 0, h = 0;
+      t.forEach(function (r) { d += r.of; h += r.have; });
+      return d ? r4(h / d) : null;
+    }
+    var required = ratio('REQUIRED'), important = ratio('IMPORTANT');
+
+    /* THREE NAMED NUMBERS. Never one blended "completeness". */
+    var metrics = {
+      required_field_completeness: {
+        value: required, of: 'the fields this question cannot be answered without',
+        detail: rows.filter(function (r) { return r.tier === 'REQUIRED'; }).map(function (r) { return r.label; })
+      },
+      important_field_completeness: {
+        value: important, of: 'the fields that materially change the answer',
+        detail: rows.filter(function (r) { return r.tier === 'IMPORTANT'; }).map(function (r) { return r.label; })
+      },
+      retrieval_success_rate: ret && num(ret.attempted) ? {
+        value: r4((num(ret.succeeded) || 0) / num(ret.attempted)),
+        of: 'reads attempted against EdgeDesk’s own sources',
+        detail: (num(ret.succeeded) || 0) + ' of ' + num(ret.attempted) + ' reads answered'
+          + (num(ret.empty) ? ', ' + num(ret.empty) + ' answered with no rows' : '')
+          + (num(ret.failed) ? ', ' + num(ret.failed) + ' failed' : ''),
+        note: 'A read that answered with no rows means the DATA is absent. A read that failed means the lookup never completed. They are different problems.'
+      } : null,
+      evidence_delivered: del ? {
+        value: (num(del.included) || 0) + (num(del.withheld) || 0) > 0
+          ? r4((num(del.included) || 0) / ((num(del.included) || 0) + (num(del.withheld) || 0))) : 1,
+        of: 'retrieved evidence items that fit inside the analyst’s message',
+        detail: (num(del.included) || 0) + ' of ' + ((num(del.included) || 0) + (num(del.withheld) || 0)) + ' items delivered',
+        withheld_subjects: del.withheld_subjects || [],
+        note: num(del.withheld)
+          ? 'Conclusions cover only what was delivered. The withheld subjects are named, and no whole-slate claim may be made.'
+          : null
+      } : null
+    };
+
+    var gaps = rows.filter(function (r) { return !r.complete; });
+    return {
+      rows: rows,
+      not_applicable: notApplicable,
+      metrics: metrics,
+      critical_gaps: gaps.filter(function (r) { return r.tier === 'REQUIRED'; }).map(function (r) { return r.label; }),
+      important_gaps: gaps.filter(function (r) { return r.tier === 'IMPORTANT'; }).map(function (r) { return r.label; }),
+      /* The one sentence that keeps the three numbers apart in the answer. */
+      sentence: [
+        required != null ? Math.round(required * 100) + '% of the required fields' : null,
+        important != null ? Math.round(important * 100) + '% of the important fields' : null,
+        metrics.retrieval_success_rate ? Math.round(metrics.retrieval_success_rate.value * 100) + '% of reads answered' : null,
+        metrics.evidence_delivered ? Math.round(metrics.evidence_delivered.value * 100) + '% of retrieved evidence delivered' : null
+      ].filter(Boolean).join(' · '),
+      may_claim_whole_slate: !(del && num(del.withheld) > 0) && !gaps.length
+    };
+  }
+
+  /* ==================================================================== */
+  /* MODEL-VERSUS-MARKET DISAGREEMENT                                      */
+  /*                                                                       */
+  /* A big gap is a reason to check the plumbing before it is a reason to  */
+  /* bet. These are the checks, named, in the order they actually catch    */
+  /* things — and the gap itself is never converted into value.            */
+  /* ==================================================================== */
+
+  function disagreementDiagnostics(o) {
+    o = o || {};
+    var model = num(o.model_line), market = num(o.market_line);
+    var market_k = normMarket(o.market);
+    if (model == null || market == null) {
+      return { gap: null, level: 'UNKNOWN', checks: [],
+        why: 'A disagreement cannot be measured without both a model number and a market number.' };
+    }
+    /* Both must be expressed on the SAME side and in the same convention, and
+       the caller is responsible for that. Orientation errors are the single
+       commonest cause of an impossible-looking gap, so the check is first. */
+    var gap = Math.abs(model - market);
+    var level = gap >= CONFIG.disagreement_points_hard ? 'EXTREME'
+      : gap >= CONFIG.disagreement_points ? 'LARGE' : 'ORDINARY';
+    var checks = [];
+    if (level !== 'ORDINARY') {
+      checks.push({ check: 'identity', question: 'Do the model and the market rows describe the same game, the same teams and the same event id?', why: 'A join that pairs two different games produces an enormous, entirely fictional gap.' });
+      checks.push({ check: 'side_orientation', question: 'Is the model line stated from the SAME side as the market line — both home, or both on the named selection?', why: 'A reversed side doubles the apparent gap and reverses its direction. On a ' + Math.abs(market) + '-point line a flip shows as a ' + (Math.abs(model - (-market))).toFixed(1) + '-point disagreement.' });
+      checks.push({ check: 'handicap_sign', question: 'Is a favourite negative on both sides of the comparison?', why: 'Model spreads and book spreads do not always share a sign convention.' });
+      checks.push({ check: 'quote_age', question: 'How old is the market number, and has the line moved since?', why: 'A stale quote makes the market look wrong when it is simply old.' });
+      checks.push({ check: 'personnel', question: 'Has the starting quarterback, or another input the model weights heavily, changed since the model ran?', why: 'The market prices a quarterback change immediately. A model built on season inputs does not.' });
+      checks.push({ check: 'opponent_adjustment', question: 'Are both teams’ inputs opponent-adjusted, and over a comparable number of games?', why: 'An unadjusted rate against a weak schedule looks like quality.' });
+      checks.push({ check: 'roster_change', question: 'Has the roster turned over since the model’s training window?', why: 'Year-over-year carry-over is the weakest assumption in any preseason rating.' });
+      checks.push({ check: 'rating_stability', question: 'How many games has the model actually observed for these teams this season?', why: 'Early-season ratings are mostly prior. A large gap in week 3 is usually the prior talking.' });
+    }
+    if (market_k === 'totals') {
+      checks.push({ check: 'pace', question: 'Do both sides agree on the expected number of possessions?', why: 'A total disagreement is usually a pace disagreement, not a scoring one.' });
+    }
+    return {
+      gap: r2(gap), level: level, model_line: r2(model), market_line: r2(market), market: market_k,
+      checks: checks,
+      /* The hard rule the size of the gap implies. */
+      verdict: level === 'EXTREME'
+        ? 'A gap this large is treated as a suspected data fault. It may not be presented as value until every check above has been answered.'
+        : level === 'LARGE'
+          ? 'Run the checks above before treating any part of this as value.'
+          : 'An ordinary disagreement. No diagnostic is triggered.',
+      blocks_recommendation: level === 'EXTREME'
+    };
+  }
+
+  /* ==================================================================== */
+  /* EDITORIAL ATTENTION — labelled as editorial, because that is what it is */
+  /*                                                                       */
+  /* "Lower-profile" is a statement about ATTENTION, not about market      */
+  /* softness. EdgeDesk measures no betting volume and no limits, so it    */
+  /* cannot claim a small game is softly priced, and this refuses to.      */
+  /* ==================================================================== */
+
+  var ATTENTION_TIERS = ['NATIONAL', 'REGIONAL', 'LOWER_PROFILE'];
+
+  function attentionTier(o) {
+    o = o || {};
+    var score = 0, drivers = [];
+    var hr = num(o.home_rank), ar = num(o.away_rank);
+    if (hr != null && hr <= 25) { score += hr <= 10 ? 3 : 2; drivers.push('home side ranked #' + hr); }
+    if (ar != null && ar <= 25) { score += ar <= 10 ? 3 : 2; drivers.push('away side ranked #' + ar); }
+    var p4 = 0;
+    if (o.home_group === 'p4') p4++;
+    if (o.away_group === 'p4') p4++;
+    if (p4 === 2) { score += 3; drivers.push('both programs in a Power 4 conference'); }
+    else if (p4 === 1) { score += 1; drivers.push('one Power 4 program'); }
+    if (o.is_rivalry) { score += 1; drivers.push('rivalry game'); }
+    if (o.neutral_site) { score += 1; drivers.push('neutral site'); }
+    var tv = clean(o.tv).toUpperCase();
+    if (/^(ABC|ESPN|FOX|CBS|NBC)$/.test(tv)) { score += 2; drivers.push('national television window (' + tv + ')'); }
+    if (num(o.book_count) != null && num(o.book_count) >= 8) { score += 1; drivers.push(num(o.book_count) + ' books quoting it'); }
+
+    var tier = score >= 6 ? 'NATIONAL' : score >= 3 ? 'REGIONAL' : 'LOWER_PROFILE';
+    return {
+      tier: tier, score: score, drivers: drivers,
+      basis: 'editorial',
+      label: tier === 'NATIONAL' ? 'nationally prominent' : tier === 'REGIONAL' ? 'regional interest' : 'lower profile',
+      /* The sentence that has to travel with the label every time it is used. */
+      caveat: 'This is an EDITORIAL ATTENTION category built from rankings, conference, television window and book coverage. '
+        + 'EdgeDesk measures no betting handle and no book limits, so it CANNOT say a lower-profile game is more softly priced. '
+        + 'Do not equate low attention with a soft market.',
+      measured_volume: null
+    };
+  }
+
+  /* ==================================================================== */
+  /* RESEARCH PRIORITY — what to look at, which is not what to bet         */
+  /* ==================================================================== */
+
+  function researchPriority(o) {
+    o = o || {};
+    var pts = [], score = 0;
+    function add(n, why) { score += n; pts.push({ points: n, why: why }); }
+
+    var dis = o.disagreement || null;
+    if (dis && dis.level === 'LARGE') add(3, 'The model and the market disagree by ' + dis.gap + ' points — worth understanding, whichever is wrong.');
+    if (dis && dis.level === 'EXTREME') add(2, 'A ' + dis.gap + '-point disagreement, large enough to suspect a data fault. Priority is diagnostic, not value.');
+
+    var fm = o.fair || null;
+    if (fm && fm.method === 'SHARP_CLAIMED_UNVERIFIED') add(3, 'The row claims a sharp anchor it cannot evidence — a provenance fault worth resolving before anything else.');
+    if (fm && fm.method === 'UNKNOWN') add(1, 'The origin of the fair price was never recorded.');
+
+    var q = o.quote_state || null;
+    if (q && q.status === 'STALE') add(1, 'The only quote on file is ' + q.age_min + ' minutes old; a refresh would settle whether anything here is live.');
+
+    if (o.model_directional) add(2, 'The model carries a measured directional record in this market, and this game sits in the band where it was measured.');
+    if (o.missing_critical && o.missing_critical.length) add(2, 'A decision-critical input is missing (' + o.missing_critical.slice(0, 3).join(', ') + '); retrieving it could change the answer.');
+    if (o.personnel_change) add(3, 'A personnel change is on file that the model’s season inputs do not reflect.');
+
+    return {
+      score: score,
+      band: score >= 6 ? 'HIGH' : score >= 3 ? 'MEDIUM' : 'LOW',
+      drivers: pts,
+      /* Stated every time, because the two get conflated constantly. */
+      caveat: 'Research priority is how much this game rewards attention. It is NOT a recommendation, it is not an edge, and a high priority with no price is still not a bet.'
+    };
+  }
+
+  /* ==================================================================== */
+  /* THE DECISION                                                          */
+  /*                                                                       */
+  /* Four outcomes, in a fixed order of precedence, each with its blockers */
+  /* named. Nothing below invents a probability: every number it uses was  */
+  /* computed above or handed in from the deterministic pipeline.          */
+  /* ==================================================================== */
+
+  /**
+   * @param o.fair            fairMethod() result
+   * @param o.quote           {dec|american, book, selection, handicap, captured_at}
+   * @param o.quote_state     quoteState() result
+   * @param o.model           {line, market, win_probability} optional
+   * @param o.validation      validationFor() result
+   * @param o.disagreement    disagreementDiagnostics() result
+   * @param o.confirmation    confirmationRead() result
+   * @param o.required_missing  [{field, why}]
+   * @param o.game_status     'scheduled' | 'in_progress' | 'final' | null
+   */
+  function decide(o) {
+    o = o || {};
+    var blockers = [], notes = [], gates = {};
+    var fair = o.fair || null;
+    var qs = o.quote_state || null;
+    var conf = o.confirmation || null;
+    var v = o.validation || null;
+    var dis = o.disagreement || null;
+    var missing = (o.required_missing || []).slice();
+
+    var dec = num(o.quote && (o.quote.dec != null ? o.quote.dec : americanToDec(o.quote.american)));
+    var handicap = num(o.quote && o.quote.handicap);
+
+    /* ---- the price arithmetic, once, from owned numbers ---------------- */
+    var push = pushProbability({
+      handicap: handicap, centre: num(o.model && o.model.line) != null ? -num(o.model.line) : null,
+      distribution_key: o.push_distribution_key
+    });
+    var marketP = fair && fair.fair_probability != null ? fair.fair_probability : null;
+    var marketEv = marketP != null && dec != null
+      ? ev({ dec: dec, p_win: marketP, p_push: push.p_push || 0 }) : null;
+    var modelP = o.model && num(o.model.win_probability) != null ? num(o.model.win_probability) : null;
+    var modelEv = null;
+    if (modelP != null && v && v.may_produce_model_ev && dec != null) {
+      modelEv = ev({ dec: dec, p_win: modelP, p_push: push.p_push || 0 });
+    }
+
+    var price = {
+      offered_decimal: r4(dec),
+      offered_american: fmtAmerican(decToAmerican(dec)),
+      book: (o.quote && o.quote.book) || null,
+      selection: (o.quote && o.quote.selection) || null,
+      handicap: handicap,
+      fair_probability: marketP,
+      fair_american: fair ? fair.fair_american : null,
+      fair_method: fair ? fair.method : null,
+      fair_label: fair ? fair.label : null,
+      push_probability: push.p_push,
+      push_note: push.why,
+      break_even_probability: dec != null ? breakEvenProb(dec, push.p_push || 0) : null,
+      market_ev: marketEv ? marketEv.ev : null,
+      model_ev: modelEv ? modelEv.ev : null,
+      /* Probability edge and expected return are DIFFERENT QUANTITIES and are
+         reported in different units so they cannot be read as one number. */
+      probability_edge_pp: (marketP != null && dec != null)
+        ? r4(marketP - breakEvenProb(dec, push.p_push || 0)) : null,
+      expected_return_per_unit: marketEv ? marketEv.ev : null,
+      price_limit_decimal: null,
+      price_limit_american: null,
+      price_needed_decimal: null,
+      price_needed_american: null
+    };
+    if (marketP != null) {
+      var lim = minPlayableDec(marketP, push.p_push || 0, CONFIG.ev_floor);
+      price.price_limit_decimal = lim;
+      price.price_limit_american = fmtAmerican(decToAmerican(lim));
+      if (marketEv && marketEv.ev != null && marketEv.ev < CONFIG.ev_floor) {
+        price.price_needed_decimal = lim;
+        price.price_needed_american = price.price_limit_american;
+      }
+    }
+
+    /* ---- gate 1: is there enough to say anything at all? --------------- */
+    if (!fair || fair.method === 'NO_FAIR' || marketP == null) {
+      missing.push({ field: 'fair_price', why: 'No fair price is on file, so there is nothing to judge this number against.' });
+    }
+    if (dec == null) missing.push({ field: 'current_price', why: 'No current price is on file for this selection.' });
+    gates.evidence = { pass: missing.length === 0, missing: missing };
+
+    /* ---- gate 2: is the game still a pregame proposition? -------------- */
+    var status = clean(o.game_status).toLowerCase();
+    gates.game_status = { pass: status !== 'final' && status !== 'in_progress', status: status || 'unknown' };
+    if (!gates.game_status.pass) blockers.push('The game is ' + status + '. A pregame price is not available.');
+
+    /* ---- gate 3: is the quote live? ----------------------------------- */
+    gates.freshness = { pass: !!(qs && qs.actionable), status: qs ? qs.status : 'UNKNOWN', why: qs ? qs.why : 'No quote state was computed.' };
+    if (!gates.freshness.pass) blockers.push(qs ? qs.why : 'The age of this quote could not be established.');
+
+    /* ---- gate 4: is the price defensibly better than fair? ------------- */
+    var evNow = marketEv && marketEv.ev != null ? marketEv.ev : null;
+    gates.price = {
+      pass: evNow != null && evNow >= CONFIG.ev_floor,
+      ev: evNow, floor: CONFIG.ev_floor,
+      why: evNow == null ? 'No expected value could be computed.'
+        : evNow >= CONFIG.ev_floor ? 'Expected return ' + pct(evNow, 2) + ' per unit, clearing the ' + pct(CONFIG.ev_floor, 2) + ' floor.'
+          : 'Expected return ' + pct(evNow, 2) + ' per unit, below the ' + pct(CONFIG.ev_floor, 2) + ' floor.'
+    };
+
+    /* ---- gate 5: is the fair price itself trustworthy? ----------------- */
+    gates.provenance = {
+      pass: !!(fair && (fair.method === 'SHARP_REFERENCE_DEVIG' || fair.method === 'ROBUST_CONSENSUS_MEDIAN')),
+      method: fair ? fair.method : null,
+      sharp: !!(fair && fair.sharp),
+      why: fair ? fair.why : 'No fair price.'
+    };
+    if (fair && fair.method === 'SHARP_CLAIMED_UNVERIFIED') blockers.push('The fair price claims a sharp anchor it cannot evidence. Resolve the provenance before pricing anything against it.');
+    if (fair && fair.method === 'UNKNOWN') notes.push('The origin of this fair price was not recorded, so the edge measured against it is of unknown quality.');
+
+    /* ---- gate 6: independent corroboration ---------------------------- */
+    gates.confirmation = {
+      pass: !!(conf && (conf.sharp_confirmed || conf.sufficient_families)),
+      sharp_confirmed: !!(conf && conf.sharp_confirmed),
+      families: conf ? conf.independent_families : null,
+      why: conf ? conf.sentence : 'Confirmation was not assessed.'
+    };
+
+    /* ---- gate 7: does the model's own record permit a recommendation? -- */
+    var maxDecision = 'BET CANDIDATE';
+    gates.model_validation = { pass: true, tier: v ? v.tier : null, why: null };
+    if (o.thesis_rests_on_model) {
+      gates.model_validation.pass = !!(v && v.may_produce_probability && v.beats_market === true);
+      gates.model_validation.why = v
+        ? (v.beats_market === true
+          ? 'The model’s own record beats the market in this market type.'
+          : 'The model’s own walk-forward record does NOT beat the closing line in this market (' + (v.limitations || '').slice(0, 160) + ').')
+        : 'No validation record.';
+      if (!gates.model_validation.pass) {
+        maxDecision = (v && v.max_decision) || 'WATCH';
+        notes.push('This thesis rests on the model, and the model’s own validation caps it at ' + maxDecision + '.');
+      }
+    }
+    if (v && v.max_decision && v.max_decision !== 'BET CANDIDATE' && o.thesis_rests_on_model) maxDecision = v.max_decision;
+
+    /* ---- gate 8: unexplained disagreement ----------------------------- */
+    gates.disagreement = { pass: !(dis && dis.blocks_recommendation), level: dis ? dis.level : null, why: dis ? dis.verdict : null };
+    if (dis && dis.blocks_recommendation) blockers.push(dis.verdict);
+
+    /* ---- gate 9: has the edge survived? ------------------------------- */
+    var remaining = num(o.edge_remaining);
+    gates.decay = { pass: remaining == null || remaining >= CONFIG.min_edge_remaining, remaining: remaining };
+    if (remaining != null && remaining < CONFIG.min_edge_remaining) {
+      notes.push('Only ' + Math.round(remaining * 100) + '% of the edge EdgeDesk first saw is left.');
+    }
+
+    /* ---- resolve ------------------------------------------------------ */
+    var decision, why;
+    if (!gates.evidence.pass) {
+      decision = 'INSUFFICIENT DATA';
+      why = 'EdgeDesk cannot evaluate this selection: ' + missing.map(function (m2) { return m2.field; }).join(', ') + ' missing.';
+    } else if (!gates.game_status.pass) {
+      decision = 'PASS';
+      why = 'The game is ' + gates.game_status.status + '.';
+    } else if (gates.price.pass === false && evNow != null && evNow < CONFIG.ev_floor) {
+      decision = 'PASS';
+      why = gates.price.why + (price.price_needed_american ? ' It becomes interesting again at ' + price.price_needed_american + ' or better.' : '');
+    } else if (blockers.length) {
+      decision = 'WATCH';
+      why = blockers[0];
+    } else if (!gates.freshness.pass) {
+      decision = 'WATCH';
+      why = gates.freshness.why;
+    } else if (!gates.confirmation.pass) {
+      decision = 'WATCH';
+      why = 'The price clears the floor, but nothing independently confirms the fair line it is measured against. ' + gates.confirmation.why;
+    } else if (!gates.decay.pass) {
+      decision = 'WATCH';
+      why = 'Most of the original edge has decayed.';
+    } else if (maxDecision !== 'BET CANDIDATE') {
+      decision = maxDecision;
+      why = notes[notes.length - 1] || 'Capped by the model’s own validation record.';
+    } else {
+      decision = 'BET CANDIDATE';
+      why = gates.price.why + ' ' + gates.confirmation.why;
+    }
+
+    /* A candidate that only just clears the floor is a candidate, and saying
+       so is more useful than a second label nobody can act on. */
+    var strength = decision === 'BET CANDIDATE'
+      ? (evNow >= CONFIG.candidate_ev ? 'clear' : 'marginal') : null;
+
+    return {
+      decision: decision,
+      strength: strength,
+      why: why,
+      blockers: blockers,
+      notes: notes,
+      gates: gates,
+      price: price,
+      model: o.model ? {
+        line: num(o.model.line), market: normMarket(o.model.market || (o.quote && o.quote.market)),
+        win_probability: modelP, model_ev: price.model_ev,
+        validation_tier: v ? v.tier : null,
+        experimental: !!(v && v.experimental),
+        may_produce_model_ev: !!(v && v.may_produce_model_ev),
+        validation_note: v ? v.limitations : null
+      } : null,
+      disagreement: dis,
+      /* Every thing the decision would need to change. */
+      what_would_change_it: buildTriggers(decision, price, gates, dis, maxDecision !== 'BET CANDIDATE' && o.thesis_rests_on_model ? maxDecision : null),
+      experimental: !!(v && v.experimental && o.thesis_rests_on_model),
+      config_used: {
+        ev_floor: CONFIG.ev_floor, candidate_ev: CONFIG.candidate_ev,
+        min_independent_families: CONFIG.min_independent_families,
+        quote_ttl_min: quoteTtlMin(o.quote && o.quote.market),
+        min_edge_remaining: CONFIG.min_edge_remaining
+      }
+    };
+  }
+
+  function buildTriggers(decision, price, gates, dis, capped) {
+    var t = [];
+    if (capped) {
+      t.push('A validation record showing the model beats the closing line in this market. Until then the model\u2019s own walk-forward record caps this at ' + capped + ', however large the disagreement looks.');
+      t.push('A market-side case for the same side — a sharp reference quoting it at a price that clears the floor — which would stand on its own rather than on the model.');
+    }
+    if (decision === 'BET CANDIDATE') {
+      if (price.price_limit_american) t.push('A price worse than ' + price.price_limit_american + ' takes the expected return below the floor and ends this.');
+      t.push('A refreshed quote that is no longer on the board withdraws it entirely.');
+    }
+    if (decision === 'PASS' && price.price_needed_american) t.push('A price of ' + price.price_needed_american + ' or better restores it.');
+    if (decision === 'WATCH' && gates.freshness && !gates.freshness.pass) t.push('A fresh capture confirming the price is still live.');
+    if (decision === 'WATCH' && gates.confirmation && !gates.confirmation.pass) t.push('A sharp reference quoting this side, or more independent books behind the fair line.');
+    if (decision === 'INSUFFICIENT DATA' && gates.evidence) {
+      (gates.evidence.missing || []).forEach(function (m2) { t.push('Retrieving ' + m2.field + '.'); });
+    }
+    if (dis && dis.blocks_recommendation) t.push('Answering the diagnostic checks on the model-market gap.');
+    if (!t.length) t.push('New evidence, a changed price, or a confirmed personnel change.');
+    return t;
+  }
+
+  /* ==================================================================== */
+  /* THE GAME EVIDENCE PACKET                                              */
+  /*                                                                       */
+  /* One versioned object per matchup. Every factual field carries a        */
+  /* source and a time context, and a field that is missing stays NULL      */
+  /* WITH A REASON — never a league average wearing the clothes of an       */
+  /* observation, and never a number the model filled in.                   */
+  /*                                                                       */
+  /* Two timestamps, deliberately: `observed_at` is when the fact was true, */
+  /* `known_at` is when it became knowable. The pair is what makes a        */
+  /* historical answer non-leaky, and collapsing them is how a backtest     */
+  /* quietly learns the future.                                             */
+  /* ==================================================================== */
+
+  function fact(value, o) {
+    o = o || {};
+    if (value == null || value === '') {
+      return { value: null, missing: true, reason: o.reason || 'not available in EdgeDesk’s current data', source: o.source || null };
+    }
+    return {
+      value: value, missing: false,
+      source: o.source || null,
+      provenance: o.provenance || null,
+      observed_at: o.observed_at || null,
+      known_at: o.known_at || o.observed_at || null,
+      unit: o.unit || null,
+      basis: o.basis || null,
+      note: o.note || null
+    };
+  }
+  function missingFact(reason, source) { return { value: null, missing: true, reason: reason, source: source || null }; }
+
+  /**
+   * Assemble a matchup packet. Every section is optional; an absent section
+   * becomes a declared gap rather than a silently shorter object.
+   */
+  function evidencePacket(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var sections = {
+      identity: o.identity || null,
+      market: o.market || null,
+      model: o.model || null,
+      previous_games: o.previous_games || null,
+      efficiency: o.efficiency || null,
+      matchup: o.matchup || null,
+      personnel: o.personnel || null,
+      situation: o.situation || null
+    };
+    var missing = [], present = [];
+    function walk(prefix, obj) {
+      if (!obj || typeof obj !== 'object') return;
+      for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        var v = obj[k];
+        if (v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'missing')) {
+          if (v.missing) missing.push({ field: prefix + k, reason: v.reason, source: v.source || null });
+          else present.push(prefix + k);
+        } else if (v && typeof v === 'object' && !Array.isArray(v)) walk(prefix + k + '.', v);
+      }
+    }
+    for (var s in sections) if (Object.prototype.hasOwnProperty.call(sections, s)) {
+      if (sections[s] == null) { missing.push({ field: s, reason: 'this whole section was not retrieved for this game', source: null }); continue; }
+      walk(s + '.', sections[s]);
+    }
+
+    var sources = uniq(present.concat([]).map(function () { return null; }));
+    var srcSet = [];
+    function collectSources(obj) {
+      if (!obj || typeof obj !== 'object') return;
+      for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        var v = obj[k];
+        if (v && typeof v === 'object' && v.source && srcSet.indexOf(v.source) < 0) srcSet.push(v.source);
+        if (v && typeof v === 'object' && !Array.isArray(v)) collectSources(v);
+      }
+    }
+    collectSources(sections);
+
+    return {
+      schema: PACKET_SCHEMA,
+      version: num(o.version) || 1,
+      packet_id: (o.game_id != null ? String(o.game_id) : 'unknown') + ':v' + (num(o.version) || 1),
+      game_id: o.game_id != null ? String(o.game_id) : null,
+      sport: o.sport || null,
+      built_at: new Date(now).toISOString(),
+      as_of: o.as_of || null,
+      sections: sections,
+      completeness: {
+        fields_present: present.length,
+        fields_missing: missing.length,
+        ratio: (present.length + missing.length) ? r4(present.length / (present.length + missing.length)) : null
+      },
+      missing: missing,
+      sources: srcSet,
+      note: 'Every factual field carries a source and a time context. A missing field is null with a reason and was never filled in with a league average, a model guess or a value carried over from another game.'
+    };
+  }
+
+  /**
+   * Has this packet's evidence changed enough that a cached conclusion can no
+   * longer be reused? Price, personnel and status move the answer; a new
+   * ranking does not.
+   */
+  function packetStillValid(prev, cur) {
+    if (!prev || !cur) return { valid: false, why: 'No earlier packet to compare against.' };
+    var changed = [];
+    function pick(p, path) {
+      var parts = path.split('.'), o = p, i;
+      for (i = 0; i < parts.length; i++) { if (!o) return undefined; o = o[parts[i]]; }
+      return o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, 'value') ? o.value : o;
+    }
+    var WATCHED = ['market.price', 'market.book', 'market.handicap', 'market.captured_at',
+      'identity.status', 'personnel.starting_qb', 'model.line', 'model.total'];
+    WATCHED.forEach(function (path) {
+      var a = pick(prev.sections || {}, path), b = pick(cur.sections || {}, path);
+      if (JSON.stringify(a == null ? null : a) !== JSON.stringify(b == null ? null : b)) changed.push(path);
+    });
+    return {
+      valid: changed.length === 0,
+      changed: changed,
+      why: changed.length
+        ? 'These decision-critical fields changed since the cached analysis: ' + changed.join(', ') + '. Any price conclusion must be recomputed before it is repeated.'
+        : 'No decision-critical field has changed, so the cached analysis still describes this game.'
+    };
+  }
+
+  /* ==================================================================== */
+  /* THE RECOMMENDATION LEDGER                                             */
+  /*                                                                       */
+  /* Immutable by construction: a published recommendation is written once  */
+  /* and never edited. A later change is a SEPARATE row pointing back at    */
+  /* the original, so the record of what was actually said at the time      */
+  /* survives whatever happens afterwards. That property is the only        */
+  /* reason any measurement built on it means anything.                     */
+  /* ==================================================================== */
+
+  function ledgerEntry(o) {
+    o = o || {};
+    var published = o.published_at || new Date(toMs(o.now) || Date.now()).toISOString();
+    if (DECISIONS.indexOf(o.decision) < 0) {
+      return { ok: false, why: 'Decision must be one of ' + DECISIONS.join(', ') + '; got "' + o.decision + '".' };
+    }
+    var dec = num(o.odds_decimal) != null ? num(o.odds_decimal) : americanToDec(o.odds_american);
+    return {
+      ok: true,
+      schema: LEDGER_SCHEMA,
+      /* A natural key, so a duplicate publish of the same decision at the same
+         price is recognisable as the same row rather than stacking. */
+      entry_key: [o.sport, o.game_id, normMarket(o.market), o.selection, o.handicap == null ? '' : o.handicap, published].join('|'),
+      kind: 'RECOMMENDATION',
+      sport: o.sport || null,
+      game_id: o.game_id != null ? String(o.game_id) : null,
+      matchup: o.matchup || null,
+      kickoff: o.kickoff || null,
+      market: normMarket(o.market),
+      selection: o.selection || null,
+      handicap: num(o.handicap),
+      odds_decimal: r4(dec),
+      odds_american: fmtAmerican(decToAmerican(dec)),
+      book: o.book || null,
+      quote_captured_at: o.quote_captured_at || null,
+      decision: o.decision,
+      strength: o.strength || null,
+      probability: num(o.probability),
+      probability_source: o.probability_source || null,
+      expected_value: num(o.expected_value),
+      price_limit_american: o.price_limit_american || null,
+      evidence_version: o.evidence_version || null,
+      evidence_packet_id: o.evidence_packet_id || null,
+      model_version: o.model_version || null,
+      engine_version: o.engine_version || null,
+      decision_config: o.decision_config || null,
+      /* FORWARD means published before the event, with no knowledge of it.
+         Anything else is a backtest and is measured in a separate population. */
+      mode: o.mode === 'BACKTEST' ? 'BACKTEST' : 'FORWARD',
+      published_at: published,
+      /* Set once, never updated in place. */
+      immutable: true,
+      supersedes: null,
+      note: 'This row records what EdgeDesk said at publication time. It is never edited. A later change is a separate UPDATE row.'
+    };
+  }
+
+  /** A subsequent change, recorded WITHOUT touching the original. */
+  function ledgerUpdate(original, o) {
+    o = o || {};
+    if (!original || !original.entry_key) return { ok: false, why: 'An update must point at an original entry.' };
+    return {
+      ok: true, schema: LEDGER_SCHEMA, kind: 'UPDATE',
+      entry_key: original.entry_key + '|u|' + (o.published_at || new Date().toISOString()),
+      supersedes: original.entry_key,
+      sport: original.sport, game_id: original.game_id, market: original.market,
+      selection: original.selection, handicap: original.handicap,
+      decision: o.decision || original.decision,
+      odds_decimal: num(o.odds_decimal) != null ? r4(num(o.odds_decimal)) : original.odds_decimal,
+      odds_american: o.odds_american || original.odds_american,
+      reason: o.reason || null,
+      published_at: o.published_at || new Date().toISOString(),
+      immutable: true,
+      note: 'An update to a published recommendation. The original row is unchanged and remains the record of what was said at the time.'
+    };
+  }
+
+  /* ---- measurement ---------------------------------------------------- */
+
+  /** Wilson score interval — honest at the sample sizes this actually sees. */
+  function wilson(wins, n, z) {
+    if (!n) return null;
+    z = z || 1.96;
+    var p = wins / n, z2 = z * z;
+    var d = 1 + z2 / n;
+    var c = p + z2 / (2 * n);
+    var s = z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n);
+    return { lo: r4((c - s) / d), hi: r4((c + s) / d), z: z };
+  }
+
+  /**
+   * Measure a set of settled ledger rows.
+   *
+   * Forward recommendations and backtests are counted in SEPARATE populations
+   * and never blended, because a backtest cannot be wrong about a game it was
+   * fitted on and mixing the two manufactures a record.
+   */
+  function measure(rows, o) {
+    o = o || {};
+    var all = (rows || []).filter(function (r) { return r && r.kind !== 'UPDATE'; });
+    var out = { forward: bucket(all.filter(function (r) { return r.mode !== 'BACKTEST'; })),
+      backtest: bucket(all.filter(function (r) { return r.mode === 'BACKTEST'; })) };
+    out.by_sport = split(all, 'sport');
+    out.by_market = split(all, 'market');
+    out.by_decision = split(all, 'decision');
+    out.separation_note = 'Forward recommendations and backtests are counted separately and are never combined. '
+      + 'A backtest result is not evidence about future performance and is reported only to show what was fitted.';
+    return out;
+
+    function split(list, key) {
+      var groups = {}, i, k;
+      for (i = 0; i < list.length; i++) {
+        k = list[i][key] == null ? 'unknown' : String(list[i][key]);
+        (groups[k] = groups[k] || []).push(list[i]);
+      }
+      var o2 = {};
+      for (k in groups) if (Object.prototype.hasOwnProperty.call(groups, k)) o2[k] = bucket(groups[k].filter(function (r) { return r.mode !== 'BACKTEST'; }));
+      return o2;
+    }
+
+    function bucket(list) {
+      var settled = list.filter(function (r) { return r.result != null && r.result !== ''; });
+      var w = 0, l = 0, p = 0, v = 0, units = 0, staked = 0;
+      var clvs = [], briers = [], probs = 0;
+      settled.forEach(function (r) {
+        var res = clean(r.result).toLowerCase();
+        var d = num(r.odds_decimal);
+        if (res === 'win') { w++; staked += 1; units += d != null ? d - 1 : 0; }
+        else if (res === 'loss') { l++; staked += 1; units -= 1; }
+        else if (res === 'push') { p++; staked += 1; }
+        else if (res === 'void' || res === 'cancelled') { v++; }
+        var c = num(r.clv);
+        if (c != null) clvs.push(c);
+        var pr = num(r.probability);
+        if (pr != null && (res === 'win' || res === 'loss')) {
+          probs++;
+          briers.push(Math.pow(pr - (res === 'win' ? 1 : 0), 2));
+        }
+      });
+      var decided = w + l;
+      return {
+        n_published: list.length,
+        n_settled: settled.length,
+        wins: w, losses: l, pushes: p, voids: v,
+        /* A push is not a win and not a loss. It is excluded from the win rate
+           and included in the stake, which is what actually happened. */
+        win_rate: decided ? r4(w / decided) : null,
+        win_rate_interval: decided ? wilson(w, decided) : null,
+        units: r2(units),
+        /* ROI is on AMOUNT STAKED, which includes pushed stakes, because that
+           is the money that was actually at risk. */
+        roi_on_staked: staked ? r4(units / staked) : null,
+        amount_staked: r2(staked),
+        clv: clvs.length ? {
+          n: clvs.length,
+          mean: r4(clvs.reduce(function (a, b) { return a + b; }, 0) / clvs.length),
+          beat_rate: r4(clvs.filter(function (c) { return c > 0; }).length / clvs.length),
+          reference: o.clv_reference || 'the de-vigged closing fair price recorded by the settle job, measured from the entry price on the row',
+          note: 'CLV is measured against one reference method for every row in this population. Rows graded against a different reference are not mixed in.'
+        } : null,
+        brier: briers.length ? { n: briers.length, value: r4(briers.reduce(function (a, b) { return a + b; }, 0) / briers.length),
+          note: 'Measured only over rows that carried a published probability and settled to a win or a loss (n=' + probs + ').' } : null,
+        sufficient_sample: decided >= 100,
+        caveat: decided < 100
+          ? 'n=' + decided + ' decided outcomes. At this sample size the interval is wide enough that neither a positive nor a negative record means anything yet. Report the interval, never the point estimate alone.'
+          : null
+      };
+    }
+  }
+
+  /**
+   * Refuse to grade a recommendation against information it could not have had.
+   *
+   * A row published after kickoff, or graded against a closing price captured
+   * before it was published, is leakage and is excluded with a reason rather
+   * than quietly included.
+   */
+  function validateNoLookahead(row) {
+    var pub = toMs(row && row.published_at);
+    var kick = toMs(row && row.kickoff);
+    var problems = [];
+    if (pub == null) problems.push('no publication timestamp, so it cannot be shown to precede the event');
+    if (kick != null && pub != null && pub > kick) problems.push('published after kickoff');
+    if (row && row.mode === 'BACKTEST') problems.push('a backtest, which is measured in its own population');
+    var closeAt = toMs(row && row.closing_captured_at);
+    if (closeAt != null && pub != null && closeAt < pub) problems.push('graded against a closing price captured before publication');
+    return {
+      clean: problems.length === 0,
+      problems: problems,
+      why: problems.length ? 'Excluded from the forward record: ' + problems.join('; ') + '.' : null
+    };
+  }
+
+  return {
+    VERSION: VERSION, PACKET_SCHEMA: PACKET_SCHEMA, LEDGER_SCHEMA: LEDGER_SCHEMA, DECISIONS: DECISIONS,
+    configure: configure, config: config,
+    num: num, toMs: toMs, normMarket: normMarket, marketLabel: marketLabel, titleCase: titleCase,
+    americanToDec: americanToDec, decToAmerican: decToAmerican, fmtAmerican: fmtAmerican,
+    impliedProb: impliedProb, devigTwoWay: devigTwoWay,
+    ev: ev, breakEvenProb: breakEvenProb, priceForEv: priceForEv, minPlayableDec: minPlayableDec,
+    registerDistribution: registerDistribution, distribution: distribution, distributions: distributions,
+    clearDistributions: clearDistributions, pushProbability: pushProbability,
+    MODEL_VALIDATION: MODEL_VALIDATION, registerValidation: registerValidation, validationFor: validationFor,
+    loadFootballValidation: loadFootballValidation, modelWinProbability: modelWinProbability,
+    validationSnapshot: validationSnapshot, loadSnapshotValidation: loadSnapshotValidation,
+    fairMethod: fairMethod, confirmationRead: confirmationRead,
+    quoteTtlMin: quoteTtlMin, quoteState: quoteState, applyRefresh: applyRefresh,
+    SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,
+    disagreementDiagnostics: disagreementDiagnostics,
+    ATTENTION_TIERS: ATTENTION_TIERS, attentionTier: attentionTier, researchPriority: researchPriority,
+    decide: decide,
+    fact: fact, missingFact: missingFact, evidencePacket: evidencePacket, packetStillValid: packetStillValid,
+    ledgerEntry: ledgerEntry, ledgerUpdate: ledgerUpdate, measure: measure, wilson: wilson,
+    validateNoLookahead: validateNoLookahead
+  };
+});
+/*__EDINTEL_END__*/
+/* The block above registers globalThis.EDINTEL (UMD). */
+const EDINTEL: any = (globalThis as any).EDINTEL;
+
+/* ========================================================================
    PART 2 — ORCHESTRATOR, PROMPT, HANDLER
    Source of truth: supabase/functions/edgedesk_ai/index.ts
    ======================================================================= */
@@ -10128,6 +13006,20 @@ const MIN_PATTERN_N = parseInt(Deno.env.get("EDGEDESK_MIN_PATTERN_N") ?? "30", 1
 // Stats API for the traditional pitching line. Set to "0" to keep the engine
 // strictly on owned tables and report the gap instead.
 const MLB_FALLBACK = (Deno.env.get("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
+
+/* Where the published static artifacts live. The FBS board's own slate is a
+   build output committed to the site, not a table, so the research engine
+   reads it the same way a browser does. Overridable so a preview deployment
+   can point at its own origin instead of production. */
+const SITE_BASE = Deno.env.get("EDGEDESK_SITE_BASE") ?? "https://edgedesksports.com";
+
+/* THE MODEL'S OWN VALIDATION RECORD, REGISTERED AT STARTUP.
+   This is what stops a 6-point model-market disagreement becoming a
+   recommendation: the football model's walk-forward record says it does not
+   beat the closing line, and the decision layer obeys that record rather than
+   the size of the gap. Registering here, once per isolate, means every
+   decision in this process is governed by it. */
+try { EDINTEL.loadSnapshotValidation("americanfootball_ncaaf"); } catch { /* the kernel is additive; never fail a request for it */ }
 
 /* ── THE SAME FLOOR AND THE SAME CLOCK AS THE DETERMINISTIC ENGINE ────────
    attackThesis, crossMarketFlags and scout each carried their own default
@@ -10285,6 +13177,21 @@ Every team reference reaches you already resolved to a canonical, sport-scoped i
 
 VERDICT DISCIPLINE
 Use the deterministic verdict wherever one is attached (BET / LEAN / WAIT / PASS). Never upgrade it. WAIT means information is missing, stale or unconfirmed — it is not a rejection; lead with what must confirm. On PASS, explain what would have to change; do not find a way to recommend it. A positive edge is not a bet: judge it against break-even and max-playable, and if the price is past the floor, say the price is the problem and name the price that would restore it.
+
+FAIR PRICE PROVENANCE — NAME THE METHOD THAT ACTUALLY PRODUCED THE NUMBER
+Every priced item carries \`fair_method\`, \`fair_label\` and \`fair_sentence\`, computed from the row's own \`reference_type\` and \`sharp_book_fair\`. Use them verbatim and never substitute a different description.
+- SHARP_REFERENCE_DEVIG is the ONLY method you may describe as a sharp or Pinnacle fair line, and only then. \`contributing_reference_quotes\` lists the actual prices it was de-vigged from; quote them when you make the claim.
+- ROBUST_CONSENSUS_MEDIAN means no sharp reference quoted this selection. Say "the de-vigged median of the books that did", never "Pinnacle fair". A row can carry a populated \`sharp_fair\` and still be this: capture writes that column from the consensus when no reference book quotes, which is exactly why the method field exists.
+- SHARP_CLAIMED_UNVERIFIED means the row claims a sharp anchor and carries nothing to evidence it. Report it as a data fault. Do not price against it as though it were sharp.
+- UNKNOWN means the origin was never recorded. Say so; do not guess it.
+NEVER write a sentence that claims a sharp anchor and a sentence that denies sharp confirmation about the same selection. If you find yourself doing that, the method field is the answer and the other sentence is wrong.
+BOOK COUNT IS NOT SHARP CONFIRMATION. Books sharing a pricing feed move together, so "seven books behind the fair line" can be one opinion repeated seven times. Independent confirmation is a reference book quoting the same side, and it is reported separately. Never present a count as though it were confirmation.
+
+QUOTE FRESHNESS — A STALE PRICE IS RESEARCH, NEVER AN ACTION
+Every priced item carries \`quote_status\`, \`quote_age_min\` and \`quote_actionable\`.
+- quote_actionable=false means the price may NOT support an actionable conclusion. Keep the number, keep its timestamp, and say plainly that it is the last price EdgeDesk observed rather than one that is currently available. Do not put it under any heading that promises a person can act on it.
+- A quote whose age cannot be established is unverified, not fresh.
+- If the answer repeats a price conclusion from earlier in the conversation, the price must have been revalidated since. An unrevalidated repeat of an actionable price is a false statement about the present.
 
 MARKET vs MODEL
 Keep these separate and never collapse them into one "AI confidence": MODEL EDGE (what EdgeDesk projects, UNPROVEN), MARKET EDGE (price vs sharp reference), PRICE VALUE (where this number sits in the playable window), ACTIONABILITY (liquidity, freshness, book trust), RESEARCH CONFIDENCE (how good the evidence is). When Pinnacle disagrees with the model, that is information to explain, not noise to dismiss.
@@ -10827,6 +13734,21 @@ interface ResearchOut {
   leakage: LeakageReport;
   /** What this sport can and cannot know, and from where. */
   capabilities: CapabilityCell[];
+  /** The authoritative slate — what games EXIST, established from a schedule. */
+  slate_index: SlateGame[] | null;
+  /** Stage B: deterministic eligibility and research priority over that slate. */
+  ranked: ShortlistRow[];
+  /** Stage C: versioned evidence packets for the games that were researched. */
+  packets: any[];
+  /** The deterministic decision for every quoted selection on the ranked card. */
+  decisions: GameDecision[];
+  /** The immutable ledger rows this turn would publish. */
+  ledger_rows: any[];
+  /** Which of the five empties this is, with the sentence the answer must use. */
+  slate_state: any | null;
+  slate_source: string | null;
+  /** The scope the user's board is showing, when the client sent one. */
+  board_scope: SlateScopeRequest | null;
   /** Operational facts accumulated from this run, for the learning layer. */
   learning_context: Record<string, unknown>;
 }
@@ -10879,12 +13801,99 @@ async function runResearch(
   let slateRows: any[] = [];
   let focus: any = null;
 
+  /* ---- 0. THE SPORT, AND THE BOARD'S OWN SCOPE, BEFORE ANY RETRIEVAL -----
+     The sport used to be resolved AFTER the board read, with the top row of
+     `signals` as a fallback — so a question about a sport with no flagged
+     signal could be routed by whatever happened to be hot somewhere else, and
+     the schedule for the sport actually asked about was never read at all.
+
+     It is resolved here instead, from the question and from the scope the
+     user's board is actually showing. `board_scope` is what the client sends
+     about the view it has open: sport, season, week and any filter. Respecting
+     it is the difference between answering about the 75 games on screen and
+     answering about some other window. */
+  const boardScope: SlateScopeRequest = (packet && typeof packet.board_scope === "object" && packet.board_scope) || {};
+  const earlySport: string | null = sportOfIntent(plan.intent) ?? plan.sport
+    ?? (packet?.game?.sport_key ?? null) ?? (boardScope as any).sport ?? state.sport ?? null;
+  if ((boardScope as any).sport || num(boardScope.week) != null) {
+    data_path.board_scope = {
+      ...boardScope,
+      note: "The scope the user's board is showing, echoed back. Research stays inside it unless the question explicitly asks for something else.",
+    };
+  }
+
+  /* ---- 0b. THE SLATE INDEX — what games EXIST, before what is priced -----
+     Stage A of staged retrieval and the single most important read in this
+     function. It answers "what is on this card" from a SCHEDULE source, so
+     that the answer to "are there games" can never again be produced by a
+     query about prices. */
+  let slateIndex: SlateIndexResult | null = null;
+  if (earlySport && (wants("slate") || wants("cfb_intelligence") || wants("matchup")
+    || wants("team_efficiency") || plan.depth === "SLATE" || plan.depth === "FULL")) {
+    try {
+      slateIndex = await dal.getSlateIndex(earlySport, {
+        season: num(boardScope.season), week: num(boardScope.week),
+        label: boardScope.label ?? null,
+        conferences: boardScope.conferences ?? null, group: boardScope.group ?? null,
+        game_ids: boardScope.game_ids ?? null,
+      });
+      data_path.slate_index = slateIndex.path;
+      evidence.push(ev({
+        source: slateIndex.source ?? "schedule", entity: null, field: "slate_index",
+        relevance: "schedule", sport: earlySport, layer: "context", data_layer: "L1_SCHEDULE",
+        source_type: "OWNED_TABLE",
+        value: {
+          state: slateIndex.state.state,
+          scope: slateIndex.scope_label,
+          schedule_source: slateIndex.source_label,
+          scheduled_games: slateIndex.state.scheduled_games,
+          games_with_quotes: slateIndex.state.games_with_quotes,
+          games_with_signals: slateIndex.state.games_with_signals,
+          sentence: slateIndex.state.sentence,
+          games: slateIndex.index.slice(0, 120).map((g) => ({
+            game_id: g.game_id, matchup: g.matchup, kickoff: g.kickoff, week: g.week,
+            home_conference: g.home_conference, away_conference: g.away_conference,
+            home_rank: g.home_rank ?? null, away_rank: g.away_rank ?? null,
+            model_home_line: g.model_home_line, model_total: g.model_total,
+            model_status: g.model_status, has_quote: g.has_quote, has_signal: g.has_signal,
+          })),
+        },
+        status: slateIndex.state.state === "RETRIEVAL_FAILED" ? "UNAVAILABLE"
+          : slateIndex.index.length ? "VERIFIED" : "PARTIAL",
+        freshness: "CURRENT",
+        provenance: slateIndex.source_label,
+        note: slateIndex.state.sentence
+          + (slateIndex.state.forbidden_claim
+            ? ` You may NOT claim ${slateIndex.state.forbidden_claim}.` : ""),
+      }));
+    } catch (e) {
+      data_path.slate_index = { error: `the slate index threw and was skipped — ${String((e as Error)?.message ?? e)}` };
+    }
+  }
+
   /* ---- 1. the board, server-side ---------------------------------------- */
   if (wants("slate") || wants("focus_signal") || wants("market") || wants("traps")) {
-    const s = await dal.getSlate(state.sport ?? null);
+    const s = await dal.getSlate(earlySport ?? state.sport ?? null);
     slateRows = s.rows;
     // Only the top of the board goes into the prompt; the rest is summarized.
-    evidence.push(...s.ev.slice(0, 24));
+    /* An empty signals read is a statement about PRICES. When the slate index
+       already established that games exist, the "no signals" item is replaced
+       by one that says which of the five empties this actually is — the exact
+       substitution that stops "no flagged signal" becoming "no CFB games". */
+    const noSignals = !s.rows.length;
+    if (noSignals && slateIndex && slateIndex.index.length) {
+      evidence.push(ev({
+        source: "signals", entity: null, field: "slate", relevance: "market",
+        value: { flagged_signals: 0, scheduled_games: slateIndex.state.scheduled_games,
+          games_with_quotes: slateIndex.state.games_with_quotes, state: slateIndex.state.state },
+        status: "PARTIAL", freshness: "CURRENT",
+        note: `EdgeDesk has flagged no signal in this window. ${slateIndex.state.sentence} `
+          + `A flagged signal is a priced opportunity EdgeDesk chose to flag; its absence is a statement about PRICES, `
+          + `not about whether games exist. Do not report an empty board as an empty slate.`,
+      }));
+    } else {
+      evidence.push(...s.ev.slice(0, 24));
+    }
     if (s.rows.length > 24) {
       data_path.slate_truncated = { total: s.rows.length, shown: 24 };
     }
@@ -10933,6 +13942,7 @@ async function runResearch(
      exists for one sport, then an explicit league word, then the loaded signal,
      then conversation state, then — last, and only as a tiebreak — board order. */
   const sportKey: string | null = sportOfIntent(plan.intent) ?? plan.sport
+    ?? (slateIndex && slateIndex.index.length ? earlySport : null)
     ?? focus?.sport_key ?? state.sport ?? (slateRows[0]?.sport_key ?? null);
   const mod = sportModule(sportKey);
   const imod = intelligenceModule(sportKey);
@@ -10940,6 +13950,7 @@ async function runResearch(
     resolved: sportKey,
     via: sportOfIntent(plan.intent) ? `intent "${plan.intent}" exists only for this sport`
       : plan.sport ? "the question named its league explicitly"
+      : (slateIndex && slateIndex.index.length) ? `the slate index found ${slateIndex.index.length} scheduled games for it`
       : focus?.sport_key ? "the signal the user has open"
       : state.sport ? "conversation state"
       : slateRows.length ? "board order (weakest — the top of the board is not the subject)"
@@ -11142,6 +14153,142 @@ async function runResearch(
     }
   }
 
+  /* ---- 4a-bis. STAGE B + STAGE C — rank the card, then research the top --
+     Stage A gave one compact row per game for the whole card. Stage B ranks it
+     with deterministic code over owned fields. Stage C fetches the expensive
+     layers for the handful that survive, in batched reads.
+
+     This ordering is the answer to "do not send the entire database into one
+     oversized prompt": the model receives a complete INDEX of every game and
+     deep evidence for a shortlist, rather than a truncated fraction of
+     everything with no way to tell what was cut. */
+  let ranked: ShortlistRow[] = [];
+  let packets: any[] = [];
+  if (slateIndex && slateIndex.index.length) {
+    ranked = rankSlate(slateIndex.index, { now: Date.now(), sport: sportKey });
+    data_path.slate_ranking = {
+      games: ranked.length,
+      eligible: ranked.filter((r) => r.eligible).length,
+      ineligible_reasons: Array.from(new Set(ranked.filter((r) => !r.eligible)
+        .map((r) => r.ineligible_reason))).slice(0, 4),
+      top: ranked.slice(0, 8).map((r) => ({
+        game: r.game.matchup, eligible: r.eligible, priority: r.priority,
+        band: r.priority_band, attention: r.attention.tier,
+        disagreement: r.disagreement ? r.disagreement.gap : null,
+      })),
+      note: "Deterministic. Eligibility is whether a priced recommendation is POSSIBLE; priority is how much the "
+        + "game repays attention. They are different questions and a high-priority game with no live quote is "
+        + "still not a bet.",
+    };
+    /* The shortlist: the focused game always, then the top of the ranking. A
+       question about one matchup must never lose that matchup to the ranking. */
+    const focusKey = state.teams.length ? state.teams.map((t) => normName(t)) : [];
+    const picked: SlateGame[] = [];
+    /* Each shortlisted game costs roster reads and widens every batched IN()
+       filter, so the shortlist is sized against what the budget can actually
+       research rather than against a fixed number. Three games researched
+       properly beat five researched thinly — the thin ones produce a packet
+       full of declared gaps that were never really gaps. */
+    const spare = Math.max(0, dal.budget - dal.calls - 6);
+    const wantN = Math.max(1, Math.min(
+      plan.depth === "QUICK" ? 1 : plan.depth === "STANDARD" ? 3 : 5,
+      Math.floor(spare / 2),
+    ));
+    for (const r of ranked) {
+      if (!focusKey.length) break;
+      const m = normName(r.game.matchup);
+      if (focusKey.some((t) => m.includes(t.split(" ").pop() ?? t))) picked.push(r.game);
+    }
+    for (const r of ranked) {
+      if (picked.length >= wantN) break;
+      if (!picked.some((p) => p.game_id === r.game.game_id)) picked.push(r.game);
+    }
+    const shortlist = picked.slice(0, wantN);
+
+    if (sportKey === "americanfootball_ncaaf" && shortlist.length && plan.depth !== "QUICK") {
+      try {
+        const ge = await dal.getCfbGameEvidence(shortlist, { season: num(boardScope.season) });
+        data_path.game_evidence = ge.path;
+        packets = ge.packets;
+        for (const p of packets) {
+          evidence.push(ev({
+            source: "evidence_packet", entity: (p.sections?.identity?.matchup?.value as string) ?? p.game_id,
+            field: "game_evidence", relevance: "matchup", sport: sportKey,
+            event_id: p.game_id, layer: "matchup", data_layer: "L5_MATCHUP", source_type: "DERIVED",
+            value: p, status: p.completeness.ratio != null && p.completeness.ratio > 0.5 ? "VERIFIED" : "PARTIAL",
+            freshness: "CURRENT",
+            provenance: `versioned evidence packet ${p.packet_id} assembled from ${p.sources.join(", ")}`,
+            note: `Evidence packet ${p.packet_id}. ${p.completeness.fields_present} fields present, `
+              + `${p.completeness.fields_missing} declared missing WITH REASONS. ${p.note}`,
+          }));
+        }
+      } catch (e) {
+        data_path.game_evidence = { error: `the evidence-packet builder threw and was skipped — ${String((e as Error)?.message ?? e)}` };
+      }
+    }
+  }
+
+  /* ---- 4a-ter. THE DECISION PASS -----------------------------------------
+     Deterministic, one row per quoted selection on the ranked card. The model
+     is called afterwards and explains THIS; it does not produce it and cannot
+     overturn it. */
+  let decisions: GameDecision[] = [];
+  let ledger_rows: any[] = [];
+
+  /* THE SELECTION IN FOCUS ALWAYS GETS A DECISION.
+     "What price makes it a pass?" is a follow-up about one selection the reader
+     already has open. It classifies QUICK, which deliberately does not index
+     the whole card — and with no card there was no ranked row, so there was no
+     decision, and the answer came back as though nothing on the board
+     qualified. That is a question about a price answered with a statement about
+     a slate.
+     A focused signal is turned into a single-game ranked row here so the
+     decision pass has something to decide, whatever depth the question ran at. */
+  if (!ranked.length && focus && focus.event_id) {
+    const g: SlateGame = {
+      game_id: String(focus.event_id), cfb_game_id: null, source: "signals",
+      season: null, week: null, kickoff: focus.commence_time ?? null,
+      home_team: String(focus.home_team ?? ""), away_team: String(focus.away_team ?? ""),
+      home_id: null, away_id: null, home_conference: null, away_conference: null,
+      home_group: null, away_group: null, neutral_site: null, venue: null,
+      matchup: `${focus.away_team} @ ${focus.home_team}`, status: "scheduled",
+      model_home_line: null, model_total: null, model_status: null, model_completeness: null,
+      quote: { event_id: String(focus.event_id), market: focus.market, selection: focus.selection,
+        point: num(focus.point), dec: num(focus.best_dec), book: focus.best_book,
+        captured_at: focus.last_seen_at ?? null },
+      has_quote: num(focus.best_dec) != null, has_signal: focus.flagged_at != null,
+      signals: [focus],
+    };
+    ranked = rankSlate([g], { now: Date.now(), sport: sportKey });
+    data_path.focus_decision = {
+      note: "No slate index was built at this depth, so the decision pass ran over the ONE selection the reader has "
+        + "open. A follow-up about a price is answered about that price, not about the card.",
+      matchup: g.matchup, selection: focus.selection,
+    };
+  }
+
+  if (ranked.length) {
+    try {
+      decisions = decideSlate(ranked, packets, { sport: sportKey });
+      ledger_rows = ledgerRowsFor(decisions, {
+        sport: sportKey,
+        model_version: EDINTEL.validationSnapshot(sportKey ?? "")?.model_version ?? null,
+        engine_version: BUILD,
+      });
+      data_path.decisions = {
+        rows: decisions.length,
+        by_decision: decisions.reduce((a: Record<string, number>, d) => {
+          a[d.decision] = (a[d.decision] ?? 0) + 1; return a;
+        }, {}),
+        publishable_ledger_rows: ledger_rows.length,
+        note: "Computed by EdgeDesk-owned code from owned prices before the model was called. The model explains these; "
+          + "it does not produce them and may not contradict them.",
+      };
+    } catch (e) {
+      data_path.decisions = { error: `the decision pass threw and was skipped — ${String((e as Error)?.message ?? e)}` };
+    }
+  }
+
   const MULTISPORT = new Set(["americanfootball_nfl", "americanfootball_ncaaf", "basketball_ncaab"]);
   let tfRows: any[] = [];
   if (sportKey && MULTISPORT.has(sportKey)
@@ -11330,11 +14477,32 @@ async function runResearch(
       .map((e) => String(e.entity)),
   ));
 
-  const slate_scope: SlateScope = cardScope ?? buildSlateScope(
+  /* THE DENOMINATOR COMES FROM THE SCHEDULE. The previous line built the scope
+     from the games that had already come back, stamping each with today's
+     date — which is the "counting retrieved rows against retrieved rows"
+     failure the comment above warns about, reintroduced one layer up. When
+     nothing came back it produced expected_games 0, and "no games are carded
+     for this date" is the sentence that became "there are no CFB matchups".
+     The slate index is a schedule read and is used first, always. */
+  const slate_scope: SlateScope = cardScope ?? (slateIndex && slateIndex.index.length ? {
+    sport: sportKey,
+    date: slateIndex.scope_label,
+    timezone: "America/New_York",
+    expected_games: slateIndex.index.length,
+    retrieved_games: slateIndex.index.length,
+    live_games: slateIndex.index.filter((g) => g.status !== "final").length,
+    scheduled_games: slateIndex.index.filter((g) => g.status !== "final").length,
+    final_games: slateIndex.index.filter((g) => g.status === "final").length,
+    postponed_games: 0,
+    missing_games: 0,
+    dropped_final: 0,
+    complete: true,
+    note: slateIndex.state.sentence,
+  } : buildSlateScope(
     sportKey,
     games.map((g) => ({ game_date: etDay(0), status: "Scheduled", game: g })),
     games.map((g) => ({ game_date: etDay(0), status: "Scheduled", game: g })),
-  );
+  ));
 
   const universe: CoverageUniverse = {
     entities: starters.length ? starters : teamsInPlay,
@@ -11520,8 +14688,30 @@ async function runResearch(
     cov.push(coverage(ev0, "opponent_offense", starters));
     cov.push(coverage(ev0, "workload", starters));
   }
-  if (teamsInPlay.length) cov.push(coverage(ev0, "team_efficiency", teamsInPlay));
-  if (games.length) cov.push(coverage(ev0, "weather", games));
+  /* A FIELD THE SPORT DOES NOT HAVE CANNOT BE MISSING FROM IT.
+     This line used to run unconditionally, so a college-football answer
+     reported "team_efficiency: usable for 0 of 176" for a metric the
+     capability matrix already declares NOT_AVAILABLE for the sport — there is
+     no free per-play CFB feed without a CollegeFootballData key, which is a
+     known, stated gap and not a retrieval failure. Printing it as 0/176
+     alongside a genuine gap teaches the reader to ignore both.
+     The declared-unavailable fields are still NAMED, once, as capabilities the
+     sport lacks; they are no longer counted as coverage misses. */
+  if (teamsInPlay.length && sportSupports(sportKey, "team_efficiency")) {
+    cov.push(coverage(ev0, "team_efficiency", teamsInPlay));
+  }
+  if (games.length && sportSupports(sportKey, "weather")) cov.push(coverage(ev0, "weather", games));
+  const declaredUnavailable = (imod?.capabilities ?? [])
+    .filter((c) => c.status === "NOT_AVAILABLE")
+    .map((c) => ({ capability: c.capability, why: c.notes }));
+  if (declaredUnavailable.length) {
+    data_path.declared_unavailable = {
+      sport: sportKey, fields: declaredUnavailable,
+      note: "These are capabilities this sport does not have in EdgeDesk at all. They are stated once as absent "
+        + "capabilities and are NOT counted as coverage gaps, because a denominator for a field that cannot exist "
+        + "is meaningless and drowns out the gaps that are real.",
+    };
+  }
 
   /* ---- 10. research packet versioning -----------------------------------
      Reduce this game's research state to comparable scalars, fetch the last
@@ -11570,6 +14760,11 @@ async function runResearch(
   return {
     plan, state, evidence: ev0, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
+    slate_index: slateIndex ? slateIndex.index : null,
+    ranked, packets, decisions, ledger_rows,
+    slate_state: slateIndex ? slateIndex.state : null,
+    slate_source: slateIndex ? slateIndex.source_label : null,
+    board_scope: (boardScope as any).sport || num(boardScope.week) != null ? boardScope : null,
     completeness: comp, coverage: cov, snapshot, changed, findings, queue,
     cross, movement, integrity: integrity0,
     entities: { teams: state.teams, rejected_teams: teamScope.rejected, players },
@@ -11641,7 +14836,10 @@ async function runResearch(
    MLB slate is ~69KB of evidence; at 60KB it was being cut in half mid-object.
    ~240KB is roughly 60k tokens — comfortably inside the context window, and
    large enough that a real slate never truncates at all. */
-const EVIDENCE_MAX = Number(Deno.env.get("EDGEDESK_EVIDENCE_MAX") ?? "240000");
+function evidenceMax(): number {
+  const n = Number(Deno.env.get("EDGEDESK_EVIDENCE_MAX") ?? "240000");
+  return Number.isFinite(n) && n > 0 ? n : 240000;
+}
 
 /* For everything OTHER than evidence. Still a blind slice, but these blocks
    (movement reads, queues, data paths) are prose-ish and degrade gracefully;
@@ -11652,7 +14850,7 @@ function compact(o: unknown, max = 60000): string {
 }
 
 
-function buildUserContent(body: any, research: ResearchOut | null, evidenceMax = EVIDENCE_MAX, pres: Presentation | null = null): string {
+function buildUserContent(body: any, research: ResearchOut | null, budgetChars = evidenceMax(), pres: Presentation | null = null): string {
   const { mode, question, packet, compare } = body ?? {};
   const parts: string[] = [];
   const ask = (question && String(question).trim()) || defaultAsk(mode);
@@ -11668,6 +14866,132 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
       + `In focus: ${research.state.teams.join(" / ") || "(board-wide)"}\n`
       + `Retrievals: ${research.calls} reads in ${research.ms}ms`,
     );
+
+    /* ── THE SLATE, BEFORE ANYTHING ELSE ─────────────────────────────────
+       This block exists because an empty `signals` query once became "there
+       are no CFB matchups to evaluate on this slate" while the board beside
+       it showed 75 games. The schedule is read separately from the prices and
+       is stated first, so the two can never be collapsed again. */
+    if (research.slate_state) {
+      const st = research.slate_state;
+      parts.push(
+        `THE SLATE — established from a SCHEDULE source, separately from any question about prices.\n`
+        + `state=${st.state}\n`
+        + `${st.sentence}\n`
+        + `scheduled games: ${st.scheduled_games == null ? "unknown" : st.scheduled_games}`
+        + ` · games carrying a market quote: ${st.games_with_quotes}`
+        + ` · games carrying a flagged EdgeDesk signal: ${st.games_with_signals}\n`
+        + `schedule source: ${research.slate_source ?? "unknown"}\n`
+        + (st.forbidden_claim
+          ? `YOU MAY NOT CLAIM ${st.forbidden_claim.toUpperCase()}. `
+            + `An empty signals query, an empty quote set and an empty slate are three different findings. `
+            + `Say which one this is, in the words above.\n`
+          : "")
+        + (st.may_recommend
+          ? `Priced recommendations are possible on the ${st.games_with_quotes} quoted games.`
+          : `NO priced recommendation is possible on this card, because no game carries a usable quote. `
+            + `Research, compare and rank the games anyway — that is a real answer — and say plainly that no price is available to bet into.`),
+      );
+      if (research.board_scope) {
+        parts.push(
+          `ACTIVE BOARD SCOPE — the user is looking at ${JSON.stringify(research.board_scope)}. `
+          + `Answer inside this scope unless the question explicitly asks for something else, and state the resolved scope in your answer.`,
+        );
+      }
+    }
+
+    /* ── THE RANKED CARD + THE RESEARCHED SHORTLIST ──────────────────────
+       A complete index of every game, then deep evidence for the few that were
+       actually researched. The model receives BOTH so it can never mistake the
+       shortlist for the card, or claim to have compared games it never saw. */
+    if (research.ranked && research.ranked.length) {
+      const r = research.ranked;
+      const eligible = r.filter((x) => x.eligible);
+      parts.push(
+        `THE CARD, RANKED — deterministic, computed before you were called. ${r.length} games; `
+        + `${eligible.length} eligible for a priced recommendation.\n`
+        + `ELIGIBILITY and PRIORITY are different questions. Eligibility is whether a priced recommendation is POSSIBLE. `
+        + `Priority is how much the game repays attention. A high-priority game with no live quote is still not a bet.\n`
+        + r.slice(0, 40).map((x) =>
+          `- ${x.game.matchup}${x.game.kickoff ? ` (${String(x.game.kickoff).slice(0, 16).replace("T", " ")}Z)` : ""}`
+          + ` · ${x.eligible ? "ELIGIBLE" : "NOT ELIGIBLE: " + x.ineligible_reason}`
+          + ` · priority ${x.priority} (${x.priority_band})`
+          + ` · attention ${x.attention.tier}`
+          + (x.game.model_home_line != null ? ` · board model ${x.game.model_home_line > 0 ? "+" : ""}${x.game.model_home_line} home` : "")
+          + (x.disagreement ? ` · model-market gap ${x.disagreement.gap}pt (${x.disagreement.level})` : "")
+          + (x.quote_state ? ` · quote ${x.quote_state.status}${x.quote_state.age_min != null ? " " + Math.round(x.quote_state.age_min) + "m" : ""}` : " · no quote")
+        ).join("\n")
+        + (r.length > 40 ? `\n… and ${r.length - 40} more games on the card, all carried in the slate index above.` : "")
+        + `\nATTENTION TIERS ARE EDITORIAL. ${r[0].attention.caveat}`,
+      );
+    }
+
+    /* ── THE DECISIONS — computed, not requested ─────────────────────────
+       This is the single most important block in the message. Every verdict,
+       price, limit, probability and expected value below was produced by
+       EdgeDesk's own code from owned numbers BEFORE this call. You explain
+       them. You do not produce them, and you cannot overturn one. */
+    if (research.decisions && research.decisions.length) {
+      const D = research.decisions;
+      const counts = D.reduce((a: Record<string, number>, d) => { a[d.decision] = (a[d.decision] ?? 0) + 1; return a; }, {});
+      parts.push(
+        "THE DECISIONS — deterministic, one per quoted selection, computed before you were called.\n"
+        + Object.keys(counts).map((k) => `${counts[k]} ${k}`).join(" · ") + "\n"
+        + "Quote the verdict, the side, the price, the book, the capture time and the price limit EXACTLY as they appear. "
+        + "Never upgrade a decision, never invent one for a game with no row here, and never present a WATCH as a bet.\n"
+        + D.slice(0, 12).map((d) => {
+          const p = d.price ?? {};
+          return `\n[${d.decision}${d.strength ? " / " + d.strength : ""}] ${d.matchup} — ${d.selection}`
+            + `${d.handicap != null ? " " + (d.handicap > 0 ? "+" : "") + d.handicap : ""} ${EDPRES.marketLabel(d.market) ?? d.market}`
+            + ` at ${p.offered_american ?? "no price"}${p.book ? " (" + p.book + ")" : ""}\n`
+            + `  why: ${d.why}\n`
+            + `  fair: ${p.fair_label ?? "none"}${p.fair_american ? " = " + p.fair_american : ""}`
+            + ` · probability edge ${p.probability_edge_pp != null ? (p.probability_edge_pp * 100).toFixed(2) + " percentage points" : "n/a"}`
+            + ` · expected return ${p.expected_return_per_unit != null ? (p.expected_return_per_unit * 100).toFixed(2) + "% per unit staked" : "n/a"}`
+            + ` · push probability ${p.push_probability == null ? "UNKNOWN (whole-number handicap with no registered distribution — it is not zero)" : (p.push_probability * 100).toFixed(2) + "%"}\n`
+            + `  price limit: ${p.price_limit_american ?? "none — no fair price to derive one from"}`
+            + `${p.price_needed_american ? ` · would need ${p.price_needed_american} or better to qualify again` : ""}\n`
+            + `  quote: ${d.gates?.freshness?.status ?? "?"}${d.gates?.freshness?.pass === false ? " — NOT ACTIONABLE" : ""}\n`
+            + (d.model ? `  model: ${d.model.line != null ? d.model.line : "no projection"}`
+              + ` · validation tier ${d.model.validation_tier}`
+              + ` · model expected value ${d.model.may_produce_model_ev ? (d.model.model_ev ?? "not computed") : "NOT PERMITTED — the model has no validated outcome probability in this market"}\n` : "")
+            + (d.disagreement ? `  model-market gap: ${d.disagreement.gap} points (${d.disagreement.level}). ${d.disagreement.verdict}\n` : "")
+            + (d.blockers && d.blockers.length ? `  blockers: ${d.blockers.join(" | ")}\n` : "")
+            + `  attention: ${d.attention?.tier} (EDITORIAL)\n`
+            + `  what would change it: ${(d.what_would_change_it ?? []).join(" | ")}`
+            + (d.experimental ? "\n  EXPERIMENTAL: this rests on a model whose own record does not beat the closing line. Label it as such." : "");
+        }).join("\n")
+        + (D.length > 12 ? `\n\n… and ${D.length - 12} more decided selections.` : "")
+        + "\n\nPROBABILITY EDGE and EXPECTED RETURN are DIFFERENT QUANTITIES in DIFFERENT UNITS. "
+        + "The first is in percentage points of win probability; the second is money per unit staked. Never report one as the other and never add them.",
+      );
+    }
+
+    if (research.packets && research.packets.length) {
+      parts.push(
+        `RESEARCHED MATCHUPS — ${research.packets.length} versioned evidence packet`
+        + `${research.packets.length === 1 ? "" : "s"}, one per game, each carrying its own sources and its own declared gaps.\n`
+        + `Every factual field is {value, source, ...} or {missing:true, reason}. A field marked missing was NOT retrieved and `
+        + `you do not have it — do not estimate it, do not substitute a league average, and do not carry a value across from the other team.\n`
+        + `THESE ARE THE ONLY GAMES YOU RESEARCHED IN DEPTH. Every other game on the card above is index-level only. `
+        + `Say which is which rather than implying you compared the whole slate at this depth.\n`
+        + compact(research.packets, 90000),
+      );
+      parts.push(
+        "HOW TO USE A MATCHUP PACKET — this is football analysis, not metadata paraphrase.\n"
+        + "For each researched game, work through these in order and say something specific about each one you can support:\n"
+        + "1. WHAT BOTH TEAMS HAVE DEMONSTRATED. previous_games carries each result WITH the opponent's SP+ rating attached. "
+        + "A 40-point win over a side rated -15 and a 3-point win over a side rated +18 are not the same evidence. Read the results against who they came against.\n"
+        + "2. HOW OPPONENT QUALITY CHANGES THE READING. strength_of_schedule is on both sides. College schedules are wildly unequal; an unadjusted season stat compared across conferences is close to meaningless without it.\n"
+        + "3. WHICH SIDE OF THE BALL DECIDES IT. SP+ splits into offence and defence and SP+ DEFENCE IS POINTS ALLOWED, so lower is better. Compare one side's offence against the other's defence, not offence against offence.\n"
+        + "4. WHAT THE DATA CANNOT TELL YOU. Turnovers, garbage time, explosive plays, success rate, pace and red-zone finishing are NOT ingested for college football. If a recent result looks distorted, say you cannot test that rather than asserting or denying it.\n"
+        + "5. PERSONNEL. A roster is not a depth chart, and NO injury report exists for this sport in EdgeDesk. Never present the absence of injury data as a clean injury sheet.\n"
+        + "6. WHY THE MODEL DIFFERS FROM THE MARKET, when both exist — and then the diagnostic checks, before any talk of value.\n"
+        + "7. THE STRONGEST EVIDENCE AGAINST YOUR OWN CONCLUSION, and the ONE missing fact most likely to reverse it.\n"
+        + "Distinguish, in your wording, between an OBSERVED FACT (a result, a quote, a roster line), a MODEL ESTIMATE (SP+, the board's projection) and YOUR OWN INFERENCE. "
+        + "Never invent a matchup explanation to rationalise a projection: if you cannot say WHY from the evidence in front of you, say the projection is unexplained.",
+      );
+    }
 
     /* ── SPORT MODULE + CAPABILITIES ──────────────────────────────────────
        What this sport can know, before the evidence. The point is that the
@@ -11805,7 +15129,7 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
        model is actually about to receive rather than what was retrieved. That
        gap is precisely the bug this layer exists to catch, so it would be
        absurd for the auditor itself to assume delivery. */
-    const budget = budgetEvidence(usableAll, evidenceMax);
+    const budget = budgetEvidence(usableAll, budgetChars);
     research.integrity = evidenceIntegrity(research.evidence, {
       slateDays: [etDay(0), etDay(1)],
       delivered: { included: budget.included, withheld: budget.dropped },
@@ -11828,7 +15152,7 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
       );
     }
 
-    /* EVIDENCE_MAX is deliberately large: a 30-starter MLB slate serializes to
+    /* The evidence cap is deliberately large: a 30-starter MLB slate serializes to
        ~69,000 characters, and the old 60,000 default silently severed it
        mid-object. Evidence is the one block that must never be trimmed to make
        room for something else — it is the entire factual basis of the answer.
@@ -11845,8 +15169,80 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
         + "the distinction could matter:\n"
         + budget.text,
       );
-      if (budget.droppedNote) parts.push("EVIDENCE WITHHELD — " + budget.droppedNote);
+      if (budget.droppedNote) {
+        /* WHICH GAMES, not just how many items. "130 items were withheld" tells
+           a reader nothing about what the answer is allowed to claim; the set of
+           MATCHUPS the withheld items belonged to tells them exactly. Named here
+           so a whole-slate claim becomes impossible rather than discouraged. */
+        const shownGames = new Set<string>();
+        const allGames = new Set<string>();
+        for (const e of usableAll) {
+          const g = String((e.value as any)?.game ?? e.entity ?? "");
+          if (g) allGames.add(g);
+        }
+        for (let i = 0; i < budget.included && i < usableAll.length; i++) {
+          const g = String((usableAll[i].value as any)?.game ?? usableAll[i].entity ?? "");
+          if (g) shownGames.add(g);
+        }
+        const lostGames = [...allGames].filter((g) => !shownGames.has(g));
+        parts.push(
+          "EVIDENCE WITHHELD — " + budget.droppedNote
+          + (lostGames.length
+            ? `\nSUBJECTS WITH NO EVIDENCE IN THIS MESSAGE AT ALL: ${lostGames.slice(0, 20).join(", ")}`
+              + (lostGames.length > 20 ? ` and ${lostGames.length - 20} more` : "") + ". "
+              + "You were shown NOTHING about these. You may not rank them, describe them, or include them in any "
+              + "statement about the slate. Say the slate is larger than what you were shown and name them as unseen."
+            : "")
+          + `\nYOU MAY NOT CLAIM TO HAVE COMPARED THE WHOLE SLATE. You were shown ${budget.included} of `
+          + `${budget.included + budget.dropped} retrieved items. Any ranking covers the ${shownGames.size} subjects `
+          + `you actually received, and you must say so in the answer.`,
+        );
+        (research as any).evidence_withheld_subjects = lostGames.slice(0, 40);
+      }
       (research as any).evidence_shown = { included: budget.included, withheld: budget.dropped };
+
+      /* ── THE THREE PERCENTAGES, NAMED AND KEPT APART ────────────────────
+         The UI showed several disagreeing completeness figures because three
+         different things were all called "completeness": how many reads
+         answered, how much of what the question NEEDS is present, and how much
+         of what was retrieved actually reached this message. They are supposed
+         to differ. Naming them is the fix; blending them was the bug. */
+      const rel = research.source_reliability ?? [];
+      const cov3 = EDINTEL.coverageReport({
+        required: Object.keys(research.semantic.required).map((f) => ({ field: f, tier: "REQUIRED", per: "one" }))
+          .concat(Object.keys(research.semantic.important).map((f) => ({ field: f, tier: "IMPORTANT", per: "one" }))),
+        present: (() => {
+          const p: Record<string, number> = {};
+          for (const f of Object.keys(research.semantic.required)) p[f] = research.semantic.required[f].available >= research.semantic.required[f].expected ? 1 : 0;
+          for (const f of Object.keys(research.semantic.important)) p[f] = research.semantic.important[f].available >= research.semantic.important[f].expected ? 1 : 0;
+          return p;
+        })(),
+        universe: { entities: 1, games: 1 },
+        retrieval: {
+          attempted: rel.reduce((a, r) => a + r.attempts, 0),
+          succeeded: rel.reduce((a, r) => a + r.successful_retrievals, 0),
+          empty: rel.reduce((a, r) => a + r.empty_retrievals, 0),
+          failed: rel.reduce((a, r) => a + r.failed_retrievals, 0),
+        },
+        delivery: {
+          included: budget.included, withheld: budget.dropped,
+          withheld_subjects: (research as any).evidence_withheld_subjects ?? [],
+        },
+      });
+      (research as any).coverage_metrics = cov3.metrics;
+      parts.push(
+        "COVERAGE — three different questions, three different denominators. They are SUPPOSED to differ; "
+        + "do not blend them into one number and do not report one as another.\n"
+        + `  required-field completeness: ${cov3.metrics.required_field_completeness.value == null ? "n/a" : Math.round(cov3.metrics.required_field_completeness.value * 100) + "%"} of ${cov3.metrics.required_field_completeness.of}\n`
+        + `  important-field completeness: ${cov3.metrics.important_field_completeness.value == null ? "n/a" : Math.round(cov3.metrics.important_field_completeness.value * 100) + "%"} of ${cov3.metrics.important_field_completeness.of}\n`
+        + (cov3.metrics.retrieval_success_rate
+          ? `  retrieval success: ${Math.round(cov3.metrics.retrieval_success_rate.value * 100)}% — ${cov3.metrics.retrieval_success_rate.detail}. ${cov3.metrics.retrieval_success_rate.note}\n` : "")
+        + (cov3.metrics.evidence_delivered
+          ? `  evidence delivered: ${Math.round(cov3.metrics.evidence_delivered.value * 100)}% — ${cov3.metrics.evidence_delivered.detail}.`
+            + (cov3.metrics.evidence_delivered.note ? " " + cov3.metrics.evidence_delivered.note : "") + "\n" : "")
+        + `A CATEGORICAL ABSENCE CLAIM ("there is no X anywhere on this slate") requires evidence delivered at 100% `
+        + `AND the relevant field complete. ${cov3.may_claim_whole_slate ? "Both hold here." : "They do not both hold here, so you may not make one — say what you were shown and what you were not."}`,
+      );
     }
 
     if (research.attack) {
@@ -12076,6 +15472,10 @@ function defaultAsk(mode: string): string {
    catch, after the response has already gone out — so this is the only place
    its health is observable without querying the database. */
 let LAST_MEMORY_WRITE: Record<string, unknown> | null = null;
+/* The ledger write's outcome, for ?probe=1. The ledger is the only thing
+   any claim about whether this system works can rest on, so a silent write
+   failure is the one failure that must not stay silent. */
+let LAST_LEDGER_WRITE: Record<string, unknown> | null = null;
 
 /* Writes the session under the CALLER's JWT, so RLS decides what is allowed.
    Never blocks the response and never fails the request. */
@@ -12232,6 +15632,46 @@ async function rememberSession(
       })));
     }
 
+    /* ── THE RECOMMENDATION LEDGER ────────────────────────────────────────
+       Written on the way out, once, and never edited. `resolution=ignore-
+       duplicates` on the natural key means re-asking the same question about
+       the same game at the same price does not stack a second recommendation —
+       it is the same decision, not a new one.
+
+       ONLY ACTIONABLE DECISIONS ARE PUBLISHED. A WATCH and a PASS are real
+       answers and are recorded, because a system that only writes down its
+       bets cannot be measured. An INSUFFICIENT DATA row is not recorded: there
+       was no recommendation to keep.
+
+       If the table does not exist the POST fails, the failure is swallowed
+       like every other memory write, and the answer is unaffected — the ledger
+       is a measurement layer, never a dependency of the response. */
+    if (research.ledger_rows && research.ledger_rows.length) {
+      const rows = research.ledger_rows.slice(0, 25).map((r: any) => ({
+        schema: r.schema, kind: r.kind, entry_key: r.entry_key, supersedes: r.supersedes,
+        sport: r.sport, game_id: r.game_id, matchup: r.matchup, kickoff: r.kickoff,
+        market: r.market, selection: r.selection, handicap: r.handicap,
+        odds_decimal: r.odds_decimal, odds_american: r.odds_american, book: r.book,
+        quote_captured_at: r.quote_captured_at,
+        decision: r.decision, strength: r.strength,
+        probability: r.probability, probability_source: r.probability_source,
+        expected_value: r.expected_value, price_limit_american: r.price_limit_american,
+        evidence_version: r.evidence_version, evidence_packet_id: r.evidence_packet_id,
+        model_version: r.model_version, engine_version: r.engine_version,
+        decision_config: r.decision_config, mode: r.mode, published_at: r.published_at,
+      }));
+      const lres = await post("recommendation_ledger?on_conflict=entry_key", rows, false,
+        "resolution=ignore-duplicates,return=minimal");
+      LAST_LEDGER_WRITE = {
+        at: new Date().toISOString(), status: lres.status,
+        ok: lres.status >= 200 && lres.status < 300, rows: rows.length,
+        detail: lres.status >= 300
+          ? (await lres.text().catch(() => "")).slice(0, 300)
+            + " — if this mentions a missing relation, run supabase/recommendation_ledger.sql."
+          : null,
+      };
+    }
+
     // Structured findings — claims bound to the record that produced them.
     // Nothing the model wrote is ever stored here; only extracted evidence.
     if (research.findings.length) {
@@ -12259,6 +15699,29 @@ function researchSummary(research: ResearchOut | null, plan: Plan) {
     ? {
       intent: research.plan.intent, mode: research.plan.mode, depth: research.plan.depth,
       entities: research.entities,
+      /* ── WHAT THE PANEL RENDERS ───────────────────────────────────────
+         The scope line, the decision list and the expandable per-matchup
+         research are all built from these. They are the SERVER'S OWN
+         deterministic objects, sent verbatim so the card, the prose and the
+         opened research cannot disagree about a number. */
+      slate_state: research.slate_state
+        ? { state: research.slate_state.state, sentence: research.slate_state.sentence,
+            scheduled_games: research.slate_state.scheduled_games,
+            games_with_quotes: research.slate_state.games_with_quotes,
+            games_with_signals: research.slate_state.games_with_signals,
+            may_recommend: research.slate_state.may_recommend,
+            forbidden_claim: research.slate_state.forbidden_claim }
+        : null,
+      slate_source: research.slate_source,
+      board_scope: research.board_scope,
+      eligible_games: research.ranked ? research.ranked.filter((r) => r.eligible).length : null,
+      researched_games: research.packets ? research.packets.length : null,
+      refreshed_at: new Date().toISOString(),
+      decisions: (research.decisions ?? []).slice(0, 12),
+      evidence_packets: (research.packets ?? []).slice(0, 5),
+      ledger_rows_published: (research.ledger_rows ?? []).length,
+      coverage_metrics: (research as any).coverage_metrics ?? null,
+      evidence_withheld_subjects: (research as any).evidence_withheld_subjects ?? null,
       /* r3: which sport module answered, and what identity it bound. */
       sport: research.sport,
       sport_label: research.sport_module?.label ?? null,
@@ -12321,7 +15784,7 @@ export async function handle(req: Request): Promise<Response> {
       research_enabled: RESEARCH_ENABLED,
       mlb_live_fallback: MLB_FALLBACK,
       min_pattern_n: MIN_PATTERN_N,
-      evidence_max_chars: EVIDENCE_MAX,
+      evidence_max_chars: evidenceMax(),
       presentation: {
         version: 1,
         modes: ["SIMPLE", "STANDARD", "DEEP", "PUBLISHER"],
@@ -12379,6 +15842,12 @@ export async function handle(req: Request): Promise<Response> {
         entries: cacheSize(),
         cacheable_categories: Object.keys(CACHEABLE),
         note: "Per-isolate, scoped by caller and by schema. Odds, lineups and weather are deliberately never cached.",
+      },
+      ledger_health: {
+        last_ledger_write: LAST_LEDGER_WRITE,
+        migration: "supabase/recommendation_ledger.sql",
+        note: "null until a decision has been published in this isolate. Non-null with ok:false means recommendations "
+          + "are NOT being recorded, so no measurement built on the ledger is trustworthy — run the migration.",
       },
       learning_health: {
         last_memory_write: LAST_MEMORY_WRITE,
@@ -12440,7 +15909,7 @@ export async function handle(req: Request): Promise<Response> {
      and the assembled prompt can all be verified in one request without
      spending a token or depending on the answer to reveal a retrieval bug. */
   if (dry) {
-    const content = buildUserContent(body, research, EVIDENCE_MAX, presentation);
+    const content = buildUserContent(body, research, evidenceMax(), presentation);
     return json({
       dry: true,
       /* The whole packet, in the order the analyst reads it, so exactly what
@@ -12456,6 +15925,12 @@ export async function handle(req: Request): Promise<Response> {
          was routed to the right module. */
       sport: research?.sport ?? research?.focus?.sport_key ?? research?.state.sport ?? null,
       sport_resolution: (research?.data_path as any)?.sport_resolution ?? null,
+      /* The slate, as a first-class field rather than something to be dug out
+         of data_path — it is the fact every other statement is measured
+         against, and the offline answer renderer opens with it. */
+      slate_state: research?.slate_state ?? null,
+      slate_source: research?.slate_source ?? null,
+      coverage_metrics: (research as any)?.coverage_metrics ?? null,
       league: research?.sport_module?.league ?? null,
       sport_module: research?.sport_module
         ? {
@@ -12502,6 +15977,15 @@ export async function handle(req: Request): Promise<Response> {
             calibration: (research.memory as any).calibration ?? [] }
         : null,
       thesis_attack: research?.thesis_attack ?? null,
+      /* The deterministic decisions, exactly as a client would receive them,
+         with no model involvement at all. */
+      slate_ranking: research?.ranked?.map((r) => ({
+        game: r.game.matchup, eligible: r.eligible, reason: r.ineligible_reason,
+        priority: r.priority, band: r.priority_band, attention: r.attention.tier,
+      })) ?? null,
+      decisions: research?.decisions ?? null,
+      ledger_rows: research?.ledger_rows ?? null,
+      evidence_packets: research?.packets ?? null,
       thesis_attack_deterministic: research?.attack ?? null,
       data_gaps: research?.semantic
         ? { critical: research.semantic.critical_gaps, important: research.semantic.important_gaps,
@@ -12522,6 +16006,10 @@ export async function handle(req: Request): Promise<Response> {
       evidence_shown: (research as any)?.evidence_shown ?? null,
       prompt_chars: content.length,
       prompt: content,
+      /* The instructions that govern the answer, so a rule can be verified
+         rather than assumed. Dry mode is the inspection surface for this
+         function and the system prompt is half of what it actually sends. */
+      system: SYSTEM + "\n\n" + MODE_PROMPT[presentationMode],
     });
   }
 
@@ -12530,7 +16018,7 @@ export async function handle(req: Request): Promise<Response> {
     ...history
       .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
       .map((m: any) => ({ role: m.role, content: m.content })),
-    { role: "user", content: buildUserContent(body, research, EVIDENCE_MAX, presentation) },
+    { role: "user", content: buildUserContent(body, research, evidenceMax(), presentation) },
   ];
   /* Four presentations of one engine: the research prompt is shared, the
      write-up instructions differ. The copy contract rides along whenever
@@ -12593,7 +16081,7 @@ export async function handle(req: Request): Promise<Response> {
          NAMES whatever will not fit, so a retry answer is thinner but never
          built on a truncated record. */
       const trimmed = [
-        { role: "user", content: buildUserContent(body, research, Math.floor(EVIDENCE_MAX / 4), presentation) },
+        { role: "user", content: buildUserContent(body, research, Math.floor(evidenceMax() / 4), presentation) },
       ];
       const r2 = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",

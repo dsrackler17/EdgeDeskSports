@@ -38,6 +38,15 @@ function done() {
 }
 
 const ROOT = path.join(__dirname, '..', '..');
+
+/* The edge function is Deno code imported under Node's native type stripping.
+   The shim goes in before the import, and it deliberately answers nothing —
+   this suite constructs the Dal with its OWN fetch, so the module must not be
+   able to reach anything on its own. */
+globalThis.Deno = globalThis.Deno || { env: { get: function (k) {
+  return ({ EDGEDESK_AI_NO_SERVE: '1', SUPABASE_URL: 'https://sb.invalid',
+    SUPABASE_ANON_KEY: 'k', ANTHROPIC_API_KEY: 'k' })[k];
+} } };
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const AI = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'), 'utf8');
 
@@ -50,7 +59,7 @@ function slice(src, start, end, label) {
   return src.slice(a, b + end.length);
 }
 
-(function main() {
+(async function main() {
   /* ── 1. THE PREDICATE ITSELF, RUN ─────────────────────────────────────── */
   const guardSrc = slice(APP,
     'function wasFlaggedSignal(e){', 'function hasQualState(e){ return !!(e && (e.qual_reason!=null || e.actionable!=null)); }',
@@ -172,16 +181,119 @@ function slice(src, start, end, label) {
   chk('edgedesk_ai exports the canonical predicate', /export function signalIsActionable/.test(AI));
   chk('the engine predicate is the SAME rule as the app\'s',
     /r\.flagged_at && Number\.isFinite\(Number\(r\.flagged_best_dec\)\) && Number\(r\.flagged_best_dec\) > 1/.test(AI));
-  const slateQ = slice(AI, 'async getSlate(', 'const out = rows.map((r) => ev({', 'getSlate');
-  chk('27 · getSlate — "the board, server-side" — filters on the flag in the QUERY',
-    /flagged_at=not\.is\.null&flagged_best_dec=not\.is\.null/.test(slateQ), slateQ.slice(0, 600));
-  chk('getSlate also re-checks each row before calling it evidence',
-    /signalIsActionable\(r\)/.test(slateQ));
-  const cross = slice(AI, 'async getCrossMarket(', 'freshness: freshnessOf("odds", marked[0]?.last_seen_at),', 'getCrossMarket');
-  chk('27 · getCrossMarket nulls the edge on any row that is not a signal',
-    /edgedesk_signal: false, edge: null/.test(cross), cross.slice(0, 800));
-  chk('and it tells the model why, rather than just removing the number',
-    /not_a_signal_because/.test(cross));
+  /* ── THE SERVER BOARD, RUN RATHER THAN READ ────────────────────────────
+     These assertions used to be regexes over a region SLICED OUT OF THE
+     TYPESCRIPT SOURCE by literal start and end markers. That mechanism is
+     brittle by construction: it broke the moment `const out = rows.map((r) =>
+     ev({` became a block body, and it broke LOUDLY but for the wrong reason —
+     the contract it guards had not changed at all.
+
+     The contract is behavioural, so it is tested behaviourally now: the real
+     Dal is constructed with a mocked fetch, the real method is called, and the
+     assertions read the REQUEST IT MADE and the EVIDENCE IT RETURNED. That is
+     strictly stronger than matching source text — a refactor that preserves
+     behaviour passes, and one that quietly drops the flag filter fails even if
+     the source still contains the string. */
+  const AIMOD = await import(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'));
+  chk('edgedesk_ai exports the Dal so its contract can be run, not just read', typeof AIMOD.Dal === 'function');
+
+  /** Call a Dal method against fixed rows; return what it asked for and got. */
+  async function runDal(rows, fn) {
+    const asked = [];
+    const fetchImpl = async function (url, init) {
+      asked.push(String(url));
+      if (init && init.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => '*/0' }, text: async () => '' };
+      const body = JSON.stringify(rows);
+      return { ok: true, status: 200, text: async () => body, json: async () => rows };
+    };
+    AIMOD.clearCache();
+    const dal = new AIMOD.Dal({ supabaseUrl: 'https://sb.test', apikey: 'k',
+      authorization: 'Bearer board-contract-' + Math.random(), budget: 40, fetchImpl: fetchImpl });
+    const out = await fn(dal);
+    return { asked: asked, out: out };
+  }
+
+  const NOW = Date.now();
+  /* One qualified signal and one stored observation with a positive edge and
+     no flag — the exact pair this whole case exists for. */
+  const QUALIFIED = {
+    event_id: 'ev-q', sport_key: 'americanfootball_ncaaf', market: 'spreads', selection: 'North Texas',
+    point: -2.5, best_dec: 1.95, first_best_dec: 1.91, best_book: 'DraftKings',
+    sharp_fair: 0.532, sharp_book_fair: 0.532, consensus_fair: 0.528,
+    reference_type: 'sharp', reference_book: 'pinnacle', pin_dec: 1.88, pin_opp_dec: 2.02,
+    edge: 0.037, first_edge: 0.016, n_books: 9, n_books_eff: 6, has_sharp: true, corrob_n: 2,
+    flagged_at: new Date(NOW - 5 * 60000).toISOString(), flagged_best_dec: 1.91,
+    home_team: 'Texas State', away_team: 'North Texas',
+    commence_time: new Date(NOW + 3 * 86400000).toISOString(),
+    last_seen_at: new Date(NOW - 5 * 60000).toISOString(),
+  };
+  const UNQUALIFIED = Object.assign({}, QUALIFIED, {
+    event_id: 'ev-u', selection: 'Texas State', flagged_at: null, flagged_best_dec: null, edge: 0.04,
+  });
+  const STALE = Object.assign({}, QUALIFIED, {
+    event_id: 'ev-s', selection: 'Stale Side',
+    last_seen_at: new Date(NOW - 2126 * 60000).toISOString(),
+  });
+
+  {
+    const r = await runDal([QUALIFIED, UNQUALIFIED, STALE], (d) => d.getSlate('americanfootball_ncaaf'));
+    const url = r.asked.find(function (u) { return u.indexOf('signals?') >= 0; }) || '';
+    chk('27 · getSlate — "the board, server-side" — filters on the flag in the QUERY it actually sends',
+      url.indexOf('flagged_at=not.is.null') >= 0 && url.indexOf('flagged_best_dec=not.is.null') >= 0, url.slice(0, 300));
+
+    const sigs = r.out.ev.filter(function (e) { return e.field === 'signal'; });
+    chk('getSlate re-checks each row and drops the unflagged one even when the query returns it',
+      !sigs.some(function (e) { return e.value && e.value.event_id === 'ev-u'; }),
+      sigs.map(function (e) { return e.value && e.value.event_id; }));
+    chk('and it says how many it dropped rather than deleting them silently',
+      r.out.ev.some(function (e) { return e.field === 'slate_filtered'; }));
+
+    /* THE ANCHOR AND THE CLOCK TRAVEL WITH EVERY BOARD ROW.
+       A raw signal row carries `sharp_fair`, which capture fills from the
+       CONSENSUS whenever no reference book quotes — so handing the row to the
+       model unannotated is how one selection came to claim a Pinnacle anchor
+       and deny sharp confirmation in the same answer. */
+    const q = sigs.find(function (e) { return e.value && e.value.event_id === 'ev-q'; });
+    chk('27 · every board row carries the METHOD that produced its fair price',
+      q && q.value.fair_method === 'SHARP_REFERENCE_DEVIG', q && q.value.fair_method);
+    chk('and the honest label, which only fairMethod can produce',
+      q && /Pinnacle de-vig fair/.test(q.value.fair_label), q && q.value.fair_label);
+    chk('and its own quote age and whether that age still permits an action',
+      q && q.value.quote_age_min != null && q.value.quote_actionable === true, q && q.value);
+
+    const st = sigs.find(function (e) { return e.value && e.value.event_id === 'ev-s'; });
+    chk('a row whose quote is past its limit is marked NOT actionable',
+      st && st.value.quote_actionable === false && st.value.quote_status === 'STALE', st && st.value.quote_status);
+    chk('and says so in the note the model reads',
+      st && /This price is NOT actionable/.test(st.note || ''), st && st.note);
+  }
+
+  {
+    /* A consensus-anchored row must never come back wearing the word Pinnacle,
+       whatever `sharp_fair` holds. */
+    const CONSENSUS = Object.assign({}, QUALIFIED, {
+      event_id: 'ev-c', sharp_book_fair: null, reference_type: 'robust_consensus',
+      reference_book: null, has_sharp: false, pin_dec: null, pin_opp_dec: null,
+    });
+    const r = await runDal([CONSENSUS], (d) => d.getSlate('americanfootball_ncaaf'));
+    const c = r.out.ev.filter(function (e) { return e.field === 'signal'; })[0];
+    chk('27 · a consensus fair line is never labelled with a reference book it did not have',
+      c && c.value.fair_method === 'ROBUST_CONSENSUS_MEDIAN'
+      && String(c.value.fair_label).toLowerCase().indexOf('pinnacle') < 0, c && c.value.fair_label);
+    chk('and the row says the fair price rests on softer books',
+      c && /No sharp reference quoted it/.test(c.note || ''), c && c.note);
+  }
+
+  {
+    const r = await runDal([QUALIFIED, UNQUALIFIED], (d) => d.getCrossMarket('ev-q'));
+    const cm = r.out.ev.filter(function (e) { return e.field === 'cross_market'; })[0];
+    const rows = (cm && cm.value) || [];
+    const u = rows.filter(function (x) { return x.edgedesk_signal === false; })[0];
+    chk('27 · getCrossMarket nulls the edge on any row that is not a signal',
+      !!u && u.edge === null, rows);
+    chk('and it tells the model why, rather than just removing the number',
+      !!u && !!u.not_a_signal_because, u);
+  }
   chk('the engine\'s lay-market rule matches capture\'s _lay SEGMENT rule',
     /\(\^\|_\)lay\(_\|\$\)/.test(AI));
 
@@ -198,11 +310,22 @@ function slice(src, start, end, label) {
   chk('the plain-facts block names the KIND of fair line it is passing on',
     /fair_price_source/.test(AI));
 
-  /* ── 7c. A SIGNAL WHOSE EDGE HAS GONE IS NOT A CANDIDATE ──────────────── */
-  chk('getSlate refuses to promote a non-positive-edge row to candidate',
-    /every one has moved to a non-positive edge/.test(slateQ), slateQ.slice(-700));
-  chk('but keeps those rows as context rather than deleting them',
-    /edge_still_positive/.test(slateQ));
+  /* ── 7c. A SIGNAL WHOSE EDGE HAS GONE IS NOT A CANDIDATE ────────────────
+     Run, not read: a board on which every qualified row has decayed to a
+     non-positive edge must say so rather than promoting its least-negative
+     row, and the decayed rows must survive as context. */
+  {
+    const GONE = Object.assign({}, QUALIFIED, { event_id: 'ev-g1', edge: -0.004 });
+    const GONE2 = Object.assign({}, QUALIFIED, { event_id: 'ev-g2', selection: 'Other', edge: -0.02 });
+    const r = await runDal([GONE, GONE2], (d) => d.getSlate('americanfootball_ncaaf'));
+    const note = r.out.ev.map(function (e) { return String(e.note || ''); }).join(' ')
+      + ' ' + JSON.stringify(r.out.ev.map(function (e) { return e.value; }));
+    chk('getSlate refuses to promote a non-positive-edge row to candidate',
+      /every one has moved to a non-positive edge/.test(note), note.slice(0, 400));
+    chk('but keeps those rows as context rather than deleting them',
+      r.out.rows.length === 2 && r.out.rows.every(function (x) { return x.edge_still_positive === false; }),
+      r.out.rows.map(function (x) { return [x.event_id, x.edge_still_positive]; }));
+  }
 
   /* ── 8. THE RECORD MUST NOT WIDEN ITSELF INTO THE STORED POPULATION ───── */
   chk('the record pool is anchored on the flag, not on a live edge band',
@@ -211,4 +334,4 @@ function slice(src, start, end, label) {
     /flagged_policy/.test(APP), 'app.html must be able to separate v9 signals from legacy ones');
 
   done();
-})();
+})().catch(function (e) { console.error('CRASH', (e && e.stack) || e); process.exit(1); });

@@ -29,6 +29,7 @@ on:
       - 'brief.html'
       - 'record.html'
       - 'tools/presentation/**'
+      - 'tools/intelligence/**'
       - 'tools/record/**'
       - 'football/injuries/**'
       - 'football/availability/**'
@@ -72,6 +73,7 @@ on:
       - 'brief.html'
       - 'record.html'
       - 'tools/presentation/**'
+      - 'tools/intelligence/**'
       - 'tools/record/**'
       - 'football/injuries/**'
       - 'football/availability/**'
@@ -456,6 +458,25 @@ jobs:
       # this needs no second toolchain and no --experimental flag.
       - name: edgedesk_ai keeps its contract and never lets the model own the verdict
         run: node tools/presentation/edgedesk_ai.test.js
+
+      # INTELLIGENCE. Every test in this suite is named after a failure that
+      # was actually observed in the product — a 75-game board answered with
+      # "there are no CFB matchups", a consensus fair line labelled Pinnacle,
+      # a 2,126-minute-old quote under "top opportunities", a categorical
+      # absence claim made over withheld evidence — and fails if that failure
+      # can happen again. It runs against the REAL published FBS slate and the
+      # REAL model validation artifact, so retraining the model or rebuilding
+      # the slate fails here before it reaches a reader.
+      - name: Intelligence tells the truth about the slate, the price and the model
+        run: node tools/intelligence/intelligence.test.js
+
+      # The other half, against a REAL PostgreSQL. Immutability is the only
+      # property that makes a performance claim mean anything, and it lives in
+      # a trigger — so it is proved by a server that refuses the edit, not by a
+      # regex over the migration. The runner ships PostgreSQL; the suite starts
+      # its own throwaway cluster and tears it down.
+      - name: A published recommendation cannot be edited, deleted or re-graded
+        run: node tools/intelligence/ledger_sql.test.js
 
       # The card and the publisher desk as wired into app.html.
       - name: The decision card leads every surface and mobile keeps it above the fold

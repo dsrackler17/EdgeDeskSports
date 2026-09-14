@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   Inline the canonical presentation library into every host that carries it.
+   Inline the canonical shared libraries into every host that carries them.
 
-   ONE SOURCE: supabase/functions/edgedesk_ai/_presentation.js
-   FOUR HOSTS: supabase/functions/edgedesk_ai/index.ts, app.html, brief.html, record.html
+   TWO SOURCES, each with its own marker pair:
 
-   Each host carries a marker pair and this replaces everything between them
+     _presentation.js  EDPRES   — translates a decision that already exists
+                                  into sportsbook language and cards.
+       hosts: edgedesk_ai/index.ts, app.html, brief.html, record.html
+
+     _intelligence.js  EDINTEL  — OWNS the decision: slate state, fair-price
+                                  provenance, quote freshness, push-aware EV,
+                                  the model-validation gate, the ledger.
+       hosts: edgedesk_ai/index.ts, app.html
+
+   Each host carries the marker pair and this replaces everything between them
    with the canonical block, byte for byte. presentation_sync.test.js fails
    when a host drifts, so the fix is always "edit the canonical file, run
    this". Run: node tools/presentation/inline.js   (add --check to only verify)
@@ -15,37 +23,49 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
-const SRC = path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', '_presentation.js');
-const HOSTS = [
-  path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'),
-  path.join(ROOT, 'app.html'),
-  path.join(ROOT, 'brief.html'),
-  path.join(ROOT, 'record.html'),
-];
-const START = '/*__EDPRES_START__*/';
-const END = '/*__EDPRES_END__*/';
+const FN = path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai');
 
-function block(src) {
+const LIBS = [
+  {
+    name: 'EDPRES',
+    src: path.join(FN, '_presentation.js'),
+    start: '/*__EDPRES_START__*/', end: '/*__EDPRES_END__*/',
+    hosts: [path.join(FN, 'index.ts'), path.join(ROOT, 'app.html'), path.join(ROOT, 'brief.html'), path.join(ROOT, 'record.html')],
+  },
+  {
+    name: 'EDINTEL',
+    src: path.join(FN, '_intelligence.js'),
+    start: '/*__EDINTEL_START__*/', end: '/*__EDINTEL_END__*/',
+    hosts: [path.join(FN, 'index.ts'), path.join(ROOT, 'app.html')],
+  },
+];
+
+function block(src, START, END) {
   const a = src.indexOf(START), b = src.indexOf(END);
   if (a < 0 || b < 0 || b <= a) return null;
   return src.slice(a, b + END.length);
 }
 
 function main(check) {
-  const canonical = block(fs.readFileSync(SRC, 'utf8'));
-  if (!canonical) throw new Error('canonical file has no marker block');
-  let drift = 0;
-  for (const host of HOSTS) {
-    if (!fs.existsSync(host)) { console.log('skip (missing): ' + path.relative(ROOT, host)); continue; }
-    const text = fs.readFileSync(host, 'utf8');
-    const have = block(text);
-    if (!have) { console.log('NO MARKERS: ' + path.relative(ROOT, host)); drift++; continue; }
-    if (have === canonical) { console.log('in sync: ' + path.relative(ROOT, host)); continue; }
-    drift++;
-    if (check) { console.log('DRIFT: ' + path.relative(ROOT, host)); continue; }
-    fs.writeFileSync(host, text.replace(have, function () { return canonical; }));
-    console.log('updated: ' + path.relative(ROOT, host));
+  let drift = 0, hosts = 0;
+  for (const lib of LIBS) {
+    const canonical = block(fs.readFileSync(lib.src, 'utf8'), lib.start, lib.end);
+    if (!canonical) throw new Error(lib.name + ': canonical file has no marker block');
+    for (const host of lib.hosts) {
+      if (!fs.existsSync(host)) { console.log('skip (missing): ' + path.relative(ROOT, host)); continue; }
+      hosts++;
+      const text = fs.readFileSync(host, 'utf8');
+      const have = block(text, lib.start, lib.end);
+      if (!have) { console.log('NO ' + lib.name + ' MARKERS: ' + path.relative(ROOT, host)); drift++; continue; }
+      if (have === canonical) { console.log('in sync: ' + lib.name + ' -> ' + path.relative(ROOT, host)); continue; }
+      drift++;
+      if (check) { console.log('DRIFT: ' + lib.name + ' -> ' + path.relative(ROOT, host)); continue; }
+      fs.writeFileSync(host, text.replace(have, function () { return canonical; }));
+      console.log('updated: ' + lib.name + ' -> ' + path.relative(ROOT, host));
+    }
   }
   if (check && drift) process.exit(1);
+  return hosts;
 }
-main(process.argv.includes('--check'));
+module.exports = { LIBS: LIBS, main: main };
+if (require.main === module) main(process.argv.includes('--check'));
