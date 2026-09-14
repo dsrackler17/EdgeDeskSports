@@ -1145,6 +1145,26 @@ section('7 — the provider');
     chk('\u2026and it names the edition that did', /2026-09-08/.test(s4b.detail || ''), s4b.detail);
     chk('\u2026and nobody is put on a roster for it', db4b.state.deliveries.length === 0);
 
+    /* AND WHEN THE READ-THEN-ACT LOSES THE RACE, the database still stops it:
+       the partial unique index refuses the `sending` transition, and that is
+       answered by name rather than thrown. */
+    const db4race = fakeDb({ eligible: people3 });
+    db4race.client.patchEdition = async function (key, patch) {
+      if (patch && patch.status === 'sending') {
+        const e = new Error('newsletter_editions?edition_key=eq.X -> 409: {"code":"23505",'
+          + '"message":"duplicate key value violates unique constraint \\"newsletter_editions_sent_body_uk\\""}');
+        e.status = 409;
+        throw e;
+      }
+      db4race.state.calls.patches.push(patch);
+      Object.assign(db4race.state.edition, patch);
+      return db4race.state.edition;
+    };
+    const s4race = await runSend(db4race);
+    chk('a lost race is refused by the database, by name and not as a crash',
+      s4race.sent === false && s4race.reason === 'already_sent_as', JSON.stringify(s4race));
+    chk('\u2026and the lease is still released', db4race.state.leaseOwner === null);
+
     const db4c = fakeDb({ eligible: people3, sentEditions: [Object.assign({}, twin, { content_hash: 'ed_other' })] });
     chk('a different week with a different hash is unaffected',
       (await runSend(db4c)).sent === true);
@@ -1159,6 +1179,29 @@ section('7 — the provider');
     const db4e = fakeDb({ eligible: people3, sentEditions: [twin] });
     chk('an operator re-sending knowingly can still force it',
       (await runSend(db4e, null, { force: true })).sent === true);
+
+    /* A TEST SEND IS NOT A SEND.
+       It must not take the edition's lease, must not seed a delivery roster
+       against the production edition row, must not record outcomes, and above
+       all must not move the edition to `sending` or `sent` — an edition marked
+       sent because somebody checked their own inbox would silently skip the
+       real audience. */
+    const dbT = fakeDb({ eligible: people3 });
+    const sT = await runSend(dbT, { settings: { test_recipients: ['ops@example.com'] } },
+      { test: true, dry: false, driver: 'console' });
+    chk('a test send reaches the provider', sT.sent === true && sT.test === true, JSON.stringify(sT).slice(0, 200));
+    chk('\u2026and never touches the edition\u2019s lease', dbT.state.calls.claim === 0 && dbT.state.calls.release === 0);
+    chk('\u2026and seeds no delivery roster', dbT.state.deliveries.length === 0);
+    chk('\u2026and leaves the edition status exactly where it was',
+      dbT.state.edition.status === 'ready' && dbT.state.calls.patches.length === 0,
+      dbT.state.edition.status + ' after ' + dbT.state.calls.patches.length + ' patch(es)');
+    chk('\u2026and goes only to the configured test address',
+      (sT.test_links || []).length === 1 && sT.test_links[0].email === 'ops@example.com',
+      JSON.stringify(sT.test_links));
+    chk('\u2026so no subscriber is reachable through the test path',
+      !JSON.stringify(sT.test_links || []).includes('@example.com\"')
+      || (sT.test_links || []).every(l => l.email === 'ops@example.com'),
+      JSON.stringify(sT.test_links));
 
     /* the kill switch is re-read at send time, not trusted from the build */
     const db5 = fakeDb({ eligible: people3 });
@@ -1310,6 +1353,14 @@ section('7 — the provider');
       'the key is used as a bearer token and reported as present/absent');
     chk('it reads the sending domain from the account rather than naming records itself',
       /\/domains/.test(doctor) && /account-specific/.test(doctor));
+    /* A LAUNCH CHECK MUST NEVER ARGUE FOR A WIDER CREDENTIAL. Resend answers
+       a sending-restricted key with 401 restricted_api_key on /domains. The
+       live run hit exactly that, and a send-only key is the correct key for
+       this job — so it is reported as a note and never as work to do. */
+    chk('a send-only provider key is a note, not a fault',
+      /restricted_api_key/.test(doctor) && /right key for sending/.test(doctor));
+    chk('\u2026and it never asks for a broader one',
+      doctor.split('restricted_api_key')[1].slice(0, 400).indexOf('todo.push') < 0);
     chk('it writes nothing', !/STORE\.(append|save)/.test(doctor) && !/upsertEdition|patchEdition/.test(doctor));
 
     const iBuild = wf.indexOf('node tools/articles/build_articles.js');

@@ -530,4 +530,59 @@ do $$ begin
 end $$;
 reset role;
 
+-- ---------------------------------------------------------------------------
+-- ONE SEND PER SPORT PER BODY OF WORK. Two dates, two edition keys, the same
+-- ten games: the application asks before it sends, but a question asked in
+-- application code is a read-then-act and two workers can both pass it. The
+-- partial unique index decides it instead, at the `sending` transition, which
+-- happens BEFORE any message reaches the provider.
+-- ---------------------------------------------------------------------------
+do $$
+declare ok boolean;
+begin
+  insert into public.newsletter_editions
+    (edition_key, sport, season, slate_week, edition_date, status, content_hash, subject, game_count)
+  values ('NFL:2026:W09:2026-11-03', 'NFL', 2026, 9, '2026-11-03', 'ready', 'ed_same', 's', 1)
+  on conflict (edition_key) do update set status = 'ready', content_hash = 'ed_same';
+  insert into public.newsletter_editions
+    (edition_key, sport, season, slate_week, edition_date, status, content_hash, subject, game_count)
+  values ('NFL:2026:W09:2026-11-10', 'NFL', 2026, 9, '2026-11-10', 'ready', 'ed_same', 's', 1)
+  on conflict (edition_key) do update set status = 'ready', content_hash = 'ed_same';
+  perform pg_temp.chk('two editions may be BUILT with the same body', true);
+
+  update public.newsletter_editions set status = 'sending' where edition_key = 'NFL:2026:W09:2026-11-03';
+  perform pg_temp.chk('the first may enter sending', true);
+
+  begin
+    update public.newsletter_editions set status = 'sending' where edition_key = 'NFL:2026:W09:2026-11-10';
+    perform pg_temp.chk('a second edition with the same body reached sending', false);
+  exception when unique_violation then
+    perform pg_temp.chk('a second edition with the same body cannot reach sending', true);
+  end;
+
+  update public.newsletter_editions set status = 'sent', sent_at = now(), subject = 's', game_count = 1,
+    html_free = '<p>x</p>', text_free = 'x'
+   where edition_key = 'NFL:2026:W09:2026-11-03';
+  perform pg_temp.chk('the same row may go on from sending to sent', true);
+
+  -- a different body on the same sport is untouched
+  update public.newsletter_editions set content_hash = 'ed_other', status = 'sending'
+   where edition_key = 'NFL:2026:W09:2026-11-10';
+  perform pg_temp.chk('a different body on the same sport is unaffected', true);
+
+  -- and the same body on the OTHER sport is a different newsletter
+  insert into public.newsletter_editions
+    (edition_key, sport, season, slate_week, edition_date, status, content_hash, subject, game_count)
+  values ('CFB:2026:W09:2026-11-02', 'CFB', 2026, 9, '2026-11-02', 'sending', 'ed_same', 's', 1)
+  on conflict (edition_key) do update set status = 'sending', content_hash = 'ed_same';
+  perform pg_temp.chk('the same body on the other sport is its own newsletter', true);
+
+  select count(*) = 1 into ok from public.newsletter_editions
+   where sport = 'NFL' and content_hash = 'ed_same' and status in ('sending', 'sent');
+  perform pg_temp.chk('exactly one NFL edition of that body is in flight', ok);
+
+  delete from public.newsletter_editions where edition_key in
+    ('NFL:2026:W09:2026-11-03', 'NFL:2026:W09:2026-11-10', 'CFB:2026:W09:2026-11-02');
+end $$;
+
 do $$ begin raise notice 'ALL NEWSLETTER SQL CHECKS PASSED'; end $$;

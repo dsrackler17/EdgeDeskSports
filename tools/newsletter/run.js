@@ -615,9 +615,25 @@ async function sendBody(edition, opts, lease) {
     }
     lease.release = () => c.releaseEdition(edition.edition_key, owner);
 
-    await c.patchEdition(edition.edition_key, {
-      status: 'sending', eligible_recipients: recipients.length,
-    });
+    /* THE TRANSITION THE DATABASE POLICES. newsletter_editions_sent_body_uk is
+       a partial unique index over (sport, content_hash) for the sending and
+       sent states, so this statement is where a second edition carrying the
+       same games is stopped — atomically, before a single message reaches the
+       provider, and without depending on the read-then-act check above having
+       won a race. Answered by name rather than as a stack trace. */
+    try {
+      await c.patchEdition(edition.edition_key, {
+        status: 'sending', eligible_recipients: recipients.length,
+      });
+    } catch (e) {
+      const why = String((e && e.message) || e);
+      if (/23505|duplicate key|newsletter_editions_sent_body_uk/i.test(why)) {
+        return Object.assign({ sent: false, reason: 'already_sent_as',
+          detail: 'the database refused this edition into `sending`: another edition of this sport '
+            + 'is already in flight or sent with the same content hash (' + edition.content_hash + ')' }, outcomeBase);
+      }
+      throw e;
+    }
     await c.seedDeliveries(recipients.map(r => ({
       edition_id: editionRow.id, subscriber_id: r.subscriber_id, email: r.email,
       variant: r.is_member ? 'member' : 'free', status: 'queued',
@@ -939,8 +955,19 @@ async function main() {
           headers: { authorization: 'Bearer ' + pcfg.apiKey, 'content-type': 'application/json' },
         });
         const body = await res.text();
-        if (!res.ok) { line('domains', res.status + ' ' + body.slice(0, 200)); }
-        else {
+        /* A SEND-ONLY KEY IS THE RIGHT KEY, and it cannot read this.
+           Resend answers a sending-restricted key with 401 restricted_api_key
+           on /domains. That is least privilege working, not a fault, and the
+           fix is NOT a broader key sitting in CI — it is to read the domain's
+           DNS state in the dashboard. Reported as a note rather than as work
+           to do, so this check never argues for a wider credential. */
+        if (res.status === 401 && /restricted_api_key/.test(body)) {
+          line('domains', 'not readable with a send-only key — this is the right key for sending; '
+            + 'check the domain\u2019s DNS state in the Resend dashboard');
+        } else if (!res.ok) {
+          line('domains', res.status + ' ' + body.slice(0, 200));
+          todo.push('the Resend API rejected the domain read (' + res.status + ') — check the key and the account');
+        } else {
           const data = JSON.parse(body);
           const domains = data.data || data.domains || [];
           if (!domains.length) { line('domains', 'NONE — add the sending domain in the Resend dashboard'); todo.push('add and verify the sending domain in Resend'); }
