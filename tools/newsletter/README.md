@@ -52,7 +52,7 @@ model could not see printed next to both.
 | `store.js` | the committed store under `articles/data/newsletter/`. |
 | `runtime.js` | the Supabase client: settings, editions, eligibility, deliveries, the lease. |
 | `provider.js` | the Resend integration, the deterministic idempotency key, and the webhook signature check. |
-| `market.js` | joins live book quotes from `public.signals` into the committed market snapshot the research host replays. |
+| `market.js` | joins live book quotes from `public.signals` into the committed market snapshot the research host replays, resolving college team names through `football/fbs/fbs.js` — the same resolver the board itself uses. |
 | `inputs.js` | freshness, and the Monday Night Football gate. |
 | `run.js` | the orchestrator and the CLI. |
 | `supabase/newsletter.sql` | the server side: consent, suppression, editions, deliveries, provider events, and the switches. |
@@ -66,6 +66,7 @@ model could not see printed next to both.
 
 ```bash
 npm run newsletter:due          # what is owed right now, per sport
+npm run newsletter:market       # refresh the book-quote snapshot from the odds capture
 npm run newsletter:preview      # build both editions, write nothing to the database
 npm run newsletter:build        # build and store what is due
 npm run newsletter:send         # send a stored, ready edition (honours the launch gate)
@@ -108,6 +109,41 @@ An edition is due at 10:00 and stays sendable for a **retry window**
 (`retry_window_minutes`, default 240). Past it the edition is *stale* and is
 held with a reason rather than sent: a newsletter that arrives at 9pm is worse
 than one that did not.
+
+## 1a — Where the market number comes from, and the order that matters
+
+EdgeDesk's odds capture writes `public.signals`. The research host injects a
+**committed snapshot** of those quotes when it boots, and the football module
+then joins, classifies and orientation-checks them itself — so the newsletter
+never reads a price directly and never decides what a price means.
+
+Two things about this were wrong in the first release, and both produced the
+same symptom: a college edition with no book number on any game.
+
+**The names did not match.** The odds capture writes the book's name — *Texas
+Longhorns*, *San Diego State Aztecs*, *Louisiana Ragin Cajuns* — and the
+college schedule writes the school alone: *Texas*, *San Diego State*,
+*Louisiana*. Comparing normalised strings joined nothing: a live run read
+**410 college signal rows and joined zero**, every one refused as
+`no_slate_game_with_both_teams`. The fix is not a fuzzy match and not a second
+name table — `football/fbs/fbs.js` already owns the resolver `fbP4Market` uses
+for exactly this join, with a curated alias table and a longest-*unambiguous*-
+prefix rule, and its own comment names the trap:
+
+> a bare prefix test is how "Miami (OH) RedHawks" ends up priced against
+> Miami Florida, and across a full FBS slate both are on the board in the
+> same week
+
+**The refresh ran too late.** It happened inside `build`, which reads records
+that `generate.js` had already produced — so a quote fetched on one run could
+not reach a record until the *next* one. `npm run newsletter:market` is now its
+own phase and the workflow runs it **before** the record refresh. The suite
+pins that ordering, because it is invisible in the output when it is wrong.
+
+A game with no quote is not a failure and is not hidden: it is printed as
+`Market spread: not available` with the reason, the edition's introduction
+says how many of the featured games carry a book number, and the model-versus-
+market component scores zero rather than being imputed.
 
 ## 2 — Which games, and why not the biggest gaps
 
@@ -180,6 +216,9 @@ separately:
 | a send after a bounce | eligibility is recomputed at send time, joining suppressions live |
 | a browser reading the subscriber list | RLS on, **no select policy for anyone**, every read is a security-definer function returning counts or a masked address |
 | a browser sending a campaign | the send path needs the service role; the console's buttons ask the pipeline, and the operator's own token is checked against `newsletter_is_admin()` first |
+| two workers sending one edition at once | `newsletter_claim_edition()` is taken before the roster is touched and released on every path out, including a throw |
+| a send to somebody who unsubscribed after the roster was seeded | eligibility is recomputed at send time and a row that is no longer eligible is closed `skipped` with its reason, so it is neither sent nor left holding the edition open |
+| a mailing list that silently stops at a thousand people | the pending roster is paginated explicitly rather than taking PostgREST's default cap |
 | an invented statistic | every number in the rendered text must be in the research payload, checked with the article system's own supported-value set |
 | a wrong sign on a spread | the difference is recomputed from the two published lines and compared against what the copy says |
 

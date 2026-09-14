@@ -21,6 +21,15 @@
      preview   build with no database and no send. What a person reads before
                the launch gate is opened.
      test      send one edition to the configured test addresses only.
+     market    refresh the committed book-quote snapshot from the odds
+               capture, and nothing else. THIS HAS TO RUN BEFORE THE RECORDS
+               ARE REGENERATED: the research host injects the snapshot when it
+               boots, so a quote written after generate.js has run does not
+               reach a record until the run AFTER this one. The first version
+               of this pipeline refreshed the market inside `build`, which is
+               downstream of the records it was meant to improve — a college
+               edition could therefore never carry a book number on the run
+               that fetched it.
      rank      the whole slate's scores and components, for calibration.
      report    the run log, as a markdown job summary.
 
@@ -246,8 +255,16 @@ async function build(opts) {
         games: slate.games, season: slate.season, week: slate.week,
         now, dry: !!opts.dry, fetch: opts.fetch,
       });
+      /* "0 quote(s) joined" is a fact and not a diagnosis, and the
+         difference cost a round trip to a live runner: a run read 410
+         college signal rows, joined none, and the log could not say whether
+         signals was empty or every row had been refused. It says now. */
       log('  market refresh: ' + (marketRefresh.ok
-        ? (marketRefresh.quotes + ' quote(s) joined' + (marketRefresh.wrote ? ' -> ' + marketRefresh.wrote : ''))
+        ? (marketRefresh.quotes + ' quote(s) joined'
+           + (marketRefresh.signals_read != null ? ' from ' + marketRefresh.signals_read + ' signal row(s)' : '')
+           + (marketRefresh.refused_count ? ' · ' + marketRefresh.refused_count + ' refused: '
+              + JSON.stringify(marketRefresh.refused_by_reason || {}) : '')
+           + (marketRefresh.wrote ? ' -> ' + marketRefresh.wrote : ''))
         : marketRefresh.reason));
     } catch (e) { marketRefresh = { ok: false, reason: 'market_refresh_threw', detail: (e && e.message) || String(e) }; }
   }
@@ -432,13 +449,26 @@ async function persist(edition, opts) {
 /* Everything is re-checked here. The build may have run four hours ago on a
    different tick, the kill switch may have been thrown since, and a recipient
    may have bounced thirty seconds ago. */
+/* THE LEASE IS RELEASED ON EVERY PATH OUT, including a throw. A worker that
+   dies holding one is covered by the TTL, but a worker that RETURNS holding
+   one would block the next legitimate retry for half an hour for no reason. */
 async function send(edition, opts) {
+  const lease = { release: null };
+  try {
+    return await sendBody(edition, opts, lease);
+  } finally {
+    if (lease.release) { try { await lease.release(); } catch (_) { /* the TTL covers this */ } }
+  }
+}
+
+async function sendBody(edition, opts, lease) {
   const cfg = opts.resolved;
   const c = cfg.client;
   const settings = cfg.settings;
   const log = opts.log;
   const now = opts.now;
   const outcomeBase = { edition_key: edition.edition_key, sport: edition.sport };
+
 
   /* WHICH EDITIONS MAY BE HANDED TO THE PROVIDER. `ready` is the normal case.
      `sending` is admitted ONLY for a retry, because that is precisely the
@@ -484,10 +514,33 @@ async function send(edition, opts) {
   let recipients = [];
   if (opts.test) {
     const list = (settings.test_recipients || []).concat(opts.to ? [opts.to] : []);
-    recipients = list.filter(Boolean).map(e => ({
-      subscriber_id: null, email: String(e).toLowerCase(), is_member: false,
-      manage_token: 'test-' + PROVIDER.sha256(String(e)).slice(0, 24),
-    }));
+    /* A TEST MESSAGE WHOSE UNSUBSCRIBE LINK DOES NOTHING IS NOT A TEST OF THE
+       EMAIL. The launch checklist asks an operator to click that link, and a
+       synthetic token answers "this link is not valid" — which tells them
+       nothing about whether the real one works. So when the test address is
+       itself a confirmed subscriber, the message carries ITS OWN token and
+       the link genuinely unsubscribes. For an address that is not subscribed
+       there is nothing to unsubscribe from and the synthetic token is
+       honest; the log says which it was. */
+    let realTokens = Object.create(null);
+    if (c.enabled && c.hasService) {
+      try {
+        const all = (await c.eligible(edition.sport)) || [];
+        all.forEach(r => { realTokens[String(r.email).toLowerCase()] = r.manage_token; });
+      } catch (_) { realTokens = Object.create(null); }
+    }
+    recipients = list.filter(Boolean).map(e => {
+      const email = String(e).toLowerCase();
+      return {
+        subscriber_id: null, email, is_member: false,
+        manage_token: realTokens[email] || ('test-' + PROVIDER.sha256(email).slice(0, 24)),
+        live_token: !!realTokens[email],
+      };
+    });
+    const live = recipients.filter(r => r.live_token).length;
+    log('  test send: ' + recipients.length + ' address(es), ' + live
+      + ' with a working unsubscribe link'
+      + (live < recipients.length ? ' (the rest are not subscribers, so their link has nothing to unsubscribe)' : ''));
     if (!recipients.length) {
       return Object.assign({ sent: false, reason: 'no_test_recipients',
         detail: 'set newsletter_settings.test_recipients or pass --to' }, outcomeBase);
@@ -515,6 +568,31 @@ async function send(edition, opts) {
     if (!editionRow) {
       return Object.assign({ sent: false, reason: 'edition_not_stored' }, outcomeBase);
     }
+    /* THE LEASE, TAKEN HERE AND NOWHERE ELSE. The schema has provided
+       newsletter_claim_edition() since day one and this code did not call it:
+       two dispatchers that both decided an edition was due would both pass
+       every gate, both read the same pending set and both hand the same batch
+       to the provider. The deterministic idempotency key meant the provider
+       would have deduplicated it — which is a good backstop and a bad primary
+       defence, because it makes correctness depend on a third party honouring
+       a header. One worker at a time, decided in one statement, in our own
+       database. */
+    /* WHO HOLDS IT, identifiably. The GitHub run id when there is one, so an
+       operator reading a stuck lease can find the job that took it; a fresh
+       id otherwise. `rid` belongs to main() and is not in scope here — the
+       first version of this line reached for it and threw on the first real
+       lease claim, which is exactly the kind of thing only a test that
+       actually calls send() finds. */
+    const owner = 'run:' + (opts.run_id || process.env.GITHUB_RUN_ID || runId()) + ':' + (process.pid || 0);
+    let leased = false;
+    try { leased = await c.claimEdition(edition.edition_key, owner, 1800); }
+    catch (e) { log('  ! could not reach the lease: ' + (e && e.message)); }
+    if (!leased) {
+      return Object.assign({ sent: false, reason: 'lease_held',
+        detail: 'another worker holds the lease on this edition; it will finish or the lease will expire' }, outcomeBase);
+    }
+    lease.release = () => c.releaseEdition(edition.edition_key, owner);
+
     await c.patchEdition(edition.edition_key, {
       status: 'sending', eligible_recipients: recipients.length,
     });
@@ -528,6 +606,17 @@ async function send(edition, opts) {
     const pending = await c.pendingDeliveries(editionRow.id);
     const byEmail = Object.create(null);
     recipients.forEach(r => { byEmail[r.email] = r; });
+    /* SUPPRESSION APPLIED AT THE LAST POSSIBLE MOMENT. `eligible()` recomputes
+       consent, sport preference and the suppression list live, so an address
+       that unsubscribed or bounced since this edition was seeded is simply not
+       in `byEmail` — and its row is closed as `skipped` rather than left
+       `queued`, which would hold the edition in `sending` forever. */
+    const dropped = (pending || []).filter(p => !byEmail[p.email]).map(p => p.email);
+    if (dropped.length) {
+      await c.skipDeliveries(editionRow.id, dropped,
+        'not eligible at send time: unsubscribed, suppressed or no longer wants this sport');
+      log('  ' + dropped.length + ' seeded recipient(s) are no longer eligible and were skipped');
+    }
     recipients = (pending || []).map(p => byEmail[p.email]).filter(Boolean);
     log('  ' + recipients.length + ' still owed a send');
     if (!recipients.length) {
@@ -578,8 +667,20 @@ async function send(edition, opts) {
     return Object.assign({ sent: true, counts, provider: result.counts,
       partial: !!anyOwed }, outcomeBase);
   }
+  /* WHAT WENT INTO THE TEST MESSAGE, returned rather than described. The
+     launch checklist asks an operator to click the unsubscribe link; handing
+     them the exact URL that was embedded — and saying whether it is a live
+     token or a synthetic one — is the difference between checking that and
+     assuming it. Never returned for a real send: those URLs are per
+     subscriber and belong in the email and nowhere else. */
+  const testLinks = opts.test ? payload.map(r => ({
+    email: r.email,
+    unsubscribe: r.urls.unsubscribe,
+    preferences: r.urls.preferences,
+    live_token: !!(recipients.filter(x => x.email === r.email)[0] || {}).live_token,
+  })) : undefined;
   return Object.assign({ sent: true, provider: result.counts, dry: !!opts.dry, test: !!opts.test,
-    console_log: result.console_log }, outcomeBase);
+    console_log: result.console_log, test_links: testLinks }, outcomeBase);
 }
 
 /* ============================================================== the CLI */
@@ -599,6 +700,7 @@ async function main() {
     return [String(s).toUpperCase()];
   })();
   const rid = runId();
+  const opts_fetch = undefined;
 
   if (flag('refresh')) {
     log('refreshing the article records from the research terminal…');
@@ -661,6 +763,39 @@ async function main() {
     return;
   }
 
+  /* ---------------------------------------------------------- market --- */
+  if (phase === 'market') {
+    for (const s of SPORTS) {
+      const cands = candidates();
+      const slate = SLATE.resolve({ candidates: cands, sport: s, now });
+      if (!slate.ok) { log('\n' + s + ': ' + slate.detail); record({ sport: s, phase: 'market', ok: false, reason: slate.reason }); continue; }
+      const out = await MARKET.refresh({
+        games: slate.games, season: slate.season, week: slate.week,
+        now, dry: DRY, fetch: opts_fetch,
+      });
+      log('\n' + s + ' — season ' + slate.season + ' week ' + slate.week + ', ' + slate.games.length + ' games on the slate');
+      if (!out.ok) {
+        log('  refused: ' + out.reason + (out.detail ? ' — ' + out.detail : ''));
+      } else {
+        log('  ' + out.quotes + ' quote(s) joined from ' + (out.signals_read || 0) + ' signal row(s)'
+          + ' via ' + (out.resolver || '?')
+          + (out.wrote ? ' -> ' + out.wrote : ' (nothing written)'));
+        if (out.refused_count) log('  ' + out.refused_count + ' refused: ' + JSON.stringify(out.refused_by_reason || {}));
+        (out.refused || []).slice(0, 6).forEach(r => log('    · ' + r.why + ' — ' + r.detail));
+        if ((out.unresolved_slate || []).length) {
+          log('  ' + out.unresolved_slate.length + ' slate game(s) whose own names did not resolve:');
+          out.unresolved_slate.forEach(g => log('    · ' + g.away + ' at ' + g.home));
+        }
+        if (out.books && out.books.length) log('  books: ' + out.books.join(', '));
+      }
+      record({ sport: s, phase: 'market', ok: !!out.ok && out.quotes > 0, reason: out.reason || null,
+        detail: { quotes: out.quotes, signals_read: out.signals_read || 0,
+          refused: out.refused_by_reason || {}, wrote: out.wrote || null } });
+    }
+    STORE.appendRuns(runRows, { now });
+    return;
+  }
+
   /* ---------------------------------------------------------- report --- */
   if (phase === 'report') {
     const idx = STORE.loadIndex();
@@ -683,7 +818,7 @@ async function main() {
   const doSend = ['send', 'all', 'test', 'retry'].indexOf(phase) >= 0;
   if (!doBuild && !doSend) {
     console.error('unknown phase: ' + phase
-      + '\nphases: due, build, send, retry, all, preview, test, rank, report');
+      + '\nphases: due, market, build, send, retry, all, preview, test, rank, report');
     process.exit(2);
   }
 
@@ -741,13 +876,16 @@ async function main() {
         edition = STORE.hydrate(stored);
       }
       const res = await send(edition, {
-        resolved, now, log, dry: DRY, force: FORCE, retry: phase === 'retry',
+        resolved, now, log, dry: DRY, force: FORCE, retry: phase === 'retry', run_id: rid,
         test: phase === 'test', to: arg('to', null) === true ? null : arg('to', null),
         env: process.env, driver: arg('driver', null) === true ? null : arg('driver', null),
       });
       log('  send: ' + (res.sent ? 'SENT' : 'not sent') + (res.reason ? ' — ' + res.reason : '')
         + (res.detail ? ' (' + res.detail + ')' : ''));
       if (res.console_log) res.console_log.forEach(b => log('    would send to ' + b.emails.join(', ')));
+      (res.test_links || []).forEach(l => log('    ' + l.email + ' unsubscribe: ' + l.unsubscribe
+        + (l.live_token ? '  [live token — this link really unsubscribes]'
+          : '  [synthetic token — this address is not a subscriber, so the link has nothing to act on]')));
       record({ sport, phase: phase === 'test' ? 'test_send' : 'send',
         edition_key: edition.edition_key, ok: !!res.sent, reason: res.reason || null,
         detail: { counts: res.counts || res.provider || null } });

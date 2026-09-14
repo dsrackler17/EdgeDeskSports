@@ -112,9 +112,32 @@ jobs:
           node tools/editorial/editorial.test.js
           node tools/articles/articles.test.js
 
+      # THE MARKET SNAPSHOT FIRST, AND THE ORDER IS THE WHOLE POINT. The
+      # research host injects the committed book-quote snapshot when it boots,
+      # so a quote fetched AFTER generate.js has run does not reach a record
+      # until the following run. Refreshing the market inside `build` — which
+      # is where this started — put the fetch downstream of the records it was
+      # meant to improve, and a college edition could never carry a book
+      # number on the run that fetched it.
+      #
+      # It needs the service role: public.signals is not readable with the
+      # anon key. Without the secret this step says so and changes nothing,
+      # and the edition is built from whatever snapshot is committed.
+      - name: Refresh the book-quote snapshot from the odds capture
+        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        env:
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.sport }}" ]; then ARGS="--sport ${{ github.event.inputs.sport }}"; fi
+          node tools/newsletter/run.js market $ARGS
+
       # The newsletter quotes what the research terminal says, so the records
-      # are refreshed from it first. Same generator the article system runs;
-      # no number on a newsletter was computed by this job.
+      # are refreshed from it second — with the snapshot above already on
+      # disk, so the quotes it just fetched are joined into the payloads this
+      # run will read. Same generator the article system runs; no number on a
+      # newsletter was computed by this job.
       - name: Refresh the research records
         if: ${{ github.event.inputs.skip_refresh != 'true' }}
         run: node tools/articles/generate.js --network --quiet

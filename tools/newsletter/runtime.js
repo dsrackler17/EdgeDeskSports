@@ -166,10 +166,39 @@ function client(opts) {
         body: JSON.stringify(rows),
       }, true);
     },
-    async pendingDeliveries(editionId) {
+    /* PAGINATED, because PostgREST caps a response and a silent truncation
+       here is a mailing list that stops at a thousand people. The page size
+       is explicit rather than left to the server's default so the cap is
+       this file's decision and visible in it. */
+    async pendingDeliveries(editionId, opts2) {
       if (!enabled || !service) return [];
-      return call('newsletter_deliveries?select=*&edition_id=eq.' + editionId
-        + '&status=in.(queued,failed)&order=email.asc', { method: 'GET' }, true);
+      const page = (opts2 && opts2.page) || 1000;
+      const max = (opts2 && opts2.maxPages) || 50;
+      const out = [];
+      for (let i = 0; i < max; i++) {
+        const rows = await call('newsletter_deliveries?select=*&edition_id=eq.' + editionId
+          + '&status=in.(queued,failed)&order=email.asc'
+          + '&limit=' + page + '&offset=' + (i * page), { method: 'GET' }, true);
+        if (!Array.isArray(rows) || !rows.length) break;
+        out.push(...rows);
+        if (rows.length < page) break;
+      }
+      return out;
+    },
+
+    /* A ROW THAT IS NO LONGER OWED A SEND. Somebody seeded into this edition
+       and then unsubscribed, bounced or complained before it went out: they
+       must not be sent to, and the row must not sit `queued` forever keeping
+       the edition in `sending` and out of `sent`. `skipped` is a terminal
+       state that records why. */
+    async skipDeliveries(editionId, emails, why) {
+      if (!enabled || !service || !emails.length) return null;
+      const list = emails.map(e => '"' + String(e).toLowerCase().replace(/"/g, '') + '"').join(',');
+      return call('newsletter_deliveries?edition_id=eq.' + editionId
+        + '&status=in.(queued,failed)&email=in.(' + encodeURIComponent(list) + ')', {
+        method: 'PATCH', headers: { prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'skipped', last_error: why || 'no longer eligible at send time' }),
+      }, true);
     },
     async deliveryCounts(editionId) {
       if (!enabled || !service) return {};

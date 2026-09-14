@@ -778,6 +778,279 @@ section('7 — the provider');
       MARKET.teamKey('San José State') === MARKET.teamKey('San Jose State'));
     const noCred = await MARKET.refresh({ games: slateGames, season: 2026, week: 2, env: {} });
     chk('no credential is a stated no-op, not a throw', noCred.reason === 'no_service_credential');
+    chk('an NFL slate matches on exact keys', joined.resolver === 'exact_key', joined.resolver);
+
+    /* ---- THE COLLEGE NAME MISMATCH, which a live run found the hard way ---
+       The odds capture writes the book's name ("Texas Longhorns") and the
+       college schedule writes the school ("Texas"). Comparing normalised
+       strings joined NOTHING: 410 signal rows read, zero joined, every one
+       refused as no_slate_game_with_both_teams. These are the exact fixtures
+       from that run. */
+    const cfbSlate = [
+      ['Texas', 'UTSA'], ['UCLA', 'Purdue'], ['San Diego State', 'James Madison'],
+      ['Louisiana', 'UAB'], ['Arizona', 'Northern Illinois'], ['San Jose State', 'Fresno State'],
+      ['Texas Tech', 'Houston'], ['Ole Miss', 'LSU'],
+    ].map(([home, away], i) => ({
+      key: 'CFB:c' + i, sport: 'CFB', game_id: 'c' + i, season: 2026, week: 3,
+      home, away, kickoff: '2026-09-19T23:00:00.000Z',
+      kickoff_ms: Date.parse('2026-09-19T23:00:00.000Z'),
+    }));
+    const bookNames = [
+      ['Texas Longhorns', 'UTSA Roadrunners'], ['UCLA Bruins', 'Purdue Boilermakers'],
+      ['San Diego State Aztecs', 'James Madison Dukes'], ['Louisiana Ragin Cajuns', 'UAB Blazers'],
+      ['Arizona Wildcats', 'Northern Illinois Huskies'], ['San Jose State Spartans', 'Fresno State Bulldogs'],
+      ['Texas Tech Red Raiders', 'Houston Cougars'], ['Ole Miss Rebels', 'LSU Tigers'],
+    ];
+    const cfbRows = bookNames.map(([home, away], i) => ({
+      sig_key: 'c' + i, market: 'spreads', selection: home, point: -(3 + i), best_book: 'FanDuel',
+      home_team: home, away_team: away, commence_time: '2026-09-19T23:00:00.000Z',
+      last_seen_at: '2026-09-19T12:00:00.000Z',
+    }));
+    const cfbJoined = MARKET.quotesFromSignals(cfbRows, cfbSlate);
+    chk('a college slate uses the FBS resolver', cfbJoined.resolver === 'EDFbs', cfbJoined.resolver);
+    chk('every book name with a mascot joins its school',
+      cfbJoined.quotes.length === cfbSlate.length,
+      cfbJoined.quotes.length + ' of ' + cfbSlate.length + ' — ' + JSON.stringify(MARKET.countBy(cfbJoined.refused)));
+    chk('the spread is attributed to the resolved school, not the book’s name',
+      cfbJoined.quotes.every(q => cfbSlate.some(g => g.home === q.spread.selection || g.away === q.spread.selection)),
+      JSON.stringify(cfbJoined.quotes.map(q => q.spread.selection)));
+    chk('"Texas Longhorns" does not take Texas Tech’s number',
+      cfbJoined.quotes.filter(q => q.home === 'Texas')[0].spread.point === -3,
+      JSON.stringify(cfbJoined.quotes.filter(q => q.home === 'Texas')));
+
+    /* THE TRAP THE RESOLVER EXISTS FOR. Both Miamis on one board: a bare
+       prefix test prices one against the other, and this must refuse rather
+       than guess. */
+    const miamiSlate = [
+      { key: 'CFB:m1', sport: 'CFB', game_id: 'm1', season: 2026, week: 3, home: 'Miami', away: 'Florida State',
+        kickoff: '2026-09-19T23:00:00.000Z', kickoff_ms: Date.parse('2026-09-19T23:00:00.000Z') },
+      { key: 'CFB:m2', sport: 'CFB', game_id: 'm2', season: 2026, week: 3, home: 'Miami (OH)', away: 'Ohio',
+        kickoff: '2026-09-19T23:00:00.000Z', kickoff_ms: Date.parse('2026-09-19T23:00:00.000Z') },
+    ];
+    const miamiJoined = MARKET.quotesFromSignals([
+      { sig_key: 'm-oh', market: 'spreads', selection: 'Miami (OH) RedHawks', point: -2.5, best_book: 'FanDuel',
+        home_team: 'Miami (OH) RedHawks', away_team: 'Ohio Bobcats',
+        commence_time: '2026-09-19T23:00:00.000Z', last_seen_at: '2026-09-19T12:00:00.000Z' },
+      { sig_key: 'm-fl', market: 'spreads', selection: 'Miami Hurricanes', point: -9.5, best_book: 'FanDuel',
+        home_team: 'Miami Hurricanes', away_team: 'Florida State Seminoles',
+        commence_time: '2026-09-19T23:00:00.000Z', last_seen_at: '2026-09-19T12:00:00.000Z' },
+    ], miamiSlate);
+    const mOh = miamiJoined.quotes.filter(q => q.game_id === 'm2')[0];
+    const mFl = miamiJoined.quotes.filter(q => q.game_id === 'm1')[0];
+    chk('Miami (OH) keeps its own number', mOh && mOh.spread.point === -2.5, JSON.stringify(mOh));
+    chk('Miami Florida keeps its own number', mFl && mFl.spread.point === -9.5, JSON.stringify(mFl));
+
+    /* A NAME THE RESOLVER CANNOT PLACE IS A NAMED REFUSAL, not a miss, so an
+       operator can tell "we need an alias" from "that game is not this week". */
+    const strange = MARKET.quotesFromSignals([
+      { sig_key: 'x', market: 'spreads', selection: 'Wossamotta U Moose', point: -3,
+        home_team: 'Wossamotta U Moose', away_team: 'Faber College Mongols',
+        commence_time: '2026-09-19T23:00:00.000Z' },
+    ], cfbSlate);
+    chk('an unresolvable college name is refused by name, not by slate',
+      strange.refused.some(r => r.why === 'team_name_unresolved'),
+      JSON.stringify(strange.refused));
+
+    /* THE DRIFT PIN. This file resolves the pair through an index for speed
+       instead of calling EDFbs.matchesEvent per (row, game). The two must
+       agree on every pair, or the newsletter and the board part company about
+       who is playing. Asked exactly: does MY join produce a quote for this
+       one row against this one game, and does matchesEvent say the same? */
+    const ixPin = MARKET.indexFor(cfbSlate);
+    const pinDisagreements = [];
+    cfbRows.forEach(r => {
+      cfbSlate.forEach(g => {
+        const canonical = MARKET.FBS.matchesEvent(
+          { home: r.home_team, away: r.away_team, t: r.commence_time },
+          { g: { home_team: g.home, away_team: g.away }, t: g.kickoff_ms },
+          ixPin.ix);
+        const mine = MARKET.quotesFromSignals([r], [g]).quotes.length === 1;
+        if (canonical !== mine) pinDisagreements.push(r.home_team + ' vs ' + g.home + ': matchesEvent ' + canonical + ', join ' + mine);
+      });
+    });
+    chk('the pair index agrees with EDFbs.matchesEvent on every pair',
+      pinDisagreements.length === 0,
+      pinDisagreements.slice(0, 4).join(' | '));
+
+    chk('the refusal histogram counts by reason',
+      MARKET.countBy([{ why: 'a' }, { why: 'a' }, { why: 'b' }]).a === 2);
+
+    /* ==================================================================
+       8b — THE SEND PATH, against a fake database
+       ================================================================== */
+    section('8b — the send path');
+    const RUN = require('./run.js');
+
+    /* Enough of runtime.client() for send() to run: the lease, the edition
+       row, the eligibility door and the delivery roster, with the same
+       semantics the SQL enforces (one lease holder, one row per address,
+       only queued/failed are still owed). */
+    function fakeDb(init) {
+      init = init || {};
+      const state = {
+        lease: null, leaseOwner: null,
+        edition: Object.assign({ id: 1, edition_key: 'NFL:2026:W02:2026-09-15', status: 'ready' }, init.edition || {}),
+        deliveries: [],
+        eligible: (init.eligible || []).slice(),
+        calls: { claim: 0, release: 0, skip: [], patches: [] },
+      };
+      const client = {
+        enabled: true, hasService: true,
+        async claimEdition(key, owner) {
+          state.calls.claim++;
+          if (state.leaseOwner && state.leaseOwner !== owner) return false;
+          state.leaseOwner = owner; return true;
+        },
+        async releaseEdition(key, owner) {
+          state.calls.release++;
+          if (state.leaseOwner === owner) { state.leaseOwner = null; return true; }
+          return false;
+        },
+        async findEdition() { return state.edition; },
+        async patchEdition(key, patch) { state.calls.patches.push(patch); Object.assign(state.edition, patch); return state.edition; },
+        async eligible() { return state.eligible.slice(); },
+        async seedDeliveries(rows) {
+          rows.forEach(r => {
+            if (state.deliveries.some(d => d.email === r.email)) return;   /* the unique index */
+            state.deliveries.push(Object.assign({ attempts: 0 }, r));
+          });
+          return state.deliveries;
+        },
+        async pendingDeliveries() {
+          return state.deliveries.filter(d => d.status === 'queued' || d.status === 'failed');
+        },
+        async skipDeliveries(id, emails, why) {
+          state.calls.skip.push({ emails: emails.slice(), why });
+          state.deliveries.forEach(d => {
+            if (emails.indexOf(d.email) >= 0 && (d.status === 'queued' || d.status === 'failed')) {
+              d.status = 'skipped'; d.last_error = why;
+            }
+          });
+        },
+        async deliveryCounts() {
+          const o = {}; state.deliveries.forEach(d => { o[d.status] = (o[d.status] || 0) + 1; }); return o;
+        },
+        async recordOutcome(id, out) {
+          const d = state.deliveries.filter(x => x.email === out.email)[0];
+          if (d) { d.status = out.status; d.ambiguous = out.ambiguous; d.last_error = out.error; }
+        },
+        async bumpAttempts() {}, async logRun() {}, async suppress() {},
+      };
+      return { state, client };
+    }
+    function resolvedFor(db, over) {
+      const settings = Object.assign({
+        site_url: 'https://edgedesksports.com',
+        mailing_address: 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423',
+        from_email: 'research@edgedesksports.com', from_name: 'EdgeDesk Research',
+        test_recipients: [],
+      }, (over && over.settings) || {});
+      return {
+        settings, client: db.client,
+        sending_enabled: over && over.sending_enabled === false ? false : true,
+        sportEnabled: () => true,
+      };
+    }
+    const sendableEdition = Object.assign({}, edition, {
+      edition_key: 'NFL:2026:W02:2026-09-15', status: 'ready',
+      deadline_at: new Date(NOW + 3600000).toISOString(),
+      content_hash: 'ed_deadbeef', html_free: r.html, text_free: r.text,
+      html_member: r.html, text_member: r.text,
+    });
+    const people3 = [
+      { subscriber_id: 'a', email: 'a@example.com', manage_token: 'tok-a', is_member: false },
+      { subscriber_id: 'b', email: 'b@example.com', manage_token: 'tok-b', is_member: true },
+      { subscriber_id: 'c', email: 'c@example.com', manage_token: 'tok-c', is_member: false },
+    ];
+
+    async function runSend(db, over, sendOpts) {
+      return RUN.send(sendableEdition, Object.assign({
+        resolved: resolvedFor(db, over), now: NOW, log: () => {},
+        dry: true, env: {},
+      }, sendOpts || {}));
+    }
+
+    /* the lease */
+    const db1 = fakeDb({ eligible: people3 });
+    const s1 = await runSend(db1);
+    chk('a send takes the edition lease', db1.state.calls.claim === 1);
+    chk('…and releases it when it is done', db1.state.calls.release === 1 && db1.state.leaseOwner === null);
+    chk('a send reaches the provider', s1.sent === true, JSON.stringify(s1));
+
+    const db2 = fakeDb({ eligible: people3 });
+    db2.state.leaseOwner = 'someone-else';
+    const s2 = await runSend(db2);
+    chk('a second worker is refused while the lease is held',
+      s2.sent === false && s2.reason === 'lease_held', JSON.stringify(s2));
+    chk('…and it does not touch the delivery roster', db2.state.deliveries.length === 0);
+    chk('…and it does not steal the lease', db2.state.leaseOwner === 'someone-else');
+
+    /* a recipient who unsubscribed after the roster was seeded */
+    const db3 = fakeDb({ eligible: people3 });
+    await runSend(db3);                                    /* seeds all three */
+    db3.state.deliveries.forEach(d => { d.status = 'queued'; });   /* pretend none went */
+    db3.state.eligible = people3.filter(p => p.email !== 'b@example.com');
+    /* NOT a dry run: outcomes are only recorded on a real send, and the point
+       of this check is that the roster reaches a terminal state. The console
+       driver still puts nothing on the wire. */
+    const s3 = await runSend(db3, null, { dry: false, driver: 'console' });
+    chk('a recipient who became ineligible is skipped, not sent to',
+      db3.state.deliveries.filter(d => d.email === 'b@example.com')[0].status === 'skipped',
+      JSON.stringify(db3.state.deliveries.map(d => d.email + ':' + d.status)));
+    chk('…with a reason recorded on the row',
+      /not eligible at send time/.test(db3.state.deliveries.filter(d => d.email === 'b@example.com')[0].last_error || ''));
+    chk('…and the other two still send', s3.sent === true);
+    chk('…so the edition can reach sent rather than hanging in sending',
+      db3.state.deliveries.every(d => d.status !== 'queued'),
+      JSON.stringify(db3.state.deliveries.map(d => d.status)));
+
+    /* an accepted row is never handed to the provider twice */
+    const db4 = fakeDb({ eligible: people3 });
+    await runSend(db4);
+    db4.state.deliveries.forEach(d => { d.status = 'accepted'; });
+    const s4 = await runSend(db4);
+    chk('an edition everyone has been accepted for does not re-send',
+      s4.reason === 'already_delivered_to_everyone', JSON.stringify(s4));
+    chk('…and is marked sent', db4.state.edition.status === 'sent');
+
+    /* the kill switch is re-read at send time, not trusted from the build */
+    const db5 = fakeDb({ eligible: people3 });
+    const s5 = await runSend(db5, { sending_enabled: false });
+    chk('the launch gate refuses the send', s5.reason === 'sending_disabled');
+    chk('…before any lease is taken', db5.state.calls.claim === 0);
+    chk('…and before any address is looked up', db5.state.deliveries.length === 0);
+
+    /* a preview can never be sent */
+    const db6 = fakeDb({ eligible: people3 });
+    const s6 = await RUN.send(Object.assign({}, sendableEdition, { status: 'preview' }),
+      { resolved: resolvedFor(db6), now: NOW, log: () => {}, dry: true, env: {} });
+    chk('a preview edition is not sendable', s6.sent === false && s6.reason === 'not_sendable', JSON.stringify(s6));
+
+    /* a test send uses a real token when the address is a subscriber */
+    const db7 = fakeDb({ eligible: people3 });
+    const s7 = await runSend(db7, { settings: { test_recipients: ['a@example.com', 'stranger@example.com'] } }, { test: true });
+    chk('a test send goes only to the configured addresses', s7.sent === true && s7.test === true);
+    chk('…and never seeds a delivery row for a subscriber', db7.state.deliveries.length === 0);
+    const testBatch = (s7.console_log || []).map(b => b.emails).reduce((a, b) => a.concat(b), []);
+    chk('…covering both test addresses', testBatch.length === 2, JSON.stringify(testBatch));
+
+    /* the same, checked at the URL level: the subscriber gets their own token */
+    const db8 = fakeDb({ eligible: people3 });
+    const s8 = await runSend(db8, { settings: { test_recipients: ['a@example.com', 'stranger@example.com'] } }, { test: true });
+    const links = s8.test_links || [];
+    const mine = links.filter(l => l.email === 'a@example.com')[0];
+    const theirs = links.filter(l => l.email === 'stranger@example.com')[0];
+    chk('a test send reports the links it embedded', links.length === 2, JSON.stringify(links));
+    chk('a subscribed test address carries its own unsubscribe token',
+      mine && /tok-a/.test(mine.unsubscribe) && mine.live_token === true, JSON.stringify(mine));
+    chk('…and an address that is not a subscriber gets a synthetic one',
+      theirs && /t=test-/.test(theirs.unsubscribe) && theirs.live_token === false, JSON.stringify(theirs));
+    chk('…which is not another subscriber’s token',
+      theirs && !/tok-[abc]/.test(theirs.unsubscribe), JSON.stringify(theirs));
+    chk('the unsubscribe link names the sport so one edition can be dropped alone',
+      mine && /sport=NFL/.test(mine.unsubscribe), JSON.stringify(mine));
+    chk('a real send never returns per-subscriber links',
+      (await runSend(fakeDb({ eligible: people3 }))).test_links === undefined);
 
     /* ==================================================================
        9 — THE STORE AND THE EDITION IDENTITY
@@ -844,6 +1117,31 @@ section('7 — the provider');
     chk('the workflow runs this suite before it may send',
       wf.indexOf('node tools/newsletter/newsletter.test.js') > 0);
     chk('the workflow schedules Monday and Tuesday only', /cron: '[\d,]+ 13-19 \* \* 1,2'/.test(wf));
+
+    /* THE ORDER OF THE TWO REFRESH STEPS IS LOAD-BEARING. The research host
+       injects the committed book-quote snapshot when it boots, so a market
+       refresh that runs after generate.js cannot reach the records this run
+       reads — which is exactly how a live run joined quotes and still
+       produced a college edition with no book number on any game. */
+    const iMarket = wf.indexOf('node tools/newsletter/run.js market');
+    const iGenerate = wf.indexOf('node tools/articles/generate.js');
+    chk('the workflow refreshes the market snapshot', iMarket > 0);
+    chk('…before it regenerates the records', iMarket > 0 && iGenerate > iMarket,
+      'market at ' + iMarket + ', generate at ' + iGenerate);
+    chk('the market step is given the service role', /SB_SERVICE_ROLE: \$\{\{ secrets\.SB_SERVICE_ROLE \}\}/.test(wf.slice(iMarket - 900, iMarket)));
+    chk('the run commits the refreshed snapshot', /git add[^\n]*articles\/data\/market/.test(wf));
+
+    /* THE SQL SUITE HAS TO RUN SOMEWHERE. It skips (and passes) with no
+       PostgreSQL so `npm test` stays green on a bare Node install — which
+       means a workflow with a real database is the only place its guarantees
+       are actually checked, and a suite nothing runs is a suite nobody has. */
+    const sqlWf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'games-sql.yml'), 'utf8');
+    chk('the newsletter SQL suite runs against a real PostgreSQL in CI',
+      sqlWf.indexOf('node tools/newsletter/newsletter_sql.test.js') > 0);
+    chk('…and a change to the schema triggers that job',
+      sqlWf.indexOf("- 'supabase/newsletter.sql'") > 0);
+    chk('…and a change to the suite itself does too',
+      sqlWf.indexOf("- 'tools/newsletter/newsletter_sql.test.js'") > 0);
 
     /* ================================================================== */
     console.log((fail ? 'FAIL' : 'PASS') + ' | edgedesk newsletter | ' + pass + ' passed, ' + fail + ' failed');

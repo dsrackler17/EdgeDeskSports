@@ -25,9 +25,39 @@
 
    A WRONG JOIN IS WORSE THAN A MISSING ONE. A newsletter that prints one
    game's line against another game's model number is not a bug a reader can
-   forgive. So the match requires BOTH team keys to agree and the kickoff to
-   be within a bounded window; anything else is refused, with the reason kept.
-   Fuzzy name matching is deliberately not attempted.
+   forgive. So the match requires BOTH teams to resolve to this game's own
+   teams and the kickoff to be within a bounded window; anything else is
+   refused, with the reason kept.
+
+   THE TWO FEEDS DO NOT AGREE ON NAMES, and the first version of this file
+   assumed they did. The odds capture writes the book's name — "Texas
+   Longhorns", "San Diego State Aztecs", "Louisiana Ragin Cajuns" — and the
+   college schedule writes the school alone: "Texas", "San Diego State",
+   "Louisiana". Comparing normalised strings therefore matched NOTHING: a
+   live run read 410 college signal rows and joined zero, and every refusal
+   said `no_slate_game_with_both_teams`.
+
+   THE FIX IS NOT A FUZZY MATCH, and it is not new code either. football/fbs/
+   already owns the resolver the terminal's own board uses for exactly this
+   join (`fbP4Market` → `EDFbs.matchesEvent`), and its comment names the trap
+   a naive prefix test falls into:
+
+       "a bare prefix test is how 'Miami (OH) RedHawks' ends up priced
+        against Miami Florida, and across a full FBS slate both are on the
+        board in the same week"
+
+   `EDFbs.resolveTeam` tries an exact key, then a curated alias, then a state
+   expansion, then the LONGEST UNAMBIGUOUS PREFIX — where a tie between two
+   different schools resolves to nothing rather than to a guess. "Ohio" never
+   swallows "Ohio State" and neither Miami takes the other's number. Using it
+   here rather than a second name table is the whole point: one resolver, one
+   set of aliases, and a college board and a college newsletter that cannot
+   disagree about who is playing.
+
+   THE NFL SIDE STAYS ON EXACT KEYS. nflverse and the odds capture both write
+   the full club name, so there is nothing to resolve; and the FBS universe
+   contains no professional teams, so running NFL rows through it would
+   resolve nothing and refuse everything.
 
    WITH NO CREDENTIAL IT IS A NO-OP THAT SAYS SO. `refresh()` returns
    `{ ok: false, reason: 'no_service_credential' }` rather than throwing, and
@@ -40,6 +70,10 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
+/* The FBS universe, its alias table and its resolver — the same module
+   app.html loads as window.EDFbs. It exports for Node, so this is the real
+   thing rather than a copy of it. */
+const FBS = require(path.join(ROOT, 'football', 'fbs', 'fbs.js'));
 const MARKET_DIR = path.join(ROOT, 'articles', 'data', 'market');
 
 /* The two sport keys the odds capture writes for football, as app.html reads
@@ -110,18 +144,96 @@ async function readSignals(opts) {
 /* Group signal rows into one quote per fixture, keeping the most recently
    seen spread and total. `selection` on a spreads row names the team the
    `point` belongs to, which is exactly what the snapshot schema stores. */
+/* THE RESOLVER, built from the slate itself. The universe only has to contain
+   the teams playing this week: a quote for a game that is not on the slate is
+   refused either way, and a smaller universe is a smaller chance of an
+   ambiguous prefix. Built once per refresh and handed to every row. */
+function indexFor(games) {
+  const rows = (games || []).map(g => ({ home_team: g.home, away_team: g.away }));
+  const season = (games || []).map(g => g.season).filter(x => x != null)[0] || null;
+  const universe = FBS.buildUniverse({ rows, season });
+  return { ix: FBS.teamIndex(universe), universe };
+}
+
+/* One side of one row, resolved and memoised. 410 signal rows carry about 150
+   distinct names between them and each resolution walks a prefix list, so
+   resolving per NAME rather than per row is the difference between a
+   millisecond and a second. */
+function resolverFor(index) {
+  const memo = Object.create(null);
+  return function resolve(name) {
+    const n = txt(name);
+    if (!n) return null;
+    if (memo[n] !== undefined) return memo[n];
+    const r = FBS.resolveTeam(n, index.ix);
+    memo[n] = r && r.key ? r : (r || null);
+    return memo[n];
+  };
+}
+
+/* ------------------------------------------------------------- the join */
+/* Group signal rows into one quote per fixture, keeping the most recently
+   seen spread and total. `selection` on a spreads row names the team the
+   `point` belongs to, which is exactly what the snapshot schema stores.
+
+   THE RULE IS EDFbs.matchesEvent's: both sides resolve to the game's own
+   teams, and the kickoffs agree within a bounded window. It is applied here
+   through a resolved-pair index rather than by calling matchesEvent once per
+   (row, game) pair, which would be thirty thousand prefix scans a run — and
+   newsletter.test.js pins this implementation to matchesEvent's own answer on
+   a sample, so the two cannot drift apart quietly. */
 function quotesFromSignals(rows, games) {
-  const byKey = Object.create(null);
-  (games || []).forEach(g => {
-    if (!g || !g.home || !g.away || g.kickoff_ms == null) return;
-    byKey[teamKey(g.home) + '|' + teamKey(g.away)] = g;
+  const list = (games || []).filter(Boolean);
+  const sport = String((list[0] && list[0].sport) || 'NFL').toUpperCase();
+  const useResolver = sport === 'CFB';
+  const index = useResolver ? indexFor(list) : null;
+  const resolve = useResolver ? resolverFor(index) : null;
+
+  /* Each slate game under the key pair its OWN names resolve to, so a row and
+     a game are compared on the same footing. */
+  const byPair = Object.create(null);
+  const unresolvedSlate = [];
+  list.forEach(g => {
+    if (!g.home || !g.away || g.kickoff_ms == null) return;
+    let hk, ak;
+    if (useResolver) {
+      const rh = resolve(g.home), ra = resolve(g.away);
+      if (!rh || !rh.key || !ra || !ra.key) {
+        unresolvedSlate.push({ key: g.key, home: g.home, away: g.away });
+        return;
+      }
+      hk = rh.key; ak = ra.key;
+    } else {
+      hk = teamKey(g.home); ak = teamKey(g.away);
+    }
+    byPair[hk + '|' + ak] = g;
   });
 
   const perGame = Object.create(null);
   const refused = [];
   (rows || []).forEach(r => {
-    const hk = teamKey(r.home_team), ak = teamKey(r.away_team);
-    const g = byKey[hk + '|' + ak];
+    let hk, ak;
+    if (useResolver) {
+      const rh = resolve(r.home_team), ra = resolve(r.away_team);
+      /* AN AMBIGUOUS NAME IS ITS OWN REFUSAL, not a miss. "Miami" with both
+         Miamis on the board is a thing a person should see, because the fix
+         is an alias rather than a wider match. */
+      if ((rh && rh.how === 'ambiguous') || (ra && ra.how === 'ambiguous')) {
+        refused.push({ sig_key: txt(r.sig_key), why: 'team_name_ambiguous',
+          detail: txt(r.away_team) + ' at ' + txt(r.home_team)
+            + ' — ' + JSON.stringify((rh && rh.ambiguous) || (ra && ra.ambiguous)) });
+        return;
+      }
+      if (!rh || !rh.key || !ra || !ra.key) {
+        refused.push({ sig_key: txt(r.sig_key), why: 'team_name_unresolved',
+          detail: txt(r.away_team) + ' at ' + txt(r.home_team) });
+        return;
+      }
+      hk = rh.key; ak = ra.key;
+    } else {
+      hk = teamKey(r.home_team); ak = teamKey(r.away_team);
+    }
+    const g = byPair[hk + '|' + ak];
     if (!g) { refused.push({ sig_key: txt(r.sig_key), why: 'no_slate_game_with_both_teams', detail: txt(r.away_team) + ' at ' + txt(r.home_team) }); return; }
     const t = Date.parse(r.commence_time);
     if (!Number.isFinite(t) || Math.abs(t - g.kickoff_ms) > KICKOFF_TOLERANCE_MS) {
@@ -133,8 +245,11 @@ function quotesFromSignals(rows, games) {
     const slot = perGame[g.key] || (perGame[g.key] = { game: g, spread: null, total: null });
     if (r.market === 'spreads' && num(r.point) != null && txt(r.selection)) {
       /* The selection must be one of the two teams; a spreads row naming
-         anything else is not a side of this game. */
-      const sk = teamKey(r.selection);
+         anything else is not a side of this game. Resolved the same way the
+         fixture was, so "Texas Longhorns" is Texas here too. */
+      const sk = useResolver
+        ? ((resolve(r.selection) || {}).key || null)
+        : teamKey(r.selection);
       if (sk !== hk && sk !== ak) { refused.push({ sig_key: txt(r.sig_key), why: 'spread_selection_is_neither_team', detail: txt(r.selection) }); return; }
       if (!slot.spread || seen > slot.spread.seen) {
         slot.spread = { selection: sk === hk ? g.home : g.away, point: num(r.point),
@@ -164,7 +279,7 @@ function quotesFromSignals(rows, games) {
     if (s.total) q.total = { point: s.total.point, book: s.total.book };
     quotes.push(q);
   });
-  return { quotes, refused };
+  return { quotes, refused, unresolved_slate: unresolvedSlate, resolver: useResolver ? 'EDFbs' : 'exact_key' };
 }
 
 /* ------------------------------------------------------------- the write */
@@ -172,6 +287,15 @@ function quotesFromSignals(rows, games) {
    already reads. Rewritten rather than appended: a week's file is the current
    capture for that week, and two rows for one game would make the replay
    depend on iteration order. */
+/* The refusals as a histogram. "410 read, 0 joined" is a fact; "410 read, 0
+   joined, 410 of them team_name_unresolved" is a diagnosis, and the
+   difference cost a round trip to a live runner to discover. */
+function countBy(refused) {
+  const out = Object.create(null);
+  (refused || []).forEach(r => { out[r.why] = (out[r.why] || 0) + 1; });
+  return out;
+}
+
 function snapshotFileFor(season, week, dir) {
   const w = String(week == null ? 0 : week).padStart(2, '0');
   return path.join(dir || MARKET_DIR, String(season) + '-week-' + w + '.json');
@@ -217,7 +341,11 @@ async function refresh(opts) {
   const joined = quotesFromSignals(read.rows, games);
   if (!joined.quotes.length) {
     return { ok: true, reason: 'no_quotes_joined', wrote: null, quotes: 0,
-      signals_read: read.rows.length, refused: joined.refused.slice(0, 20) };
+      signals_read: read.rows.length, resolver: joined.resolver,
+      refused_count: joined.refused.length,
+      refused_by_reason: countBy(joined.refused),
+      unresolved_slate: (joined.unresolved_slate || []).slice(0, 10),
+      refused: joined.refused.slice(0, 20) };
   }
   const file = snapshotFileFor(opts.season, opts.week, opts.dir);
   if (!opts.dry) writeSnapshot(file, opts.season, joined.quotes, opts);
@@ -226,8 +354,11 @@ async function refresh(opts) {
     wrote: opts.dry ? null : path.relative(ROOT, file),
     quotes: joined.quotes.length,
     signals_read: read.rows.length,
+    resolver: joined.resolver,
     refused: joined.refused.slice(0, 20),
     refused_count: joined.refused.length,
+    refused_by_reason: countBy(joined.refused),
+    unresolved_slate: (joined.unresolved_slate || []).slice(0, 10),
     books: [...new Set(joined.quotes.map(q => (q.spread && q.spread.book) || (q.total && q.total.book)).filter(Boolean))],
   };
 }
@@ -235,4 +366,5 @@ async function refresh(opts) {
 module.exports = {
   SPORT_KEYS, KICKOFF_TOLERANCE_MS, MARKET_DIR, COLUMNS,
   teamKey, config, readSignals, quotesFromSignals, snapshotFileFor, writeSnapshot, refresh,
+  indexFor, resolverFor, countBy, FBS,
 };

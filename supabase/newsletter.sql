@@ -106,6 +106,16 @@ create table if not exists public.newsletter_settings (
   record_stale_hours integer not null default 30,
   gap_confidence_floor numeric not null default 0.55,
 
+  -- ABUSE CONTROL ON THE ONE PUBLIC DOOR. /subscribe is unauthenticated by
+  -- necessity — a stranger signing up has no session — which means anybody
+  -- who can reach it can make a VERIFIED EDGEDESK DOMAIN send mail to any
+  -- address they name. Unthrottled that is an email-bombing service with our
+  -- reputation attached, and the damage lands on deliverability for every
+  -- real subscriber. Both caps are enforced in the function below, not in
+  -- the edge runtime, so no client and no redeploy can go around them.
+  signup_cooldown_seconds integer not null default 900,
+  signup_per_ip_hour integer not null default 12,
+
   -- where a test send goes. Never used by a scheduled edition.
   test_recipients text[] not null default '{}',
 
@@ -139,6 +149,8 @@ alter table public.newsletter_settings add column if not exists nfl_expansion_th
 alter table public.newsletter_settings add column if not exists quote_stale_hours integer not null default 72;
 alter table public.newsletter_settings add column if not exists record_stale_hours integer not null default 30;
 alter table public.newsletter_settings add column if not exists gap_confidence_floor numeric not null default 0.55;
+alter table public.newsletter_settings add column if not exists signup_cooldown_seconds integer not null default 900;
+alter table public.newsletter_settings add column if not exists signup_per_ip_hour integer not null default 12;
 alter table public.newsletter_settings add column if not exists test_recipients text[] not null default '{}';
 alter table public.newsletter_settings add column if not exists updated_by uuid;
 
@@ -156,6 +168,8 @@ alter table public.newsletter_settings add constraint newsletter_settings_shape_
   and quote_stale_hours between 1 and 720
   and record_stale_hours between 1 and 720
   and gap_confidence_floor between 0 and 1
+  and signup_cooldown_seconds between 0 and 86400
+  and signup_per_ip_hour between 1 and 1000
   and position('@' in from_email) > 1
   and position('@' in reply_to_email) > 1
   and length(mailing_address) >= 10
@@ -589,6 +603,9 @@ declare
   v_manage text;
   v_row public.newsletter_subscribers;
   v_suppressed public.newsletter_suppressions;
+  v_cooldown integer;
+  v_per_ip integer;
+  v_recent integer;
 begin
   if v_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
     return jsonb_build_object('ok', false, 'reason', 'invalid_email');
@@ -604,10 +621,39 @@ begin
     return jsonb_build_object('ok', true, 'state', 'suppressed', 'reason', v_suppressed.reason);
   end if;
 
+  select coalesce(signup_cooldown_seconds, 900), coalesce(signup_per_ip_hour, 12)
+    into v_cooldown, v_per_ip from public.newsletter_settings where id = 1;
+
+  -- PER SOURCE. Counted on the hashed address rather than the address itself,
+  -- so the guard works without the table ever holding one. A caller over the
+  -- cap gets the SAME answer everyone gets and no email is sent.
+  if p_ip_hash is not null and v_per_ip is not null then
+    select count(*) into v_recent from public.newsletter_subscribers
+     where consent_ip_hash = p_ip_hash and consent_at > now() - interval '1 hour';
+    if v_recent >= v_per_ip then
+      return jsonb_build_object('ok', true, 'state', 'pending', 'throttled', 'source');
+    end if;
+  end if;
+
   v_confirm := encode(gen_random_bytes(32), 'hex');
   v_manage  := encode(gen_random_bytes(32), 'hex');
 
   select * into v_row from public.newsletter_subscribers where email = v_email;
+
+  -- PER ADDRESS. A pending signup that was mailed a moment ago does not get a
+  -- second message however many times the form is submitted; the preferences
+  -- are still updated, because a person correcting their choice and pressing
+  -- send again should not have to wait out a cooldown to be recorded.
+  if found and v_row.status = 'pending' and v_row.confirm_sent_at is not null
+     and v_row.confirm_sent_at > now() - make_interval(secs => v_cooldown) then
+    update public.newsletter_subscribers
+       set wants_cfb = coalesce(p_wants_cfb, false),
+           wants_nfl = coalesce(p_wants_nfl, false),
+           confirm_attempts = v_row.confirm_attempts + 1
+     where id = v_row.id;
+    return jsonb_build_object('ok', true, 'state', 'pending', 'throttled', 'cooldown',
+      'subscriber_id', v_row.id);
+  end if;
   if not found then
     insert into public.newsletter_subscribers
       (email, status, wants_cfb, wants_nfl, consent_source, consent_at, consent_user_agent,
@@ -1123,7 +1169,8 @@ declare
     'send_hour_local', 'send_minute_local', 'send_zone', 'retry_window_minutes',
     'target_games', 'max_games', 'cfb_threshold', 'nfl_threshold',
     'cfb_expansion_threshold', 'nfl_expansion_threshold',
-    'quote_stale_hours', 'record_stale_hours', 'gap_confidence_floor', 'test_recipients'];
+    'quote_stale_hours', 'record_stale_hours', 'gap_confidence_floor', 'test_recipients',
+    'signup_cooldown_seconds', 'signup_per_ip_hour'];
 begin
   if not public.newsletter_is_admin() then
     raise exception 'not authorised' using errcode = '42501';
@@ -1156,6 +1203,8 @@ begin
          quote_stale_hours = coalesce((p_patch->>'quote_stale_hours')::integer, s.quote_stale_hours),
          record_stale_hours = coalesce((p_patch->>'record_stale_hours')::integer, s.record_stale_hours),
          gap_confidence_floor = coalesce((p_patch->>'gap_confidence_floor')::numeric, s.gap_confidence_floor),
+         signup_cooldown_seconds = coalesce((p_patch->>'signup_cooldown_seconds')::integer, s.signup_cooldown_seconds),
+         signup_per_ip_hour = coalesce((p_patch->>'signup_per_ip_hour')::integer, s.signup_per_ip_hour),
          test_recipients = coalesce(
            (select array_agg(value::text) from jsonb_array_elements_text(p_patch->'test_recipients')),
            s.test_recipients),
@@ -1294,9 +1343,14 @@ union all select 13, 'a sent edition must carry a body and at least one game',
 union all select 14, 'a held edition must state a reason',
   case when exists (select 1 from pg_constraint where conname = 'newsletter_editions_hold_shape_ck')
        then 'ok' else 'CHECK THIS' end
-union all select 15, 'the membership test degrades to free on a bare project',
+union all select 15, 'the public signup door is rate limited',
+  case when exists (select 1 from information_schema.columns
+      where table_schema='public' and table_name='newsletter_settings'
+        and column_name in ('signup_cooldown_seconds','signup_per_ip_hour')
+      having count(*) = 2) then 'ok' else 'CHECK THIS' end
+union all select 16, 'the membership test degrades to free on a bare project',
   case when to_regprocedure('public.newsletter_is_member(text,uuid)') is not null
        then 'ok' else 'CHECK THIS' end
-union all select 16, 'the operator allowlist is the article system''s',
+union all select 17, 'the operator allowlist is the article system''s',
   case when to_regprocedure('public.newsletter_is_admin()') is not null then 'ok' else 'CHECK THIS' end
 order by 1;
