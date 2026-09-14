@@ -955,6 +955,12 @@
     teamSlug: teamSlug, slugFor: slugFor, uniqueSlug: uniqueSlug, aliasFor: aliasFor,
     headlineFor: headlineFor, seoTitleFor: seoTitleFor, seoDescriptionFor: seoDescriptionFor,
     build: build, articleFor: articleFor, compact: compact, hydrate: hydrate,
+    /* Shared with the postgame builder so the two article types cannot drift
+       apart on the furniture every EdgeDesk page owes a reader: the same
+       crawlable internal links, and the same labels saying which numbers
+       moved the price. A postgame page shows the pregame call, so it owes
+       both exactly as the pregame page does. */
+    internalLinks: internalLinks, pricingSection: pricingSection,
     registerType: registerType, typeOf: typeOf, TYPES: TYPES,
     shortName: shortName, gameMetaFrom: gameMetaFrom,
     checks: checks, publishable: publishable, flattenText: flattenText, dedupeKey: dedupeKey,

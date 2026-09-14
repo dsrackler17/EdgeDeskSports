@@ -607,8 +607,12 @@
   }
   function ctaHTML(rec) {
     var c = rec.article.cta;
+    /* `prompt` is the standing positioning line, on every article whatever
+       its type. A postgame page's own CTA line is about the two halves, so
+       it carries the prompt as a second line rather than losing it. */
     return '<section class="a-cta">'
       + '<p class="a-ctaline">' + esc(c.line) + '</p>'
+      + (c.prompt ? '<p class="a-ctaprompt">' + esc(c.prompt) + '</p>' : '')
       + '<a class="a-ctabtn" href="' + esc(c.href) + '">' + esc(c.button) + '</a>'
       + '<nav class="a-ctalinks" aria-label="More EdgeDesk research">'
       + c.links.map(function (l) { return '<a href="' + esc(l.href) + '">' + esc(l.label) + '</a>'; }).join('')

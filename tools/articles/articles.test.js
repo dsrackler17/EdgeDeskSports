@@ -637,9 +637,24 @@ section('16. THE STORE');
   const taken = STORE.takenSlugs(RECORDS);
   chk('every slug in the store maps to its own record',
     RECORDS.every(r => taken[r.slug] === r.id));
-  /* every record carries the research it was built from */
+  /* EVERY RECORD CARRIES THE RESEARCH IT WAS BUILT FROM — but the two article
+     types keep it in different places, and this check used to know only one.
+     A pregame record holds live research at `research`. A postgame record
+     grades a call made earlier, so its research is the FROZEN copy inside the
+     immutable snapshot; that is the whole point of the snapshot, and reading
+     `research` on it would be reading something the audit never graded.
+     Checking each type where its research actually lives means a postgame
+     record can no longer satisfy this by carrying no research at all. */
   RECORDS.forEach(r => {
-    chk(r.slug + ': the record carries its research payload', !!(r.research && r.research.kind));
+    const research = MODEL.typeOf(r) === 'postgame'
+      ? (r.snapshot && r.snapshot.research)
+      : r.research;
+    chk(r.slug + ': the record carries its research payload', !!(research && research.kind));
+    if (MODEL.typeOf(r) === 'postgame') {
+      chk(r.slug + ': and the postgame research is the frozen snapshot, not a re-read',
+        !!(r.snapshot && r.snapshot.snapshot_id && r.snapshot_id === r.snapshot.snapshot_id),
+        r.snapshot_id + ' vs ' + (r.snapshot && r.snapshot.snapshot_id));
+    }
     chk(r.slug + ': and the research names its own source', !!r.research_source, r.research_source);
     chk(r.slug + ': the payload is structured, not an HTML blob',
       JSON.stringify(r.article).indexOf('<div') < 0 && JSON.stringify(r.article).indexOf('<p>') < 0);
