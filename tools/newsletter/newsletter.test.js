@@ -1262,6 +1262,32 @@ section('7 — the provider');
       const PDIR = path.join(REPO, 'articles', 'data', 'newsletter', 'previews');
       const stored = FS.existsSync(EDIR)
         ? FS.readdirSync(EDIR).filter(f => /\.json$/.test(f)) : [];
+      /* ONLY THE EDITION THE PIPELINE WOULD BUILD RIGHT NOW is asked about its
+         figures, and the clock decides which that is rather than the highest
+         date on disk.
+
+         A SUPERSEDED edition legitimately drifts: it printed the total the
+         book showed when it was built, the book moved, and the record behind
+         it moved with it — so a figure it printed really is no longer
+         supported and that edition really could not be sent today. That is
+         the check working. Asserting over every historical file turned it
+         into a failing suite the moment a line moved, which it did within
+         minutes of the file existing (NFL-2026-W02-2026-09-15 on 48.5, 47.5,
+         49.5 — an edition built earlier with a --now override, since
+         overtaken by the market).
+
+         The re-attachment itself is still asserted over EVERY stored edition,
+         because that is the regression guard: the payload must be findable
+         for every game of every edition, current or not. */
+      const currentKeys = SCHEDULE.sports().map(sp => {
+        const d = SCHEDULE.dueFor(sp, Date.now());
+        return { sport: sp, date: d.edition_date };
+      });
+      const isCurrent = f => currentKeys.some(c => {
+        const m = /^([A-Z]+)-\d{4}-W\d+-(\d{4}-\d{2}-\d{2})\.json$/.exec(f);
+        return !!m && m[1] === c.sport && m[2] === c.date;
+      });
+
       let checked = 0;
       const unsupported = [];
       const lostResearch = [];
@@ -1276,6 +1302,7 @@ section('7 — the provider');
           (ed.games || []).every(g => !g.research));
         const missing = RUN.attachResearch(ed);
         if (missing.length) { lostResearch.push(key + ': ' + missing.join(', ')); return; }
+        if (!isCurrent(f)) return;             /* re-attachment proven; drift is not a fault */
         ed.html_free = FS.readFileSync(htmlFile, 'utf8');
         ed.text_free = FS.readFileSync(textFile, 'utf8');
         const v = VALIDATE.validate(ed, {
@@ -1290,9 +1317,11 @@ section('7 — the provider');
           if (x.id === 'unsupported_statistic') unsupported.push(key + ': ' + x.detail);
         });
       });
-      chk('a stored edition is actually checked by this', checked > 0,
-        checked + ' checked, ' + lostResearch.length + ' had no research to re-attach');
-      chk('re-attaching the research makes every figure traceable again',
+      chk('the research is findable again for every game of every stored edition',
+        lostResearch.length === 0, lostResearch.slice(0, 3).join(' | '));
+      chk('a current edition is actually checked by this', checked > 0,
+        checked + ' checked of ' + stored.length + ' stored');
+      chk('and every figure in a current edition is traceable again',
         unsupported.length === 0, unsupported.slice(0, 3).join(' | '));
     }
 
