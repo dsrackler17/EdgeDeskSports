@@ -28273,6 +28273,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   var LOADED=null;        // enriched signal currently in focus
   var HIST=[];            // chat history for the AI function
   var BUSY=false;
+  /* THE CONVERSATION'S SUBJECT, AS IDENTIFIERS.
+     The server resolves which game is being discussed and hands the ids back;
+     they ride out again on the next question so a follow-up that names nothing
+     ("Who have they played?") stays on the same game instead of falling back
+     to whichever board is open. The server re-validates them against the
+     published card, so nothing here is authoritative. */
+  var LAST_CTX=null;
+  /* The last question, so a failed narration can be asked for again without
+     the reader retyping it. */
+  var LAST_ASK=null;
 
   /* ---- small utils ---- */
   function $id(x){return document.getElementById(x);}
@@ -30873,13 +30883,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      measured later, and an interface that renders the decision while silently
      dropping the row is claiming a record it does not have. The write is
      awaited on the response path precisely so this can be said here. */
+  /* TRACKING IS A STATUS LINE, NOT A STACK TRACE.
+     This printed the function's `detail` field straight into the panel, and
+     `detail` is PostgREST's own sentence — `relation
+     "public.recommendation_ledger" does not exist`. A paying reader who asked
+     how a football team looked was shown a schema error about a table that is
+     not theirs to know about. The server now withholds that string entirely;
+     this also stops rendering it, so an older deployment that still sends one
+     cannot put it on screen either. The operator's copy goes to the console. */
   function ledgerNoticeHTML(d){
     var L=d&&d.ledger; if(!L||!L.notice) return '';
     var off=L.state==='DECISIONS_DISABLED';
+    try{ if(L.detail) console.warn('EdgeDesk ledger write failed:', L.state, L.status, L.detail); }catch(_){}
     return '<div class="gd-modelnote" style="border-left:3px solid '+(off?'var(--dim,#7a7a7a)':'var(--bad,#e26044)')
       +';padding-left:10px;margin-top:8px;font-size:12px">'
-      +'<b>'+(off?'Decisions are switched off.':'Not recorded.')+'</b> '+esc(L.notice)
-      +(L.detail?' <span class="ec mut">('+esc(String(L.detail).slice(0,160))+')</span>':'')
+      +'<b>'+(off?'Decisions are switched off.':'Tracking unavailable.')+'</b> '+esc(L.notice)
       +'</div>';
   }
   function decisionListHTML(r){
@@ -31015,6 +31033,200 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* The expandable research, on its own: the scope line and the decision list
      are rendered separately above and below the prose, so this is only the
      per-matchup evidence. */
+  /* ======================================================================
+     THE FACTUAL RESEARCH CARD — what EdgeDesk knows, with no analyst voice.
+
+     Two jobs, both of them customer-visible failures before this existed.
+
+     1. WHEN NARRATION FAILS. Every retrieval has already run server-side and
+        travels back with the 502. The panel used to throw that away and fall
+        back to narrative(x) — the deterministic write-up of whatever signal
+        the reader had OPEN — so a Texas State question answered with a
+        baseball card. A reader is owed the facts that were actually gathered
+        about the game they asked about, and a way to ask for the prose again.
+        They are never owed a fabricated opinion: nothing here invents a lean,
+        a confidence or a recommendation the engine did not produce.
+
+     2. WHILE NARRATION LOADS. The same renderer draws what the browser can
+        already resolve locally — matchup, kickoff, model projection, market
+        number — from the board's own shared modules, so the reader is reading
+        facts while the writing model is still working.
+     ====================================================================== */
+
+  /* Is this server research about the game the reader asked about? The server
+     sends the resolved context with every answer; the panel filters its own
+     rendering against the same object so the two cannot disagree. */
+  function ctxOf(r){ return (r && r.research_context) || null; }
+
+  /* Is the reader's open signal the thing they just asked about?
+     Answered through the board's OWN resolver — the same EDINTEL block the
+     server uses — never a normalised string compare, because the book writes
+     "North Texas Mean Green" and the schedule writes "North Texas". */
+  function askedAboutOpenSignal(question, x, mode){
+    if(!x) return false;
+    /* An explicit panel button (Analyze / Why / Price / Challenge) is BY
+       DEFINITION about the loaded signal. Only free text can wander. */
+    if(mode && mode!=='chat') return true;
+    var q=String(question||'');
+    if(!q.trim()) return true;
+    /* A question that names a different game, or names a game at all that this
+       row is not, is not about this row. */
+    try{
+      if(LAST_CTX && LAST_CTX.game_id && x.e && String(x.e.event_id||'')!==String(LAST_CTX.game_id)){
+        /* The conversation is anchored on a different game than the open row. */
+        var xs=String(x.matchup||'');
+        if(!xs || !LAST_CTX.home || xs.indexOf(LAST_CTX.home)<0) return false;
+      }
+      if(!window.EDINTEL || !window.FB || !FB.p4 || !FB.p4.up || !FB.p4.up.length) return true;
+      var games=FB.p4.up.map(function(u){ return {game_id:String(u.g.game_id),home_team:u.g.home_team,
+        away_team:u.g.away_team,home_id:u.g.home_team_id||null,away_id:u.g.away_team_id||null,kickoff:u.g.kickoff||null}; });
+      var ix=EDINTEL.fbsIndexFor(games);
+      var hit=resolveQuestionToGame(q, games, ix, String(x.matchup||''));
+      if(hit) return false;   // they named a football game; this MLB/other row is not it
+    }catch(_){}
+    return true;
+  }
+
+  /* Resolve a free-text question to ONE scheduled game on the loaded board.
+     A lookup, not a guess: both halves of "A vs B" must land on the same game,
+     and a single name must land on exactly one. Anything else resolves to
+     nothing and the caller says so. */
+  function resolveQuestionToGame(question, games, ix, exclude){
+    var q=String(question||'');
+    /* "(OH)" is part of the name. Miami and Miami (OH) are different programs
+       and are regularly on the same card; a pattern that stops at the bracket
+       sends a question about one of them to the other. */
+    var PAREN="(?:[ ]?\\([A-Za-z.]{1,6}\\))?";
+    var SIDE="[A-Z][A-Za-z'&.-]*"+PAREN+"(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.-]*"+PAREN+")*";
+    var vs=new RegExp("("+SIDE+")\\s+(?:versus|vs\\.?|@|at)\\s+("+SIDE+")").exec(q);
+    /* THE BOARD RESOLVER IS MASCOT-TOLERANT, WHICH IS WHY IT WORKS AND WHY IT
+       MUST BE FENCED. It exists to join a book's "Colorado Buffaloes" to a
+       schedule's "Colorado", so it cheerfully resolves "Colorado Rockies" to
+       Colorado's football team as well. Anything the reader has open in
+       another sport is therefore excluded by name before the lookup: a phrase
+       that names the loaded selection is about the loaded selection. */
+    var skip={};
+    String(exclude||'').split(/\s+(?:@|vs\.?|at|versus)\s+|,/).forEach(function(t){
+      t=String(t||'').trim(); if(t) skip[t.toLowerCase()]=1; });
+    function find(a,b){
+      var ra=EDINTEL.resolveTeam(a,ix), rb=EDINTEL.resolveTeam(b,ix);
+      if(!ra||!ra.key||!rb||!rb.key) return null;
+      for(var i=0;i<games.length;i++){ var g=games[i];
+        var hk=EDINTEL.canonKey(g.home_id,g.home_team), ak=EDINTEL.canonKey(g.away_id,g.away_team);
+        if((hk===ra.key&&ak===rb.key)||(hk===rb.key&&ak===ra.key)) return g; }
+      return null;
+    }
+    if(vs){ var m=find(vs[1],vs[2]); if(m) return m; }
+    /* One capitalised multi-word phrase, resolved to exactly one game. */
+    var re=/\b([A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?(?:[ ][A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?)+)/g, mm, seen={};
+    while((mm=re.exec(q))!=null){
+      var phrase=mm[1].replace(/[.,;:!?]+$/,'').trim();
+      if(seen[phrase]) continue; seen[phrase]=1;
+      if(skip[phrase.toLowerCase()]) continue;
+      var r=EDINTEL.resolveTeam(phrase,ix); if(!r||!r.key) continue;
+      var hits=games.filter(function(g){ return EDINTEL.canonKey(g.home_id,g.home_team)===r.key
+        || EDINTEL.canonKey(g.away_id,g.away_team)===r.key; });
+      if(hits.length===1) return hits[0];
+    }
+    return null;
+  }
+
+  /* WHAT THE BROWSER ALREADY KNOWS, DRAWN WHILE THE SERVER IS STILL WORKING —
+     and the last thing standing if the service cannot be reached at all.
+     Everything here comes from the board's own loaded slate and its own
+     projection engine. No opinion, no lean, no recommendation: a reader who
+     sees this sees facts EdgeDesk holds, and is told plainly that the research
+     itself has not run. */
+  function localFactCardHTML(question, opts){
+    opts=opts||{};
+    try{
+      if(!window.EDINTEL||!window.FB||!FB.p4||!FB.p4.up||!FB.p4.up.length) return '';
+      var games=FB.p4.up.map(function(u){ return {game_id:String(u.g.game_id),home_team:u.g.home_team,
+        away_team:u.g.away_team,home_id:u.g.home_team_id||null,away_id:u.g.away_team_id||null,
+        kickoff:u.g.kickoff||null,_u:u}; });
+      var ix=EDINTEL.fbsIndexFor(games);
+      var g=resolveQuestionToGame(question, games, ix, opts.exclude||'');
+      if(!g && LAST_CTX && LAST_CTX.game_id){
+        for(var i=0;i<games.length;i++) if(games[i].game_id===String(LAST_CTX.game_id)){ g=games[i]; break; }
+      }
+      if(!g) return '';
+      var rows=[], u=g._u;
+      var mkt=null; try{ mkt=fbP4Market(u); }catch(_){}
+      var proj=null; try{ proj=window.EDCfbP4.projectGame(fbP4Request(u)); }catch(_){}
+      if(proj&&proj.model&&proj.model.fair_spread!=null&&isFinite(proj.model.fair_spread))
+        rows.push(['Model projection', (proj.model.fair_spread>0?'+':'')+proj.model.fair_spread.toFixed(1)
+          +' ('+esc(g.home_team)+')'+(proj.model.fair_total!=null?' · total '+proj.model.fair_total.toFixed(1):'')]);
+      if(mkt&&mkt.spread_line!=null){
+        /* A MARKET NUMBER IS NOT A PRICE, AND THE DIFFERENCE IS THE WHOLE
+           POINT. fbP4Market resolves from two sources and says which in its
+           own `book` field: a `captured ·` row is a real book quote with an
+           observation time; a `cfb.lines ·` row is a consensus handicap with
+           no book, no per-side odds and no capture time — a number to compare
+           a model against and nothing to bet into. The board's own `status`
+           (LIVE / STALE QUOTE / NO MARKET) is the arbiter, so this card and
+           the board can never disagree about whether a game has a price. */
+        var captured = /^captured/.test(String(mkt.book||''));
+        var live = mkt.status==='LIVE';
+        rows.push(['Market number', (mkt.spread_line>0?'+':'')+mkt.spread_line
+          +(mkt.total_line!=null?' · total '+mkt.total_line:'')]);
+        if(captured){
+          rows.push(['Quote', esc(String(mkt.book||''))
+            +(mkt.as_of?' · observed '+esc(new Date(mkt.as_of).toLocaleString()):' · no observation time')
+            +(live?'' : ' · STALE — research only, not a live price')]);
+        } else {
+          rows.push(['Quote', esc(String(mkt.book||'consensus reference'))
+            +' — a market reference, not an executable sportsbook quote: no book, no side odds and no capture time.']);
+        }
+        rows.push(['Price status', esc(String(mkt.status||'UNKNOWN'))]);
+      } else rows.push(['Market', 'no market number on this game from either source']);
+      var c={away:g.away_team,home:g.home_team,teams:[g.away_team,g.home_team],kickoff:g.kickoff,
+        sport_source:'resolved on the board you have open'};
+      var h=factHeadHTML(c, opts.pending
+        ? 'Researching… the facts below are from the board already loaded in your browser.'
+        : 'EdgeDesk could not reach its research service. The facts below are from the board already loaded in your browser; the research itself has NOT run.');
+      h+='<div style="border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin:0 0 8px">';
+      rows.forEach(function(r){ h+='<div style="font-size:12px;margin:2px 0"><span style="color:var(--faint)">'
+        +esc(r[0])+':</span> '+r[1]+'</div>'; });
+      h+='<div style="font-size:11px;color:var(--faint);margin-top:4px">Previous games, opponent quality, '
+        +'personnel and the counterargument come from the research service and are not available offline. '
+        +'EdgeDesk has not formed a view on this game here.</div>';
+      h+='</div>';
+      if(!opts.pending) h+='<div style="margin-top:6px"><button class="edai-qa" onclick="EDAI.retryLast()">Retry research</button></div>';
+      return h;
+    }catch(_){ return ''; }
+  }
+
+  function factHeadHTML(c, status){
+    if(!c) return '';
+    var who = (c.away && c.home) ? (esc(c.away)+' @ '+esc(c.home)) : (c.teams||[]).map(esc).join(' / ');
+    if(!who) return '';
+    var when='';
+    try{ if(c.kickoff){ var k=new Date(c.kickoff);
+      when = k.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})+' '+k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); } }catch(_){}
+    return '<div style="border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin:0 0 8px">'
+      +'<div style="font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--dim)">RESEARCH</div>'
+      +'<div style="font-size:13px;margin-top:2px"><b>'+who+'</b>'+(when?' <span style="color:var(--faint);font-weight:400">· '+esc(when)+'</span>':'')+'</div>'
+      +(c.sport_source?'<div style="font-size:11px;color:var(--faint);margin-top:2px">Scope: '+esc(c.sport_source)+'</div>':'')
+      +(status?'<div style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(status)+'</div>':'')
+      +'</div>';
+  }
+
+  /* The card shown when the writing model did not answer. Facts only, plus a
+     retry. The wording never implies EdgeDesk formed a view it did not form. */
+  function factualFallbackHTML(d, question){
+    var r=d&&d.research; if(!r) return '';
+    var c=ctxOf(r);
+    var why=(d.narration&&d.narration.reason)||'the writing model did not answer';
+    var h=factHeadHTML(c, 'Research completed. The written analysis is unavailable — the facts below are EdgeDesk’s own and are unaffected.');
+    h+=scopeHTMLFor(r)+decisionListHTML(r)+researchSectionsHTML(r);
+    if(!h) return '';
+    h+='<div class="gd-modelnote" style="border-left:3px solid var(--warn,#d99a2b);padding-left:10px;margin-top:8px;font-size:12px">'
+      +'<b>Analysis unavailable.</b> The research above ran and is complete; only the written summary failed ('
+      +esc(String(why).slice(0,80))+'). EdgeDesk has not formed a view in its place.'
+      +' <button class="edai-qa" style="margin-left:6px" onclick="EDAI.retryLast()">Retry analysis</button></div>';
+    return h;
+  }
+
   function researchSectionsHTML(r){
     if(!r||typeof r!=='object') return '';
     var h='';
@@ -31117,10 +31329,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var r=await fetch(AI_FN,{method:'POST',
       headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
       body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:compareArr||null,
-        presentation_mode:pm, preset:(extra&&extra.preset)||null})});
+        presentation_mode:pm, preset:(extra&&extra.preset)||null,
+        /* Identifiers only — see LAST_CTX. */
+        research_context:LAST_CTX})});
     if(!r.ok){
-      var body='';
-      try{ var t=await r.text(); try{ var j=JSON.parse(t); body=j&&(j.error||j.message)||t; }catch(_){ body=t; } }catch(_){}
+      var body='', parsed=null;
+      try{ var t=await r.text(); try{ parsed=JSON.parse(t); body=parsed&&(parsed.error||parsed.message)||t; }catch(_){ body=t; } }catch(_){}
+      /* THE RESEARCH SURVIVES A NARRATION FAILURE.
+         edgedesk_ai runs every retrieval BEFORE it calls the writing model, so
+         a 502 from that model still carries the slate, the matchup, the market
+         and the deterministic decisions. Throwing the whole body away is what
+         left the panel with nothing to show but whatever signal happened to be
+         open — a different game, in a different sport, presented as the
+         answer. If the research came back, it is not an error case for the
+         reader: it is an answer without the prose. */
+      if(parsed && parsed.research){
+        parsed.narration = parsed.narration || {ok:false, reason:'fn '+r.status, retryable:true};
+        return parsed;
+      }
       throw new Error('fn '+r.status+(body?' \u2014 '+String(body).slice(0,400):''));
     }
     return r.json();
@@ -31148,10 +31374,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       /* THE ERROR WAS ALWAYS IN THE BODY: callFn carries the function's own
          message through, so a 502 is a named report, not an opaque code. */
       var d=await callFn(mode, question, x, extra, packet, compareArr);
+      /* THE SUBJECT THE SERVER RESOLVED, CARRIED BACK ON THE NEXT TURN.
+         Identifiers only, and the server re-looks them up against the
+         published card before using them, so this is a reminder of what was
+         being discussed and never an assertion about it. It is what keeps
+         "Who have they played?" on the game the reader chose instead of
+         falling back to whichever board is open. */
+      try{ var rc=d&&d.research&&d.research.research_context;
+        LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
+          home_id:rc.home_id,away_id:rc.away_id} : LAST_CTX; }catch(_){}
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
         return {html:presCardHTML(d,x,mode)+integrityHTMLFor(d.research)+scopeHTMLFor(d.research)+mdToHtml(d.answer)
           +decisionListHTML(d.research)+ledgerNoticeHTML(d)+researchSectionsHTML(d.research)+traceHTMLFor(d.research),
           src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
+      /* Narration failed but the research came back. Render the facts and
+         offer the prose again — do NOT fall through to the catch block, which
+         answers from whatever signal is open and would be a different game. */
+      var fb=factualFallbackHTML(d, question);
+      if(fb){ LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+        return {html:fb+traceHTMLFor(d.research), src:'EdgeDesk research · written analysis unavailable'}; }
       throw new Error('empty');
     }catch(err){
       /* The reason was being thrown away. This block hardcoded "deploy
@@ -31170,9 +31411,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       // deterministic fallback — still a real, grounded answer
       if(extra && extra.board) return {html:boardFallbackHTML(extra.board, question),
         src:'deterministic board · AI call failed: '+why+hint};
-      if(x){ var lm=(mode==='chat')?routeLocal(question):(mode==='why'?'analyze':mode);
+      /* THE OPEN SIGNAL IS ONLY AN ANSWER TO A QUESTION ABOUT IT.
+         This branch rendered narrative(x) — the local write-up of whatever
+         row the reader had open — for ANY failed question. Asked about Texas
+         State with a Padres row open, the panel answered about the Padres and
+         called it the deterministic engine. A question that names another
+         game, or that names a matchup this row is not, gets the honest
+         "could not research it" instead of a confident answer to a question
+         nobody asked. */
+      if(x && askedAboutOpenSignal(question, x, mode)){
+        var lm=(mode==='chat')?routeLocal(question):(mode==='why'?'analyze':mode);
         return {html:narrative(x, lm), src:'deterministic engine · AI call failed: '+why+hint}; }
-      return {html:'<p>The reasoning service isn\u2019t reachable right now. Open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
+      LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+      var local=localFactCardHTML(question);
+      if(local) return {html:local, src:'EdgeDesk board · research service unreachable'};
+      return {html:'<p>EdgeDesk could not reach its research service, so it has not researched that question. '
+        +'This is a service fault, not a finding about the game.</p>'
+        +'<p><button class="edai-qa" onclick="EDAI.retryLast()">Try again</button> '
+        +'Or open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
         src:'AI call failed: '+why+hint};
     }
   }
@@ -33758,19 +34014,56 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         // BOARD/RESEARCH mode: broader questions, and anything asked with no signal open.
         // The board data the app already holds goes to the AI — it never answers "I can't see the slate".
         if(!ctx || isBoardQuestion(t)){ await boardAnswer(t); return; }
-        if(ctx){
+        /* THE LOCAL DEEP AND QUICK PATHS RESEARCH THE LOADED SIGNAL, WHICH IS
+           ONLY THE ANSWER WHEN THE LOADED SIGNAL IS THE QUESTION.
+           plan() reads the words and picks a depth; investigate() and
+           quickAnswer() then research `ctx` — the row on screen. Asked "what
+           could make that lean wrong?" with a baseball game open and a football
+           game under discussion, that produced a deep, confident, entirely
+           local answer about the wrong sport without the server ever hearing
+           the question. When the question is about something else, it goes to
+           the server, which resolves the named matchup against the card. */
+        if(ctx && askedAboutOpenSignal(t, ctx.x, 'chat')){
           if(SESSION.eventId!==ctx.eventId){ SESSION.eventId=ctx.eventId; SESSION.cache={}; } // new game -> fresh session cache
           var pl=plan(t,ctx);
           if(pl.depth==='FULL'||pl.depth==='DEEP'){ await investigate(ctx,null,t); return; }
           if(pl.depth==='QUICK'){ await quickAnswer(ctx,pl,t); return; }
         }
         thinking(true);
+        /* FACTS FIRST, PROSE WHEN IT ARRIVES.
+           The browser has already loaded the board, its identity resolver and
+           its projection engine, so when the question resolves to a game on
+           that board there is real, correct information to read while the
+           server is still working. It is replaced by the full answer; if the
+           service never answers, the reader still has this instead of a
+           spinner that ends in an apology. */
+        LAST_ASK={mode:'chat',question:t,x:ctx?ctx.x:null,extra:null};
+        var pend=null;
+        try{ var pf=localFactCardHTML(t,{pending:true}); if(pf) pend=push('a',pf); }catch(_){}
         var res=await askAI('chat',t,ctx?ctx.x:null);
         thinking(false);
+        if(pend&&pend.remove) pend.remove();
         var d=push('a',res.html);
         if(res.src&&d){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; d.appendChild(s); }
       }catch(err){ thinking(false); push('a','<p>Something went wrong running that. Try <b>Analyze</b> or <b>Research this</b>.</p>'); }
       finally{ BUSY=false; var sb=$id('edaiSend'); if(sb)sb.disabled=false; }
+    },
+
+    /* ASK AGAIN FOR THE PROSE, WITHOUT RETYPING THE QUESTION.
+       The research succeeded and only the write-up failed, so a retry is a
+       cheap second attempt at the same turn rather than a new one. Nothing is
+       fabricated in the meantime: the factual card says plainly that EdgeDesk
+       has not formed a view. */
+    retryLast:async function(){
+      if(BUSY || !LAST_ASK) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
+      try{
+        thinking(true);
+        var res=await askAI(LAST_ASK.mode||'chat', LAST_ASK.question, LAST_ASK.x, LAST_ASK.extra);
+        thinking(false);
+        var d=push('a',res.html);
+        if(res.src&&d){ var s2=document.createElement('div'); s2.className='edai-src'; s2.textContent=res.src; d.appendChild(s2); }
+      }catch(_){ thinking(false); push('a','<p>Still unable to reach the research service. Your question is unchanged — try again in a moment.</p>'); }
+      finally{ BUSY=false; var s3=$id('edaiSend'); if(s3)s3.disabled=false; }
     },
 
     research:function(depth){ var ctx=buildCtx(); if(ctx) investigate(ctx, depth||'FULL', 'Research this game.'); },

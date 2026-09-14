@@ -1888,7 +1888,7 @@ export const SPORT_INTELLIGENCE: Record<string, SportIntelligenceModule> = {
     research_intents: ["nfl_best_offenses", "nfl_worst_offenses", "nfl_best_defenses", "nfl_worst_defenses",
       "nfl_best_quarterbacks", "nfl_worst_quarterbacks", "nfl_best_matchups", "nfl_worst_matchups",
       "nfl_betting_candidate", "nfl_injury_impact", "nfl_what_changed", "nfl_historical_matchup",
-      "nfl_team_comparison"],
+      "nfl_team_comparison", "nfl_research_matchup"],
     /* EFFICIENCY FIRST, ALWAYS. Points per game is a pace artifact and ranking
        on it is the single most common football error. */
     evidence_hierarchy: ["quarterback", "team_efficiency", "matchup_context",
@@ -1944,7 +1944,7 @@ export const SPORT_INTELLIGENCE: Record<string, SportIntelligenceModule> = {
     research_intents: ["cfb_best_offenses", "cfb_worst_offenses", "cfb_best_defenses",
       "cfb_best_quarterbacks", "cfb_best_teams", "cfb_best_matchups", "cfb_roster",
       "cfb_returning_production", "cfb_recruiting", "cfb_portal", "cfb_sp_plus",
-      "cfb_betting_candidate", "cfb_what_changed"],
+      "cfb_betting_candidate", "cfb_what_changed", "cfb_research_matchup"],
     evidence_hierarchy: ["cfb_team_season_stat", "cfb_sp_plus", "cfb_record", "cfb_game",
       "cfb_ranking", "cfb_recruiting", "cfb_roster", "matchup_context", "signal"],
     learning_dimensions: ["returning_production", "recruiting_gap", "sp_plus_disagreement",
@@ -2010,7 +2010,8 @@ export const SPORT_INTELLIGENCE: Record<string, SportIntelligenceModule> = {
     research_intents: ["cbb_best_offenses", "cbb_worst_offenses", "cbb_best_defenses",
       "cbb_best_teams", "cbb_best_players", "cbb_best_matchups", "cbb_pace_matchup",
       "cbb_shooting_matchup", "cbb_rebounding_matchup", "cbb_availability",
-      "cbb_tournament", "cbb_betting_candidate", "cbb_historical", "cbb_what_changed"],
+      "cbb_tournament", "cbb_betting_candidate", "cbb_historical", "cbb_what_changed",
+      "cbb_research_matchup"],
     /* TEMPO-FREE OR NOTHING. adj_em first because it is the single best
        one-number summary; the four factors say HOW, which is what turns a
        ranking into a matchup read. */
@@ -2290,7 +2291,91 @@ export function resolvePlayers(hints: string[], known: string[]): PlayerResoluti
 /* Deterministic first: cheap, testable, and right for the questions users
    actually ask. index.ts may call the model to classify anything that lands
    on `unknown`, but the system never depends on that call succeeding. */
-export function classify(question: string, mode?: string): Plan {
+/**
+ * What the caller already knows about the question, from a source the
+ * classifier itself cannot reach.
+ *
+ * classify() is synchronous and runs BEFORE any retrieval, so it can only see
+ * words. `resolveNamedMatchup` is asynchronous and resolves a real game off a
+ * real card — which is strictly better evidence about which sport a question
+ * is in, and it arrives one step too late to route anything. That is the whole
+ * shape of the production failure: the sport was corrected downstream while the
+ * PLAN stayed baseball, so "How does Texas State look this week?" executed
+ * `pitcher_features` and `opponent_offense` against a college football game and
+ * reported intent=unknown to the reader.
+ *
+ * So the plan is re-made once the context is known. This is the hint that lets
+ * that happen without a second classifier.
+ */
+export interface ClassifyHint {
+  /** The sport the resolved research context settled on. Outranks detectSport. */
+  sport?: string | null;
+  /** True when exactly one scheduled game is the subject of the question. */
+  single_game?: boolean;
+}
+
+/* THE RETRIEVAL LAYERS THAT ONLY EXIST IN BASEBALL.
+   These step names reach MLB-only tables. A plan that carries them into a
+   football question does not merely waste a read: `runResearch` reports the
+   steps it executed in the research trace, so the reader was told that a
+   college football answer had retrieved `pitcher_features` and
+   `opponent_offense` — which was true, and was the bug. */
+const MLB_ONLY_STEPS = new Set(["pitchers", "pitcher_features", "opponent_offense",
+  "bullpen", "park", "workload"]);
+
+/* What each sport retrieves INSTEAD, so a re-scoped plan still asks for a
+   matchup layer rather than simply losing one. Read from the sport module's
+   own vocabulary, not invented here. */
+const SPORT_LAYER_STEPS: Record<string, string[]> = {
+  americanfootball_ncaaf: ["cfb_intelligence", "matchup_context", "cfb_sp_plus"],
+  americanfootball_nfl: ["team_efficiency", "quarterback", "matchup_context", "nfl_deep"],
+  basketball_ncaab: ["team_efficiency", "matchup_context", "cbb_deep"],
+  basketball_nba: ["team_efficiency", "matchup_context"],
+  icehockey_nhl: ["team_efficiency", "matchup_context"],
+  basketball_wnba: ["team_efficiency", "matchup_context"],
+};
+
+/**
+ * Re-scope a plan's retrieval steps onto the sport the question is actually in.
+ *
+ * classify() has forty-odd return statements and most of them are generic —
+ * `attack`, `compare`, `price`, `historical`, `unknown`. Every one of those was
+ * written when this product was a baseball desk, so every one of them asks for
+ * pitchers and bullpens. Re-routing each of them per sport would mean sixty
+ * more branches to keep in step; re-scoping the STEPS once, here, fixes all of
+ * them together and keeps working when a new intent is added tomorrow.
+ *
+ * Baseball is returned untouched: the regression requirement is that the MLB
+ * path behaves exactly as it did.
+ */
+export function scopeStepsToSport(steps: string[], sport: string | null): string[] {
+  if (!sport || sport === "baseball_mlb") return steps.slice();
+  const dropped = steps.filter((st) => MLB_ONLY_STEPS.has(st));
+  if (!dropped.length) return steps.slice();
+  const kept = steps.filter((st) => !MLB_ONLY_STEPS.has(st));
+  /* The replacement layer is added only when the plan asked for a matchup read
+     in the first place — a pure price question keeps its narrow shape. */
+  const out = kept.slice();
+  for (const add of SPORT_LAYER_STEPS[sport] ?? []) if (!out.includes(add)) out.push(add);
+  return out;
+}
+
+/**
+ * Classify, then put the plan in the right sport.
+ *
+ * The raw classifier is unchanged and still the thing under test; this wrapper
+ * only applies what the caller already knew. Without a hint it is a pass-through,
+ * so every existing caller and every existing test keeps its exact behaviour.
+ */
+export function classify(question: string, mode?: string, hint?: ClassifyHint | null): Plan {
+  const plan = classifyRaw(question, mode, hint);
+  const sport = plan.sport ?? hint?.sport ?? sportOfIntent(plan.intent) ?? null;
+  if (!sport) return plan;
+  const steps = scopeStepsToSport(plan.steps, sport);
+  return { ...plan, sport, steps };
+}
+
+function classifyRaw(question: string, mode?: string, hint?: ClassifyHint | null): Plan {
   const raw = String(question ?? "");
   const q = normName(raw);
   const has = (...xs: string[]) => xs.some((x) => q.includes(normName(x)));
@@ -2357,6 +2442,14 @@ export function classify(question: string, mode?: string): Plan {
      one, and the matchup intent retrieves weather and market on top of the
      pitching layer. Let it win when the user actually said matchup. */
   const MATCHUP_WORD = /\b(matchup|matchups|mismatch|spot|spots)\b/;
+  /* ONE MISSING BOUNDARY, ONE WRONG ANSWER. This was
+     `/\bbet|bets|play|plays|edge|value|candidate\b/` — only the first and last
+     alternatives were anchored, so `\bplay` matched the "play" inside
+     "played" and the acceptance follow-up "Who have they played?" classified
+     as a BETTING question. A question asking which opponents a team has
+     already faced retrieved sharp references and a CLV history instead of the
+     previous games it asked for. */
+  const BET_WORD = /\b(bet|bets|betting|play|plays|playable|edge|value|candidate|candidates|worth a look)\b/;
 
   if (WEAK_WORD.test(q) && PITCH_STEM.test(q) && !MATCHUP_WORD.test(q))
     return P("worst_pitchers", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park", "weather", "workload", "bullpen", "market"], "Ranking starters requires the whole card plus who each one faces.");
@@ -2372,8 +2465,27 @@ export function classify(question: string, mode?: string): Plan {
      generic team_efficiency path exactly as it did before this build. Nothing
      below can change the routing of a question that does not name its sport. */
   {
+    /* THE SPORT BLOCK ROUTES SPORT QUESTIONS, NOT EVERY QUESTION IN A SPORT.
+       "What could make that lean wrong?" is a thesis attack whatever sport it
+       is asked in, and it needs the attack retrieval — sharp reference, CLV
+       history and prior sessions — which no per-sport branch asks for. These
+       intents are therefore left to the generic classifier below; the wrapper
+       re-scopes their steps onto the resolved sport, so they come back
+       correctly routed without sixty duplicated branches. */
+    /* Price questions are in this set for the same reason: "What price makes
+       it a pass?" is answered from the price-sensitivity fields at QUICK depth
+       in every sport, and routing it to a deep matchup read answers a question
+       nobody asked while spending the budget to do it. */
+    const GENERIC_WINS = /\b(talk me out|convince me|biggest risk|what would make|what could make|lean wrong|be wrong|falsif|reason not to|what are we missing|postmortem|what went wrong|how did we do|what price|at what price|break ?even|max playable|still playable|what do i need)\b/;
     const det = detectSport(raw);
-    const sport = det.confidence === "EXPLICIT" ? det.sport : null;
+    /* A CONTEXT THAT RESOLVED A REAL GAME OUTRANKS A WORD SEARCH.
+       detectSport can only find a league word or a club that is unique in the
+       curated registry — "Texas State" is neither, which is why this branch
+       never fired for it and the question fell through to the baseball
+       catch-all. When the caller has already resolved the matchup against a
+       published card, that IS the sport, and it is better evidence than any
+       regex over the sentence. */
+    const sport = GENERIC_WINS.test(q) ? null : (hint?.sport ?? (det.confidence === "EXPLICIT" ? det.sport : null));
     const SP = (intent: string, depth: Depth, steps: string[], why: string): Plan =>
       ({ ...P(intent, depth, steps, why), sport });
 
@@ -2411,10 +2523,14 @@ export function classify(question: string, mode?: string): Plan {
         return SP(WEAK_WORD.test(q) ? "nfl_worst_matchups" : "nfl_best_matchups", "SLATE",
           base, "NFL matchup quality — strength against weakness, not strength against average.");
       }
-      if (/\bbet|bets|play|plays|edge|value|candidate\b/.test(q)) {
+      if (BET_WORD.test(q)) {
         return SP("nfl_betting_candidate", "SLATE",
           base.concat(["sharp_reference", "clv_history", "memory"]),
           "NFL betting research — the deterministic engine still owns the verdict.");
+      }
+      if (hint?.single_game) {
+        return SP("nfl_research_matchup", "DEEP", base.concat(["injuries", "sharp_reference"]),
+          "One NFL game is the subject — research THAT matchup in depth rather than sweeping the card.");
       }
       return SP("nfl_best_matchups", "SLATE", base, "NFL question — retrieve the full owned NFL layer.");
     }
@@ -2460,9 +2576,18 @@ export function classify(question: string, mode?: string): Plan {
       if (MATCHUP_WORD.test(q)) {
         return SP("cfb_best_matchups", "SLATE", base.concat(["cfb_sp_plus"]), "CFB matchup quality across the card.");
       }
-      if (/\bbet|bets|play|plays|edge|value|candidate\b/.test(q)) {
+      if (BET_WORD.test(q)) {
         return SP("cfb_betting_candidate", "SLATE", base.concat(["sharp_reference", "clv_history", "memory"]),
           "CFB betting research.");
+      }
+      /* ONE GAME IS NOT A CARD. "How does Texas State look this week?" names a
+         single program, resolves to a single scheduled game, and used to be
+         answered with a card-wide sweep — or, before the sport was corrected at
+         all, with baseball. A resolved single game gets the deep per-matchup
+         read: previous games, opponent quality, personnel and the market. */
+      if (hint?.single_game) {
+        return SP("cfb_research_matchup", "DEEP", base.concat(["cfb_sp_plus", "sharp_reference"]),
+          "One college football game is the subject — research THAT matchup in depth rather than sweeping the card.");
       }
       return SP("cfb_best_teams", "SLATE", base.concat(["cfb_sp_plus"]),
         "CFB question — retrieve the owned CollegeFootballData layer.");
@@ -2511,9 +2636,13 @@ export function classify(question: string, mode?: string): Plan {
       if (MATCHUP_WORD.test(q)) {
         return SP("cbb_best_matchups", "SLATE", base, "CBB matchup quality — the four factors say HOW.");
       }
-      if (/\bbet|bets|play|plays|edge|value|candidate\b/.test(q)) {
+      if (BET_WORD.test(q)) {
         return SP("cbb_betting_candidate", "SLATE", base.concat(["sharp_reference", "clv_history", "memory"]),
           "CBB betting research.");
+      }
+      if (hint?.single_game) {
+        return SP("cbb_research_matchup", "DEEP", base.concat(["availability", "sharp_reference"]),
+          "One college basketball game is the subject — research THAT matchup rather than sweeping the card.");
       }
       return SP("cbb_best_teams", "SLATE", base, "CBB question — adjusted efficiency leads.");
     }
@@ -2543,8 +2672,13 @@ export function classify(question: string, mode?: string): Plan {
   if (has("compare", " vs ", " versus "))
     return P("compare", "DEEP", ["slate", "focus_signal", "market", "sharp_reference", "matchup", "pitchers", "pitcher_features", "opponent_offense", "bullpen", "park", "weather"], "Comparison — retrieve both sides and put the evidence side by side.");
 
+  /* "What could make that lean wrong?" is the acceptance question and it is a
+     thesis attack in plain English. It matched none of these and fell through
+     to the catch-all, so the one question that asks for the counterargument
+     retrieved no sharp reference and no market history. */
   if (has("attack", "challenge", "talk me out", "convince me not", "convince me", "biggest risk",
-          "what would make", "why not", "falsif", "reason not to", "every reason", "blind to", "what are we missing"))
+          "what would make", "what could make", "lean wrong", "be wrong", "get this wrong",
+          "why not", "falsif", "reason not to", "every reason", "blind to", "what are we missing"))
     return P("attack", "DEEP", ["focus_signal", "market", "sharp_reference", "matchup", "bullpen", "weather", "clv_history", "memory"], "Thesis attack.");
 
   if (has("what changed", "changed since", "line move", "line moving", "movement", "steam"))
@@ -7359,7 +7493,8 @@ export function attackThesis(
     validation?: any; availability?: any[]; market?: any;
     packet_gaps?: { field: string; reason: string }[]; kickoff?: string | null;
   } = {},
-): { status: string; note: string; falsifiers: string[]; structural: string[] } {
+): { status: string; note: string; falsifiers: string[]; structural: string[];
+     counterarguments: string[]; blockers: string[]; next_checks: string[] } {
   const edge = num(sig?.edge);
   const firstEdge = num(sig?.first_edge);
   const nb = num(sig?.n_books) ?? 0;
@@ -7423,21 +7558,55 @@ export function attackThesis(
     }
   }
 
-  /* A SURVIVING THESIS STILL HAS A CASE AGAINST IT, AND SAYING OTHERWISE IS
-     THE FAILURE. The falsifier list is never handed back empty. */
+  /* THREE DIFFERENT THINGS, TOLD APART.
+
+     These were one list, and the conflation is visible in the product: "last
+     re-priced 446m ago — treat as stale until capture confirms it" was served
+     as an ARGUMENT AGAINST the lean. It is not one. It is a gap in what
+     EdgeDesk currently knows, and the sentence even contains its own remedy.
+     Reading it as a counterargument lets "refresh the odds" look like an
+     answer to a thesis problem, which is how a stale quote and an unvalidated
+     model came to be offered as the same kind of objection.
+
+       COUNTERARGUMENT  evidence against the thesis. Acting on it changes the
+                        view. Nothing about it is fixed by looking again.
+       BLOCKER          information that is missing or stale. It bounds what
+                        can be claimed; it is not evidence either way.
+       NEXT CHECK       the thing to go and find out. A blocker's remedy.
+
+     Classified from the text that already exists rather than by rewriting the
+     rules, so every sentence keeps its wording and only its bucket changes. */
+  const STALE_OR_MISSING = /no fair price on file|treat as stale until|no availability report|availability is partial|not ingested for this sport|cannot be TESTED|has not arrived yet/i;
+  const counterarguments: string[] = [];
+  const blockers: string[] = [];
+  for (const f of falsifiers.concat(structural)) {
+    (STALE_OR_MISSING.test(f) ? blockers : counterarguments).push(f);
+  }
+  /* A next check is derived from the blocker it answers, and never invented:
+     no blocker, no next check. */
+  const next_checks: string[] = [];
+  if (staleM >= staleMin) next_checks.push(`Re-capture the price — the last observation is ${Math.round(staleM)} minutes old. This confirms or withdraws the number; it does NOT answer any argument against the lean.`);
+  if (edge == null) next_checks.push("Get a fair price on file, so there is something to judge the number against.");
+  for (const av of ctx.availability ?? []) {
+    if (av && (av.state === "UNKNOWN" || av.state === "NOT_RETRIEVED")) {
+      next_checks.push(`Find an availability report for ${av.team}. Until then its status is unknown, and a refreshed price does not make it known.`);
+    }
+  }
+  if (gaps.length) next_checks.push(`Per-play evidence (${gaps.slice(0, 3).map((g) => g.field).join(", ")}) is not ingested for this sport, so a distorted result cannot be checked. Closing this needs an ingest, not a refresh.`);
+
   const all = falsifiers.concat(structural);
-  if (edge == null) return { status: "PENDING", note: "Cannot test a thesis with no fair price on file.", falsifiers: all, structural };
-  if (edge < floor) return { status: "INVALIDATED", note: "The price has moved EV below the floor — the thesis does not survive at this number.", falsifiers: all, structural };
+  if (edge == null) return { status: "PENDING", note: "Cannot test a thesis with no fair price on file.", falsifiers: all, structural, counterarguments, blockers, next_checks };
+  if (edge < floor) return { status: "INVALIDATED", note: "The price has moved EV below the floor — the thesis does not survive at this number.", falsifiers: all, structural, counterarguments, blockers, next_checks };
   const hard = (!sharp && nb < 4) || staleM >= staleMin || (remaining != null && remaining < 0.4);
-  if (hard) return { status: "WEAKENED", note: "Positive, but undercut by thin confirmation, staleness or heavy decay.", falsifiers: all, structural };
-  if (falsifiers.length >= 3) return { status: "WEAKENED", note: "Several unresolved problems — a lean, not a strong bet.", falsifiers: all, structural };
+  if (hard) return { status: "WEAKENED", note: "Positive, but undercut by thin confirmation, staleness or heavy decay.", falsifiers: all, structural, counterarguments, blockers, next_checks };
+  if (falsifiers.length >= 3) return { status: "WEAKENED", note: "Several unresolved problems — a lean, not a strong bet.", falsifiers: all, structural, counterarguments, blockers, next_checks };
   return {
     status: "SURVIVES",
     note: structural.length
       ? "The ARITHMETIC holds against price, confirmation and freshness on owned data. That is not the same as the case "
         + "being strong: the limits below bound what this number is evidence of, and none of them is fixed by a better price."
       : "The edge holds up against price, confirmation and freshness on owned data.",
-    falsifiers: all, structural,
+    falsifiers: all, structural, counterarguments, blockers, next_checks,
   };
 }
 
@@ -7862,6 +8031,10 @@ export interface ConvoState {
       asked about, and conflating the two makes an ordinary question about the
       open game look like a matchup that is missing from another sport's card. */
   namedMatchup?: string[];
+  /** The structured subject this conversation is on — IDs, resolved once and
+      re-validated against the card each turn, rather than re-read out of a
+      short transcript. An explicit topic change replaces it wholesale. */
+  subject?: ResearchSubject | null;
   teams: string[];
   sport: string | null;
   eventId: string | null;
@@ -7887,7 +8060,14 @@ export function matchupFromText(text: string): string[] {
   if (!t) return [];
   /* A side is a capitalised run: "Miami", "Wake Forest", "Texas A&M",
      "Miami (OH)", "Ole Miss". Joiners stay lower case so they cannot start one. */
-  const SIDE = "[A-Z][A-Za-z'&.()-]*(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.()-]*)*";
+  /* "(OH)" IS PART OF THE NAME, NOT PUNCTUATION AFTER IT.
+     Miami (OH) and Miami are different programs and are frequently on the same
+     card. This pattern stopped at the "(", so "Miami (OH) vs Cincinnati" read
+     as "Miami" — the Florida school — versus Cincinnati, found no such game,
+     and resolved nothing. A parenthetical of a few letters is admitted as part
+     of the side it qualifies. */
+  const PAREN = "(?:[ ]?\\([A-Za-z.]{1,6}\\))?";
+  const SIDE = "[A-Z][A-Za-z'&.-]*" + PAREN + "(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.-]*" + PAREN + ")*";
   const re = new RegExp("(" + SIDE + ")\\s+(?:versus|vs\\.?|@|at)\\s+(" + SIDE + ")");
   const m = re.exec(t);
   if (!m) return [];
@@ -7908,6 +8088,7 @@ export function deriveState(
   };
   if (!st.teams.length && prev?.teams?.length) st.teams = prev.teams.slice();
   if (!st.namedMatchup?.length && prev?.namedMatchup?.length) st.namedMatchup = prev.namedMatchup.slice();
+  if (prev?.subject) st.subject = prev.subject;
   if (!st.eventId && prev?.eventId) st.eventId = prev.eventId;
   if (!st.sport && prev?.sport) st.sport = prev.sport;
 
@@ -7937,6 +8118,12 @@ export function deriveState(
   }
   if (packet?.sport_key && (namedBefore.length !== 2 || packetNamesIt)) st.sport = packet.sport_key;
   if (namedBefore.length === 2 && !packetNamesIt) {
+    /* AN EXPLICIT TOPIC CHANGE REPLACES THE OLD SUBJECT, it does not queue
+       behind it. "What about Miami vs Wake Forest?" names a different game, so
+       the carried subject is dropped here and re-resolved from the new names —
+       otherwise the previous game's id would keep winning the carry and every
+       later turn would answer about the matchup the reader had moved off. */
+    if (namedHere.length === 2) st.subject = null;
     st.teams = namedBefore;
     st.namedMatchup = namedBefore;
     /* The sport is NOT asserted here — resolveNamedMatchup settles that
@@ -14373,7 +14560,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-14-r8-matchup-routing-fix";
+export const BUILD = "edgedesk_ai-2026-09-14-r9-research-context";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -14730,7 +14917,18 @@ export function presentationModeOf(body: any, plan: Plan): PresentationMode {
     packet, a scored board row for the focused game, or nothing. */
 export function presentationSource(body: any, research: ResearchOut | null): { kind: string; packet: any } | null {
   const p = body?.packet;
-  if (p && typeof p === "object" && p.deterministic && (p.prices || p.price_sensitivity)) {
+  /* THE CARD IS ABOUT THE QUESTION, NOT ABOUT THE TAB.
+     buildPresentation() turns this into the decision card the panel renders
+     under the answer. Taking the open packet unconditionally is what put a
+     Padres–Rockies card under a Texas State answer: the packet was real, its
+     numbers were right, and it was about a different game in a different
+     sport. When the turn resolved a subject, the card must be about THAT
+     subject or there must be no card. */
+  const ctx = research?.context ?? null;
+  const pSport = p?.game?.sport_key ?? null;
+  const packetInScope = !ctx || !ctx.sport || !pSport
+    || (pSport === ctx.sport && (!ctx.single_game || matchesContext(ctx, { matchup: p?.game?.matchup })));
+  if (p && typeof p === "object" && p.deterministic && (p.prices || p.price_sensitivity) && packetInScope) {
     return { kind: "packet", packet: p };
   }
   const rows: any[] = Array.isArray(p?.board?.rows) ? p.board.rows : Array.isArray(p?.board) ? p.board : [];
@@ -15085,6 +15283,10 @@ export async function runExternalAdapters(
 interface ResearchOut {
   plan: Plan;
   state: ConvoState;
+  /** The one resolved scope for this turn. Everything shown is checked against it. */
+  context: ResearchContext;
+  /** What was retrieved that did NOT match the context, and what was done about it. */
+  context_guard: ContextGuard;
   evidence: Evidence[];
   conflicts: ReturnType<typeof findConflicts>;
   unavailable: { source: string; field: string; reason: string }[];
@@ -15176,6 +15378,12 @@ function needsFromCfb(plan: Plan, wants: (s: string) => boolean): Set<string> {
     case "cfb_best_matchups": add("sp_plus", "records", "schedule", "rankings"); break;
     case "cfb_betting_candidate": add("sp_plus", "records", "schedule", "lines"); break;
     case "cfb_best_teams": add("sp_plus", "records", "schedule", "rankings"); break;
+    /* ONE GAME, READ PROPERLY. The market belongs here — a matchup question is
+       nearly always also a price question — and `roster` does not: stage C's
+       getCfbGameEvidence already reads the roster and the availability artifact
+       for the shortlist, so asking for it again here spends the budget twice
+       and leaves nothing for the availability read it duplicates. */
+    case "cfb_research_matchup": add("sp_plus", "records", "team_season_stats", "schedule", "lines"); break;
     default: add("sp_plus", "records", "team_season_stats", "schedule", "team_quality");
   }
   /* An explicit plan step always wins over the intent default — the planner
@@ -15226,7 +15434,7 @@ function needsFromCfb(plan: Plan, wants: (s: string) => boolean): Set<string> {
 export function teamishPhrases(text: string): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
-  const re = /\b([A-Z][A-Za-z'&.()-]*(?:[ ](?:of|and|&|the)?[ ]?[A-Z][A-Za-z'&.()-]*)+)/g;
+  const re = /\b([A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?(?:[ ](?:of|and|&|the)?[ ]?[A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?)+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(String(text ?? ""))) != null) {
     let words = m[1].replace(MATCHUP_LEAD, "").replace(/[.,;:!?]+$/, "").trim().split(/\s+/);
@@ -15246,8 +15454,77 @@ export function teamishPhrases(text: string): string[] {
   return out.slice(0, 4);
 }
 
+/* Capitalised SINGLE words that could name a program. Handed to the card
+   resolver exactly as the multi-word phrases are, and asserted about only
+   after that lookup succeeds. Ordinary sentence words are excluded by the same
+   NOT_A_NAME list, so "Anything worth betting?" contributes nothing. */
+export function bareTeamWords(text: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const re = /\b([A-Z][A-Za-z'&.()-]{2,})/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(String(text ?? ""))) != null) {
+    const w = m[1].replace(/[.,;:!?]+$/, "").trim();
+    const k = normName(w);
+    if (!k || seen.has(k) || NOT_A_NAME.has(k)) continue;
+    seen.add(k);
+    out.push(w);
+  }
+  return out.slice(0, 5);
+}
+
+/**
+ * One bare word, read against the card.
+ *
+ * Exactly one game => the same resolution a full phrase would have produced.
+ * More than one => the SPORT is settled and the GAME is not, which is reported
+ * as an ambiguity to ask about rather than resolved by picking the first.
+ */
+function bareWordRead(
+  words: string[], games: any[], ix: any, carriedGameId: string | null, none: MatchupResolution,
+): MatchupResolution {
+  for (const w of words) {
+    const r = EDINTEL.resolveTeam(w, ix);
+    if (!r?.key) continue;
+    const hits = games.filter((g: any) =>
+      EDINTEL.canonKey(g.home_id, g.home_team) === r.key || EDINTEL.canonKey(g.away_id, g.away_team) === r.key);
+    if (!hits.length) continue;
+    /* A carried subject that this word is consistent with keeps its game —
+       "how does Texas State look now?" on turn four is the same game. */
+    const carried = carriedGameId ? hits.find((h: any) => String(h.game_id) === String(carriedGameId)) : null;
+    const hit = carried ?? (hits.length === 1 ? hits[0] : null);
+    if (hit) {
+      return {
+        state: "RESOLVED", named: [w], sport: "americanfootball_ncaaf", game_id: String(hit.game_id),
+        home: hit.home_team, away: hit.away_team,
+        home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
+        away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
+        kickoff: hit.kickoff ?? null,
+        source: "football/fbs/slate.json" + (carried ? " (carried subject)" : ""), note: null,
+      };
+    }
+    return {
+      ...none, state: "AMBIGUOUS_ON_CARD", named: [w], sport: "americanfootball_ncaaf",
+      note: `"${w}" is a college football program on the card EdgeDesk publishes, and it appears in `
+        + `${hits.length} scheduled games in this window (${hits.map((h: any) => `${h.away_team} @ ${h.home_team}`).join(", ")}). `
+        + `The SPORT is settled — this is a college football question and must not be answered from any other `
+        + `sport's board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.`,
+    };
+  }
+  return none;
+}
+
 export interface MatchupResolution {
-  /** 'RESOLVED' | 'NOT_ON_ANY_CARD' | 'RETRIEVAL_FAILED' | 'NONE_NAMED' */
+  /**
+   * 'RESOLVED'           both sides (or one name) reached ONE scheduled game
+   * 'AMBIGUOUS_ON_CARD'  the program is on the card in more than one game —
+   *                      the SPORT is settled, the GAME is not
+   * 'NOT_ON_ANY_CARD'    the card was read and carries no such matchup
+   * 'RETRIEVAL_FAILED'   the card could not be read — NOT a finding of absence
+   * 'NONE_NAMED'         the question named no team at all
+   * Each needs a different sentence, and collapsing any two of them is how a
+   * failed lookup becomes "this team does not exist".
+   */
   state: string;
   named: string[];
   sport: string | null;
@@ -15271,13 +15548,18 @@ export interface MatchupResolution {
  * match resolves nothing rather than something plausible.
  */
 export async function resolveNamedMatchup(
-  question: string, dal: Dal, carried: string[] = [],
+  question: string, dal: Dal, carried: string[] = [], carriedGameId: string | null = null,
 ): Promise<MatchupResolution> {
   /* A follow-up names nothing — "who have they played?" — so the subject the
      conversation established is used instead. Without this the resolution
      lapses on turn two and the open board takes the wheel again. */
   const fromQ = matchupFromText(question);
   const named = fromQ.length === 2 ? fromQ : (carried.length === 2 ? carried.slice() : []);
+  /* Which of the two it was. The trace said "named in this message" for a
+     matchup the reader had not mentioned in four turns, which is a true
+     statement about the resolver and a false one about the conversation. */
+  const cameFromCarry = fromQ.length !== 2 && carried.length === 2;
+  const SRC = (base: string) => base + (cameFromCarry ? " (carried subject)" : "");
 
   /* ONE TEAM IS THE SAME BUG WITH ONE NAME. "How does Texas State look this
      week?" has no "vs" for matchupFromText to find, and reaches exactly the
@@ -15288,13 +15570,49 @@ export async function resolveNamedMatchup(
      Deliberately conservative: a name that resolves to two programs, or that
      matches a club in the sport already in scope, is left alone. */
   const soloNames = named.length === 2 ? [] : teamishPhrases(question);
+  /* SINGLE BARE WORDS ARE LOOKED UP TOO — BUT ONLY TO ESTABLISH THE SPORT.
+     teamishPhrases deliberately refuses one-word names because "Miami" alone
+     is two programs and "Thoughts" is none. That was right about picking a
+     GAME and wrong about everything else: a question that says "Miami" and
+     nothing else fell through to NONE_NAMED, and the sport was then taken from
+     whatever board was open — so a college question became a baseball one in
+     silence, which is the one outcome the brief forbids outright. A bare word
+     that names a program on the card therefore settles the SPORT and reports
+     the game as ambiguous; it never selects one. */
+  const soloWords = named.length === 2 ? [] : bareTeamWords(question);
   const none: MatchupResolution = {
     state: "NONE_NAMED", named: [], sport: null, game_id: null, home: null, away: null,
     home_id: null, away_id: null, kickoff: null, source: null, note: null,
   };
-  if (named.length !== 2 && !soloNames.length) return none;
+  /* THE SUBJECT SURVIVES A QUESTION THAT NAMES NOTHING.
+     "Who have they played?" names no team at all, and the two-name carry above
+     only fires for a matchup the reader wrote as "A vs B". A conversation that
+     started from ONE name — "How does Texas State look this week?" — therefore
+     lost its subject on the very next turn and fell back to the open board,
+     which is the original production failure arriving one turn late.
+
+     A carried GAME ID fixes that, and it is safe to carry because it is not
+     trusted: it is re-looked-up against the published card below exactly as a
+     freshly named matchup is, and a id that matches no scheduled game is
+     dropped without a word. */
+  const wantCarriedGame = named.length !== 2 && !soloNames.length && !soloWords.length && !!carriedGameId;
+  if (named.length !== 2 && !soloNames.length && !soloWords.length && !wantCarriedGame) return none;
 
   const art = await dal.getFbsSlateArtifact();
+  if (wantCarriedGame && art.games.length) {
+    const hit = art.games.find((g: any) => String(g.game_id) === String(carriedGameId));
+    if (hit) {
+      return {
+        state: "RESOLVED", named: [String(hit.away_team ?? ""), String(hit.home_team ?? "")],
+        sport: "americanfootball_ncaaf", game_id: String(hit.game_id),
+        home: String(hit.home_team ?? ""), away: String(hit.away_team ?? ""),
+        home_id: EDINTEL.canonKey(hit.home_team_id ?? null, hit.home_team),
+        away_id: EDINTEL.canonKey(hit.away_team_id ?? null, hit.away_team),
+        kickoff: hit.kickoff ?? null, source: "football/fbs/slate.json (carried subject)", note: null,
+      };
+    }
+  }
+  if (wantCarriedGame) return none;
   if (art.error && !art.games.length) {
     return {
       ...none, state: "RETRIEVAL_FAILED", named,
@@ -15322,7 +15640,7 @@ export async function resolveNamedMatchup(
           game_id: hit.game_id, home: hit.home_team, away: hit.away_team,
           home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
           away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
-          kickoff: hit.kickoff, source: "football/fbs/slate.json", note: null,
+          kickoff: hit.kickoff, source: SRC("football/fbs/slate.json"), note: null,
         };
       }
     }
@@ -15354,7 +15672,14 @@ export async function resolveNamedMatchup(
     /* A name that looks like a team and is on no card is NOT a finding worth
        interrupting for — the reader may have meant a player, another sport, or
        nothing in particular. Fall through silently. */
-    return none;
+    return bareWordRead(soloWords, games, ix, carriedGameId, none);
+  }
+  if (named.length !== 2 && soloWords.length && art.games.length) {
+    const games = art.games.map((g: any) => ({
+      game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
+      home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null,
+    }));
+    return bareWordRead(soloWords, games, EDINTEL.fbsIndexFor(games), carriedGameId, none);
   }
 
   return {
@@ -15366,12 +15691,289 @@ export async function resolveNamedMatchup(
   };
 }
 
+/* ========================================================================
+   ONE RESEARCH CONTEXT, RESOLVED ONCE, CARRIED EXPLICITLY.
+
+   Before this, "which sport is this question in" was answered independently in
+   four places — classify(), detectSport(), resolveNamedMatchup() and the
+   `earlySport` chain — and "which game" in three more. They agreed most of the
+   time, and when they disagreed nothing noticed: the sport was corrected for
+   retrieval while the PLAN stayed baseball, so a college football question ran
+   `pitcher_features`, reported intent=unknown, and told the reader which
+   college module it had not queried.
+
+   This is the single object all of them now read. It states what was resolved,
+   WHICH RULE resolved it, and what is still ambiguous — so a disagreement is a
+   visible fact rather than a silent race between two defaults.
+
+   THE PRECEDENCE, in order, each one only consulted when the one above it is
+   silent:
+
+     1. a matchup or team named in THIS message, resolved against a real card
+     2. the subject the conversation already established (carried by game id,
+        re-validated against the card — never trusted from the browser)
+     3. an explicit league word in this message
+     4. the game the reader has open
+     5. the board's scope
+     6. nothing — which is a real answer, and the caller asks.
+
+   Rule 1 above rule 4 is the whole fix for the reported failure. Rule 2 above
+   rule 4 is the fix for the same failure on the follow-up turn.
+   ======================================================================== */
+
+export interface ResearchContext {
+  sport: string | null;
+  /** Which rule in the precedence decided the sport. */
+  sport_source: string;
+  /** Canonical ids from the board's own resolver — never display strings. */
+  team_ids: string[];
+  team_names: string[];
+  game_id: string | null;
+  home: string | null;
+  away: string | null;
+  home_id: string | null;
+  away_id: string | null;
+  kickoff: string | null;
+  season: number | null;
+  week: number | null;
+  /** Which market/selection the reader asked about, when they named one. */
+  market: string | null;
+  selection: string | null;
+  /** Where the identity came from, for the answer to cite. */
+  resolution_source: string | null;
+  /** Set when the question could not be resolved and the reader must be asked. */
+  ambiguity: { state: string; question: string; candidates: string[] } | null;
+  /** True when the subject came from the conversation rather than this message. */
+  carried: boolean;
+  /** True when a resolved single game is the subject. */
+  single_game: boolean;
+}
+
+/** The subject persisted between turns. IDs only — never a browser's numbers. */
+export interface ResearchSubject {
+  sport: string | null;
+  game_id: string | null;
+  home: string | null;
+  away: string | null;
+  home_id: string | null;
+  away_id: string | null;
+}
+
+/**
+ * Read a client-supplied subject WITHOUT trusting it.
+ *
+ * The browser is allowed to remind the server what the conversation was about;
+ * it is not allowed to assert it. Only the identifiers survive this function,
+ * and even they are re-looked-up against the published card before anything is
+ * researched — so an edited payload can at worst name a different REAL game,
+ * which is exactly what the reader could have done by typing its name.
+ * No price, no projection and no decision is ever read from here.
+ */
+export function sanitizeSubject(raw: unknown): ResearchSubject | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown, max = 80): string | null => {
+    if (typeof v !== "string") return null;
+    const t = v.trim().slice(0, max);
+    return t ? t : null;
+  };
+  const sport = str(r.sport, 40);
+  const out: ResearchSubject = {
+    sport: sport && SPORT_INTELLIGENCE[sport] ? sport : null,
+    game_id: str(r.game_id, 40),
+    home: str(r.home), away: str(r.away),
+    home_id: str(r.home_id, 60), away_id: str(r.away_id, 60),
+  };
+  if (!out.sport && !out.game_id) return null;
+  return out;
+}
+
+/**
+ * Build the turn's research context from the precedence above.
+ *
+ * `matchup` has already done the only work that needs the network — one
+ * memoised read of the published card — so this is pure and testable.
+ */
+export function researchContextOf(input: {
+  matchup: MatchupResolution;
+  plan: Plan;
+  question: string;
+  packet: any;
+  boardScope: Record<string, unknown>;
+  state: ConvoState;
+}): ResearchContext {
+  const { matchup, plan, question, packet, boardScope, state } = input;
+  const ctx: ResearchContext = {
+    sport: null, sport_source: "none", team_ids: [], team_names: [],
+    game_id: null, home: null, away: null, home_id: null, away_id: null, kickoff: null,
+    season: num(boardScope.season), week: num(boardScope.week),
+    market: (packet?.market_key as string) ?? null,
+    selection: (packet?.selection as string) ?? null,
+    resolution_source: null, ambiguity: null, carried: false, single_game: false,
+  };
+
+  /* ---- 1 + 2. a matchup resolved against a real card --------------------- */
+  if (matchup.state === "RESOLVED") {
+    ctx.sport = matchup.sport;
+    ctx.sport_source = /carried/.test(matchup.source ?? "")
+      ? "the matchup this conversation is already on, re-checked against the card"
+      : "a matchup named in this message, resolved against the published card";
+    ctx.carried = /carried/.test(matchup.source ?? "");
+    ctx.game_id = matchup.game_id;
+    ctx.home = matchup.home; ctx.away = matchup.away;
+    ctx.home_id = matchup.home_id; ctx.away_id = matchup.away_id;
+    ctx.kickoff = matchup.kickoff;
+    ctx.team_ids = [matchup.away_id, matchup.home_id].filter(Boolean) as string[];
+    ctx.team_names = [matchup.away, matchup.home].filter(Boolean) as string[];
+    ctx.resolution_source = matchup.source;
+    ctx.single_game = true;
+    return ctx;
+  }
+
+  /* A matchup that was NAMED and is on no card is an ambiguity to report, not
+     a licence to answer about something else. */
+  /* The sport is known and the game is not. This must NOT fall through to the
+     open board: "never silently default to MLB" is the whole point of it. */
+  if (matchup.state === "AMBIGUOUS_ON_CARD") {
+    ctx.sport = matchup.sport;
+    ctx.sport_source = "a program named in this message, found on the published college football card";
+    ctx.team_names = matchup.named.slice();
+    ctx.ambiguity = {
+      state: "AMBIGUOUS_GAME",
+      question: matchup.note ?? "Which game is meant?",
+      candidates: matchup.named.slice(),
+    };
+    return ctx;
+  }
+  if (matchup.state === "NOT_ON_ANY_CARD" || matchup.state === "RETRIEVAL_FAILED") {
+    ctx.ambiguity = {
+      state: matchup.state,
+      question: matchup.state === "RETRIEVAL_FAILED"
+        ? "The card could not be read, so EdgeDesk cannot say whether that game exists."
+        : "Which teams and which week are meant?",
+      candidates: matchup.named.slice(),
+    };
+    ctx.team_names = matchup.named.slice();
+  }
+
+  /* ---- 3. an explicit league word in this message ------------------------ */
+  const det = detectSport(question);
+  if (det.sport && det.confidence === "EXPLICIT") {
+    ctx.sport = det.sport; ctx.sport_source = det.via; return ctx;
+  }
+  /* The plan's own sport, when an intent is locked to one. */
+  const planSport = plan.sport ?? sportOfIntent(plan.intent);
+  if (planSport) { ctx.sport = planSport; ctx.sport_source = `the intent ${plan.intent} exists only in this sport`; return ctx; }
+  /* A team that resolves in exactly one registry. */
+  if (det.sport) { ctx.sport = det.sport; ctx.sport_source = det.via; return ctx; }
+
+  /* ---- 4 + 5. the open game, then the board ----------------------------- */
+  if (packet?.game?.sport_key) {
+    ctx.sport = String(packet.game.sport_key);
+    ctx.sport_source = "the game the reader has open";
+    ctx.selection = ctx.selection ?? null;
+    return ctx;
+  }
+  if (boardScope.sport) {
+    ctx.sport = String(boardScope.sport);
+    ctx.sport_source = "the board the reader is looking at";
+    return ctx;
+  }
+  if (state.sport) { ctx.sport = state.sport; ctx.sport_source = "the sport this conversation was already in"; ctx.carried = true; return ctx; }
+
+  /* ---- 6. nothing. A real answer, and a common one. --------------------- */
+  ctx.sport_source = det.via;
+  return ctx;
+}
+
+/* ========================================================================
+   NOTHING LEAVES THIS FUNCTION THAT DOES NOT MATCH THE RESOLVED CONTEXT.
+
+   The reported failure had two halves and only the first is a routing bug. The
+   second is that when retrieval came back for the WRONG SPORT, the system
+   noticed, said so at length in the answer, and then showed the reader the
+   wrong evidence anyway — an MLB pitcher line and a Padres–Rockies decision
+   card under a question about Texas State. Explaining a mistake is not the
+   same as not making it.
+
+   So the resolved context is a filter, not a caption. Evidence and decisions
+   are checked against it before the model is called; what does not match is
+   WITHHELD and counted, and the count is reported. A mismatch big enough to
+   have emptied the answer triggers one bounded re-retrieval in the right
+   sport rather than a graceful paragraph about the wrong one.
+
+   THE SIX STATES ARE KEPT APART, because they need different sentences and
+   different fixes, and collapsing them is how a failed query became "this team
+   does not exist":
+
+     UNKNOWN_TEAM        the name matches no program on any card
+     AMBIGUOUS_SPORT     the name is real in more than one sport
+     NO_SCHEDULED_GAME   the team is real and is not playing in this window
+     GAME_WITHOUT_PRICE  the game exists and carries no executable quote
+     DATA_UNAVAILABLE    the source is reachable and holds nothing for this
+     RETRIEVAL_FAILED    the source could not be read at all
+     JOIN_FAILED         both sides were read and could not be matched up
+   ======================================================================== */
+
+export interface ContextGuard {
+  ok: boolean;
+  /** Decisions withheld because they are not about the resolved game. */
+  decisions_withheld: { game: string; why: string }[];
+  /** Evidence packets withheld for the same reason. */
+  packets_withheld: string[];
+  /** Set when retrieval came back in a different sport than the context. */
+  sport_mismatch: { retrieved: string | null; resolved: string | null; action: string } | null;
+  /** One of the seven states above, when something is missing. */
+  state: string | null;
+  /** The sentence the answer must use. Never a raw error. */
+  sentence: string | null;
+  retried: boolean;
+}
+
+export const EMPTY_GUARD: ContextGuard = {
+  ok: true, decisions_withheld: [], packets_withheld: [],
+  sport_mismatch: null, state: null, sentence: null, retried: false,
+};
+
+/** Does this decision/packet belong to the game the reader asked about? */
+export function matchesContext(ctx: ResearchContext, subject: {
+  game_id?: unknown; matchup?: unknown; sport?: unknown;
+}): boolean {
+  /* No resolved single game means no per-game filter — a card-wide question is
+     ABOUT the card and every game on it is in scope. */
+  if (!ctx.single_game) return true;
+  const gid = subject.game_id == null ? null : String(subject.game_id);
+  if (gid && ctx.game_id && gid === ctx.game_id) return true;
+  /* The decision rows carry a display matchup rather than the artifact's id, so
+     identity is re-established through the board's OWN resolver — never a
+     normalised string compare, which is the join that failed for years because
+     the book writes "North Texas Mean Green" and the schedule writes
+     "North Texas". */
+  const m = subject.matchup == null ? "" : String(subject.matchup);
+  if (!m) return false;
+  const ix = EDINTEL.fbsIndexFor([{
+    game_id: ctx.game_id ?? "ctx", home_team: ctx.home ?? "", away_team: ctx.away ?? "",
+    home_id: ctx.home_id ?? null, away_id: ctx.away_id ?? null, kickoff: ctx.kickoff ?? null,
+  }]);
+  const sides = m.split(/\s+(?:@|vs\.?|at|versus)\s+/i).filter(Boolean);
+  if (sides.length !== 2) return false;
+  const a = EDINTEL.resolveTeam(sides[0], ix), b = EDINTEL.resolveTeam(sides[1], ix);
+  if (!a?.key || !b?.key) return false;
+  const want = new Set([ctx.home_id, ctx.away_id].filter(Boolean) as string[]);
+  return want.has(a.key) && want.has(b.key) && a.key !== b.key;
+}
+
 async function runResearch(
-  plan: Plan, state: ConvoState, packet: any, dal: Dal, question = "",
+  plan0: Plan, state: ConvoState, packet: any, dal: Dal, question = "", mode = "",
 ): Promise<ResearchOut> {
+  /* Reassignable, because the plan is re-made once the research context has
+     resolved the sport. See RE-PLAN below. */
+  let plan: Plan = plan0;
   const t0 = Date.now();
   const evidence: Evidence[] = [];
   const data_path: Record<string, unknown> = {};
+  /* Rebuilt when the plan is re-made below, so `wants()` follows the plan that
+     actually ran rather than the one the word-classifier guessed first. */
   const steps = new Set(plan.steps);
   const wants = (s: string) => steps.has(s);
 
@@ -15402,7 +16004,34 @@ async function runResearch(
      question asked with a baseball game open would look up "Baltimore Orioles
      vs New York Yankees" on the FBS card, fail to find it, and fire the
      clarification path on a question that named no matchup at all. */
-  const namedMatchup = await resolveNamedMatchup(question, dal, state.namedMatchup ?? []);
+  /* AN EXPLICIT LEAGUE WORD IN THIS MESSAGE OUTRANKS THE CARRIED SUBJECT.
+     "Forget that — what do the MLB pitching matchups look like tonight?" names
+     no team, so the carry fired and the conversation stayed in college
+     football: the reader said the word MLB and was answered about a football
+     game. The precedence is explicit-current-message FIRST, and the subject a
+     conversation is on is not more explicit than the sport the reader just
+     named. A carry into a sport the reader has just switched away from is
+     dropped here rather than re-resolved downstream. */
+  const saidSport = detectSport(question);
+  const carriedSport = state.subject?.sport ?? null;
+  const switchedAway = saidSport.confidence === "EXPLICIT" && !!saidSport.sport
+    && !!carriedSport && saidSport.sport !== carriedSport;
+  if (switchedAway) {
+    data_path.subject_dropped = {
+      was: { sport: carriedSport, game_id: state.subject?.game_id ?? null },
+      because: saidSport.via,
+      note: "The reader named a different league in this message, so the matchup the conversation was on is no "
+        + "longer the subject. A topic change replaces the subject; it does not queue behind it.",
+    };
+    state.subject = null;
+    state.namedMatchup = [];
+    state.teams = [];
+    state.sport = null;
+  }
+
+  const namedMatchup = await resolveNamedMatchup(
+    question, dal, switchedAway ? [] : (state.namedMatchup ?? []),
+    switchedAway ? null : (state.subject?.game_id ?? null));
   if (namedMatchup.state !== "NONE_NAMED") {
     data_path.named_matchup = {
       state: namedMatchup.state, named: namedMatchup.named, sport: namedMatchup.sport,
@@ -15416,9 +16045,41 @@ async function runResearch(
     };
   }
 
-  const earlySport: string | null = namedMatchup.sport
-    ?? sportOfIntent(plan.intent) ?? plan.sport
-    ?? (packet?.game?.sport_key ?? null) ?? (boardScope as any).sport ?? state.sport ?? null;
+  /* ---- 0a-ii. THE RESEARCH CONTEXT, AND THE PLAN REMADE AGAINST IT ------
+     One object, one stated precedence, and — the part that was missing — the
+     PLAN rebuilt once the sport is known. classify() ran before any of this
+     could be looked up, so it routed on words alone; now that a real game has
+     been resolved off a real card, the question is classified again with that
+     fact in hand. Without this the sport was corrected for retrieval while the
+     plan kept asking for pitchers, which is precisely what production did. */
+  const ctx = researchContextOf({ matchup: namedMatchup, plan, question, packet, boardScope, state });
+
+  const replanned = ctx.sport
+    ? classify(question, mode, { sport: ctx.sport, single_game: ctx.single_game })
+    : plan;
+  if (replanned.intent !== plan.intent || replanned.steps.join() !== plan.steps.join()) {
+    data_path.replan = {
+      from: { intent: plan.intent, mode: plan.mode, depth: plan.depth, steps: plan.steps },
+      to: { intent: replanned.intent, mode: replanned.mode, depth: replanned.depth, steps: replanned.steps },
+      because: ctx.sport_source,
+      note: "The question was classified a second time once the research context resolved the sport, so the "
+        + "retrieval plan matches the sport that is actually being researched.",
+    };
+    plan = replanned;
+    steps.clear(); for (const st of plan.steps) steps.add(st);
+    dal.budget = Math.max(dal.budget, plan.budget);
+  }
+  data_path.research_context = {
+    sport: ctx.sport, sport_source: ctx.sport_source, game_id: ctx.game_id,
+    teams: ctx.team_names, team_ids: ctx.team_ids, kickoff: ctx.kickoff,
+    season: ctx.season, week: ctx.week, single_game: ctx.single_game, carried: ctx.carried,
+    resolution_source: ctx.resolution_source, ambiguity: ctx.ambiguity,
+    note: "The ONE resolved scope for this turn. Retrieval, evidence, decisions and the rendered cards are all "
+      + "checked against it; anything that does not match it is withheld rather than shown.",
+  };
+
+  const guard: ContextGuard = { ...EMPTY_GUARD, decisions_withheld: [], packets_withheld: [] };
+  const earlySport: string | null = ctx.sport;
 
   /* A resolved matchup also replaces the board's scope: the reader asked about
      THAT game, so the card researched is the card it is on. */
@@ -15439,6 +16100,15 @@ async function runResearch(
     }
     state.sport = namedMatchup.sport;
     state.teams = [namedMatchup.away!, namedMatchup.home!];
+    /* STRUCTURED, NOT SCANNED. The next turn reads this instead of re-deriving
+       the subject from a transcript, which is how "Who have they played?" used
+       to lose the game and fall back to the open board. */
+    state.subject = {
+      sport: namedMatchup.sport, game_id: namedMatchup.game_id,
+      home: namedMatchup.home, away: namedMatchup.away,
+      home_id: namedMatchup.home_id, away_id: namedMatchup.away_id,
+    };
+    state.namedMatchup = [namedMatchup.away!, namedMatchup.home!];
   }
   if ((boardScope as any).sport || num(boardScope.week) != null) {
     data_path.board_scope = {
@@ -15580,20 +16250,28 @@ async function runResearch(
      board. The order below is strictly most-certain-first: an intent that only
      exists for one sport, then an explicit league word, then the loaded signal,
      then conversation state, then — last, and only as a tiebreak — board order. */
-  const sportKey: string | null = sportOfIntent(plan.intent) ?? plan.sport
-    ?? (slateIndex && slateIndex.index.length ? earlySport : null)
-    ?? focus?.sport_key ?? state.sport ?? (slateRows[0]?.sport_key ?? null);
+  /* ONE AUTHORITY, NOT A FOURTH CHAIN.
+     This was a third independent answer to "which sport is this", running
+     after the slate index and reachable through `state.sport` — so a reader
+     who said the word MLB got a context that said baseball and a `sportKey`
+     that said college football, because the conversation state still held the
+     previous subject. Two chains that disagree is the whole shape of the
+     reported failure; the research context already applies the stated
+     precedence and is the thing every other consumer reads, so it decides
+     here too. Board order survives only as the last resort it always was,
+     for a question that resolved no sport at all. */
+  const sportKey: string | null = ctx.sport
+    ?? focus?.sport_key ?? (slateRows[0]?.sport_key ?? null);
   const mod = sportModule(sportKey);
   const imod = intelligenceModule(sportKey);
   data_path.sport_resolution = {
     resolved: sportKey,
-    via: sportOfIntent(plan.intent) ? `intent "${plan.intent}" exists only for this sport`
-      : plan.sport ? "the question named its league explicitly"
-      : (slateIndex && slateIndex.index.length) ? `the slate index found ${slateIndex.index.length} scheduled games for it`
+    via: ctx.sport ? ctx.sport_source
       : focus?.sport_key ? "the signal the user has open"
-      : state.sport ? "conversation state"
       : slateRows.length ? "board order (weakest — the top of the board is not the subject)"
       : "unresolved",
+    /* Stated so a disagreement between the two is visible rather than silent. */
+    research_context_sport: ctx.sport,
     module: imod ? { label: imod.label, league: imod.league, status: imod.status } : null,
   };
 
@@ -15966,6 +16644,50 @@ async function runResearch(
   if (ranked.length) {
     try {
       decisions = decideSlate(ranked, packets, { sport: sportKey });
+      /* THE FILTER THAT STOPS A PADRES CARD APPEARING UNDER A TEXAS STATE
+         QUESTION. decideSlate ranks whatever was retrieved; when the reader
+         asked about ONE game, everything else it computed is a different
+         subject and is withheld rather than appended. Withheld, not deleted:
+         the count travels so the answer can say the card was ranked without
+         showing rows the reader did not ask for. */
+      /* A NAMED MATCHUP THAT DID NOT RESOLVE SHOWS NOTHING IN ITS PLACE.
+         "Texas State vs Boise State" is two real programs that are not playing
+         each other. The honest answer is to say so and ask; what must never
+         happen is a decision card for some OTHER game appearing underneath
+         that sentence, which is the substitution the whole report is about. */
+      if (ctx.ambiguity) {
+        for (const d of decisions) {
+          guard.decisions_withheld.push({
+            game: String(d.matchup ?? d.game_id ?? "?"),
+            why: "the matchup in the question did not resolve, so no other game may be shown in its place",
+          });
+        }
+        decisions = [];
+        for (const pk of packets) guard.packets_withheld.push(String((pk as any)?.game_id ?? "?"));
+        packets = [];
+        guard.ok = false;
+        guard.state = ctx.ambiguity.state;
+        guard.sentence = ctx.ambiguity.question;
+      } else if (ctx.single_game) {
+        const keep = decisions.filter((d: any) => matchesContext(ctx, d));
+        for (const d of decisions) {
+          if (!keep.includes(d)) {
+            guard.decisions_withheld.push({
+              game: String(d.matchup ?? d.game_id ?? "?"),
+              why: "not the game this question is about",
+            });
+          }
+        }
+        decisions = keep;
+        packets = packets.filter((pk: any) => {
+          const ok = matchesContext(ctx, {
+            game_id: pk?.game_id,
+            matchup: pk?.sections?.identity?.matchup?.value ?? null,
+          });
+          if (!ok) guard.packets_withheld.push(String(pk?.game_id ?? "?"));
+          return ok;
+        });
+      }
       ledger_rows = ledgerRowsFor(decisions, {
         sport: sportKey,
         model_version: EDINTEL.validationSnapshot(sportKey ?? "")?.model_version ?? null,
@@ -16506,10 +17228,15 @@ async function runResearch(
     /* Reported apart from the price-level ones because they are a different
        kind of objection: no better number fixes any of them. */
     structural_limits: attack?.structural ?? [],
+    /* The same items, told apart. See the classifier in attackThesis(). */
+    counterarguments: attack?.counterarguments ?? [],
+    blockers: attack?.blockers ?? [],
+    next_checks: attack?.next_checks ?? [],
   };
 
   return {
-    plan, state, evidence: ev0, conflicts, unavailable: unavail, attack, memory,
+    plan, state, context: ctx, context_guard: guard,
+    evidence: ev0, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
     slate_index: slateIndex ? slateIndex.index : null,
     ranked, packets, decisions, ledger_rows,
@@ -16638,6 +17365,19 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
               + `what was researched. Do not answer about whatever was on screen.\n`
             : "")
           + `Answer about THIS game. Other games on the card are context you may mention; they are not the answer.`,
+        );
+      } else if (nm.state === "AMBIGUOUS_ON_CARD") {
+        /* THE SPORT IS SETTLED AND THE GAME IS NOT, WHICH IS ITS OWN STATE.
+           Sent down the branch below, this produced "no game carries BOTH of
+           those sides" about a question that named ONE side — a true sentence
+           about a different failure, which is how a failed lookup turns into a
+           claim that a team does not exist. */
+        parts.push(
+          `THE PROGRAM THIS QUESTION NAMES IS ON THE CARD; WHICH GAME IS NOT SETTLED.\n`
+          + `${nm.note}\n`
+          + `The SPORT is decided and is not in question: this is a ${nm.sport} question. You may NOT answer it `
+          + `from another sport's board, and you may NOT pick one of the candidate games. Ask which one is meant, `
+          + `in ONE short sentence, naming the candidates. Do not research a game you were not asked about.`,
         );
       } else {
         parts.push(
@@ -17118,6 +17858,26 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
            the closing line in this market" are objections of different kinds,
            and collapsing them lets the second one read as though a better
            price would answer it. */
+        /* THREE KINDS OF OBJECTION, AND THEY ARE NOT INTERCHANGEABLE.
+           Presented as one list, "the price is 446 minutes old" read as an
+           argument against the lean — so refreshing the odds looked like an
+           answer to a thesis problem. It answers a BLOCKER and nothing else. */
+        + `COUNTERARGUMENT — evidence AGAINST the thesis. Looking again does not fix any of these:\n`
+        + ((ta.counterarguments && ta.counterarguments.length)
+          ? ta.counterarguments.map((x: string) => `  - ${x}`).join("\n") + "\n"
+          : "  none on file. Say that plainly rather than manufacturing an objection to look balanced.\n")
+        + `BLOCKER — information that is MISSING or STALE. These bound what may be claimed. They are NOT evidence `
+        + `against the lean and must never be presented as one:\n`
+        + ((ta.blockers && ta.blockers.length)
+          ? ta.blockers.map((x: string) => `  - ${x}`).join("\n") + "\n"
+          : "  none on file.\n")
+        + `NEXT CHECK — what to go and find out. A next check answers a BLOCKER. It is never an answer to a `
+        + `counterargument, and a fresh capture confirming the price answers ONLY the price:\n`
+        + ((ta.next_checks && ta.next_checks.length)
+          ? ta.next_checks.map((x: string) => `  - ${x}`).join("\n") + "\n"
+          : "  none on file.\n")
+        + `Do not claim that refreshing odds resolves missing personnel data, a routing failure or an unvalidated `
+        + `model. It resolves the age of a price and nothing else.\n`
         + (ta.structural_limits && ta.structural_limits.length
           ? `STRUCTURAL LIMITS — true whatever the price does, and NOT fixed by a better number:\n`
             + ta.structural_limits.map((x: string) => `  - ${x}`).join("\n") + "\n"
@@ -17273,11 +18033,33 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
     const clone: Record<string, unknown> = { ...packet };
     const board = clone.board;
     delete clone.board; delete clone.board_mode;
-    if (Object.keys(clone).length) {
+    /* THE OPEN TAB IS NOT THE QUESTION.
+       This block called the client's packet "authoritative" unconditionally.
+       A reader with a Padres–Rockies signal open who asks about Texas State
+       was therefore handing the model an authoritative MLB decision to write
+       about, on a turn whose entire retrieval was college football — which is
+       exactly where the unrelated decision card in the report came from. The
+       packet is still sent when it IS the subject; when it is a different
+       game it is named in one line as what the reader has open, and is not
+       offered as an answer to anything. */
+    const ctx0 = research?.context ?? null;
+    const packetSport = (packet as any)?.game?.sport_key ?? null;
+    const packetIsSubject = !ctx0 || !ctx0.sport || !packetSport
+      || (packetSport === ctx0.sport
+        && (!ctx0.single_game || matchesContext(ctx0, { matchup: (packet as any)?.game?.matchup })));
+    if (Object.keys(clone).length && packetIsSubject) {
       parts.push(
         "CLIENT PACKET — the deterministic engine's output for the signal the user has open. "
         + "Its verdict, confidence, score and price sensitivity are authoritative:\n"
         + JSON.stringify(clone),
+      );
+    } else if (Object.keys(clone).length) {
+      parts.push(
+        `THE READER HAS AN UNRELATED SELECTION OPEN${packetSport ? ` in ${packetSport}` : ""}, and it has been `
+        + `WITHHELD from this message on purpose. It is not what they asked about, so its decision, price and `
+        + `verdict are not evidence here. Do not mention it, do not price it, do not recommend it and do not `
+        + `offer it as an alternative — naming a game the reader did not ask about is the failure this guard `
+        + `exists to prevent. Answer the question that was asked.`,
       );
     }
     if (board) {
@@ -17349,6 +18131,8 @@ export interface LedgerWrite {
      shows the recommendation while quietly dropping the row is claiming a
      measurement it does not have. */
   notice: string | null;
+  /** Operator diagnostics. NEVER sent to a client — redactLedgerDetail() strips it. */
+  operator_hint?: string | null;
   at: string;
 }
 
@@ -17412,12 +18196,19 @@ export async function publishLedger(
     const detail = ok ? null : (await res.text().catch(() => "")).slice(0, 300);
     const out: LedgerWrite = {
       state: ok ? "RECORDED" : "NOT_RECORDED", rows: payload.length, status: res.status, detail, at,
+      /* ONE SENTENCE, NO OPERATIONS. The reader is owed the fact that the
+         decision was not recorded, and nothing else: an HTTP code, a table
+         name and a migration filename are the operator's business and reach
+         them through ?probe=1 and the deployment doctor. What the reader must
+         not be left with is the impression that it WAS recorded. */
       notice: ok ? null
-        : "TRACKING UNAVAILABLE: EdgeDesk could not write this decision to the recommendation ledger "
-          + `(HTTP ${res.status}), so it was NOT recorded and will not appear in the published record. `
-          + (detail && /relation|does not exist|schema cache/i.test(detail)
-            ? "The ledger table is missing on this deployment — supabase/recommendation_ledger.sql has not been applied."
-            : "This is an operational fault, not a change to the recommendation."),
+        : "Tracking is unavailable right now, so this decision was not recorded and will not appear in the "
+          + "published record. The research above is unaffected.",
+      /* Operator-side only; redactLedgerDetail() strips this before it is sent. */
+      operator_hint: ok ? null
+        : (detail && /relation|does not exist|schema cache/i.test(detail)
+          ? "The ledger table is missing on this deployment — supabase/recommendation_ledger.sql has not been applied."
+          : `HTTP ${res.status} from the ledger insert. Operational fault, not a change to the recommendation.`),
     };
     LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
     return out;
@@ -17425,12 +18216,27 @@ export async function publishLedger(
     const detail = String((e as Error)?.message ?? e).slice(0, 300);
     const out: LedgerWrite = {
       state: "NOT_RECORDED", rows: payload.length, status: null, detail, at,
-      notice: "TRACKING UNAVAILABLE: the write to the recommendation ledger failed (" + detail + "), so this "
-        + "decision was NOT recorded and will not appear in the published record.",
+      notice: "Tracking is unavailable right now, so this decision was not recorded and will not appear in the "
+        + "published record. The research above is unaffected.",
+      operator_hint: detail,
     };
     LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
     return out;
   }
+}
+
+/**
+ * The customer-facing shape of a ledger outcome.
+ *
+ * Everything a reader needs — did it record, and the sentence saying it did
+ * not — and nothing a database says to an operator. `detail` is kept on the
+ * server in LAST_LEDGER_WRITE, which is what ?probe=1 and
+ * tools/intelligence/deploy_doctor.js read, so no diagnostic is lost; it is
+ * simply not narrated to the person asking about a football game.
+ */
+export function redactLedgerDetail(l: LedgerWrite): Omit<LedgerWrite, "detail" | "operator_hint"> & { detail: null; diagnostic_available: boolean } {
+  const { detail, operator_hint, ...rest } = l;
+  return { ...rest, detail: null, diagnostic_available: !!(detail || operator_hint) };
 }
 
 /* Writes the session under the CALLER's JWT, so RLS decides what is allowed.
@@ -17648,6 +18454,22 @@ function researchSummary(research: ResearchOut | null, plan: Plan) {
         : null,
       slate_source: research.slate_source,
       board_scope: research.board_scope,
+      /* THE SCOPE THE CLIENT MUST FILTER ITS OWN RENDERING AGAINST, and the
+         subject it hands back next turn. Without this the panel appended
+         whatever decision cards the server happened to compute — which is how
+         a Texas State question ended with a Padres card underneath it. */
+      research_context: {
+        sport: research.context.sport, sport_source: research.context.sport_source,
+        game_id: research.context.game_id, teams: research.context.team_names,
+        team_ids: research.context.team_ids, home: research.context.home,
+        away: research.context.away, home_id: research.context.home_id,
+        away_id: research.context.away_id, kickoff: research.context.kickoff,
+        season: research.context.season, week: research.context.week,
+        single_game: research.context.single_game, carried: research.context.carried,
+        resolution_source: research.context.resolution_source,
+        ambiguity: research.context.ambiguity,
+      },
+      context_guard: research.context_guard,
       eligible_games: research.ranked ? research.ranked.filter((r) => r.eligible).length : null,
       researched_games: research.packets ? research.packets.length : null,
       refreshed_at: new Date().toISOString(),
@@ -17823,7 +18645,22 @@ export async function handle(req: Request): Promise<Response> {
 
   /* --- plan ------------------------------------------------------------- */
   const plan = classify(String(body?.question ?? ""), String(body?.mode ?? ""));
-  const state = deriveState(history, plan, body?.packet, null, String(body?.question ?? ""));
+  /* THE CONVERSATION'S OWN MEMORY, HANDED BACK BY THE CLIENT AND NOT BELIEVED.
+     `prev` was hardcoded null, so every turn rebuilt the subject by scanning a
+     six-turn transcript for the words "A vs B" — which finds nothing at all
+     when the conversation started from one team's name. The client now returns
+     the subject the server gave it; sanitizeSubject() keeps only identifiers
+     and resolveNamedMatchup re-looks-up the game id against the published card,
+     so this can remind the server what was being discussed and can never
+     assert a price, a projection or a decision. */
+  const carriedSubject = sanitizeSubject((body as any)?.research_context);
+  const prevState: ConvoState | null = carriedSubject
+    ? { teams: [carriedSubject.away, carriedSubject.home].filter(Boolean) as string[],
+        sport: carriedSubject.sport, eventId: null, lastIntent: null,
+        subject: carriedSubject,
+        namedMatchup: [carriedSubject.away, carriedSubject.home].filter(Boolean) as string[] }
+    : null;
+  const state = deriveState(history, plan, body?.packet, prevState, String(body?.question ?? ""));
   const presentationMode = presentationModeOf(body, plan);
 
   /* --- research --------------------------------------------------------- */
@@ -17834,7 +18671,7 @@ export async function handle(req: Request): Promise<Response> {
         supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY,
         authorization: auth, budget: plan.budget, mlbFallback: MLB_FALLBACK,
       });
-      research = await runResearch(plan, state, body?.packet, dal, String(body?.question ?? ""));
+      research = await runResearch(plan, state, body?.packet, dal, String(body?.question ?? ""), String(body?.mode ?? ""));
     } catch {
       // Retrieval blew up entirely — degrade to packet-only narration, which is
       // exactly the behaviour this function had before the research layer.
@@ -17873,6 +18710,10 @@ export async function handle(req: Request): Promise<Response> {
          of data_path — it is the fact every other statement is measured
          against, and the offline answer renderer opens with it. */
       slate_state: research?.slate_state ?? null,
+      /* The resolved scope and what it withheld, so a test can assert on the
+         filter rather than on the absence of a string in the prose. */
+      research_context: research?.context ?? null,
+      context_guard: research?.context_guard ?? null,
       slate_source: research?.slate_source ?? null,
       coverage_metrics: (research as any)?.coverage_metrics ?? null,
       league: research?.sport_module?.league ?? null,
@@ -18001,10 +18842,22 @@ export async function handle(req: Request): Promise<Response> {
 
     if (!r.ok) {
       const detail = await r.text().catch(() => "");
-      /* The client falls back to its own deterministic engine on a non-200.
-         The deterministic card travels anyway so a client that reads it does
-         not lose the decision to a narration outage. */
-      return json({ error: `anthropic ${r.status}`, detail, presentation }, 502);
+      /* NARRATION FAILED. THE RESEARCH DID NOT.
+         Every retrieval for this turn has already run and been paid for: the
+         slate, the matchup, the market, the packets and the deterministic
+         decisions all exist on this line. Returning only an error threw all of
+         it away and left the panel to fall back to whatever signal the reader
+         happened to have open — which, on a Texas State question asked with a
+         baseball game open, is how an unrelated card became the answer.
+         The status stays 502 because the narration genuinely failed; the body
+         now carries the research so a client can render the facts and offer a
+         retry instead of inventing an opinion. */
+      return json({
+        error: `anthropic ${r.status}`, detail, presentation,
+        answer: null,
+        narration: { ok: false, reason: `the writing model answered ${r.status}`, retryable: true },
+        research: researchSummary(research, plan),
+      }, 502);
     }
     const data = await r.json();
     const textOf = (d: any) => (d?.content ?? [])
@@ -18099,8 +18952,16 @@ export async function handle(req: Request): Promise<Response> {
       model: data?.model ?? MODEL,
       cached: false,
       /* Additive, and the only place a reader learns that a decision they can
-         see was not written down. */
-      ledger,
+         see was not written down.
+
+         THE RAW DATABASE ERROR DOES NOT TRAVEL. `detail` carries PostgREST's
+         own text — `relation "public.recommendation_ledger" does not exist` —
+         and the panel was printing it verbatim underneath the answer, so a
+         paying reader asking about a football game was shown a schema-cache
+         error about a table they have never heard of. The operator needs that
+         string; the customer needs the one-line notice. It stays server-side,
+         where ?probe=1 and the deployment doctor already read it. */
+      ledger: redactLedgerDetail(ledger),
       // Additive. Older clients ignore it; the panel can render a research trace.
       research: researchSummary(research, plan),
       /* Additive. The structured decision card: deterministic fields from
@@ -18108,7 +18969,14 @@ export async function handle(req: Request): Promise<Response> {
       presentation,
     });
   } catch (e) {
-    return json({ error: String((e as Error)?.message ?? e), presentation }, 502);
+    /* Same reasoning as the non-200 branch above: the research survives a
+       transport failure in the narration call and travels with the error. */
+    return json({
+      error: String((e as Error)?.message ?? e), presentation,
+      answer: null,
+      narration: { ok: false, reason: "the writing model could not be reached", retryable: true },
+      research: researchSummary(research, plan),
+    }, 502);
   }
 }
 
