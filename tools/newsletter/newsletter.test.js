@@ -1343,6 +1343,21 @@ section('7 — the provider');
     const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'newsletter.yml'), 'utf8');
     chk('the workflow runs this suite before it may send',
       wf.indexOf('node tools/newsletter/newsletter.test.js') > 0);
+
+    /* AND SOMETHING RUNS IT ON THE CHANGE, not only on the send.
+       This suite's only caller used to be newsletter.yml's pre-flight, which
+       checks out `main` — so a pull request rewriting the send path showed
+       zero checks and a break surfaced at the next scheduled edition, where
+       the choices are to hold the week or to send something wrong. */
+    const prWf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'newsletter-suites.yml'), 'utf8');
+    chk('a pull request runs the newsletter suite', /on:[\s\S]*pull_request/.test(prWf)
+      && prWf.indexOf('node tools/newsletter/newsletter.test.js') > 0);
+    chk('\u2026and it watches the code the newsletter is made of',
+      ["tools/newsletter/**", "tools/articles/**", "tools/editorial/**", "supabase/newsletter.sql"]
+        .every(p2 => prWf.indexOf(p2) > 0));
+    chk('\u2026and runs the same three suites the pre-flight demands',
+      ['newsletter.test.js', 'editorial.test.js', 'articles.test.js']
+        .every(t => prWf.indexOf('node tools/' + (t === 'newsletter.test.js' ? 'newsletter' : t === 'editorial.test.js' ? 'editorial' : 'articles') + '/' + t) > 0));
     chk('the workflow schedules Monday and Tuesday only', /cron: '[\d,]+ 13-19 \* \* 1,2'/.test(wf));
 
     /* THE ORDER OF THE TWO REFRESH STEPS IS LOAD-BEARING. The research host
