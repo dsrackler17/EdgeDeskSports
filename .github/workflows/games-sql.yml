@@ -50,6 +50,13 @@ on:
       - 'tools/editorial/editorial_sql.test.js'
       - 'tools/editorial/runtime_sql.test.js'
       - 'tools/editorial/dispatch_sql.test.js'
+      # THE NEWSLETTER SCHEMA decides whether strangers receive email and who
+      # can read a subscriber address, and every one of those guarantees is a
+      # grant, a unique index or a check constraint rather than application
+      # code. Reasoning about them is not evidence.
+      - 'supabase/newsletter.sql'
+      - 'tools/newsletter/sql/**'
+      - 'tools/newsletter/newsletter_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -91,6 +98,13 @@ on:
       - 'tools/editorial/editorial_sql.test.js'
       - 'tools/editorial/runtime_sql.test.js'
       - 'tools/editorial/dispatch_sql.test.js'
+      # THE NEWSLETTER SCHEMA decides whether strangers receive email and who
+      # can read a subscriber address, and every one of those guarantees is a
+      # grant, a unique index or a check constraint rather than application
+      # code. Reasoning about them is not evidence.
+      - 'supabase/newsletter.sql'
+      - 'tools/newsletter/sql/**'
+      - 'tools/newsletter/newsletter_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -170,6 +184,18 @@ jobs:
           PGPASSWORD: postgres
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/games/offline.test.js | tee offline.log
+
+      # THE NEWSLETTER SCHEMA. Four rules the database enforces itself — one
+      # edition per week, one delivery row per address, one processed provider
+      # event, one worker per edition — plus the one enforced by the ABSENCE
+      # of a grant: no client role, operator included, may read a subscriber
+      # address. Applied twice, applied to a bare project, and attacked as
+      # anon, as a signed-in reader and as the operator.
+      - name: Run the newsletter SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/newsletter/newsletter_sql.test.js | tee newsletter.log
 
       # Problem reports: the one table `anon` may write to. That concession is
       # only safe if an anonymous reporter cannot read anything back, nobody can
