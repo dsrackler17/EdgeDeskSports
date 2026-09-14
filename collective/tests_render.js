@@ -1266,6 +1266,110 @@ var S=sandbox;
     {cell:(/<td[^>]*>\s*No finished games yet[^<]*/.exec(emptyHtml)||[])[0]});
   S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
 
+  /* ---- THE REPORTED SCREENSHOT, reproduced and then refused ------------
+     College Football 2026: the Win % board reading "No finished games yet"
+     while the Margin MAE board beside it ranked four models off those very
+     games, the standings reading "no ATS picks" and "0 thin" graded beside
+     a margin error of 15.5, and nothing anywhere saying that what was
+     actually missing was the closing lines.
+
+     The state behind it is one field: finished games with a real score and
+     a NULL captured close. Every other number on the page comes out of the
+     same games, which is what makes the Win % board's sentence a
+     self-contradiction rather than merely a gap. */
+  (function(){})();
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};
+  var NOCLOSE=JSON.parse(JSON.stringify(GAMES));
+  NOCLOSE.forEach(function(g){g.result.closing_spread=null;g.result.closing_total=null;});
+  var realFetch8=S.fetch;
+  var closingAsked8=[];
+  S.fetch=function(u){
+    var t=String(u);
+    if(t.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(t);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(t))return reply({games:[],week:1,entitled:true});
+      return reply({games:JSON.parse(JSON.stringify(NOCLOSE)),week:1,entitled:true});
+    }
+    /* the Collective holds no close for any of them, on either route */
+    if(t.indexOf('/collective_odds/')>=0){
+      closingAsked8.push(t);
+      if(t.indexOf('/closing/')>=0)return reply({available:false,reason:'no_close_captured'});
+      return reply({games:[]});
+    }
+    if(t.indexOf('/v1/rankings')>=0)return reply({boards:{},thresholds:null});
+    return realFetch8(u);
+  };
+  var rNo=node();
+  await S.renderRankings(rNo);
+  S.fetch=realFetch8;
+  var noHtml=rNo.innerHTML;
+  chk('a page with finished games never claims none have finished',
+    noHtml.indexOf('No finished games yet')<0,
+    {sentence:(/No finished games yet[^<]*/.exec(noHtml)||[])[0]});
+  chk('the Win % board names the reason instead: finished, graded, no closing line',
+    /and none produced an against-the-spread result/.test(noHtml)&&
+    /captured no closing line/.test(noHtml),
+    {board:(/Win %[\s\S]{0,700}/.exec(noHtml)||[])[0]});
+  chk('the Margin MAE board is still full off the same games',
+    /Margin MAE/.test(noHtml)&&(noHtml.match(/n=3</g)||[]).length>0,
+    'a missing close costs the ATS record and nothing else');
+  chk('the standings carry a sample under every metric, not one Graded column',
+    (function(){
+      var tbl=(/<table id="standtbl"[\s\S]*?<\/table>/.exec(noHtml)||[''])[0];
+      return (tbl.match(/class="nsamp[^"]*"[^>]*>n=/g)||[]).length>=12
+        &&tbl.indexOf('>Graded</th>')<0
+        &&/an against-the-spread result/.test(tbl)&&/a projected margin/.test(tbl)
+        &&/a posted win probability/.test(tbl);
+    })(),
+    {samples:(noHtml.match(/class="nsamp[^"]*"[^>]*>n=\d+/g)||[]).slice(0,8)});
+  chk('and the ungraded games are counted and attributed on the page',
+    /no against-the-spread result/.test(noHtml)&&/ungraded/.test(noHtml),
+    {line:(/[0-9]+ of [0-9]+\s*<\/b>?[\s\S]{0,120}/.exec(noHtml)||[])[0]});
+  chk('the close was actually asked for before the page gave up on it',
+    closingAsked8.length>0,{asked:closingAsked8.slice(0,4)});
+
+  /* ---- and with the closes recovered, the same page ranks -------------- */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+  var realFetch9=S.fetch;
+  /* the board spells the teams out; the Collective's schedule has them cut
+     to ten characters, which is the whole bug */
+  var BOARD9={games:[
+    {event_id:'b1',home:'TCU',away:'North Carolina',commence_time:'2026-08-29T16:00:00Z',
+     closing:{'spread:home':{line:-7.5},total:{line:47.5}}},
+    {event_id:'b2',home:'USC',away:'San Jose State',commence_time:'2026-08-29T16:00:00Z',
+     closing:{'spread:home':{line:-38.5}}},
+    {event_id:'b3',home:'Virginia',away:'NC State',commence_time:'2026-08-29T16:00:00Z',
+     closing:{'spread:home':{line:-5.5}}}]};
+  S.fetch=function(u){
+    var t=String(u);
+    if(t.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(t);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(t))return reply({games:[],week:1,entitled:true});
+      return reply({games:JSON.parse(JSON.stringify(NOCLOSE)),week:1,entitled:true});
+    }
+    if(t.indexOf('/closing/')>=0)return reply({available:false});
+    if(t.indexOf('/collective_odds/')>=0)return reply(BOARD9);
+    if(t.indexOf('/v1/rankings')>=0)return reply({boards:{},thresholds:null});
+    return realFetch9(u);
+  };
+  var rYes=node();
+  await S.renderRankings(rYes);
+  S.fetch=realFetch9;
+  var yesHtml=rYes.innerHTML;
+  chk('the truncated names find their closes and the Win % board fills',
+    yesHtml.indexOf('and none produced an against-the-spread result')<0&&
+    /Win %[\s\S]{0,900}?\d+%/.test(yesHtml),
+    {board:(/Win %[\s\S]{0,600}/.exec(yesHtml)||[])[0]});
+  chk('and the standings stop saying "no ATS picks" about all four models',
+    (yesHtml.match(/no ATS picks/g)||[]).length===0,
+    {left:(yesHtml.match(/no ATS picks/g)||[]).length});
+  chk('the ATS sample is the games that gained a close, not the whole slate by default',
+    /class="nsamp[^"]*"[^>]*>n=3</.test(yesHtml),
+    'three finished games, three closes recovered, three graded');
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+
   /* ---- THE MODEL'S OWN PAGE -------------------------------------------
      Never driven by this suite, and it was broken in the way that matters
      most: the page built its game log out of the weeks named in the
@@ -1309,6 +1413,63 @@ var S=sandbox;
     /class="pgrade"/.test(mod),
     'a settled record and one computed here are different claims');
   S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+
+  /* ---- THE RECORD LABELLED FOR WHAT IT IS ------------------------------
+     "Record (ATS) 5-3-0" over a model with 91 played games is a true
+     sentence that reads as a false one: the reader takes it for the season
+     and it is eight games of it. The other 83 are not losses, they are
+     games the Collective captured no closing line for, and that is a
+     statement about the data rather than about the model. One game with a
+     close and two without reproduces the shape. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+  var PARTIAL=JSON.parse(JSON.stringify(GAMES));
+  PARTIAL[1].result.closing_spread=null;PARTIAL[2].result.closing_spread=null;
+  var realFetchP=S.fetch;
+  S.fetch=function(u){
+    var t=String(u);
+    if(t.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(t);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(t))return reply({games:[],week:1,entitled:true});
+      return reply({games:JSON.parse(JSON.stringify(PARTIAL)),week:1,entitled:true});
+    }
+    if(t.indexOf('/closing/')>=0)return reply({available:false});
+    if(t.indexOf('/collective_odds/')>=0)return reply({games:[]});
+    return realFetchP(u);
+  };
+  S.location.hash='#/model/blerm/blerm-s-model';
+  var vPart=node();
+  await S.renderModel(vPart,'blerm','blerm-s-model');
+  S.fetch=realFetchP;
+  var part=vPart.innerHTML;
+  /* blerm is on the road side of game 1 and UNC lost into TCU -7.5, so the
+     one game that kept a close is a loss: 0-1-0 over 1 graded, 2 ungraded. */
+  chk('the record states its own sample and the size of the gap, in words',
+    /0-1-0 ATS across 1 graded game; 2 games ungraded ATS<\/b> of 3 played/.test(part),
+    {line:(/[0-9]+-[0-9]+-[0-9]+ ATS across[\s\S]{0,200}/.exec(part)||[])[0]});
+  chk('and names the reason the other games are ungraded',
+    /2 games ungraded ATS<\/b> of 3 played &mdash; 2 with no captured closing line/.test(part),
+    {why:(/ungraded ATS<\/b>[\s\S]{0,160}/.exec(part)||[])[0]});
+  chk('the margin and Brier samples are printed separately and are NOT the ATS one',
+    /Margin graded[\s\S]{0,120}?>3</.test(part)&&/n=1</.test(part),
+    'three margin errors on one ATS result: three samples, three numbers');
+  chk('an ungraded row says which reason it is rather than a bare dash',
+    (function(){
+      var tbl=(/<table id="glTbl"[\s\S]*?<\/table>/.exec(part)||[''])[0];
+      return (tbl.match(/no captured close/g)||[]).length===2
+        &&(tbl.match(/data-res=""/g)||[]).length===2;
+    })(),
+    {marks:(part.match(/no captured close/g)||[]).length});
+  chk('and an ungraded game is never coloured as a loss',
+    (function(){
+      var tbl=(/<table id="glTbl"[\s\S]*?<\/table>/.exec(part)||[''])[0];
+      /* exactly one graded row on this log, and it is the one with a close */
+      return (tbl.match(/>LOSS</g)||[]).length===1&&(tbl.match(/>WIN</g)||[]).length===0
+        &&(tbl.match(/grade-(win|loss|push)/g)||[]).length===1;
+    })(),
+    'an ungraded game is not a loss and must never read as one');
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+  S.location.hash='';
 
   /* ---- THE REPORTED BUG, second half ----------------------------------
      The profile above was driven with an EMPTY server coverage list, which

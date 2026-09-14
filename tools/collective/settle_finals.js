@@ -16,8 +16,18 @@
         repo already trusts — nflverse for NFL, cfbfastR for college
      3. offer the Collective's OWN captured closing line as the grading
         number (GET collective_odds /v1/<league>/closing/<game_id>), exactly
-        as the admin screen's "Use captured close" button does
+        as the admin screen's "Use captured close" button does -- and when
+        that route cannot name the game, find its row on the odds board for
+        the week and read the same stored close off that (see
+        closesFromBoard: the Collective's schedule cuts team names to ten
+        characters and the per-game route joins on that stored string, which
+        is why a whole college season settled with close_source null)
      4. POST collective_admin /v1/admin/results
+
+   --backfill-closes is the same close recovery run on its own, over the
+   committed settlement record rather than over this week's games: it fills
+   only the closes that are null, touches no score, team, week or kickoff,
+   keeps settled_at, and is a no-op on a second run.
 
    THE RULES IT WILL NOT BREAK
 
@@ -655,6 +665,122 @@ async function capturedClose(sport, gameId, token) {
   } catch (_) { return null; }
 }
 
+/* ---- THE CLOSE THE PER-GAME ROUTE CANNOT NAME ---------------------------
+ *
+ * /v1/<league>/closing/<collective_game_id> answers for a game the odds feed
+ * has been LINKED to. On the 2026 college season it answered for none of
+ * them: the committed record carries a captured close on 15 of 15 NFL games
+ * and 0 of 104 CFB games, and every one of those CFB entries went through
+ * this same call. NFL team names are two- and three-letter codes that pass
+ * through unchanged; the Collective's schedule cuts college names to TEN
+ * CHARACTERS, so "Mississippi" is stored as MISSISSIPP and "West Virginia"
+ * as WESTVIRGIN, and any join on the stored string misses. 61 of the 142
+ * team names in that record are exactly ten characters long.
+ *
+ * The number is not missing. It is on the odds BOARD, under the feed's own
+ * spelling, in the same `closing` object the market page prints under
+ * "Close". So the board is asked for the week and the game is found in it by
+ * the same rule this file already uses for the finals feed (teamsAgree: a
+ * prefix with a six-character floor), on the PAIR and the kickoff day, and
+ * only when exactly one row fits.
+ *
+ * What this changes is which row is read. What is read off it is unchanged:
+ * `closing`, written after kickoff, and never `consensus` or any current
+ * price. A board with no stored close for a game yields nothing, and the
+ * game stays ungraded against the spread exactly as before. */
+async function oddsBoard(sport, season, week, token) {
+  const league = ODDS_LEAGUE[String(sport).toUpperCase()];
+  if (!league) return null;
+  const q = [`books=0`, `limit=200`];
+  if (week !== null && week !== undefined && week !== '') q.push(`week=${encodeURIComponent(week)}`);
+  if (season) q.push(`season=${encodeURIComponent(season)}`);
+  try {
+    const d = await apiGet('collective_odds', `/v1/${league}/odds?${q.join('&')}`, token);
+    return (d && Array.isArray(d.games)) ? d.games : null;
+  } catch (_) { return null; }
+}
+
+/* The stored close off one board row, in the shape capturedClose() returns
+   so both sources reach recordEntry() through the same door. */
+function closeFromBoardRow(row) {
+  const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
+  const c = (row && row.closing) || {};
+  const sp = c['spread:home'];
+  const tot = c['total'] || c['total:over'];
+  const spread = sp ? num(sp.line) : null;
+  if (spread === null) return null;
+  return {
+    closing_spread: spread,
+    closing_total: tot ? num(tot.line) : null,
+    closing_home_ml_prob: null,
+  };
+}
+
+/* One board row for one Collective game, decided on the PAIR and the day.
+   Exact on both sides wins outright; a truncated match is taken only when it
+   is the ONLY row that fits. Two candidates is not a match: a closing line
+   taken on a coin flip puts a win or a loss on a record from another game. */
+function findBoardRow(game, rows) {
+  const dated = (rows || []).filter(r => {
+    const t = r && (r.commence_time || r.kickoff_at || r.start_time);
+    return (!t || !game.kickoff_at) ? true : datesAgree(game.kickoff_at, t, 1);
+  });
+  const hk = teamKey(game.home), ak = teamKey(game.away);
+  const exact = dated.filter(r => teamKey(r.home) === hk && teamKey(r.away) === ak);
+  if (exact.length) return exact.length === 1 ? { row: exact[0], matched_by: 'exact' } : null;
+  /* ONE SIDE MUST STILL MATCH EXACTLY. A prefix rule allowed to guess at both
+     teams at once can land a whole game on the wrong row -- "GEORGIA @ MIAMI"
+     fits "Georgia Tech @ Miami (OH)" on both sides. Pinning one side to an
+     exact name makes that impossible: the exactly-matched team would have to
+     be playing twice that day. On the committed 2026 college record 8 of 104
+     games have both names at the ten-character boundary, and those 8 are
+     still reachable by the per-game route, which joins on the id. A close
+     this refuses is a game reported as ungraded, which is true and visible;
+     a close it got wrong would be a win or a loss on another game's number. */
+  const loose = dated.filter(r => {
+    const he = teamKey(r.home) === hk, ae = teamKey(r.away) === ak;
+    if (!he && !ae) return false;
+    return (he || teamsAgree(game.home, r.home)) && (ae || teamsAgree(game.away, r.away));
+  });
+  return loose.length === 1 ? { row: loose[0], matched_by: 'truncated' } : null;
+}
+
+/* Every game in `games` that still wants a close, given one off the board,
+   one board request per week rather than one per game. Mutates nothing:
+   returns game_id -> {close, matched_by}. */
+async function closesFromBoard(sport, season, games, token, log) {
+  const want = (games || []).filter(g => g && g.kickoff_at);
+  if (!want.length) return {};
+  const byWeek = new Map();
+  want.forEach(g => {
+    const k = (g.week === null || g.week === undefined) ? '' : String(g.week);
+    if (!byWeek.has(k)) byWeek.set(k, []);
+    byWeek.get(k).push(g);
+  });
+  const out = {};
+  for (const [wk, list] of byWeek) {
+    const rows = await oddsBoard(sport, season, wk, token);
+    if (!rows || !rows.length) {
+      if (log) log(`    [close] ${sport} ${season} week ${wk || '(all)'}: the odds board answered with no games`);
+      continue;
+    }
+    let got = 0, trunc = 0;
+    list.forEach(g => {
+      const hit = findBoardRow(g, rows);
+      if (!hit) return;
+      const close = closeFromBoardRow(hit.row);
+      if (!close) return;
+      out[String(g.game_id)] = { close, matched_by: hit.matched_by };
+      got++;
+      if (hit.matched_by === 'truncated') trunc++;
+    });
+    if (log) log(`    [close] ${sport} ${season} week ${wk || '(all)'}: ` +
+      `${got} of ${list.length} game(s) recovered a captured close from the board` +
+      (trunc ? ` (${trunc} matched through a truncated team name)` : ''));
+  }
+  return out;
+}
+
 /* ---- the database itself ------------------------------------------------
    THE JOB RUNS ITSELF. Settling used to mean POSTing to collective_admin: an
    edge function deployed from a dashboard, outside this repository, behind
@@ -993,13 +1119,25 @@ function recordEntry(game, final, close, sources) {
     closing_spread: close ? num(close.closing_spread) : null,
     closing_total: close ? num(close.closing_total) : null,
     closing_home_ml_prob: close ? num(close.closing_home_ml_prob) : null,
-    close_source: close ? (close.source || 'collective') : null,
+    /* Named only when there is actually a number to name. A `close` object
+       whose every field is null is an ATTEMPT, not a close, and stamping it
+       `collective` put a provenance label on an absence -- which reads, to
+       anything auditing the file, as "the Collective's close for this game
+       is nothing" rather than "this game has no close yet". */
+    close_source: (close && num(close.closing_spread) !== null)
+      ? (close.source || 'collective') : null,
   };
 }
 /* Merge entries into the previous record. settled_at is the first time the
    record saw the game and is kept; every other field is the newest fact.
    Returns changed:false, and the previous record untouched, when nothing
    about any game moved — a timestamp-only diff is not a change. */
+/* The line fields, which are the ones a run can legitimately arrive without.
+   A score is either agreed or the game is not settled at all; a close is a
+   separate fetch against a separate service and comes back empty on a bad
+   minute. */
+const CLOSE_FIELDS = ['closing_spread', 'closing_total', 'closing_home_ml_prob'];
+
 function mergeRecord(prev, sport, season, entries, nowIso) {
   const games = Object.assign({}, (prev && prev.games) || {});
   let changed = false;
@@ -1009,6 +1147,21 @@ function mergeRecord(prev, sport, season, entries, nowIso) {
     const next = Object.assign({}, e);
     delete next.game_id;
     next.settled_at = (old && old.settled_at) || nowIso;
+    /* A CLOSE THE RECORD ALREADY HOLDS IS NEVER BLANKED BY A RUN THAT FOUND
+       NONE. settleDirect() has always had this rule for the database row and
+       the record did not, so one odds outage on an hourly job could erase a
+       captured closing line out of the committed file -- and with it every
+       against-the-spread result graded on it, for good, because the next run
+       reads the file it just emptied. Losing a number nobody can re-derive
+       is not a smaller failure than never having it. */
+    if (old) {
+      const hadClose = CLOSE_FIELDS.some(k => old[k] !== null && old[k] !== undefined);
+      const hasClose = CLOSE_FIELDS.some(k => next[k] !== null && next[k] !== undefined);
+      if (hadClose && !hasClose) {
+        CLOSE_FIELDS.forEach(k => { next[k] = old[k] === undefined ? null : old[k]; });
+        next.close_source = old.close_source === undefined ? null : old.close_source;
+      }
+    }
     if (isPlaceholderResult(next)) return;         /* never carried, whatever wrote it */
     const same = old && JSON.stringify(sortedObject(old)) === JSON.stringify(sortedObject(next));
     if (same) return;
@@ -1030,10 +1183,112 @@ function writeRecord(file, record) {
   fs.writeFileSync(file, JSON.stringify(record, null, 1) + '\n');
 }
 
+/* ---- THE HISTORICAL REPAIR ----------------------------------------------
+ *
+ * `--backfill-closes` reads a committed record, finds every finished game in
+ * it that carries no captured closing line, and asks for one -- the per-game
+ * route first, then the odds board by week with the truncation-tolerant join.
+ * It is the same two sources, the same rule and the same numbers as a normal
+ * run; it exists because a record written before that join existed is full
+ * of nulls that nothing else will ever go back for.
+ *
+ * SAFE AND IDEMPOTENT BY CONSTRUCTION:
+ *   - it only ever fills a null. A close already on file is never asked
+ *     about, never overwritten and never blanked (mergeRecord enforces the
+ *     last of those for every writer, not just this one).
+ *   - it never touches a score, a team, a week or a kickoff.
+ *   - settled_at -- when the record first saw the game -- is carried
+ *     through mergeRecord untouched, so the audit trail survives the repair.
+ *     close_source names which of the two routes answered, per game, so the
+ *     repair is legible in the file afterwards rather than indistinguishable
+ *     from the original write.
+ *   - running it twice is a no-op: the second pass finds nothing null to
+ *     fill and mergeRecord reports changed:false, so nothing is rewritten.
+ *   - a source that answers with nothing leaves the game exactly as it was.
+ *     A missing close stays missing; it is never invented, never taken from
+ *     a current price, and never taken from a second game that merely looks
+ *     like this one.
+ *
+ * The two fetchers are injected so the suite can drive the whole repair
+ * offline against a record file it wrote itself. */
+async function backfillCloses(dir, sport, season, opts) {
+  opts = opts || {};
+  const log = opts.log || (() => {});
+  const file = recordPath(dir, sport, season);
+  const rec = loadRecord(file);
+  const out = { file, sport: String(sport).toUpperCase(), season: Number(season),
+    games: 0, wanted: 0, recovered: 0, still_missing: 0, by_source: {},
+    changed: false, ok: true, reason: null };
+  if (!rec) { out.ok = false; out.reason = 'no_record_file'; return out; }
+  const games = rec.games || {};
+  const ids = Object.keys(games);
+  out.games = ids.length;
+  const want = ids
+    .filter(id => games[id].closing_spread === null || games[id].closing_spread === undefined)
+    .map(id => Object.assign({ game_id: id }, games[id]));
+  out.wanted = want.length;
+  if (!want.length) return out;
+
+  const entries = [];
+  const take = (g, close, source) => {
+    const e = recordEntry(g, g, Object.assign({}, close, { source }), g.score_source);
+    if (e.closing_spread === null) return false;
+    entries.push(e);
+    out.recovered++;
+    out.by_source[source] = (out.by_source[source] || 0) + 1;
+    return true;
+  };
+
+  let left = want;
+  if (opts.perGame) {
+    const still = [];
+    for (const g of left) {
+      let c = null;
+      try { c = await opts.perGame(g.game_id); } catch (_) { c = null; }
+      if (!(c && c.closing_spread !== null && c.closing_spread !== undefined && take(g, c, 'collective_odds'))) {
+        still.push(g);
+      }
+    }
+    left = still;
+  }
+  if (left.length && opts.board) {
+    const byWeek = new Map();
+    left.forEach(g => {
+      const k = (g.week === null || g.week === undefined) ? '' : String(g.week);
+      if (!byWeek.has(k)) byWeek.set(k, []);
+      byWeek.get(k).push(g);
+    });
+    const still = [];
+    for (const [wk, list] of byWeek) {
+      let rows = null;
+      try { rows = await opts.board(wk); } catch (_) { rows = null; }
+      if (!rows || !rows.length) { list.forEach(g => still.push(g)); continue; }
+      list.forEach(g => {
+        const hit = findBoardRow(g, rows);
+        const close = hit ? closeFromBoardRow(hit.row) : null;
+        if (!close || !take(g, close, 'collective_odds_board')) still.push(g);
+      });
+    }
+    left = still;
+  }
+  out.still_missing = left.length;
+  if (entries.length) {
+    const merged = mergeRecord(rec, sport, season, entries, new Date().toISOString());
+    out.changed = merged.changed;
+    if (merged.changed && !opts.dryRun) writeRecord(file, merged.record);
+    out.record = merged.record;
+  }
+  log(`  backfill ${file}: ${out.wanted} game(s) wanted a close, ${out.recovered} recovered` +
+    (Object.keys(out.by_source).length ? ` (${Object.entries(out.by_source).map(([k, v]) => `${v} ${k}`).join(', ')})` : '') +
+    `, ${out.still_missing} still missing${out.changed ? ', file updated' : ', file unchanged'}`);
+  return out;
+}
+
 /* ---- the run ------------------------------------------------------------ */
 
 function parseArgs(argv) {
-  const a = { commit: false, json: false, verify: false, sport: null, season: null, limit: 200, record: null };
+  const a = { commit: false, json: false, verify: false, sport: null, season: null, limit: 200,
+    record: null, backfillCloses: false };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--commit') a.commit = true;
@@ -1043,6 +1298,9 @@ function parseArgs(argv) {
     else if (v === '--season') a.season = Number(argv[++i]);
     else if (v === '--limit') a.limit = Number(argv[++i]);
     else if (v === '--record') a.record = argv[++i];
+    /* the historical repair: fill the closes a record was written without,
+       from the same two sources a normal run uses, and change nothing else */
+    else if (v === '--backfill-closes') a.backfillCloses = true;
   }
   return a;
 }
@@ -1063,13 +1321,52 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const log = args.json ? () => {} : (...m) => console.log(...m);
   const report = { checked: 0, settled: 0, graded: 0, skipped: [], failed: [], sources: [],
-                   mode: null, schema_gaps: [], record: [],
+                   mode: null, schema_gaps: [], record: [], closes: [],
                    dry_run: !args.commit, verify_only: args.verify };
 
   /* --verify proves the SOURCES, and needs no credential to do it: the
      game list and whether a game has a result are public. That is the
      point -- you can confirm the feeds are live and the matcher agrees
      before you hand this job a key to anything. */
+  /* ---- the historical repair, before anything else --------------------
+     Reads the committed records and fills only the closes that are null. It
+     settles nothing, writes no database row and touches no score, so it
+     asks for no credential and -- given --sport and --season -- for no
+     schedule either: the record files name their own games. That matters,
+     because the one environment where this repair is most needed is one
+     where only some of the estate is reachable, and a mode that dies on
+     /v1/meta before it has read a single file is a repair nobody can run. */
+  if (args.backfillCloses) {
+    if (!args.record) throw new Error('--backfill-closes needs --record <dir> to know which files to repair.');
+    report.mode = 'backfill-closes';
+    let bfSports = (args.sport && args.season)
+      ? [{ code: args.sport.toUpperCase(), season: args.season }]
+      : null;
+    if (!bfSports) {
+      const meta = await apiGet('collective_public', '/v1/meta', null);
+      bfSports = (meta.sports || []).map(sp => ({ code: sp.code, season: args.season || sp.season }))
+        .filter(sp => !args.sport || sp.code.toUpperCase() === args.sport.toUpperCase());
+    }
+    log('Backfilling captured closing lines into the committed settlement record.');
+    log('Only null closes are filled. No score, team, week or kickoff is touched, and a close already on file is left exactly as it is.\n');
+    for (const sp of bfSports) {
+      const r = await backfillCloses(args.record, sp.code, sp.season, {
+        log,
+        dryRun: !args.commit,
+        perGame: id => capturedClose(sp.code, id, null),
+        board: wk => oddsBoard(sp.code, sp.season, wk, null),
+      });
+      report.closes.push(r);
+      if (!r.ok) log(`  ${sp.code} ${sp.season}: ${r.reason}`);
+    }
+    const stuck = report.closes.reduce((n, r) => n + (r.still_missing || 0), 0);
+    const got = report.closes.reduce((n, r) => n + (r.recovered || 0), 0);
+    log(`\n${got} captured closing line(s) recovered; ${stuck} finished game(s) still carry none.`);
+    if (!args.commit) log('Dry run: nothing was written. Re-run with --commit to write the repaired record.');
+    if (args.json) console.log(JSON.stringify(report, null, 2));
+    return 0;
+  }
+
   let token = null, db = null, schema = null;
   if (args.verify) {
     report.mode = 'verify';
@@ -1197,6 +1494,36 @@ async function main() {
     }
   }
 
+  /* ---- the close, before anything is settled on it ---------------------
+     A game settles with whatever close is in hand, and the close is what
+     turns a settled game into an against-the-spread result -- in the
+     database row and in every projection graded against it, not only in the
+     committed record. So the games this run is about to settle that still
+     have none are looked for on the board FIRST, one request per week, and
+     the close travels into settleBody with them. Settle a season without
+     this and the ATS grades have to be backfilled afterwards, one game at a
+     time, against rows that have already been written. */
+  if (!args.verify) {
+    const bySport = new Map();
+    batch.filter(b => !b.close).forEach(b => {
+      const k = `${b.sport}|${b.season}`;
+      if (!bySport.has(k)) bySport.set(k, []);
+      bySport.get(k).push(b);
+    });
+    for (const [k, items] of bySport) {
+      const [code, season] = k.split('|');
+      const found = await closesFromBoard(code, Number(season), items.map(b => b.game), token, log);
+      items.forEach(b => {
+        const hit = found[String(b.game.game_id)];
+        if (!hit) return;
+        b.close = { ...hit.close, source: 'collective_odds_board' };
+        b.body = settleBody(b.game, b.meta, b.close);
+      });
+      const got = items.filter(b => b.close).length;
+      if (got) log(`  ${code}: ${got} of ${items.length} game(s) about to settle gained a captured close from the board`);
+    }
+  }
+
   if (args.verify) {
     log(`\nVerify: ${report.checked} game(s) checked, ${batch.length} have an agreed final, ` +
       `${report.skipped.length} do not. Nothing was written and no credential was used to settle.`);
@@ -1259,25 +1586,78 @@ async function main() {
       if (!games) continue;
       const entries = [];
       const settledNow = {};
+      const byId = new Map();     /* game_id -> the game behind its entry */
+      const push = (g, final, close, sources) => {
+        const e = recordEntry(g, final, close, sources);
+        entries.push(e);
+        byId.set(String(g.game_id), { game: g, entry: e });
+      };
       batch.filter(b => b.sport === sp.code).forEach(b => {
         settledNow[String(b.game.game_id)] = 1;
-        entries.push(recordEntry(b.game, b.meta, b.close, b.meta.agreed_by.join('+')));
+        push(b.game, b.meta, b.close, b.meta.agreed_by.join('+'));
       });
-      /* every game the Collective already holds a real final for; a close it
-         holds none for is asked for by name, the same keyless call the site
-         makes, so the record carries the number the record is graded on */
-      let askedClose = 0;
+      /* every game the Collective already holds a real final for */
       for (const g of games) {
         if (settledNow[String(g.game_id)] || !g.result || isPlaceholderResult(g.result)) continue;
         if (!isFinalScore(g.result.home_score) || !isFinalScore(g.result.away_score)) continue;
-        let close = { closing_spread: g.result.closing_spread, closing_total: g.result.closing_total,
-          closing_home_ml_prob: null, source: 'collective' };
-        if ((close.closing_spread === null || close.closing_spread === undefined) && !args.verify && askedClose < 60) {
+        push(g, g.result, { closing_spread: g.result.closing_spread, closing_total: g.result.closing_total,
+          closing_home_ml_prob: null, source: 'collective' }, 'collective');
+      }
+
+      /* ---- ONE close-recovery pass over EVERY entry that still wants one --
+         It used to run only over the games this run did NOT settle, and to
+         need a `result` already on the server to reach them at all. For a
+         sport with no write credential that is every game twice over: each
+         run re-settles the whole season off the public feed, so every game
+         is in `settledNow` and none of them has a server `result`, and the
+         close pass skipped all of them on both counts. The 104 CFB games in
+         the committed record, every one of them with close_source null, are
+         what that looks like from outside. A close is a separate fetch from
+         a score and can arrive later than one, so it is asked for on every
+         run, for every game that has not got one yet, whoever settled it. */
+      const wantClose = [];
+      byId.forEach(v => {
+        if (v.entry.closing_spread === null || v.entry.closing_spread === undefined) wantClose.push(v);
+      });
+      if (wantClose.length && !args.verify) {
+        /* the per-game route first: it is the exact one, joined by id on the
+           server, and it costs one request per game so it is capped. A game
+           this run already settled was asked by name at settle time and
+           answered nothing, so asking again in the same run is 104 requests
+           for the same silence. */
+        let askedClose = 0;
+        for (const v of wantClose) {
+          if (settledNow[String(v.game.game_id)]) continue;
+          if (askedClose >= 60) break;
           askedClose++;
-          const c = await capturedClose(sp.code, g.game_id, token);
-          if (c) close = { ...c, source: 'collective_odds' };
+          const c = await capturedClose(sp.code, v.game.game_id, token);
+          if (c && c.closing_spread !== null && c.closing_spread !== undefined) {
+            Object.assign(v.entry, recordEntry(v.game, v.entry, { ...c, source: 'collective_odds' }, v.entry.score_source));
+          }
         }
-        entries.push(recordEntry(g, g.result, close, 'collective'));
+        /* then the board, by week, for whatever it could not name: one
+           request per week rather than one per game, and the join that makes
+           a truncated college name reach the row that holds its close */
+        const still = wantClose.filter(v =>
+          v.entry.closing_spread === null || v.entry.closing_spread === undefined);
+        if (still.length) {
+          const found = await closesFromBoard(sp.code, sp.season, still.map(v => v.game), token, log);
+          let n = 0;
+          still.forEach(v => {
+            const hit = found[String(v.game.game_id)];
+            if (!hit) return;
+            Object.assign(v.entry, recordEntry(v.game, v.entry,
+              { ...hit.close, source: 'collective_odds_board' }, v.entry.score_source));
+            n++;
+          });
+          if (n) log(`  ${sp.code}: ${n} captured closing line(s) recovered from the odds board`);
+        }
+        const left = wantClose.filter(v =>
+          v.entry.closing_spread === null || v.entry.closing_spread === undefined).length;
+        report.closes.push({ sport: sp.code, season: sp.season,
+          wanted: wantClose.length, recovered: wantClose.length - left, still_missing: left });
+        if (left) log(`  ${sp.code}: ${left} finished game(s) still carry no captured close ` +
+          '(they are graded on their score alone and have no against-the-spread result)');
       }
       const file = recordPath(args.record, sp.code, sp.season);
       const merged = mergeRecord(loadRecord(file), sp.code, sp.season, entries, nowIso);
@@ -1294,6 +1674,7 @@ async function main() {
 }
 
 module.exports = {
+  oddsBoard, closeFromBoardRow, findBoardRow, closesFromBoard, backfillCloses, CLOSE_FIELDS,
   teamKey, teamsAgree, teamsAgreeAny, namesOf, gameMatches, datesAgree, ymd, isFinalScore,
   isPlaceholderResult, espnCompleted,
   findFinal, findAcrossSources, settleBody, needsSettling, parseCsv,
