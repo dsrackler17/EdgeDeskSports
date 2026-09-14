@@ -1,22 +1,30 @@
 {
   "schema": "edgedesk_research_memory_v1",
-  "generated_at": "2026-09-13T20:41:25.405Z",
+  "generated_at": "2026-09-14T16:19:20.005Z",
   "min_sample": 8,
-  "lessons": 5,
-  "graded_games": 1,
+  "lessons": 11,
+  "graded_games": 3,
   "categories": [
     {
-      "category": "market",
-      "lessons": 2,
-      "contradicted": 2,
+      "category": "scoring",
+      "lessons": 3,
+      "contradicted": 3,
       "confirmed": 0,
       "reviews": 1,
       "contradiction_rate": null
     },
     {
+      "category": "market",
+      "lessons": 3,
+      "contradicted": 2,
+      "confirmed": 1,
+      "reviews": 1,
+      "contradiction_rate": null
+    },
+    {
       "category": "passing",
-      "lessons": 1,
-      "contradicted": 1,
+      "lessons": 2,
+      "contradicted": 2,
       "confirmed": 0,
       "reviews": 0,
       "contradiction_rate": null
@@ -30,11 +38,19 @@
       "contradiction_rate": null
     },
     {
-      "category": "scoring",
+      "category": "rushing",
       "lessons": 1,
       "contradicted": 1,
       "confirmed": 0,
-      "reviews": 1,
+      "reviews": 0,
+      "contradiction_rate": null
+    },
+    {
+      "category": "data_quality",
+      "lessons": 1,
+      "contradicted": 0,
+      "confirmed": 0,
+      "reviews": 0,
       "contradiction_rate": null
     }
   ],
@@ -42,24 +58,24 @@
     "right_right": 0,
     "right_wrong": 0,
     "wrong_right": 0,
-    "wrong_wrong": 0,
+    "wrong_wrong": 1,
     "untested": 0,
     "ungraded": 0
   },
   "answers": {
     "Do EdgeDesk’s winning numbers come from the mechanisms it named?": "Not enough graded wins yet (0 of 8).",
     "What share of winning wagers had incorrect reasoning?": "Not enough graded wins yet (0 of 8).",
-    "What share of losing wagers still showed a defensible process?": "Not enough graded losses yet (0 of 8).",
-    "Which model drivers fail most often?": "market (2 contradicted of 2), passing (1 contradicted of 1), explosiveness (1 contradicted of 1)",
-    "Where does EdgeDesk disagree with the market, and is it worth anything?": "Not enough graded disagreements yet (1 of 8).",
+    "What share of losing wagers still showed a defensible process?": "Not enough graded losses yet (1 of 8).",
+    "Which model drivers fail most often?": "scoring (3 contradicted of 3), market (2 contradicted of 3), passing (2 contradicted of 2)",
+    "Where does EdgeDesk disagree with the market, and is it worth anything?": "Not enough graded disagreements yet (3 of 8).",
     "Has the market moved toward EdgeDesk after publication?": "Not enough games with both a captured quote and a closing line yet (0 of 8)."
   },
   "disagreement_buckets": [
     {
       "label": "under 2 points",
-      "n": 0,
+      "n": 1,
       "wins": 0,
-      "losses": 0,
+      "losses": 1,
       "hit_rate": null,
       "note": "not enough graded games in this bucket to say anything"
     },
@@ -73,8 +89,8 @@
     },
     {
       "label": "4 to 7 points",
-      "n": 0,
-      "wins": 0,
+      "n": 1,
+      "wins": 1,
       "losses": 0,
       "hit_rate": null,
       "note": "not enough graded games in this bucket to say anything"
@@ -93,5 +109,5 @@
     "average_points": null
   },
   "caveat": "These are counts of EdgeDesk’s own published research against its own published audits. They are a measure of internal consistency and of process, not a betting record, and no figure here is computed on a sample the system considers sufficient unless it says so.",
-  "decided": 0
+  "decided": 1
 }

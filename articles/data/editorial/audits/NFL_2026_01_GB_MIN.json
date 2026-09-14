@@ -1,0 +1,1211 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "NFL:2026_01_GB_MIN",
+  "game_id": "2026_01_GB_MIN",
+  "sport": "NFL",
+  "snapshot_id": "snap_82d2058d3db159db",
+  "audited_at": "2026-09-14T16:19:20.005Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Minnesota Vikings -0.8 with a fair total of 40.9, which makes Minnesota Vikings the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 0.8,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 0.7837286528312922,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Green Bay Packers winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Minnesota Vikings is ahead on the scoreboard in a way that looks like Minnesota Vikings -0.8 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Minnesota Vikings -0.8 where the market has Minnesota Vikings -2.5 at nflverse reference — a 1.7 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 1.7,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 1.7,
+        "unit": "points",
+        "market_margin": 2.5,
+        "market_text": "Minnesota Vikings -2.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Minnesota Vikings -2.5 and Minnesota Vikings -0.8.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Model baseline — the team-strength model’s constant — worth +2.5 of the EdgeDesk number, in Minnesota Vikings’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model_baseline",
+      "weight": 2.5,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": null,
+      "falsifier": "Green Bay Packers winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Indoors — Green Bay Packers by 0.9 points — worth -0.9 of the EdgeDesk number, in Green Bay Packers’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 0.9,
+      "favours_side": "away",
+      "favours_team": "Green Bay Packers",
+      "expected_signal": null,
+      "falsifier": "Minnesota Vikings winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Points scored and allowed, opponent-adjusted — Green Bay Packers by 0.8 points — worth -0.8 of the EdgeDesk number, in Green Bay Packers’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "scoring",
+      "weight": 0.8,
+      "favours_side": "away",
+      "favours_team": "Green Bay Packers",
+      "expected_signal": {
+        "metrics": [
+          "points"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Minnesota Vikings winning this part of the game instead.",
+      "watch": "Whether Green Bay Packers is actually ahead on points.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "claim": "Division game — Green Bay Packers by 0.7 points — worth -0.7 of the EdgeDesk number, in Green Bay Packers’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[3]",
+      "category": "model",
+      "weight": 0.7,
+      "favours_side": "away",
+      "favours_team": "Green Bay Packers",
+      "expected_signal": null,
+      "falsifier": "Minnesota Vikings winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "claim": "Model baseline — the context model’s constant, home field included — worth +0.6 of the EdgeDesk number, in Minnesota Vikings’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[4]",
+      "category": "home_field",
+      "weight": 0.6,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": null,
+      "falsifier": "Green Bay Packers winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "claim": "Net passing EPA — Minnesota Vikings by 0.2 points — worth +0.2 of the EdgeDesk number, in Minnesota Vikings’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[5]",
+      "category": "passing",
+      "weight": 0.2,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Green Bay Packers winning this part of the game instead.",
+      "watch": "Whether Minnesota Vikings is actually ahead on yards per pass attempt and net passing yards.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Green Bay Packers’ pass offence rates +0.129 (#2 of 32) and Minnesota Vikings’ pass defence rates −0.253 (#1 of 32). Added the way the model adds them, this pairing sits −0.124 from the league mean, which favours Minnesota Vikings.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 1.2,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Minnesota Vikings losing the phase it is rated to win.",
+      "watch": "How Green Bay Packers pass offence handles Minnesota Vikings pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Minnesota Vikings’ pass offence rates −0.190 (#30 of 32) and Green Bay Packers’ pass defence rates +0.081 (#24 of 32). Added the way the model adds them, this pairing sits −0.109 from the league mean, which favours Green Bay Packers.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "passing",
+      "weight": 1.1,
+      "favours_side": "away",
+      "favours_team": "Green Bay Packers",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Green Bay Packers losing the phase it is rated to win.",
+      "watch": "How Minnesota Vikings pass offence handles Green Bay Packers pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Green Bay Packers’ run offence rates −0.006 (#16 of 32) and Minnesota Vikings’ run defence rates −0.086 (#2 of 32). Added the way the model adds them, this pairing sits −0.092 from the league mean, which favours Minnesota Vikings.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "rushing",
+      "weight": 0.9,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Minnesota Vikings losing the phase it is rated to win.",
+      "watch": "How Green Bay Packers run offence handles Minnesota Vikings run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Minnesota Vikings’ run offence rates −0.021 (#23 of 32) and Green Bay Packers’ run defence rates −0.046 (#10 of 32). Added the way the model adds them, this pairing sits −0.067 from the league mean, which favours Green Bay Packers.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0.7,
+      "favours_side": "away",
+      "favours_team": "Green Bay Packers",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Green Bay Packers losing the phase it is rated to win.",
+      "watch": "How Minnesota Vikings run offence handles Green Bay Packers run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Green Bay Packers holds the largest measured edge in this matchup: Green Bay Packers +0.129 (#2 of 32) vs Minnesota Vikings −0.190 (#30 of 32) — 28 places on the league board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "passing",
+      "weight": 7,
+      "favours_side": "away",
+      "favours_team": "Green Bay Packers",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Minnesota Vikings winning that category on the day.",
+      "watch": "Whether Green Bay Packers’s edge in Pass offence · EPA per dropback shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Pass offence · EPA per dropback"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Minnesota Vikings holds the largest measured edge in this matchup: Minnesota Vikings +4.3 pp (#1 of 32) vs Green Bay Packers −1.5 pp (#29 of 32) — 28 places on the league board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "pressure",
+      "weight": 7,
+      "favours_side": "home",
+      "favours_team": "Minnesota Vikings",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Green Bay Packers winning that category on the day.",
+      "watch": "Whether Minnesota Vikings’s edge in Sacks generated per dropback shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Sacks generated per dropback"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 3,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on availability not on file.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Minnesota Vikings -0.8 with a fair total of 40.9, which makes Minnesota Vikings the better team here by that margin on this field.",
+      "weight": 0.8,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 0.7837286528312922,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 17,
+          "away": -17,
+          "diff": 17
+        }
+      ],
+      "observed_result": "Minnesota Vikings won by 17 where EdgeDesk projected a 0.8-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Minnesota Vikings -0.8 where the market has Minnesota Vikings -2.5 at nflverse reference — a 1.7 points disagreement.",
+      "weight": 1.7,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 1.7,
+        "unit": "points",
+        "market_margin": 2.5,
+        "market_text": "Minnesota Vikings -2.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 17,
+          "away": -17,
+          "diff": 17
+        }
+      ],
+      "observed_result": "Minnesota Vikings won by 17.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Minnesota Vikings beat a margin of 2.5"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model_baseline",
+      "claim": "Model baseline — the team-strength model’s constant — worth +2.5 of the EdgeDesk number, in Minnesota Vikings’s favour.",
+      "weight": 2.5,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Indoors — Green Bay Packers by 0.9 points — worth -0.9 of the EdgeDesk number, in Green Bay Packers’s favour.",
+      "weight": 0.9,
+      "favours_team": "Green Bay Packers",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "scoring",
+      "claim": "Points scored and allowed, opponent-adjusted — Green Bay Packers by 0.8 points — worth -0.8 of the EdgeDesk number, in Green Bay Packers’s favour.",
+      "weight": 0.8,
+      "favours_team": "Green Bay Packers",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "points"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "points",
+          "available": true,
+          "label": "points",
+          "unit": "points",
+          "better": "high",
+          "home": 39,
+          "away": 22,
+          "diff": 17,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.436,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Green Bay Packers 22 points against Minnesota Vikings 39.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Division game — Green Bay Packers by 0.7 points — worth -0.7 of the EdgeDesk number, in Green Bay Packers’s favour.",
+      "weight": 0.7,
+      "favours_team": "Green Bay Packers",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "category": "home_field",
+      "claim": "Model baseline — the context model’s constant, home field included — worth +0.6 of the EdgeDesk number, in Minnesota Vikings’s favour.",
+      "weight": 0.6,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "category": "passing",
+      "claim": "Net passing EPA — Minnesota Vikings by 0.2 points — worth +0.2 of the EdgeDesk number, in Minnesota Vikings’s favour.",
+      "weight": 0.2,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.888888888888889,
+          "away": 7.673913043478261,
+          "diff": -2.79,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.363,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 132,
+          "away": 353,
+          "diff": -221,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.626,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Minnesota Vikings 4.89 yards per pass attempt against Green Bay Packers 7.67; Minnesota Vikings 132 net passing yards against Green Bay Packers 353.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Green Bay Packers’ pass offence rates +0.129 (#2 of 32) and Minnesota Vikings’ pass defence rates −0.253 (#1 of 32). Added the way the model adds them, this pairing sits −0.124 from the league mean, which favours Minnesota Vikings.",
+      "weight": 1.2,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.888888888888889,
+          "away": 7.673913043478261,
+          "diff": -2.79,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.363,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 132,
+          "away": 353,
+          "diff": -221,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.626,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Minnesota Vikings 4.89 yards per pass attempt against Green Bay Packers 7.67; Minnesota Vikings 132 net passing yards against Green Bay Packers 353.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Minnesota Vikings’ pass offence rates −0.190 (#30 of 32) and Green Bay Packers’ pass defence rates +0.081 (#24 of 32). Added the way the model adds them, this pairing sits −0.109 from the league mean, which favours Green Bay Packers.",
+      "weight": 1.1,
+      "favours_team": "Green Bay Packers",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.888888888888889,
+          "away": 7.673913043478261,
+          "diff": -2.79,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.363,
+          "at_size": true
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 132,
+          "away": 353,
+          "diff": -221,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.626,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Green Bay Packers 7.67 yards per pass attempt against Minnesota Vikings 4.89; Green Bay Packers 353 net passing yards against Minnesota Vikings 132.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Green Bay Packers’ run offence rates −0.006 (#16 of 32) and Minnesota Vikings’ run defence rates −0.086 (#2 of 32). Added the way the model adds them, this pairing sits −0.092 from the league mean, which favours Minnesota Vikings.",
+      "weight": 0.9,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 3.147,
+          "away": 3.143,
+          "diff": 0,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.001,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 107,
+          "away": 66,
+          "diff": 41,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.383,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Minnesota Vikings 3.15 yards per carry against Green Bay Packers 3.14; Minnesota Vikings 107 rushing yards against Green Bay Packers 66.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Minnesota Vikings’ run offence rates −0.021 (#23 of 32) and Green Bay Packers’ run defence rates −0.046 (#10 of 32). Added the way the model adds them, this pairing sits −0.067 from the league mean, which favours Green Bay Packers.",
+      "weight": 0.7,
+      "favours_team": "Green Bay Packers",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 3.147,
+          "away": 3.143,
+          "diff": 0,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.001,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 107,
+          "away": 66,
+          "diff": 41,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.383,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Green Bay Packers 3.14 yards per carry against Minnesota Vikings 3.15; Green Bay Packers 66 rushing yards against Minnesota Vikings 107.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "passing",
+      "claim": "Green Bay Packers holds the largest measured edge in this matchup: Green Bay Packers +0.129 (#2 of 32) vs Minnesota Vikings −0.190 (#30 of 32) — 28 places on the league board.",
+      "weight": 7,
+      "favours_team": "Green Bay Packers",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.888888888888889,
+          "away": 7.673913043478261,
+          "diff": -2.79,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.363,
+          "at_size": true
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 132,
+          "away": 353,
+          "diff": -221,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.626,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Green Bay Packers 7.67 yards per pass attempt against Minnesota Vikings 4.89; Green Bay Packers 353 net passing yards against Minnesota Vikings 132.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "pressure",
+      "claim": "Minnesota Vikings holds the largest measured edge in this matchup: Minnesota Vikings +4.3 pp (#1 of 32) vs Green Bay Packers −1.5 pp (#29 of 32) — 28 places on the league board.",
+      "weight": 7,
+      "favours_team": "Minnesota Vikings",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "sacks_generated",
+          "available": true,
+          "label": "sacks generated",
+          "unit": "sacks",
+          "better": "high",
+          "home": 4,
+          "away": 3,
+          "diff": 1,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.25,
+          "at_size": false
+        },
+        {
+          "metric": "sacks_allowed",
+          "available": true,
+          "label": "sacks allowed",
+          "unit": "sacks",
+          "better": "low",
+          "home": 3,
+          "away": 4,
+          "diff": -1,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.25,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Minnesota Vikings 4 sacks generated against Green Bay Packers 3; Minnesota Vikings 3 sacks allowed against Green Bay Packers 4.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "weight": 3,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 3,
+      "PARTIALLY CONFIRMED": 3,
+      "NOT CONFIRMED": 4,
+      "INCONCLUSIVE": 5
+    },
+    "graded": 10,
+    "total": 15,
+    "not_observable": 5,
+    "headline": "3 of 10 gradeable claims held up, 4 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "2026_01_GB_MIN",
+    "sport": "NFL",
+    "snapshot_id": "snap_82d2058d3db159db",
+    "graded_at": "2026-09-14T16:19:20.005Z",
+    "final": {
+      "home_team": "Minnesota Vikings",
+      "away_team": "Green Bay Packers",
+      "home_score": 39,
+      "away_score": 22,
+      "margin": 17,
+      "total_points": 61,
+      "winner": "Minnesota Vikings"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "away",
+      "team": "Green Bay Packers",
+      "point": 2.5,
+      "line_text": "Green Bay Packers +2.5",
+      "book": "nflverse reference",
+      "market_home_margin": -2.5,
+      "model_home_margin": -0.8,
+      "gap": 1.7,
+      "why": "EdgeDesk’s own number sat 1.7 points toward Green Bay Packers of the quote EdgeDesk captured at nflverse reference. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "under",
+      "line": 46.5,
+      "model_total": 40.9,
+      "gap": 5.6,
+      "why": "EdgeDesk’s fair total of 40.9 sat 5.6 points below the captured total of 46.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "loss",
+        "cover_margin": -14.5,
+        "side": "away",
+        "point": 2.5,
+        "team": "Green Bay Packers",
+        "line_text": "Green Bay Packers +2.5"
+      },
+      "total": {
+        "outcome": "loss",
+        "points": 61,
+        "line": 46.5,
+        "side": "under",
+        "by": 14.5,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "loss",
+        "side": "away",
+        "team": "Green Bay Packers"
+      }
+    },
+    "bet_headline": "LOSS",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 0.8,
+      "actual_home_margin": 17,
+      "margin_error": 16.2,
+      "right_side": true,
+      "projected_total": 40.9,
+      "actual_total": 61,
+      "total_error": 20.1,
+      "projected_score": {
+        "away": 20,
+        "home": 21
+      },
+      "inside_published_range": true,
+      "range_text": "-15.0 → +20.0 (Minnesota Vikings)"
+    },
+    "process": {
+      "grade": "UNSOUND",
+      "reasons": [
+        "4 of 8 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+        "EdgeDesk projected a home margin of 0.8 and the game finished 17 the home way — 16.2 points of margin error, inside the range the model published."
+      ],
+      "confirmed": 2,
+      "partial": 2,
+      "wrong": 4,
+      "graded": 8,
+      "high_variance": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNSOUND",
+    "variance_markers": [],
+    "verdict": {
+      "key": "wrong_for_the_wrong_reason",
+      "line": "The number did not land and the reasoning did not either. This is the case that should change something, and the lessons below say what."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_01_GB_MIN:contradicted:scoring",
+      "game_id": "2026_01_GB_MIN",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 1,
+      "article_id": "postgame-nfl-2026_01_GB_MIN",
+      "snapshot_id": "snap_82d2058d3db159db",
+      "thesis_id": "driver.2",
+      "team": "Green Bay Packers",
+      "opponent": "Minnesota Vikings",
+      "category": "scoring",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "Points scored and allowed, opponent-adjusted — Green Bay Packers by 0.8 points — worth -0.8 of the EdgeDesk number, in Green Bay Packers’s favour.",
+      "actual_result": "Green Bay Packers 22 points against Minnesota Vikings 39.",
+      "lesson": "EdgeDesk named Green Bay Packers as better in scoring and the game went the other way. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-09-14T16:19:20.005Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_01_GB_MIN:contradicted:passing",
+      "game_id": "2026_01_GB_MIN",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 1,
+      "article_id": "postgame-nfl-2026_01_GB_MIN",
+      "snapshot_id": "snap_82d2058d3db159db",
+      "thesis_id": "matchup.0 driver.5",
+      "team": "Minnesota Vikings",
+      "opponent": "Green Bay Packers",
+      "category": "passing",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "2 published claims said the same thing: Green Bay Packers’ pass offence rates +0.129 (#2 of 32) and Minnesota Vikings’ pass defence rates −0.253 (#1 of 32). Added the way the model adds them, this pairing sits −0.124 from the league mean, which favours Minnesota Vikings. Net passing EPA — Minnesota Vikings by 0.2 points — worth +0.2 of the EdgeDesk number, in Minnesota Vikings’s favour.",
+      "actual_result": "Minnesota Vikings 4.89 yards per pass attempt against Green Bay Packers 7.67; Minnesota Vikings 132 net passing yards against Green Bay Packers 353. Minnesota Vikings 4.89 yards per pass attempt against Green Bay Packers 7.67; Minnesota Vikings 132 net passing yards against Green Bay Packers 353.",
+      "lesson": "EdgeDesk named Minnesota Vikings as better in passing and the game went the other way, across 2 separate published claims. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-09-14T16:19:20.005Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_01_GB_MIN:contradicted:rushing",
+      "game_id": "2026_01_GB_MIN",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 1,
+      "article_id": "postgame-nfl-2026_01_GB_MIN",
+      "snapshot_id": "snap_82d2058d3db159db",
+      "thesis_id": "matchup.3",
+      "team": "Green Bay Packers",
+      "opponent": "Minnesota Vikings",
+      "category": "rushing",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "Minnesota Vikings’ run offence rates −0.021 (#23 of 32) and Green Bay Packers’ run defence rates −0.046 (#10 of 32). Added the way the model adds them, this pairing sits −0.067 from the league mean, which favours Green Bay Packers.",
+      "actual_result": "Green Bay Packers 3.14 yards per carry against Minnesota Vikings 3.15; Green Bay Packers 66 rushing yards against Minnesota Vikings 107.",
+      "lesson": "EdgeDesk named Green Bay Packers as better in rushing and the game went the other way. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-09-14T16:19:20.005Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_01_GB_MIN:unobservable",
+      "game_id": "2026_01_GB_MIN",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 1,
+      "article_id": "postgame-nfl-2026_01_GB_MIN",
+      "snapshot_id": "snap_82d2058d3db159db",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "2 of the claims in this article rested on model.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model.",
+      "bet_result": "LOSS",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-09-14T16:19:20.005Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_01_GB_MIN:total_miss",
+      "game_id": "2026_01_GB_MIN",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 1,
+      "article_id": "postgame-nfl-2026_01_GB_MIN",
+      "snapshot_id": "snap_82d2058d3db159db",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "scoring",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "EdgeDesk published a fair total of 40.9.",
+      "actual_result": "The game finished with 61 points, an error of 20.1.",
+      "lesson": "A total missed by this much usually means a pace or a finishing assumption was wrong, not that both ratings were. Check which of the two moved.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Was the play count or the points per drive the miss? Both are in this game’s result record.",
+      "bet_result": "LOSS",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-09-14T16:19:20.005Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_01_GB_MIN:disagreement_landed",
+      "game_id": "2026_01_GB_MIN",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 1,
+      "article_id": "postgame-nfl-2026_01_GB_MIN",
+      "snapshot_id": "snap_82d2058d3db159db",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Minnesota Vikings -0.8 where the market has Minnesota Vikings -2.5 at nflverse reference — a 1.7 points disagreement.",
+      "actual_result": "Minnesota Vikings won by 17. the result landed on EdgeDesk’s side of the market number: Minnesota Vikings beat a margin of 2.5",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-09-14T16:19:20.005Z"
+    }
+  ]
+}
