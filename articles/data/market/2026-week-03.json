@@ -1,8 +1,9 @@
 {
   "schema": "edgedesk_article_market_snapshot_v1",
   "season": 2026,
-  "generated_at": "2026-09-14T18:25:54.905Z",
+  "generated_at": "2026-09-14T19:24:11.711Z",
   "source": "Captured book quotes read from EdgeDesk’s own odds capture (public.signals) by tools/newsletter/market.js. Replayed here so a headless build joins the same sportsbook number the terminal joins; the live capture is behind an account and a build server has no session for it.",
+  "convention": "spread.selection names the team spread.point belongs to and spread.side says whether that is the home or the away side of the game. A point spread is one handicap with two sides, so a quote captured on the away side is the same number seen from the other end; the replay presents both and never invents a second price.",
   "note": "These are SPORTSBOOK numbers, not EdgeDesk numbers, and every article and newsletter that uses one says so and names the book. Nothing here is an EdgeDesk projection, and no line in this file is read by any model: the engine has already priced the game before the market section is assembled.",
   "quotes": [
     {
@@ -15,6 +16,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Alabama",
+        "side": "home",
         "point": -18,
         "book": "BetMGM"
       },
@@ -33,6 +35,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Arkansas",
+        "side": "home",
         "point": 21.5,
         "book": "FanDuel"
       },
@@ -51,6 +54,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Auburn",
+        "side": "home",
         "point": 2.5,
         "book": "FanDuel"
       },
@@ -68,9 +72,10 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "LSU",
-        "point": -2.5,
-        "book": "FanDuel"
+        "selection": "Ole Miss",
+        "side": "home",
+        "point": 2.5,
+        "book": "DraftKings"
       },
       "total": {
         "point": 58.5,
@@ -86,8 +91,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "New Mexico",
-        "point": 21.5,
+        "selection": "Oklahoma",
+        "side": "home",
+        "point": -21.5,
         "book": "FanDuel"
       },
       "total": {
@@ -104,8 +110,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Mississippi State",
-        "point": 5.5,
+        "selection": "South Carolina",
+        "side": "home",
+        "point": -5.5,
         "book": "DraftKings"
       },
       "total": {
@@ -122,8 +129,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Kennesaw State",
-        "point": 35.5,
+        "selection": "Tennessee",
+        "side": "home",
+        "point": -35.5,
         "book": "FanDuel"
       },
       "total": {
@@ -141,6 +149,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Texas",
+        "side": "home",
         "point": -30,
         "book": "BetOnline.ag"
       },
@@ -158,8 +167,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Kentucky",
-        "point": 15.5,
+        "selection": "Texas A&M",
+        "side": "home",
+        "point": -15.5,
         "book": "DraftKings"
       },
       "total": {
@@ -176,8 +186,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "NC State",
-        "point": 4.5,
+        "selection": "Vanderbilt",
+        "side": "home",
+        "point": -4.5,
         "book": "FanDuel"
       },
       "total": {
@@ -195,6 +206,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Kansas State",
+        "side": "home",
         "point": -19.5,
         "book": "FanDuel"
       },
@@ -213,6 +225,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Arizona",
+        "side": "home",
         "point": -35.5,
         "book": "FanDuel"
       },
@@ -231,6 +244,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Colorado State",
+        "side": "home",
         "point": 19.5,
         "book": "FanDuel"
       },
@@ -248,9 +262,10 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Colorado",
-        "point": 3,
-        "book": "DraftKings"
+        "selection": "Northwestern",
+        "side": "home",
+        "point": -3.5,
+        "book": "FanDuel"
       },
       "total": {
         "point": 45.5,
@@ -267,6 +282,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Cincinnati",
+        "side": "home",
         "point": -13.5,
         "book": "FanDuel"
       },
@@ -284,8 +300,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Bowling Green",
-        "point": 23.5,
+        "selection": "Iowa State",
+        "side": "home",
+        "point": -23.5,
         "book": "FanDuel"
       },
       "total": {
@@ -302,8 +319,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Arkansas State",
-        "point": 20.5,
+        "selection": "TCU",
+        "side": "home",
+        "point": -20.5,
         "book": "FanDuel"
       },
       "total": {
@@ -320,8 +338,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Georgia State",
-        "point": 19.5,
+        "selection": "UCF",
+        "side": "home",
+        "point": -19.5,
         "book": "FanDuel"
       },
       "total": {
@@ -338,8 +357,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Utah State",
-        "point": 26.5,
+        "selection": "Utah",
+        "side": "home",
+        "point": -26.5,
         "book": "FanDuel"
       },
       "total": {
@@ -370,6 +390,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Texas Tech",
+        "side": "home",
         "point": -9.5,
         "book": "FanDuel"
       },
@@ -388,6 +409,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Pittsburgh",
+        "side": "home",
         "point": -9.5,
         "book": "FanDuel"
       },
@@ -405,8 +427,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Miami",
-        "point": -22.5,
+        "selection": "Wake Forest",
+        "side": "home",
+        "point": 22.5,
         "book": "DraftKings"
       },
       "total": {
@@ -424,6 +447,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Clemson",
+        "side": "home",
         "point": -5.5,
         "book": "FanDuel"
       },
@@ -441,8 +465,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "SMU",
-        "point": 2,
+        "selection": "Louisville",
+        "side": "home",
+        "point": -2,
         "book": "BetMGM"
       },
       "total": {
@@ -459,8 +484,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Stanford",
-        "point": 9.5,
+        "selection": "Duke",
+        "side": "home",
+        "point": -9.5,
         "book": "FanDuel"
       },
       "total": {
@@ -478,6 +504,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Maryland",
+        "side": "home",
         "point": 2.5,
         "book": "FanDuel"
       },
@@ -496,6 +523,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Indiana",
+        "side": "home",
         "point": -44.5,
         "book": "DraftKings"
       },
@@ -514,6 +542,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Michigan",
+        "side": "home",
         "point": -35.5,
         "book": "FanDuel"
       },
@@ -531,8 +560,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Akron",
-        "point": 28.5,
+        "selection": "Minnesota",
+        "side": "home",
+        "point": -28.5,
         "book": "FanDuel"
       },
       "total": {
@@ -549,9 +579,10 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Michigan State",
-        "point": 29.5,
-        "book": "FanDuel"
+        "selection": "Notre Dame",
+        "side": "home",
+        "point": -29.5,
+        "book": "DraftKings"
       },
       "total": {
         "point": 52.5,
@@ -567,8 +598,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Kent State",
-        "point": 52.5,
+        "selection": "Ohio State",
+        "side": "home",
+        "point": -52.5,
         "book": "DraftKings"
       },
       "total": {
@@ -586,6 +618,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Rutgers",
+        "side": "home",
         "point": 23.5,
         "book": "FanDuel"
       },
@@ -604,6 +637,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "UCLA",
+        "side": "home",
         "point": -14.5,
         "book": "theScore Bet"
       },
@@ -621,8 +655,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Eastern Michigan",
-        "point": 24.5,
+        "selection": "Wisconsin",
+        "side": "home",
+        "point": -24.5,
         "book": "FanDuel"
       },
       "total": {
@@ -639,8 +674,9 @@
       "captured_at": "2026-09-13T18:00:03.924+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "James Madison",
-        "point": 1.5,
+        "selection": "San Diego State",
+        "side": "home",
+        "point": -1.5,
         "book": "DraftKings"
       },
       "total": {
@@ -658,6 +694,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "San José State",
+        "side": "home",
         "point": 7.5,
         "book": "Caesars"
       },
@@ -675,8 +712,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "North Texas",
-        "point": 2.5,
+        "selection": "Texas State",
+        "side": "home",
+        "point": -2.5,
         "book": "FanDuel"
       },
       "total": {
@@ -694,6 +732,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Florida Atlantic",
+        "side": "home",
         "point": -8.5,
         "book": "FanDuel"
       },
@@ -711,8 +750,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Western Michigan",
-        "point": -10.5,
+        "selection": "Rice",
+        "side": "home",
+        "point": 10.5,
         "book": "FanDuel"
       },
       "total": {
@@ -729,8 +769,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Temple",
-        "point": 2.5,
+        "selection": "Toledo",
+        "side": "home",
+        "point": -2.5,
         "book": "FanDuel"
       },
       "total": {
@@ -748,6 +789,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Louisiana",
+        "side": "home",
         "point": -9.5,
         "book": "FanDuel"
       },
@@ -765,8 +807,9 @@
       "captured_at": "2026-09-13T18:00:03.924+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "North Dakota State",
-        "point": -26.5,
+        "selection": "Sacramento State",
+        "side": "home",
+        "point": 26.5,
         "book": "DraftKings"
       },
       "total": {
@@ -784,6 +827,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Central Michigan",
+        "side": "home",
         "point": -1.5,
         "book": "FanDuel"
       },
@@ -801,8 +845,9 @@
       "captured_at": "2026-09-13T10:00:02.682+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
-        "selection": "Ball State",
-        "point": 13.5,
+        "selection": "Liberty",
+        "side": "home",
+        "point": -13.5,
         "book": "FanDuel"
       },
       "total": {
@@ -820,6 +865,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Baylor",
+        "side": "home",
         "point": -18.5,
         "book": "FanDuel"
       },
@@ -838,6 +884,7 @@
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Delaware",
+        "side": "home",
         "point": -4.5,
         "book": "FanDuel"
       },
