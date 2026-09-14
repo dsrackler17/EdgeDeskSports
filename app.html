@@ -30955,11 +30955,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +line('SP+ offence',t.sp_plus_offense)+line('SP+ defence (lower is better)',t.sp_plus_defense)
         +line('Strength of schedule',t.strength_of_schedule)+line('Rest',t.rest_days);
       if(t.previous_games&&!t.previous_games.missing){
-        h+='<div style="font-size:11px;color:var(--faint);margin-top:3px">Previous games, with the opponent’s SP+ attached:</div>';
+        /* "as it stands now", not "at the time". cfb.ratings is keyed
+           (season, team) with no week column, so this is a retrospective
+           assessment of that opponent and the label has to say so -- a reader
+           who thinks it is a contemporary rating is reading a past result
+           against information nobody had. */
+        h+='<div style="font-size:11px;color:var(--faint);margin-top:3px">Previous games, with the opponent’s SP+ '
+          +'<b>as it stands now</b> attached (not as it stood then — no historical version is on file):</div>';
         (t.previous_games.value||[]).forEach(function(g){
+          var sp=g.opponent_sp_plus_now!=null?g.opponent_sp_plus_now:g.opponent_sp_plus;
           h+='<div style="font-size:11px;margin-left:8px">'+esc(g.date||'')+' '+esc(g.venue||'')+' vs '+esc(g.opponent||'')
             +' &middot; '+esc(String(g.points_for)+'-'+String(g.points_against))+' '+esc(g.result||'')
-            +(g.opponent_sp_plus!=null?' &middot; opponent SP+ '+esc(String(g.opponent_sp_plus)):'')+'</div>';
+            +(sp!=null?' &middot; opponent SP+ now '+esc(String(sp)):'')+'</div>';
         });
       } else h+=line('Previous games',t.previous_games);
       return h;

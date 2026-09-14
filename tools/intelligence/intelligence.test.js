@@ -532,6 +532,15 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
         games.every((g) => 'opponent_sp_plus_at_the_time' in g && g.opponent_sp_plus_at_the_time === null), games[0]);
       chk('and the note says the database holds no historical version',
         /no week and no as-of column/.test(away.previous_games.note || ''), away.previous_games.note);
+      /* A rename is only done when its consumers move with it. Both of these
+         read the field and would have shown nothing at all — silently — while
+         every assertion above went on passing. */
+      const APP = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'app.html'), 'utf8');
+      chk('the app reads the renamed field', /opponent_sp_plus_now/.test(APP));
+      chk('and labels it as a rating from NOW rather than from then',
+        /as it stands now<\/b> attached/.test(APP) && /no historical version is on file/.test(APP));
+      const ANS = require('fs').readFileSync(require('path').join(__dirname, 'answer.js'), 'utf8');
+      chk('the offline renderer reads it too, and says NOW', /opponent_sp_plus_now/.test(ANS) && /SP\+ NOW/.test(ANS));
       chk('rest days are derived from the schedule', away.rest_days.missing === false && away.rest_days.value > 0, away.rest_days);
       chk('SP+ defence is labelled lower-is-better',
         /LOWER is better/.test(away.sp_plus_defense.note || ''), away.sp_plus_defense.note);
