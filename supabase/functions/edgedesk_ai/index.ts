@@ -15515,7 +15515,16 @@ function bareWordRead(
 }
 
 export interface MatchupResolution {
-  /** 'RESOLVED' | 'NOT_ON_ANY_CARD' | 'RETRIEVAL_FAILED' | 'NONE_NAMED' */
+  /**
+   * 'RESOLVED'           both sides (or one name) reached ONE scheduled game
+   * 'AMBIGUOUS_ON_CARD'  the program is on the card in more than one game —
+   *                      the SPORT is settled, the GAME is not
+   * 'NOT_ON_ANY_CARD'    the card was read and carries no such matchup
+   * 'RETRIEVAL_FAILED'   the card could not be read — NOT a finding of absence
+   * 'NONE_NAMED'         the question named no team at all
+   * Each needs a different sentence, and collapsing any two of them is how a
+   * failed lookup becomes "this team does not exist".
+   */
   state: string;
   named: string[];
   sport: string | null;
@@ -17356,6 +17365,19 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
               + `what was researched. Do not answer about whatever was on screen.\n`
             : "")
           + `Answer about THIS game. Other games on the card are context you may mention; they are not the answer.`,
+        );
+      } else if (nm.state === "AMBIGUOUS_ON_CARD") {
+        /* THE SPORT IS SETTLED AND THE GAME IS NOT, WHICH IS ITS OWN STATE.
+           Sent down the branch below, this produced "no game carries BOTH of
+           those sides" about a question that named ONE side — a true sentence
+           about a different failure, which is how a failed lookup turns into a
+           claim that a team does not exist. */
+        parts.push(
+          `THE PROGRAM THIS QUESTION NAMES IS ON THE CARD; WHICH GAME IS NOT SETTLED.\n`
+          + `${nm.note}\n`
+          + `The SPORT is decided and is not in question: this is a ${nm.sport} question. You may NOT answer it `
+          + `from another sport's board, and you may NOT pick one of the candidate games. Ask which one is meant, `
+          + `in ONE short sentence, naming the candidates. Do not research a game you were not asked about.`,
         );
       } else {
         parts.push(

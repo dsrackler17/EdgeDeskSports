@@ -329,6 +329,16 @@ const MLB_PACKET = {
       /do NOT fall back|Do NOT answer about a different game/i.test(nm.note || ''), nm.note);
     chk('and no decision from some other game is shown in its place',
       !(j.decisions || []).length, j.decisions);
+    /* THE FIVE STATES GET FIVE SENTENCES. Sent down the wrong branch, an
+       ambiguous single name produced "no game carries BOTH of those sides"
+       about a question that named ONE — a true sentence about a different
+       failure, which is how a failed lookup becomes "that team does not
+       exist". */
+    const p = j.prompt || '';
+    chk('an unresolved matchup is not described as an unknown team',
+      !/does not exist|no such team|unknown team/i.test(p));
+    chk('and the answer is told to ask rather than substitute',
+      /ASK ONE SHORT CLARIFYING QUESTION/.test(p));
   }
   {
     /* (b) A SCHEDULE THAT CANNOT BE READ is not an empty schedule. */
