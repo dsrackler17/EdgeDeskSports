@@ -37,10 +37,10 @@ TURN 1  "Any CFB matchups look good?"
                 families stand behind the fair price (9 quotes in total, de-duplicated
                 to 6). Corroborated at 2 levels against the sharp reference.
   retrieval     56 reads; price feed re-read: true
-  prompt        176200 chars of evidence + 28373 of contract; 0 earlier turns carried
+  prompt        176500 chars of evidence + 28373 of contract; 0 earlier turns carried
   ledger        RECORDED
   prompt sections, largest first
-                 129203  RESEARCHED MATCHUPS — 5 versioned evidence packets deliv
+                 129396  RESEARCHED MATCHUPS — 5 versioned evidence packets deliv
                   24970  EVIDENCE — retrieved from EdgeDesk's own tables just now
                    4203  DATA PATH — where a retrieval came back empty and which 
                    4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
@@ -80,15 +80,15 @@ TURN 2  "Analyze North Texas versus Texas State."
                 families stand behind the fair price (9 quotes in total, de-duplicated
                 to 6). Corroborated at 2 levels against the sharp reference.
   retrieval     44 reads; price feed re-read: true
-  prompt        144628 chars of evidence + 28373 of contract; 2 earlier turns carried
+  prompt        147896 chars of evidence + 28373 of contract; 2 earlier turns carried
   ledger        RECORDED
   prompt sections, largest first
-                 104193  RESEARCHED MATCHUPS — 4 versioned evidence packets deliv
+                 104350  RESEARCHED MATCHUPS — 4 versioned evidence packets deliv
                   16290  EVIDENCE — retrieved from EdgeDesk's own tables just now
                    4203  DATA PATH — where a retrieval came back empty and which 
                    4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
                    2641  THE CARD, RANKED — deterministic, computed before you we
-                   1306  THE SLATE — established from a SCHEDULE source, separate
+                   2030  THESIS ATTACK INPUTS — evidence ids, chosen from the pac
 
 ──────────────────────────────────────────────────────────────────────────────
 TURN 3  "Who have they played?"
@@ -108,15 +108,15 @@ TURN 3  "Who have they played?"
                 families stand behind the fair price (9 quotes in total, de-duplicated
                 to 6). Corroborated at 2 levels against the sharp reference.
   retrieval     32 reads; price feed re-read: true
-  prompt        63370 chars of evidence + 28373 of contract; 4 earlier turns carried
+  prompt        66523 chars of evidence + 28373 of contract; 4 earlier turns carried
   ledger        RECORDED
   prompt sections, largest first
-                  29929  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
+                  29971  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
                   10423  EVIDENCE — retrieved from EdgeDesk's own tables just now
                    4203  DATA PATH — where a retrieval came back empty and which 
                    4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
                    2641  THE CARD, RANKED — deterministic, computed before you we
-                   1306  THE SLATE — established from a SCHEDULE source, separate
+                   2030  THESIS ATTACK INPUTS — evidence ids, chosen from the pac
 
 ──────────────────────────────────────────────────────────────────────────────
 TURN 4  "Did opponent quality inflate their numbers?"
@@ -136,15 +136,15 @@ TURN 4  "Did opponent quality inflate their numbers?"
                 families stand behind the fair price (9 quotes in total, de-duplicated
                 to 6). Corroborated at 2 levels against the sharp reference.
   retrieval     32 reads; price feed re-read: true
-  prompt        63392 chars of evidence + 28373 of contract; 6 earlier turns carried
+  prompt        66545 chars of evidence + 28373 of contract; 6 earlier turns carried
   ledger        RECORDED
   prompt sections, largest first
-                  29929  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
+                  29971  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
                   10423  EVIDENCE — retrieved from EdgeDesk's own tables just now
                    4203  DATA PATH — where a retrieval came back empty and which 
                    4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
                    2641  THE CARD, RANKED — deterministic, computed before you we
-                   1306  THE SLATE — established from a SCHEDULE source, separate
+                   2030  THESIS ATTACK INPUTS — evidence ids, chosen from the pac
 
 ──────────────────────────────────────────────────────────────────────────────
 TURN 5  "What is the strongest argument against that lean?"
@@ -164,15 +164,26 @@ TURN 5  "What is the strongest argument against that lean?"
                 families stand behind the fair price (9 quotes in total, de-duplicated
                 to 6). Corroborated at 2 levels against the sharp reference.
   retrieval     32 reads; price feed re-read: true
-  prompt        63398 chars of evidence + 28373 of contract; 8 earlier turns carried
+  prompt        66551 chars of evidence + 28373 of contract; 8 earlier turns carried
   ledger        RECORDED
   prompt sections, largest first
-                  29929  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
+                  29971  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
                   10423  EVIDENCE — retrieved from EdgeDesk's own tables just now
                    4203  DATA PATH — where a retrieval came back empty and which 
                    4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
                    2641  THE CARD, RANKED — deterministic, computed before you we
-                   1306  THE SLATE — established from a SCHEDULE source, separate
+                   2030  THESIS ATTACK INPUTS — evidence ids, chosen from the pac
+
+  STRUCTURAL LIMITS, verbatim — the answer to THIS question:
+    STRUCTURAL LIMITS — true whatever the price does, and NOT fixed by a better number:
+      - The model has NO validated outcome probability in this market (RESEARCH), so its agreement with the price is not cor
+      - This model is marked EXPERIMENTAL in this market — its walk-forward record does not beat the closing line.
+      - Texas State: no availability report on file. That is UNKNOWN, not healthy — a starter could be out and EdgeDesk woul
+      - North Texas: no availability report on file. That is UNKNOWN, not healthy — a starter could be out and EdgeDesk woul
+      - The matchup read cannot be TESTED: efficiency.per_play, matchup.home.per_play_efficiency, matchup.home.explosive_pla
+      - The executable half of this case is ONE captured price at DraftKings. If that book moves or pulls the number, there 
+      - Kickoff is 144 hours away. Most of the information that will move this number — availability, weather, late money — 
+    When you are asked for the strongest argument AGAINST a lean, these are it. Lead with the one that would cost the most i
 
 ──────────────────────────────────────────────────────────────────────────────
 TURN 6  "What price makes it a pass?"
@@ -192,7 +203,7 @@ TURN 6  "What price makes it a pass?"
                 families stand behind the fair price (9 quotes in total, de-duplicated
                 to 6). Corroborated at 2 levels against the sharp reference.
   retrieval     10 reads; price feed re-read: true
-  prompt        50601 chars of evidence + 28373 of contract; 8 earlier turns carried
+  prompt        50708 chars of evidence + 28373 of contract; 8 earlier turns carried
   ledger        RECORDED
   prompt sections, largest first
                   22912  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
