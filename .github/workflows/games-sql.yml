@@ -46,8 +46,10 @@ on:
       # test file went green without executing it.
       - 'supabase/editorial_system.sql'
       - 'supabase/editorial_runtime.sql'
+      - 'supabase/editorial_dispatch_sql.sql'
       - 'tools/editorial/editorial_sql.test.js'
       - 'tools/editorial/runtime_sql.test.js'
+      - 'tools/editorial/dispatch_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -85,8 +87,10 @@ on:
       # test file went green without executing it.
       - 'supabase/editorial_system.sql'
       - 'supabase/editorial_runtime.sql'
+      - 'supabase/editorial_dispatch_sql.sql'
       - 'tools/editorial/editorial_sql.test.js'
       - 'tools/editorial/runtime_sql.test.js'
+      - 'tools/editorial/dispatch_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -223,6 +227,16 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/editorial/runtime_sql.test.js | tee editorial_runtime.log
 
+      # The SQL primary scheduler — the edge-function-free poke. It reads a
+      # GitHub token and can start a workflow, so the questions are whether a
+      # browser can reach it, whether a missing token is reported rather than
+      # silently swallowed, and whether it ever does anything but poke.
+      - name: Run the editorial SQL dispatcher suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/editorial/dispatch_sql.test.js | tee editorial_dispatch.log
+
       # The UFC Live Fight Center contract: public reads, no client writes, the
       # per-event poller lock, the dedup constraints and the cascade — the
       # guarantees the browser and the GitHub jobs both depend on.
@@ -246,7 +260,7 @@ jobs:
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log ufc.log tennis.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log ufc.log tennis.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1

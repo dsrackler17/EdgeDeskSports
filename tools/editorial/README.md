@@ -499,7 +499,39 @@ a Node VM and commits to this repository. It pokes the existing workflow. A
 second pipeline in an edge runtime would give EdgeDesk two editorial systems
 that disagree, which is far worse than a late article.
 
-### Operator steps (these cannot be done from the repository)
+### Operator steps — two ways, pick one
+
+**A · Everything in the SQL editor** (`supabase/editorial_dispatch_sql.sql`).
+No CLI, no edge function: the pause check, the debounce and the GitHub poke are
+plpgsql, so the whole scheduler installs by pasting files into the Supabase SQL
+editor.
+
+```sql
+-- 1  extensions (or Dashboard → Database → Extensions)
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+-- 2  the token, encrypted at rest
+select vault.create_secret('ghp_xxx', 'edgedesk_gh_token',
+                           'GitHub PAT with actions:write');
+
+-- 3  paste and run, in this order
+--      supabase/site_articles.sql        (if not already applied)
+--      supabase/editorial_system.sql     (if not already applied)
+--      supabase/editorial_runtime.sql
+--      supabase/editorial_dispatch_sql.sql
+
+-- 4  prove it
+select public.editorial_poke('manual');
+select status_code, content from net._http_response order by id desc limit 1;
+```
+
+`204` is success. `401`/`403` is a bad or unscoped token, `404` a wrong repo or
+workflow name, `422` a workflow on that ref that predates the `source` input.
+
+**B · The edge function** (`supabase/editorial_cron.sql` + `supabase/functions/editorial_cron/`).
+Same behaviour, but the token lives in Supabase secrets rather than in Vault,
+and deploying needs the CLI:
 
 ```
 1  Enable pg_cron and pg_net          Supabase dashboard → Database → Extensions
@@ -508,6 +540,13 @@ that disagree, which is far worse than a late article.
 4  psql -f supabase/editorial_runtime.sql
 5  psql -f supabase/editorial_cron.sql   (see its header for the two settings)
 ```
+
+**Do not install both.** They are not harmful together — each debounces against
+the heartbeat table and the dispatcher holds a lease besides — but two
+schedulers doing one job is only noise in the logs.
+
+Either way `public.editorial_poke()` and the edge function are *pokes*. Neither
+runs the pipeline; both ask GitHub to run the one canonical dispatcher.
 
 Until step 3 the function returns **503** and says the token is missing — it
 never reports success while scheduling nothing.
