@@ -5029,6 +5029,9 @@ export class Dal {
              team that has been cleared. */
           availability: av
             ? F({
+              /* NAMED. Without it the case-against reads "the home side has no
+                 availability report", which is true of some game somewhere. */
+              team: av.team,
               state: av.state, sentence: av.sentence, data_quality: av.data_quality,
               counts: av.counts, quarterbacks_flagged: av.quarterbacks,
               official_report_found: av.official_report_found,
@@ -7322,7 +7325,26 @@ export function normalizeEvidence(evidence: Evidence[]): Evidence[] {
 /* Deterministic. Reads the OWNED numbers on a signal row and reports whether the
    thesis survives them. It produces no new betting number — it reports which
    owned field breaks the case. */
-export function attackThesis(sig: any, floor = 0.02, staleMin = 45): { status: string; note: string; falsifiers: string[] } {
+export function attackThesis(
+  sig: any, floor = 0.02, staleMin = 45,
+  /* WHAT THE SIGNAL ROW CANNOT SEE.
+     This function used to read a signal row and nothing else, so a live,
+     sharp-anchored, floor-clearing quote came back SURVIVES with an EMPTY
+     falsifier list — and "what is the strongest argument against this?" was
+     answered with silence. Silence there is not neutrality: it is the closest
+     thing this system can produce to manufactured confidence, on the one
+     question a reader asks when they are trying not to be fooled.
+
+     The answers were already in the packet. The model is unvalidated in this
+     market; availability is UNKNOWN on both sides and unknown is not healthy;
+     per-play efficiency is not ingested so the matchup read cannot be tested;
+     the whole case rests on one captured price. None of those are visible in a
+     signals row, so they are passed in. */
+  ctx: {
+    validation?: any; availability?: any[]; market?: any;
+    packet_gaps?: { field: string; reason: string }[]; kickoff?: string | null;
+  } = {},
+): { status: string; note: string; falsifiers: string[]; structural: string[] } {
   const edge = num(sig?.edge);
   const firstEdge = num(sig?.first_edge);
   const nb = num(sig?.n_books) ?? 0;
@@ -7340,12 +7362,68 @@ export function attackThesis(sig: any, floor = 0.02, staleMin = 45): { status: s
   if (edge != null && edge > 0.06) falsifiers.push("An edge this large on a game line is usually a stale or bad price, not a gift.");
   if (remaining != null && remaining < 0.5) falsifiers.push(`Over half the detection edge has decayed (${Math.round(remaining * 100)}% remains).`);
 
-  if (edge == null) return { status: "PENDING", note: "Cannot test a thesis with no fair price on file.", falsifiers };
-  if (edge < floor) return { status: "INVALIDATED", note: "The price has moved EV below the floor — the thesis does not survive at this number.", falsifiers };
+  /* ---- THE STRUCTURAL CASE AGAINST, which no price can clear ----------
+     These do not weaken the arithmetic; they bound what the arithmetic is
+     evidence OF. They are reported separately for exactly that reason, and
+     they are never empty when the limits are real. */
+  const structural: string[] = [];
+  const v = ctx.validation;
+  if (v && v.may_produce_model_ev === false) {
+    structural.push(`The model has NO validated outcome probability in this market (${v.tier ?? "unvalidated"}), so its `
+      + `agreement with the price is not corroboration of anything. If this case needs the model to be right, it has no `
+      + `measured basis${v.max_decision && v.max_decision !== "BET CANDIDATE" ? `, which is why a model-led thesis is capped at ${v.max_decision}` : ""}.`);
+  }
+  if (v && v.experimental) {
+    structural.push("This model is marked EXPERIMENTAL in this market — its walk-forward record does not beat the closing line.");
+  }
+  for (const av of ctx.availability ?? []) {
+    if (!av) continue;
+    if (av.state === "UNKNOWN" || av.state === "NOT_RETRIEVED") {
+      structural.push(`${av.team}: no availability report on file. That is UNKNOWN, not healthy — a starter could be out `
+        + `and EdgeDesk would not know, and nothing in this price accounts for it.`);
+    } else if (av.state === "PARTIAL") {
+      structural.push(`${av.team}: availability is partial. Players not named are unreported, not confirmed fit.`);
+    }
+  }
+  const gaps = (ctx.packet_gaps ?? []).filter((g) => /efficienc|success_rate|explosive|pace|turnover|red_zone|pressure/.test(g.field));
+  if (gaps.length) {
+    structural.push(`The matchup read cannot be TESTED: ${gaps.slice(0, 4).map((g) => g.field).join(", ")} `
+      + `${gaps.length > 4 ? `and ${gaps.length - 4} more ` : ""}are not ingested for this sport. A recent result that looks `
+      + `distorted cannot be checked against per-play evidence, in either direction.`);
+  }
+  const mk = ctx.market;
+  if (mk && mk.has_executable_price && mk.spread && mk.spread.book) {
+    structural.push(`The executable half of this case is ONE captured price at ${mk.spread.book}. If that book moves or `
+      + `pulls the number, there is no second executable quote behind it.`);
+  }
+  if (mk && mk.has_market_line && !mk.has_executable_price) {
+    structural.push("There is a market NUMBER here but no executable price, so nothing about this can be acted on at a price.");
+  }
+  const kick = ctx.kickoff ? Date.parse(ctx.kickoff) : NaN;
+  if (Number.isFinite(kick)) {
+    const hrs = (kick - Date.now()) / 3600000;
+    if (hrs > 24) {
+      structural.push(`Kickoff is ${Math.round(hrs)} hours away. Most of the information that will move this number — `
+        + `availability, weather, late money — has not arrived yet.`);
+    }
+  }
+
+  /* A SURVIVING THESIS STILL HAS A CASE AGAINST IT, AND SAYING OTHERWISE IS
+     THE FAILURE. The falsifier list is never handed back empty. */
+  const all = falsifiers.concat(structural);
+  if (edge == null) return { status: "PENDING", note: "Cannot test a thesis with no fair price on file.", falsifiers: all, structural };
+  if (edge < floor) return { status: "INVALIDATED", note: "The price has moved EV below the floor — the thesis does not survive at this number.", falsifiers: all, structural };
   const hard = (!sharp && nb < 4) || staleM >= staleMin || (remaining != null && remaining < 0.4);
-  if (hard) return { status: "WEAKENED", note: "Positive, but undercut by thin confirmation, staleness or heavy decay.", falsifiers };
-  if (falsifiers.length >= 3) return { status: "WEAKENED", note: "Several unresolved problems — a lean, not a strong bet.", falsifiers };
-  return { status: "SURVIVES", note: "The edge holds up against price, confirmation and freshness on owned data.", falsifiers };
+  if (hard) return { status: "WEAKENED", note: "Positive, but undercut by thin confirmation, staleness or heavy decay.", falsifiers: all, structural };
+  if (falsifiers.length >= 3) return { status: "WEAKENED", note: "Several unresolved problems — a lean, not a strong bet.", falsifiers: all, structural };
+  return {
+    status: "SURVIVES",
+    note: structural.length
+      ? "The ARITHMETIC holds against price, confirmation and freshness on owned data. That is not the same as the case "
+        + "being strong: the limits below bound what this number is evidence of, and none of them is fixed by a better price."
+      : "The edge holds up against price, confirmation and freshness on owned data.",
+    falsifiers: all, structural,
+  };
 }
 
 /* ------------------------------------- research packet versioning */
@@ -15753,7 +15831,30 @@ async function runResearch(
   }
 
   /* ---- 7. thesis attack, on owned numbers only -------------------------- */
-  const attack = focus ? attackThesis(focus, RESEARCH_FLOOR, RESEARCH_STALE_MIN) : null;
+  /* THE CASE AGAINST NEEDS WHAT THE SIGNAL ROW CANNOT SEE.
+     The packet for the game in focus already carries the availability state,
+     the declared gaps and the resolved market; the validation record is the
+     model's own. Handing them over is the difference between "SURVIVES, no
+     falsifiers" and an answer a reader can actually argue with. */
+  const attackPacket = packets.find((p: any) =>
+    focus && (String(p.game_id) === String((focus as any).game_id)
+      || (state.teams.length && state.teams.every((t) =>
+        JSON.stringify(p.sections?.identity ?? {}).toLowerCase().includes(normName(t))))))
+    ?? (packets.length === 1 ? packets[0] : null);
+  const attackSides = attackPacket
+    ? ["home", "away"].map((k) => (attackPacket.sections?.matchup?.[k]?.availability?.value ?? null))
+      .filter(Boolean).map((v: any, i: number) => ({ ...v, team: v.team || (i === 0 ? "the home side" : "the away side") }))
+    : [];
+  const attackGame = ranked.find((r) => attackPacket && String(r.game.game_id) === String(attackPacket.game_id));
+  const attack = focus
+    ? attackThesis(focus, RESEARCH_FLOOR, RESEARCH_STALE_MIN, {
+      validation: EDINTEL.validationFor(sportKey, EDINTEL.normMarket((focus as any).market)),
+      availability: attackSides,
+      market: attackGame ? (attackGame.game as any).market : null,
+      packet_gaps: attackPacket ? attackPacket.missing : [],
+      kickoff: attackGame ? attackGame.game.kickoff : ((focus as any).commence_time ?? null),
+    })
+    : null;
 
   /* ---- 8. conflicts + unavailable roll-up ------------------------------- */
   const conflicts = findConflicts(evidence);
@@ -16082,6 +16183,9 @@ async function runResearch(
       ...players.filter((p) => p.status === "AMBIGUOUS").map((p) => `"${p.query}" could be ${p.candidates.join(" or ")}`),
     ],
     falsifiers: attack?.falsifiers ?? [],
+    /* Reported apart from the price-level ones because they are a different
+       kind of objection: no better number fixes any of them. */
+    structural_limits: attack?.structural ?? [],
   };
 
   return {
@@ -16635,8 +16739,12 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
 
     if (research.attack) {
       parts.push(
-        "THESIS ATTACK (deterministic, computed from owned signal fields — do not recompute):\n"
-        + compact(research.attack),
+        "THESIS ATTACK (deterministic, computed from owned fields — do not recompute):\n"
+        /* `structural` is rendered in full under STRUCTURAL LIMITS below and is
+           already inside `falsifiers`, so printing it here too would send the
+           same paragraphs three times. Dropped from the dump, not from the
+           prompt. */
+        + compact({ ...research.attack, structural: undefined }),
       );
     }
 
@@ -16650,7 +16758,19 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
         + `contradictions: ${ta.contradictions.length
           ? ta.contradictions.map((c: any) => `${c.id ?? "-"}: ${c.detail}`).join(" | ")
           : "NONE. Nothing in this packet contradicts the thesis. Say that plainly — do NOT manufacture an objection to look balanced."}\n`
-        + `unresolved: ${ta.unresolved_questions.join(" | ") || "none"}`,
+        + `unresolved: ${ta.unresolved_questions.join(" | ") || "none"}\n`
+        /* THE LIMITS NO PRICE FIXES. Separated from the price-level falsifiers
+           on purpose: "the number got worse" and "the model has never beaten
+           the closing line in this market" are objections of different kinds,
+           and collapsing them lets the second one read as though a better
+           price would answer it. */
+        + (ta.structural_limits && ta.structural_limits.length
+          ? `STRUCTURAL LIMITS — true whatever the price does, and NOT fixed by a better number:\n`
+            + ta.structural_limits.map((x: string) => `  - ${x}`).join("\n") + "\n"
+            + `When you are asked for the strongest argument AGAINST a lean, these are it. Lead with the one that would `
+            + `cost the most if it turned out to matter, and say what would resolve it. A thesis that survives the `
+            + `arithmetic has NOT survived these.`
+          : `STRUCTURAL LIMITS: none on file. Say that plainly rather than manufacturing an objection to look balanced.`),
       );
     }
 

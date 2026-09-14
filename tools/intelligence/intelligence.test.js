@@ -1028,5 +1028,82 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       bad.lined === good.lined, { bad: bad.lined, good: good.lined });
   }
 
+  /* =====================================================================
+     27. "WHAT IS THE STRONGEST ARGUMENT AGAINST THAT LEAN?"
+     The deterministic attack layer read a signals row and nothing else, so a
+     live, sharp-anchored, floor-clearing quote came back SURVIVES with an
+     EMPTY falsifier list — and the one question a reader asks when they are
+     trying not to be fooled was answered with silence. Silence there is not
+     neutrality; it is the closest this system can come to manufactured
+     confidence.
+     ===================================================================== */
+  {
+    const live = {
+      market: 'spreads', selection: 'North Texas', edge: 0.037, first_edge: 0.030,
+      n_books: 9, has_sharp: true, last_seen_at: new Date().toISOString(),
+    };
+    const bare = m.attackThesis(live, 0.02, 45);
+    eq('the arithmetic still survives on its own terms', bare.status, 'SURVIVES');
+    eq('and with nothing passed in, there is nothing structural to report', bare.structural.length, 0);
+
+    const withCtx = m.attackThesis(live, 0.02, 45, {
+      validation: I.validationFor('americanfootball_ncaaf', 'spreads'),
+      availability: [
+        { team: 'North Texas', state: 'UNKNOWN' },
+        { team: 'Texas State', state: 'UNKNOWN' },
+      ],
+      market: { has_executable_price: true, has_market_line: true, spread: { book: 'DraftKings' } },
+      packet_gaps: [{ field: 'per_play_efficiency', reason: 'not ingested' },
+        { field: 'success_rate', reason: 'not ingested' }],
+      kickoff: new Date(Date.now() + 6 * 86400000).toISOString(),
+    });
+    eq('the arithmetic is unchanged by the context', withCtx.status, 'SURVIVES');
+    chk('but the case against is no longer empty', withCtx.falsifiers.length > 0, withCtx.falsifiers.length);
+    chk('and SURVIVES stops meaning "nothing against it"',
+      /not the same as the case being strong/.test(withCtx.note), withCtx.note);
+
+    const all = withCtx.structural.join(' | ');
+    chk('the unvalidated model is named as the first limit',
+      /NO validated outcome probability in this market/.test(withCtx.structural[0] || ''), withCtx.structural[0]);
+    chk('and its agreement with the price is refused as corroboration',
+      /agreement with the price is not corroboration/.test(all));
+    chk('an UNKNOWN availability report is a risk, not a neutral',
+      /North Texas: no availability report on file/.test(all) && /UNKNOWN, not healthy/.test(all), all.slice(0, 200));
+    chk('and BOTH sides are named rather than "the home side"',
+      /North Texas/.test(all) && /Texas State/.test(all));
+    chk('the untestable matchup is stated as untestable',
+      /matchup read cannot be TESTED/.test(all) && /in either direction/.test(all));
+    chk('a single-book dependency is named with the book',
+      /ONE captured price at DraftKings/.test(all));
+    chk('and a distant kickoff is a limit, because the information has not arrived',
+      /Kickoff is \d+ hours away/.test(all));
+
+    /* A LINE-ONLY GAME HAS ITS OWN STRUCTURAL OBJECTION. */
+    const lineOnly = m.attackThesis(live, 0.02, 45, {
+      market: { has_executable_price: false, has_market_line: true },
+    });
+    chk('a market number with no price says so as a limit',
+      /no executable price/.test(lineOnly.structural.join(' ')), lineOnly.structural);
+
+    /* And it reaches the model, apart from the price-level falsifiers. */
+    const fx = FX.build();
+    clearCache(); route = FX.router(fx);
+    const j = await (await m.handle(req({ mode: 'chat', question: 'What is the strongest argument against that lean?',
+      packet: { board_scope: SCOPE },
+      history: [{ role: 'user', content: 'Analyze North Texas versus Texas State.' },
+        { role: 'assistant', content: 'North Texas -2.5 looks like a candidate.' }] }, '?dry=1'))).json();
+    const p = j.prompt || '';
+    chk('the prompt carries the structural limits as their own block',
+      /STRUCTURAL LIMITS — true whatever the price does/.test(p), p.indexOf('STRUCTURAL LIMITS'));
+    chk('and tells the analyst these ARE the answer to that question',
+      /When you are asked for the strongest argument AGAINST a lean, these are it/.test(p));
+    chk('and that surviving the arithmetic is not surviving these',
+      /has NOT survived these/.test(p));
+    chk('the limits name this game, not a generic one',
+      /North Texas: no availability report on file|Texas State: no availability report on file/.test(p));
+    chk('and an empty list still refuses a manufactured objection',
+      /manufacturing an objection to look balanced|manufacture an objection to look balanced/.test(p));
+  }
+
   done();
 })().catch((e) => { console.error('CRASH', e && e.stack || e); process.exit(1); });
