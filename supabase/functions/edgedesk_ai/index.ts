@@ -17245,6 +17245,13 @@ export async function handle(req: Request): Promise<Response> {
       /* The first thing to check when the desk stops recommending: whether it
          was told to. An explicit boolean, not a threshold to be interpreted. */
       decisions_enabled: EDINTEL.decisionsEnabled(),
+      /* A build can be current and still be missing the kernel if the bundle
+         changed shape, and from outside those two failures look identical. */
+      intelligence_loaded: !!EDINTEL,
+      intelligence_version: EDINTEL ? EDINTEL.VERSION : null,
+      /* Which sports this build carries a transcribed validation record for.
+         Without one the decision layer has no ceiling to enforce. */
+      validation_records: EDINTEL && EDINTEL.MODEL_VALIDATION ? Object.keys(EDINTEL.MODEL_VALIDATION) : [],
       mlb_live_fallback: MLB_FALLBACK,
       min_pattern_n: MIN_PATTERN_N,
       evidence_max_chars: evidenceMax(),

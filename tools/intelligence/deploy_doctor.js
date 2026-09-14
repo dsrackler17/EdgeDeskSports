@@ -1,0 +1,187 @@
+#!/usr/bin/env node
+/* ===========================================================================
+   MERGED IS NOT DEPLOYED.
+
+   This repository has no workflow that deploys an edge function and none that
+   applies a SQL migration: every function carries a manual
+   `supabase functions deploy <name>` in its header, and every .sql file is
+   applied by hand. So a green CI run and a merged pull request say exactly
+   nothing about what is answering at the other end, and the only honest way to
+   tell them apart is to ASK the deployment.
+
+   That is what this does. Four questions, each answerable, each reported as a
+   fact rather than an assumption:
+
+     1. is edgedesk_ai deployed, and is it serving THIS commit's build?
+     2. has supabase/recommendation_ledger.sql been applied?
+     3. does the deployed build carry the intelligence kernel and the
+        correction columns, and is its decision layer switched on?
+     4. is the published site serving the artifacts the desk reads?
+
+   IT NEEDS NO NEW CREDENTIAL. SB_URL and SB_SERVICE_ROLE are the secrets the
+   newsletter workflow already holds; the anon key alone answers 1, 3 and 4.
+   Nothing is written, nothing is deployed, and no secret is printed —
+   presence is reported as a boolean, exactly as the function's own probe does.
+
+   Run: node tools/intelligence/deploy_doctor.js
+        SB_URL=... SB_ANON=... node tools/intelligence/deploy_doctor.js --json
+   =========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..', '..');
+
+function env(...names) {
+  for (const n of names) { const v = String(process.env[n] || '').trim(); if (v) return v; }
+  return '';
+}
+
+/** The build this checkout would deploy, read from the source of truth. */
+function expectedBuild() {
+  const src = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'), 'utf8');
+  const m = /export const BUILD = "([^"]+)"/.exec(src);
+  return m ? m[1] : null;
+}
+
+async function get(url, headers, timeoutMs) {
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs || 12000) : null;
+  try {
+    const r = await fetch(url, { headers: headers || {}, signal: ctrl && ctrl.signal });
+    const text = await r.text().catch(() => '');
+    if (timer) clearTimeout(timer);
+    return { ok: r.ok, status: r.status, text };
+  } catch (e) {
+    if (timer) clearTimeout(timer);
+    return { ok: false, status: 0, text: '', error: String((e && e.message) || e) };
+  }
+}
+
+async function doctor(opts) {
+  opts = opts || {};
+  const url = (opts.url || env('SB_URL', 'EDGD_SB_URL', 'SUPABASE_URL')
+    || 'https://iattxbkbufslbauoumga.supabase.co').replace(/\/+$/, '');
+  const key = opts.key || env('SB_ANON', 'SUPABASE_ANON_KEY', 'SB_SERVICE_ROLE', 'SUPABASE_SERVICE_ROLE_KEY');
+  const site = (opts.site || env('EDGEDESK_SITE_BASE') || 'https://edgedesksports.com').replace(/\/+$/, '');
+  const want = expectedBuild();
+  const out = { checked_at: new Date().toISOString(), expected_build: want, checks: [] };
+  const add = (name, state, detail, fix) => out.checks.push({ name, state, detail, fix: fix || null });
+
+  /* ---- 1 + 3. the function ------------------------------------------- */
+  const probe = await get(`${url}/functions/v1/edgedesk_ai?probe=1`, key ? { apikey: key, authorization: 'Bearer ' + key } : {});
+  if (probe.status === 0) {
+    add('edgedesk_ai reachable', 'UNKNOWN', `could not reach ${url} (${probe.error || 'no response'})`,
+      'Run this from somewhere with network access to the Supabase project.');
+  } else if (probe.status === 404) {
+    add('edgedesk_ai deployed', 'NOT_DEPLOYED', `HTTP 404 from ${url}/functions/v1/edgedesk_ai`,
+      'supabase functions deploy edgedesk_ai');
+  } else if (!probe.ok) {
+    add('edgedesk_ai deployed', 'UNKNOWN', `HTTP ${probe.status} from the probe`,
+      probe.status === 401 ? 'Pass SB_ANON so the probe can be reached.' : null);
+  } else {
+    let j = null; try { j = JSON.parse(probe.text); } catch (_) { /* below */ }
+    if (!j) {
+      add('edgedesk_ai deployed', 'UNKNOWN', 'the probe answered but not with JSON');
+    } else {
+      add('edgedesk_ai deployed', 'DEPLOYED', `serving build ${j.build}`);
+      add('deployed build matches this checkout',
+        j.build === want ? 'CURRENT' : 'STALE',
+        j.build === want ? `both are ${want}`
+          : `deployed ${j.build}, this checkout would deploy ${want}`,
+        j.build === want ? null : 'supabase functions deploy edgedesk_ai');
+      add('intelligence kernel loaded in the deployed build',
+        j.intelligence_loaded === true ? 'PRESENT'
+          : j.intelligence_loaded === false ? 'ABSENT' : 'UNKNOWN',
+        j.intelligence_loaded === undefined
+          ? 'this build predates the kernel probe field' : `EDINTEL v${j.intelligence_version}`,
+        j.intelligence_loaded ? null : 'supabase functions deploy edgedesk_ai');
+      add('decision layer',
+        j.decisions_enabled === false ? 'DISABLED' : j.decisions_enabled === true ? 'ENABLED' : 'UNKNOWN',
+        j.decisions_enabled === false
+          ? 'EDGEDESK_DECISIONS_ENABLED is off: the desk researches and recommends nothing'
+          : j.decisions_enabled === true ? 'recommendations are being produced' : 'this build predates the flag');
+      add('model credential configured on the deployment',
+        j.env && j.env.anthropic_key ? 'PRESENT' : 'ABSENT',
+        j.env && j.env.anthropic_key ? 'set (value never read)' : 'ANTHROPIC_API_KEY is not set, so chat will 503',
+        j.env && j.env.anthropic_key ? null : 'supabase secrets set ANTHROPIC_API_KEY=...');
+    }
+  }
+
+  /* ---- 2. the migration ----------------------------------------------- */
+  if (!key) {
+    add('recommendation_ledger applied', 'UNKNOWN', 'no SB_ANON or SB_SERVICE_ROLE in the environment',
+      'SB_ANON=... node tools/intelligence/deploy_doctor.js');
+  } else {
+    const t = await get(`${url}/rest/v1/recommendation_ledger?select=entry_key&limit=1`,
+      { apikey: key, authorization: 'Bearer ' + key });
+    const missing = /does not exist|schema cache|PGRST205|42P01/i.test(t.text);
+    if (t.status === 0) add('recommendation_ledger applied', 'UNKNOWN', t.error || 'no response');
+    else if (missing || t.status === 404) {
+      add('recommendation_ledger applied', 'NOT_APPLIED',
+        'the table is not in the schema — every decision the desk publishes is going unrecorded',
+        'psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql');
+    } else if (t.ok || t.status === 401 || t.status === 403) {
+      add('recommendation_ledger applied', 'APPLIED',
+        t.ok ? 'the table answered' : `the table exists and row-level security refused this key (HTTP ${t.status}), which is the table being there`);
+      /* The correction columns are the newest part of the migration, so a
+         table that exists is not proof the CURRENT migration was applied. */
+      const c = await get(`${url}/rest/v1/recommendation_ledger?select=correction_reason&limit=1`,
+        { apikey: key, authorization: 'Bearer ' + key });
+      const noCol = /correction_reason.*does not exist|PGRST204|42703/i.test(c.text);
+      add('official-correction columns applied',
+        noCol ? 'NOT_APPLIED' : (c.ok || c.status === 401 || c.status === 403) ? 'APPLIED' : 'UNKNOWN',
+        noCol ? 'the table predates append-only settlement corrections'
+          : 'correction_reason is present',
+        noCol ? 'psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql  (it is idempotent)' : null);
+    } else {
+      add('recommendation_ledger applied', 'UNKNOWN', `HTTP ${t.status}`);
+    }
+  }
+
+  /* ---- 4. the artifacts the desk reads over HTTP ----------------------- */
+  for (const [label, p] of [['FBS slate', '/football/fbs/slate.json'], ['availability', '/football/availability/current.json']]) {
+    const a = await get(site + p, { accept: 'application/json' });
+    /* A 404 IS AN ABSENT FILE. A 403 IS SOMEBODY ELSE SAYING NO.
+       An egress proxy, a corporate gateway or a CDN rule all answer 403 to a
+       file that is sitting there perfectly well, and reporting that as MISSING
+       would send an operator to redeploy an artifact that never moved. The
+       whole point of this tool is to stop calling one thing another. */
+    if (a.status === 0) add(`${label} artifact published`, 'UNKNOWN', a.error || 'no response');
+    else if (a.status === 404 || a.status === 410) {
+      add(`${label} artifact published`, 'MISSING', `HTTP ${a.status} from ${site}${p}`,
+        'The desk reads this over HTTP; without it the CFB slate falls back to cfb.games.');
+    } else if (!a.ok) {
+      add(`${label} artifact published`, 'UNKNOWN',
+        `HTTP ${a.status} from ${site}${p} — refused rather than absent, so this says nothing about whether the file is published`,
+        a.status === 403 || a.status === 407
+          ? 'Run this from somewhere with direct network access to the site; a proxy is answering for it.' : null);
+    }
+    else {
+      let n = null, gen = null;
+      try { const j = JSON.parse(a.text); n = (j.games || []).length || Object.keys(j.teams || {}).length || null; gen = j.generated_at || null; } catch (_) { /* ignore */ }
+      add(`${label} artifact published`, 'PUBLISHED', `${n == null ? 'served' : n + ' entries'}${gen ? ', generated ' + gen : ''}`);
+    }
+  }
+
+  const bad = out.checks.filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT/.test(c.state));
+  out.verdict = bad.length ? 'ACTION NEEDED' : out.checks.some((c) => c.state === 'UNKNOWN') ? 'INCOMPLETE' : 'DEPLOYED AND CURRENT';
+  return out;
+}
+
+module.exports = { doctor, expectedBuild };
+
+if (require.main === module) {
+  doctor().then((r) => {
+    if (process.argv.includes('--json')) { console.log(JSON.stringify(r, null, 1)); return; }
+    console.log('EDGEDESK DEPLOYMENT DOCTOR — merged is not deployed\n');
+    console.log('this checkout would deploy: ' + r.expected_build + '\n');
+    r.checks.forEach((c) => {
+      console.log('  ' + String(c.state).padEnd(14) + c.name);
+      if (c.detail) console.log('                 ' + c.detail);
+      if (c.fix) console.log('                 fix: ' + c.fix);
+    });
+    console.log('\n  VERDICT: ' + r.verdict);
+    process.exit(r.verdict === 'ACTION NEEDED' ? 1 : 0);
+  }).catch((e) => { console.error('CRASH', (e && e.stack) || e); process.exit(2); });
+}

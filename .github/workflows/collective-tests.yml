@@ -464,6 +464,25 @@ jobs:
       - name: Intelligence tells the truth about the slate, the price and the model
         run: node tools/intelligence/intelligence.test.js
 
+      # The CONVERSATION, not the decision layer. Drives the deployed function
+      # through a six-question sequence exactly as app.html does — same body,
+      # same growing history, same board scope — with inference stubbed at the
+      # HTTP boundary and that limit stated rather than hidden. It exists
+      # because a follow-up used to answer about the TOP-RANKED game rather
+      # than the one under discussion, which reads exactly like a correct
+      # answer, and no test in this repository could see it.
+      - name: A follow-up keeps the matchup, the sport and the price it was asked about
+        run: node tools/intelligence/conversation.test.js
+
+      # Nothing here deploys anything, so a merged pull request says nothing
+      # about what is answering. This pins the doctor's ability to tell apart
+      # the things that look identical from outside: deployed-but-stale from
+      # not-deployed, a missing table from one RLS refused, an absent artifact
+      # from a proxy answering 403 on its behalf. Offline; the live check is
+      # .github/workflows/intelligence-doctor.yml.
+      - name: The deployment doctor never mistakes refused for absent
+        run: node tools/intelligence/deploy_doctor.test.js
+
       # The other half, against a REAL PostgreSQL. Immutability is the only
       # property that makes a performance claim mean anything, and it lives in
       # a trigger — so it is proved by a server that refuses the edit, not by a

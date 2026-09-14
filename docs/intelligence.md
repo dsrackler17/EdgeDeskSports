@@ -20,13 +20,39 @@ fetches the cfbfastR schedule CSV, builds the universe and the slate through
 `football/fbs/fbs.js`, projects every game with `football/cfb_p4/engine.js`,
 and then joins market context onto it. The same build is published as
 `football/fbs/slate.json` — 75 games, schema `edgedesk_fbs_slate_v1`, every one
-of them `"market_status": "NOT JOINED IN THIS BUILD"`.
+of them `"market_status": "NOT JOINED IN THIS BUILD"` — which does NOT mean the
+card has no market. It means the artifact is a schedule and the market is joined
+at render time, as the artifact's own `market_note` says. Mistaking the second
+for the first is the subject of the next four paragraphs.
 
 Intelligence never saw any of it. `runResearch()` asked one question —
 `getSlate()`, which reads the `signals` table — and `signals` holds **priced,
 flagged opportunities**. It holds nothing at all for a sport nobody has flagged
 this week. The empty result produced `unavailable("signals", "slate", "no
 signals in the current window")`, and the answer turned that into "no games".
+
+**And then a second, worse thing, which the first version of this document got
+wrong.** It concluded from `"market_status": "NOT JOINED IN THIS BUILD"` that
+the CFB card carries no captured quotes. It does. The artifact's own
+`market_note` says the join happens live in the browser, and `fbP4Market()`
+resolves a market from **two** sources: a captured `signals` row and the
+ingested CollegeFootballData consensus in `cfb.lines`. A real Week 3 board
+showed **75 scheduled, 46 with market quotes, 45 research-grade, 29 without**.
+
+Intelligence read `signals` for college football and joined **zero** of them,
+because it keyed both sides on a normalised display string. The odds capture
+writes the BOOK's name — "North Texas Mean Green", "Miami (OH) RedHawks" — and
+the college schedule writes the school alone — "North Texas", "Miami". Those
+strings never match. `tools/newsletter/market.js` hit the identical failure and
+recorded it in its own header: *"a live run read 410 college signal rows and
+joined zero, and every refusal said `no_slate_game_with_both_teams`."*
+
+Its fix was to resolve through the board's own `EDFbs` resolver, and that is the
+fix here — through the same code rather than a second copy of it. `fbs.js` now
+carries two marker blocks that `tools/presentation/inline.js` copies into
+`_intelligence.js` and onward into `index.ts` and `app.html`, so one alias table
+and one prefix rule serve the board, the newsletter and the desk.
+`presentation_sync.test.js` fails on drift.
 
 It was made worse by the slate scope, which was supposed to be the honest
 denominator:
@@ -319,12 +345,32 @@ absent:
 | Measured betting volume | Attention tiers are editorial and say so | No source |
 | Weather, server-side | The browser board fetches it; the function does not | Wire open-meteo into stage C |
 
-**The honest headline gap:** the CFB card in this repository carries **no captured
-market quotes at all** (`"market_status": "NOT JOINED IN THIS BUILD"` on all 75
-games). Until capture covers college football, the truthful answer to "which CFB
-games are worth betting this week?" is *75 games are on the card, none of them
-carries a price to bet into, here is the research* — which is exactly what the
-system now says.
+**A correction.** An earlier version of this section said the CFB card carries
+"no captured market quotes at all", reading that off
+`"market_status": "NOT JOINED IN THIS BUILD"` in `slate.json`. That was wrong,
+and the way it was wrong is the subject of §1.1: the artifact publishes a
+schedule and says in its own `market_note` that the join happens live in the
+browser, from **two** sources — captured `signals` rows and the
+CollegeFootballData consensus in `cfb.lines`. Reading a zero out of a broken
+join and reporting it as an absent market is the original bug wearing a
+different hat.
+
+**The honest headline gap, stated properly:** on a college card most games carry
+a market NUMBER and very few carry an executable PRICE. A `cfb.lines` row is a
+handicap and a total with no book, no per-side odds and no capture time — a
+number to compare a model against, and nothing to bet into. Three counts
+therefore travel together everywhere in this system, and conflating any two of
+them is how a 46-market board was described as having one:
+
+| count | what it means | what it permits |
+|---|---|---|
+| scheduled | games on the card, from a SCHEDULE source | ranking, discussion, research |
+| carrying a market number | either source supplied a handicap or total | comparison against the model |
+| carrying an executable price | a real book price, with a capture time | a priced recommendation, and only here |
+
+No odds are ever mirrored from the other side of a handicap. A consensus
+moneyline IS de-vigged — both sides are real numbers — and the result is still
+not actionable, because the row carries no book and no timestamp.
 
 ---
 
@@ -472,3 +518,55 @@ existing contract.
 **Not reversible from the app:** `recommendation_ledger` rows. That is the
 point — deletion is blocked by a trigger, and dropping the table is a deliberate
 database action.
+
+---
+
+## 10. Merged is not deployed
+
+Nothing in this repository deploys an edge function or applies a migration.
+Every function carries a manual `supabase functions deploy <name>` in its header
+and every `.sql` file is applied by hand, so a green CI run and a merged pull
+request say exactly nothing about what is answering at the other end. Only
+`app.html` and the committed artifacts ship automatically, through GitHub Pages
+on `main`.
+
+| piece | how it ships | how to check |
+|---|---|---|
+| `app.html`, `football/fbs/slate.json`, `football/availability/current.json` | GitHub Pages, on merge to `main` | the `pages build and deployment` run for the merge commit |
+| `supabase/functions/edgedesk_ai` | **manual** — `supabase functions deploy edgedesk_ai` | `GET /functions/v1/edgedesk_ai?probe=1` → `build` |
+| `supabase/recommendation_ledger.sql` | **manual** — `psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql` (idempotent) | `GET /rest/v1/recommendation_ledger?select=entry_key&limit=1` |
+
+`npm run intel:doctor` asks all of that and reports each answer as a fact:
+
+```
+node tools/intelligence/deploy_doctor.js
+```
+
+It needs no new credential — `SB_URL` and `SB_SERVICE_ROLE` are the secrets the
+newsletter workflow already holds, and the anon key alone answers everything
+except the ledger question. Nothing is written, nothing is deployed, and no
+secret value is printed: credential presence is reported as a boolean, exactly
+as the function's own probe does.
+
+`.github/workflows/intelligence-doctor.yml` runs it daily and fails the job when
+something needs deploying, so "is the thing I merged the thing that is running"
+has a standing answer rather than an assumption.
+
+The distinctions it is careful about are the ones that look identical from
+outside and send an operator to do the wrong thing:
+
+- **deployed but stale** is not **not deployed** — both builds are named
+- a **missing table** is not **a table row-level security refused** — a 401 is
+  the table being there
+- an **absent artifact** is not **a proxy answering 403 on its behalf** — only
+  404 is missing; everything else is UNKNOWN and says so
+- an **unreachable project** never reports anything as not deployed
+
+### Switching the decision layer off
+
+`EDGEDESK_DECISIONS_ENABLED=0` on the deployment stops EdgeDesk producing
+recommendations while retrieval, research and the evidence packets carry on
+unchanged. `decide()` returns `decision: null` with
+`decision_state: "DECISIONS DISABLED"`, the ledger refuses the row, and the
+answer says the layer is off rather than returning PASS — which would be a
+verdict about a bet nobody weighed.
