@@ -122,6 +122,7 @@
       + '<a href="/articles">Research articles</a><a href="/articles/college-football">College football</a>'
       + '<a href="/articles/nfl">NFL</a><a href="/articles/community">Member posts</a>'
       + '<a href="/app.html#research/football">Research terminal</a>'
+      + '<a href="/newsletter/">Weekly research email</a>'
       + '<a href="/games">EdgeDesk Games</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a></nav>'
       + '<p class="af-legal">21+. Gamble responsibly — 1-800-GAMBLER. © ' + new Date().getUTCFullYear() + ' ' + esc(ORG) + '.</p>'
@@ -900,6 +901,18 @@
       + '<p><b>Research, not picks.</b> Nothing here is a wager, a recommendation or advice. A model status of <code>THIN DATA</code>, <code>INVESTIGATE</code> or <code>UNPROVEN</code> means exactly what it says, and EdgeDesk leaves it on the page rather than dressing it up.</p>'
       + '<p><b>Featured games get both halves.</b> Before the game, what EdgeDesk thought and why. After it, what actually happened — with every pregame claim graded against the box score, and the bet result reported separately from whether the reasoning held up. A number that landed on a broken thesis is published as exactly that.</p>'
       + '<p><a class="a-ctabtn" href="/app.html#research/football">Open the EdgeDesk research terminal</a></p></section>';
+    /* THE WEEKLY EMAIL, on the hub rather than on every article page. A
+       research reader who reached the hub is the one person for whom a
+       shortlist of next week's games is actually useful; a subscription
+       prompt under every individual matchup would be the "restrained" CTA
+       this product keeps saying it wants and then is not. */
+    h += '<section class="a-about"><h2 class="a-h2">Get the week ahead by email</h2>'
+      + '<p>Monday: college football, all of FBS. Tuesday: the NFL, after Monday Night Football. '
+      + 'Five games worth your own research time — up to ten when more of them earn it — with '
+      + 'EdgeDesk’s fair spread beside the market’s number, the evidence behind the gap, and the '
+      + 'thing the model could not see printed next to both.</p>'
+      + '<p><b>Research, not picks.</b> No locks, no guaranteed outcomes, and one-click unsubscribe in every email.</p>'
+      + '<p><a class="a-ctabtn" href="/newsletter/">See what is in it</a></p></section>';
     h += '</main>' + siteFooter() + '\n</body>\n</html>\n';
     return h;
   }

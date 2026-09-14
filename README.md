@@ -59,6 +59,25 @@ claim opens a review candidate, and only a person closes one.
 
 See [`tools/editorial/README.md`](tools/editorial/README.md).
 
+## The weekly research email
+Twice a week the same research goes out as an email nobody sends: **College
+Football Week Ahead** on Monday and **NFL Week Ahead** on Tuesday, both at 10:00
+America/Chicago, the second after Monday Night Football. Each edition carries
+the five upcoming games most worth researching — up to ten when more of them
+earn it, fewer when they do not, and none rather than padding — with EdgeDesk's
+fair spread beside a named book's number, the evidence behind the difference,
+and the thing the model could not see printed next to both.
+
+The ranking deliberately does **not** sort on the biggest gap to the market: the
+largest gaps in any week come from the thinnest data, so a discrepancy earns its
+points only as far as the price and the sample behind it reach, and one standing
+on neither is refused with the reason published in the email's own introduction.
+
+Sending is off until an operator turns it on, unsubscribe works in one click
+without a login, and no page in this repository can read a subscriber address.
+
+See [`tools/newsletter/README.md`](tools/newsletter/README.md).
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means

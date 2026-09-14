@@ -48,6 +48,17 @@ Evidence from the shipped front end, not from the naming.
 | `odds` | odds reads |
 | `team_brief` | team briefs |
 
+**Called directly by `newsletter/index.html` and `admin/newsletter/index.html`**
+
+| function | what for |
+|---|---|
+| `newsletter` | the whole public door: `/subscribe`, `/confirm`, `/unsubscribe` (GET page and the RFC 8058 one-click POST), `/preferences`, `/webhook` (signature-verified provider events) and `/dispatch` (operator only, and the caller's own token is checked against `newsletter_is_admin()` before the GitHub token is touched). Deployed `--no-verify-jwt`: a mail client posting a one-click unsubscribe carries no session, and neither does a provider webhook. |
+| `newsletter_cron` | the newsletter's primary scheduler. Pokes `newsletter.yml` by `workflow_dispatch`; it does not send anything itself, for the reason `editorial_cron` does not publish anything itself. |
+
+The newsletter pipeline itself is `tools/newsletter/`, run by
+`.github/workflows/newsletter.yml`; it reaches the database over PostgREST with
+the service role and no function is in that path.
+
 **Called directly by `collective/index.html`** (the Collective's own site)
 
 | function | what for |
