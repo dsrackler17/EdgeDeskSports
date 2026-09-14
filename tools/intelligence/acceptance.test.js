@@ -335,8 +335,16 @@ const MLB_PACKET = {
        failure, which is how a failed lookup becomes "that team does not
        exist". */
     const p = j.prompt || '';
-    chk('an unresolved matchup is not described as an unknown team',
-      !/does not exist|no such team|unknown team/i.test(p));
+    /* Scoped to claims about the TEAMS. The prompt says "the data does not
+       exist" elsewhere, about a source that answered with no rows, and that
+       sentence is correct — it is the distinction this assertion is protecting,
+       not a violation of it. */
+    const nmNote = (j.data_path.named_matchup || {}).note || '';
+    chk('an unresolved matchup is never described as an unknown or absent team',
+      !/(team|program|school|Texas State|Boise State)[^.]{0,40}(does not exist|is not a real|unknown team)/i.test(p + ' ' + nmNote),
+      nmNote);
+    chk('it is described as absent from the CARD, which is what was checked',
+      /no scheduled game with BOTH of those|not on any card|no game carries BOTH/i.test(p + ' ' + nmNote), nmNote);
     chk('and the answer is told to ask rather than substitute',
       /ASK ONE SHORT CLARIFYING QUESTION/.test(p));
   }
@@ -358,6 +366,30 @@ const MLB_PACKET = {
     eq('a source that cannot be read is a retrieval failure', nm2.state, 'RETRIEVAL_FAILED');
     chk('and is explicitly NOT a finding that the game does not exist',
       /RETRIEVAL failure, not a finding that the matchup is absent/i.test(nm2.note || ''), nm2.note);
+  }
+  {
+    /* (b2) A SCHEDULED GAME WITH NO PRICE is not a missing game, and is not a
+       tradeable one either. Three counts travel together everywhere in this
+       system and conflating any two is how a 46-market board was described as
+       having one. */
+    const ask = conversation({ packet: MLB_PACKET });
+    const j = await ask('How does Oregon look this week?');
+    const c = j.research_context || {};
+    eq('an unpriced game still resolves', c.game_id, '401858455');
+    eq('and routes to football', j.sport, 'americanfootball_ncaaf');
+    chk('the absence of a price is never reported as an absent game',
+      !/no such game|game does not exist|not on the card/i.test(j.prompt || ''));
+    const st = j.slate_state || {};
+    chk('scheduled, quoted and priced are counted separately',
+      st.scheduled_games != null && st.games_with_quotes != null
+      && st.scheduled_games >= st.games_with_quotes,
+      { scheduled: st.scheduled_games, quoted: st.games_with_quotes });
+    chk('and the prompt says a market NUMBER is not an executable price',
+      /not a price to bet into|no book, no per-side odds and no capture time|consensus line is a number/i.test(j.prompt || ''));
+    chk('no decision is published for a game with no executable price',
+      (j.decisions || []).every((d) => String(d.game_id) !== '401858455'
+        || (d.price && d.price.offered_american != null)),
+      (j.decisions || []).map((d) => [d.game_id, d.price && d.price.offered_american]));
   }
   {
     /* (c) THE AI ENDPOINT IS DOWN. The research must still reach the client. */
