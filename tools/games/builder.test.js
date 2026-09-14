@@ -260,8 +260,20 @@ if (good.json) {
      that as a non-ambiguous failure, and the run log and the operator console
      both show it. A missing key here is a loud, named state rather than a
      newsletter that quietly never went out. */
+  /* SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF and SB_DB_URL are the deploy
+     credentials, and they are listed under the same rule as the two above: an
+     empty value must not let the job silently do nothing.
+     deploy-intelligence.yml checks each one for PRESENCE before it runs
+     anything, skips the step that needs it, prints a ::warning:: naming what
+     was not deployed, writes the same fact into the run summary, and then asks
+     the deployment itself what build it is serving. A missing token there is a
+     loud, named state — which is exactly what its absence was NOT before this
+     workflow existed: the function was carried by hand and nothing in the
+     repository recorded whether it had been. That silence is what shipped an
+     answer about baseball to someone asking about Texas State. */
   const ALLOWED = ['SB_SERVICE_ROLE', 'SB_URL', 'COLLECTIVE_ADMIN_REFRESH_TOKEN', 'GITHUB_TOKEN',
-    'ANTHROPIC_API_KEY', 'RESEND_API_KEY'];
+    'ANTHROPIC_API_KEY', 'RESEND_API_KEY',
+    'SUPABASE_ACCESS_TOKEN', 'SUPABASE_PROJECT_REF', 'SB_DB_URL'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));
