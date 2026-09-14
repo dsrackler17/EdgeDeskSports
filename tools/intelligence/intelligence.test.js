@@ -828,15 +828,28 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     }));
     eq('a failed write is NOT_RECORDED', missing.state, 'NOT_RECORDED');
     chk('and says tracking is unavailable in words a reader will understand',
-      /TRACKING UNAVAILABLE/.test(missing.notice || '') && /was NOT recorded/.test(missing.notice || ''), missing.notice);
-    chk('a missing table names the migration that fixes it',
-      /recommendation_ledger\.sql has not been applied/.test(missing.notice || ''), missing.notice);
-    chk('and it is called an operational fault, not a change to the recommendation',
-      /operational fault|has not been applied/.test(missing.notice || ''), missing.notice);
+      /[Tt]racking is unavailable/.test(missing.notice || '') && /not recorded/.test(missing.notice || ''), missing.notice);
+    chk('and says the research itself still stands',
+      /research above is unaffected/.test(missing.notice || ''), missing.notice);
+    /* THE READER IS NOT SHOWN THE DATABASE. This is the line the reported
+       failure ended on: a paying customer asking about a football team was
+       given PostgREST's own sentence about public.recommendation_ledger. The
+       operator still gets it — on the operator's channel. */
+    chk('the reader-facing notice carries no table name, no SQL file and no HTTP code',
+      !/recommendation_ledger|\.sql|relation|schema cache|HTTP \d|404/i.test(missing.notice || ''), missing.notice);
+    chk('a missing table names the migration that fixes it, to the OPERATOR',
+      /recommendation_ledger\.sql has not been applied/.test(missing.operator_hint || ''), missing.operator_hint);
+    chk('and the redacted shape sent to a client drops both detail and the hint',
+      (function () {
+        const red = m.redactLedgerDetail(missing);
+        return red.detail === null && red.operator_hint === undefined
+          && red.diagnostic_available === true && red.notice === missing.notice;
+      })(), m.redactLedgerDetail(missing));
 
     const threw = await m.publishLedger('Bearer t', [row], async () => { throw new Error('network down'); });
     eq('a thrown write is still reported rather than swallowed', threw.state, 'NOT_RECORDED');
-    chk('with the underlying reason attached', /network down/.test(threw.notice || ''), threw.notice);
+    chk('with the underlying reason attached for the operator', /network down/.test(threw.operator_hint || ''), threw.operator_hint);
+    chk('and withheld from the reader', !/network down/.test(threw.notice || ''), threw.notice);
 
     eq('nothing to record is its own state',
       (await m.publishLedger('Bearer t', [])).state, 'NOTHING_TO_RECORD');

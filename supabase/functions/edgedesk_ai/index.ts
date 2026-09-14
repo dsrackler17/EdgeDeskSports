@@ -17896,6 +17896,8 @@ export interface LedgerWrite {
      shows the recommendation while quietly dropping the row is claiming a
      measurement it does not have. */
   notice: string | null;
+  /** Operator diagnostics. NEVER sent to a client — redactLedgerDetail() strips it. */
+  operator_hint?: string | null;
   at: string;
 }
 
@@ -17959,12 +17961,19 @@ export async function publishLedger(
     const detail = ok ? null : (await res.text().catch(() => "")).slice(0, 300);
     const out: LedgerWrite = {
       state: ok ? "RECORDED" : "NOT_RECORDED", rows: payload.length, status: res.status, detail, at,
+      /* ONE SENTENCE, NO OPERATIONS. The reader is owed the fact that the
+         decision was not recorded, and nothing else: an HTTP code, a table
+         name and a migration filename are the operator's business and reach
+         them through ?probe=1 and the deployment doctor. What the reader must
+         not be left with is the impression that it WAS recorded. */
       notice: ok ? null
-        : "TRACKING UNAVAILABLE: EdgeDesk could not write this decision to the recommendation ledger "
-          + `(HTTP ${res.status}), so it was NOT recorded and will not appear in the published record. `
-          + (detail && /relation|does not exist|schema cache/i.test(detail)
-            ? "The ledger table is missing on this deployment — supabase/recommendation_ledger.sql has not been applied."
-            : "This is an operational fault, not a change to the recommendation."),
+        : "Tracking is unavailable right now, so this decision was not recorded and will not appear in the "
+          + "published record. The research above is unaffected.",
+      /* Operator-side only; redactLedgerDetail() strips this before it is sent. */
+      operator_hint: ok ? null
+        : (detail && /relation|does not exist|schema cache/i.test(detail)
+          ? "The ledger table is missing on this deployment — supabase/recommendation_ledger.sql has not been applied."
+          : `HTTP ${res.status} from the ledger insert. Operational fault, not a change to the recommendation.`),
     };
     LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
     return out;
@@ -17972,12 +17981,27 @@ export async function publishLedger(
     const detail = String((e as Error)?.message ?? e).slice(0, 300);
     const out: LedgerWrite = {
       state: "NOT_RECORDED", rows: payload.length, status: null, detail, at,
-      notice: "TRACKING UNAVAILABLE: the write to the recommendation ledger failed (" + detail + "), so this "
-        + "decision was NOT recorded and will not appear in the published record.",
+      notice: "Tracking is unavailable right now, so this decision was not recorded and will not appear in the "
+        + "published record. The research above is unaffected.",
+      operator_hint: detail,
     };
     LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
     return out;
   }
+}
+
+/**
+ * The customer-facing shape of a ledger outcome.
+ *
+ * Everything a reader needs — did it record, and the sentence saying it did
+ * not — and nothing a database says to an operator. `detail` is kept on the
+ * server in LAST_LEDGER_WRITE, which is what ?probe=1 and
+ * tools/intelligence/deploy_doctor.js read, so no diagnostic is lost; it is
+ * simply not narrated to the person asking about a football game.
+ */
+export function redactLedgerDetail(l: LedgerWrite): Omit<LedgerWrite, "detail" | "operator_hint"> & { detail: null; diagnostic_available: boolean } {
+  const { detail, operator_hint, ...rest } = l;
+  return { ...rest, detail: null, diagnostic_available: !!(detail || operator_hint) };
 }
 
 /* Writes the session under the CALLER's JWT, so RLS decides what is allowed.
@@ -18579,10 +18603,22 @@ export async function handle(req: Request): Promise<Response> {
 
     if (!r.ok) {
       const detail = await r.text().catch(() => "");
-      /* The client falls back to its own deterministic engine on a non-200.
-         The deterministic card travels anyway so a client that reads it does
-         not lose the decision to a narration outage. */
-      return json({ error: `anthropic ${r.status}`, detail, presentation }, 502);
+      /* NARRATION FAILED. THE RESEARCH DID NOT.
+         Every retrieval for this turn has already run and been paid for: the
+         slate, the matchup, the market, the packets and the deterministic
+         decisions all exist on this line. Returning only an error threw all of
+         it away and left the panel to fall back to whatever signal the reader
+         happened to have open — which, on a Texas State question asked with a
+         baseball game open, is how an unrelated card became the answer.
+         The status stays 502 because the narration genuinely failed; the body
+         now carries the research so a client can render the facts and offer a
+         retry instead of inventing an opinion. */
+      return json({
+        error: `anthropic ${r.status}`, detail, presentation,
+        answer: null,
+        narration: { ok: false, reason: `the writing model answered ${r.status}`, retryable: true },
+        research: researchSummary(research, plan),
+      }, 502);
     }
     const data = await r.json();
     const textOf = (d: any) => (d?.content ?? [])
@@ -18677,8 +18713,16 @@ export async function handle(req: Request): Promise<Response> {
       model: data?.model ?? MODEL,
       cached: false,
       /* Additive, and the only place a reader learns that a decision they can
-         see was not written down. */
-      ledger,
+         see was not written down.
+
+         THE RAW DATABASE ERROR DOES NOT TRAVEL. `detail` carries PostgREST's
+         own text — `relation "public.recommendation_ledger" does not exist` —
+         and the panel was printing it verbatim underneath the answer, so a
+         paying reader asking about a football game was shown a schema-cache
+         error about a table they have never heard of. The operator needs that
+         string; the customer needs the one-line notice. It stays server-side,
+         where ?probe=1 and the deployment doctor already read it. */
+      ledger: redactLedgerDetail(ledger),
       // Additive. Older clients ignore it; the panel can render a research trace.
       research: researchSummary(research, plan),
       /* Additive. The structured decision card: deterministic fields from
@@ -18686,7 +18730,14 @@ export async function handle(req: Request): Promise<Response> {
       presentation,
     });
   } catch (e) {
-    return json({ error: String((e as Error)?.message ?? e), presentation }, 502);
+    /* Same reasoning as the non-200 branch above: the research survives a
+       transport failure in the narration call and travels with the error. */
+    return json({
+      error: String((e as Error)?.message ?? e), presentation,
+      answer: null,
+      narration: { ok: false, reason: "the writing model could not be reached", retryable: true },
+      research: researchSummary(research, plan),
+    }, 502);
   }
 }
 

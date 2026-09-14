@@ -128,7 +128,13 @@ function done() {
     broken.turns.every((t) => !t.decisions.length || t.ledger.state === 'NOT_RECORDED'),
     broken.turns.map((t) => t.ledger.state));
   chk('with a notice a reader will understand',
-    broken.turns.some((t) => /TRACKING UNAVAILABLE/.test((t.ledger && t.ledger.notice) || '')));
+    broken.turns.some((t) => /[Tt]racking is unavailable/.test((t.ledger && t.ledger.notice) || '')
+      && /not recorded/.test((t.ledger && t.ledger.notice) || '')));
+  /* And nothing a database said. The reported failure ended with PostgREST's
+     own sentence about public.recommendation_ledger printed under the answer. */
+  chk('and no database text reaches the reader',
+    broken.turns.every((t) => !/recommendation_ledger|relation |schema cache|HTTP \d{3}/i.test((t.ledger && t.ledger.notice) || '')),
+    broken.turns.map((t) => t.ledger && t.ledger.notice).filter(Boolean)[0]);
   chk('and the answers still arrive', broken.turns.every((t) => typeof t.answer === 'string' && t.answer.length > 0));
 
   /* ---- the matchup reader itself, on the phrasings people use ---------- */
