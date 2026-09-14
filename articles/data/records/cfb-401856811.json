@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Houston vs. Texas Tech: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Houston vs. Texas Tech 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Houston at Texas Tech at Texas Tech -14.3 with a 54.8 fair total. Texas Tech wins 83% of simulations. Data confidence 41%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Houston at Texas Tech at Texas Tech -14.3 with a 54.8 fair total. Texas Tech wins 83% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Texas Tech carries the stronger underlying team rating — +7.0 against +1.4, a 5.7-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Texas Tech -14.3 before any sportsbook number is consulted, with Texas Tech…",
   "home_team": "Texas Tech",
   "away_team": "Houston",
@@ -21,11 +21,11 @@
   "game_time": "2026-09-19T00:00:00.000Z",
   "game_when_label": "2026-09-19 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T17:15:33.743Z",
-  "generated_at": "2026-09-14T17:15:33.743Z",
+  "updated_at": "2026-09-14T18:25:52.176Z",
+  "generated_at": "2026-09-14T18:25:52.176Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
   "confidence": 41,
   "priced": true,
   "fair_spread_text": "Texas Tech -14.3",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -108,8 +108,8 @@
       },
       "confidence_pct": 41,
       "inputs_reached_pct": 40,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1242,8 +1242,14 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "sample",
-          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "label": "market disagreement",
+          "text": "The market disagrees by 4.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 32h old",
           "widening": null
         },
         {
@@ -1287,12 +1293,6 @@
           "label": "early season",
           "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
           "widening": "4%"
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "home starting QB unknown",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1348,15 +1348,25 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Texas Tech -14.3",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Texas Tech -9.5",
+      "difference": "4.8 points",
+      "difference_n": 4.804377902118031,
+      "total_model": "54.8",
+      "total_market": "52.5",
+      "book": "captured · FanDuel",
+      "captured": "2026-09-13T10:00:02.682+00:00",
+      "capture_age": "32 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "headline": "EdgeDesk projects Texas Tech 35, Houston 20.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1508,7 +1518,7 @@
       "EdgeDesk’s line is Texas Tech -14.3 on a neutral read of the two teams, before any book is consulted. Projected total 54.8.",
       "Texas Tech wins 83% of the time in EdgeDesk’s simulation, Houston 17%.",
       "Eight games in ten land between -8.7 and +35.3 for Texas Tech. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "The market has Texas Tech -9.5 at captured · FanDuel, 4.8 points from EdgeDesk’s number."
     ],
     "missing": [],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1518,6 +1528,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-14T17:15:33.743Z"
+    "at": "2026-09-14T18:25:52.176Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_newsletter_runs_v1",
-  "kept": 11,
+  "kept": 13,
   "max": 500,
   "runs": [
     {
@@ -146,7 +146,37 @@
         "games": 10,
         "content_hash": "ed_6aab2e46"
       }
+    },
+    {
+      "at": "2026-09-14T18:25:50.378Z",
+      "run_id": "nl_td6z95nb",
+      "sport": "CFB",
+      "phase": "market",
+      "ok": true,
+      "reason": null,
+      "detail": {
+        "quotes": 47,
+        "signals_read": 410,
+        "refused": {
+          "no_slate_game_with_both_teams": 22,
+          "kickoff_disagreement": 10
+        },
+        "wrote": "articles/data/market/2026-week-03.json"
+      }
+    },
+    {
+      "at": "2026-09-14T18:25:54.905Z",
+      "run_id": "nl_lxkfi56x",
+      "sport": "CFB",
+      "phase": "build",
+      "edition_key": "CFB:2026:W03:2026-09-14",
+      "ok": false,
+      "reason": "validation_failed",
+      "detail": {
+        "games": 10,
+        "content_hash": "ed_ab9936a9"
+      }
     }
   ],
-  "generated_at": "2026-09-15T15:00:00.000Z"
+  "generated_at": "2026-09-14T18:25:54.905Z"
 }
