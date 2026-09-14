@@ -510,6 +510,28 @@ async function sendBody(edition, opts, lease) {
       detail: revalidate.hold_reason, validation: revalidate }, outcomeBase);
   }
 
+  /* THE SAME NEWSLETTER, TWICE, UNDER TWO KEYS.
+     The identity index stops one edition being stored twice. It does not stop
+     two editions, on two dates, carrying the same ten games — which is what
+     happens when the upcoming slate has not advanced between them, and the
+     content hash says so plainly. The provider's idempotency key is built
+     from the edition key, so it would accept both and a subscriber would read
+     the same week twice.
+
+     A retry excludes the edition's own row, because finishing a partial send
+     is the one case where the identical content SHOULD go out again. --force
+     overrides, because an operator re-sending knowingly is not this mistake. */
+  if (!opts.test && !opts.force && edition.content_hash && c && c.sentWithHash) {
+    let twin = null;
+    try { twin = await c.sentWithHash(edition.sport, edition.content_hash, edition.edition_key); }
+    catch (e) { log('  ! could not check for an identical sent edition: ' + (e && e.message)); }
+    if (twin) {
+      return Object.assign({ sent: false, reason: 'already_sent_as',
+        detail: 'the identical edition went out as ' + twin.edition_key
+          + (twin.sent_at ? ' at ' + twin.sent_at : '') + ' — same content hash, different date' }, outcomeBase);
+    }
+  }
+
   /* ---- the recipients, resolved LIVE ---------------------------------- */
   let recipients = [];
   if (opts.test) {

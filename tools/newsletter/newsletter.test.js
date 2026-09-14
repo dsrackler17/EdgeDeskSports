@@ -1046,6 +1046,11 @@ section('7 — the provider');
           const d = state.deliveries.filter(x => x.email === out.email)[0];
           if (d) { d.status = out.status; d.ambiguous = out.ambiguous; d.last_error = out.error; }
         },
+        async sentWithHash(sport, hash, exceptKey) {
+          const rows = (init.sentEditions || []).filter(e => e.sport === sport
+            && e.content_hash === hash && e.edition_key !== exceptKey);
+          return rows.length ? rows[0] : null;
+        },
         async bumpAttempts() {}, async logRun() {}, async suppress() {},
       };
       return { state, client };
@@ -1124,6 +1129,36 @@ section('7 — the provider');
     chk('an edition everyone has been accepted for does not re-send',
       s4.reason === 'already_delivered_to_everyone', JSON.stringify(s4));
     chk('…and is marked sent', db4.state.edition.status === 'sent');
+
+    /* THE SAME TEN GAMES, TWICE, UNDER TWO KEYS.
+       The identity index stops one edition being stored twice; it does not
+       stop two dates carrying the same slate. Both NFL previews in the store
+       came out with the identical content hash, and the provider's
+       idempotency key is built from the edition key, so it would have
+       accepted both. */
+    const twin = { sport: 'NFL', edition_key: 'NFL:2026:W02:2026-09-08',
+      content_hash: 'ed_deadbeef', sent_at: '2026-09-08T15:04:00.000Z' };
+    const db4b = fakeDb({ eligible: people3, sentEditions: [twin] });
+    const s4b = await runSend(db4b);
+    chk('an edition identical to one already sent does not go out again',
+      s4b.sent === false && s4b.reason === 'already_sent_as', JSON.stringify(s4b));
+    chk('\u2026and it names the edition that did', /2026-09-08/.test(s4b.detail || ''), s4b.detail);
+    chk('\u2026and nobody is put on a roster for it', db4b.state.deliveries.length === 0);
+
+    const db4c = fakeDb({ eligible: people3, sentEditions: [Object.assign({}, twin, { content_hash: 'ed_other' })] });
+    chk('a different week with a different hash is unaffected',
+      (await runSend(db4c)).sent === true);
+
+    /* finishing a partial send is the one case where identical content SHOULD
+       go out again, so a retry excludes the edition's own row */
+    const db4d = fakeDb({ eligible: people3,
+      sentEditions: [Object.assign({}, twin, { edition_key: 'NFL:2026:W02:2026-09-15' })] });
+    chk('a retry of the edition\u2019s own row is not blocked by itself',
+      (await runSend(db4d, null, { retry: true })).sent === true);
+
+    const db4e = fakeDb({ eligible: people3, sentEditions: [twin] });
+    chk('an operator re-sending knowingly can still force it',
+      (await runSend(db4e, null, { force: true })).sent === true);
 
     /* the kill switch is re-read at send time, not trusted from the build */
     const db5 = fakeDb({ eligible: people3 });
