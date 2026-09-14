@@ -335,8 +335,16 @@ const MLB_PACKET = {
        failure, which is how a failed lookup becomes "that team does not
        exist". */
     const p = j.prompt || '';
-    chk('an unresolved matchup is not described as an unknown team',
-      !/does not exist|no such team|unknown team/i.test(p));
+    /* Scoped to claims about the TEAMS. The prompt says "the data does not
+       exist" elsewhere, about a source that answered with no rows, and that
+       sentence is correct — it is the distinction this assertion is protecting,
+       not a violation of it. */
+    const nmNote = (j.data_path.named_matchup || {}).note || '';
+    chk('an unresolved matchup is never described as an unknown or absent team',
+      !/(team|program|school|Texas State|Boise State)[^.]{0,40}(does not exist|is not a real|unknown team)/i.test(p + ' ' + nmNote),
+      nmNote);
+    chk('it is described as absent from the CARD, which is what was checked',
+      /no scheduled game with BOTH of those|not on any card|no game carries BOTH/i.test(p + ' ' + nmNote), nmNote);
     chk('and the answer is told to ask rather than substitute',
       /ASK ONE SHORT CLARIFYING QUESTION/.test(p));
   }
