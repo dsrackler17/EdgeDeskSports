@@ -426,6 +426,36 @@ create unique index if not exists newsletter_editions_identity_uk
   on public.newsletter_editions (sport, season, slate_week, edition_date);
 create unique index if not exists newsletter_editions_key_uk
   on public.newsletter_editions (edition_key);
+
+-- RULE 2b: ONE SEND PER SPORT PER BODY OF WORK, ENFORCED RATHER THAN CHECKED.
+--
+-- Rule 2 stops one edition being STORED twice. It does not stop two editions,
+-- on two dates, carrying the SAME GAMES — which is what happens when the
+-- upcoming slate has not advanced between them, and their content hashes say
+-- so. The pipeline asks before it sends, but a question asked in application
+-- code is a read-then-act: two workers on two different edition keys can both
+-- read "no twin" and both dispatch.
+--
+-- So the database decides it. An edition is stamped `sending` BEFORE a single
+-- message is handed to the provider, so a partial unique index over the
+-- sending and sent states makes the second edition fail at that transition —
+-- before any email leaves, not after. The same row moving sending -> sent is
+-- still one row, so a retry is unaffected, and a test send never enters these
+-- states at all.
+--
+-- CREATED DEFENSIVELY: if a deployment already holds two such rows the index
+-- cannot be built, and that is a row in this file's report to act on rather
+-- than a migration that refuses to finish.
+do $$
+begin
+  begin
+    create unique index if not exists newsletter_editions_sent_body_uk
+      on public.newsletter_editions (sport, content_hash)
+      where status in ('sending', 'sent') and content_hash is not null;
+  exception when unique_violation then
+    raise notice 'newsletter_editions_sent_body_uk NOT created: two editions of one sport already share a content hash in sending/sent. Resolve them, then re-run this file.';
+  end;
+end $$;
 create index if not exists newsletter_editions_status_idx
   on public.newsletter_editions (status, scheduled_at desc);
 create index if not exists newsletter_editions_sport_idx
@@ -1391,6 +1421,10 @@ union all select 2, 'sending is OFF until an operator turns it on',
 union all select 3, 'one edition per sport/season/week/date',
   case when exists (select 1 from pg_indexes where tablename = 'newsletter_editions'
       and indexname = 'newsletter_editions_identity_uk') then 'ok' else 'CHECK THIS' end
+union all select 3.5, 'one send per sport per body of work',
+  case when exists (select 1 from pg_indexes where tablename = 'newsletter_editions'
+      and indexname = 'newsletter_editions_sent_body_uk') then 'ok'
+      else 'CHECK THIS — two editions of one sport share a content hash in sending/sent' end
 union all select 4, 'one delivery row per (edition, address)',
   case when exists (select 1 from pg_indexes where tablename = 'newsletter_deliveries'
       and indexname = 'newsletter_deliveries_once_uk') then 'ok' else 'CHECK THIS' end
