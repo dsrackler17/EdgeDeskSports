@@ -1203,6 +1203,43 @@ section('7 — the provider');
       || (sT.test_links || []).every(l => l.email === 'ops@example.com'),
       JSON.stringify(sT.test_links));
 
+    /* THE RETRY WINDOW IS A SCHEDULING GUARD, NOT THE LAUNCH GATE.
+       The first real test of this pipeline sent nothing: the CFB edition's
+       four-hour window had closed eighteen minutes earlier and `edition_stale`
+       refused the test too, which made the launch checklist impossible to
+       complete outside two four-hour windows a week. A test goes to an
+       operator's own inbox and the window has nothing to say about it — but it
+       must SAY the window had closed, so a test is never mistaken for proof
+       that a timely send would have gone. */
+    const staleEdition = Object.assign({}, sendableEdition, {
+      deadline_at: new Date(NOW - 60000).toISOString(),
+    });
+    async function runStale(db, over, sendOpts) {
+      return RUN.send(staleEdition, Object.assign({
+        resolved: resolvedFor(db, over), now: NOW, log: () => {}, dry: true, env: {},
+      }, sendOpts || {}));
+    }
+    const dbStale = fakeDb({ eligible: people3 });
+    const sStale = await runStale(dbStale);
+    chk('a real send past its window is refused',
+      sStale.sent === false && sStale.reason === 'edition_stale', JSON.stringify(sStale));
+
+    const dbStaleT = fakeDb({ eligible: people3 });
+    const sStaleT = await runStale(dbStaleT, { settings: { test_recipients: ['ops@example.com'] } },
+      { test: true, dry: false, driver: 'console' });
+    chk('a test send past that window still goes', sStaleT.sent === true, JSON.stringify(sStaleT).slice(0, 200));
+    chk('\u2026and says the window had closed',
+      /retry window closed/.test(sStaleT.past_window || ''), String(sStaleT.past_window));
+    chk('\u2026and still reaches only the test address',
+      (sStaleT.test_links || []).every(l => l.email === 'ops@example.com'),
+      JSON.stringify(sStaleT.test_links));
+    chk('\u2026and still leaves the edition untouched',
+      dbStaleT.state.edition.status === 'ready' && dbStaleT.state.calls.patches.length === 0);
+    chk('a timely test carries no window note',
+      ((await runSend(fakeDb({ eligible: people3 }),
+        { settings: { test_recipients: ['ops@example.com'] } },
+        { test: true, dry: false, driver: 'console' })).past_window) == null);
+
     /* the kill switch is re-read at send time, not trusted from the build */
     const db5 = fakeDb({ eligible: people3 });
     const s5 = await runSend(db5, { sending_enabled: false });
@@ -1367,6 +1404,17 @@ section('7 — the provider');
     chk('the workflow rebuilds the pages behind the records it refreshed', iBuild > 0);
     chk('\u2026after it has regenerated them', iBuild > iGenerate,
       'generate at ' + iGenerate + ', build at ' + iBuild);
+    /* A RETRY THAT POISONS ITSELF IS NOT A RETRY. The first real run this
+       step raced lost every attempt: `git pull --rebase` conflicted on the
+       generated manifest and sitemap, stopped with unmerged files, and the
+       three remaining attempts all died on that same state. */
+    chk('the commit retry never leaves a conflicted rebase behind',
+      /git rebase --abort/.test(wf) && !/git pull --rebase origin main \|\| true/.test(wf));
+    chk('\u2026and rebuilds the commit on the new main instead of merging into it',
+      /git checkout -q -B main origin\/main/.test(wf) && /git checkout "\$SAVED" --/.test(wf));
+    chk('\u2026and stops cleanly when another run already committed the same artefacts',
+      /already committed these artefacts/.test(wf));
+
     const iAdd = wf.indexOf('git add');
     const addLine = wf.slice(iAdd, wf.indexOf('\n', iAdd));
     chk('the run commits the refreshed snapshot, the records and the pages',

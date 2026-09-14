@@ -492,10 +492,29 @@ async function sendBody(edition, opts, lease) {
     return Object.assign({ sent: false, reason: 'sending_disabled',
       detail: 'newsletter_settings.sending_enabled is false — this is the launch gate' }, outcomeBase);
   }
+  /* THE RETRY WINDOW IS A SCHEDULING GUARD, NOT THE LAUNCH GATE.
+     It exists so a late edition never reaches subscribers — Monday's research
+     landing on Thursday is worse than not landing. It has nothing to say about
+     a message going to an operator's own inbox, and applying it there made the
+     launch checklist impossible: a test could only be sent inside a four-hour
+     window, twice a week. The very first real test of this pipeline was
+     refused for exactly that and sent nothing.
+
+     So a test send is exempt, the same way it is exempt from
+     sending_enabled — and it SAYS SO in the result, so a test of an edition
+     whose window has closed is never mistaken for a timely one. Nothing about
+     the subscriber path changes: test mode resolves only the configured test
+     addresses and never a subscriber, and sending_enabled still gates every
+     real send. */
   const deadline = Date.parse(edition.deadline_at);
-  if (!opts.force && Number.isFinite(deadline) && now > deadline) {
+  const pastWindow = Number.isFinite(deadline) && now > deadline;
+  if (!opts.force && !opts.test && pastWindow) {
     return Object.assign({ sent: false, reason: 'edition_stale',
       detail: 'the retry window closed at ' + edition.deadline_at }, outcomeBase);
+  }
+  if (opts.test && pastWindow) {
+    log('  note: this edition\u2019s retry window closed at ' + edition.deadline_at
+      + ' — a real send would be refused as edition_stale; a test is not');
   }
   /* A GAME THAT KICKED OFF WHILE THE EDITION WAITED invalidates the edition.
      Re-validating here rather than trusting the build is the difference
@@ -711,6 +730,10 @@ async function sendBody(edition, opts, lease) {
      token or a synthetic one — is the difference between checking that and
      assuming it. Never returned for a real send: those URLs are per
      subscriber and belong in the email and nowhere else. */
+  const testWindowNote = (opts.test && pastWindow)
+    ? 'the edition\u2019s retry window closed at ' + edition.deadline_at
+      + '; a real send would have been refused as edition_stale'
+    : null;
   const testLinks = opts.test ? payload.map(r => ({
     email: r.email,
     unsubscribe: r.urls.unsubscribe,
@@ -718,6 +741,7 @@ async function sendBody(edition, opts, lease) {
     live_token: !!(recipients.filter(x => x.email === r.email)[0] || {}).live_token,
   })) : undefined;
   return Object.assign({ sent: true, provider: result.counts, dry: !!opts.dry, test: !!opts.test,
+    past_window: testWindowNote,
     console_log: result.console_log, test_links: testLinks }, outcomeBase);
 }
 
