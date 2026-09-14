@@ -960,5 +960,64 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       !/EVIDENCE WITHHELD/.test(p2) || /SUBJECTS WITH NO EVIDENCE IN THIS MESSAGE AT ALL/.test(p2));
   }
 
+  /* =====================================================================
+     26. THE WHOLE REAL CARD, RECONCILED.
+     Scenario 19 checks the counts on a seven-game fixture. This runs the
+     desk's market resolution over the REAL committed 75-game slate — the same
+     artifact the board renders — so the shape the user actually saw (75
+     scheduled, most carrying a market number, far fewer carrying a price) is
+     reproduced from the real file rather than from numbers typed in.
+     ===================================================================== */
+  {
+    const slate = FX.SLATE;
+    chk('the committed card is the size the board showed', slate.games.length === 75, slate.games.length);
+
+    /* cfb.lines.spread is a BETTING number, the convention the artifact
+       publishes model_home_line in, so a correctly stored row IS that number.
+       Building the fixture the other way round is what a bad ingest looks
+       like, and both are run here. */
+    const linesFor = (offset, invert) => {
+      const L = {};
+      slate.games.forEach((g, i) => {
+        if (i % 5 === 3 || g.model_home_line == null) return;   /* a fifth carry no line */
+        const spread = g.model_home_line + offset;
+        L[g.game_id] = [{ game_id: g.game_id, provider: 'consensus',
+          spread: invert ? -spread : spread, over_under: 55.5, home_moneyline: -150, away_moneyline: 130 }];
+      });
+      return L;
+    };
+    const runCard = (L) => {
+      const out = { lined: 0, priced: 0, none: 0, faults: 0, devig: 0, mirrored: 0 };
+      slate.games.forEach((g) => {
+        const mk = I.resolveMarket({ signals: [], lines: L[g.game_id] || [],
+          home_selection: g.home_team, away_selection: g.away_team, model_home_line: g.model_home_line });
+        if (mk.has_market_line) out.lined++; else out.none++;
+        if (mk.has_executable_price) out.priced++;
+        if (mk.spread.fault) out.faults++;
+        if (mk.moneyline.devig && mk.moneyline.devig.ok) out.devig++;
+        if (mk.spread.odds_decimal != null || mk.spread.odds_american != null) out.mirrored++;
+      });
+      return out;
+    };
+
+    const good = runCard(linesFor(1.5, false));
+    eq('every game on the card is accounted for', good.lined + good.none, slate.games.length);
+    chk('most of the card carries a market NUMBER, as the board shows', good.lined > 50, good);
+    eq('and none of it carries an executable price without a captured quote', good.priced, 0);
+    eq('a correctly oriented card produces no convention faults', good.faults, 0);
+    chk('a two-sided consensus moneyline IS de-vigged, because both sides are real',
+      good.devig === good.lined && good.devig > 50, good);
+    eq('and NO spread price is ever mirrored from the other side of a handicap', good.mirrored, 0);
+
+    /* The same card stored the wrong way round. The guard must catch the rows
+       big enough to catch and must never flip one. */
+    const bad = runCard(linesFor(1.5, true));
+    chk('an inverted table has most of its spreads dropped rather than flipped',
+      bad.faults > 30, bad);
+    eq('and dropping a spread never invents an executable price', bad.priced, 0);
+    chk('the games still count as carrying a market, because the total and the moneyline survive',
+      bad.lined === good.lined, { bad: bad.lined, good: good.lined });
+  }
+
   done();
 })().catch((e) => { console.error('CRASH', e && e.stack || e); process.exit(1); });
