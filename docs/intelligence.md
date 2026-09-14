@@ -5,7 +5,108 @@ is still missing. It is written for whoever has to operate or extend this next.
 
 ---
 
+## 0. The 2026-09-14 incident — "How does Texas State look this week?"
+
+A paying customer asked that, with an MLB board open, and got baseball: intent
+`unknown`, retrieval scoped to `baseball_mlb`, "Texas State" unresolved with
+"texas" reaching the **Texas Rangers**, MLB pitcher/bullpen/offense evidence, a
+long explanation that no college football module had been queried, an unrelated
+Padres–Rockies decision card, and a raw error about
+`public.recommendation_ledger`.
+
+**The root cause has two halves, and the first one is not a code defect.**
+
+### 0.1 Merged was not deployed
+
+`tools/intelligence/deploy_doctor.js`, run against production on the day:
+
+```
+this checkout would deploy: edgedesk_ai-2026-09-14-r8-matchup-routing-fix
+  DEPLOYED     serving build edgedesk_ai-2026-09-14-r6-cfb-market-join
+  STALE        deployed r6, this checkout would deploy r8
+               fix: supabase functions deploy edgedesk_ai
+  NOT_APPLIED  recommendation_ledger — the table is not in the schema
+               fix: psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql
+```
+
+`app.html` ships on merge because GitHub Pages serves the repository. The edge
+function and every `.sql` shipped only when a person remembered to run a
+command. PRs #233–#235 fixed most of the routing and **none of it was running**.
+The ledger error the customer saw was the same fact from the other end: the
+table had never been created.
+
+`.github/workflows/deploy-intelligence.yml` now exists so "merged" and
+"running" are connected. It is manual on purpose; what it removes is the
+laptop, the forgotten step and the undeclared drift. It needs
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF` and `SB_DB_URL`, which this
+repository has never held.
+
+### 0.2 And the routing was still wrong, on current main
+
+Reproduced through the real handler on the unmodified checkout, so this is not
+inference:
+
+| what | was |
+|---|---|
+| `intent` | `unknown` — `classify()` runs BEFORE any retrieval and can only see words. "Texas State" is not in the curated `COLLEGE_SCHOOLS` registry and carries no league word, so `detectSport` found nothing and the question fell through to the baseball catch-all |
+| steps executed | `slate, focus_signal, market, matchup, pitcher_features, opponent_offense` — on a college football game, and reported to the reader as such |
+| the sport | *was* corrected, by `resolveNamedMatchup`, one step too late to route anything. Two authorities disagreed and nothing noticed |
+| the Padres card | the client's open packet was labelled "authoritative" unconditionally, and `presentationSource` built the decision card from it whatever the question was |
+| follow-ups | the subject was re-derived each turn by scanning the transcript for "A vs B". A conversation that began with ONE name had nothing to find, so turn two fell back to the open board |
+| the ledger error | `publishLedger` put PostgREST's own sentence in `detail`, and `ledgerNoticeHTML` printed it under the answer |
+
+### 0.3 What changed
+
+**One research context, resolved once**, with a stated precedence (a matchup
+named in this message → the carried subject, re-validated against the card → an
+explicit league word → the open game → the board → nothing), the rule that
+decided it, and its ambiguity state. `sportKey` was a third chain reachable
+through `state.sport`; it now reads the context, because the point of having
+one is that there is only one.
+
+**The plan is classified a second time** once the context has a sport, so a
+college football question runs a college football plan.
+`scopeStepsToSport()` swaps the six MLB-only retrieval layers for the sport's
+own — one rule rather than sixty duplicated branches, so generic intents
+(`attack`, `compare`, `price`) route correctly in every sport.
+
+**The context is a filter, not a caption.** Decisions, evidence packets, the
+client packet and the rendered card are all checked against it; what does not
+match is withheld and counted. Explaining a wrong-sport answer is not the same
+as not giving one.
+
+**The subject is carried structurally** as a game id and re-validated against
+the published card each turn. The browser may remind the server what was being
+discussed; `sanitizeSubject()` keeps identifiers only, so it can never assert a
+price, a projection or a ledger entry.
+
+**Narration failure no longer costs the research.** Every retrieval runs before
+the model is called, so the 502 carries the research and the panel renders the
+facts with a retry instead of an invented opinion — and instead of
+`narrative(x)`, which answered from whatever signal was open.
+
+`tools/intelligence/acceptance.test.js` drives the exact reported messages
+through the real handler: 213 assertions, none about what the answer *says*.
+It caught four further defects after the first fixes, including an explicit
+league word losing to a carried subject, and a bare school name ("How about
+Oregon?") never being looked up at all — so the sport came from whichever board
+was open, which is the forbidden silent default to MLB.
+
+### 0.4 Availability, correctly counted
+
+The reported "276 failed source reads" was not 276 problems. It was two
+systematic faults counted once per team, on all 138: `espn_depth` **404** (the
+path does not serve college football) and `espn_participation` **403** (access
+restricted). Those need opposite responses. Failures are now grouped by cause
+and classified; the depth collector tries the documented endpoints in order and
+records which answered, and still raises when none does. The 403 is left alone.
+Coverage is unchanged — 138 LIMITED, 0 official reports — and availability
+still reads UNKNOWN rather than healthy.
+
+---
+
 ## 1. Root causes
+
 
 Six symptoms were reported. Four of them turned out to be the same structural
 problem wearing different clothes, and two were labelling faults with a single
