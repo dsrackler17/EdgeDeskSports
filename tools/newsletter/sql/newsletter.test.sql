@@ -209,6 +209,51 @@ begin
 end $$;
 
 -- ===========================================================================
+-- 2b — THE ONE PUBLIC DOOR IS RATE LIMITED
+--
+-- /subscribe cannot require a session: a stranger signing up has none. Which
+-- means anybody who can reach it can make a VERIFIED EDGEDESK DOMAIN send
+-- mail to any address they name. Unthrottled that is an email-bombing service
+-- with our sending reputation attached. Both caps live here rather than in the
+-- edge runtime, so no client and no redeploy goes around them.
+-- ===========================================================================
+do $$
+declare r jsonb; i int; issued int := 0; cap int;
+begin
+  r := public.newsletter_signup('rl@example.com', true, false, 'public_form', 'ua', 'hash-rl');
+  perform pg_temp.chk('a first signup is issued a confirmation token', (r->>'confirm_token') is not null);
+
+  r := public.newsletter_signup('rl@example.com', true, true, 'public_form', 'ua', 'hash-rl');
+  perform pg_temp.chk('an immediate repeat is issued NO second token', (r->>'confirm_token') is null);
+  perform pg_temp.chk('…and says it was the cooldown', r->>'throttled' = 'cooldown');
+  perform pg_temp.chk('…and still looks identical to the caller', r->>'state' = 'pending');
+  perform pg_temp.chk('…but the preference change is still recorded, so correcting a choice is not punished',
+    (select wants_nfl from public.newsletter_subscribers where email = 'rl@example.com'));
+
+  update public.newsletter_subscribers set confirm_sent_at = now() - interval '20 minutes'
+   where email = 'rl@example.com';
+  r := public.newsletter_signup('rl@example.com', true, false, 'public_form', 'ua', 'hash-rl');
+  perform pg_temp.chk('past the cooldown a new token is issued', (r->>'confirm_token') is not null);
+
+  select signup_per_ip_hour into cap from public.newsletter_settings where id = 1;
+  for i in 1..(cap + 4) loop
+    r := public.newsletter_signup('flood' || i || '@example.com', true, false, 'public_form', 'ua', 'hash-flood');
+    if (r->>'confirm_token') is not null then issued := issued + 1; end if;
+  end loop;
+  perform pg_temp.chk('a flood from one source stops at the cap', issued = cap);
+  r := public.newsletter_signup('elsewhere@example.com', true, false, 'public_form', 'ua', 'hash-other');
+  perform pg_temp.chk('a different source is unaffected by it', (r->>'confirm_token') is not null);
+
+  -- and the cap is a setting an operator can move, not a literal
+  begin
+    update public.newsletter_settings set signup_per_ip_hour = 0 where id = 1;
+    perform pg_temp.chk('a cap of zero was accepted', false);
+  exception when check_violation then
+    perform pg_temp.chk('a cap that would block every signup is refused', true);
+  end;
+end $$;
+
+-- ===========================================================================
 -- 3 — UNSUBSCRIBE WITHOUT A LOGIN, AND SUPPRESSION PRECEDENCE
 -- ===========================================================================
 do $$
