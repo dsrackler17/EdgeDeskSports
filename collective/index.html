@@ -48,6 +48,26 @@ h2{font-size:15px;margin:26px 0 8px;font-weight:700}
 /* table */
 .tblwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;min-width:760px}
+/* THE SAMPLE UNDER THE NUMBER. It sits inside the same cell as the value it
+   belongs to, which is the only arrangement that survives a narrow screen:
+   a sample in its own column is the first thing to slide off the right edge,
+   and that is exactly how "0 graded" came to be the last visible word about
+   a model with a full column of margin errors. */
+.nsamp{font-size:10px;line-height:1.5;font-weight:400;color:var(--faint);
+       letter-spacing:.03em;font-variant-numeric:tabular-nums}
+.nsamp.thin{color:var(--warn)}
+.nsamp.miss{color:var(--dim)}
+/* THE STANDINGS AT PHONE WIDTH. The record and the three values are the
+   table; coverage is context and is the one column that can go. Dropping it
+   below 620px takes the standings under the width of the viewport, so the
+   record and its sample are on screen without a sideways gesture rather
+   than pinned behind one. */
+table.standings{min-width:620px}
+@media(max-width:620px){
+  table.standings{min-width:0}
+  table.standings th.cov-col,table.standings td.cov-col{display:none}
+  table.standings th,table.standings td{padding-left:7px;padding-right:7px}
+}
 th{position:sticky;top:0;background:var(--surface2);color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:8px 10px;white-space:nowrap;z-index:1;user-select:none}
 th.num,td.num{text-align:right}
 td{padding:9px 10px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle;white-space:nowrap}
@@ -672,25 +692,42 @@ function recATSHtml(rec,cls){
    explanation: a finished game the Collective captured no closing line for
    has no against-the-spread result at all, and reading that cell as a loss
    is the one misreading this table must not invite. */
-function resultPill(res){
-  if(res!=='win'&&res!=='loss'&&res!=='push')
-    return '<span class="note" title="no against-the-spread result: the Collective captured no closing line for this game, so it is not graded either way">&ndash;</span>';
+function resultPill(res,why){
+  if(res!=='win'&&res!=='loss'&&res!=='push'){
+    /* A dash had one explanation for four different states. The row knows
+       which one it is, so it says which one it is. */
+    var t=(why&&ATS_REASON[why])?ATS_REASON[why]:ATS_REASON.no_close;
+    return '<span class="note" title="'+esc('No against-the-spread result \u2014 '+t+
+      '. It is not graded either way, and it is not a loss.')+'">&ndash;'+
+      (why&&ATS_REASON_SHORT[why]?' <span class="nsamp miss" style="display:inline">'+esc(ATS_REASON_SHORT[why])+'</span>':'')+'</span>';
+  }
   return '<b class="grade-'+res+'">'+(res==='win'?'WIN':res==='loss'?'LOSS':'PUSH')+'</b>';
 }
 /* What a game log adds up to. Counted from the ROWS ON SCREEN rather than
    recomputed from the games behind them, so the summary above a table can
    never disagree with the table it is summarising. */
 function logTally(rows){
-  var w=0,l=0,p=0,u=0;
+  var w=0,l=0,p=0,u=0,mae=0,br=0,miss={};
   (rows||[]).forEach(function(g){
     if(!g)return;
     if(g.pick_result==='win')w++;
     else if(g.pick_result==='loss')l++;
     else if(g.pick_result==='push')p++;
-    else u++;
+    else{
+      u++;
+      /* a server log row carries no reason of its own, so read one off the
+         row itself rather than filing every gap under the same heading */
+      var k=g.ats_reason||(g.closing_spread==null?'no_close':'no_side');
+      miss[k]=(miss[k]||0)+1;
+    }
+    /* the OTHER two samples, counted from the same rows: an ATS count of
+       zero must never be read as "nothing here has been graded" */
+    if(g.margin_error!=null)mae++;
+    if(g.brier!=null)br++;
   });
   return {n:(rows||[]).length,wins:w,losses:l,pushes:p,ungraded:u,
-    ats:w+l+p,win_pct:(w+l)?w/(w+l):null};
+    ats:w+l+p,win_pct:(w+l)?w/(w+l):null,
+    margin_n:mae,brier_n:br,ats_missing:miss};
 }
 function recCell(rec,lastSubmissionAt,live,scope){
   if(rec)return recATSHtml(rec)+liveMark(live,scope);
@@ -1148,11 +1185,120 @@ function marketBoard(opts){
     return MCOdds.board(opts).catch(function(){return null;});
   }catch(e){return Promise.resolve(null);}
 }
-/* Match a Collective game to its market. Prefers the server side link, falls
-   back to team codes for a game the odds feed has not been linked to yet. */
+/* ---- joining a Collective game to the market row that holds its close ----
+   THE JOIN, not the number.
+
+   The Collective's schedule stores team names cut to TEN CHARACTERS.
+   "Mississippi" is stored as MISSISSIPP, "West Virginia" as WESTVIRGIN,
+   "Florida State" as FLORIDASTA \u2014 on the 2026 college season, 61 of the
+   142 team names in the settlement record are exactly ten characters long
+   and only 29 of 104 finished games have both names comfortably inside the
+   cut. Every lookup into the odds feed was an EXACT match on that stored
+   string (odds.js index(): byTeams[teamKey(away)+'@'+teamKey(home)]), so a
+   game found its market only when both of its names happened to survive
+   truncation. The rest found no row, took no closing line, and therefore
+   had no against-the-spread result at all \u2014 which is the whole of "no ATS
+   picks" on the rankings beside a full column of margin errors.
+
+   Nothing was missing from the Collective. The close was captured and
+   stored; the page could not name the game it belonged to.
+
+   The finals feed had to learn this once already \u2014 teamsAgree() in
+   tools/collective/settle_finals.js, a prefix match with a six-character
+   floor, because "NORTHCAROL" must reach "North Carolina" and must not
+   reach "North Carolina State". This is that same rule on the same problem
+   for the odds feed. It changes only WHICH ROW is read, never what is read
+   off it: the number taken is still the Collective's own stored close and
+   nothing else. */
+function teamsAgreeTrunc(mine,theirs){
+  var x=teamKey(mine),y=teamKey(theirs);
+  if(!x||!y)return false;
+  if(x===y)return true;
+  var n=Math.min(x.length,y.length);
+  if(x.slice(0,n)!==y.slice(0,n))return false;
+  /* Six characters of agreement is the bar for spelled-out NAMES, where a
+     shorter overlap is a coincidence. */
+  if(n>=6)return true;
+  /* CODES are the other case and need their own rule: a short code may latch
+     onto another CODE (four characters is the longest these feeds use),
+     never onto a spelled-out name. */
+  return n>=2&&x.length<=4&&y.length<=4;
+}
+/* The UTC day a kickoff falls on, for comparing two feeds that each publish
+   their own local time. */
+function dayKeyOf(iso){
+  if(!iso)return '';
+  var d=new Date(iso);
+  if(!isFinite(d.getTime()))return '';
+  return d.toISOString().slice(0,10);
+}
+/* Kickoffs are stored in UTC and feeds publish a local date, so a night game
+   is legitimately one calendar day apart between the two. One day of slack
+   and no more: two days would let a Thursday game claim a Saturday
+   rematch's line. */
+function kickoffsAgree(isoA,isoB,slackDays){
+  var a=dayKeyOf(isoA),b=dayKeyOf(isoB);
+  if(!a||!b)return false;
+  var diff=Math.abs(Date.parse(a+'T00:00:00Z')-Date.parse(b+'T00:00:00Z'));
+  return isFinite(diff)&&diff<=(slackDays==null?1:slackDays)*86400000;
+}
+function marketKickoff(r){
+  return (r&&(r.commence_time||r.kickoff_at||r.start_time))||null;
+}
+/* THE DECISION, made on the GAME rather than on either team. A truncation is
+   frequently ambiguous on its own \u2014 "NORTHCAROL" is North Carolina and North
+   Carolina State, "WASHINGTON" is Washington and Washington State \u2014 so the
+   pair plus the kickoff day is where the evidence actually is. An exact match
+   on both sides wins outright and involves no guessing at all; a truncated
+   match is taken only when it is the ONLY row that fits. Two candidates means
+   the matcher does not know which, and a closing line taken on a coin flip
+   would put a win or a loss on a record from a different game. */
+function looseMarketFor(mkt,g){
+  var list=(mkt&&mkt.games)||[];
+  if(!list.length||!g||!g.home||!g.away)return null;
+  var dated=list.filter(function(r){
+    var t=marketKickoff(r);
+    /* a row or a game with no time is not thrown away on that account: the
+       pair still has to be unique before anything is taken from it */
+    return (!t||!g.kickoff_at)?true:kickoffsAgree(g.kickoff_at,t,1);
+  });
+  var hk=teamKey(g.home),ak=teamKey(g.away);
+  var exact=dated.filter(function(r){
+    return teamKey(r.home)===hk&&teamKey(r.away)===ak;});
+  if(exact.length)return exact.length===1?exact[0]:null;
+  /* ONE SIDE MUST STILL MATCH EXACTLY.
+     A prefix rule that is allowed to guess at BOTH teams at once can, in
+     principle, land a whole game on the wrong row: "GEORGIA @ MIAMI" fits
+     "Georgia Tech @ Miami (OH)" on both sides. Pinning one side to an exact
+     name makes that impossible, because the exactly-matched team would have
+     to be playing twice that day.
+
+     It costs very little. On the committed 2026 college record, 8 of 104
+     games have both team names at the ten-character boundary; the other 96
+     have at least one name that survived the cut intact. And the cost is the
+     cheap direction: a game this refuses keeps NO closing line and is
+     reported as ungraded against the spread, which is visible and true,
+     where a wrong close would put a win or a loss on a record from another
+     game's number and never say so. Those 8 are still reachable by the
+     per-game route, which joins on the id and guesses at nothing. */
+  var loose=dated.filter(function(r){
+    var he=teamKey(r.home)===hk,ae=teamKey(r.away)===ak;
+    if(!he&&!ae)return false;
+    return (he||teamsAgreeTrunc(g.home,r.home))&&(ae||teamsAgreeTrunc(g.away,r.away));
+  });
+  return loose.length===1?loose[0]:null;
+}
+/* Match a Collective game to its market. The server side link first, then
+   the exact team codes odds.js already indexes, then the truncation above.
+   mkt.find() is asked through its own guard because the deployed odds.js and
+   this page are separate uploads and can be out of step. */
 function marketFor(mkt,g){
-  if(!mkt||!mkt.find||!g)return null;
-  return mkt.find({game_id:g.game_id,home:g.home,away:g.away});
+  if(!mkt||!g)return null;
+  var hit=null;
+  if(typeof mkt.find==='function'){
+    try{hit=mkt.find({game_id:g.game_id,home:g.home,away:g.away});}catch(e){hit=null;}
+  }
+  return hit||looseMarketFor(mkt,g);
 }
 /* "Market unavailable" was the same sentence whether the odds service was
    down, whether it had no route for this sport yet, or whether the feed had
@@ -2050,6 +2196,11 @@ function finalResult(g){
   var cl=(r.closing_spread==null)?null:Number(r.closing_spread);
   return {home:hs,away:as,margin:hs-as,
     closing_spread:(cl!=null&&isFinite(cl))?cl:null,
+    /* where that close came from: the Collective's committed settlement
+       record, its odds board, or the per-game captured-close route. Named
+       rather than implied, so a reader can audit an ATS result back to the
+       number it was graded on. */
+    close_source:r.close_source||null,
     /* 'espn' when the page had to go and find this score itself, so every
        surface can say where it came from rather than implying the
        settlement run wrote it */
@@ -2233,6 +2384,14 @@ function gradeNote(n){
    first one is still the graded one. */
 function modelRecord(games,cs,ms){
   var w=0,l=0,p=0,errSum=0,errN=0,brSum=0,brN=0,live=0,imp=0,seen={};
+  /* Why the games that did NOT produce an against-the-spread result did not.
+     Counted here, on the same pass and the same one-row-per-game rule as the
+     record itself, so a reader is never shown an ATS sample without being
+     able to find out what the rest of the sample was doing. An ATS count of
+     zero has four completely different causes and they need four different
+     answers; "no ATS picks" was one sentence for all of them. */
+  var miss={no_close:0,no_side:0,excluded_late:0,excluded_locked:0,
+    excluded_origin:0,not_final:0},missN=0,played=0;
   (games||[]).forEach(function(g){
     var k=gameKey(g);
     if(seen[k])return;
@@ -2240,8 +2399,18 @@ function modelRecord(games,cs,ms){
     for(i=0;i<rows.length;i++){
       var mr=rows[i];
       if(!mr||mr.creator_slug!==cs||mr.model_slug!==ms)continue;
+      played++;
       var gr=rowGrade(g,mr);
-      if(!gr)continue;
+      if(gr&&gr.pick_result==null){
+        var why0=atsReason(g,mr);
+        if(why0){miss[why0]++;missN++;}
+      }
+      if(!gr){
+        var why=atsReason(g,mr);
+        if(why){miss[why]++;missN++;}
+        seen[k]=1;
+        break;
+      }
       seen[k]=1;
       if(gr.source===GRADE_PAGE)live++;
       if(gr.implied)imp++;
@@ -2255,20 +2424,98 @@ function modelRecord(games,cs,ms){
   });
   var atsN=w+l;
   return {wins:w,losses:l,pushes:p,graded:w+l+p,
+    /* the three samples, each named, because they are three different
+       samples: a model can post a spread with no pick side, or a pick side
+       with no win probability, and calling any of those one number is how a
+       zero in one column came to read as "nothing has been graded" */
+    ats_n:w+l+p,
     win_pct:atsN?w/atsN:null,
     margin_mae:errN?errSum/errN:null,margin_n:errN,
     brier:brN?brSum/brN:null,brier_n:brN,
+    /* every game of this model's that has been played, graded or not, and
+       why the ungraded ones are ungraded */
+    games:played,ats_missing:miss,ats_missing_n:missN,
     live:live,implied:imp};
+}
+/* ---- why a row has no against-the-spread result ------------------------
+   Four different states wearing one sentence. A game the Collective captured
+   no closing line for is not the same as a model that named no side, which
+   is not the same as a row excluded by the published rule, which is not the
+   same as a game that has not finished. Only the first is a gap in the
+   Collective's own data; the others are the rule working. */
+/* Three registers of the same six reasons, because they are read in three
+   places. The long one is a sentence on its own (a tooltip, a note); the
+   list one is a phrase that follows a COUNT and carries no comma of its own,
+   so "83 with no captured closing line, 2 where the model named no side"
+   parses as two items rather than four; the short one fits a table cell. */
+var ATS_REASON={
+  no_close:'the Collective captured no closing line for this game',
+  no_side:'this model submitted no pick side, and its own line sits exactly on the close, so it named no side',
+  excluded_late:'this submission arrived after the lock and is excluded by the published rule',
+  excluded_locked:'this is a locked row and carries no number to grade',
+  excluded_origin:'this is backfill or test data, stored and excluded by the published rule',
+  not_final:'this game has no final score yet'
+};
+var ATS_REASON_LIST={
+  no_close:'with no captured closing line',
+  no_side:'where the model named no side',
+  excluded_late:'submitted after the lock',
+  excluded_locked:'locked',
+  excluded_origin:'backfill or test data',
+  not_final:'not final yet'
+};
+var ATS_REASON_SHORT={
+  no_close:'no captured close',
+  no_side:'no side selected',
+  excluded_late:'late, excluded',
+  excluded_locked:'locked',
+  excluded_origin:'backfill or test data',
+  not_final:'not final yet'
+};
+function atsReason(g,mr){
+  if(!mr)return null;
+  if(mr.locked)return 'excluded_locked';
+  if(mr.late)return 'excluded_late';
+  if(mr.data_origin!=null&&mr.data_origin!=='live')return 'excluded_origin';
+  var r=finalResult(g);
+  if(!r)return 'not_final';
+  /* A settled grade is the record; when the settlement run scored this row
+     against the spread there is nothing to explain. */
+  var sg=placeholderSettled(g)?null:serverGrade(mr);
+  if(sg&&sg.pick_result!=null)return null;
+  if(r.closing_spread==null)return 'no_close';
+  var side=pickSideNorm(mr)||impliedSide(mr,r.closing_spread);
+  if(!side)return 'no_side';
+  /* a close and a side is an ATS result by the published rule; if the run
+     published none, the page computed one */
+  return null;
+}
+/* The reason breakdown as a sentence, longest bucket first, naming only the
+   buckets that actually have games in them. */
+function atsMissingText(miss,short){
+  var keys=Object.keys(miss||{}).filter(function(k){return miss[k]>0;});
+  if(!keys.length)return '';
+  keys.sort(function(a,b){return miss[b]-miss[a];});
+  var tbl=short?ATS_REASON_SHORT:ATS_REASON_LIST;
+  return keys.map(function(k){return miss[k]+' '+(tbl[k]||k);}).join(', ');
 }
 /* This model's graded games, in the shape the model page's own log already
    renders, so the fallback needs no second renderer. Newest first, and one
    row per game — the latest submission received before the lock is the
    graded one (the games feed is collapsed to that row on arrival). */
 function localGameLog(games,cs,ms){
-  var out=[];
+  var out=[],seen={};
   (games||[]).forEach(function(g){
     var fr=finalResult(g);
     if(!fr)return;
+    /* ONE ROW PER GAME, the same rule and the same key modelRecord applies.
+       The sweep concatenates a week payload, a coverage page and the current
+       slate, and the same game legitimately arrives from more than one of
+       them; the model page deduped its own merge before calling here, so the
+       guard lived in one caller rather than in the aggregator, and the log
+       and the record it is supposed to add up to could count differently. */
+    var gk=gameKey(g);
+    if(seen[gk])return;
     var rows=(g&&g.models)||[],i;
     for(i=0;i<rows.length;i++){
       var mr=rows[i];
@@ -2279,12 +2526,17 @@ function localGameLog(games,cs,ms){
         week:g.week,kickoff_at:g.kickoff_at,
         pick_side:pickedSide(g,mr).team||pickSideNorm(mr),
         closing_spread:fr.closing_spread,
+        close_source:fr.close_source,
         final:fr.away+' - '+fr.home,
         pick_result:gr.pick_result,
+        /* a row with no ATS result says which of the four reasons it is,
+           on the row, so the log and the summary above it cannot disagree */
+        ats_reason:gr.pick_result==null?atsReason(g,mr):null,
         margin_error:gr.margin_error,
         brier:gr.brier,
         movement_n:mr.movement_n,
         live:gr.source===GRADE_PAGE});
+      seen[gk]=1;
       break;
     }
   });
@@ -2634,6 +2886,36 @@ function marketClose(mg){
   var v=Number(c.line);
   return isFinite(v)?v:null;
 }
+/* The stored closing TOTAL of the same row, for the same reason. Never the
+   current consensus total, which is a different number on a different day. */
+function marketCloseTotal(mg){
+  var c=mg&&mg.closing&&(mg.closing['total']||mg.closing['total:over']);
+  if(!c||c.line==null)return null;
+  var v=Number(c.line);
+  return isFinite(v)?v:null;
+}
+/* ---- the board for ONE PLAYED WEEK, which is where a season's closes are
+   The board this page carries is a moving window (days forward, back=8
+   behind), and the record it grades is a whole season. So a week whose games
+   still have no close is asked for by week \u2014 one request that carries every
+   game in it, rather than one request per game \u2014 and only ever for weeks
+   that still need one. Cached per league+season+week for the session: a
+   closing line is written once, after kickoff, and never moves again. */
+var WEEK_BOARDS={};
+function weekBoard(league,season,week){
+  var key=league+'|'+season+'|'+week;
+  if(WEEK_BOARDS[key])return WEEK_BOARDS[key];
+  var opts={league:league,week:week,books:false,limit:200};
+  /* odds.js is a separate upload from this page and can be absent or out of
+     step; when it is, go to the same URL directly rather than losing every
+     closing line with it. This is the shape closingDirect() already takes
+     for the per-game route, applied to the board. */
+  var p=(window.MCOdds?marketBoard(opts):marketBoardDirect(opts))
+    .then(function(b){return b||null;})
+    .catch(function(){return null;});
+  WEEK_BOARDS[key]=p;
+  return p;
+}
 /* ---- the closing line a played game was graded against -----------------
    THE MISSING NUMBER. A final score alone grades two of the three metrics:
    the margin error and the Brier score need nothing else. The against-the-
@@ -2721,21 +3003,68 @@ async function fillCapturedCloses(games,sportCode,mkt,season){
         var cs=Number(e.closing_spread);
         if(!isFinite(cs))return;
         g.result.closing_spread=cs;
+        g.result.close_source=e.close_source||'record';
         if(g.result.closing_total==null&&e.closing_total!=null&&isFinite(Number(e.closing_total)))
           g.result.closing_total=Number(e.closing_total);
         n++;
       });
     }
   }catch(e){}
+  /* One market row's stored close onto one game. Returns whether it landed,
+     and names where it came from, so no surface has to guess later. */
+  function takeFrom(g,mg,src){
+    var bc=marketClose(mg);
+    if(bc==null||!g.result)return false;
+    g.result.closing_spread=bc;
+    g.result.close_source=src;
+    if(g.result.closing_total==null){
+      var bt=marketCloseTotal(mg);
+      if(bt!=null)g.result.closing_total=bt;
+    }
+    return true;
+  }
   (games||[]).forEach(function(g){
     var r=finalResult(g);
     if(!r||r.closing_spread!=null)return;
     /* free, and already fetched: the board carries a close on any game
        still inside its window */
-    var bc=marketClose(marketFor(mkt,g));
-    if(bc!=null){g.result.closing_spread=bc;n++;return;}
-    if(g.game_id!=null)need.push(g);
+    if(takeFrom(g,marketFor(mkt,g),'board')){n++;return;}
+    need.push(g);
   });
+  if(!need.length)return n;
+  /* ---- the weeks the moving board does not reach -----------------------
+     The board above is a window (see marketBoard: days forward, back=8
+     behind) and the record graded here is a whole season, so every finished
+     game older than the window arrived at the per-game route below and, for
+     any sport whose games the odds feed has not linked by id, came back
+     empty. One board per PLAYED WEEK covers the same games in one request
+     each, and the truncation-tolerant join above is what lets a college game
+     find its row in them. Only weeks that still need a close are asked for,
+     and each is fetched once per session. */
+  var byWeek={};
+  need.forEach(function(g){
+    if(g&&g.week!=null&&season!=null)(byWeek[g.week]=byWeek[g.week]||[]).push(g);
+  });
+  var weeks=Object.keys(byWeek);
+  if(weeks.length){
+    var boards=await Promise.all(weeks.map(function(w){
+      return weekBoard(league,season,w).catch(function(){return null;});
+    }));
+    weeks.forEach(function(w,i){
+      var b=boards[i];
+      if(!b)return;
+      byWeek[w].forEach(function(g){
+        var fr=finalResult(g);
+        if(!fr||fr.closing_spread!=null)return;
+        if(takeFrom(g,marketFor(b,g),'board'))n++;
+      });
+    });
+    need=need.filter(function(g){
+      var r=finalResult(g);return !!r&&r.closing_spread==null;});
+    if(!need.length)return n;
+  }
+  /* what is left is asked for by name, which needs an id to ask about */
+  need=need.filter(function(g){return g.game_id!=null;});
   if(!need.length)return n;
   /* A cap the reader can see the effect of rather than a silent truncation:
      the oldest games are the ones already settled by the run, so ask about
@@ -2757,6 +3086,7 @@ async function fillCapturedCloses(games,sportCode,mkt,season){
       var c=got[j];
       if(!c||c.spread==null||!g.result)return;
       g.result.closing_spread=c.spread;
+      g.result.close_source='captured';
       if(g.result.closing_total==null&&c.total!=null)g.result.closing_total=c.total;
       n++;
     });
@@ -4163,14 +4493,45 @@ async function renderModel(view,cs,ms){
       '<span><div class="k">Coverage</div><div class="v">'+(covPct!=null?fmtNum(covPct,0)+'%':'<span class="note">no played games yet</span>')+'</div></span>'+
       '</div>'+
       (d.model.description?'<p class="note" style="max-width:760px;margin:0 0 10px">'+esc(d.model.description)+'</p>':'');
+    /* ---- what the ATS record is a record OF ---------------------------
+       "Record (ATS) 5-3-0" over a model with 91 played games is a true
+       sentence that reads as a false one: a reader takes it for the season
+       and it is eight games of it. The other 83 are not losses and are not
+       hidden either — they have no against-the-spread result because the
+       Collective captured no closing line for them, and that is a statement
+       about the data, not about the model. So the sample is printed with
+       the record, the gap is printed beside it, and the reasons are named.
+
+       Computed from the games this page holds for this model whichever
+       record is on display, because the server's record carries a count and
+       no account of what is missing from it. */
+    var atsCov=null;
+    try{atsCov=modelRecord(logGames,cs,ms);}catch(_){atsCov=null;}
+    var atsN=(rec&&rec.ats_n!=null)?rec.ats_n
+      :(recATSText(rec)?((Number(rec.wins)||0)+(Number(rec.losses)||0)+(Number(rec.pushes)||0)):0);
+    var atsGap=(atsCov&&atsCov.ats_missing_n)||0;
+    var atsPlayed=(atsCov&&atsCov.games)||0;
+    function kn(n,what){
+      var k=Number(n)||0;
+      return '<div class="nsamp" title="'+esc(k+' game'+(k===1?'':'s')+' carry '+what)+'">n='+k+'</div>';
+    }
     var stats=rec?'<div class="panel"><div class="kv">'+
-      '<span><div class="k">Record (ATS)</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+impliedRecMark(rec)+'</div></span>'+
-      '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
-      (calMl&&calMl.n?'<span><div class="k" title="how often the side this model favoured on the moneyline actually won">Outright (ML)</div><div class="v">'+calMl.w+'-'+calMl.l+' &middot; '+fmtPct(calMl.pct,0)+'</div></span>':'')+
-      '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
-      '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
+      '<span><div class="k">Record (ATS)</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+impliedRecMark(rec)+
+        kn(atsN,'an against-the-spread result')+
+        (atsGap?'<div class="nsamp miss" title="'+esc(atsGap+' of '+atsPlayed+' played games have no against-the-spread result: '+atsMissingText(atsCov.ats_missing))+'">'+atsGap+' ungraded ATS</div>':'')+
+        '</div></span>'+
+      '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'<div class="nsamp" title="wins and losses only; pushes are excluded from a win percentage">excl. pushes</div></div></span>'+
+      (calMl&&calMl.n?'<span><div class="k" title="how often the side this model favoured on the moneyline actually won \u2014 a different question, and a different sample, from the spread record">Outright (ML)</div><div class="v">'+calMl.w+'-'+calMl.l+' &middot; '+fmtPct(calMl.pct,0)+kn(calMl.n,'a posted win probability and no tie')+'</div></span>':'')+
+      '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+kn(rec.margin_n,'a projected margin')+'</div></span>'+
+      '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+kn(rec.brier_n,'a posted win probability')+'</div></span>'+
       '<span><div class="k">Coverage</div><div class="v">'+fmtNum(covPct,0)+'%</div></span>'+
-      '</div><div class="note" style="margin-top:8px">Graded on actual final scores against the Collective&#39;s own captured closing lines, never self-reported. <a href="#rules">Grading rules</a></div>'+
+      '</div>'+
+      (atsGap?'<div class="note" style="margin-top:8px"><b style="color:var(--text)">'+
+        esc(recATSText(rec)||'0-0-0')+' ATS across '+atsN+' graded game'+(atsN===1?'':'s')+'; '+
+        atsGap+' game'+(atsGap===1?'':'s')+' ungraded ATS</b> of '+atsPlayed+' played &mdash; '+
+        esc(atsMissingText(atsCov.ats_missing))+'. An ungraded game is not a loss and is in no win percentage. '+
+        'The outright, margin and Brier samples are separate and are printed with their own counts above.</div>':'')+
+      '<div class="note" style="margin-top:8px">Graded on actual final scores against the Collective&#39;s own captured closing lines, never self-reported. <a href="#rules">Grading rules</a></div>'+
       (recLive?gradeNote('This record is'):'')+'</div>'
       :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>'+
         (lastSub?'This model has submitted projections but no eligible game has been graded yet. ':'This model has not posted a projection yet. ')+
@@ -4221,7 +4582,7 @@ async function renderModel(view,cs,ms){
         '<td class="num">'+esc(g.pick_side||'-')+'</td>'+
         '<td class="num">'+fmtSpread(g.closing_spread)+'</td>'+
         '<td class="num">'+esc(g.final||'-')+'</td>'+
-        '<td class="num">'+resultPill(g.pick_result)+'</td>'+
+        '<td class="num">'+resultPill(g.pick_result,g.ats_reason||(g.closing_spread==null?'no_close':'no_side'))+'</td>'+
         '<td class="num">'+fmtNum(g.margin_error)+'</td>'+
         '<td class="num">'+fmtNum(g.brier,3)+'</td>'+
         '<td class="num" style="color:var(--dim)">'+(g.movement_n>1?g.movement_n+' subs':'-')+'</td></tr>';
@@ -4235,17 +4596,31 @@ async function renderModel(view,cs,ms){
         glTally.n+' game'+(glTally.n===1?'':'s')+', newest first</span></h2>'+
       '<div class="panel" style="margin-bottom:10px"><div class="kv">'+
         '<span><div class="k">Against the spread</div><div class="v">'+
-          (glTally.ats?esc(glTally.wins+'-'+glTally.losses+(glTally.pushes?'-'+glTally.pushes:'')):
+          (glTally.ats?esc(glTally.wins+'-'+glTally.losses+'-'+glTally.pushes):
             '<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+
-          liveMark(logLive)+'</div></span>'+
-        (glTally.ats?'<span><div class="k" title="excludes pushes">Win %</div><div class="v">'+fmtPct(glTally.win_pct,0)+'</div></span>':'')+
-        '<span><div class="k" title="games on this log with no against-the-spread result — the Collective captured no closing line for them">Ungraded ATS</div><div class="v">'+glTally.ungraded+'</div></span>'+
-      '</div></div>'+
+          liveMark(logLive)+'<div class="nsamp" title="games on this log that carry an against-the-spread result">n='+glTally.ats+'</div></div></span>'+
+        (glTally.ats?'<span><div class="k" title="excludes pushes">Win %</div><div class="v">'+fmtPct(glTally.win_pct,0)+'<div class="nsamp">excl. pushes</div></div></span>':'')+
+        '<span><div class="k" title="games on this log with no against-the-spread result. Not losses, and in no win percentage.">Ungraded ATS</div><div class="v">'+glTally.ungraded+
+          (glTally.ungraded?'<div class="nsamp miss" title="'+esc(atsMissingText(glTally.ats_missing))+'">'+esc(atsMissingText(glTally.ats_missing,true))+'</div>':'')+'</div></span>'+
+        '<span><div class="k" title="games on this log that carry a projected margin">Margin graded</div><div class="v">'+glTally.margin_n+'</div></span>'+
+        '<span><div class="k" title="games on this log that carry a posted home win probability and no tie">Brier graded</div><div class="v">'+glTally.brier_n+'</div></span>'+
+      '</div>'+
+      /* The sentence a reader would otherwise have to assemble from five
+         tiles, said once, in the order it is actually asked. */
+      '<div class="note" style="margin-top:8px">'+
+        (glTally.ats
+          ?'<b style="color:var(--text)">'+esc(glTally.wins+'-'+glTally.losses+'-'+glTally.pushes)+' ATS across '+glTally.ats+' graded game'+(glTally.ats===1?'':'s')+
+            (glTally.ungraded?'; '+glTally.ungraded+' game'+(glTally.ungraded===1?'':'s')+' ungraded ATS':'')+'</b>'
+          :'<b style="color:var(--text)">No against-the-spread result on any of these '+glTally.n+' game'+(glTally.n===1?'':'s')+'</b>')+
+        ' of '+glTally.n+' on this log'+
+        (glTally.ungraded?' &mdash; '+esc(atsMissingText(glTally.ats_missing)):'')+
+        '. The margin and Brier samples are counted separately above, on the same games: a game with no closing line still has a margin error.</div></div>'+
       (logLive?gradeNote('These games are'):'')+
       '<div class="sortsel"><span class="note">Show</span><select id="glFilter"><option value="">All results</option><option value="win">Wins</option><option value="loss">Losses</option><option value="push">Pushes</option></select></div>'+
       '<div class="tblwrap"><table id="glTbl"><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Each game is graded on the model’s latest live submission received before the lock, '+LOCK_MIN+' minutes before kickoff. Earlier numbers are stored as movement, never regraded. '+
-      'A game with no result against the spread is one the Collective captured no closing line for &mdash; it is not a loss and is not counted.</p>'
+      'A game with no result against the spread says on its own row which of the four reasons it is &mdash; no captured closing line, no side selected, excluded by rule, or not final. '+
+      'None of them is a loss and none of them is counted in the win percentage.</p>'
       :'<h2>Every graded game</h2><div class="emptybox">No game of this model&rsquo;s has finished yet. Every pick it posts appears here the moment its game does, with the closing line it was graded against and whether it won.</div>';
     var cal=calibrationHTML(calCal);
     var behave='';
@@ -4806,6 +5181,46 @@ async function renderRankings(view){
       var k=Number(n)||0;
       return '<td class="num" style="color:'+(k<THIN?'var(--warn)':'var(--dim)')+'"'+(k<THIN?' title="under '+THIN+' graded games: read this value as early, not as a rank"':'')+'>'+k+(k<THIN?' <span class="note">thin</span>':'')+'</td>';
     }
+    /* ---- an empty board has to say WHICH empty it is -------------------
+       "No finished games yet" was printed under the Win % board on a page
+       whose other two boards were full of values from the same finished
+       games. It is the one sentence that cannot be true when the Margin MAE
+       column beside it is ranking four models, and a reader looking at both
+       learns only that the page is not reading its own numbers.
+
+       There are four ways for a board to be empty and they need four
+       different answers: nothing has finished; games have finished but the
+       Collective captured no closing line to grade them against; games have
+       finished and no model named or implied a side; or this metric needs a
+       number nobody posted. The reasons are already counted per model on
+       the record, so this reads them rather than guessing. */
+    function boardEmpty(key){
+      var es=(local&&local.entries)||[];
+      var rows=0,miss={};
+      es.forEach(function(e){
+        var r=e.record||{};
+        rows+=Number(r.games)||0;
+        Object.keys(r.ats_missing||{}).forEach(function(k){
+          if(r.ats_missing[k]>0)miss[k]=(miss[k]||0)+r.ats_missing[k];});
+      });
+      /* finished GAMES, and separately the model-games on them: four models
+         on three games is twelve rows and three games, and calling either
+         number the other is how a page ends up arguing with itself */
+      var fin=seasonG.length;
+      if(!es.length||(!fin&&!rows))
+        return 'No finished games yet. Every model appears here after its first one.';
+      var head=fin+' finished game'+(fin===1?'':'s')+', '+rows+' model submission'+(rows===1?'':'s')+' on them, ';
+      if(key==='win_pct'){
+        var txt=atsMissingText(miss);
+        return head+'and none produced an against-the-spread result'+(txt?' \u2014 '+txt:'')+
+          '. The other boards stand on the same games: a missing closing line costs the ATS record and nothing else.';
+      }
+      if(key==='margin_mae')
+        return head+'and none carried a projected spread or projected scores to measure a margin error against.';
+      if(key==='brier')
+        return head+'and none carried a home win probability to score. A Brier score is never inferred from a spread.';
+      return 'Nothing to rank on this board yet.';
+    }
     function board(title,key,fmt,sub){
       var pick=picks[key];
       var body=pick.rows.map(function(r){
@@ -4823,7 +5238,7 @@ async function renderRankings(view){
          for a row of numbers, wrong for a sentence. Without it this message
          forced the table wider than its card, which put a scrollbar under
          each empty board and pushed the Graded column out of sight. */
-      if(!body)body='<tr><td colspan="4" class="note" style="text-align:center;padding:18px;white-space:normal">No finished games yet. Every model appears here after its first one.</td></tr>';
+      if(!body)body='<tr><td colspan="4" class="note" style="text-align:center;padding:18px;white-space:normal">'+esc(boardEmpty(key))+'</td></tr>';
       return '<div><h2 style="margin-top:0">'+title+' <span class="note" style="font-weight:400">'+sub+'</span></h2>'+
         '<div class="tblwrap mini"><table style="min-width:0"><thead><tr><th class="num">#</th><th>Model</th><th class="num">Value</th><th class="num">Graded</th></tr></thead><tbody>'+body+'</tbody></table></div></div>';
     }
@@ -4838,39 +5253,70 @@ async function renderRankings(view){
     function standingsHTML(){
       var st=(local&&local.standings)||[];
       if(!st.length)return '';
+      /* ---- one sample per metric, under the number it belongs to -------
+         There was ONE "Graded" column, and it counted games with an
+         against-the-spread result. So a model with a full season of margin
+         errors and no captured closing lines read "0 graded" beside a
+         Margin MAE of 15.5 — a table stating, in two adjacent cells, that
+         it had graded nothing and that it had graded something. The three
+         metrics are three different samples by design (a model can post a
+         spread with no pick side, or a pick side with no win probability),
+         so each one now carries its own count where a reader is already
+         looking, and no single number can speak for the other two. */
+      function nUnder(n,what){
+        var k=Number(n)||0;
+        return '<div class="nsamp'+(k<THIN?' thin':'')+'" title="'+esc(k+' game'+(k===1?'':'s')+' carry '+what)+
+          (k<THIN&&k>0?' \u2014 under '+THIN+', read this as early rather than as a rank':'')+'">n='+k+'</div>';
+      }
       var body=st.map(function(e,i){
         var r=e.record;
         var href=profHref(e.creator_slug,e.model_slug);
+        var missTxt=atsMissingText(r.ats_missing,true);
         return '<tr class="rowlink" data-href="'+href+'">'+
           '<td class="num" style="color:var(--faint)">'+(i+1)+'</td>'+
           '<td><a href="'+href+'" class="nm">'+esc(e.creator_name)+'</a>'+(fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(e.model_name)+'</span></td>'+
           /* the record is what this table is FOR: it reads at the weight of
              an answer rather than as one number among seven */
-          '<td class="num" style="font-weight:700;font-size:14px">'+recATSHtml(r)+liveMark(r.live>0)+impliedRecMark(r)+'</td>'+
+          '<td class="num" style="font-weight:700;font-size:14px">'+recATSHtml(r)+liveMark(r.live>0)+impliedRecMark(r)+
+            nUnder(r.ats_n,'an against-the-spread result')+
+            (r.ats_missing_n?'<div class="nsamp miss" title="'+esc(r.ats_missing_n+' of this model\u2019s '+r.games+' played games have no against-the-spread result: '+atsMissingText(r.ats_missing))+'">+'+r.ats_missing_n+' ungraded</div>':'')+
+            '</td>'+
           '<td class="num" style="font-weight:700">'+fmtPct(r.win_pct)+'</td>'+
-          '<td class="num">'+fmtNum(r.margin_mae)+'</td>'+
-          '<td class="num">'+fmtNum(r.brier,3)+'</td>'+
-          sampleCell(r.graded)+
-          '<td>'+covCell(e.coverage_pct)+'</td>'+
+          '<td class="num">'+fmtNum(r.margin_mae)+nUnder(r.margin_n,'a projected margin')+'</td>'+
+          '<td class="num">'+fmtNum(r.brier,3)+nUnder(r.brier_n,'a posted win probability')+'</td>'+
+          '<td class="cov-col">'+covCell(e.coverage_pct)+'</td>'+
           '<td class="num"><a href="'+href+'">picks &rarr;</a></td></tr>';
       }).join('');
       var anyLiveSt=st.some(function(e){return e.record.live>0;});
+      /* the whole board's ungraded-ATS reasons, added up, so the gap is
+         stated once as a number rather than left in eight tooltips */
+      var allMiss={},allMissN=0,allPlayed=0;
+      st.forEach(function(e){
+        var r=e.record||{};
+        allPlayed+=Number(r.games)||0;
+        Object.keys(r.ats_missing||{}).forEach(function(k){
+          if(r.ats_missing[k]>0){allMiss[k]=(allMiss[k]||0)+r.ats_missing[k];allMissN+=r.ats_missing[k];}});
+      });
       return '<h2>Live standings <span class="note" style="font-weight:400">every model, every graded game, no minimums</span></h2>'+
         (anyLiveSt?gradeNote('The marked rows are'):'')+
-        '<div class="tblwrap"><table id="standtbl"><thead><tr>'+
-          '<th class="num">#</th><th>Model</th><th class="num">Record</th>'+
+        '<div class="tblwrap"><table id="standtbl" class="standings"><thead><tr>'+
+          '<th class="num">#</th><th>Model</th>'+
+          '<th class="num" title="wins-losses-pushes against the Collective&#39;s own captured closing line, with the number of games that carry one">Record (ATS)</th>'+
           '<th class="num" title="excludes pushes">Win %</th>'+
           '<th class="num" title="average error of the projected margin against the final score, lower is better">Margin MAE</th>'+
           '<th class="num" title="scores the posted win probability against the actual winner, lower is better">Brier</th>'+
-          '<th class="num" title="games with an against-the-spread result">Graded</th>'+
-          '<th title="share of the games PLAYED so far that this model posted">Coverage</th>'+
+          '<th class="cov-col" title="share of the games PLAYED so far that this model posted">Coverage</th>'+
           '<th class="num" title="every game this model has been graded on, with the pick and the result">Game log</th>'+
         '</tr></thead><tbody>'+body+'</tbody></table></div>'+
+        (allMissN?'<p class="note" style="margin-top:8px"><b>'+allMissN+' of '+allPlayed+
+          ' played model-games on this board have no against-the-spread result</b> &mdash; '+
+          esc(atsMissingText(allMiss))+'. Those games still count toward margin error and Brier, which need no closing line; '+
+          'they are not losses and they are not in any win percentage.</p>':'')+
         '<p class="note" style="margin-top:8px">Every metric for every model in one table, so a model that leads one board and trails another is one row rather than three. '+
         'The boards above carry no minimum either &mdash; a model appears on each of them from its first finished game, on whichever numbers it has posted. '+
-        'Win percentage excludes pushes; each column counts only the games that carry the number it measures, so the graded counts can differ between them. '+
-        'A finished game the Collective captured no closing line for has no against-the-spread result at all \u2014 it is not a loss, it is not counted, and the coverage column is where that gap shows.</p>';
+        'Win percentage excludes pushes; <b>each metric carries its own sample</b> (the <span class="mono">n=</span> under every value), because a model can post a spread with no pick side or a pick side with no win probability &mdash; a zero in one column never means the others are empty. '+
+        'A finished game the Collective captured no closing line for has no against-the-spread result at all \u2014 it is not a loss, it is not counted, and it is named in the breakdown above.</p>';
     }
     /* ---- who is genuinely not on a board yet ---------------------------
        This list is built here and NEVER from /v1/rankings. The server's own
@@ -9366,7 +9812,7 @@ function liveFingerprint(games){
 /* Everything on this page that counts games is cached for the session, so a
    redraw that did not drop these would repaint the same stale numbers. */
 function bustLiveCaches(){
-  META=null;WALLC=null;SEASON_GAMES={};LOCALREC={};SLATE_CACHE={};
+  META=null;WALLC=null;SEASON_GAMES={};LOCALREC={};SLATE_CACHE={};WEEK_BOARDS={};
 }
 async function liveTick(){
   if(LIVE_BUSY||!liveRoute())return;
@@ -9378,7 +9824,11 @@ async function liveTick(){
      slower cycle: no repaint, no request, just a guarantee that the next
      render this reader triggers reads the season again rather than a sweep
      from an hour ago. */
-  if(++LIVE_TICKS%LIVE_SEASON_EVERY===0){SEASON_GAMES={};LOCALREC={};}
+  /* WEEK_BOARDS with them: a closing line is written once and never moves,
+     so caching a board that HAD one forever is right -- but a board that had
+     none yet is a negative answer, and "not written yet" must not become
+     "never" for the rest of the session. */
+  if(++LIVE_TICKS%LIVE_SEASON_EVERY===0){SEASON_GAMES={};LOCALREC={};WEEK_BOARDS={};}
   try{
     var m=await meta();
     var sp=currentSport(m);

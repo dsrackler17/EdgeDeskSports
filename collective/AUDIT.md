@@ -285,3 +285,118 @@ Covered in `collective/tests_render.js`: the router is driven against a server
 whose label and rows disagree, one that is simply down, and one whose session
 has expired, and the generated SQL is checked for schema discovery, for its two
 refusals, and for `RAISE` placeholder arity.
+
+## 7. The record that was there and could not be read (September 2026)
+
+The rankings for College Football 2026 showed a Win % board reading *"No
+finished games yet"* beside a Margin MAE board ranking four models off those
+very games, live standings reading *"no ATS picks"* and *"0 thin"* graded
+next to a margin error of 15.5, and a model page reading *5-3-0* over a log
+of 91 played games. One page, stating in adjacent cells that it had graded
+nothing and that it had graded something.
+
+### Root cause: a ten-character team name
+
+The against-the-spread rule grades the final margin against **the
+Collective's own captured closing line**. Margin error and Brier need no such
+number, which is exactly why they were full while the ATS column was empty:
+the closing lines were not reaching the games.
+
+Not because they were not captured. The Collective's schedule stores team
+names **cut to ten characters** — `Mississippi` is `MISSISSIPP`, `West
+Virginia` is `WESTVIRGIN`, `Florida State` is `FLORIDASTA` — and every route
+from a game to its closing line joined on that stored string, exactly:
+`odds.js index()` keys its board by `teamKey(away)+'@'+teamKey(home)`, and
+the per-game `collective_odds /v1/<league>/closing/<game_id>` route resolves
+the same identity server-side. NFL team names are two- and three-letter codes
+and survive the cut, which is why one sport looked healthy and the other
+looked empty:
+
+| | finished games in the committed record | with a captured close |
+|---|---|---|
+| `NFL_2026.json` | 15 | **15** |
+| `CFB_2026.json` | 104 | **0** |
+
+61 of the 142 college team names in that record are exactly ten characters
+long, and only 29 of the 104 games have both names comfortably inside the
+cut. Measured against the real full names this repository already holds in
+`football/players/teams/`, driving the page's own `marketFor()`: the exact
+join reaches **55 of 104** games and the new join reaches **97 of 104**. The
+7 it refuses are the games where *both* names sit at the ten-character
+boundary (`COASTALCAR @ WESTVIRGIN`, `SANJOSESTA @ EASTERNMIC`, …) — a
+truncated match requires one side to be exactly right, so that a prefix rule
+can never land a whole game on another row, and those 7 stay reachable only
+through the id-based per-game route. The board's own eight-day look-back then
+narrowed the reachable set again to roughly one week, which is the eight
+graded games the model page was showing.
+
+The finals feed had to learn this once already (`teamsAgree()` in
+`tools/collective/settle_finals.js`, a prefix match with a six-character
+floor). The odds feed never did.
+
+### What changed
+
+* **The join, in both places.** `teamsAgreeTrunc()` / `looseMarketFor()` in
+  `collective/index.html` and `findBoardRow()` in `settle_finals.js`: exact
+  on both sides wins outright, a truncated match is taken only when it is the
+  **only** row fitting the pair and the kickoff day, and two candidates is
+  refused rather than guessed. `NORTHCAROL` is the truncation of both North
+  Carolina and North Carolina State. A truncated match additionally requires
+  one side to be **exactly** right, so a prefix rule can never guess at both
+  teams at once and land the game on another row. Only `closing` is read,
+  never `consensus` — the source of the number is unchanged, and so is the
+  published rule.
+* **A season's worth of weeks, not a moving window.** `fillCapturedCloses()`
+  asks one board per played week that still has a gap instead of one request
+  per game, and falls back to a direct fetch when `odds.js` is absent.
+* **The settle job goes back for a close on every run**, for every game that
+  has not got one, whoever settled it — it used to skip any game the run
+  itself had just settled and any game the server held no `result` for, which
+  for a sport with no write credential is every game, twice over.
+* **`--backfill-closes`**, an idempotent historical repair: fills only nulls,
+  touches no score, team, week or kickoff, keeps `settled_at`, names the
+  source in `close_source`, and is a no-op on a second run.
+* **A close on file is never blanked by a run that found none.**
+  `settleDirect()` already had this rule for the database row; `mergeRecord()`
+  did not, so one odds outage could erase a captured line out of the
+  committed file — and the next run reads the file it just emptied.
+
+### What the page now says
+
+An ATS count of zero is a statement about closing lines, not about grading,
+and the page says so rather than implying the opposite:
+
+* **Three samples, never one.** The standings' single *Graded* column counted
+  ATS games only; each metric now carries its own `n=` under its own value.
+* **`atsReason()`** classifies every ungraded row as one of four states — no
+  captured close, no side selected (the model's line sits exactly on the
+  close), excluded by rule (late, locked, backfill), or not final — and that
+  reason is printed on the row, in the standings, and in the summary.
+* **The record is labelled for what it is**: *"5-3-0 ATS across 8 graded
+  games; 83 games ungraded ATS of 91 played — 83 the Collective captured no
+  closing line for the game."* Outright (ML), margin and Brier samples are
+  stated separately.
+* **An empty board says which empty it is.** *"No finished games yet"* is now
+  reachable only when nothing has finished.
+* **`localGameLog()` dedupes by game key**, as `modelRecord()` already did —
+  the guard lived in one caller, so the log and the record it is supposed to
+  add up to could count differently.
+
+`tools/collective/reconcile_ats.js` prints the per-game reconciliation —
+submission, selected side, captured close, final, `margin + close`, grade or
+exact exclusion reason — and asserts that the cumulative record equals the
+sum of the rows. It lifts the grading functions out of `collective/index.html`
+rather than reimplementing them, so a reconciliation that agrees is evidence
+about the page and not about a second copy of the arithmetic.
+
+### Not verified from here
+
+The deployed `collective_odds` function is not in this repository and its
+hosts are unreachable from the environment this was written in, so the claim
+that the college closes exist and are recoverable rests on the shape of the
+committed record (every CFB entry carries `score_source` from the settle path
+and `close_source: null`, the signature of a capture that was asked for and
+came back empty) rather than on a successful fetch. `--backfill-closes` was
+run against the committed record here: it identified 104 games wanting a
+close, recovered 0 because no route was reachable, and wrote nothing. Run it
+where the odds routes answer.

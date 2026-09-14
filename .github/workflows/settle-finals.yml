@@ -125,6 +125,39 @@ jobs:
           if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
           node tools/collective/settle_finals.js $ARGS
 
+      # THE CLOSES THE RECORD WAS WRITTEN WITHOUT.
+      #
+      # A closing line is a separate fetch from a score and can arrive after
+      # one, and for a whole season of college football it arrived for none
+      # of them: the per-game route joins on the Collective's own stored team
+      # name, and that name is cut to ten characters, so "Mississippi" is
+      # MISSISSIPP and matches nothing. The result was a committed record with
+      # a captured close on 15 of 15 NFL games and 0 of 104 CFB games, and a
+      # site reporting "no ATS picks" against models whose games had all been
+      # played.
+      #
+      # This step goes back for them, from the odds board, joined on the pair
+      # and the kickoff day. It only ever fills a null: a close already on
+      # file is never asked about and never overwritten, no score or team or
+      # week is touched, and a game nothing can answer for is left exactly as
+      # it is. Idempotent, so once a season is filled this costs one request
+      # per week that still has a gap and writes nothing.
+      - name: Backfill the captured closing lines the record is missing
+        if: ${{ !cancelled() }}
+        run: |
+          ARGS="--backfill-closes --record collective/settled"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          fi
+          if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          node tools/collective/settle_finals.js $ARGS | tee /tmp/backfill.log
+          {
+            echo '### Captured closing lines'
+            echo ''
+            grep -E '^(  backfill|[0-9]+ captured)' /tmp/backfill.log || echo 'nothing to repair'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # The record is the thing the site reads, so it is published even when a
       # database write above was refused — that failure stays red above, and
       # the site still grades from the finals this run found.
