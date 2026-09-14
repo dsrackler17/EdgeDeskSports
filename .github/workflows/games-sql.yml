@@ -286,7 +286,15 @@ jobs:
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log ufc.log tennis.log; do
+          # newsletter.log belongs here for the same reason every other name
+          # does: its suite SKIPS and passes without PostgreSQL, so a job that
+          # did not list it would go green on a newsletter suite that never
+          # ran — which is the exact failure this step exists to refuse.
+          #
+          # NOTE, not fixed here because it is not this change's to widen:
+          # cards.log, season.log and offline.log are produced by steps above
+          # and are still absent from this list.
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
