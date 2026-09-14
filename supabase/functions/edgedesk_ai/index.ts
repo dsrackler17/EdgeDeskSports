@@ -7493,7 +7493,8 @@ export function attackThesis(
     validation?: any; availability?: any[]; market?: any;
     packet_gaps?: { field: string; reason: string }[]; kickoff?: string | null;
   } = {},
-): { status: string; note: string; falsifiers: string[]; structural: string[] } {
+): { status: string; note: string; falsifiers: string[]; structural: string[];
+     counterarguments: string[]; blockers: string[]; next_checks: string[] } {
   const edge = num(sig?.edge);
   const firstEdge = num(sig?.first_edge);
   const nb = num(sig?.n_books) ?? 0;
@@ -7557,21 +7558,55 @@ export function attackThesis(
     }
   }
 
-  /* A SURVIVING THESIS STILL HAS A CASE AGAINST IT, AND SAYING OTHERWISE IS
-     THE FAILURE. The falsifier list is never handed back empty. */
+  /* THREE DIFFERENT THINGS, TOLD APART.
+
+     These were one list, and the conflation is visible in the product: "last
+     re-priced 446m ago — treat as stale until capture confirms it" was served
+     as an ARGUMENT AGAINST the lean. It is not one. It is a gap in what
+     EdgeDesk currently knows, and the sentence even contains its own remedy.
+     Reading it as a counterargument lets "refresh the odds" look like an
+     answer to a thesis problem, which is how a stale quote and an unvalidated
+     model came to be offered as the same kind of objection.
+
+       COUNTERARGUMENT  evidence against the thesis. Acting on it changes the
+                        view. Nothing about it is fixed by looking again.
+       BLOCKER          information that is missing or stale. It bounds what
+                        can be claimed; it is not evidence either way.
+       NEXT CHECK       the thing to go and find out. A blocker's remedy.
+
+     Classified from the text that already exists rather than by rewriting the
+     rules, so every sentence keeps its wording and only its bucket changes. */
+  const STALE_OR_MISSING = /no fair price on file|treat as stale until|no availability report|availability is partial|not ingested for this sport|cannot be TESTED|has not arrived yet/i;
+  const counterarguments: string[] = [];
+  const blockers: string[] = [];
+  for (const f of falsifiers.concat(structural)) {
+    (STALE_OR_MISSING.test(f) ? blockers : counterarguments).push(f);
+  }
+  /* A next check is derived from the blocker it answers, and never invented:
+     no blocker, no next check. */
+  const next_checks: string[] = [];
+  if (staleM >= staleMin) next_checks.push(`Re-capture the price — the last observation is ${Math.round(staleM)} minutes old. This confirms or withdraws the number; it does NOT answer any argument against the lean.`);
+  if (edge == null) next_checks.push("Get a fair price on file, so there is something to judge the number against.");
+  for (const av of ctx.availability ?? []) {
+    if (av && (av.state === "UNKNOWN" || av.state === "NOT_RETRIEVED")) {
+      next_checks.push(`Find an availability report for ${av.team}. Until then its status is unknown, and a refreshed price does not make it known.`);
+    }
+  }
+  if (gaps.length) next_checks.push(`Per-play evidence (${gaps.slice(0, 3).map((g) => g.field).join(", ")}) is not ingested for this sport, so a distorted result cannot be checked. Closing this needs an ingest, not a refresh.`);
+
   const all = falsifiers.concat(structural);
-  if (edge == null) return { status: "PENDING", note: "Cannot test a thesis with no fair price on file.", falsifiers: all, structural };
-  if (edge < floor) return { status: "INVALIDATED", note: "The price has moved EV below the floor — the thesis does not survive at this number.", falsifiers: all, structural };
+  if (edge == null) return { status: "PENDING", note: "Cannot test a thesis with no fair price on file.", falsifiers: all, structural, counterarguments, blockers, next_checks };
+  if (edge < floor) return { status: "INVALIDATED", note: "The price has moved EV below the floor — the thesis does not survive at this number.", falsifiers: all, structural, counterarguments, blockers, next_checks };
   const hard = (!sharp && nb < 4) || staleM >= staleMin || (remaining != null && remaining < 0.4);
-  if (hard) return { status: "WEAKENED", note: "Positive, but undercut by thin confirmation, staleness or heavy decay.", falsifiers: all, structural };
-  if (falsifiers.length >= 3) return { status: "WEAKENED", note: "Several unresolved problems — a lean, not a strong bet.", falsifiers: all, structural };
+  if (hard) return { status: "WEAKENED", note: "Positive, but undercut by thin confirmation, staleness or heavy decay.", falsifiers: all, structural, counterarguments, blockers, next_checks };
+  if (falsifiers.length >= 3) return { status: "WEAKENED", note: "Several unresolved problems — a lean, not a strong bet.", falsifiers: all, structural, counterarguments, blockers, next_checks };
   return {
     status: "SURVIVES",
     note: structural.length
       ? "The ARITHMETIC holds against price, confirmation and freshness on owned data. That is not the same as the case "
         + "being strong: the limits below bound what this number is evidence of, and none of them is fixed by a better price."
       : "The edge holds up against price, confirmation and freshness on owned data.",
-    falsifiers: all, structural,
+    falsifiers: all, structural, counterarguments, blockers, next_checks,
   };
 }
 
@@ -17177,6 +17212,10 @@ async function runResearch(
     /* Reported apart from the price-level ones because they are a different
        kind of objection: no better number fixes any of them. */
     structural_limits: attack?.structural ?? [],
+    /* The same items, told apart. See the classifier in attackThesis(). */
+    counterarguments: attack?.counterarguments ?? [],
+    blockers: attack?.blockers ?? [],
+    next_checks: attack?.next_checks ?? [],
   };
 
   return {
@@ -17790,6 +17829,26 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
            the closing line in this market" are objections of different kinds,
            and collapsing them lets the second one read as though a better
            price would answer it. */
+        /* THREE KINDS OF OBJECTION, AND THEY ARE NOT INTERCHANGEABLE.
+           Presented as one list, "the price is 446 minutes old" read as an
+           argument against the lean — so refreshing the odds looked like an
+           answer to a thesis problem. It answers a BLOCKER and nothing else. */
+        + `COUNTERARGUMENT — evidence AGAINST the thesis. Looking again does not fix any of these:\n`
+        + ((ta.counterarguments && ta.counterarguments.length)
+          ? ta.counterarguments.map((x: string) => `  - ${x}`).join("\n") + "\n"
+          : "  none on file. Say that plainly rather than manufacturing an objection to look balanced.\n")
+        + `BLOCKER — information that is MISSING or STALE. These bound what may be claimed. They are NOT evidence `
+        + `against the lean and must never be presented as one:\n`
+        + ((ta.blockers && ta.blockers.length)
+          ? ta.blockers.map((x: string) => `  - ${x}`).join("\n") + "\n"
+          : "  none on file.\n")
+        + `NEXT CHECK — what to go and find out. A next check answers a BLOCKER. It is never an answer to a `
+        + `counterargument, and a fresh capture confirming the price answers ONLY the price:\n`
+        + ((ta.next_checks && ta.next_checks.length)
+          ? ta.next_checks.map((x: string) => `  - ${x}`).join("\n") + "\n"
+          : "  none on file.\n")
+        + `Do not claim that refreshing odds resolves missing personnel data, a routing failure or an unvalidated `
+        + `model. It resolves the age of a price and nothing else.\n`
         + (ta.structural_limits && ta.structural_limits.length
           ? `STRUCTURAL LIMITS — true whatever the price does, and NOT fixed by a better number:\n`
             + ta.structural_limits.map((x: string) => `  - ${x}`).join("\n") + "\n"

@@ -469,5 +469,56 @@ const MLB_PACKET = {
       m.matchesContext(Object.assign({}, ctx, { single_game: false }), { matchup: 'Miami @ Wake Forest' }));
   }
 
+  /* =====================================================================
+     10. COUNTERARGUMENT, BLOCKER AND NEXT CHECK ARE THREE DIFFERENT THINGS.
+     They were one list, so "last re-priced 446m ago — treat as stale until
+     capture confirms it" was served as an ARGUMENT AGAINST the lean. It is a
+     gap in what EdgeDesk knows, and the sentence contains its own remedy.
+     ===================================================================== */
+  {
+    m.clearCache(); route = FX.router(fx, {});
+    const r = await m.handle(new Request('https://fn.test/edgedesk_ai?dry=1', {
+      method: 'POST', headers: { authorization: 'Bearer u', 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'challenge', question: 'What could make that lean wrong?',
+        packet: { board_scope: MLB_BOARD }, history: [],
+        research_context: { sport: 'americanfootball_ncaaf', game_id: TXST.game_id,
+          home: 'Texas State', away: 'North Texas', home_id: 'texasstate', away_id: 'northtexas' } }),
+    }));
+    const j = await r.json();
+    const ta = j.thesis_attack || {};
+    chk('the attack is split three ways, not served as one list',
+      Array.isArray(ta.counterarguments) && Array.isArray(ta.blockers) && Array.isArray(ta.next_checks),
+      Object.keys(ta));
+    /* A blocker is about what EdgeDesk does not KNOW. A counterargument is
+       about what it does know and what that evidence says. The assertion is on
+       that distinction, not on a copy of the classifier's regex. */
+    const isGap = (x) => /treat as stale until|no availability report|availability is partial|not ingested|cannot be TESTED|no fair price on file|has not arrived yet/i.test(x);
+    chk('no stale-or-missing item is filed as a counterargument',
+      (ta.counterarguments || []).every((x) => !isGap(x)), ta.counterarguments);
+    chk('and every blocker is a gap in knowledge, not an argument',
+      (ta.blockers || []).every(isGap), ta.blockers);
+    chk('availability being UNKNOWN is a blocker, not evidence against the lean',
+      !(ta.counterarguments || []).some((x) => /no availability report/i.test(x))
+      && (ta.blockers || []).some((x) => /no availability report/i.test(x)),
+      { counter: ta.counterarguments, blockers: ta.blockers });
+    chk('an unvalidated model IS a counterargument — no refresh answers it',
+      (ta.counterarguments || []).some((x) => /NO validated outcome probability|EXPERIMENTAL/i.test(x)),
+      ta.counterarguments);
+    chk('every next check names what it would resolve',
+      (ta.next_checks || []).every((x) => /availability|price|fair price|ingest|per-play/i.test(x)), ta.next_checks);
+    /* THE SENTENCE THE BRIEF SINGLES OUT. */
+    chk('"a fresh capture confirming the price" is a next check, never a counterargument',
+      !(ta.counterarguments || []).some((x) => /capture confirms|re-capture/i.test(x)),
+      ta.counterarguments);
+    const p = j.prompt || '';
+    chk('the prompt states that a next check answers a blocker, not a counterargument',
+      /A next check answers a BLOCKER/.test(p));
+    chk('and forbids claiming a refresh fixes personnel, routing or the model',
+      /refreshing odds resolves missing personnel data, a routing failure or an unvalidated/.test(p));
+    /* AND NO INTERNAL MACHINERY IN THE READER'S ANSWER. */
+    chk('no raw SQL, JSON dump or table name is set up to reach the reader',
+      !/relation \"public|schema cache|SELECT |PostgREST/i.test(j.answer || ''));
+  }
+
   done();
 })().catch((e) => { console.error(e && e.stack || e); process.exit(1); });
