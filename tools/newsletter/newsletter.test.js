@@ -1142,6 +1142,12 @@ section('7 — the provider');
       sqlWf.indexOf("- 'supabase/newsletter.sql'") > 0);
     chk('…and a change to the suite itself does too',
       sqlWf.indexOf("- 'tools/newsletter/newsletter_sql.test.js'") > 0);
+    /* AND THE JOB REFUSES TO GO GREEN ON A SKIP. The suite passes when no
+       PostgreSQL is reachable, so a job that ran it without checking for
+       SKIP would report success on a suite that never executed — which is
+       the same "nothing is actually checking this" hole one step removed. */
+    chk('the silent-skip guard covers the newsletter log',
+      /for f in [^\n]*\bnewsletter\.log\b/.test(sqlWf), 'newsletter.log is not in the guard list');
 
     /* ================================================================== */
     console.log((fail ? 'FAIL' : 'PASS') + ' | edgedesk newsletter | ' + pass + ' passed, ' + fail + ' failed');
