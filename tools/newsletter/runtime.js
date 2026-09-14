@@ -112,6 +112,38 @@ function client(opts) {
       return rpc('newsletter_install_status', {});
     },
 
+    /* THE LAUNCH GATE, MOVED FROM A JOB RATHER THAN FROM A BROWSER.
+       The operator console moves this through newsletter_admin_set(), which
+       checks the caller's own token. A job has no operator token, so it
+       writes the row directly with the service role — the settings audit
+       trigger still records the change, with a null actor that reads exactly
+       as what it is: moved by the pipeline, not by a person in the console. */
+    async patchSettings(patch) {
+      if (!enabled || !service) return null;
+      const rows = await call('newsletter_settings?id=eq.1', {
+        method: 'PATCH', headers: { prefer: 'return=representation' },
+        body: JSON.stringify(patch),
+      }, true);
+      return Array.isArray(rows) && rows.length ? rows[0] : null;
+    },
+
+    /* WHO WOULD ACTUALLY RECEIVE THE NEXT EDITION. Counts only: an operator
+       deciding whether to open the gate needs the blast radius, not a list of
+       people's addresses. */
+    async subscriberCounts() {
+      if (!enabled || !service) return null;
+      const rows = await call('newsletter_subscribers?select=status,wants_cfb,wants_nfl', { method: 'GET' }, true);
+      const list = Array.isArray(rows) ? rows : [];
+      const confirmed = list.filter(r => r.status === 'confirmed');
+      return {
+        confirmed: confirmed.length,
+        pending: list.filter(r => r.status === 'pending').length,
+        unsubscribed: list.filter(r => r.status === 'unsubscribed').length,
+        cfb: confirmed.filter(r => r.wants_cfb).length,
+        nfl: confirmed.filter(r => r.wants_nfl).length,
+      };
+    },
+
     async readSettings() {
       if (!enabled || !service) return null;
       const rows = await call('newsletter_settings?select=*&id=eq.1', { method: 'GET' }, true);

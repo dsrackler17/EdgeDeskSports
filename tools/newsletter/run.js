@@ -925,6 +925,98 @@ async function main() {
     return;
   }
 
+  /* ------------------------------------------------------------ gate --- */
+  /* THE ONE-TIME LAUNCH GATE, AND THE ONE PRECONDITION IT WILL NOT SKIP.
+
+     Opening this means the next valid edition goes to every confirmed
+     subscriber with no further approval, so the only thing this refuses is
+     the thing that would make that unsafe: an unsubscribe link that does not
+     work.
+
+     Every email carries a link to /functions/v1/newsletter/unsubscribe. If
+     that function is not deployed the link 404s, and an edition sent in that
+     state is one a reader cannot get out of — which is both the protection
+     an operator asks to preserve when they say "preserve unsubscribe" and,
+     in the United States, a legal requirement rather than a preference. It
+     is also the same function that serves /subscribe and /confirm and
+     receives the provider's bounce and complaint webhooks, so without it
+     nobody can join, nobody can leave, and no bounce is ever suppressed.
+
+     So the precondition is checked against the live deployment, not asserted
+     in a comment: --on probes the function and refuses if it is not there.
+     --force opens the gate anyway, because an operator who knows all of that
+     and has a reason is not this mistake. Closing it is never gated: a kill
+     switch that could be blocked is not a kill switch. */
+  if (phase === 'gate') {
+    const wantOn = flag('on');
+    const wantOff = flag('off');
+    const line = (k, v) => log('  ' + String(k).padEnd(24) + ' ' + v);
+    if (wantOn && wantOff) { console.error('--on and --off are the same switch'); process.exit(2); }
+    const c = RUNTIME.client({});
+    if (!c.enabled || !c.hasService) {
+      console.error('the launch gate lives in the database; this needs the service role');
+      process.exit(2);
+    }
+    const before = await c.readSettings();
+    if (!before) { console.error('could not read newsletter_settings'); process.exit(2); }
+
+    let counts = null;
+    try { counts = await c.subscriberCounts(); } catch (e) { log('  ! could not count subscribers: ' + (e && e.message)); }
+
+    log('\n=== the launch gate ===');
+    line('sending_enabled', before.sending_enabled ? 'OPEN' : 'closed');
+    line('cfb / nfl', (before.cfb_enabled ? 'on' : 'PAUSED') + ' / ' + (before.nfl_enabled ? 'on' : 'PAUSED'));
+    line('dispatcher', before.dispatcher_enabled ? 'on' : 'PAUSED');
+    if (counts) {
+      line('confirmed subscribers', counts.confirmed + ' (' + counts.cfb + ' CFB, ' + counts.nfl + ' NFL)');
+      line('pending / unsubscribed', counts.pending + ' / ' + counts.unsubscribed);
+    }
+    if (!wantOn && !wantOff) { log('\n  read-only; pass --on or --off to move it\n'); return; }
+
+    if (wantOn) {
+      const base = (RUNTIME.SB_URL || '').replace(/\/$/, '');
+      let reachable = false, detail = 'no project URL';
+      try {
+        const res = await fetch(base + '/functions/v1/newsletter/health', {
+          method: 'GET',
+          headers: { authorization: 'Bearer ' + (process.env.SB_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || RUNTIME.SB_ANON || '') },
+        });
+        reachable = res.status !== 404;
+        detail = 'HTTP ' + res.status;
+      } catch (e) { detail = String((e && e.message) || e).slice(0, 120); }
+      line('unsubscribe endpoint', reachable ? 'reachable (' + detail + ')' : 'NOT DEPLOYED (' + detail + ')');
+      if (!reachable && !FORCE) {
+        log('\n  REFUSED. The `newsletter` edge function is not deployed, so every email\n'
+          + '  this would send carries an unsubscribe link that answers 404 — and the\n'
+          + '  same function serves signup, confirmation and the bounce/complaint\n'
+          + '  webhook, so nobody could join, leave, or be suppressed.\n\n'
+          + '    supabase functions deploy newsletter --no-verify-jwt\n\n'
+          + '  Then run this again. --force opens it anyway.\n');
+        record({ phase: 'gate', ok: false, reason: 'unsubscribe_endpoint_missing' });
+        STORE.appendRuns(runRows, { now });
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    const after = await c.patchSettings({ sending_enabled: !!wantOn });
+    log('\n  sending_enabled ' + (before.sending_enabled ? 'OPEN' : 'closed')
+      + ' -> ' + (after && after.sending_enabled ? 'OPEN' : 'closed')
+      + (wantOn && FORCE ? '  [forced past the unsubscribe check]' : ''));
+    if (wantOn) {
+      log('  From here a valid edition sends automatically at 10:00 America/Chicago:');
+      SCHEDULE.sports().forEach(sp => {
+        const d = dueFor(sp, now, resolved.settings);
+        log('    ' + sp + '  next ' + d.next_edition_date + ' at ' + d.next_scheduled_at);
+      });
+      log('  To pause: this phase with --off, or the Launch card at /admin/newsletter.');
+    }
+    log('');
+    record({ phase: 'gate', ok: true, detail: { sending_enabled: !!wantOn, forced: !!(wantOn && FORCE) } });
+    STORE.appendRuns(runRows, { now });
+    return;
+  }
+
   /* ---------------------------------------------------------- doctor --- */
   /* WHAT IS ACTUALLY CONFIGURED, READ-ONLY, WITHOUT PRINTING A SECRET.
 
@@ -1070,7 +1162,7 @@ async function main() {
   const doSend = ['send', 'all', 'test', 'retry'].indexOf(phase) >= 0;
   if (!doBuild && !doSend) {
     console.error('unknown phase: ' + phase
-      + '\nphases: due, doctor, market, build, send, retry, all, preview, test, rank, report');
+      + '\nphases: due, doctor, gate, market, build, send, retry, all, preview, test, rank, report');
     process.exit(2);
   }
 

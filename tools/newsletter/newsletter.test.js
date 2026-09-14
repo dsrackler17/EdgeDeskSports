@@ -1480,10 +1480,47 @@ section('7 — the provider');
        articles.test.js — which is this workflow's own pre-flight gate. A run
        that refreshed records and left the pages behind therefore broke the
        next run's ability to start at all. */
+    /* THE LAUNCH GATE, AND THE ONE THING IT WILL NOT SKIP.
+       Opening it means the next valid edition reaches every confirmed
+       subscriber with no further approval. The unsubscribe link in that email
+       points at the `newsletter` edge function, so opening the gate while
+       that function is undeployed sends mail a reader cannot get out of —
+       which is a legal requirement in the US, not a preference, and is also
+       the function that receives bounce and complaint webhooks. */
+    const runSrc = fs.readFileSync(path.join(ROOT, 'tools', 'newsletter', 'run.js'), 'utf8');
+    const gate = runSrc.slice(runSrc.indexOf("phase === 'gate'"), runSrc.indexOf("phase === 'doctor'"));
+    chk('the gate phase exists', gate.length > 500, String(gate.length));
+    chk('opening it probes the unsubscribe endpoint first',
+      /functions\/v1\/newsletter\/health/.test(gate) && /wantOn/.test(gate));
+    chk('\u2026and refuses when that function is not deployed',
+      /reachable && !FORCE|!reachable && !FORCE/.test(gate) && /REFUSED/.test(gate));
+    chk('\u2026and names the deploy that fixes it',
+      /supabase functions deploy newsletter/.test(gate));
+    chk('an operator can still force it knowingly', /FORCE/.test(gate));
+    chk('CLOSING the gate is never blocked',
+      gate.indexOf('reachable') > gate.indexOf('if (wantOn)'),
+      'the endpoint probe sits inside the open branch only');
+    chk('it reports the blast radius before moving anything',
+      /confirmed subscribers/.test(gate) && /subscriberCounts/.test(gate));
+    /* the door it reads through returns counts, never addresses — asserted at
+       the door rather than by grepping the caller for the word "email" */
+    const rtSrc = fs.readFileSync(path.join(ROOT, 'tools', 'newsletter', 'runtime.js'), 'utf8');
+    const countsFn = rtSrc.slice(rtSrc.indexOf('async subscriberCounts'),
+      rtSrc.indexOf('async readSettings'));
+    chk('the blast-radius door selects no address column',
+      /select=status,wants_cfb,wants_nfl/.test(countsFn) && !/email/.test(countsFn), countsFn.slice(0, 200));
+    chk('\u2026and returns numbers only',
+      /confirmed: confirmed\.length/.test(countsFn) && !/\.map\(/.test(countsFn));
+    chk('the workflow offers the two directions as separate choices',
+      /'gate-on', 'gate-off'/.test(wf) && /PHASE=gate; ARGS="\$ARGS --on"/.test(wf));
+    chk('\u2026and the gate commits nothing',
+      /startsWith\(github\.event\.inputs\.phase, 'gate'\)/.test(wf));
+
     /* THE READ-ONLY INSPECTION. `doctor` answers the launch questions from
        live state instead of from memory, so it must refresh nothing, commit
        nothing, and above all print no credential. */
-    chk('the workflow offers the read-only doctor phase', /'doctor'\]/.test(wf), wf.slice(wf.indexOf('options:'), wf.indexOf('options:') + 120));
+    chk('the workflow offers the read-only doctor phase', /'doctor'/.test(wf),
+      wf.slice(wf.indexOf('options:'), wf.indexOf('options:') + 140));
     chk('doctor refreshes nothing',
       (wf.match(/github\.event\.inputs\.phase != 'doctor'/g) || []).length >= 4);
     chk('doctor cannot commit',
