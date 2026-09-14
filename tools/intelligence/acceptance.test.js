@@ -368,6 +368,30 @@ const MLB_PACKET = {
       /RETRIEVAL failure, not a finding that the matchup is absent/i.test(nm2.note || ''), nm2.note);
   }
   {
+    /* (b2) A SCHEDULED GAME WITH NO PRICE is not a missing game, and is not a
+       tradeable one either. Three counts travel together everywhere in this
+       system and conflating any two is how a 46-market board was described as
+       having one. */
+    const ask = conversation({ packet: MLB_PACKET });
+    const j = await ask('How does Oregon look this week?');
+    const c = j.research_context || {};
+    eq('an unpriced game still resolves', c.game_id, '401858455');
+    eq('and routes to football', j.sport, 'americanfootball_ncaaf');
+    chk('the absence of a price is never reported as an absent game',
+      !/no such game|game does not exist|not on the card/i.test(j.prompt || ''));
+    const st = j.slate_state || {};
+    chk('scheduled, quoted and priced are counted separately',
+      st.scheduled_games != null && st.games_with_quotes != null
+      && st.scheduled_games >= st.games_with_quotes,
+      { scheduled: st.scheduled_games, quoted: st.games_with_quotes });
+    chk('and the prompt says a market NUMBER is not an executable price',
+      /not a price to bet into|no book, no per-side odds and no capture time|consensus line is a number/i.test(j.prompt || ''));
+    chk('no decision is published for a game with no executable price',
+      (j.decisions || []).every((d) => String(d.game_id) !== '401858455'
+        || (d.price && d.price.offered_american != null)),
+      (j.decisions || []).map((d) => [d.game_id, d.price && d.price.offered_american]));
+  }
+  {
     /* (c) THE AI ENDPOINT IS DOWN. The research must still reach the client. */
     modelStatus = 503;
     m.clearCache(); route = FX.router(fx, {});
