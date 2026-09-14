@@ -520,5 +520,101 @@ const MLB_PACKET = {
       !/relation \"public|schema cache|SELECT |PostgREST/i.test(j.answer || ''));
   }
 
+  /* =====================================================================
+     11. THE WEBSITE HALF.
+
+     The server can route perfectly and the panel can still answer about the
+     wrong game: app.html has its own resolver, its own planner and its own
+     fallbacks, and all three used to assume the loaded signal was the subject.
+     These run the browser's OWN resolver — the EDINTEL block inlined into
+     app.html, not a copy — against the real published card.
+     ===================================================================== */
+  {
+    const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
+
+    /* ---- the resolver the panel uses, actually executed ---------------- */
+    const kernel = APP.slice(APP.indexOf('/*__EDINTEL_START__*/'), APP.indexOf('/*__EDINTEL_END__*/'));
+    chk('the intelligence kernel is inlined into the page', kernel.length > 1000, kernel.length);
+    const grab = (name) => {
+      const at = APP.indexOf('function ' + name + '(');
+      if (at < 0) return null;
+      /* Balance braces from the first one after the signature. */
+      let i = APP.indexOf('{', at), depth = 0;
+      for (let j = i; j < APP.length; j++) {
+        if (APP[j] === '{') depth++;
+        else if (APP[j] === '}') { depth--; if (!depth) return APP.slice(at, j + 1); }
+      }
+      return null;
+    };
+    const src = [grab('resolveQuestionToGame')].filter(Boolean).join('\n');
+    chk('resolveQuestionToGame was found in the page', !!src.length);
+    const sandbox = new Function('EDINTEL_SRC', `
+      ${kernel}
+      ${src}
+      return { resolveQuestionToGame: resolveQuestionToGame, EDINTEL: EDINTEL };
+    `)();
+    const EI = sandbox.EDINTEL;
+    const SL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/fbs/slate.json'), 'utf8'));
+    const games = SL.games.map((g) => ({ game_id: String(g.game_id), home_team: g.home_team,
+      away_team: g.away_team, home_id: g.home_team_id, away_id: g.away_team_id, kickoff: g.kickoff }));
+    const ix = EI.fbsIndexFor(games);
+    const R = (q) => sandbox.resolveQuestionToGame(q, games, ix);
+
+    const nt = R('What do you think about North Texas vs Texas State this week?');
+    chk('the browser resolves a named matchup off the published card',
+      nt && nt.home_id === 'texasstate' && nt.away_id === 'northtexas', nt && [nt.away_team, nt.home_team]);
+    const solo = R('How does Texas State look this week?');
+    chk('and resolves a single named program to its one game',
+      solo && solo.home_id === 'texasstate', solo && [solo.away_team, solo.home_team]);
+    /* THE TRAP THE WHOLE INCIDENT TURNS ON. */
+    chk('"Texas State" is never read as "Texas"',
+      !solo || !/rangers/i.test(JSON.stringify(solo)), solo);
+    const oh = R('What about Miami (OH) vs Cincinnati?');
+    chk('Miami (OH) reaches Cincinnati, not Miami Florida',
+      oh && oh.away_id === 'miamioh', oh && [oh.away_team, oh.home_team]);
+    const fl = R('What about Miami vs Wake Forest?');
+    chk('and plain Miami reaches Wake Forest',
+      fl && fl.away_id === 'miami' && fl.home_id === 'wakeforest', fl && [fl.away_team, fl.home_team]);
+    chk('an ordinary sentence resolves to no game at all',
+      R('Anything worth betting tonight?') == null, R('Anything worth betting tonight?'));
+    /* THE RESOLVER IS MASCOT-TOLERANT BY DESIGN — it exists to join a book's
+       "Colorado Buffaloes" to a schedule's "Colorado" — so it will resolve
+       "Colorado Rockies" to Colorado's football team if asked. It is fenced by
+       excluding whatever the reader has open in another sport. */
+    chk('a baseball club is excluded once the loaded selection is named',
+      sandbox.resolveQuestionToGame('San Diego Padres @ Colorado Rockies', games, ix,
+        'San Diego Padres @ Colorado Rockies') == null);
+
+    /* ---- the contract the panel now keeps ----------------------------- */
+    chk('the panel sends the resolved subject back with every question',
+      /research_context\s*:\s*LAST_CTX/.test(APP));
+    chk('and keeps a failed response that still carries research',
+      /if\(parsed && parsed\.research\)/.test(APP));
+    chk('the local deep path is gated on the question being about the open signal',
+      /if\(ctx && askedAboutOpenSignal\(t, ctx\.x, 'chat'\)\)/.test(APP));
+    chk('and so is the deterministic narrative fallback',
+      /if\(x && askedAboutOpenSignal\(question, x, mode\)\)/.test(APP));
+    chk('a narration failure renders facts plus a retry, not an invented view',
+      /factualFallbackHTML/.test(APP) && /EdgeDesk has not formed a view/.test(APP)
+      && /EDAI\.retryLast\(\)/.test(APP));
+    /* THE LINE THE REPORTED FAILURE ENDED ON. */
+    chk('the ledger notice no longer renders the database detail',
+      !/esc\(String\(L\.detail\)/.test(APP));
+    chk('and sends it to the console instead',
+      /console\.warn\('EdgeDesk ledger write failed:'/.test(APP));
+    chk('the fact card separates a captured quote from a consensus reference',
+      /not an executable sportsbook quote/.test(APP) && /captured/.test(APP));
+    /* NO PRIVILEGED CREDENTIAL MOVES TO THE BROWSER.
+       A page that NAMES a server-side variable in a diagnostic sentence is
+       fine; a page that holds a key, or calls the model directly, is not. */
+    chk('the page holds no model key', !/sk-ant-[A-Za-z0-9]/.test(APP));
+    chk('and never calls the model API itself — that stays server-side',
+      !/api\.anthropic\.com/.test(APP) && !/['"]x-api-key['"]/.test(APP));
+    chk('and no service-role key is either',
+      !/service_role|SERVICE_ROLE/.test(APP));
+    chk('the only privileged call it makes is to the authenticated function',
+      /functions\/v1\/edgedesk_ai/.test(APP));
+  }
+
   done();
 })().catch((e) => { console.error(e && e.stack || e); process.exit(1); });

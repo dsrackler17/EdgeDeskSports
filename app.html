@@ -31081,7 +31081,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var games=FB.p4.up.map(function(u){ return {game_id:String(u.g.game_id),home_team:u.g.home_team,
         away_team:u.g.away_team,home_id:u.g.home_team_id||null,away_id:u.g.away_team_id||null,kickoff:u.g.kickoff||null}; });
       var ix=EDINTEL.fbsIndexFor(games);
-      var hit=resolveQuestionToGame(q, games, ix);
+      var hit=resolveQuestionToGame(q, games, ix, String(x.matchup||''));
       if(hit) return false;   // they named a football game; this MLB/other row is not it
     }catch(_){}
     return true;
@@ -31091,10 +31091,23 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      A lookup, not a guess: both halves of "A vs B" must land on the same game,
      and a single name must land on exactly one. Anything else resolves to
      nothing and the caller says so. */
-  function resolveQuestionToGame(question, games, ix){
+  function resolveQuestionToGame(question, games, ix, exclude){
     var q=String(question||'');
-    var SIDE="[A-Z][A-Za-z'&.()-]*(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.()-]*)*";
+    /* "(OH)" is part of the name. Miami and Miami (OH) are different programs
+       and are regularly on the same card; a pattern that stops at the bracket
+       sends a question about one of them to the other. */
+    var PAREN="(?:[ ]?\\([A-Za-z.]{1,6}\\))?";
+    var SIDE="[A-Z][A-Za-z'&.-]*"+PAREN+"(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.-]*"+PAREN+")*";
     var vs=new RegExp("("+SIDE+")\\s+(?:versus|vs\\.?|@|at)\\s+("+SIDE+")").exec(q);
+    /* THE BOARD RESOLVER IS MASCOT-TOLERANT, WHICH IS WHY IT WORKS AND WHY IT
+       MUST BE FENCED. It exists to join a book's "Colorado Buffaloes" to a
+       schedule's "Colorado", so it cheerfully resolves "Colorado Rockies" to
+       Colorado's football team as well. Anything the reader has open in
+       another sport is therefore excluded by name before the lookup: a phrase
+       that names the loaded selection is about the loaded selection. */
+    var skip={};
+    String(exclude||'').split(/\s+(?:@|vs\.?|at|versus)\s+|,/).forEach(function(t){
+      t=String(t||'').trim(); if(t) skip[t.toLowerCase()]=1; });
     function find(a,b){
       var ra=EDINTEL.resolveTeam(a,ix), rb=EDINTEL.resolveTeam(b,ix);
       if(!ra||!ra.key||!rb||!rb.key) return null;
@@ -31105,10 +31118,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
     if(vs){ var m=find(vs[1],vs[2]); if(m) return m; }
     /* One capitalised multi-word phrase, resolved to exactly one game. */
-    var re=/\b([A-Z][A-Za-z'&.()-]*(?:[ ][A-Z][A-Za-z'&.()-]*)+)/g, mm, seen={};
+    var re=/\b([A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?(?:[ ][A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?)+)/g, mm, seen={};
     while((mm=re.exec(q))!=null){
       var phrase=mm[1].replace(/[.,;:!?]+$/,'').trim();
       if(seen[phrase]) continue; seen[phrase]=1;
+      if(skip[phrase.toLowerCase()]) continue;
       var r=EDINTEL.resolveTeam(phrase,ix); if(!r||!r.key) continue;
       var hits=games.filter(function(g){ return EDINTEL.canonKey(g.home_id,g.home_team)===r.key
         || EDINTEL.canonKey(g.away_id,g.away_team)===r.key; });
@@ -31131,7 +31145,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         away_team:u.g.away_team,home_id:u.g.home_team_id||null,away_id:u.g.away_team_id||null,
         kickoff:u.g.kickoff||null,_u:u}; });
       var ix=EDINTEL.fbsIndexFor(games);
-      var g=resolveQuestionToGame(question, games, ix);
+      var g=resolveQuestionToGame(question, games, ix, opts.exclude||'');
       if(!g && LAST_CTX && LAST_CTX.game_id){
         for(var i=0;i<games.length;i++) if(games[i].game_id===String(LAST_CTX.game_id)){ g=games[i]; break; }
       }
@@ -34000,7 +34014,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         // BOARD/RESEARCH mode: broader questions, and anything asked with no signal open.
         // The board data the app already holds goes to the AI — it never answers "I can't see the slate".
         if(!ctx || isBoardQuestion(t)){ await boardAnswer(t); return; }
-        if(ctx){
+        /* THE LOCAL DEEP AND QUICK PATHS RESEARCH THE LOADED SIGNAL, WHICH IS
+           ONLY THE ANSWER WHEN THE LOADED SIGNAL IS THE QUESTION.
+           plan() reads the words and picks a depth; investigate() and
+           quickAnswer() then research `ctx` — the row on screen. Asked "what
+           could make that lean wrong?" with a baseball game open and a football
+           game under discussion, that produced a deep, confident, entirely
+           local answer about the wrong sport without the server ever hearing
+           the question. When the question is about something else, it goes to
+           the server, which resolves the named matchup against the card. */
+        if(ctx && askedAboutOpenSignal(t, ctx.x, 'chat')){
           if(SESSION.eventId!==ctx.eventId){ SESSION.eventId=ctx.eventId; SESSION.cache={}; } // new game -> fresh session cache
           var pl=plan(t,ctx);
           if(pl.depth==='FULL'||pl.depth==='DEEP'){ await investigate(ctx,null,t); return; }

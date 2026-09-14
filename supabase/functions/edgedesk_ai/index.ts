@@ -8060,7 +8060,14 @@ export function matchupFromText(text: string): string[] {
   if (!t) return [];
   /* A side is a capitalised run: "Miami", "Wake Forest", "Texas A&M",
      "Miami (OH)", "Ole Miss". Joiners stay lower case so they cannot start one. */
-  const SIDE = "[A-Z][A-Za-z'&.()-]*(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.()-]*)*";
+  /* "(OH)" IS PART OF THE NAME, NOT PUNCTUATION AFTER IT.
+     Miami (OH) and Miami are different programs and are frequently on the same
+     card. This pattern stopped at the "(", so "Miami (OH) vs Cincinnati" read
+     as "Miami" — the Florida school — versus Cincinnati, found no such game,
+     and resolved nothing. A parenthetical of a few letters is admitted as part
+     of the side it qualifies. */
+  const PAREN = "(?:[ ]?\\([A-Za-z.]{1,6}\\))?";
+  const SIDE = "[A-Z][A-Za-z'&.-]*" + PAREN + "(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.-]*" + PAREN + ")*";
   const re = new RegExp("(" + SIDE + ")\\s+(?:versus|vs\\.?|@|at)\\s+(" + SIDE + ")");
   const m = re.exec(t);
   if (!m) return [];
@@ -15427,7 +15434,7 @@ function needsFromCfb(plan: Plan, wants: (s: string) => boolean): Set<string> {
 export function teamishPhrases(text: string): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
-  const re = /\b([A-Z][A-Za-z'&.()-]*(?:[ ](?:of|and|&|the)?[ ]?[A-Z][A-Za-z'&.()-]*)+)/g;
+  const re = /\b([A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?(?:[ ](?:of|and|&|the)?[ ]?[A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?)+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(String(text ?? ""))) != null) {
     let words = m[1].replace(MATCHUP_LEAD, "").replace(/[.,;:!?]+$/, "").trim().split(/\s+/);
