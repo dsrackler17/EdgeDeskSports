@@ -392,6 +392,41 @@ section('4 — selection');
   chk('…and the games past five say which bar they missed',
     (highBar.passed || []).some(p => p.why === 'below_expansion_threshold'));
 
+  /* ---- A FEATURED GAME HAS TO BE EXPLICABLE ------------------------------
+     EdgeDesk withholds a RANK below its own confidence floor: the rating is
+     published, the position on the board is not. A game with such a team has
+     no comparison sentence to write and no measured advantage to name \u2014 an
+     advantage is a distance between two positions \u2014 so the whole read comes
+     out as one sentence. A live college edition was HELD for exactly this,
+     four of ten featured games below the two-sentence floor. The refusal
+     belongs where a different game can still be chosen. */
+  const unrankable = record({ game_id: 'UR' });
+  unrankable.research.compare.groups[0].rows.forEach(r => {
+    r.a.rank = null; r.a.rank_n = null;
+    r.a.note = 'confidence 9% is below the 22% floor.';
+  });
+  unrankable.research.advantages = { away: [], home: [], measured: [] };
+  const unrankableCand = SLATE.fromRecord(unrankable);
+  const thinScore = SELECT.scoreOne(unrankableCand, 'NFL', SELECT.DEFAULTS, NOW);
+  chk('a game the model cannot rank is refused rather than featured',
+    thinScore.refusals.some(r => r.id === 'evidence_too_thin'),
+    JSON.stringify(thinScore.refusals.map(r => r.id)));
+  chk('\u2026and the refusal names what the payload could not supply',
+    thinScore.refusals.some(r => r.id === 'evidence_too_thin' && /confidence floor/.test(r.detail || '')),
+    JSON.stringify(thinScore.refusals));
+  chk('a payload with ranks and advantages is not refused for evidence',
+    !SELECT.scoreOne(candidate({ game_id: 'OK' }), 'NFL', SELECT.DEFAULTS, NOW)
+      .refusals.some(r => r.id === 'evidence_too_thin'));
+  chk('one missing source of three is still enough',
+    !SELECT.scoreOne(SLATE.fromRecord((function () {
+      const r = record({ game_id: 'TWO' });
+      r.research.advantages = { away: [], home: [], measured: [] };
+      return r;
+    })()), 'NFL', SELECT.DEFAULTS, NOW).refusals.some(x => x.id === 'evidence_too_thin'));
+  chk('an unrankable game is kept out of the edition entirely',
+    SELECT.rank({ games: [unrankableCand], sport: 'NFL', now: NOW,
+      settings: { thresholds: { NFL: 0 }, gap_confidence_floor: 0 } }).chosen.length === 0);
+
   /* refusals */
   const unpriced = SELECT.scoreOne(candidate({ game_id: 'U', priced: false }), 'NFL', SELECT.DEFAULTS, NOW);
   chk('an unpriced game is refused', unpriced.refusals.some(r => r.id === 'not_priced'));
@@ -497,6 +532,30 @@ function buildEdition(opts) {
   const v = VALIDATE.validate(edition, { now: NOW, rendered, published_ids: {} });
   chk('a well-formed edition validates', v.ok === true,
     JSON.stringify(v.integrity_failed.concat(v.craft_failed)));
+
+  /* THE TWO MODULES CANNOT DISAGREE ABOUT WHAT EXISTS. select.js refuses a
+     game it cannot evidence; compose.js writes the sentences. They read the
+     same chosen sources, and this is the pin that says so: every game that
+     reaches an edition carries at least the two sentences the validator
+     demands, so the gate is met by choosing rather than by holding. */
+  const unrankableEd = record({ game_id: 'UR2' });
+  unrankableEd.research.compare.groups[0].rows.forEach(r => { r.a.rank = null; r.a.rank_n = null; });
+  unrankableEd.research.advantages = { away: [], home: [], measured: [] };
+  const mixed = buildEdition({ candidates: [
+    candidate({ game_id: 'G1', fair_spread: 4.4, market_line: -9.5, sample_games: 8 }),
+    SLATE.fromRecord(unrankableEd),
+  ] });
+  chk('a game select could not evidence never reaches the copy',
+    mixed.edition.games.every(g => g.key.indexOf('UR2') < 0),
+    mixed.edition.games.map(g => g.key).join(', '));
+  chk('every featured game composes at least two evidence sentences',
+    mixed.edition.games.every(g => (g.why || []).length >= 2),
+    mixed.edition.games.map(g => g.key + ':' + (g.why || []).length).join(', '));
+  chk('\u2026and select counted the same sources compose wrote',
+    mixed.edition.games.every(g => {
+      const c = (mixed.selection.chosen || []).filter(x => x.key === g.key)[0];
+      return c && SELECT.evidenceSources(c.evidence, 'NFL').count === (g.why || []).length;
+    }));
 
   chk('the subject is specific to this week', /Week 2/.test(edition.subject), edition.subject);
   chk('the subject fits an inbox', edition.subject.length <= 78, String(edition.subject.length));
@@ -875,6 +934,59 @@ section('7 — the provider');
     chk('the refusal histogram counts by reason',
       MARKET.countBy([{ why: 'a' }, { why: 'a' }, { why: 'b' }]).a === 2);
 
+    /* ---- ONE HANDICAP, TWO SIDES -------------------------------------
+       The second half of the same live failure. The names resolved, the
+       quotes joined, and the board still showed NO MARKET on 25 of 47
+       college games, because the capture writes a row per selection and the
+       board's reader looks for the HOME row. Whichever side happened to be
+       seen last was the one the snapshot kept. */
+    const bothSides = MARKET.quotesFromSignals([
+      { sig_key: 'away-side', market: 'spreads', selection: 'Detroit Lions', point: 3, best_book: 'FanDuel',
+        home_team: 'Buffalo Bills', away_team: 'Detroit Lions', commence_time: '2026-09-17T20:15:00Z', last_seen_at: '2026-09-15T09:00:00Z' },
+      { sig_key: 'home-side', market: 'spreads', selection: 'Buffalo Bills', point: -3, best_book: 'FanDuel',
+        home_team: 'Buffalo Bills', away_team: 'Detroit Lions', commence_time: '2026-09-17T20:15:00Z', last_seen_at: '2026-09-15T08:00:00Z' },
+    ], slateGames);
+    chk('the home side is stored even when the away row was seen later',
+      bothSides.quotes[0].spread.selection === 'Buffalo Bills'
+      && bothSides.quotes[0].spread.point === -3
+      && bothSides.quotes[0].spread.side === 'home',
+      JSON.stringify(bothSides.quotes[0].spread));
+    const awayOnly = MARKET.quotesFromSignals([
+      { sig_key: 'away-only', market: 'spreads', selection: 'Detroit Lions', point: 3, best_book: 'FanDuel',
+        home_team: 'Buffalo Bills', away_team: 'Detroit Lions', commence_time: '2026-09-17T20:15:00Z', last_seen_at: '2026-09-15T09:00:00Z' },
+    ], slateGames);
+    chk('an away-only capture is stored as captured, with its side named',
+      awayOnly.quotes[0].spread.selection === 'Detroit Lions'
+      && awayOnly.quotes[0].spread.point === 3
+      && awayOnly.quotes[0].spread.side === 'away',
+      JSON.stringify(awayOnly.quotes[0].spread));
+
+    /* And the replay hands the board BOTH ends of that handicap, so the
+       away-side capture still joins. -3 on the home team is +3 on the away
+       team: the same captured number, no second price. */
+    const HOSTMOD = require('../articles/research_host.js');
+    const replay = function (spread) {
+      const win = { FB: { nfl: { sig: {} }, p4: { sig: {} } } };
+      HOSTMOD.installMarketSnapshot(win, [
+        { sport: 'NFL', game_id: '1', home: 'Buffalo Bills', away: 'Detroit Lions',
+          kickoff: '2026-09-17T20:15:00.000Z', captured_at: '2026-09-15T09:00:00Z', spread: spread },
+      ]);
+      return (win.FB.nfl.sig['snapshot:1'] || { rows: [] }).rows.filter(r => r.market === 'spreads');
+    };
+    const mirroredRows = replay({ selection: 'Detroit Lions', side: 'away', point: 3, book: 'FanDuel' });
+    chk('the replay presents both ends of one handicap', mirroredRows.length === 2,
+      JSON.stringify(mirroredRows));
+    chk('the mirrored end is the same number from the other side',
+      mirroredRows.some(r => r.selection === 'Buffalo Bills' && r.point === -3)
+      && mirroredRows.some(r => r.selection === 'Detroit Lions' && r.point === 3),
+      JSON.stringify(mirroredRows));
+    chk('the mirrored end keeps the captured book and timestamp, and states no price',
+      mirroredRows.every(r => r.best_book === 'FanDuel' && r.last_seen_at === '2026-09-15T09:00:00Z'
+        && r.best_dec === undefined && r.price === undefined));
+    chk('a pick\u2019em mirrors to zero, not to negative zero',
+      replay({ selection: 'Detroit Lions', side: 'away', point: 0, book: 'FanDuel' })
+        .every(r => Object.is(r.point, 0)));
+
     /* ==================================================================
        8b — THE SEND PATH, against a fake database
        ================================================================== */
@@ -933,6 +1045,11 @@ section('7 — the provider');
         async recordOutcome(id, out) {
           const d = state.deliveries.filter(x => x.email === out.email)[0];
           if (d) { d.status = out.status; d.ambiguous = out.ambiguous; d.last_error = out.error; }
+        },
+        async sentWithHash(sport, hash, exceptKey) {
+          const rows = (init.sentEditions || []).filter(e => e.sport === sport
+            && e.content_hash === hash && e.edition_key !== exceptKey);
+          return rows.length ? rows[0] : null;
         },
         async bumpAttempts() {}, async logRun() {}, async suppress() {},
       };
@@ -1012,6 +1129,36 @@ section('7 — the provider');
     chk('an edition everyone has been accepted for does not re-send',
       s4.reason === 'already_delivered_to_everyone', JSON.stringify(s4));
     chk('…and is marked sent', db4.state.edition.status === 'sent');
+
+    /* THE SAME TEN GAMES, TWICE, UNDER TWO KEYS.
+       The identity index stops one edition being stored twice; it does not
+       stop two dates carrying the same slate. Both NFL previews in the store
+       came out with the identical content hash, and the provider's
+       idempotency key is built from the edition key, so it would have
+       accepted both. */
+    const twin = { sport: 'NFL', edition_key: 'NFL:2026:W02:2026-09-08',
+      content_hash: 'ed_deadbeef', sent_at: '2026-09-08T15:04:00.000Z' };
+    const db4b = fakeDb({ eligible: people3, sentEditions: [twin] });
+    const s4b = await runSend(db4b);
+    chk('an edition identical to one already sent does not go out again',
+      s4b.sent === false && s4b.reason === 'already_sent_as', JSON.stringify(s4b));
+    chk('\u2026and it names the edition that did', /2026-09-08/.test(s4b.detail || ''), s4b.detail);
+    chk('\u2026and nobody is put on a roster for it', db4b.state.deliveries.length === 0);
+
+    const db4c = fakeDb({ eligible: people3, sentEditions: [Object.assign({}, twin, { content_hash: 'ed_other' })] });
+    chk('a different week with a different hash is unaffected',
+      (await runSend(db4c)).sent === true);
+
+    /* finishing a partial send is the one case where identical content SHOULD
+       go out again, so a retry excludes the edition's own row */
+    const db4d = fakeDb({ eligible: people3,
+      sentEditions: [Object.assign({}, twin, { edition_key: 'NFL:2026:W02:2026-09-15' })] });
+    chk('a retry of the edition\u2019s own row is not blocked by itself',
+      (await runSend(db4d, null, { retry: true })).sent === true);
+
+    const db4e = fakeDb({ eligible: people3, sentEditions: [twin] });
+    chk('an operator re-sending knowingly can still force it',
+      (await runSend(db4e, null, { force: true })).sent === true);
 
     /* the kill switch is re-read at send time, not trusted from the build */
     const db5 = fakeDb({ eligible: people3 });
@@ -1129,7 +1276,52 @@ section('7 — the provider');
     chk('…before it regenerates the records', iMarket > 0 && iGenerate > iMarket,
       'market at ' + iMarket + ', generate at ' + iGenerate);
     chk('the market step is given the service role', /SB_SERVICE_ROLE: \$\{\{ secrets\.SB_SERVICE_ROLE \}\}/.test(wf.slice(iMarket - 900, iMarket)));
-    chk('the run commits the refreshed snapshot', /git add[^\n]*articles\/data\/market/.test(wf));
+    /* THE PAGES BEHIND THE REFRESHED RECORDS ARE PART OF THE SAME RUN.
+       generate.js rewrites records; the disclosure that a quote was replayed
+       from a committed snapshot is asserted against the PUBLISHED PAGE by
+       articles.test.js — which is this workflow's own pre-flight gate. A run
+       that refreshed records and left the pages behind therefore broke the
+       next run's ability to start at all. */
+    /* THE READ-ONLY INSPECTION. `doctor` answers the launch questions from
+       live state instead of from memory, so it must refresh nothing, commit
+       nothing, and above all print no credential. */
+    chk('the workflow offers the read-only doctor phase', /'doctor'\]/.test(wf), wf.slice(wf.indexOf('options:'), wf.indexOf('options:') + 120));
+    chk('doctor refreshes nothing',
+      (wf.match(/github\.event\.inputs\.phase != 'doctor'/g) || []).length >= 4);
+    chk('doctor cannot commit',
+      /Commit the edition[\s\S]{0,120}phase != 'doctor'/.test(wf));
+    const runJs = fs.readFileSync(path.join(ROOT, 'tools', 'newsletter', 'run.js'), 'utf8');
+    const doctor = runJs.slice(runJs.indexOf("phase === 'doctor'"), runJs.indexOf("build / send / all / preview"));
+    chk('the doctor phase exists', doctor.length > 500, String(doctor.length));
+    chk('it reports the service key as set or not set, never its value',
+      /ds\['edgedesk\.service_key'\]/.test(doctor));
+    /* the credential is READ in exactly one place, an authorization header,
+       and reaches no log line. The name of the variable may of course be
+       printed; its value may not. */
+    const envReads = doctor.split(/process\.env\./).slice(1);
+    chk('the service role is read only into an authorization header',
+      envReads.every(after => /^(SB_SERVICE_ROLE|SUPABASE_SERVICE_ROLE_KEY)/.test(after) === false
+        || /authorization/.test(doctor.slice(Math.max(0, doctor.indexOf('process.env.' + after.slice(0, 16)) - 120),
+          doctor.indexOf('process.env.' + after.slice(0, 16)) + 40))),
+      envReads.map(x => x.slice(0, 40)).join(' /// '));
+    chk('it never prints the provider key',
+      /pcfg\.apiKey \? 'present' : 'ABSENT'/.test(doctor)
+      && !/\+ pcfg\.apiKey/.test(doctor.replace(/'Bearer ' \+ pcfg\.apiKey/g, '')),
+      'the key is used as a bearer token and reported as present/absent');
+    chk('it reads the sending domain from the account rather than naming records itself',
+      /\/domains/.test(doctor) && /account-specific/.test(doctor));
+    chk('it writes nothing', !/STORE\.(append|save)/.test(doctor) && !/upsertEdition|patchEdition/.test(doctor));
+
+    const iBuild = wf.indexOf('node tools/articles/build_articles.js');
+    chk('the workflow rebuilds the pages behind the records it refreshed', iBuild > 0);
+    chk('\u2026after it has regenerated them', iBuild > iGenerate,
+      'generate at ' + iGenerate + ', build at ' + iBuild);
+    const iAdd = wf.indexOf('git add');
+    const addLine = wf.slice(iAdd, wf.indexOf('\n', iAdd));
+    chk('the run commits the refreshed snapshot, the records and the pages',
+      /\barticles\b/.test(addLine), addLine);
+    chk('\u2026and the sitemaps the rebuild rewrote',
+      /sitemap\.xml/.test(addLine) && /sitemap-articles\.xml/.test(addLine), addLine);
 
     /* THE SQL SUITE HAS TO RUN SOMEWHERE. It skips (and passes) with no
        PostgreSQL so `npm test` stays green on a bare Node install — which
@@ -1142,6 +1334,12 @@ section('7 — the provider');
       sqlWf.indexOf("- 'supabase/newsletter.sql'") > 0);
     chk('…and a change to the suite itself does too',
       sqlWf.indexOf("- 'tools/newsletter/newsletter_sql.test.js'") > 0);
+    /* AND THE JOB REFUSES TO GO GREEN ON A SKIP. The suite passes when no
+       PostgreSQL is reachable, so a job that ran it without checking for
+       SKIP would report success on a suite that never executed — which is
+       the same "nothing is actually checking this" hole one step removed. */
+    chk('the silent-skip guard covers the newsletter log',
+      /for f in [^\n]*\bnewsletter\.log\b/.test(sqlWf), 'newsletter.log is not in the guard list');
 
     /* ================================================================== */
     console.log((fail ? 'FAIL' : 'PASS') + ' | edgedesk newsletter | ' + pass + ' passed, ' + fail + ' failed');

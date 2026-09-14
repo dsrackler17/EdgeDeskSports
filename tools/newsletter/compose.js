@@ -55,26 +55,6 @@ function poss(name) {
   const s = txt(name); if (!s) return '';
   return /s$/i.test(s) ? s + '\u2019' : s + '\u2019s';
 }
-/* A rank string the payload writes as "#54 of 68", as a position within its
-   own pool. Two units ranked in different pools are only comparable this way. */
-function rankPct(rankText) {
-  const m = /#\s*(\d+)\s*of\s*(\d+)/i.exec(String(rankText || ''));
-  if (!m) return null;
-  const pool = Number(m[2]);
-  return pool > 0 ? Number(m[1]) / pool : null;
-}
-/* How much a complete matchup separates the two units. `net` is the NFL
-   payload's own added value; the college payload publishes ranks instead, so
-   the fallback is the distance between the two units' positions in their own
-   pools. Used only to pick WHICH pairing to quote — never printed. */
-function matchupStrength(m) {
-  const n = num(m && m.net);
-  if (n != null) return Math.abs(n);
-  const a = rankPct(m && m.att && m.att.rank);
-  const d = rankPct(m && m.def && m.def.rank);
-  if (a == null || d == null) return 0;
-  return Math.abs(d - a);
-}
 function num(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
 function round1(n) { return Math.round(n * 10) / 10; }
 function signed(n) { return (n > 0 ? '+' : '') + round1(n).toFixed(1); }
@@ -160,52 +140,52 @@ function differenceFor(game) {
    Order is fixed so two runs of the same slate produce the same email. */
 function whyFor(game, sport) {
   const ev = game.evidence;
+  /* WHICH SOURCES EXIST IS SELECT'S ANSWER, NOT A SECOND ONE MADE HERE.
+     select.js refuses a game that cannot supply two of these, so a game that
+     reaches this function has already been established to have the prose. */
+  const src = SELECT.evidenceSources(ev, sport);
   const out = [];
 
-  /* 1 — where the two teams sit on EdgeDesk's own board. */
-  const row = SELECT.overallRow(ev, sport);
-  if (row && row.a && row.h && row.a.rank && row.h.rank) {
+  /* 1 \u2014 where the two teams sit on EdgeDesk's own board. */
+  if (src.compare) {
+    const row = src.compare;
     out.push({
       source: 'compare.' + row.cat,
-      text: 'On EdgeDesk’s own ' + row.k + ' scale it has ' + game.home + ' ' + row.h.rank
+      text: 'On EdgeDesk\u2019s own ' + row.k + ' scale it has ' + game.home + ' ' + row.h.rank
         + ' at ' + row.h.v + ' and ' + game.away + ' ' + row.a.rank + ' at ' + row.a.v + '.',
     });
   }
 
-  /* 2 — the widest complete pairing, by the model's own addition of the two
+  /* 2 \u2014 the widest complete pairing, by the model's own addition of the two
      sides. `net` is the payload's number, not one computed here. */
   /* THE PAYLOAD'S OWN SENTENCE, VERBATIM. The two boards word this
-     differently — the NFL brief ends "…which favours Detroit Lions", the
-     college one ends "…stands higher among its own position group, by 51
-     places" — and re-writing either into one house grammar would mean
+     differently \u2014 the NFL brief ends "\u2026which favours Detroit Lions", the
+     college one ends "\u2026stands higher among its own position group, by 51
+     places" \u2014 and re-writing either into one house grammar would mean
      asserting something neither of them said. It is already EdgeDesk's prose,
      it is already in the fact ledger, and quoting it is the only form of this
      sentence that cannot be wrong. */
-  const best = ev.complete_matchups.slice()
-    .sort((a, b) => matchupStrength(b) - matchupStrength(a))[0];
-  if (best && txt(best.read)) {
-    out.push({ source: 'matchups.' + best.title, text: txt(best.read), verbatim: true });
+  if (src.matchup) {
+    out.push({ source: 'matchups.' + src.matchup.title, text: txt(src.matchup.read), verbatim: true });
   }
 
-  /* 3 — the single largest measured advantage on either side, by how many
+  /* 3 \u2014 the single largest measured advantage on either side, by how many
      places separate the two teams on the league board. */
-  const adv = ev.advantages_home.concat(ev.advantages_away)
-    .filter(a => a && a.k && a.lead && a.trail)
-    .sort((a, b) => (num(b.rank_gap) || 0) - (num(a.rank_gap) || 0))[0];
-  if (adv) {
+  if (src.advantage) {
+    const adv = src.advantage;
     out.push({
       source: 'advantages.' + adv.k,
-      text: adv.lead + ' carries the wider measured edge on ' + adv.k + ' — '
+      text: adv.lead + ' carries the wider measured edge on ' + adv.k + ' \u2014 '
         + adv.lead_cell + ' against ' + poss(adv.trail) + ' ' + adv.trail_cell + '.',
     });
   }
 
   /* A game with no compare table and no matchups still gets a sentence, from
      the model's own pricing drivers, rather than an empty block. */
-  if (!out.length && ev.drivers.length) {
-    const d = ev.drivers.slice().sort((a, b) => Math.abs(num(b.points_n) || 0) - Math.abs(num(a.points_n) || 0))[0];
+  if (!out.length && src.driver) {
+    const d = src.driver;
     out.push({ source: 'drivers.0',
-      text: 'The largest single term in EdgeDesk’s number is ' + d.text
+      text: 'The largest single term in EdgeDesk\u2019s number is ' + d.text
         + ' at ' + d.points + (d.favours ? ', favouring ' + d.favours : '') + '.' });
   }
   return out.slice(0, 3);
@@ -501,7 +481,7 @@ function compose(opts) {
 
 module.exports = {
   SCHEMA, SITE, TOTAL_MATERIAL,
-  poss, rankPct, matchupStrength,
+  poss,
   lineText, shortSide, marketFor, differenceFor, whyFor, watchFor, totalFor, linkFor,
   subjectFor, previewFor, introFor, compose,
 };

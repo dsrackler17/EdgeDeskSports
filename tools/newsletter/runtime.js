@@ -104,6 +104,14 @@ function client(opts) {
   return {
     enabled, hasService: !!service, url,
 
+    /* WHAT IS INSTALLED, ASKED OF THE DATABASE. Service role only, both here
+       and in the grant: it is a deployment question. Returns null rather than
+       throwing when there is no credential, so `doctor` can say so plainly. */
+    async installStatus() {
+      if (!enabled || !service) return null;
+      return rpc('newsletter_install_status', {});
+    },
+
     async readSettings() {
       if (!enabled || !service) return null;
       const rows = await call('newsletter_settings?select=*&id=eq.1', { method: 'GET' }, true);
@@ -116,6 +124,23 @@ function client(opts) {
       const rows = await call('newsletter_editions?select=*&edition_key=eq.' + encodeURIComponent(key), { method: 'GET' }, true);
       return Array.isArray(rows) && rows.length ? rows[0] : null;
     },
+    /* THE SAME NEWSLETTER UNDER A DIFFERENT KEY. An edition's identity is
+       (sport, season, slate_week, edition_date) and the unique index enforces
+       it, which stops one edition being stored twice — but two editions on
+       two dates can still carry the SAME TEN GAMES if the upcoming slate has
+       not advanced between them, and their content hashes say so. Asked
+       before a send, never on a retry of the edition's own row. */
+    async sentWithHash(sport, hash, exceptKey) {
+      if (!enabled || !service || !hash) return null;
+      const rows = await call('newsletter_editions?select=edition_key,sent_at,content_hash'
+        + '&sport=eq.' + encodeURIComponent(sport)
+        + '&status=eq.sent'
+        + '&content_hash=eq.' + encodeURIComponent(hash)
+        + (exceptKey ? '&edition_key=neq.' + encodeURIComponent(exceptKey) : '')
+        + '&limit=1', { method: 'GET' }, true);
+      return Array.isArray(rows) && rows.length ? rows[0] : null;
+    },
+
     /* UPSERT ON THE IDENTITY, which is the unique index the schema owns. Two
        dispatchers racing here produce one row, not an error and not two. */
     async upsertEdition(row) {

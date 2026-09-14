@@ -1119,6 +1119,97 @@ $$;
 revoke all on function public.newsletter_admin_overview() from public, anon;
 grant execute on function public.newsletter_admin_overview() to authenticated;
 
+-- ---------------------------------------------------------------------------
+-- WHAT IS ACTUALLY INSTALLED, ANSWERED BY THE DATABASE ITSELF.
+--
+-- A launch checklist that a person ticks off from memory is a launch checklist
+-- that is wrong. This answers the configuration questions from catalogue
+-- state, so `node tools/newsletter/run.js doctor` reports what IS rather than
+-- what somebody believes: which extensions are enabled, whether the pg_cron
+-- job exists and on what schedule, whether the two database settings the cron
+-- job body reads are set, and how much of the contract's own surface is here.
+--
+-- IT NEVER RETURNS A SECRET. The service key and the project URL are reported
+-- as set / not set. `edgedesk.service_key` is a credential and the boolean is
+-- the entire answer anybody needs from here.
+--
+-- Service role only: this is a deployment question, not a reader's.
+-- ---------------------------------------------------------------------------
+create or replace function public.newsletter_install_status()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_url  text := current_setting('edgedesk.project_url', true);
+  v_key  text := current_setting('edgedesk.service_key', true);
+  v_cron jsonb := '{}'::jsonb;
+begin
+  if to_regclass('cron.job') is not null then
+    execute $q$
+      select coalesce(jsonb_build_object(
+               'present', true,
+               'schedule', (select schedule from cron.job where jobname = 'newsletter_dispatch'),
+               'active',   (select active   from cron.job where jobname = 'newsletter_dispatch')), '{}'::jsonb)
+    $q$ into v_cron;
+    if v_cron->>'schedule' is null then
+      v_cron := jsonb_build_object('present', false, 'why', 'pg_cron is installed but newsletter_dispatch is not scheduled — run supabase/newsletter_cron.sql');
+    end if;
+  else
+    v_cron := jsonb_build_object('present', false, 'why', 'pg_cron is not installed — enable it in Database -> Extensions, then run supabase/newsletter_cron.sql');
+  end if;
+
+  return jsonb_build_object(
+    'schema_version', 'newsletter.sql',
+    'extensions', jsonb_build_object(
+      'pg_cron',  exists (select 1 from pg_extension where extname = 'pg_cron'),
+      'pg_net',   exists (select 1 from pg_extension where extname = 'pg_net'),
+      'pgcrypto', exists (select 1 from pg_extension where extname = 'pgcrypto')),
+    'cron', v_cron,
+    'db_settings', jsonb_build_object(
+      'edgedesk.project_url', case when coalesce(v_url, '') = '' then 'not set' else 'set' end,
+      'edgedesk.service_key', case when coalesce(v_key, '') = '' then 'not set' else 'set' end),
+    'tables', (select coalesce(jsonb_object_agg(t, to_regclass('public.' || t) is not null), '{}'::jsonb)
+                 from unnest(array['newsletter_settings','newsletter_settings_audit','newsletter_subscribers',
+                                   'newsletter_suppressions','newsletter_editions','newsletter_deliveries',
+                                   'newsletter_events','newsletter_runs']) t),
+    'functions', (select coalesce(jsonb_object_agg(f, to_regproc('public.' || f) is not null), '{}'::jsonb)
+                    from unnest(array['newsletter_signup','newsletter_confirm','newsletter_unsubscribe',
+                                      'newsletter_preferences_get','newsletter_preferences_set','newsletter_suppress',
+                                      'newsletter_eligible','newsletter_eligible_count','newsletter_is_member',
+                                      'newsletter_is_admin','newsletter_claim_edition','newsletter_release_edition',
+                                      'newsletter_admin_overview','newsletter_admin_edition','newsletter_admin_set',
+                                      'newsletter_my_preferences','newsletter_set_my_preferences']) f),
+    'gate', (select jsonb_build_object(
+      'sending_enabled',    s.sending_enabled,
+      'cfb_enabled',        s.cfb_enabled,
+      'nfl_enabled',        s.nfl_enabled,
+      'dispatcher_enabled', s.dispatcher_enabled,
+      'from_name',          s.from_name,
+      'from_email',         s.from_email,
+      'reply_to_email',     s.reply_to_email,
+      'mailing_address',    s.mailing_address,
+      'site_url',           s.site_url,
+      -- a count, not the addresses: an operator needs to know whether a test
+      -- recipient is configured, not to have one printed into a run log
+      'test_recipients',    coalesce(array_length(s.test_recipients, 1), 0)
+    ) from public.newsletter_settings s where s.id = 1),
+    'counts', jsonb_build_object(
+      'subscribers_confirmed',   (select count(*) from public.newsletter_subscribers where status = 'confirmed'),
+      'subscribers_pending',     (select count(*) from public.newsletter_subscribers where status = 'pending'),
+      'subscribers_unsubscribed',(select count(*) from public.newsletter_subscribers where status = 'unsubscribed'),
+      'suppressions',            (select count(*) from public.newsletter_suppressions),
+      'editions',                (select count(*) from public.newsletter_editions),
+      'editions_sent',           (select count(*) from public.newsletter_editions where status = 'sent'),
+      'deliveries',              (select count(*) from public.newsletter_deliveries),
+      'provider_events',         (select count(*) from public.newsletter_events))
+  );
+end;
+$$;
+revoke all on function public.newsletter_install_status() from public, anon, authenticated;
+
 create or replace function public.newsletter_admin_edition(p_edition_key text)
 returns jsonb
 language plpgsql
@@ -1353,4 +1444,9 @@ union all select 16, 'the membership test degrades to free on a bare project',
        then 'ok' else 'CHECK THIS' end
 union all select 17, 'the operator allowlist is the article system''s',
   case when to_regprocedure('public.newsletter_is_admin()') is not null then 'ok' else 'CHECK THIS' end
+union all select 18, 'the install report is callable by the service role only',
+  case when to_regprocedure('public.newsletter_install_status()') is not null
+    and not exists (select 1 from information_schema.role_routine_grants
+      where routine_schema = 'public' and routine_name = 'newsletter_install_status'
+        and grantee in ('anon','authenticated')) then 'ok' else 'CHECK THIS' end
 order by 1;

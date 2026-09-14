@@ -510,6 +510,28 @@ async function sendBody(edition, opts, lease) {
       detail: revalidate.hold_reason, validation: revalidate }, outcomeBase);
   }
 
+  /* THE SAME NEWSLETTER, TWICE, UNDER TWO KEYS.
+     The identity index stops one edition being stored twice. It does not stop
+     two editions, on two dates, carrying the same ten games — which is what
+     happens when the upcoming slate has not advanced between them, and the
+     content hash says so plainly. The provider's idempotency key is built
+     from the edition key, so it would accept both and a subscriber would read
+     the same week twice.
+
+     A retry excludes the edition's own row, because finishing a partial send
+     is the one case where the identical content SHOULD go out again. --force
+     overrides, because an operator re-sending knowingly is not this mistake. */
+  if (!opts.test && !opts.force && edition.content_hash && c && c.sentWithHash) {
+    let twin = null;
+    try { twin = await c.sentWithHash(edition.sport, edition.content_hash, edition.edition_key); }
+    catch (e) { log('  ! could not check for an identical sent edition: ' + (e && e.message)); }
+    if (twin) {
+      return Object.assign({ sent: false, reason: 'already_sent_as',
+        detail: 'the identical edition went out as ' + twin.edition_key
+          + (twin.sent_at ? ' at ' + twin.sent_at : '') + ' — same content hash, different date' }, outcomeBase);
+    }
+  }
+
   /* ---- the recipients, resolved LIVE ---------------------------------- */
   let recipients = [];
   if (opts.test) {
@@ -813,12 +835,141 @@ async function main() {
     return;
   }
 
+  /* ---------------------------------------------------------- doctor --- */
+  /* WHAT IS ACTUALLY CONFIGURED, READ-ONLY, WITHOUT PRINTING A SECRET.
+
+     A launch checklist ticked off from memory is a launch checklist that is
+     wrong. This asks the database, the two edge functions and the mail
+     provider what state they are in and prints the answer, so the remaining
+     steps are the ones that are genuinely remaining.
+
+     Every credential is reported as present / absent. The Resend DNS records
+     are read from the ACCOUNT, because the records are account-specific and
+     the only correct source for them is the account itself. */
+  if (phase === 'doctor') {
+    const blank = (label) => log('  ' + label);
+    const line = (k, v) => log('  ' + String(k).padEnd(26) + ' ' + v);
+    const mark = (b) => (b ? 'yes' : 'NO');
+    const todo = [];
+
+    log('\n=== the database ===');
+    if (!resolved.has_service_credential) {
+      line('service credential', 'ABSENT — set SB_SERVICE_ROLE (or SUPABASE_SERVICE_ROLE_KEY) to inspect the database');
+      todo.push('give this job the service role so it can read the install state');
+    } else {
+      const c = RUNTIME.client({});
+      let st = null, stErr = null;
+      try { st = await c.installStatus(); } catch (e) { stErr = e; }
+      if (!st) {
+        const why = String((stErr && stErr.message) || 'no answer');
+        line('install report', 'UNAVAILABLE — ' + why.slice(0, 160));
+        if (/PGRST202|does not exist|not find the function/i.test(why)) {
+          todo.push('run supabase/newsletter.sql once in the SQL editor (it is idempotent) so newsletter_install_status() exists');
+        }
+      } else {
+        const tables = st.tables || {}, fns = st.functions || {};
+        const missingT = Object.keys(tables).filter(k => !tables[k]);
+        const missingF = Object.keys(fns).filter(k => !fns[k]);
+        line('contract tables', (Object.keys(tables).length - missingT.length) + '/' + Object.keys(tables).length
+          + (missingT.length ? ' — MISSING ' + missingT.join(', ') : ''));
+        line('contract functions', (Object.keys(fns).length - missingF.length) + '/' + Object.keys(fns).length
+          + (missingF.length ? ' — MISSING ' + missingF.join(', ') : ''));
+        if (missingT.length || missingF.length) todo.push('run supabase/newsletter.sql once in the SQL editor');
+        const ex = st.extensions || {};
+        line('pg_cron / pg_net', mark(ex.pg_cron) + ' / ' + mark(ex.pg_net));
+        const cron = st.cron || {};
+        line('cron job', cron.present ? (cron.schedule + ' (UTC)' + (cron.active === false ? ' — INACTIVE' : ''))
+          : ('NOT SCHEDULED — ' + (cron.why || '')));
+        if (!cron.present) todo.push('enable pg_cron and pg_net, then run supabase/newsletter_cron.sql');
+        const ds = st.db_settings || {};
+        line('edgedesk.project_url', ds['edgedesk.project_url'] || 'not set');
+        line('edgedesk.service_key', ds['edgedesk.service_key'] || 'not set');
+        if (ds['edgedesk.project_url'] !== 'set' || ds['edgedesk.service_key'] !== 'set') {
+          todo.push('set edgedesk.project_url and edgedesk.service_key with alter database (see supabase/newsletter_cron.sql)');
+        }
+        const g = st.gate || {};
+        log('');
+        line('sending_enabled', g.sending_enabled ? 'TRUE — editions will send' : 'false — the launch gate is closed');
+        line('cfb / nfl enabled', mark(g.cfb_enabled) + ' / ' + mark(g.nfl_enabled));
+        line('dispatcher_enabled', mark(g.dispatcher_enabled));
+        line('from', (g.from_name || '?') + ' <' + (g.from_email || '?') + '>');
+        line('reply-to', g.reply_to_email || 'not set');
+        line('mailing address', g.mailing_address || 'NOT SET — CAN-SPAM requires one');
+        line('test recipients', (g.test_recipients || 0) + ' configured');
+        if (!g.test_recipients) todo.push('add a test address to newsletter_settings.test_recipients before any send');
+        const n = st.counts || {};
+        log('');
+        line('subscribers', n.subscribers_confirmed + ' confirmed, ' + n.subscribers_pending + ' pending, '
+          + n.subscribers_unsubscribed + ' unsubscribed');
+        line('suppressions', String(n.suppressions));
+        line('editions', n.editions + ' stored, ' + n.editions_sent + ' sent');
+        line('deliveries / events', n.deliveries + ' / ' + n.provider_events);
+      }
+    }
+
+    log('\n=== the edge functions ===');
+    const base = (RUNTIME.SB_URL || '').replace(/\/$/, '');
+    if (!base) { blank('no project URL — set SB_URL'); } else {
+      for (const fn of ['newsletter', 'newsletter_cron']) {
+        let verdict;
+        try {
+          const res = await fetch(base + '/functions/v1/' + fn + '/health', {
+            method: 'GET',
+            headers: { authorization: 'Bearer ' + (process.env.SB_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || RUNTIME.SB_ANON || '') },
+          });
+          const body = (await res.text()).slice(0, 200);
+          verdict = res.status === 404 ? 'NOT DEPLOYED (404)' : res.status + ' ' + body;
+          if (res.status === 404) todo.push('supabase functions deploy ' + fn + ' --no-verify-jwt');
+        } catch (e) {
+          verdict = 'unreachable — ' + String((e && e.message) || e).slice(0, 120);
+        }
+        line(fn, verdict);
+      }
+    }
+
+    log('\n=== the mail provider ===');
+    const pcfg = PROVIDER.config(process.env);
+    line('RESEND_API_KEY', pcfg.apiKey ? 'present' : 'ABSENT');
+    if (!pcfg.apiKey) {
+      todo.push('add the RESEND_API_KEY repository secret (Settings -> Secrets and variables -> Actions)');
+      blank('  (domain and DNS state cannot be read without it — Resend\u2019s records are account-specific)');
+    } else {
+      try {
+        const res = await fetch(pcfg.endpoint + '/domains', {
+          headers: { authorization: 'Bearer ' + pcfg.apiKey, 'content-type': 'application/json' },
+        });
+        const body = await res.text();
+        if (!res.ok) { line('domains', res.status + ' ' + body.slice(0, 200)); }
+        else {
+          const data = JSON.parse(body);
+          const domains = data.data || data.domains || [];
+          if (!domains.length) { line('domains', 'NONE — add the sending domain in the Resend dashboard'); todo.push('add and verify the sending domain in Resend'); }
+          domains.forEach(d => {
+            line('domain', d.name + ' — ' + d.status + (d.region ? ' (' + d.region + ')' : ''));
+            (d.records || []).forEach(r => log('      ' + String(r.record || r.type).padEnd(6) + ' '
+              + String(r.name || '').padEnd(32) + ' ' + String(r.type).padEnd(6) + ' '
+              + String(r.value || '').slice(0, 110) + '   [' + (r.status || '?') + ']'));
+            if (String(d.status).toLowerCase() !== 'verified') todo.push('finish DNS verification for ' + d.name + ' (records above, from the Resend account)');
+          });
+        }
+      } catch (e) {
+        line('domains', 'unreachable — ' + String((e && e.message) || e).slice(0, 140));
+      }
+    }
+
+    log('\n=== what is left ===');
+    if (!todo.length) log('  nothing this check can see. The launch gate is the operator\u2019s to open.');
+    todo.forEach((t, i) => log('  ' + (i + 1) + '. ' + t));
+    log('');
+    return;
+  }
+
   /* -------------------------------------- build / send / all / preview -- */
   const doBuild = ['build', 'all', 'preview', 'test'].indexOf(phase) >= 0;
   const doSend = ['send', 'all', 'test', 'retry'].indexOf(phase) >= 0;
   if (!doBuild && !doSend) {
     console.error('unknown phase: ' + phase
-      + '\nphases: due, market, build, send, retry, all, preview, test, rank, report');
+      + '\nphases: due, doctor, market, build, send, retry, all, preview, test, rank, report');
     process.exit(2);
   }
 

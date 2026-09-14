@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Temple vs. Toledo: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Temple vs. Toledo 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Temple at Toledo at Toledo -12.5 with a 52.3 fair total. Toledo wins 79% of simulations. Data confidence 41%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Temple at Toledo at Toledo -12.5 with a 52.3 fair total. Toledo wins 79% of simulations. Data confidence 41%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Toledo carries the stronger underlying team rating — +1.7 against -1.3, a 3.0-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Toledo -12.5 before any sportsbook number is consulted, with Toledo winning 79% of…",
   "home_team": "Toledo",
   "away_team": "Temple",
@@ -21,11 +21,11 @@
   "game_time": "2026-09-19T19:00:00.000Z",
   "game_when_label": "2026-09-19 19:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T18:25:52.176Z",
-  "generated_at": "2026-09-14T18:25:52.176Z",
+  "updated_at": "2026-09-14T18:40:43.980Z",
+  "generated_at": "2026-09-14T18:40:43.980Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "INVESTIGATE",
+  "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
   "confidence": 41,
   "priced": true,
   "fair_spread_text": "Toledo -12.5",
@@ -107,8 +107,8 @@
       },
       "confidence_pct": 41,
       "inputs_reached_pct": 40,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1148,14 +1148,14 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "sample",
-          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "label": "market disagreement",
+          "text": "The market disagrees by 10.0 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 32h old",
+          "text": "odds is 33h old",
           "widening": null
         },
         {
@@ -1248,15 +1248,25 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Toledo -12.5",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Toledo -2.5",
+      "difference": "10.0 points",
+      "difference_n": 9.973369115521784,
+      "total_model": "52.3",
+      "total_market": "51.5",
+      "book": "captured · FanDuel",
+      "captured": "2026-09-13T10:00:02.682+00:00",
+      "capture_age": "33 hours old",
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "headline": "EdgeDesk projects Toledo 32, Temple 20.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1402,7 +1412,7 @@
       "EdgeDesk’s line is Toledo -12.5 on a neutral read of the two teams, before any book is consulted. Projected total 52.3.",
       "Toledo wins 79% of the time in EdgeDesk’s simulation, Temple 21%.",
       "Eight games in ten land between -10.5 and +33.5 for Toledo. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "The market has Toledo -2.5 at captured · FanDuel, 10.0 points from EdgeDesk’s number."
     ],
     "missing": [
       "Toledo — etsr (overall): confidence 9% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1451,6 +1461,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-14T18:25:52.176Z"
+    "at": "2026-09-14T18:40:43.980Z"
   }
 }

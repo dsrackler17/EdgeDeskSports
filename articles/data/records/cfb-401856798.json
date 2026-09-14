@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Bowling Green vs. Iowa State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Bowling Green vs. Iowa State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Bowling Green at Iowa State at Iowa State -32.3 with a 48.0 fair total. Iowa State wins 98% of simulations. Data confidence 41%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Bowling Green at Iowa State at Iowa State -32.3 with a 48.0 fair total. Iowa State wins 98% of simulations. Data confidence 41%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Iowa State carries the stronger underlying team rating — -0.5 against -7.2, a 6.7-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Iowa State -32.3 before any sportsbook number is consulted, with Iowa State…",
   "home_team": "Iowa State",
   "away_team": "Bowling Green",
@@ -21,11 +21,11 @@
   "game_time": "2026-09-19T16:00:00.000Z",
   "game_when_label": "2026-09-19 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T18:25:52.176Z",
-  "generated_at": "2026-09-14T18:25:52.176Z",
+  "updated_at": "2026-09-14T18:40:43.980Z",
+  "generated_at": "2026-09-14T18:40:43.980Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "INVESTIGATE",
+  "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
   "confidence": 41,
   "priced": true,
   "fair_spread_text": "Iowa State -32.3",
@@ -107,8 +107,8 @@
       },
       "confidence_pct": 41,
       "inputs_reached_pct": 40,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1142,14 +1142,14 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "sample",
-          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "label": "market disagreement",
+          "text": "The market disagrees by 8.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 32h old",
+          "text": "odds is 33h old",
           "widening": null
         },
         {
@@ -1248,15 +1248,25 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Iowa State -32.3",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Iowa State -23.5",
+      "difference": "8.8 points",
+      "difference_n": 8.762509387225911,
+      "total_model": "48.0",
+      "total_market": "47.5",
+      "book": "captured · FanDuel",
+      "captured": "2026-09-13T10:00:02.682+00:00",
+      "capture_age": "33 hours old",
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "headline": "EdgeDesk projects Iowa State 40, Bowling Green 8.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1402,7 +1412,7 @@
       "EdgeDesk’s line is Iowa State -32.3 on a neutral read of the two teams, before any book is consulted. Projected total 48.0.",
       "Iowa State wins 98% of the time in EdgeDesk’s simulation, Bowling Green 2%.",
       "Eight games in ten land between +9.3 and +53.3 for Iowa State. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "The market has Iowa State -23.5 at captured · FanDuel, 8.8 points from EdgeDesk’s number."
     ],
     "missing": [
       "Iowa State — etsr (overall): confidence 11% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1451,6 +1461,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-14T18:25:52.176Z"
+    "at": "2026-09-14T18:40:43.980Z"
   }
 }

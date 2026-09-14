@@ -242,7 +242,7 @@ function quotesFromSignals(rows, games) {
       return;
     }
     const seen = Date.parse(r.last_seen_at || r.first_seen_at || r.commence_time);
-    const slot = perGame[g.key] || (perGame[g.key] = { game: g, spread: null, total: null });
+    const slot = perGame[g.key] || (perGame[g.key] = { game: g, sides: { home: null, away: null }, total: null });
     if (r.market === 'spreads' && num(r.point) != null && txt(r.selection)) {
       /* The selection must be one of the two teams; a spreads row naming
          anything else is not a side of this game. Resolved the same way the
@@ -251,8 +251,17 @@ function quotesFromSignals(rows, games) {
         ? ((resolve(r.selection) || {}).key || null)
         : teamKey(r.selection);
       if (sk !== hk && sk !== ak) { refused.push({ sig_key: txt(r.sig_key), why: 'spread_selection_is_neither_team', detail: txt(r.selection) }); return; }
-      if (!slot.spread || seen > slot.spread.seen) {
-        slot.spread = { selection: sk === hk ? g.home : g.away, point: num(r.point),
+      /* ONE HANDICAP, TWO ROWS. The capture writes a row per selection, so a
+         priced game arrives as the home side and the away side of the same
+         number. Keeping the freshest row across BOTH of them used to store
+         whichever side happened to be seen last, and roughly half the college
+         slate came out quoted from the away team — which the terminal's
+         replay reads past, because it looks for the home side. So the
+         freshest row of each side is held separately and the write below
+         states which one the stored point belongs to. */
+      const side = sk === hk ? 'home' : 'away';
+      if (!slot.sides[side] || seen > slot.sides[side].seen) {
+        slot.sides[side] = { selection: side === 'home' ? g.home : g.away, side, point: num(r.point),
           book: txt(r.best_book), seen, seen_at: txt(r.last_seen_at || r.first_seen_at) };
       }
     } else if (r.market === 'totals' && num(r.point) != null) {
@@ -266,6 +275,13 @@ function quotesFromSignals(rows, games) {
   const quotes = [];
   Object.keys(perGame).sort().forEach(k => {
     const s = perGame[k];
+    /* EdgeDesk quotes a spread from the home side everywhere it prints one,
+       and the replay that feeds the terminal reads the home row. When the
+       capture holds both sides the home row is stored as captured; when it
+       holds only the away side the row is stored AS CAPTURED TOO — the side
+       is named rather than flipped, so the file says what the book said and
+       the replay does the arithmetic in one place. */
+    s.spread = s.sides.home || s.sides.away || null;
     if (!s.spread && !s.total) return;
     const at = (s.spread && s.spread.seen_at) || (s.total && s.total.seen_at) || null;
     const q = {
@@ -275,7 +291,7 @@ function quotesFromSignals(rows, games) {
       captured_at: at,
       from: 'EdgeDesk odds capture (public.signals), read by the newsletter pipeline',
     };
-    if (s.spread) q.spread = { selection: s.spread.selection, point: s.spread.point, book: s.spread.book };
+    if (s.spread) q.spread = { selection: s.spread.selection, side: s.spread.side, point: s.spread.point, book: s.spread.book };
     if (s.total) q.total = { point: s.total.point, book: s.total.book };
     quotes.push(q);
   });
@@ -310,6 +326,9 @@ function writeSnapshot(file, season, quotes, opts) {
     source: 'Captured book quotes read from EdgeDesk’s own odds capture (public.signals) by '
       + 'tools/newsletter/market.js. Replayed here so a headless build joins the same sportsbook '
       + 'number the terminal joins; the live capture is behind an account and a build server has no session for it.',
+    convention: 'spread.selection names the team spread.point belongs to and spread.side says whether that is the '
+      + 'home or the away side of the game. A point spread is one handicap with two sides, so a quote captured on the '
+      + 'away side is the same number seen from the other end; the replay presents both and never invents a second price.',
     note: 'These are SPORTSBOOK numbers, not EdgeDesk numbers, and every article and newsletter that uses one '
       + 'says so and names the book. Nothing here is an EdgeDesk projection, and no line in this file is read by '
       + 'any model: the engine has already priced the game before the market section is assembled.',

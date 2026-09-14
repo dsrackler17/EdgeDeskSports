@@ -65,6 +65,7 @@ model could not see printed next to both.
 ## Running it
 
 ```bash
+npm run newsletter:doctor       # what is actually configured, read-only, no secret printed
 npm run newsletter:due          # what is owed right now, per sport
 npm run newsletter:market       # refresh the book-quote snapshot from the odds capture
 npm run newsletter:preview      # build both editions, write nothing to the database
@@ -83,6 +84,23 @@ node tools/newsletter/run.js rank --sport CFB --explain
 node tools/newsletter/run.js preview --sport NFL --now 2026-11-03T16:30:00Z
 node tools/newsletter/run.js test --sport NFL --to you@example.com
 node tools/newsletter/run.js retry --sport NFL
+```
+
+`doctor` is the launch check. It asks the database which tables, functions and
+extensions exist, whether the pg_cron job is scheduled and on what line,
+whether the two database settings the cron body reads are set, what the gate
+and the counts say; it asks both edge functions for `/health`; and when a
+provider key is present it reads the sending domain's DNS state **from the
+Resend account**, because those records are account-specific and the account is
+the only correct source for them. It then prints what is left, in order.
+
+Every credential is reported as present or absent. None is ever printed, and
+the run in CI refreshes nothing and commits nothing:
+
+```bash
+npm run newsletter:doctor
+# or, against production, from the Actions tab:
+#   Run workflow -> phase: doctor
 ```
 
 The scheduled job is `.github/workflows/newsletter.yml`.

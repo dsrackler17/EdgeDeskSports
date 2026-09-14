@@ -57,7 +57,7 @@ on:
       phase:
         description: 'Which phase to run'
         type: choice
-        options: ['all', 'build', 'send', 'preview', 'test', 'rank', 'due']
+        options: ['all', 'build', 'send', 'preview', 'test', 'rank', 'due', 'doctor']
         default: 'all'
       sport:
         description: 'One sport only (CFB or NFL). Blank = both.'
@@ -94,6 +94,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # ALWAYS main, WHICHEVER BRANCH DISPATCHED THIS. The job commits the
+      # edition it builds back to main, so it has to build from main or it
+      # would push a branch's articles there.
+      #
+      # THE CONSEQUENCE, WHICH COST AN HOUR ONCE: dispatching this workflow
+      # from a branch runs the WORKFLOW FILE from that branch against main's
+      # CODE. A run on a feature branch therefore proves nothing about that
+      # branch, and a suite that fails here is failing on main. To exercise a
+      # change to the pipeline itself, merge it first.
       - uses: actions/checkout@v5
         with:
           ref: main
@@ -124,7 +133,7 @@ jobs:
       # anon key. Without the secret this step says so and changes nothing,
       # and the edition is built from whatever snapshot is committed.
       - name: Refresh the book-quote snapshot from the odds capture
-        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        if: ${{ github.event.inputs.skip_refresh != 'true' && github.event.inputs.phase != 'doctor' }}
         env:
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SB_URL: ${{ secrets.SB_URL }}
@@ -139,13 +148,29 @@ jobs:
       # run will read. Same generator the article system runs; no number on a
       # newsletter was computed by this job.
       - name: Refresh the research records
-        if: ${{ github.event.inputs.skip_refresh != 'true' }}
+        if: ${{ github.event.inputs.skip_refresh != 'true' && github.event.inputs.phase != 'doctor' }}
         run: node tools/articles/generate.js --network --quiet
+
+      # A REFRESHED RECORD AND A STALE PAGE ARE A FAILING REPOSITORY. The
+      # records this run just rewrote carry the market-source disclosure, and
+      # articles.test.js reads that disclosure off the PUBLISHED page. Leaving
+      # the pages behind turned the repository red — 47 records disclosing a
+      # replayed quote that no page mentioned — and the suite that caught it is
+      # this workflow's own pre-flight gate, so the next scheduled edition
+      # would have refused to start. The editorial workflow already rebuilds
+      # after it writes records; so does this one.
+      - name: Rebuild the pages behind the refreshed records
+        if: ${{ github.event.inputs.skip_refresh != 'true' && github.event.inputs.phase != 'doctor' }}
+        run: node tools/articles/build_articles.js
 
       - name: Build, validate and (if the gate is open) send
         env:
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SB_URL: ${{ secrets.SB_URL }}
+          # `doctor` reads the sending domain's DNS state from the Resend
+          # ACCOUNT, because those records are account-specific and the account
+          # is the only correct source for them. It prints the records and
+          # never the key.
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           PHASE="${{ github.event.inputs.phase }}"
@@ -155,11 +180,13 @@ jobs:
           if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           node tools/newsletter/run.js "${PHASE:-all}" $ARGS
 
+      # `doctor` reads state and writes nothing. It must not be able to commit.
       - name: Commit the edition and the rendered preview
+        if: ${{ github.event.inputs.phase != 'doctor' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add articles/data/newsletter articles/data/records articles/data/index.json articles/data/market || true
+          git add articles sitemap.xml sitemap-articles.xml || true
           if git diff --cached --quiet; then
             echo 'the newsletter changed nothing this run'
             exit 0
