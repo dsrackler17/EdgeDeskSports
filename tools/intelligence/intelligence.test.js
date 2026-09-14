@@ -79,7 +79,10 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
      ===================================================================== */
   {
     const fx = FX.build();
-    clearCache(); route = FX.router(fx, { signals: [] });
+    /* BOTH market sources empty. The board resolves a market from captured
+       signals OR cfb.lines, so emptying only the first would leave the other
+       one answering and test a different state than the name claims. */
+    clearCache(); route = FX.router(fx, { signals: [], lines: [] });
     const r = await m.handle(req({ mode: 'chat', question: 'Any CFB matchups look good this week?',
       packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
     const j = await r.json();
@@ -88,7 +91,11 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     eq('and classifies the slate as quoted-less, not empty', st && st.state, 'GAMES_NO_QUOTES');
     eq('the slate scope denominator comes from the schedule', j.slate_scope && j.slate_scope.expected_games, fx.slate.games.length);
     const p = j.prompt || '';
-    chk('the prompt states the real game count', /\d+ CFB games are scheduled/.test(p), p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 200));
+    chk('the prompt states the real game count',
+      new RegExp(fx.slate.games.length + ' CFB games are scheduled').test(p),
+      p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 200));
+    chk('and says both market sources were checked, not just signals',
+      /NONE of them carries a market number from either source/.test(p), p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 400));
     chk('the prompt forbids the "no games" claim outright',
       p.indexOf('YOU MAY NOT CLAIM THAT THERE ARE NO GAMES TO EVALUATE') >= 0);
     chk('and tells the analyst to research them anyway',
@@ -244,7 +251,9 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     const j = await r.json();
     delete ENV.EDGEDESK_EVIDENCE_MAX;
     const p = j.prompt || '';
-    chk('the slate scope survives truncation', p.indexOf('THE SLATE') >= 0 && /\d+ CFB games are scheduled/.test(p));
+    chk('the slate scope survives truncation',
+      p.indexOf('THE SLATE') >= 0
+      && new RegExp(fx.slate.games.length + ' CFB games (are )?scheduled').test(p));
     chk('withheld items are reported', p.indexOf('EVIDENCE WITHHELD') >= 0);
     chk('the unseen subjects are NAMED, not just counted',
       p.indexOf('SUBJECTS WITH NO EVIDENCE IN THIS MESSAGE AT ALL') >= 0);
@@ -548,8 +557,28 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       { researched: (j.evidence_packets || []).length });
     chk('eligibility and priority are reported separately',
       (j.slate_ranking || []).every((x) => 'eligible' in x && 'priority' in x));
-    chk('an unquoted game is ineligible but still ranked',
-      (j.slate_ranking || []).some((x) => !x.eligible && /no book EdgeDesk captures is quoting/.test(x.reason || '')));
+    /* THREE STATES, NOT TWO. Collapsing "carries a consensus line" into "no
+       market" is what made a 46-game board read as one game, so the ranking
+       is asserted on the states themselves rather than on a reason string. */
+    const rk = j.slate_ranking || [];
+    const byStatus = (st) => rk.filter((x) => x.market_status === st);
+    chk('a priced game is eligible', byStatus('PRICED').length > 0 && byStatus('PRICED').every((x) => x.eligible), byStatus('PRICED')[0]);
+    chk('a line-only game is ineligible for a priced recommendation but still researchable',
+      byStatus('LINE ONLY').length > 0
+      && byStatus('LINE ONLY').every((x) => x.eligible === false && x.researchable === true),
+      byStatus('LINE ONLY')[0]);
+    chk('and its reason names the missing half rather than the whole market',
+      byStatus('LINE ONLY').every((x) => /consensus market LINE but no executable price/.test(x.ineligible_reason || '')),
+      (byStatus('LINE ONLY')[0] || {}).ineligible_reason);
+    chk('a game with no number from either source is neither eligible nor researchable',
+      byStatus('NO MARKET').length > 0
+      && byStatus('NO MARKET').every((x) => !x.eligible && !x.researchable
+        && /not a captured price, not a consensus line/.test(x.ineligible_reason || '')),
+      (byStatus('NO MARKET')[0] || {}).ineligible_reason);
+    chk('every ranked game lands in exactly one of the three states',
+      rk.length > 0 && rk.every((x) => ['PRICED', 'PRICED (STALE)', 'LINE ONLY', 'NO MARKET'].indexOf(x.market_status) >= 0));
+    chk('an ineligible game can still out-rank an eligible one on interest',
+      rk.some((x) => !x.eligible && x.priority > 0), rk.filter((x) => !x.eligible).slice(0, 2));
     const p = j.prompt || '';
     chk('the prompt distinguishes the index from the shortlist',
       /THESE ARE THE ONLY GAMES YOU RESEARCHED IN DEPTH/.test(p));
@@ -571,6 +600,96 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       j.data_path.board_scope && j.data_path.board_scope.week === 3, j.data_path.board_scope);
     chk('and the prompt tells the analyst to stay inside it',
       /ACTIVE BOARD SCOPE/.test(j.prompt || ''));
+  }
+
+  /* =====================================================================
+     18. THE BOOK AND THE SCHEDULE DO NOT SPELL A PROGRAM THE SAME WAY.
+     The observed failure, and the one that caused every other CFB symptom:
+     the FBS board showed 75 games and 46 with market quotes while
+     Intelligence reported no CFB matchups. The capture writes "North Texas
+     Mean Green"; the schedule writes "North Texas". A join on normalised
+     strings matches NOTHING and reports the emptiness as an absent market.
+     tools/newsletter/market.js recorded the same failure: "a live run read
+     410 college signal rows and joined zero".
+     ===================================================================== */
+  {
+    const games = [
+      { game_id: 'g1', home_team: 'Texas State', away_team: 'North Texas', home_id: 'texasstate', away_id: 'northtexas', kickoff: '2026-09-20T23:00:00Z' },
+      { game_id: 'g2', home_team: 'Wake Forest', away_team: 'Miami', home_id: 'wakeforest', away_id: 'miami', kickoff: '2026-09-20T20:00:00Z' },
+      { game_id: 'g3', home_team: 'Ohio State', away_team: 'Ohio', home_id: 'ohiostate', away_id: 'ohio', kickoff: '2026-09-20T18:00:00Z' },
+    ];
+    const sig = (h, a, t) => ({ home_team: h, away_team: a, commence_time: t || '2026-09-20T20:00:00Z' });
+    const j = I.joinSignalsToGames({
+      games,
+      signals: [
+        sig('Texas State Bobcats', 'North Texas Mean Green', '2026-09-20T23:00:00Z'),
+        sig('Wake Forest Demon Deacons', 'Miami Hurricanes'),
+        sig('Wake Forest Demon Deacons', 'Miami (OH) RedHawks'),
+        sig('Ohio State Buckeyes', 'Ohio Bobcats', '2026-09-20T18:00:00Z'),
+        sig('Alabama Crimson Tide', 'Auburn Tigers'),
+        sig('Texas State Bobcats', 'North Texas Mean Green', '2026-09-27T23:00:00Z'),
+      ],
+    });
+    chk('a book’s nickname resolves to the school the schedule names',
+      (j.by_game.g1 || []).length === 1, j.by_game.g1);
+    chk('and so does a full book name on a ranked program',
+      (j.by_game.g2 || []).length === 1, j.by_game.g2);
+    /* The trap fbs.js names: "Ohio" must never swallow "Ohio State", and
+       neither Miami may take the other's number. */
+    chk('Miami Ohio does NOT take Miami Florida’s number',
+      (j.by_game.g2 || []).every((r) => !/RedHawks/.test(r.away_team)), j.by_game.g2);
+    chk('Ohio and Ohio State stay two different programs',
+      (j.by_game.g3 || []).length === 1
+      && /Ohio Bobcats/.test((j.by_game.g3 || [{}])[0].away_team || ''), j.by_game.g3);
+    chk('a fixture for a game not on this card is refused, not attached',
+      j.unresolved_names.indexOf('Alabama Crimson Tide') >= 0, j.unresolved_names);
+    chk('a kickoff a week away is refused even when both teams resolve',
+      /kickoff/.test(Object.keys(j.refusal_reasons).join(' ')), j.refusal_reasons);
+    eq('three of the six rows joined', j.signals_joined, 3);
+    eq('and the other three are refused and counted, not lost', j.signals_refused, 3);
+
+    /* ZERO JOINED OUT OF MANY READ IS A JOIN FAULT, AND MUST SAY SO. */
+    const none = I.joinSignalsToGames({
+      games, signals: [sig('Alabama Crimson Tide', 'Auburn Tigers'), sig('Boise State Broncos', 'Fresno State Bulldogs')],
+    });
+    chk('reading rows and joining none is reported as a JOIN FAULT',
+      /JOIN FAULT/.test(none.diagnosis) && /not an absence of markets/.test(none.diagnosis), none.diagnosis);
+    chk('an empty read is NOT called a join fault',
+      !/JOIN FAULT/.test(I.joinSignalsToGames({ games, signals: [] }).diagnosis));
+    chk('the resolver is named rather than described', /fbs\.js/.test(none.resolver), none.resolver);
+  }
+
+  /* =====================================================================
+     19. THE BOARD'S TWO MARKET SOURCES, RECONCILED END TO END.
+     The board resolves a market from captured signals OR cfb.lines
+     (fbP4Market). Counting only the first is what turned a 46-market card
+     into one. All three counts must survive to the client and the prompt.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    clearCache(); route = FX.router(fx);
+    const r = await m.handle(req({ mode: 'chat', question: 'Which CFB games are worth betting this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
+    const j = await r.json();
+    const si = j.data_path.slate_index;
+    eq('every scheduled game is indexed from the schedule', si.slate_state.scheduled, fx.slate.games.length);
+    eq('the consensus source is read for the WHOLE card, not just a shortlist',
+      si.cfb_lines.game_ids_tried, fx.slate.games.length);
+    eq('games carrying a market NUMBER counts both sources', si.cfb_lines.games_with_a_line, 4);
+    eq('games carrying an EXECUTABLE price is the smaller number',
+      si.cfb_lines.games_with_an_executable_price, 1);
+    chk('the captured join is reported separately from the consensus join',
+      si.signal_join && si.signal_join.signals_joined > 0, si.signal_join);
+    const ms = j.data_path.slate_ranking.market_states;
+    eq('and the ranking agrees with the index on lines', (ms['LINE ONLY'] || 0) + (ms['PRICED'] || 0) + (ms['PRICED (STALE)'] || 0), 4);
+    eq('and on prices', (ms['PRICED'] || 0) + (ms['PRICED (STALE)'] || 0), 1);
+    eq('the schedule cross-check agrees with the artifact', j.data_path.slate_index.cross_check.agrees, true);
+    const p = j.prompt || '';
+    chk('the prompt carries all three counts, not one',
+      /games carrying a market number: 4/.test(p) && /games carrying an executable price: 1/.test(p), 
+      p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 500));
+    chk('and states that a consensus line is not a price',
+      /consensus line is a number, not a price|not a price to bet into/i.test(p));
   }
 
   done();

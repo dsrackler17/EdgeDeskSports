@@ -50,6 +50,16 @@
      drops a program. fbs.test.js asserts the two agree on every team in
      the live schedule feed.
      --------------------------------------------------------------------- */
+  /*__EDFBSKEY_START__*/
+  /* SHARED WITH THE EDGE FUNCTION. tools/presentation/inline.js copies this
+     block verbatim into supabase/functions/edgedesk_ai/_intelligence.js, which
+     is itself copied into index.ts and app.html. The odds capture writes book
+     names ("North Texas Mean Green") and the college schedule writes school
+     names ("North Texas"), so a server that compares normalised strings joins
+     NOTHING — the failure tools/newsletter/market.js documents as "410 college
+     signal rows and joined zero". One resolver, one alias table, copied rather
+     than re-implemented, so the board and the desk cannot disagree about who
+     is playing. presentation_sync.test.js fails on drift. */
   var ACCENTS = { 'é': 'e', 'í': 'i', 'á': 'a', 'ó': 'o',
     'ú': 'u', 'ñ': 'n', '’': "'", '‘': "'" };
   function normKey(name) {
@@ -71,6 +81,8 @@
     out = out.replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
     return out || null;
   }
+
+  /*__EDFBSKEY_END__*/
 
   function slug(s) {
     return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -564,6 +576,7 @@
      entries the canonical key cannot already reach on its own are listed;
      everything here is a real spelling seen in a schedule, book or odds
      feed, not a guess at one. */
+  /*__EDFBSRESOLVE_START__*/
   var TEAM_ALIASES = {
     appstate: ['appalachian state', 'appalachian st', 'app st'],
     hawaii: ["hawai'i", 'hawaii', 'hawaii rainbow warriors', 'university of hawaii'],
@@ -733,6 +746,7 @@
     if (!isFinite(t) || !isFinite(item.t)) return false;
     return Math.abs(t - item.t) < windowMs;
   }
+  /*__EDFBSRESOLVE_END__*/
 
   /* =====================================================================
      THE AUDIT — what a build-time gate needs, as data.

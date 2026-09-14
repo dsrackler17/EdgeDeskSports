@@ -52,7 +52,39 @@ function build(now) {
     { game_id: 9003, season: 2026, week: 1, start_date: D(16), completed: true, neutral_site: false, conference_game: false, venue: 'UFCU', home_team: 'Texas State', home_points: 38, home_conference: 'Sun Belt', away_team: 'Eastern Michigan', away_points: 17, away_conference: 'Mid-American' },
     { game_id: 9004, season: 2026, week: 2, start_date: D(8), completed: true, neutral_site: false, conference_game: false, venue: 'Martin', home_team: 'Washington State', home_points: 24, home_conference: 'Pac-12', away_team: 'Texas State', away_points: 21, away_conference: 'Sun Belt' },
   ];
-  const upcoming = [{ game_id: 9100, season: 2026, week: 3, start_date: kickoff, completed: false, neutral_site: false, conference_game: false, venue: 'UFCU Stadium', home_id: 2, home_team: 'Texas State', home_conference: 'Sun Belt', away_id: 1, away_team: 'North Texas', away_conference: 'American Athletic' }];
+  /* THE CROSS-CHECK AND THE LINE JOIN BOTH NEED THIS.
+     cfb.games is what carries the CollegeFootballData game_id, and
+     getSlateIndex joins it onto the artifact rows by team pair. Without a row
+     per artifact game there is no cfb_game_id, so cfb.lines cannot be joined
+     and the card comes back looking unpriced for a reason that is an artefact
+     of the fixture rather than of the code. So every game on the card gets
+     one, ids ascending from the North Texas game's own 9100. */
+  const upcoming = slate.games.map((g, i) => ({
+    game_id: 9100 + i, season: 2026, week: 3, start_date: g.kickoff || kickoff,
+    completed: false, neutral_site: g.neutral_site === true, conference_game: g.is_conference_game === true,
+    venue: g.venue || null,
+    home_id: i === 0 ? 2 : 100 + i, home_team: g.home_team, home_conference: g.home_conference,
+    away_id: i === 0 ? 1 : 200 + i, away_team: g.away_team, away_conference: g.away_conference,
+  }));
+
+  /* cfb.lines — CONSENSUS BOOK NUMBERS, THE OTHER HALF OF THE BOARD'S MARKET.
+     A row here carries a spread, a total and two moneylines. It carries NO
+     book, NO per-side spread odds and NO observation time, which is exactly
+     why it is a number to research and never a price to bet into.
+
+     The shape is the board's own: more games scheduled than carry a market
+     number, and more carrying a market number than carry an executable price.
+     Four of the seven are lined; only the game with a captured signal is
+     priced; three carry nothing at all. Spreads are BETTING numbers (negative
+     = home favourite) and are oriented against each game's real published
+     model line, so the orientation guard is genuinely exercised rather than
+     stepped around. */
+  const lines = [
+    { game_id: 9100, provider: 'consensus', spread: -2.5, over_under: 57.5, home_moneyline: -142, away_moneyline: 120 },
+    { game_id: 9101, provider: 'consensus', spread: -19.5, over_under: 55.5, home_moneyline: -1100, away_moneyline: 750 },
+    { game_id: 9102, provider: 'consensus', spread: 13.5, over_under: 56.5, home_moneyline: 420, away_moneyline: -560 },
+    { game_id: 9103, provider: 'consensus', spread: -14, over_under: 54.5, home_moneyline: -620, away_moneyline: 450 },
+  ];
 
   const ratings = [
     { season: 2026, team: 'North Texas', conference: 'American Athletic', rating: 6.4, ranking: 52, offense_rating: 31.2, offense_ranking: 28, defense_rating: 24.8, defense_ranking: 71, special_teams_rating: 0.3, sos: -2.1 },
@@ -92,23 +124,44 @@ function build(now) {
       quality_score: 78, fresh_books: 6,
       flagged_at: new Date(now - 14 * 60000).toISOString(), flagged_edge: 0.016,
       flagged_best_dec: 1.91, flagged_best_book: 'DraftKings',
-      home_team: 'Texas State', away_team: 'North Texas', commence_time: kickoff,
+      /* THE BOOK'S NAME, NOT THE SCHOOL'S — which is the whole point.
+         The odds capture writes what the sportsbook calls the program; the
+         college schedule writes the school alone. A fixture that used the
+         school name here would pass against a join that compares normalised
+         strings, which is the join that read 410 college rows and matched
+         none of them. These names are the ones a book actually writes. */
+      home_team: 'Texas State Bobcats', away_team: 'North Texas Mean Green', commence_time: kickoff,
       first_seen_at: new Date(now - 240 * 60000).toISOString(),
       last_seen_at: new Date(now - 14 * 60000).toISOString(),
       clv: null, beat_close: null, result: null, graded_at: null, closing_sharp_fair: null,
     }, over || {});
   }
 
-  return { now, kickoff, slate, teams, completed, upcoming, ratings, records, seasonStats, rosterNT, rosterTX, signal };
+  return { now, kickoff, slate, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
 }
 
-/** A fetch router over one fixture set. `opts.signals` replaces the signal list. */
+/**
+ * A fetch router over one fixture set.
+ *   opts.signals  replaces the captured-signal list ([] = nothing priced)
+ *   opts.lines    replaces the cfb.lines rows   ([] = no consensus numbers)
+ *   opts.slate    replaces (or, with null, fails) the published artifact
+ */
 function router(fx, opts) {
   opts = opts || {};
   const signals = opts.signals === undefined ? [fx.signal()] : opts.signals;
+  const lines = opts.lines === undefined ? fx.lines : opts.lines;
   return function (u) {
     if (u.indexOf('/football/fbs/slate.json') >= 0) return opts.slate === null ? null : (opts.slate || fx.slate);
     if (u.indexOf('/signals?') >= 0) return signals;
+    /* cfb.lines is read with a chunked game_id=in.(...) filter, so the fixture
+       honours the filter rather than returning the whole table: a router that
+       ignores it would hide a broken filter. */
+    if (u.indexOf('lines?') >= 0) {
+      const m = /game_id=in\.\(([^)]*)\)/.exec(decodeURIComponent(u));
+      if (!m) return lines;
+      const want = new Set(m[1].split(',').map((x) => x.trim()));
+      return lines.filter((l) => want.has(String(l.game_id)));
+    }
     if (u.indexOf('teams?') >= 0) return fx.teams;
     if (u.indexOf('ratings?') >= 0) return fx.ratings;
     if (u.indexOf('records?') >= 0) return fx.records;
