@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-13T13:52:20.471Z",
+  "generated_at": "2026-09-14T15:58:14.191Z",
   "ok": true,
-  "last_ok_at": "2026-09-13T13:52:20.471Z",
+  "last_ok_at": "2026-09-14T15:58:14.191Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -21,10 +21,10 @@
   },
   "learning": {
     "nfl": {
-      "completed_in_feed": 2,
-      "absorbed": 2,
+      "completed_in_feed": 15,
+      "absorbed": 15,
       "join_missed": 0,
-      "data_through": "2026-09-10",
+      "data_through": "2026-09-13",
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
@@ -36,9 +36,9 @@
   },
   "lines": {
     "nfl": {
-      "compared": 28,
-      "median_gap": 2.41,
-      "max_gap": 6.56,
+      "compared": 17,
+      "median_gap": 2.98,
+      "max_gap": 6.41,
       "outliers": [],
       "orientation_faults": []
     },
@@ -79,31 +79,31 @@
       "id": "nfl_ingest",
       "label": "NFL: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "2/2 absorbed, data through 2026-09-10"
+      "detail": "15/15 absorbed, data through 2026-09-13"
     },
     {
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming games PREDICTED, all inside bounds"
+      "detail": "17/17 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "28 lines inside plausible bounds"
+      "detail": "17 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines_orientation",
       "label": "NFL: market lines point the right way",
       "status": "pass",
-      "detail": "28 joined line(s), none reconciled by negation"
+      "detail": "17 joined line(s), none reconciled by negation"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 2.41 pts over 28 games, max 6.56"
+      "detail": "median gap 2.98 pts over 17 games, max 6.41"
     },
     {
       "id": "p4_season_window",
@@ -179,20 +179,20 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-13T13:52:20.471Z",
+    "daily_check_last_run": "2026-09-14T15:58:14.191Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-13T13:52:20.471Z",
+    "engine_tests_last_run": "2026-09-14T15:58:14.191Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-13T13:52:20.471Z",
+    "nfl_ingest_last_run": "2026-09-14T15:58:14.191Z",
     "nfl_ingest_last_status": "ok",
-    "row_count_nfl_ingest": 2,
-    "p4_ingest_last_run": "2026-09-13T13:52:20.471Z",
+    "row_count_nfl_ingest": 15,
+    "p4_ingest_last_run": "2026-09-14T15:58:14.191Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 185,
-    "projection_guard_last_run": "2026-09-13T13:52:20.471Z",
+    "projection_guard_last_run": "2026-09-14T15:58:14.191Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-13T13:52:20.471Z",
+    "line_guard_last_run": "2026-09-14T15:58:14.191Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 28
+    "row_count_line_guard": 17
   }
 }
