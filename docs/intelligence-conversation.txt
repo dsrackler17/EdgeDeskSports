@@ -1,0 +1,204 @@
+EDGEDESK INTELLIGENCE — THE SIX-QUESTION SEQUENCE, THROUGH THE REAL SERVER PATH
+==============================================================================
+
+Regenerate:  npm run intel:chat          (tools/intelligence/conversation.js)
+Asserted by: node tools/intelligence/conversation.test.js
+
+WHAT IS REAL HERE
+  The deployed edge function, imported and driven exactly as app.html drives it:
+  same POST body, same growing history array, same board scope. Auth, intent
+  classification, conversational state, staged retrieval, eligibility, evidence
+  packets, the deterministic decision pass, prompt assembly, the response path,
+  the ledger write and the client renderers are all the shipped code. The FBS
+  slate and the availability artifact are the real committed files; the database
+  is fixtures, because there is no live Supabase in CI.
+
+WHAT IS NOT
+  The model's own words. This environment has no Anthropic credential and no
+  egress to the deployed function, so inference is stubbed at the HTTP boundary.
+  The prompt that would reach it is captured verbatim; the text a real Claude
+  would write is not produced here and is not claimed.
+
+──────────────────────────────────────────────────────────────────────────────
+TURN 1  "Any CFB matchups look good?"
+          opens on the whole card
+──────────────────────────────────────────────────────────────────────────────
+  resolved      intent=cfb_best_matchups  depth=SLATE  sport=americanfootball_ncaaf
+  context held  teams=[]
+  slate         PARTIAL_COVERAGE
+                7 CFB games scheduled in week 3; 4 carry a market number; 1 carries an
+                executable price; 1 carries a flagged signal. A statement about the slate
+                covers 7 games; about MARKETS, 4; about PRICES YOU COULD BET INTO, 1.
+  markets       {"PRICED":1,"LINE ONLY":3,"NO MARKET":3}
+  researched    401858900:v1, 401858225:v1, 401858226:v1, 401856811:v1, 401858455:v1
+  decided       BET CANDIDATE — North Texas
+                why: Expected return 3.74% per unit, clearing the 0.50% floor. A sharp
+                reference (Pinnacle) is quoting this exact selection. 6 independent book
+                families stand behind the fair price (9 quotes in total, de-duplicated
+                to 6). Corroborated at 2 levels against the sharp reference.
+  retrieval     56 reads; price feed re-read: true
+  prompt        176200 chars of evidence + 28373 of contract; 0 earlier turns carried
+  ledger        RECORDED
+  prompt sections, largest first
+                 129203  RESEARCHED MATCHUPS — 5 versioned evidence packets deliv
+                  24970  EVIDENCE — retrieved from EdgeDesk's own tables just now
+                   4203  DATA PATH — where a retrieval came back empty and which 
+                   4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
+                   2641  THE CARD, RANKED — deterministic, computed before you we
+                   1306  THE SLATE — established from a SCHEDULE source, separate
+
+  THE SLATE, verbatim:
+    THE SLATE — established from a SCHEDULE source, separately from any question about prices.
+    state=PARTIAL_COVERAGE
+    7 CFB games scheduled in week 3; 4 carry a market number; 1 carries an executable price; 1 carries a flagged signal. A statement about the slate covers 7 games; about MARKETS, 4; about PRICES YOU COULD BET INTO, 1.
+    scheduled games: 7 · games carrying a market number: 4 · games carrying an executable price: 1 · games carrying a flagged EdgeDesk signal: 1
+    A CONSENSUS LINE IS A NUMBER, NOT A PRICE TO BET INTO. 3 of those games carry a handicap and a total from cfb.lines with NO book, NO per-side odds and NO capture time. Research them, rank them and compare them against the model — that is a real answer — and do not quote a price on them, because there is none, and do not invent one from the other side of the handicap.
+    schedule source: the FBS board's own published slate (cfbfastR-data schedules 2026, generated 2026-09-14T16:00:36.958Z)
+    YOU MAY NOT CLAIM THAT THERE ARE NO GAMES TO EVALUATE, OR THAT THE SLATE IS EMPTY. An empty signals query, an empty quote set and an empty slate are three different findings. Say which one this is, in the words above.
+    Priced recommendations are possible on the 1 game carrying an executable price, and on those only. The other games are research.
+
+  THE DECISIONS, verbatim:
+    THE DECISIONS — deterministic, one per quoted selection, computed before you were called.
+    1 BET CANDIDATE
+    Quote the verdict, the side, the price, the book, the capture time and the price limit EXACTLY as they appear. Never upgrade a decision, never invent one for a game with no row here, and never present a WATCH as a bet.
+
+──────────────────────────────────────────────────────────────────────────────
+TURN 2  "Analyze North Texas versus Texas State."
+          narrows to one game by name
+──────────────────────────────────────────────────────────────────────────────
+  resolved      intent=compare  depth=DEEP  sport=americanfootball_ncaaf
+  context held  teams=["North Texas","Texas State"]
+  slate         PARTIAL_COVERAGE
+                7 CFB games scheduled in week 3; 4 carry a market number; 1 carries an
+                executable price; 1 carries a flagged signal. A statement about the slate
+                covers 7 games; about MARKETS, 4; about PRICES YOU COULD BET INTO, 1.
+  markets       {"PRICED":1,"LINE ONLY":3,"NO MARKET":3}
+  researched    401858900:v1, 401856811:v1, 401858455:v1, 401858225:v1
+  decided       BET CANDIDATE — North Texas
+                why: Expected return 3.74% per unit, clearing the 0.50% floor. A sharp
+                reference (Pinnacle) is quoting this exact selection. 6 independent book
+                families stand behind the fair price (9 quotes in total, de-duplicated
+                to 6). Corroborated at 2 levels against the sharp reference.
+  retrieval     44 reads; price feed re-read: true
+  prompt        144628 chars of evidence + 28373 of contract; 2 earlier turns carried
+  ledger        RECORDED
+  prompt sections, largest first
+                 104193  RESEARCHED MATCHUPS — 4 versioned evidence packets deliv
+                  16290  EVIDENCE — retrieved from EdgeDesk's own tables just now
+                   4203  DATA PATH — where a retrieval came back empty and which 
+                   4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
+                   2641  THE CARD, RANKED — deterministic, computed before you we
+                   1306  THE SLATE — established from a SCHEDULE source, separate
+
+──────────────────────────────────────────────────────────────────────────────
+TURN 3  "Who have they played?"
+          pure pronoun — carries no team name at all
+──────────────────────────────────────────────────────────────────────────────
+  resolved      intent=unknown  depth=STANDARD  sport=americanfootball_ncaaf
+  context held  teams=["North Texas","Texas State"]
+  slate         PARTIAL_COVERAGE
+                7 CFB games scheduled in week 3; 4 carry a market number; 1 carries an
+                executable price; 1 carries a flagged signal. A statement about the slate
+                covers 7 games; about MARKETS, 4; about PRICES YOU COULD BET INTO, 1.
+  markets       {"PRICED":1,"LINE ONLY":3,"NO MARKET":3}
+  researched    401858900:v1
+  decided       BET CANDIDATE — North Texas
+                why: Expected return 3.74% per unit, clearing the 0.50% floor. A sharp
+                reference (Pinnacle) is quoting this exact selection. 6 independent book
+                families stand behind the fair price (9 quotes in total, de-duplicated
+                to 6). Corroborated at 2 levels against the sharp reference.
+  retrieval     32 reads; price feed re-read: true
+  prompt        63370 chars of evidence + 28373 of contract; 4 earlier turns carried
+  ledger        RECORDED
+  prompt sections, largest first
+                  29929  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
+                  10423  EVIDENCE — retrieved from EdgeDesk's own tables just now
+                   4203  DATA PATH — where a retrieval came back empty and which 
+                   4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
+                   2641  THE CARD, RANKED — deterministic, computed before you we
+                   1306  THE SLATE — established from a SCHEDULE source, separate
+
+──────────────────────────────────────────────────────────────────────────────
+TURN 4  "Did opponent quality inflate their numbers?"
+          still no name; needs the same matchup AND the ratings
+──────────────────────────────────────────────────────────────────────────────
+  resolved      intent=unknown  depth=STANDARD  sport=americanfootball_ncaaf
+  context held  teams=["North Texas","Texas State"]
+  slate         PARTIAL_COVERAGE
+                7 CFB games scheduled in week 3; 4 carry a market number; 1 carries an
+                executable price; 1 carries a flagged signal. A statement about the slate
+                covers 7 games; about MARKETS, 4; about PRICES YOU COULD BET INTO, 1.
+  markets       {"PRICED":1,"LINE ONLY":3,"NO MARKET":3}
+  researched    401858900:v1
+  decided       BET CANDIDATE — North Texas
+                why: Expected return 3.74% per unit, clearing the 0.50% floor. A sharp
+                reference (Pinnacle) is quoting this exact selection. 6 independent book
+                families stand behind the fair price (9 quotes in total, de-duplicated
+                to 6). Corroborated at 2 levels against the sharp reference.
+  retrieval     32 reads; price feed re-read: true
+  prompt        63392 chars of evidence + 28373 of contract; 6 earlier turns carried
+  ledger        RECORDED
+  prompt sections, largest first
+                  29929  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
+                  10423  EVIDENCE — retrieved from EdgeDesk's own tables just now
+                   4203  DATA PATH — where a retrieval came back empty and which 
+                   4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
+                   2641  THE CARD, RANKED — deterministic, computed before you we
+                   1306  THE SLATE — established from a SCHEDULE source, separate
+
+──────────────────────────────────────────────────────────────────────────────
+TURN 5  "What is the strongest argument against that lean?"
+          refers to a conclusion from an earlier turn
+──────────────────────────────────────────────────────────────────────────────
+  resolved      intent=unknown  depth=STANDARD  sport=americanfootball_ncaaf
+  context held  teams=["North Texas","Texas State"]
+  slate         PARTIAL_COVERAGE
+                7 CFB games scheduled in week 3; 4 carry a market number; 1 carries an
+                executable price; 1 carries a flagged signal. A statement about the slate
+                covers 7 games; about MARKETS, 4; about PRICES YOU COULD BET INTO, 1.
+  markets       {"PRICED":1,"LINE ONLY":3,"NO MARKET":3}
+  researched    401858900:v1
+  decided       BET CANDIDATE — North Texas
+                why: Expected return 3.74% per unit, clearing the 0.50% floor. A sharp
+                reference (Pinnacle) is quoting this exact selection. 6 independent book
+                families stand behind the fair price (9 quotes in total, de-duplicated
+                to 6). Corroborated at 2 levels against the sharp reference.
+  retrieval     32 reads; price feed re-read: true
+  prompt        63398 chars of evidence + 28373 of contract; 8 earlier turns carried
+  ledger        RECORDED
+  prompt sections, largest first
+                  29929  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
+                  10423  EVIDENCE — retrieved from EdgeDesk's own tables just now
+                   4203  DATA PATH — where a retrieval came back empty and which 
+                   4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
+                   2641  THE CARD, RANKED — deterministic, computed before you we
+                   1306  THE SLATE — established from a SCHEDULE source, separate
+
+──────────────────────────────────────────────────────────────────────────────
+TURN 6  "What price makes it a pass?"
+          time-sensitive: must re-read the price, not reuse it
+──────────────────────────────────────────────────────────────────────────────
+  resolved      intent=price  depth=QUICK  sport=americanfootball_ncaaf
+  context held  teams=["North Texas","Texas State"]
+  slate         PARTIAL_COVERAGE
+                7 CFB games scheduled in week 3; 4 carry a market number; 1 carries an
+                executable price; 1 carries a flagged signal. A statement about the slate
+                covers 7 games; about MARKETS, 4; about PRICES YOU COULD BET INTO, 1.
+  markets       {"PRICED":1,"LINE ONLY":3,"NO MARKET":3}
+  researched    401858900:v1
+  decided       BET CANDIDATE — North Texas
+                why: Expected return 3.74% per unit, clearing the 0.50% floor. A sharp
+                reference (Pinnacle) is quoting this exact selection. 6 independent book
+                families stand behind the fair price (9 quotes in total, de-duplicated
+                to 6). Corroborated at 2 levels against the sharp reference.
+  retrieval     10 reads; price feed re-read: true
+  prompt        50601 chars of evidence + 28373 of contract; 8 earlier turns carried
+  ledger        RECORDED
+  prompt sections, largest first
+                  22912  RESEARCHED MATCHUPS — 1 versioned evidence packet delive
+                   7197  EVIDENCE — retrieved from EdgeDesk's own tables just now
+                   4203  DATA PATH — where a retrieval came back empty and which 
+                   4173  HOW TO USE A MATCHUP PACKET — this is football analysis,
+                   2641  THE CARD, RANKED — deterministic, computed before you we
+                   1306  THE SLATE — established from a SCHEDULE source, separate
+

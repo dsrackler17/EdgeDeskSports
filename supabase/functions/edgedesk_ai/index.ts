@@ -7770,7 +7770,40 @@ export interface ConvoState {
   lastIntent: string | null;
 }
 
-export function deriveState(history: any[], plan: Plan, packet: any, prev?: ConvoState | null): ConvoState {
+/* THE MATCHUP THE CONVERSATION IS ON, PULLED OUT OF WHAT WAS SAID.
+   resolveTeams only knows MLB clubs, so on a college board the history scan
+   either finds nothing or finds the wrong sport's team through an alias. But
+   the matchup is usually written down in plain sight -- "Analyze Miami versus
+   Wake Forest", "Miami @ Wake Forest" -- in the question the user asked or the
+   answer that came back. Read it from there.
+
+   This asserts no identity. It extracts two NAMES and hands them to the same
+   resolution the rest of the pipeline uses; if they match nothing on the card,
+   nothing is focused and the ranking decides as before. Without it, "who have
+   they played?" after a named matchup came back with the top-ranked game on
+   the board rather than the game being discussed -- a wrong answer that reads
+   exactly like a right one. */
+const MATCHUP_LEAD = /^(?:analyz|analys|compar|previewi?|research|break down|look at|tell me about|show me|explain|give me|what about|how about|thoughts on|take on)\w*\s+/i;
+export function matchupFromText(text: string): string[] {
+  const t = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (!t) return [];
+  /* A side is a capitalised run: "Miami", "Wake Forest", "Texas A&M",
+     "Miami (OH)", "Ole Miss". Joiners stay lower case so they cannot start one. */
+  const SIDE = "[A-Z][A-Za-z'&.()-]*(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.()-]*)*";
+  const re = new RegExp("(" + SIDE + ")\\s+(?:versus|vs\\.?|@|at)\\s+(" + SIDE + ")");
+  const m = re.exec(t);
+  if (!m) return [];
+  const clean = (v: string) => v.replace(MATCHUP_LEAD, "").replace(/[.,;:!?]+$/, "").trim();
+  const a = clean(m[1]), b = clean(m[2]);
+  if (!a || !b || normName(a) === normName(b)) return [];
+  /* Two words that are both ordinary sentence openers are a false positive. */
+  if (a.split(" ").length > 5 || b.split(" ").length > 5) return [];
+  return [a, b];
+}
+
+export function deriveState(
+  history: any[], plan: Plan, packet: any, prev?: ConvoState | null, question = "",
+): ConvoState {
   const st: ConvoState = {
     teams: plan.entities.teams.slice(),
     sport: null, eventId: plan.entities.eventId, lastIntent: plan.intent,
@@ -7787,12 +7820,45 @@ export function deriveState(history: any[], plan: Plan, packet: any, prev?: Conv
   }
   if (packet?.sport_key) st.sport = packet.sport_key;
 
-  // Fall back to whatever the last few turns were about.
+  /* Fall back to whatever the last few turns were about — INSIDE THIS
+     CONVERSATION'S SPORT.
+     resolveTeams only knows MLB clubs, and it reaches them through aliases. Ask
+     "analyze North Texas versus Texas State" on a college football board and
+     the history scan comes back with the TEXAS RANGERS, because "texas" is one
+     of that club's aliases. The right game was still researched here, because
+     the board scope pinned the sport, but the conversation's entity scope was a
+     baseball team for three turns running and a question that leaned on it
+     would have retrieved one.
+     scopeTeamsToSport already exists for exactly this and was simply not
+     applied on the fallback path: once the sport is known to be something other
+     than baseball, a club claimed only through a cross-league alias is
+     dropped. */
   if (!st.teams.length) {
-    for (let i = history.length - 1; i >= 0 && i >= history.length - 6; i--) {
-      const t = resolveTeams(String(history[i]?.content ?? ""));
-      if (t.length) { st.teams = t; break; }
+    const sportNow = st.sport ?? packet?.sport_key ?? packet?.board_scope?.sport ?? null;
+    /* ALL of the history the client sent, not the last six entries of it.
+       The handler already caps history at eight, and the matchup that anchors a
+       conversation is named ONCE -- at the turn the user chose the game -- and
+       then referred to by pronoun. Six entries is three turns; ask four
+       follow-ups and the anchor falls off the back of the scan while every
+       later turn still means the same game. The failure is silent: the ranking
+       supplies its top game instead, and a wrong answer about a different
+       fixture reads exactly like a right one. */
+    for (let i = history.length - 1; i >= 0; i--) {
+      const said = String(history[i]?.content ?? "");
+      /* The written-down matchup first: it is the thing the conversation is
+         actually about, in any sport, and it needs no club table to find. */
+      const pair = matchupFromText(said);
+      if (pair.length === 2) { st.teams = pair; break; }
+      const matches = resolveTeamsDetailed(said);
+      const { teams } = scopeTeamsToSport(matches, sportNow);
+      if (teams.length) { st.teams = teams; break; }
     }
+  }
+  /* The same reading applies to THIS question: "what about Miami at Wake
+     Forest" names a matchup the MLB resolver cannot see. */
+  if (!st.teams.length) {
+    const pair = matchupFromText(question);
+    if (pair.length === 2) st.teams = pair;
   }
   return st;
 }
@@ -15036,9 +15102,19 @@ async function runResearch(
      function. It answers "what is on this card" from a SCHEDULE source, so
      that the answer to "are there games" can never again be produced by a
      query about prices. */
+  /* A QUESTION WHOSE ANSWER IS A PRICE NEEDS THE PRICE, WHATEVER ITS DEPTH.
+     "What price makes it a pass?" classifies as intent=price at QUICK depth,
+     and QUICK skipped the slate index and the matchup stage outright. So the
+     one question in a conversation that is entirely a function of the CURRENT
+     market arrived with no market read at all, five turns after the game had
+     been established — it answered from whatever the client had attached.
+     These intents re-read rather than reuse. */
+  const priceSensitive = plan.intent === "price" || plan.intent === "what_changed"
+    || plan.intent === "refresh" || /price|line|odds|number/i.test(question ?? "");
   let slateIndex: SlateIndexResult | null = null;
   if (earlySport && (wants("slate") || wants("cfb_intelligence") || wants("matchup")
-    || wants("team_efficiency") || plan.depth === "SLATE" || plan.depth === "FULL")) {
+    || wants("team_efficiency") || plan.depth === "SLATE" || plan.depth === "FULL"
+    || (priceSensitive && (state.teams.length || (boardScope as any).sport)))) {
     try {
       slateIndex = await dal.getSlateIndex(earlySport, {
         season: num(boardScope.season), week: num(boardScope.week),
@@ -15425,20 +15501,51 @@ async function runResearch(
     }
     const shortlist = picked.slice(0, wantN);
 
-    if (sportKey === "americanfootball_ncaaf" && shortlist.length && plan.depth !== "QUICK") {
+    /* QUICK skips the multi-game shortlist, not an established single focus:
+       a follow-up about ONE game the conversation is already on costs the same
+       reads whatever the depth label says, and answering it without the game is
+       how a price question lost its matchup. */
+    const quickButFocused = plan.depth === "QUICK" && shortlist.length === 1;
+    if (sportKey === "americanfootball_ncaaf" && shortlist.length
+      && (plan.depth !== "QUICK" || quickButFocused)) {
       try {
         const ge = await dal.getCfbGameEvidence(shortlist, { season: num(boardScope.season) });
         data_path.game_evidence = ge.path;
         packets = ge.packets;
+        /* A REFERENCE, NOT A SECOND COPY.
+           Each packet already reaches the model in full, under RESEARCHED
+           MATCHUPS, organised by side with the instructions for reading it.
+           Pushing the whole packet into the evidence list as well serialised
+           every one of them TWICE into the same prompt: five games came to
+           225,000 characters of a 262,000-character prompt, the same facts
+           rendered two different ways, and the second rendering carried no
+           information the first did not.
+
+           So the evidence list carries a POINTER — the packet id, its sources
+           and its completeness — and the packet block carries the content.
+           Nothing is withheld and nothing is truncated; the duplicate is
+           simply not made. The evidence cap then measures what is actually
+           distinct, which is the only thing a cap can honestly measure. */
         for (const p of packets) {
           evidence.push(ev({
             source: "evidence_packet", entity: (p.sections?.identity?.matchup?.value as string) ?? p.game_id,
             field: "game_evidence", relevance: "matchup", sport: sportKey,
             event_id: p.game_id, layer: "matchup", data_layer: "L5_MATCHUP", source_type: "DERIVED",
-            value: p, status: p.completeness.ratio != null && p.completeness.ratio > 0.5 ? "VERIFIED" : "PARTIAL",
+            value: {
+              packet_id: p.packet_id, schema: p.schema, game_id: p.game_id,
+              matchup: (p.sections?.identity?.matchup?.value as string) ?? null,
+              fields_present: p.completeness.fields_present,
+              fields_missing: p.completeness.fields_missing,
+              sources: p.sources,
+              see: "RESEARCHED MATCHUPS — this packet is delivered there IN FULL, with both sides, "
+                + "every previous game with its opponent's rating, availability and the declared gaps. "
+                + "It is not repeated here.",
+            },
+            status: p.completeness.ratio != null && p.completeness.ratio > 0.5 ? "VERIFIED" : "PARTIAL",
             freshness: "CURRENT",
             provenance: `versioned evidence packet ${p.packet_id} assembled from ${p.sources.join(", ")}`,
-            note: `Evidence packet ${p.packet_id}. ${p.completeness.fields_present} fields present, `
+            note: `Evidence packet ${p.packet_id}, delivered in full under RESEARCHED MATCHUPS. `
+              + `${p.completeness.fields_present} fields present, `
               + `${p.completeness.fields_missing} declared missing WITH REASONS. ${p.note}`,
           }));
         }
@@ -16118,8 +16225,16 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
             + `An empty signals query, an empty quote set and an empty slate are three different findings. `
             + `Say which one this is, in the words above.\n`
           : "")
+        /* THE COUNT THAT GOVERNS A RECOMMENDATION IS THE PRICED ONE.
+           This said "possible on the N quoted games" using the MARKET NUMBER
+           count — so a card with four lines and one price told the model that
+           four games could be recommended at a price. Three of them had no
+           price to recommend at. It is the same conflation, in the sentence
+           that hands out the permission. */
         + (st.may_recommend
-          ? `Priced recommendations are possible on the ${st.games_with_quotes} quoted games.`
+          ? `Priced recommendations are possible on the ${st.games_with_executable_price ?? st.games_with_quotes} `
+            + `game${(st.games_with_executable_price ?? st.games_with_quotes) === 1 ? "" : "s"} carrying an executable price, `
+            + `and on those only. The other games are research.`
           : `NO priced recommendation is possible on this card, because no game carries a usable quote. `
             + `Research, compare and rank the games anyway — that is a real answer — and say plainly that no price is available to bet into.`),
       );
@@ -16199,14 +16314,36 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
     }
 
     if (research.packets && research.packets.length) {
+      /* WHOLE PACKETS ONLY, AND SAY WHICH ONES DID NOT FIT.
+         This was `compact(packets, 90000)` — a blind slice. Five researched
+         games ran past 90,000 characters, so the fifth packet was severed
+         mid-object while the header above it went on claiming five. The model
+         received a truncated JSON tail and a sentence telling it that tail was
+         a complete matchup. That is the same failure as "361 items, 130
+         withheld" and it is not fixed by a bigger number: a packet either
+         arrives entire or is named as absent. */
+      const PACKET_MAX = 140000;
+      const kept: any[] = [];
+      const dropped: any[] = [];
+      let used = 0;
+      for (const pk of research.packets) {
+        const size = JSON.stringify(pk).length + 1;
+        if (used + size <= PACKET_MAX) { kept.push(pk); used += size; } else dropped.push(pk);
+      }
+      const named = (pk: any) => (pk?.sections?.identity?.matchup?.value as string) ?? pk?.game_id ?? "an unnamed game";
       parts.push(
-        `RESEARCHED MATCHUPS — ${research.packets.length} versioned evidence packet`
-        + `${research.packets.length === 1 ? "" : "s"}, one per game, each carrying its own sources and its own declared gaps.\n`
+        `RESEARCHED MATCHUPS — ${kept.length} versioned evidence packet`
+        + `${kept.length === 1 ? "" : "s"} delivered here IN FULL, one per game, each carrying its own sources and its own declared gaps.\n`
         + `Every factual field is {value, source, ...} or {missing:true, reason}. A field marked missing was NOT retrieved and `
         + `you do not have it — do not estimate it, do not substitute a league average, and do not carry a value across from the other team.\n`
         + `THESE ARE THE ONLY GAMES YOU RESEARCHED IN DEPTH. Every other game on the card above is index-level only. `
         + `Say which is which rather than implying you compared the whole slate at this depth.\n`
-        + compact(research.packets, 90000),
+        + (dropped.length
+          ? `${dropped.length} further packet${dropped.length === 1 ? " was" : "s were"} researched and did NOT FIT in this message: `
+            + `${dropped.map(named).join("; ")}. You do NOT have their evidence. Do not describe those games from the index `
+            + `row alone as though you had researched them, and do not present this set as the full shortlist.\n`
+          : "")
+        + JSON.stringify(kept),
       );
       parts.push(
         "HOW TO USE A MATCHUP PACKET — this is football analysis, not metadata paraphrase.\n"
@@ -17205,7 +17342,7 @@ export async function handle(req: Request): Promise<Response> {
 
   /* --- plan ------------------------------------------------------------- */
   const plan = classify(String(body?.question ?? ""), String(body?.mode ?? ""));
-  const state = deriveState(history, plan, body?.packet, null);
+  const state = deriveState(history, plan, body?.packet, null, String(body?.question ?? ""));
   const presentationMode = presentationModeOf(body, plan);
 
   /* --- research --------------------------------------------------------- */

@@ -700,6 +700,11 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       p.slice(p.indexOf('THE SLATE'), p.indexOf('THE SLATE') + 500));
     chk('and states that a consensus line is not a price',
       /consensus line is a number, not a price|not a price to bet into/i.test(p));
+    /* The permission sentence must use the PRICED count, not the market-number
+       count: four lines and one price is permission to recommend one game. */
+    chk('the recommendation permission is granted on priced games only',
+      /Priced recommendations are possible on the 1 game carrying an executable price, and on those only/.test(p),
+      p.slice(p.indexOf('Priced recommendations'), p.indexOf('Priced recommendations') + 160));
   }
 
   /* =====================================================================
@@ -907,6 +912,52 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk('but the same row evaluated with today’s ratings is NOT leakage-free',
       leaky.clean === false && /not available when it was published/.test(leaky.why || ''), leaky.problems);
     chk('and leakage_free is reported as its own field', leaky.leakage_free === false);
+  }
+
+  /* =====================================================================
+     25. A PACKET ARRIVES ENTIRE OR IS NAMED AS ABSENT.
+     The packet block was a blind slice at 90,000 characters. Five researched
+     games ran past it, so the fifth packet was severed mid-object while the
+     header above it went on claiming five — the same failure as "361 items,
+     130 withheld", one layer in.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+    clearCache(); route = FX.router(fx);
+    const j = await (await m.handle(req({ mode: 'chat', question: 'Any CFB matchups look good this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'))).json();
+    const p = j.prompt || '';
+    /* The section only. Later blocks have their own budgets and their own
+       truncation, and this assertion is about THIS one. */
+    const secOf = (txt) => {
+      const a = txt.indexOf('RESEARCHED MATCHUPS');
+      const b = txt.indexOf('\n\n', a);
+      return a < 0 ? '' : txt.slice(a, b < 0 ? txt.length : b);
+    };
+    const block = secOf(p);
+    const bodies = (block.match(/"sections":\{/g) || []).length;
+    const header = /RESEARCHED MATCHUPS — (\d+) versioned evidence packet/.exec(block);
+    chk('the header counts what was actually delivered, not what was built',
+      header && Number(header[1]) === bodies, { header: header && header[1], bodies });
+    chk('and every delivered packet is complete JSON, not a severed tail',
+      (() => { try { JSON.parse(block.slice(block.indexOf('[{'))); return true; } catch (_) { return false; } })());
+    chk('no packet is cut off mid-object', !/…\[truncated at \d+ chars\]/.test(block), block.slice(-120));
+
+    /* Squeeze it until packets genuinely cannot fit, and check what it says. */
+    ENV.EDGEDESK_EVIDENCE_MAX = '30000';
+    clearCache();
+    const j2 = await (await m.handle(req({ mode: 'chat', question: 'Any CFB matchups look good this week?',
+      packet: { board_scope: SCOPE }, history: [] }, '?dry=1'))).json();
+    delete ENV.EDGEDESK_EVIDENCE_MAX;
+    const p2 = j2.prompt || '';
+    chk('a tight budget still delivers whole packets',
+      !/…\[truncated at \d+ chars\]/.test(secOf(p2)));
+    chk('and if one does not fit, it is named rather than silently dropped',
+      (() => { const b2 = secOf(p2); const h = /RESEARCHED MATCHUPS — (\d+) versioned/.exec(b2);
+        const n = (b2.match(/"sections":\{/g) || []).length;
+        return h && Number(h[1]) === n && (!/did NOT FIT/.test(b2) || /You do NOT have their evidence/.test(b2)); })());
+    chk('the evidence block still names what it withheld rather than going quiet',
+      !/EVIDENCE WITHHELD/.test(p2) || /SUBJECTS WITH NO EVIDENCE IN THIS MESSAGE AT ALL/.test(p2));
   }
 
   done();
