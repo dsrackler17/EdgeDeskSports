@@ -1,49 +1,314 @@
 {
   "schema": "edgedesk_article_market_snapshot_v1",
   "season": 2026,
-  "source": "Captured book quotes as they stood in the EdgeDesk game briefs published 2026-09-08. Replayed here so a headless build can join the same sportsbook number the terminal joined; the live capture (Supabase `signals`) is behind an account and a build server has no session for it.",
-  "note": "These are SPORTSBOOK numbers, not EdgeDesk numbers, and every article that uses one says so and names the book. Nothing here is an EdgeDesk projection, and no line in this file is read by any model: the engine has already priced the game before the market section is assembled.",
+  "generated_at": "2026-09-14T19:30:42.894Z",
+  "source": "Captured book quotes read from EdgeDesk’s own odds capture (public.signals) by tools/newsletter/market.js. Replayed here so a headless build joins the same sportsbook number the terminal joins; the live capture is behind an account and a build server has no session for it.",
+  "convention": "spread.selection names the team spread.point belongs to and spread.side says whether that is the home or the away side of the game. A point spread is one handicap with two sides, so a quote captured on the away side is the same number seen from the other end; the replay presents both and never invents a second price.",
+  "note": "These are SPORTSBOOK numbers, not EdgeDesk numbers, and every article and newsletter that uses one says so and names the book. Nothing here is an EdgeDesk projection, and no line in this file is read by any model: the engine has already priced the game before the market section is assembled.",
   "quotes": [
     {
-      "sport": "CFB",
-      "game_id": "401856678",
-      "home": "Kansas",
-      "away": "Missouri",
-      "kickoff": "2026-09-12T00:00:00.000Z",
-      "captured_at": "2026-09-08T12:05:00.000Z",
-      "spread": { "selection": "Kansas", "point": 5.5, "book": "FanDuel" },
-      "from": "EdgeDesk College Football Brief — Missouri at Kansas, published 2026-09-08T17:08Z"
-    },
-    {
-      "sport": "CFB",
-      "game_id": "401858214",
-      "home": "Boston College",
-      "away": "Rutgers",
-      "kickoff": "2026-09-11T23:30:00.000Z",
-      "captured_at": "2026-09-08T12:05:00.000Z",
-      "spread": { "selection": "Boston College", "point": -3.0, "book": "BetOnline.ag" },
-      "from": "EdgeDesk College Football Brief — Rutgers at Boston College, published 2026-09-08T17:08Z"
-    },
-    {
-      "sport": "CFB",
-      "game_id": "401858220",
-      "home": "Virginia",
-      "away": "Norfolk State",
-      "kickoff": "2026-09-11T23:00:00.000Z",
-      "captured_at": "2026-09-08T12:05:00.000Z",
-      "spread": { "selection": "Virginia", "point": -43.5, "book": "Hard Rock Bet" },
-      "from": "EdgeDesk College Football Brief — Norfolk State at Virginia, published 2026-09-08T17:07Z"
+      "sport": "NFL",
+      "game_id": "2026_02_CAR_ATL",
+      "home": "Atlanta Falcons",
+      "away": "Carolina Panthers",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Atlanta Falcons",
+        "side": "home",
+        "point": -1.5,
+        "book": "FanDuel"
+      },
+      "total": {
+        "point": 42.5,
+        "book": "DraftKings"
+      }
     },
     {
       "sport": "NFL",
-      "game_id": "2026_01_NE_SEA",
-      "home": "Seattle Seahawks",
-      "away": "New England Patriots",
-      "kickoff": "2026-09-10T00:20:00.000Z",
-      "captured_at": "2026-09-03T15:03:00.000Z",
-      "spread": { "selection": "Seattle Seahawks", "point": -1.0, "book": "Nordic Bet" },
-      "total": { "point": 43.5, "book": "Nordic Bet" },
-      "from": "EdgeDesk NFL Brief — New England Patriots at Seattle Seahawks, published 2026-09-08T18:03Z"
+      "game_id": "2026_02_CIN_HOU",
+      "home": "Houston Texans",
+      "away": "Cincinnati Bengals",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Houston Texans",
+        "side": "home",
+        "point": -2.5,
+        "book": "FanDuel"
+      },
+      "total": {
+        "point": 46.5,
+        "book": "FanDuel"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_CLE_TB",
+      "home": "Tampa Bay Buccaneers",
+      "away": "Cleveland Browns",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Tampa Bay Buccaneers",
+        "side": "home",
+        "point": -6.5,
+        "book": "DraftKings"
+      },
+      "total": {
+        "point": 41.5,
+        "book": "BetRivers"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_DET_BUF",
+      "home": "Buffalo Bills",
+      "away": "Detroit Lions",
+      "kickoff": "2026-09-17T20:15:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Buffalo Bills",
+        "side": "home",
+        "point": -3,
+        "book": "BetRivers"
+      },
+      "total": {
+        "point": 51.5,
+        "book": "DraftKings"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_GB_NYJ",
+      "home": "New York Jets",
+      "away": "Green Bay Packers",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "New York Jets",
+        "side": "home",
+        "point": 5.5,
+        "book": "Caesars"
+      },
+      "total": {
+        "point": 42.5,
+        "book": "DraftKings"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_IND_KC",
+      "home": "Kansas City Chiefs",
+      "away": "Indianapolis Colts",
+      "kickoff": "2026-09-20T20:20:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Kansas City Chiefs",
+        "side": "home",
+        "point": -5.5,
+        "book": "FanDuel"
+      },
+      "total": {
+        "point": 46.5,
+        "book": "FanDuel"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_JAX_DEN",
+      "home": "Denver Broncos",
+      "away": "Jacksonville Jaguars",
+      "kickoff": "2026-09-20T16:05:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Denver Broncos",
+        "side": "home",
+        "point": -3,
+        "book": "Caesars"
+      },
+      "total": {
+        "point": 43.5,
+        "book": "DraftKings"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_LV_LAC",
+      "home": "Los Angeles Chargers",
+      "away": "Las Vegas Raiders",
+      "kickoff": "2026-09-20T16:05:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Los Angeles Chargers",
+        "side": "home",
+        "point": -9.5,
+        "book": "FanDuel"
+      },
+      "total": {
+        "point": 42.5,
+        "book": "FanDuel"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_MIA_SF",
+      "home": "San Francisco 49ers",
+      "away": "Miami Dolphins",
+      "kickoff": "2026-09-20T16:25:00.000Z",
+      "captured_at": "2026-09-09T18:00:14.827+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "San Francisco 49ers",
+        "side": "home",
+        "point": -10.5,
+        "book": "Caesars"
+      },
+      "total": {
+        "point": 45.5,
+        "book": "FanDuel"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_MIN_CHI",
+      "home": "Chicago Bears",
+      "away": "Minnesota Vikings",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Chicago Bears",
+        "side": "home",
+        "point": -3,
+        "book": "Caesars"
+      },
+      "total": {
+        "point": 45.5,
+        "book": "Caesars"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_NO_BAL",
+      "home": "Baltimore Ravens",
+      "away": "New Orleans Saints",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Baltimore Ravens",
+        "side": "home",
+        "point": -7.5,
+        "book": "Caesars"
+      },
+      "total": {
+        "point": 46.5,
+        "book": "DraftKings"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_NYG_LA",
+      "home": "Los Angeles Rams",
+      "away": "New York Giants",
+      "kickoff": "2026-09-21T20:15:00.000Z",
+      "captured_at": "2026-09-09T18:00:14.827+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Los Angeles Rams",
+        "side": "home",
+        "point": -9.5,
+        "book": "DraftKings"
+      },
+      "total": {
+        "point": 47.5,
+        "book": "FanDuel"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_PHI_TEN",
+      "home": "Tennessee Titans",
+      "away": "Philadelphia Eagles",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Tennessee Titans",
+        "side": "home",
+        "point": 5.5,
+        "book": "Caesars"
+      },
+      "total": {
+        "point": 41.5,
+        "book": "FanDuel"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_PIT_NE",
+      "home": "New England Patriots",
+      "away": "Pittsburgh Steelers",
+      "kickoff": "2026-09-20T13:00:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "New England Patriots",
+        "side": "home",
+        "point": -4.5,
+        "book": "DraftKings"
+      },
+      "total": {
+        "point": 43.5,
+        "book": "Caesars"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_SEA_ARI",
+      "home": "Arizona Cardinals",
+      "away": "Seattle Seahawks",
+      "kickoff": "2026-09-20T16:25:00.000Z",
+      "captured_at": "2026-09-09T18:00:14.827+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Arizona Cardinals",
+        "side": "home",
+        "point": 9.5,
+        "book": "FanDuel"
+      },
+      "total": {
+        "point": 44.5,
+        "book": "FanDuel"
+      }
+    },
+    {
+      "sport": "NFL",
+      "game_id": "2026_02_WAS_DAL",
+      "home": "Dallas Cowboys",
+      "away": "Washington Commanders",
+      "kickoff": "2026-09-20T16:25:00.000Z",
+      "captured_at": "2026-09-13T08:00:05.042+00:00",
+      "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
+      "spread": {
+        "selection": "Dallas Cowboys",
+        "side": "home",
+        "point": -4.5,
+        "book": "DraftKings"
+      },
+      "total": {
+        "point": 51,
+        "book": "BetOnline.ag"
+      }
     }
   ]
 }

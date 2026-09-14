@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_newsletter_runs_v1",
-  "kept": 22,
+  "kept": 25,
   "max": 500,
   "runs": [
     {
@@ -304,7 +304,51 @@
           "total": 1
         }
       }
+    },
+    {
+      "at": "2026-09-14T19:30:39.396Z",
+      "run_id": "nl_8ia0okg6",
+      "sport": "NFL",
+      "phase": "market",
+      "ok": true,
+      "reason": null,
+      "detail": {
+        "quotes": 16,
+        "signals_read": 218,
+        "refused": {},
+        "wrote": "articles/data/market/2026-week-02.json"
+      }
+    },
+    {
+      "at": "2026-09-14T19:30:42.894Z",
+      "run_id": "nl_vbiljt0b",
+      "sport": "NFL",
+      "phase": "build",
+      "edition_key": "NFL:2026:W02:2026-09-08",
+      "ok": true,
+      "reason": null,
+      "detail": {
+        "games": 10,
+        "content_hash": "ed_463bc83b"
+      }
+    },
+    {
+      "at": "2026-09-14T19:30:42.894Z",
+      "run_id": "nl_vbiljt0b",
+      "sport": "NFL",
+      "phase": "test_send",
+      "edition_key": "NFL:2026:W02:2026-09-08",
+      "ok": true,
+      "reason": null,
+      "detail": {
+        "counts": {
+          "accepted": 1,
+          "failed": 0,
+          "ambiguous": 0,
+          "total": 1
+        }
+      }
     }
   ],
-  "generated_at": "2026-09-14T19:29:54.467Z"
+  "generated_at": "2026-09-14T19:30:42.894Z"
 }
