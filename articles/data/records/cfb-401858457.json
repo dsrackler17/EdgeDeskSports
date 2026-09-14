@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "USC vs. Rutgers: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "USC vs. Rutgers 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices USC at Rutgers at Rutgers +12.7 with a 58.9 fair total. USC wins 80% of simulations. Data confidence 41%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices USC at Rutgers at Rutgers +12.7 with a 58.9 fair total. USC wins 80% of simulations. Data confidence 41%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "USC carries the stronger underlying team rating — +9.2 against +0.9, a 8.3-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Rutgers +12.7 before any sportsbook number is consulted, with USC winning 80% of…",
   "home_team": "Rutgers",
   "away_team": "USC",
@@ -21,11 +21,11 @@
   "game_time": "2026-09-19T19:30:00.000Z",
   "game_when_label": "2026-09-19 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T17:15:33.743Z",
-  "generated_at": "2026-09-14T17:15:33.743Z",
+  "updated_at": "2026-09-14T18:25:52.176Z",
+  "generated_at": "2026-09-14T18:25:52.176Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "INVESTIGATE",
+  "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
   "confidence": 41,
   "priced": true,
   "fair_spread_text": "Rutgers +12.7",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -108,8 +108,8 @@
       },
       "confidence_pct": 41,
       "inputs_reached_pct": 40,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1193,8 +1193,14 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "sample",
-          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "label": "market disagreement",
+          "text": "The market disagrees by 10.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 32h old",
           "widening": null
         },
         {
@@ -1256,12 +1262,6 @@
           "label": "missing",
           "text": "away starting QB unknown",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "weather not supplied",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1317,15 +1317,25 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Rutgers +12.7",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Rutgers +23.5",
+      "difference": "10.8 points",
+      "difference_n": 10.825700539584812,
+      "total_model": "58.9",
+      "total_market": "55.5",
+      "book": "captured · FanDuel",
+      "captured": "2026-09-13T10:00:02.682+00:00",
+      "capture_age": "32 hours old",
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "headline": "EdgeDesk projects USC 36, Rutgers 23.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1477,7 +1487,7 @@
       "EdgeDesk’s line is Rutgers +12.7 on a neutral read of the two teams, before any book is consulted. Projected total 58.9.",
       "Rutgers wins 20% of the time in EdgeDesk’s simulation, USC 80%.",
       "Eight games in ten land between -35.7 and +8.3 for Rutgers. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "The market has Rutgers +23.5 at captured · FanDuel, 10.8 points from EdgeDesk’s number."
     ],
     "missing": [],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
@@ -1487,6 +1497,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-14T17:15:33.743Z"
+    "at": "2026-09-14T18:25:52.176Z"
   }
 }

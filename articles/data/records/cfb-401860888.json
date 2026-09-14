@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Fresno State vs. San José State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Fresno State vs. San José State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Fresno State at San José State at San José State +7.2 with a 50.9 fair total. Fresno State wins 68% of simulations. Data confidence 41%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Fresno State at San José State at San José State +7.2 with a 50.9 fair total. Fresno State wins 68% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Fresno State carries the stronger underlying team rating — -3.5 against -5.3, a 1.9-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it San José State +7.2 before any sportsbook number is consulted, with Fresno…",
   "home_team": "San José State",
   "away_team": "Fresno State",
@@ -21,11 +21,11 @@
   "game_time": "2026-09-20T03:00:00.000Z",
   "game_when_label": "2026-09-20 03:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T17:15:33.743Z",
-  "generated_at": "2026-09-14T17:15:33.743Z",
+  "updated_at": "2026-09-14T18:25:52.176Z",
+  "generated_at": "2026-09-14T18:25:52.176Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
   "confidence": 41,
   "priced": true,
   "fair_spread_text": "San José State +7.2",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Caesars and Hard Rock Bet on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -108,8 +108,8 @@
       },
       "confidence_pct": 41,
       "inputs_reached_pct": 40,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1238,6 +1238,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 24h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Fresno State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1288,12 +1294,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "home starting QB unknown",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away starting QB unknown",
           "widening": null
         }
       ],
@@ -1350,15 +1350,25 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "San José State +7.2",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "San José State +7.5",
+      "difference": "0.3 points",
+      "difference_n": 0.27182855225333125,
+      "total_model": "50.9",
+      "total_market": "51.5",
+      "book": "captured · Caesars",
+      "captured": "2026-09-13T18:00:03.924+00:00",
+      "capture_age": "24 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "headline": "EdgeDesk projects Fresno State 29, San José State 22.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1510,7 +1520,7 @@
       "EdgeDesk’s line is San José State +7.2 on a neutral read of the two teams, before any book is consulted. Projected total 50.9.",
       "San José State wins 32% of the time in EdgeDesk’s simulation, Fresno State 68%.",
       "Eight games in ten land between -30.2 and +13.8 for San José State. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "The market has San José State +7.5 at captured · Caesars, 0.3 points from EdgeDesk’s number."
     ],
     "missing": [
       "San José State — special teams: no rating was published for this category."
@@ -1522,6 +1532,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-14T17:15:33.743Z"
+    "at": "2026-09-14T18:25:52.176Z"
   }
 }
