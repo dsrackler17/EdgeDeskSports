@@ -66,6 +66,7 @@ model could not see printed next to both.
 
 ```bash
 npm run newsletter:doctor       # what is actually configured, read-only, no secret printed
+npm run newsletter:gate         # read the launch gate (add --on / --off to move it)
 npm run newsletter:due          # what is owed right now, per sport
 npm run newsletter:market       # refresh the book-quote snapshot from the odds capture
 npm run newsletter:preview      # build both editions, write nothing to the database
@@ -101,6 +102,26 @@ the run in CI refreshes nothing and commits nothing:
 npm run newsletter:doctor
 # or, against production, from the Actions tab:
 #   Run workflow -> phase: doctor
+```
+
+### The launch gate
+
+`sending_enabled` is the one-time switch. Opening it means the next valid
+edition reaches every confirmed subscriber with no further approval, so
+`gate --on` checks one thing first and refuses without it: that
+`/functions/v1/newsletter` answers. That function serves the unsubscribe link
+in every email, the signup and confirmation routes, and the provider's bounce
+and complaint webhooks — opening the gate without it sends mail a reader
+cannot get out of, which is a legal requirement in the US rather than a
+preference. `--force` opens it anyway. **Closing it is never gated**: a kill
+switch that could be blocked is not a kill switch.
+
+```bash
+npm run newsletter:gate                       # read it
+node tools/newsletter/run.js gate --on        # open  (refuses without the function)
+node tools/newsletter/run.js gate --off       # close (always allowed)
+# or from the Actions tab: Run workflow -> phase: gate-on / gate-off
+# or the Launch card at /admin/newsletter
 ```
 
 The scheduled job is `.github/workflows/newsletter.yml`.
