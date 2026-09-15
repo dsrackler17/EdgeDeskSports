@@ -138,6 +138,23 @@ jobs:
       # The card is rebuilt with everything above wired in. The coverage gate
       # inside it still has to pass: a realignment, a renamed league or a
       # dropped game fails this step and nothing is committed.
+      # EVERY STADIUM THE SLATE NEEDS, AND WHO IS COACHING. Both are read
+      # from the same public mirror this job already reads for schedules and
+      # rosters, and both fill contract fields that were published as
+      # permanent gaps. The venue build is what lets the away side of an
+      # FBS-vs-FCS game have a travel distance at all; the coaching build
+      # answers the head-coach half of the staff question and refuses the
+      # coordinator half, which that feed does not carry.
+      - name: Stadium geography
+        run: node football/venues/build_venues.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Coaching continuity
+        run: node football/coaching/build_coaching.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       - name: Rebuild the published card with the inputs joined
         run: |
           ARGS=""

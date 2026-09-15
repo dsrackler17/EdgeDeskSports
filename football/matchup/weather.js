@@ -10,9 +10,10 @@
 
    This is that same call, through the recovery layer, so it gets a timeout,
    a per-host rate limit, retries on transient failures only, a shared cache
-   and a budget. No new endpoint: the URL is copied from the board, and if the
-   host refuses, the contract records FETCH_FAILED with the host and the
-   reason rather than a silent null.
+   and a budget. The URL is no longer COPIED from the board — both now read
+   football/matchup/forecast.js, so the page and the committed artifact cannot
+   drift into asking for different things. If the host refuses, the contract
+   records FETCH_FAILED with the host and the reason rather than a silent null.
 
    A DOME IS NOT A FETCH. A venue the table marks indoor returns a
    neutralised forecast without a request, because the answer is known.
@@ -33,35 +34,16 @@
 'use strict';
 const path = require('path');
 const R = require(path.join(__dirname, '..', 'data', 'recovery.js'));
+/* THE REQUEST AND THE READING BOTH LIVE IN forecast.js, which the browser
+   loads too. This file is the part that cannot run in a page: the session,
+   the budget, the retries and the carry-forward. */
+const F = require(path.join(__dirname, 'forecast.js'));
 
-const HOST = 'https://api.open-meteo.com/v1/forecast';
+const HOST = F.HOST;
 
-function urlFor(venue, kickIso) {
-  const day = String(kickIso).slice(0, 10);
-  return HOST + '?latitude=' + venue.lat + '&longitude=' + venue.lon
-    + '&hourly=temperature_2m,precipitation,wind_speed_10m&temperature_unit=fahrenheit'
-    + '&wind_speed_unit=mph&precipitation_unit=inch&timezone=UTC&start_date=' + day + '&end_date=' + day;
-}
+const urlFor = F.urlFor;
 
-function parse(text, venue, kickIso) {
-  let j;
-  try { j = JSON.parse(text); } catch (_) { return null; }
-  const h = j && j.hourly;
-  if (!h || !h.time) return null;
-  const want = Date.parse(kickIso);
-  let best = -1, bd = 1e15;
-  for (let i = 0; i < h.time.length; i++) {
-    const d = Math.abs(Date.parse(h.time[i] + 'Z') - want);
-    if (d < bd) { bd = d; best = i; }
-  }
-  /* A FORECAST FOUR HOURS FROM KICKOFF IS NOT THIS GAME'S WEATHER. */
-  if (best < 0 || bd > 4 * 3600e3) return null;
-  return {
-    temp_f: h.temperature_2m[best], precip_in: h.precipitation[best],
-    wind_mph: h.wind_speed_10m[best], dome: !!venue.dome,
-    source: 'open-meteo forecast', as_of: new Date().toISOString()
-  };
-}
+const parse = F.parse;
 
 /* HOW OLD A CARRIED FORECAST MAY BE BEFORE IT IS WORSE THAN NOTHING. Past
    this it is dropped: the contract's own floor is twelve hours, and a forecast
@@ -105,8 +87,7 @@ async function fetchForGames(sess, games, opts) {
     if (!g || !g.kickoff) continue;
     if (!g.venue || g.venue.lat == null || g.venue.lon == null) { report.no_venue++; continue; }
     if (g.venue.dome) {
-      byGame[String(g.game_id)] = { dome: true, temp_f: null, wind_mph: null, precip_in: null,
-        source: 'trained venue table — indoor venue, no request made', as_of: new Date().toISOString() };
+      byGame[String(g.game_id)] = F.forDome(g.venue, { as_of: new Date(now).toISOString() });
       report.dome++;
       continue;
     }

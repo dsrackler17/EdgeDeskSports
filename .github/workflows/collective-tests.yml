@@ -40,6 +40,8 @@ on:
       # confidence number means triggered no CI at all.
       - 'football/matchup/**'
       - 'football/cfb_p4/**'
+      - 'football/venues/**'
+      - 'football/coaching/**'
       # The FBS universe: team identity, season conference, program grouping
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
@@ -90,6 +92,8 @@ on:
       # confidence number means triggered no CI at all.
       - 'football/matchup/**'
       - 'football/cfb_p4/**'
+      - 'football/venues/**'
+      - 'football/coaching/**'
       # The FBS universe: team identity, season conference, program grouping
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
@@ -440,6 +444,14 @@ jobs:
       # as "not verified", never as a missing fix. Loopback sockets only.
       - name: The deployment verifier cannot mistake a blocked reader for a bad deploy
         run: node tools/football/verify_deployment.test.js
+
+      # THE VENUE AND THE GAME-TIME FORECAST. The parser, the view model and
+      # the renderer sliced out of app.html and executed — a card that is only
+      # correct inside a 3.6 MB page cannot be checked. Holds the rules too:
+      # no forecast is never drawn as good weather, a dome is answered rather
+      # than left blank, and a carried forecast states its real age.
+      - name: The forecast card reproduces the game, and never invents one
+        run: node tools/football/weather_card.test.js
 
       # CAPTURE. The single most consequential function in EdgeDesk: it decides
       # what becomes a signal. Imported here as the DEPLOYED file under Node's
