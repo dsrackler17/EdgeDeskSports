@@ -243,7 +243,17 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
           moreOpen: det ? det.hasAttribute('open') : null,
           moreLabel: det ? det.querySelector('summary').textContent.trim() : null,
           rows: det ? det.querySelectorAll('table tr').length : 0,
-          next: [...log.querySelectorAll('.dk-next button')].map((b) => b.textContent.trim()),
+          next: [...log.querySelectorAll('.dk-next button, .ed-acts button')].map((b) => b.textContent.trim()),
+          /* The research card's own market presentation: one row of numbers,
+             with every captured selection behind the market disclosure. */
+          numBlocks: log.querySelectorAll('.ed-nums').length,
+          marketDisclosure: [...log.querySelectorAll('.ed-more > summary')]
+            .filter((x) => /the market, in full/i.test(x.textContent)).length,
+          marketRows: (() => {
+            const d = [...log.querySelectorAll('.ed-more')]
+              .filter((x) => /the market, in full/i.test((x.querySelector('summary') || {}).textContent || ''))[0];
+            return d ? { open: d.hasAttribute('open'), rows: d.querySelectorAll('table tr').length } : null;
+          })(),
           legacyCards: log.querySelectorAll('.gd-modelnote').length,
           text: log.innerText,
         };
@@ -257,15 +267,17 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
         && /^price and data limitations$/i.test(seen.heads[3]),
         seen.heads);
       eq('exactly one read block', seen.reads, 1);
-      /* THE SIX-CARD PILE-UP. */
-      eq('exactly one primary market is shown', seen.primaries, 1);
-      chk('the other markets are behind a disclosure', /View all markets \(6\)/.test(seen.moreLabel || ''), seen.moreLabel);
-      eq('which is closed by default', seen.moreOpen, false);
-      eq('and lists every market once opened', seen.rows, 6);
+      /* THE SIX-CARD PILE-UP. The research card is now the spine of the
+         answer and carries the market itself, so "one primary market" means
+         ONE row of numbers on the card rather than a second card under the
+         read. Every captured selection stays behind the market disclosure. */
+      eq('exactly one market presentation is shown', seen.numBlocks + seen.primaries, 1);
+      eq('every other market is behind a disclosure', seen.marketDisclosure, 1);
+      chk('which is closed by default', seen.marketRows && seen.marketRows.open === false, seen.marketRows);
       /* CONTEXTUAL FOLLOW-UPS. */
       chk('contextual follow-ups are offered',
-        seen.next.indexOf('Pressure-test this') >= 0 && seen.next.indexOf('Who have they played?') >= 0
-        && seen.next.indexOf('What price works?') >= 0, seen.next);
+        seen.next.indexOf('Who have they played?') >= 0
+        && seen.next.some((b) => /total|who is out|change your mind/i.test(b)), seen.next);
       /* NO INTERNAL VOCABULARY ON SCREEN. */
       /* Case-insensitive: the research trace renders uppercase, which is how
          "CFB_RESEARCH_MATCHUP · DEEP" sat at the foot of the answer while a
@@ -301,6 +313,7 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
         return {
           heads: [...log.querySelectorAll('.dk-read .lab, .dk-sec > .h')].map((e) => e.textContent.trim()),
           primaries: log.querySelectorAll('.dk-primary').length,
+          numBlocks: log.querySelectorAll('.ed-nums').length,
           retry: !!log.querySelector('button[onclick*="retryLast"]'),
           read: (log.querySelector('.dk-read p') || {}).textContent || '',
           wrong: secText('wrong'),
@@ -312,7 +325,7 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
         /^the desk[\u2019']s read$/i.test(seen.heads[0] || ''), seen.heads);
       chk('with the same four sections',
         seen.heads.length === 4, seen.heads);
-      eq('and still one primary market', seen.primaries, 1);
+      eq('and still one market presentation', seen.primaries + seen.numBlocks, 1);
       chk('it says the read is EdgeDesk’s own, not the model’s',
         /Written by EdgeDesk, not by the model/i.test(seen.text));
       chk('it does not invent a view', /No view has been invented/i.test(seen.text));
@@ -386,6 +399,7 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
           docOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
           heads: [...log.querySelectorAll('.dk-read .lab, .dk-sec > .h')].map((e) => e.textContent.trim()).length,
           primaries: log.querySelectorAll('.dk-primary').length,
+          numBlocks: log.querySelectorAll('.ed-nums').length,
           readTop: log.querySelector('.dk-read').getBoundingClientRect().top,
           logTop: log.getBoundingClientRect().top,
         };
@@ -394,7 +408,7 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
       chk('and neither does the page', m.docOverflow <= 1, m);
       chk('the panel fills the phone width', Math.abs(m.panelW - m.winW) <= 1, m);
       eq('all four sections survive the narrow width', m.heads, 4);
-      eq('still one primary market', m.primaries, 1);
+      eq('still one market presentation', m.primaries + m.numBlocks, 1);
       chk('the read is the first thing in the log', m.readTop - m.logTop < 120, m);
       chk('the page threw no errors', errors.length === 0, errors);
       if (SHOTS) {

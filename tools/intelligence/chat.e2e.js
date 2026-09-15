@@ -247,6 +247,12 @@ const MLB_SIGNALS = [{
     chk('"' + short + '" is not substituted for "' + SUBJ.name + '"', stray.indexOf('>' + short + '<') < 0 && !/Rangers|Astros/.test(stray));
   });
   lacks(a1, /pitcher|bullpen|starting arm|xERA|WHIP/i, 'no baseball pitcher or bullpen research in a college football answer');
+  /* the published line, at either precision the product prints it in */
+  function quotesLine(text, line) {
+    const abs = Math.abs(line);
+    return [Math.round(abs * 100) / 100, Math.round(abs * 10) / 10]
+      .some((v) => String(text).indexOf(String(v)) >= 0);
+  }
   lacks(a1, /Padres|Dodgers/i, 'no card, line or mention from the loaded baseball game');
   lacks(a1, /BET CANDIDATE/, 'no decision card from another game is shown');
   lacks(a1, /PGRST|schema cache|public\.recommendation_ledger|relation .* does not exist/i,
@@ -259,9 +265,13 @@ const MLB_SIGNALS = [{
   /* the facts the card is required to carry */
   has(a1, 'week ' + SUBJ.game.week, 'the scope (week) is stated');
   chk('the kickoff is stated', /\b\d{1,2}:\d{2}\b/.test(a1) || /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/.test(a1));
+  /* A SPREAD IS QUOTED IN HALF POINTS, so the card rounds the published line
+     to one decimal rather than repeating the engine's two. Both spellings are
+     accepted here: what is being asserted is that the number came off the
+     published card and was not invented, not how many decimals it wears. */
   chk('the model projection is quoted from the published card',
-    a1.indexOf(String(Math.abs(Math.round(SUBJ.game.model_home_line * 100) / 100))) >= 0
-    || /no projection published/.test(a1), { line: SUBJ.game.model_home_line });
+    quotesLine(a1, SUBJ.game.model_home_line) || /no projection published/.test(a1),
+    { line: SUBJ.game.model_home_line });
   chk('the market state is stated rather than implied',
     /No sportsbook number is joined|consensus line|The market has it at/.test(a1));
   chk('what is not on file is disclosed', /What is not on file/.test(a1));
@@ -352,7 +362,8 @@ const MLB_SIGNALS = [{
   has(a7, SUBJ.name, 'the card still names the team when narration fails');
   has(a7, SUBJ.opponent, 'and still names the opponent');
   chk('and still carries the projection or says there is none',
-    a7.indexOf(String(Math.abs(Math.round(SUBJ.game.model_home_line * 100) / 100))) >= 0 || /no projection published/.test(a7));
+    quotesLine(a7, SUBJ.game.model_home_line) || /no projection published/.test(a7),
+    { line: SUBJ.game.model_home_line });
   has(a7, 'Where this came from', 'and still discloses its sources');
   chk('it says the written read is missing', /written (interpretation|read)/i.test(a7));
   chk('and offers to try again', /retryLast/.test(a7) && /Retry analysis/.test(a7));
