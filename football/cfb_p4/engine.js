@@ -964,6 +964,298 @@
         live_drivers: live, discriminating: live.length > 1, basis: basis,
         range: [lo, hi] };
     },
+    /* ===================================================================
+       INFORMATION MEASUREMENTS — what `confidence` is supposed to be fed.
+
+       THE BUG THIS SECTION EXISTS TO CLOSE. `confidence` below documents its
+       own contract in the next comment: it answers "how good is my
+       information?". Its call site was handing it PRICED measurements for
+       five of its twelve inputs — the QB points gap, the injury points gap,
+       the schedule points gap, the travel points and the weather total. A
+       priced measurement is missing whenever the LAYER is unpriced, which is
+       a statement about the model's coefficients, not about what EdgeDesk
+       went and got.
+
+       The consequence was not a rounding error. The `qb` term carries the
+       largest weight in the table (1.0 of 4.083, equal to the rating itself)
+       and it scored ZERO on every game in the universe, because the college
+       QB layer prices EPA per dropback and no feed publishes it. A term that
+       takes the same value on all 76 games of a slate carries no information
+       about any of them; it subtracts a constant 24.5 points and tells a
+       reader nothing. Meanwhile football/starters/ resolves the starting
+       quarterback for 96% of the field — by athlete id, corroborated against
+       the current roster, with his measured dropback volume, his start count
+       and the share of his room's dropbacks he takes — and none of it
+       reached this score.
+
+       So each input gets an INFORMATION measurement: what EdgeDesk knows
+       about that input and how well it knows it. They vary game to game,
+       which is the whole point — a matchup with two resolved veteran
+       starters must score above one with an unknown starter, and today those
+       two score identically.
+
+       WHAT THIS DOES NOT DO. Not one of these measurements touches the
+       projection. The spread, the total, the win probability and sigma are
+       computed from the priced measurements exactly as before and are
+       byte-identical across this change. The priced share is published
+       alongside as `confidence_priced` so the two questions — what do I
+       know, and how much of it does the number use — are both answerable
+       and neither is hidden behind the other.
+
+       THE SCALE IS DECLARED, NOT FITTED, and says so, in the same way
+       params.market's thresholds are declared. It is anchored to the
+       evidence tiers the starter layer already publishes rather than to
+       fresh magic numbers. */
+    information: {
+      /* STATES THAT ARE A STATEMENT ABOUT THIS GAME rather than an inference
+         from the last one. Their confidence is DECLARED, not measured, and
+         labelled as such wherever it is used — there is nothing to measure
+         because no college programme currently reaches any of them (the
+         starter build's coverage reports ANNOUNCED 0, DEPTH_CHART 0,
+         EXPECTED 0; the sport files nothing league-wide and the depth-chart
+         endpoints refuse this repository). They are kept live because the
+         NFL side of the same build does reach them. */
+      DECLARED_STATUS: { ANNOUNCED: 0.95, DEPTH_CHART: 0.9, EXPECTED: 0.8 },
+
+      /* One side's quarterback: HOW WELL IS HE KNOWN, which is not what he
+         is worth. Returns missing when nothing was supplied — an unsupplied
+         starter is not a well-known one — and 0 when a starter genuinely
+         could not be resolved, which is a measurement rather than a gap.
+
+         For the state that covers essentially the whole college field —
+         PREVIOUS_GAME, "he opened the last one" — the confidence is the
+         MEASURED rate at which that holds, supplied by the caller from
+         football/starters/persistence.json: 10,843 consecutive-game pairs
+         over four seasons, bucketed by the share of that game's dropbacks
+         the opener took. It is not a number anybody picked. It also
+         discriminates in a way a picked number could not have: an opener who
+         took 85%+ of the dropbacks opens the next game 87% of the time,
+         while one who opened and immediately handed it over does so 12% of
+         the time, and those two situations were previously indistinguishable
+         to this score.
+
+         No calibration supplied means the rate is not known, and this
+         returns missing rather than substituting a constant. That is the
+         same rule persistence.json applies to its own thin bands. */
+      quarterback: function (ctx, which) {
+        var I = uncertainty.information;
+        if (!ctx) return M.missing('no starter context supplied for ' + which
+          + ' — who is playing quarterback is unknown to this projection');
+        var status = String(ctx.status || 'UNKNOWN').toUpperCase();
+        if (!ctx.player_id || status === 'UNKNOWN') {
+          return M(0, { confidence: 0, source: ctx.source || 'EdgeDesk starter context',
+            basis: 'no starter resolved for ' + which + ' — declared unknown, not assumed average' });
+        }
+        var declared = I.DECLARED_STATUS[status];
+        var pers = ctx.persistence || null;
+        var v = null, basis = null, n = null;
+        if (isNum(declared)) {
+          v = declared;
+          basis = status.toLowerCase().replace(/_/g, ' ') + ' for this game — a declared confidence, '
+            + 'not a measured one: no college programme currently reaches this state';
+        } else if (pers && isNum(pers.rate)) {
+          v = pers.rate;
+          n = isNum(pers.pairs) ? pers.pairs : null;
+          basis = (ctx.player || 'the starter') + ' opened the last game'
+            + (isNum(ctx.last_game_share) ? ' and took ' + Math.round(ctx.last_game_share * 100) + '% of its dropbacks' : '')
+            + '; openers in the "' + pers.band + '" band went on to open the next game '
+            + Math.round(pers.rate * 100) + '% of the time over ' + (n == null ? 'the measured window' : n + ' pairs');
+        } else {
+          return M.missing('a starter is resolved for ' + which + ' (' + (ctx.player || ctx.player_id)
+            + ') but no persistence calibration was supplied, so how reliably that predicts this game '
+            + 'is not measured — run football/starters/calibrate_persistence.js');
+        }
+        /* an identity that was not corroborated against the current roster is
+           a name in a feed, not a player on this team */
+        if (ctx.identity_corroborated === false) v *= 0.85;
+        /* a record two sources disagree about, or one past its freshness
+           floor, is not a clean read whatever the band says */
+        if (ctx.field_state === 'CONFLICTING') v *= 0.8;
+        if (ctx.field_state === 'STALE') v *= 0.7;
+        v = clamp(v, 0, 1);
+        return M(v, { n: n, confidence: v, as_of: ctx.as_of || null,
+          source: ctx.source || 'EdgeDesk starter context',
+          basis: basis
+            + (ctx.identity_corroborated === false ? ', discounted: identity not corroborated against the roster' : '')
+            + (ctx.field_state === 'CONFLICTING' ? ', discounted: sources conflict' : '')
+            + (ctx.field_state === 'STALE' ? ', discounted: the record is stale' : '') });
+      },
+
+      /* THE RATING GAP: the blend is TWO sources of information, and this
+         term was counting one.
+
+         `ratingGap` scores its confidence as in-season games over
+         params.rating.games_for_full_confidence, which in September is two
+         games over six. But the rating the engine actually uses is a BLEND:
+         prior_weight of a trained seed — a complete opponent-adjusted rating
+         from a full prior season, shipped for all 138 programmes with a
+         published held-out record — plus the in-season update. Scoring that
+         blend purely on the in-season half says EdgeDesk barely knows who
+         Georgia is in week two, which is not true and is not what the model
+         believes either: the weight on the prior is a LEARNED curve, and the
+         model learned it is worth most of the rating early.
+
+         The risk that a team is no longer what its prior says is real, and
+         it is already priced — `early_season` and `roster_turnover` are
+         fitted drivers in the volatility layer and widen sigma on exactly
+         these games. Counting it a second time here, as an information gap,
+         is the double-count the confidence/volatility split exists to stop.
+
+         PRIOR_INFORMATION is the one declared number in this section and is
+         marked as such: a trained seed is strong information about a
+         programme, not perfect information about this season's team. */
+      PRIOR_INFORMATION: 0.8,
+      ratingGap: function (gap, H, A) {
+        var I = uncertainty.information;
+        /* an unrated programme stays exactly as missing as it was: there is
+           no prior to blend and nothing was observed */
+        if (!avail(gap)) return gap;
+        var inSeason = clamp(gap.confidence, 0, 1);
+        /* THE PRIOR ONLY COUNTS WHERE IT IS ABOUT THIS TEAM. Every programme
+           outside the rated FBS field shares one seed — params.rating.
+           fcs_rating, a single floor number — and a floor that every FCS
+           opponent shares is not information about the one in this game.
+           Crediting it here is what made an FBS-vs-FCS game score HIGHER
+           than a conference game on the first attempt at this function. */
+        if (H.is_fbs === false || A.is_fbs === false) return gap;
+        var pw = null;
+        if (isNum(H.blended.prior_weight) && isNum(A.blended.prior_weight)) {
+          /* the gap's confidence is set by the side with FEWER games, so the
+             prior that matters is that same side's — the one carrying the
+             most prior weight */
+          pw = Math.max(H.blended.prior_weight, A.blended.prior_weight);
+        }
+        if (!isNum(pw)) return gap;
+        pw = clamp(pw, 0, 1);
+        /* A PRIOR NEVER MAKES THE MODEL KNOW LESS. Once the in-season sample
+           is strong the blend must not drag the answer back down toward the
+           prior's own ceiling, so the blended figure is a floor-raiser, not a
+           replacement. */
+        var v = clamp(Math.max(inSeason, pw * I.PRIOR_INFORMATION + (1 - pw) * inSeason), 0, 1);
+        return M(gap.value, { n: gap.n, confidence: v, source: gap.source,
+          basis: 'the blended rating is ' + Math.round(pw * 100) + '% trained prior and '
+            + Math.round((1 - pw) * 100) + '% in-season at this point of the season, and both halves '
+            + 'are information — the prior is a complete rating from a full season, the in-season '
+            + 'half is ' + (gap.n == null ? 'the games absorbed so far' : gap.n + ' games absorbed')
+            + '. Whether the prior still describes this team is carried in the volatility layer, '
+            + 'where early_season and roster_turnover are fitted drivers, and is not charged twice' });
+      },
+
+      /* THE ROSTER, over the roster layer's OWN contract.
+
+         This term was being handed `talent.overall` — one field of the many
+         the roster layer measures. That understates the answer badly: the
+         talent composite's confidence describes how much on-field production
+         has been attributed so far (modest in September, by construction),
+         while continuity, class mix and portal flow are athlete-id facts
+         that are either known or not and do not get more true in November.
+         Scoring the whole roster question at the composite's confidence
+         throws the hard facts away.
+
+         The denominator is the contract talent.profile() publishes — six
+         fields per position group plus the overall composite — so it is the
+         layer's own structure rather than a set of weights chosen here.
+         Each filled field contributes its own measured confidence; each
+         empty one contributes nothing. A roster nobody supplied still scores
+         missing, and a thinly-observed one still scores low. */
+      roster: function (prof, which) {
+        if (!prof || !prof.by_group) return M.missing('no roster profile for ' + which);
+        var FIELDS = ['talent', 'experience', 'continuity', 'returning_production', 'portal_in', 'portal_out'];
+        var got = 0, tot = 0, i, j, g, m;
+        for (i = 0; i < POS_GROUPS.length; i++) {
+          g = prof.by_group[POS_GROUPS[i]];
+          if (!g) continue;
+          for (j = 0; j < FIELDS.length; j++) {
+            tot++;
+            m = g[FIELDS[j]];
+            if (m && m.available) got += clamp(m.confidence, 0, 1);
+          }
+        }
+        tot++;
+        if (prof.overall && prof.overall.available) got += clamp(prof.overall.confidence, 0, 1);
+        if (!tot) return M.missing('no position groups present in the roster bundle for ' + which);
+        var v = clamp(got / tot, 0, 1);
+        if (!(v > 0)) return M.missing('nothing in the roster contract was measurable for ' + which);
+        return M(v, { n: tot, confidence: v, as_of: prof.as_of || null, source: prof.source || 'roster layer',
+          basis: 'the share of the roster layer\u2019s own contract that was filled and how well — '
+            + tot + ' fields across the position groups (talent, class mix, continuity, returning '
+            + 'production and portal flow), each counted at its measured confidence rather than assumed' });
+      },
+
+      /* AVAILABILITY: how good is my information about who can play.
+
+         THE SCOPE IS NOT A DODGE, IT IS THE TRAINED SURFACE. This engine's
+         injury layer prices ONE position — params.injury.position_weight
+         carries QB at 3.902 and nothing else, measured over 2,846 games, and
+         params.unavailable_by_design says why: "only the quarterback's
+         absence is observable in public data; every other position ships
+         untrained". So an absence anywhere but quarterback moves no point of
+         the projection no matter how well it were reported.
+
+         And the quarterback IS observed. EdgeDesk reads its own play
+         attribution, sees who opened the last game and who finished it, and
+         football/starters/persistence.json measures how often that opener
+         opens the next one. That measured rate already folds in the reason
+         this term exists: a starter who is hurt does not open the next game,
+         and the 87%/77%/51%/12% bands count exactly those events.
+
+         WHAT THIS DOES NOT CLAIM. It does not claim EdgeDesk knows who else
+         is hurt. It does not, because nobody publishes it and the two
+         endpoints that carry proxies refuse this repository. That gap is
+         real and it is carried where it belongs — the volatility layer
+         prices an unreported injury situation as maximum injury uncertainty,
+         which widens sigma on every one of these games. Confidence and
+         volatility answer different questions, and this is the case the
+         distinction was written for. */
+      availability: function (H, A, qbInfo) {
+        var hOk = avail(H.injuries.points), aOk = avail(A.injuries.points);
+        if (hOk || aOk) {
+          var c = Math.max(hOk ? H.injuries.points.confidence : 0,
+                           aOk ? A.injuries.points.confidence : 0);
+          /* A GRADED READ DOES NOT ERASE THE QUARTERBACK OBSERVATION. This
+             branch used to short-circuit, which let an injury report arriving
+             at its layer's flat 0.6 SCORE LOWER than EdgeDesk's own measured
+             participation observation and so made the availability term fall
+             when a source started answering. Two sources of information about
+             the same question leave you at least as well informed as the
+             better one. */
+          var qc = avail(qbInfo) ? clamp(qbInfo.confidence, 0, 1) : 0;
+          var best = Math.max(clamp(c, 0, 1), qc);
+          return M(1, { confidence: best, source: best > clamp(c, 0, 1)
+              ? 'EdgeDesk play attribution (quarterback participation)' : 'graded availability read',
+            basis: 'an availability report reached this game for '
+              + ((hOk && aOk) ? 'both sides' : 'one side')
+              + (qc > clamp(c, 0, 1)
+                ? ', and the measured quarterback participation observation is the stronger of the two'
+                : '') });
+        }
+        if (avail(qbInfo)) {
+          return M(qbInfo.value, { n: qbInfo.n, confidence: clamp(qbInfo.confidence, 0, 1),
+            as_of: qbInfo.as_of || null,
+            source: 'EdgeDesk play attribution (quarterback participation)',
+            basis: 'no injury report reached this game — college football files none and the two '
+              + 'endpoints that carry proxies refuse this repository. What IS observed is the '
+              + 'quarterback, which is the only position this engine\u2019s injury layer prices, and '
+              + 'the rate quoted is the measured one. Absences at every other position are neither '
+              + 'observed nor priced here; they are carried as volatility, which widens this '
+              + 'game\u2019s range rather than shifting its centre' });
+        }
+        return M.missing('no availability information of any kind reached this game: no graded injury '
+          + 'read, and no quarterback participation observed for either side');
+      },
+
+      /* The weaker of two sides. An unknown starter opposite a known one
+         leaves the matchup's quarterback picture weak, and taking the mean
+         would let one resolved side paper over the other. */
+      weaker: function (a, b, reason) {
+        var aOk = avail(a), bOk = avail(b);
+        if (!aOk && !bOk) return M.missing(reason);
+        if (!aOk) return b;
+        if (!bOk) return a;
+        return (a.confidence <= b.confidence) ? a : b;
+      }
+    },
+
     /* CONFIDENCE is NOT the inverse of volatility. Confidence answers "how
        good is my information?"; volatility answers "how wide is the real
        outcome?". A veteran mismatch in a dome can be high confidence AND
@@ -1395,6 +1687,15 @@
       stability: talent.stability(roster, { coaching: side.coaching }),
       youth: talent.youthVolatility(roster),
       qb: qbEngine.evaluate(side.qb, which),
+      /* THE STARTER, FOR INFORMATION ONLY. `side.qb` is the PRICED input and
+         stays null for college because the QB layer needs EPA per dropback.
+         `side.qb_context` is a different question — who is playing and how
+         well do we know that — and it is read by the information layer and
+         by nothing that computes a point. Two fields because they are two
+         questions; one field would have made the priced path reachable by
+         accident, which is exactly what PRICED_STARTER_STATUSES exists to
+         prevent. */
+      qb_info: uncertainty.information.quarterback(side.qb_context, which),
       ol: olEngine.evaluate(roster, prof, which),
       injuries: context.injuryImpact(side.injuries, which),
       offfield: context.offField(side.news, which),
@@ -1586,6 +1887,73 @@
     var sigma = vol ? vol.sigma : (P.distributions && P.distributions.sigma_margin) || 15;
     var sigmaBase = vol ? vol.sigma_base : sigma;
 
+    /* EVERY INPUT IS ASKED FOR THE MEASUREMENT, NOT THE PRICE.
+
+       travel came first (it was handed `travel.points`, a layer that failed
+       validation and is therefore M.missing on every game in the universe),
+       and the same category error ran through four more of the twelve
+       inputs. Each is switched to the thing EdgeDesk actually went and got.
+       None of this changes a single point of the projection — the priced
+       measurements above are untouched and still produce the spread, the
+       total, sigma and the win probability. What changes is the answer to
+       "how good is my information?", which is the only question this
+       aggregator was ever asking.
+
+       Each line says what the measurement is and why the price was the wrong
+       thing to hand it:
+
+         qb        the starter is resolved by athlete id and corroborated
+                   against the roster for most of the field, with his
+                   observed dropbacks and starts. The PRICE needs EPA per
+                   dropback, which no college feed publishes, so the priced
+                   term scored zero on all 76 games of a slate and could not
+                   tell a resolved veteran from an unknown.
+         injuries  the graded availability read, which is the thing that is
+                   or is not on file. The price additionally needs position
+                   weights that ship untrained for every position but
+                   quarterback (params.unavailable_by_design).
+         schedule  rest, road sequence and opponent identity come off the
+                   schedule feed exactly or not at all, and scheduleStress
+                   carries its own measured confidence. The priced gap's 0.4
+                   is the coefficient's strength, not the data's.
+         weather   the forecast either reached this game or it did not, and a
+                   dome is a real answer rather than a gap. The price needs
+                   weather coefficients that were never earned on this corpus
+                   (params.unavailable_by_design again).
+         venue     which stadium this is, and whether it is neutral, are
+                   known facts. hfa's confidence describes the league
+                   constant the venue table lost to, not our knowledge of
+                   where the game is. */
+    var qbInfo = uncertainty.information.weaker(H.qb_info, A.qb_info,
+      'no starter context reached this projection for either side');
+
+    var injInfo = uncertainty.information.availability(H, A, qbInfo);
+
+    /* the schedule CONTEXT, which scheduleStress already scores for how much
+       of it it could see */
+    var schedInfo = uncertainty.information.weaker(H.schedule, A.schedule,
+      'no schedule context reached this projection for either side');
+
+    /* where the game is: known, or not */
+    var venueInfo = (venue.home || isNum(g.venue_id) || neutral)
+      ? M(1, { confidence: neutral ? 0.9 : (venue.home ? 0.95 : 0.6),
+          source: 'schedule feed and trained venue table',
+          basis: neutral ? 'neutral site, declared by the schedule feed'
+            : (venue.home ? 'the home venue resolves in the trained table'
+              : 'the game has a venue id but no coordinates in the trained table') })
+      : M.missing('the venue of this game is not identified');
+
+    /* the forecast: present, neutralised by a roof, or absent */
+    var wxInfo = avail(wx.total_points) ? wx.total_points
+      : (req.weather
+          ? M(1, { confidence: req.weather.dome ? 0.95 : 0.85,
+              source: 'supplied forecast', as_of: req.weather.as_of || null,
+              basis: req.weather.dome
+                ? 'indoor venue — weather is neutralised, which is an answer rather than a gap'
+                : 'a forecast reached this game; it narrows the weather uncertainty term and '
+                  + 'moves no points, because no weather coefficient was earned on this corpus' })
+          : M.missing('no forecast reached this game'));
+
     /* TRAVEL IS ASKED FOR THE MEASUREMENT, NOT THE PRICE.
 
        This aggregator's own contract is "how good is my information?", and it
@@ -1606,9 +1974,29 @@
        contributes to the spread: that is still zero, and still says why. */
     var travelInfo = avail(travel.points) ? travel.points : travel.miles;
 
-    var confMeasure = uncertainty.confidence({
+    var confInputs = {
+      rating: uncertainty.information.ratingGap(ratingGap, H, A), qb: qbInfo,
+      roster_home: uncertainty.information.roster(H.talent, 'home'),
+      roster_away: uncertainty.information.roster(A.talent, 'away'),
+      matchup: matchupPts, venue: venueInfo, travel: travelInfo, injuries: injInfo,
+      schedule: schedInfo, weather: wxInfo, offfield_home: H.offfield.information_confidence,
+      offfield_away: A.offfield.information_confidence
+    };
+    var confMeasure = uncertainty.confidence(confInputs);
+
+    /* THE SAME TABLE OVER THE PRICED MEASUREMENTS, published beside it.
+
+       Information confidence answers "how good is my information?". This
+       answers "how much of it does the published number actually use?", and
+       it is always the lower of the two here because five of these layers
+       are retrieved and unpriced by design. Publishing only the first would
+       hide how much of the model is dark; publishing only the second — which
+       is what this engine did until now — hides everything EdgeDesk knows and
+       pins every game in the universe to the same low number. Both, or
+       neither. */
+    var confPriced = uncertainty.confidence({
       rating: ratingGap, qb: qbGap, roster_home: H.talent.overall, roster_away: A.talent.overall,
-      matchup: matchupPts, venue: hfa, travel: travelInfo, injuries: injGap,
+      matchup: matchupPts, venue: hfa, travel: travel.points, injuries: injGap,
       schedule: schedGap, weather: wx.total_points, offfield_home: H.offfield.information_confidence,
       offfield_away: A.offfield.information_confidence
     });
@@ -1652,6 +2040,12 @@
       },
       scores: {
         confidence: confPct,
+        /* how much of what EdgeDesk knows the published number actually uses.
+           Always <= confidence here, because five layers are retrieved and
+           unpriced by design; the gap between the two IS the unpriced share
+           and is meant to be visible. */
+        confidence_priced: avail(confPriced) ? confPriced.value : null,
+        confidence_basis: avail(confMeasure) ? confMeasure.basis : null,
         volatility: vol ? vol.index : null,
         /* the index is a rescaling of this game's sigma across the fitted
            range, so what it can mean depends on how many drivers the fit
@@ -1692,8 +2086,11 @@
           conference_home: H.conference, conference_away: A.conference, weather: wx },
         matchup: { home_offence: mHome, away_offence: mAway, scheme_fit: schemeFit },
         uncertainty: { sigma: sigma, sigma_base: sigmaBase, index: vol ? vol.index : null,
-          drivers: vol ? vol.drivers : [], context: volCtx, confidence: confMeasure },
-        qb: { home: H.qb, away: A.qb },
+          drivers: vol ? vol.drivers : [], context: volCtx, confidence: confMeasure,
+          /* every input's information measurement, named, so a reader can see
+             which one is costing the score rather than inferring it */
+          confidence_priced: confPriced, information: confInputs },
+        qb: { home: H.qb, away: A.qb, information: { home: H.qb_info, away: A.qb_info } },
         offensive_line: { home: H.ol, away: A.ol },
         injuries: { home: H.injuries, away: A.injuries },
         off_field: { home: H.offfield, away: A.offfield }

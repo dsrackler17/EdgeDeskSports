@@ -163,6 +163,14 @@ function load(opts) {
   out.starters_as_of = out.starters ? out.starters.generated_at : null;
   if (!out.starters) out.problems.push(`football/starters/cfb_${season}.json is missing — run football/starters/build_starters.js`);
 
+  /* HOW WELL "he opened the last one" PREDICTS THIS ONE, measured rather than
+     assumed. Without it the engine declares the starter's reliability
+     unmeasured instead of substituting a constant, which is the correct
+     failure and why this is loaded here rather than defaulted in the engine. */
+  out.persistence = readJson(path.join(ROOT, 'football', 'starters', 'persistence.json'), null);
+  if (!out.persistence) out.problems.push('football/starters/persistence.json is missing — run '
+    + 'football/starters/calibrate_persistence.js; until then no starter carries a measured reliability');
+
   /* the player layer's room ratings, research context for the packet */
   out.rooms = {};
   const tdir = path.join(ROOT, 'football', 'players', 'teams');
@@ -447,8 +455,17 @@ function buildRequest(ctx, o) {
     game: { home: g.home_team, away: g.away_team, neutral_site: !!g.neutral_site,
       venue_id: g.venue_id, kickoff: g.start_date, home_fbs: homeFbs, away_fbs: awayFbs },
     teams: {
-      home: { conference: g.home_conference, roster: rh, qb: null, injuries: ih, news: null, coaching: null, schedule: ch },
-      away: { conference: g.away_conference, roster: ra, qb: null, injuries: ia, news: null, coaching: null, schedule: ca }
+      /* `qb` is the PRICED input and stays null: the college QB layer prices
+         EPA per dropback and no feed publishes it. `qb_context` is a
+         different question — who is playing and how well do we know it — and
+         the engine reads it for its information score and for nothing that
+         computes a point. The starter reaching the projection as CONTEXT is
+         not the starter being priced; PRICED_STARTER_STATUSES is still the
+         only switch for that, and it is still empty. */
+      home: { conference: g.home_conference, roster: rh, qb: null, qb_context: qbContext(sh, ctx, hk),
+        injuries: ih, news: null, coaching: null, schedule: ch },
+      away: { conference: g.away_conference, roster: ra, qb: null, qb_context: qbContext(sa, ctx, ak),
+        injuries: ia, news: null, coaching: null, schedule: ca }
     },
     venue: { home: vh, away: va },
     weather: wx, market: o.market || {},
@@ -479,6 +496,71 @@ function buildRequest(ctx, o) {
       whitelist: PRICED_STARTER_STATUSES.slice() },
     summary: summarise(contract)
   };
+}
+
+/* THE STARTER, FLATTENED FOR THE ENGINE'S INFORMATION LAYER.
+
+   Everything here answers "how well is this quarterback known", and nothing
+   here can reach a point: the engine's information.quarterback() reads these
+   fields and returns a 0-1 measurement that only the confidence score
+   consumes. Deliberately NOT the same object as the shadow QB input — that
+   one is shaped for the priced layer and carries efficiency fields this one
+   must never acquire. */
+function qbContext(rec, ctx, teamKey) {
+  if (!rec || !rec.player_id) return null;
+  const exp = rec.experience || null;
+  const comp = rec.competition || null;
+  /* the resolved starter's own share of his room's observed dropbacks; a
+     contested room is genuinely less certain and the record already says so */
+  let share = null;
+  if (comp && Array.isArray(comp.players)) {
+    const mine = comp.players.filter(p => String(p.player_id) === String(rec.player_id))[0];
+    if (mine && isNum(mine.share)) share = mine.share;
+  }
+  /* THE LAST GAME HE ACTUALLY OPENED, and what share of it he threw. The
+     persistence bands are measured on exactly this quantity, so it is read
+     from the record's own history rather than from the season-long
+     competition share — those are different numbers and using one where the
+     other was measured would silently mis-band every team. */
+  const hist = Array.isArray(rec.history) ? rec.history : [];
+  let lastShare = null;
+  for (let i = hist.length - 1; i >= 0; i--) {
+    const h = hist[i];
+    if (h && h.starter && String(h.starter.player_id) === String(rec.player_id) && isNum(h.starter.share)) {
+      lastShare = h.starter.share; break;
+    }
+  }
+  return {
+    player: rec.player_name || null,
+    player_id: rec.player_id,
+    status: rec.status || 'UNKNOWN',
+    field_state: rec.field_state || null,
+    identity_corroborated: rec.identity_corroborated !== false,
+    contested: !!(comp && comp.contested),
+    dropback_share: share,
+    last_game_share: lastShare,
+    persistence: persistenceFor(ctx, lastShare),
+    dropbacks: exp && isNum(exp.dropbacks) ? exp.dropbacks : null,
+    starts: exp && isNum(exp.starts) ? exp.starts : null,
+    seasons_observed: exp && isNum(exp.seasons_observed) ? exp.seasons_observed : null,
+    source: rec.source || null,
+    as_of: rec.retrieved_at || null
+  };
+}
+
+/* The measured band for a given last-game dropback share. A band the
+   calibration refused to publish for thin support comes back null, and the
+   engine then declares the starter's reliability unmeasured. */
+function persistenceFor(ctx, lastShare) {
+  const cal = ctx && ctx.persistence;
+  if (!cal || !Array.isArray(cal.by_band) || !isNum(lastShare)) return null;
+  /* bands are ordered high to low by min_share in the artifact; re-sorted
+     here so a reordering of the file cannot silently change the answer */
+  const bands = cal.by_band.slice().sort((a, b) => b.min_share - a.min_share);
+  const band = bands.filter(b => lastShare >= b.min_share)[0] || bands[bands.length - 1];
+  if (!band || !isNum(band.rate)) return null;
+  return { band: band.id, rate: band.rate, pairs: band.pairs, label: band.label,
+    source: cal.source || null, as_of: cal.generated_at || null };
 }
 
 /* What the player layer knows about the resolved starter. It is attached as

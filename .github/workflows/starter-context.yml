@@ -79,6 +79,15 @@ jobs:
           node football/starters/starters.test.js
           node football/matchup/research.test.js
 
+      # HOW WELL "he opened the last one" PREDICTS THIS ONE, re-measured over
+      # four seasons of play attribution. The engine reads the rates this
+      # writes; without them it declares every starter's reliability unmeasured
+      # rather than substituting a constant, so this runs BEFORE the context is
+      # resolved. --max-age-days keeps it off the wire on the firings in
+      # between: the rates move in the third decimal, the feed does not.
+      - name: Re-measure starter persistence if it has gone stale
+        run: node football/starters/calibrate_persistence.js --max-age-days 6 || true
+
       - name: Resolve starter context (college and NFL)
         run: |
           ARGS=""

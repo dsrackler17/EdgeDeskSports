@@ -43880,6 +43880,7 @@ function fbP4Load(force,signal){
        loaded without it is a board that says "unknown quarterback" on every
        game while the answer sits in a committed artifact. */
     fbStartersEnsure(cur);
+    fbPersistenceEnsure();
     var st=E.newState();
     if(!st)throw new Error('parameters did not produce a rating state');
     /* advance the seeded state season by season, absorbing real results */
@@ -44287,6 +44288,61 @@ function fbP4Injuries(teamName){
   });
   return out;
 }
+/* ---- THE STARTER, FLATTENED FOR THE ENGINE'S INFORMATION LAYER ----------
+   Mirrors qbContext() in football/matchup/inputs.js field for field, because
+   the board and the offline artifact must hand the engine the same object.
+   Nothing here can reach a point: the engine reads these fields only in
+   uncertainty.information.quarterback(), whose output only the confidence
+   score consumes. `qb` — the PRICED input — stays null either way. */
+function fbP4QbContext(teamName){
+  var rec=null;
+  try{ rec=fbStarterFor(teamName); }catch(_){ return null; }
+  if(!rec||!rec.player_id)return null;
+  var exp=rec.experience||null, comp=rec.competition||null;
+  var share=null;
+  if(comp&&comp.players){
+    for(var i=0;i<comp.players.length;i++)
+      if(String(comp.players[i].player_id)===String(rec.player_id)&&comp.players[i].share!=null)
+        { share=comp.players[i].share; break; }
+  }
+  /* THE LAST GAME HE ACTUALLY OPENED, and what share of it he threw. The
+     persistence bands are measured on exactly this quantity — not on the
+     season-long competition share, which is a different number and would
+     mis-band every team. */
+  var hist=rec.history&&rec.history.length?rec.history:[], last=null;
+  for(var j=hist.length-1;j>=0;j--){
+    var h=hist[j];
+    if(h&&h.starter&&String(h.starter.player_id)===String(rec.player_id)&&h.starter.share!=null)
+      { last=h.starter.share; break; }
+  }
+  return {
+    player:rec.player_name||null, player_id:rec.player_id,
+    status:rec.status||'UNKNOWN', field_state:rec.field_state||null,
+    identity_corroborated:rec.identity_corroborated!==false,
+    contested:!!(comp&&comp.contested),
+    dropback_share:share, last_game_share:last,
+    persistence:fbP4Persistence(last),
+    dropbacks:exp&&exp.dropbacks!=null?exp.dropbacks:null,
+    starts:exp&&exp.starts!=null?exp.starts:null,
+    seasons_observed:exp&&exp.seasons_observed!=null?exp.seasons_observed:null,
+    source:rec.source||null, as_of:rec.retrieved_at||null
+  };
+}
+/* The measured band for a last-game dropback share. A band the calibration
+   refused to publish for thin support comes back null, and the engine then
+   declares the starter's reliability unmeasured rather than guessing. */
+function fbP4Persistence(lastShare){
+  var cal=FB.persistence.data;
+  if(!cal||!cal.by_band||lastShare==null)return null;
+  var bands=cal.by_band.slice().sort(function(a,b){return b.min_share-a.min_share;});
+  var band=null;
+  for(var i=0;i<bands.length;i++)if(lastShare>=bands[i].min_share){band=bands[i];break;}
+  if(!band)band=bands[bands.length-1];
+  if(!band||band.rate==null)return null;
+  return {band:band.id,rate:band.rate,pairs:band.pairs,label:band.label,
+    source:cal.source||null,as_of:cal.generated_at||null};
+}
+
 /* The freshest thing the report is built from, so staleness is measured
    against when EdgeDesk actually read the sources — not against a date. */
 function fbP4AvailAsOf(){
@@ -44372,9 +44428,11 @@ function fbP4Request(u,opts){
          priced as minimum stability and the card says which of those two
          sentences applies. */
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
-        qb:null,injuries:fbP4Injuries(g.home_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
+        qb:null,qb_context:fbP4QbContext(g.home_team),
+        injuries:fbP4Injuries(g.home_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
       away:{conference:g.away_conference,roster:FB.p4.roster[ak]||null,
-        qb:null,injuries:fbP4Injuries(g.away_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
+        qb:null,qb_context:fbP4QbContext(g.away_team),
+        injuries:fbP4Injuries(g.away_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,
@@ -46022,11 +46080,18 @@ function fbGxSummary(u,p,gid){
   try{ if(typeof fbP4ContractFor==='function')cov=fbP4ContractFor(u); }catch(_){ cov=null; }
   var cs=cov&&cov.summary;
   var covPct=(cs&&cs.input_coverage!=null)?Math.round(cs.input_coverage*100):null;
+  /* BOTH NUMBERS, because they answer different questions and either one
+     alone misleads. Confidence is how good EdgeDesk's information is; priced
+     is how much of it the published spread actually uses. The gap between
+     them is the unpriced share — layers EdgeDesk retrieved and deliberately
+     does not price — and hiding it behind either number was the bug. */
+  var priced=p.scores&&p.scores.confidence_priced!=null?Math.round(p.scores.confidence_priced):null;
+  var sub=[];
+  if(priced!=null)sub.push(priced+'% of it priced');
+  if(covPct!=null)sub.push(cs.known+' of '+cs.applicable+' contract fields');
   out+=cell('Data confidence',conf!=null?(conf+'%'):'<span class="gx-miss">unknown</span>',
     conf==null?'':(conf>=60?'ok':(conf>=35?'warn':'neg')),
-    covPct!=null?(covPct+'% of the input contract reached it — '+cs.known+' of '+cs.applicable
-      +' applicable fields')
-      :'input coverage not reported');
+    sub.length?sub.join(' · '):'input coverage not reported');
   out+='</div>';
   out+='<div class="gx-means '+st.cls+'"><b>What this means</b> '+fbEsc(st.means)+'</div>';
   out+=fbGxCheck(u,p);
@@ -46049,6 +46114,17 @@ function fbGxStarter(u,which){
   var r=null;
   try{ r=fbStarterFor(which==='home'?g.home_team:g.away_team); }catch(_){ return null; }
   return (r&&r.player_name)?r.player_name:null;
+}
+/* the measured reliability the engine put on this game's starters, phrased as
+   the rate it actually is rather than as a score */
+function fbGxQbRate(p){
+  var qi=p&&p.layers&&p.layers.qb&&p.layers.qb.information;
+  if(!qi)return '';
+  var xs=[qi.home,qi.away].filter(function(m){return m&&m.available!==false&&m.confidence!=null;});
+  if(!xs.length)return '';
+  var lo=xs.reduce(function(a,b){return a.confidence<=b.confidence?a:b;});
+  return ' — resolved from play attribution; the weaker of the two is known at '
+    +Math.round(lo.confidence*100)+'%'+(lo.n?(' over '+lo.n+' measured pairs'):'');
 }
 function fbGxStarterWhy(){
   var e=null;
@@ -46121,9 +46197,9 @@ function fbGxCheckRows(u,p){
     st('starting quarterback','AVAILABLE','');
   else if(stH&&stA)
     st('starting quarterback','RESEARCH',
-       stH+' / '+stA+' — resolved from play attribution and published as research. The priced QB layer '
-       +'is not fed from it: no feed EdgeDesk reads carries EPA per dropback for college football, so the '
-       +'QB layer has no value term, and the starter layer prices nothing until it has an out-of-sample record');
+       stH+' / '+stA+fbGxQbRate(p)+'. The priced QB layer is still not fed from it — no feed EdgeDesk '
+       +'reads carries EPA per dropback for college football, so the QB layer has no value term — but how '
+       +'well the starter is known now reaches the data-confidence score, measured rather than assumed');
   else if(stH||stA)
     st('starting quarterback','PARTIAL',(stH||stA)+' resolved; the other side has no starter record');
   else
@@ -49099,6 +49175,21 @@ var FBRK_HEALTH = 'football/rankings/health.json';
    the quarterback himself on all 75 games. */
 var FBST_URL = function(y){ return 'football/starters/cfb_'+y+'.json'; };
 FB.starters = { data:null, err:null, _p:null, season:null };
+/* HOW WELL "he opened the last one" PREDICTS THIS ONE — measured, not assumed.
+   football/starters/persistence.json is built by calibrate_persistence.js over
+   four seasons of play attribution. Without it the engine declares the
+   starter's reliability unmeasured rather than substituting a constant, which
+   is why this is loaded rather than defaulted. */
+FB.persistence = { data:null, err:null, _p:null };
+function fbPersistenceEnsure(){
+  if(FB.persistence.data)return Promise.resolve(FB.persistence.data);
+  if(FB.persistence._p)return FB.persistence._p;
+  FB.persistence._p=fetch('football/starters/persistence.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('persistence '+r.status); return r.json(); })
+    .then(function(j){ FB.persistence.data=j; FB.persistence.err=null; FB.persistence._p=null; return j; })
+    .catch(function(e){ FB.persistence.err=String(e&&e.message||e).slice(0,140); FB.persistence._p=null; return null; });
+  return FB.persistence._p;
+}
 function fbStartersEnsure(season){
   if(FB.starters.data&&FB.starters.season===season)return Promise.resolve(FB.starters.data);
   if(FB.starters._p)return FB.starters._p;

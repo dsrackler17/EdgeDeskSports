@@ -1,0 +1,83 @@
+{
+ "schema": "edgedesk_starter_persistence_v1",
+ "version": 1,
+ "generated_at": "2026-09-15T16:55:09.637Z",
+ "source": "cfbfastR-data player_stats — play attribution",
+ "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_<season>.csv",
+ "seasons_read": [
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "seasons_failed": [],
+ "min_pairs_to_publish": 200,
+ "question": "given the quarterback who took the first dropback of a team’s game, how often does he take the first dropback of that team’s next game in the same season?",
+ "scope": "continuity of the starting job only. It is not quality and not availability: a quarterback who stops starting because he was hurt and one who stops because he was benched are the same event here.",
+ "overall": {
+  "pairs": 10843,
+  "same": 8256,
+  "rate": 0.761
+ },
+ "by_band": [
+  {
+   "id": "dominant",
+   "min_share": 0.85,
+   "label": "opener took 85%+ of the dropbacks",
+   "pairs": 7511,
+   "same": 6531,
+   "rate": 0.87,
+   "published": true
+  },
+  {
+   "id": "clear",
+   "min_share": 0.65,
+   "label": "opener took 65-85%",
+   "pairs": 1600,
+   "same": 1227,
+   "rate": 0.767,
+   "published": true
+  },
+  {
+   "id": "split",
+   "min_share": 0.4,
+   "label": "opener took 40-65% — a shared room",
+   "pairs": 743,
+   "same": 378,
+   "rate": 0.509,
+   "published": true
+  },
+  {
+   "id": "fragment",
+   "min_share": 0,
+   "label": "opener took under 40% — he opened and handed it over",
+   "pairs": 989,
+   "same": 120,
+   "rate": 0.121,
+   "published": true
+  }
+ ],
+ "by_season": {
+  "2022": {
+   "pairs": 2332,
+   "same": 1800,
+   "teams": 283
+  },
+  "2023": {
+   "pairs": 2660,
+   "same": 2055,
+   "teams": 265
+  },
+  "2024": {
+   "pairs": 2865,
+   "same": 2134,
+   "teams": 290
+  },
+  "2025": {
+   "pairs": 2986,
+   "same": 2267,
+   "teams": 300
+  }
+ },
+ "note": "A band with fewer than 200 observed pairs publishes rate: null, and the engine treats a null as no measurement rather than falling back to a number nobody measured."
+}
