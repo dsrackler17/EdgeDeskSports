@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-15T20:23:00.183Z",
+  "generated_at": "2026-09-15T20:30:14.498Z",
   "ok": true,
-  "last_ok_at": "2026-09-15T20:23:00.183Z",
+  "last_ok_at": "2026-09-15T20:30:14.498Z",
   "run": {
     "trigger": "push",
     "runner": "github-actions",
@@ -176,23 +176,71 @@
       "label": "CFB P4: model vs market line guard",
       "status": "pass",
       "detail": "no market number joined to any upcoming game — nothing to compare"
+    },
+    {
+      "id": "p4_confidence_ledger",
+      "label": "CFB P4: every published confidence ledger adds to 100",
+      "status": "pass",
+      "detail": "77 games"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-15T20:23:00.183Z",
+    "daily_check_last_run": "2026-09-15T20:30:14.498Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-15T20:23:00.183Z",
+    "engine_tests_last_run": "2026-09-15T20:30:14.498Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-15T20:23:00.183Z",
+    "nfl_ingest_last_run": "2026-09-15T20:30:14.498Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 16,
-    "p4_ingest_last_run": "2026-09-15T20:23:00.183Z",
+    "p4_ingest_last_run": "2026-09-15T20:30:14.498Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 185,
-    "projection_guard_last_run": "2026-09-15T20:23:00.183Z",
+    "projection_guard_last_run": "2026-09-15T20:30:14.498Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-15T20:23:00.183Z",
+    "line_guard_last_run": "2026-09-15T20:30:14.498Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 17
+  },
+  "scope": {
+    "what_ok_means": "the pipeline ran: the engine suites pass, every feed answered, completed games absorbed into the ratings, every upcoming game projects inside bounds and no joined market line points the wrong way.",
+    "what_ok_does_not_mean": "it is NOT a statement about data coverage. A week where the conference availability reports are not due yet, no forecast provider was called and half the slate is non-conference is a perfectly healthy pipeline over thin inputs, and `coverage` below is where that shows."
+  },
+  "coverage": {
+    "games": 77,
+    "information_confidence": {
+      "mean": 70.9,
+      "median": 79.8,
+      "lower_decile": 42.2,
+      "at_90": 0,
+      "at_95": 0
+    },
+    "biggest_gaps": [
+      {
+        "field": "qb_availability",
+        "mean_points_lost": 8.61
+      },
+      {
+        "field": "team_rating",
+        "mean_points_lost": 4.93
+      },
+      {
+        "field": "matchup_profile",
+        "mean_points_lost": 2.42
+      },
+      {
+        "field": "weather",
+        "mean_points_lost": 2.23
+      },
+      {
+        "field": "roster",
+        "mean_points_lost": 2.02
+      },
+      {
+        "field": "off_field",
+        "mean_points_lost": 1.84
+      }
+    ],
+    "ledgers_reconciling": 77,
+    "source": "football/fbs/slate.json — read, not recomputed, so this cannot disagree with the board"
   }
 }
