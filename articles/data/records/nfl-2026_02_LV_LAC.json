@@ -23,8 +23,8 @@
   "game_time": "2026-09-20T16:05:00.000Z",
   "game_when_label": "2026-09-20 16:05 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T19:30:40.791Z",
-  "generated_at": "2026-09-14T23:50:13.780Z",
+  "updated_at": "2026-09-15T04:45:21.035Z",
+  "generated_at": "2026-09-15T04:45:21.035Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 3.3 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -43,7 +43,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 15 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 16 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
@@ -112,8 +112,8 @@
         "note": "Quoted from the perspective of Los Angeles Chargers, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 15 absorbed 2026 games.",
-      "sample_games": 15,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 16 absorbed 2026 games.",
+      "sample_games": 16,
       "seeded": true,
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk differs from the market by 3.3 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -242,14 +242,14 @@
               "h": {
                 "v": "+0.004",
                 "n": 0.0044119203863177275,
-                "rank": "#16 of 32",
-                "rank_n": 16,
+                "rank": "#17 of 32",
+                "rank_n": 17,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.1587091282256453,
-                "rank_gap": 14
+                "rank_gap": 13
               }
             },
             {
@@ -391,14 +391,14 @@
               "h": {
                 "v": "−1.2 pp",
                 "n": -0.012111813213364356,
-                "rank": "#25 of 32",
-                "rank_n": 25,
+                "rank": "#24 of 32",
+                "rank_n": 24,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.013465299755335655,
-                "rank_gap": 7
+                "rank_gap": 8
               }
             },
             {
@@ -689,16 +689,6 @@
           "text": "Los Angeles Chargers +0.4 pp (#14 of 32) vs Las Vegas Raiders −2.6 pp (#31 of 32) — 17 places on the league board."
         },
         {
-          "k": "Net EPA per play",
-          "rank_gap": 14,
-          "gap": 0.1587091282256453,
-          "lead": "Los Angeles Chargers",
-          "trail": "Las Vegas Raiders",
-          "lead_cell": "+0.004 · #16 of 32",
-          "trail_cell": "−0.154 · #30 of 32",
-          "text": "Los Angeles Chargers +0.004 (#16 of 32) vs Las Vegas Raiders −0.154 (#30 of 32) — 14 places on the league board."
-        },
-        {
           "k": "Points allowed",
           "rank_gap": 14,
           "gap": 2.9735151797781154,
@@ -717,6 +707,16 @@
           "lead_cell": "−0.102 · #8 of 32",
           "trail_cell": "+0.060 · #22 of 32",
           "text": "Los Angeles Chargers −0.102 (#8 of 32) vs Las Vegas Raiders +0.060 (#22 of 32) — 14 places on the league board."
+        },
+        {
+          "k": "Net EPA per play",
+          "rank_gap": 13,
+          "gap": 0.1587091282256453,
+          "lead": "Los Angeles Chargers",
+          "trail": "Las Vegas Raiders",
+          "lead_cell": "+0.004 · #17 of 32",
+          "trail_cell": "−0.154 · #30 of 32",
+          "text": "Los Angeles Chargers +0.004 (#17 of 32) vs Las Vegas Raiders −0.154 (#30 of 32) — 13 places on the league board."
         },
         {
           "k": "Sacks generated per dropback",
@@ -881,7 +881,7 @@
           "team": "Los Angeles Chargers",
           "label": "explosive passing",
           "v": "−1.2 pp",
-          "rank": "#25 of 32",
+          "rank": "#24 of 32",
           "note": null
         },
         "def": {
@@ -893,7 +893,7 @@
         },
         "complete": true,
         "net": -0.021919813213364357,
-        "read": "Los Angeles Chargers’ explosive passing rates −1.2 pp (#25 of 32) and Las Vegas Raiders’ explosive passes allowed rates −1.0 pp (#8 of 32). Added the way the model adds them, this pairing sits −2.2 pp from the league mean, which favours Las Vegas Raiders."
+        "read": "Los Angeles Chargers’ explosive passing rates −1.2 pp (#24 of 32) and Las Vegas Raiders’ explosive passes allowed rates −1.0 pp (#8 of 32). Added the way the model adds them, this pairing sits −2.2 pp from the league mean, which favours Las Vegas Raiders."
       },
       {
         "title": "Las Vegas Raiders explosive running vs Los Angeles Chargers explosive runs allowed",
@@ -1056,7 +1056,7 @@
         ],
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
-          "The ratings behind this projection are the trained seeds plus 15 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 16 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1069,7 +1069,7 @@
           "Net EPA per play — Los Angeles Chargers by 1.6 points (+1.6 pts).",
           "Net rushing EPA — Los Angeles Chargers by 1.2 points (+1.2 pts).",
           "Explosive run rate: Los Angeles Chargers +0.4 pp (#14 of 32) vs Las Vegas Raiders −2.6 pp (#31 of 32) — 17 places on the league board.",
-          "Net EPA per play: Los Angeles Chargers +0.004 (#16 of 32) vs Las Vegas Raiders −0.154 (#30 of 32) — 14 places on the league board."
+          "Points allowed: Los Angeles Chargers −1.78 (#9 of 32) vs Las Vegas Raiders +1.19 (#23 of 32) — 14 places on the league board."
         ]
       },
       "underdog": {
@@ -1095,14 +1095,14 @@
         },
         {
           "sev": "HIGH",
-          "label": "early-season sample",
-          "text": "Only 15 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
+          "label": "the model does not beat the closing line",
+          "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
           "widening": null
         },
         {
-          "sev": "HIGH",
-          "label": "the model does not beat the closing line",
-          "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
+          "sev": "MEDIUM",
+          "label": "early-season sample",
+          "text": "Only 16 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
           "widening": null
         }
       ],
@@ -1143,7 +1143,7 @@
       "total_market": "42.5",
       "total_difference": "3.6 points",
       "book": "FanDuel",
-      "capture_age": "36 hours old",
+      "capture_age": "45 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk differs from the market by 3.3 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -1176,7 +1176,7 @@
         {
           "k": "Net EPA per play",
           "a": "−0.154  #30 of 32",
-          "h": "+0.004  #16 of 32",
+          "h": "+0.004  #17 of 32",
           "note": "offence EPA per play minus defence EPA allowed per play — the engine’s own net_epa half"
         },
         {
@@ -1212,7 +1212,7 @@
         {
           "k": "Explosive pass rate",
           "a": "−2.6 pp  #32 of 32",
-          "h": "−1.2 pp  #25 of 32",
+          "h": "−1.2 pp  #24 of 32",
           "note": "20+ yard pass plays per attempt"
         },
         {
@@ -1284,11 +1284,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 15 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 16 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-14T23:50:13.780Z"
+    "at": "2026-09-15T04:45:21.035Z"
   }
 }

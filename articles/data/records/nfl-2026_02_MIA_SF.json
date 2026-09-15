@@ -21,8 +21,8 @@
   "game_time": "2026-09-20T16:25:00.000Z",
   "game_when_label": "2026-09-20 16:25 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T19:30:40.791Z",
-  "generated_at": "2026-09-14T23:50:13.780Z",
+  "updated_at": "2026-09-15T04:45:21.035Z",
+  "generated_at": "2026-09-15T04:45:21.035Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 4.0 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 15 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 16 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Caesars and FanDuel on 2026-09-09, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
@@ -110,8 +110,8 @@
         "note": "Quoted from the perspective of San Francisco 49ers, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 15 absorbed 2026 games.",
-      "sample_games": 15,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 16 absorbed 2026 games.",
+      "sample_games": 16,
       "seeded": true,
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk differs from the market by 4.0 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -234,14 +234,14 @@
               "h": {
                 "v": "+0.007",
                 "n": 0.006625731505047541,
-                "rank": "#15 of 32",
-                "rank_n": 15,
+                "rank": "#16 of 32",
+                "rank_n": 16,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.10122116110412059,
-                "rank_gap": 14
+                "rank_gap": 13
               }
             },
             {
@@ -359,14 +359,14 @@
               "h": {
                 "v": "+0.033",
                 "n": 0.033098557579944565,
-                "rank": "#8 of 32",
-                "rank_n": 8,
+                "rank": "#9 of 32",
+                "rank_n": 9,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.09044620800537834,
-                "rank_gap": 22
+                "rank_gap": 21
               }
             },
             {
@@ -701,16 +701,6 @@
           "text": "San Francisco 49ers −2.5 pp (#2 of 32) vs Miami Dolphins +1.6 pp (#26 of 32) — 24 places on the league board."
         },
         {
-          "k": "Run offence · EPA per carry",
-          "rank_gap": 22,
-          "gap": 0.09044620800537834,
-          "lead": "San Francisco 49ers",
-          "trail": "Miami Dolphins",
-          "lead_cell": "+0.033 · #8 of 32",
-          "trail_cell": "−0.057 · #30 of 32",
-          "text": "San Francisco 49ers +0.033 (#8 of 32) vs Miami Dolphins −0.057 (#30 of 32) — 22 places on the league board."
-        },
-        {
           "k": "Explosive passes allowed",
           "rank_gap": 22,
           "gap": 0.028472,
@@ -729,6 +719,16 @@
           "lead_cell": "+0.072 · #5 of 32",
           "trail_cell": "−0.047 · #26 of 32",
           "text": "San Francisco 49ers +0.072 (#5 of 32) vs Miami Dolphins −0.047 (#26 of 32) — 21 places on the league board."
+        },
+        {
+          "k": "Run offence · EPA per carry",
+          "rank_gap": 21,
+          "gap": 0.09044620800537834,
+          "lead": "San Francisco 49ers",
+          "trail": "Miami Dolphins",
+          "lead_cell": "+0.033 · #9 of 32",
+          "trail_cell": "−0.057 · #30 of 32",
+          "text": "San Francisco 49ers +0.033 (#9 of 32) vs Miami Dolphins −0.057 (#30 of 32) — 21 places on the league board."
         },
         {
           "k": "Explosive runs allowed",
@@ -813,7 +813,7 @@
           "team": "San Francisco 49ers",
           "label": "run offence",
           "v": "+0.033",
-          "rank": "#8 of 32",
+          "rank": "#9 of 32",
           "note": null
         },
         "def": {
@@ -825,7 +825,7 @@
         },
         "complete": true,
         "net": 0.04085055757994457,
-        "read": "San Francisco 49ers’ run offence rates +0.033 (#8 of 32) and Miami Dolphins’ run defence rates +0.008 (#17 of 32). Added the way the model adds them, this pairing sits +0.041 from the league mean, which favours San Francisco 49ers."
+        "read": "San Francisco 49ers’ run offence rates +0.033 (#9 of 32) and Miami Dolphins’ run defence rates +0.008 (#17 of 32). Added the way the model adds them, this pairing sits +0.041 from the league mean, which favours San Francisco 49ers."
       },
       {
         "title": "Miami Dolphins pass protection vs San Francisco 49ers pass rush",
@@ -1069,7 +1069,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 15 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 16 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1108,14 +1108,14 @@
         },
         {
           "sev": "HIGH",
-          "label": "early-season sample",
-          "text": "Only 15 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
+          "label": "the model does not beat the closing line",
+          "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
           "widening": null
         },
         {
-          "sev": "HIGH",
-          "label": "the model does not beat the closing line",
-          "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
+          "sev": "MEDIUM",
+          "label": "early-season sample",
+          "text": "Only 16 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
           "widening": null
         },
         {
@@ -1162,7 +1162,7 @@
       "total_market": "45.5",
       "total_difference": "0.2 points",
       "book": "Caesars",
-      "capture_age": "122 hours old",
+      "capture_age": "131 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk differs from the market by 4.0 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -1195,7 +1195,7 @@
         {
           "k": "Net EPA per play",
           "a": "−0.095  #29 of 32",
-          "h": "+0.007  #15 of 32",
+          "h": "+0.007  #16 of 32",
           "note": "offence EPA per play minus defence EPA allowed per play — the engine’s own net_epa half"
         },
         {
@@ -1225,7 +1225,7 @@
         {
           "k": "Run offence · EPA per carry",
           "a": "−0.057  #30 of 32",
-          "h": "+0.033  #8 of 32",
+          "h": "+0.033  #9 of 32",
           "note": null
         },
         {
@@ -1303,11 +1303,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 15 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 16 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-14T23:50:13.780Z"
+    "at": "2026-09-15T04:45:21.035Z"
   }
 }
