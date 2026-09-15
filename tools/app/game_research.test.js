@@ -441,6 +441,102 @@ lacks(SRC, 'supabase', 'and reads no database');
 lacks(SRC, 'functions/v1', 'and no edge function');
 chk('it reads the projection the board already computed', /FB\.p4\._proj/.test(SRC));
 
+/* ======================================================================== */
+/* 13. THE QUARTERBACK BLOCK                                                */
+/*                                                                          */
+/* The card carries a measurement the college board has never had. These    */
+/* hold the three ways a measurement block goes wrong on a research page:   */
+/* a rate shown without the sample it came off, a missing sample rendered   */
+/* as a number, and a research figure that reads as if it reached the       */
+/* price.                                                                   */
+/* ======================================================================== */
+(function quarterback() {
+  function cardOf(o) {
+    o = o || {};
+    return {
+      state: o.state || 'MEASURED',
+      state_means: o.state_means || 'observed, with the sample size beside it',
+      identity: o.identity === null ? null : Object.assign({
+        kind: 'LAST_GAME_PROXY',
+        kind_means: 'he took the first dropback of this team\u2019s most recent completed game',
+        player: 'Maalik Murphy', athlete_id: '4431234', status: 'PREVIOUS_GAME', confirmed: false,
+        label: 'Maalik Murphy \u2014 started the last game; no announcement for this one.',
+        identity_corroborated: true, contested: false
+      }, o.identity || {}),
+      career: o.career === null ? null : Object.assign({ state: 'MEASURED', games: 11, dropbacks: 389,
+        attempts: 356, epa_per_dropback: 0.164, yards_per_attempt: 7.761, sack_rate: 0.085,
+        interception_rate: 0.0225, first_season: 2025, seasons_observed: 2 }, o.career || {}),
+      recent_5: o.recent_5 || { state: 'MEASURED', games: 5, dropbacks: 193, epa_per_dropback: 0.0752 },
+      season: o.season || { state: 'MEASURED', games: 1, dropbacks: 42, epa_per_dropback: 0.814 },
+      vs_league: 0.0552, league_epa_per_dropback: 0.1088,
+      team_pass_epa_per_play: 0.82, team_games: 1,
+      opponent_allowed_pass_epa_per_play: -0.41, opponent_games: 2,
+      coverage_state: o.coverage_state || 'COMPLETE',
+      coverage_means: o.coverage_means || null,
+      points_applied: false,
+      pricing_statement: 'Passing EPA per dropback is research context and does not affect the fair line'
+    };
+  }
+  function render(home, away, store) {
+    const c = ctx();
+    c.FB.qbEpa = store === undefined ? { data: { season: 2026 }, err: null } : store;
+    c.fbQbEpaCard = (u, which) => (which === 'home' ? home : away);
+    vm.runInContext('globalThis.__out = fbGxQb(FB.p4.up[0]);', c);
+    return c.__out;
+  }
+
+  const html = render(cardOf(), cardOf());
+  has(html, 'Maalik Murphy', 'the quarterback block names the resolved passer');
+  has(html, '0.164', 'and shows his career EPA per dropback');
+  has(html, '389 dropbacks', 'with the sample it came off, never the rate alone');
+  has(html, '356 attempts', 'and the right denominator for a yards-per-attempt figure');
+  has(html, 'research context and does not affect the fair line',
+    'and says in words that it does not reach the price');
+  has(html, 'Scrambles are not in it', 'and says what the measurement excludes');
+  has(html, 'garbage', 'and that garbage time is inside it');
+  has(html, 'not opponent-adjusted', 'and that the team and opponent rates are not adjusted');
+  lacks(html, 'QBR', 'nothing here is relabelled as QBR');
+  chk('an unconfirmed starter is never rendered as confirmed', !/confirmed starter/i.test(html));
+
+  const noHistory = render(cardOf({ career: { state: 'NO_OBSERVATIONS', games: 0 },
+    state: 'MEASURED', state_means: 'this passer has thrown no FBS pass inside this history' }), cardOf());
+  has(noHistory, 'no FBS pass', 'a quarterback with no history says so');
+  chk('and no rate is invented for him', noHistory.indexOf('0.164') === noHistory.lastIndexOf('0.164'));
+
+  const unresolved = render(cardOf({ state: 'UNRESOLVED_IDENTITY' }),
+    cardOf({ state: 'UNRESOLVED_IDENTITY' }));
+  has(unresolved, 'No quarterback identity resolves', 'an unresolved side says so');
+  lacks(unresolved, 'Maalik Murphy', 'and names nobody');
+  lacks(unresolved, '0.164', 'and measures nobody');
+
+  const partial = render(cardOf({ coverage_state: 'PARTIAL',
+    coverage_means: 'the provider has not published a passing row for a completed game yet' }), cardOf());
+  has(partial, 'has not published a passing row', 'a publication gap is named, not hidden');
+
+  const unloaded = render(cardOf(), cardOf(), { data: null, err: 'qb epa 404' });
+  has(unloaded, 'could not be read this session', 'a failed load says so');
+  has(unloaded, 'Nothing is substituted', 'and substitutes nothing');
+  lacks(unloaded, '0.164', 'and shows no number at all');
+
+  /* the check row, which is the one a reader scans first */
+  const c3 = ctx();
+  c3.FB.qbEpa = { data: { season: 2026 }, err: null };
+  c3.fbQbEpaCard = () => cardOf();
+  c3.__p = proj({});
+  vm.runInContext('globalThis.__rows = fbGxCheckRows(FB.p4.up[0], __p);', c3);
+  const rows = c3.__rows || [];
+  const epaRow = rows.filter(r => /quarterback passing EPA/i.test(r.l))[0];
+  chk('the research check carries a quarterback EPA row', !!epaRow);
+  if (epaRow) {
+    eq('and it is RESEARCH, never AVAILABLE', epaRow.s, 'RESEARCH');
+    chk('and its note carries the sample and the reason it is not priced',
+      /career dropbacks/.test(epaRow.n) && /epa_contract/.test(epaRow.n), epaRow.n);
+  }
+  const starterRow = rows.filter(r => /^starting quarterback$/.test(r.l))[0];
+  chk('the starter row no longer claims no feed carries EPA per dropback',
+    !starterRow || !/no feed/i.test(starterRow.n || ''), starterRow && starterRow.n);
+})();
+
 console.log('');
 failures.forEach(f => console.log('  FAIL  ' + f));
 console.log('\ngame research: ' + pass + ' passed, ' + fail + ' failed');

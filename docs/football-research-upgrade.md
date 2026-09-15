@@ -185,6 +185,17 @@ own effect is published on every game:
 > driver (`early_season`), so `qb_uncertainty` carries no coefficient at all
 > and cannot widen or narrow the distribution either.
 
+**Correction, recorded rather than edited away.** The first half of that
+sentence stopped being true. `sportsdataverse/cfbfastR-cfb-data` publishes
+per-game passing EPA for college football from 2014, `football/fbs_epa` ingests
+it, and it is on every card. The QB value term still contributes no points, for
+a narrower and better-evidenced reason: the provider's series comes from a
+different expected-points model, keeps garbage time, and has a league average of
++0.061 against the layer's replacement prior of 0.0, so the shipped
+`points_per_epa_db` slope has no meaning on it. See
+`football/fbs_epa/epa_contract.js`. The shadow-effect text on every game has
+been rewritten to say that instead.
+
 The published card's numbers **did** change, because the offline builder now
 sends the same request the terminal sends. That is the artifact catching up
 with the board, not the model changing.

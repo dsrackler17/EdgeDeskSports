@@ -14,16 +14,25 @@
 #   1  starter context     who took the dropbacks, who leads the depth chart,
 #                          who is on an availability report — typed into the
 #                          six states that are not the same statement
-#   2  team profiles       the season's scoring, pace, explosives, pressure,
+#   2  quarterback EPA     what he has actually DONE — passing EPA per dropback
+#                          from the provider's advanced passing table, joined on
+#                          the same athlete ids, career and recent form with the
+#                          sample each came off
+#   3  team profiles       the season's scoring, pace, explosives, pressure,
 #                          turnovers, third down, red zone and field position,
 #                          with every collapsed attribution column gated out
-#   3  the published card  the slate rebuilt with all of it wired in, plus a
+#   4  the published card  the slate rebuilt with all of it wired in, plus a
 #                          SHADOW projection that carries the starter and is
 #                          priced nowhere
 #
 # NOTHING NEW PRICES. football/matchup/inputs.js PRICED_STARTER_STATUSES is
-# empty, the shadow line is published under its own names, and the tests fail
-# if either of those stops being true.
+# empty, football/fbs_epa/epa_contract.js COMPATIBILITY.priced_input is false,
+# the shadow line is published under its own names, and the tests fail if any
+# of those stops being true.
+#
+# NO SECOND SCHEDULER. The quarterback EPA refresh belongs to this job because
+# it reads the same play week and feeds the same card: adding a cron of its own
+# would mean two schedules that can disagree about what week it is.
 #
 # A FAILED SOURCE NEVER FAILS THE RUN, and it is never silently absent either:
 # the recovery layer records the host, the status and whether the refusal was
@@ -77,6 +86,8 @@ jobs:
       - name: The rules must pass before anything is allowed to write
         run: |
           node football/starters/starters.test.js
+          node football/fbs_epa/fbs_epa.test.js
+          node football/fbs_epa/path.test.js
           node football/matchup/research.test.js
 
       # HOW WELL "he opened the last one" PREDICTS THIS ONE, re-measured over
@@ -94,6 +105,29 @@ jobs:
           if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
           if [ -n "${{ github.event.inputs.history }}" ]; then ARGS="$ARGS --history ${{ github.event.inputs.history }}"; fi
           node football/starters/build_starters.js $ARGS
+
+      # WHAT THE QUARTERBACK HAS DONE, refreshed for the season in progress.
+      #
+      # ONE SEASON, NOT THIRTEEN. The prior seasons are frozen in the committed
+      # career spine (football/fbs_epa/career_through_<S-1>.json), so this
+      # fetches four parquet files for the current year and nothing else. The
+      # 2014-onwards corpus stays in the pipeline cache and is never cloned.
+      #
+      # A FAILED FETCH IS NOT A FAILED RUN AND IS NOT A SILENT ONE. The builder
+      # keeps the previous artifact, republishes it with its age measured, and
+      # marks it STALE; it refuses to write anything that fails its own
+      # validation. `|| true` is therefore about the JOB continuing, not about
+      # the failure being hidden — index.json carries it either way.
+      - name: Refresh the quarterback EPA layer
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          node football/fbs_epa/build_epa.js --refresh $ARGS || true
+
+      - name: Prove the refreshed EPA artifact still holds its rules
+        run: |
+          node football/fbs_epa/fbs_epa.test.js
+          node football/fbs_epa/path.test.js
 
       - name: Build the team-game profiles
         run: |
@@ -119,6 +153,8 @@ jobs:
       - name: Prove the published card still holds its rules
         run: |
           node football/fbs/fbs.test.js
+          node football/fbs_epa/fbs_epa.test.js
+          node football/fbs_epa/path.test.js
           node football/matchup/research.test.js
 
       - name: Commit the artifacts
@@ -128,12 +164,12 @@ jobs:
           # -A over the directories, for the same reason availability-sync.yml
           # does it: `git add a b c` stages NOTHING if any one path is missing,
           # and a new artifact's first run is exactly when one is.
-          git add -A -- football/starters/ football/matchup/ football/fbs/ football/venues/
+          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/
           if git diff --cached --quiet; then
             echo 'starter context and profiles unchanged — nothing to commit'
             exit 0
           fi
-          git commit -m 'starter context, team profiles and the published card'
+          git commit -m 'starter context, quarterback EPA, team profiles and the published card'
           for i in 1 2 3 4; do
             git push origin "${{ github.ref_name }}" && exit 0
             git pull --rebase origin "${{ github.ref_name }}" || true

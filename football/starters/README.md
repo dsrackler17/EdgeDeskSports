@@ -95,9 +95,13 @@ the play feed across the seasons the build read (the current one plus
 over a stated window, not a career total. It is the one thing the engine's QB
 layer can actually act on, because:
 
-* no feed this repository reads carries **EPA per dropback** for college
-  football, so the QB layer's *value* term has no input and contributes no
-  points; and
+* the QB layer's *value* term prices **EPA per dropback**. That measurement
+  now exists — `football/fbs_epa` carries it for every FBS quarterback from
+  2014, joined on these same athlete ids — and the term still contributes no
+  points, for a narrower reason: `football/fbs_epa/epa_contract.js` establishes
+  that the provider's series is not on the scale the shipped coefficient was
+  fitted against (a different expected-points model, garbage time left in, and
+  a league average of +0.061 against a replacement prior of 0.0); and
 * the trained volatility model kept exactly one driver (`early_season`), so
   `qb_uncertainty` carries no coefficient and cannot widen or narrow the
   distribution either.

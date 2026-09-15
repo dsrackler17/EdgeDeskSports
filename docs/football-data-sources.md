@@ -28,8 +28,10 @@ null and the confidence falls — nothing is substituted.
 made, field goals, fumbles, targets, interceptions, pass break-ups, forced
 fumbles — each tied to a game state.
 
-**Does not carry:** next-score information (so **no EPA is computable** and none
-is invented), snap counts, tackles, blocking, alignment, personnel, coverage.
+**Does not carry:** next-score information (so **no EPA is computable from THIS
+table** and none is invented from it — a different file carries a modelled one,
+see "Quarterback EPA" below), snap counts, tackles, blocking, alignment,
+personnel, coverage.
 
 **Known coverage collapses, measured every build.** Several attribution columns
 are filled in for some seasons and not others. Counted per team-game:
@@ -196,7 +198,7 @@ a question the feeds already answer.
 | **Source** | `cfbfastR-data player_stats` (already downloaded above) |
 | **Carries** | `completion_player_id`, `incompletion_player_id`, `sack_taken_player_id`, `interception_thrown_player_id` and a `play_id` on every row — so the player who took a team's FIRST dropback of a game is read, not inferred |
 | **Produces** | the `PREVIOUS_GAME` starter state, the dropback split that makes a `COMPETITION`, and the **start count** (`experience.starts`) over the seasons the build reads |
-| **Does not carry** | an announcement, a depth chart, or EPA. None of those are inferred from it. |
+| **Does not carry** | an announcement, a depth chart, or EPA. None of those are inferred from it. EPA comes from a different file entirely — see "Quarterback EPA" below — and is joined on the same athlete ids rather than derived from this one. |
 
 | | |
 |---|---|
@@ -245,7 +247,7 @@ quietly substitute a plausible-looking point.
 | **CollegeFootballData API** | requires a per-user API key, and its terms do not permit redistributing the data as a committed dataset. A licence holder can supply recruiting through `football/players/recruiting_adapter.js`; nothing is wired in. |
 | **Recruiting services (industry composites)** | subscription, and scraping them would violate their terms. |
 | **cfbfastR-data recruiting paths** | every candidate path returns 404. There is no public recruiting file in this mirror. |
-| **cfbfastR play-by-play with real EPA** | only published through 2022, in a directory that no longer resolves for recent seasons. The EP surface this repository once fitted is therefore not reproducible, and **no EPA is invented in its place**. |
+| ~~**cfbfastR play-by-play with real EPA**~~ | **SUPERSEDED — see "Quarterback EPA" below.** The `cfbfastR-data` play-by-play mirror does stop at 2022, and that was wrongly generalised into "no EPA exists for college football". The successor repository `sportsdataverse/cfbfastR-cfb-data` publishes per-game passing EPA from 2014 and `football/fbs_epa` ingests it. Nothing is invented; what is published is the provider's own measurement, with an audit of what it is. |
 | **Coordinator / coaching history** | no public, keyless feed carries it. The input is contracted for in `config.js` and stays absent. |
 | **Snap counts** | do not exist publicly for college football at any price this project can reach. |
 | **ESPN depth charts and participation (college)** | every documented candidate path is tried in order and all of them refuse this repository (HTTP 404 / 403 on all 138 programmes — one cause, not 276 misfortunes). `football/data/recovery.js` cuts the host after three consecutive refusals and records the refusal as systematic, so the `DEPTH_CHART` state falls through for college rather than being faked. |
@@ -395,13 +397,32 @@ tested (`football/cfb_p4/information.test.js`).
 | rating, matchup | ~7 early | scale with games played; the trained prior now carries its share, so this falls faster than it used to |
 
 **Priced confidence is the real remaining headroom**: 39% board-wide against 72%
-information. The largest single unpriced layer is the QB value term, and
-closing it means either a licensed EPA-per-dropback feed or fitting a
-points-per-quality coefficient on the same tune window the rest of the model
-used, with its own walk-forward record and `points_applied` decided by that
-record rather than by whoever writes the patch. Until then the starter informs
-the confidence score and prices nothing — `PRICED_STARTER_STATUSES` is still
-empty.
+information. The largest single unpriced layer is the QB value term.
+
+**The feed half of that sentence has been answered; the pricing half has not,
+and the two must not be confused.** An EPA-per-dropback feed for college
+football now exists and is ingested (see below). That raised SOURCE coverage
+and INFORMATION coverage. It did not raise priced coverage by a single point,
+and it was not allowed to: `football/fbs_epa/epa_contract.js` establishes that
+the provider's series is not on the scale `params.qb.points_per_epa_db` was
+fitted against, so the value term still contributes zero. Closing the priced
+gap now means re-estimating a coefficient ON THAT SERIES inside a training
+fold, and passing the predeclared rule in `football/validation/`. Until then
+the starter and his measured history both inform the confidence score and
+price nothing — `PRICED_STARTER_STATUSES` is still empty.
+
+### Quarterback EPA
+
+| | |
+|---|---|
+| **Source** | `sportsdataverse/cfbfastR-cfb-data` — `cfb/adv_passing`, `cfb/adv_team`, `cfb/cfb_schedules`, `cfb/cfb_rosters` (parquet, version-pinned) |
+| **Access** | public, keyless |
+| **Carries** | one row per passer per game from 2014: `EPA`, `EPA_per_Play`, `Att`, `Sck`, `Yds`, `Pass_TD`, `Int`, an EPA-based success rate and CPOE |
+| **Produces** | `football/fbs_epa/qb_epa_<season>.json` and `teams.json` — career-to-date and recent passing EPA per dropback for every FBS quarterback, with sample sizes and a stated history boundary |
+| **Expected-points model** | the published `cfb_model_artifacts` XGBoost EP model, v2026.09.09, trained on seasons 2004–2025 over 2.2M plays. Its features are seconds remaining, yards to goal, distance, the four down indicators and the pre-play score difference — **no market information** |
+| **Does not carry** | an announcement, an injury, a pressure rate, a scheme, or a scramble. Scrambles are rush plays and are outside the passer row; garbage time is NOT filtered |
+| **Market-contaminated siblings, excluded** | `exp_qbr` (the QBR model reads `spread`), `WPA` (the win-probability model reads `spread_time`), and the `spread` column itself |
+| **Priced?** | **No.** `football/fbs_epa/epa_contract.js` holds the audit and the single flag |
 
 
 ---

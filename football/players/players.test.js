@@ -112,7 +112,19 @@ function close(name, a, b, tol) { ok(name, a != null && Math.abs(a - b) <= (tol 
   ok('group: QBR is ingested but never an input to a rating',
     CFG.OBSERVABILITY.qbr.observed === true && CFG.OBSERVABILITY.qbr.used_in_rating === false);
   ok('group: snap share is declared unobservable', CFG.OBSERVABILITY.snap_share.observed === false);
-  ok('group: EPA is declared not computed', CFG.OBSERVABILITY.epa.observed === false);
+  /* CORRECTED, AND THE CORRECTION IS THE POINT. This asserted `observed ===
+     false`, which was a claim about every public file and was wrong: the
+     successor SportsDataverse repository publishes per-game passing EPA from
+     2014 and football/fbs_epa ingests it. What this layer must keep true is
+     the part that actually protects a rating — that no EPA reaches one — so
+     that is what is asserted now, the same shape the QBR row already used. */
+  ok('group: EPA is observed ELSEWHERE and never enters a player rating',
+    CFG.OBSERVABILITY.epa.observed === 'elsewhere' && CFG.OBSERVABILITY.epa.used_in_rating === false
+    && /football\/fbs_epa/.test(CFG.OBSERVABILITY.epa.source || ''));
+  ok('group: no EPA field is a scored component of any position group',
+    Object.keys(CFG.COMPONENTS || {}).every(function (g) {
+      return (CFG.COMPONENTS[g] || []).every(function (c) { return !/epa/i.test(c.key); });
+    }));
 })();
 
 /* ---------------------------------------------------------------- */

@@ -30,6 +30,14 @@ football/
                 FBS-vs-FBS game rather than the power conferences alone.
                 See cfb_p4/README.md.
 
+  fbs_epa/      QUARTERBACK EPA — expected points added per dropback for every
+                FBS quarterback from 2014, from the successor SportsDataverse
+                repository, joined on the ESPN game and athlete ids the board
+                already uses. Includes the semantic audit that says what the
+                provider's EPA actually is, and the one flag that keeps it out
+                of the price: it is not on the scale the shipped coefficient
+                was fitted against. See fbs_epa/README.md.
+
   fbs/          the FBS UNIVERSE — who is FBS this season, which conference
                 they are in THIS season, which program group that puts them
                 in, what belongs on the weekly slate and what kind of game

@@ -581,6 +581,16 @@ function ctxFor(talentRating, opts) {
     PROMOTE.evaluate(arm({ brier: 0.19 }), base).status, 'CANDIDATE');
   eq('promotion: an untested leakage arm is not promoted',
     PROMOTE.evaluate(arm({ leakage_clean: null }), base).status, 'CANDIDATE');
+  /* AND A TESTED ONE THAT FAILED IS NOT A CANDIDATE AT ALL. "The test has not
+     run" and "the test ran and the arm knows the result" are different
+     statements, and only the first one leaves room for the arm to turn out
+     clean. The second is the retrospective arm of the quarterback EPA
+     experiment, which exists to be an upper bound and must never read as
+     something that might one day price. */
+  eq('promotion: an arm whose leakage test FAILED is never a candidate',
+    PROMOTE.evaluate(arm({ leakage_clean: false }), base).status, 'RESEARCH_ONLY');
+  ok('promotion: and it still may not move a line',
+    PROMOTE.evaluate(arm({ leakage_clean: false }), base).may_move_lines === false);
   eq('promotion: a season it badly degrades blocks promotion',
     PROMOTE.evaluate(arm({ per_season: [{ season: 2024, n: 800, mae_before: 12.6, mae_after: 13.2 },
       { season: 2025, n: 800, mae_before: 12.4, mae_after: 11.9 }] }), base).status, 'CANDIDATE');

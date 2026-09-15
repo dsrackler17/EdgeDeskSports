@@ -217,6 +217,26 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .gx-sec-h:hover .t{color:var(--text)}
 .gx-sec-b{display:none;padding-bottom:4px}
 .gx-sec.open>.gx-sec-b{display:block}
+/* THE QUARTERBACK BLOCK. Two columns on a desk, one on a phone; every rate
+   carries the sample it came off in its own column so a number can never be
+   read without it. */
+.gx-qb{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:620px){.gx-qb{grid-template-columns:1fr}}
+.gx-qb-side{border:1px solid var(--border);border-radius:9px;padding:9px 10px;background:var(--bg)}
+.gx-qb-h{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+.gx-qb-nm{font-size:14px;font-weight:700;color:var(--text);line-height:1.25}
+.gx-qb-ev{font-size:10.5px;color:var(--faint);line-height:1.45;margin-top:3px}
+.gx-qb-lb{font-size:11px;color:var(--dim);line-height:1.45;margin-top:4px}
+.gx-qb-lb.warn{color:var(--warn)}
+.gx-qb-un{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:5px}
+.gx-qb-tbl{margin-top:7px;border-top:1px solid var(--border);padding-top:6px}
+.gx-qb-r{display:flex;align-items:baseline;gap:8px;padding:2.5px 0;font-size:11.5px}
+.gx-qb-r .l{color:var(--dim);flex:1 1 auto;min-width:0}
+.gx-qb-r .v{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);flex:none}
+.gx-qb-r .n{font-size:10px;color:var(--faint);flex:none;min-width:8.5em;text-align:right}
+.gx-qb-foot{margin-top:9px;font-size:11px;line-height:1.55;color:var(--faint);padding:8px 10px;border-radius:9px;
+  border:1px solid var(--border);border-left-width:3px;border-left-color:var(--border);background:var(--bg)}
+.gx-qb-foot b{color:var(--dim)}
 .rs-creed{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:5px;max-width:62ch}
 .rs-creed b{color:var(--dim);font-weight:600}
 /* START HERE — four ways in, all of them existing routes */
@@ -30894,6 +30914,93 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     };
   }
 
+  /* ---------------------------------------------------------------------
+     WHAT THE QUARTERBACK HAS DONE, READ OFF THE PUBLISHED CARD.
+
+     `starterRead` above answers WHO is playing. This answers what he has
+     actually done, and the two are separate because they fail separately: a
+     resolved starter with no measured history and an unresolved identity used
+     to come out of this packet as the same shrug, and they are not the same
+     statement.
+
+     Every field here was computed once, in football/fbs_epa/fbs_epa.js, and
+     written onto the card by the slate build. Nothing is recomputed here — a
+     browser that divides EPA by its own idea of a denominator is how one
+     surface ends up disagreeing with another. The card carries its own
+     sentences (`kind_means`, `state_means`, `pricing_statement`) so this
+     reader never has to invent one.
+
+     NOTHING HERE IS PRICED. `points_applied` comes off the card and is false:
+     the provider's EPA is not on the scale the engine's coefficient was
+     fitted against (football/fbs_epa/epa_contract.js). It is research
+     evidence for an explanation, exactly like the starter above.
+     --------------------------------------------------------------------- */
+  function qbEpaRead(card, side, SLATE) {
+    if (!card) return null;
+    var src = card.source || SLATE;
+    function meas(m, scope) {
+      if (!m) return null;
+      if (m.state !== 'MEASURED') {
+        return { state: fact(m.state, { source: src, basis: card.state_means || null }),
+          games: fact(m.games == null ? 0 : m.games, { source: src, unit: 'games' }),
+          epa_per_dropback: missingFact(
+            m.state === 'NO_OBSERVATIONS'
+              ? 'no FBS passing row in this history carries this athlete \u2014 an empty sample, never an average one'
+              : 'no game in this window carries an EPA total that reconciles against its own denominator', src) };
+      }
+      return {
+        state: fact('MEASURED', { source: src }),
+        games: fact(m.games, { source: src, unit: 'games' }),
+        dropbacks: fact(m.dropbacks, { source: src, unit: 'attempts + sacks' }),
+        epa_per_dropback: fact(m.epa_per_dropback, { source: src, unit: 'expected points per dropback',
+          n: m.dropbacks, observed_at: m.observed_through,
+          basis: scope + '; passing EPA only \u2014 scrambles are not in it and garbage time is' }),
+        yards_per_attempt: fact(m.yards_per_attempt, { source: src, unit: 'yards', n: m.attempts }),
+        sack_rate: fact(m.sack_rate, { source: src, unit: 'share of dropbacks', n: m.dropbacks,
+          basis: 'a joint measurement of the passer, his line and the opponent \u2014 never of the passer alone' }),
+        interception_rate: fact(m.interception_rate, { source: src, unit: 'share of attempts', n: m.attempts }),
+        first_season: fact(m.first_season, { source: src }),
+        seasons_observed: fact(m.seasons_observed, { source: src })
+      };
+    }
+    var id = card.identity || null;
+    return {
+      side: side,
+      state: fact(card.state, { source: src, basis: card.state_means || null }),
+      identity: id ? {
+        kind: fact(id.kind, { source: src, basis: id.kind_means || null }),
+        player: id.player ? fact(id.player, { source: id.source || src, observed_at: id.retrieved_at,
+          known_at: id.published_at || id.retrieved_at, note: id.source_url || null })
+          : missingFact('no single player is named by the evidence for this side', src),
+        confirmed: fact(id.confirmed === true, { source: src,
+          basis: id.confirmed === true ? 'an official source named him'
+            : 'NOT confirmed \u2014 it may not be narrated as an announcement' })
+      } : null,
+      career: meas(card.career, 'career to date, cut at this kickoff'),
+      season: meas(card.season, 'this season, cut at this kickoff'),
+      recent_5: meas(card.recent_5, 'his last five completed games, which may cross a season'),
+      vs_league: fact(card.vs_league, { source: src, unit: 'expected points per dropback',
+        basis: 'his career rate minus this season\u2019s league rate over every reconciled dropback' }),
+      league_epa_per_dropback: fact(card.league_epa_per_dropback, { source: src }),
+      team_pass_epa_per_play: fact(card.team_pass_epa_per_play, { source: src, n: card.team_games,
+        basis: 'an unweighted mean over the team\u2019s last five completed games, NOT opponent-adjusted' }),
+      opponent_allowed_pass_epa_per_play: fact(card.opponent_allowed_pass_epa_per_play,
+        { source: src, n: card.opponent_games,
+          basis: 'what this opponent has allowed over its last five completed games, NOT opponent-adjusted \u2014 '
+            + 'a defence that has faced weaker offences reads better here than it is' }),
+      coverage: card.coverage_state ? {
+        state: fact(card.coverage_state, { source: src, basis: card.coverage_means || null }),
+        games_without_passing_data: fact((card.games_without_passing_data || []).length,
+          { source: src, unit: 'completed games with no published passing row' })
+      } : null,
+      cutoff: fact(card.cutoff, { source: src, unit: 'ISO-8601 UTC',
+        basis: 'every measurement above is cut here; a game that had not finished is not inside it' }),
+      priced: fact(card.points_applied === true, { source: src,
+        basis: card.pricing_statement
+          || 'research context; it does not affect the fair line' })
+    };
+  }
+
   /* The input contract, in the seven states that are not the same thing. The
      old packet had one number for this and it was zero on every game. */
   function contractRead(row, SLATE) {
@@ -31143,6 +31250,39 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
             + '. Unknown is carried as unknown; it is never read as healthy.');
       });
     }
+    /* ---- what the quarterbacks have measurably done -------------------- */
+    var quarterback = row ? {
+      home: qbEpaRead(row.home_qb_epa, 'home', SLATE),
+      away: qbEpaRead(row.away_qb_epa, 'away', SLATE)
+    } : null;
+    if (row && !row.home_qb_epa && !row.away_qb_epa) {
+      gap('quarterback_efficiency', SPORT === NFL_SPORT
+        ? 'the NFL board carries no quarterback efficiency card on its rows'
+        : 'the published card carries no quarterback efficiency measurement for this game \u2014 '
+          + 'football/fbs_epa has published nothing for it, and no number is substituted');
+      quarterback = null;
+    }
+    if (quarterback) {
+      ['home', 'away'].forEach(function (k) {
+        var q = quarterback[k];
+        if (!q) return;
+        if (q.state.value === 'UNRESOLVED_IDENTITY') {
+          limits.push('No quarterback identity resolves for the ' + k + ' side, so there is nobody to measure. '
+            + 'That is an unresolved identity, not a quarterback without a history.');
+        } else if (q.career && q.career.state.value === 'NO_OBSERVATIONS') {
+          limits.push((q.identity && q.identity.player.value ? q.identity.player.value : 'The ' + k + ' quarterback')
+            + ' has thrown no FBS pass inside the measured history \u2014 an empty sample, never an average one.');
+        }
+        if (q.coverage && q.coverage.state.value === 'PARTIAL') {
+          limits.push('A completed game in this matchup has no published passing row yet, so nothing measured for '
+            + 'the ' + k + ' quarterback includes it. That is a publication gap, not a game that was not played.');
+        }
+        if (q.priced && q.priced.value === false && q.career && q.career.state.value === 'MEASURED') {
+          limits.push('The ' + k + ' quarterback\u2019s passing EPA is measured and is RESEARCH ONLY: '
+            + q.priced.basis);
+        }
+      });
+    }
     var contract = contractRead(row, SLATE);
     if (contract && num(row.input_coverage) != null && num(row.input_coverage) < 0.6) {
       limits.push('This projection is running on ' + Math.round(num(row.input_coverage) * 100)
@@ -31167,7 +31307,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       resolution: { state: res.state || null, how: res.how || null, named: res.named || [], source: res.source || SLATE },
       identity: identity, model: model, market: market, ratings: ratings,
       previous_games: previous, availability: availability,
-      starters: starters, input_contract: contract,
+      starters: starters, quarterback: quarterback, input_contract: contract,
       missing: missing, limits: uniq(limits.filter(Boolean)),
       status: {
         answerable: answerable,
@@ -43437,6 +43577,13 @@ function fbP4Ensure(){
     /* the v1.1 calibration and v1.2 experiment records are display-only and
        optional: they change no number, so a missing artifact must not gate
        the board */
+    /* THE QUARTERBACK EPA LAYER — the audit and the adapter, in that order.
+       Both are optional in exactly the way calibration.js is: they change no
+       number, so a missing file must never gate a board. What they add is a
+       measurement the college card has never carried, and the reason it is
+       still not priced. */
+    .then(function(){return fbScript('football/fbs_epa/epa_contract.js').catch(function(){});})
+    .then(function(){return fbScript('football/fbs_epa/fbs_epa.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/calibration.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/v12_correction.js').catch(function(){});})
     .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('FBS engine loaded but globals missing');
@@ -43881,6 +44028,10 @@ function fbP4Load(force,signal){
        game while the answer sits in a committed artifact. */
     fbStartersEnsure(cur);
     fbPersistenceEnsure();
+    /* the measured passing history that goes with the starter. Same shape of
+       promise, same rule: it feeds no number, and every card, brief and
+       newsletter item built from this board reads it. */
+    fbQbEpaEnsure(cur);
     var st=E.newState();
     if(!st)throw new Error('parameters did not produce a rating state');
     /* advance the seeded state season by season, absorbing real results */
@@ -44047,6 +44198,7 @@ function fbP4Load(force,signal){
     /* the starter artifact is small and already in flight; joining it here is
        what stops a brief built the instant the board resolves from racing it */
     lanes.push(fbStartersEnsure(S.season));
+    lanes.push(fbQbEpaEnsure(S.season));
     return Promise.all(lanes);
   }).then(function(){
     FB.p4.loadedAt=Date.now();
@@ -46155,6 +46307,102 @@ function fbP4AvailWhy(u){
     +'priced as maximum uncertainty and never as health.';
 }
 
+/* ── THE QUARTERBACKS ───────────────────────────────────────────────────
+   WHO is playing is the starter layer and it already had a home on this card.
+   WHAT HE HAS DONE had none, because until football/fbs_epa existed there was
+   nothing to put there: the check row said so on every game in the universe.
+
+   Everything below is read off the card football/fbs_epa/fbs_epa.js built —
+   the same object the research packet carries and the same one the AI is
+   handed. Nothing is recomputed here. Three things this block will not do:
+
+     * it will not call a measurement EPA that is not EPA. Yards per attempt,
+       sack rate and interception rate keep their own names;
+     * it will not show a rate without the sample it came off. "0.16 over 389
+       dropbacks" and "0.16 over 14" are different statements;
+     * it will not imply any of it reached the price. It did not, and the
+       footer says why in the audit's own words.
+   ───────────────────────────────────────────────────────────────────────── */
+function fbGxQbNum(v,dp){ return v==null?'<span class="gx-miss">—</span>':(+v).toFixed(dp==null?3:dp); }
+function fbGxQbSide(card,teamName){
+  if(!card)return '';
+  var id=card.identity||{};
+  var h='<div class="gx-qb-side"><div class="gx-qb-h">'+fbEsc(teamName)+'</div>';
+  if(card.state==='UNRESOLVED_IDENTITY'){
+    h+='<div class="gx-qb-un">No quarterback identity resolves for this side, so there is nobody to measure. '
+      +'That is an unresolved identity, not a quarterback without a history.</div></div>';
+    return h;
+  }
+  h+='<div class="gx-qb-nm">'+fbEsc(id.player||'unnamed')+'</div>';
+  h+='<div class="gx-qb-ev">'+fbEsc(id.kind_means||'')+'</div>';
+  if(id.label)h+='<div class="gx-qb-lb">'+fbEsc(id.label)+'</div>';
+  if(id.contested)h+='<div class="gx-qb-lb warn">The room is contested; this is the best-supported name, not the only one.</div>';
+  if(id.identity_corroborated===false)
+    h+='<div class="gx-qb-lb warn">His identity is not corroborated against this season’s roster.</div>';
+  var C=card.career,R=card.recent_5,S2=card.season;
+  if(!C||C.state!=='MEASURED'){
+    h+='<div class="gx-qb-un">'+fbEsc(card.state_means||'no measured passing history for this quarterback')
+      +'</div></div>';
+    return h;
+  }
+  function row(l,v,n,unit){
+    return '<div class="gx-qb-r"><span class="l">'+fbEsc(l)+'</span><span class="v">'+v+'</span>'
+      +'<span class="n">'+(n!=null?fbEsc(n+' '+unit):'')+'</span></div>';
+  }
+  h+='<div class="gx-qb-tbl">';
+  h+=row('Passing EPA / dropback · career',fbGxQbNum(C.epa_per_dropback),C.dropbacks,'dropbacks');
+  if(R&&R.state==='MEASURED')
+    h+=row('Passing EPA / dropback · last 5',fbGxQbNum(R.epa_per_dropback),R.dropbacks,'dropbacks');
+  if(S2&&S2.state==='MEASURED')
+    h+=row('Passing EPA / dropback · this season',fbGxQbNum(S2.epa_per_dropback),S2.dropbacks,'dropbacks');
+  h+=row('Yards per attempt · career',fbGxQbNum(C.yards_per_attempt,2),C.attempts,'attempts');
+  h+=row('Sack rate · career',C.sack_rate==null?'<span class="gx-miss">—</span>':(C.sack_rate*100).toFixed(1)+'%',
+    C.dropbacks,'dropbacks');
+  h+=row('Interception rate · career',C.interception_rate==null?'<span class="gx-miss">—</span>'
+    :(C.interception_rate*100).toFixed(1)+'%',C.attempts,'attempts');
+  if(card.team_pass_epa_per_play!=null)
+    h+=row('Team passing EPA / play · last 5',fbGxQbNum(card.team_pass_epa_per_play),card.team_games,'games');
+  if(card.opponent_allowed_pass_epa_per_play!=null)
+    h+=row('Opponent allows / play · last 5',fbGxQbNum(card.opponent_allowed_pass_epa_per_play),
+      card.opponent_games,'games');
+  h+='</div>';
+  var bits=[];
+  if(C.first_season!=null)bits.push('measured history begins '+C.first_season);
+  if(C.seasons_observed!=null)bits.push(C.seasons_observed+' season'+(C.seasons_observed===1?'':'s')+' observed');
+  if(card.vs_league!=null)bits.push((card.vs_league>=0?'+':'')+card.vs_league.toFixed(3)+' vs this season’s league rate');
+  if(bits.length)h+='<div class="gx-qb-ev">'+fbEsc(bits.join(' · '))+'</div>';
+  if(card.coverage_state==='PARTIAL')
+    h+='<div class="gx-qb-lb warn">'+fbEsc(card.coverage_means||'')+'</div>';
+  h+='</div>';
+  return h;
+}
+/* the loader lives with the other board artifacts, outside this module, and
+   this module is also run on its own by tools/app/game_research.test.js. Both
+   accesses are guarded for that reason and not defensively for its own sake. */
+function fbGxQbStore(){ try{ return (typeof FB!=='undefined'&&FB.qbEpa)?FB.qbEpa:null; }catch(_){ return null; } }
+function fbGxQbCard(u,which){
+  try{ return (typeof fbQbEpaCard==='function')?fbQbEpaCard(u,which):null; }catch(_){ return null; }
+}
+function fbGxQb(u){
+  var g=u&&u.g; if(!g)return '';
+  var store=fbGxQbStore();
+  if(!store||!store.data){
+    return '<div class="gx-qb-un">'+((store&&store.err)
+      ? fbEsc('The measured passing history could not be read this session ('+store.err+').')
+      : 'The measured passing history has not loaded for this season.')
+      +' Nothing is substituted for it.</div>';
+  }
+  var hc=fbGxQbCard(u,'home'),ac=fbGxQbCard(u,'away');
+  if(!hc&&!ac)return '';
+  var out='<div class="gx-qb">'+fbGxQbSide(ac,g.away_team)+fbGxQbSide(hc,g.home_team)+'</div>';
+  var st=(hc&&hc.pricing_statement)||(ac&&ac.pricing_statement)||'';
+  out+='<div class="gx-qb-foot"><b>Research context.</b> '+fbEsc(st)
+    +'. This is PASSING EPA per dropback — the passer’s attempts and sacks. Scrambles are not in it, garbage '
+    +'time is, and the expected-points model behind it is one published artifact scored onto every season. '
+    +'The team and opponent rates beside it are unweighted five-game means and are not opponent-adjusted.</div>';
+  return out;
+}
+
 /* ── RESEARCH CHECK ─────────────────────────────────────────────────────
    Derived from what actually reached the projection. No invented percentage
    sits behind any of these: each is a state the engine reported. */
@@ -46197,13 +46445,46 @@ function fbGxCheckRows(u,p){
     st('starting quarterback','AVAILABLE','');
   else if(stH&&stA)
     st('starting quarterback','RESEARCH',
-       stH+' / '+stA+fbGxQbRate(p)+'. The priced QB layer is still not fed from it — no feed EdgeDesk '
-       +'reads carries EPA per dropback for college football, so the QB layer has no value term — but how '
-       +'well the starter is known now reaches the data-confidence score, measured rather than assumed');
+       stH+' / '+stA+fbGxQbRate(p)+'. The priced QB layer is still not fed from it, but how well the starter '
+       +'is known now reaches the data-confidence score, measured rather than assumed');
   else if(stH||stA)
     st('starting quarterback','PARTIAL',(stH||stA)+' resolved; the other side has no starter record');
   else
     st('starting quarterback','UNKNOWN',fbGxStarterWhy());
+  /* THE MEASUREMENT, ON ITS OWN ROW AND FOR A DIFFERENT REASON.
+
+     This row used to be a clause inside the one above, and the clause said no
+     feed EdgeDesk reads carries EPA per dropback for college football. That
+     stopped being true: football/fbs_epa carries it for every FBS quarterback
+     from 2014, joined on the same athlete ids. The reason the QB layer still
+     contributes nothing changed with it, and it is narrower and better
+     evidenced — the provider's series is not on the scale the shipped
+     coefficient was fitted against. A row that keeps asserting the old reason
+     is worse than no row, so this one reads the audit rather than a
+     constant. */
+  var qeH=fbGxQbCard(u,'home'), qeA=fbGxQbCard(u,'away');
+  var qeStore=fbGxQbStore();
+  function meas(c){ return !!(c&&c.career&&c.career.state==='MEASURED'); }
+  var why='';
+  try{ var CT=window.EDFbsEpaContract;
+    why=CT?CT.pricingStatement('epa_per_dropback'):''; }catch(_){ why=''; }
+  if(!qeStore||!qeStore.data)
+    st('quarterback passing EPA','UNKNOWN',(qeStore&&qeStore.err)
+      ? ('the measured passing history could not be read this session ('+qeStore.err+')')
+      : 'the measured passing history has not loaded for this season');
+  else if(meas(qeH)&&meas(qeA))
+    st('quarterback passing EPA','RESEARCH',
+       qeH.career.epa_per_dropback.toFixed(3)+' over '+qeH.career.dropbacks+' career dropbacks / '
+       +qeA.career.epa_per_dropback.toFixed(3)+' over '+qeA.career.dropbacks+'. '+why
+       +' — the provider’s EPA comes from a different expected-points model, keeps garbage time, and its league '
+       +'average is not the engine’s replacement prior (football/fbs_epa/epa_contract.js)');
+  else if(meas(qeH)||meas(qeA))
+    st('quarterback passing EPA','PARTIAL',
+       'one side has a measured passing history; the other has none inside it — a true freshman, a transfer from '
+       +'outside FBS, or an unresolved identity, and it is reported as an empty sample rather than an average one');
+  else
+    st('quarterback passing EPA','UNKNOWN',
+       'neither quarterback has a measured FBS passing history inside this window');
   st('recruiting','MISSING','per-player star ratings are subscription data; no keyless feed carries them '
      +'and none is substituted');
   /* WEATHER, READ FROM THE MEASUREMENT RATHER THAN FROM THE BUNDLE.
@@ -46394,7 +46675,7 @@ window.fbGxToggle=function(gid,id){
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
-var FB_GX_DEFAULT={drivers:true,wrong:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false};
+var FB_GX_DEFAULT={drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -46659,6 +46940,8 @@ function fbP4Card(u){
       'who is playing, on one all-FBS scale')
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
     +fbGxSec(gid,'wrong','Why this number could be wrong',fbGxWrong(p),true)
+    +fbGxSec(gid,'qb','The quarterbacks · measured',fbGxQb(u),true,
+      'passing EPA per dropback, with the sample it came off — research context, not priced')
     +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
     +fbGxSec(gid,'scale','Model vs market',fbGxScale(u,p),true)
     +fbGxSec(gid,'detail','Model and market detail',L,false,'spreads, totals, moneyline, outcome range')
@@ -49190,6 +49473,42 @@ function fbPersistenceEnsure(){
     .catch(function(e){ FB.persistence.err=String(e&&e.message||e).slice(0,140); FB.persistence._p=null; return null; });
   return FB.persistence._p;
 }
+/* THE MEASURED QUARTERBACK, fetched once per season and read through the same
+   adapter node uses. football/fbs_epa/qb_epa_<season>.json carries dated game
+   rows rather than season totals, so the cut at a kickoff happens here in the
+   browser exactly as it happens in the builder and nothing can drift.
+
+   A failure to load is a normal state and is NOT an error the reader has to
+   interpret: the quarterback block is absent and the card says the history
+   could not be read, which is a different sentence from a quarterback with no
+   history. */
+FB.qbEpa = { data:null, err:null, _p:null, season:null };
+function fbQbEpaEnsure(season){
+  if(FB.qbEpa.data&&FB.qbEpa.season===season)return Promise.resolve(FB.qbEpa.data);
+  if(FB.qbEpa._p)return FB.qbEpa._p;
+  FB.qbEpa._p=fetch('football/fbs_epa/qb_epa_'+season+'.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('qb epa '+r.status); return r.json(); })
+    .then(function(j){ FB.qbEpa.data=j; FB.qbEpa.season=season; FB.qbEpa.err=null; FB.qbEpa._p=null; return j; })
+    .catch(function(e){ FB.qbEpa.err=String(e&&e.message||e).slice(0,140); FB.qbEpa._p=null; return null; });
+  return FB.qbEpa._p;
+}
+/* one side of one game, as the compact card every surface renders. Never
+   throws: the board renders in sessions where the artifact never loaded. */
+function fbQbEpaCard(u,which){
+  try{
+    var A=FB.qbEpa.data, X=window.EDFbsEpa;
+    if(!A||!X||!u||!u.g)return null;
+    var g=u.g;
+    var teamName=which==='home'?g.home_team:g.away_team;
+    var oppName=which==='home'?g.away_team:g.home_team;
+    var key=fbP4Key(teamName), opp=fbP4Key(oppName);
+    var rec=null; try{ rec=fbStarterFor(teamName); }catch(_){ rec=null; }
+    var kick=Date.parse(g.start_date||g.kickoff);
+    return X.cardForm(X.quarterback({ artifact:A, starter:rec, team_key:key, opponent_key:opp,
+      cutoff:isFinite(kick)?kick:Date.now(), side:which }));
+  }catch(_){ return null; }
+}
+
 function fbStartersEnsure(season){
   if(FB.starters.data&&FB.starters.season===season)return Promise.resolve(FB.starters.data);
   if(FB.starters._p)return FB.starters._p;

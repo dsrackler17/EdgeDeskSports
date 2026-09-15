@@ -31,6 +31,7 @@ const path = require('path');
 const HERE = __dirname;
 const ROOT = path.join(HERE, '..', '..');
 const PROF = require(path.join(HERE, 'profiles.js'));
+const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
 const SNAP = require(path.join(ROOT, 'tools', 'lib', 'snapshot_contract.js'));
 
 const SCHEMA = 'edgedesk_football_research_packet_v1';
@@ -69,6 +70,9 @@ function loadContext(opts) {
     profiles: opts.profiles || readJson(path.join(HERE, `profiles_${season}.json`), null),
     starters: opts.starters || readJson(path.join(ROOT, 'football', 'starters', `cfb_${season}.json`), null),
     params: opts.params || (typeof globalThis !== 'undefined' && globalThis.EDCfbP4Params) || null,
+    /* the quarterback artifact, so a packet built from a slate row that
+       predates the card can still answer the question rather than shrug */
+    fbs_epa: opts.fbs_epa || readJson(path.join(ROOT, 'football', 'fbs_epa', `qb_epa_${season}.json`), null),
     quotes: opts.quotes || []
   };
 }
@@ -438,6 +442,15 @@ function build(o) {
       away: starters.away ? summariseStarter(starters.away) : null,
       source: ctx.starters ? ('football/starters/cfb_' + ctx.season + '.json, generated ' + ctx.starters.generated_at) : null
     },
+    /* WHAT THE QUARTERBACK HAS ACTUALLY DONE. Identity is the starter block
+       above; this is the measurement, and the two are deliberately separate
+       objects because they can fail independently — a resolved starter with no
+       history and an unresolved identity are different sentences and used to
+       come out as the same shrug. Every number here carries its sample size,
+       its history boundary and one sentence on whether it touches the price.
+       It does not: football/fbs_epa/epa_contract.js is the audit and the
+       single flag, and the flag is false. */
+    quarterback: quarterbackSection(ctx, row),
     availability: {
       home: starters.home ? starters.home.availability : null,
       away: starters.away ? starters.away.availability : null,
@@ -470,6 +483,70 @@ function build(o) {
   };
 }
 
+/* The quarterback measurement, from the card the slate already carries when it
+   has one, and recomputed from the artifact when it does not. Both routes end
+   in the same object, and the prose comes from EPA.LEGEND so the packet, the
+   card and the AI use one wording. */
+function quarterbackSection(ctx, row) {
+  const legend = EPA.LEGEND;
+  function sideOf(side) {
+    let card = row ? row[side + '_qb_epa'] : null;
+    if (!card && ctx.fbs_epa) {
+      const key = row ? row[side + '_team_id'] : null;
+      const opp = row ? row[(side === 'home' ? 'away' : 'home') + '_team_id'] : null;
+      const rec = (ctx.starters && ctx.starters.teams) ? ctx.starters.teams[key] : null;
+      const kick = row ? Date.parse(row.kickoff) : NaN;
+      card = EPA.cardForm(EPA.quarterback({ artifact: ctx.fbs_epa, starter: rec, team_key: key,
+        opponent_key: opp, cutoff: isNum(kick) ? kick : Date.now(), side }));
+    }
+    if (!card) return null;
+    return {
+      team: row ? row[side + '_team'] : null,
+      state: card.state,
+      state_means: legend.states[card.state] || null,
+      identity: card.identity ? Object.assign({}, card.identity, {
+        kind_means: legend.identity_kinds[card.identity.kind] || null
+      }) : null,
+      career: card.career, season: card.season, recent_5: card.recent_5,
+      windows: legend.windows,
+      vs_league: card.vs_league,
+      league_epa_per_dropback: card.league_epa_per_dropback,
+      team_pass_epa_per_play: card.team_pass_epa_per_play,
+      team_games: card.team_games,
+      opponent_allowed_pass_epa_per_play: card.opponent_allowed_pass_epa_per_play,
+      opponent_games: card.opponent_games,
+      coverage: { state: card.coverage_state,
+        means: card.coverage_state ? (legend.states[card.coverage_state] || null) : null,
+        games_without_passing_data: card.games_without_passing_data || [] },
+      measurements: EPA.measurementsFromCard(card),
+      source: card.source, source_generated_at: card.source_generated_at, cutoff: card.cutoff
+    };
+  }
+  const home = sideOf('home'), away = sideOf('away');
+  if (!home && !away) {
+    return { available: false,
+      why: 'no quarterback efficiency artifact reached this packet — football/fbs_epa has published nothing for '
+        + 'this season, and no number is invented in its place' };
+  }
+  return {
+    available: true,
+    home, away,
+    bases: legend.bases,
+    pricing: legend.pricing,
+    source: (row && (row.qb_epa_source || null))
+      || (ctx.slate && ctx.slate.qb_epa_source) || 'football/fbs_epa',
+    freshness: (ctx.slate && ctx.slate.qb_epa_source && ctx.slate.qb_epa_source.freshness) || null,
+    limits: [
+      'this is PASSING EPA per dropback: the passer\u2019s attempts and sacks. Scrambles and designed '
+        + 'quarterback runs are not in it, so a running quarterback is measured here only from the pocket',
+      'garbage time is NOT excluded from it, and the provider\u2019s expected-points model is one artifact '
+        + 'scored onto every season rather than a model of each season as it was played',
+      'the team and opponent rates beside it are unweighted means over five games and are not opponent-adjusted',
+      'none of it moves the fair line'
+    ]
+  };
+}
+
 function summariseStarter(r) {
   return {
     status: r.status, confirmed: r.confirmed === true, label: r.label,
@@ -486,4 +563,4 @@ function summariseStarter(r) {
 }
 
 module.exports = { build, loadContext, arithmetic, ratingsReconciliation, disagreement,
-  unitStanding, bandFor, GAP_BANDS, SCHEMA, VERSION };
+  unitStanding, quarterbackSection, bandFor, GAP_BANDS, SCHEMA, VERSION };

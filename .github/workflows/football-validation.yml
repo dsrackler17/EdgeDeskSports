@@ -9,6 +9,14 @@
 # arms and prints them, without writing the registry, so drift is visible
 # without anything being promoted behind your back. Promotion happens when a
 # human dispatches this with `write: true` and reviews the diff.
+#
+# TWO KINDS OF ARM, ONE GATE. Most arms are rebuilt inside the walk-forward
+# below. The quarterback EPA experiment cannot be — it needs its own cold
+# replay of thirteen seasons and its own corpus — so it runs separately,
+# publishes football/cfb_p4/research/qb_epa.json, and this job folds that
+# artifact through the SAME promote.js rules rather than letting it grade
+# itself. `--external` refreshes only those arms and leaves every measured
+# verdict alone, which is what makes it safe to run without the full cache.
 name: Football feature validation
 
 on:
@@ -53,6 +61,18 @@ jobs:
           restore-keys: |
             football-feeds-
 
+      # The quarterback EPA experiment, re-run against the corpus if one is
+      # cached. Without a corpus it is skipped and the previously published
+      # artifact is what the gate reads — an absent experiment is an absent
+      # arm, never a pass.
+      - name: Re-run the quarterback EPA experiment, if its corpus is available
+        run: |
+          if [ -d football/data/cache/fbs_epa/corpus ]; then
+            node football/cfb_p4/research/fit_qb_epa.js
+          else
+            echo 'no FBS EPA corpus cached — the published qb_epa.json is what the gate will read'
+          fi
+
       - name: Walk forward
         run: |
           node --max-old-space-size=8192 football/validation/validate_features.js \
@@ -63,12 +83,20 @@ jobs:
             --cache .cache/football \
             ${{ github.event.inputs.write == 'true' && '--write' || '' }}
 
+      # The published experiments, through the same gate. Runs whether or not
+      # the heavy walk-forward above could rebuild its own arms, because it
+      # needs neither the cache nor the corpus — only the artifacts.
+      - name: Fold the external experiments into the registry
+        run: |
+          node football/validation/validate_features.js --external \
+            ${{ github.event.inputs.write == 'true' && '--write' || '' }}
+
       - name: Commit the registry, if this run was allowed to write one
         if: ${{ github.event.inputs.write == 'true' }}
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add football/validation/feature-status.json
+          git add football/validation/feature-status.json football/cfb_p4/research/qb_epa.json
           if git diff --cached --quiet; then echo 'registry unchanged'; exit 0; fi
           git commit -m "football: feature promotion registry"
           git push

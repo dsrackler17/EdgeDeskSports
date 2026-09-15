@@ -373,7 +373,8 @@ chk('this season is trusted more the more of it has been played',
      him off play attribution for most of the field, and he reaches the engine
      as `qb_context`, which only the information layer consumes. What must not
      happen is that record reaching `qb`, the PRICED input — the college QB
-     layer prices EPA per dropback, no feed publishes it, and
+     layer prices EPA per dropback, the published series is not on the scale
+     its coefficient was fitted on (football/fbs_epa/epa_contract.js), and
      PRICED_STARTER_STATUSES is the one switch for changing that. */
   chk('the priced QB input is still null on both sides',
     (app.match(/\bqb:null\b/g) || []).length >= 2, (app.match(/\bqb:null\b/g) || []).length);

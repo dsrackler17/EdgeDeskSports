@@ -58,6 +58,7 @@ const FBS = require(path.join(HERE, 'fbs.js'));
 const IN = require(path.join(ROOT, 'football', 'matchup', 'inputs.js'));
 const WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js'));
 const RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
+const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
 const P = global.EDCfbP4Params;
 
 const SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_${y}.csv`;
@@ -94,6 +95,7 @@ function parseCsv(text) {
   return rows.filter(r => r.length > 1).map(r => { const o = {}; head.forEach((h, i) => { o[h] = r[i] === undefined ? '' : r[i]; }); return o; });
 }
 const TRUE = v => /^(true|1|t|yes)$/i.test(String(v == null ? '' : v).trim());
+const readJson = (f, fb) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return fb; } };
 const NUM = v => { if (v == null || v === '') return null; const x = +v; return isFinite(x) ? x : null; };
 
 async function loadSeason(season, offline) {
@@ -196,9 +198,12 @@ function shadowEffect(base, sh, asm) {
       away: { baseline: st(base, 'away'), shadow: st(sh, 'away') } },
     why: (line === 0 && sig === 0)
       ? 'The resolved starter moved the engine\u2019s QB stability term off its "unknown starter" floor and moved '
-        + 'nothing the engine prices. Two reasons, both structural and both documented: no feed this repository '
-        + 'reads carries EPA per dropback for college football, so the QB layer\u2019s VALUE term has no input and '
-        + 'contributes no points; and the trained volatility model kept exactly one driver (early_season), so '
+        + 'nothing the engine prices. Two reasons, both structural and both documented. The QB layer\u2019s VALUE '
+        + 'term prices EPA per dropback, and while that measurement now EXISTS for college football \u2014 '
+        + 'football/fbs_epa carries it for every FBS quarterback from 2014 \u2014 the audit in '
+        + 'football/fbs_epa/epa_contract.js establishes that the provider\u2019s series is not on the scale the '
+        + 'shipped coefficient was fitted against, so it is published as research and the term still contributes '
+        + 'no points. And the trained volatility model kept exactly one driver (early_season), so '
         + 'qb_uncertainty carries '
         + (qbLambda == null ? 'no coefficient at all' : ('a coefficient of ' + qbLambda))
         + ' and cannot widen or narrow the distribution either. The starter context is therefore research '
@@ -472,6 +477,10 @@ async function main() {
     const unc = (p && p.layers && p.layers.uncertainty && p.layers.uncertainty.context) || null;
     const asm = (p && p.assembly) || null;
     const sh = (p && p.shadow) || null;
+    const qbEpaCard = (side) => {
+      const pk = asm && asm.qb_epa && asm.qb_epa[side];
+      return pk ? EPA.cardForm(pk) : null;
+    };
     const starter = (side) => {
       const r = asm && asm.starters && asm.starters[side];
       if (!r) return null;
@@ -516,6 +525,14 @@ async function main() {
       input_contract_summary: asm ? asm.summary : null,
       home_starter: starter('home'),
       away_starter: starter('away'),
+      /* THE MEASURED QUARTERBACK, in the compact form every surface renders.
+         The board, the research card, the newsletter and the AI all read
+         these two objects rather than each computing a rate from somewhere
+         else, and `qb_epa_legend` on the artifact carries the prose once so
+         152 of these do not each carry a paragraph. Research context: none of
+         it is inside the projection above. */
+      home_qb_epa: qbEpaCard('home'),
+      away_qb_epa: qbEpaCard('away'),
       /* the unvalidated experiment, kept apart from the priced number and
          never published as one */
       shadow_model_version: sh && sh.status === 'PREDICTED' ? 'edgedesk_cfb_p4_v1.0.0+starter_context_v1' : null,
@@ -553,6 +570,22 @@ async function main() {
     },
     p4_scope: universe.p4,
     conferences: universe.conferences,
+    /* the sentences that belong to the quarterback cards, carried ONCE */
+    qb_epa_legend: EPA.LEGEND,
+    qb_epa_source: (() => {
+      const ix = readJson(path.join(ROOT, 'football', 'fbs_epa', 'index.json'), null);
+      if (!ix) return { state: 'ABSENT', why: 'football/fbs_epa has published no artifact' };
+      return { season: ix.season, generated_at: ix.generated_at,
+        freshness: EPA.freshness(ix, Date.now()),
+        source_commit: ix.source ? ix.source.commit : null,
+        coverage: { completed_games: ix.coverage.completed_by_cutoff,
+          with_passing_data: ix.coverage.completed_games_with_passing_data,
+          passer_rows: ix.coverage.passer_rows,
+          passer_rows_with_athlete_id: ix.coverage.passer_rows_with_athlete_id,
+          starters: ix.coverage.starters || null },
+        priced_input: ix.contract.priced_input,
+        why_not_priced: ix.contract.summary };
+    })(),
     market_note: 'Market quotes are joined live in the browser from captured signals and cfb.lines. '
       + 'This offline artifact carries the slate, the identities and the model states only; it never '
       + 'invents a line, and a game with no quote is NO MARKET on the board rather than a zero here.',
