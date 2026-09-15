@@ -63,6 +63,16 @@ on:
       - 'tools/capture/**'
       - 'supabase/*.sql'
       - '.github/workflows/collective-tests.yml'
+      # THE TWO JOBS THAT BUILD THE FOOTBALL ARTIFACTS. Changing either got no
+      # CI at all: neither carries a `pull_request` trigger, and neither was in
+      # any other workflow's path list, so a pull request touching only one of
+      # them came back with ZERO check runs. That is how this file's own commit
+      # step shipped a `git add` that silently dropped two artifact directories
+      # — nothing was red because nothing ran. Five workflows in this
+      # repository already list their own file this way; these two now do too,
+      # through the suite that can actually execute something.
+      - '.github/workflows/football-weekly-build.yml'
+      - '.github/workflows/starter-context.yml'
   pull_request:
     paths:
       - 'app.html'
@@ -115,6 +125,16 @@ on:
       - 'tools/capture/**'
       - 'supabase/*.sql'
       - '.github/workflows/collective-tests.yml'
+      # THE TWO JOBS THAT BUILD THE FOOTBALL ARTIFACTS. Changing either got no
+      # CI at all: neither carries a `pull_request` trigger, and neither was in
+      # any other workflow's path list, so a pull request touching only one of
+      # them came back with ZERO check runs. That is how this file's own commit
+      # step shipped a `git add` that silently dropped two artifact directories
+      # — nothing was red because nothing ran. Five workflows in this
+      # repository already list their own file this way; these two now do too,
+      # through the suite that can actually execute something.
+      - '.github/workflows/football-weekly-build.yml'
+      - '.github/workflows/starter-context.yml'
   workflow_dispatch:
 
 permissions:

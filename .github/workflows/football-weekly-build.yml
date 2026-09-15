@@ -359,14 +359,21 @@ jobs:
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add football/players/current.json football/players/index.json \
+          # -A OVER THE PATHS, for the reason starter-context.yml and
+          # availability-sync.yml already say out loud: `git add a b c` stages
+          # NOTHING if any one path is missing, and a new artifact's first run
+          # is exactly when one is. This job regenerates the stadium geography
+          # and the coaching table; without them listed it rebuilt both every
+          # week and committed neither.
+          git add -A -- football/players/current.json football/players/index.json \
                   football/players/params.js football/players/teams \
                   football/players/snapshots football/players/candidates \
                   football/data/box football/rankings/current.json \
                   football/rankings/snapshots football/rankings/params.js \
                   football/rankings/history.json football/rankings/health.json \
                   football/fbs/coverage.json football/fbs/slate.json \
-                  football/starters football/matchup
+                  football/starters football/matchup \
+                  football/venues football/coaching
           if git diff --cached --quiet; then
             echo 'nothing changed — quiet day, no commit'
             exit 0
@@ -374,4 +381,16 @@ jobs:
           SEASON=$(node -p "require('./football/rankings/current.json').season")
           WEEK=$(node -p "require('./football/rankings/current.json').week_label")
           git commit -m "football: ${SEASON} ${WEEK} ratings and rankings"
-          git push
+          # AND THE PUSH RETRIES, because this repository pushes to main from
+          # several scheduled jobs and they overlap. This one raced the model
+          # health job, was rejected non-fast-forward, and failed the whole
+          # weekly build over a two-second overlap after every test had
+          # passed. starter-context.yml and availability-sync.yml already
+          # retry with a rebase; this is the same loop.
+          for i in 1 2 3 4; do
+            git push origin HEAD:"${GITHUB_REF_NAME}" && exit 0
+            git pull --rebase origin "${GITHUB_REF_NAME}" || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the weekly artifacts after 4 attempts'
+          exit 1
