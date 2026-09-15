@@ -186,8 +186,48 @@ async function doctor(opts) {
         `the newest capture on an upcoming game is ${age} old, against a ${limit}-minute limit `
         + `for a game starting in ${hrsToKick < 24 ? hrsToKick.toFixed(1) + ' hours' : (hrsToKick / 24).toFixed(1) + ' days'}`,
         ageMin <= limit ? null
-          : 'Nothing is calling capture on cadence. Apply supabase/capture_cron.sql and check '
+          : 'Nothing is calling capture on cadence. Read the next check first — it says whether capture is '
+            + 'refusing its callers or simply not being called. Then apply supabase/capture_cron.sql and check '
             + 'cron.job_run_details; the GitHub backup is .github/workflows/capture.yml.');
+    }
+  }
+
+  /* ---- 3b. is capture ABLE to accept its scheduler? ---------------------
+     A stale board has two completely different causes that look identical
+     from the signals table: nothing is CALLING capture, or everything is
+     calling it and capture is REFUSING them all. The second happens whenever
+     the function is deployed without CRON_SECRET, and it is invisible to
+     every other check here — pg_cron reports a successful HTTP POST, the
+     workflow reports a 401 nobody reads, and the board just stops filling.
+
+     Capture says which one it is in the body of its own 401, so this asks it.
+     The request carries NO credential on purpose: the auth gate is the first
+     thing in the handler and `CRON_SECRET !== ""` is the left side of its
+     &&, so an unauthenticated call is refused on both branches and can never
+     reach a sport list, an odds request or a write. It costs one 401. */
+  {
+    const cap = await get(`${url}/functions/v1/capture`, {}, 8000);
+    let reason = '';
+    try { reason = String((JSON.parse(cap.text) || {}).reason || ''); } catch (_) { /* below */ }
+    if (cap.status === 0) {
+      add('capture can accept its scheduler', 'UNKNOWN', cap.error || 'no response');
+    } else if (cap.status === 404) {
+      add('capture can accept its scheduler', 'NOT_DEPLOYED',
+        `HTTP 404 from ${url}/functions/v1/capture`,
+        'supabase functions deploy capture --no-verify-jwt');
+    } else if (cap.status === 401 && /CRON_SECRET is not set/.test(reason)) {
+      add('capture can accept its scheduler', 'MISSING',
+        'capture is deployed but holds no CRON_SECRET, so it refuses EVERY caller including pg_cron and '
+        + '.github/workflows/capture.yml. This alone empties the board; no amount of scheduling fixes it.',
+        'supabase secrets set CRON_SECRET=<value>, then set the same value as edgedesk.cron_secret for the '
+        + 'database (supabase/capture_cron.sql step 3) and as the CAPTURE_CRON_SECRET Actions secret.');
+    } else if (cap.status === 401) {
+      add('capture can accept its scheduler', 'ARMED',
+        'capture holds a CRON_SECRET and refused this unauthenticated probe, which is correct. The function '
+        + 'side is healthy, so a stale board above is a caller that is not firing or not matching.');
+    } else {
+      add('capture can accept its scheduler', 'UNKNOWN',
+        `HTTP ${cap.status} from capture rather than the expected 401`);
     }
   }
 

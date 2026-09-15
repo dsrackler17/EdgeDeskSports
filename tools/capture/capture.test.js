@@ -912,7 +912,22 @@ function ev(bookmakers, over) {
       chk('a backup scheduler is committed', fs.existsSync(wf));
       const y = fs.readFileSync(wf, 'utf8');
       chk('the backup fails loudly when its secrets are missing rather than exiting green',
-        /::error::SB_URL and CAPTURE_CRON_SECRET/.test(y) && /exit 1/.test(y));
+        /::error::missing Actions repository secret/.test(y) && /exit 1/.test(y));
+      /* NAMING THE ONE THAT IS MISSING. This used to fail with "SB_URL and
+         CAPTURE_CRON_SECRET are not both set", which sends an operator to
+         audit two secrets when only one is absent — and on 2026-09-15 SB_URL
+         was present (games-settle.yml reported the credential) while
+         CAPTURE_CRON_SECRET was not, so the run said nothing useful. */
+      chk('and names which secret is missing rather than listing both',
+        /MISSING="\$MISSING SB_URL"/.test(y) && /MISSING="\$MISSING CAPTURE_CRON_SECRET"/.test(y));
+      /* A missing Actions secret and a function deployed without CRON_SECRET
+         look identical from here and have opposite fixes, so the preflight
+         asks capture which one it is. The probe must carry no secret: capture
+         401s before it reads a sport list, so this can never spend quota. */
+      chk('and asks capture whether the FUNCTION is missing its secret too',
+        /functions\/v1\/capture\?probe=1/.test(y) && /CRON_SECRET is not set on this function/.test(y));
+      chk('and that preflight probe sends no cron secret of its own',
+        (y.match(/-H "x-cron-secret:/g) || []).length === 1);
       chk('and fails when capture answers anything other than 200',
         /CODE" != "200"/.test(y));
       chk('the backup carries no odds key and no service role',
