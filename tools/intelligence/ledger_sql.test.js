@@ -42,6 +42,19 @@ chk('the reporting view never sums forward and backtest', /group by r\.mode/.tes
 chk('the view counts pushes into the stake but not the win rate',
   /amount_staked/.test(SQL) && /result in \('win','loss'\)\)/.test(SQL));
 chk('the view flags an insufficient sample', /sufficient_sample/.test(SQL));
+/* APPLYING IT IS NOT THE LAST STEP, AND THAT COST A RELEASE.
+   A live run created the table, the indexes, the triggers, the policies and the
+   view and committed cleanly — and the deployment doctor one second later still
+   reported NOT_APPLIED, because PostgREST caches the schema in memory and had
+   started before the table existed. Everything that touches this table goes
+   through PostgREST, the edge function's insert included, so the migration
+   looked perfect and the ledger stayed invisible to the only clients that use
+   it. The reload has to be part of the migration, not folklore. */
+chk('the migration tells PostgREST to reload its schema cache',
+  /notify\s+pgrst\s*,\s*'reload schema'/i.test(SQL));
+chk('and does so AFTER the transaction commits, so it fires on durable state',
+  SQL.lastIndexOf('commit;') < SQL.toLowerCase().lastIndexOf("notify pgrst"));
+
 chk('official corrections are an appended kind, not an edit',
   /check \(kind in \('RECOMMENDATION','UPDATE','CORRECTION'\)\)/.test(SQL));
 chk('a correction must name its target, its reason and its source',
