@@ -618,11 +618,66 @@ function ev(bookmakers, over) {
   /* ═══ THE FUNNEL IS MONOTONIC ═══════════════════════════════════════════ */
   {
     chk('every rejection reason is mapped to a funnel stage',
-      Object.keys(M.STAGE_OF_REASON).length >= 20 && M.STAGE_OF_REASON.ok === M.FUNNEL_STAGES.length - 1);
+      Object.keys(M.STAGE_OF_REASON).length >= 20);
     chk('an unmapped reason reports zero stages rather than a phantom pass',
       M.stagesPassed('a_reason_nobody_added') === 0);
     chk('reaching the edge floor means every earlier gate was cleared',
       M.stagesPassed('below_segment_edge_floor') > M.stagesPassed('best_price_stale'));
+
+    /* THE LAST STAGE HAS TO BE REACHABLE.
+       `ok` mapped to the INDEX of the final stage (9) while the handler counts
+       `for (s = 0; s < stagesPassed(reason); s++)`, so a candidate that cleared
+       every gate registered on the first nine stages and left `actionable` at
+       zero — for ever, on every run. The funnel's last row contradicted the
+       `funnel.actionable` counter printed beside it, in the one report that
+       exists to answer "why is the board empty". This replays the handler's own
+       loop rather than asserting on the constant, so the guard survives a
+       reshuffle of the table. */
+    chk('a verdict that clears every gate clears ALL of them, the last included',
+      M.stagesPassed('ok') === M.FUNNEL_STAGES.length, [M.stagesPassed('ok'), M.FUNNEL_STAGES.length]);
+    {
+      const counts = M.FUNNEL_STAGES.map(() => 0);
+      for (let s = 0; s < M.stagesPassed('ok'); s++) counts[s]++;
+      chk('so one actionable candidate registers on the actionable stage',
+        counts[counts.length - 1] === 1, counts);
+      chk('and the funnel stays monotonically non-increasing',
+        counts.every((n, i) => i === 0 || n <= counts[i - 1]), counts);
+    }
+    {
+      /* A rejection must NOT reach the stage that refused it. below_quality_floor
+         stops at `quality_floor`, so that stage counts the ones that cleared it. */
+      const counts = M.FUNNEL_STAGES.map(() => 0);
+      for (let s = 0; s < M.stagesPassed('below_quality_floor'); s++) counts[s]++;
+      chk('a rejection does not credit itself with the gate that refused it',
+        counts[M.FUNNEL_STAGES.indexOf('quality_floor')] === 0
+        && counts[M.FUNNEL_STAGES.indexOf('persistence')] === 1, counts);
+    }
+  }
+
+  /* ═══ THE CADENCE TIER IS A NAME, NOT A LOOKUP ══════════════════════════ */
+  {
+    const base = M.defaultConfig(() => undefined);
+    for (const t of ['near', 'day', 'board']) {
+      const r = M.applyCadenceTier(base, t);
+      chk('the ' + t + ' tier resolves and carries its own window',
+        r.tier === t && Number.isFinite(r.cfg.nearHours) && Number.isFinite(r.cfg.maxDaysToStart),
+        [t, r.cfg.nearHours, r.cfg.maxDaysToStart]);
+    }
+    chk('an unknown tier degrades to the environment window rather than to nothing',
+      M.applyCadenceTier(base, 'nonsense').tier === null);
+    /* `tier` is a query parameter. A bare CADENCE_TIERS[name] lookup also finds
+       what the object INHERITS, and `constructor` survives toLowerCase(): it
+       resolved to Object.prototype.constructor, reported itself as a real tier,
+       and spread `maxDaysToStart: undefined` over the config — which silently
+       disabled the actionable horizon, because every comparison against NaN is
+       false and a game a month out stopped being beyond it. */
+    for (const evil of ['constructor', '__proto__', 'hasownproperty']) {
+      const r = M.applyCadenceTier(base, evil);
+      chk('an inherited property name is not a cadence tier: ' + evil,
+        r.tier === null && r.cfg.maxDaysToStart === base.maxDaysToStart
+        && r.cfg.nearHours === base.nearHours,
+        [evil, r.tier, r.cfg.maxDaysToStart]);
+    }
   }
 
   /* ═══ 22-25 — THE HANDLER ═══════════════════════════════════════════════ */

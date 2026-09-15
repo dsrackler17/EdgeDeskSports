@@ -44,6 +44,20 @@ function expectedBuild() {
   return m ? m[1] : null;
 }
 
+/** The same question for capture, which stamps its build into every response it
+    gives — including the 401 it answers an unauthenticated probe with. So the
+    deployed-versus-merged question is answerable for capture with no credential
+    at all, and it is worth asking: capture is deployed by hand, and a board that
+    stopped filling because the fix for it was merged and never deployed looks
+    exactly like a board that stopped filling for any other reason. */
+function expectedCaptureBuild() {
+  try {
+    const src = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'capture', 'index.ts'), 'utf8');
+    const m = /export const BUILD = "([^"]+)"/.exec(src);
+    return m ? m[1] : null;
+  } catch (_) { return null; }
+}
+
 async function get(url, headers, timeoutMs) {
   const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs || 12000) : null;
@@ -207,8 +221,24 @@ async function doctor(opts) {
      reach a sport list, an odds request or a write. It costs one 401. */
   {
     const cap = await get(`${url}/functions/v1/capture`, {}, 8000);
-    let reason = '';
-    try { reason = String((JSON.parse(cap.text) || {}).reason || ''); } catch (_) { /* below */ }
+    let reason = '', servingBuild = '';
+    try {
+      const j = JSON.parse(cap.text) || {};
+      reason = String(j.reason || '');
+      servingBuild = String(j.build || '');
+    } catch (_) { /* below */ }
+
+    /* Capture stamps its build into the 401, so the merged-is-not-deployed
+       question is answerable here for free. Only asked when it answered. */
+    const wantCap = expectedCaptureBuild();
+    if (servingBuild && wantCap) {
+      add('deployed capture matches this checkout',
+        servingBuild === wantCap ? 'CURRENT' : 'STALE',
+        servingBuild === wantCap ? `both are ${wantCap}`
+          : `deployed ${servingBuild}, this checkout would deploy ${wantCap}`,
+        servingBuild === wantCap ? null : 'supabase functions deploy capture --no-verify-jwt');
+    }
+
     if (cap.status === 0) {
       add('capture can accept its scheduler', 'UNKNOWN', cap.error || 'no response');
     } else if (cap.status === 404) {
@@ -261,7 +291,7 @@ async function doctor(opts) {
   return out;
 }
 
-module.exports = { doctor, expectedBuild };
+module.exports = { doctor, expectedBuild, expectedCaptureBuild };
 
 if (require.main === module) {
   doctor().then((r) => {

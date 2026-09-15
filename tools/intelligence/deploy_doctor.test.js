@@ -29,8 +29,10 @@ const WANT = D.expectedBuild();
    default so the fifteen cases that are about something else keep their old
    verdicts; a test that is about capture's own secret lists its own entry,
    which is matched first. */
+const CAP_BUILD = D.expectedCaptureBuild();
 const CAPTURE_ARMED = ['/functions/v1/capture',
-  { status: 401, body: '{"ok":false,"error":"unauthorized","reason":"the x-cron-secret header did not match CRON_SECRET."}' }];
+  { status: 401, body: JSON.stringify({ ok: false, build: CAP_BUILD, error: 'unauthorized',
+    reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }];
 
 /** Answer every URL from a table of {match: response}. */
 function net(table) {
@@ -144,6 +146,37 @@ const OK_BOARD = signals(40, 144);
     net([...base, OK_BOARD, ['/functions/v1/capture', { throw: 'network unreachable' }]]);
     eq('an unreachable capture is UNKNOWN rather than an accusation',
       stateOf(await D.doctor(OPTS), 'capture can accept its scheduler'), 'UNKNOWN');
+
+    /* MERGED IS NOT DEPLOYED, FOR CAPTURE TOO. It is deployed by hand and it
+       stamps its build into every response including the 401, so this costs
+       nothing extra and catches the case where the fix for an empty board was
+       merged and never deployed — which looks exactly like every other cause. */
+    net([...base, OK_BOARD]);
+    let d = await D.doctor(OPTS);
+    eq('a capture serving this checkout is CURRENT',
+      stateOf(d, 'deployed capture matches this checkout'), 'CURRENT');
+
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 401, body: JSON.stringify({
+      ok: false, build: 'capture-v8-sharp', error: 'unauthorized',
+      reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }]]);
+    d = await D.doctor(OPTS);
+    eq('an older capture still serving is STALE',
+      stateOf(d, 'deployed capture matches this checkout'), 'STALE');
+    chk('and names both builds and the deploy command',
+      /capture-v8-sharp/.test(detailOf(d, 'deployed capture matches this checkout'))
+      && detailOf(d, 'deployed capture matches this checkout').indexOf(CAP_BUILD) >= 0
+      && /functions deploy capture/.test((d.checks.find((c) => c.name === 'deployed capture matches this checkout') || {}).fix || ''),
+      detailOf(d, 'deployed capture matches this checkout'));
+    eq('and a stale capture is action, not an unknown', d.verdict, 'ACTION NEEDED');
+    eq('while its auth state is still read independently',
+      stateOf(d, 'capture can accept its scheduler'), 'ARMED');
+
+    /* A capture too old to stamp a build must not be reported as matching. */
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 401, body: '{"ok":false,"error":"unauthorized"}' }]]);
+    d = await D.doctor(OPTS);
+    chk('a capture that reports no build at all makes no build claim either way',
+      d.checks.every((c) => c.name !== 'deployed capture matches this checkout'),
+      d.checks.map((c) => c.name).join(', '));
   }
 
   chk('the expected build is read from the function source', /^edgedesk_ai-\d{4}-/.test(String(WANT)), WANT);
