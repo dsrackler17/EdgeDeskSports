@@ -82,6 +82,9 @@ function load(opts) {
   const out = { season, loaded_at: new Date().toISOString(), problems: [] };
 
   const P = opts.params || (typeof globalThis !== 'undefined' && globalThis.EDCfbP4Params) || null;
+  /* carried on the ctx so buildRequest can ask the PARAMETERS which layers
+     are priced, rather than a constant in this file drifting from them */
+  out.params = P;
   out.venues = (P && P.universe && P.universe.venues) || {};
   /* THE INJECTION POINT for a venue the trained table predates — a programme
      that moved up to FBS after the table was built. It is a committed file
@@ -116,6 +119,31 @@ function load(opts) {
       out.roster_note = `${built.teams} teams, ${built.with_continuity} with continuity vs ${season - 1}`;
     } else { out.rosters = {}; out.problems.push(`football/rosters/fbs_${season}_espn.json is missing — the talent layer is blind`); }
   } catch (e) { out.rosters = {}; out.problems.push('roster bundles could not be built: ' + ((e && e.message) || e)); }
+
+  /* THE PLAYER LAYER, merged into those bundles.
+
+     The roster sync measures WHO IS ON THE ROSTER and who was there last year
+     — continuity, portal flow, class mix. It has never measured HOW GOOD THEY
+     ARE, and said so by shipping overall_talent: null on every programme.
+     football/players/current.json has measured exactly that, weekly, for all
+     138 of them, since long before this assembly existed; the two files were
+     simply never joined, so the engine's talent layer reported empty next to
+     a committed file that answers it. */
+  out.player_layer = null;
+  out.roster_quality = null;
+  try {
+    const RQ = require(path.join(ROOT, 'football', 'players', 'roster_quality.js'));
+    const layer = readJson(path.join(ROOT, 'football', 'players', 'current.json'), null);
+    if (layer) {
+      const merged = RQ.merge(out.rosters, layer, (opts.normKey || normKey));
+      out.rosters = merged.bundles;
+      out.player_layer = { season: layer.season, week: layer.week, generated_at: layer.generated_at,
+        player_count: layer.player_count, rated_with_production: layer.rated_with_production,
+        quality: layer.quality || null };
+      out.roster_quality = { teams: merged.teams, as_of: merged.as_of, source: merged.source,
+        filled: merged.filled, note: merged.note };
+    } else out.problems.push('football/players/current.json is missing — no roster carries a talent composite');
+  } catch (e) { out.problems.push('the player layer could not be merged: ' + ((e && e.message) || e)); }
 
   /* the college availability layer */
   const av = readJson(path.join(ROOT, 'football', 'availability', 'current.json'), null);
@@ -170,6 +198,26 @@ const AVAIL_TO_ENGINE = { OUT: 'out', DOUBTFUL: 'doubtful', QUESTIONABLE: 'quest
 function injuriesFor(ctx, teamName) {
   const t = ctx.availability_by_team[normKey(teamName)];
   if (!t) return null;
+  /* THE GATE THIS FUNCTION WAS MISSING, and the reason football/fbs/slate.json
+     published a higher completeness than the board on screen for the same game
+     out of the same files.
+
+     The availability layer grades its own read: STRONG and PARTIAL mean
+     sources answered, LIMITED means EdgeDesk asked and got nothing usable
+     back, NONE means it could not ask. Returning [] for a LIMITED team hands
+     the engine "a report saying everybody is available" with confidence 0.6 —
+     and in the current dataset that statement would be made about all 138 FBS
+     programmes at once, on the strength of two sources returning 403/404 and a
+     third answering with an empty list. That is not a clean injury report. It
+     is no injury report, and the distinction this module's own comment calls
+     non-negotiable is only protected if the QUALITY of the read is honoured
+     and not just its presence.
+
+     So the same gate the terminal applies is applied here. It makes the
+     published completeness number smaller and makes it true, and it makes the
+     offline artifact agree with the screen instead of contradicting it. */
+  const q = String(t.dataQuality || t.data_quality || 'NONE').toUpperCase();
+  if (q === 'NONE' || q === 'LIMITED') return null;
   const out = [];
   (t.players || []).forEach(p => {
     const st = AVAIL_TO_ENGINE[String(p.status || '').toUpperCase()];
@@ -256,10 +304,26 @@ function buildRequest(ctx, o) {
 
   /* ---- weather ------------------------------------------------------ */
   const wx = ctx.weather[String(g.game_id)] || null;
+  /* A FORECAST THAT REACHES EDGEDESK IS NOT A FORECAST THE MODEL PRICES.
+     params.js ships `unavailable_by_design.weather_coefficients` — no
+     historical weather series exists in this corpus, so no coefficient was
+     earned and supplied weather "cannot move the total". The row was USABLE
+     anyway, and USABLE sets priced: true, so `priced_input_coverage` was
+     counting a field the parameters themselves say prices nothing. That is
+     the same overstatement the starter row avoids by being RESEARCH_ONLY, and
+     it is read from the parameters rather than hard-coded here so the day a
+     coefficient IS earned this row upgrades itself. */
+  const P_ = ctx.params || (typeof globalThis !== 'undefined' && globalThis.EDCfbP4Params) || null;
+  const wxPriced = !!(P_ && P_.weather);
+  const wxWhy = (P_ && P_.unavailable_by_design && P_.unavailable_by_design.weather_coefficients) || null;
   if (dome) contract.push(row('weather', null, 'NOT_APPLICABLE',
     { detail: (vh.name || 'an indoor venue') + ' is a dome — weather is neutralised, not missing' }));
-  else if (wx) contract.push(row('weather', null, hoursSince(wx.as_of, now) > 12 ? 'STALE' : 'USABLE',
-    { source: ctx.weather_source || 'venue weather', as_of: wx.as_of, age_hours: hoursSince(wx.as_of, now) }));
+  else if (wx) contract.push(row('weather', null,
+    hoursSince(wx.as_of, now) > 12 ? 'STALE' : (wxPriced ? 'USABLE' : 'RESEARCH_ONLY'),
+    { source: ctx.weather_source || 'venue weather', as_of: wx.as_of, age_hours: hoursSince(wx.as_of, now),
+      detail: wxPriced ? null
+        : ('retrieved and shown, and it narrows the weather uncertainty term, but it moves no points: '
+          + (wxWhy || 'no weather coefficient was earned on this corpus')) }));
   else if (!vh) contract.push(row('weather', null, 'UNAVAILABLE',
     { detail: 'the venue has no coordinates in the trained table, so no forecast can be located for it' }));
   /* THREE DIFFERENT SENTENCES, because "no weather" had been doing the work of
@@ -296,9 +360,45 @@ function buildRequest(ctx, o) {
         detail: 'the sources were read and named nobody — a report of no absences, which is not the same as no report' }));
     else if (!isFbs) contract.push(row('availability', side, 'NOT_APPLICABLE',
       { detail: `${name} is outside the FBS availability registry` }));
-    else contract.push(row('availability', side, 'UNAVAILABLE',
-      { source: 'EdgeDesk college availability layer',
-        detail: `no source EdgeDesk reads answered for ${name}; the engine prices this as maximum injury uncertainty, never as healthy` }));
+    else {
+      /* WHY THE READ FAILED, not just that it did. The registry grades every
+         team's read and records which sources refused; a row that says only
+         "unavailable" sends the next person to look for a bug in this file
+         instead of at the two endpoints that are actually returning 403. */
+      const t = ctx.availability_by_team[normKey(name)] || null;
+      const q = t ? String(t.dataQuality || t.data_quality || 'NONE').toUpperCase() : null;
+      const failed = t && isNum(t.sources_failed) ? t.sources_failed : null;
+      const checked = t && isNum(t.sources_checked) ? t.sources_checked : null;
+      contract.push(row('availability', side, q === 'LIMITED' ? 'FETCH_FAILED' : 'UNAVAILABLE',
+        { source: 'EdgeDesk college availability layer', as_of: ctx.availability_as_of,
+          detail: !t
+            ? `${name} is not in the availability registry; the engine prices this as maximum injury uncertainty, never as healthy`
+            : `EdgeDesk read ${checked == null ? 'the'  : checked} source(s) for ${name} and ${failed ? failed + ' refused' : 'none carried a usable report'}`
+              + `; the read is graded ${q} and an ungraded read is not a clean bill of health. `
+              + 'The engine prices this as maximum injury uncertainty, never as healthy' }));
+    }
+  });
+
+  /* ---- roster talent -------------------------------------------------- */
+  /* A SEPARATE FIELD FROM `roster`, because they are separate questions and
+     collapsing them hid this gap for as long as it existed: `roster` is who is
+     on it and who was here last year; `roster_talent` is how good they are.
+     The first has been measured by the roster sync all along. The second is
+     measured by football/players and was, until this assembly joined them,
+     reported as empty on every programme. */
+  [['home', rh, homeFbs, g.home_team], ['away', ra, awayFbs, g.away_team]].forEach(([side, r, isFbs, name]) => {
+    const rq = ctx.roster_quality || null;
+    if (r && isNum(r.overall_talent)) contract.push(row('roster_talent', side, 'USABLE',
+      { source: (rq && rq.source) || 'EdgeDesk player layer', as_of: (rq && rq.as_of) || null,
+        age_hours: hoursSince((rq && rq.as_of) || null, now),
+        detail: `composite ${Math.round(r.overall_talent * 10) / 10}`
+          + (isNum(r.overall_talent_confidence) ? ` at confidence ${r.overall_talent_confidence}` : '')
+          + ' — measured production, not recruiting pedigree' }));
+    else if (!isFbs) contract.push(row('roster_talent', side, 'NOT_APPLICABLE',
+      { detail: `${name} is outside the FBS field the player layer rates` }));
+    else contract.push(row('roster_talent', side, 'UNAVAILABLE',
+      { source: 'EdgeDesk player layer',
+        detail: `no rated roster resolved for ${name}` + (rq ? '' : '; football/players/current.json did not load') }));
   });
 
   /* ---- starter context ----------------------------------------------- */

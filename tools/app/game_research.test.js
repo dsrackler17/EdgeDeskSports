@@ -72,7 +72,21 @@ function proj(o) {
       offensive_line: { home: { continuity: { available: true } }, away: { continuity: { available: true } } },
       injuries: { home: { points: { available: o.inj !== false } }, away: { points: { available: o.inj !== false } } },
       qb: { home: { value: { available: false } }, away: { value: { available: false } } },
-      situation: { weather: o.wx !== undefined ? o.wx : { available: false, reason: 'no forecast supplied' } }
+      talent: { home: { overall: { available: o.tal === true || o.tal === 'home' } },
+        away: { overall: { available: o.tal === true } } },
+      /* THE ENGINE'S REAL WEATHER SHAPE. This stub used to be a flat
+         measurement — {available, reason} — which is not what
+         layers.situation.weather is: the engine publishes the whole bundle
+         {total_points, spread_points, uncertainty, detail}. The card read
+         `w.available` off the bundle, compared undefined to false, and
+         rendered a green tick on every game including ones with no forecast;
+         the stub matched the card's assumption instead of the engine, so the
+         assertion below passed while the row was wrong in production. A
+         fixture that encodes the bug cannot catch it. */
+      situation: { weather: o.wx !== undefined ? o.wx : {
+        total_points: { available: false, reason: 'no weather supplied' },
+        spread_points: { available: true, value: 0 },
+        uncertainty: { available: true, value: 0.5 }, detail: [] } }
     },
     explanation: {
       summary: 'a summary',
@@ -235,12 +249,43 @@ eq('a feed that does not exist reads MISSING', by['recruiting'], 'MISSING');
 eq('an unsupplied injury report reads UNKNOWN', C.fbGxCheckRows(UNIT, proj({ inj: false })).find(r => r.l === 'availability').s, 'UNKNOWN');
 eq('a market with no quote reads MISSING', C.fbGxCheckRows(UNIT, proj({ mkt: null, gap: null })).find(r => r.l === 'market joined').s, 'MISSING');
 eq('a stale quote reads STALE, not AVAILABLE', C.fbGxCheckRows(UNIT, proj({ stale: true })).find(r => r.l === 'market joined').s, 'STALE');
+/* ---- ROSTER TALENT IS ITS OWN ROW, AND IT IS NOT RECRUITING ----------
+   `roster loaded` answers who is on the roster; this answers how good they
+   are, and the two were one row for as long as the second was always empty.
+   The engine's talent composite now comes from football/players — measured
+   production — and the row must never let that be read as pedigree, which is
+   the row below it and stays MISSING. */
+const talRow = o => C.fbGxCheckRows(UNIT, proj(o)).find(r => r.l === 'roster talent');
+eq('a rated roster on both sides reads AVAILABLE',
+  talRow({ tal: true }).s, 'AVAILABLE');
+eq('one rated side reads PARTIAL, never AVAILABLE',
+  talRow({ tal: 'home' }).s, 'PARTIAL');
+eq('no rated roster reads MISSING, never AVAILABLE', talRow({ tal: false }).s, 'MISSING');
+chk('and the row says it is production rather than pedigree',
+  /production/.test(talRow({ tal: true }).n) && /not recruiting pedigree/.test(talRow({ tal: true }).n),
+  talRow({ tal: true }).n);
+eq('recruiting stays MISSING whatever the talent row says',
+  C.fbGxCheckRows(UNIT, proj({ tal: true })).find(r => r.l === 'recruiting').s, 'MISSING');
+
+const wxRow = o => C.fbGxCheckRows(UNIT, proj({ wx: o })).find(r => r.l === 'weather');
 eq('an unsupplied forecast reads UNKNOWN',
   C.fbGxCheckRows(UNIT, proj()).find(r => r.l === 'weather').s, 'UNKNOWN');
-eq('and a supplied one reads AVAILABLE — the row reads the path the engine publishes',
-  C.fbGxCheckRows(UNIT, proj({ wx: { available: true, value: 3 } })).find(r => r.l === 'weather').s, 'AVAILABLE');
+eq('a forecast the model can price reads AVAILABLE',
+  wxRow({ total_points: { available: true, value: 3, source: 'open-meteo' } }).s, 'AVAILABLE');
+/* THE STATE THE GREEN TICK WAS HIDING. params.js ships
+   unavailable_by_design.weather_coefficients — no weather coefficient was
+   earned on this corpus, so a forecast that arrives narrows the uncertainty
+   term and moves no points. That is retrieved-not-priced, which is research,
+   and it must not render as a tick that says the model used it. */
+eq('a forecast that arrived but cannot move the total reads RESEARCH, not AVAILABLE',
+  wxRow({ total_points: { available: false, reason: 'weather coefficients not trained' } }).s, 'RESEARCH');
+chk('and the row says the forecast arrived and why it prices nothing',
+  /forecast reached this game/.test(wxRow({ total_points: { available: false, reason: 'weather coefficients not trained' } }).n),
+  wxRow({ total_points: { available: false, reason: 'weather coefficients not trained' } }).n);
+eq('a dome — a real answer, not a gap — still reads AVAILABLE',
+  wxRow({ total_points: { available: true, value: 0, source: 'indoor venue' } }).s, 'AVAILABLE');
 chk('every state is one of the declared vocabulary',
-  rows.every(r => ['AVAILABLE', 'PARTIAL', 'UNKNOWN', 'MISSING', 'STALE'].indexOf(r.s) >= 0),
+  rows.every(r => ['AVAILABLE', 'RESEARCH', 'PARTIAL', 'UNKNOWN', 'MISSING', 'STALE'].indexOf(r.s) >= 0),
   JSON.stringify(rows.map(r => r.s)));
 const CH = C.fbGxCheck(UNIT, proj());
 lacks(CH, '100%', 'the checklist invents no percentage');
@@ -268,6 +313,14 @@ chk('an UNKNOWN row is never painted as healthy', !/ok[^"]*"[^>]*>\?\s*availabil
     ['layers.offensive_line.home.continuity', L.offensive_line && L.offensive_line.home && 'continuity' in L.offensive_line.home],
     ['layers.injuries.home.points', L.injuries && L.injuries.home && 'points' in L.injuries.home],
     ['layers.situation.weather', L.situation && 'weather' in L.situation],
+    /* the bundle, not a flat measurement: the row must read the measurement
+       INSIDE it, and pinning the shape here is what stops a stub drifting
+       back to the flatter thing the card used to assume */
+    ['layers.situation.weather.total_points', !!(L.situation && L.situation.weather
+      && 'total_points' in L.situation.weather)],
+    ['layers.situation.weather has no bare .available', !!(L.situation && L.situation.weather
+      && !('available' in L.situation.weather))],
+    ['layers.talent.home.overall', !!(L.talent && L.talent.home && 'overall' in L.talent.home)],
     ['layers.uncertainty.context', !!(L.uncertainty && L.uncertainty.context)]
   ];
   paths.forEach(pth => chk('the checklist path ' + pth[0] + ' exists on a real projection', !!pth[1]));
@@ -277,7 +330,7 @@ chk('an UNKNOWN row is never painted as healthy', !/ok[^"]*"[^>]*>\?\s*availabil
   const real = C.fbGxCheckRows({ g: { home_team: 'Alabama', away_team: 'Auburn', game_id: '1' }, t: Date.now() }, R);
   chk('the checklist runs against a real projection', real.length >= 7);
   chk('and every row is a declared state',
-    real.every(r => ['AVAILABLE', 'PARTIAL', 'UNKNOWN', 'MISSING', 'STALE'].indexOf(r.s) >= 0),
+    real.every(r => ['AVAILABLE', 'RESEARCH', 'PARTIAL', 'UNKNOWN', 'MISSING', 'STALE'].indexOf(r.s) >= 0),
     JSON.stringify(real.map(r => r.l + '=' + r.s)));
 })();
 

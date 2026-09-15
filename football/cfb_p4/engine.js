@@ -601,9 +601,16 @@
         gname = POS_GROUPS[i]; g = r.by_group[gname];
         if (!g) { out.by_group[gname] = { talent: M.missing(gname + ' not present in roster bundle') }; continue; }
         c = isNum(g.n) ? clamp(g.n / 8, 0.2, 1) : 0.3;
+        /* WHERE A CONFIDENCE TRAVELLED WITH THE VALUE, IT IS THE ONE USED.
+           The roster-count proxy above was the only confidence available when
+           a bundle carried nothing but headcount. A supplier that measured
+           this group knows how well it measured it, and substituting a count
+           of bodies for that is how a thinly-observed group came to look as
+           certain as a heavily-observed one. */
         out.by_group[gname] = {
-          talent: isNum(g.talent) ? M(g.talent, { n: g.n, confidence: c, source: r.source,
-            basis: g.talent_basis || 'roster composite' })
+          talent: isNum(g.talent) ? M(g.talent, { n: g.n,
+            confidence: isNum(g.talent_confidence) ? clamp(g.talent_confidence, 0, 1) : c,
+            source: r.source, basis: g.talent_basis || 'roster composite' })
             : M.missing('no talent measure for ' + gname + ' (per-player recruiting ratings are not in any public feed this engine reads)'),
           experience: isNum(g.experience) ? M(g.experience, { n: g.n, confidence: c, source: r.source, basis: 'class mix' })
             : M.missing('class data absent for ' + gname),
@@ -617,7 +624,10 @@
         };
       }
       out.overall = isNum(r.overall_talent)
-        ? M(r.overall_talent, { confidence: 0.6, source: r.source, basis: r.overall_basis || 'roster composite' })
+        ? M(r.overall_talent, {
+            confidence: isNum(r.overall_talent_confidence) ? clamp(r.overall_talent_confidence, 0, 1) : 0.6,
+            source: r.source, as_of: r.talent_as_of || r.as_of || null,
+            basis: r.overall_basis || 'roster composite' })
         : M.missing('no overall talent composite');
       out.blue_chip = isNum(r.blue_chip_ratio)
         ? M(r.blue_chip_ratio, { confidence: 0.8, source: r.source, basis: 'per-player star ratings supplied by caller' })
@@ -1576,9 +1586,29 @@
     var sigma = vol ? vol.sigma : (P.distributions && P.distributions.sigma_margin) || 15;
     var sigmaBase = vol ? vol.sigma_base : sigma;
 
+    /* TRAVEL IS ASKED FOR THE MEASUREMENT, NOT THE PRICE.
+
+       This aggregator's own contract is "how good is my information?", and it
+       was being handed `travel.points` — which is a PRICING DECISION. Out of
+       sample every travel specification raised MAE, so the layer is published
+       and deliberately not applied, and `points` is therefore M.missing on
+       every game in the universe. That made a field EdgeDesk knows to a
+       hundred metres (two stadium coordinates out of the trained venue table,
+       one haversine) read as a hole in its information on all 76 games, and a
+       neutral site — where there is no travel asymmetry to model at all —
+       read as a hole twice over. Counting a deliberate non-application, or a
+       question that does not arise, as an information gap is the same error
+       football/matchup/inputs.js refuses to make when it excludes
+       NOT_APPLICABLE from its denominator.
+
+       So the priced number is used where the layer is priced, and the
+       measured distance where it is not. Nothing here changes what travel
+       contributes to the spread: that is still zero, and still says why. */
+    var travelInfo = avail(travel.points) ? travel.points : travel.miles;
+
     var confMeasure = uncertainty.confidence({
       rating: ratingGap, qb: qbGap, roster_home: H.talent.overall, roster_away: A.talent.overall,
-      matchup: matchupPts, venue: hfa, travel: travel.points, injuries: injGap,
+      matchup: matchupPts, venue: hfa, travel: travelInfo, injuries: injGap,
       schedule: schedGap, weather: wx.total_points, offfield_home: H.offfield.information_confidence,
       offfield_away: A.offfield.information_confidence
     });
