@@ -17748,7 +17748,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-15-r10-browser-resolution-and-gate";
+export const BUILD = "edgedesk_ai-2026-09-15-r11-starter-context-and-input-contract";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
