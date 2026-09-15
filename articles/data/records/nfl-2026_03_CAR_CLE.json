@@ -23,8 +23,8 @@
   "game_time": "2026-09-27T13:00:00.000Z",
   "game_when_label": "2026-09-27 13:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T16:51:12.352Z",
-  "generated_at": "2026-09-15T16:51:12.352Z",
+  "updated_at": "2026-09-15T17:39:58.011Z",
+  "generated_at": "2026-09-15T17:39:58.011Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1184,11 +1184,20 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Cleveland Browns -1.1",
+      "market": null,
+      "difference": null,
       "total_model": "40.7",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "39.5",
+      "total_difference": "1.2 points",
+      "book": "captured",
+      "capture_age": null,
+      "stale": false,
+      "classification": "NO MARKET",
+      "classification_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "reference": null,
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Cleveland Browns 21, Carolina Panthers 20.",
     "state": {
@@ -1319,8 +1328,7 @@
     },
     "notes": [
       "EdgeDesk’s line is Cleveland Browns -1.1 with a fair total of 40.7, before any book is consulted.",
-      "Cleveland Browns wins 54% of the time in EdgeDesk’s distribution, Carolina Panthers 46%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "Cleveland Browns wins 54% of the time in EdgeDesk’s distribution, Carolina Panthers 46%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1330,6 +1338,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T16:51:12.352Z"
+    "at": "2026-09-15T17:39:58.011Z"
   }
 }
