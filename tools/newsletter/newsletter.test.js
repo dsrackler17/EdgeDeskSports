@@ -50,6 +50,13 @@ function chk(name, cond, detail) {
   return false;
 }
 function section(t) { if (process.env.NL_VERBOSE) console.log('\n' + t); }
+/* A REPORTED DIAGNOSTIC, WHICH IS NOT AN ASSERTION. A few conditions are worth
+   surfacing on every run and worth failing on none: the ones that depend on
+   data this suite does not own and cannot hold still. A note prints with the
+   summary and never touches the exit code, so the warning can be loud without
+   making the newsletter workflow's own pre-flight hostage to the market. */
+const notes = [];
+function note(line) { notes.push(line); }
 
 /* ------------------------------------------------------------- fixtures */
 /* A research payload with the shape the football module actually publishes.
@@ -1286,7 +1293,11 @@ section('7 — the provider');
          failed the same way inside the live window on 2026-09-15 (44.8, 48.5,
          2.78, 47.5, 49.5) because the gate had been closed for a day, nothing
          had been re-committed, and the records had moved underneath a frozen
-         body. The window was never the variable. */
+         body. The window was never the variable.
+
+         WHAT DOES COVER THAT PAIRING is below: the send path's own refusal,
+         asserted on a fixture drifted on purpose, plus a note() over the
+         edition an operator's `send` would actually pick up right now. */
       let supportProven = 0;
       const lostResearch = [];
       const emptySupport = [];
@@ -1319,6 +1330,168 @@ section('7 — the provider');
          the week, whatever the market has done since. */
       chk('and re-attachment is what makes the figures supported at all',
         emptySupport.length === 0, emptySupport.slice(0, 3).join(' | '));
+
+      /* AND THE EARLY WARNING, REPORTED RATHER THAN ASSERTED.
+
+         The question the operator actually needs answered is not "do all
+         three committed files still trace" — it is "if I select `send` from
+         the workflow's phase list right now, will it be refused?" So this
+         asks it about exactly the edition such a run would pick: the same
+         dueFor() the send branch uses, and the stored edition for that date
+         (run.js:1229-1236), hydrated and re-validated the way sendBody()
+         re-validates it. Only a `ready` edition is worth reporting, since a
+         preview or an already-sent one is refused earlier and for a reason
+         that has nothing to do with drift.
+
+         It is a note() and not a chk() because the answer depends on records
+         this suite does not own: a drifted figure here is a true and useful
+         statement about today's data, not a defect in the code under test,
+         and failing on it is what reddened this suite twice and blocked the
+         next edition from being built. The refusal is visible either way. */
+      const nowMs = Date.now();
+      const onDisk = STORE.allEditions();
+      SCHEDULE.sports().forEach(sp => {
+        const due = RUN.dueFor(sp, nowMs, null);
+        const row = onDisk.filter(e => e.sport === sp && e.edition_date === due.edition_date)[0];
+        if (!row || row.status !== 'ready') return;
+        const ed = STORE.hydrate(row);
+        if (!ed.html_free || !ed.text_free) return;
+        const gone = RUN.attachResearch(ed);
+        if (gone.length) {
+          note(ed.edition_key + ': a `send` now would be refused — research_unavailable ('
+            + gone.slice(0, 4).join(', ') + ')');
+          return;
+        }
+        const v = VALIDATE.validate(ed, {
+          now: nowMs, published_ids: RUN.publishedIds(),
+          rendered: { html: ed.html_free, text: ed.text_free },
+          renderOpts: { site: 'https://edgedesksports.com',
+            mailing_address: 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423' },
+        });
+        if (v.ok) return;
+        const deadline = Date.parse(ed.deadline_at);
+        note(ed.edition_key + ': a `send` or `retry` now would be refused — revalidation_failed ('
+          + v.hold_reason + ')'
+          + (v.integrity_failed || []).filter(x => x.id === 'unsupported_statistic')
+            .map(x => ' on ' + x.detail).join('')
+          + (Number.isFinite(deadline) && nowMs > deadline
+            ? '; its retry window is shut, so a plain `send` refuses it as edition_stale first' : ''));
+      });
+    }
+
+    /* AND THAT THE SEND PATH ITSELF IS WHAT PUTS THE PAYLOAD BACK.
+
+       The two guards above call RUN.attachResearch() directly, so they pin the
+       helper. Nothing pinned that sendBody() still CALLS it — and "storage
+       drops `g.research` and nothing restores it" is exactly what deleting
+       that one line re-creates. The fixture sends cannot notice: every fixture
+       edition in this file carries its research already, so the re-attachment
+       is a no-op for them and they stay green. A COMMITTED edition is the only
+       input shaped like the bug, because the payload really is absent from it.
+
+       So a real stored edition goes through the real RUN.send(), and what is
+       measured is the support set on the edition object the send path has
+       finished with — attachResearch() mutates it in place. Drift cannot
+       move this number: a figure that moved is one token, and the ratio the
+       original bug produced was 69 -> 69 against 69 -> 1110 healthy. `force`
+       is set because these editions' retry windows have long closed and
+       edition_stale is refused BEFORE the research is re-attached, which
+       would make the check vacuous; `dry` keeps the provider out of it and no
+       recipients are offered, so the run stops at the first door past the one
+       being tested. Nothing asserts that the send SUCCEEDS — that is the
+       drift-fragile claim this suite twice learned not to make. */
+    {
+      const readyStored = STORE.allEditions()
+        .filter(e => e && e.status === 'ready' && (e.games || []).length)
+        .map(e => STORE.hydrate(e))
+        .filter(e => e.html_free && e.text_free);
+      const flat = [];
+      let sendProven = 0;
+      for (const ed of readyStored) {
+        const bare = Object.keys(VALIDATE.supportedFor(ed, [])).length;
+        const res = await RUN.send(ed, {
+          resolved: resolvedFor(fakeDb({ eligible: [] })),
+          now: Date.now(), log: () => {}, dry: true, force: true, env: {},
+        });
+        chk(ed.edition_key + ': the send path can still find the research behind it',
+          res.reason !== 'research_unavailable', res.detail);
+        const rich = Object.keys(VALIDATE.supportedFor(ed, [])).length;
+        if (rich < bare * 2) flat.push(ed.edition_key + ': ' + bare + ' -> ' + rich);
+        sendProven++;
+      }
+      chk('a committed edition is actually put through the send path',
+        sendProven > 0, sendProven + ' ready editions');
+      chk('and the send path is what makes its figures supported at all',
+        flat.length === 0, flat.slice(0, 3).join(' | '));
+    }
+
+    /* THE SEND PATH'S OWN REFUSAL, PINNED — AND WHY THIS IS SCOPED TO THAT
+       PATH RATHER THAN TO EVERY STORED EDITION.
+
+       Whether a run builds what it sends is decided by the phase:
+
+         const doBuild = ['build', 'all', 'preview', 'test'].indexOf(phase) >= 0;
+         const doSend  = ['send', 'all', 'test', 'retry'].indexOf(phase) >= 0;
+
+       On `all` and `test` both are true and send() receives the object
+       build() just returned — that is the scheduled run, and for it a frozen
+       body genuinely never meets today's records. `send` and `retry` do not
+       build. `edition` is still null when the send branch is reached, so
+       run.js hydrates the COMMITTED file and hands that to send()
+       (run.js:1229-1238), and sendBody() re-validates that frozen body
+       against research re-read from the record store now (run.js:565-578).
+       `send` is one of the phases newsletter.yml offers in its
+       workflow_dispatch choice list, so an operator can select it.
+
+       The pairing is real, and it REFUSES rather than sends — so nothing
+       wrong goes out. What was lost when this went away is the moment of
+       discovery: the refusal now surfaces when an operator runs the phase,
+       which is the worst time to learn it.
+
+       So what is asserted is the MECHANISM, on a fixture drifted on purpose,
+       and not the DATA in the committed editions. Drift in a committed file
+       is not a fault — the body is a snapshot, the `editorial:` job moves the
+       records under it roughly hourly, and demanding they still agree is what
+       reddened this suite twice. A fixture cannot redden for that reason, and
+       it still goes red the moment the send path stops refusing: drop
+       check_numbers, unhook the re-validation from the frozen body, or let
+       sendBody trust the build, and these four assertions are what notices.
+       The live editions get the same question asked as the note() above,
+       where it can be answered without failing anything. */
+    {
+      const drifted = JSON.parse(JSON.stringify(sendableEdition));
+      /* ONE FIGURE MOVED, THE WAY A RE-RUN MOVES IT. The team-strength rates
+         are recomputed every time the editorial job runs; the frozen body
+         goes on printing the one it was built from. Nothing else is touched —
+         the body, the model and market blocks and the edition's own counts
+         are exactly as stored, so the only thing that can refuse this edition
+         is the figure that drifted. */
+      const printed = [];
+      drifted.games.forEach(g => {
+        (((g.research || {}).compare || {}).groups || []).forEach(grp => {
+          const r = (grp.rows || [])[0];
+          if (!r || !r.h || typeof r.h.n !== 'number') return;
+          printed.push(String(r.h.n));
+          const to = Math.round((r.h.n + 0.004) * 1000) / 1000;
+          r.h.n = to; r.h.v = '+' + to.toFixed(3);
+        });
+      });
+      chk('the drift fixture moves a figure the frozen body really printed',
+        printed.length > 0 && printed.every(v => drifted.text_free.indexOf(v) >= 0),
+        JSON.stringify(printed));
+      const sDrift = await RUN.send(drifted, {
+        resolved: resolvedFor(fakeDb({ eligible: people3 })),
+        now: NOW, log: () => {}, dry: true, env: {},
+      });
+      chk('a stored body whose research has drifted under it is refused, not sent',
+        sDrift.sent === false && sDrift.reason === 'revalidation_failed',
+        JSON.stringify(sDrift).slice(0, 200));
+      chk('\u2026by name, as a figure the research no longer supports',
+        /unsupported_statistic/.test(sDrift.detail || ''), sDrift.detail);
+      chk('\u2026naming the figure that moved',
+        ((sDrift.validation || {}).integrity_failed || []).some(x => x.id === 'unsupported_statistic'
+          && printed.some(v => String(x.detail || '').indexOf(v) >= 0)),
+        JSON.stringify((sDrift.validation || {}).integrity_failed));
     }
 
     /* AND WHEN IT CANNOT BE RE-ATTACHED, the send says so by name rather than
@@ -1603,6 +1776,7 @@ section('7 — the provider');
       /for f in [^\n]*\bnewsletter\.log\b/.test(sqlWf), 'newsletter.log is not in the guard list');
 
     /* ================================================================== */
+    notes.forEach(n => console.log('  ! ' + n));
     console.log((fail ? 'FAIL' : 'PASS') + ' | edgedesk newsletter | ' + pass + ' passed, ' + fail + ' failed');
     if (fail) { failures.forEach(f => console.log('  × ' + f)); process.exit(1); }
     void assert;
