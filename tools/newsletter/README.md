@@ -357,6 +357,32 @@ supabase secrets set NEWSLETTER_WEBHOOK_SECRET=whsec_xxx
 supabase secrets set NEWSLETTER_GH_TOKEN=ghp_xxx
 ```
 
+### Without the CLI
+
+Both functions are one file each and import nothing, so the dashboard editor
+takes them whole — no CLI, no login, no project link:
+
+> Supabase dashboard → **Edge Functions** → deploy a new function → name it
+> exactly `newsletter` → paste `supabase/functions/newsletter/index.ts` →
+> **turn off “Verify JWT”** → deploy. Repeat for `newsletter_cron`.
+
+**“Verify JWT” must be off.** `/unsubscribe`, `/confirm` and `/webhook` are
+opened by mail clients and by Resend, neither of which carries a Supabase
+token; left on, the unsubscribe link in every email answers `401` instead of
+`404`, which is worse, because the launch gate probes for *not 404* and would
+open on it.
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected into every edge
+function automatically, so a bare paste is enough for the unsubscribe link and
+for the gate. The other three are function secrets (dashboard → Edge Functions
+→ **Secrets**), and only these routes want them:
+
+| secret | without it |
+| --- | --- |
+| `RESEND_API_KEY` | `/subscribe` accepts the address but cannot mail the confirmation — it answers `no_api_key`. Sending the editions themselves runs from Actions, which has its own copy |
+| `NEWSLETTER_WEBHOOK_SECRET` | `/webhook` rejects every delivery event, so bounces and complaints never suppress |
+| `NEWSLETTER_GH_TOKEN` | `/dispatch` cannot start a run; only needed if the edge dispatcher, rather than the Actions cron, is driving the schedule |
+
 ---
 
 ## Sending a test, then opening the gate
