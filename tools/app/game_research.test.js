@@ -45,6 +45,29 @@ if (START < 0 || END > APP.length || END < 0) {
 }
 const SRC = APP.slice(START, END);
 
+/* THE BOUNDED-PROBABILITY HELPERS, SLICED IN RATHER THAN STUBBED.
+
+   `fbGxSummary` renders a win probability through fbWinPair(), which lives
+   further up the same IIFE — in a browser it is simply in scope, and this
+   harness's region slice cuts between the two. Handing the context a stub
+   would make the test pass while testing nothing: the rule these helpers
+   exist to enforce is that 100% and 0% are never printed for a probability
+   the model put strictly inside the interval, and a stub cannot enforce it.
+
+   So the REAL functions are sliced out by name and run as a prelude. A rename
+   or a deletion fails here loudly, which is the point. */
+function fnSrc(name) {
+  const at = APP.indexOf('function ' + name + '(');
+  if (at < 0) {
+    console.log('FAIL | app.html no longer defines ' + name + ', which the research card calls');
+    process.exit(1);
+  }
+  /* to the first line that is exactly `}` at column 0 — the page's own style */
+  const end = APP.indexOf('\n}\n', at);
+  return APP.slice(at, end + 3);
+}
+const HELPERS = fnSrc('fbWinPair') + '\n' + fnSrc('fbWinText') + '\n';
+
 /* the engine's real thresholds, read from the shipped params */
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 const PARAMS = global.window.EDCfbP4Params;
@@ -124,6 +147,7 @@ function ctx() {
   };
   c.window = c; c.EDCfbP4Params = PARAMS; c.window.EDCfbP4Params = PARAMS;
   vm.createContext(c);
+  vm.runInContext(HELPERS, c, { filename: 'app.html:shared-helpers' });
   vm.runInContext(SRC, c, { filename: 'app.html:game-research' });
   return c;
 }
