@@ -506,3 +506,22 @@ jobs:
       # panel per edge, nothing invented.
       - name: Full picture names only stored players and lists every priced side
         run: node tools/presentation/app_picture.test.js
+
+      # INTELLIGENCE IN THE ACTUAL WEBSITE. Every suite above drives a module;
+      # this drives app.html in Chromium and types the question into the real
+      # textarea. It exists because the failure it pins was invisible to all of
+      # them: the modules were right and the CHAT PANEL never called them, so a
+      # question naming a college team fell through to the board — which in
+      # September is baseball — and the reader got pitcher research and a
+      # decision card from another sport. Nothing under test here can be
+      # reached except through the DOM a subscriber uses.
+      #
+      # The install is allowed to fail: the suite prints SKIPPED and exits 0
+      # without a browser, which is better than a red job that says nothing
+      # about the code.
+      - name: Install Chromium for the browser suite
+        run: npx --yes playwright@1.47.2 install --with-deps chromium
+        continue-on-error: true
+
+      - name: A question that names a team is answered about that team, in the browser
+        run: node tools/intelligence/chat.e2e.js

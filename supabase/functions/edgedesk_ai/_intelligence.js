@@ -2678,6 +2678,515 @@
     };
   }
 
+  /* ==================================================================
+     WHO IS THE READER ASKING ABOUT?
+
+     The website used to answer this question nowhere. app.html's chat had
+     three routes — a daily-scan follow-up, a loaded signal, or "the board" —
+     and a question that named a team matched none of them, so it fell to the
+     board. The board is whatever card is loaded, which in September is
+     baseball. "How does Texas State look this week?" therefore arrived at the
+     reasoning function as an MLB board packet with no football anywhere in
+     it, and every symptom followed from that one routing decision: the sport
+     came back baseball, "Texas" was resolved against the only team list in
+     scope (MLB clubs), the research was about starting pitchers, and the
+     decision card belonged to a Padres game.
+
+     So resolution happens HERE, in the kernel both the browser and the edge
+     function already load, against the card the site itself publishes. No
+     second alias table: resolveTeam and TEAM_ALIASES above are the same ones
+     the board joins its market with.
+     ================================================================== */
+
+  /* Words that are never part of a school name, trimmed from the ENDS of a
+     candidate phrase. Deliberately not applied in the middle — "Miami of
+     Ohio" and "Texas A and M" keep their connectives. */
+  var NOT_A_NAME = {};
+  ('a an the is it its was are am do does did how what which who whom whose why when where '
+    + 'this that these those there here look looks looking looked play plays playing played '
+    + 'week weekend tonight today tomorrow season game games matchup matchups line lines odds '
+    + 'price prices spread total bet bets betting worth anything something nothing good bad '
+    + 'about against over under vs versus at on in for of and or but so if then than i we you '
+    + 'they them their my me us he she his her think thinks thought like likes want need have '
+    + 'has had be been being get gets got make makes made take takes took give gives gave say '
+    + 'says said tell tells told show shows showed any some all both each few more most other '
+    + 'such only own same too very can will just should now next last first second next').split(/\s+/)
+    .forEach(function (w) { NOT_A_NAME[w] = 1; });
+
+  /* A single word only counts as a team when the writer capitalised it, or
+     when nothing in the sentence is capitalised and capitalisation therefore
+     carries no signal at all. Without this rule an ordinary sentence
+     containing "army", "rice" or "temple" names a football team. */
+  function soloAllowed(word, text) {
+    if (!word || word.length < 3) return false;
+    if (/^[A-Z]/.test(word)) return true;
+    return !/[A-Z]/.test(String(text || ''));
+  }
+
+  /* Capitalised runs that LOOK like a proper name, whether or not this card
+     knows them. Used for one thing only: telling "who have they played?"
+     (which names nobody, so the conversation's subject stands) apart from
+     "what about the Padres?" (which names somebody else, so it must not be
+     answered as the football game that was under discussion). A question in
+     all lower case yields nothing here, because capitalisation carries no
+     signal in it and guessing would be worse than declining. */
+  /* A CONTRACTION IS THE SAME ORDINARY WORD. "What's the line?" was reading as
+     a question about somebody called What's — the apostrophe form was not in
+     the stop list — so a market follow-up dropped the subject the conversation
+     had just established. Strip the clitic before the lookup rather than
+     enumerating every contraction. */
+  function plainWord(w) {
+    return String(w == null ? '' : w).toLowerCase()
+      .replace(/n['’]t$/, '').replace(/['’](s|re|ve|ll|d|m)$/, '').replace(/[^a-z]/g, '');
+  }
+  function isFiller(w) { var k = plainWord(w); return !k || !!NOT_A_NAME[k]; }
+
+  function nameCandidates(text) {
+    var raw = String(text == null ? '' : text);
+    if (!/[A-Z]/.test(raw)) return [];
+    var out = [], seen = {};
+    var re = /([A-Z][A-Za-z'&.()-]*(?:[ ](?:of|and|de|the)?[ ]?[A-Z][A-Za-z'&.()-]*)*)/g, m;
+    while ((m = re.exec(raw)) != null) {
+      var words = m[1].split(/\s+/);
+      while (words.length && isFiller(words[0])) words = words.slice(1);
+      while (words.length && isFiller(words[words.length - 1])) words = words.slice(0, -1);
+      if (!words.length) continue;
+      var phrase = words.join(' ');
+      if (words.length === 1 && phrase.length < 3) continue;
+      /* A sentence-initial capital is grammar, not a name — unless the word
+         carries its own capital elsewhere or is plainly not an ordinary word. */
+      if (m.index === 0 && words.length === 1 && isFiller(phrase)) continue;
+      var k = phrase.toLowerCase();
+      if (seen[k]) continue;
+      seen[k] = 1;
+      out.push(phrase);
+    }
+    return out.slice(0, 6);
+  }
+
+  /**
+   * Every team named in a piece of text, LONGEST NAME FIRST.
+   *
+   * This is the rule the brief asks for in one line: "Texas State" must not
+   * become "Texas". A phrase is tested at every length from four words down
+   * to one and the longest hit wins its words outright, so the two-word
+   * school is found before the one-word school that is a prefix of it, and
+   * "North Texas vs Texas State" yields both programs rather than one team
+   * twice. Only exact, alias and St./State expansions count — a loose prefix
+   * match on a bare word is precisely how a college question ends up on a
+   * professional club.
+   *
+   * @param text  the reader's question
+   * @param ix    a resolver index (fbsIndexFor / teamIndex)
+   * @returns [{phrase, key, name, how, start, end}] in reading order
+   */
+  function teamPhrases(text, ix) {
+    var raw = String(text == null ? '' : text);
+    if (!raw.trim() || !ix) return [];
+    var words = raw.split(/[\s]+/).map(function (w) {
+      return w.replace(/^[^A-Za-z0-9'&.()-]+/, '').replace(/[^A-Za-z0-9'&.()-]+$/, '');
+    });
+    var taken = {}, found = [], MAXN = 4, n, i, j, phrase, r, blocked, ok;
+    for (n = MAXN; n >= 1; n--) {
+      for (i = 0; i + n <= words.length; i++) {
+        blocked = false;
+        for (j = i; j < i + n; j++) if (taken[j] || !words[j]) { blocked = true; break; }
+        if (blocked) continue;
+        /* Ordinary words are trimmed from both ends of a MULTI-word window,
+           which is how "does Texas State" becomes "Texas State" without a
+           separate pass; a window that is all filler is skipped. */
+        var a = i, b = i + n - 1;
+        while (a <= b && isFiller(words[a])) a++;
+        while (b >= a && isFiller(words[b])) b--;
+        if (b < a || (b - a + 1) !== n) continue;     /* trimmed: a shorter window will catch it */
+        phrase = words.slice(a, b + 1).join(' ');
+        if (n === 1 && !soloAllowed(phrase, raw)) continue;
+        if (n === 1 && isFiller(phrase)) continue;
+        r = resolveTeam(phrase, ix);
+        ok = r && r.key && (r.how === 'exact' || r.how === 'alias' || r.how === 'state-expansion');
+        if (!ok) continue;
+        for (j = a; j <= b; j++) taken[j] = 1;
+        found.push({ phrase: phrase, key: r.key, name: (r.team && r.team.name) || phrase, how: r.how, start: a, end: b });
+      }
+    }
+    found.sort(function (x, y) { return x.start - y.start; });
+    return found;
+  }
+
+  /* AN EXPLICIT MATCHUP, whether or not this card knows either side. "A vs B"
+     is a claim about a specific game, so two sides that resolve to nothing are
+     a matchup EdgeDesk does not carry — a thing to ask about — and NOT a
+     wandering subject to be quietly dropped. Those are different answers and
+     the difference has to survive into the state below. */
+  var MATCHUP_LEAD = /^(?:analyz|analys|compar|previewi?|research|break down|look at|tell me about|show me|explain|give me|what about|how about|thoughts on|take on)\w*\s+/i;
+  function matchupPair(text) {
+    var t = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+    if (!t) return [];
+    var SIDE = "[A-Z][A-Za-z'&.()-]*(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.()-]*)*";
+    var m = new RegExp('(' + SIDE + ')\\s+(?:versus|vs\\.?|@|at)\\s+(' + SIDE + ')').exec(t);
+    if (!m) return [];
+    function cut(v) { return v.replace(MATCHUP_LEAD, '').replace(/[.,;:!?]+$/, '').trim(); }
+    var a = cut(m[1]), b = cut(m[2]);
+    if (!a || !b || normName(a) === normName(b)) return [];
+    if (a.split(' ').length > 5 || b.split(' ').length > 5) return [];
+    return [a, b];
+  }
+
+  var MATCHUP_STATES = {
+    RESOLVED: 'a named team was found on the published card',
+    AMBIGUOUS: 'the team plays more than one game in this window',
+    NOT_ON_CARD: 'the team resolved but plays no game in the published window',
+    NONE_NAMED: 'the question named no team this card knows',
+    SUBJECT_CHANGED: 'the question named somebody this card does not carry, so the previous subject does not stand',
+    NO_CARD: 'the published card could not be read, so absence cannot be claimed'
+  };
+
+  /**
+   * Resolve the matchup a question is about, against a published slate.
+   *
+   * PURE. The caller supplies the games — the browser from the static slate
+   * artifact it already publishes, the edge function from the same artifact
+   * through its DAL — so there is one resolution rule and one alias table for
+   * both, and a test can drive it with the real card and no network.
+   *
+   * Precedence, in the order the brief sets out:
+   *   1. two teams named in THIS question that share a scheduled game
+   *   2. one team named in THIS question with exactly one game in the window
+   *   3. the subject the conversation already established (`carried`)
+   * A board that happens to be open is NOT consulted here and cannot win: an
+   * MLB tab must not override an explicit college football matchup.
+   *
+   * @param o.question  the reader's text
+   * @param o.games     [{game_id, home_team, away_team, home_id, away_id, kickoff, week}]
+   * @param o.carried   a previous resolution to fall back to on a follow-up
+   * @param o.card_error  why the card could not be read, if it could not
+   */
+  function resolveMatchup(o) {
+    o = o || {};
+    var games = o.games || [], question = String(o.question == null ? '' : o.question);
+    var carried = o.carried && o.carried.game_id ? o.carried : null;
+    var none = {
+      state: 'NONE_NAMED', named: [], sport: null, game_id: null, home: null, away: null,
+      home_id: null, away_id: null, kickoff: null, week: null, subject: null, subject_id: null,
+      source: null, how: null, note: null, candidates: null
+    };
+    if (!games.length) {
+      if (o.card_error) {
+        return Object.assign({}, none, {
+          state: 'NO_CARD', note: 'The published FBS card could not be read (' + o.card_error
+            + '), so EdgeDesk cannot tell whether that game exists. This is a retrieval failure, '
+            + 'not a finding that the matchup is absent, and may not be reported as one.'
+        });
+      }
+      return carried ? Object.assign({}, carried, { how: 'carried' }) : none;
+    }
+    var rows = games.map(function (g) {
+      return {
+        game_id: String(g.game_id == null ? '' : g.game_id),
+        home_team: String(g.home_team == null ? '' : g.home_team),
+        away_team: String(g.away_team == null ? '' : g.away_team),
+        home_key: canonKey(g.home_id != null ? g.home_id : g.home_team_id, g.home_team),
+        away_key: canonKey(g.away_id != null ? g.away_id : g.away_team_id, g.away_team),
+        kickoff: g.kickoff || null, week: g.week == null ? null : g.week
+      };
+    });
+    var ix = fbsIndexFor(games.map(function (g) {
+      return {
+        home_team: g.home_team, away_team: g.away_team,
+        home_id: g.home_id != null ? g.home_id : g.home_team_id,
+        away_id: g.away_id != null ? g.away_id : g.away_team_id
+      };
+    }));
+    var named = teamPhrases(question, ix);
+    function hit(row, how, subject) {
+      return {
+        state: 'RESOLVED', named: named.map(function (t) { return t.phrase; }),
+        sport: 'americanfootball_ncaaf', game_id: row.game_id,
+        home: row.home_team, away: row.away_team, home_id: row.home_key, away_id: row.away_key,
+        kickoff: row.kickoff, week: row.week, subject: subject ? subject.name : null,
+        subject_id: subject ? subject.key : null,
+        source: o.source || 'football/fbs/slate.json', how: how, note: null, candidates: null
+      };
+    }
+    /* ---- 1. two named teams that share a game ---------------------- */
+    var i, j, a, b, k;
+    for (i = 0; i < named.length; i++) {
+      for (j = i + 1; j < named.length; j++) {
+        a = named[i]; b = named[j];
+        for (k = 0; k < rows.length; k++) {
+          if ((rows[k].home_key === a.key && rows[k].away_key === b.key)
+            || (rows[k].home_key === b.key && rows[k].away_key === a.key)) return hit(rows[k], 'both-teams-named', null);
+        }
+      }
+    }
+    /* ---- 2. one named team with exactly one game in the window -----
+       Every named team is tried before any of them is reported as absent: a
+       question that names a program on the card and one that is not ("Texas
+       State against somebody") must answer about the one that is playing,
+       not stop at the first name that missed. */
+    var ambiguous = null, offCard = null;
+    for (i = 0; i < named.length; i++) {
+      var subj = named[i];
+      var mine = rows.filter(function (r) { return r.home_key === subj.key || r.away_key === subj.key; });
+      if (mine.length === 1) return hit(mine[0], 'one-team-named', subj);
+      if (mine.length > 1 && !ambiguous) {
+        ambiguous = Object.assign({}, none, {
+          state: 'AMBIGUOUS', named: [subj.phrase], sport: 'americanfootball_ncaaf',
+          subject: subj.name, subject_id: subj.key, source: o.source || 'football/fbs/slate.json',
+          candidates: mine.map(function (r) {
+            return { game_id: r.game_id, home: r.home_team, away: r.away_team, kickoff: r.kickoff };
+          }),
+          note: subj.phrase + ' has more than one game in this window — say which one.'
+        });
+      } else if (!mine.length && !offCard) {
+        /* Resolved to a real program that is not playing inside the window. */
+        offCard = Object.assign({}, none, {
+          state: 'NOT_ON_CARD', named: [subj.phrase], sport: 'americanfootball_ncaaf',
+          subject: subj.name, subject_id: subj.key, source: o.source || 'football/fbs/slate.json',
+          note: subj.phrase + ' is on the FBS card but has no game inside the published window.'
+        });
+      }
+    }
+    if (ambiguous) return ambiguous;
+    if (offCard) return offCard;
+    /* ---- 2b. an explicit "A vs B" that this card does not carry -----
+       Both sides were named as a matchup and neither is on the card. That is a
+       question to ask back, never a licence to answer about something else. */
+    var pair = matchupPair(question);
+    if (pair.length === 2 && !named.length) {
+      return Object.assign({}, none, {
+        state: 'NOT_ON_CARD', named: pair, sport: null,
+        source: o.source || 'football/fbs/slate.json',
+        note: '"' + pair[0] + '" and "' + pair[1] + '" were named as a matchup, and no scheduled game with '
+          + 'BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
+          + ' games were checked on the FBS slate).'
+      });
+    }
+    /* ---- 3. the subject the conversation already established -------
+       A follow-up names nobody, so the subject stands. A question that names
+       SOMEBODY ELSE — a club from another sport, a player, a program this
+       card does not carry — must not be answered as the game that happened to
+       be under discussion, which is the same "whatever is loaded wins" bug
+       one turn later. */
+    var other = nameCandidates(question).filter(function (p) {
+      var r = resolveTeam(p, ix);
+      return !(r && r.key && (r.how === 'exact' || r.how === 'alias' || r.how === 'state-expansion'));
+    });
+    if (carried && !other.length) return Object.assign({}, carried, { how: 'carried', named: [] });
+    if (other.length) {
+      return Object.assign({}, none, {
+        state: 'SUBJECT_CHANGED', named: other,
+        note: other[0] + ' is not on the published FBS card, so this is not a follow-up about '
+          + (carried ? (carried.away + ' @ ' + carried.home) : 'the previous subject') + '.'
+      });
+    }
+    return none;
+  }
+
+  var RESEARCH_SCHEMA = 'edgedesk_matchup_research_v1';
+
+  /**
+   * The research context for one resolved matchup — the facts, with no prose.
+   *
+   * PURE, and deliberately so. The website calls it with what it already
+   * holds and renders the result in the browser; the edge function calls it
+   * with what its DAL read and narrates the same object. That is the whole
+   * point of putting it here: the card a reader sees when the model is
+   * unreachable and the card they see when it answers are built from ONE
+   * assembly, so the two can never disagree about a number, a book or a gap.
+   *
+   * Every field is a fact() — a value with a source and a time context, or a
+   * declared absence with a reason. Nothing is defaulted, averaged or carried
+   * over from another game, and the model's decision ceiling travels with it.
+   */
+  function matchupResearch(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var res = o.resolution || {};
+    var row = o.slate_row || null;
+    var SLATE = o.slate_source || 'football/fbs/slate.json';
+    var subjectKey = res.subject_id || null;
+    var homeKey = res.home_id || (row ? canonKey(row.home_team_id, row.home_team) : null);
+    var awayKey = res.away_id || (row ? canonKey(row.away_team_id, row.away_team) : null);
+    var home = res.home || (row && row.home_team) || null;
+    var away = res.away || (row && row.away_team) || null;
+    /* The subject is the team the reader named; the opponent is the other
+       side. With no named subject (a "A vs B" question) the home team is the
+       frame, because that is the side every line in this system is written
+       from. */
+    var subjectIsHome = subjectKey ? (subjectKey === homeKey) : true;
+    var missing = [], limits = [];
+    function gap(field, reason) { missing.push({ field: field, reason: reason }); }
+
+    /* ---- identity ---------------------------------------------------- */
+    var identity = {
+      game_id: fact(res.game_id || (row && String(row.game_id)) || null, { source: SLATE }),
+      home: fact(home, { source: SLATE }), away: fact(away, { source: SLATE }),
+      kickoff: fact(res.kickoff || (row && row.kickoff) || null, { source: SLATE, unit: 'ISO-8601 UTC' }),
+      week: fact(res.week != null ? res.week : (row ? row.week : null), { source: SLATE }),
+      season: fact(row ? row.season : null, { source: SLATE }),
+      venue: fact(row ? row.venue : null, { source: SLATE }),
+      neutral_site: fact(row ? !!row.neutral_site : null, { source: SLATE }),
+      matchup_type: fact(row ? row.matchup_type : null, { source: SLATE }),
+      home_conference: fact(row ? row.home_conference : null, { source: SLATE }),
+      away_conference: fact(row ? row.away_conference : null, { source: SLATE })
+    };
+
+    /* ---- model ------------------------------------------------------- */
+    var val = validationFor('americanfootball_ncaaf', 'spreads');
+    var model = null;
+    if (row && row.model_status === 'PREDICTED' && num(row.model_home_line) != null) {
+      var hl = num(row.model_home_line);
+      /* THE TWO CONVENTIONS, NAMED RATHER THAN ASSUMED. The artifact publishes
+         a BETTING line: negative means the home side is favoured. The margin
+         is its mirror. Both are carried so no reader and no prompt has to
+         infer which one it is looking at. */
+      model = {
+        status: fact(row.model_status, { source: SLATE }),
+        home_line: fact(hl, { source: SLATE, unit: 'points', basis: 'betting convention — negative is the home favourite' }),
+        home_margin: fact(num(row.model_home_margin) != null ? num(row.model_home_margin) : -hl,
+          { source: SLATE, unit: 'points', basis: 'margin convention — positive is the home side favoured' }),
+        favourite: fact(hl < 0 ? home : (hl > 0 ? away : null), { source: SLATE }),
+        by_points: fact(Math.abs(r2(hl)), { source: SLATE, unit: 'points' }),
+        fair_total: fact(num(row.model_fair_total), { source: SLATE, unit: 'points' }),
+        data_completeness: fact(num(row.data_completeness), { source: SLATE, unit: 'ratio 0-1' }),
+        tier: fact(val.tier, { source: 'EDINTEL.MODEL_VALIDATION' }),
+        max_decision: fact(val.max_decision, { source: 'EDINTEL.MODEL_VALIDATION' })
+      };
+      limits.push(val.limitations);
+      if (val.max_decision === 'WATCH') {
+        limits.push('This model has not cleared validation for this market, so its strongest possible '
+          + 'output is WATCH. It may order research and may be quoted as an estimate; it may not become '
+          + 'a probability, an expected value, or a reason to bet.');
+      }
+      if (num(row.data_completeness) === 0) {
+        limits.push('The projection carries a data completeness of 0 for this game, so it is running on '
+          + 'the season rating alone rather than on this week’s inputs.');
+      }
+    } else {
+      gap('model', row ? ('the published card carries model_status ' + (row.model_status || 'NONE')
+        + ' for this game, so there is no projection to quote') : 'no row for this game on the published card');
+    }
+
+    /* ---- market ------------------------------------------------------ */
+    var market = null, mk = null;
+    if ((o.signals && o.signals.length) || (o.lines && o.lines.length)) {
+      mk = resolveMarket({
+        signals: o.signals || [], lines: o.lines || [], now: now,
+        kickoff: res.kickoff || (row && row.kickoff) || null,
+        home_team: home, away_team: away,
+        model_home_line: row ? num(row.model_home_line) : null,
+        lines_convention: o.lines_convention || 'betting'
+      });
+    }
+    if (mk && mk.spread && mk.spread.line != null) {
+      market = {
+        spread: fact(mk.spread.line, {
+          source: mk.spread.source === 'signals' ? 'captured signals' : 'cfb.lines',
+          unit: 'points', observed_at: mk.spread.observed_at,
+          provenance: mk.spread.executable ? 'executable quote' : 'consensus number',
+          basis: mk.spread.executable
+            ? 'a price a book was actually showing when it was captured'
+            : 'a consensus number with no book and no capture time — a reference, not something you can bet'
+        }),
+        book: mk.spread.executable ? fact(mk.spread.book, { source: 'captured signals' })
+          : missingFact('a consensus line carries no book', 'cfb.lines'),
+        odds: mk.spread.executable ? fact(mk.spread.odds_american, { source: 'captured signals' })
+          : missingFact('a consensus line carries no price', 'cfb.lines'),
+        executable: fact(!!mk.spread.executable, { source: mk.spread.source || null }),
+        freshness: mk.spread.freshness || null,
+        total: mk.total && mk.total.line != null
+          ? fact(mk.total.line, { source: mk.total.source === 'signals' ? 'captured signals' : 'cfb.lines', unit: 'points', observed_at: mk.total.observed_at })
+          : missingFact('no total on file for this game', 'signals + cfb.lines'),
+        fault: mk.spread.fault || null
+      };
+      if (!mk.spread.executable) {
+        limits.push('The number on file is a consensus line, not a price. Nothing here has been confirmed '
+          + 'as still available at a book, so no quote may be described as executable.');
+      }
+    } else {
+      gap('market', 'no captured quote and no consensus line joined to this game — the board shows it as NO MARKET, '
+        + 'which is an absence of a joined price, not a price of zero');
+    }
+
+    /* ---- ratings ------------------------------------------------------ */
+    function ratingOf(key, label) {
+      var t = key && o.ratings ? o.ratings[key] : null;
+      if (!t) { gap('ratings.' + label, 'no rating row on file for ' + label); return null; }
+      var p = t.performance || {};
+      return {
+        team: fact(t.team || label, { source: o.ratings_source || 'football/rankings/current.json' }),
+        rank: fact(num(t.rank), { source: o.ratings_source || 'football/rankings/current.json' }),
+        etsr: fact(num(t.etsr), { source: o.ratings_source || 'football/rankings/current.json', unit: 'points vs the league mean' }),
+        confidence: fact(t.confidence ? num(t.confidence.value) : null, { source: o.ratings_source || 'football/rankings/current.json', unit: 'ratio 0-1' }),
+        offense: fact(num(p.offense), { source: o.ratings_source || 'football/rankings/current.json' }),
+        defense: fact(num(p.defense), { source: o.ratings_source || 'football/rankings/current.json' }),
+        special_teams: fact(num(p.special_teams), { source: o.ratings_source || 'football/rankings/current.json' }),
+        games_used: fact(t.weights ? num(t.weights.games_used) : null, { source: o.ratings_source || 'football/rankings/current.json' }),
+        achievement: fact(t.achievement ? t.achievement.state : null, { source: o.ratings_source || 'football/rankings/current.json', note: t.achievement ? t.achievement.basis : null }),
+        conference: fact(t.conference || null, { source: o.ratings_source || 'football/rankings/current.json' })
+      };
+    }
+    var ratings = { home: ratingOf(homeKey, home || 'the home side'), away: ratingOf(awayKey, away || 'the away side') };
+
+    /* ---- previous games ---------------------------------------------- */
+    function priorOf(list, key, label) {
+      if (!list) { gap('previous_games.' + label, 'the completed-games table was not read for this answer'); return null; }
+      var rows = list.filter(function (g) { return g && g.completed; }).map(function (g) {
+        var isHome = canonKey(g.home_id, g.home_team) === key;
+        var us = num(isHome ? g.home_points : g.away_points), them = num(isHome ? g.away_points : g.home_points);
+        return {
+          week: g.week == null ? null : num(g.week),
+          opponent: isHome ? g.away_team : g.home_team,
+          site: g.neutral_site ? 'neutral' : (isHome ? 'home' : 'away'),
+          points_for: us, points_against: them,
+          result: (us == null || them == null) ? null : (us > them ? 'W' : us < them ? 'L' : 'T'),
+          margin: (us == null || them == null) ? null : us - them,
+          date: g.start_date || null
+        };
+      }).sort(function (a, b) { return (b.week || 0) - (a.week || 0); });
+      if (!rows.length) { gap('previous_games.' + label, 'no completed games on file for ' + label + ' this season'); return null; }
+      return rows.slice(0, 6);
+    }
+    var previous = {
+      home: priorOf(o.previous && o.previous.home, homeKey, home || 'the home side'),
+      away: priorOf(o.previous && o.previous.away, awayKey, away || 'the away side')
+    };
+
+    /* ---- availability -------------------------------------------------- */
+    function availOf(key, label) {
+      var rec = key && o.availability ? o.availability[key] : null;
+      if (!rec) { gap('availability.' + label, 'no availability record reached ' + label + '’s roster'); return null; }
+      var read = availabilityRead({ team: label, record: rec, now: now, generated_at: o.availability_generated_at || null });
+      if (read && read.state === 'UNKNOWN') {
+        limits.push('Availability for ' + label + ' is UNKNOWN, and unknown is carried as unknown — it is never read as healthy.');
+      }
+      return read;
+    }
+    var availability = { home: availOf(homeKey, home || 'the home side'), away: availOf(awayKey, away || 'the away side') };
+
+    /* ---- what this can and cannot answer ------------------------------ */
+    var answerable = !!(identity.home.value && identity.away.value);
+    return {
+      schema: RESEARCH_SCHEMA,
+      built_at: new Date(now).toISOString(),
+      sport: 'americanfootball_ncaaf',
+      game_id: identity.game_id.value,
+      subject: res.subject || (subjectIsHome ? home : away),
+      opponent: subjectIsHome ? away : home,
+      subject_is_home: subjectIsHome,
+      resolution: { state: res.state || null, how: res.how || null, named: res.named || [], source: res.source || SLATE },
+      identity: identity, model: model, market: market, ratings: ratings,
+      previous_games: previous, availability: availability,
+      missing: missing, limits: uniq(limits.filter(Boolean)),
+      status: {
+        answerable: answerable,
+        narration: 'pending',
+        why: answerable ? null : 'the matchup did not resolve to two named teams'
+      }
+    };
+  }
+
   return {
     VERSION: VERSION, PACKET_SCHEMA: PACKET_SCHEMA, LEDGER_SCHEMA: LEDGER_SCHEMA, DECISIONS: DECISIONS,
     DECISIONS_DISABLED: DECISIONS_DISABLED, decisionsEnabled: function () { return CONFIG.decisions_enabled !== false; },
@@ -2698,6 +3207,9 @@
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
     ratingTimeBasis: ratingTimeBasis, RATING_TIME_BASES: RATING_TIME_BASES,
     normKey: normKey, aliasKey: aliasKey, resolveTeam: resolveTeam, matchesEvent: matchesEvent,
+    teamPhrases: teamPhrases, nameCandidates: nameCandidates, matchupPair: matchupPair,
+    resolveMatchup: resolveMatchup, MATCHUP_STATES: MATCHUP_STATES,
+    matchupResearch: matchupResearch, RESEARCH_SCHEMA: RESEARCH_SCHEMA,
     teamIndex: teamIndex, expandState: expandState, TEAM_ALIASES: TEAM_ALIASES,
     SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,
     disagreementDiagnostics: disagreementDiagnostics,

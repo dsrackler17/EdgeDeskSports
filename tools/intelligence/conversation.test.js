@@ -127,8 +127,13 @@ function done() {
   chk('a failed ledger write is surfaced on every turn that had a decision',
     broken.turns.every((t) => !t.decisions.length || t.ledger.state === 'NOT_RECORDED'),
     broken.turns.map((t) => t.ledger.state));
-  chk('with a notice a reader will understand',
-    broken.turns.some((t) => /TRACKING UNAVAILABLE/.test((t.ledger && t.ledger.notice) || '')));
+  chk('with the one sentence a reader gets, and nothing operational in it',
+    broken.turns.some((t) => (t.ledger && t.ledger.notice) === 'Research available; tracking temporarily unavailable.'),
+    broken.turns.map((t) => t.ledger && t.ledger.notice));
+  chk('and no status code, exception or table name travels with it',
+    broken.turns.every((t) => !t.ledger || (t.ledger.detail == null
+      && !/PGRST|schema cache|relation|HTTP \d/i.test(String(t.ledger.notice || '')))),
+    broken.turns.map((t) => t.ledger));
   chk('and the answers still arrive', broken.turns.every((t) => typeof t.answer === 'string' && t.answer.length > 0));
 
   /* ---- the matchup reader itself, on the phrasings people use ---------- */

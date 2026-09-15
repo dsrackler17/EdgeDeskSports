@@ -5,6 +5,206 @@ is still missing. It is written for whoever has to operate or extend this next.
 
 ---
 
+## 0. The website never asked the question (2026-09-15)
+
+Everything in sections 1 to 10 below is about the edge function. This section is
+about the half of the product that reaches the reader first, and it is where the
+reported failure actually lived.
+
+### 0.1 What was reported
+
+> "How does Texas State look this week?" produces `intent=unknown`,
+> `baseball_mlb` retrieval, Texas → Texas Rangers aliasing, MLB pitcher and
+> bullpen research, an unrelated Padres decision card, and a missing
+> recommendation ledger error.
+
+### 0.2 The root cause, in one paragraph
+
+`EDAI.sendText()` in `app.html` had **no team or matchup resolution at all**. It
+routed a question three ways — a daily-scan follow-up, a signal the reader had
+opened, or "the board" — and a question naming a college team matched none of
+them:
+
+```js
+var ctx = buildCtx();                       // null unless a signal is LOADED
+if (!ctx || isBoardQuestion(t)) { await boardAnswer(t); return; }
+```
+
+`isBoardQuestion("How does Texas State look this week?")` is false, and with no
+signal open `buildCtx()` is null — so the question fell to `boardAnswer()`.
+`boardAnswer()` builds an **MLB-shaped board** (`mlb_starters`, `mlb_matchups`,
+a `slate` of scored signals, which in September are baseball) and posts it with
+`board_mode: true`. `boardScope()` returns `null` unless `FB.p4.up` is populated,
+which only happens once the reader has opened the CFB tab, so the request
+carried no football anywhere in it.
+
+Every reported symptom is a consequence of that single routing decision:
+
+| symptom | why |
+|---|---|
+| `intent=unknown` | nothing in the request said football |
+| `baseball_mlb` retrieval | the MLB board was the only evidence sent |
+| Texas → Texas Rangers | the only team list in scope was MLB clubs |
+| pitcher and bullpen research | `mlb_starters` is what was sent |
+| a Padres decision card | `board.slate[0]`; nothing scoped cards to a matchup |
+| a ledger error in the answer | the write failed and its PostgREST body was rendered to the reader |
+
+The server-side precedence fix merged as `r8` is correct and still stands, but it
+could never have fixed this: it decides what the function does with a football
+packet, and the browser was never sending one.
+
+### 0.3 What changed
+
+**One resolver, in the kernel, shared by both hosts.** `EDINTEL.resolveMatchup`
+and `EDINTEL.teamPhrases` live in `supabase/functions/edgedesk_ai/_intelligence.js`
+and are copied verbatim into both `index.ts` and `app.html` by
+`tools/presentation/inline.js`. There is no second alias table: they resolve
+through the same `resolveTeam` / `TEAM_ALIASES` the board joins its market with.
+`resolveNamedMatchup` in the function is now a thin retrieval wrapper around the
+shared call rather than a second implementation.
+
+**The longest name wins.** `teamPhrases` tests every window of the question from
+four words down to one and the longest hit takes its words outright, so
+`Texas State` is found before `Texas`, and `North Texas vs Texas State` yields
+both programs. Only exact, alias and `St.`/`State` expansions count — a loose
+prefix match on a bare word is precisely how a college question lands on a
+professional club. A single word only counts when the writer capitalised it, or
+when nothing in the sentence is capitalised at all.
+
+**Precedence, as the brief sets it out.** In `matchupRoute()`:
+
+1. a matchup named in *this* question (both teams, or one team with exactly one
+   game in the published window)
+2. the subject the conversation already established
+3. the board — and only for an explicit board question; a merely *carried*
+   subject does not outrank `"who are today's worst starting pitchers?"`
+4. otherwise the ordinary routes, unchanged
+
+A board that happens to be open never wins. Naming somebody the FBS card does
+not carry (`"what about the Padres?"`) returns `SUBJECT_CHANGED`, which clears
+the football subject and hands the turn back rather than answering about a game
+the reader has moved on from.
+
+**The card does not wait for the model.** `matchupTurn()` renders in three
+passes: the published artifacts first (slate, ratings, availability — all static
+files the site already serves), then the market and completed-games reads under
+the reader's own token, then narration. The card carries the opponent, kickoff,
+venue, week, the model's projection with both conventions named, the market
+state (executable quote with book and capture time, or consensus number, or a
+declared absence), each side's rating, previous results, availability, every
+missing field with a reason, and the model's own decision ceiling. If narration
+fails the card stays exactly as it is, with one line saying the written read did
+not come back and a button to ask for it again. **No lean is ever fabricated to
+fill the gap.**
+
+**Decision cards are scoped.** `decisionListHTML(research, scope)` filters to
+the resolved `game_id`, falling back to a name match on *both* sides. A matchup
+question can no longer render a card from another game, let alone another sport.
+
+**"Against it" is two lists.** `"priced 20m ago — verify it is still live"` is a
+step you take before betting, not an argument that the bet is wrong, and while
+it sat in `reasonsAgainst` it could become the *watch line* — the one sentence a
+reader takes away — of a perfectly sound call. Operational blockers now travel
+in `checksRequired` / `checks_required` and render under **Confirm before
+acting**. Opposing evidence stays where it was.
+
+**The tracking failure is one sentence.** The reader sees
+`Research available; tracking temporarily unavailable.` The status code, the
+response body and the diagnosis stay in `?probe=1`'s `ledger_health` and the
+function's own logs. And `ledgerDiagnosis()` classifies by **status**, not by
+grepping the body for `"schema cache"` — a 404 is reported as *ambiguous between
+a table that was never created and one outside PostgREST's exposed schemas*,
+because reporting it as an unapplied migration sent somebody to re-run a
+migration that was already applied.
+
+### 0.4 The endpoint is a gate, not a door
+
+The provider key has never been in the browser: it is an environment variable on
+the edge function, and every database read runs under the caller's own token so
+row-level security decides what they can see. **A Supabase JWT proves identity,
+not entitlement**, and until now that was the only thing checked — any signed-up
+account could spend provider tokens indefinitely.
+
+- `subscriptionGate()` reads the caller's own `subscriptions` row under their own
+  token and applies the same rule `app.html`'s paywall applies (`entitled()` ≡
+  `pgEntitled`). A row that is present and not entitling is refused **402**. A
+  table that cannot be read is an infrastructure fault, not a finding that
+  somebody has not paid, so it does not lock anybody out.
+- `rateVerdict()` is a per-isolate, per-caller counter — 30 a minute, 300 an
+  hour, both configurable. It is honest about being per-isolate: it cannot stop a
+  determined abuser spread across isolates, and it is not presented as if it
+  could. What it stops is the ordinary runaway, which is what actually burns a
+  budget.
+- The browser's `resolved_matchup` is a **claim, not evidence**. The function
+  looks the claimed `game_id` up in its own copy of the published card, checks
+  the teams against that row, and drops the claim if they disagree. A browser may
+  say *which game*; it may not say what is true about it. Every number the
+  function reports or records is its own read.
+
+**No new server runtime was added, and none is needed.** The Supabase Edge
+Function already is the small authenticated server endpoint this calls for: it
+holds the provider credential, authenticates the caller, and runs every
+privileged read under that caller's token. What was missing was enforcement, not
+infrastructure. A static page cannot hold an AI provider key — anything shipped
+to the browser is public — so the function stays, and the work went into giving
+it less to do: the deterministic research assembly now lives in the shared
+kernel, where the browser runs it too.
+
+### 0.5 How it is verified
+
+`tools/intelligence/chat.e2e.js` loads `app.html` in Chromium, opens the chat
+panel, **loads an MLB signal first** (the state the failure was reported in), and
+types the question into the real textarea. Every assertion reads the DOM a
+subscriber would be looking at; nothing calls an internal function to get its
+answer. The reasoning function is answered three ways across the run — a normal
+narration, a 500, and a decision card belonging to another game.
+
+The subject is **not hardcoded**. The suite picks, from the real published card,
+a program whose full name starts with another program's on the same card and
+which plays exactly one game in the window. On today's card that is Texas State;
+if the card changes it picks whatever team now has that shape and keeps testing
+the rule rather than the team.
+
+```
+npm run intel:e2e          # 48 assertions, in a browser
+```
+
+It is non-vacuous: with `matchupRoute()` removed from `sendText()` and nothing
+else changed, 30 of the 48 fail.
+
+### 0.6 What could not be verified here, and why
+
+The session this was built in has **no outbound network access**: the agent
+proxy answers `403` to `CONNECT` for both `edgedesksports.com:443` and the
+Supabase project host. So:
+
+| check | state |
+|---|---|
+| `app.html` chat path, the exact question, in a real browser | **verified** — `npm run intel:e2e`, 48 assertions, against the real published artifacts |
+| the shared kernel, the endpoint gates, the ledger diagnosis | **verified** — `npm run ai:test`, and the whole repo suite is green |
+| the live site answering the question | **not verified** — no egress |
+| the deployed function's build | **not verified** — `intel:doctor` reports `UNKNOWN`, `HTTP 403 from the probe`, which is the proxy refusing, not the function being absent |
+| the production `recommendation_ledger` schema and migration state | **not verified** — the same block, plus no `SB_ANON` / `SB_SERVICE_ROLE` in this environment |
+
+**The tracking repair is therefore half done and should be read that way.** The
+reader-facing half is complete and tested: one sentence, no exception text, and
+a diagnosis that refuses to call a 404 an unapplied migration. Applying the
+migration and proving an authenticated write and read against production needs
+a machine with direct network access and the project credentials:
+
+```
+SB_ANON=...  node tools/intelligence/deploy_doctor.js      # what is actually there
+psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql # idempotent
+supabase functions deploy edgedesk_ai                      # r9
+```
+
+`app.html` and the artifacts ship on merge through GitHub Pages, so the browser
+half of this change is live once the pull request merges. **The edge function is
+not**, and nothing here should be read as saying the production endpoint is
+running `r9` until `intel:doctor` says so from somewhere that can reach it.
+
+---
+
 ## 1. Root causes
 
 Six symptoms were reported. Four of them turned out to be the same structural
