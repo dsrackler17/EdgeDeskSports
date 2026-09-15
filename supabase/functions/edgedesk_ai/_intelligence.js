@@ -335,6 +335,49 @@
     /* Quote freshness, in minutes, by market family. A pregame side moves more
        slowly than a total on a short board; both move faster than a future. */
     quote_ttl_min: { h2h: 90, spreads: 90, totals: 90, futures: 720, _default: 90 },
+    /* ...AND BY HOW CLOSE THE GAME IS, which the market family cannot express.
+       A flat limit is two different mistakes at once, and the expensive one is
+       not the one people expect:
+
+         TOO LOOSE WHERE IT MATTERS MOST. Twenty minutes before kickoff, a
+         44-minute-old price cleared the old flat 45-minute check and a
+         89-minute-old price cleared the flat 90. That is the window in which
+         a line moves fastest and a book takes a number down soonest, and it
+         was the window in which EdgeDesk was most willing to call a price
+         current. Showing a customer a number that left the board half an hour
+         ago, at the moment they are most likely to act on it, is the worst
+         failure this system can have.
+
+         TOO TIGHT WHERE IT DOES NOT. A college spread six days out that has
+         not been re-captured in two hours is an ordinary Tuesday, not a
+         staleness event. Flagging it burns the word `stale` on a non-event,
+         and a warning that fires on everything stops being read.
+
+       These are the SAME numbers capture enforces on the write side
+       (FRESHNESS_POLICY, ncaaf, in seconds) expressed in minutes, so the price
+       a run is willing to store as fresh and the price a reader is willing to
+       call current are one policy rather than two that drift. Buckets are
+       matched in order; the first whose ceiling the game is inside wins.
+
+       The ladder REPLACES the family limit for the markets named in
+       quote_ttl_bucketed_markets rather than capping it, because the family
+       number and the bucket number are answers to different questions and
+       combining them with a min or a max gets one of the two cases wrong. Note
+       that the `day` rung is 90 minutes — the same value the flat limit always
+       had. A game inside a day behaves exactly as it did; the change is
+       entirely at the two ends that a single number could not describe. */
+    quote_ttl_buckets: [
+      { name: 'imminent', max_hours_to_start: 0.5, minutes: 5 },
+      { name: 'close', max_hours_to_start: 2, minutes: 15 },
+      { name: 'soon', max_hours_to_start: 6, minutes: 45 },
+      { name: 'day', max_hours_to_start: 24, minutes: 90 },
+      { name: 'far', max_hours_to_start: 72, minutes: 180 },
+      { name: 'deep', max_hours_to_start: null, minutes: 360 }
+    ],
+    /* Which markets the ladder decides. A future is not priced against a
+       kickoff — it is priced against a season — so its freshness stays on the
+       family limit above, where 720 minutes means what it has always meant. */
+    quote_ttl_bucketed_markets: ['h2h', 'spreads', 'totals'],
     /* Past this multiple of its TTL a quote is not merely aging, it is stale
        and may not support an actionable conclusion at all. */
     stale_multiple: 1,
@@ -991,9 +1034,61 @@
   /* QUOTE STATE — is this price still a price?                            */
   /* ==================================================================== */
 
-  function quoteTtlMin(market, over) {
+  /**
+   * Which kickoff bucket a game is in, by hours until it starts.
+   *
+   * A game already under way returns the tightest bucket rather than none:
+   * a pregame quote on a started game is blocked outright elsewhere, and the
+   * tightest limit is the answer that can never be the generous one.
+   */
+  function quoteTtlBucket(hoursToStart) {
+    var h = num(hoursToStart);
+    if (h == null) return null;
+    var list = CONFIG.quote_ttl_buckets || [];
+    for (var i = 0; i < list.length; i++) {
+      var b = list[i];
+      var ceil = num(b && b.max_hours_to_start);
+      if (ceil == null || h <= ceil) return b;
+    }
+    return list.length ? list[list.length - 1] : null;
+  }
+
+  /** Plain English for a bucket's ceiling, for use inside a sentence. */
+  function kickoffPhrase(bucket) {
+    var h = bucket && num(bucket.max_hours_to_start);
+    if (h == null) return 'this far out';
+    if (h <= 1) return 'under ' + Math.round(h * 60) + ' minutes away';
+    if (h < 24) return 'under ' + h + ' hours away';
+    return 'under ' + Math.round(h / 24) + ' day' + (Math.round(h / 24) === 1 ? '' : 's') + ' away';
+  }
+
+  /**
+   * How old a quote on this market may be, in minutes.
+   *
+   * WHICHEVER RULE ACTUALLY KNOWS. For a game market with a kickoff, the
+   * ladder knows: how long a price survives is a function of how close the
+   * game is, and a family average cannot express that. For a future, or for a
+   * quote with no event time at all, the family limit is the only thing there
+   * is, and it stands untouched.
+   *
+   * These are not combined with a min or a max. Both were tried on paper and
+   * both get one end wrong: a min can never loosen the limit for a game six
+   * days out, and a max can never tighten it for a game six minutes out. They
+   * are answers to different questions, so one of them answers and the other
+   * does not.
+   *
+   * An explicit `over` for the market always wins — a caller naming its own
+   * limit is not asking for a policy lookup.
+   */
+  function quoteTtlMin(market, over, hoursToStart) {
     var m = normMarket(market);
-    var t = over && over[m] != null ? over[m] : CONFIG.quote_ttl_min[m];
+    if (over && over[m] != null && num(over[m]) != null) return num(over[m]);
+
+    var bucket = quoteTtlBucket(hoursToStart);
+    var bucketed = (CONFIG.quote_ttl_bucketed_markets || []).indexOf(m) >= 0;
+    if (bucket && bucketed && num(bucket.minutes) != null) return num(bucket.minutes);
+
+    var t = CONFIG.quote_ttl_min[m];
     return num(t) != null ? num(t) : CONFIG.quote_ttl_min._default;
   }
 
@@ -1010,10 +1105,24 @@
     var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
     var at = toMs(o.captured_at);
     var ageMin = at != null ? Math.max(0, (now - at) / 60000) : num(o.age_min);
-    var limit = quoteTtlMin(o.market, o.ttl_override);
-    var hard = limit * (num(o.stale_multiple) != null ? num(o.stale_multiple) : CONFIG.stale_multiple);
     var kickoff = toMs(o.kickoff);
     var minsToKick = kickoff != null ? (kickoff - now) / 60000 : null;
+    /* The limit is resolved AFTER the kickoff is known, not before, because
+       how close the game is is half of what decides it. */
+    var limit = quoteTtlMin(o.market, o.ttl_override, minsToKick == null ? null : minsToKick / 60);
+    var ladder = quoteTtlBucket(minsToKick == null ? null : minsToKick / 60);
+    /* The bucket only NAMES the limit when it SET the limit. A futures quote
+       sitting in the `far` window is still on its family limit, and reporting
+       `far` for it would be a basis that does not match the number. */
+    var bucket = (ladder && (CONFIG.quote_ttl_bucketed_markets || []).indexOf(normMarket(o.market)) >= 0
+      && !(o.ttl_override && o.ttl_override[normMarket(o.market)] != null)) ? ladder : null;
+    var hard = limit * (num(o.stale_multiple) != null ? num(o.stale_multiple) : CONFIG.stale_multiple);
+
+    /* Said once so the stale and aging branches cannot describe the same
+       limit two different ways. */
+    var limitPhrase = bucket && bucket.name !== 'deep'
+      ? limit + '-minute limit that applies with kickoff ' + kickoffPhrase(bucket)
+      : limit + '-minute limit for a ' + (marketLabel(o.market) || 'market') + ' quote';
 
     var status, why, actionable;
     if (ageMin == null) {
@@ -1022,11 +1131,11 @@
       actionable = CONFIG.unknown_age_is_actionable === true;
     } else if (ageMin >= hard) {
       status = 'STALE';
-      why = 'Last captured ' + Math.round(ageMin) + ' minutes ago, past the ' + limit + '-minute limit for a ' + (marketLabel(o.market) || 'market') + ' quote. This is the last price EdgeDesk observed, not a price that is currently available.';
+      why = 'Last captured ' + Math.round(ageMin) + ' minutes ago, past the ' + limitPhrase + '. This is the last price EdgeDesk observed, not a price that is currently available.';
       actionable = false;
     } else if (ageMin >= limit / 2) {
       status = 'AGING';
-      why = 'Captured ' + Math.round(ageMin) + ' minutes ago, inside the ' + limit + '-minute limit but past half of it. Confirm it is still on the board before acting.';
+      why = 'Captured ' + Math.round(ageMin) + ' minutes ago, inside the ' + limitPhrase + ' but past half of it. Confirm it is still on the board before acting.';
       actionable = true;
     } else {
       status = 'CURRENT';
@@ -1047,6 +1156,10 @@
       status: status,
       age_min: ageMin == null ? null : Math.round(ageMin * 10) / 10,
       limit_min: limit,
+      /* WHY the limit is what it is. Without this a customer told a
+         12-minute-old price is stale has no way to see that the game starts in
+         forty minutes, and the warning reads as a malfunction. */
+      limit_basis: bucket ? bucket.name : 'market',
       captured_at: at != null ? new Date(at).toISOString() : null,
       minutes_to_kickoff: minsToKick == null ? null : Math.round(minsToKick),
       actionable: actionable && !kickBlock,
@@ -1057,6 +1170,93 @@
       research_note: status === 'STALE' || status === 'UNKNOWN'
         ? 'Keep this quote for research with its timestamp attached. Do not describe it as currently available and do not build a price conclusion on it.'
         : null
+    };
+  }
+
+  var GAME_STATES = ['SCHEDULED', 'IN_PROGRESS', 'FINAL', 'UNKNOWN'];
+
+  /* How long after kickoff a game is presumed still running when no status
+     feed says otherwise. Generous on purpose: presuming a game has finished
+     while it is still being played is the error that lets a pregame number be
+     described as a result. */
+  var TYPICAL_GAME_H = 4;
+
+  /**
+   * Is this game scheduled, being played, or over?
+   *
+   * EDGEDESK'S RESEARCH IS PREGAME AND ONLY PREGAME. No in-game price, score,
+   * clock or possession is ingested anywhere in this system. That is a fine
+   * thing to be — most research is done before kickoff — but it stops being
+   * fine the moment a question asked at half past eight is answered with the
+   * same words as one asked at noon, because everything in the answer is then
+   * describing a game the reader is currently watching, in the present tense,
+   * with no indication that it has started.
+   *
+   * So the state is established and SAID. A game under way is not refused a
+   * research answer — the pregame work is still the pregame work, and a reader
+   * asking "what did we think of this?" during the second quarter deserves it
+   * — but nothing about it may be presented as current, and no number in it
+   * may be acted on.
+   *
+   * @param o.kickoff  scheduled start
+   * @param o.status   a status string from a schedule row, when there is one
+   * @param o.now      clock
+   */
+  function gameState(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var kick = toMs(o.kickoff);
+    var raw = String(o.status == null ? '' : o.status).toLowerCase();
+
+    /* A STATUS FEED OUTRANKS THE CLOCK, because a game can be delayed,
+       suspended or moved and the schedule row is the thing that knows. */
+    var said = /final|complete|post|ended/.test(raw) ? 'FINAL'
+      : /in.?progress|live|halftime|quarter|period|inning/.test(raw) ? 'IN_PROGRESS'
+      : /scheduled|pre|upcoming/.test(raw) ? 'SCHEDULED' : null;
+
+    var state, why;
+    if (said === 'FINAL') {
+      state = 'FINAL';
+      why = 'This game is over. Everything below is what EdgeDesk knew before it started.';
+    } else if (said === 'IN_PROGRESS') {
+      state = 'IN_PROGRESS';
+      why = 'This game is being played right now.';
+    } else if (kick == null) {
+      state = 'UNKNOWN';
+      why = 'No kickoff time is on file for this game, so EdgeDesk cannot tell whether it has started.';
+    } else if (now < kick) {
+      state = 'SCHEDULED';
+      why = null;
+    } else if (now - kick < TYPICAL_GAME_H * 3600e3) {
+      state = 'IN_PROGRESS';
+      why = 'Kickoff was ' + Math.round((now - kick) / 60000) + ' minutes ago and no status feed says the game has '
+        + 'finished, so it is being played right now.';
+    } else {
+      state = 'FINAL';
+      why = 'Kickoff was ' + Math.round((now - kick) / 3600e3) + ' hours ago, so this game is over.';
+    }
+
+    var live = state === 'IN_PROGRESS';
+    var over = state === 'FINAL';
+    return {
+      state: state,
+      kickoff: kick != null ? new Date(kick).toISOString() : null,
+      minutes_since_kickoff: kick == null ? null : Math.round((now - kick) / 60000),
+      status_source: said ? 'status feed' : kick == null ? 'none' : 'clock',
+      why: why,
+      /* THE THREE PERMISSIONS, SAID AS DATA. */
+      may_recommend: state === 'SCHEDULED',
+      may_describe_as_current: state === 'SCHEDULED',
+      research_usable: true,
+      /* What a consumer must tell the reader, in one sentence, when the game
+         is not scheduled. Null when it is. */
+      notice: !live && !over ? null
+        : live
+          ? 'THIS GAME HAS ALREADY STARTED. EdgeDesk holds no in-game price, score, clock or possession — every '
+            + 'number below describes the game BEFORE kickoff and none of it is a live read. Treat it as a record '
+            + 'of what the research said, not as advice about a game in progress.'
+          : 'THIS GAME IS OVER. Everything below is what EdgeDesk knew before kickoff. It is not a result, and no '
+            + 'price in it is available.'
     };
   }
 
@@ -1207,6 +1407,9 @@
    * @param o.team     the team name, for the sentence
    * @param o.generated_at the artifact's own build time
    * @param o.now      clock
+   * @param o.league   the artifact's own sport-wide totals — {team_count,
+   *                   records, teams_with_official, failed_sources}. Optional,
+   *                   and the reason it exists is below.
    */
   function availabilityRead(o) {
     o = o || {};
@@ -1258,6 +1461,7 @@
         + ', found no official report, and published nothing. '
         + 'THIS IS UNKNOWN, NOT HEALTHY: nobody has been confirmed fit and no injury has been ruled out. '
         + 'Do not describe this team as healthy, clean or fully available.';
+
     }
     if (stale && state !== 'NOT_RETRIEVED') {
       sentence += ' The availability build is ' + ageH + ' hours old, past the ' + AVAIL_STALE_H
@@ -1268,8 +1472,40 @@
       team: team, quality: quality, counts: counts,
       players: players, quarterbacks: qbs,
       official_report_found: official, sources_checked: checked, sources_failed: failed,
+      league_uncovered: !!(o.league && (num(o.league.team_count) || 0) > 0
+        && (num(o.league.teams_with_official) || 0) === 0),
       age_hours: ageH, stale: stale, sentence: sentence
     });
+  }
+
+  /**
+   * The one sentence about the WHOLE availability build, said once.
+   *
+   * IS THIS TEAM UNCOVERED, OR IS THE SPORT? Those read identically to a
+   * customer and they are not the same fact. "EdgeDesk checked 3 sources and 2
+   * failed" sounds like this team had bad luck this week, and a reader hearing
+   * it about one team assumes the next team will be fine. The truth on the
+   * last build was that NOT ONE of 138 programs carried an official report and
+   * the whole build held five records — which is not an injury picture, it is
+   * the absence of one, and it will be the same for every team they ask about.
+   *
+   * Returns null when the build has real coverage, so this appears only when
+   * it is true.
+   *
+   * @param o {team_count, records, teams_with_official}
+   */
+  function availabilityCoverageNote(o) {
+    o = o || {};
+    var teams = num(o.team_count) || 0;
+    if (teams <= 0) return null;
+    if ((num(o.teams_with_official) || 0) > 0) return null;
+    var records = num(o.records) || 0;
+    return 'AVAILABILITY COVERAGE FOR THIS SPORT: none of the ' + teams + ' programs in this build carries an '
+      + 'official availability report, and the whole build holds ' + records + ' record'
+      + (records === 1 ? '' : 's') + '. The gap is the sport\u2019s, not any one team\u2019s — no team on this '
+      + 'card can be described as healthy, and none of them will look any different from each other. Say this '
+      + 'once if it matters to the question; do not repeat it per team, and do not read it as a clean bill of '
+      + 'health for anybody.';
   }
 
   function finishAvail(state, o) {
@@ -1279,6 +1515,11 @@
       players: o.players, quarterbacks: o.quarterbacks,
       official_report_found: o.official_report_found,
       sources_checked: o.sources_checked, sources_failed: o.sources_failed,
+      /* True when the gap is the SPORT'S and not this team's. Deliberately NOT
+         folded into `sentence`: it is one fact about the whole build, and a
+         consumer that repeats it under every team on the card says the same
+         paragraph ten times and crowds out a game's evidence to do it. */
+      league_uncovered: o.league_uncovered === true,
       artifact_age_hours: o.age_hours, stale: o.stale,
       /* THE TWO PERMISSIONS, SAID AS DATA SO NO CONSUMER HAS TO INFER THEM. */
       may_claim_healthy: state === 'NO_REPORTED_INJURIES',
@@ -3260,7 +3501,9 @@
     loadFootballValidation: loadFootballValidation, modelWinProbability: modelWinProbability,
     validationSnapshot: validationSnapshot, loadSnapshotValidation: loadSnapshotValidation,
     fairMethod: fairMethod, confirmationRead: confirmationRead,
-    quoteTtlMin: quoteTtlMin, quoteState: quoteState, applyRefresh: applyRefresh,
+    quoteTtlMin: quoteTtlMin, quoteTtlBucket: quoteTtlBucket, quoteState: quoteState, applyRefresh: applyRefresh,
+    gameState: gameState, GAME_STATES: GAME_STATES,
+    availabilityCoverageNote: availabilityCoverageNote,
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,

@@ -215,6 +215,115 @@ export const FRESHNESS_POLICY: Record<string, Record<string, number>> = {
   "*|*": { imminent: 300, close: 900, soon: 2400, day: 4800, far: 9600, deep: 19200 },
 };
 
+/* ── CADENCE TIERS ───────────────────────────────────────────────────────────
+   A capture run is not one thing. The board a customer researches on Tuesday
+   and the board they bet into forty minutes before kickoff need completely
+   different cadences, and until now the deployment had neither: NOTHING
+   scheduled `capture` at all. The file header calls it a cron job; no cron
+   existed anywhere in this repository. That is why a customer asking about a
+   Saturday game on the Thursday was shown a price captured 2,345 minutes —
+   thirty-nine hours — earlier, and why the answer opened by warning them
+   about it.
+
+   One deployed function, several cadences, selected per invocation with
+   `?tier=`. The tier picks a WINDOW, not a policy: what makes a signal
+   actionable is identical in every tier, and a tier can only narrow which
+   sports are worth a billed request, never loosen what a price must prove.
+
+     near   every ~10 min   Sports with a game inside 8 hours. On a day with
+                            no such game this costs the FREE event index per
+                            sport and not one billed request. On a Saturday it
+                            is the only thing standing between a customer and
+                            a price that left the board.
+     day    every ~30 min   Anything kicking off inside 30 hours. Keeps the
+                            board a customer researches the night before, and
+                            the morning of, inside its 90-minute rung.
+     board  every 4 hours   The whole horizon, nothing skipped. A college
+                            spread six days out is allowed to be six hours
+                            old — that is its rung — so six runs a day clears
+                            it with room.
+
+   THE RUNGS THESE SERVE are the reader's, in
+   `edgedesk_ai/_intelligence.js` (`quote_ttl_buckets`), which are these same
+   FRESHNESS_POLICY numbers in minutes. A cadence looser than the rung it
+   feeds produces a board that is correctly described as stale, which is
+   honest and useless. These were chosen to sit inside their rungs and the
+   comparison is asserted in tools/capture/capture.test.js so the two cannot
+   drift apart silently. */
+/* The reader's rungs, in minutes, mirrored from
+   edgedesk_ai/_intelligence.js `quote_ttl_buckets`. Held here so a run can
+   state which of them its own cadence is fast enough to keep, and so
+   tools/capture/capture.test.js can fail when the two copies drift. */
+export const READER_RUNGS: { name: string; maxHoursToStart: number; minutes: number }[] = [
+  { name: "imminent", maxHoursToStart: 0.5, minutes: 5 },
+  { name: "close", maxHoursToStart: 2, minutes: 15 },
+  { name: "soon", maxHoursToStart: 6, minutes: 45 },
+  { name: "day", maxHoursToStart: 24, minutes: 90 },
+  { name: "far", maxHoursToStart: 72, minutes: 180 },
+  { name: "deep", maxHoursToStart: Infinity, minutes: 360 },
+];
+
+export interface CadenceTier {
+  nearHours: number;
+  maxDaysToStart: number;
+  /** Minutes between runs on the schedule this tier is DEPLOYED on. The cron
+      entries in supabase/capture_cron.sql must agree with this, and the test
+      suite reads that file and checks that they do. */
+  cadenceMin: number;
+  note: string;
+}
+export const CADENCE_TIERS: Record<string, CadenceTier> = {
+  near: {
+    nearHours: 8, maxDaysToStart: 2, cadenceMin: 10,
+    note: "Only sports with an event inside 8 hours. On a day with no such event "
+      + "this costs the free event index per sport and not one billed request.",
+  },
+  day: {
+    nearHours: 30, maxDaysToStart: 3, cadenceMin: 30,
+    note: "Anything kicking off inside 30 hours, which is the board a customer "
+      + "researches the night before and the morning of.",
+  },
+  board: {
+    nearHours: 0, maxDaysToStart: 14, cadenceMin: 240,
+    note: "The full horizon with no sport skipped. Every sport costs a billed "
+      + "request on this tier, which is why it runs six times a day and not more.",
+  },
+};
+
+/** Which reader rungs a cadence is fast enough to keep, and which it is not.
+ *
+ *  A CADENCE LOOSER THAN THE RUNG IT FEEDS IS NOT A BUG, BUT IT MUST NOT BE
+ *  SILENT. Running every ten minutes cannot keep a price inside the five-minute
+ *  rung that applies within half an hour of kickoff, so in that window EdgeDesk
+ *  genuinely does not know the current number to the accuracy it demands before
+ *  acting, and the reader will correctly call those quotes aging. That is the
+ *  system working. What would not be working is a run reporting success while
+ *  leaving somebody to discover the gap from a customer complaint, so every run
+ *  says which rungs it serves and which it does not. */
+export function rungsServed(cadenceMin: number): { served: string[]; not_served: string[]; note: string } {
+  const served: string[] = [], notServed: string[] = [];
+  for (const r of READER_RUNGS) (cadenceMin <= r.minutes ? served : notServed).push(r.name);
+  return {
+    served, not_served: notServed,
+    note: notServed.length
+      ? `A ${cadenceMin}-minute cadence cannot keep a price inside the ${notServed.join(", ")} rung`
+        + `${notServed.length > 1 ? "s" : ""}. Quotes in ${notServed.length > 1 ? "those windows" : "that window"} `
+        + `are correctly reported as aging or stale rather than presented as current. Tightening this costs odds-API `
+        + `quota in direct proportion; see supabase/capture_cron.sql.`
+      : `A ${cadenceMin}-minute cadence keeps every reader rung this tier covers.`,
+  };
+}
+
+/** Apply a named cadence tier to a config. Unknown or absent name returns the
+    config untouched, so a malformed cron entry degrades to the environment's
+    own window rather than to a window nobody chose. */
+export function applyCadenceTier(cfg: Config, tier: string | undefined | null): { cfg: Config; tier: string | null } {
+  const name = String(tier ?? "").trim().toLowerCase();
+  const t = name ? CADENCE_TIERS[name] : undefined;
+  if (!t) return { cfg, tier: null };
+  return { cfg: { ...cfg, nearHours: t.nearHours, maxDaysToStart: t.maxDaysToStart }, tier: name };
+}
+
 /* ── EDGE FLOORS ─────────────────────────────────────────────────────────────
    The minimum edge a segment must show before EdgeDesk will call it actionable,
    by sport × market × tier.
@@ -1715,7 +1824,7 @@ function explainWriteError(phase: string, e: string): string {
 
 export async function handle(req: Request): Promise<Response> {
   const envGet: EnvGet = (k) => (typeof Deno !== "undefined" ? Deno.env.get(k) : undefined);
-  const cfg = defaultConfig(envGet);
+  const baseCfg = defaultConfig(envGet);
   const CRON_SECRET = envGet("CRON_SECRET") ?? "";
   const ODDS_KEY = envGet("ODDS_API_KEY") ?? "";
   const SB_URL = envGet("SUPABASE_URL") ?? "";
@@ -1725,6 +1834,12 @@ export async function handle(req: Request): Promise<Response> {
   const params = Object.fromEntries(url.searchParams);
   const diag = params.diag === "1";
   const probe = params.probe === "1";
+
+  /* WHICH WINDOW THIS RUN IS FOR. Selected per invocation so one deployment
+     serves every cadence; see CADENCE_TIERS. The tier is applied BEFORE the
+     auth check reads nothing from it and BEFORE any request is made, and it
+     is echoed in the response so a run says which schedule produced it. */
+  const { cfg, tier } = applyCadenceTier(baseCfg, params.tier);
 
   const startedAt = Date.now();
   const elapsed = () => Date.now() - startedAt;
@@ -2230,6 +2345,20 @@ export async function handle(req: Request): Promise<Response> {
 
     // ── clock and quota ────────────────────────────────────────────────────
     elapsed_ms: elapsed(), budget_ms: cfg.budgetMs,
+
+    /* WHICH SCHEDULE PRODUCED THIS RUN. A board that looks under-captured is
+       either a cadence that is not firing or a tier that is doing exactly what
+       it was asked to; without this in the log those are the same picture. */
+    cadence: {
+      tier: tier,
+      near_hours: cfg.nearHours,
+      max_days_to_start: cfg.maxDaysToStart,
+      cadence_min: tier ? CADENCE_TIERS[tier].cadenceMin : null,
+      reader_rungs: tier ? rungsServed(CADENCE_TIERS[tier].cadenceMin) : null,
+      note: tier ? CADENCE_TIERS[tier].note
+        : "No ?tier= was named, so this run used the window the environment configures. "
+          + "Scheduled runs name a tier; see CADENCE_TIERS.",
+    },
     ...(Object.keys(eventsSkippedForTime).length ? { events_skipped_for_time: eventsSkippedForTime } : {}),
     ...(skippedNoNearEvents.length ? {
       sports_skipped_no_near_events: skippedNoNearEvents,

@@ -68,6 +68,16 @@ jobs:
             node football/availability/build_sources.js
           fi
 
+      # A REGISTERED SOURCE THAT DOES NOT ANSWER LOOKS EXACTLY LIKE A TEAM WITH
+      # NOBODY HURT. The collector returns zero reports for a 404, for a page
+      # that renders its table in JavaScript, and for a school whose whole
+      # roster is fit — and only the third of those is good news. This says
+      # which. It writes nothing and never fails the sync: a source that
+      # stopped answering is worth seeing in the log, and yesterday's dataset
+      # is better than no run.
+      - name: Prove the registered official sources still answer
+        run: node football/availability/fetch_availability.js --verify || true
+
       - name: Collect availability
         run: |
           ARGS=""

@@ -48,14 +48,55 @@ const OK_ARTIFACTS = [
   ['/football/fbs/slate.json', { status: 200, body: '{"games":[{},{}]}' }],
   ['/football/availability/current.json', { status: 200, body: '{"teams":{"a":{}},"generated_at":"2026-09-14T12:00:00Z"}' }],
 ];
+/** One signal row: captured `ageMin` ago, for a game `kickHrs` from now. */
+const signals = (ageMin, kickHrs) => ['/rest/v1/signals', { status: 200, body: JSON.stringify([{
+  last_seen_at: new Date(Date.now() - ageMin * 60000).toISOString(),
+  commence_time: new Date(Date.now() + kickHrs * 3600000).toISOString(),
+  sport_key: 'americanfootball_ncaaf', market: 'spreads',
+}]) }];
+/* A board captured 40 minutes ago for a game six days out: healthy on any
+   rung, so it never decides the verdict in tests about something else. */
+const OK_BOARD = signals(40, 144);
 
 (async function main() {
+  /* --- IS ANYTHING FILLING THE BOARD? ---------------------------------
+     Every other check here answers "is the right code deployed". Capture was
+     never scheduled at all, which none of them could see, so a customer found
+     it instead: a price captured 2,345 minutes before they were shown it. */
+  {
+    const base = [['?probe=1', { status: 200, body: probeBody() }],
+      ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS];
+    const board = async (row) => stateOf(await (net([...base, row]), D.doctor(OPTS)), 'the board is being captured');
+
+    eq('a board captured 40 minutes ago for a game six days out is current',
+      await board(signals(40, 144)), 'CURRENT');
+    eq('the same 40-minute age is STALE twenty minutes before kickoff',
+      await board(signals(40, 0.33)), 'STALE');
+    eq('the 39-hour board production served is STALE',
+      await board(signals(2345, 60)), 'STALE');
+    eq('a board with no upcoming game on it at all is EMPTY',
+      await board(['/rest/v1/signals', { status: 200, body: '[]' }]), 'EMPTY');
+
+    net([...base, signals(2345, 60)]);
+    let s = await D.doctor(OPTS);
+    eq('a stale board makes the whole verdict actionable', s.verdict, 'ACTION NEEDED');
+    chk('and the fix names the scheduler rather than the function',
+      /capture_cron\.sql/.test((s.checks.find((c) => c.name === 'the board is being captured') || {}).fix || ''),
+      (s.checks.find((c) => c.name === 'the board is being captured') || {}).fix);
+
+    net([...base, ['/rest/v1/signals', { status: 401, body: 'permission denied' }]]);
+    s = await D.doctor(OPTS);
+    eq('a key that may not read signals reports UNKNOWN rather than guessing',
+      stateOf(s, 'the board is being captured'), 'UNKNOWN');
+  }
+
   chk('the expected build is read from the function source', /^edgedesk_ai-\d{4}-/.test(String(WANT)), WANT);
 
   /* ---- everything deployed and current -------------------------------- */
   net([['?probe=1', { status: 200, body: probeBody() }],
     ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
-    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS]);
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
   let r = await D.doctor(OPTS);
   eq('a deployed, current, migrated project is reported as such', r.verdict, 'DEPLOYED AND CURRENT');
   eq('the function is DEPLOYED', stateOf(r, 'edgedesk_ai deployed'), 'DEPLOYED');
@@ -65,7 +106,7 @@ const OK_ARTIFACTS = [
 
   /* ---- THE CENTRAL CONFUSION: merged but not deployed ------------------ */
   net([['?probe=1', { status: 200, body: probeBody({ build: 'edgedesk_ai-2026-09-03-r5-presentation' }) }],
-    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS]);
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('an older build serving is STALE, not missing', stateOf(r, 'deployed build matches this checkout'), 'STALE');
   chk('and both builds are named so the gap is obvious',
@@ -74,7 +115,7 @@ const OK_ARTIFACTS = [
     detailOf(r, 'deployed build matches this checkout'));
   eq('which is action, not an unknown', r.verdict, 'ACTION NEEDED');
 
-  net([['?probe=1', { status: 404, body: 'not found' }], ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS]);
+  net([['?probe=1', { status: 404, body: 'not found' }], ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('a 404 on the function is NOT_DEPLOYED', stateOf(r, 'edgedesk_ai deployed'), 'NOT_DEPLOYED');
   chk('and names the command that fixes it',
@@ -83,14 +124,14 @@ const OK_ARTIFACTS = [
   /* ---- a missing table vs a table RLS refused -------------------------- */
   net([['?probe=1', { status: 200, body: probeBody() }],
     ['recommendation_ledger', { status: 404, body: '{"message":"relation \\"public.recommendation_ledger\\" does not exist"}' }],
-    ...OK_ARTIFACTS]);
+    ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('an absent table is NOT_APPLIED', stateOf(r, 'recommendation_ledger applied'), 'NOT_APPLIED');
   chk('and says what it costs, not just that it is absent',
     /going unrecorded/.test(detailOf(r, 'recommendation_ledger applied')), detailOf(r, 'recommendation_ledger applied'));
 
   net([['?probe=1', { status: 200, body: probeBody() }],
-    ['recommendation_ledger', { status: 401, body: 'permission denied' }], ...OK_ARTIFACTS]);
+    ['recommendation_ledger', { status: 401, body: 'permission denied' }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('a table row-level security refused is APPLIED, not missing',
     stateOf(r, 'recommendation_ledger applied'), 'APPLIED');
@@ -98,7 +139,7 @@ const OK_ARTIFACTS = [
   /* ---- the migration half-applied -------------------------------------- */
   net([['?probe=1', { status: 200, body: probeBody() }],
     ['recommendation_ledger?select=correction_reason', { status: 400, body: '{"code":"42703","message":"column recommendation_ledger.correction_reason does not exist"}' }],
-    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS]);
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('a ledger without the correction columns is caught', stateOf(r, 'official-correction columns applied'), 'NOT_APPLIED');
   chk('and the fix says the migration is safe to re-run',
@@ -119,14 +160,14 @@ const OK_ARTIFACTS = [
 
   /* ---- the things a deployed build can still be wrong about ------------ */
   net([['?probe=1', { status: 200, body: probeBody({ decisions_enabled: false }) }],
-    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS]);
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('a switched-off decision layer is reported', stateOf(r, 'decision layer'), 'DISABLED');
   chk('with what it means for the reader',
     /recommends nothing/.test(detailOf(r, 'decision layer')), detailOf(r, 'decision layer'));
 
   net([['?probe=1', { status: 200, body: probeBody({ env: { anthropic_key: false } }) }],
-    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS]);
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('a deployment with no model key is caught before a user finds it',
     stateOf(r, 'model credential configured on the deployment'), 'ABSENT');
@@ -134,13 +175,13 @@ const OK_ARTIFACTS = [
     JSON.stringify(r).indexOf('anthropic_key') < 0 || !/sk-|eyJ/.test(JSON.stringify(r)));
 
   net([['?probe=1', { status: 200, body: probeBody({ intelligence_loaded: false, intelligence_version: null }) }],
-    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS]);
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor(OPTS);
   eq('a current build that lost the kernel is caught',
     stateOf(r, 'intelligence kernel loaded in the deployed build'), 'ABSENT');
 
   /* ---- no credential is UNKNOWN, never a guess ------------------------- */
-  net([['?probe=1', { status: 200, body: probeBody() }], ...OK_ARTIFACTS]);
+  net([['?probe=1', { status: 200, body: probeBody() }], ...OK_ARTIFACTS, OK_BOARD]);
   r = await D.doctor({ url: 'https://p.test', key: '', site: 'https://s.test' });
   eq('without a key the ledger question is UNKNOWN, not assumed',
     stateOf(r, 'recommendation_ledger applied'), 'UNKNOWN');

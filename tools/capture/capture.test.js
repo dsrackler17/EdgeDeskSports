@@ -818,5 +818,107 @@ function ev(bookmakers, over) {
       j.quota_spent_this_run > 0 && j.quota_remaining === '4321', [j.quota_spent_this_run, j.quota_remaining]);
   }
 
+  /* =====================================================================
+     CADENCE. Capture was never scheduled -- not in pg_cron, not in GitHub
+     Actions -- which is how a customer came to be shown a price captured
+     2,345 minutes earlier. These assert the schedule exists, that it says
+     the same thing in all three places it is written, and that a run reports
+     honestly which reader rungs its own cadence cannot keep.
+     ===================================================================== */
+  {
+    const fs = require('fs');
+    const ROOT = path.join(__dirname, '..', '..');
+
+    /* --- a tier narrows the window and says which one it was ------------- */
+    net.odds['americanfootball_nfl'] = okPack();
+    net.db = () => res(200, [], { 'content-range': '*/0' });
+    const near = await (await M.handle(rq('?tier=near'))).json();
+    chk('a tiered run says which tier produced it', near.cadence && near.cadence.tier === 'near', near.cadence);
+    chk('and the tier set the window rather than the environment',
+      near.cadence.near_hours === M.CADENCE_TIERS.near.nearHours
+      && near.cadence.max_days_to_start === M.CADENCE_TIERS.near.maxDaysToStart, near.cadence);
+
+    const board = await (await M.handle(rq('?tier=board'))).json();
+    chk('the board tier skips no sport', board.cadence.near_hours === 0, board.cadence);
+    chk('and carries the full horizon', board.cadence.max_days_to_start === 14, board.cadence);
+
+    const bogus = await (await M.handle(rq('?tier=nonesuch'))).json();
+    chk('an unknown tier degrades to the configured window rather than to one nobody chose',
+      bogus.cadence.tier === null && bogus.cadence.max_days_to_start === 14, bogus.cadence);
+
+    /* --- a run is honest about the rung it cannot keep -------------------- */
+    chk('a ten-minute cadence admits it cannot keep the five-minute rung',
+      near.cadence.reader_rungs.not_served.includes('imminent'), near.cadence.reader_rungs);
+    chk('and names the rungs it does keep',
+      near.cadence.reader_rungs.served.includes('close')
+      && near.cadence.reader_rungs.served.includes('day'), near.cadence.reader_rungs);
+    chk('and says so in words, with the cost of closing it',
+      /five-minute|imminent/.test(near.cadence.reader_rungs.note)
+      && /quota/.test(near.cadence.reader_rungs.note), near.cadence.reader_rungs.note);
+    chk('the four-hour board tier keeps only the deepest rung',
+      board.cadence.reader_rungs.served.join(',') === 'deep', board.cadence.reader_rungs);
+
+    /* --- THE RUNGS ARE THE READER'S. Two copies, one policy. ------------- */
+    {
+      const intel = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', '_intelligence.js'), 'utf8');
+      const blk = /quote_ttl_buckets:\s*\[([\s\S]*?)\]/.exec(intel);
+      chk('the reader publishes a quote-freshness ladder', !!blk);
+      if (blk) {
+        const rungs = [...blk[1].matchAll(/name:\s*'([a-z]+)'[^}]*?minutes:\s*(\d+)/g)]
+          .map((m) => ({ name: m[1], minutes: Number(m[2]) }));
+        chk('and capture mirrors it rung for rung, in the same order and the same minutes',
+          JSON.stringify(rungs) === JSON.stringify(M.READER_RUNGS.map((r) => ({ name: r.name, minutes: r.minutes }))),
+          [rungs, M.READER_RUNGS.map((r) => ({ name: r.name, minutes: r.minutes }))]);
+      }
+    }
+
+    /* --- THE SCHEDULE EXISTS, and agrees with what the function claims ---- */
+    {
+      const sqlPath = path.join(ROOT, 'supabase', 'capture_cron.sql');
+      chk('a capture schedule is committed', fs.existsSync(sqlPath));
+      const sql = fs.readFileSync(sqlPath, 'utf8');
+
+      /* cron -> minutes between runs, for the shapes this file uses. */
+      const cadenceOf = (expr) => {
+        const [min, hr] = expr.split(/\s+/);
+        if (/^\*\/(\d+)$/.test(min) && hr === '*') return Number(/^\*\/(\d+)$/.exec(min)[1]);
+        if (/^\d+(,\d+)+$/.test(min) && hr === '*') return 60 / min.split(',').length;
+        if (/^\d+$/.test(min) && /^\*\/(\d+)$/.test(hr)) return Number(/^\*\/(\d+)$/.exec(hr)[1]) * 60;
+        if (/^\d+$/.test(min) && /^\d+(,\d+)+$/.test(hr)) return (24 / hr.split(',').length) * 60;
+        return null;
+      };
+
+      for (const tier of Object.keys(M.CADENCE_TIERS)) {
+        const m = new RegExp("cron\\.schedule\\('capture_" + tier + "',\\s*'([^']+)'").exec(sql);
+        chk('the ' + tier + ' tier is actually scheduled', !!m, tier);
+        if (!m) continue;
+        const every = cadenceOf(m[1]);
+        chk('the ' + tier + " tier's cron is a shape this contract can read", every != null, m[1]);
+        chk('the ' + tier + ' tier runs on the cadence the function says it does',
+          every === M.CADENCE_TIERS[tier].cadenceMin, [tier, m[1], every, M.CADENCE_TIERS[tier].cadenceMin]);
+      }
+
+      chk('the schedule sends the cron secret capture requires',
+        /x-cron-secret/.test(sql), 'capture 401s every caller without it, its own scheduler included');
+      chk('and refuses to send anything when a setting is missing, rather than producing a 401 that looks like a working schedule',
+        /nothing was sent/.test(sql));
+      chk('no credential is committed in the schedule itself',
+        !/eyJ[A-Za-z0-9_-]{20,}/.test(sql) && !/service_role_key\s*=\s*'[^']+'/.test(sql));
+    }
+
+    /* --- THE BACKUP EXISTS and cannot pass while capturing nothing -------- */
+    {
+      const wf = path.join(ROOT, '.github', 'workflows', 'capture.yml');
+      chk('a backup scheduler is committed', fs.existsSync(wf));
+      const y = fs.readFileSync(wf, 'utf8');
+      chk('the backup fails loudly when its secrets are missing rather than exiting green',
+        /::error::SB_URL and CAPTURE_CRON_SECRET/.test(y) && /exit 1/.test(y));
+      chk('and fails when capture answers anything other than 200',
+        /CODE" != "200"/.test(y));
+      chk('the backup carries no odds key and no service role',
+        !/ODDS_API_KEY/.test(y) && !/SB_SERVICE_ROLE/.test(y));
+    }
+  }
+
   done();
 })().catch((e) => { console.log('FAIL | suite threw'); console.error(e); process.exit(1); });

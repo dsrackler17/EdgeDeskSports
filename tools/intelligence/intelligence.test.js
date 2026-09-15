@@ -245,6 +245,450 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   }
 
   /* =====================================================================
+     5b. HOW OLD IS TOO OLD DEPENDS ON WHEN THE GAME STARTS.
+
+     A single number was wrong at both ends, and the expensive end was the
+     loose one: a 44-minute-old price twenty minutes before kickoff cleared
+     the old flat 45-minute check and was presented as the price. That is the
+     window where a line moves fastest and a book pulls a number soonest.
+
+     The other end cost credibility rather than money: a two-hour-old college
+     spread six days out was called stale, which is an ordinary Tuesday, and
+     a staleness warning that fires on everything stops being read.
+     ===================================================================== */
+  {
+    const now = Date.now();
+    const at = (kickMin, ageMin, market) => I.quoteState({
+      captured_at: now - ageMin * 60000, now, market: market || 'spreads',
+      kickoff: now + kickMin * 60000,
+    });
+
+    /* --- the loose end: the case that could show a customer a dead price --- */
+    const imminent = at(20, 44);
+    eq('44 minutes old with kickoff 20 minutes away is STALE', imminent.status, 'STALE');
+    chk('and is not actionable', imminent.actionable === false);
+    eq('because the limit inside half an hour is 5 minutes', imminent.limit_min, 5);
+    eq('and the limit says it came from the kickoff, not the market', imminent.limit_basis, 'imminent');
+    chk('and the sentence tells the reader why the limit is so tight',
+      /kickoff under 30 minutes away/.test(imminent.why), imminent.why);
+
+    eq('90 minutes out, the limit is 15 minutes', at(90, 5).limit_min, 15);
+    eq('and a 44-minute-old price there is stale too', at(90, 44).status, 'STALE');
+    eq('4 hours out, the limit is 45 minutes', at(240, 5).limit_min, 45);
+
+    /* --- the tight end: the false alarm that burns the word "stale" ------- */
+    const far = at(5 * 24 * 60, 120);
+    eq('2 hours old with kickoff 5 days away is CURRENT', far.status, 'CURRENT');
+    chk('and is actionable', far.actionable === true);
+    eq('because the limit that far out is 6 hours', far.limit_min, 360);
+
+    /* --- and the failure that started this is still caught ---------------- */
+    const live = at(5 * 24 * 60, 2345);
+    eq('the 2,345-minute quote production served is still STALE', live.status, 'STALE');
+    chk('and is still not actionable', live.actionable === false);
+
+    /* --- the rung that did not move -------------------------------------- */
+    eq('a game inside a day keeps the 90 minutes it always had', at(12 * 60, 5).limit_min, 90);
+    eq('and a 44-minute price there is still current', at(12 * 60, 44).status, 'CURRENT');
+
+    /* --- a future is not priced against a kickoff ------------------------- */
+    eq('a futures quote keeps its own 720-minute limit', at(5 * 24 * 60, 400, 'futures').limit_min, 720);
+    eq('and says the limit came from the market, not a kickoff',
+      at(5 * 24 * 60, 400, 'futures').limit_basis, 'market');
+
+    /* --- no kickoff means no ladder, which is the old behaviour exactly --- */
+    const noKick = I.quoteState({ captured_at: now - 44 * 60000, now, market: 'spreads' });
+    eq('with no kickoff the flat market limit stands', noKick.limit_min, 90);
+    eq('and nothing claims a bucket set it', noKick.limit_basis, 'market');
+
+    /* --- a caller naming its own limit is not asking for a lookup --------- */
+    eq('an explicit override wins over the ladder',
+      I.quoteTtlMin('spreads', { spreads: 30 }, 0.2), 30);
+  }
+
+  /* =====================================================================
+     5c. THREE LEAGUES THAT HAD A MODULE, AN INTENT AND NOT ONE TEAM.
+
+     basketball_nba, icehockey_nhl and basketball_wnba were routed by the
+     sport matcher and carried retrieval steps, and had zero canonical teams
+     between them. "How do the Lakers look tonight?" resolved to NOTHING --
+     the pipeline could name the sport and then had no idea who was being
+     asked about.
+     ===================================================================== */
+  {
+    const count = {};
+    for (const t of m.canonicalRegistry()) count[t.sport] = (count[t.sport] || 0) + 1;
+    eq('the NBA has thirty clubs', count.basketball_nba, 30);
+    eq('the NHL has thirty-two', count.icehockey_nhl, 32);
+    chk('the WNBA has its clubs through the 2026 expansions',
+      count.basketball_wnba >= 13, count.basketball_wnba);
+    /* The college count is a FLOOR, not an equality: the registry learns teams
+       from the board at runtime, so a fixture slate legitimately grows it. */
+    eq('and the leagues that already worked are untouched',
+      [count.baseball_mlb, count.americanfootball_nfl].join(','), '30,32');
+    chk('college football keeps at least its declared programs',
+      count.americanfootball_ncaaf >= 83, count.americanfootball_ncaaf);
+
+    const one = (text, sport) => {
+      const r = m.resolveTeamIdentity(text, sport);
+      return r.length === 1 ? r[0] : { status: r.length ? 'MULTIPLE' : 'NOTHING', canonical_name: null };
+    };
+
+    /* --- the three reported questions ------------------------------------ */
+    eq('"How do the Lakers look tonight?" resolves',
+      one('How do the Lakers look tonight?', 'basketball_nba').canonical_name, 'Los Angeles Lakers');
+    eq('"What about the Bruins?" resolves',
+      one('What about the Bruins?', 'icehockey_nhl').canonical_name, 'Boston Bruins');
+    eq('"How do the Liberty look?" resolves',
+      one('How do the Liberty look?', 'basketball_wnba').canonical_name, 'New York Liberty');
+
+    /* --- AMBIGUITY IS COMPUTED, NOT DECLARED, so it cannot depend on which
+           league happened to be loaded first ------------------------------ */
+    eq('"kings" is Sacramento in basketball',
+      one('Kings tonight?', 'basketball_nba').canonical_name, 'Sacramento Kings');
+    eq('and Los Angeles in hockey',
+      one('Kings tonight?', 'icehockey_nhl').canonical_name, 'Los Angeles Kings');
+    eq('and neither with no sport resolved',
+      one('Kings tonight?', null).status, 'AMBIGUOUS');
+    {
+      const r = m.resolveTeamIdentity('Kings tonight?', null);
+      const names = (r[0].candidates || []).map((c) => c.canonical_name).sort().join('|');
+      eq('with BOTH named, not just the one loaded second',
+        names, 'Los Angeles Kings|Sacramento Kings');
+    }
+    eq('"panthers" is Florida in hockey',
+      one('How do the Panthers look?', 'icehockey_nhl').canonical_name, 'Florida Panthers');
+    eq('and Carolina in football',
+      one('How do the Panthers look?', 'americanfootball_nfl').canonical_name, 'Carolina Panthers');
+    {
+      const r = m.resolveTeamIdentity('Rangers tonight?', null);
+      const names = (r[0].candidates || []).map((c) => c.canonical_name).sort().join('|');
+      eq('and adding hockey made "rangers" ambiguous where it had not been',
+        names, 'New York Rangers|Texas Rangers');
+    }
+
+    /* --- a club in two sports is NOT two clubs ---------------------------- */
+    /* Alabama is registered for BOTH ncaaf and ncaab under the same name.
+       Reconciliation counts distinct CLUBS, not distinct sports, so one
+       institution in two sports must not be made ambiguous with itself --
+       otherwise adding basketball would have silently unresolved every school
+       in the football registry. */
+    eq('a school registered for football and basketball is not ambiguous with itself',
+      one('How does Alabama look?', 'americanfootball_ncaaf').canonical_name, 'Alabama');
+    eq('and resolves the same way in the other sport',
+      one('How does Alabama look?', 'basketball_ncaab').canonical_name, 'Alabama');
+
+    /* --- identity without pretending to research -------------------------- */
+    for (const [key, label] of [['basketball_nba', 'NBA'], ['icehockey_nhl', 'NHL'], ['basketball_wnba', 'WNBA']]) {
+      const mod = m.SPORTS[key];
+      chk(label + ' has a module that declares what EdgeDesk does not own',
+        !!mod && mod.status === 'CORE_ONLY' && typeof mod.needs === 'string' && mod.needs.length > 20,
+        mod && mod.needs);
+      chk('and does not claim a research step it has no table for',
+        !!mod && mod.steps.length === 0, mod && mod.steps);
+    }
+  }
+
+  /* =====================================================================
+     5d. A SINGLE-GAME QUESTION IS RESEARCHED AS ONE GAME, IN EVERY LEAGUE.
+
+     "How does Texas State look this week?" came back intent=unknown because
+     no branch of the classifier covered a single-team college question. That
+     branch now exists — and the same hole was still open one league over:
+     "What about the Bruins?" and "How do the Liberty look?" classified as
+     `unknown`, and "How do the Lakers look tonight?" as `slate_overview`, a
+     board-wide sweep answering a question about one team.
+     ===================================================================== */
+  {
+    const plan = (q, sport) => m.classify(q, 'chat', { sport, single_game: true });
+
+    for (const [q, sport, label] of [
+      ['How do the Lakers look tonight?', 'basketball_nba', 'NBA'],
+      ['What about the Bruins?', 'icehockey_nhl', 'NHL'],
+      ['How do the Liberty look?', 'basketball_wnba', 'WNBA'],
+    ]) {
+      const p = plan(q, sport);
+      eq(label + ': a one-game question is researched as a matchup', p.intent, 'research_matchup');
+      chk('and not swept as a board', p.depth !== 'SLATE', p.depth);
+      chk('and never as `unknown`', p.intent !== 'unknown');
+      chk('and asks for the layers this sport owns',
+        p.steps.includes('matchup_context') && p.steps.includes('market'), p.steps);
+    }
+
+    /* A league with its own intents keeps them — this is a floor, not an
+       override. */
+    eq('college football keeps its own matchup intent',
+      plan('How does Texas State look this week?', 'americanfootball_ncaaf').intent, 'cfb_research_matchup');
+    eq('and the NFL keeps its own',
+      plan('How do the Chiefs look this week?', 'americanfootball_nfl').intent, 'nfl_research_matchup');
+
+    /* A board-wide question is still a board-wide question. */
+    const board = m.classify('What are the best bets today?', 'chat', { sport: 'americanfootball_ncaaf' });
+    eq('a board question with no single game resolved is left alone', board.depth, 'SLATE');
+
+    /* NO SPORT MAY PLAN TO RETRIEVE ANOTHER SPORT'S LAYER. MLB_ONLY_STEPS
+       caught the baseball half of this and only the baseball half: before the
+       ownership map, an NBA plan asked for a quarterback. */
+    for (const [q, sport, forbidden] of [
+      ['How do the Lakers look tonight?', 'basketball_nba', ['quarterback', 'pitchers', 'bullpen', 'cfb_sp_plus', 'nfl_deep']],
+      ['What about the Bruins?', 'icehockey_nhl', ['quarterback', 'pitcher_features', 'park', 'cbb_deep']],
+      ['How does Texas State look this week?', 'americanfootball_ncaaf', ['quarterback', 'pitchers', 'bullpen', 'workload']],
+    ]) {
+      const p = plan(q, sport);
+      const leaked = forbidden.filter((f) => p.steps.includes(f));
+      chk(sport + ' plans no step another sport owns', leaked.length === 0, leaked);
+    }
+  }
+
+  /* =====================================================================
+     5e. DEPTH ACCUMULATES WHEN THE CONVERSATION STAYS PUT.
+
+     Every turn re-planned from the question alone and retrieved to a fixed
+     budget, so three questions about one game got the same shallow pass three
+     times. The second question is asked BECAUSE the first was answered.
+     ===================================================================== */
+  {
+    const cfb = m.classify('How does Texas State look this week?', 'chat',
+      { sport: 'americanfootball_ncaaf', single_game: true });
+
+    eq('the first turn is the question, unchanged',
+      m.escalateDepth(cfb, 1, 'americanfootball_ncaaf'), null);
+
+    const read = m.escalateDepth(cfb, 2, 'americanfootball_ncaaf');
+    eq('the second turn on the same subject is a READ', read && read.stage, 'READ');
+    chk('a rung deeper', read && read.to !== read.from, read);
+    chk('and picks up layers the first pass had no budget for',
+      read && read.added_steps.length > 0, read && read.added_steps);
+
+    const dossier = m.escalateDepth(cfb, 3, 'americanfootball_ncaaf');
+    eq('the third is a DOSSIER', dossier && dossier.stage, 'DOSSIER');
+    eq('at the deepest rung', dossier && dossier.to, 'FULL');
+
+    /* ESCALATION ONLY. A deeper turn may add and may not remove. */
+    for (const t of [2, 3, 9]) {
+      const e = m.escalateDepth(cfb, t, 'americanfootball_ncaaf');
+      chk('a turn-' + t + ' escalation removes no step',
+        !e || cfb.steps.every((st) => !e.added_steps.includes(st) || cfb.steps.includes(st)));
+      chk('and never lowers the depth',
+        !e || ['QUICK', 'STANDARD', 'DEEP', 'FULL'].indexOf(e.to)
+          >= ['QUICK', 'STANDARD', 'DEEP', 'FULL'].indexOf(e.from), e);
+    }
+
+    /* A BOARD QUESTION HAS NO DOSSIER — it is about the card, not a subject. */
+    const slate = m.classify('What are the best bets today?', 'chat', { sport: 'americanfootball_ncaaf' });
+    eq('a board-wide plan does not accumulate', m.escalateDepth(slate, 3, 'americanfootball_ncaaf'), null);
+
+    /* A LEAGUE WITH NO TABLES IS NOT PROMISED DEPTH IT DOES NOT HAVE. */
+    const nba = m.classify('How do the Lakers look tonight?', 'chat',
+      { sport: 'basketball_nba', single_game: true });
+    const nbaDeep = m.escalateDepth(nba, 3, 'basketball_nba');
+    chk('a CORE_ONLY league adds no step it has no table for',
+      !nbaDeep || nbaDeep.added_steps.every((st) => nba.steps.includes(st)
+        || (m.SPORTS.basketball_nba.steps || []).includes(st)), nbaDeep && nbaDeep.added_steps);
+
+    /* THE SUBJECT KEY IS WHAT MAKES THE STREAK REAL. Move off the game and
+       the count starts again. */
+    const k = (o) => m.subjectKeyOf(Object.assign({ sport: null, game_id: null, team_ids: [] }, o));
+    eq('two turns on one game share a key',
+      k({ sport: 'americanfootball_ncaaf', game_id: 'g1' }), k({ sport: 'americanfootball_ncaaf', game_id: 'g1' }));
+    chk('a different game is a different subject',
+      k({ sport: 'americanfootball_ncaaf', game_id: 'g1' }) !== k({ sport: 'americanfootball_ncaaf', game_id: 'g2' }));
+    chk('and the same game id in another sport is not the same subject',
+      k({ sport: 'americanfootball_ncaaf', game_id: 'g1' }) !== k({ sport: 'baseball_mlb', game_id: 'g1' }));
+    eq('a turn with no resolved subject has no key', k({ sport: 'baseball_mlb' }), null);
+
+    /* THE BROWSER MAY SEND THE COUNT AND MAY DO NOTHING ELSE WITH IT. */
+    const sub = (turns) => m.sanitizeSubject({ sport: 'americanfootball_ncaaf', game_id: 'g1', turns });
+    eq('a forged count is clamped to the dossier ceiling', sub(9999).turns, m.DOSSIER_TURNS);
+    eq('a negative count floors at one', sub(-5).turns, 1);
+    eq('a non-numeric count floors at one', sub('deepest').turns, 1);
+    eq('an absent count floors at one', m.sanitizeSubject({ sport: 'americanfootball_ncaaf', game_id: 'g1' }).turns, 1);
+    chk('and the count can never carry a price, a projection or a decision',
+      Object.keys(sub(2)).sort().join(',') === 'away,away_id,game_id,home,home_id,sport,turns',
+      Object.keys(sub(2)).sort());
+  }
+
+  /* =====================================================================
+     5f. "NO RECORD FOR THIS TEAM" AND "NO SOURCE FOR THIS SPORT" ARE NOT
+     THE SAME SENTENCE.
+
+     Every college team came back "EdgeDesk checked 3 sources and 2 failed",
+     which reads like this team got unlucky this week. The truth on the build
+     that produced the reported answer was that NOT ONE of 138 programs had an
+     official report and the whole build held five records. A reader told the
+     first goes and asks about another team; a reader told the second goes and
+     reads the school's own report before betting.
+     ===================================================================== */
+  {
+    const now = Date.now();
+    const rec = { counts: { records: 0, flagged: 0 }, dataQuality: 'LIMITED',
+      sources_checked: 3, sources_failed: 2, official_report_found: false, players: [] };
+    const read = (league) => I.availabilityRead({
+      record: rec, team: 'Texas State', generated_at: new Date(now - 3600e3).toISOString(), now, league });
+
+    const bare = read({ team_count: 138, records: 5, teams_with_official: 0 });
+    eq('a team with nothing on file is UNKNOWN', bare.state, 'UNKNOWN');
+    chk('and is never described as healthy', bare.may_claim_healthy === false);
+    chk('and the gap is marked as the sport\u2019s', bare.league_uncovered === true);
+
+    const covered = read({ team_count: 138, records: 900, teams_with_official: 120 });
+    chk('one unlucky team in a covered sport is NOT marked as a sport-wide gap',
+      covered.league_uncovered === false);
+    eq('and is still UNKNOWN rather than healthy', covered.state, 'UNKNOWN');
+
+    /* THE COVERAGE SENTENCE IS SAID ONCE, NOT PER TEAM. An earlier attempt put
+       it in every team's own sentence: ten copies of a paragraph, and a whole
+       game's evidence pushed out of the prompt to make room for them. */
+    chk('the per-team sentence does not carry the sport-wide paragraph',
+      !/COVERAGE FOR THIS SPORT/.test(bare.sentence), bare.sentence);
+
+    const note = I.availabilityCoverageNote({ team_count: 138, records: 5, teams_with_official: 0 });
+    chk('the sport-wide note exists and quotes the program count, not the index size',
+      !!note && /138 programs/.test(note), note);
+    chk('and says the gap is not any one team\u2019s', !!note && /not any one team/.test(note), note);
+    chk('and refuses to be read as a clean bill of health',
+      !!note && /clean bill of health/.test(note), note);
+    eq('a sport with real coverage produces no note at all',
+      I.availabilityCoverageNote({ team_count: 138, records: 900, teams_with_official: 120 }), null);
+    eq('and neither does an empty build', I.availabilityCoverageNote({ team_count: 0 }), null);
+  }
+
+  /* =====================================================================
+     5g. PER-PLAY EFFICIENCY FOR COLLEGE FOOTBALL.
+
+     The NFL module owns EPA, success rate and explosive rate in its own
+     tables, so an NFL matchup read rests on how the two teams actually play.
+     College football had no route to the same layer at all, and the gap was
+     filled with SP+ — a rating of results standing in for a measurement of
+     play, which is the wrong number under the right label.
+     ===================================================================== */
+  {
+    const a = (m.EXTERNAL_ADAPTERS || []).find((x) => x.id === 'cfbd_advanced_stats');
+    chk('a per-play efficiency adapter exists for college football', !!a);
+    eq('it is the CFB module\u2019s own capability', a && a.capability, 'cfb_per_play_efficiency');
+    eq('and it is gated on a credential', a && a.credential_env, 'CFBD_API_KEY');
+    chk('which is not set here, so it stays dark', a && a.configured() === false);
+
+    /* WHAT IT SAYS WHILE DARK is the answer to "why is there no efficiency in
+       this college read", and a reader is owed it rather than an empty
+       section. */
+    const why = (a && a.unconfigured_reason) || '';
+    chk('the reason names the credential that would open it', /CFBD_API_KEY/.test(why), why);
+    chk('and refuses SP+ as a substitute in so many words',
+      /SP\+ IS NOT A SUBSTITUTE/.test(why), why);
+    chk('and names the other route, so it is not presented as a purchase decision',
+      /cfb_ingest/.test(why), why);
+
+    /* WITH A FEED, the numbers come out named and the shape is not assumed. */
+    const row = { team: 'Texas State', conference: 'Sun Belt',
+      offense: { plays: 700, ppa: 0.21, successRate: 0.447, explosiveness: 1.24,
+        passingPlays: { ppa: 0.33 }, rushingPlays: { ppa: 0.08 },
+        standardDowns: { successRate: 0.49 }, passingDowns: { successRate: 0.31 } },
+      defense: { ppa: 0.12, successRate: 0.402, explosiveness: 1.11, havoc: { total: 0.18 } } };
+    const ok = await a.run(async () => ({ ok: true, status: 200, json: async () => [row] }),
+      { season: 2026, teams: ['Texas State'] });
+    eq('a feed that answers produces one verified row', ok.length, 1);
+    eq('carrying the per-play field', ok[0].field, 'cfb_per_play_efficiency');
+    eq('with offensive PPA lifted out and named', ok[0].value.offense.ppa, 0.21);
+    eq('and success rate', ok[0].value.offense.success_rate, 0.447);
+    eq('and the defensive side kept separate', ok[0].value.defense.ppa, 0.12);
+    chk('a field the feed did not send is null, never zero',
+      ok[0].value.defense.line_yards === null, ok[0].value.defense);
+    chk('and the note says which direction is better for a defence',
+      /defensive PPA is better when it is LOWER/.test(ok[0].note), ok[0].note);
+    chk('and that the measurement is cumulative, not last week',
+      /SEASON-TO-DATE AND CUMULATIVE/.test(ok[0].note), ok[0].note);
+
+    /* A FEED THAT REFUSES, OR ANSWERS ABOUT SOMEBODY ELSE, IS UNAVAILABLE —
+       never an empty efficiency read that looks like a measured zero. */
+    const refused = await a.run(async () => ({ ok: false, status: 401, json: async () => ({}) }),
+      { season: 2026, teams: ['Texas State'] });
+    eq('a refused request is UNAVAILABLE', refused[0].status, 'UNAVAILABLE');
+    chk('and says what was refused', /HTTP 401/.test(refused[0].note), refused[0].note);
+
+    const wrongTeam = await a.run(async () => ({ ok: true, status: 200, json: async () => [{ team: 'Alabama' }] }),
+      { season: 2026, teams: ['Texas State'] });
+    eq('a feed carrying no row for the team in scope is UNAVAILABLE', wrongTeam[0].status, 'UNAVAILABLE');
+    chk('and names the team it could not find', /Texas State/.test(wrongTeam[0].note), wrongTeam[0].note);
+
+    const garbage = await a.run(async () => ({ ok: true, status: 200, json: async () => ({ nope: true }) }),
+      { season: 2026, teams: ['Texas State'] });
+    eq('a response that is not an array is UNAVAILABLE rather than parsed hopefully',
+      garbage[0].status, 'UNAVAILABLE');
+
+    const threw = await a.run(async () => { throw new Error('connection reset'); },
+      { season: 2026, teams: ['Texas State'] });
+    eq('and a request that throws is UNAVAILABLE, not a crash', threw[0].status, 'UNAVAILABLE');
+  }
+
+  /* =====================================================================
+     5h. A GAME THAT HAS STARTED IS NOT ANSWERED LIKE ONE THAT HAS NOT.
+
+     `status === "final"` caught only games a feed had already marked over,
+     which left the whole window in between — a game that kicked off forty
+     minutes ago, being watched right now — eligible for a recommendation off
+     a pregame price, and described in the present tense as though nothing had
+     happened. EdgeDesk ingests no in-game price, score or clock, so there is
+     no live read to give; the only honest move is to say which game state
+     this is before saying anything else.
+     ===================================================================== */
+  {
+    const H = 3600e3, now = Date.now();
+    const at = (hours, status) => I.gameState({
+      kickoff: new Date(now + hours * H).toISOString(), status: status || null, now });
+
+    eq('a game three hours away is scheduled', at(3).state, 'SCHEDULED');
+    chk('and may be recommended', at(3).may_recommend === true);
+    chk('and carries no notice', at(3).notice === null);
+
+    const live = at(-0.67);
+    eq('a game that kicked off 40 minutes ago is in progress', live.state, 'IN_PROGRESS');
+    chk('and may NOT be recommended', live.may_recommend === false);
+    chk('and may not be described as current', live.may_describe_as_current === false);
+    chk('but its pregame research is still usable', live.research_usable === true);
+    chk('and the notice says EdgeDesk holds nothing live',
+      /no in-game price, score, clock or possession/.test(live.notice), live.notice);
+
+    eq('six hours after kickoff a game is over', at(-6).state, 'FINAL');
+    chk('and the notice refuses to be read as a result',
+      /not a result/.test(at(-6).notice), at(-6).notice);
+
+    /* A STATUS FEED OUTRANKS THE CLOCK, because a game can be delayed,
+       suspended or moved and the schedule row is the thing that knows. */
+    eq('a feed saying final wins over a clock saying in progress',
+      at(-0.33, 'STATUS_FINAL').state, 'FINAL');
+    eq('and a feed saying in progress wins over a clock saying over',
+      at(-9, 'in progress').state, 'IN_PROGRESS');
+    eq('and the source of the call is stated', at(-9, 'in progress').status_source, 'status feed');
+    eq('rather than claimed when it was the clock', at(-6).status_source, 'clock');
+
+    eq('with no kickoff on file the state is UNKNOWN, never SCHEDULED',
+      I.gameState({ kickoff: null, now }).state, 'UNKNOWN');
+    chk('and UNKNOWN may not be recommended either',
+      I.gameState({ kickoff: null, now }).may_recommend === false);
+
+    /* THE ANSWER LEADS WITH IT. */
+    const ctx = (hours) => ({
+      sport: 'americanfootball_ncaaf', sport_source: 'x', team_ids: [], team_names: [],
+      game_id: 'g1', home: 'Texas State', away: 'North Texas', home_id: null, away_id: null,
+      kickoff: new Date(now + hours * H).toISOString(), season: 2026, week: 3,
+      market: null, selection: null, resolution_source: null, ambiguity: null,
+      carried: false, single_game: true });
+    const sLive = m.matchupSummary({ ctx: ctx(-0.67), decisions: [], attack: null });
+    eq('the summary carries the state', sLive.game_state, 'IN_PROGRESS');
+    chk('and the read opens by saying the game is under way',
+      /already under way/.test(sLive.read), sLive.read);
+    chk('and says the research is pregame only', /pregame only/.test(sLive.read), sLive.read);
+    chk('and never offers a price to look for',
+      sLive.price_needed === null, sLive.price_needed);
+
+    const sPre = m.matchupSummary({ ctx: ctx(3), decisions: [], attack: null });
+    eq('a scheduled game is untouched by any of this', sPre.game_state, 'SCHEDULED');
+    chk('and reads as it always did',
+      /no source EdgeDesk reads carries a price/.test(sPre.read), sPre.read);
+  }
+
+  /* =====================================================================
      6. TRUNCATION CANNOT ERASE SCOPE OR CRITICAL BLOCKERS.
      Observed: 361 items retrieved, 130 withheld, and a categorical absence
      claim made anyway.

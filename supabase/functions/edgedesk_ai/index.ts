@@ -1121,6 +1121,116 @@ export function canonicalTeamId(sportKey: string, name: string): string {
   return `${m.label}:${m.league}:${teamSlug(name)}`;
 }
 
+/* --------------------------------------------------------- NBA / NHL / WNBA ---
+   THREE LEAGUES THAT HAD A MODULE, AN INTENT AND NOT ONE TEAM.
+
+   `basketball_nba`, `icehockey_nhl` and `basketball_wnba` were registered in
+   LEAGUE_OF_SPORT, carried retrieval steps in SPORT_LAYER_STEPS, and matched
+   in the sport router — and had zero canonical teams between them. The effect
+   was not a degraded answer, it was no answer at all: "How do the Lakers look
+   tonight?", "What about the Bruins?" and "How do the Liberty look?" each
+   resolved to NOTHING. The pipeline could name the sport and then had no idea
+   who was being asked about.
+
+   City and nickname ambiguity is NOT declared here. It is computed across the
+   whole registry after every league is loaded, by reconcileAmbiguity() below,
+   because a hand-maintained collision list is wrong the moment a league is
+   added: "kings" was unambiguous until hockey arrived, "boston" until
+   basketball did. */
+const NBA_TEAMS: { name: string; city: string; state: string; abbr: string; conf: string; nick: string[] }[] = [
+  { name: "Atlanta Hawks", city: "Atlanta", state: "GA", abbr: "ATL", conf: "East", nick: ["hawks"] },
+  { name: "Boston Celtics", city: "Boston", state: "MA", abbr: "BOS", conf: "East", nick: ["celtics", "cs"] },
+  { name: "Brooklyn Nets", city: "Brooklyn", state: "NY", abbr: "BKN", conf: "East", nick: ["nets"] },
+  { name: "Charlotte Hornets", city: "Charlotte", state: "NC", abbr: "CHA", conf: "East", nick: ["hornets"] },
+  { name: "Chicago Bulls", city: "Chicago", state: "IL", abbr: "CHI", conf: "East", nick: ["bulls"] },
+  { name: "Cleveland Cavaliers", city: "Cleveland", state: "OH", abbr: "CLE", conf: "East", nick: ["cavaliers", "cavs"] },
+  { name: "Dallas Mavericks", city: "Dallas", state: "TX", abbr: "DAL", conf: "West", nick: ["mavericks", "mavs"] },
+  { name: "Denver Nuggets", city: "Denver", state: "CO", abbr: "DEN", conf: "West", nick: ["nuggets"] },
+  { name: "Detroit Pistons", city: "Detroit", state: "MI", abbr: "DET", conf: "East", nick: ["pistons"] },
+  { name: "Golden State Warriors", city: "San Francisco", state: "CA", abbr: "GSW", conf: "West", nick: ["warriors", "dubs", "golden state"] },
+  { name: "Houston Rockets", city: "Houston", state: "TX", abbr: "HOU", conf: "West", nick: ["rockets"] },
+  { name: "Indiana Pacers", city: "Indianapolis", state: "IN", abbr: "IND", conf: "East", nick: ["pacers"] },
+  { name: "Los Angeles Clippers", city: "Inglewood", state: "CA", abbr: "LAC", conf: "West", nick: ["clippers", "clips", "la clippers"] },
+  { name: "Los Angeles Lakers", city: "Los Angeles", state: "CA", abbr: "LAL", conf: "West", nick: ["lakers"] },
+  { name: "Memphis Grizzlies", city: "Memphis", state: "TN", abbr: "MEM", conf: "West", nick: ["grizzlies", "grizz"] },
+  { name: "Miami Heat", city: "Miami", state: "FL", abbr: "MIA", conf: "East", nick: ["heat"] },
+  { name: "Milwaukee Bucks", city: "Milwaukee", state: "WI", abbr: "MIL", conf: "East", nick: ["bucks"] },
+  { name: "Minnesota Timberwolves", city: "Minneapolis", state: "MN", abbr: "MIN", conf: "West", nick: ["timberwolves", "wolves"] },
+  { name: "New Orleans Pelicans", city: "New Orleans", state: "LA", abbr: "NOP", conf: "West", nick: ["pelicans", "pels"] },
+  { name: "New York Knicks", city: "New York", state: "NY", abbr: "NYK", conf: "East", nick: ["knicks"] },
+  { name: "Oklahoma City Thunder", city: "Oklahoma City", state: "OK", abbr: "OKC", conf: "West", nick: ["thunder", "oklahoma city"] },
+  { name: "Orlando Magic", city: "Orlando", state: "FL", abbr: "ORL", conf: "East", nick: ["magic"] },
+  { name: "Philadelphia 76ers", city: "Philadelphia", state: "PA", abbr: "PHI", conf: "East", nick: ["76ers", "sixers"] },
+  { name: "Phoenix Suns", city: "Phoenix", state: "AZ", abbr: "PHX", conf: "West", nick: ["suns"] },
+  { name: "Portland Trail Blazers", city: "Portland", state: "OR", abbr: "POR", conf: "West", nick: ["trail blazers", "blazers"] },
+  { name: "Sacramento Kings", city: "Sacramento", state: "CA", abbr: "SAC", conf: "West", nick: ["kings", "sacramento"] },
+  { name: "San Antonio Spurs", city: "San Antonio", state: "TX", abbr: "SAS", conf: "West", nick: ["spurs", "san antonio"] },
+  { name: "Toronto Raptors", city: "Toronto", state: "ON", abbr: "TOR", conf: "East", nick: ["raptors", "raps"] },
+  { name: "Utah Jazz", city: "Salt Lake City", state: "UT", abbr: "UTA", conf: "West", nick: ["jazz"] },
+  { name: "Washington Wizards", city: "Washington", state: "DC", abbr: "WAS", conf: "East", nick: ["wizards", "wiz"] },
+];
+
+/* Utah's club is listed as the Mammoth, the name it plays under from 2025-26.
+   `utah hockey club` is kept as an alias because an odds feed that has not
+   been updated still sends the old one, and a rename is exactly the kind of
+   thing that silently unjoins a board from a schedule. */
+const NHL_TEAMS: { name: string; city: string; state: string; abbr: string; conf: string; nick: string[] }[] = [
+  { name: "Anaheim Ducks", city: "Anaheim", state: "CA", abbr: "ANA", conf: "West", nick: ["ducks"] },
+  { name: "Boston Bruins", city: "Boston", state: "MA", abbr: "BOS", conf: "East", nick: ["bruins", "bs"] },
+  { name: "Buffalo Sabres", city: "Buffalo", state: "NY", abbr: "BUF", conf: "East", nick: ["sabres"] },
+  { name: "Calgary Flames", city: "Calgary", state: "AB", abbr: "CGY", conf: "West", nick: ["flames"] },
+  { name: "Carolina Hurricanes", city: "Raleigh", state: "NC", abbr: "CAR", conf: "East", nick: ["hurricanes", "canes"] },
+  { name: "Chicago Blackhawks", city: "Chicago", state: "IL", abbr: "CHI", conf: "West", nick: ["blackhawks", "hawks"] },
+  { name: "Colorado Avalanche", city: "Denver", state: "CO", abbr: "COL", conf: "West", nick: ["avalanche", "avs"] },
+  { name: "Columbus Blue Jackets", city: "Columbus", state: "OH", abbr: "CBJ", conf: "East", nick: ["blue jackets", "jackets"] },
+  { name: "Dallas Stars", city: "Dallas", state: "TX", abbr: "DAL", conf: "West", nick: ["stars"] },
+  { name: "Detroit Red Wings", city: "Detroit", state: "MI", abbr: "DET", conf: "East", nick: ["red wings", "wings"] },
+  { name: "Edmonton Oilers", city: "Edmonton", state: "AB", abbr: "EDM", conf: "West", nick: ["oilers"] },
+  { name: "Florida Panthers", city: "Sunrise", state: "FL", abbr: "FLA", conf: "East", nick: ["panthers"] },
+  { name: "Los Angeles Kings", city: "Los Angeles", state: "CA", abbr: "LAK", conf: "West", nick: ["kings"] },
+  { name: "Minnesota Wild", city: "Saint Paul", state: "MN", abbr: "MIN", conf: "West", nick: ["wild"] },
+  { name: "Montreal Canadiens", city: "Montreal", state: "QC", abbr: "MTL", conf: "East", nick: ["canadiens", "habs"] },
+  { name: "Nashville Predators", city: "Nashville", state: "TN", abbr: "NSH", conf: "West", nick: ["predators", "preds"] },
+  { name: "New Jersey Devils", city: "Newark", state: "NJ", abbr: "NJD", conf: "East", nick: ["devils"] },
+  { name: "New York Islanders", city: "Elmont", state: "NY", abbr: "NYI", conf: "East", nick: ["islanders", "isles"] },
+  { name: "New York Rangers", city: "New York", state: "NY", abbr: "NYR", conf: "East", nick: ["rangers"] },
+  { name: "Ottawa Senators", city: "Ottawa", state: "ON", abbr: "OTT", conf: "East", nick: ["senators", "sens"] },
+  { name: "Philadelphia Flyers", city: "Philadelphia", state: "PA", abbr: "PHI", conf: "East", nick: ["flyers"] },
+  { name: "Pittsburgh Penguins", city: "Pittsburgh", state: "PA", abbr: "PIT", conf: "East", nick: ["penguins", "pens"] },
+  { name: "San Jose Sharks", city: "San Jose", state: "CA", abbr: "SJS", conf: "West", nick: ["sharks", "san jose"] },
+  { name: "Seattle Kraken", city: "Seattle", state: "WA", abbr: "SEA", conf: "West", nick: ["kraken"] },
+  { name: "St. Louis Blues", city: "St. Louis", state: "MO", abbr: "STL", conf: "West", nick: ["blues", "st louis"] },
+  { name: "Tampa Bay Lightning", city: "Tampa", state: "FL", abbr: "TBL", conf: "East", nick: ["lightning", "bolts", "tampa bay"] },
+  { name: "Toronto Maple Leafs", city: "Toronto", state: "ON", abbr: "TOR", conf: "East", nick: ["maple leafs", "leafs"] },
+  { name: "Utah Mammoth", city: "Salt Lake City", state: "UT", abbr: "UTA", conf: "West", nick: ["mammoth", "utah hockey club"] },
+  { name: "Vancouver Canucks", city: "Vancouver", state: "BC", abbr: "VAN", conf: "West", nick: ["canucks"] },
+  { name: "Vegas Golden Knights", city: "Paradise", state: "NV", abbr: "VGK", conf: "West", nick: ["golden knights", "knights", "vegas"] },
+  { name: "Washington Capitals", city: "Washington", state: "DC", abbr: "WSH", conf: "East", nick: ["capitals", "caps"] },
+  { name: "Winnipeg Jets", city: "Winnipeg", state: "MB", abbr: "WPG", conf: "West", nick: ["jets"] },
+];
+
+/* The thirteen clubs through 2025 plus the two 2026 expansions, Toronto and
+   Portland. A club listed here that does not exist yet costs nothing — it can
+   only produce an identity match with no board row to join to — while a club
+   MISSING from here produces exactly the failure this list was added to fix. */
+const WNBA_TEAMS: { name: string; city: string; state: string; abbr: string; conf: string; nick: string[] }[] = [
+  { name: "Atlanta Dream", city: "Atlanta", state: "GA", abbr: "ATL", conf: "East", nick: ["dream"] },
+  { name: "Chicago Sky", city: "Chicago", state: "IL", abbr: "CHI", conf: "East", nick: ["sky"] },
+  { name: "Connecticut Sun", city: "Uncasville", state: "CT", abbr: "CON", conf: "East", nick: ["sun", "connecticut"] },
+  { name: "Dallas Wings", city: "Arlington", state: "TX", abbr: "DAL", conf: "West", nick: ["wings"] },
+  { name: "Golden State Valkyries", city: "San Francisco", state: "CA", abbr: "GSV", conf: "West", nick: ["valkyries"] },
+  { name: "Indiana Fever", city: "Indianapolis", state: "IN", abbr: "IND", conf: "East", nick: ["fever"] },
+  { name: "Las Vegas Aces", city: "Las Vegas", state: "NV", abbr: "LVA", conf: "West", nick: ["aces", "las vegas"] },
+  { name: "Los Angeles Sparks", city: "Los Angeles", state: "CA", abbr: "LAS", conf: "West", nick: ["sparks"] },
+  { name: "Minnesota Lynx", city: "Minneapolis", state: "MN", abbr: "MIN", conf: "West", nick: ["lynx"] },
+  { name: "New York Liberty", city: "Brooklyn", state: "NY", abbr: "NYL", conf: "East", nick: ["liberty"] },
+  { name: "Phoenix Mercury", city: "Phoenix", state: "AZ", abbr: "PHO", conf: "West", nick: ["mercury"] },
+  { name: "Portland Fire", city: "Portland", state: "OR", abbr: "POR", conf: "West", nick: ["fire"] },
+  { name: "Seattle Storm", city: "Seattle", state: "WA", abbr: "SEA", conf: "West", nick: ["storm"] },
+  { name: "Toronto Tempo", city: "Toronto", state: "ON", abbr: "TOR", conf: "East", nick: ["tempo"] },
+  { name: "Washington Mystics", city: "Washington", state: "DC", abbr: "WAS", conf: "East", nick: ["mystics"] },
+];
+
 /* ---------------------------------------------------------------- NFL ---
    Thirty-two clubs with city, division and abbreviation. Nicknames that are
    unique in the NFL are still shared with baseball, hockey and college, so the
@@ -1349,6 +1459,36 @@ function ensureCanonicalRegistry(): void {
     });
   }
 
+  /* NBA, NHL and WNBA. One shape, three leagues, because the three lists have
+     the same shape and a copy each is three places for a rule to drift.
+     Nothing is declared ambiguous here: reconcileAmbiguity() below works it
+     out from the finished registry, which is the only way "kings" can be
+     ambiguous for BOTH Sacramento and Los Angeles regardless of which league
+     was loaded first. */
+  for (const [teams, sport, label, league] of [
+    [NBA_TEAMS, "basketball_nba", "NBA", "NBA"],
+    [NHL_TEAMS, "icehockey_nhl", "NHL", "NHL"],
+    [WNBA_TEAMS, "basketball_wnba", "WNBA", "WNBA"],
+  ] as [typeof NBA_TEAMS, string, string, string][]) {
+    for (const t of teams) {
+      const cityTok = normName(t.city);
+      const nameCity = normName(t.name.split(" ").slice(0, -1).join(" "));
+      const aliases = new Set<string>([normName(t.name), ...t.nick.map(normName)]);
+      /* A city is a claim about a metro area, not about a club: every one of
+         them is shared with at least one other league somewhere. They go in as
+         aliases and reconciliation decides. */
+      for (const c of [cityTok, nameCity]) if (c) aliases.add(c);
+      addCanonical({
+        canonical_team_id: canonicalTeamId(sport, t.name),
+        canonical_name: t.name, display_name: t.name,
+        sport, sport_label: label, league,
+        conference: t.conf, city: t.city, state: t.state, abbreviation: t.abbr,
+        aliases: Array.from(aliases), ambiguous_aliases: [],
+        provider_ids: { abbr: t.abbr },
+      });
+    }
+  }
+
   /* Colleges are registered TWICE — once per sport — because the football team
      and the basketball team are different populations that merely share a
      crest. This is the mechanism that makes "Texas Tech football" and "Texas
@@ -1400,6 +1540,54 @@ function ensureCanonicalRegistry(): void {
     const bySport = new Map<string, number>();
     for (const t of teams) bySport.set(t.sport, (bySport.get(t.sport) ?? 0) + 1);
     if (![...bySport.values()].some((n) => n > 1)) COLLEGE_SHORT_TRAP.delete(tok);
+  }
+
+  reconcileAmbiguity();
+}
+
+/**
+ * Recompute which tokens are ambiguous, across the FINISHED registry.
+ *
+ * WHY THIS IS NOT DECLARED BY HAND. Each league block above could only check
+ * its tokens against the leagues loaded BEFORE it, so ambiguity depended on
+ * declaration order and was therefore asymmetric: load basketball before
+ * hockey and "kings" is ambiguous for the Los Angeles Kings and unambiguous
+ * for the Sacramento Kings, which is not a description of anything real. It is
+ * also wrong the moment a league is added — "kings" was unambiguous until
+ * hockey arrived, "boston" until basketball did — and a rule that must be
+ * re-audited by hand on every addition will not be.
+ *
+ * AMBIGUITY IS BETWEEN CLUBS, NOT BETWEEN SPORTS. Texas State is registered
+ * twice, once for football and once for basketball, and a question naming
+ * "Texas State" is not ambiguous about WHO — only about which sport, which the
+ * sport router decides before identity is ever asked. So the count is over
+ * distinct canonical NAMES. Two different clubs sharing a token is ambiguity;
+ * one club in two sports is not.
+ *
+ * A token that lands in `ambiguous_aliases` is not lost. resolveTeamIdentity()
+ * still matches on it, and with a known sport a single claimant inside that
+ * sport is a clean resolution — "kings" is the Sacramento Kings once the
+ * question is known to be basketball. What ambiguity buys is the refusal to
+ * guess when the sport is NOT known, which is the whole reason this registry
+ * exists.
+ */
+function reconcileAmbiguity(): void {
+  const claimants = new Map<string, Set<string>>();
+  for (const t of CANONICAL_TEAMS.values()) {
+    for (const a of [...t.aliases, ...t.ambiguous_aliases]) {
+      const set = claimants.get(a) ?? new Set<string>();
+      set.add(t.canonical_name);
+      claimants.set(a, set);
+    }
+  }
+  for (const t of CANONICAL_TEAMS.values()) {
+    const safe: string[] = [];
+    const amb = new Set<string>(t.ambiguous_aliases);
+    for (const a of t.aliases) {
+      if ((claimants.get(a)?.size ?? 1) > 1) amb.add(a); else safe.push(a);
+    }
+    t.aliases = safe;
+    t.ambiguous_aliases = Array.from(amb);
   }
 }
 
@@ -1721,6 +1909,15 @@ export const SPORTS: Record<string, SportModule> = {
     key: "icehockey_nhl", label: "NHL", status: "CORE_ONLY", steps: [],
     needs: "No NHL goalie/xG/special-teams tables are ingested. Core market research works; goalie confirmation is the single highest-value missing input.",
   },
+  /* The WNBA was routed by the sport matcher and named in SPORT_LAYER_STEPS
+     but had no module here, so `mod` came back undefined and the one thing
+     this table exists to do — declare what EdgeDesk does NOT own, so an answer
+     says so instead of improvising — did not happen for it. A league that is
+     askable must be able to state its own limits. */
+  basketball_wnba: {
+    key: "basketball_wnba", label: "WNBA", status: "CORE_ONLY", steps: [],
+    needs: "No WNBA availability, pace or efficiency tables are ingested. Core market research works; availability is the single highest-value missing input in a twelve-player rotation.",
+  },
   mma_mixed_martial_arts: {
     key: "mma_mixed_martial_arts", label: "UFC/MMA", status: "CORE_ONLY", steps: ["rankings"],
     needs: "Fighter metrics live behind the ufc schema (ufc_fighters_sync / ufcstats_sync) and are not exposed to this function's reader. Core market research works.",
@@ -1981,7 +2178,11 @@ export const SPORT_INTELLIGENCE: Record<string, SportIntelligenceModule> = {
       CAP("transfer_portal", "cfb.portal", "PROVIDER_API", "portal", "PROBE", "historical", "L3_TEAM_SEASON",
         "Same contract as returning production: attempted, and reported honestly when absent.", null, "cfb"),
       CAP("cfbd_direct", "CollegeFootballData", "PROVIDER_API", "api.collegefootballdata.com", "REQUIRES_CREDENTIAL", "team_stats", "L3_TEAM_SEASON",
-        "Direct API calls for returning production and portal require CFBD_API_KEY. Without the key the adapter is skipped and the gap is declared — the module never fails as a whole.",
+        "Direct API calls for returning production, per-play efficiency and portal require CFBD_API_KEY. Without the key each adapter is skipped and the gap is declared — the module never fails as a whole.",
+        "CFBD_API_KEY"),
+      CAP("per_play_efficiency", "CollegeFootballData", "PROVIDER_API", "stats/season/advanced", "REQUIRES_CREDENTIAL", "team_stats", "L3_TEAM_SEASON",
+        "PPA, success rate and explosiveness by offence and defence, the layer the NFL module owns in its own tables and this one has never had. "
+        + "Dark without CFBD_API_KEY, and SP+ is not a stand-in for it: a rating of results is not a measurement of how a team plays.",
         "CFBD_API_KEY"),
       CAP("market", "signals", "MARKET", "signals", "AVAILABLE", "odds", "L7_MARKET", "EdgeDesk's own priced rows for CFB events."),
     ],
@@ -2348,11 +2549,34 @@ const SPORT_LAYER_STEPS: Record<string, string[]> = {
  * Baseball is returned untouched: the regression requirement is that the MLB
  * path behaves exactly as it did.
  */
+/* WHICH SPORTS CLAIM EACH LAYER STEP, built from the tables above rather than
+   restated. MLB_ONLY_STEPS caught the baseball half of this problem and only
+   the baseball half: `quarterback` is an NFL layer and nothing stopped it
+   reaching a basketball plan, so "How do the Lakers look tonight?" planned to
+   retrieve a quarterback. A step named by at least one sport belongs to
+   exactly the sports that name it; a step named by none is generic (`market`,
+   `slate`, `rest`, `rankings`) and travels everywhere. */
+const STEP_OWNERS: Map<string, Set<string>> = (() => {
+  const m = new Map<string, Set<string>>();
+  const own = (step: string, sport: string) => {
+    const set = m.get(step) ?? new Set<string>();
+    set.add(sport);
+    m.set(step, set);
+  };
+  for (const st of MLB_ONLY_STEPS) own(st, "baseball_mlb");
+  for (const [sport, steps] of Object.entries(SPORT_LAYER_STEPS)) for (const st of steps) own(st, sport);
+  return m;
+})();
+
 export function scopeStepsToSport(steps: string[], sport: string | null): string[] {
   if (!sport || sport === "baseball_mlb") return steps.slice();
-  const dropped = steps.filter((st) => MLB_ONLY_STEPS.has(st));
+  const foreign = (st: string) => {
+    const owners = STEP_OWNERS.get(st);
+    return !!owners && !owners.has(sport);
+  };
+  const dropped = steps.filter(foreign);
   if (!dropped.length) return steps.slice();
-  const kept = steps.filter((st) => !MLB_ONLY_STEPS.has(st));
+  const kept = steps.filter((st) => !foreign(st));
   /* The replacement layer is added only when the plan asked for a matchup read
      in the first place — a pure price question keeps its narrow shape. */
   const out = kept.slice();
@@ -2367,12 +2591,52 @@ export function scopeStepsToSport(steps: string[], sport: string | null): string
  * only applies what the caller already knew. Without a hint it is a pass-through,
  * so every existing caller and every existing test keeps its exact behaviour.
  */
+/* Intents that are ALREADY about one game. A plan carrying one of these needs
+   no focusing — it is asking the right shape of question already. */
+const ONE_GAME_INTENT = /(^|_)research_matchup$|^attack$|^price$|^what_changed$|^postmortem$|^full_research$|^matchup/;
+
+/**
+ * Make a plan be about the one game the context resolved.
+ *
+ * THIS IS THE REPORTED FAILURE, ONE LEAGUE OVER. "How does Texas State look
+ * this week?" came back `intent = unknown` because no branch of the classifier
+ * covered a single-team college question. The same holds today for every
+ * league without its own intents: "What about the Bruins?" and "How do the
+ * Liberty look?" classify as `unknown`, and "How do the Lakers look tonight?"
+ * as `slate_overview` — a board-wide sweep answering a question about one
+ * team. Fixing that league by league means a new branch every time a sport is
+ * added, and the branch that is missing is always the one nobody thought of.
+ *
+ * So it is fixed once, where the fact is known: when the resolved context says
+ * exactly one scheduled game is the subject and the plan is not about one
+ * game, the plan is re-pointed at that game with the layers the sport owns. A
+ * plan that is already single-game keeps its own shape, and a league with its
+ * own intents — MLB, NFL, college — never reaches here with a board-wide plan
+ * for a single-game question.
+ */
+export function focusPlanOnOneGame(plan: Plan, sport: string): Plan {
+  if (ONE_GAME_INTENT.test(plan.intent)) return plan;
+  if (plan.depth !== "SLATE" && plan.intent !== "unknown") return plan;
+  const steps = [...new Set([
+    "focus_signal", "market", "sharp_reference", "matchup",
+    ...(SPORT_LAYER_STEPS[sport] ?? []),
+  ])];
+  return {
+    ...plan,
+    intent: "research_matchup", mode: "MATCHUP", depth: "DEEP", budget: 22,
+    steps: scopeStepsToSport(steps, sport),
+    why: `One scheduled game is the subject of this question, so it is researched as a matchup rather than `
+      + `swept as a board. The classifier reached "${plan.intent}" from the wording alone, before the context `
+      + `had resolved which game was meant.`,
+  };
+}
+
 export function classify(question: string, mode?: string, hint?: ClassifyHint | null): Plan {
   const plan = classifyRaw(question, mode, hint);
   const sport = plan.sport ?? hint?.sport ?? sportOfIntent(plan.intent) ?? null;
   if (!sport) return plan;
-  const steps = scopeStepsToSport(plan.steps, sport);
-  return { ...plan, sport, steps };
+  const scoped: Plan = { ...plan, sport, steps: scopeStepsToSport(plan.steps, sport) };
+  return hint?.single_game ? focusPlanOnOneGame(scoped, sport) : scoped;
 }
 
 function classifyRaw(question: string, mode?: string, hint?: ClassifyHint | null): Plan {
@@ -2993,8 +3257,19 @@ export function rankSlate(index: SlateGame[], opts: { now?: number; sport?: stri
     const mk = (g as any).market ?? null;
     const hasLine = mk ? mk.has_market_line : g.has_quote;
     const hasPrice = mk ? mk.has_executable_price : g.has_quote;
-    if (g.status === "final") { eligible = false; reason = "the game is already final"; }
-    else if (!hasLine) { eligible = false; reason = "no source EdgeDesk reads carries a market number for this game — not a captured price, not a consensus line"; }
+    /* HAS THIS GAME STARTED? `status === "final"` caught only the games a feed
+       had already marked over, which left the whole window in between — a game
+       kicked off forty minutes ago, being watched right now — eligible for a
+       recommendation off a pregame price. EdgeDesk ingests no in-game price,
+       score or clock, so there is nothing it could be recommending except a
+       number from before the game began. */
+    const gs = EDINTEL.gameState({ kickoff: g.kickoff ?? null, status: g.status ?? null, now });
+    if (!gs.may_recommend && gs.state !== "UNKNOWN") {
+      eligible = false;
+      reason = gs.state === "FINAL" ? "the game is already final"
+        : "this game is already being played, and EdgeDesk holds no in-game price — everything on file for it "
+          + "describes the game before kickoff";
+    } else if (!hasLine) { eligible = false; reason = "no source EdgeDesk reads carries a market number for this game — not a captured price, not a consensus line"; }
     else if (!hasPrice) {
       eligible = false;
       reason = "this game carries a consensus market LINE but no executable price. It can be researched and "
@@ -3029,7 +3304,7 @@ export function rankSlate(index: SlateGame[], opts: { now?: number; sport?: stri
       market_status: mk ? mk.market_status : (g.has_quote ? "PRICED" : "NO MARKET"),
       priority: score,
       priority_band: score >= 6 ? "HIGH" : score >= 3 ? "MEDIUM" : "LOW",
-      drivers, attention, disagreement, quote_state: quoteState,
+      drivers, attention, disagreement, quote_state: quoteState, game_state: gs,
     };
   }).sort((a, b) => {
     /* Eligible games first — a recommendation can only come from one — then by
@@ -5030,7 +5305,12 @@ export class Dal {
     const avail = await this.getAvailabilityArtifact();
     const availBy = avail.byTeam, availMeta = avail.meta;
     path.availability = {
-      teams_indexed: availBy.size, error: avail.error,
+      /* teams_indexed counts INDEX KEYS, and a program is indexed under several
+         aliases, so it reads ~395 for 138 schools. The artifact's own
+         team_count is the number of programs and is what a coverage statement
+         must quote; conflating the two put "none of the 395 programs" in front
+         of a customer for a 138-school build. */
+      teams_indexed: availBy.size, team_count: availMeta?.team_count ?? null, error: avail.error,
       generated_at: availMeta?.generated_at ?? null,
       records: availMeta?.records ?? null, flagged: availMeta?.flagged ?? null,
       teams_with_official: availMeta?.teams_with_official ?? null,
@@ -5064,6 +5344,17 @@ export class Dal {
           ? EDINTEL.availabilityRead({
             record: availBy.get(EDINTEL.normKey(t)) ?? null, team: t,
             generated_at: availMeta?.generated_at ?? null, now,
+            /* THE SPORT'S OWN TOTALS, so a team with nothing on file can say
+               whether that is particular to it or true of all 138 programs.
+               Those two read identically to a customer and are not the same
+               fact: one is bad luck this week, the other is that EdgeDesk has
+               no working injury source for college football at all. */
+            league: availMeta ? {
+              team_count: availMeta.team_count ?? availBy.size,
+              records: availMeta.records ?? null,
+              teams_with_official: availMeta.teams_with_official ?? null,
+              failed_sources: availMeta.failed_sources ?? null,
+            } : null,
           })
           : null;
         const played = (byTeamGames.get(k) ?? []).slice().sort((a, b) =>
@@ -7469,6 +7760,31 @@ export function normalizeEvidence(evidence: Evidence[]): Evidence[] {
   });
 }
 
+/* --------------------------------------------- how old is too old, here */
+
+/** How many minutes a captured price on this market may be, given when the
+ *  game starts.
+ *
+ *  THE FLAT NUMBER WAS WRONG AT BOTH ENDS. `RESEARCH_STALE_MIN` is 90 and the
+ *  thesis attack used 45, and neither can be right for both a game starting in
+ *  twenty minutes and a game starting in six days. The loose end is the one
+ *  that cost something: a 44-minute-old price twenty minutes before kickoff
+ *  passed the 45-minute check and was described to a customer as the price,
+ *  in the window where a line moves fastest and a book pulls a number
+ *  soonest.
+ *
+ *  EDINTEL owns the ladder — it is the same policy capture enforces when it
+ *  decides what to store as fresh — so this asks EDINTEL rather than carrying
+ *  a fourth copy of the numbers. With no kickoff, or with no EDINTEL, the flat
+ *  environment limit stands, which is the old behaviour exactly. */
+function staleMinFor(kickoff: unknown, market: unknown = "spreads"): number {
+  if (!EDINTEL || typeof EDINTEL.quoteTtlMin !== "function") return RESEARCH_STALE_MIN;
+  const k = kickoff ? Date.parse(String(kickoff)) : NaN;
+  if (!Number.isFinite(k)) return RESEARCH_STALE_MIN;
+  const v = Number(EDINTEL.quoteTtlMin(market ?? "spreads", null, (k - Date.now()) / 3600000));
+  return Number.isFinite(v) && v > 0 ? v : RESEARCH_STALE_MIN;
+}
+
 /* ------------------------------------------------------ thesis attack */
 
 /* Deterministic. Reads the OWNED numbers on a signal row and reports whether the
@@ -7501,6 +7817,10 @@ export function attackThesis(
   const sharp = sig?.has_sharp === true || sig?.has_sharp === "true";
   const seen = sig?.last_seen_at ? Date.parse(sig.last_seen_at) : NaN;
   const staleM = Number.isFinite(seen) ? (Date.now() - seen) / 60000 : 999;
+  /* The caller's flat limit is a FLOOR ON THE QUESTION, not the answer: once a
+     kickoff is known, how close the game is decides. A caller that names its
+     own number on purpose passes something other than the default. */
+  if (staleMin === 45 && ctx.kickoff) staleMin = staleMinFor(ctx.kickoff, sig?.market);
   const remaining = (firstEdge && firstEdge > 0 && edge != null) ? Math.max(0, Math.min(1, edge / firstEdge)) : null;
 
   const falsifiers: string[] = [];
@@ -7980,9 +8300,14 @@ export interface ScoutItem {
   betting_action: string;      // kept explicitly separate from research interest
 }
 
+/* `staleMin` is a FALLBACK here, not a rule: each row carries its own kickoff,
+   so each row gets the limit its own kickoff earns. A slate mixes a game
+   starting in an hour with one starting on Saturday, and one number cannot be
+   right for both. */
 export function scout(slateRows: any[], floor = 0.02, staleMin = 45): ScoutItem[] {
   const out: ScoutItem[] = [];
   for (const s of slateRows) {
+    const rowStale = s.commence_time ? staleMinFor(s.commence_time, s.market) : staleMin;
     const edge = num(s.edge), first = num(s.first_edge);
     const nb = num(s.n_books) ?? 0;
     const sharp = s.has_sharp === true || s.has_sharp === "true";
@@ -7993,7 +8318,7 @@ export function scout(slateRows: any[], floor = 0.02, staleMin = 45): ScoutItem[
 
     if (edge != null && edge >= 0.04 && (!sharp || nb < 5)) flags.push("large edge, weak confirmation");
     if (edge != null && edge > 0 && edge < floor && sharp && nb >= 6) flags.push("strong confirmation, sub-floor edge");
-    if (edge != null && edge >= floor && staleM != null && staleM >= staleMin) flags.push("playable number on a stale capture");
+    if (edge != null && edge >= floor && staleM != null && staleM >= rowStale) flags.push("playable number on a stale capture");
     if (remaining != null && remaining < 0.5 && first! > 0) flags.push("over half the detection edge has decayed");
     if (edge != null && edge > 0.06) flags.push("edge large enough to suspect a bad or stale price");
     if (!sharp && edge != null && edge >= floor) flags.push("no Pinnacle print on this side");
@@ -12178,6 +12503,49 @@ const EDPRES: any = (globalThis as any).EDPRES;
     /* Quote freshness, in minutes, by market family. A pregame side moves more
        slowly than a total on a short board; both move faster than a future. */
     quote_ttl_min: { h2h: 90, spreads: 90, totals: 90, futures: 720, _default: 90 },
+    /* ...AND BY HOW CLOSE THE GAME IS, which the market family cannot express.
+       A flat limit is two different mistakes at once, and the expensive one is
+       not the one people expect:
+
+         TOO LOOSE WHERE IT MATTERS MOST. Twenty minutes before kickoff, a
+         44-minute-old price cleared the old flat 45-minute check and a
+         89-minute-old price cleared the flat 90. That is the window in which
+         a line moves fastest and a book takes a number down soonest, and it
+         was the window in which EdgeDesk was most willing to call a price
+         current. Showing a customer a number that left the board half an hour
+         ago, at the moment they are most likely to act on it, is the worst
+         failure this system can have.
+
+         TOO TIGHT WHERE IT DOES NOT. A college spread six days out that has
+         not been re-captured in two hours is an ordinary Tuesday, not a
+         staleness event. Flagging it burns the word `stale` on a non-event,
+         and a warning that fires on everything stops being read.
+
+       These are the SAME numbers capture enforces on the write side
+       (FRESHNESS_POLICY, ncaaf, in seconds) expressed in minutes, so the price
+       a run is willing to store as fresh and the price a reader is willing to
+       call current are one policy rather than two that drift. Buckets are
+       matched in order; the first whose ceiling the game is inside wins.
+
+       The ladder REPLACES the family limit for the markets named in
+       quote_ttl_bucketed_markets rather than capping it, because the family
+       number and the bucket number are answers to different questions and
+       combining them with a min or a max gets one of the two cases wrong. Note
+       that the `day` rung is 90 minutes — the same value the flat limit always
+       had. A game inside a day behaves exactly as it did; the change is
+       entirely at the two ends that a single number could not describe. */
+    quote_ttl_buckets: [
+      { name: 'imminent', max_hours_to_start: 0.5, minutes: 5 },
+      { name: 'close', max_hours_to_start: 2, minutes: 15 },
+      { name: 'soon', max_hours_to_start: 6, minutes: 45 },
+      { name: 'day', max_hours_to_start: 24, minutes: 90 },
+      { name: 'far', max_hours_to_start: 72, minutes: 180 },
+      { name: 'deep', max_hours_to_start: null, minutes: 360 }
+    ],
+    /* Which markets the ladder decides. A future is not priced against a
+       kickoff — it is priced against a season — so its freshness stays on the
+       family limit above, where 720 minutes means what it has always meant. */
+    quote_ttl_bucketed_markets: ['h2h', 'spreads', 'totals'],
     /* Past this multiple of its TTL a quote is not merely aging, it is stale
        and may not support an actionable conclusion at all. */
     stale_multiple: 1,
@@ -12834,9 +13202,61 @@ const EDPRES: any = (globalThis as any).EDPRES;
   /* QUOTE STATE — is this price still a price?                            */
   /* ==================================================================== */
 
-  function quoteTtlMin(market, over) {
+  /**
+   * Which kickoff bucket a game is in, by hours until it starts.
+   *
+   * A game already under way returns the tightest bucket rather than none:
+   * a pregame quote on a started game is blocked outright elsewhere, and the
+   * tightest limit is the answer that can never be the generous one.
+   */
+  function quoteTtlBucket(hoursToStart) {
+    var h = num(hoursToStart);
+    if (h == null) return null;
+    var list = CONFIG.quote_ttl_buckets || [];
+    for (var i = 0; i < list.length; i++) {
+      var b = list[i];
+      var ceil = num(b && b.max_hours_to_start);
+      if (ceil == null || h <= ceil) return b;
+    }
+    return list.length ? list[list.length - 1] : null;
+  }
+
+  /** Plain English for a bucket's ceiling, for use inside a sentence. */
+  function kickoffPhrase(bucket) {
+    var h = bucket && num(bucket.max_hours_to_start);
+    if (h == null) return 'this far out';
+    if (h <= 1) return 'under ' + Math.round(h * 60) + ' minutes away';
+    if (h < 24) return 'under ' + h + ' hours away';
+    return 'under ' + Math.round(h / 24) + ' day' + (Math.round(h / 24) === 1 ? '' : 's') + ' away';
+  }
+
+  /**
+   * How old a quote on this market may be, in minutes.
+   *
+   * WHICHEVER RULE ACTUALLY KNOWS. For a game market with a kickoff, the
+   * ladder knows: how long a price survives is a function of how close the
+   * game is, and a family average cannot express that. For a future, or for a
+   * quote with no event time at all, the family limit is the only thing there
+   * is, and it stands untouched.
+   *
+   * These are not combined with a min or a max. Both were tried on paper and
+   * both get one end wrong: a min can never loosen the limit for a game six
+   * days out, and a max can never tighten it for a game six minutes out. They
+   * are answers to different questions, so one of them answers and the other
+   * does not.
+   *
+   * An explicit `over` for the market always wins — a caller naming its own
+   * limit is not asking for a policy lookup.
+   */
+  function quoteTtlMin(market, over, hoursToStart) {
     var m = normMarket(market);
-    var t = over && over[m] != null ? over[m] : CONFIG.quote_ttl_min[m];
+    if (over && over[m] != null && num(over[m]) != null) return num(over[m]);
+
+    var bucket = quoteTtlBucket(hoursToStart);
+    var bucketed = (CONFIG.quote_ttl_bucketed_markets || []).indexOf(m) >= 0;
+    if (bucket && bucketed && num(bucket.minutes) != null) return num(bucket.minutes);
+
+    var t = CONFIG.quote_ttl_min[m];
     return num(t) != null ? num(t) : CONFIG.quote_ttl_min._default;
   }
 
@@ -12853,10 +13273,24 @@ const EDPRES: any = (globalThis as any).EDPRES;
     var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
     var at = toMs(o.captured_at);
     var ageMin = at != null ? Math.max(0, (now - at) / 60000) : num(o.age_min);
-    var limit = quoteTtlMin(o.market, o.ttl_override);
-    var hard = limit * (num(o.stale_multiple) != null ? num(o.stale_multiple) : CONFIG.stale_multiple);
     var kickoff = toMs(o.kickoff);
     var minsToKick = kickoff != null ? (kickoff - now) / 60000 : null;
+    /* The limit is resolved AFTER the kickoff is known, not before, because
+       how close the game is is half of what decides it. */
+    var limit = quoteTtlMin(o.market, o.ttl_override, minsToKick == null ? null : minsToKick / 60);
+    var ladder = quoteTtlBucket(minsToKick == null ? null : minsToKick / 60);
+    /* The bucket only NAMES the limit when it SET the limit. A futures quote
+       sitting in the `far` window is still on its family limit, and reporting
+       `far` for it would be a basis that does not match the number. */
+    var bucket = (ladder && (CONFIG.quote_ttl_bucketed_markets || []).indexOf(normMarket(o.market)) >= 0
+      && !(o.ttl_override && o.ttl_override[normMarket(o.market)] != null)) ? ladder : null;
+    var hard = limit * (num(o.stale_multiple) != null ? num(o.stale_multiple) : CONFIG.stale_multiple);
+
+    /* Said once so the stale and aging branches cannot describe the same
+       limit two different ways. */
+    var limitPhrase = bucket && bucket.name !== 'deep'
+      ? limit + '-minute limit that applies with kickoff ' + kickoffPhrase(bucket)
+      : limit + '-minute limit for a ' + (marketLabel(o.market) || 'market') + ' quote';
 
     var status, why, actionable;
     if (ageMin == null) {
@@ -12865,11 +13299,11 @@ const EDPRES: any = (globalThis as any).EDPRES;
       actionable = CONFIG.unknown_age_is_actionable === true;
     } else if (ageMin >= hard) {
       status = 'STALE';
-      why = 'Last captured ' + Math.round(ageMin) + ' minutes ago, past the ' + limit + '-minute limit for a ' + (marketLabel(o.market) || 'market') + ' quote. This is the last price EdgeDesk observed, not a price that is currently available.';
+      why = 'Last captured ' + Math.round(ageMin) + ' minutes ago, past the ' + limitPhrase + '. This is the last price EdgeDesk observed, not a price that is currently available.';
       actionable = false;
     } else if (ageMin >= limit / 2) {
       status = 'AGING';
-      why = 'Captured ' + Math.round(ageMin) + ' minutes ago, inside the ' + limit + '-minute limit but past half of it. Confirm it is still on the board before acting.';
+      why = 'Captured ' + Math.round(ageMin) + ' minutes ago, inside the ' + limitPhrase + ' but past half of it. Confirm it is still on the board before acting.';
       actionable = true;
     } else {
       status = 'CURRENT';
@@ -12890,6 +13324,10 @@ const EDPRES: any = (globalThis as any).EDPRES;
       status: status,
       age_min: ageMin == null ? null : Math.round(ageMin * 10) / 10,
       limit_min: limit,
+      /* WHY the limit is what it is. Without this a customer told a
+         12-minute-old price is stale has no way to see that the game starts in
+         forty minutes, and the warning reads as a malfunction. */
+      limit_basis: bucket ? bucket.name : 'market',
       captured_at: at != null ? new Date(at).toISOString() : null,
       minutes_to_kickoff: minsToKick == null ? null : Math.round(minsToKick),
       actionable: actionable && !kickBlock,
@@ -12900,6 +13338,93 @@ const EDPRES: any = (globalThis as any).EDPRES;
       research_note: status === 'STALE' || status === 'UNKNOWN'
         ? 'Keep this quote for research with its timestamp attached. Do not describe it as currently available and do not build a price conclusion on it.'
         : null
+    };
+  }
+
+  var GAME_STATES = ['SCHEDULED', 'IN_PROGRESS', 'FINAL', 'UNKNOWN'];
+
+  /* How long after kickoff a game is presumed still running when no status
+     feed says otherwise. Generous on purpose: presuming a game has finished
+     while it is still being played is the error that lets a pregame number be
+     described as a result. */
+  var TYPICAL_GAME_H = 4;
+
+  /**
+   * Is this game scheduled, being played, or over?
+   *
+   * EDGEDESK'S RESEARCH IS PREGAME AND ONLY PREGAME. No in-game price, score,
+   * clock or possession is ingested anywhere in this system. That is a fine
+   * thing to be — most research is done before kickoff — but it stops being
+   * fine the moment a question asked at half past eight is answered with the
+   * same words as one asked at noon, because everything in the answer is then
+   * describing a game the reader is currently watching, in the present tense,
+   * with no indication that it has started.
+   *
+   * So the state is established and SAID. A game under way is not refused a
+   * research answer — the pregame work is still the pregame work, and a reader
+   * asking "what did we think of this?" during the second quarter deserves it
+   * — but nothing about it may be presented as current, and no number in it
+   * may be acted on.
+   *
+   * @param o.kickoff  scheduled start
+   * @param o.status   a status string from a schedule row, when there is one
+   * @param o.now      clock
+   */
+  function gameState(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var kick = toMs(o.kickoff);
+    var raw = String(o.status == null ? '' : o.status).toLowerCase();
+
+    /* A STATUS FEED OUTRANKS THE CLOCK, because a game can be delayed,
+       suspended or moved and the schedule row is the thing that knows. */
+    var said = /final|complete|post|ended/.test(raw) ? 'FINAL'
+      : /in.?progress|live|halftime|quarter|period|inning/.test(raw) ? 'IN_PROGRESS'
+      : /scheduled|pre|upcoming/.test(raw) ? 'SCHEDULED' : null;
+
+    var state, why;
+    if (said === 'FINAL') {
+      state = 'FINAL';
+      why = 'This game is over. Everything below is what EdgeDesk knew before it started.';
+    } else if (said === 'IN_PROGRESS') {
+      state = 'IN_PROGRESS';
+      why = 'This game is being played right now.';
+    } else if (kick == null) {
+      state = 'UNKNOWN';
+      why = 'No kickoff time is on file for this game, so EdgeDesk cannot tell whether it has started.';
+    } else if (now < kick) {
+      state = 'SCHEDULED';
+      why = null;
+    } else if (now - kick < TYPICAL_GAME_H * 3600e3) {
+      state = 'IN_PROGRESS';
+      why = 'Kickoff was ' + Math.round((now - kick) / 60000) + ' minutes ago and no status feed says the game has '
+        + 'finished, so it is being played right now.';
+    } else {
+      state = 'FINAL';
+      why = 'Kickoff was ' + Math.round((now - kick) / 3600e3) + ' hours ago, so this game is over.';
+    }
+
+    var live = state === 'IN_PROGRESS';
+    var over = state === 'FINAL';
+    return {
+      state: state,
+      kickoff: kick != null ? new Date(kick).toISOString() : null,
+      minutes_since_kickoff: kick == null ? null : Math.round((now - kick) / 60000),
+      status_source: said ? 'status feed' : kick == null ? 'none' : 'clock',
+      why: why,
+      /* THE THREE PERMISSIONS, SAID AS DATA. */
+      may_recommend: state === 'SCHEDULED',
+      may_describe_as_current: state === 'SCHEDULED',
+      research_usable: true,
+      /* What a consumer must tell the reader, in one sentence, when the game
+         is not scheduled. Null when it is. */
+      notice: !live && !over ? null
+        : live
+          ? 'THIS GAME HAS ALREADY STARTED. EdgeDesk holds no in-game price, score, clock or possession — every '
+            + 'number below describes the game BEFORE kickoff and none of it is a live read. Treat it as a record '
+            + 'of what the research said, not as advice about a game in progress.'
+          : 'THIS GAME IS OVER. Everything below is what EdgeDesk knew before kickoff. It is not a result, and no '
+            + 'price in it is available.'
     };
   }
 
@@ -13050,6 +13575,9 @@ const EDPRES: any = (globalThis as any).EDPRES;
    * @param o.team     the team name, for the sentence
    * @param o.generated_at the artifact's own build time
    * @param o.now      clock
+   * @param o.league   the artifact's own sport-wide totals — {team_count,
+   *                   records, teams_with_official, failed_sources}. Optional,
+   *                   and the reason it exists is below.
    */
   function availabilityRead(o) {
     o = o || {};
@@ -13101,6 +13629,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
         + ', found no official report, and published nothing. '
         + 'THIS IS UNKNOWN, NOT HEALTHY: nobody has been confirmed fit and no injury has been ruled out. '
         + 'Do not describe this team as healthy, clean or fully available.';
+
     }
     if (stale && state !== 'NOT_RETRIEVED') {
       sentence += ' The availability build is ' + ageH + ' hours old, past the ' + AVAIL_STALE_H
@@ -13111,8 +13640,40 @@ const EDPRES: any = (globalThis as any).EDPRES;
       team: team, quality: quality, counts: counts,
       players: players, quarterbacks: qbs,
       official_report_found: official, sources_checked: checked, sources_failed: failed,
+      league_uncovered: !!(o.league && (num(o.league.team_count) || 0) > 0
+        && (num(o.league.teams_with_official) || 0) === 0),
       age_hours: ageH, stale: stale, sentence: sentence
     });
+  }
+
+  /**
+   * The one sentence about the WHOLE availability build, said once.
+   *
+   * IS THIS TEAM UNCOVERED, OR IS THE SPORT? Those read identically to a
+   * customer and they are not the same fact. "EdgeDesk checked 3 sources and 2
+   * failed" sounds like this team had bad luck this week, and a reader hearing
+   * it about one team assumes the next team will be fine. The truth on the
+   * last build was that NOT ONE of 138 programs carried an official report and
+   * the whole build held five records — which is not an injury picture, it is
+   * the absence of one, and it will be the same for every team they ask about.
+   *
+   * Returns null when the build has real coverage, so this appears only when
+   * it is true.
+   *
+   * @param o {team_count, records, teams_with_official}
+   */
+  function availabilityCoverageNote(o) {
+    o = o || {};
+    var teams = num(o.team_count) || 0;
+    if (teams <= 0) return null;
+    if ((num(o.teams_with_official) || 0) > 0) return null;
+    var records = num(o.records) || 0;
+    return 'AVAILABILITY COVERAGE FOR THIS SPORT: none of the ' + teams + ' programs in this build carries an '
+      + 'official availability report, and the whole build holds ' + records + ' record'
+      + (records === 1 ? '' : 's') + '. The gap is the sport\u2019s, not any one team\u2019s — no team on this '
+      + 'card can be described as healthy, and none of them will look any different from each other. Say this '
+      + 'once if it matters to the question; do not repeat it per team, and do not read it as a clean bill of '
+      + 'health for anybody.';
   }
 
   function finishAvail(state, o) {
@@ -13122,6 +13683,11 @@ const EDPRES: any = (globalThis as any).EDPRES;
       players: o.players, quarterbacks: o.quarterbacks,
       official_report_found: o.official_report_found,
       sources_checked: o.sources_checked, sources_failed: o.sources_failed,
+      /* True when the gap is the SPORT'S and not this team's. Deliberately NOT
+         folded into `sentence`: it is one fact about the whole build, and a
+         consumer that repeats it under every team on the card says the same
+         paragraph ten times and crowds out a game's evidence to do it. */
+      league_uncovered: o.league_uncovered === true,
       artifact_age_hours: o.age_hours, stale: o.stale,
       /* THE TWO PERMISSIONS, SAID AS DATA SO NO CONSUMER HAS TO INFER THEM. */
       may_claim_healthy: state === 'NO_REPORTED_INJURIES',
@@ -15103,7 +15669,9 @@ const EDPRES: any = (globalThis as any).EDPRES;
     loadFootballValidation: loadFootballValidation, modelWinProbability: modelWinProbability,
     validationSnapshot: validationSnapshot, loadSnapshotValidation: loadSnapshotValidation,
     fairMethod: fairMethod, confirmationRead: confirmationRead,
-    quoteTtlMin: quoteTtlMin, quoteState: quoteState, applyRefresh: applyRefresh,
+    quoteTtlMin: quoteTtlMin, quoteTtlBucket: quoteTtlBucket, quoteState: quoteState, applyRefresh: applyRefresh,
+    gameState: gameState, GAME_STATES: GAME_STATES,
+    availabilityCoverageNote: availabilityCoverageNote,
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
@@ -15743,10 +16311,19 @@ export function buildPresentation(body: any, research: ResearchOut | null, mode:
   if (!EDPRES) return null;
   const src = presentationSource(body, research);
   if (!src) return null;
+  /* THE CARD'S STALENESS LIMIT IS THIS GAME'S, NOT THE ENVIRONMENT'S.
+     EDPRES cannot resolve it itself: it is also inlined into brief.html and
+     record.html, where EDINTEL is not present, so a hard dependency on the
+     ladder would break two pages to fix one. The server knows both, so the
+     server resolves it and passes the number down — which is what
+     `stale_limit_min` was always for. */
+  const cardKickoff = src.packet?.game?.commence ?? src.packet?.game?.kickoff
+    ?? src.packet?.game?.commence_time ?? research?.context?.kickoff ?? null;
+  const cardMarket = src.packet?.market?.market ?? research?.context?.market ?? "spreads";
   const simple = EDPRES.simpleFromPacket(src.packet, {
     integrity: research?.integrity ?? null,
     gaps: presentationGaps(research),
-    stale_limit_min: RESEARCH_STALE_MIN,
+    stale_limit_min: staleMinFor(cardKickoff, cardMarket),
     research_at: Date.now(),
   });
   if (!simple || !simple.available) return null;
@@ -15923,6 +16500,106 @@ export const EXTERNAL_ADAPTERS: ExternalAdapter[] = [
           }));
       } catch (e) {
         return [unavailable("CollegeFootballData", "cfb_returning_production",
+          `CFBD request failed — ${String((e as Error)?.message ?? e)}`)];
+      }
+    },
+  },
+  {
+    /* PER-PLAY EFFICIENCY FOR COLLEGE FOOTBALL — the layer the CFB module has
+       always declared missing and never had a route to.
+
+       The NFL module owns EPA, success rate and explosive rate in its own
+       tables, so an NFL matchup read rests on how the two teams actually play.
+       College football has no free play-by-play feed, so the same read has
+       rested on SP+ (a rating, not a per-play measurement) and the scoreboard.
+       That is the difference between "Texas State's offense is efficient on
+       early downs and cannot finish drives" and "Texas State is rated 78th",
+       and it is most of what a reader wants from a matchup.
+
+       CFBD's advanced season stats carry exactly that: PPA (their expected
+       points added per play) by offense and defense, success rate,
+       explosiveness, and the situational splits underneath. The adapter is
+       written against the documented route and ASSUMES NOTHING about the
+       shape beyond "an array of rows naming a team" — anything that does not
+       parse becomes an honest unavailable rather than a guess.
+
+       It is dark until CFBD_API_KEY is set, and until then the module says so
+       in the words below rather than quietly substituting a rating for a
+       measurement. */
+    id: "cfbd_advanced_stats",
+    provider: "CollegeFootballData",
+    sport: "americanfootball_ncaaf",
+    source_type: "PROVIDER_API",
+    capability: "cfb_per_play_efficiency",
+    credential_env: "CFBD_API_KEY",
+    configured: () => !!CFBD_API_KEY,
+    unconfigured_reason:
+      "College football has no per-play efficiency layer in this build: there is no free play-by-play feed for the "
+      + "sport, the ingested cfb schema carries no EPA or success-rate columns, and CFBD_API_KEY is not set, so the "
+      + "direct route is closed too. SP+ IS NOT A SUBSTITUTE — it is a rating of results, not a measurement of how a "
+      + "team plays, and reporting it as efficiency would be the wrong number under the right label. Every matchup "
+      + "read in this sport therefore rests on ratings, records and the market, and says so. To enable: set "
+      + "CFBD_API_KEY, or extend cfb_ingest to write per-play efficiency into the cfb schema.",
+    async run(f, opts) {
+      try {
+        const url = `${CFBD_BASE}/stats/season/advanced?year=${opts.season}`;
+        const r = await f(url, { headers: { authorization: `Bearer ${CFBD_API_KEY}`, accept: "application/json" } });
+        if (!r.ok) {
+          return [unavailable("CollegeFootballData", "cfb_per_play_efficiency",
+            `CFBD returned HTTP ${r.status} for /stats/season/advanced?year=${opts.season}`)];
+        }
+        const rows = await r.json();
+        if (!Array.isArray(rows) || !rows.length) {
+          return [unavailable("CollegeFootballData", "cfb_per_play_efficiency",
+            `CFBD returned no advanced-stat rows for ${opts.season}`)];
+        }
+        const want = (opts.teams ?? []).map(normName);
+        const picked = rows.filter((x: any) => !want.length || want.some((t) => normName(x?.team).includes(t)));
+        if (!picked.length) {
+          return [unavailable("CollegeFootballData", "cfb_per_play_efficiency",
+            `CFBD advanced stats answered for ${opts.season} but carried no row for `
+            + `${(opts.teams ?? []).join(" or ") || "the teams in scope"}`)];
+        }
+        return picked.slice(0, 40).map((x: any) => {
+          /* Only the fields that are actually per-play measurements are lifted
+             out and named. The whole row travels as the value, so nothing is
+             hidden, but the named ones are what a matchup read may lean on. */
+          const o = x?.offense ?? {}, d = x?.defense ?? {};
+          const pick = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+          return ev({
+            source: "CollegeFootballData", entity: x?.team ?? null, field: "cfb_per_play_efficiency",
+            sport: "americanfootball_ncaaf", league: "FBS", season: opts.season,
+            source_type: "PROVIDER_API", layer: "season", data_layer: "L3_TEAM_SEASON",
+            relevance: "efficiency", status: "VERIFIED",
+            freshness: freshnessOf("historical", Date.now()),
+            value: {
+              team: x?.team ?? null, conference: x?.conference ?? null, plays: pick(o.plays),
+              offense: {
+                ppa: pick(o.ppa), success_rate: pick(o.successRate), explosiveness: pick(o.explosiveness),
+                line_yards: pick(o.lineYards), stuff_rate: pick(o.stuffRate),
+                passing_ppa: pick(o.passingPlays?.ppa), rushing_ppa: pick(o.rushingPlays?.ppa),
+                standard_downs_success: pick(o.standardDowns?.successRate),
+                passing_downs_success: pick(o.passingDowns?.successRate),
+              },
+              defense: {
+                ppa: pick(d.ppa), success_rate: pick(d.successRate), explosiveness: pick(d.explosiveness),
+                havoc: pick(d.havoc?.total), line_yards: pick(d.lineYards), stuff_rate: pick(d.stuffRate),
+                passing_ppa: pick(d.passingPlays?.ppa), rushing_ppa: pick(d.rushingPlays?.ppa),
+                standard_downs_success: pick(d.standardDowns?.successRate),
+                passing_downs_success: pick(d.passingDowns?.successRate),
+              },
+              raw: x,
+            },
+            provenance: `CollegeFootballData /stats/season/advanced?year=${opts.season}`,
+            note: "Per-play efficiency: PPA is expected points added per play, success rate the share of plays that "
+              + "stayed on schedule, explosiveness the size of the successful ones. SEASON-TO-DATE AND CUMULATIVE — "
+              + "it describes how a team has played across the year, not how it played last week, and a team that has "
+              + "changed quarterback mid-season is described by both halves at once. A defensive PPA is better when "
+              + "it is LOWER.",
+          });
+        });
+      } catch (e) {
+        return [unavailable("CollegeFootballData", "cfb_per_play_efficiency",
           `CFBD request failed — ${String((e as Error)?.message ?? e)}`)];
       }
     },
@@ -16428,6 +17105,9 @@ export interface ResearchSubject {
   away: string | null;
   home_id: string | null;
   away_id: string | null;
+  /** How many consecutive turns this conversation has stayed on this subject.
+      Raises retrieval depth and NOTHING else — see sanitizeSubject(). */
+  turns?: number;
 }
 
 /**
@@ -16449,14 +17129,111 @@ export function sanitizeSubject(raw: unknown): ResearchSubject | null {
     return t ? t : null;
   };
   const sport = str(r.sport, 40);
+  /* THE ONE NUMBER THE BROWSER MAY CONTRIBUTE, AND WHAT IT CAN DO WITH IT.
+     A conversation that stays on one game should get deeper research each
+     turn rather than the same shallow pass repeated, and the browser is the
+     only thing that knows the turn ran at all. So it may send a count.
+
+     It is clamped to [1, DOSSIER_TURNS] and it can do exactly one thing:
+     raise how much EdgeDesk RETRIEVES. It cannot assert a fact, suppress a
+     retrieval, skip a step, reach a ledger entry or change a decision. The
+     worst a forged value achieves is a deeper read than the turn earned,
+     which costs EdgeDesk a few queries and costs the reader nothing — and
+     the clamp bounds even that. */
+  const turnsRaw = Number(r.turns);
+  const turns = Number.isFinite(turnsRaw) && turnsRaw >= 1
+    ? Math.min(Math.floor(turnsRaw), DOSSIER_TURNS) : 1;
+
   const out: ResearchSubject = {
     sport: sport && SPORT_INTELLIGENCE[sport] ? sport : null,
     game_id: str(r.game_id, 40),
     home: str(r.home), away: str(r.away),
     home_id: str(r.home_id, 60), away_id: str(r.away_id, 60),
+    turns,
   };
   if (!out.sport && !out.game_id) return null;
   return out;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DEPTH THAT ACCUMULATES.
+
+   Every turn classified the question from scratch and retrieved to a fixed
+   budget, so a reader who asked three questions about one game got the same
+   shallow pass three times. The second question is not the first question
+   again: it is asked BECAUSE the first was answered, and it deserves the
+   things the first pass did not have budget to fetch.
+
+     GLANCE    turn 1     what the question asked for. Fast, and for most
+                          questions it is the whole answer.
+     READ      turn 2     the same subject a second time. One rung deeper,
+                          plus every layer the sport module owns that the
+                          first pass did not run.
+     DOSSIER   turn 3+    the deepest rung the sport supports, every owned
+                          layer, nothing held back for budget.
+
+   ESCALATION ONLY, AND ONLY OF RETRIEVAL. A dossier turn can add steps and
+   raise the budget. It can never remove a step, lower a budget, skip a
+   retrieval because an earlier turn "already did it", or change what the
+   evidence is allowed to conclude. Accumulated depth makes EdgeDesk look
+   harder; it never makes it look less. */
+export const DOSSIER_TURNS = 3;
+const DEPTH_LADDER: Depth[] = ["QUICK", "STANDARD", "DEEP", "FULL"];
+
+/** The stable identity of what a turn is about, or null when the turn is not
+    about one subject. Two turns share a dossier only if this matches. */
+export function subjectKeyOf(ctx: { sport: string | null; game_id: string | null; team_ids: string[] }): string | null {
+  if (!ctx.sport) return null;
+  if (ctx.game_id) return `${ctx.sport}#${ctx.game_id}`;
+  if (ctx.team_ids.length) return `${ctx.sport}#${[...ctx.team_ids].sort().join("+")}`;
+  return null;
+}
+
+export interface DepthEscalation {
+  turns: number;
+  stage: "GLANCE" | "READ" | "DOSSIER";
+  from: Depth;
+  to: Depth;
+  added_steps: string[];
+  why: string;
+}
+
+/**
+ * Deepen a plan because the conversation has stayed on this subject.
+ *
+ * Returns null when nothing changes, so the caller reports an escalation only
+ * when there was one.
+ */
+export function escalateDepth(plan: Plan, turns: number, sportKey: string | null): DepthEscalation | null {
+  const t = Math.max(1, Math.min(Math.floor(turns) || 1, DOSSIER_TURNS));
+  if (t < 2) return null;
+  /* A SLATE plan is about the whole board, not about one subject, so it has no
+     dossier to accumulate and its budget is already the widest there is. */
+  if (plan.depth === "SLATE") return null;
+
+  const stage = t >= DOSSIER_TURNS ? "DOSSIER" : "READ";
+  const at = DEPTH_LADDER.indexOf(plan.depth);
+  const want = stage === "DOSSIER" ? DEPTH_LADDER.length - 1 : Math.min(at + 1, DEPTH_LADDER.length - 1);
+  const to = at < 0 ? plan.depth : DEPTH_LADDER[Math.max(at, want)];
+
+  /* The layers this sport actually owns. Nothing is invented for a league
+     with no tables: a CORE_ONLY sport adds no steps here, and the answer goes
+     on saying so rather than promising depth that does not exist. */
+  const owned = [
+    ...(SPORTS[sportKey ?? ""]?.steps ?? []),
+    ...(SPORT_LAYER_STEPS[sportKey ?? ""] ?? []),
+  ];
+  const added = [...new Set(owned.filter((st) => !plan.steps.includes(st)))];
+
+  if (to === plan.depth && !added.length) return null;
+  return {
+    turns: t, stage, from: plan.depth, to, added_steps: added,
+    why: stage === "DOSSIER"
+      ? `This is the ${t}${t === 3 ? "rd" : "th"} turn on the same subject, so it is researched at full depth `
+        + `with every layer this sport owns, rather than the same first-pass read repeated.`
+      : `The conversation has stayed on this subject, so this turn goes a rung deeper than the question alone `
+        + `would have asked for and picks up the layers the first pass had no budget for.`,
+  };
 }
 
 /**
@@ -16698,6 +17475,10 @@ export interface MatchupSummary {
   other_markets: number;
   /** Always stated, never inferred: whose arithmetic any expected return is. */
   ev_provenance: string | null;
+  /** SCHEDULED, IN_PROGRESS, FINAL or UNKNOWN. A reader asking about a game
+      that has started is answered with pregame research and must be told so:
+      EdgeDesk ingests no live price, score or clock. */
+  game_state?: string;
   source: "deterministic";
 }
 
@@ -16724,8 +17505,27 @@ export function matchupSummary(input: {
     ev_provenance: null, source: "deterministic",
   };
 
+  /* ---- HAS IT STARTED? This comes first, before any read is written. ----
+     A question asked at half past eight about a game that kicked off at eight
+     was answered in exactly the same words as one asked at noon: a pregame
+     spread, a pregame lean, a price to look for — all in the present tense,
+     about a game the reader is watching. EdgeDesk ingests no in-game price,
+     score or clock, so there is no live read to give and the only honest move
+     is to say which game state this is before saying anything else. */
+  const gstate = EDINTEL.gameState({ kickoff: ctx.kickoff, status: (ctx as any).status ?? null, now: Date.now() });
+  out.game_state = gstate.state;
+  if (gstate.notice) {
+    out.read = (gstate.state === "IN_PROGRESS"
+      ? `${matchup ?? "This game"} is already under way. `
+      : `${matchup ?? "This game"} is over. `)
+      + `EdgeDesk's research is pregame only — no live price, score or clock is ingested — so what follows is `
+      + `what the desk had before kickoff, not a read on the game as it stands.`;
+    out.data_blockers.push(gstate.notice);
+  }
+
   /* ---- no priced market at all ---------------------------------------- */
   if (!d) {
+    if (gstate.notice) return out;
     out.read = matchup
       ? `${matchup} is on the card, and no source EdgeDesk reads carries a price for it right now. `
         + `That is a gap in what I can see, not a view on the game — I have nothing to judge a number against.`
@@ -16947,11 +17747,53 @@ async function runResearch(
     steps.clear(); for (const st of plan.steps) steps.add(st);
     dal.budget = Math.max(dal.budget, plan.budget);
   }
+  /* ---- 0a-iii. DEPTH THAT ACCUMULATES ----------------------------------
+     A reader who asks three questions about one game used to get the same
+     shallow pass three times: every turn re-planned from the question alone
+     and retrieved to a fixed budget, so the second question — asked BECAUSE
+     the first was answered — got no more than the first did.
+
+     The subject key is computed here, from the context this turn RESOLVED, so
+     the streak survives only while the conversation genuinely stays on one
+     game. The moment it moves, the key changes and the count starts again.
+     A forged count from the browser is clamped and can only make EdgeDesk
+     look harder; see sanitizeSubject(). */
+  const subjectKey = subjectKeyOf(ctx);
+  const priorSubject = state.subject ?? null;
+  const priorKey = priorSubject
+    ? subjectKeyOf({ sport: priorSubject.sport, game_id: priorSubject.game_id, team_ids: [] })
+    : null;
+  const sameSubject = !!subjectKey && !!priorKey && subjectKey === priorKey;
+  const dossierTurns = subjectKey
+    ? (sameSubject ? Math.min((priorSubject?.turns ?? 1) + 1, DOSSIER_TURNS) : 1)
+    : 1;
+
+  const deeper = subjectKey ? escalateDepth(plan, dossierTurns, ctx.sport) : null;
+  if (deeper) {
+    plan = { ...plan, depth: deeper.to, steps: [...plan.steps, ...deeper.added_steps] };
+    /* Rebuilt from the new depth by the same ladder classify() uses, and taken
+       as a MAXIMUM so an escalation can never shrink a budget. */
+    const escalatedBudget = deeper.to === "QUICK" ? 5 : deeper.to === "STANDARD" ? 16
+      : deeper.to === "DEEP" ? 22 : deeper.to === "SLATE" ? 28 : 32;
+    plan.budget = Math.max(plan.budget, escalatedBudget);
+    for (const st of plan.steps) steps.add(st);
+    dal.budget = Math.max(dal.budget, plan.budget);
+    data_path.depth_escalation = {
+      ...deeper, subject_key: subjectKey,
+      note: "Retrieval only. An escalation adds steps and raises the budget; it never removes a step, "
+        + "skips a retrieval because an earlier turn ran it, or changes what the evidence may conclude.",
+    };
+  }
+
   data_path.research_context = {
     sport: ctx.sport, sport_source: ctx.sport_source, game_id: ctx.game_id,
     teams: ctx.team_names, team_ids: ctx.team_ids, kickoff: ctx.kickoff,
     season: ctx.season, week: ctx.week, single_game: ctx.single_game, carried: ctx.carried,
     resolution_source: ctx.resolution_source, ambiguity: ctx.ambiguity,
+    /* Returned so the NEXT turn knows how long this conversation has been on
+       this subject. The client hands it straight back; the server clamps it. */
+    turns: dossierTurns,
+    depth_stage: dossierTurns >= DOSSIER_TURNS ? "DOSSIER" : dossierTurns === 2 ? "READ" : "GLANCE",
     note: "The ONE resolved scope for this turn. Retrieval, evidence, decisions and the rendered cards are all "
       + "checked against it; anything that does not match it is withheld rather than shown.",
   };
@@ -17378,6 +18220,10 @@ async function runResearch(
      everything with no way to tell what was cut. */
   let ranked: ShortlistRow[] = [];
   let packets: any[] = [];
+  /* Gaps that describe a whole retrieval LAYER rather than one item. They have
+     no evidence row of their own, so they are collected here and folded into
+     the unavailable roll-up once, at the end of the turn. */
+  const unavailableExtra: { source: string; field: string; reason: string }[] = [];
   if (slateIndex && slateIndex.index.length) {
     ranked = rankSlate(slateIndex.index, { now: Date.now(), sport: sportKey });
     data_path.slate_ranking = {
@@ -17437,6 +18283,26 @@ async function runResearch(
         const ge = await dal.getCfbGameEvidence(shortlist, { season: num(boardScope.season) });
         data_path.game_evidence = ge.path;
         packets = ge.packets;
+        /* THE COVERAGE OF THE AVAILABILITY LAYER, SAID ONCE FOR THE TURN.
+           Every team on the card carries "no availability record is on file",
+           which reads to a customer like this team got unlucky — and on the
+           build that produced the reported answer the truth was that not one
+           of 138 programs had an official report. That is one fact about the
+           whole sport, so it is stated once, here, rather than repeated under
+           every team: an earlier attempt to put it in each team's own sentence
+           cost ten copies of a paragraph and crowded a whole game's evidence
+           out of the prompt to make room. */
+        const availCoverage = EDINTEL.availabilityCoverageNote?.({
+          team_count: (ge.path as any)?.availability?.team_count ?? 0,
+          records: (ge.path as any)?.availability?.records ?? 0,
+          teams_with_official: (ge.path as any)?.availability?.teams_with_official ?? 0,
+        });
+        if (availCoverage) {
+          unavailableExtra.push({
+            source: "football/availability/current.json", field: "availability_coverage",
+            reason: availCoverage,
+          });
+        }
         /* A REFERENCE, NOT A SECOND COPY.
            Each packet already reaches the model in full, under RESEARCHED
            MATCHUPS, organised by side with the instructions for reading it.
@@ -17781,6 +18647,9 @@ async function runResearch(
   const unavail = evidence
     .filter((e) => e.status === "UNAVAILABLE")
     .map((e) => ({ source: e.source, field: e.field, reason: e.note ?? "not retrievable" }));
+  /* Gaps that are true of a WHOLE LAYER rather than of one retrieved item, so
+     they have no evidence row to hang off. Stated once per turn. */
+  unavail.push(...unavailableExtra);
 
   // Declare the sport modules EdgeDesk does not own, so the answer can say so
   // rather than improvising a football/basketball opinion.
@@ -17956,6 +18825,20 @@ async function runResearch(
             { season: seasonFor("americanfootball_ncaaf"), teams: state.teams, only: ["cfbd_returning_production"] })).evidence,
           "CollegeFootballData API", "/player/returning");
       }
+    }
+    /* PER-PLAY EFFICIENCY. There is no ingested mirror to try first — the cfb
+       schema has no EPA or success-rate columns at all — so the direct adapter
+       is the only route, and without a key it returns its own unconfigured
+       reason rather than nothing. That reason is the answer to "why does this
+       college read have no efficiency in it", and a reader is owed it every
+       time rather than left to infer it from an empty section. */
+    if (gapFields.has("cfb_per_play_efficiency") || gapFields.has("team_efficiency")) {
+      await targeted(
+        "a matchup read in this sport needs per-play efficiency and the build carries none",
+        "cfb_per_play_efficiency", "CFBD /stats/season/advanced",
+        async () => (await runExternalAdapters("americanfootball_ncaaf",
+          { season: seasonFor("americanfootball_ncaaf"), teams: state.teams, only: ["cfbd_advanced_stats"] })).evidence,
+        "CollegeFootballData API", "/stats/season/advanced");
     }
     if (gapFields.has("cfb_recruiting")) {
       await targeted("recruiting context is missing for the programs in scope",
