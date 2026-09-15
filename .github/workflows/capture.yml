@@ -83,8 +83,35 @@ jobs:
           CAPTURE_CRON_SECRET: ${{ secrets.CAPTURE_CRON_SECRET }}
         run: |
           set -euo pipefail
-          if [ -z "${SB_URL:-}" ] || [ -z "${CAPTURE_CRON_SECRET:-}" ]; then
-            echo "::error::SB_URL and CAPTURE_CRON_SECRET are not both set, so capture cannot be invoked."
+
+          # NAME THE ONE THAT IS MISSING. This used to fail with "SB_URL and
+          # CAPTURE_CRON_SECRET are not both set", which sends an operator to
+          # check two secrets when one of them is already there -- and SB_URL
+          # is, every other workflow in this repository uses it.
+          MISSING=""
+          [ -z "${SB_URL:-}" ] && MISSING="$MISSING SB_URL"
+          [ -z "${CAPTURE_CRON_SECRET:-}" ] && MISSING="$MISSING CAPTURE_CRON_SECRET"
+
+          if [ -n "$MISSING" ]; then
+            echo "::error::missing Actions repository secret(s):$MISSING — capture cannot be invoked."
+
+            # ASK CAPTURE WHICH SIDE IS BROKEN, if we at least know where it
+            # lives. No credential is sent and none is needed: the auth gate is
+            # the first thing in the handler, so this is refused before any
+            # sport list, odds request or write, and the 401 body says whether
+            # the FUNCTION is missing its CRON_SECRET too. Without this the run
+            # ends knowing only that a secret is absent here, which is the
+            # cheaper half of the answer.
+            if [ -n "${SB_URL:-}" ]; then
+              echo "--- what the deployed function says about its own secret ---"
+              curl -sS --max-time 20 -X POST "${SB_URL%/}/functions/v1/capture?probe=1" \
+                -H "content-type: application/json" -d '{"source":"github_actions_preflight"}' \
+                | head -c 600 || echo "(capture did not answer)"
+              echo
+              echo "A 401 reading 'CRON_SECRET is not set on this function' means the function is refusing"
+              echo "pg_cron as well, and setting only the Actions secret will NOT fill the board."
+            fi
+
             echo "CAPTURE_CRON_SECRET must equal the value the deployed function holds as CRON_SECRET."
             echo "The primary scheduler is pg_cron (supabase/capture_cron.sql) and is unaffected by this."
             exit 1

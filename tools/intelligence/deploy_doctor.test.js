@@ -24,11 +24,21 @@ function done() {
 const D = require('./deploy_doctor.js');
 const WANT = D.expectedBuild();
 
+/* The healthy answer from capture's auth gate: a 401 saying it HOLDS a secret
+   and refused a caller that did not match. Appended to every table below as a
+   default so the fifteen cases that are about something else keep their old
+   verdicts; a test that is about capture's own secret lists its own entry,
+   which is matched first. */
+const CAP_BUILD = D.expectedCaptureBuild();
+const CAPTURE_ARMED = ['/functions/v1/capture',
+  { status: 401, body: JSON.stringify({ ok: false, build: CAP_BUILD, error: 'unauthorized',
+    reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }];
+
 /** Answer every URL from a table of {match: response}. */
 function net(table) {
   globalThis.fetch = async (url) => {
     const u = String(url);
-    for (const [frag, res] of table) {
+    for (const [frag, res] of [...table, CAPTURE_ARMED]) {
       if (u.indexOf(frag) >= 0) {
         if (res.throw) throw new Error(res.throw);
         return { ok: res.status >= 200 && res.status < 300, status: res.status, text: async () => res.body || '' };
@@ -89,6 +99,84 @@ const OK_BOARD = signals(40, 144);
     s = await D.doctor(OPTS);
     eq('a key that may not read signals reports UNKNOWN rather than guessing',
       stateOf(s, 'the board is being captured'), 'UNKNOWN');
+  }
+
+  /* --- IS CAPTURE REFUSING ITS CALLERS, OR IS NOBODY CALLING? ----------
+     Identical from the signals table, opposite fixes. A function deployed
+     without CRON_SECRET 401s pg_cron and the workflow alike, and every other
+     check in this file reads healthy while the board empties. */
+  {
+    const base = [['?probe=1', { status: 200, body: probeBody() }],
+      ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS];
+    const NO_SECRET = ['/functions/v1/capture', { status: 401, body: JSON.stringify({
+      ok: false, error: 'unauthorized',
+      reason: 'CRON_SECRET is not set on this function, so every caller is rejected including the scheduler. '
+        + 'Capture has not run since the variable went missing.' }) }];
+
+    net([...base, OK_BOARD, NO_SECRET]);
+    let s = await D.doctor(OPTS);
+    eq('a capture holding no CRON_SECRET is reported even while the board still looks fresh',
+      stateOf(s, 'capture can accept its scheduler'), 'MISSING');
+    eq('and that alone makes the verdict actionable', s.verdict, 'ACTION NEEDED');
+    chk('and the fix names the function secret, not the scheduler',
+      /supabase secrets set CRON_SECRET/.test((s.checks.find((c) => c.name === 'capture can accept its scheduler') || {}).fix || ''),
+      (s.checks.find((c) => c.name === 'capture can accept its scheduler') || {}).fix);
+
+    net([...base, OK_BOARD]);
+    s = await D.doctor(OPTS);
+    eq('a capture that refuses a mismatched secret is ARMED, not broken',
+      stateOf(s, 'capture can accept its scheduler'), 'ARMED');
+    eq('and an armed capture over a fresh board stays clean', s.verdict, 'DEPLOYED AND CURRENT');
+
+    /* The pairing that matters: board stale AND capture armed means the fault
+       is the caller, and the stale fix must send the operator to the caller. */
+    net([...base, signals(2345, 60)]);
+    s = await D.doctor(OPTS);
+    eq('a stale board beside an armed capture still reports ARMED',
+      stateOf(s, 'capture can accept its scheduler'), 'ARMED');
+    chk('and the stale fix points at the capture check before the cron table',
+      /next check first/.test((s.checks.find((c) => c.name === 'the board is being captured') || {}).fix || ''),
+      (s.checks.find((c) => c.name === 'the board is being captured') || {}).fix);
+
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 404, body: 'not found' }]]);
+    eq('a capture that is not deployed at all is NOT_DEPLOYED, not a secret problem',
+      stateOf(await D.doctor(OPTS), 'capture can accept its scheduler'), 'NOT_DEPLOYED');
+
+    net([...base, OK_BOARD, ['/functions/v1/capture', { throw: 'network unreachable' }]]);
+    eq('an unreachable capture is UNKNOWN rather than an accusation',
+      stateOf(await D.doctor(OPTS), 'capture can accept its scheduler'), 'UNKNOWN');
+
+    /* MERGED IS NOT DEPLOYED, FOR CAPTURE TOO. It is deployed by hand and it
+       stamps its build into every response including the 401, so this costs
+       nothing extra and catches the case where the fix for an empty board was
+       merged and never deployed — which looks exactly like every other cause. */
+    net([...base, OK_BOARD]);
+    let d = await D.doctor(OPTS);
+    eq('a capture serving this checkout is CURRENT',
+      stateOf(d, 'deployed capture matches this checkout'), 'CURRENT');
+
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 401, body: JSON.stringify({
+      ok: false, build: 'capture-v8-sharp', error: 'unauthorized',
+      reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }]]);
+    d = await D.doctor(OPTS);
+    eq('an older capture still serving is STALE',
+      stateOf(d, 'deployed capture matches this checkout'), 'STALE');
+    chk('and names both builds and the deploy command',
+      /capture-v8-sharp/.test(detailOf(d, 'deployed capture matches this checkout'))
+      && detailOf(d, 'deployed capture matches this checkout').indexOf(CAP_BUILD) >= 0
+      && /functions deploy capture/.test((d.checks.find((c) => c.name === 'deployed capture matches this checkout') || {}).fix || ''),
+      detailOf(d, 'deployed capture matches this checkout'));
+    eq('and a stale capture is action, not an unknown', d.verdict, 'ACTION NEEDED');
+    eq('while its auth state is still read independently',
+      stateOf(d, 'capture can accept its scheduler'), 'ARMED');
+
+    /* A capture too old to stamp a build must not be reported as matching. */
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 401, body: '{"ok":false,"error":"unauthorized"}' }]]);
+    d = await D.doctor(OPTS);
+    chk('a capture that reports no build at all makes no build claim either way',
+      d.checks.every((c) => c.name !== 'deployed capture matches this checkout'),
+      d.checks.map((c) => c.name).join(', '));
   }
 
   chk('the expected build is read from the function source', /^edgedesk_ai-\d{4}-/.test(String(WANT)), WANT);

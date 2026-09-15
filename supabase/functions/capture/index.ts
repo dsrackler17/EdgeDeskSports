@@ -2,7 +2,7 @@
 //  FILE:    supabase/functions/capture/index.ts
 //  TYPE:    Edge Function (deployed) - cron job
 //  DEPLOY:  supabase functions deploy capture --no-verify-jwt
-//  BUILD:   capture-v9-qualified   (authoritative value: `export const BUILD` below)
+//  BUILD:   capture-v9-qualified-r2   (authoritative value: `export const BUILD` below)
 //  IMPORTS: NONE. Not one. See "WHY THIS FILE HAS NO IMPORTS" below.
 //  TESTS:   node tools/capture/capture.test.js   (imports THIS file, no network)
 // ============================================================
@@ -133,7 +133,7 @@
 //   update to an existing one, resetting the opening snapshot on the whole board.
 // ═════════════════════════════════════════════════════════════════════════════
 
-export const BUILD = "capture-v9-qualified";
+export const BUILD = "capture-v9-qualified-r2";
 
 /* Bumped whenever the QUALIFICATION RULES change, independently of BUILD. It is
    written to `flagged_policy` on every freeze so the record can segment its
@@ -319,7 +319,17 @@ export function rungsServed(cadenceMin: number): { served: string[]; not_served:
     own window rather than to a window nobody chose. */
 export function applyCadenceTier(cfg: Config, tier: string | undefined | null): { cfg: Config; tier: string | null } {
   const name = String(tier ?? "").trim().toLowerCase();
-  const t = name ? CADENCE_TIERS[name] : undefined;
+  /* OWN PROPERTY ONLY. `tier` is a query parameter, and a bare `CADENCE_TIERS[name]`
+     lookup also finds what the object INHERITS: `?tier=constructor` resolved to
+     Object.prototype.constructor, which is truthy, so the run reported itself as
+     tier "constructor" and spread `nearHours: undefined, maxDaysToStart: undefined`
+     over the config. That silently disabled the actionable horizon — with
+     maxDaysToStart undefined, `hours_to_start > undefined * 24` is NaN and every
+     comparison against it is false, so a game a month out stopped being beyond
+     the horizon. `toString` and `valueOf` miss only because toLowerCase() mangles
+     them, which is luck, not a check. */
+  const t = name && Object.prototype.hasOwnProperty.call(CADENCE_TIERS, name)
+    ? CADENCE_TIERS[name] : undefined;
   if (!t) return { cfg, tier: null };
   return { cfg: { ...cfg, nearHours: t.nearHours, maxDaysToStart: t.maxDaysToStart }, tier: name };
 }
@@ -1458,7 +1468,17 @@ export const STAGE_OF_REASON: Record<string, number> = {
   segment_not_qualified_for_action: 6, below_segment_edge_floor: 6,
   awaiting_confirmation: 7,
   below_quality_floor: 8,
-  ok: 9,
+  /* THE NUMBER OF STAGES CLEARED, WHICH FOR A REJECTION IS THE INDEX OF THE
+     GATE THAT STOPPED IT, AND FOR `ok` IS ALL TEN.
+
+     This read 9 — the INDEX of the last stage rather than the COUNT of stages —
+     and the caller increments `for (s = 0; s < stagesPassed(reason); s++)`. So a
+     candidate that cleared every gate registered on the first nine stages and
+     left `actionable` at zero, permanently: the final row of the funnel could
+     never be anything but 0, in direct contradiction of `funnel.actionable`
+     beside it. The one report built to answer "why is the board empty" said
+     nothing became actionable on every run in which something did. */
+  ok: 10,
 };
 
 /** How many gates this verdict cleared. `ok` clears all of them. An unmapped
