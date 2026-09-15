@@ -1,9 +1,41 @@
 # EdgeDesk CFB Availability Intelligence
 
-College football has no universal injury report. There is no free, standardized
-CFB equivalent of the NFL's league-filed report, so EdgeDesk builds its own
-availability layer out of public evidence — and says exactly how good that
-evidence is.
+College football has no LEAGUE-WIDE injury report. It is no longer true that it
+has none at all, and that changed in 2025: every Power Four conference and
+several others now require player availability reports for conference games and
+publish them. `policy.js` carries which conference publishes what, for which
+fixtures, on what cadence and in which status vocabulary, with the source of
+each claim and the date EdgeDesk last checked it.
+
+That distinction is the whole layer. "No universal report" was being used as a
+reason not to look, and the sentence survived the thing it described.
+
+| Conference | Where | When | Scope | Vocabulary |
+|---|---|---|---|---|
+| SEC | `secsports.com/fbreports` | 3 days out, daily, final 90 min before kick | conference games | available / probable / questionable / doubtful / out |
+| Big Ten | `bigten.org` | Wed, Thu, Fri 8pm ET + 2h before kick | conference games, from 19 Sep 2026 | probable / questionable / doubtful / out / out (1st half) |
+| ACC | `theacc.com` | 2 nights out, night before, 2h before kick | conference games | available / questionable / doubtful / out |
+| Big 12 | `big12sports.com` | daily from 3 days out, final 90 min before kick | conference games | available / probable / questionable / doubtful / out |
+| Mountain West | `themw.com` | 2 days out + 3h before kick | conference games | questionable / out **only** |
+| Conference USA | `conferenceusa.com` | per the conference policy | conference games | questionable / out **only** |
+| Sun Belt | `sunbeltsports.org` | not verified | conference games | not verified |
+| American, MAC, Pac-12 | — | — | — | **UNVERIFIED — a gap in EdgeDesk's research, not a finding that they publish nothing** |
+
+Three things follow from that table and all three are enforced in code:
+
+* **Scope.** Every published policy covers CONFERENCE games. A Power Four team
+  hosting an FCS opponent files nothing, and no amount of retrying produces a
+  report that was never required. That is `NOT_REQUIRED`, which is a fact about
+  the fixture and never about anybody's fitness.
+* **Vocabulary.** The Mountain West and Conference USA file only OUT and
+  QUESTIONABLE. A player absent from a Big Ten report is reported available; a
+  player absent from a CUSA report is merely not out. Only a policy marked
+  `comprehensive` can turn silence into a clean bill of health.
+* **Cadence.** A report that is not due yet is not a report that is missing.
+  That is `NOT_DUE_YET`, and it resolves itself as kickoff approaches.
+
+Neither `NOT_REQUIRED` nor `NOT_DUE_YET` is excused from the coverage
+denominator. Both are precise reasons for not knowing; neither is knowing.
 
 The product's credibility comes from admitting what it does not know, so these
 four are never collapsed into one another:
@@ -25,7 +57,16 @@ four are never collapsed into one another:
 | `build_sources.js` | regenerates `sources.json` from the roster dataset plus `sources.overrides.json` |
 | `sources.json` | the registry: every FBS program, keyed by the ESPN team id the roster sync uses |
 | `sources.overrides.json` | **the file you edit** to add an official source |
+| `policy.js` | which conference requires a report, for which fixtures, when, and in which vocabulary — with the source of every claim |
+| `reports.js` | one ingestion path for a filed report, whatever the format: roster-anchored extraction, two clocks, conflict reconciliation |
+| `pdf_text.js` | text out of a PDF with no dependencies. A document it cannot read is a FAILED READ, never an empty report |
+| `ingest_report.js` | the CLI: fetch or read one report, `--due` lists what is inside its filing window |
+| `sync_reports.js` | the scheduled half: fetch every report that is due, once per URL |
+| `operator.js` / `operator.json` | the narrow door for a person, when no scraper will recover it reliably |
+| `record_correction.js` | the CLI for that door. Refuses anything without a source, a date, an author and a fixture |
+| `overlay.js` | the three sources merged at READ time — conference filings, operator corrections, the automated read |
 | `availability.test.js` | the rules, offline, on fixtures |
+| `reports.test.js` | that an empty response, a blocked request and a roster listing never become a clean bill of health |
 | `../../.github/workflows/availability-sync.yml` | the schedule |
 
 Ingestion is isolated from presentation. `availability.js` and the collectors

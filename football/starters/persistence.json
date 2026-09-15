@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_starter_persistence_v1",
  "version": 1,
- "generated_at": "2026-09-15T16:55:09.637Z",
+ "generated_at": "2026-09-15T19:22:45.188Z",
  "source": "cfbfastR-data player_stats — play attribution",
  "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_<season>.csv",
  "seasons_read": [
@@ -57,6 +57,630 @@
    "published": true
   }
  ],
+ "run_bands": [
+  {
+   "id": "entrenched",
+   "min_run": 4,
+   "label": "and had opened the four before it"
+  },
+  {
+   "id": "established",
+   "min_run": 2,
+   "label": "and had opened the two or three before it"
+  },
+  {
+   "id": "second",
+   "min_run": 1,
+   "label": "and had opened the one before it"
+  },
+  {
+   "id": "first",
+   "min_run": 0,
+   "label": "and had not opened the game before it"
+  }
+ ],
+ "by_band_and_run": [
+  {
+   "band": "dominant",
+   "run": "entrenched",
+   "min_share": 0.85,
+   "min_run": 4,
+   "label": "opener took 85%+ of the dropbacks, and had opened the four before it",
+   "pairs": 2587,
+   "same": 2381,
+   "rate": 0.92,
+   "published": true
+  },
+  {
+   "band": "dominant",
+   "run": "established",
+   "min_share": 0.85,
+   "min_run": 2,
+   "label": "opener took 85%+ of the dropbacks, and had opened the two or three before it",
+   "pairs": 1787,
+   "same": 1621,
+   "rate": 0.907,
+   "published": true
+  },
+  {
+   "band": "dominant",
+   "run": "second",
+   "min_share": 0.85,
+   "min_run": 1,
+   "label": "opener took 85%+ of the dropbacks, and had opened the one before it",
+   "pairs": 1264,
+   "same": 1097,
+   "rate": 0.868,
+   "published": true
+  },
+  {
+   "band": "dominant",
+   "run": "first",
+   "min_share": 0.85,
+   "min_run": 0,
+   "label": "opener took 85%+ of the dropbacks, and had not opened the game before it",
+   "pairs": 1873,
+   "same": 1432,
+   "rate": 0.765,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "entrenched",
+   "min_share": 0.65,
+   "min_run": 4,
+   "label": "opener took 65-85%, and had opened the four before it",
+   "pairs": 449,
+   "same": 381,
+   "rate": 0.849,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "established",
+   "min_share": 0.65,
+   "min_run": 2,
+   "label": "opener took 65-85%, and had opened the two or three before it",
+   "pairs": 340,
+   "same": 282,
+   "rate": 0.829,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "second",
+   "min_share": 0.65,
+   "min_run": 1,
+   "label": "opener took 65-85%, and had opened the one before it",
+   "pairs": 321,
+   "same": 248,
+   "rate": 0.773,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "first",
+   "min_share": 0.65,
+   "min_run": 0,
+   "label": "opener took 65-85%, and had not opened the game before it",
+   "pairs": 490,
+   "same": 316,
+   "rate": 0.645,
+   "published": true
+  },
+  {
+   "band": "split",
+   "run": "entrenched",
+   "min_share": 0.4,
+   "min_run": 4,
+   "label": "opener took 40-65% — a shared room, and had opened the four before it",
+   "pairs": 170,
+   "same": 101,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "split",
+   "run": "established",
+   "min_share": 0.4,
+   "min_run": 2,
+   "label": "opener took 40-65% — a shared room, and had opened the two or three before it",
+   "pairs": 165,
+   "same": 81,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "split",
+   "run": "second",
+   "min_share": 0.4,
+   "min_run": 1,
+   "label": "opener took 40-65% — a shared room, and had opened the one before it",
+   "pairs": 129,
+   "same": 66,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "split",
+   "run": "first",
+   "min_share": 0.4,
+   "min_run": 0,
+   "label": "opener took 40-65% — a shared room, and had not opened the game before it",
+   "pairs": 279,
+   "same": 130,
+   "rate": 0.466,
+   "published": true
+  },
+  {
+   "band": "fragment",
+   "run": "entrenched",
+   "min_share": 0,
+   "min_run": 4,
+   "label": "opener took under 40% — he opened and handed it over, and had opened the four before it",
+   "pairs": 88,
+   "same": 28,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "fragment",
+   "run": "established",
+   "min_share": 0,
+   "min_run": 2,
+   "label": "opener took under 40% — he opened and handed it over, and had opened the two or three before it",
+   "pairs": 103,
+   "same": 28,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "fragment",
+   "run": "second",
+   "min_share": 0,
+   "min_run": 1,
+   "label": "opener took under 40% — he opened and handed it over, and had opened the one before it",
+   "pairs": 89,
+   "same": 22,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "fragment",
+   "run": "first",
+   "min_share": 0,
+   "min_run": 0,
+   "label": "opener took under 40% — he opened and handed it over, and had not opened the game before it",
+   "pairs": 709,
+   "same": 42,
+   "rate": 0.059,
+   "published": true
+  }
+ ],
+ "season_bands": [
+  {
+   "id": "season_dominant",
+   "min_share": 0.85,
+   "label": "has taken 85%+ of the season’s dropbacks"
+  },
+  {
+   "id": "season_clear",
+   "min_share": 0.65,
+   "label": "has taken 65-85% of the season’s dropbacks"
+  },
+  {
+   "id": "season_split",
+   "min_share": 0.4,
+   "label": "has taken 40-65% of the season’s dropbacks"
+  },
+  {
+   "id": "season_fragment",
+   "min_share": 0,
+   "label": "has taken under 40% of the season’s dropbacks"
+  }
+ ],
+ "by_season_share_and_run": [
+  {
+   "season_band": "season_dominant",
+   "run": "entrenched",
+   "min_season_share": 0.85,
+   "min_run": 4,
+   "label": "has taken 85%+ of the season’s dropbacks, and had opened the four before it",
+   "pairs": 2318,
+   "same": 2104,
+   "rate": 0.908,
+   "published": true
+  },
+  {
+   "season_band": "season_dominant",
+   "run": "established",
+   "min_season_share": 0.85,
+   "min_run": 2,
+   "label": "has taken 85%+ of the season’s dropbacks, and had opened the two or three before it",
+   "pairs": 1132,
+   "same": 1037,
+   "rate": 0.916,
+   "published": true
+  },
+  {
+   "season_band": "season_dominant",
+   "run": "second",
+   "min_season_share": 0.85,
+   "min_run": 1,
+   "label": "has taken 85%+ of the season’s dropbacks, and had opened the one before it",
+   "pairs": 687,
+   "same": 616,
+   "rate": 0.897,
+   "published": true
+  },
+  {
+   "season_band": "season_dominant",
+   "run": "first",
+   "min_season_share": 0.85,
+   "min_run": 0,
+   "label": "has taken 85%+ of the season’s dropbacks, and had not opened the game before it",
+   "pairs": 840,
+   "same": 700,
+   "rate": 0.833,
+   "published": true
+  },
+  {
+   "season_band": "season_clear",
+   "run": "entrenched",
+   "min_season_share": 0.65,
+   "min_run": 4,
+   "label": "has taken 65-85% of the season’s dropbacks, and had opened the four before it",
+   "pairs": 841,
+   "same": 685,
+   "rate": 0.815,
+   "published": true
+  },
+  {
+   "season_band": "season_clear",
+   "run": "established",
+   "min_season_share": 0.65,
+   "min_run": 2,
+   "label": "has taken 65-85% of the season’s dropbacks, and had opened the two or three before it",
+   "pairs": 778,
+   "same": 632,
+   "rate": 0.812,
+   "published": true
+  },
+  {
+   "season_band": "season_clear",
+   "run": "second",
+   "min_season_share": 0.65,
+   "min_run": 1,
+   "label": "has taken 65-85% of the season’s dropbacks, and had opened the one before it",
+   "pairs": 499,
+   "same": 398,
+   "rate": 0.798,
+   "published": true
+  },
+  {
+   "season_band": "season_clear",
+   "run": "first",
+   "min_season_share": 0.65,
+   "min_run": 0,
+   "label": "has taken 65-85% of the season’s dropbacks, and had not opened the game before it",
+   "pairs": 573,
+   "same": 446,
+   "rate": 0.778,
+   "published": true
+  },
+  {
+   "season_band": "season_split",
+   "run": "entrenched",
+   "min_season_share": 0.4,
+   "min_run": 4,
+   "label": "has taken 40-65% of the season’s dropbacks, and had opened the four before it",
+   "pairs": 129,
+   "same": 98,
+   "rate": null,
+   "published": false
+  },
+  {
+   "season_band": "season_split",
+   "run": "established",
+   "min_season_share": 0.4,
+   "min_run": 2,
+   "label": "has taken 40-65% of the season’s dropbacks, and had opened the two or three before it",
+   "pairs": 382,
+   "same": 282,
+   "rate": 0.738,
+   "published": true
+  },
+  {
+   "season_band": "season_split",
+   "run": "second",
+   "min_season_share": 0.4,
+   "min_run": 1,
+   "label": "has taken 40-65% of the season’s dropbacks, and had opened the one before it",
+   "pairs": 368,
+   "same": 261,
+   "rate": 0.709,
+   "published": true
+  },
+  {
+   "season_band": "season_split",
+   "run": "first",
+   "min_season_share": 0.4,
+   "min_run": 0,
+   "label": "has taken 40-65% of the season’s dropbacks, and had not opened the game before it",
+   "pairs": 576,
+   "same": 381,
+   "rate": 0.661,
+   "published": true
+  },
+  {
+   "season_band": "season_fragment",
+   "run": "entrenched",
+   "min_season_share": 0,
+   "min_run": 4,
+   "label": "has taken under 40% of the season’s dropbacks, and had opened the four before it",
+   "pairs": 6,
+   "same": 4,
+   "rate": null,
+   "published": false
+  },
+  {
+   "season_band": "season_fragment",
+   "run": "established",
+   "min_season_share": 0,
+   "min_run": 2,
+   "label": "has taken under 40% of the season’s dropbacks, and had opened the two or three before it",
+   "pairs": 103,
+   "same": 61,
+   "rate": null,
+   "published": false
+  },
+  {
+   "season_band": "season_fragment",
+   "run": "second",
+   "min_season_share": 0,
+   "min_run": 1,
+   "label": "has taken under 40% of the season’s dropbacks, and had opened the one before it",
+   "pairs": 249,
+   "same": 158,
+   "rate": 0.635,
+   "published": true
+  },
+  {
+   "season_band": "season_fragment",
+   "run": "first",
+   "min_season_share": 0,
+   "min_run": 0,
+   "label": "has taken under 40% of the season’s dropbacks, and had not opened the game before it",
+   "pairs": 1362,
+   "same": 393,
+   "rate": 0.289,
+   "published": true
+  }
+ ],
+ "by_competitive_band": [
+  {
+   "id": "dominant",
+   "min_share": 0.85,
+   "label": "opener took 85%+ of the COMPETITIVE dropbacks",
+   "pairs": 8319,
+   "same": 7157,
+   "rate": 0.86,
+   "published": true
+  },
+  {
+   "id": "clear",
+   "min_share": 0.65,
+   "label": "opener took 65-85%",
+   "pairs": 1102,
+   "same": 792,
+   "rate": 0.719,
+   "published": true
+  },
+  {
+   "id": "split",
+   "min_share": 0.4,
+   "label": "opener took 40-65% — a shared room",
+   "pairs": 513,
+   "same": 209,
+   "rate": 0.407,
+   "published": true
+  },
+  {
+   "id": "fragment",
+   "min_share": 0,
+   "label": "opener took under 40% — he opened and handed it over",
+   "pairs": 909,
+   "same": 98,
+   "rate": 0.108,
+   "published": true
+  }
+ ],
+ "by_competitive_band_and_run": [
+  {
+   "band": "dominant",
+   "run": "entrenched",
+   "min_share": 0.85,
+   "min_run": 4,
+   "label": "opener took 85%+ of the COMPETITIVE dropbacks, and had opened the four before it",
+   "pairs": 2814,
+   "same": 2572,
+   "rate": 0.914,
+   "published": true
+  },
+  {
+   "band": "dominant",
+   "run": "established",
+   "min_share": 0.85,
+   "min_run": 2,
+   "label": "opener took 85%+ of the COMPETITIVE dropbacks, and had opened the two or three before it",
+   "pairs": 1956,
+   "same": 1771,
+   "rate": 0.905,
+   "published": true
+  },
+  {
+   "band": "dominant",
+   "run": "second",
+   "min_share": 0.85,
+   "min_run": 1,
+   "label": "opener took 85%+ of the COMPETITIVE dropbacks, and had opened the one before it",
+   "pairs": 1424,
+   "same": 1219,
+   "rate": 0.856,
+   "published": true
+  },
+  {
+   "band": "dominant",
+   "run": "first",
+   "min_share": 0.85,
+   "min_run": 0,
+   "label": "opener took 85%+ of the COMPETITIVE dropbacks, and had not opened the game before it",
+   "pairs": 2125,
+   "same": 1595,
+   "rate": 0.751,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "entrenched",
+   "min_share": 0.65,
+   "min_run": 4,
+   "label": "opener took 65-85%, and had opened the four before it",
+   "pairs": 291,
+   "same": 239,
+   "rate": 0.821,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "established",
+   "min_share": 0.65,
+   "min_run": 2,
+   "label": "opener took 65-85%, and had opened the two or three before it",
+   "pairs": 235,
+   "same": 176,
+   "rate": 0.749,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "second",
+   "min_share": 0.65,
+   "min_run": 1,
+   "label": "opener took 65-85%, and had opened the one before it",
+   "pairs": 218,
+   "same": 163,
+   "rate": 0.748,
+   "published": true
+  },
+  {
+   "band": "clear",
+   "run": "first",
+   "min_share": 0.65,
+   "min_run": 0,
+   "label": "opener took 65-85%, and had not opened the game before it",
+   "pairs": 358,
+   "same": 214,
+   "rate": 0.598,
+   "published": true
+  },
+  {
+   "band": "split",
+   "run": "entrenched",
+   "min_share": 0.4,
+   "min_run": 4,
+   "label": "opener took 40-65% — a shared room, and had opened the four before it",
+   "pairs": 117,
+   "same": 59,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "split",
+   "run": "established",
+   "min_share": 0.4,
+   "min_run": 2,
+   "label": "opener took 40-65% — a shared room, and had opened the two or three before it",
+   "pairs": 116,
+   "same": 40,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "split",
+   "run": "second",
+   "min_share": 0.4,
+   "min_run": 1,
+   "label": "opener took 40-65% — a shared room, and had opened the one before it",
+   "pairs": 86,
+   "same": 37,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "split",
+   "run": "first",
+   "min_share": 0.4,
+   "min_run": 0,
+   "label": "opener took 40-65% — a shared room, and had not opened the game before it",
+   "pairs": 194,
+   "same": 73,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "fragment",
+   "run": "entrenched",
+   "min_share": 0,
+   "min_run": 4,
+   "label": "opener took under 40% — he opened and handed it over, and had opened the four before it",
+   "pairs": 72,
+   "same": 21,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "fragment",
+   "run": "established",
+   "min_share": 0,
+   "min_run": 2,
+   "label": "opener took under 40% — he opened and handed it over, and had opened the two or three before it",
+   "pairs": 88,
+   "same": 25,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "fragment",
+   "run": "second",
+   "min_share": 0,
+   "min_run": 1,
+   "label": "opener took under 40% — he opened and handed it over, and had opened the one before it",
+   "pairs": 75,
+   "same": 14,
+   "rate": null,
+   "published": false
+  },
+  {
+   "band": "fragment",
+   "run": "first",
+   "min_share": 0,
+   "min_run": 0,
+   "label": "opener took under 40% — he opened and handed it over, and had not opened the game before it",
+   "pairs": 674,
+   "same": 38,
+   "rate": 0.056,
+   "published": true
+  }
+ ],
+ "garbage_time": {
+  "thresholds_by_period": {
+   "2": 38,
+   "3": 28,
+   "4": 22
+  },
+  "basis": "a dropback is COMPETITIVE unless the running margin before the play exceeded the period’s threshold. Declared, not fitted; its value is measured in `evaluation`."
+ },
  "by_season": {
   "2022": {
    "pairs": 2332,
@@ -79,5 +703,53 @@
    "teams": 300
   }
  },
- "note": "A band with fewer than 200 observed pairs publishes rate: null, and the engine treats a null as no measurement rather than falling back to a number nobody measured."
+ "evaluation": {
+  "method": "leave-one-season-out; each table is fitted on the other seasons and scored on the held-out one, with its own fallback chain in place",
+  "holdouts": [
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "by_candidate": {
+   "band": {
+    "scored": 10843,
+    "covered": 10843,
+    "coverage": 1,
+    "brier": 0.13202,
+    "log_loss": 0.43025
+   },
+   "band_x_run": {
+    "scored": 10843,
+    "covered": 10843,
+    "coverage": 1,
+    "brier": 0.1282,
+    "log_loss": 0.4157
+   },
+   "season_share_x_run": {
+    "scored": 10843,
+    "covered": 10843,
+    "coverage": 1,
+    "brier": 0.14171,
+    "log_loss": 0.4513
+   },
+   "competitive_share_x_run": {
+    "scored": 10843,
+    "covered": 10843,
+    "coverage": 1,
+    "brier": 0.12852,
+    "log_loss": 0.41718
+   }
+  },
+  "best": "band_x_run",
+  "basis": "the engine reads `band_x_run`: lowest held-out Brier among the tables that answer every pair. A table that cannot answer every pair is not chosen however well it scores on the ones it can."
+ },
+ "engine_reads": "band_x_run",
+ "dimensions": [
+  "share of the last game’s dropbacks the opener took",
+  "consecutive preceding games the same player opened",
+  "the opener’s share of every dropback the team has thrown so far this season",
+  "the opener’s share of the last game’s COMPETITIVE dropbacks"
+ ],
+ "note": "A band or cell with fewer than 200 observed pairs publishes rate: null. A null cell falls back to its BAND, and a null band is treated by the engine as no measurement rather than as a number nobody measured."
 }

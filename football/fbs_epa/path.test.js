@@ -178,11 +178,41 @@ if (!ART || !SLATE) { console.log('FAIL | nothing to test the path with'); proce
   const ctxNoEpa = Object.assign({}, ctx, { fbs_epa: null, fbs_epa_index: null, fbs_epa_freshness: null });
   const withoutEpa = IN.buildRequest(ctxNoEpa, { game: g, meta, state: st, now });
 
-  chk('the request the engine PRICES is byte-identical with and without the EPA layer',
-    JSON.stringify(withEpa.baseline) === JSON.stringify(withoutEpa.baseline),
+  /* WHAT MUST BE IDENTICAL, AND WHAT MAY NOT BE.
+
+     This used to assert the whole request object was byte-identical. That was
+     a proxy for the claim that matters and it has stopped being the right
+     proxy: `qb_context.efficiency_history` is a BOOLEAN saying whether a
+     history resolved for this athlete id, it is read only by
+     uncertainty.information.quarterback(), and "EdgeDesk has measured this
+     passer" is exactly the kind of thing the information score is supposed to
+     know. The EPA NUMBERS still reach neither request.
+
+     So the claim is asserted directly instead of through a proxy: strip that
+     one flag and the requests are identical, the EPA values appear in neither,
+     and — the real test — every PRICED OUTPUT of the engine is identical while
+     the information confidence is free to differ. */
+  const stripFlag = (req) => JSON.parse(JSON.stringify(req, (k, v) => k === 'efficiency_history' ? undefined : v));
+  chk('the request the engine PRICES is identical but for the has-a-history flag',
+    JSON.stringify(stripFlag(withEpa.baseline)) === JSON.stringify(stripFlag(withoutEpa.baseline)),
     'the baseline request changed when the research layer loaded');
-  chk('the SHADOW request is byte-identical too — even the unpriced arm does not read it',
-    JSON.stringify(withEpa.enriched) === JSON.stringify(withoutEpa.enriched));
+  chk('the SHADOW request is identical too — even the unpriced arm does not read the numbers',
+    JSON.stringify(stripFlag(withEpa.enriched)) === JSON.stringify(stripFlag(withoutEpa.enriched)));
+  chk('no EPA VALUE appears anywhere in either request',
+    !/epa_per_dropback/.test(JSON.stringify(withEpa.baseline))
+      && !/epa_per_dropback/.test(JSON.stringify(withEpa.enriched)));
+  {
+    const pa = E.projectGame(withEpa.baseline), pb = E.projectGame(withoutEpa.baseline);
+    const priced = p => JSON.stringify({ spread: p.model.fair_spread, total: p.model.fair_total,
+      wp: p.model.home_win_prob, sigma: p.model.sigma_margin, p10: p.model.p10_margin, p90: p.model.p90_margin,
+      cp: p.scores.confidence_priced,
+      contrib: (p.contributions || []).map(c => c.key + '=' + c.points) });
+    chk('and EVERY PRICED OUTPUT is identical with and without the EPA layer',
+      priced(pa) === priced(pb), { with: priced(pa).slice(0, 200), without: priced(pb).slice(0, 200) });
+    chk('while the INFORMATION confidence is allowed to know about it, which is the whole distinction',
+      pa.scores.confidence >= pb.scores.confidence,
+      { with: pa.scores.confidence, without: pb.scores.confidence });
+  }
   chk('the priced QB input is still null on both sides',
     withEpa.baseline.teams.home.qb === null && withEpa.baseline.teams.away.qb === null);
   chk('the QB pricing door is still shut',

@@ -31,6 +31,19 @@
    roster changed — so pairs never cross one. The final game of a season has
    no successor and contributes nothing.
 
+   V2: A SECOND MEASURED DIMENSION, because one game was never all the
+   evidence. The v1 table conditioned on ONE fact — the share of the last
+   game's dropbacks the opener took — and so said the same thing about a
+   quarterback in his eighth consecutive start who happened to take 54% of a
+   blowout as it said about one making his first start in a split room. Those
+   are not the same situation and the feed already distinguishes them: the
+   number of consecutive preceding games the SAME player opened is read off
+   the same attribution, it is known before kickoff, and it is measured here
+   rather than assumed. Cells are published only where the support clears the
+   same floor a band does; a thin cell falls back to its band, and a thin band
+   still publishes null. Nothing here loosens a requirement — it conditions on
+   more of what was already observed.
+
      node football/starters/calibrate_persistence.js [--seasons 2022,2023,2024,2025]
           [--out football/starters/persistence.json] [--check] [--quiet]
 
@@ -104,7 +117,8 @@ async function season(y) {
 /* team -> game -> { order -> passer }, collapsed to one attribution per play
    exactly as build_starters.js does it */
 function gamesOf(text) {
-  const COLS = ['game_id', 'season', 'week', 'team', 'play_id',
+  const COLS = ['game_id', 'season', 'week', 'team', 'play_id', 'period',
+    'team_score', 'opponent_score',
     'completion_player_id', 'incompletion_player_id', 'sack_taken_player_id',
     'interception_thrown_player_id'];
   const byTeamGame = new Map();
@@ -117,10 +131,16 @@ function gamesOf(text) {
     if (!team) return;
     const key = team + '|' + r.game_id;
     let g = byTeamGame.get(key);
-    if (!g) { g = { team, game_id: r.game_id, week: NUM(r.week), counts: new Map(), first: null, firstOrder: Infinity }; byTeamGame.set(key, g); }
+    if (!g) { g = { team, game_id: r.game_id, week: NUM(r.week), counts: new Map(),
+      live: new Map(), first: null, firstOrder: Infinity }; byTeamGame.set(key, g); }
     const order = NUM(r.play_id) != null ? NUM(r.play_id) : i;
     i++;
     g.counts.set(pid, (g.counts.get(pid) || 0) + 1);
+    /* the score columns are the RUNNING score before the play, verified on the
+       feed rather than assumed; a row missing them counts as competitive */
+    const ts = NUM(r.team_score), os = NUM(r.opponent_score);
+    const live = (ts == null || os == null) ? true : competitive(NUM(r.period), ts - os);
+    if (live) g.live.set(pid, (g.live.get(pid) || 0) + 1);
     if (order < g.firstOrder) { g.firstOrder = order; g.first = pid; }
   });
   return byTeamGame;
@@ -136,6 +156,53 @@ const BANDS = [
   { id: 'fragment', min: 0, label: 'opener took under 40% — he opened and handed it over' }
 ];
 const bandOf = share => BANDS.filter(b => share >= b.min)[0] || BANDS[BANDS.length - 1];
+
+/* THE SECOND DIMENSION. How many games in a row, immediately before this one,
+   the SAME player opened. It is read off the same attribution, it is a fact
+   about games already played, and it separates a quarterback eight starts
+   into a job from one making his first. Ordered high to low; `min` is
+   inclusive, exactly as the share bands are. */
+const RUNS = [
+  { id: 'entrenched', min: 4, label: 'and had opened the four before it' },
+  { id: 'established', min: 2, label: 'and had opened the two or three before it' },
+  { id: 'second', min: 1, label: 'and had opened the one before it' },
+  { id: 'first', min: 0, label: 'and had not opened the game before it' }
+];
+const runOf = n => RUNS.filter(r => n >= r.min)[0] || RUNS[RUNS.length - 1];
+const cellId = (bandId, runId) => bandId + '|' + runId;
+
+/* THE THIRD READING OF THE SAME EVIDENCE, and the one that fixes the case
+   this v2 exists for. A single game's share is noisy: a starter pulled early
+   in a forty-point win against an FCS opponent lands in the same band as one
+   losing a job. His share of the team's dropbacks ACROSS EVERY GAME PLAYED SO
+   FAR is the same feed, is known before kickoff, and does not move on one
+   blowout. Measured, not assumed — and if it turned out not to discriminate,
+   the table below would say so and the engine would keep using the band. */
+const SEASON_BANDS = [
+  { id: 'season_dominant', min: 0.85, label: 'has taken 85%+ of the season’s dropbacks' },
+  { id: 'season_clear', min: 0.65, label: 'has taken 65-85% of the season’s dropbacks' },
+  { id: 'season_split', min: 0.40, label: 'has taken 40-65% of the season’s dropbacks' },
+  { id: 'season_fragment', min: 0, label: 'has taken under 40% of the season’s dropbacks' }
+];
+const seasonBandOf = share => SEASON_BANDS.filter(b => share >= b.min)[0] || SEASON_BANDS[SEASON_BANDS.length - 1];
+
+/* THE FOURTH READING, and the one the reproduction case turns on. A starter
+   pulled with a thirty-point lead in the fourth quarter took half his game's
+   dropbacks and lost none of his job; the raw share cannot tell him from a
+   quarterback who was benched. The play feed carries the RUNNING score and
+   the period, so the two can be separated: this is the opener's share of the
+   dropbacks thrown while the game was still competitive.
+
+   The margins are DECLARED, not fitted — the widely used garbage-time
+   thresholds — and whether the distinction is worth anything is then MEASURED
+   against a holdout like every other candidate here. If it does not beat the
+   raw share out of sample it does not get used, however sensible it sounds. */
+const GARBAGE = { 2: 38, 3: 28, 4: 22 };
+function competitive(period, margin) {
+  const p = Math.min(4, Math.max(1, period || 1));
+  const lim = GARBAGE[p];
+  return lim == null ? true : Math.abs(margin || 0) <= lim;
+}
 
 async function main() {
   const seasons = String(arg('seasons', '2022,2023,2024,2025')).split(',').map(s => parseInt(s, 10)).filter(Boolean);
@@ -163,10 +230,21 @@ async function main() {
   }
   const tally = {};
   BANDS.forEach(b => { tally[b.id] = { pairs: 0, same: 0 }; });
+  const cells = {};
+  BANDS.forEach(b => RUNS.forEach(r => { cells[cellId(b.id, r.id)] = { pairs: 0, same: 0 }; }));
+  const seasonCells = {};
+  SEASON_BANDS.forEach(b => RUNS.forEach(r => { seasonCells[cellId(b.id, r.id)] = { pairs: 0, same: 0 }; }));
+  const liveTally = {};
+  BANDS.forEach(b => { liveTally[b.id] = { pairs: 0, same: 0 }; });
+  const liveCells = {};
+  BANDS.forEach(b => RUNS.forEach(r => { liveCells[cellId(b.id, r.id)] = { pairs: 0, same: 0 }; }));
   const overall = { pairs: 0, same: 0 };
   const perSeason = {};
   const read = [];
   const failed = [];
+  /* every measured pair, kept so the three candidate conditionings can be
+     compared out of sample rather than chosen by which one reads highest */
+  const pairs = [];
 
   for (const y of seasons) {
     let text = null;
@@ -182,7 +260,14 @@ async function main() {
       if (!list) { list = []; byTeam.set(g.team, list); }
       let total = 0;
       for (const v of g.counts.values()) total += v;
-      list.push({ week: g.week, first: g.first, share: total ? (g.counts.get(g.first) || 0) / total : null, dropbacks: total });
+      let liveTotal = 0;
+      for (const v of g.live.values()) liveTotal += v;
+      list.push({ week: g.week, first: g.first, share: total ? (g.counts.get(g.first) || 0) / total : null,
+        /* a game played entirely in garbage time has no competitive share to
+           measure, and falls back to the raw one rather than to a guess */
+        live_share: liveTotal ? (g.live.get(g.first) || 0) / liveTotal
+          : (total ? (g.counts.get(g.first) || 0) / total : null),
+        live_dropbacks: liveTotal, dropbacks: total, counts: g.counts });
     }
     perSeason[y] = { pairs: 0, same: 0, teams: byTeam.size };
     for (const list of byTeam.values()) {
@@ -190,11 +275,41 @@ async function main() {
       for (let j = 0; j + 1 < list.length; j++) {
         const a = list[j], b = list[j + 1];
         if (!a.first || !b.first || a.share == null) continue;
+        /* the pair, kept in its predictor form so the walk-forward below can
+           re-tally it against a table fitted without its own season */
         /* a team's bye week is not a break in the sequence: the next game it
            plays is the next game, whatever the calendar did in between */
         const same = a.first === b.first ? 1 : 0;
         const band = bandOf(a.share);
+        /* THE RUN, counted backwards from the game just played and ONLY over
+           games this window actually observed. A season's opener has run 0
+           because nothing precedes it here — not because the player is new,
+           which is a different statement and is not claimed. */
+        let run = 0;
+        for (let k = j - 1; k >= 0 && list[k].first === a.first; k--) run++;
+        const rb = runOf(run);
+        /* his share of every dropback the team has thrown so far, games 1..j
+           inclusive — exactly what a projection standing before game j+1 can
+           see, and never a play from the game being predicted */
+        let mine = 0, all = 0;
+        for (let k = 0; k <= j; k++) { mine += (list[k].counts.get(a.first) || 0); all += list[k].dropbacks; }
+        const seasonShare = all ? mine / all : null;
         tally[band.id].pairs++; tally[band.id].same += same;
+        const cell = cells[cellId(band.id, rb.id)];
+        cell.pairs++; cell.same += same;
+        if (seasonShare != null) {
+          const sc = seasonCells[cellId(seasonBandOf(seasonShare).id, rb.id)];
+          sc.pairs++; sc.same += same;
+        }
+        pairs.push({ season: y, band: band.id, run: rb.id,
+          live_band: a.live_share == null ? null : bandOf(a.live_share).id,
+          season_band: seasonShare == null ? null : seasonBandOf(seasonShare).id, same: same });
+        const lb = a.live_share == null ? null : bandOf(a.live_share);
+        if (lb) {
+          liveTally[lb.id].pairs++; liveTally[lb.id].same += same;
+          const lc = liveCells[cellId(lb.id, rb.id)];
+          lc.pairs++; lc.same += same;
+        }
         overall.pairs++; overall.same += same;
         perSeason[y].pairs++; perSeason[y].same += same;
       }
@@ -208,6 +323,93 @@ async function main() {
   }
 
   const rate = t => (t.pairs >= MIN_PAIRS ? Math.round((t.same / t.pairs) * 1000) / 1000 : null);
+
+  /* ------------------------------------------------------------------------
+     WHICH CONDITIONING THE ENGINE SHOULD READ, decided out of sample.
+
+     Three tables describe the same 10,843 pairs. Picking between them by
+     which one reads highest would be marking our own homework, so each is
+     fitted on every season but one and scored on the one left out, over every
+     holdout in turn. Brier is the mean squared error of the published rate
+     against what actually happened; lower is better. `covered` is the share
+     of holdout pairs the table could answer at all — a table that answers a
+     third of the field with a beautiful score is not the better table, and
+     the fallback chain is scored WITH its fallbacks so the comparison is
+     between what the engine would really do in each case.
+     ------------------------------------------------------------------------ */
+  function fit(rows) {
+    const b = {}, c = {}, sc = {}, lb = {}, lc = {};
+    BANDS.forEach(x => { b[x.id] = { pairs: 0, same: 0 }; lb[x.id] = { pairs: 0, same: 0 }; });
+    BANDS.forEach(x => RUNS.forEach(r => { c[cellId(x.id, r.id)] = { pairs: 0, same: 0 };
+      lc[cellId(x.id, r.id)] = { pairs: 0, same: 0 }; }));
+    SEASON_BANDS.forEach(x => RUNS.forEach(r => { sc[cellId(x.id, r.id)] = { pairs: 0, same: 0 }; }));
+    rows.forEach(r => {
+      b[r.band].pairs++; b[r.band].same += r.same;
+      const k = c[cellId(r.band, r.run)]; k.pairs++; k.same += r.same;
+      if (r.season_band) { const k2 = sc[cellId(r.season_band, r.run)]; k2.pairs++; k2.same += r.same; }
+      if (r.live_band) {
+        lb[r.live_band].pairs++; lb[r.live_band].same += r.same;
+        const k3 = lc[cellId(r.live_band, r.run)]; k3.pairs++; k3.same += r.same;
+      }
+    });
+    return { b, c, sc, lb, lc };
+  }
+  /* the three candidates, each written as the lookup the engine would use */
+  const CANDIDATES = {
+    band: (t, r) => rate(t.b[r.band]),
+    band_x_run: (t, r) => rate(t.c[cellId(r.band, r.run)]) != null
+      ? rate(t.c[cellId(r.band, r.run)]) : rate(t.b[r.band]),
+    season_share_x_run: (t, r) => {
+      if (r.season_band) {
+        const v = rate(t.sc[cellId(r.season_band, r.run)]);
+        if (v != null) return v;
+      }
+      const v2 = rate(t.c[cellId(r.band, r.run)]);
+      return v2 != null ? v2 : rate(t.b[r.band]);
+    },
+    competitive_share_x_run: (t, r) => {
+      if (r.live_band) {
+        const v = rate(t.lc[cellId(r.live_band, r.run)]);
+        if (v != null) return v;
+        const v1 = rate(t.lb[r.live_band]);
+        if (v1 != null) return v1;
+      }
+      const v2 = rate(t.c[cellId(r.band, r.run)]);
+      return v2 != null ? v2 : rate(t.b[r.band]);
+    }
+  };
+  const evaluation = { method: 'leave-one-season-out; each table is fitted on the other seasons and scored '
+      + 'on the held-out one, with its own fallback chain in place', holdouts: read.slice(), by_candidate: {} };
+  Object.keys(CANDIDATES).forEach(name => {
+    let n = 0, covered = 0, brier = 0, logloss = 0;
+    read.forEach(y => {
+      const t = fit(pairs.filter(r => r.season !== y));
+      pairs.filter(r => r.season === y).forEach(r => {
+        n++;
+        const p = CANDIDATES[name](t, r);
+        if (p == null) return;
+        covered++;
+        brier += (p - r.same) * (p - r.same);
+        const q = Math.min(1 - 1e-6, Math.max(1e-6, p));
+        logloss += -(r.same ? Math.log(q) : Math.log(1 - q));
+      });
+    });
+    evaluation.by_candidate[name] = {
+      scored: n, covered,
+      coverage: n ? Math.round((covered / n) * 1000) / 1000 : null,
+      brier: covered ? Math.round((brier / covered) * 100000) / 100000 : null,
+      log_loss: covered ? Math.round((logloss / covered) * 100000) / 100000 : null
+    };
+  });
+  {
+    const names = Object.keys(evaluation.by_candidate)
+      .filter(k => evaluation.by_candidate[k].brier != null && evaluation.by_candidate[k].coverage === 1);
+    names.sort((a, b2) => evaluation.by_candidate[a].brier - evaluation.by_candidate[b2].brier);
+    evaluation.best = names[0] || 'band';
+    evaluation.basis = 'the engine reads `' + evaluation.best + '`: lowest held-out Brier among the tables '
+      + 'that answer every pair. A table that cannot answer every pair is not chosen however well it scores '
+      + 'on the ones it can.';
+  }
   const out = {
     schema: SCHEMA, version: 1, generated_at: new Date().toISOString(),
     source: 'cfbfastR-data player_stats — play attribution',
@@ -224,9 +426,52 @@ async function main() {
       pairs: tally[b.id].pairs, same: tally[b.id].same, rate: rate(tally[b.id]),
       published: rate(tally[b.id]) != null
     })),
+    /* THE TWO-DIMENSIONAL TABLE. Same pairs, same window, conditioned on one
+       more fact the feed already carried. A cell that does not clear the floor
+       publishes rate: null and the engine falls back to that cell's BAND —
+       never to a neighbouring cell and never to a number nobody measured. */
+    run_bands: RUNS.map(r => ({ id: r.id, min_run: r.min, label: r.label })),
+    by_band_and_run: BANDS.map(b => RUNS.map(r => {
+      const t = cells[cellId(b.id, r.id)];
+      return { band: b.id, run: r.id, min_share: b.min, min_run: r.min,
+        label: b.label + ', ' + r.label,
+        pairs: t.pairs, same: t.same, rate: rate(t), published: rate(t) != null };
+    })).reduce((a, x) => a.concat(x), []),
+    /* THE TABLE THE ENGINE PREFERS, when a cell in it is published: the
+       opener's share of the season's dropbacks so far, crossed with his run
+       of consecutive openings. Both are facts about games already played. */
+    season_bands: SEASON_BANDS.map(b => ({ id: b.id, min_share: b.min, label: b.label })),
+    by_season_share_and_run: SEASON_BANDS.map(b => RUNS.map(r => {
+      const t = seasonCells[cellId(b.id, r.id)];
+      return { season_band: b.id, run: r.id, min_season_share: b.min, min_run: r.min,
+        label: b.label + ', ' + r.label,
+        pairs: t.pairs, same: t.same, rate: rate(t), published: rate(t) != null };
+    })).reduce((a, x) => a.concat(x), []),
+    /* THE SAME CROSS, ON THE COMPETITIVE SHARE. Whether the engine reads this
+       one or the raw-share one is decided by `evaluation` below, not here. */
+    by_competitive_band: BANDS.map(b => ({
+      id: b.id, min_share: b.min, label: b.label.replace('the dropbacks', 'the COMPETITIVE dropbacks'),
+      pairs: liveTally[b.id].pairs, same: liveTally[b.id].same, rate: rate(liveTally[b.id]),
+      published: rate(liveTally[b.id]) != null })),
+    by_competitive_band_and_run: BANDS.map(b => RUNS.map(r => {
+      const t = liveCells[cellId(b.id, r.id)];
+      return { band: b.id, run: r.id, min_share: b.min, min_run: r.min,
+        label: b.label.replace('the dropbacks', 'the COMPETITIVE dropbacks') + ', ' + r.label,
+        pairs: t.pairs, same: t.same, rate: rate(t), published: rate(t) != null };
+    })).reduce((a, x) => a.concat(x), []),
+    garbage_time: { thresholds_by_period: GARBAGE,
+      basis: 'a dropback is COMPETITIVE unless the running margin before the play exceeded the period\u2019s '
+        + 'threshold. Declared, not fitted; its value is measured in `evaluation`.' },
     by_season: perSeason,
-    note: 'A band with fewer than ' + MIN_PAIRS + ' observed pairs publishes rate: null, and the engine '
-      + 'treats a null as no measurement rather than falling back to a number nobody measured.'
+    evaluation: evaluation,
+    engine_reads: evaluation.best,
+    dimensions: ['share of the last game\u2019s dropbacks the opener took',
+      'consecutive preceding games the same player opened',
+      'the opener\u2019s share of every dropback the team has thrown so far this season',
+      'the opener\u2019s share of the last game\u2019s COMPETITIVE dropbacks'],
+    note: 'A band or cell with fewer than ' + MIN_PAIRS + ' observed pairs publishes rate: null. A null cell '
+      + 'falls back to its BAND, and a null band is treated by the engine as no measurement rather than as '
+      + 'a number nobody measured.'
   };
 
   const dest = dest0;
@@ -235,6 +480,20 @@ async function main() {
   log('[persistence] wrote ' + path.relative(ROOT, dest));
   out.by_band.forEach(b => log('  ' + b.id.padEnd(10) + (b.rate == null ? 'not published' : (b.rate * 100).toFixed(1) + '%') + '  n=' + b.pairs));
   log('  overall   ' + (out.overall.rate * 100).toFixed(1) + '%  n=' + out.overall.pairs);
+  log('  by band x run:');
+  out.by_band_and_run.forEach(c => log('    ' + (c.band + ' / ' + c.run).padEnd(26)
+    + (c.rate == null ? 'not published' : (c.rate * 100).toFixed(1) + '%').padStart(14) + '  n=' + c.pairs));
+  log('  held-out comparison (lower Brier is better):');
+  Object.keys(out.evaluation.by_candidate).forEach(k => { const e = out.evaluation.by_candidate[k];
+    log('    ' + k.padEnd(22) + ' brier ' + String(e.brier).padEnd(9) + ' log-loss ' + String(e.log_loss).padEnd(9)
+      + ' coverage ' + e.coverage); });
+  log('  engine reads: ' + out.engine_reads);
+  log('  by competitive band x run:');
+  out.by_competitive_band_and_run.forEach(c => log('    ' + (c.band + ' / ' + c.run).padEnd(30)
+    + (c.rate == null ? 'not published' : (c.rate * 100).toFixed(1) + '%').padStart(14) + '  n=' + c.pairs));
+  log('  by season share x run:');
+  out.by_season_share_and_run.forEach(c => log('    ' + (c.season_band + ' / ' + c.run).padEnd(32)
+    + (c.rate == null ? 'not published' : (c.rate * 100).toFixed(1) + '%').padStart(14) + '  n=' + c.pairs));
 }
 
 main().catch(e => { console.error('[persistence] ' + ((e && e.stack) || e)); process.exit(2); });

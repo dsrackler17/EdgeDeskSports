@@ -231,6 +231,29 @@ jobs:
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
+      # TEAM RECRUITING TALENT. The per-player ratings are still subscription
+      # data; the per-TEAM composite is public and keyless in the same mirror
+      # this job already reads for play attribution, and it fills a contract
+      # field that had been reported as a permanent gap. Research only: no
+      # coefficient is fitted against it, so it moves no point.
+      - name: Team recruiting talent
+        if: steps.go.outputs.run == 'true'
+        run: node football/players/build_team_talent.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # WHY THE PRODUCTION-ATTRIBUTION COUNT IS WHAT IT IS. It separates the
+      # populations the single published number was hiding — a feed that does
+      # not cover a position, a player who has not played, an identity the
+      # roster does not carry, and an actual broken join — so a regression in
+      # the last of those is visible instead of being absorbed into the first
+      # three. It is a diagnostic and never gates the build.
+      - name: Attribution audit
+        if: steps.go.outputs.run == 'true'
+        run: node football/players/attribution_audit.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       # THE FBS COVERAGE GATE. The board claims to carry every game involving
       # an active FBS team; this is the job allowed to say that is no longer
       # true. It rebuilds the universe from the season's own schedule feed,
@@ -242,6 +265,27 @@ jobs:
         if: steps.go.outputs.run == 'true'
         run: node football/fbs/build_coverage.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
+      # WHERE EVERY MISSING CONFIDENCE POINT WENT, written beside the slate.
+      # The card publishes a percentage; this publishes the arithmetic behind
+      # it — every contract field, what it feeds, and the exact points it
+      # costs — so "73%" is auditable rather than asserted. It also fails
+      # loudly if the ledger stops adding up to 100.
+      - name: Confidence ledger
+        if: steps.go.outputs.run == 'true'
+        run: |
+          node tools/football/confidence_ledger.js --json --out football/fbs/confidence.json \
+            ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          node -e "
+            const r = require('./football/fbs/confidence.json');
+            const bad = r.summary.reconciliation_failures || [];
+            const dis = r.ledgers.reduce((n, l) => n + ((l.disagreements || []).length), 0);
+            console.log('[ledger] ' + r.summary.games + ' games · mean ' + r.summary.confidence.mean
+              + '% · median ' + r.summary.confidence.median + '% · lower decile ' + r.summary.confidence.p10 + '%');
+            if (bad.length) { console.error('[ledger] ' + bad.length + ' game(s) do not add to 100'); process.exit(1); }
+            if (dis) console.error('[ledger] ' + dis + ' contract/score disagreement(s) — the contract and the '
+              + 'weighted score describe the same game differently on those inputs');
+          "
 
       # Re-run against what was actually written. The first pass proved the code
       # is sound; this proves the DATA is.

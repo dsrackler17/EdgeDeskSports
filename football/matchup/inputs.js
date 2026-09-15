@@ -54,7 +54,23 @@ const path = require('path');
 const HERE = __dirname;
 const ROOT = path.join(HERE, '..', '..');
 
-const STATES = ['USABLE', 'RESEARCH_ONLY', 'STALE', 'CONFLICTING', 'NOT_APPLICABLE', 'FETCH_FAILED', 'UNAVAILABLE'];
+/* THE STATES A CONTRACT ROW MAY TAKE. Two were added with the availability
+   policy and both are deliberately NOT excused from the denominator:
+
+     NOT_REQUIRED  no conference filing was required for this fixture. True,
+                   precise, and not a statement that anybody is healthy.
+     NOT_DUE_YET   a report is required and its first filing is still hours
+                   away. The document does not exist yet.
+
+   Only NOT_APPLICABLE leaves the denominator, and only for a question that
+   genuinely does not arise: weather under a roof, travel at a neutral site. */
+const STATES = ['USABLE', 'RESEARCH_ONLY', 'STALE', 'CONFLICTING', 'NOT_APPLICABLE',
+  'NOT_REQUIRED', 'NOT_DUE_YET', 'FETCH_FAILED', 'UNAVAILABLE'];
+
+/* the one flattening, shared with the browser */
+const QBC = require(path.join(HERE, 'qb_context.js'));
+/* who is required to publish an availability report for which fixture */
+const POLICY = require(path.join(HERE, '..', 'availability', 'policy.js'));
 
 /* WHICH STARTER STATES MAY MOVE A PRICE. Empty on purpose. The starter layer
    is new; nothing new prices until it has an out-of-sample record of its own,
@@ -66,11 +82,23 @@ function readJson(f, fb) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); 
 function isNum(x) { return typeof x === 'number' && isFinite(x); }
 function hoursSince(t, now) { const a = Date.parse(t); return isFinite(a) ? (now - a) / 3600000 : null; }
 
+/* ONE CONTRACT ROW. Beyond the state it carries the four things a reader
+   needs in order to check it rather than believe it: WHEN THE FACT WAS
+   OBSERVED (which is not when EdgeDesk retrieved it), HOW THE IDENTITY WAS
+   RESOLVED, WHAT WOULD FILL IT, and whether the published number prices it.
+   `observed_at` and `as_of` are deliberately two fields: re-reading an
+   unchanged artifact moves the second and must never move the first. */
 function row(field, side, state, o) {
   o = o || {};
   return { field, side: side || null, state,
-    source: o.source || null, as_of: o.as_of || null, age_hours: o.age_hours == null ? null : Math.round(o.age_hours * 10) / 10,
-    detail: o.detail || null, priced: state === 'USABLE' };
+    source: o.source || null,
+    as_of: o.as_of || null,
+    observed_at: o.observed_at || null,
+    age_hours: o.age_hours == null ? null : Math.round(o.age_hours * 10) / 10,
+    identity: o.identity || null,
+    detail: o.detail || null,
+    fix: o.fix || null,
+    priced: state === 'USABLE' };
 }
 
 /* -------------------------------------------------------------------- load */
@@ -145,18 +173,44 @@ function load(opts) {
     } else out.problems.push('football/players/current.json is missing — no roster carries a talent composite');
   } catch (e) { out.problems.push('the player layer could not be merged: ' + ((e && e.message) || e)); }
 
-  /* the college availability layer */
+  /* THE COLLEGE AVAILABILITY LAYER, as three sources merged once.
+
+     The automated collector read is one of them. The other two are the thing
+     that was missing: the conference filings college football began requiring
+     in 2025, and a dated operator correction for what no scraper recovers.
+     football/availability/overlay.js does the merge at READ time so it is done
+     in one place and cannot be applied twice or dropped by the next sync. */
   const av = readJson(path.join(ROOT, 'football', 'availability', 'current.json'), null);
+  const OVERLAY = require(path.join(ROOT, 'football', 'availability', 'overlay.js'));
+  const OPERATOR = require(path.join(ROOT, 'football', 'availability', 'operator.js'));
+  const opStore = readJson(path.join(ROOT, 'football', 'availability', 'operator.json'), null);
+  const nowMs = Date.now();
+  const reports = [];
+  const rdir = path.join(ROOT, 'football', 'availability', 'reports');
+  if (fs.existsSync(rdir)) {
+    for (const f of fs.readdirSync(rdir)) {
+      if (!/\.json$/.test(f)) continue;
+      const r = readJson(path.join(rdir, f), null);
+      if (r && r.schema === 'edgedesk_availability_report_v1') reports.push(r);
+    }
+  }
+  const opLoaded = OPERATOR.load(opStore || { entries: [] }, nowMs);
+  const merged = OVERLAY.build({ current: av, operator: opLoaded, reports, now: nowMs, normKey });
   out.availability = av;
   out.availability_as_of = av ? (av.generated_at || null) : null;
+  out.availability_overlay = { merged: merged.merged, counts: merged.counts,
+    operator: opLoaded.counts, reports_on_file: reports.length };
+  if (opLoaded.refused.length) out.problems.push(opLoaded.refused.length
+    + ' operator correction(s) are refused for missing a source, a date or a fixture — run '
+    + 'node football/availability/record_correction.js --list');
   out.availability_by_team = {};
-  if (av && av.teams) {
-    for (const id of Object.keys(av.teams)) {
-      const t = av.teams[id];
-      const k = normKey(t.team_name || t.team_display);
-      if (k) out.availability_by_team[k] = t;
-    }
-  } else out.problems.push('football/availability/current.json is missing — every injury report reads as not supplied');
+  for (const id of Object.keys(merged.teams)) {
+    const t = merged.teams[id];
+    const k = normKey(t.team_name || t.team_display);
+    if (k) out.availability_by_team[k] = t;
+  }
+  if (!av) out.problems.push('football/availability/current.json is missing — the automated read contributes '
+    + 'nothing and only ingested reports and operator corrections are on file');
 
   /* the starter context */
   out.starters = readJson(path.join(ROOT, 'football', 'starters', `cfb_${season}.json`), null);
@@ -216,11 +270,61 @@ function load(opts) {
       if (d && d.key) out.rooms[d.key] = d;
     }
   }
+  /* TEAM RECRUITING TALENT. The per-player ratings are still subscription
+     data and are still not substituted anywhere; this is the per-TEAM
+     composite, which is public and keyless and which nothing here had ever
+     read. It is research: no coefficient is fitted against it on this corpus,
+     so it fills the recruiting_talent contract field and moves no point. */
+  out.team_talent = readJson(path.join(ROOT, 'football', 'players', 'team_talent.json'), null);
+  if (out.team_talent && out.team_talent.season !== season) {
+    out.problems.push('football/players/team_talent.json is for season ' + out.team_talent.season
+      + ', not ' + season + ' — it is not read for this season rather than read from the wrong one');
+    out.team_talent = null;
+  }
+  if (!out.team_talent) out.problems.push('football/players/team_talent.json is missing — run '
+    + 'football/players/build_team_talent.js');
+  else if (out.team_talent.teams) {
+    /* blue_chip_ratio was M.missing on every roster in the universe with the
+       note "supply them via ingest.setRecruiting()". A public team-level
+       ratio is not per-player stars and is labelled as the team ratio it is,
+       but it IS the field the engine asked for and it is supplied here. */
+    for (const k of Object.keys(out.team_talent.teams)) {
+      const b = out.rosters[k];
+      const t = out.team_talent.teams[k];
+      if (b && b.blue_chip_ratio == null && isNum(t.blue_chip_ratio)) b.blue_chip_ratio = t.blue_chip_ratio;
+    }
+  }
+
   out.rankings = readJson(path.join(ROOT, 'football', 'rankings', 'current.json'), null);
   out.weather = opts.weather || {};      /* game_id -> {temp_f, wind_mph, ..., as_of} */
   out.weather_source = opts.weather_source || null;
   out.weather_attempted = !!opts.weather_attempted;
   out.weather_failure = opts.weather_failure || null;
+  out.weather_read_at = opts.weather_read_at || null;
+  /* THE LAST FORECAST EDGEDESK ACTUALLY OBSERVED, for every caller that does
+     not fetch one itself — the coverage report, the daily check, the health
+     job. Publishing nothing when a good observation is on disk is the same
+     erasure the builder stopped making, one caller further out. It is aged
+     against ITS OWN observation time and goes STALE on the contract's floor
+     like any other carried value; it is never presented as current. */
+  if (!Object.keys(out.weather).length) {
+    const store = readJson(path.join(ROOT, 'football', 'venues', 'forecasts.json'), null);
+    if (store && store.by_game) {
+      const carried = {};
+      for (const id of Object.keys(store.by_game)) {
+        const w = store.by_game[id];
+        if (!w || !w.as_of) continue;
+        carried[id] = Object.assign({}, w, { carried: true,
+          carried_reason: 'this build requested no forecast; the last one EdgeDesk observed is carried forward '
+            + 'at its own observation time' });
+      }
+      if (Object.keys(carried).length) {
+        out.weather = carried;
+        out.weather_source = store.source || 'open-meteo forecast (carried from football/venues/forecasts.json)';
+        out.weather_store_as_of = store.generated_at || null;
+      }
+    }
+  }
   return out;
 }
 
@@ -361,12 +465,27 @@ function buildRequest(ctx, o) {
   const wxWhy = (P_ && P_.unavailable_by_design && P_.unavailable_by_design.weather_coefficients) || null;
   if (dome) contract.push(row('weather', null, 'NOT_APPLICABLE',
     { detail: (vh.name || 'an indoor venue') + ' is a dome — weather is neutralised, not missing' }));
-  else if (wx) contract.push(row('weather', null,
-    hoursSince(wx.as_of, now) > 12 ? 'STALE' : (wxPriced ? 'USABLE' : 'RESEARCH_ONLY'),
-    { source: ctx.weather_source || 'venue weather', as_of: wx.as_of, age_hours: hoursSince(wx.as_of, now),
-      detail: wxPriced ? null
-        : ('retrieved and shown, and it narrows the weather uncertainty term, but it moves no points: '
-          + (wxWhy || 'no weather coefficient was earned on this corpus')) }));
+  else if (wx) {
+    /* AGED AGAINST WHEN IT WAS OBSERVED, never against when it was re-read.
+       A forecast carried forward from an earlier build is still that earlier
+       build's observation: `as_of` is the moment open-meteo answered, and the
+       carry writes `carried_at` beside it rather than over it. */
+    const wxAge = hoursSince(wx.as_of, now);
+    contract.push(row('weather', null,
+      wxAge > 12 ? 'STALE' : (wxPriced ? 'USABLE' : 'RESEARCH_ONLY'),
+      { source: ctx.weather_source || 'venue weather',
+        as_of: ctx.weather_read_at || (wx.carried ? wx.carried_at : wx.as_of),
+        observed_at: wx.as_of,
+        age_hours: wxAge,
+        detail: (wx.carried
+          ? 'CARRIED FORWARD: ' + (wx.carried_reason || 'this build could not reach the forecast provider')
+            + '. Observed ' + (wxAge == null ? 'at an unknown time' : wxAge.toFixed(1) + ' hours ago') + '. '
+          : '')
+          + (wxPriced ? 'a forecast for this kickoff, matched to the venue coordinates'
+            : 'retrieved and shown, and it narrows the weather uncertainty term, but it moves no points: '
+              + (wxWhy || 'no weather coefficient was earned on this corpus')),
+        fix: wx.carried ? 're-run the build from a host that can reach api.open-meteo.com' : null }));
+  }
   else if (!vh) contract.push(row('weather', null, 'UNAVAILABLE',
     { detail: 'the venue has no coordinates in the trained table, so no forecast can be located for it' }));
   /* THREE DIFFERENT SENTENCES, because "no weather" had been doing the work of
@@ -385,30 +504,117 @@ function buildRequest(ctx, o) {
   [['home', hk, rh, homeFbs, g.home_team], ['away', ak, ra, awayFbs, g.away_team]].forEach(([side, key, r, isFbs, name]) => {
     if (r) contract.push(row('roster', side, rosterAge != null && rosterAge > 24 * 14 ? 'STALE' : 'USABLE',
       { source: 'EdgeDesk ESPN roster sync', as_of: ctx.roster_as_of, age_hours: rosterAge, detail: ctx.roster_note }));
-    else if (!isFbs) contract.push(row('roster', side, 'NOT_APPLICABLE',
-      { detail: `${name} is outside the ${ctx.season} FBS universe EdgeDesk rates; the roster layer is not defined for it and its absence is not a gap in this game's inputs` }));
+    else if (!isFbs) contract.push(row('roster', side, 'UNAVAILABLE',
+      /* THIS ROW USED TO SAY NOT_APPLICABLE, AND THE SCORE DISAGREED WITH IT.
+         "Its absence is not a gap in this game's inputs" is a claim that the
+         projection does not need it, and the projection does: with no roster
+         for the FCS side the engine's roster_away term is unmeasured and it
+         charges the full 6.1 points for it, on every one of these games. A
+         contract excluding a field from its own denominator while the
+         weighted score charges for it is exactly the quiet contradiction the
+         confidence ledger was built to surface, and it surfaced this one.
+
+         So the contract now agrees with the score: EdgeDesk does not have this
+         roster, that is a real gap, and it is counted as one. Coverage on an
+         FBS-vs-FCS game falls, which is the correct direction for a number
+         that is meant to mean something. */
+      { source: 'EdgeDesk ESPN roster sync',
+        detail: `${name} is outside the ${ctx.season} FBS universe EdgeDesk rates, so no roster is retrieved `
+          + 'for it. The engine prices the side from a shared FCS floor and charges the full weight of its '
+          + 'roster term, so this is counted as the gap it is rather than excused as inapplicable',
+        fix: 'no FCS roster feed is wired in; the gap is real and the confidence cost is the honest price of it' }));
     else contract.push(row('roster', side, 'UNAVAILABLE',
       { source: 'EdgeDesk ESPN roster sync', detail: `no roster bundle resolved for ${name}` }));
   });
 
   /* ---- injuries / availability -------------------------------------- */
+  /* WHAT THE CONFERENCE ACTUALLY REQUIRES FOR THIS FIXTURE, asked first.
+
+     Every branch below used to end in the same sentence — EdgeDesk read some
+     sources and none carried a report — and that sentence was doing the work
+     of five different situations. College football acquired conference
+     availability reporting in 2025 and football/availability/policy.js now
+     carries each conference's published policy, with its scope, its cadence
+     and its status vocabulary. That turns "no report" into the specific
+     statement that is true of this game:
+
+       NOT_REQUIRED     a non-conference fixture, where no policy obliges
+                        anyone to file. Nothing was withheld
+       NOT_DUE_YET      a conference game whose first filing is still hours
+                        away. The report does not exist yet
+       FETCH_FAILED     required, filed or filable, and EdgeDesk could not
+                        read it
+       UNAVAILABLE      required and EdgeDesk has no route to it at all
+       USABLE           read, with the scope the policy says it has
+
+     None of them is health. A comprehensive report naming nobody is the ONLY
+     thing that means nobody is out, and only the policy registry may say a
+     source is comprehensive. */
   const ih = injuriesFor(ctx, g.home_team), ia = injuriesFor(ctx, g.away_team);
   const avAge = hoursSince(ctx.availability_as_of, now);
+  const policyGame = { home_conference: g.home_conference, away_conference: g.away_conference,
+    is_conference_game: g.home_conference != null && g.away_conference != null
+      && POLICY.norm(g.home_conference) === POLICY.norm(g.away_conference),
+    kickoff: g.start_date };
+  const avPolicy = { home: POLICY.forGame(policyGame, 'home', now), away: POLICY.forGame(policyGame, 'away', now) };
+  const avEvidence = { home: 'NONE', away: 'NONE' };
   [['home', ih, homeFbs, g.home_team], ['away', ia, awayFbs, g.away_team]].forEach(([side, list, isFbs, name]) => {
-    if (list && list.length) contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
-      { source: 'EdgeDesk college availability layer', as_of: ctx.availability_as_of, age_hours: avAge,
-        detail: `${list.length} absence report(s) on file` }));
-    else if (list) contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
-      { source: 'EdgeDesk college availability layer', as_of: ctx.availability_as_of, age_hours: avAge,
-        detail: 'the sources were read and named nobody — a report of no absences, which is not the same as no report' }));
-    else if (!isFbs) contract.push(row('availability', side, 'NOT_APPLICABLE',
-      { detail: `${name} is outside the FBS availability registry` }));
-    else {
+    const pol = avPolicy[side];
+    const t = ctx.availability_by_team[normKey(name)] || null;
+    const official = !!(t && t.official_report);
+    const comprehensive = !!(t && t.official_report && t.official_report.comprehensive);
+    const polNote = pol && pol.why ? ' ' + pol.why + '.' : '';
+    if (list && list.length) {
+      avEvidence[side] = 'EXPLICIT';
+      contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
+        { source: (official ? pol.conference + ' availability report' : 'EdgeDesk college availability layer'),
+          as_of: ctx.availability_as_of, observed_at: (t && t.official_report && t.official_report.published_at) || null,
+          age_hours: avAge, identity: 'resolved against the current-season roster by name; a name that is not on '
+            + 'the roster is refused rather than invented',
+          detail: `${list.length} absence report(s) on file` + polNote,
+          fix: null }));
+    } else if (list && comprehensive) {
+      /* the one branch that may say nobody is out */
+      avEvidence[side] = 'COMPREHENSIVE_SILENCE';
+      contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
+        { source: pol.conference + ' availability report',
+          as_of: ctx.availability_as_of, observed_at: (t.official_report && t.official_report.published_at) || null,
+          age_hours: avAge,
+          detail: 'the ' + pol.conference + ' report for this game designates every player and names nobody on this '
+            + 'roster — a report of no absences, which is a different statement from no report' }));
+    } else if (list) {
+      /* sources answered and named nobody, but nothing comprehensive covers
+         this game, so this is not a clean bill of health for the roster */
+      contract.push(row('availability', side, avAge != null && avAge > 48 ? 'STALE' : 'USABLE',
+        { source: 'EdgeDesk college availability layer', as_of: ctx.availability_as_of, age_hours: avAge,
+          detail: 'the sources EdgeDesk reads were read and named nobody. No COMPREHENSIVE report covers this '
+            + 'fixture, so this is an absence of named absences and not a statement that the roster is whole'
+            + polNote,
+          fix: pol && pol.report_url ? ('ingest the ' + pol.conference + ' report from ' + pol.report_url) : null }));
+    } else if (!isFbs) {
+      contract.push(row('availability', side, 'UNAVAILABLE',
+        { detail: `${name} is outside the FBS availability registry, so no availability read covers it. The `
+            + 'engine prices maximum injury uncertainty for this side and charges for the gap, so the contract '
+            + 'counts it as a gap rather than excusing it as inapplicable',
+          fix: 'no FCS availability source is registered; a school release is the only route and none is wired' }));
+    } else if (pol && pol.state === 'NOT_REQUIRED_FOR_THIS_GAME') {
+      /* NOT A GAP IN EDGEDESK'S RESEARCH. No report exists because none was
+         required, and the engine still prices maximum injury uncertainty. */
+      contract.push(row('availability', side, 'NOT_REQUIRED',
+        { source: pol.conference, detail: pol.why,
+          fix: 'none available from a conference source. A school release or game notes are the only route, and '
+            + 'they are registered per school in football/availability/sources.overrides.json' }));
+    } else if (pol && pol.state === 'NOT_DUE_YET') {
+      contract.push(row('availability', side, 'NOT_DUE_YET',
+        { source: pol.conference,
+          detail: pol.why + '. The report will exist ' + pol.policy.first_filing_hours_before_kickoff
+            + ' hours before kickoff, which is in ' + Math.max(0, Math.round((pol.hours_to_kickoff
+              - pol.policy.first_filing_hours_before_kickoff) * 10) / 10) + ' hours; until then there is no '
+            + 'report to read and nobody is assumed healthy',
+          fix: 're-run the availability sync inside the filing window (' + pol.report_url + ')' }));
+    } else {
       /* WHY THE READ FAILED, not just that it did. The registry grades every
-         team's read and records which sources refused; a row that says only
-         "unavailable" sends the next person to look for a bug in this file
-         instead of at the two endpoints that are actually returning 403. */
-      const t = ctx.availability_by_team[normKey(name)] || null;
+         team's read and records which sources refused. */
       const q = t ? String(t.dataQuality || t.data_quality || 'NONE').toUpperCase() : null;
       const failed = t && isNum(t.sources_failed) ? t.sources_failed : null;
       const checked = t && isNum(t.sources_checked) ? t.sources_checked : null;
@@ -418,7 +624,11 @@ function buildRequest(ctx, o) {
             ? `${name} is not in the availability registry; the engine prices this as maximum injury uncertainty, never as healthy`
             : `EdgeDesk read ${checked == null ? 'the'  : checked} source(s) for ${name} and ${failed ? failed + ' refused' : 'none carried a usable report'}`
               + `; the read is graded ${q} and an ungraded read is not a clean bill of health. `
-              + 'The engine prices this as maximum injury uncertainty, never as healthy' }));
+              + 'The engine prices this as maximum injury uncertainty, never as healthy' + polNote,
+          fix: pol && pol.report_url
+            ? ('ingest the ' + pol.conference + ' availability report for this game from ' + pol.report_url)
+            : 'register an official source for this programme in football/availability/sources.overrides.json, or '
+              + 'record a dated operator correction in football/availability/operator.json' }));
     }
   });
 
@@ -437,8 +647,12 @@ function buildRequest(ctx, o) {
         detail: `composite ${Math.round(r.overall_talent * 10) / 10}`
           + (isNum(r.overall_talent_confidence) ? ` at confidence ${r.overall_talent_confidence}` : '')
           + ' — measured production, not recruiting pedigree' }));
-    else if (!isFbs) contract.push(row('roster_talent', side, 'NOT_APPLICABLE',
-      { detail: `${name} is outside the FBS field the player layer rates` }));
+    else if (!isFbs) contract.push(row('roster_talent', side, 'UNAVAILABLE',
+      { source: 'EdgeDesk player layer',
+        detail: `${name} is outside the FBS field the player layer rates, so no composite is measured for it. `
+          + 'The engine charges for the gap, so the contract counts it as one',
+        fix: 'the player layer is built from FBS play attribution; extending it to the FCS field is the fix, and '
+          + 'nothing is substituted for it meanwhile' }));
     else contract.push(row('roster_talent', side, 'UNAVAILABLE',
       { source: 'EdgeDesk player layer',
         detail: `no rated roster resolved for ${name}` + (rq ? '' : '; football/players/current.json did not load') }));
@@ -448,22 +662,71 @@ function buildRequest(ctx, o) {
   const st = ctx.starters && ctx.starters.teams ? ctx.starters.teams : {};
   const sh = st[hk] || null, sa = st[ak] || null;
   const starters = { home: sh, away: sa };
+  const qbEvidenceClass = { home: null, away: null };
+  const qbAvailEvidence = { home: 'NONE', away: 'NONE' };
+  const qbAvailWhy = { home: null, away: null };
   [['home', sh, homeFbs, g.home_team], ['away', sa, awayFbs, g.away_team]].forEach(([side, rec, isFbs, name]) => {
     if (!rec) {
       contract.push(row('qb_starter', side, isFbs ? 'UNAVAILABLE' : 'NOT_APPLICABLE',
         { detail: isFbs ? `no starter record was built for ${name}`
-          : `${name} is outside the rated universe; no starter context is assembled for it` }));
+          : `${name} is outside the rated universe; no starter context is assembled for it`,
+          fix: isFbs ? 'run football/starters/build_starters.js --sport cfb' : null }));
       return;
     }
     const state = rec.field_state === 'USABLE' ? 'RESEARCH_ONLY' : rec.field_state;
+    const cls = QBC.classOf(rec);
+    qbEvidenceClass[side] = cls.id;
     contract.push(row('qb_starter', side, state, {
-      source: rec.source, as_of: rec.retrieved_at, age_hours: hoursSince(rec.retrieved_at, now),
-      detail: rec.label + ' — retrieved and published as research; the priced QB layer is not fed from it '
-        + 'until the starter layer has an out-of-sample record of its own'
+      source: rec.source, as_of: rec.retrieved_at, observed_at: rec.published_at || null,
+      age_hours: hoursSince(rec.retrieved_at, now),
+      identity: rec.identity_basis || null,
+      /* THE EVIDENCE CLASS IS PART OF THE FIELD, not a footnote on it. A
+         projection supported by a measured observation is neither a
+         confirmation nor an unknown, and the row says which it is. */
+      detail: rec.label + ' — ' + cls.label + ': ' + cls.means
+        + '. Retrieved and published as research; the priced QB layer is not fed from it until the starter '
+        + 'layer has an out-of-sample record of its own',
+      fix: cls.id === 'CONFIRMED' ? null
+        : 'a team or conference announcement for THIS game would move this to CONFIRMED; register one in '
+          + 'football/availability/sources.overrides.json or record it in football/starters/announcements.json'
     }));
+    /* ---- can the resolved starter play ------------------------------- */
     const av = rec.availability || {};
-    contract.push(row('qb_availability', side, av.evidence === 'EXPLICIT' ? 'USABLE' : 'UNAVAILABLE',
-      { source: av.source, as_of: av.retrieved_at, detail: av.why || null }));
+    const pol = avPolicy[side];
+    if (av.evidence === 'EXPLICIT') {
+      qbAvailEvidence[side] = 'EXPLICIT';
+      qbAvailWhy[side] = av.why || null;
+      contract.push(row('qb_availability', side, 'USABLE',
+        { source: av.source, as_of: av.retrieved_at, observed_at: av.published_at || null,
+          identity: 'the same athlete id the starter record resolved',
+          detail: av.why || 'an availability source names this player and states a status' }));
+    } else if (avEvidence[side] === 'COMPREHENSIVE_SILENCE') {
+      /* the ONLY route from silence to available, and it needs a source the
+         policy registry marks comprehensive for THIS fixture */
+      qbAvailEvidence[side] = 'COMPREHENSIVE_SILENCE';
+      qbAvailWhy[side] = 'named nowhere on a comprehensive report for this game';
+      contract.push(row('qb_availability', side, 'USABLE',
+        { source: pol && pol.conference, as_of: ctx.availability_as_of,
+          detail: 'the comprehensive ' + (pol && pol.conference) + ' availability report for this game designates '
+            + 'every player and does not name him, which is a report that he is available' }));
+    } else if (pol && pol.state === 'NOT_REQUIRED_FOR_THIS_GAME') {
+      contract.push(row('qb_availability', side, 'NOT_REQUIRED',
+        { source: pol.conference, detail: pol.why,
+          fix: 'no conference source exists for a non-conference fixture; a school release or game notes are the '
+            + 'only route and are registered per school' }));
+    } else if (pol && pol.state === 'NOT_DUE_YET') {
+      contract.push(row('qb_availability', side, 'NOT_DUE_YET',
+        { source: pol.conference, detail: pol.why + ' — no report on this quarterback exists yet, which is not '
+            + 'a statement that he is fit',
+          fix: 're-run the availability sync inside the filing window (' + pol.report_url + ')' }));
+    } else {
+      contract.push(row('qb_availability', side, 'UNAVAILABLE',
+        { source: av.source, as_of: av.retrieved_at,
+          detail: (av.why || 'no source states whether this quarterback can play')
+            + (pol && pol.why ? '. ' + pol.why : ''),
+          fix: pol && pol.report_url ? ('ingest the ' + pol.conference + ' availability report from ' + pol.report_url)
+            : 'record a dated operator correction in football/availability/operator.json' }));
+    }
   });
 
   /* ---- quarterback efficiency history --------------------------------- */
@@ -482,6 +745,9 @@ function buildRequest(ctx, o) {
      publication gap in the provider's table, an unresolved identity, and a
      quarterback who has genuinely never thrown an FBS pass. */
   const qbEpa = { home: null, away: null };
+  /* "we measured his performance" is its own statement, kept beside "we know
+     who he is" and "we expect him to start" rather than merged into either */
+  const qbMeasured = { home: false, away: false };
   if (ctx.fbs_epa) {
     const EPAMOD = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
     const kickoff = Date.parse(g.start_date);
@@ -495,6 +761,7 @@ function buildRequest(ctx, o) {
         let state, detail;
         if (pk.state === 'MEASURED' && pk.career.state === 'MEASURED') {
           state = stale ? 'STALE' : 'RESEARCH_ONLY';
+          qbMeasured[side] = !stale;
           detail = pk.identity.player + ' — ' + pk.career.epa_per_dropback + ' EPA per dropback over '
             + pk.career.dropbacks + ' career dropbacks'
             + (card.coverage_state === 'PARTIAL' ? ' (partial: a completed game has no passing row yet)' : '')
@@ -526,12 +793,130 @@ function buildRequest(ctx, o) {
         + 'football/fbs_epa/build_epa.js' })));
   }
 
+  /* ---- recruiting talent ---------------------------------------------- */
+  /* THIS ROW WAS A PERMANENT GAP FOR A REASON THAT ANSWERED A NARROWER
+     QUESTION THAN THE FIELD ASKS. "Per-player recruiting ratings are
+     subscription data" is true and still true; the field asks how much
+     pedigree is on the roster, and the per-TEAM composite that answers it is
+     published keyless in the same mirror this repository already reads. It is
+     RESEARCH_ONLY, not USABLE: no coefficient has been fitted against it on
+     this corpus, so like the EPA series it is retrieved, published and not
+     priced. One row per side, because it is a fact about a team. */
+  const TT = ctx.team_talent && ctx.team_talent.teams ? ctx.team_talent.teams : null;
+  [['home', hk, homeFbs, g.home_team], ['away', ak, awayFbs, g.away_team]].forEach(([side, key, isFbs, name]) => {
+    const t = TT ? TT[key] : null;
+    if (t && isNum(t.talent_composite)) {
+      contract.push(row('recruiting_talent', side, 'RESEARCH_ONLY',
+        { source: ctx.team_talent.source, as_of: ctx.team_talent.generated_at,
+          age_hours: hoursSince(ctx.team_talent.generated_at, now),
+          identity: 'joined on the provider’s ESPN team id and corroborated against the roster sync’s '
+            + 'own spelling for that id',
+          detail: 'composite ' + t.talent_composite + ' (national rank ' + t.talent_rank + '), blue-chip ratio '
+            + t.blue_chip_ratio + ' over ' + t.recruits + ' rated recruits. Retrieved and published as research: '
+            + 'no coefficient has been fitted against this series on this corpus, so it moves no point. '
+            + 'PER-TEAM only — per-player recruiting ratings remain subscription data and are still not '
+            + 'substituted anywhere' }));
+    } else if (!isFbs) {
+      contract.push(row('recruiting_talent', side, 'NOT_APPLICABLE',
+        { detail: `${name} is outside the FBS field EdgeDesk rates` }));
+    } else {
+      contract.push(row('recruiting_talent', side, 'UNAVAILABLE',
+        { source: ctx.team_talent ? ctx.team_talent.source : 'sportsdataverse/cfbfastR-cfb-data cfb_team_talent',
+          detail: ctx.team_talent
+            ? `the provider’s ${ctx.team_talent.season} team-talent table does not carry ${name} — a `
+              + 'publication gap in the source, not an unresolved identity here'
+            : 'football/players/team_talent.json has not been built',
+          fix: ctx.team_talent ? null : 'run football/players/build_team_talent.js' }));
+    }
+  });
+
+  /* ---- the team rating and the matchup profile ------------------------- */
+  /* THE TWO BIGGEST-WEIGHT INPUTS HAD NO CONTRACT ROW AT ALL.
+
+     `rating` carries 1.0 of the 4.083 weight table — as much as the
+     quarterback and four times the venue — and `matchup` carries 0.4, and
+     neither appeared on the input contract. So on an FBS-vs-FCS game the
+     score was being charged twenty points for a rating it could not measure
+     and the card had no field to hang that on: the confidence ledger
+     reported it as a point EdgeDesk had lost to nothing in particular. A
+     reader could see 30% and find nothing on the contract that explained it.
+
+     They are rows now, with the same rules as every other field: a rated
+     programme is USABLE, an unrated one is UNAVAILABLE with the reason, and
+     the ledger attributes the loss to the field instead of to a residue. */
+  const ratedH = o.state && o.state.r ? o.state.r[hk] : undefined;
+  const ratedA = o.state && o.state.r ? o.state.r[ak] : undefined;
+  const gamesOf = (k) => (o.state && o.state.g && isNum(o.state.g[k])) ? o.state.g[k] : null;
+  [['home', hk, ratedH, homeFbs, g.home_team], ['away', ak, ratedA, awayFbs, g.away_team]]
+    .forEach(([side, key, rat, isFbs, name]) => {
+      if (isNum(rat) && isFbs) {
+        const n = gamesOf(key);
+        contract.push(row('team_rating', side, 'USABLE',
+          { source: 'EdgeDesk ETSR + the trained preseason seed',
+            identity: 'the engine’s own team key',
+            detail: 'rated ' + Math.round(rat * 100) / 100
+              + (n == null ? '' : ' over ' + n + ' absorbed game(s) this season')
+              + ', blended with the trained prior on the learned curve' }));
+      } else {
+        contract.push(row('team_rating', side, 'UNAVAILABLE',
+          { source: 'EdgeDesk ETSR',
+            detail: name + ' is outside the rated FBS field, so the projection uses params.rating.fcs_rating '
+              + '— ONE floor number shared by every FCS programme. That is not a rating of this team, and '
+              + 'the engine charges the full weight of the rating input for it. This row exists so that charge '
+              + 'lands on a named field instead of on nothing',
+            fix: 'no public rating of the FCS field is wired in; the floor is the honest substitute and the '
+              + 'confidence cost is the honest price of it' }));
+      }
+    });
+  const profH = ctx.rooms && ctx.rooms[hk], profA = ctx.rooms && ctx.rooms[ak];
+  if (homeFbs && awayFbs) contract.push(row('matchup_profile', null, 'USABLE',
+    { source: 'football/matchup/profiles_' + ctx.season + '.json',
+      detail: 'both sides carry a team-game profile, so the stylistic pairing is measurable' }));
+  else contract.push(row('matchup_profile', null, 'UNAVAILABLE',
+    { source: 'football/matchup/profiles_' + ctx.season + '.json',
+      detail: 'the stylistic pairing needs a measured profile for BOTH sides and '
+        + (homeFbs ? g.away_team : g.home_team) + ' is outside the FBS field the profiles cover',
+      fix: 'none available: the profile is built from FBS play attribution and no equivalent is published for '
+        + 'the FCS field' }));
+
+  /* ---- off-field reporting -------------------------------------------- */
+  /* A FIELD THE ENGINE SCORES AND THE CONTRACT NEVER PUBLISHED. The
+     confidence table carries offfield_home and offfield_away, they are
+     M.missing on every game in the universe, and together they were costing
+     2.4 points of every score with nothing on the card to say so. A gap the
+     reader cannot see is worse than a gap: it makes the number look
+     arbitrary. So it is a contract row, one per side, with its cost
+     attributable like every other row.
+
+     NOTHING IS SUBSTITUTED FOR IT. The engine's own rule is that a signal
+     must be public, sourced, dated and severity-graded before it may touch
+     even the confidence score, and passing the injury layer's output in its
+     place would be scoring one question with another question's answer. */
+  ['home', 'away'].forEach(side => {
+    const news = ctx.off_field_for ? ctx.off_field_for(side === 'home' ? hk : ak) : null;
+    if (news && news.length) contract.push(row('off_field', side, 'USABLE',
+      { source: ctx.off_field_source || 'supplied public reporting', as_of: ctx.off_field_as_of || null,
+        detail: news.length + ' sourced, dated signal(s) on file' }));
+    else if (news) contract.push(row('off_field', side, 'USABLE',
+      { source: ctx.off_field_source || 'supplied public reporting', as_of: ctx.off_field_as_of || null,
+        detail: 'the configured reporting sources were read and carried nothing material for this side' }));
+    else contract.push(row('off_field', side, 'UNAVAILABLE',
+      { detail: 'no off-field reporting feed is wired in. The engine scores this input and it is missing on every '
+          + 'game, so it is published here rather than left invisible. A signal must be public, sourced, dated and '
+          + 'severity-graded before it may move even the confidence score, and no keyless feed EdgeDesk reads '
+          + 'supplies all four; the availability layer answers a different question and is not substituted for it',
+        fix: 'supply dated, sourced, severity-graded signals through ctx.off_field_for(teamKey) — the assembly '
+          + 'passes whatever it returns straight to the engine’s off-field layer' }));
+  });
+
   /* ---- documented, permanent gaps ------------------------------------ */
-  contract.push(row('recruiting_talent', null, 'UNAVAILABLE',
-    { detail: 'per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted '
-      + '(football/players/recruiting_adapter.js is the injection point)' }));
   contract.push(row('coaching_continuity', null, 'UNAVAILABLE',
-    { detail: 'no public, keyless feed carries coordinator or staff continuity' }));
+    { detail: 'no public, keyless feed carries head-coach or coordinator continuity. sportsdataverse publishes '
+      + 'rosters, schedules, play attribution and team talent for this season and no coaching table; '
+      + 'CollegeFootballData’s coaches endpoint needs a per-user key whose terms forbid redistributing the '
+      + 'result as a committed dataset. Checked 2026-09-15 and recorded as checked',
+      fix: 'a licensed caller may supply staff continuity through the engine’s `coaching` input; there is no '
+        + 'keyless route to wire' }));
 
   /* ---- schedule ------------------------------------------------------- */
   const sch = o.schedule_index || null;
@@ -558,10 +943,14 @@ function buildRequest(ctx, o) {
          computes a point. The starter reaching the projection as CONTEXT is
          not the starter being priced; PRICED_STARTER_STATUSES is still the
          only switch for that, and it is still empty. */
-      home: { conference: g.home_conference, roster: rh, qb: null, qb_context: qbContext(sh, ctx, hk),
-        injuries: ih, news: null, coaching: null, schedule: ch },
-      away: { conference: g.away_conference, roster: ra, qb: null, qb_context: qbContext(sa, ctx, ak),
-        injuries: ia, news: null, coaching: null, schedule: ca }
+      home: { conference: g.home_conference, roster: rh, qb: null,
+        qb_context: qbContext(sh, ctx, hk, { efficiency_history: qbMeasured.home,
+          availability_evidence: qbAvailEvidence.home, availability_why: qbAvailWhy.home }),
+        injuries: ih, news: ctx.off_field_for ? ctx.off_field_for(hk) : null, coaching: null, schedule: ch },
+      away: { conference: g.away_conference, roster: ra, qb: null,
+        qb_context: qbContext(sa, ctx, ak, { efficiency_history: qbMeasured.away,
+          availability_evidence: qbAvailEvidence.away, availability_why: qbAvailWhy.away }),
+        injuries: ia, news: ctx.off_field_for ? ctx.off_field_for(ak) : null, coaching: null, schedule: ca }
     },
     venue: { home: vh, away: va },
     weather: wx, market: o.market || {},
@@ -602,68 +991,21 @@ function buildRequest(ctx, o) {
 
 /* THE STARTER, FLATTENED FOR THE ENGINE'S INFORMATION LAYER.
 
-   Everything here answers "how well is this quarterback known", and nothing
-   here can reach a point: the engine's information.quarterback() reads these
-   fields and returns a 0-1 measurement that only the confidence score
-   consumes. Deliberately NOT the same object as the shadow QB input — that
-   one is shaped for the priced layer and carries efficiency fields this one
-   must never acquire. */
-function qbContext(rec, ctx, teamKey) {
-  if (!rec || !rec.player_id) return null;
-  const exp = rec.experience || null;
-  const comp = rec.competition || null;
-  /* the resolved starter's own share of his room's observed dropbacks; a
-     contested room is genuinely less certain and the record already says so */
-  let share = null;
-  if (comp && Array.isArray(comp.players)) {
-    const mine = comp.players.filter(p => String(p.player_id) === String(rec.player_id))[0];
-    if (mine && isNum(mine.share)) share = mine.share;
-  }
-  /* THE LAST GAME HE ACTUALLY OPENED, and what share of it he threw. The
-     persistence bands are measured on exactly this quantity, so it is read
-     from the record's own history rather than from the season-long
-     competition share — those are different numbers and using one where the
-     other was measured would silently mis-band every team. */
-  const hist = Array.isArray(rec.history) ? rec.history : [];
-  let lastShare = null;
-  for (let i = hist.length - 1; i >= 0; i--) {
-    const h = hist[i];
-    if (h && h.starter && String(h.starter.player_id) === String(rec.player_id) && isNum(h.starter.share)) {
-      lastShare = h.starter.share; break;
-    }
-  }
-  return {
-    player: rec.player_name || null,
-    player_id: rec.player_id,
-    status: rec.status || 'UNKNOWN',
-    field_state: rec.field_state || null,
-    identity_corroborated: rec.identity_corroborated !== false,
-    contested: !!(comp && comp.contested),
-    dropback_share: share,
-    last_game_share: lastShare,
-    persistence: persistenceFor(ctx, lastShare),
-    dropbacks: exp && isNum(exp.dropbacks) ? exp.dropbacks : null,
-    starts: exp && isNum(exp.starts) ? exp.starts : null,
-    seasons_observed: exp && isNum(exp.seasons_observed) ? exp.seasons_observed : null,
-    source: rec.source || null,
-    as_of: rec.retrieved_at || null
-  };
+   The flattening itself now lives in football/matchup/qb_context.js, loaded
+   by this assembly AND by app.html, because two copies of one contract is how
+   the board and the committed artifact come to disagree about the same game
+   out of the same files. What stays here is only the wiring: which artifacts
+   this process holds and what they say about this quarterback. */
+function qbContext(rec, ctx, teamKey, extra) {
+  extra = extra || {};
+  return QBC.build(rec, {
+    persistence: ctx.persistence,
+    efficiency_history: extra.efficiency_history === true,
+    availability_evidence: extra.availability_evidence || 'NONE',
+    availability_why: extra.availability_why || null
+  });
 }
 
-/* The measured band for a given last-game dropback share. A band the
-   calibration refused to publish for thin support comes back null, and the
-   engine then declares the starter's reliability unmeasured. */
-function persistenceFor(ctx, lastShare) {
-  const cal = ctx && ctx.persistence;
-  if (!cal || !Array.isArray(cal.by_band) || !isNum(lastShare)) return null;
-  /* bands are ordered high to low by min_share in the artifact; re-sorted
-     here so a reordering of the file cannot silently change the answer */
-  const bands = cal.by_band.slice().sort((a, b) => b.min_share - a.min_share);
-  const band = bands.filter(b => lastShare >= b.min_share)[0] || bands[bands.length - 1];
-  if (!band || !isNum(band.rate)) return null;
-  return { band: band.id, rate: band.rate, pairs: band.pairs, label: band.label,
-    source: cal.source || null, as_of: cal.generated_at || null };
-}
 
 /* What the player layer knows about the resolved starter. It is attached as
    research context and — because the whitelist is empty — never priced. */

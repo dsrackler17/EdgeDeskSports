@@ -81,7 +81,7 @@
   function M(value, opts) {
     opts = opts || {};
     var ok = isNum(value);
-    return {
+    var out = {
       value: ok ? value : null,
       available: ok,
       confidence: ok ? clamp(isNum(opts.confidence) ? opts.confidence : 1, 0, 1) : 0,
@@ -91,6 +91,14 @@
       basis: opts.basis || null,
       reason: ok ? null : (opts.reason || 'not supplied')
     };
+    /* A MEASUREMENT MAY SHOW ITS WORKING. A term built from several separately
+       measured parts has to publish them or the reader cannot see which part
+       is costing the score — the whole reason the information section exists.
+       The named fields above are the contract; these ride alongside and
+       nothing in the engine reads them. */
+    if (opts.components) out.components = opts.components;
+    if (opts.weights_basis) out.weights_basis = opts.weights_basis;
+    return out;
   }
   M.missing = function (reason, source) {
     return { value: null, available: false, confidence: 0, n: null,
@@ -599,7 +607,11 @@
       }
       for (i = 0; i < POS_GROUPS.length; i++) {
         gname = POS_GROUPS[i]; g = r.by_group[gname];
-        if (!g) { out.by_group[gname] = { talent: M.missing(gname + ' not present in roster bundle') }; continue; }
+        /* `roster_n` IS THE HEADCOUNT AND TRAVELS WITH THE MEASUREMENTS.
+           Without it a consumer cannot tell a group the feed files nobody
+           under from one it files twenty players under and measured nothing
+           about, and those are opposite statements. */
+        if (!g) { out.by_group[gname] = { roster_n: 0, talent: M.missing(gname + ' not present in roster bundle') }; continue; }
         c = isNum(g.n) ? clamp(g.n / 8, 0.2, 1) : 0.3;
         /* WHERE A CONFIDENCE TRAVELLED WITH THE VALUE, IT IS THE ONE USED.
            The roster-count proxy above was the only confidence available when
@@ -608,6 +620,7 @@
            of bodies for that is how a thinly-observed group came to look as
            certain as a heavily-observed one. */
         out.by_group[gname] = {
+          roster_n: isNum(g.n) ? g.n : null,
           talent: isNum(g.talent) ? M(g.talent, { n: g.n,
             confidence: isNum(g.talent_confidence) ? clamp(g.talent_confidence, 0, 1) : c,
             source: r.source, basis: g.talent_basis || 'roster composite' })
@@ -1020,26 +1033,46 @@
          NFL side of the same build does reach them. */
       DECLARED_STATUS: { ANNOUNCED: 0.95, DEPTH_CHART: 0.9, EXPECTED: 0.8 },
 
-      /* One side's quarterback: HOW WELL IS HE KNOWN, which is not what he
-         is worth. Returns missing when nothing was supplied — an unsupplied
-         starter is not a well-known one — and 0 when a starter genuinely
-         could not be resolved, which is a measurement rather than a gap.
+      /* ─────────────────────────────────────────────────────────────────
+         THE QUARTERBACK EVIDENCE CONTRACT — four questions, kept apart.
 
-         For the state that covers essentially the whole college field —
-         PREVIOUS_GAME, "he opened the last one" — the confidence is the
-         MEASURED rate at which that holds, supplied by the caller from
-         football/starters/persistence.json: 10,843 consecutive-game pairs
-         over four seasons, bucketed by the share of that game's dropbacks
-         the opener took. It is not a number anybody picked. It also
-         discriminates in a way a picked number could not have: an opener who
-         took 85%+ of the dropbacks opens the next game 87% of the time,
-         while one who opened and immediately handed it over does so 12% of
-         the time, and those two situations were previously indistinguishable
-         to this score.
+         WHAT THIS TERM IS FOR. It carries the largest weight in the table
+         (1.0 of 4.083, equal to the whole rating) and its contract is "how
+         good is my information about the quarterback input". The
+         implementation answered a strictly narrower question — "will the
+         same man open this game" — and therefore scored a fifteen-start,
+         id-resolved quarterback with 547 measured dropbacks and a joined
+         EPA history IDENTICALLY to an anonymous passer who happened to take
+         the same share of one game. Those two are not equally known, and a
+         term that cannot tell them apart is the same defect the rest of this
+         section was written to fix, one level down.
 
-         No calibration supplied means the rate is not known, and this
-         returns missing rather than substituting a constant. That is the
-         same rule persistence.json applies to its own thin bands. */
+         So the four things the reader is entitled to see separately are
+         measured separately, and the score is their declared-weight blend:
+
+           who_starts     do we expect him to open this one. The DECLARED
+                          tier where a game has one, otherwise the MEASURED
+                          persistence rate. No calibration still means the
+                          whole term is missing, exactly as before.
+           identity       do we know who this player is — an athlete id,
+                          corroborated against the CURRENT roster.
+           observed       have we measured him: dropbacks and starts off the
+                          play feed, and an efficiency history that resolved.
+           available      is there EXPLICIT evidence he can play. Silence is
+                          zero here and can never be anything else.
+
+         THE WEIGHTS ARE DECLARED, NOT FITTED, and say so — the same standard
+         DECLARED_STATUS is held to. They are deliberately weighted toward
+         who_starts, because a resolved identity for the wrong man is not
+         information about this game.
+
+         WHAT CANNOT HAPPEN HERE. An unresolved starter still scores zero on
+         every component. An unknown availability still contributes nothing
+         — there is no default-healthy path. A projection is never promoted
+         to a confirmation: `announced` is not read and cannot be. And every
+         component is published in the measurement so the reader can see
+         which one is costing the score. */
+      QB_EVIDENCE_WEIGHTS: { who_starts: 0.50, identity: 0.15, observed: 0.20, available: 0.15 },
       quarterback: function (ctx, which) {
         var I = uncertainty.information;
         if (!ctx) return M.missing('no starter context supplied for ' + which
@@ -1051,37 +1084,97 @@
         }
         var declared = I.DECLARED_STATUS[status];
         var pers = ctx.persistence || null;
-        var v = null, basis = null, n = null;
+        var starts = null, basis = null, n = null;
         if (isNum(declared)) {
-          v = declared;
+          starts = declared;
           basis = status.toLowerCase().replace(/_/g, ' ') + ' for this game — a declared confidence, '
             + 'not a measured one: no college programme currently reaches this state';
         } else if (pers && isNum(pers.rate)) {
-          v = pers.rate;
+          starts = pers.rate;
           n = isNum(pers.pairs) ? pers.pairs : null;
           basis = (ctx.player || 'the starter') + ' opened the last game'
             + (isNum(ctx.last_game_share) ? ' and took ' + Math.round(ctx.last_game_share * 100) + '% of its dropbacks' : '')
-            + '; openers in the "' + pers.band + '" band went on to open the next game '
+            + (pers.run_label ? ' ' + pers.run_label : '')
+            + '; openers in the "' + pers.band + '" cell went on to open the next game '
             + Math.round(pers.rate * 100) + '% of the time over ' + (n == null ? 'the measured window' : n + ' pairs');
         } else {
           return M.missing('a starter is resolved for ' + which + ' (' + (ctx.player || ctx.player_id)
             + ') but no persistence calibration was supplied, so how reliably that predicts this game '
             + 'is not measured — run football/starters/calibrate_persistence.js');
         }
-        /* an identity that was not corroborated against the current roster is
-           a name in a feed, not a player on this team */
-        if (ctx.identity_corroborated === false) v *= 0.85;
-        /* a record two sources disagree about, or one past its freshness
-           floor, is not a clean read whatever the band says */
+
+        /* --- identity: do we know who this is ---------------------------- */
+        var identity = 0, idWhy;
+        if (ctx.identity_corroborated === false) {
+          identity = 0.5;
+          idWhy = 'resolved to an athlete id but NOT corroborated against the current roster — a name in a feed';
+        } else if (ctx.player_id) {
+          identity = 1;
+          idWhy = 'resolved on an athlete id and corroborated against the current-season roster';
+        } else { identity = 0; idWhy = 'no athlete id'; }
+
+        /* --- observed: have we measured him ------------------------------ */
+        var observed = 0, obWhy;
+        var vol = isNum(ctx.dropbacks) ? ctx.dropbacks : null;
+        var st = isNum(ctx.starts) ? ctx.starts : null;
+        var hist = ctx.efficiency_history === true;
+        if (vol != null && vol > 0 && hist) {
+          observed = 1;
+          obWhy = vol + ' measured dropbacks over ' + (st == null ? 'an unstated number of' : st) + ' starts, '
+            + 'with a measured efficiency history joined on the same athlete id';
+        } else if (vol != null && vol > 0) {
+          observed = 0.6;
+          obWhy = vol + ' measured dropbacks over ' + (st == null ? 'an unstated number of' : st)
+            + ' starts, but no efficiency history resolved for him';
+        } else if (hist) {
+          observed = 0.4;
+          obWhy = 'an efficiency history resolved, but no dropback volume was observed for him in this window';
+        } else { observed = 0; obWhy = 'nothing measured: no attributed dropback and no efficiency history'; }
+
+        /* --- available: EXPLICIT evidence only --------------------------- */
+        var available = 0, avWhy;
+        if (ctx.availability_evidence === 'EXPLICIT') {
+          available = 1;
+          avWhy = 'an availability source names him and states a status';
+        } else if (ctx.availability_evidence === 'COMPREHENSIVE_SILENCE') {
+          /* a report that covers every player on the roster and names him
+             nowhere IS a statement that he is available. Only a source the
+             policy registry marks comprehensive may reach this. */
+          available = 1;
+          avWhy = 'a comprehensive availability report for this game names nobody on this roster, which is a '
+            + 'report of no absences rather than an absence of a report';
+        } else {
+          available = 0;
+          avWhy = 'no source states whether he can play. Silence is not health and scores nothing here';
+        }
+
+        var W = I.QB_EVIDENCE_WEIGHTS;
+        var v = W.who_starts * clamp(starts, 0, 1) + W.identity * identity
+          + W.observed * observed + W.available * available;
+
+        /* THE DISCOUNTS STILL APPLY, and apply to the whole blend: a record
+           two sources disagree about is not a clean read however much of the
+           rest of the contract is filled. */
+        if (ctx.contested === true) v *= 0.9;
         if (ctx.field_state === 'CONFLICTING') v *= 0.8;
         if (ctx.field_state === 'STALE') v *= 0.7;
         v = clamp(v, 0, 1);
+
         return M(v, { n: n, confidence: v, as_of: ctx.as_of || null,
           source: ctx.source || 'EdgeDesk starter context',
+          components: {
+            who_starts: { value: clamp(starts, 0, 1), weight: W.who_starts, basis: basis },
+            identity: { value: identity, weight: W.identity, basis: idWhy },
+            observed: { value: observed, weight: W.observed, basis: obWhy },
+            available: { value: available, weight: W.available, basis: avWhy }
+          },
+          weights_basis: 'declared, not fitted, and weighted toward who_starts because a resolved identity for '
+            + 'the wrong man is not information about this game',
           basis: basis
-            + (ctx.identity_corroborated === false ? ', discounted: identity not corroborated against the roster' : '')
-            + (ctx.field_state === 'CONFLICTING' ? ', discounted: sources conflict' : '')
-            + (ctx.field_state === 'STALE' ? ', discounted: the record is stale' : '') });
+            + '. Identity: ' + idWhy + '. Measured: ' + obWhy + '. Availability: ' + avWhy
+            + (ctx.contested === true ? '. Discounted: the room is contested' : '')
+            + (ctx.field_state === 'CONFLICTING' ? '. Discounted: sources conflict' : '')
+            + (ctx.field_state === 'STALE' ? '. Discounted: the record is stale' : '') });
       },
 
       /* THE RATING GAP: the blend is TWO sources of information, and this
@@ -1164,10 +1257,29 @@
       roster: function (prof, which) {
         if (!prof || !prof.by_group) return M.missing('no roster profile for ' + which);
         var FIELDS = ['talent', 'experience', 'continuity', 'returning_production', 'portal_in', 'portal_out'];
-        var got = 0, tot = 0, i, j, g, m;
+        var got = 0, tot = 0, i, j, g, m, empty = [], groups = 0;
         for (i = 0; i < POS_GROUPS.length; i++) {
           g = prof.by_group[POS_GROUPS[i]];
-          if (!g) continue;
+          /* A POSITION GROUP WITH NOBODY IN IT IS NOT A MEASUREMENT EDGEDESK
+             FAILED TO MAKE. This denominator was sixteen groups on every team
+             in the universe, and the roster feed's own taxonomy does not
+             produce sixteen: it files edge rushers under DL and LB, files
+             every defensive back under DB, and files nobody at all under RET
+             or ATH. Those groups arrived carrying zero players and six empty
+             fields each, and the score charged the team for all of them --
+             about a quarter of the contract, lost to a vocabulary mismatch
+             rather than to anything actually unknown. Every one of those
+             players IS counted, under the group the feed filed him in.
+
+             So a group the roster WAS READ FOR and found empty is excluded,
+             exactly as football/matchup/inputs.js excludes a dome from the
+             weather denominator. A group that carries players and no
+             measurements still counts all six of its fields as missing, which
+             is the case this must not weaken, and the basis names every group
+             it dropped so the exclusion is auditable rather than silent. */
+          if (!g) { empty.push(POS_GROUPS[i]); continue; }
+          if (isNum(g.roster_n) && g.roster_n === 0) { empty.push(POS_GROUPS[i]); continue; }
+          groups++;
           for (j = 0; j < FIELDS.length; j++) {
             tot++;
             m = g[FIELDS[j]];
@@ -1176,13 +1288,16 @@
         }
         tot++;
         if (prof.overall && prof.overall.available) got += clamp(prof.overall.confidence, 0, 1);
-        if (!tot) return M.missing('no position groups present in the roster bundle for ' + which);
+        if (tot <= 1) return M.missing('no position group in the roster bundle for ' + which + ' carries a player');
         var v = clamp(got / tot, 0, 1);
         if (!(v > 0)) return M.missing('nothing in the roster contract was measurable for ' + which);
         return M(v, { n: tot, confidence: v, as_of: prof.as_of || null, source: prof.source || 'roster layer',
-          basis: 'the share of the roster layer\u2019s own contract that was filled and how well — '
-            + tot + ' fields across the position groups (talent, class mix, continuity, returning '
-            + 'production and portal flow), each counted at its measured confidence rather than assumed' });
+          basis: 'the share of the roster layer’s own contract that was filled and how well — '
+            + tot + ' fields across the ' + groups + ' position groups this roster actually carries players in '
+            + '(talent, class mix, continuity, returning production and portal flow), each counted at its '
+            + 'measured confidence rather than assumed'
+            + (empty.length ? '. No player on this roster is filed under ' + empty.join(', ')
+              + ', so those groups are excluded from the denominator rather than counted as gaps' : '') });
       },
 
       /* AVAILABILITY: how good is my information about who can play.
@@ -1326,8 +1441,29 @@
     var T = req.teams || {};
     if (!T.home || !T.home.roster) warn.push('home roster not supplied — talent, continuity and youth layers are blind');
     if (!T.away || !T.away.roster) warn.push('away roster not supplied — talent, continuity and youth layers are blind');
-    if (!T.home || !T.home.qb) warn.push('home starting QB unknown');
-    if (!T.away || !T.away.qb) warn.push('away starting QB unknown');
+    /* WHO IS PLAYING QUARTERBACK IS NOT `teams.*.qb`, AND HAS NOT BEEN SINCE
+       the starter layer shipped. `qb` is the PRICED input — an EPA-per-
+       dropback object the college side deliberately leaves null, because the
+       published EPA series is not on the scale this coefficient was fitted
+       against. Testing it for null therefore asked "is the QB layer priced",
+       got "no" on all 138 programmes as designed, and printed "starting QB
+       unknown" on 86 games where football/starters/ had resolved the starter
+       by athlete id and corroborated him against the current roster.
+
+       The warning is about INFORMATION, so it reads the information object,
+       and it says which of the five states actually holds. An unknown starter
+       is still a warning; a resolved one is not a warning at all. */
+    ['home', 'away'].forEach(function (side) {
+      var t = T[side] || null;
+      var c = t && t.qb_context;
+      if (!c || !c.player_id) { warn.push(side + ' starting quarterback unknown — no starter resolved'); return; }
+      var st = String(c.status || 'UNKNOWN').toUpperCase();
+      if (st === 'UNKNOWN') { warn.push(side + ' starting quarterback unknown — a record exists but resolves nobody'); return; }
+      if (st === 'COMPETITION') warn.push(side + ' quarterback is contested — the evidence names more than one starter');
+      else if (c.identity_corroborated === false) warn.push(side + ' starting quarterback (' + (c.player + '') + ') is not corroborated against the current roster');
+      else if (c.field_state === 'CONFLICTING') warn.push(side + ' starting quarterback evidence conflicts between sources');
+      else if (c.field_state === 'STALE') warn.push(side + ' starting quarterback record is past its freshness floor');
+    });
     if (!req.venue) warn.push('venue geography not supplied — travel, altitude and venue HFA fall back to league means');
     if (!req.weather) warn.push('weather not supplied');
     if (!T.home || T.home.injuries == null) warn.push('home injury report not supplied');
@@ -2015,7 +2151,25 @@
        So the priced number is used where the layer is priced, and the
        measured distance where it is not. Nothing here changes what travel
        contributes to the spread: that is still zero, and still says why. */
-    var travelInfo = avail(travel.points) ? travel.points : travel.miles;
+    /* A NEUTRAL SITE HAS NO TRAVEL ASYMMETRY TO KNOW ABOUT, and that is a
+       COMPLETE answer rather than a partial one.
+
+       The comment above says counting a question that does not arise as an
+       information gap is an error, and the fallback made it anyway in two
+       ways. With no away coordinates it read as a hole. With them, it read as
+       the distance between two home stadiums neither team is travelling from
+       — a 95%-confident measurement of the wrong quantity, costing a residual
+       the input contract (which marks the away venue NOT_APPLICABLE at a
+       neutral site) said should not exist. The confidence ledger found both;
+       this is the side of the disagreement that was wrong.
+
+       The schedule feed DECLARES the neutral site, so "is there a travel
+       asymmetry the model should price here" is answered exactly: no. */
+    var travelInfo = neutral
+      ? M(0, { confidence: 1, source: 'schedule feed',
+          basis: 'neutral site, declared by the schedule feed: there is no travel asymmetry between these teams '
+            + 'for this game, so the question is answered rather than unanswered. It moves no point either way' })
+      : (avail(travel.points) ? travel.points : travel.miles);
 
     var confInputs = {
       rating: uncertainty.information.ratingGap(ratingGap, H, A), qb: qbInfo,

@@ -149,9 +149,25 @@
           + 'and every roster reports no talent composite' };
     }
     var asOf = layer.generated_at || null;
+    /* THE LABEL THAT WAS DOING TOO MUCH WORK.
+
+       This read "15542 rated players, 1746 with attributed production" and
+       was wrong about which population the 1746 is. It is the count with a
+       computable career QUALITY SCORE, which needs events, then enough of
+       them to clear a measure's own minimum, then a season whose baseline
+       cleared its coverage floor. The count WITH ATTRIBUTED PRODUCTION is
+       three times larger. football/players/attribution_audit.js separates the
+       five causes behind the difference; this string now names the population
+       it is actually reporting instead of the one a reader assumed. */
+    var withEvents = layer.rated_with_any_attributed_event;
     var source = 'EdgeDesk player layer ' + (layer.season == null ? '' : layer.season)
       + (layer.week == null ? '' : (' wk' + layer.week)) + ' (' + (layer.player_count || '?')
-      + ' rated players, ' + (layer.rated_with_production || '?') + ' with attributed production)';
+      + ' rated players'
+      + (isNum(withEvents) ? ', ' + withEvents + ' with an attributed event' : '')
+      + ', ' + (layer.rated_with_production || '?') + ' with a computable career quality score'
+      + (isNum(layer.rated_with_production_this_season)
+        ? ', ' + layer.rated_with_production_this_season + ' this season so far' : '')
+      + ')';
     var tot = { overall: 0, groups: 0, experience: 0, production: 0, continuity: 0 }, teams = 0;
 
     for (k in layer.teams) {

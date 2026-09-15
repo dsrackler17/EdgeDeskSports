@@ -198,11 +198,23 @@ function espnRosterPositions(season) {
   const out = {};
   if (!j || !j.teams) return { by_id: out, source: null };
   for (const t of (j.teams || [])) {
+    /* the team keys the same way the rest of this build keys a team, so an
+       athlete added from here lands on the same programme the play feed
+       attributes his events to */
+    /* LOCATION FIRST, exactly as football/rosters/espn_to_bundles.js keys a
+       team. `display_name` is "Kentucky Wildcats" and would key `kentuckywildcats`,
+       which is a team no other artifact in this repository has heard of. */
+    const teamName = t.location || t.display_name || t.team || t.name;
+    const key = tk(teamName);
     for (const p of (t.players || t.athletes || [])) {
       const id = p.espn_id || p.espn_player_id || p.id;
       const pos = p.position || p.pos;
       if (!id || !pos) continue;
-      out[String(id)] = { pos: pos, prior_school: p.previous_school || null, class_year: p.class || null };
+      out[String(id)] = { pos: pos, prior_school: p.previous_school || null, class_year: p.class || null,
+        /* carried so refinePositions() can ADD an athlete the provider roster
+           omits, not merely correct one it listed */
+        name: p.name || p.player || p.fullName || p.displayName || null,
+        team: teamName || null, team_key: key || null, jersey: p.jersey || null };
     }
   }
   return { by_id: out, source: `football/rosters/fbs_${season}_espn.json` };
@@ -219,7 +231,39 @@ function refinePositions(roster, espn) {
     const cand = String(e.pos).toUpperCase().replace(/[^A-Z]/g, '');
     if (SPECIFIC[cand] && (COARSE[cur] || !cur)) { r.pos = e.pos; r.pos_source = 'espn_sync_refined'; refined++; }
   }
+  /* A PLAYER THE PROVIDER'S ROSTER TABLE OMITS IS STILL A PLAYER.
+
+     This loop used to only REFINE athletes the provider had already listed,
+     so an athlete missing from cfbfastR's roster table was missing from the
+     rating too — even when EdgeDesk's own ESPN sync carried him, with his
+     position, and the provider's PLAY table was attributing carries and
+     catches to his athlete id. football/players/attribution_audit.js found
+     forty-five of them, one with twenty-two attributed events, all rated at
+     positional replacement with no position and therefore no measurable
+     contract at all. Their production was on disk the whole time.
+
+     So an athlete EdgeDesk's own roster covers and the provider's does not is
+     ADDED, from EdgeDesk's sync, with `roster_source` saying where he came
+     from. Nothing is invented: he is on an FBS roster this repository
+     retrieved, and every measure still has to clear its own floor. */
+  let added = 0;
+  for (const id of Object.keys(espn.by_id)) {
+    if (roster.players[id]) continue;
+    const e = espn.by_id[id];
+    if (!e || !e.pos || !e.team_key) continue;
+    roster.players[id] = {
+      athlete_id: String(id), name: e.name || null,
+      team: e.team || null, team_key: e.team_key,
+      pos: e.pos, pos_source: 'espn_sync_only',
+      roster_source: 'EdgeDesk ESPN roster sync — this athlete is absent from the provider roster table',
+      height_in: null, weight_lb: null, jersey: e.jersey || null,
+      class_year: e.class_year || null
+    };
+    added++;
+  }
   roster.refined_positions = refined;
+  roster.added_from_espn = added;
+  roster.count = Object.keys(roster.players).length;
   roster.espn_source = espn.source;
   return roster;
 }
@@ -256,13 +300,15 @@ async function loadRoster(season) {
   if (j && j.teams) {
     const out = {};
     for (const t of j.teams) {
-      const key = tk(t.display_name || t.team || t.location || t.name);
+      /* same ordering as espnRosterPositions() above and as
+         football/rosters/espn_to_bundles.js: one spelling of a team key */
+      const key = tk(t.location || t.display_name || t.team || t.name);
       for (const p of (t.players || t.athletes || [])) {
         const id = p.espn_id || p.espn_player_id || p.id;
         if (!id) continue;
         out[String(id)] = {
           athlete_id: String(id), name: p.name || p.player || p.fullName || p.displayName || null,
-          team: t.display_name || t.team || t.location, team_key: key, pos: p.position || null,
+          team: t.location || t.display_name || t.team, team_key: key, pos: p.position || null,
           height_in: null, weight_lb: null, jersey: p.jersey || null,
           class_year: p.class || null, prior_school: p.previous_school || null
         };

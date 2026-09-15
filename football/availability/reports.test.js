@@ -1,0 +1,256 @@
+#!/usr/bin/env node
+/* ============================================================================
+   AN EMPTY RESPONSE IS NEVER A CLEAN BILL OF HEALTH.
+
+   Everything in the availability layer turns on one distinction, and every way
+   of losing it is tested here:
+
+     a source that named nobody         a report, if and only if that source
+                                        designates every player
+     a source that could not be read    a FAILED READ, always
+     a report that was not required     a fact about the fixture, never about
+                                        anybody's fitness
+     a report not yet due               a document that does not exist yet
+     a roster listing                   not evidence of anything
+
+   It also holds the policy registry to what it actually says: conference
+   reports cover CONFERENCE games, three of the registered conferences file
+   only absences rather than designating everybody, and two are recorded as
+   UNVERIFIED rather than as publishing nothing.
+   ========================================================================== */
+'use strict';
+const path = require('path');
+const R = require(path.join(__dirname, 'reports.js'));
+const POLICY = require(path.join(__dirname, 'policy.js'));
+const OPERATOR = require(path.join(__dirname, 'operator.js'));
+const OVERLAY = require(path.join(__dirname, 'overlay.js'));
+const PDF = require(path.join(__dirname, 'pdf_text.js'));
+const zlib = require('zlib');
+
+let pass = 0, fail = 0;
+function chk(what, cond, detail) {
+  if (cond) { pass++; return; }
+  fail++; console.error('  FAIL | ' + what + (detail === undefined ? '' : '  ' + JSON.stringify(detail)));
+}
+function section(t) { console.log('\n' + t); }
+
+const NOW = Date.parse('2026-09-17T12:00:00Z');
+const ROSTER = [
+  { name: 'Carson Beck', position: 'QB', espn_id: '1' },
+  { name: 'Rueben Bain Jr.', position: 'DL', espn_id: '2' },
+  { name: 'Darian Mensah', position: 'QB', espn_id: '3' }
+];
+const BASE = { conference: 'ACC', team: 'Miami', roster: ROSTER, source_url: 'https://theacc.com/x',
+  published_at: '2026-09-17T02:00:00Z', game_id: '401858226', kickoff: '2026-09-18T23:30:00Z',
+  is_conference_game: true, now: NOW };
+
+/* ═════ 1. the policy registry says what it knows and no more ═════════ */
+section('1. the policy registry — scope, vocabulary, and what it has not checked');
+{
+  chk('every registered conference carries a state', POLICY.CONFERENCES.every(c => !!c.state));
+  chk('every PUBLISHED conference carries a url and a source for the claim',
+    POLICY.published().every(c => !!c.report_url && !!c.source),
+    POLICY.published().filter(c => !c.report_url || !c.source).map(c => c.id));
+  chk('every PUBLISHED policy covers conference games only — none claims to cover a non-conference fixture',
+    POLICY.published().every(c => c.applies_to === 'CONFERENCE_GAMES'),
+    POLICY.published().map(c => c.id + '=' + c.applies_to));
+  /* THE THING THE TASK NAMES: not every conference publishes the same report */
+  const comp = POLICY.published().filter(c => c.comprehensive).map(c => c.id);
+  const sel = POLICY.published().filter(c => !c.comprehensive).map(c => c.id);
+  chk('some conferences designate every player and some file only absences, and they are not treated alike',
+    comp.length > 0 && sel.length > 0, { comprehensive: comp, selected: sel });
+  chk('a conference that files only OUT/QUESTIONABLE can never mean everybody else is available',
+    POLICY.published().filter(c => !c.comprehensive).every(c => !POLICY.silenceMeansAvailable(c)));
+  chk('an UNVERIFIED conference is recorded as unresearched, NOT as publishing nothing',
+    POLICY.CONFERENCES.filter(c => c.state === 'UNVERIFIED')
+      .every(c => /gap in EdgeDesk|not a finding/i.test(c.why || '')),
+    POLICY.CONFERENCES.filter(c => c.state === 'UNVERIFIED').map(c => c.id));
+
+  const nonConf = POLICY.forGame({ home_conference: 'Big Ten', away_conference: 'Missouri Valley',
+    is_conference_game: false, kickoff: '2026-09-19T23:00:00Z' }, 'home', NOW);
+  chk('a non-conference fixture requires no report', nonConf.state === 'NOT_REQUIRED_FOR_THIS_GAME');
+  chk('and says so without implying anybody is fit',
+    /not.*evidence that anybody is healthy/i.test(nonConf.why), nonConf.why);
+
+  const early = POLICY.forGame({ home_conference: 'ACC', away_conference: 'ACC', is_conference_game: true,
+    kickoff: '2026-09-25T23:00:00Z' }, 'home', NOW);
+  chk('a conference game outside the filing window is NOT_DUE_YET, not missing', early.state === 'NOT_DUE_YET');
+  const due = POLICY.forGame({ home_conference: 'ACC', away_conference: 'ACC', is_conference_game: true,
+    kickoff: '2026-09-18T23:30:00Z' }, 'home', NOW);
+  chk('and inside it the report is REQUIRED, with the url to fetch',
+    due.state === 'REQUIRED' && /theacc\.com/.test(due.report_url || ''), due);
+  const unknownConf = POLICY.forGame({ home_conference: 'Some New League', away_conference: 'Some New League',
+    is_conference_game: true, kickoff: '2026-09-18T23:30:00Z' }, 'home', NOW);
+  chk('an unregistered conference is UNREGISTERED, not "no policy"', unknownConf.state === 'UNREGISTERED');
+  chk('and says it is an open question rather than a settled finding',
+    /open question/i.test(unknownConf.why), unknownConf.why);
+}
+
+/* ═════ 2. reading a document ════════════════════════════════════════ */
+section('2. what a read produces, and what a failed read produces');
+{
+  const table = '<table><tr><td>Carson Beck</td><td>QB</td><td>Out</td></tr>'
+    + '<tr><td>Rueben Bain Jr.</td><td>DL</td><td>Questionable</td></tr></table>';
+  const r = R.ingest(Object.assign({}, BASE, { body: table, content_type: 'text/html' }));
+  chk('a filed report resolves its named players', r.ok && r.rows.length === 2, r.rows);
+  chk('statuses come from the document, mapped into the vocabulary',
+    r.rows.map(x => x.status).sort().join(',') === 'OUT,QUESTIONABLE', r.rows.map(x => x.status));
+  chk('each row carries the position from the ROSTER, not from the document',
+    r.rows.every(x => !!x.position));
+  chk('the publication time and the retrieval time are separate fields',
+    r.published_at === BASE.published_at && r.retrieved_at !== r.published_at, r);
+  chk('the report records the conference scope it was filed under', r.scope === 'CONFERENCE_GAMES');
+  chk('and whether silence about a player means anything', r.comprehensive === true);
+
+  /* THE CORE GUARANTEE, FOUR WAYS */
+  const empty = R.ingest(Object.assign({}, BASE, { body: '', content_type: 'text/html' }));
+  chk('an EMPTY response is a failed read, never a report', empty.ok === false, empty);
+  chk('and it can never mean nobody is out', empty.silence_means_available !== true, empty);
+  const blocked = R.ingest(Object.assign({}, BASE, { body: null, content_type: 'text/html' }));
+  chk('a blocked request is a failed read too', blocked.ok === false);
+  const scan = R.ingest(Object.assign({}, BASE,
+    { body: Buffer.from('%PDF-1.4\nnothing here\n%%EOF'), content_type: 'application/pdf' }));
+  chk('a PDF this reader cannot extract is a failed read, never an empty report',
+    scan.ok === false && /could not be read/.test(scan.why), scan.why);
+  const undated = R.ingest(Object.assign({}, BASE, { body: table, content_type: 'text/html', published_at: null }));
+  chk('an undated document is refused rather than dated from when EdgeDesk read it',
+    undated.ok === false && /no publication date/.test(undated.why), undated.why);
+  const future = R.ingest(Object.assign({}, BASE, { body: table, content_type: 'text/html',
+    published_at: '2027-01-01T00:00:00Z' }));
+  chk('a document dated in the future is refused', future.ok === false && /in the future/.test(future.why));
+
+  /* the ONE route from silence to available, and the one that is not */
+  const quiet = R.ingest(Object.assign({}, BASE, { body: '<p>No Miami players are listed this week.</p>',
+    content_type: 'text/html' }));
+  chk('a COMPREHENSIVE report read in full and naming nobody IS a report of no absences',
+    quiet.ok === true && quiet.silence_means_available === true, quiet.why);
+  const selective = R.ingest(Object.assign({}, BASE, { conference: 'Mountain West', team: 'Miami',
+    body: '<p>Nobody listed.</p>', content_type: 'text/html' }));
+  chk('the same silence from a conference that files only absences says nothing',
+    selective.ok === true && selective.silence_means_available === false, selective.why);
+  chk('and it says why rather than leaving the reader to infer it',
+    /not a statement that the roster is whole/.test(selective.why), selective.why);
+
+  /* a status outside the conference's published vocabulary */
+  const odd = R.ingest(Object.assign({}, BASE, { body: '<table><tr><td>Carson Beck</td><td>Probable</td></tr></table>',
+    content_type: 'text/html' }));
+  chk('a designation the conference does not publish is quarantined, not mapped onto a neighbour',
+    odd.rows.length === 0 && odd.unparsed.length === 1
+      && /not in this conference/.test(odd.unparsed[0].why || ''), odd.unparsed);
+
+  /* a name that is not on the roster cannot become a player */
+  const stray = R.ingest(Object.assign({}, BASE,
+    { body: '<table><tr><td>Somebody Nobody</td><td>QB</td><td>Out</td></tr></table>', content_type: 'text/html' }));
+  chk('a name not on the roster never becomes a player', stray.rows.length === 0, stray.rows);
+}
+
+/* ═════ 3. PDFs ══════════════════════════════════════════════════════ */
+section('3. a PDF is read or refused, never half-read');
+{
+  const content = 'BT (Miami Availability) Tj T* (Carson Beck QB OUT) Tj T* (Rueben Bain Jr. DL QUESTIONABLE) Tj ET';
+  const z = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([Buffer.from('%PDF-1.4\n'),
+    Buffer.from('1 0 obj << /Length ' + z.length + ' /Filter /FlateDecode >> stream\n'), z,
+    Buffer.from('\nendstream endobj\n%%EOF\n')]);
+  const out = PDF.extract(pdf);
+  chk('a text PDF extracts its lines', out.ok && out.lines.length === 3, out);
+  const r = R.ingest(Object.assign({}, BASE, { body: pdf, content_type: 'application/pdf' }));
+  chk('and ingests to resolved players', r.ok && r.rows.length === 2, r.rows.map(x => x.player_name + '=' + x.status));
+  chk('the format is recorded so a parser gap is attributable', r.format === 'pdf');
+  const notPdf = PDF.extract(Buffer.from('<html>error page</html>'));
+  chk('an error page served as a PDF is refused with the reason',
+    notPdf.ok === false && /not a PDF/.test(notPdf.why), notPdf.why);
+}
+
+/* ═════ 4. conflicts ═════════════════════════════════════════════════ */
+section('4. two filings, one player — the later one wins and the earlier one is kept');
+{
+  const a = { player_name: 'Carson Beck', player_id: '1', game_id: 'g1', status: 'QUESTIONABLE',
+    published_at: '2026-09-17T02:00:00Z', retrieved_at: '2026-09-17T03:00:00Z', source_url: 'u1' };
+  const b = { player_name: 'Carson Beck', player_id: '1', game_id: 'g1', status: 'OUT',
+    published_at: '2026-09-18T20:00:00Z', retrieved_at: '2026-09-18T21:00:00Z', source_url: 'u2' };
+  const rec = R.reconcile([a], [b]);
+  chk('the later filing wins', rec.records.length === 1 && rec.records[0].status === 'OUT', rec.records);
+  chk('the earlier one is kept beside it rather than overwritten',
+    !!rec.records[0].superseded && rec.records[0].superseded.status === 'QUESTIONABLE', rec.records[0]);
+  chk('and the conflict is recorded with both sources', rec.conflicts.length === 1
+    && rec.conflicts[0].resolved_by === 'the later filing', rec.conflicts);
+
+  const tie = R.reconcile([a], [Object.assign({}, b, { published_at: a.published_at })]);
+  chk('two filings at the same instant with different statuses are NOT resolved',
+    tie.conflicts.length === 1 && tie.conflicts[0].resolved_to === null, tie.conflicts);
+  chk('and the record is marked conflicting rather than silently picking one',
+    tie.records[0].conflicting === true, tie.records[0]);
+}
+
+/* ═════ 5. the operator door is narrow ═══════════════════════════════ */
+section('5. an operator correction needs a source, a date, a fixture and an author');
+{
+  const good = { kind: 'AVAILABILITY', team: 'Miami', player: 'Carson Beck', status: 'OUT',
+    game_id: '401858226', kickoff: '2026-09-18T23:30:00Z', source_name: 'ACC report',
+    source_url: 'https://theacc.com/x', published_at: '2026-09-17T02:00:00Z',
+    recorded_by: 'ops', recorded_at: '2026-09-17T03:00:00Z' };
+  chk('a complete entry is accepted', OPERATOR.validate(good, NOW).ok === true);
+  chk('and it expires', !!OPERATOR.validate(good, NOW).entry.expires_at);
+  [['source_url', 'not a url'], ['published_at', null], ['recorded_by', null], ['player', null],
+    ['source_name', null]].forEach(([k, v]) => {
+    const bad = Object.assign({}, good); bad[k] = v;
+    chk('an entry with no valid ' + k + ' is refused outright', OPERATOR.validate(bad, NOW).ok === false);
+  });
+  const noFixture = Object.assign({}, good); delete noFixture.game_id; delete noFixture.kickoff;
+  chk('an entry with no fixture and no expiry is refused — a permanent claim is not accepted',
+    OPERATOR.validate(noFixture, NOW).ok === false);
+  const blogStarter = { kind: 'STARTER', team: 'Miami', player: 'Darian Mensah', position: 'QB', confirmed: true,
+    game_id: 'g', source_name: 'a blog', source_url: 'https://example.com/p',
+    published_at: '2026-09-17T02:00:00Z', recorded_by: 'ops', recorded_at: '2026-09-17T03:00:00Z' };
+  const v = OPERATOR.validate(blogStarter, NOW);
+  chk('an operator cannot promote a projection to a confirmation without an official source',
+    v.ok && v.entry.confirmed === false && !!v.entry.downgraded_why, v.entry);
+  const official = OPERATOR.validate(Object.assign({}, blogStarter,
+    { source_url: 'https://hurricanesports.com/news/x' }), NOW);
+  chk('an official source may carry one', official.entry.confirmed === true && official.entry.tier === 1);
+  chk('there is no status meaning "everybody is available"',
+    OPERATOR.STATUSES.indexOf('ALL_AVAILABLE') < 0 && OPERATOR.STATUSES.indexOf('HEALTHY') < 0,
+    OPERATOR.STATUSES);
+  const expired = OPERATOR.load({ entries: [Object.assign({}, good,
+    { expires_at: '2026-09-01T00:00:00Z' })] }, NOW);
+  chk('an expired entry stops being applied and is published as expired',
+    expired.live.length === 0 && expired.expired.length === 1);
+  const refused = OPERATOR.load({ entries: [{ kind: 'AVAILABILITY' }] }, NOW);
+  chk('a half-filled entry is published as refused rather than sitting silently inert',
+    refused.refused.length === 1 && refused.refused[0].why.length > 0, refused.refused);
+}
+
+/* ═════ 6. the overlay grades what is actually on file ════════════════ */
+section('6. the merged view never grades a failed read as a clean one');
+{
+  const current = { teams: { m: { team_id: '2390', team_name: 'Miami', team_display: 'Miami Hurricanes',
+    dataQuality: 'LIMITED', players: [], counts: {} } } };
+  const failedRead = { schema: R.SCHEMA, team: 'Miami', ok: false, rows: [],
+    source_url: 'u', why: 'HTTP 403', retrieved_at: '2026-09-17T03:00:00Z' };
+  const a = OVERLAY.build({ current, operator: { live: [] }, reports: [failedRead], now: NOW });
+  chk('a failed read does not raise the grade', a.teams.m.dataQuality === 'LIMITED', a.teams.m.dataQuality);
+  chk('and it is recorded as a failed read, with the reason',
+    !!a.teams.m.official_report_failed && /403/.test(a.teams.m.official_report_failed.why));
+  chk('the team is NOT given a report object it does not have', a.teams.m.official_report === null);
+
+  const real = { schema: R.SCHEMA, team: 'Miami', ok: true, comprehensive: true, silence_means_available: false,
+    conference: 'Atlantic Coast Conference', source_url: 'u', published_at: '2026-09-17T02:00:00Z',
+    retrieved_at: '2026-09-17T03:00:00Z', scope: 'CONFERENCE_GAMES', vocabulary: ['OUT'],
+    rows: [{ player_name: 'Carson Beck', player_id: '1', position: 'QB', status: 'OUT' }], unparsed: [] };
+  const b = OVERLAY.build({ current, operator: { live: [] }, reports: [real], now: NOW });
+  chk('an ingested report grades the team OFFICIAL', b.teams.m.dataQuality === 'OFFICIAL');
+  chk('its players land on the team with the OFFICIAL source type',
+    b.teams.m.players.length === 1 && b.teams.m.players[0].source_type === 'OFFICIAL');
+  chk('the observation time is the report’s publication, not the sync’s run time',
+    Date.parse(b.teams.m.observed_at) === Date.parse('2026-09-17T02:00:00Z'), b.teams.m.observed_at);
+
+  const quiet = Object.assign({}, real, { rows: [], silence_means_available: true });
+  const c = OVERLAY.build({ current, operator: { live: [] }, reports: [quiet], now: NOW });
+  chk('a comprehensive report naming nobody sets report_of_no_absences rather than inventing records',
+    c.teams.m.official_report.report_of_no_absences === true && c.teams.m.players.length === 0,
+    c.teams.m.official_report);
+}
+
+console.log('\navailability reports: ' + pass + ' passed, ' + fail + ' failed');
+process.exit(fail === 0 ? 0 : 1);

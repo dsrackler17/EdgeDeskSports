@@ -479,6 +479,22 @@ function build(o) {
       note: 'engine_data_completeness is the engine’s own internal probe count; input_coverage below is the share '
         + 'of APPLICABLE contracted fields EdgeDesk actually retrieved, and excludes what does not apply to this game',
       input_coverage: row.input_coverage, priced_input_coverage: row.priced_input_coverage },
+    /* THE SAME LEDGER THE CARD SHOWS, so the narration cannot describe the
+       confidence differently from the page. It carries the five numbers under
+       their own names and the exact points each missing field is costing, so
+       an answer about "why is confidence 73%" is read rather than invented. */
+    confidence: row.confidence_ledger ? {
+      scoreboard: row.confidence_ledger.scoreboard,
+      biggest_gaps: row.confidence_ledger.biggest_gaps,
+      inputs: row.confidence_ledger.inputs,
+      reconciles: row.confidence_ledger.reconciles,
+      disagreements: row.confidence_ledger.disagreements || [],
+      note: 'every number here is READ from the engine and the input contract. The five in `scoreboard` have five '
+        + 'different denominators and each says what it is not; they are not supposed to agree and a reader '
+        + 'comparing them should not conclude the page is broken.'
+    } : null,
+    /* two clocks, never one: a model rebuild does not refresh a price */
+    freshness: row.freshness || null,
     limits
   };
 }

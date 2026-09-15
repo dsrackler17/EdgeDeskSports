@@ -2014,7 +2014,15 @@ footer a:hover{color:var(--text)}
     if (p.win_prob && num(p.win_prob.home_pct) != null && num(p.win_prob.away_pct) != null) {
       wp = { home: txt(p.win_prob.home) || 'Home', away: txt(p.win_prob.away) || 'Away',
         home_pct: num(p.win_prob.home_pct), away_pct: num(p.win_prob.away_pct),
-        favourite: txt(p.win_prob.favourite), favourite_pct: num(p.win_prob.favourite_pct) };
+        /* the BOUNDED text, carried so every consumer prints the same thing
+           and none of them re-rounds a probability back across the boundary.
+           100% and 0% are the two values a continuous margin distribution
+           cannot mean, and a card that printed them was telling a reader
+           something the model never said. */
+        home_text: txt(p.win_prob.home_text), away_text: txt(p.win_prob.away_text),
+        bounded: p.win_prob.bounded === true, bounded_note: txt(p.win_prob.bounded_note),
+        favourite: txt(p.win_prob.favourite), favourite_pct: num(p.win_prob.favourite_pct),
+        favourite_text: txt(p.win_prob.favourite_text) };
     }
     var rg = null;
     if (p.outcome_range && txt(p.outcome_range.p10) && txt(p.outcome_range.p90)) {
@@ -2298,7 +2306,9 @@ footer a:hover{color:var(--text)}
        Escaping the subtitle here as well printed "Florida A&amp;M". */
     if (p.total) h += tile('EdgeDesk fair total', esc(p.total), 'the model\u2019s own total, before any book is consulted');
     if (p.win_prob) h += tile('Win probability',
-      esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%', p.win_prob.away + ' ' + p.win_prob.away_pct + '%');
+      esc(p.win_prob.home) + ' ' + (p.win_prob.home_text || (p.win_prob.home_pct + '%')),
+      p.win_prob.away + ' ' + (p.win_prob.away_text || (p.win_prob.away_pct + '%'))
+        + (p.win_prob.bounded ? ' \u00b7 bounded: a projection cannot mean 100% or 0%' : ''));
     if (p.moneyline) h += tile('Fair moneyline',
       esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds), p.moneyline.away + ' ' + p.moneyline.away_odds);
     if (p.outcome_range) h += tile('Outcome range',
@@ -3079,7 +3089,8 @@ footer a:hover{color:var(--text)}
         + ', ' + esc(p.score.home.team) + ' ' + esc(p.score.home.points) + '.' + (p.score.note ? ' ' + esc(p.score.note) : '') + '</p>';
       else if (p.score_absent_reason) h += '<p><strong>Projected score:</strong> not published — ' + esc(p.score_absent_reason) + '</p>';
       if (p.total) h += '<p>EdgeDesk fair total: ' + esc(p.total) + '.</p>';
-      if (p.win_prob) h += '<p>Win probability: ' + esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%, ' + esc(p.win_prob.away) + ' ' + p.win_prob.away_pct + '%.</p>';
+      if (p.win_prob) h += '<p>Win probability: ' + esc(p.win_prob.home) + ' ' + esc(p.win_prob.home_text || (p.win_prob.home_pct + '%')) + ', ' + esc(p.win_prob.away) + ' ' + esc(p.win_prob.away_text || (p.win_prob.away_pct + '%')) + '.'
+        + (p.win_prob.bounded ? ' ' + esc(p.win_prob.bounded_note || '') : '') + '</p>';
       if (p.moneyline) h += '<p>Fair moneyline: ' + esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds)
         + ', ' + esc(p.moneyline.away) + ' ' + esc(p.moneyline.away_odds) + '. ' + esc(p.moneyline.note || '') + '</p>';
       if (p.outcome_range) h += '<p>Outcome range ' + esc(p.outcome_range.p10) + ' to ' + esc(p.outcome_range.p90)
@@ -3397,7 +3408,8 @@ footer a:hover{color:var(--text)}
         if (rp.score) L.push('  Projected score: ' + rp.score.away.team + ' ' + rp.score.away.points + ', ' + rp.score.home.team + ' ' + rp.score.home.points);
         else { L.push('  Projected score: not published'); if (rp.score_absent_reason) L.push('    ' + rp.score_absent_reason); }
         if (rp.total) L.push('  Fair total: ' + rp.total);
-        if (rp.win_prob) L.push('  Win probability: ' + rp.win_prob.home + ' ' + rp.win_prob.home_pct + '%, ' + rp.win_prob.away + ' ' + rp.win_prob.away_pct + '%');
+        if (rp.win_prob) L.push('  Win probability: ' + rp.win_prob.home + ' ' + (rp.win_prob.home_text || (rp.win_prob.home_pct + '%')) + ', ' + rp.win_prob.away + ' ' + (rp.win_prob.away_text || (rp.win_prob.away_pct + '%'))
+          + (rp.win_prob.bounded ? ' (bounded — a projection cannot mean 100% or 0%)' : ''));
         if (rp.moneyline) L.push('  Fair moneyline: ' + rp.moneyline.home + ' ' + rp.moneyline.home_odds + ', ' + rp.moneyline.away + ' ' + rp.moneyline.away_odds);
         if (rp.outcome_range) L.push('  Outcome range: ' + rp.outcome_range.p10 + ' to ' + rp.outcome_range.p90
           + (rp.outcome_range.median ? ', median ' + rp.outcome_range.median : '')
