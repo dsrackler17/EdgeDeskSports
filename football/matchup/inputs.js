@@ -167,6 +167,15 @@ function load(opts) {
      assumed. Without it the engine declares the starter's reliability
      unmeasured instead of substituting a constant, which is the correct
      failure and why this is loaded here rather than defaulted in the engine. */
+  /* THE QUARTERBACK QUALITY COEFFICIENT and every passer's score as the tune
+     window ended. Read together so a projection prices from the same feature
+     definition the coefficient was fitted against — recomputing the feature at
+     prediction time from a different definition is how a coefficient ends up
+     applied to something it never saw. */
+  out.qb_quality = readJson(path.join(ROOT, 'football', 'cfb_p4', 'research', 'qb_quality.json'), null);
+  if (!out.qb_quality) out.problems.push('football/cfb_p4/research/qb_quality.json is missing — run '
+    + 'football/cfb_p4/research/fit_qb_quality.js; until then the QB layer has no quality input either');
+
   out.persistence = readJson(path.join(ROOT, 'football', 'starters', 'persistence.json'), null);
   if (!out.persistence) out.problems.push('football/starters/persistence.json is missing — run '
     + 'football/starters/calibrate_persistence.js; until then no starter carries a measured reliability');
@@ -586,10 +595,48 @@ function qbOpts(ctx, teamKey, rec) {
        not an unknown starter. That is the whole of the shadow difference, and
        it moves the distribution rather than the mean. */
     season_epa_per_db: null, career_epa_per_db: null,
+    /* THE SUBSTITUTE ROUTE. EPA per dropback stays null above because no feed
+       publishes it; this is the measured stand-in and the coefficient fitted
+       against it. Both travel together so the engine cannot price one with the
+       other's calibration, and `points_applied` inside the calibration decides
+       whether it prices at all — today it is false and the layer contributes
+       zero, exactly as it did before the coefficient existed. */
+    quality: qbQualityOf(ctx, rec),
+    quality_calibration: qbCalibrationOf(ctx),
     attempts: exp && isNum(exp.dropbacks) ? exp.dropbacks : null,
     starts: exp && isNum(exp.starts) ? exp.starts : null,
     rush_value: null, new_system: null,
     returning_starter: exp ? (exp.seasons_observed > 1) : null
+  };
+}
+
+/* One passer's score on the metric the coefficient was fitted against. A
+   passer the window never saw returns null, and the engine then reports the
+   value missing rather than pricing him at the league average. */
+function qbQualityOf(ctx, rec) {
+  const cal = ctx && ctx.qb_quality;
+  if (!cal || !cal.players || !rec || !rec.player_id) return null;
+  const row = cal.players[String(rec.player_id)];
+  if (!row) return null;
+  const v = row[cal.chosen_metric];
+  return isNum(v) ? v : null;
+}
+
+/* The coefficient and, more importantly, the switch. Passed through verbatim
+   from the artifact so the decision travels with the number and nothing here
+   can quietly override it. */
+function qbCalibrationOf(ctx) {
+  const cal = ctx && ctx.qb_quality;
+  if (!cal) return null;
+  const w = cal.metrics && cal.metrics[cal.chosen_metric];
+  return {
+    metric: cal.chosen_metric,
+    points_per_quality: cal.points_per_quality,
+    points_applied: cal.points_applied === true,
+    tune_window_games: cal.tune_window_games,
+    held_out_mae_delta: w ? w.mae_delta : null,
+    decision: cal.decision,
+    as_of: cal.generated_at || null
   };
 }
 

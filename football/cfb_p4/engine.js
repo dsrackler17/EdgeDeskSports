@@ -1607,11 +1607,44 @@
       var w = att / (att + shrink);
       var eff = isNum(q.season_epa_per_db) ? q.season_epa_per_db
         : (isNum(q.career_epa_per_db) ? q.career_epa_per_db : null);
-      var valPts = null;
+      var valPts = null, valBasis = null, valReason = null;
       if (isNum(eff)) {
         var shrunk = w * eff + (1 - w) * (W.prior_epa_per_db || 0);
         valPts = (W.points_per_epa_db || 0) * shrunk
           + (isNum(q.rush_value) ? (W.points_per_rush_value || 0) * q.rush_value : 0);
+        valBasis = att + ' career dropbacks, shrunk toward the replacement prior';
+      } else if (isNum(q.quality)) {
+        /* THE SECOND ROUTE TO A QB PRICE, for the sport where the first one
+           has no input.
+
+           EPA per dropback is not published for college football, so the
+           branch above never fires there. football/cfb_p4/research/
+           fit_qb_quality.js measures a substitute from what the play feed DOES
+           carry — career-to-date quality, shrunk, differenced between the two
+           starters — and regresses it on the rating residual over the same
+           kind of tune window the EPA coefficient used, then WALKS IT FORWARD.
+
+           `points_applied` in that artifact is the switch, and the walk-forward
+           sets it, not this file and not whoever runs the job. When it is
+           false the value stays missing and says why, the layer contributes
+           zero, and the published spread is exactly what it was — the same
+           discipline params.travel.points_applied already carries for a layer
+           that was measured and did not earn its keep. */
+        var cal = q.quality_calibration || null;
+        if (cal && cal.points_applied && isNum(cal.points_per_quality)) {
+          valPts = cal.points_per_quality * q.quality;
+          valBasis = (cal.metric || 'measured quality') + ' at ' + cal.points_per_quality
+            + ' points per unit, over ' + (cal.tune_window_games || '?') + ' tune-window games'
+            + (cal.held_out_mae_delta != null
+              ? ' (held-out MAE ' + (cal.held_out_mae_delta < 0 ? 'fell ' : 'rose ')
+                + Math.abs(cal.held_out_mae_delta) + ' points a game)' : '');
+        } else {
+          valReason = 'a measured quality is on file for ' + (q.player || 'this QB')
+            + ' but the quality-to-points coefficient is NOT APPLIED'
+            + (cal ? (': ' + (cal.decision || 'its walk-forward did not earn it')) 
+                   : ' — no calibration was supplied with the input')
+            + '. The QB layer therefore contributes zero to the spread, as it did before.';
+        }
       }
       var starts = isNum(q.starts) ? q.starts : null;
       var stab = null;
@@ -1626,8 +1659,8 @@
       return {
         value: isNum(valPts) ? M(valPts, { n: att, confidence: clamp(w, 0.15, 0.95),
           source: q.source || 'supplied QB record', as_of: q.as_of || null,
-          basis: att + ' career dropbacks, shrunk toward the replacement prior' })
-          : M.missing('no efficiency history for ' + (q.player || 'this QB')),
+          basis: valBasis || 'supplied QB record' })
+          : M.missing(valReason || ('no efficiency history for ' + (q.player || 'this QB'))),
         stability: isNum(stab) ? M(stab, { n: starts, confidence: 0.8,
           source: 'career starts' + (q.new_system ? ' (discounted: new system)' : ''),
           basis: starts + ' career starts' }) : M.missing('career starts unknown'),
