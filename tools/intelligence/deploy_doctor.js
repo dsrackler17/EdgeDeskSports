@@ -291,11 +291,50 @@ async function doctor(opts) {
   return out;
 }
 
-module.exports = { doctor, expectedBuild, expectedCaptureBuild };
+/* GitHub workflow-command lines for one doctor result.
+ *
+ * WHY THIS IS NOT COSMETIC. The doctor workflow used to run the doctor TWICE:
+ * once to produce the report, and once more with its output sent to /dev/null
+ * purely to set the exit code. So the step that went red printed nothing at
+ * all — "Process completed with exit code 1" and not one word about which
+ * check failed — while the report sat in a different step's summary. A monitor
+ * whose failure does not say what failed makes you go and find out, which is
+ * the job it was supposed to be doing for you.
+ *
+ * `::error::` puts the failing check on the run itself, so the runs list is
+ * readable without opening anything. A check the doctor could not determine is
+ * a `::warning::` and never an error: UNKNOWN means nobody asked the question
+ * successfully, which is not the same as a failure and must not be dressed up
+ * as one. */
+function annotations(r) {
+  const out = [];
+  const one = (level, c) =>
+    `::${level}::${c.name} — ${String(c.state)}`
+    + (c.detail ? ': ' + c.detail : '')
+    + (c.fix ? ' | fix: ' + c.fix : '');
+  const bad = (r.checks || []).filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY/.test(c.state));
+  const unknown = (r.checks || []).filter((c) => c.state === 'UNKNOWN');
+  bad.forEach((c) => out.push(one('error', c)));
+  unknown.forEach((c) => out.push(one('warning', c)));
+  /* The verdict last, so it is the line nearest the summary. A run that found
+     nothing wrong still says so — silence reads the same as not having run. */
+  out.push(`::notice::VERDICT: ${r.verdict}`
+    + (bad.length ? ` — ${bad.length} check(s) need action` : '')
+    + (unknown.length ? `, ${unknown.length} undetermined` : ''));
+  return out;
+}
+
+module.exports = { doctor, expectedBuild, expectedCaptureBuild, annotations };
 
 if (require.main === module) {
   doctor().then((r) => {
-    if (process.argv.includes('--json')) { console.log(JSON.stringify(r, null, 1)); return; }
+    if (process.argv.includes('--json')) {
+      console.log(JSON.stringify(r, null, 1));
+      /* --json USED TO EXIT 0 WHATEVER IT FOUND. A caller that asked for the
+         machine-readable form and then trusted the exit code was told every
+         run was fine. Same verdict, same code, both forms. */
+      process.exit(r.verdict === 'ACTION NEEDED' ? 1 : 0);
+    }
     console.log('EDGEDESK DEPLOYMENT DOCTOR — merged is not deployed\n');
     console.log('this checkout would deploy: ' + r.expected_build + '\n');
     r.checks.forEach((c) => {
@@ -304,6 +343,11 @@ if (require.main === module) {
       if (c.fix) console.log('                 fix: ' + c.fix);
     });
     console.log('\n  VERDICT: ' + r.verdict);
+    /* One line per failing check, in the form GitHub renders against the run
+       itself, so the runs list says WHAT is wrong without anyone opening a
+       step. Off unless asked for, so the other callers of this file
+       (deploy-intelligence.yml runs it too) do not sprout annotations. */
+    if (process.argv.includes('--annotate')) annotations(r).forEach((l) => console.log(l));
     process.exit(r.verdict === 'ACTION NEEDED' ? 1 : 0);
   }).catch((e) => { console.error('CRASH', (e && e.stack) || e); process.exit(2); });
 }

@@ -181,6 +181,47 @@ const OK_BOARD = signals(40, 144);
 
   chk('the expected build is read from the function source', /^edgedesk_ai-\d{4}-/.test(String(WANT)), WANT);
 
+  /* --- THE FAILURE HAS TO SAY WHAT FAILED ------------------------------
+     The doctor workflow ran the doctor twice: once for the report, and once
+     more with its output sent to /dev/null purely to set the exit code. The
+     step that went red therefore printed nothing at all, and the reason sat in
+     a different step's summary. These annotations are what put the reason on
+     the run itself. */
+  {
+    const base = [['?probe=1', { status: 200, body: probeBody() }],
+      ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS];
+
+    net([...base, signals(2345, 60)]);
+    let s = await D.doctor(OPTS);
+    let a = D.annotations(s);
+    chk('a failing check becomes an ::error:: naming the check',
+      a.some((l) => l.startsWith('::error::') && /the board is being captured/.test(l)), a.slice(0, 3));
+    chk('and carries the fix line, so the annotation is actionable on its own',
+      a.some((l) => l.startsWith('::error::') && /fix: /.test(l)), a.slice(0, 3));
+    chk('and the verdict is a ::notice:: counting what needs action',
+      a.some((l) => /^::notice::VERDICT: ACTION NEEDED — \d+ check\(s\) need action/.test(l)),
+      a[a.length - 1]);
+    chk('every annotation is a single line, or GitHub renders only the first',
+      a.every((l) => l.indexOf('\n') < 0 && l.indexOf('\r') < 0), a);
+
+    /* UNKNOWN IS NOT A FAILURE. Nobody got an answer to that question; saying
+       so as an error would send an operator to fix a thing that may be fine. */
+    net([...base, ['/rest/v1/signals', { status: 401, body: 'permission denied' }]]);
+    s = await D.doctor(OPTS);
+    a = D.annotations(s);
+    chk('an undetermined check is a ::warning::, never an ::error::',
+      a.some((l) => l.startsWith('::warning::') && /the board is being captured/.test(l))
+      && !a.some((l) => l.startsWith('::error::') && /the board is being captured/.test(l)), a);
+
+    /* A clean run still speaks. Silence reads the same as not having run. */
+    net([...base, OK_BOARD]);
+    s = await D.doctor(OPTS);
+    a = D.annotations(s);
+    chk('a clean run still emits a verdict notice and no errors',
+      a.length === 1 && /^::notice::VERDICT: DEPLOYED AND CURRENT$/.test(a[0]), a);
+  }
+
   /* ---- everything deployed and current -------------------------------- */
   net([['?probe=1', { status: 200, body: probeBody() }],
     ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
