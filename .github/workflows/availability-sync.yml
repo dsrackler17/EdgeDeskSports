@@ -85,6 +85,31 @@ jobs:
           if [ -n "${{ github.event.inputs.teams }}" ]; then ARGS="$ARGS --teams ${{ github.event.inputs.teams }}"; fi
           node football/availability/fetch_availability.js $ARGS
 
+      # THE CONFERENCE FILINGS, WHICH IS THE PART THAT CHANGED IN 2025.
+      #
+      # College football has no LEAGUE-WIDE injury report and every sentence in
+      # this repository said so. It now has CONFERENCE reports: the SEC, Big
+      # Ten, ACC, Big 12, Mountain West, Conference USA and the Sun Belt each
+      # require one for conference games, with their own scope, cadence and
+      # status vocabulary, and football/availability/policy.js carries which is
+      # which. This step asks that registry which fixtures on the current slate
+      # have a report REQUIRED and inside its filing window, and fetches only
+      # those — so a request that comes back empty is a real failure rather
+      # than a question nobody was obliged to answer.
+      #
+      # A FAILED READ IS RECORDED AS A FAILED READ and never as a report
+      # naming nobody, so this step does not fail the sync.
+      - name: Ingest the conference availability reports that are due
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          node football/availability/sync_reports.js $ARGS || true
+
+      # Operator corrections are committed by hand; this only reports on them,
+      # so a half-filled entry is visible in the log instead of sitting inert.
+      - name: Operator corrections on file
+        run: node football/availability/record_correction.js --list || true
+
       - name: Commit the dataset
         run: |
           git config user.name 'github-actions[bot]'

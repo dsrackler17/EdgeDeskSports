@@ -130,9 +130,25 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
     byField['qb_starter:home'].state === 'RESEARCH_ONLY', byField['qb_starter:home']);
   chk('the starter row says why it is not priced',
     /out-of-sample record/.test(byField['qb_starter:home'].detail), byField['qb_starter:home'].detail);
-  chk('recruiting is UNAVAILABLE with the reason, not silently absent',
-    byField['recruiting_talent:-'].state === 'UNAVAILABLE'
-    && /subscription/.test(byField['recruiting_talent:-'].detail), byField['recruiting_talent:-']);
+  /* RECRUITING SPLIT INTO THE TWO STATEMENTS THAT WERE HIDING IN ONE.
+     The old row said "per-player recruiting ratings are subscription data" and
+     was UNAVAILABLE on every game. That sentence is still true and it was
+     answering a narrower question than the field asks: the per-TEAM composite
+     is public and keyless, is now ingested, and fills the field as RESEARCH
+     because no coefficient has been fitted against it. */
+  const rec = byField['recruiting_talent:home'];
+  chk('the recruiting field is published per side, because it is a fact about a team', !!rec, Object.keys(byField));
+  if (rec && rec.state === 'RESEARCH_ONLY') {
+    chk('an ingested team composite is RESEARCH_ONLY, never USABLE — nothing prices it',
+      rec.priced === false, rec);
+    chk('and it says it is per-team only, so nobody reads it as per-player recruiting',
+      /PER-TEAM only/.test(rec.detail) && /still not\s+substituted/.test(rec.detail.replace(/\s+/g, ' ')), rec.detail);
+    chk('identity is resolved on an id and corroborated, not on a name alone',
+      /ESPN team id/.test(rec.identity || ''), rec.identity);
+  } else {
+    chk('with no artifact built the field is UNAVAILABLE and says how to fill it',
+      rec && rec.state === 'UNAVAILABLE' && !!rec.fix, rec);
+  }
 
   /* NOT APPLICABLE IS NOT MISSING */
   const neutral = IN.buildRequest(ctx, { game: Object.assign({}, g, { neutral_site: true }), meta, state, now: NOW });
@@ -158,10 +174,29 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
   const fcs = IN.buildRequest(ctx, { game: Object.assign({}, g, { away_team: 'Norfolk State' }), meta: fcsMeta, state, now: NOW });
   const fField = {};
   fcs.contract.forEach(c => { fField[c.field + ':' + (c.side || '-')] = c; });
-  chk('an FCS opponent\'s roster is NOT_APPLICABLE, not a gap in this game\'s inputs',
-    fField['roster:away'].state === 'NOT_APPLICABLE', fField['roster:away']);
+  /* THIS ASSERTION CHANGED, AND THE REASON IS THE POINT.
+
+     It used to demand NOT_APPLICABLE for an FCS opponent's roster — "not a gap
+     in this game's inputs". The weighted score disagreed with that on every
+     one of these games: with no roster for the FCS side the engine's
+     roster_away term is unmeasured and it charges the full 6.1 points. A
+     contract that excludes a field from its own denominator while the score
+     charges for it publishes two numbers about one game that cannot both be
+     right, and football/matchup/confidence.js surfaced exactly that
+     disagreement on eighteen fixtures.
+
+     So the contract agrees with the score. Coverage on an FBS-vs-FCS game
+     falls, which is the correct direction. What must NOT change is the
+     reason: this is still the rated universe, not a feed that failed. */
+  chk('an FCS opponent\'s roster is a real gap, counted as one',
+    fField['roster:away'].state === 'UNAVAILABLE', fField['roster:away']);
   chk('the reason names the rated universe rather than blaming a feed',
     /outside the 2026 FBS universe/.test(fField['roster:away'].detail), fField['roster:away'].detail);
+  chk('and it says why it is counted rather than excused',
+    /charges the full weight/.test(fField['roster:away'].detail), fField['roster:away'].detail);
+  /* the two states that genuinely do not arise are still excluded */
+  chk('a dome still makes weather NOT_APPLICABLE, and a neutral site the away venue',
+    nField['venue_geography:away'].state === 'NOT_APPLICABLE');
 
   /* ============================================ 3. research never prices */
   chk('the pricing whitelist is empty, so no starter status can price today',

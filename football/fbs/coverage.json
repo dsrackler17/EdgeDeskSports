@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-15T18:52:38.779Z",
+ "generated_at": "2026-09-15T20:12:32.878Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,14 +119,14 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 76,
+  "total": 77,
   "by_group": {
    "p4": 48,
-   "other": 47,
+   "other": 48,
    "independent": 2
   },
   "by_matchup": {
-   "conference": 14,
+   "conference": 15,
    "fbs_fcs": 18,
    "non_conference": 44
   },
@@ -137,7 +137,7 @@
    "cusa": 10,
    "sunbelt": 15,
    "sec": 11,
-   "american": 12,
+   "american": 13,
    "mac": 13,
    "pac12": 8,
    "mwc": 7,
@@ -152,23 +152,13 @@
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 76
+  "PREDICTED": 77
  },
  "weather": {
-  "requested": 72,
-  "answered": 0,
-  "dome": 0,
-  "no_venue": 2,
-  "failed": 72,
-  "failures": {
-   "HTTP 403": 8,
-   "host circuit open: HTTP 403 x3": 64
-  },
-  "host": "api.open-meteo.com",
-  "summary": "0 of 72 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 2 had no coordinates to locate one; 72 request(s) failed (HTTP 403 x8, host circuit open: HTTP 403 x3 x64)"
+  "skipped": "--offline: no forecast was requested"
  },
  "spread_recommendation": {
-  "NO_MARKET": 76
+  "NO_MARKET": 77
  },
  "checks": [
   {
@@ -205,8 +195,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 28,
-    "total": 76,
+    "non_power_games": 29,
+    "total": 77,
     "example": [
      "Coastal Carolina @ Delaware",
      "North Texas @ Texas State",
@@ -225,7 +215,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 14,
+    "conference_games": 15,
     "wrong": 0
    }
   },
@@ -257,8 +247,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 76,
-    "audit_total": 76
+    "slate": 77,
+    "audit_total": 77
    }
   },
   {

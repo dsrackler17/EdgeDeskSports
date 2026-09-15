@@ -1,0 +1,24 @@
+{
+  "schema": "edgedesk_operator_corrections_v1",
+  "why": [
+    "Dated, sourced availability and starter facts recorded by a person, for the cases structured automation",
+    "cannot recover reliably: a two-deep inside a game-notes PDF, a coach naming a starter at a Monday press",
+    "conference, a conference table rendered in JavaScript.",
+    "",
+    "EVERY ENTRY NEEDS ALL OF: kind (AVAILABILITY|STARTER), team, player, source_name, source_url,",
+    "published_at (when the SOURCE said it), recorded_by, recorded_at, and a fixture — game_id, kickoff or",
+    "expires_at. football/availability/operator.js REFUSES anything missing one of them and publishes the",
+    "refusal, so a half-filled entry is visible rather than silently inert.",
+    "",
+    "WHAT AN ENTRY CANNOT DO. It cannot declare a roster healthy: there is no 'everybody available' form,",
+    "because that is a claim about players nobody named. It cannot promote a projection to a confirmation",
+    "unless its source_url is a conference or school domain — otherwise `confirmed` is forced false and the",
+    "reason is recorded on the entry. And it cannot outrank a later official filing: reconciliation is by",
+    "publication time.",
+    "",
+    "Add one with: node football/availability/record_correction.js --kind AVAILABILITY --team 'Miami'",
+    "  --player 'Carson Beck' --status OUT --game-id 401858226 --source-name 'ACC availability report'",
+    "  --source-url https://theacc.com/... --published-at 2026-09-17T02:00:00Z --by yourname"
+  ],
+  "entries": []
+}

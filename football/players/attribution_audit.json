@@ -1,0 +1,882 @@
+{
+ "schema": "edgedesk_attribution_audit_v1",
+ "version": 1,
+ "season": 2026,
+ "generated_at": "2026-09-15T19:58:22.650Z",
+ "question": "why do only 1746 of 15542 rated players carry attributed production, and which part of that is a bug?",
+ "populations": {
+  "rated_players": 15542,
+  "with_any_attributed_event": 5509,
+  "with_a_career_quality_score": 1746,
+  "with_a_current_season_quality_score": 193,
+  "note": "these are FOUR populations, not one. \"Attributed production\" was the label on the third and is a property of the second. A player needs events, then enough of them to clear his measure’s minimum, then a season whose baseline cleared its own coverage floor, before a score exists for him."
+ },
+ "causes": {
+  "NOT_COVERED_BY_SOURCE": {
+   "players": 2965,
+   "groups": [
+    "OL",
+    "LS"
+   ],
+   "why": "the play feed names passers, rushers, receivers, kickers and the players who tackle or defend them. It attributes nothing to an offensive lineman or a long snapper, so a player in those groups with no events is invisible to this source rather than absent from the field. No amount of ingestion fixes it."
+  },
+  "GENUINE_NONPARTICIPATION_OR_BELOW_FLOOR": {
+   "players": 7068,
+   "why": "on a rated roster, in a group the feed CAN attribute to, with no attributed event in the seasons read. In September this is dominated by players who have genuinely not taken a meaningful snap. It is not separable from \"played a handful of snaps and touched nothing\" without a snap count, and no public feed carries one."
+  },
+  "UNRESOLVED_IDENTITY": {
+   "count": 2905,
+   "sample": [
+    {
+     "athlete_id": "4685698",
+     "events": 108
+    },
+    {
+     "athlete_id": "5225938",
+     "events": 17
+    },
+    {
+     "athlete_id": "5224307",
+     "events": 8
+    },
+    {
+     "athlete_id": "5295237",
+     "events": 24
+    },
+    {
+     "athlete_id": "5121697",
+     "events": 5
+    },
+    {
+     "athlete_id": "5207620",
+     "events": 31
+    },
+    {
+     "athlete_id": "1",
+     "events": 206
+    },
+    {
+     "athlete_id": "3",
+     "events": 19
+    },
+    {
+     "athlete_id": "5224278",
+     "events": 17
+    },
+    {
+     "athlete_id": "5141628",
+     "events": 2
+    },
+    {
+     "athlete_id": "5178979",
+     "events": 1
+    },
+    {
+     "athlete_id": "5161958",
+     "events": 1
+    },
+    {
+     "athlete_id": "5435761",
+     "events": 1
+    },
+    {
+     "athlete_id": "5224276",
+     "events": 24
+    },
+    {
+     "athlete_id": "5225961",
+     "events": 1
+    },
+    {
+     "athlete_id": "5216796",
+     "events": 1
+    },
+    {
+     "athlete_id": "5298797",
+     "events": 26
+    },
+    {
+     "athlete_id": "5162467",
+     "events": 123
+    },
+    {
+     "athlete_id": "5120632",
+     "events": 12
+    },
+    {
+     "athlete_id": "13",
+     "events": 1
+    }
+   ],
+   "why": "the provider attributes events to these athlete ids and no rated player carries them. Most are FCS and lower-division opponents, who appear in an FBS team’s play rows and are not on an FBS roster; the rest are genuine identity gaps."
+  },
+  "OUTSIDE_VOLUME_DEFINITION": {
+   "count": 39,
+   "sample": [
+    {
+     "athlete_id": "5145207",
+     "name": "Bryce Cain",
+     "team": "auburn",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5150831",
+     "name": "Jeremy Bell",
+     "team": "georgia",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5246589",
+     "name": "Camden Capehart",
+     "team": "mississippistate",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5223789",
+     "name": "Nik Henry",
+     "team": "utep",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "4832792",
+     "name": "Major Everhart",
+     "team": "tcu",
+     "group": "WR",
+     "provider_events": 3,
+     "columns": [
+      "rush_player_id",
+      "touchdown_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5219496",
+     "name": "Donald Collier",
+     "team": "kansas",
+     "group": "WR",
+     "provider_events": 4,
+     "columns": [
+      "rush_player_id",
+      "touchdown_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5245511",
+     "name": "Terrance Saryon",
+     "team": "byu",
+     "group": "WR",
+     "provider_events": 2,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5221297",
+     "name": "Daniel Gerlach",
+     "team": "colorado",
+     "group": "P",
+     "provider_events": 1,
+     "columns": [
+      "field_goal_attempt_player_id"
+     ]
+    },
+    {
+     "athlete_id": "4899342",
+     "name": "Max Fletcher",
+     "team": "cincinnati",
+     "group": "P",
+     "provider_events": 1,
+     "columns": [
+      "reception_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5196024",
+     "name": "Tyreek Robinson",
+     "team": "pittsburgh",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5290211",
+     "name": "Jianni Davis",
+     "team": "maryland",
+     "group": "DL",
+     "provider_events": 4,
+     "columns": [
+      "rush_player_id",
+      "touchdown_player_id"
+     ]
+    },
+    {
+     "athlete_id": "4432691",
+     "name": "Carlos Del Rio-Wilson",
+     "team": "marshall",
+     "group": "QB",
+     "provider_events": 2,
+     "columns": [
+      "fumble_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5082256",
+     "name": "Jace Bellah",
+     "team": "coloradostate",
+     "group": "S",
+     "provider_events": 1,
+     "columns": [
+      "target_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5151339",
+     "name": "Anthony Garcia",
+     "team": "utahstate",
+     "group": "QB",
+     "provider_events": 4,
+     "columns": [
+      "reception_player_id",
+      "target_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5222710",
+     "name": "Landon Walker",
+     "team": "navy",
+     "group": "WR",
+     "provider_events": 4,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5220471",
+     "name": "Andre Gilbert Jr.",
+     "team": "navy",
+     "group": "WR",
+     "provider_events": 2,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5158365",
+     "name": "Gage Leonard",
+     "team": "navy",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5291772",
+     "name": "Coen Logan",
+     "team": "temple",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5219405",
+     "name": "Aden Self",
+     "team": "army",
+     "group": "WR",
+     "provider_events": 1,
+     "columns": [
+      "rush_player_id"
+     ]
+    },
+    {
+     "athlete_id": "5150328",
+     "name": "Brady Mott",
+     "team": "army",
+     "group": "WR",
+     "provider_events": 2,
+     "columns": [
+      "rush_player_id"
+     ]
+    }
+   ],
+   "why": "the provider attributes events to these athlete ids, and none of those events counts as VOLUME for the position group the player is in. epir.js volume() is defined per group — a lineman credited with a fumble recovery has an event and no volume, correctly. This is a definition showing, not a join failure, and the fix if one is wanted is to widen the definition, not to repair a join.",
+   "renamed": "OUTSIDE_VOLUME_DEFINITION is the accurate name for this population"
+  },
+  "BROKEN_JOIN": {
+   "count": 56,
+   "sample": [
+    {
+     "athlete_id": "5194702",
+     "name": "Ahmir Smith",
+     "team": "kentucky",
+     "group": null,
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "5220909",
+     "name": "Tymere Jackson",
+     "team": "texasstate",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5077390",
+     "name": "Jambres Dubar",
+     "team": "missouristate",
+     "group": null,
+     "provider_events": 22,
+     "events_in_rating_columns": 21
+    },
+    {
+     "athlete_id": "5166580",
+     "name": "Tre Rigby",
+     "team": "ucf",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "4804885",
+     "name": "Brandon Rose",
+     "team": "utah",
+     "group": null,
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "5214651",
+     "name": "Caleb Smith",
+     "team": "arizona",
+     "group": null,
+     "provider_events": 4,
+     "events_in_rating_columns": 4
+    },
+    {
+     "athlete_id": "5209118",
+     "name": "Hayden Vercher",
+     "team": "arizonastate",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5151274",
+     "name": "Drayden Dickmann",
+     "team": "wakeforest",
+     "group": null,
+     "provider_events": 3,
+     "events_in_rating_columns": 3
+    },
+    {
+     "athlete_id": "5099305",
+     "name": "Antonio Meeks",
+     "team": "wakeforest",
+     "group": null,
+     "provider_events": 8,
+     "events_in_rating_columns": 8
+    },
+    {
+     "athlete_id": "4905609",
+     "name": "Fredrick Moore",
+     "team": "michiganstate",
+     "group": null,
+     "provider_events": 6,
+     "events_in_rating_columns": 6
+    },
+    {
+     "athlete_id": "5224718",
+     "name": "TreShawn Moore",
+     "team": "wyoming",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5327239",
+     "name": "Jaylen King",
+     "team": "wyoming",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5150789",
+     "name": "Kali Nguma",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 4,
+     "events_in_rating_columns": 4
+    },
+    {
+     "athlete_id": "5146769",
+     "name": "Dominic Toy",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 3,
+     "events_in_rating_columns": 3
+    },
+    {
+     "athlete_id": "5290862",
+     "name": "Cedric Ross",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 5,
+     "events_in_rating_columns": 5
+    },
+    {
+     "athlete_id": "5446698",
+     "name": "Jaivyn Moore",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5158829",
+     "name": "Javon Robinson",
+     "team": "utahstate",
+     "group": null,
+     "provider_events": 14,
+     "events_in_rating_columns": 14
+    },
+    {
+     "athlete_id": "5219602",
+     "name": "Kian Afrookhteh",
+     "team": "utahstate",
+     "group": null,
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "5086629",
+     "name": "Rex Haynes",
+     "team": "utahstate",
+     "group": null,
+     "provider_events": 3,
+     "events_in_rating_columns": 3
+    },
+    {
+     "athlete_id": "5363611",
+     "name": "Raymond Liggins III",
+     "team": "uconn",
+     "group": null,
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "5446579",
+     "name": "James Lee",
+     "team": "arkansasstate",
+     "group": null,
+     "provider_events": 4,
+     "events_in_rating_columns": 4
+    },
+    {
+     "athlete_id": "5295531",
+     "name": "Santonyo Isaac",
+     "team": "easternmichigan",
+     "group": null,
+     "provider_events": 3,
+     "events_in_rating_columns": 3
+    },
+    {
+     "athlete_id": "5223123",
+     "name": "Jalen Rashad Turner",
+     "team": "airforce",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5220449",
+     "name": "Brett Karhu",
+     "team": "newmexico",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5294241",
+     "name": "Cedric Kouemi",
+     "team": "jacksonvillestate",
+     "group": null,
+     "provider_events": 13,
+     "events_in_rating_columns": 13
+    },
+    {
+     "athlete_id": "5383058",
+     "name": "Koraun Perdue",
+     "team": "middletennessee",
+     "group": null,
+     "provider_events": 4,
+     "events_in_rating_columns": 4
+    },
+    {
+     "athlete_id": "5425111",
+     "name": "Kaeden Smith",
+     "team": "baylor",
+     "group": null,
+     "provider_events": 18,
+     "events_in_rating_columns": 18
+    },
+    {
+     "athlete_id": "5446770",
+     "name": "Nick Peal",
+     "team": "georgia",
+     "group": null,
+     "provider_events": 9,
+     "events_in_rating_columns": 9
+    },
+    {
+     "athlete_id": "4799985",
+     "name": "Jaylen Wester",
+     "team": "westernkentucky",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5082358",
+     "name": "Luke Drzewiecki",
+     "team": "minnesota",
+     "group": null,
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "4773919",
+     "name": "Thomas Castellanos",
+     "team": "texastech",
+     "group": null,
+     "provider_events": 6,
+     "events_in_rating_columns": 5
+    },
+    {
+     "athlete_id": "4910239",
+     "name": "Justus Ross-Simmons",
+     "team": "syracuse",
+     "group": null,
+     "provider_events": 7,
+     "events_in_rating_columns": 7
+    },
+    {
+     "athlete_id": "5125366",
+     "name": "Sesi Vailahi",
+     "team": "utahstate",
+     "group": null,
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "4694500",
+     "name": "James Jennette",
+     "team": "washington",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5155792",
+     "name": "Asher Cunningham",
+     "team": "washington",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "4871061",
+     "name": "Pearce Spurlin III",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "5212610",
+     "name": "Ksaan Farrar",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 7,
+     "events_in_rating_columns": 7
+    },
+    {
+     "athlete_id": "5281562",
+     "name": "Troy Foster",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5446708",
+     "name": "Daven Amos",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5296864",
+     "name": "Malichi Greaves",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 3,
+     "events_in_rating_columns": 3
+    },
+    {
+     "athlete_id": "5327618",
+     "name": "Isaiah Watson",
+     "team": "coloradostate",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "4870941",
+     "name": "Cameron Seldon",
+     "team": "southflorida",
+     "group": "WR",
+     "provider_events": 4,
+     "events_in_rating_columns": 4
+    },
+    {
+     "athlete_id": "5447032",
+     "name": "Tyrell Brown",
+     "team": "ulmonroe",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5220227",
+     "name": "Kevontay Wells",
+     "team": "ulmonroe",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5152669",
+     "name": "Kente Edwards",
+     "team": "coastalcarolina",
+     "group": null,
+     "provider_events": 3,
+     "events_in_rating_columns": 3
+    },
+    {
+     "athlete_id": "5095121",
+     "name": "Mitchell Robinson Jr.",
+     "team": "troy",
+     "group": null,
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "4869390",
+     "name": "Wyatt Sullivan",
+     "team": "southflorida",
+     "group": "TE",
+     "provider_events": 8,
+     "events_in_rating_columns": 8
+    },
+    {
+     "athlete_id": "4870927",
+     "name": "Bryson Rodgers",
+     "team": "southflorida",
+     "group": "WR",
+     "provider_events": 11,
+     "events_in_rating_columns": 11
+    },
+    {
+     "athlete_id": "5125521",
+     "name": "Arhmad Branch",
+     "team": "southflorida",
+     "group": "WR",
+     "provider_events": 14,
+     "events_in_rating_columns": 14
+    },
+    {
+     "athlete_id": "5146720",
+     "name": "Will Cianfrini",
+     "team": "sandiegostate",
+     "group": "WR",
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "5209946",
+     "name": "Jerquaden Guilford",
+     "team": "ohiostate",
+     "group": "WR",
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5214446",
+     "name": "Brody Lennon",
+     "team": "ohiostate",
+     "group": "TE",
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5281153",
+     "name": "Demetrice McCray",
+     "team": "pittsburgh",
+     "group": "WR",
+     "provider_events": 2,
+     "events_in_rating_columns": 2
+    },
+    {
+     "athlete_id": "5300511",
+     "name": "Luke Clyburn",
+     "team": "southflorida",
+     "group": "TE",
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5302270",
+     "name": "Jack Lua",
+     "team": "sandiegostate",
+     "group": "TE",
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    },
+    {
+     "athlete_id": "5375131",
+     "name": "Nick Lautar",
+     "team": "ohiostate",
+     "group": "TE",
+     "provider_events": 1,
+     "events_in_rating_columns": 1
+    }
+   ],
+   "by_team": {
+    "kentucky": 1,
+    "texasstate": 1,
+    "missouristate": 1,
+    "ucf": 1,
+    "utah": 1,
+    "arizona": 1,
+    "arizonastate": 1,
+    "wakeforest": 2,
+    "michiganstate": 1,
+    "wyoming": 2,
+    "coloradostate": 10,
+    "utahstate": 4,
+    "uconn": 1,
+    "arkansasstate": 1,
+    "easternmichigan": 1,
+    "airforce": 1,
+    "newmexico": 1,
+    "jacksonvillestate": 1,
+    "middletennessee": 1,
+    "baylor": 1,
+    "georgia": 1,
+    "westernkentucky": 1,
+    "minnesota": 1,
+    "texastech": 1,
+    "syracuse": 1,
+    "washington": 2,
+    "southflorida": 5,
+    "ulmonroe": 2,
+    "coastalcarolina": 1,
+    "troy": 1,
+    "sandiegostate": 2,
+    "ohiostate": 3,
+    "pittsburgh": 1
+   },
+   "largest": [
+    {
+     "athlete_id": "5077390",
+     "name": "Jambres Dubar",
+     "team": "missouristate",
+     "group": null,
+     "provider_events": 22,
+     "events_in_rating_columns": 21
+    },
+    {
+     "athlete_id": "5425111",
+     "name": "Kaeden Smith",
+     "team": "baylor",
+     "group": null,
+     "provider_events": 18,
+     "events_in_rating_columns": 18
+    },
+    {
+     "athlete_id": "5158829",
+     "name": "Javon Robinson",
+     "team": "utahstate",
+     "group": null,
+     "provider_events": 14,
+     "events_in_rating_columns": 14
+    },
+    {
+     "athlete_id": "5125521",
+     "name": "Arhmad Branch",
+     "team": "southflorida",
+     "group": "WR",
+     "provider_events": 14,
+     "events_in_rating_columns": 14
+    },
+    {
+     "athlete_id": "5294241",
+     "name": "Cedric Kouemi",
+     "team": "jacksonvillestate",
+     "group": null,
+     "provider_events": 13,
+     "events_in_rating_columns": 13
+    }
+   ],
+   "why": "the provider attributes events to these athlete ids AND they are on a rated roster, and the rating carries no attributed event for them. This is a join failure inside EdgeDesk and is the only population here that is a bug."
+  }
+ },
+ "provider": {
+  "attempted": true,
+  "ok": true,
+  "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+  "columns_read": 15,
+  "distinct_attributed_athletes": 5804
+ },
+ "no_event_by_group": {
+  "WR": 1161,
+  "UNKNOWN": 45,
+  "P": 137,
+  "DL": 1290,
+  "QB": 407,
+  "S": 476,
+  "OL": 2644,
+  "TE": 648,
+  "LB": 970,
+  "CB": 458,
+  "LS": 321,
+  "DB": 738,
+  "K": 248,
+  "RB": 422,
+  "EDGE": 68
+ },
+ "verdict": "56 rated player(s) are missing events the provider attributes to their own athlete id — a real join failure, listed above.",
+ "label_fix": "football/players/roster_quality.js published \"N with attributed production\" using the career-quality-score count. The two are different populations and the string now says which is which."
+}

@@ -165,7 +165,16 @@ async function main() {
       projected: before.games,
       engine_data_completeness_mean: mean(before.engine_completeness),
       engine_data_completeness_zero: before.engine_completeness.filter(x => x === 0).length,
-      games_with_unknown_qb: before.warnings['home starting QB unknown'] || 0,
+      /* THE WARNING TEXT CHANGED WITH THE BUG IT DESCRIBED. It used to read
+         `teams.*.qb` — the PRICED input, null by design on every college game
+         — and so printed "starting QB unknown" on 86 games where the starter
+         was resolved by athlete id and corroborated against the roster. It now
+         reads qb_context and names which of the five states holds, so the
+         before/after count is matched on a prefix rather than on the old
+         string, and BOTH arms are counted the same way. */
+      games_with_unknown_qb: Object.keys(before.warnings)
+        .filter(w => /^home starting (quarterback|QB) unknown/.test(w))
+        .reduce((n, w) => n + before.warnings[w], 0),
       warnings: before.warnings,
       basis: 'the engine request as the offline builder assembled it before this change: roster, qb, injuries, '
         + 'news, coaching, schedule and weather all hard-coded null'

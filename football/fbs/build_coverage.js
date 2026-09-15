@@ -56,6 +56,7 @@ require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 const E = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
 const FBS = require(path.join(HERE, 'fbs.js'));
 const IN = require(path.join(ROOT, 'football', 'matchup', 'inputs.js'));
+const CONF = require(path.join(ROOT, 'football', 'matchup', 'confidence.js'));
 const WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js'));
 const RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
@@ -273,6 +274,10 @@ async function main() {
      whose venue coordinates it was holding at the time. Same endpoint the
      terminal uses, through the recovery layer so it is bounded, and a refusal
      is recorded as a refusal rather than as an absence. */
+  /* WHAT THE LAST SUCCESSFUL BUILD OBSERVED, so a build that cannot reach the
+     provider publishes what EdgeDesk knew rather than less than it knew. */
+  const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
+  const prevForecast = readJson(FORECAST_STORE, null);
   if (!a.offline) {
     const sess = RECOVERY.session({ host_min_gap_ms: 80, budget_ms: 120000 });
     const wanted = slate.filter(it => !it.g.neutral_site).map(it => ({
@@ -280,8 +285,25 @@ async function main() {
       venue: ctx.venues[(it.meta && it.meta.home.key) || FBS.normKey(it.g.home_team)] || null
     }));
     try {
-      const wx = await WX.fetchForGames(sess, wanted, { concurrency: 6 });
+      const wx = await WX.fetchForGames(sess, wanted, { concurrency: 6,
+        previous: (prevForecast && prevForecast.by_game) || {} });
       ctx.weather = wx.byGame;
+      ctx.weather_read_at = new Date().toISOString();
+      /* committed only when something was actually observed: a build that
+         answered nothing must not overwrite the store with its own emptiness */
+      if (wx.report.answered > 0 || wx.report.dome > 0) {
+        try {
+          fs.writeFileSync(FORECAST_STORE, JSON.stringify({
+            schema: 'edgedesk_forecast_store_v1',
+            why: 'the last forecast EdgeDesk actually observed for each game, so a build that cannot reach the '
+              + 'provider carries it forward at its real observation time instead of publishing a refusal. Only '
+              + 'observed forecasts are written here; a carried one is never re-committed as a fresh one.',
+            generated_at: new Date().toISOString(),
+            source: 'open-meteo forecast (keyless), joined on the trained venue coordinates',
+            by_game: WX.forCommit(wx.byGame, wanted)
+          }, null, 1) + '\n');
+        } catch (e) { log('[fbs] forecast store not written: ' + ((e && e.message) || e)); }
+      }
       ctx.weather_attempted = true;
       ctx.weather_source = 'open-meteo forecast (keyless), joined on the trained venue coordinates';
       ctx.weather_failure = wx.report.failed
@@ -513,6 +535,18 @@ async function main() {
       model_home_margin: r2n(p && p.status === 'PREDICTED' ? p.model.fair_spread : null, 100),
       model_home_line: r2n((p && p.status === 'PREDICTED' && isFiniteNum(p.model.fair_spread)) ? -p.model.fair_spread : null, 100),
       model_fair_total: r2n(p && p.status === 'PREDICTED' ? p.model.fair_total : null, 10),
+      /* THE WIN PROBABILITY, AND THE TEXT THAT REFUSES TO ROUND IT INTO A
+         CERTAINTY. Oregon at 0.9977 printed "100% / 0%" on the board, which
+         is the one thing a projection built on a continuous margin
+         distribution can never mean. The raw number is published for anything
+         that computes with it and the bounded text for anything that shows
+         it, so no surface has to remember the rule. */
+      model_home_win_prob: (p && p.status === 'PREDICTED' && isFiniteNum(p.model.home_win_prob))
+        ? p.model.home_win_prob : null,
+      model_home_win_text: (p && p.status === 'PREDICTED' && isFiniteNum(p.model.home_win_prob))
+        ? CONF.outcomeLabel(p.model.home_win_prob).text : null,
+      model_away_win_text: (p && p.status === 'PREDICTED' && isFiniteNum(p.model.home_win_prob))
+        ? CONF.outcomeLabel(1 - p.model.home_win_prob).text : null,
       data_completeness: (unc && unc.information_missing != null) ? Math.round((1 - unc.information_missing) * 1000) / 1000 : null,
       /* THE CONTRACT, IN THE SEVEN STATES THAT ARE NOT THE SAME THING. The
          engine's own `data_completeness` is its internal probe count and is
@@ -523,6 +557,45 @@ async function main() {
       priced_input_coverage: asm ? asm.summary.priced_coverage : null,
       input_contract: asm ? asm.contract : null,
       input_contract_summary: asm ? asm.summary : null,
+      /* THE LEDGER: every contract field, what it feeds, and the exact number
+         of points it is costing the displayed score — computed by the one
+         module every consumer reads (football/matchup/confidence.js) rather
+         than by each surface guessing at the arithmetic. It also publishes the
+         five different numbers this card shows under their own names, so a
+         reader comparing 73% with "11 of 17" can see they are different
+         questions instead of concluding the page contradicts itself. */
+      confidence_ledger: (asm && p && p.status === 'PREDICTED')
+        ? CONF.ledger({
+          contract: asm.contract,
+          information: (p.layers && p.layers.uncertainty && p.layers.uncertainty.information) || {},
+          weights: (P.confidence && P.confidence.weights) || {},
+          summary: asm.summary,
+          confidence: p.scores.confidence,
+          confidence_priced: p.scores.confidence_priced,
+          engine_completeness: (unc && unc.information_missing != null) ? (1 - unc.information_missing) : null,
+          home_win_prob: p.model.home_win_prob,
+          weight_total: Object.keys((P.confidence && P.confidence.weights) || {})
+            .reduce((x, k) => x + P.confidence.weights[k], 0),
+          home: g.home_team, away: g.away_team, now: Date.now()
+        })
+        : null,
+      /* TWO CLOCKS, PUBLISHED SEPARATELY. A model rebuild does not refresh a
+         price and a re-read does not renew an observation; conflating either
+         pair is how a 57-hour-old quote came to sit under a live badge. */
+      freshness: asm ? {
+        model_built_at: report.generated_at,
+        inputs: asm.contract.filter(r => r.as_of || r.observed_at).map(r => ({
+          field: r.field + (r.side ? ':' + r.side : ''),
+          observed_at: r.observed_at || r.as_of,
+          retrieved_at: r.as_of,
+          age_hours: r.age_hours, state: r.state })),
+        market: { state: 'NOT JOINED IN THIS BUILD',
+          why: 'the board and the exports carry the live quote; this artifact joins none, so it publishes no '
+            + 'price age rather than the model build time in place of one' },
+        note: 'model_built_at is when this artifact was written. It is NOT the age of any field in it: each input '
+          + 'carries its own observation time, and a field re-read without changing keeps the observation time it '
+          + 'already had.'
+      } : null,
       home_starter: starter('home'),
       away_starter: starter('away'),
       /* THE MEASURED QUARTERBACK, in the compact form every surface renders.

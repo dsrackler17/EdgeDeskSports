@@ -117,14 +117,62 @@ const fragment = { band: 'fragment', rate: bandRate('fragment'), pairs: 989 };
     last_game_share: 0.92, persistence: dominant });
   const weak = q({ player: 'Y', player_id: '2', status: 'PREVIOUS_GAME', identity_corroborated: true,
     last_game_share: 0.2, persistence: fragment });
-  chk('a dominant starter scores the MEASURED dominant rate', near(strong.confidence, dominant.rate),
-    { got: strong.confidence, measured: dominant.rate });
-  chk('an opener who handed it over scores the MEASURED fragment rate', near(weak.confidence, fragment.rate),
-    { got: weak.confidence, measured: fragment.rate });
+  /* FOUR QUESTIONS, FOUR COMPONENTS. The term used to return the persistence
+     rate alone, which scored a fifteen-start id-resolved quarterback with a
+     joined efficiency history identically to an anonymous one who happened to
+     take the same share of one game. Each component is now measured on its
+     own and published, and `who_starts` still carries the MEASURED rate with
+     nothing rounded up. */
+  const W = I.QB_EVIDENCE_WEIGHTS;
+  chk('the who-starts component IS the measured rate, unrounded',
+    near(strong.components.who_starts.value, dominant.rate),
+    { got: strong.components.who_starts.value, measured: dominant.rate });
+  chk('and the weak one is the measured fragment rate',
+    near(weak.components.who_starts.value, fragment.rate),
+    { got: weak.components.who_starts.value, measured: fragment.rate });
+  chk('the four components are exactly the four separate questions',
+    ['who_starts', 'identity', 'observed', 'available'].every(k => strong.components[k]),
+    Object.keys(strong.components));
+  chk('the blend is the declared weights over those components, and nothing else',
+    near(strong.confidence, W.who_starts * dominant.rate + W.identity * 1 + W.observed * 0 + W.available * 0),
+    { got: strong.confidence, weights: W });
+  /* NO DEFAULT-HEALTHY PATH. A starter nobody has reported on scores zero on
+     the availability component however much else is known about him. */
+  chk('silence about availability scores ZERO, never a default of healthy',
+    strong.components.available.value === 0 && /Silence is not health/.test(strong.components.available.basis),
+    strong.components.available);
+  chk('an unmeasured player scores zero on the observed component',
+    strong.components.observed.value === 0, strong.components.observed);
   /* THE WHOLE POINT: the term has to tell these two apart. The old priced
      term scored both of them, and every other game on the board, at zero. */
   chk('the term DISCRIMINATES between them by a wide margin',
-    strong.confidence - weak.confidence > 0.5, { strong: strong.confidence, weak: weak.confidence });
+    strong.confidence - weak.confidence > 0.3, { strong: strong.confidence, weak: weak.confidence });
+
+  /* AND IT DISCRIMINATES ON THE OTHER THREE QUESTIONS TOO, which is the
+     reason the composite exists. */
+  const known = q({ player: 'X', player_id: '1', status: 'PREVIOUS_GAME', identity_corroborated: true,
+    last_game_share: 0.92, persistence: dominant, dropbacks: 547, starts: 15,
+    efficiency_history: true, availability_evidence: 'EXPLICIT' });
+  chk('a quarterback EdgeDesk has measured and has an availability report on scores above one it has not',
+    known.confidence > strong.confidence + 0.2, { known: known.confidence, bare: strong.confidence });
+  chk('and a fully-evidenced starter still cannot exceed his own measured start rate plus the other three',
+    near(known.confidence, W.who_starts * dominant.rate + W.identity + W.observed + W.available),
+    known.confidence);
+  const volumeOnly = q({ player: 'X', player_id: '1', status: 'PREVIOUS_GAME', identity_corroborated: true,
+    last_game_share: 0.92, persistence: dominant, dropbacks: 547, starts: 15 });
+  chk('measured volume without a resolved efficiency history is partial credit, not full',
+    volumeOnly.components.observed.value > 0 && volumeOnly.components.observed.value < 1,
+    volumeOnly.components.observed);
+  const comprehensive = q({ player: 'X', player_id: '1', status: 'PREVIOUS_GAME', identity_corroborated: true,
+    last_game_share: 0.92, persistence: dominant, availability_evidence: 'COMPREHENSIVE_SILENCE' });
+  chk('a COMPREHENSIVE report naming nobody is the one route from silence to available',
+    comprehensive.components.available.value === 1
+      && /comprehensive availability report/.test(comprehensive.components.available.basis),
+    comprehensive.components.available);
+  const contested = q({ player: 'X', player_id: '1', status: 'PREVIOUS_GAME', identity_corroborated: true,
+    last_game_share: 0.92, persistence: dominant, contested: true });
+  chk('a contested room is discounted', contested.confidence < strong.confidence,
+    { contested: contested.confidence, settled: strong.confidence });
   chk('the basis quotes the rate and the sample rather than asserting a score',
     /\d+% of the time/.test(strong.basis) && /pairs/.test(strong.basis), strong.basis);
 

@@ -354,8 +354,17 @@ async function main() {
     prior_season: prevSeason,
     team_count: Object.keys(teams).length,
     player_count: curRated.ratings.length,
+    /* THREE POPULATIONS, PUBLISHED AS THREE NUMBERS. They were published as
+       one and labelled as the widest of them, which read as a catastrophic
+       ingestion failure rather than as measurement floors doing their job.
+       football/players/attribution_audit.js separates the causes. */
+    rated_with_any_attributed_event: curRated.ratings.filter(r => (r.sample_size || 0) > 0).length,
     rated_with_production: curRated.ratings.filter(r => r.components.quality.z_career != null).length,
     rated_with_production_this_season: curRated.ratings.filter(r => r.components.quality.z_raw != null).length,
+    population_note: 'rated_with_any_attributed_event counts every player the feed attributed an event to. '
+      + 'rated_with_production counts those with a computable career quality score, which additionally needs '
+      + 'enough volume to clear a measure\u2019s own minimum over a season whose baseline cleared its coverage '
+      + 'floor. They are different questions and the second is always much smaller.',
     coverage: coverageBySeason[cur],
     coverage_by_season: coverageBySeason,
     reliability,

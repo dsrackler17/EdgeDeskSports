@@ -23825,7 +23825,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (p.win_prob && num(p.win_prob.home_pct) != null && num(p.win_prob.away_pct) != null) {
       wp = { home: txt(p.win_prob.home) || 'Home', away: txt(p.win_prob.away) || 'Away',
         home_pct: num(p.win_prob.home_pct), away_pct: num(p.win_prob.away_pct),
-        favourite: txt(p.win_prob.favourite), favourite_pct: num(p.win_prob.favourite_pct) };
+        /* the BOUNDED text, carried so every consumer prints the same thing
+           and none of them re-rounds a probability back across the boundary.
+           100% and 0% are the two values a continuous margin distribution
+           cannot mean, and a card that printed them was telling a reader
+           something the model never said. */
+        home_text: txt(p.win_prob.home_text), away_text: txt(p.win_prob.away_text),
+        bounded: p.win_prob.bounded === true, bounded_note: txt(p.win_prob.bounded_note),
+        favourite: txt(p.win_prob.favourite), favourite_pct: num(p.win_prob.favourite_pct),
+        favourite_text: txt(p.win_prob.favourite_text) };
     }
     var rg = null;
     if (p.outcome_range && txt(p.outcome_range.p10) && txt(p.outcome_range.p90)) {
@@ -24109,7 +24117,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        Escaping the subtitle here as well printed "Florida A&amp;M". */
     if (p.total) h += tile('EdgeDesk fair total', esc(p.total), 'the model\u2019s own total, before any book is consulted');
     if (p.win_prob) h += tile('Win probability',
-      esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%', p.win_prob.away + ' ' + p.win_prob.away_pct + '%');
+      esc(p.win_prob.home) + ' ' + (p.win_prob.home_text || (p.win_prob.home_pct + '%')),
+      p.win_prob.away + ' ' + (p.win_prob.away_text || (p.win_prob.away_pct + '%'))
+        + (p.win_prob.bounded ? ' \u00b7 bounded: a projection cannot mean 100% or 0%' : ''));
     if (p.moneyline) h += tile('Fair moneyline',
       esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds), p.moneyline.away + ' ' + p.moneyline.away_odds);
     if (p.outcome_range) h += tile('Outcome range',
@@ -24890,7 +24900,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         + ', ' + esc(p.score.home.team) + ' ' + esc(p.score.home.points) + '.' + (p.score.note ? ' ' + esc(p.score.note) : '') + '</p>';
       else if (p.score_absent_reason) h += '<p><strong>Projected score:</strong> not published — ' + esc(p.score_absent_reason) + '</p>';
       if (p.total) h += '<p>EdgeDesk fair total: ' + esc(p.total) + '.</p>';
-      if (p.win_prob) h += '<p>Win probability: ' + esc(p.win_prob.home) + ' ' + p.win_prob.home_pct + '%, ' + esc(p.win_prob.away) + ' ' + p.win_prob.away_pct + '%.</p>';
+      if (p.win_prob) h += '<p>Win probability: ' + esc(p.win_prob.home) + ' ' + esc(p.win_prob.home_text || (p.win_prob.home_pct + '%')) + ', ' + esc(p.win_prob.away) + ' ' + esc(p.win_prob.away_text || (p.win_prob.away_pct + '%')) + '.'
+        + (p.win_prob.bounded ? ' ' + esc(p.win_prob.bounded_note || '') : '') + '</p>';
       if (p.moneyline) h += '<p>Fair moneyline: ' + esc(p.moneyline.home) + ' ' + esc(p.moneyline.home_odds)
         + ', ' + esc(p.moneyline.away) + ' ' + esc(p.moneyline.away_odds) + '. ' + esc(p.moneyline.note || '') + '</p>';
       if (p.outcome_range) h += '<p>Outcome range ' + esc(p.outcome_range.p10) + ' to ' + esc(p.outcome_range.p90)
@@ -25208,7 +25219,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         if (rp.score) L.push('  Projected score: ' + rp.score.away.team + ' ' + rp.score.away.points + ', ' + rp.score.home.team + ' ' + rp.score.home.points);
         else { L.push('  Projected score: not published'); if (rp.score_absent_reason) L.push('    ' + rp.score_absent_reason); }
         if (rp.total) L.push('  Fair total: ' + rp.total);
-        if (rp.win_prob) L.push('  Win probability: ' + rp.win_prob.home + ' ' + rp.win_prob.home_pct + '%, ' + rp.win_prob.away + ' ' + rp.win_prob.away_pct + '%');
+        if (rp.win_prob) L.push('  Win probability: ' + rp.win_prob.home + ' ' + (rp.win_prob.home_text || (rp.win_prob.home_pct + '%')) + ', ' + rp.win_prob.away + ' ' + (rp.win_prob.away_text || (rp.win_prob.away_pct + '%'))
+          + (rp.win_prob.bounded ? ' (bounded — a projection cannot mean 100% or 0%)' : ''));
         if (rp.moneyline) L.push('  Fair moneyline: ' + rp.moneyline.home + ' ' + rp.moneyline.home_odds + ', ' + rp.moneyline.away + ' ' + rp.moneyline.away_odds);
         if (rp.outcome_range) L.push('  Outcome range: ' + rp.outcome_range.p10 + ' to ' + rp.outcome_range.p90
           + (rp.outcome_range.median ? ', median ' + rp.outcome_range.median : '')
@@ -43586,6 +43598,15 @@ function fbP4Ensure(){
     .then(function(){return fbScript('football/fbs_epa/fbs_epa.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/calibration.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/v12_correction.js').catch(function(){});})
+    /* THE CONFIDENCE LEDGER AND THE OUTCOME RENDERER, shared with the offline
+       build so the board and the committed artifact say the same thing about
+       the same game. Optional in the same way as the two above: it changes no
+       projected number, so a missing file must not gate a board. */
+    .then(function(){return fbScript('football/matchup/confidence.js').catch(function(){});})
+    .then(function(){return fbScript('football/matchup/qb_context.js').catch(function(){});})
+    .then(function(){return fbScript('football/availability/policy.js').catch(function(){});})
+    .then(function(){return fbScript('football/availability/overlay.js').catch(function(){});})
+    .then(function(){return fbScript('football/availability/operator.js').catch(function(){});})
     .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('FBS engine loaded but globals missing');
       if(!window.EDFbs)throw new Error('the FBS universe (team identity + conferences) failed to load'); });
 }
@@ -44440,6 +44461,37 @@ function fbP4Injuries(teamName){
   });
   return out;
 }
+/* ---- AN OUTCOME PROBABILITY, RENDERED WITHOUT CLAIMING CERTAINTY --------
+   Delegates to football/matchup/confidence.js so the board and the committed
+   artifact bound the same number the same way. If that module did not load
+   (it is optional and must never gate a board) this falls back to plain
+   rounding EXCEPT at the two boundaries, which it still refuses to print:
+   100% and 0% are the two values a continuous margin distribution cannot
+   mean, and a reader seeing them is being told something the model did not
+   say. */
+function fbWinPair(pHome){
+  if(pHome==null||!isFinite(pHome))return null;
+  if(window.EDConfidence&&window.EDConfidence.outcomePair)return window.EDConfidence.outcomePair(pHome);
+  var one=function(p){
+    var pct=Math.round(p*100);
+    if(p>=1)return{pct:100,text:'100%',certain:true,bounded:false};
+    if(p<=0)return{pct:0,text:'0%',certain:true,bounded:false};
+    if(pct>=100)return{pct:99,text:'>99%',certain:false,bounded:true};
+    if(pct<=0)return{pct:1,text:'<1%',certain:false,bounded:true};
+    return{pct:pct,text:pct+'%',certain:false,bounded:false};
+  };
+  var h=one(pHome),a=one(1-pHome);
+  return {home:h,away:a,note:(h.bounded||a.bounded)
+    ?'one side rounds past the boundary, so it is shown bounded: a projection built on a continuous margin distribution cannot mean 100% or 0%'
+    :null};
+}
+
+/* Exported beside their definitions, not in the block of exports further
+   down: app.html is sliced by module for testing, and an export that lands in
+   a different slice from its function is a ReferenceError the moment that
+   slice is evaluated on its own. */
+window.fbWinPair=fbWinPair;
+
 /* ---- THE STARTER, FLATTENED FOR THE ENGINE'S INFORMATION LAYER ----------
    Mirrors qbContext() in football/matchup/inputs.js field for field, because
    the board and the offline artifact must hand the engine the same object.
@@ -44450,49 +44502,54 @@ function fbP4QbContext(teamName){
   var rec=null;
   try{ rec=fbStarterFor(teamName); }catch(_){ return null; }
   if(!rec||!rec.player_id)return null;
-  var exp=rec.experience||null, comp=rec.competition||null;
-  var share=null;
-  if(comp&&comp.players){
-    for(var i=0;i<comp.players.length;i++)
-      if(String(comp.players[i].player_id)===String(rec.player_id)&&comp.players[i].share!=null)
-        { share=comp.players[i].share; break; }
-  }
-  /* THE LAST GAME HE ACTUALLY OPENED, and what share of it he threw. The
-     persistence bands are measured on exactly this quantity — not on the
-     season-long competition share, which is a different number and would
-     mis-band every team. */
-  var hist=rec.history&&rec.history.length?rec.history:[], last=null;
-  for(var j=hist.length-1;j>=0;j--){
-    var h=hist[j];
-    if(h&&h.starter&&String(h.starter.player_id)===String(rec.player_id)&&h.starter.share!=null)
-      { last=h.starter.share; break; }
-  }
-  return {
-    player:rec.player_name||null, player_id:rec.player_id,
-    status:rec.status||'UNKNOWN', field_state:rec.field_state||null,
-    identity_corroborated:rec.identity_corroborated!==false,
-    contested:!!(comp&&comp.contested),
-    dropback_share:share, last_game_share:last,
-    persistence:fbP4Persistence(last),
-    dropbacks:exp&&exp.dropbacks!=null?exp.dropbacks:null,
-    starts:exp&&exp.starts!=null?exp.starts:null,
-    seasons_observed:exp&&exp.seasons_observed!=null?exp.seasons_observed:null,
-    source:rec.source||null, as_of:rec.retrieved_at||null
-  };
+  /* ONE FLATTENING, SHARED WITH THE OFFLINE BUILD. This used to be a second
+     copy of qbContext() from football/matchup/inputs.js, kept in step by a
+     comment in both files saying they must mirror each other field for field.
+     Two implementations of one contract is how the board and the committed
+     artifact come to disagree about the same game out of the same files, so
+     the flattening moved to football/matchup/qb_context.js and both callers
+     load it. If that module did not load there is no fallback copy: the board
+     reports the starter unknown, which is true of what it can compute. */
+  if(!window.EDQbContext)return null;
+  var epa=fbP4QbEpaResolved(rec);
+  return window.EDQbContext.build(rec,{
+    persistence:FB.persistence.data,
+    efficiency_history:epa,
+    availability_evidence:fbP4QbAvailEvidence(rec),
+    availability_why:(rec.availability&&rec.availability.why)||null
+  });
 }
-/* The measured band for a last-game dropback share. A band the calibration
-   refused to publish for thin support comes back null, and the engine then
-   declares the starter's reliability unmeasured rather than guessing. */
-function fbP4Persistence(lastShare){
-  var cal=FB.persistence.data;
-  if(!cal||!cal.by_band||lastShare==null)return null;
-  var bands=cal.by_band.slice().sort(function(a,b){return b.min_share-a.min_share;});
-  var band=null;
-  for(var i=0;i<bands.length;i++)if(lastShare>=bands[i].min_share){band=bands[i];break;}
-  if(!band)band=bands[bands.length-1];
-  if(!band||band.rate==null)return null;
-  return {band:band.id,rate:band.rate,pairs:band.pairs,label:band.label,
-    source:cal.source||null,as_of:cal.generated_at||null};
+window.fbP4QbContext=fbP4QbContext;
+/* HAS EDGEDESK MEASURED THIS PASSER. A boolean about whether a history
+   resolved for this athlete id — never the EPA numbers, which reach no
+   request on either path. */
+function fbP4QbEpaResolved(rec){
+  try{
+    if(!window.EDFbsEpa||!FB.epa||!FB.epa.data)return false;
+    var pk=window.EDFbsEpa.quarterback({artifact:FB.epa.data,starter:rec,team_key:null,opponent_key:null,cutoff:Date.now()});
+    return !!(pk&&pk.state==='MEASURED'&&pk.career&&pk.career.state==='MEASURED');
+  }catch(_){ return false; }
+}
+/* IS THERE EXPLICIT EVIDENCE HE CAN PLAY. Three values and the third is the
+   point: NONE is not "available", and no path here turns silence into health.
+   Only a report football/availability/policy.js calls COMPREHENSIVE, actually
+   read, reaches COMPREHENSIVE_SILENCE. */
+function fbP4QbAvailEvidence(rec){
+  var av=(rec&&rec.availability)||{};
+  if(av.evidence==='EXPLICIT')return 'EXPLICIT';
+  try{
+    var C=window.EDCARD&&window.EDCARD.cfbAvailability&&window.EDCARD.cfbAvailability();
+    var teams=(C&&C.data&&C.data.teams)||null;
+    if(!teams)return 'NONE';
+    var key=window.EDCfbP4.normKey(rec.team||'');
+    for(var k in teams){ if(!Object.prototype.hasOwnProperty.call(teams,k))continue;
+      var t=teams[k];
+      if(window.EDCfbP4.normKey(t.team_name||t.team_display)!==key)continue;
+      if(t.official_report&&t.official_report.ok&&t.official_report.report_of_no_absences)return 'COMPREHENSIVE_SILENCE';
+      return 'NONE';
+    }
+  }catch(_){ }
+  return 'NONE';
 }
 
 /* The freshest thing the report is built from, so staleness is measured
@@ -50309,7 +50366,7 @@ function fbBrLede(o){
   }
   if(o.projection&&o.projection.priced&&o.projection.fair_spread_text){
     L.push('EdgeDesk makes it '+o.projection.fair_spread_text+' before any sportsbook number is consulted'
-      +(o.projection.win_prob?(', with '+o.projection.win_prob.favourite+' winning '+o.projection.win_prob.favourite_pct+'% of simulations'):'')+'.');
+      +(o.projection.win_prob?(', with '+o.projection.win_prob.favourite+' winning '+(o.projection.win_prob.favourite_text||(o.projection.win_prob.favourite_pct+'%'))+' of simulations'):'')+'.');
   } else if(o.projection){
     L.push('EdgeDesk has not priced this matchup — '+(o.projection.absent_reason||'it is not on the current projection board')
       +'. The team and roster research below is unaffected by that and stands on its own.');
@@ -50472,7 +50529,12 @@ function fbBriefGame(q){
       var schedHome=pr.u.g.home_team, schedAway=pr.u.g.away_team;
       var sc=fbGxScore(m);
       var favHome=m.fair_spread>=0;
-      var hwp=m.home_win_prob==null?null:Math.round(m.home_win_prob*100);
+      /* A PROBABILITY IS NEVER RENDERED AS A CERTAINTY. Math.round() printed
+         100% / 0% on a projection whose own numbers were 0.9977 and 0.0023 —
+         two values a continuous margin distribution cannot mean. fbWinPair()
+         bounds them and says so; see football/matchup/confidence.js. */
+      var hwpair=fbWinPair(m.home_win_prob);
+      var hwp=hwpair?hwpair.home.pct:null;
       var conf=(p.scores&&p.scores.confidence!=null)?Math.round(p.scores.confidence):null;
       var ctx=(p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
       /* The brief, the article pipeline and the newsletter all render this as
@@ -50505,10 +50567,15 @@ function fbBriefGame(q){
                   home:{team:homeName,points:String(pr.flipped?sc.away:sc.home)},
                   note:'Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score.'}:null,
         score_absent_reason:scoreAbsent,
-        win_prob:hwp==null?null:{home:homeName,away:awayName,
-          home_pct:pr.flipped?100-hwp:hwp, away_pct:pr.flipped?hwp:100-hwp,
-          favourite:(pr.flipped?100-hwp:hwp)>=50?homeName:awayName,
-          favourite_pct:Math.max(pr.flipped?100-hwp:hwp,100-(pr.flipped?100-hwp:hwp))},
+        win_prob:hwpair==null?null:(function(){
+          var H=pr.flipped?hwpair.away:hwpair.home, A=pr.flipped?hwpair.home:hwpair.away;
+          var favH=H.pct>=A.pct;
+          return {home:homeName,away:awayName,
+            home_pct:H.pct, away_pct:A.pct, home_text:H.text, away_text:A.text,
+            bounded:!!(H.bounded||A.bounded), bounded_note:hwpair.note,
+            favourite:favH?homeName:awayName,
+            favourite_pct:favH?H.pct:A.pct, favourite_text:favH?H.text:A.text};
+        })(),
         outcome_range:(m.p10_margin!=null&&m.p90_margin!=null)?{
           basis_team:schedHome,p10:fbPts(m.p10_margin),
           median:m.median_margin==null?null:fbPts(m.median_margin),
@@ -50651,7 +50718,7 @@ function fbBriefGame(q){
       }
       notes.push('EdgeDesk’s line is '+projection.fair_spread_text+' on a neutral read of the two teams, before any book is consulted.'
         +(projection.total?(' Projected total '+projection.total+'.'):''));
-      if(projection.win_prob) notes.push(homeName+' wins '+projection.win_prob.home_pct+'% of the time in EdgeDesk’s simulation, '+awayName+' '+projection.win_prob.away_pct+'%.');
+      if(projection.win_prob) notes.push(homeName+' wins '+(projection.win_prob.home_text||projection.win_prob.home_pct+'%')+' of the time in EdgeDesk’s simulation, '+awayName+' '+(projection.win_prob.away_text||projection.win_prob.away_pct+'%')+'.'+(projection.win_prob.bounded?' Neither side is certain: '+projection.win_prob.bounded_note:''));
       if(projection.outcome_range) notes.push('Eight games in ten land between '+projection.outcome_range.p10+' and '+projection.outcome_range.p90+' for '+projection.outcome_range.basis_team+'. A single result inside that band tells you nothing new about either team.');
       if(market.available) notes.push('The market has '+market.market+(market.book?' at '+market.book:'')+(market.difference?', '+market.difference+' from EdgeDesk’s number.':'.'));
       else notes.push('No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.');
@@ -51317,7 +51384,12 @@ function fbNflBriefGame(q){
       var m=p.model;
       var sc=fbGxScore({fair_total:m.fair_total,fair_spread:m.fair_spread});
       var favHome=m.fair_spread>=0;
-      var hwp=m.home_win_prob==null?null:Math.round(m.home_win_prob*100);
+      /* A PROBABILITY IS NEVER RENDERED AS A CERTAINTY. Math.round() printed
+         100% / 0% on a projection whose own numbers were 0.9977 and 0.0023 —
+         two values a continuous margin distribution cannot mean. fbWinPair()
+         bounds them and says so; see football/matchup/confidence.js. */
+      var hwpair=fbWinPair(m.home_win_prob);
+      var hwp=hwpair?hwpair.home.pct:null;
       var R=p.outcome_range;
       var scoreAbsent=null;
       if(!sc){
@@ -51336,8 +51408,13 @@ function fbNflBriefGame(q){
         score:sc?{away:{team:aDisp,points:String(sc.away)},home:{team:hDisp,points:String(sc.home)},
           note:'Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score.'}:null,
         score_absent_reason:scoreAbsent,
-        win_prob:hwp==null?null:{home:hDisp,away:aDisp,home_pct:hwp,away_pct:100-hwp,
-          favourite:hwp>=50?hDisp:aDisp,favourite_pct:Math.max(hwp,100-hwp)},
+        win_prob:hwpair==null?null:{home:hDisp,away:aDisp,
+          home_pct:hwpair.home.pct, away_pct:hwpair.away.pct,
+          home_text:hwpair.home.text, away_text:hwpair.away.text,
+          bounded:!!(hwpair.home.bounded||hwpair.away.bounded), bounded_note:hwpair.note,
+          favourite:hwpair.home.pct>=hwpair.away.pct?hDisp:aDisp,
+          favourite_pct:Math.max(hwpair.home.pct,hwpair.away.pct),
+          favourite_text:hwpair.home.pct>=hwpair.away.pct?hwpair.home.text:hwpair.away.text},
         moneyline:(m.fair_home_ml!=null&&m.fair_away_ml!=null)?{
           home:hDisp,away:aDisp,
           home_odds:(m.fair_home_ml>0?'+':'')+m.fair_home_ml,
@@ -51460,7 +51537,7 @@ function fbNflBriefGame(q){
         headline='EdgeDesk projects '+(hp>=ap?hDisp+' '+hp+', '+aDisp+' '+ap:aDisp+' '+ap+', '+hDisp+' '+hp)+'.';
       }
       notes.push('EdgeDesk’s line is '+projection.fair_spread_text+' with a fair total of '+(projection.total||'—')+', before any book is consulted.');
-      if(projection.win_prob) notes.push(hDisp+' wins '+projection.win_prob.home_pct+'% of the time in EdgeDesk’s distribution, '+aDisp+' '+projection.win_prob.away_pct+'%.');
+      if(projection.win_prob) notes.push(hDisp+' wins '+(projection.win_prob.home_text||projection.win_prob.home_pct+'%')+' of the time in EdgeDesk’s distribution, '+aDisp+' '+(projection.win_prob.away_text||projection.win_prob.away_pct+'%')+'.'+(projection.win_prob.bounded?' Neither side is certain: '+projection.win_prob.bounded_note:''));
       if(!market.available) notes.push('No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.');
     }
     if(!headline){

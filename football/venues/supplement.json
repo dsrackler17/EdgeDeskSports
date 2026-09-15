@@ -2,6 +2,40 @@
   "schema": "edgedesk_venue_supplement_v1",
   "why": "The engine's venue table is part of the trained parameter set and covers the FBS field the model was built on (2025). A programme that moves up from the FCS, or a school that opens a new stadium, is therefore absent from it until the parameters are retrained — and an absent venue is an absent weather forecast, because a forecast is located by coordinates. This file is the injection point for those, and it is deliberately not a place to guess: an entry without a real latitude, a real longitude and a named source is REFUSED by football/matchup/inputs.js and reported as refused. Nothing here is interpolated from a city name.",
   "how_to_add": "Add one entry keyed by the team's canonical key (lower-case, alphanumerics only: `missouristate`). Required: lat, lon, source (where the coordinates came from, as a URL or a named public dataset). Optional: name, elev (metres), tz (UTC offset hours), dome (boolean), grass (boolean), capacity. Run `node football/fbs/build_coverage.js` and the game's weather field moves from UNAVAILABLE to a real state.",
-  "source": null,
-  "venues": {}
+  "source": "published stadium coordinates, one named source per entry; `verified_at` is when EdgeDesk last checked the entry against that source",
+  "resolver": "football/venues/resolve_venues.js lists every venue the current slate needs and refuses any candidate it cannot corroborate against a second independent source",
+  "venues": {
+    "missouristate": {
+      "name": "Robert W. Plaster Stadium",
+      "lat": 37.19778,
+      "lon": -93.27972,
+      "elev": 393,
+      "tz": -5,
+      "dome": false,
+      "grass": false,
+      "capacity": 17500,
+      "city": "Springfield, Missouri",
+      "source": "https://en.wikipedia.org/wiki/Robert_W._Plaster_Stadium",
+      "corroborated_by": "https://latitude.to/articles-by-country/us/united-states/421513/robert-w-plaster-stadium",
+      "corroboration_note": "the two published points differ by roughly 0.7 km, well inside the open-meteo forecast grid, so they agree for the purpose this coordinate is used for. The Wikipedia value is the one carried.",
+      "why_needed": "Missouri State moved up to FBS after the parameter table's trained venue set was built, so the trained table has no entry for it and every forecast join for a Missouri State home game failed for want of a coordinate.",
+      "verified_at": "2026-09-15"
+    },
+    "sacramentostate": {
+      "name": "Hornet Stadium",
+      "lat": 38.556,
+      "lon": -121.423,
+      "elev": 9,
+      "tz": -8,
+      "dome": false,
+      "grass": false,
+      "capacity": 21195,
+      "city": "Sacramento, California",
+      "source": "https://en.wikipedia.org/wiki/Hornet_Stadium_(Sacramento)",
+      "corroborated_by": "https://hornetsports.com/facilities/hornet-stadium/1",
+      "corroboration_note": "the school's own facilities page gives the address 6000 J Street, Sacramento, which is the same site as the published coordinate.",
+      "why_needed": "Sacramento State is new to the FBS field the parameter table was trained on, so the trained table has no entry for it.",
+      "verified_at": "2026-09-15"
+    }
+  }
 }
