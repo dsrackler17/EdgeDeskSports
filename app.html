@@ -31160,7 +31160,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var re=new RegExp('(^|\\n)\\s*\\**\\s*'+(sec.re||sec.h)+'\\s*\\**\\s*:?\\s*(\\n|$)','i');
       var m=re.exec(txt); return {sec:sec, at:m?m.index:-1, len:m?m[0].length:0};
     }).filter(function(x){return x.at>=0;}).sort(function(a,b){return a.at-b.at;});
-    if(idx.length<2) return mdToHtml(txt);            // not the four-section shape
+    /* NOT THE FOUR-SECTION SHAPE. The caller decides what to do with that —
+       see deskAnswerHTML: a wrong-shaped answer is demoted below the
+       deterministic read rather than served as the answer. */
+    if(idx.length<2) return '';
     var out='';
     idx.forEach(function(cur,i){
       var start=cur.at+cur.len, end=(i+1<idx.length)?idx[i+1].at:txt.length;
@@ -31172,6 +31175,32 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       }
     });
     return out;
+  }
+
+  /* WHICH READ THE PANEL LEADS WITH.
+
+     THE PRODUCTION FAILURE THIS EXISTS TO END, measured against the live
+     deployment rather than guessed: the writing model DID answer the reported
+     question — 3,781 characters of it — and carried NONE of the four sections.
+     It opened "WARNING — this answer is provisional. All six priced markets
+     ... are on stale quotes", which is the engine's own caveat with a football
+     question underneath it, unanswered.
+
+     So prose is not trusted because it exists; it is trusted because it
+     answered. When it carries the shape, it leads. When it does not, the
+     deterministic read leads and the prose is demoted to a disclosure, where a
+     reader who wants it can still have it and a reader who asked a football
+     question is not made to dig for the answer. */
+  function deskAnswerHTML(answer, S){
+    var shaped=deskProseHTML(answer);
+    if(shaped) return shaped;
+    if(!S) return mdToHtml(answer);          // nothing better to lead with
+    var h=deskReadHTML(S);
+    if(answer && String(answer).trim()){
+      h+='<details class="dk-more"><summary>The Desk\u2019s longer notes</summary>'
+        +'<div style="margin-top:6px">'+mdToHtml(answer)+'</div></details>';
+    }
+    return h;
   }
 
   /* The same four, built from structured fields, when the writer did not
@@ -31605,7 +31634,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            is exactly what buried the useful part of the reported reply. */
         var S=d.matchup_summary||null;
         if(S){ LAST_ASK={mode:mode,question:question,x:x,extra:extra};
-          return {html:integrityHTMLFor(d.research)+deskProseHTML(d.answer)
+          return {html:integrityHTMLFor(d.research)+deskAnswerHTML(d.answer,S)
             +deskMarketHTML(S,(d.research&&d.research.decisions)||[])
             +ledgerNoticeHTML(d)+deskNextHTML(S)+researchSectionsHTML(d.research)+traceHTMLFor(d.research),
             src:d.model?('The Desk \u00b7 reasoned by '+d.model+(d.cached?' \u00b7 cached':'')):null}; }

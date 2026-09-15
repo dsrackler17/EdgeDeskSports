@@ -102,6 +102,19 @@ Texas State is favored by 2.5, but EdgeDesk doesn't have enough current evidence
   ledger: { state: 'NOTHING_TO_RECORD', notice: null },
   narration: { ok: true, retried: false, retry: null },
 };
+/* WHAT THE DEPLOYMENT ACTUALLY RETURNED, probed live on 2026-09-15: the model
+   answered at length and in the wrong shape, opening with the engine's own
+   staleness caveat instead of a football read. Verbatim opening, abridged
+   body. This is the failure the panel must not pass through. */
+const WRONG_SHAPE = { build: 'e2e', model: 'claude-test',
+  answer: 'WARNING — this answer is provisional. All six priced markets on North Texas @ Texas State are on '
+    + 'stale quotes (captured 2345 minutes ago, well past the 90-minute freshness limit), so nothing below is '
+    + 'currently bettable.\n\nThe deterministic decision layer returned WATCH on all six selections. '
+    + 'Research priority is MEDIUM. The validation registry caps spreads at RESEARCH_LEAN.',
+  matchup_summary: SUMMARY, research: RESEARCH,
+  ledger: { state: 'NOTHING_TO_RECORD', notice: null },
+  narration: { ok: true, retried: false, retry: null } };
+
 const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
   why: 'the model returned no text (stop_reason max_tokens).',
   narration: { ok: false, retried: true, retryable: true, reason: 'the writing model returned no text twice' },
@@ -309,6 +322,37 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
       chk('what could make it wrong holds only opposing evidence',
         seen.wrong.length > 0 && seen.wrong.every((x) => !/hours old|refresh|availability report|not ingested/i.test(x)),
         seen.wrong);
+      chk('the page threw no errors', errors.length === 0, errors);
+      await ctx.close();
+    }
+
+    /* ══ 3b. THE MODEL ANSWERED, IN THE WRONG SHAPE ═══════════════════
+       The live failure: 3,781 characters, zero sections, an operational
+       preamble where the football read belongs. The panel must lead with the
+       answer to the question and demote the prose, not pass it through. */
+    {
+      const { page, ctx, errors } = await openDesk({ width: 1280, height: 900 }, WRONG_SHAPE);
+      await ask(page, Q);
+      const seen = await page.evaluate(() => {
+        const log = document.getElementById('edaiLog');
+        const read = log.querySelector('.dk-read p');
+        return {
+          heads: [...log.querySelectorAll('.dk-read .lab, .dk-sec > .h')].map((e) => e.textContent.trim()),
+          readText: read ? read.textContent.trim() : '',
+          firstBlock: log.querySelector('.edai-msg.a') ? log.querySelector('.edai-msg.a').firstElementChild.className : null,
+          notes: !!log.querySelector('details.dk-more summary'),
+          notesLabels: [...log.querySelectorAll('details.dk-more summary')].map((e) => e.textContent.trim()),
+          text: log.innerText,
+        };
+      });
+      chk('a wrong-shaped answer still gets the four sections', seen.heads.length === 4, seen.heads);
+      chk('and the read answers the question rather than warning about freshness',
+        /favored by 2\.5/.test(seen.readText) && !/^WARNING/i.test(seen.readText), seen.readText.slice(0, 160));
+      chk('the operational preamble does not lead the answer',
+        !/^warning/i.test(seen.text.trim().split('\n').filter((l) => l.trim())[1] || ''),
+        seen.text.slice(0, 200));
+      chk('the prose is kept, demoted to a disclosure',
+        seen.notesLabels.some((l) => /longer notes/i.test(l)), seen.notesLabels);
       chk('the page threw no errors', errors.length === 0, errors);
       await ctx.close();
     }
