@@ -14866,6 +14866,82 @@ Direct, analytical, specific. Name the factors; never "there are many factors to
 
 export type PresentationMode = "SIMPLE" | "STANDARD" | "DEEP" | "PUBLISHER";
 
+/* ========================================================================
+   THE DESK ANSWERS THE QUESTION THAT WAS ASKED.
+
+   THE PRODUCTION FAILURE THIS EXISTS TO END. A reader asked "What do you think
+   about North Texas vs Texas State this week? Anything worth betting?" The
+   routing was finally right — the matchup resolved, the sport was college
+   football, the evidence was the correct game's. And the answer was still
+   useless, for reasons that had nothing to do with retrieval:
+
+     - the prompt ran to 120,041 characters, of which 46k was a raw EVIDENCE
+       dump and 34k a packet — 66% machine output before any answer shape
+     - every MODE_PROMPT tells the model to lead with a VERDICT ON A SELECTION.
+       None of them answers a question about a football game. So the model
+       narrated the decision layer instead of reading the matchup
+     - six near-identical cards, one per quoted selection on the SAME game,
+       buried whatever was useful
+     - the card's "against it" line held the PRICE NEEDED, not a single piece
+       of opposing evidence
+
+   So when one game is the subject, this contract replaces the shape. It is
+   deliberately about football first and the desk's machinery last, and every
+   section maps to something the reader asked for rather than something the
+   engine computed.
+   ======================================================================== */
+const MATCHUP_CONTRACT = `THE DESK — ANSWER CONTRACT FOR A SINGLE MATCHUP
+This question is about ONE game. It replaces the presentation-mode shape above.
+
+VOICE. You are The Desk: sharp, skeptical, concise, confident about facts and
+never about certainty you do not have. First person singular is fine ("I'd
+treat this as research-only"). No hedging padding, no enthusiasm, no sales.
+
+WRITE EXACTLY THESE FOUR SECTIONS, in this order, with these headings:
+
+**The Desk's read**
+ONE paragraph, 2-4 sentences, plain football English, answering the question
+that was actually asked. Lead with what the market says and what EdgeDesk can
+or cannot stand behind. If the evidence does not support a call, say that IS
+the read — that is a complete answer, not a failure. A model that has no
+validated probability in this market cannot supply one here.
+A good example of the register:
+  "Texas State is favored by 2.5, but EdgeDesk doesn't have enough current
+   evidence to call that value. The last FanDuel quote is stale, so I'd treat
+   the matchup as research-only until the market refreshes."
+
+**Why**
+2-4 bullets. The actual football and market reasons, each with the number it
+rests on. Records, opponent quality, rest, SP+ and the market number belong
+here. Say which side each point favours.
+
+**What could make it wrong**
+ONLY evidence that argues AGAINST the read. A missing input is NOT an argument
+and does not belong in this section — neither does a stale price, an absent
+injury report or an un-ingested metric. If nothing in the evidence contradicts
+the read, say so plainly in one line. Never manufacture an objection for
+balance, and never pad this with things a refresh would fix.
+
+**Price and data limitations**
+Where the price stands, what price would be needed to change anything, and what
+EdgeDesk cannot currently see. Stale quotes, missing availability and
+un-ingested metrics go HERE. Name the age of a stale quote in hours.
+
+FORBIDDEN IN THE ANSWER — these are internal and the reader never sees them:
+intent names (cfb_research_matchup, cfb_betting_candidate), mode or depth
+labels (SLATE, DEEP, MATCHUP), tier names (RESEARCH_LEAN, PROBABILITY tier),
+evidence ids, packet ids, table or column names, HTTP codes, SQL, JSON, the
+words "retrieval", "data_path", "slate scope", "validation registry", and any
+description of your own permissions or of what you were instructed to do.
+Say "EdgeDesk hasn't ingested per-play data for college football" — not
+"team_efficiency is NOT_AVAILABLE in the capability matrix".
+
+DO NOT list every quoted selection. The primary market is named in DECISION
+CARD FACTS; the rest are shown to the reader separately and must not be
+recited in the prose.
+
+Under 220 words across all four sections.`;
+
 const MODE_PROMPT: Record<PresentationMode, string> = {
   SIMPLE: `PRESENTATION MODE: SIMPLE — the five-second answer.
 Your job here is compression, not display. Write for a football fan at a bar who has never placed a bet and has never heard of de-vigging, a fair line, EV, CLV, a sharp book or closing-line value. If a sentence needs a glossary, it has failed. Target an eighth-grade reading level. Short sentences. Short bullets. Never start with background — start with the decision.
@@ -15961,6 +16037,197 @@ export function matchesContext(ctx: ResearchContext, subject: {
   if (!a?.key || !b?.key) return false;
   const want = new Set([ctx.home_id, ctx.away_id].filter(Boolean) as string[]);
   return want.has(a.key) && want.has(b.key) && a.key !== b.key;
+}
+
+/* ========================================================================
+   ONE PRIMARY MARKET, AND A FACTUAL READ WHEN THE WRITER DOES NOT ANSWER.
+
+   The reported answer showed SIX cards — one per quoted selection on the SAME
+   game — and buried everything useful. A football reader asking about a game
+   means the spread unless they say otherwise; the other five selections are
+   reference, not the answer.
+
+   And when narration fails, the reader is still owed a read. Not an invented
+   one: this states what the MARKET says, what EdgeDesk can and cannot stand
+   behind, and stops. It never produces a lean the decision layer did not
+   produce, and it never supplies a probability the validation registry
+   forbids.
+   ======================================================================== */
+
+/** How a football reader ranks the markets on one game. */
+const MARKET_RANK: Record<string, number> = { spreads: 0, totals: 1, h2h: 2 };
+
+/**
+ * The one market the answer leads with.
+ *
+ * An actionable quote outranks a stale one — a live spread is what the reader
+ * can do something about. Below that it is the reader's own ordering: the
+ * spread is "the line", the total next, the moneyline last.
+ */
+export function primaryDecision(decisions: GameDecision[]): GameDecision | null {
+  if (!decisions?.length) return null;
+  const score = (d: any) => {
+    const fresh = d?.gates?.freshness?.status === "CURRENT" ? 0 : 1;
+    const priced = d?.price?.offered_american ? 0 : 1;
+    const rank = MARKET_RANK[String(d.market)] ?? 9;
+    /* A BET CANDIDATE on a live price is the answer whatever market it is in. */
+    const verdict = d.decision === "BET CANDIDATE" ? 0 : d.decision === "WATCH" ? 1 : 2;
+    return [priced, fresh, verdict, rank];
+  };
+  return [...decisions].sort((a, b) => {
+    const A = score(a), B = score(b);
+    for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) return A[i] - B[i];
+    return 0;
+  })[0] ?? null;
+}
+
+/** Hours since a quote was captured, or null when it was never captured. */
+function quoteAgeHours(d: any): number | null {
+  const why = String(d?.gates?.freshness?.why ?? "");
+  const m = /Captured|captured (\d+) minutes? ago/.exec(why) ?? /(\d+)\s*minutes? ago/.exec(why);
+  const mins = m ? Number(m[1]) : NaN;
+  return Number.isFinite(mins) ? Math.round((mins / 60) * 10) / 10 : null;
+}
+
+export interface MatchupSummary {
+  matchup: string | null;
+  kickoff: string | null;
+  /** The paragraph that answers the question. Never a lean the engine did not make. */
+  read: string;
+  why: string[];
+  could_be_wrong: string[];
+  price_needed: string | null;
+  data_blockers: string[];
+  /** Which market the read is about, and how many others exist. */
+  primary: Record<string, unknown> | null;
+  other_markets: number;
+  /** Always stated, never inferred: whose arithmetic any expected return is. */
+  ev_provenance: string | null;
+  source: "deterministic";
+}
+
+/**
+ * The factual read, built from structured fields only.
+ *
+ * Nothing here is generated prose in the sense that matters: every clause is
+ * conditional on a field the decision layer computed, and where a field is
+ * absent the sentence says so rather than softening it.
+ */
+export function matchupSummary(input: {
+  ctx: ResearchContext;
+  decisions: GameDecision[];
+  attack?: { counterarguments?: string[]; blockers?: string[]; next_checks?: string[] } | null;
+  slate_state?: any;
+}): MatchupSummary {
+  const { ctx, decisions, attack } = input;
+  const d: any = primaryDecision(decisions ?? []);
+  const matchup = ctx.away && ctx.home ? `${ctx.away} @ ${ctx.home}` : null;
+  const out: MatchupSummary = {
+    matchup, kickoff: ctx.kickoff, read: "", why: [], could_be_wrong: [],
+    price_needed: null, data_blockers: [], primary: null,
+    other_markets: Math.max(0, (decisions?.length ?? 0) - (d ? 1 : 0)),
+    ev_provenance: null, source: "deterministic",
+  };
+
+  /* ---- no priced market at all ---------------------------------------- */
+  if (!d) {
+    out.read = matchup
+      ? `${matchup} is on the card, and no source EdgeDesk reads carries a price for it right now. `
+        + `That is a gap in what I can see, not a view on the game — I have nothing to judge a number against.`
+      : "There is no priced market here to judge, so I have no read to give.";
+    out.data_blockers.push("No executable price from any source EdgeDesk reads.");
+    return out;
+  }
+
+  const p = d.price ?? {};
+  const fresh = d?.gates?.freshness?.status;
+  const stale = fresh && fresh !== "CURRENT";
+  const ageH = quoteAgeHours(d);
+  const side = String(d.selection ?? "");
+  const hcap = d.handicap;
+  const book = p.book ? String(p.book) : null;
+
+  /* WHO THE MARKET LIKES — read off the market number, never off the model.
+     The model has no validated probability in this market and may not supply
+     a favourite here. */
+  let favLine = "";
+  if (d.market === "spreads" && hcap != null) {
+    const fav = hcap < 0 ? side : (ctx.home === side ? ctx.away : ctx.home);
+    favLine = `${fav} is favored by ${Math.abs(Number(hcap))}`;
+  } else if (d.market === "totals" && hcap != null) {
+    favLine = `the total is ${hcap}`;
+  } else if (p.offered_american) {
+    favLine = `${side} is priced at ${p.offered_american}`;
+  }
+
+  /* ---- the read -------------------------------------------------------- */
+  const cannotCall = d.decision !== "BET CANDIDATE";
+  const bits: string[] = [];
+  if (favLine) bits.push(favLine.charAt(0).toUpperCase() + favLine.slice(1));
+  if (cannotCall) {
+    bits.push("but EdgeDesk doesn't have enough current evidence to call that value");
+  } else if (p.market_ev != null) {
+    bits.push(`and at ${p.offered_american}${book ? ` on ${book}` : ""} that price clears EdgeDesk's floor `
+      + `against the sharp-market fair number`);
+  }
+  out.read = bits.join(", ") + ".";
+  if (stale) {
+    out.read += ` The last ${book ?? "book"} quote is stale${ageH != null ? ` — ${ageH} hours old` : ""}, `
+      + `so I'd treat the matchup as research-only until the market refreshes.`;
+  } else if (cannotCall) {
+    out.read += ` I'd treat it as research rather than a play.`;
+  }
+
+  /* ---- why ------------------------------------------------------------- */
+  if (favLine) out.why.push(`The market number: ${favLine}${book ? `, last seen at ${book}` : ""}.`);
+  if (d.model?.line != null) {
+    out.why.push(`EdgeDesk's model projects ${d.model.line} on this side. `
+      + `It has no validated outcome probability in this market, so it is a comparison point, not an edge.`);
+  }
+  if (p.fair_american && p.fair_label) {
+    out.why.push(`The comparison price is ${p.fair_american} (${p.fair_label}).`);
+  }
+
+  /* ---- what could make it wrong: OPPOSING EVIDENCE ONLY ---------------- */
+  out.could_be_wrong = (attack?.counterarguments ?? []).slice(0, 4);
+  if (!out.could_be_wrong.length) {
+    out.could_be_wrong.push("Nothing in the evidence EdgeDesk holds argues against this read. "
+      + "That is not the same as the read being strong — see the limitations.");
+  }
+
+  /* ---- price needed ---------------------------------------------------- */
+  if (p.price_needed_american) {
+    out.price_needed = `${p.price_needed_american} or better would bring this to EdgeDesk's floor.`;
+  } else if (p.price_limit_american) {
+    out.price_needed = `Good to ${p.price_limit_american}; worse than that and the expected return falls below the floor.`;
+  }
+
+  /* ---- data blockers --------------------------------------------------- */
+  if (stale) {
+    out.data_blockers.push(`The ${book ?? "book"} quote is ${ageH != null ? `${ageH} hours` : "past its window"} old. `
+      + `It is the last price EdgeDesk observed, not one you can take now.`);
+  }
+  /* The attack layer states staleness in its own words too ("last re-priced
+     2310m ago"). Saying the same fact twice in a list of limitations reads as
+     two problems; the reader is told the quote is stale once, in hours. */
+  for (const b of attack?.blockers ?? []) {
+    if (stale && /re-?priced|stale until|minutes ago|\bm ago\b/i.test(b)) continue;
+    if (!out.data_blockers.includes(b)) out.data_blockers.push(b);
+  }
+
+  /* ---- the primary market, and whose arithmetic the number is ---------- */
+  out.primary = {
+    market: d.market, selection: side, handicap: hcap ?? null,
+    offered_american: p.offered_american ?? null, book,
+    freshness: fresh ?? null, decision: d.decision, strength: d.strength ?? null,
+  };
+  if (p.model_ev != null) {
+    out.ev_provenance = "This expected return comes from EdgeDesk's own model, which is validated to produce one in this market.";
+  } else if (p.market_ev != null) {
+    out.ev_provenance = "This expected return is measured against a sharp-market fair price, not produced by EdgeDesk's model — "
+      + "the model has no validated outcome probability in this market.";
+  }
+  return out;
 }
 
 async function runResearch(
@@ -17331,6 +17598,16 @@ function compact(o: unknown, max = 60000): string {
 function buildUserContent(body: any, research: ResearchOut | null, budgetChars = evidenceMax(), pres: Presentation | null = null): string {
   const { mode, question, packet, compare } = body ?? {};
   const parts: string[] = [];
+  /* ONE GAME IS NOT THE WHOLE CARD, AND THE PROMPT HAS TO KNOW THAT.
+     The reported failure came back `stop_reason: max_tokens, output 0` on a
+     31,000-token input: 46k characters of raw EVIDENCE and 34k of packet, plus
+     a ranked card and a research queue for a question about ONE game. The
+     model had no room left to answer. When a single matchup is the subject the
+     packet already carries its facts in structured form, so the card-wide
+     blocks are dropped and the evidence list is cut to what is about THIS
+     game. Nothing is hidden: what does not fit is named, as it always was. */
+  const oneGame = research?.context?.single_game === true;
+  if (oneGame) budgetChars = Math.min(budgetChars, 24000);
   const ask = (question && String(question).trim()) || defaultAsk(mode);
   parts.push(`QUESTION: ${ask}   (client mode=${mode ?? "chat"})`);
 
@@ -17448,7 +17725,8 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
        A complete index of every game, then deep evidence for the few that were
        actually researched. The model receives BOTH so it can never mistake the
        shortlist for the card, or claim to have compared games it never saw. */
-    if (research.ranked && research.ranked.length) {
+    /* A ranked CARD is not an answer to a question about ONE game on it. */
+    if (research.ranked && research.ranked.length && !oneGame) {
       const r = research.ranked;
       const eligible = r.filter((x) => x.eligible);
       parts.push(
@@ -17963,7 +18241,7 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
       );
     }
 
-    if (research.queue.length && (research.plan.mode === "SCOUT" || research.plan.depth === "SLATE")) {
+    if (research.queue.length && !oneGame && (research.plan.mode === "SCOUT" || research.plan.depth === "SLATE")) {
       parts.push(
         "RESEARCH QUEUE — games flagged by comparing owned fields against each other. "
         + "research_interest and betting_action are SEPARATE: a game can be the most interesting "
@@ -18019,7 +18297,9 @@ function buildUserContent(body: any, research: ResearchOut | null, budgetChars =
       );
     }
 
-    if (Object.keys(research.data_path).length) {
+    /* Operational. The reader never sees it, and on a single-matchup question
+       it is 4,000 characters the answer needs more than the trace does. */
+    if (Object.keys(research.data_path).length && !oneGame) {
       parts.push(
         "DATA PATH — where a retrieval came back empty and which link failed. If the user's question "
         + "needed one of these, explain in one sentence what EdgeDesk tried and what came back:\n"
@@ -18473,7 +18753,14 @@ function researchSummary(research: ResearchOut | null, plan: Plan) {
       eligible_games: research.ranked ? research.ranked.filter((r) => r.eligible).length : null,
       researched_games: research.packets ? research.packets.length : null,
       refreshed_at: new Date().toISOString(),
-      decisions: (research.decisions ?? []).slice(0, 12),
+      /* ONE PRIMARY, THE REST BEHIND A DISCLOSURE. Six cards for six
+         selections on one game is the reported failure; the panel leads with
+         the market a football reader means and keeps the others available. */
+      decisions: (() => {
+        const ds = (research.decisions ?? []).slice(0, 12);
+        const prim = research.context?.single_game ? primaryDecision(ds) : null;
+        return ds.map((d) => (d === prim ? { ...d, primary: true } : { ...d, primary: false }));
+      })(),
       evidence_packets: (research.packets ?? []).slice(0, 5),
       ledger_rows_published: (research.ledger_rows ?? []).length,
       coverage_metrics: (research as any).coverage_metrics ?? null,
@@ -18685,6 +18972,20 @@ export async function handle(req: Request): Promise<Response> {
   let presentation: Presentation | null = null;
   try { presentation = buildPresentation(body, research, presentationMode); } catch { presentation = null; }
 
+  /* THE FACTUAL READ, BUILT BEFORE THE MODEL IS CALLED.
+     It costs nothing — every field it reads is already computed — and having
+     it in hand means a narration failure degrades to a real answer instead of
+     an apology. It travels on EVERY response, so the panel can lead with the
+     primary market and keep the other selections out of the way. */
+  let summary: MatchupSummary | null = null;
+  try {
+    summary = research?.context?.single_game
+      ? matchupSummary({ ctx: research.context, decisions: research.decisions ?? [],
+          attack: (research as any).thesis_attack ?? null, slate_state: research.slate_state })
+      : null;
+  } catch { summary = null; }
+  let RETRY_NOTE: Record<string, unknown> | null = null;
+
   /* ?dry=1 — everything except the model call. Returns the packet the analyst
      WOULD have received, so retrieval, entity resolution, coverage, integrity
      and the assembled prompt can all be verified in one request without
@@ -18801,7 +19102,17 @@ export async function handle(req: Request): Promise<Response> {
       /* The instructions that govern the answer, so a rule can be verified
          rather than assumed. Dry mode is the inspection surface for this
          function and the system prompt is half of what it actually sends. */
-      system: SYSTEM + "\n\n" + MODE_PROMPT[presentationMode],
+      /* The SAME string the live path sends, matchup contract included — a
+         dry response that omits half the instructions is not an inspection
+         surface, it is a second implementation to keep in step. */
+      system: SYSTEM + "\n\n" + MODE_PROMPT[presentationMode]
+        + (research?.context?.single_game ? "\n\n" + MATCHUP_CONTRACT : ""),
+      /* The deterministic four-section read, so it can be asserted without a
+         model call — and so the panel can render it while narration loads. */
+      matchup_summary: research?.context?.single_game
+        ? matchupSummary({ ctx: research.context, decisions: research.decisions ?? [],
+            attack: (research as any).thesis_attack ?? null, slate_state: research.slate_state })
+        : null,
     });
   }
 
@@ -18815,7 +19126,10 @@ export async function handle(req: Request): Promise<Response> {
   /* Four presentations of one engine: the research prompt is shared, the
      write-up instructions differ. The copy contract rides along whenever
      there is a decision card to write copy for. */
-  const system = SYSTEM + "\n\n" + MODE_PROMPT[presentationMode];
+  /* ONE GAME, ONE CONTRACT. Appended last so it supersedes the presentation
+     mode's decision-card shape, which answers a different question. */
+  const system = SYSTEM + "\n\n" + MODE_PROMPT[presentationMode]
+    + (research?.context?.single_game ? "\n\n" + MATCHUP_CONTRACT : "");
   /* SIMPLE and PUBLISHER are compression tasks; they need less room than a
      full research write-up, plus a small allowance for the copy block. */
   const baseTokens = presentationMode === "SIMPLE" ? 700
@@ -18856,6 +19170,7 @@ export async function handle(req: Request): Promise<Response> {
         error: `anthropic ${r.status}`, detail, presentation,
         answer: null,
         narration: { ok: false, reason: `the writing model answered ${r.status}`, retryable: true },
+        matchup_summary: summary,
         research: researchSummary(research, plan),
       }, 502);
     }
@@ -18884,9 +19199,19 @@ export async function handle(req: Request): Promise<Response> {
          Rebuilding with a smaller evidence budget keeps whole items only and
          NAMES whatever will not fit, so a retry answer is thinner but never
          built on a truncated record. */
+      /* SMALLER MEANS SMALLER. `evidenceMax()/4` was still 60,000 characters —
+         a quarter of a payload that had just exhausted the model's budget at
+         31,000 input tokens is not a retry, it is the same failure with a
+         smaller number on it. A retry gets the matchup's own facts and little
+         else, and budgetEvidence() still keeps whole items and names what it
+         dropped, so a thinner answer is never one built on a severed record. */
+      const retryBudget = research?.context?.single_game ? 6000 : Math.min(12000, Math.floor(evidenceMax() / 8));
       const trimmed = [
-        { role: "user", content: buildUserContent(body, research, Math.floor(evidenceMax() / 4), presentation) },
+        { role: "user", content: buildUserContent(body, research, retryBudget, presentation) },
       ];
+      RETRY_NOTE = { attempted: true, reason: stop === "max_tokens" ? "the first answer ran out of room"
+        : "the first call returned no text", evidence_budget: retryBudget,
+        first_input_tokens: usage?.input_tokens ?? null, first_max_tokens: maxTokens };
       const r2 = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -18906,6 +19231,12 @@ export async function handle(req: Request): Promise<Response> {
          it as a 200 carrying the research, so the caller keeps the deterministic
          board rather than losing the whole response to a narration failure. */
       if (!answer) {
+        /* NARRATION FAILED TWICE. THE READER STILL GETS A READ.
+           Not an invented one — matchupSummary() states what the market says
+           and what EdgeDesk cannot stand behind, from fields the decision
+           layer already computed. A reader who asked about a football game
+           gets a football answer; what they do not get is a lean nobody
+           made. */
         return json({
           answer: "",
           error: "empty completion",
@@ -18913,7 +19244,10 @@ export async function handle(req: Request): Promise<Response> {
             + (usage ? `input ${usage.input_tokens ?? "?"} tokens, output ${usage.output_tokens ?? "?"}, ` : "")
             + `max_tokens ${maxTokens} at depth ${plan.depth}. `
             + `A retry with double the budget and a trimmed payload also came back empty.`,
-          research,
+          narration: { ok: false, retried: true, retry: RETRY_NOTE, retryable: true,
+            reason: "the writing model returned no text twice" },
+          matchup_summary: summary,
+          research: researchSummary(research, plan),
           /* Deterministic copy only — nothing narrated, nothing lost. */
           presentation: applyAiCopyTo(presentation, null, research, "empty completion"),
         }, 200);
@@ -18962,6 +19296,11 @@ export async function handle(req: Request): Promise<Response> {
          string; the customer needs the one-line notice. It stays server-side,
          where ?probe=1 and the deployment doctor already read it. */
       ledger: redactLedgerDetail(ledger),
+      /* The four-section read, deterministic, always present. The panel renders
+         the model's prose when there is prose and this when there is not, and
+         the two have the same shape on purpose. */
+      matchup_summary: summary,
+      narration: { ok: true, retried: !!RETRY_NOTE, retry: RETRY_NOTE },
       // Additive. Older clients ignore it; the panel can render a research trace.
       research: researchSummary(research, plan),
       /* Additive. The structured decision card: deterministic fields from
@@ -18975,6 +19314,7 @@ export async function handle(req: Request): Promise<Response> {
       error: String((e as Error)?.message ?? e), presentation,
       answer: null,
       narration: { ok: false, reason: "the writing model could not be reached", retryable: true },
+      matchup_summary: summary,
       research: researchSummary(research, plan),
     }, 502);
   }
