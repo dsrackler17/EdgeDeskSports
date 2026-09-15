@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-15T14:25:10.226Z",
+  "generated_at": "2026-09-15T16:40:22.300Z",
   "ok": true,
-  "last_ok_at": "2026-09-15T14:25:10.226Z",
+  "last_ok_at": "2026-09-15T16:40:22.300Z",
   "run": {
-    "trigger": "schedule",
+    "trigger": "push",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -37,7 +37,7 @@
   "lines": {
     "nfl": {
       "compared": 16,
-      "median_gap": 2.98,
+      "median_gap": 3.13,
       "max_gap": 5.96,
       "outliers": [],
       "orientation_faults": []
@@ -103,7 +103,7 @@
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 2.98 pts over 16 games, max 5.96"
+      "detail": "median gap 3.13 pts over 16 games, max 5.96"
     },
     {
       "id": "p4_season_window",
@@ -179,19 +179,19 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-15T14:25:10.226Z",
+    "daily_check_last_run": "2026-09-15T16:40:22.300Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-15T14:25:10.226Z",
+    "engine_tests_last_run": "2026-09-15T16:40:22.300Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-15T14:25:10.226Z",
+    "nfl_ingest_last_run": "2026-09-15T16:40:22.300Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 16,
-    "p4_ingest_last_run": "2026-09-15T14:25:10.226Z",
+    "p4_ingest_last_run": "2026-09-15T16:40:22.300Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 185,
-    "projection_guard_last_run": "2026-09-15T14:25:10.226Z",
+    "projection_guard_last_run": "2026-09-15T16:40:22.300Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-15T14:25:10.226Z",
+    "line_guard_last_run": "2026-09-15T16:40:22.300Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 16
   }
