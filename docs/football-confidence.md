@@ -75,6 +75,45 @@ These are the rules the tests hold, in `football/matchup/confidence.test.js`:
   field rather than letting it look like a bug.
 * **No interior probability renders as 100% or 0%.**
 
+## Before and after, on the same 77-game slate
+
+Measured by running both trees against the same schedule feed at the same
+instant (`8ffb1bb~1` versus the branch head):
+
+| | before | after |
+|---|---|---|
+| mean information confidence | 70.29% | **70.89%** |
+| median | 80.4% | 79.8% |
+| lower decile | 45.2% | 42.2% |
+| minimum | 23.6% | **30.4%** |
+| mean input coverage | 59.0% | **61.1%** |
+| mean priced confidence | 39.33% | 39.33% *(unchanged — nothing new is priced)* |
+| `starting QB unknown` warnings | **154** | **4** |
+| Miami at Wake Forest | 72.14% · 12 of 19 fields | **77.80%** · 17 of 25 |
+| Houston at Texas Tech | 72.36% · 12 of 19 fields | **77.07%** · 17 of 25 |
+| Power Four games (39) | 78.64% | **80.00%** |
+| other FBS (20) | 77.73% | **79.04%** |
+| FBS vs FCS (18) | 43.94% | **42.08%** |
+
+**The slate mean barely moved, and that is the honest result.** The calculation
+corrections raised it and the honesty corrections lowered it, by design:
+
+* `off_field` became a contract field because the engine scores it and it is
+  missing on every game. Publishing the gap costs coverage.
+* The FCS side's roster, availability and talent are counted as the gaps they
+  are instead of being excused as inapplicable — which is why the FBS-vs-FCS
+  tier FELL and the two Power Four tiers rose.
+* `NOT_REQUIRED` and `NOT_DUE_YET` stay in the denominator.
+
+The contract also grew: 19 applicable fields to 25, because `team_rating`,
+`matchup_profile`, `recruiting_talent` per side and `off_field` per side were
+being scored and not published. A larger denominator with the same numerator
+is a lower percentage and a truer one.
+
+What did NOT move is `priced_confidence`, at 39.33% on both arms. Nothing in
+this change prices anything new, and the number that says so is unchanged to
+two decimal places.
+
 ## Where the points actually went, week 3 2026
 
 Seventy-seven games. Mean information confidence **70.9%**, median **79.8%**,
@@ -148,6 +187,31 @@ reason is not a missing feed: it is that the model's own layers decline to
 claim certainty they do not have. The honest ceiling for a fully-supplied
 Power Four game in week 3 is about 93.5%, and it rises through the season as
 the player layer's production accumulates.
+
+## Coverage of the things the number is made of
+
+| | before | after |
+|---|---|---|
+| starter resolved by athlete id | 150 of 154 sides (97.4%) | unchanged — it was already good, and the WARNING was the bug |
+| starter evidence class | 239 last-game proxy · 29 competition · 7 unknown | published per row as CONFIRMED / PROJECTED / COMPETITION / LAST_GAME_PROXY / UNKNOWN |
+| availability, automated read | 138 of 138 programmes graded LIMITED, 0 records | unchanged automated; the policy state is now published per fixture: 71 NOT_REQUIRED, 28 NOT_DUE_YET, 37 FETCH_FAILED, 18 outside the registry |
+| official conference reports registered | 0 | 7 conferences with a verified url, cadence, scope and vocabulary; 3 recorded UNVERIFIED |
+| fresh-market coverage | 0 live, 0 recent, 46 stale of 46 | unchanged — the capture pipeline is a separate job; what changed is that the model clock can no longer stand in for the price clock |
+| player-id match | "1746 of 15542 with attributed production" | 5,509 with an attributed event · 1,746 with a career quality score · 193 this season · 2,905 provider ids on no FBS roster · **45 real broken joins, 42 fixable from EdgeDesk's own sync** |
+| team recruiting talent | none | 137 of 138 programmes; Hawai'i is not in the provider's table |
+| venue coordinates | 2 FBS home venues missing | 0 |
+
+## Every remaining missing field, and what it costs
+
+| Field | Games | Mean points | Why |
+|---|---|---|---|
+| `off_field` (×2) | 77 | 2.44 | no feed is wired in. The engine scores it |
+| `weather` | 77 | 2.45 | blocked in this build environment; a networked build supplies it |
+| `qb_availability` | 153 | ~4.8 | 71 not required (non-conference), 27 not due yet, 55 unread |
+| `availability` | 154 | ~2.8 | same three reasons |
+| `team_rating` / `matchup_profile` / `roster*` on the FCS side | 18 games | up to 20 | EdgeDesk does not rate the FCS field |
+| `coaching_continuity` | 77 | 0 | it feeds no scored input. Checked 2026-09-15: sportsdataverse publishes no coaching table, CFBD needs a per-user key whose terms forbid committing the result |
+| `recruiting_talent` | 1 | 0 | Hawai'i is not in the provider's table. Research only; feeds no scored input |
 
 ## Calculation corrections, separated from data gains
 
