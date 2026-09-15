@@ -47,6 +47,10 @@ on:
         description: 'Deploy supabase/functions/edgedesk_ai'
         type: boolean
         default: true
+      deploy_capture:
+        description: 'Deploy supabase/functions/capture (the odds capture job)'
+        type: boolean
+        default: false
       apply_ledger:
         description: 'Apply supabase/recommendation_ledger.sql (idempotent)'
         type: boolean
@@ -73,6 +77,16 @@ jobs:
       - name: The desk must answer its acceptance conversation first
         run: npm run intel:test
 
+      # Same rule, applied to the other function this workflow can now ship.
+      # capture.test.js imports the deployed file itself against a mocked
+      # network, so this is the qualification contract the board is priced by,
+      # not a proxy for it.
+      - name: Capture must pass its qualification contract before it ships
+        if: ${{ inputs.deploy_capture }}
+        run: |
+          node tools/capture/capture.test.js
+          node tools/capture/verdict_authority.test.js
+
       - name: Check the credentials exist before claiming anything
         id: creds
         env:
@@ -89,7 +103,7 @@ jobs:
           fi
 
       - name: Install the Supabase CLI
-        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        if: ${{ (inputs.deploy_function || inputs.deploy_capture) && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
         uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -102,6 +116,31 @@ jobs:
           supabase functions deploy edgedesk_ai \
             --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
             --no-verify-jwt=false
+
+      # CAPTURE HAD NO DEPLOY PATH AT ALL. Every other function here is
+      # reachable from Actions; capture's header carries a
+      # `supabase functions deploy capture --no-verify-jwt` that only ever ran
+      # from somebody's laptop, so a merged capture fix stayed unshipped until
+      # a person remembered — the exact drift this workflow was written to end.
+      # On 2026-09-15 the doctor reported the deployment serving
+      # capture-v9-qualified against a checkout of capture-v9-qualified-r2.
+      #
+      # --no-verify-jwt IS LOAD-BEARING AND IS NOT A COPY OF THE LINE ABOVE.
+      # edgedesk_ai is called by signed-in browsers and verifies a JWT. capture
+      # is called by pg_cron and by .github/workflows/capture.yml, neither of
+      # which holds one: they authenticate with the x-cron-secret header that
+      # capture checks itself, in the first statement of its handler. Deploy it
+      # with JWT verification ON and the platform rejects both schedulers
+      # before capture ever sees the request, and the board stops filling with
+      # nothing in capture's own logs to say why.
+      - name: Deploy capture
+        if: ${{ inputs.deploy_capture && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy capture \
+            --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
+            --no-verify-jwt
 
       - name: Apply the recommendation ledger migration
         if: ${{ inputs.apply_ledger && steps.creds.outputs.have_db == 'yes' }}
@@ -121,6 +160,9 @@ jobs:
             [ "${{ steps.creds.outputs.have_token }}" = "yes" ] && echo '- Supabase access token: present' || echo '- Supabase access token: **missing — the function was NOT deployed**'
             [ "${{ steps.creds.outputs.have_ref }}" = "yes" ]   && echo '- Project ref: present'          || echo '- Project ref: **missing**'
             [ "${{ steps.creds.outputs.have_db }}" = "yes" ]    && echo '- Database URL: present'         || echo '- Database URL: missing (migrations skipped)'
+            echo ''
+            echo "- edgedesk_ai requested: ${{ inputs.deploy_function }}"
+            echo "- capture requested: ${{ inputs.deploy_capture }}"
             echo ''
             echo 'Confirm what is actually running with the **Intelligence doctor** workflow — it asks the'
             echo 'deployment rather than trusting this one.'

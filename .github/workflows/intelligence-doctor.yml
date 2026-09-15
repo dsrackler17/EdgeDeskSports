@@ -33,8 +33,17 @@ on:
         type: string
         required: false
   schedule:
-    # Once a day, off the hour for the reason editorial.yml documents.
-    - cron: '17 14 * * *'
+    # FOUR TIMES A DAY, NOT ONCE, AND THE REASON IS MEASURED.
+    # This was a single daily slot at 14:17. GitHub drops scheduled runs under
+    # load — supabase/capture_cron.sql documents this repository measuring a
+    # ~4.5 hour gap across every scheduled workflow on 2026-09-13 — and a
+    # once-a-day check that gets dropped is a day with no answer. As of
+    # 2026-09-15 the 14:17 slot had come round exactly once and been missed, so
+    # the workflow had never run itself: every run in its history was a manual
+    # dispatch. Four slots do not fix GitHub's scheduler, which is not
+    # something this repository can fix. They make one dropped slot cost six
+    # hours instead of a day. The job is ~20 seconds and writes nothing.
+    - cron: '17 2,8,14,20 * * *'
 
 permissions:
   contents: read
@@ -48,13 +57,28 @@ jobs:
         with:
           node-version: '22'
 
+      # ONE RUN. IT REPORTS, IT ANNOTATES, AND IT DECIDES THE JOB.
+      #
+      # This used to be two: this step with `continue-on-error: true`, and a
+      # second `deploy_doctor.js > /dev/null` at the end whose only purpose was
+      # to set the exit code. That cost two full sets of probes against the
+      # deployment per run, let the summary and the verdict disagree (they were
+      # separate runs, seconds apart, against a board whose age moves), and —
+      # worst — made the FAILING step print nothing. Clicking the red X showed
+      # "Process completed with exit code 1" and no reason, while the reason sat
+      # in a different step. A monitor that will not say what is wrong is not
+      # doing the job it exists for.
+      #
+      # pipefail is what makes one step do both: without it the exit status of
+      # `doctor | tee` is tee's, which is always 0, and the job would pass while
+      # printing ACTION NEEDED.
       - name: Ask the deployment what it is running
         env:
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
         run: |
-          node tools/intelligence/deploy_doctor.js | tee doctor.txt
-        continue-on-error: true
+          set -o pipefail
+          node tools/intelligence/deploy_doctor.js --annotate | tee doctor.txt
 
       - name: Put the answer in the run summary
         if: always()
@@ -62,7 +86,9 @@ jobs:
           {
             echo '## Intelligence deployment'
             echo '```'
-            cat doctor.txt 2>/dev/null || echo 'the doctor produced no output'
+            # The ::error:: / ::notice:: lines are for the run's own annotations;
+            # they are already rendered above the log, so keep them out of here.
+            grep -v '^::' doctor.txt 2>/dev/null || echo 'the doctor produced no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -73,8 +99,12 @@ jobs:
       # label leak into the prose, and was a deterministic read served when
       # narration failed. No secret is printed and the answer is summarised,
       # never dumped, so a public run log is not a copy of someone's research.
+      # `always()` because the doctor step above now FAILS the job when
+      # something needs deploying, and a skipped probe would be exactly
+      # backwards: the run where the deployment is in trouble is the run where
+      # somebody asked for this.
       - name: Ask the deployment the customer's question
-        if: ${{ inputs.probe_answer }}
+        if: ${{ always() && inputs.probe_answer }}
         env:
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
@@ -93,8 +123,6 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Fail if something needs deploying
-        env:
-          SB_URL: ${{ secrets.SB_URL }}
-          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: node tools/intelligence/deploy_doctor.js > /dev/null
+      # There is no second doctor run here on purpose. The step that asks the
+      # deployment is the step that decides the job, so the failure and the
+      # reason for it are the same piece of output.
