@@ -332,6 +332,13 @@ jobs:
       - name: The FBS board renders and filters at desktop and mobile widths
         run: node tools/football/fbs_board.e2e.js
 
+      # The Desk answers in a real browser: four sections, ONE primary market,
+      # the rest behind a disclosure, no engine vocabulary on screen, and the
+      # same shape when the writing model does not answer. Chromium is already
+      # installed by the step above.
+      - name: The Desk answers the question at desktop and mobile widths
+        run: node tools/intelligence/desk_ui.e2e.js
+
       - name: Settle matching, and the captured closes it goes back for
         run: node tools/collective/settle_finals.test.js
 

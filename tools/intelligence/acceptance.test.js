@@ -59,6 +59,14 @@ let ledgerStatus = 201;           // flip to exercise an unavailable ledger
 globalThis.fetch = async function (url, init) {
   const u = String(url);
   if (u.indexOf('api.anthropic.com') >= 0) {
+    /* 'empty' is the reported shape: a 200 with no text and stop_reason
+       max_tokens, which the function must treat as recoverable rather than
+       fatal — and, when the retry is also empty, answer deterministically. */
+    if (modelStatus === 'empty') {
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ model: 'test', stop_reason: 'max_tokens',
+          usage: { input_tokens: 31000, output_tokens: 0 }, content: [] }) };
+    }
     if (modelStatus !== 200) return { ok: false, status: modelStatus, text: async () => 'upstream down', json: async () => null };
     return { ok: true, status: 200, json: async () => ({ model: 'test', content: [{ type: 'text', text: 'ok' }] }), text: async () => 'ok' };
   }
@@ -656,6 +664,124 @@ const MLB_PACKET = {
       !/service_role|SERVICE_ROLE/.test(APP));
     chk('the only privileged call it makes is to the authenticated function',
       /functions\/v1\/edgedesk_ai/.test(APP));
+  }
+
+  /* =====================================================================
+     12. THE NARRATION PATH, WHEN THE WRITING MODEL WILL NOT WRITE.
+
+     The reported reply resolved the right game and was still useless: the
+     model returned nothing usable, six near-identical cards filled the space,
+     and the PRICE NEEDED was filed as an argument against the lean. Every
+     assertion below is one of those failures.
+     ===================================================================== */
+  {
+    const STALE = new Date(Date.now() - 38.5 * 3600 * 1000).toISOString();
+    const six = ['spreads:North Texas:2.5', 'spreads:Texas State:-2.5', 'totals:Over:57.5',
+                 'totals:Under:57.5', 'h2h:North Texas:', 'h2h:Texas State:']
+      .map((spec) => { const [market, selection, point] = spec.split(':');
+        return fx.signal({ market, selection, point: point === '' ? null : Number(point),
+          last_seen_at: STALE, best_book: 'FanDuel', edge: 0.004 }); });
+
+    /* ---- (a) the model returns no text, twice --------------------------- */
+    modelStatus = 'empty';
+    m.clearCache(); route = FX.router(fx, { signals: six });
+    const r = await m.handle(new Request('https://fn.test/edgedesk_ai', {
+      method: 'POST', headers: { authorization: 'Bearer u', 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'chat',
+        question: 'What do you think about North Texas vs Texas State this week? Anything worth betting?',
+        packet: { board_scope: { sport: 'americanfootball_ncaaf', season: 2026, week: 3 } }, history: [] }),
+    }));
+    const j = await r.json();
+    modelStatus = 200;
+
+    eq('a narration failure is not a failed request', r.status, 200);
+    chk('it is reported as a narration failure', j.narration && j.narration.ok === false, j.narration);
+    /* THE RETRY IS ACTUALLY SMALLER. 60,000 characters is not a smaller
+       payload after 31,000 input tokens exhausted the budget. */
+    chk('a retry was attempted', j.narration && j.narration.retried === true, j.narration);
+    chk('with a genuinely smaller evidence budget',
+      j.narration && j.narration.retry && j.narration.retry.evidence_budget <= 6000,
+      j.narration && j.narration.retry);
+
+    const S = j.matchup_summary;
+    chk('the reader still gets a read', !!S, Object.keys(j));
+    chk('and it is built from EdgeDesk fields, not written', S && S.source === 'deterministic', S && S.source);
+    /* THE TARGET SENTENCE — the market number, then the honest limit. */
+    chk('the read names the favourite from the MARKET number',
+      /favored by 2\.5/.test(S.read || ''), S && S.read);
+    chk('and says plainly that it cannot call the value',
+      /doesn't have enough current evidence to call that value/.test(S.read || ''), S && S.read);
+    chk('and names the stale quote in hours, with its book',
+      /FanDuel quote is stale/.test(S.read || '') && /38\.5 hours old/.test(S.read || ''), S && S.read);
+    chk('and reaches research-only rather than a lean',
+      /research-only until the market refreshes/.test(S.read || ''), S && S.read);
+    /* NO INVENTED LEAN. */
+    chk('no bet, play or recommendation is invented',
+      !/\b(bet it|take the|i like|play the|hammer|lean to)\b/i.test(S.read || ''), S && S.read);
+
+    /* ONE PRIMARY MARKET, NOT SIX CARDS. */
+    chk('one market is marked primary', (j.research.decisions || []).filter((d) => d.primary).length === 1,
+      (j.research.decisions || []).map((d) => [d.market, d.selection, d.primary]));
+    eq('and the rest are secondary', (j.research.decisions || []).filter((d) => !d.primary).length, 5);
+    chk('the primary is the spread, which is what "the line" means',
+      S && S.primary && S.primary.market === 'spreads', S && S.primary);
+    eq('and the summary counts the others', S && S.other_markets, 5);
+
+    /* PRICE NEEDED AND BLOCKERS ARE NOT COUNTERARGUMENTS. */
+    const wrong = (S && S.could_be_wrong) || [];
+    chk('the price needed is not filed as opposing evidence',
+      !wrong.some((x) => /good to -|price limit|or better would/i.test(x)), wrong);
+    chk('nor is the stale quote',
+      !wrong.some((x) => /hours old|stale until|re-priced/i.test(x)), wrong);
+    chk('nor is a missing availability report',
+      !wrong.some((x) => /availability report/i.test(x)), wrong);
+    chk('the price needed is stated as a price', /-112/.test((S && S.price_needed) || ''), S && S.price_needed);
+    chk('the stale quote is a data blocker',
+      (S.data_blockers || []).some((x) => /38\.5 hours/.test(x)), S.data_blockers);
+    chk('and it is stated once, not twice',
+      (S.data_blockers || []).filter((x) => /hours old|re-priced|stale until/i.test(x)).length === 1,
+      S.data_blockers);
+
+    /* EV PROVENANCE — whose arithmetic the number is. */
+    chk('the expected return names its source',
+      /sharp-market fair price/.test(S.ev_provenance || ''), S && S.ev_provenance);
+    chk('and says the model did not produce it',
+      /no validated outcome probability/.test(S.ev_provenance || ''), S && S.ev_provenance);
+    chk('no CFB spread decision carries a model EV',
+      (j.research.decisions || []).every((d) => d.market !== 'spreads' || !d.model || d.model.model_ev == null),
+      (j.research.decisions || []).map((d) => [d.market, d.model && d.model.model_ev]));
+
+    /* NOTHING OPERATIONAL REACHES THE READER. */
+    const blob = JSON.stringify({ read: S.read, why: S.why, wrong: S.could_be_wrong,
+      price: S.price_needed, blockers: S.data_blockers });
+    chk('the read carries no internal classification',
+      !/cfb_research_matchup|cfb_betting_candidate|RESEARCH_LEAN|data_path|single_game|americanfootball_ncaaf/i.test(blob),
+      blob.slice(0, 200));
+  }
+  {
+    /* ---- (b) the contract that makes the model answer ------------------- */
+    m.clearCache(); route = FX.router(fx, {});
+    const r = await m.handle(new Request('https://fn.test/edgedesk_ai?dry=1', {
+      method: 'POST', headers: { authorization: 'Bearer u', 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'chat', question: 'How does Texas State look this week?',
+        packet: { board_scope: MLB_BOARD }, history: [] }),
+    }));
+    const j = await r.json();
+    const sys = j.system || '';
+    chk('a single-matchup question carries The Desk contract',
+      /THE DESK — ANSWER CONTRACT FOR A SINGLE MATCHUP/.test(sys));
+    for (const h of ["The Desk's read", 'Why', 'What could make it wrong', 'Price and data limitations']) {
+      chk(`the contract asks for "${h}"`, sys.indexOf(h) >= 0);
+    }
+    chk('it forbids a missing input from being an argument',
+      /A missing input is NOT an argument/.test(sys));
+    chk('and bans internal vocabulary from the prose',
+      /cfb_research_matchup/.test(sys) && /FORBIDDEN IN THE ANSWER/.test(sys));
+    /* THE PROMPT HAS ROOM TO ANSWER IN. */
+    chk('the card-wide blocks are dropped for a one-game question',
+      !/THE CARD, RANKED/.test(j.prompt || '') && !/RESEARCH QUEUE/.test(j.prompt || ''));
+    chk('and the prompt is small enough to leave room for an answer',
+      (j.prompt || '').length < 100000, (j.prompt || '').length);
   }
 
   done();
