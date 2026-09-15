@@ -1,16 +1,16 @@
 {
  "schema": "edgedesk_venue_geography_v1",
  "season": 2026,
- "generated_at": "2026-09-15T22:38:45.832Z",
+ "generated_at": "2026-09-15T22:48:03.600Z",
  "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_teams/parquet/cfb_teams_2026.parquet",
  "source_note": "cfbfastR team table, one row per team per season, carrying the venue’s coordinates, elevation, capacity, surface, roof and IANA timezone. The same public mirror this repository already reads for schedules, rosters, player stats and team talent.",
- "precedence": "the trained parameter table wins, then football/venues/supplement.json (hand-checked against a named source), then this file. Nothing here overwrites either of those: 136 key(s) were already known and were left alone.",
+ "precedence": "the trained parameter table wins, then football/venues/supplement.json (hand-checked against a named source), then this file. Nothing here overwrites either of those: 137 key(s) were already known and were left alone.",
  "refuses": "a row without real coordinates, or with coordinates and no stadium name, is refused and listed in `refused` rather than written as a half-venue. Nothing is interpolated from a city name.",
  "counts": {
   "rows_in_season": 827,
-  "keys_written": 2128,
-  "keys_already_known": 136,
-  "described": 136,
+  "keys_written": 2126,
+  "keys_already_known": 137,
+  "described": 137,
   "refused": 173
  },
  "describe_note": "descriptive fields only — name, city, IANA zone, venue id — for keys the trained table or the supplement already owns. No coordinate, roof or surface is here: those belong to the layer the model was fitted against and are never restated.",
@@ -62,6 +62,12 @@
    "city": "San Diego, CA",
    "tz_name": "America/Los_Angeles",
    "venue_id": 3932
+  },
+  "sanjosestate": {
+   "name": "CEFCU Stadium",
+   "city": "San Jose, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3935
   },
   "stanford": {
    "name": "Stanford Stadium",
@@ -1652,35 +1658,7 @@
    "team_id": 21,
    "classification": "fbs"
   },
-  "sanjosstatespartans": {
-   "name": "CEFCU Stadium",
-   "lat": 37.3196675,
-   "lon": -121.8682962,
-   "elev": 28.30708694,
-   "capacity": 30456,
-   "tz_name": "America/Los_Angeles",
-   "dome": false,
-   "grass": false,
-   "city": "San Jose, CA",
-   "venue_id": 3935,
-   "team_id": 23,
-   "classification": "fbs"
-  },
-  "sanjosstate": {
-   "name": "CEFCU Stadium",
-   "lat": 37.3196675,
-   "lon": -121.8682962,
-   "elev": 28.30708694,
-   "capacity": 30456,
-   "tz_name": "America/Los_Angeles",
-   "dome": false,
-   "grass": false,
-   "city": "San Jose, CA",
-   "venue_id": 3935,
-   "team_id": 23,
-   "classification": "fbs"
-  },
-  "sanjosst": {
+  "sanjosestatespartans": {
    "name": "CEFCU Stadium",
    "lat": 37.3196675,
    "lon": -121.8682962,

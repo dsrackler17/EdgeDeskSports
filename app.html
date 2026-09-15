@@ -43654,6 +43654,7 @@ function fbP4Ensure(){
     .then(function(){return fbScript('football/matchup/confidence.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/qb_context.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/forecast.js').catch(function(){});})
+    .then(function(){return fbScript('football/venues/descriptions.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/policy.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/overlay.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/operator.js').catch(function(){});})
@@ -46891,6 +46892,22 @@ function fbGxWeather(u){
   var g=u.g,P=window.EDCfbP4Params||{},V=(P.universe&&P.universe.venues)||{};
   var hk=(window.EDFbs&&window.EDFbs.normKey)?window.EDFbs.normKey(g.home_team):null;
   var ven=(hk&&V[hk])||null;
+  /* THE TRAINED TABLE HAS NO CITY. It carries coordinates, elevation,
+     capacity, roof and surface — everything the model was fitted on — and not
+     a single town name, so this card said "Acrisure Stadium" while the
+     committed slate said "Acrisure Stadium, Pittsburgh, PA" off the same
+     stadium. football/venues/descriptions.js is that gap closed for the page:
+     descriptive fields only, and only where the winning layer has none, so
+     nothing here can move a coordinate the engine was trained against. */
+  var TXT=window.EDVenueText||null;
+  if(ven&&TXT&&hk&&TXT[hk]){
+    var d=TXT[hk],merged={},k;
+    for(k in ven)if(Object.prototype.hasOwnProperty.call(ven,k))merged[k]=ven[k];
+    ['name','city','tz_name','venue_id'].forEach(function(f){
+      if((merged[f]==null||merged[f]==='')&&d[f]!=null)merged[f]=d[f];
+    });
+    ven=merged;
+  }
   var w=null;try{w=(FB&&FB.p4&&FB.p4.weather)?FB.p4.weather[g.game_id]:null;}catch(_){}
   if(!ven&&!w)return '';
   var F=window.EDForecast||null;

@@ -54,10 +54,17 @@ function defaultSeason() { const d = new Date(); return (d.getMonth() <= 1) ? d.
 const QUIET = !!arg('quiet', false);
 const log = (...a) => { if (!QUIET) console.error(...a); };
 function num(v) { if (v == null || v === '' || v === 'NA') return null; const x = +v; return isFinite(x) ? x : null; }
-function normKey(s) {
-  if (s == null) return null;
-  return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '') || null;
-}
+/* THE ENGINE'S OWN NORMALISER, NOT A COPY OF IT.
+   This file carried its own four-line normKey, and it was wrong in exactly
+   one way that mattered: the engine folds accents through a table before
+   stripping punctuation, and the copy did not. "San José State" keyed as
+   `sanjosestate` for the engine and `sanjosstate` here, so the provider row
+   for a real FBS programme resolved to a key nothing else in the repository
+   uses — and the venue description for it silently went missing while every
+   count still looked right. A second implementation of an identity function
+   is how two files come to disagree about which team they are talking
+   about. */
+const normKey = require(path.join(ROOT, 'football', 'fbs', 'fbs.js')).normKey;
 function parseCsv(text) {
   const out = [];
   const lines = String(text).split('\n');
