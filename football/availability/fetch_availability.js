@@ -17,7 +17,12 @@
    carries the difference so the product can say it.
 
      node football/availability/fetch_availability.js [--season 2026] [--week 3]
-       [--teams 20] [--only 2641,158] [--out DIR] [--dry]
+       [--teams 20] [--only 2641,158] [--out DIR] [--dry] [--verify]
+
+   --verify probes every registered official source and says which answered.
+   It writes nothing. Run it on a runner before committing a new override:
+   a page that 404s and a page with nobody hurt produce the same zero reports,
+   and only this tells them apart.
    Exit 0 = written or unchanged. Exit 1 = could not run at all.
    ========================================================================== */
 'use strict';
@@ -233,9 +238,57 @@ async function currentWeek(season) {
   return null;
 }
 
+/* ---------------------------------------------------------------- verify --
+   DOES A REGISTERED SOURCE ACTUALLY ANSWER?
+
+   The registry is the growth path: an official school or conference
+   availability page is added by editing sources.overrides.json, no code
+   change. What was missing is the step between adding a URL and trusting it.
+   A page that 404s, that redirects to a marketing site, or that renders its
+   table in JavaScript looks exactly like a page with nobody hurt this week —
+   the collector returns zero reports either way, and zero reports is what
+   "everybody is available" looks like too.
+
+   So --verify probes every registered URL and reports, per source, whether it
+   answered and whether anything could be read off it. It writes nothing and
+   it is the check to run on the runner before committing an override. A
+   registry with no URLs in it is not a failure here; it is the current state,
+   and this says so with the number rather than looking clean. */
+async function verify(reg, rosterById, ctx) {
+  const withUrl = reg.teams.filter((t) => t.availability_url || t.conference_availability_url || t.athletics_url);
+  console.error(`[verify] ${reg.teams.length} programs registered · ${withUrl.length} carrying an official URL`);
+  if (!withUrl.length) {
+    console.error('[verify] NO OFFICIAL SOURCE IS REGISTERED FOR ANY PROGRAM.');
+    console.error('[verify] Availability therefore rests entirely on the ESPN injuries feed, which is Tier 2');
+    console.error('[verify] and is thin for college football. Add a school or a conference report to');
+    console.error('[verify] football/availability/sources.overrides.json and re-run this to prove it answers.');
+    return 2;
+  }
+  let answered = 0, empty = 0, failed = 0;
+  for (const t of withUrl) {
+    const url = t.availability_url || t.conference_availability_url || t.athletics_url;
+    const roster = rosterById[t.team_id];
+    try {
+      const r = await C.officialPage(t, roster, ctx);
+      const n = (r && r.reports ? r.reports.length : 0);
+      if (n > 0) { answered++; console.error(`[verify] OK      ${t.team_name} · ${n} report(s) · ${url}`); }
+      else { empty++; console.error(`[verify] EMPTY   ${t.team_name} · the page answered and nothing could be read off it · ${url}`); }
+    } catch (e) {
+      failed++;
+      console.error(`[verify] FAILED  ${t.team_name} · ${String((e && e.message) || e).slice(0, 90)} · ${url}`);
+    }
+  }
+  console.error(`[verify] ${answered} answered with reports · ${empty} answered empty · ${failed} failed`);
+  /* EMPTY IS NOT OK AND IS NOT A FAILURE EITHER. A school with nobody hurt
+     publishes an empty report, and so does a page this parser cannot read.
+     They are reported apart so the person adding the source decides, and the
+     exit code is non-zero only when nothing answered at all. */
+  return answered > 0 ? 0 : (failed ? 1 : 2);
+}
+
 async function main() {
   const args = process.argv.slice(2);
-  let season = defaultSeason(), week = null, limit = null, only = null, out = DIR, dry = false;
+  let season = defaultSeason(), week = null, limit = null, only = null, out = DIR, dry = false, doVerify = false;
   for (let i = 0; i < args.length; i++) {
     const v = args[i];
     if (v === '--season') season = parseInt(args[++i], 10);
@@ -244,6 +297,7 @@ async function main() {
     else if (v === '--only') only = String(args[++i]).split(',').map(s => s.trim()).filter(Boolean);
     else if (v === '--out') out = args[++i];
     else if (v === '--dry') dry = true;
+    else if (v === '--verify') doVerify = true;
   }
   const reg = readJson(path.join(DIR, 'sources.json'), null);
   if (!reg || !reg.teams || !reg.teams.length) throw new Error('no source registry — run build_sources.js first');
@@ -259,6 +313,7 @@ async function main() {
   if (week == null) week = await currentWeek(season);
 
   const ctx = { now: new Date().toISOString(), season, week, kickoff: null };
+  if (doVerify) return verify({ ...reg, teams }, rosterById, ctx);
   console.error(`[availability] ${teams.length} programs · season ${season}${week ? ' · week ' + week : ' · week unknown'}`);
   const collected = await pool(teams, CONCURRENCY, async (t) => {
     const res = await collectTeam(t, rosterById[t.team_id], ctx);

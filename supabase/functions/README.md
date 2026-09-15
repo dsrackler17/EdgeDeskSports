@@ -76,7 +76,15 @@ one of these functions needs is defined once, in the database, instead of three
 times in three bundles that cannot import from each other.
 
 **Everything else is a scheduled job or a webhook.** A cron job is load-bearing
-if the app reads a table it writes:
+if the app reads a table it writes — and a function whose header calls it a
+cron job is not evidence that a cron exists. `capture` said so for its whole
+life and **nothing was calling it**, which is how a customer came to be shown a
+thirty-nine-hour-old price. Its schedule is now
+`../capture_cron.sql` (pg_cron, primary) with
+`.github/workflows/capture.yml` as the independent backup, and
+`tools/intelligence/deploy_doctor.js` fails when the board stops being filled.
+Before trusting any other row of this table, check `cron.job` rather than the
+file header:
 
 | the app reads | fed by |
 |---|---|

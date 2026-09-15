@@ -21336,6 +21336,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 /* ── THE DESK'S ANSWER ─────────────────────────────────────────────────
    Four sections, in the order a reader asks for them. The read is the
    answer and is styled as the answer; everything under it is support. */
+/* A GAME THAT HAS STARTED IS SAID ABOVE THE READ, not buried in the
+   limitations. EdgeDesk ingests no live price, score or clock, so everything
+   under this describes the game before kickoff — and a reader watching the
+   second quarter must not have to scroll to find that out. */
+.dk-live{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;
+  margin:0 0 10px;padding:8px 11px;border-radius:9px;
+  background:rgba(216,242,75,.13);border:1px solid rgba(216,242,75,.42)}
+.dk-live b{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--citron)}
+.dk-live span{font-size:12px;color:var(--desk-dim)}
+.dk-live.over{background:rgba(111,120,168,.16);border-color:rgba(111,120,168,.42)}
+.dk-live.over b{color:var(--desk-dim)}
 .dk-read{border:1px solid var(--ink-line);border-left:3px solid var(--citron);background:var(--ink-2);
   border-radius:10px;padding:11px 13px;margin:0 0 10px}
 .dk-read .lab{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--citron)}
@@ -26768,6 +26779,93 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     };
   }
 
+  var GAME_STATES = ['SCHEDULED', 'IN_PROGRESS', 'FINAL', 'UNKNOWN'];
+
+  /* How long after kickoff a game is presumed still running when no status
+     feed says otherwise. Generous on purpose: presuming a game has finished
+     while it is still being played is the error that lets a pregame number be
+     described as a result. */
+  var TYPICAL_GAME_H = 4;
+
+  /**
+   * Is this game scheduled, being played, or over?
+   *
+   * EDGEDESK'S RESEARCH IS PREGAME AND ONLY PREGAME. No in-game price, score,
+   * clock or possession is ingested anywhere in this system. That is a fine
+   * thing to be — most research is done before kickoff — but it stops being
+   * fine the moment a question asked at half past eight is answered with the
+   * same words as one asked at noon, because everything in the answer is then
+   * describing a game the reader is currently watching, in the present tense,
+   * with no indication that it has started.
+   *
+   * So the state is established and SAID. A game under way is not refused a
+   * research answer — the pregame work is still the pregame work, and a reader
+   * asking "what did we think of this?" during the second quarter deserves it
+   * — but nothing about it may be presented as current, and no number in it
+   * may be acted on.
+   *
+   * @param o.kickoff  scheduled start
+   * @param o.status   a status string from a schedule row, when there is one
+   * @param o.now      clock
+   */
+  function gameState(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var kick = toMs(o.kickoff);
+    var raw = String(o.status == null ? '' : o.status).toLowerCase();
+
+    /* A STATUS FEED OUTRANKS THE CLOCK, because a game can be delayed,
+       suspended or moved and the schedule row is the thing that knows. */
+    var said = /final|complete|post|ended/.test(raw) ? 'FINAL'
+      : /in.?progress|live|halftime|quarter|period|inning/.test(raw) ? 'IN_PROGRESS'
+      : /scheduled|pre|upcoming/.test(raw) ? 'SCHEDULED' : null;
+
+    var state, why;
+    if (said === 'FINAL') {
+      state = 'FINAL';
+      why = 'This game is over. Everything below is what EdgeDesk knew before it started.';
+    } else if (said === 'IN_PROGRESS') {
+      state = 'IN_PROGRESS';
+      why = 'This game is being played right now.';
+    } else if (kick == null) {
+      state = 'UNKNOWN';
+      why = 'No kickoff time is on file for this game, so EdgeDesk cannot tell whether it has started.';
+    } else if (now < kick) {
+      state = 'SCHEDULED';
+      why = null;
+    } else if (now - kick < TYPICAL_GAME_H * 3600e3) {
+      state = 'IN_PROGRESS';
+      why = 'Kickoff was ' + Math.round((now - kick) / 60000) + ' minutes ago and no status feed says the game has '
+        + 'finished, so it is being played right now.';
+    } else {
+      state = 'FINAL';
+      why = 'Kickoff was ' + Math.round((now - kick) / 3600e3) + ' hours ago, so this game is over.';
+    }
+
+    var live = state === 'IN_PROGRESS';
+    var over = state === 'FINAL';
+    return {
+      state: state,
+      kickoff: kick != null ? new Date(kick).toISOString() : null,
+      minutes_since_kickoff: kick == null ? null : Math.round((now - kick) / 60000),
+      status_source: said ? 'status feed' : kick == null ? 'none' : 'clock',
+      why: why,
+      /* THE THREE PERMISSIONS, SAID AS DATA. */
+      may_recommend: state === 'SCHEDULED',
+      may_describe_as_current: state === 'SCHEDULED',
+      research_usable: true,
+      /* What a consumer must tell the reader, in one sentence, when the game
+         is not scheduled. Null when it is. */
+      notice: !live && !over ? null
+        : live
+          ? 'THIS GAME HAS ALREADY STARTED. EdgeDesk holds no in-game price, score, clock or possession — every '
+            + 'number below describes the game BEFORE kickoff and none of it is a live read. Treat it as a record '
+            + 'of what the research said, not as advice about a game in progress.'
+          : 'THIS GAME IS OVER. Everything below is what EdgeDesk knew before kickoff. It is not a result, and no '
+            + 'price in it is available.'
+    };
+  }
+
   /**
    * The result of trying to refresh a quote before acting on it.
    *
@@ -26915,6 +27013,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
    * @param o.team     the team name, for the sentence
    * @param o.generated_at the artifact's own build time
    * @param o.now      clock
+   * @param o.league   the artifact's own sport-wide totals — {team_count,
+   *                   records, teams_with_official, failed_sources}. Optional,
+   *                   and the reason it exists is below.
    */
   function availabilityRead(o) {
     o = o || {};
@@ -26966,6 +27067,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         + ', found no official report, and published nothing. '
         + 'THIS IS UNKNOWN, NOT HEALTHY: nobody has been confirmed fit and no injury has been ruled out. '
         + 'Do not describe this team as healthy, clean or fully available.';
+
     }
     if (stale && state !== 'NOT_RETRIEVED') {
       sentence += ' The availability build is ' + ageH + ' hours old, past the ' + AVAIL_STALE_H
@@ -26976,8 +27078,40 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       team: team, quality: quality, counts: counts,
       players: players, quarterbacks: qbs,
       official_report_found: official, sources_checked: checked, sources_failed: failed,
+      league_uncovered: !!(o.league && (num(o.league.team_count) || 0) > 0
+        && (num(o.league.teams_with_official) || 0) === 0),
       age_hours: ageH, stale: stale, sentence: sentence
     });
+  }
+
+  /**
+   * The one sentence about the WHOLE availability build, said once.
+   *
+   * IS THIS TEAM UNCOVERED, OR IS THE SPORT? Those read identically to a
+   * customer and they are not the same fact. "EdgeDesk checked 3 sources and 2
+   * failed" sounds like this team had bad luck this week, and a reader hearing
+   * it about one team assumes the next team will be fine. The truth on the
+   * last build was that NOT ONE of 138 programs carried an official report and
+   * the whole build held five records — which is not an injury picture, it is
+   * the absence of one, and it will be the same for every team they ask about.
+   *
+   * Returns null when the build has real coverage, so this appears only when
+   * it is true.
+   *
+   * @param o {team_count, records, teams_with_official}
+   */
+  function availabilityCoverageNote(o) {
+    o = o || {};
+    var teams = num(o.team_count) || 0;
+    if (teams <= 0) return null;
+    if ((num(o.teams_with_official) || 0) > 0) return null;
+    var records = num(o.records) || 0;
+    return 'AVAILABILITY COVERAGE FOR THIS SPORT: none of the ' + teams + ' programs in this build carries an '
+      + 'official availability report, and the whole build holds ' + records + ' record'
+      + (records === 1 ? '' : 's') + '. The gap is the sport\u2019s, not any one team\u2019s — no team on this '
+      + 'card can be described as healthy, and none of them will look any different from each other. Say this '
+      + 'once if it matters to the question; do not repeat it per team, and do not read it as a clean bill of '
+      + 'health for anybody.';
   }
 
   function finishAvail(state, o) {
@@ -26987,6 +27121,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       players: o.players, quarterbacks: o.quarterbacks,
       official_report_found: o.official_report_found,
       sources_checked: o.sources_checked, sources_failed: o.sources_failed,
+      /* True when the gap is the SPORT'S and not this team's. Deliberately NOT
+         folded into `sentence`: it is one fact about the whole build, and a
+         consumer that repeats it under every team on the card says the same
+         paragraph ten times and crowds out a game's evidence to do it. */
+      league_uncovered: o.league_uncovered === true,
       artifact_age_hours: o.age_hours, stale: o.stale,
       /* THE TWO PERMISSIONS, SAID AS DATA SO NO CONSUMER HAS TO INFER THEM. */
       may_claim_healthy: state === 'NO_REPORTED_INJURIES',
@@ -28401,6 +28540,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     validationSnapshot: validationSnapshot, loadSnapshotValidation: loadSnapshotValidation,
     fairMethod: fairMethod, confirmationRead: confirmationRead,
     quoteTtlMin: quoteTtlMin, quoteTtlBucket: quoteTtlBucket, quoteState: quoteState, applyRefresh: applyRefresh,
+    gameState: gameState, GAME_STATES: GAME_STATES,
+    availabilityCoverageNote: availabilityCoverageNote,
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
@@ -31304,10 +31445,26 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      deterministic read leads and the prose is demoted to a disclosure, where a
      reader who wants it can still have it and a reader who asked a football
      question is not made to dig for the answer. */
+  /* A GAME THAT HAS STARTED IS SAID ABOVE EVERYTHING ELSE.
+     EdgeDesk ingests no live price, score or clock, so every number under this
+     describes the game before kickoff — and a reader watching the second
+     quarter must not have to reach the limitations section to find that out.
+     It is emitted HERE rather than inside deskReadHTML because the writer's
+     own prose renders on a different branch, and a reader who got a good
+     narration is exactly as entitled to know the game has started. */
+  function deskLiveHTML(S){
+    var st=S&&S.game_state;
+    if(st!=='IN_PROGRESS'&&st!=='FINAL') return '';
+    return '<div class="dk-live'+(st==='FINAL'?' over':'')+'">'
+      +'<b>'+(st==='FINAL'?'This game is over':'This game is under way')+'</b>'
+      +'<span>Research below is pregame. EdgeDesk holds no live price, score or clock.</span></div>';
+  }
+
   function deskAnswerHTML(answer, S){
+    var live=deskLiveHTML(S);
     var shaped=deskProseHTML(answer);
-    if(shaped) return shaped;
-    if(!S) return mdToHtml(answer);          // nothing better to lead with
+    if(shaped) return live+shaped;
+    if(!S) return live+mdToHtml(answer);     // nothing better to lead with
     var h=deskReadHTML(S);
     if(answer && String(answer).trim()){
       h+='<details class="dk-more"><summary>The Desk\u2019s longer notes</summary>'
@@ -31320,6 +31477,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      answer. Nothing here is a lean the engine did not make. */
   function deskReadHTML(S){
     if(!S) return '';
+    /* The notice itself is deskAnswerHTML's, so it appears on every path and
+       never twice on this one. */
     var h='<div class="dk-read"><div class="lab">'+esc(DESK_SECTIONS[0].h)+'</div><p>'+esc(S.read||'')+'</p></div>';
     function list(cls,head,arr){
       if(!arr||!arr.length) return '';
@@ -31737,9 +31896,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          being discussed and never an assertion about it. It is what keeps
          "Who have they played?" on the game the reader chose instead of
          falling back to whichever board is open. */
+      /* `turns` rides along so the NEXT question about the same game is
+         researched deeper than this one rather than repeating it. It is a
+         count, not a claim: the server clamps it and it can only raise how
+         much EdgeDesk retrieves. */
       try{ var rc=d&&d.research&&d.research.research_context;
         LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
-          home_id:rc.home_id,away_id:rc.away_id} : LAST_CTX; }catch(_){}
+          home_id:rc.home_id,away_id:rc.away_id,turns:rc.turns||1} : LAST_CTX; }catch(_){}
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
         /* A MATCHUP ANSWER IS SHAPED LIKE THE QUESTION, not like the board.
            When one game is the subject the answer leads with The Desk's read

@@ -1173,6 +1173,93 @@
     };
   }
 
+  var GAME_STATES = ['SCHEDULED', 'IN_PROGRESS', 'FINAL', 'UNKNOWN'];
+
+  /* How long after kickoff a game is presumed still running when no status
+     feed says otherwise. Generous on purpose: presuming a game has finished
+     while it is still being played is the error that lets a pregame number be
+     described as a result. */
+  var TYPICAL_GAME_H = 4;
+
+  /**
+   * Is this game scheduled, being played, or over?
+   *
+   * EDGEDESK'S RESEARCH IS PREGAME AND ONLY PREGAME. No in-game price, score,
+   * clock or possession is ingested anywhere in this system. That is a fine
+   * thing to be — most research is done before kickoff — but it stops being
+   * fine the moment a question asked at half past eight is answered with the
+   * same words as one asked at noon, because everything in the answer is then
+   * describing a game the reader is currently watching, in the present tense,
+   * with no indication that it has started.
+   *
+   * So the state is established and SAID. A game under way is not refused a
+   * research answer — the pregame work is still the pregame work, and a reader
+   * asking "what did we think of this?" during the second quarter deserves it
+   * — but nothing about it may be presented as current, and no number in it
+   * may be acted on.
+   *
+   * @param o.kickoff  scheduled start
+   * @param o.status   a status string from a schedule row, when there is one
+   * @param o.now      clock
+   */
+  function gameState(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var kick = toMs(o.kickoff);
+    var raw = String(o.status == null ? '' : o.status).toLowerCase();
+
+    /* A STATUS FEED OUTRANKS THE CLOCK, because a game can be delayed,
+       suspended or moved and the schedule row is the thing that knows. */
+    var said = /final|complete|post|ended/.test(raw) ? 'FINAL'
+      : /in.?progress|live|halftime|quarter|period|inning/.test(raw) ? 'IN_PROGRESS'
+      : /scheduled|pre|upcoming/.test(raw) ? 'SCHEDULED' : null;
+
+    var state, why;
+    if (said === 'FINAL') {
+      state = 'FINAL';
+      why = 'This game is over. Everything below is what EdgeDesk knew before it started.';
+    } else if (said === 'IN_PROGRESS') {
+      state = 'IN_PROGRESS';
+      why = 'This game is being played right now.';
+    } else if (kick == null) {
+      state = 'UNKNOWN';
+      why = 'No kickoff time is on file for this game, so EdgeDesk cannot tell whether it has started.';
+    } else if (now < kick) {
+      state = 'SCHEDULED';
+      why = null;
+    } else if (now - kick < TYPICAL_GAME_H * 3600e3) {
+      state = 'IN_PROGRESS';
+      why = 'Kickoff was ' + Math.round((now - kick) / 60000) + ' minutes ago and no status feed says the game has '
+        + 'finished, so it is being played right now.';
+    } else {
+      state = 'FINAL';
+      why = 'Kickoff was ' + Math.round((now - kick) / 3600e3) + ' hours ago, so this game is over.';
+    }
+
+    var live = state === 'IN_PROGRESS';
+    var over = state === 'FINAL';
+    return {
+      state: state,
+      kickoff: kick != null ? new Date(kick).toISOString() : null,
+      minutes_since_kickoff: kick == null ? null : Math.round((now - kick) / 60000),
+      status_source: said ? 'status feed' : kick == null ? 'none' : 'clock',
+      why: why,
+      /* THE THREE PERMISSIONS, SAID AS DATA. */
+      may_recommend: state === 'SCHEDULED',
+      may_describe_as_current: state === 'SCHEDULED',
+      research_usable: true,
+      /* What a consumer must tell the reader, in one sentence, when the game
+         is not scheduled. Null when it is. */
+      notice: !live && !over ? null
+        : live
+          ? 'THIS GAME HAS ALREADY STARTED. EdgeDesk holds no in-game price, score, clock or possession — every '
+            + 'number below describes the game BEFORE kickoff and none of it is a live read. Treat it as a record '
+            + 'of what the research said, not as advice about a game in progress.'
+          : 'THIS GAME IS OVER. Everything below is what EdgeDesk knew before kickoff. It is not a result, and no '
+            + 'price in it is available.'
+    };
+  }
+
   /**
    * The result of trying to refresh a quote before acting on it.
    *
@@ -1320,6 +1407,9 @@
    * @param o.team     the team name, for the sentence
    * @param o.generated_at the artifact's own build time
    * @param o.now      clock
+   * @param o.league   the artifact's own sport-wide totals — {team_count,
+   *                   records, teams_with_official, failed_sources}. Optional,
+   *                   and the reason it exists is below.
    */
   function availabilityRead(o) {
     o = o || {};
@@ -1371,6 +1461,7 @@
         + ', found no official report, and published nothing. '
         + 'THIS IS UNKNOWN, NOT HEALTHY: nobody has been confirmed fit and no injury has been ruled out. '
         + 'Do not describe this team as healthy, clean or fully available.';
+
     }
     if (stale && state !== 'NOT_RETRIEVED') {
       sentence += ' The availability build is ' + ageH + ' hours old, past the ' + AVAIL_STALE_H
@@ -1381,8 +1472,40 @@
       team: team, quality: quality, counts: counts,
       players: players, quarterbacks: qbs,
       official_report_found: official, sources_checked: checked, sources_failed: failed,
+      league_uncovered: !!(o.league && (num(o.league.team_count) || 0) > 0
+        && (num(o.league.teams_with_official) || 0) === 0),
       age_hours: ageH, stale: stale, sentence: sentence
     });
+  }
+
+  /**
+   * The one sentence about the WHOLE availability build, said once.
+   *
+   * IS THIS TEAM UNCOVERED, OR IS THE SPORT? Those read identically to a
+   * customer and they are not the same fact. "EdgeDesk checked 3 sources and 2
+   * failed" sounds like this team had bad luck this week, and a reader hearing
+   * it about one team assumes the next team will be fine. The truth on the
+   * last build was that NOT ONE of 138 programs carried an official report and
+   * the whole build held five records — which is not an injury picture, it is
+   * the absence of one, and it will be the same for every team they ask about.
+   *
+   * Returns null when the build has real coverage, so this appears only when
+   * it is true.
+   *
+   * @param o {team_count, records, teams_with_official}
+   */
+  function availabilityCoverageNote(o) {
+    o = o || {};
+    var teams = num(o.team_count) || 0;
+    if (teams <= 0) return null;
+    if ((num(o.teams_with_official) || 0) > 0) return null;
+    var records = num(o.records) || 0;
+    return 'AVAILABILITY COVERAGE FOR THIS SPORT: none of the ' + teams + ' programs in this build carries an '
+      + 'official availability report, and the whole build holds ' + records + ' record'
+      + (records === 1 ? '' : 's') + '. The gap is the sport\u2019s, not any one team\u2019s — no team on this '
+      + 'card can be described as healthy, and none of them will look any different from each other. Say this '
+      + 'once if it matters to the question; do not repeat it per team, and do not read it as a clean bill of '
+      + 'health for anybody.';
   }
 
   function finishAvail(state, o) {
@@ -1392,6 +1515,11 @@
       players: o.players, quarterbacks: o.quarterbacks,
       official_report_found: o.official_report_found,
       sources_checked: o.sources_checked, sources_failed: o.sources_failed,
+      /* True when the gap is the SPORT'S and not this team's. Deliberately NOT
+         folded into `sentence`: it is one fact about the whole build, and a
+         consumer that repeats it under every team on the card says the same
+         paragraph ten times and crowds out a game's evidence to do it. */
+      league_uncovered: o.league_uncovered === true,
       artifact_age_hours: o.age_hours, stale: o.stale,
       /* THE TWO PERMISSIONS, SAID AS DATA SO NO CONSUMER HAS TO INFER THEM. */
       may_claim_healthy: state === 'NO_REPORTED_INJURIES',
@@ -2806,6 +2934,8 @@
     validationSnapshot: validationSnapshot, loadSnapshotValidation: loadSnapshotValidation,
     fairMethod: fairMethod, confirmationRead: confirmationRead,
     quoteTtlMin: quoteTtlMin, quoteTtlBucket: quoteTtlBucket, quoteState: quoteState, applyRefresh: applyRefresh,
+    gameState: gameState, GAME_STATES: GAME_STATES,
+    availabilityCoverageNote: availabilityCoverageNote,
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,

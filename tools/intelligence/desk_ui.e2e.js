@@ -115,6 +115,21 @@ const WRONG_SHAPE = { build: 'e2e', model: 'claude-test',
   ledger: { state: 'NOTHING_TO_RECORD', notice: null },
   narration: { ok: true, retried: false, retry: null } };
 
+/* A GAME THAT KICKED OFF FORTY MINUTES AGO. The reader is watching it. Every
+   number EdgeDesk holds describes the game before it started, and the panel
+   has to say so above the read rather than inside the limitations. */
+const LIVE = { build: 'e2e', model: 'claude-test', answer: NARRATED.answer,
+  matchup_summary: Object.assign({}, SUMMARY, {
+    game_state: 'IN_PROGRESS',
+    kickoff: new Date(Date.now() - 40 * 60000).toISOString(),
+    read: 'North Texas @ Texas State is already under way. EdgeDesk\u2019s research is pregame only — no live '
+      + 'price, score or clock is ingested — so what follows is what the desk had before kickoff, not a read on '
+      + 'the game as it stands.',
+    price_needed: null,
+  }),
+  research: RESEARCH, ledger: { state: 'NOTHING_TO_RECORD', notice: null },
+  narration: { ok: true, retried: false, retry: null } };
+
 const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
   why: 'the model returned no text (stop_reason max_tokens).',
   narration: { ok: false, retried: true, retryable: true, reason: 'the writing model returned no text twice' },
@@ -387,6 +402,39 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
         await page.screenshot({ path: path.join(SHOT_DIR, 'desk-mobile.png'), fullPage: false });
       }
       await ctx.close();
+    }
+    /* ══ 5. A GAME THAT HAS STARTED SAYS SO, FIRST ══════════════════ */
+    {
+      const { page, ctx } = await openDesk({ width: 1280, height: 900 }, LIVE);
+      await ask(page, Q);
+      const live = await page.evaluate(() => {
+        const log = document.getElementById('edaiLog');
+        const b = log.querySelector('.dk-live');
+        const read = log.querySelector('.dk-read');
+        return {
+          present: !!b,
+          text: b ? b.innerText.replace(/\s+/g, ' ').trim() : null,
+          /* It must sit ABOVE the read, not below it and not in the
+             limitations list, which is where a reader stops looking. */
+          aboveRead: !!(b && read && b.compareDocumentPosition(read) & Node.DOCUMENT_POSITION_FOLLOWING),
+          priceNeeded: /Price needed/i.test(log.innerText),
+        };
+      });
+      chk('a game under way carries the notice', live.present, live);
+      chk('and it says the game has started', /under way/i.test(live.text || ''), live.text);
+      chk('and that the research below is pregame', /pregame/i.test(live.text || ''), live.text);
+      chk('and that no live price, score or clock is held', /live price/i.test(live.text || ''), live.text);
+      chk('and it sits above the read, not under the limitations', live.aboveRead, live);
+      chk('and no price to look for is offered on a game in progress', !live.priceNeeded, live);
+      await ctx.close();
+
+      /* A SCHEDULED GAME IS UNTOUCHED BY ANY OF THIS. */
+      const pre = await openDesk({ width: 1280, height: 900 }, NARRATED);
+      await ask(pre.page, Q);
+      const none = await pre.page.evaluate(() =>
+        !document.getElementById('edaiLog').querySelector('.dk-live'));
+      chk('a scheduled game carries no such notice', none);
+      await pre.ctx.close();
     }
   } catch (e) {
     console.log('THREW: ' + String((e && e.stack) || e).slice(0, 900));

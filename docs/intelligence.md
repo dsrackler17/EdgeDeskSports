@@ -429,6 +429,124 @@ these were exercised against fixtures and **not** against production:
 
 ---
 
+## 3.5 The 2026-09-15 build — what was added after the incident
+
+The incident fixed routing. These fixed the things routing being correct then
+revealed, and each is listed with the evidence that made it a defect rather
+than a preference.
+
+### Nothing was calling `capture`
+
+`supabase/functions/capture/index.ts` has carried `TYPE: Edge Function
+(deployed) - cron job` since it was written. There was no cron: not in
+pg_cron, not in GitHub Actions, nowhere in this repository. That is why a
+customer was shown a FanDuel quote captured **2,345 minutes — thirty-nine
+hours — earlier**. Everything downstream was working; the board was empty
+because nothing filled it.
+
+`supabase/capture_cron.sql` now schedules three cadences through pg_cron
+(primary, for the reason `editorial_cron.sql` documents: GitHub's scheduler
+measurably skips hours here), and `.github/workflows/capture.yml` is the
+independent backup. `capture` gained `?tier=` so one deployment serves all
+three.
+
+| tier | cron | window |
+|---|---|---|
+| near | `*/10 * * * *` | sports with an event inside 8 hours |
+| day | `4,34 * * * *` | anything kicking off inside 30 hours |
+| board | `18 */4 * * *` | the full 14-day horizon, nothing skipped |
+
+Every run reports which reader rungs its own cadence **cannot** keep — a
+ten-minute cadence cannot serve the five-minute rung — rather than leaving it
+to be discovered from a complaint. `tools/capture/capture.test.js` parses the
+SQL and the workflow and fails if a cadence changes in one place only.
+
+### "Too old" now depends on when the game starts
+
+The reader used flat limits: 90 minutes in two places, 45 in a third. A flat
+limit is wrong at both ends and the expensive end was the loose one — **a
+44-minute-old price twenty minutes before kickoff passed the 45-minute check**
+and was described as the price, in the window where a line moves fastest and a
+book pulls a number soonest.
+
+`quote_ttl_buckets` in `_intelligence.js` now resolves freshness from time to
+kickoff, using the same numbers `capture` enforces on the write side: 5 minutes
+inside half an hour, 15 inside two hours, 45 inside six, 90 inside a day, 180
+inside three, 360 beyond. **A game inside a day keeps the 90 minutes it always
+had**; the change is entirely at the two ends a single number could not
+describe. Futures are not priced against a kickoff and keep their own limit.
+
+### Three leagues had a module, an intent and not one team
+
+`basketball_nba`, `icehockey_nhl` and `basketball_wnba` were routed by the
+sport matcher and carried retrieval steps, and had **zero canonical teams**
+between them. "How do the Lakers look tonight?" resolved to nothing. All three
+registries are now loaded (30 / 32 / 15), and ambiguity is **computed across
+the finished registry** rather than declared per league — previously it
+depended on load order, so "kings" was ambiguous for the Los Angeles Kings and
+unambiguous for Sacramento, which describes nothing real. Ambiguity is counted
+between distinct clubs, not sports, so a school registered for both football
+and basketball is not made ambiguous with itself.
+
+### A single-game question is researched as one game, in every league
+
+The reported failure — `intent = unknown` for a single-team college question —
+was still open one league over: "What about the Bruins?" and "How do the
+Liberty look?" classified as `unknown`, and "How do the Lakers look tonight?"
+as `slate_overview`, a board-wide sweep answering a question about one team.
+`focusPlanOnOneGame()` fixes it once, where the fact is known, rather than a
+new branch per league. Leagues with their own intents keep them.
+
+Relatedly, `MLB_ONLY_STEPS` caught only the baseball half of cross-sport step
+leakage: **an NBA plan asked for a quarterback.** Step ownership is now derived
+from the layer tables, so no sport can plan to retrieve another sport's layer.
+
+### Depth accumulates when the conversation stays put
+
+Every turn re-planned from the question alone and retrieved to a fixed budget,
+so three questions about one game got the same shallow pass three times. A
+subject that survives turns now escalates: GLANCE (turn 1), READ (turn 2, a
+rung deeper plus the layers the first pass had no budget for), DOSSIER (turn
+3+, the deepest rung the sport supports). Escalation is **retrieval only** — it
+adds steps and raises the budget, never removes a step, skips a retrieval or
+changes what the evidence may conclude. The browser contributes the turn count
+and it is clamped to `[1, 3]`; the worst a forged value achieves is a deeper
+read than the turn earned.
+
+### A game that has started is not answered like one that has not
+
+`status === "final"` caught only games a feed had already marked over, leaving
+the whole window in between — a game that kicked off forty minutes ago, being
+watched right now — eligible for a recommendation off a pregame price and
+described in the present tense. EdgeDesk ingests no in-game price, score or
+clock. `EDINTEL.gameState()` establishes SCHEDULED / IN_PROGRESS / FINAL (a
+status feed outranks the clock), a started game cannot be recommended, and the
+panel says so **above** the read on every render path rather than inside the
+limitations list.
+
+### "No record for this team" and "no source for this sport" are different
+
+Every college team came back "EdgeDesk checked 3 sources and 2 failed", which
+reads like this team got unlucky. The truth was that **not one of 138 programs
+carried an official availability report and the whole build held 5 records**.
+`availabilityCoverageNote()` states that once per turn — once, deliberately: an
+earlier attempt put it in every team's own sentence and ten copies of a
+paragraph pushed a whole game's evidence out of the prompt.
+
+`fetch_availability.js --verify` probes every registered official source and
+says which answered, because a page that 404s and a team with nobody hurt
+produce the same zero reports. It currently reports the true state: **138
+programs registered, 0 carrying an official URL.**
+
+### The deployment doctor now asks whether the board is being captured
+
+Every other check answers "is the right code deployed". None of them could see
+that nothing was running it, which is why a customer found it first. The doctor
+now reads the newest capture against the reader's own rung for the nearest
+kickoff and fails the verdict when the board is stale or empty.
+
+---
+
 ## 4. Remaining data gaps
 
 Declared in the capability matrix and in every evidence packet, not silently
@@ -436,8 +554,8 @@ absent:
 
 | Gap | Consequence | What would close it |
 |---|---|---|
-| CFB per-play efficiency (EPA/play, success rate, explosive rate) | No true efficiency read; SP+ is the opponent-adjusted axis instead | `CFBD_API_KEY` + per-game ingest, or a play-by-play mirror |
-| CFB injuries / depth charts | The largest unmodelled input in the sport | `football/availability/` exists in the repo and is **not** read by the edge function — the clearest next win |
+| CFB per-play efficiency (EPA/play, success rate, explosive rate) | No true efficiency read; SP+ is the opponent-adjusted axis instead | **Adapter now written** (`cfbd_advanced_stats`, CFBD `/stats/season/advanced`) and dark until `CFBD_API_KEY` is set. It refuses SP+ as a substitute in so many words rather than filling the gap with the wrong number |
+| CFB injuries / depth charts | The largest unmodelled input in the sport | `football/availability/` is read by the edge function and publishes honestly: 138 programs, 0 official reports, 5 records. The gap is the **source registry**, not the pipeline — add a school or conference report to `sources.overrides.json` and prove it with `--verify` |
 | CFB turnovers, garbage time, red zone, pace | Recent results cannot be tested for distortion | Same ingest as above |
 | NFL injury report | Only the quarterback carries a status | No source ingested |
 | CBB availability | One absent starter moves a college number more than any efficiency gap | No source ingested |
