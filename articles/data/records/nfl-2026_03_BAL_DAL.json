@@ -11,7 +11,7 @@
   ],
   "title": "Baltimore Ravens vs. Dallas Cowboys: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Baltimore Ravens vs. Dallas Cowboys 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Baltimore Ravens at Dallas Cowboys at Dallas Cowboys +1.6 with a 51.1 fair total. Baltimore Ravens wins 56% of simulations. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Baltimore Ravens at Dallas Cowboys at Dallas Cowboys +1.6 with a 51.1 fair total. Baltimore Ravens wins 56% of simulations. Model status AGREEMENT. Research, not picks.",
   "excerpt": "Baltimore Ravens carries the stronger EdgeDesk offensive profile (#4 in EPA per play) and the better defensive rating with it, so the ratings point the same way on both sides of the ball. EdgeDesk’s independent projection makes it Dallas Cowboys +1.6 with…",
   "home_team": "Dallas Cowboys",
   "away_team": "Baltimore Ravens",
@@ -23,11 +23,11 @@
   "game_time": "2026-09-27T16:25:00.000Z",
   "game_when_label": "2026-09-27 16:25 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T16:51:12.352Z",
-  "generated_at": "2026-09-15T17:39:58.011Z",
+  "updated_at": "2026-09-15T20:29:10.802Z",
+  "generated_at": "2026-09-15T20:29:10.802Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "AGREEMENT",
+  "model_status_note": "EdgeDesk and the market are 1.4 points apart, inside the 2-point research threshold. There is nothing unusual to report.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Dallas Cowboys +1.6",
@@ -93,8 +93,13 @@
         "away": "Baltimore Ravens",
         "home_pct": 44,
         "away_pct": 56,
+        "home_text": "44%",
+        "away_text": "56%",
+        "bounded": false,
+        "bounded_note": null,
         "favourite": "Baltimore Ravens",
-        "favourite_pct": 56
+        "favourite_pct": 56,
+        "favourite_text": "56%"
       },
       "moneyline": {
         "home": "Dallas Cowboys",
@@ -115,8 +120,8 @@
       "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 16 absorbed 2026 games.",
       "sample_games": 16,
       "seeded": true,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "AGREEMENT",
+      "status_note": "EdgeDesk and the market are 1.4 points apart, inside the 2-point research threshold. There is nothing unusual to report.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1165,16 +1170,25 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Dallas Cowboys +1.6",
+      "market": "Dallas Cowboys +3.0",
+      "difference": "1.4 points",
       "total_model": "51.1",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "52.5",
+      "total_difference": "1.4 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "AGREEMENT",
+      "classification_note": "EdgeDesk and the market are 1.4 points apart, inside the 2-point research threshold. There is nothing unusual to report.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Baltimore Ravens 26, Dallas Cowboys 25.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "AGREEMENT",
+      "note": "EdgeDesk and the market are 1.4 points apart, inside the 2-point research threshold. There is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1300,8 +1314,7 @@
     },
     "notes": [
       "EdgeDesk’s line is Dallas Cowboys +1.6 with a fair total of 51.1, before any book is consulted.",
-      "Dallas Cowboys wins 44% of the time in EdgeDesk’s distribution, Baltimore Ravens 56%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "Dallas Cowboys wins 44% of the time in EdgeDesk’s distribution, Baltimore Ravens 56%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1311,6 +1324,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T17:39:58.011Z"
+    "at": "2026-09-15T20:29:10.802Z"
   }
 }

@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Northern Iowa vs. Iowa: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Northern Iowa vs. Iowa 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Northern Iowa at Iowa at Iowa -42.0. Iowa wins 100% of simulations. Data confidence 49%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Northern Iowa at Iowa at Iowa -42.0. Iowa wins 99% of simulations. Data confidence 45%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Iowa carries a full EdgeDesk team rating at +0.3; Northern Iowa is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Iowa -42.0 before any sportsbook number is…",
   "home_team": "Iowa",
   "away_team": "Northern Iowa",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T20:00:00.000Z",
   "game_when_label": "2026-09-19 20:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T17:39:58.011Z",
-  "generated_at": "2026-09-15T17:39:58.011Z",
+  "updated_at": "2026-09-15T20:29:10.802Z",
+  "generated_at": "2026-09-15T20:29:10.802Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 49,
+  "confidence": 45,
   "priced": true,
   "fair_spread_text": "Iowa -42.0",
   "fair_total": null,
@@ -64,9 +64,9 @@
     },
     "lede": [
       "Iowa carries a full EdgeDesk team rating at +0.3; Northern Iowa is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
-      "EdgeDesk makes it Iowa -42.0 before any sportsbook number is consulted, with Iowa winning 100% of simulations.",
+      "EdgeDesk makes it Iowa -42.0 before any sportsbook number is consulted, with Iowa winning >99% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Northern Iowa is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 49% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 45% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -81,10 +81,15 @@
       "win_prob": {
         "home": "Iowa",
         "away": "Northern Iowa",
-        "home_pct": 100,
-        "away_pct": 0,
+        "home_pct": 99,
+        "away_pct": 1,
+        "home_text": ">99%",
+        "away_text": "<1%",
+        "bounded": true,
+        "bounded_note": "one side rounds past the boundary, so it is shown bounded: a projection built on a continuous margin distribution cannot mean 100% or 0%",
         "favourite": "Iowa",
-        "favourite_pct": 100
+        "favourite_pct": 99,
+        "favourite_text": ">99%"
       },
       "outcome_range": {
         "basis_team": "Iowa",
@@ -96,7 +101,7 @@
         "volatility_discriminates": false,
         "note": "Quoted from Iowa’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 49,
+      "confidence_pct": 45,
       "inputs_reached_pct": 50,
       "input_contract": {
         "fields": 17,
@@ -1236,18 +1241,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home starting QB unknown",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away starting QB unknown",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "weather not supplied",
           "widening": null
         },
@@ -1267,6 +1260,18 @@
           "sev": "LOW",
           "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book total joined to this game",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "low confidence",
+          "text": "opponent-adjusted team rating is in the number but rests on a thin sample",
           "widening": null
         }
       ],
@@ -1471,7 +1476,7 @@
     },
     "notes": [
       "EdgeDesk’s line is Iowa -42.0 on a neutral read of the two teams, before any book is consulted.",
-      "Iowa wins 100% of the time in EdgeDesk’s simulation, Northern Iowa 0%.",
+      "Iowa wins >99% of the time in EdgeDesk’s simulation, Northern Iowa <1%. Neither side is certain: one side rounds past the boundary, so it is shown bounded: a projection built on a continuous margin distribution cannot mean 100% or 0%",
       "Eight games in ten land between +19.0 and +63.0 for Iowa. A single result inside that band tells you nothing new about either team.",
       "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "Northern Iowa quarterback: Jaxon Dailey — started the last game; no announcement for this one.",
@@ -1490,6 +1495,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T17:39:58.011Z"
+    "at": "2026-09-15T20:29:10.802Z"
   }
 }

@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UT Martin vs. Memphis: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UT Martin vs. Memphis 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UT Martin at Memphis at Memphis -31.1. Memphis wins 98% of simulations. Data confidence 49%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices UT Martin at Memphis at Memphis -31.1. Memphis wins 98% of simulations. Data confidence 45%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Memphis carries a full EdgeDesk team rating at -3.6; UT Martin is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Memphis -31.1 before any sportsbook number is…",
   "home_team": "Memphis",
   "away_team": "UT Martin",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T23:00:00.000Z",
   "game_when_label": "2026-09-19 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T17:39:58.011Z",
-  "generated_at": "2026-09-15T17:39:58.011Z",
+  "updated_at": "2026-09-15T20:29:10.802Z",
+  "generated_at": "2026-09-15T20:29:10.802Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 49,
+  "confidence": 45,
   "priced": true,
   "fair_spread_text": "Memphis -31.1",
   "fair_total": null,
@@ -66,7 +66,7 @@
       "Memphis carries a full EdgeDesk team rating at -3.6; UT Martin is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Memphis -31.1 before any sportsbook number is consulted, with Memphis winning 98% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; UT Martin is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 49% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 45% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -83,8 +83,13 @@
         "away": "UT Martin",
         "home_pct": 98,
         "away_pct": 2,
+        "home_text": "98%",
+        "away_text": "2%",
+        "bounded": false,
+        "bounded_note": null,
         "favourite": "Memphis",
-        "favourite_pct": 98
+        "favourite_pct": 98,
+        "favourite_text": "98%"
       },
       "outcome_range": {
         "basis_team": "Memphis",
@@ -96,7 +101,7 @@
         "volatility_discriminates": false,
         "note": "Quoted from Memphis’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 49,
+      "confidence_pct": 45,
       "inputs_reached_pct": 53,
       "input_contract": {
         "fields": 17,
@@ -1214,13 +1219,7 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home starting QB unknown",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away starting QB unknown",
+          "text": "away starting quarterback unknown — no starter resolved",
           "widening": null
         },
         {
@@ -1251,6 +1250,12 @@
           "sev": "LOW",
           "label": "missing",
           "text": "no book total joined to this game",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "low confidence",
+          "text": "opponent-adjusted team rating is in the number but rests on a thin sample",
           "widening": null
         }
       ],
@@ -1473,6 +1478,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T17:39:58.011Z"
+    "at": "2026-09-15T20:29:10.802Z"
   }
 }
