@@ -279,3 +279,83 @@ as college evidence accumulates.
 | the roster feed is unpublished | EdgeDesk's own ESPN sync is used; if that is also missing, continuity is unknown, never zero |
 | a team has no prior season | the prior term rests on talent alone and a gate fires |
 | severe anomalies are found | **the rankings build refuses to publish** and exits non-zero |
+
+---
+
+## Data confidence: where every point of it goes
+
+The research card publishes two numbers and they answer different questions.
+Both were wrong in ways worth writing down, because the same mistake is easy to
+make again.
+
+**Data confidence** is `scores.confidence` — the engine's own weighted answer to
+"how good is my information?", over twelve measurements with trained weights
+summing to 4.083. **Input coverage** is the share of the seventeen-field input
+contract EdgeDesk actually retrieved (`football/matchup/inputs.js`, mirrored in
+the board's `fbP4Contract`). They are not the same number and neither is the
+engine's internal `information_missing`, which is a ten-probe volatility driver
+and was being printed on the card under the label "% of the model's inputs
+reached it". Three of those ten probes are permanently unfillable for this
+sport, so the sentence pinned every game near 40% no matter what EdgeDesk
+retrieved, and disagreed with `football/fbs/slate.json` about the same game.
+
+Measured on Miami (OH) @ Cincinnati, week 3 2026 — a game with full rosters, a
+joined market, a resolved starter and a forecast:
+
+| measurement | weight | state | points of the 100 it costs |
+|---|---|---|---|
+| **qb** | 1.0 | no value term | **24.5** |
+| **injuries** | 0.35 | no graded read | **8.6** |
+| schedule | 0.283 | present, confidence fixed at 0.4 | 4.2 |
+| roster talent, two sides | 0.25 each | present at the player layer's own confidence (~0.48) | 6.4 |
+| weather | 0.1 | forecast present, no coefficient earned | 2.4 |
+| venue | 0.25 | present at 0.7 | 1.8 |
+| off-field, two sides | 0.05 each | no public feed | 2.4 |
+| travel | 0.1 | present at 0.95 | 0.1 |
+| rating | 1.0 | full | 0 |
+| matchup | 0.4 | full | 0 |
+
+**80% is not reachable today, and the two reasons are exactly the top two rows.**
+Together they are 33.1 of the 100 points. Clearing both would land at roughly
+82%; clearing neither caps the number in the high forties however many games are
+played. Neither is a modelling choice and neither is fixed by waiting:
+
+* **QB — 24.5 points.** The engine's QB layer prices EPA per dropback
+  (`params.qb.points_per_epa_db`). No feed this repository reads publishes it
+  for college football: cfbfastR's real-EPA play-by-play stops at 2022 in a
+  directory that no longer resolves, and `football/players/config.js` records
+  EPA as not observed for the same reason. EdgeDesk *does* resolve the starter
+  for most of the field from play attribution and publishes him, and the player
+  layer measures his success rate, yards per attempt, explosive rate,
+  completion percentage, sack rate and interception rate — but those are a
+  unit-rating scale, not points of spread, and nothing converts one to the
+  other. The honest routes are (a) a licensed EPA feed, or (b) training a
+  points-per-z coefficient for the QB layer on the same tune window the rest of
+  the model used, with its own walk-forward record. Substituting EPIR for EPA
+  is neither.
+* **Availability — 8.6 points.** College football files no mandatory injury
+  report. Of the three sources the collector reads, two (`espn_depth`,
+  `espn_participation`) refuse this repository on all 138 programmes with
+  HTTP 403/404, and the third answers with zero rows for all 138. The read is
+  graded `LIMITED`, and a `LIMITED` read reaches the engine as **null** — not
+  as an empty list. That distinction is the whole layer: "we read the sources
+  and nobody is hurt" and "no source answered" are different statements, and
+  collapsing them would claim all 138 programmes are healthy on the strength of
+  two refusals and an empty response. Fixing this means a source that answers,
+  not a looser gate.
+
+What **does** move with more games: the `rating` and `matchup` confidences scale
+with games played (`rating.games_for_full_confidence`, six), and the roster
+talent confidence rises as the play feed attributes production to more of each
+roster — 1,746 of 15,542 rated players had attributed production at week 3.
+That is worth a few points across the season, not thirty.
+
+What is **declared unfixable in the parameters themselves**, in
+`params.unavailable_by_design`: weather coefficients, injury position weights
+beyond quarterback, blue-chip ratio, NIL and off-field, coaching continuity. A
+field in that list is not a collection failure and the contract does not render
+it as one — but it is not excluded from the denominator either, because a
+reader deciding how much to trust the number should see it. Only
+`NOT_APPLICABLE` leaves the denominator: a dome has no weather to be missing, a
+neutral site has no travel asymmetry, an FCS visitor has no roster in a rated
+universe that does not contain it.

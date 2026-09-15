@@ -75,8 +75,50 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
 
   /* THE JOIN THE OLD BUILDER LOST */
   chk('the roster reaches the engine request', !!asm.baseline.teams.home.roster && !!asm.baseline.teams.away.roster);
-  chk('the availability layer reaches the engine request as an injury report',
-    Array.isArray(asm.baseline.teams.home.injuries), typeof asm.baseline.teams.home.injuries);
+  /* THE AVAILABILITY JOIN, AND THE GRADE ON IT.
+
+     This used to assert only that an array came out, which passed while the
+     assembly was handing the engine [] — "the sources were read and named
+     nobody" — for every team in the registry regardless of how that read had
+     gone. In the current dataset that statement would be made about all 138
+     FBS programmes at once, off two sources returning 403/404 and a third
+     answering empty, and it is what made football/fbs/slate.json publish a
+     higher completeness than the board on screen for the same game.
+
+     So the invariant is the one that actually matters: the join exists, and
+     what comes out of it reflects the registry's own grade. A graded read
+     yields a list (empty or not); an ungraded one yields null, which the
+     engine prices as maximum injury uncertainty and never as health. */
+  const AV_GRADED = { STRONG: true, PARTIAL: true };
+  Object.keys(ctx.availability_by_team).forEach(k => {
+    const t = ctx.availability_by_team[k];
+    const q = String(t.dataQuality || t.data_quality || 'NONE').toUpperCase();
+    const got = IN.injuriesFor(ctx, t.team_name || t.team_display);
+    const want = !!AV_GRADED[q];
+    chk('availability grade ' + q + ' decides what reaches the engine for ' + (t.team_name || k),
+      want ? Array.isArray(got) : got === null, { grade: q, got: got === null ? 'null' : ('array[' + got.length + ']') });
+  });
+  chk('an ungraded availability read never reaches the engine as a clean report',
+    (() => {
+      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'LIMITED', players: [] } },
+        availability_as_of: null };
+      return IN.injuriesFor(fake, 'Someteam') === null;
+    })());
+  chk('a graded read that names nobody still reaches the engine as a real report',
+    (() => {
+      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'STRONG', players: [] } },
+        availability_as_of: null };
+      const r = IN.injuriesFor(fake, 'Someteam');
+      return Array.isArray(r) && r.length === 0;
+    })());
+  chk('the injury join itself is intact — a graded read with a listed player carries him through',
+    (() => {
+      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'PARTIAL',
+        players: [{ player_name: 'A Player', position: 'QB', status: 'OUT', depth_role: 'QB1' }] } },
+        availability_as_of: null };
+      const r = IN.injuriesFor(fake, 'Someteam');
+      return Array.isArray(r) && r.length === 1 && r[0].status === 'out' && r[0].starter === true;
+    })());
   chk('the venue reaches the engine request', !!asm.baseline.venue.home);
   chk('the timestamps travel with the request', !!asm.baseline.timestamps.roster);
 

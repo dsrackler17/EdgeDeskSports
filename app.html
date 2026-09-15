@@ -43416,6 +43416,7 @@ function fbRatingsBoard(sport){
    nothing below is fetched twice because a reader picked a conference. */
 FB.p4 = {state:null,up:[],uni:null,slateDrop:null,notes:[],gate:null,season:null,absorbed:0,
   roster:{},rosterSeason:null,rosterAsOf:null,rosterNote:null,lines:{},sig:{},weather:{},
+  talent:null,talentNote:null,
   loadedAt:0,engineErr:null,
   filters:{group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'},
   confOpen:false};
@@ -43973,6 +43974,15 @@ function fbP4Load(force,signal){
   }).then(function(){
     return fbP4LoadRosters(FB.p4.season,signal).catch(function(){});
   }).then(function(){
+    /* THE ROSTER BUNDLES NOW CARRY HOW GOOD THE ROSTER IS, not just who is on
+       it. Until this call the talent layer was dark on every game while
+       football/players/current.json — a committed weekly artifact covering all
+       138 FBS programmes — sat one fetch away, wired to the Player Explorer
+       and to nothing else. A failure here leaves the bundles exactly as the
+       roster sync built them and the engine reports the composite missing, as
+       it did before: the merge adds, it never gates. */
+    return fbP4TalentMerge(signal).catch(function(){});
+  }).then(function(){
     var ids=FB.p4.up.map(function(u){return u.g.game_id;}).filter(Boolean);
     if(!ids.length)return [];
     /* the all-FBS slate is three to four times the old Power 4 one, so the
@@ -44285,6 +44295,49 @@ function fbP4AvailAsOf(){
   try{ var d=C.cfbAvailability(); return (d&&d.data&&(d.data.generated_at||null))||null; }catch(_){ return null; }
 }
 
+/* ---- the talent layer, joined to the roster bundles ---------------------
+   The engine's talent layer asks a roster bundle for `overall_talent` and a
+   per-group `talent`. Both roster builders ship them null and both explain it
+   the same way — per-player RECRUITING stars are in no public feed. That is
+   true, and it is a different statement from "EdgeDesk cannot measure this
+   roster": football/players/ rates 15,542 players across all 138 FBS
+   programmes from counted events, rolls them up per group and per team with
+   its own measured confidence, and ships weekly. The two files were never
+   joined, so every game on this board reported two of the engine's ten input
+   probes empty for a reason that had stopped being true.
+
+   The merge is non-destructive by construction (football/players/
+   roster_quality.js): continuity, portal flow and class mix are the roster
+   diff's measurements and keep winning, and a field neither side measured
+   stays null so the engine widens rather than guesses. Recruiting pedigree is
+   still unavailable and blue_chip_ratio is still null — this is production,
+   and every basis string in it says so. */
+function fbP4TalentMerge(signal){
+  var S=FB.p4;
+  S.talentNote=null;
+  if(!S.roster)return Promise.resolve(null);
+  return fbScript('football/players/roster_quality.js').then(function(){
+    return fbPqManifest();
+  }).then(function(layer){
+    if(!window.EDRosterQuality||!layer||!layer.teams)throw new Error('player layer unavailable');
+    var m=window.EDRosterQuality.merge(S.roster,layer,window.EDCfbP4.normKey);
+    S.roster=m.bundles;
+    S.talent={teams:m.teams,as_of:m.as_of,source:m.source,filled:m.filled,
+      quality:layer.quality||null,season:layer.season,week:layer.week};
+    S.talentNote=m.teams+' programme'+(m.teams===1?'':'s')+' carry a measured roster-quality composite '
+      +'from the player layer ('+(layer.player_count||'?')+' rated players, week '+(layer.week==null?'?':layer.week)
+      +'), so talent, group quality and returning production reach the engine instead of reading as absent. '
+      +'It is measured production, not recruiting pedigree: per-player star ratings remain in no public feed '
+      +'and the blue-chip layer stays dark and says so.';
+    return m;
+  }).catch(function(e){
+    S.talent=null;
+    S.talentNote='The player layer did not load ('+((e&&e.message)||'fetch failed')+'), so no roster carries a '
+      +'talent composite and the engine reports it missing on every game rather than assuming one.';
+    throw e;
+  });
+}
+
 /* `opts.noMarket` builds the SAME request with no market number in it.
    The fair spread does not depend on the market (the market only feeds the
    gap, the cover and the blend), so this is how a model number is obtained
@@ -44308,10 +44361,16 @@ function fbP4Request(u,opts){
       home_fbs:(u.meta?u.meta.home.is_fbs:fbP4IsFbs(g.home_division,g.home_team)),
       away_fbs:(u.meta?u.meta.away.is_fbs:fbP4IsFbs(g.away_division,g.away_team))},
     teams:{
-      /* qb stays null on purpose: college football publishes no depth chart
-         EdgeDesk trusts, so naming a starter would be a guess dressed as an
-         input. The engine prices an unknown starter as minimum stability,
-         which is the honest answer, and the card says so. */
+      /* qb stays null, and the reason is narrower than it used to be written.
+         It is NOT that EdgeDesk has no starter: football/starters/ resolves
+         one for most of the field from play attribution and the card names
+         him. It is that the engine's QB layer prices EPA PER DROPBACK, which
+         no feed this repository reads publishes for college football, and
+         that the starter layer prices nothing until it has an out-of-sample
+         record of its own — football/matchup/inputs.js PRICED_STARTER_STATUSES
+         is the one switch, and it is empty on purpose. An unknown starter is
+         priced as minimum stability and the card says which of those two
+         sentences applies. */
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
         qb:null,injuries:fbP4Injuries(g.home_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
       away:{conference:g.away_conference,roster:FB.p4.roster[ak]||null,
@@ -44329,6 +44388,206 @@ function fbP4Request(u,opts){
       injuries:fbP4AvailAsOf(),
       weather:(FB.p4.weather[g.game_id]||{}).as_of||null}
   };
+}
+
+/* ---- THE INPUT CONTRACT, ON SCREEN ------------------------------------
+   WHAT THIS REPLACED, and why the old number was not wrong by accident.
+
+   The card used to print "<n>% of the model's inputs reached it" from the
+   engine's `information_missing` — a TEN-PROBE INTERNAL VOLATILITY DRIVER,
+   not an input contract. Three of those ten probes are things nobody can
+   deliver for college football: per-player recruiting pedigree (subscription
+   data), EPA per dropback for the QB layer (in no feed this repository
+   reads), and an injury report (the sport files none, and the two endpoints
+   that carry proxies for it are refusing). Counting a permanent structural
+   ceiling as a collection failure pins every game in the universe near 40%
+   whatever EdgeDesk actually retrieves, which makes the number useless as a
+   coverage signal and makes it a lie as a sentence.
+
+   football/matchup/inputs.js had already written the rule — "a completeness
+   percentage that counts NOT_APPLICABLE as missing is not a measure of what
+   EdgeDesk knows" — and shipped the seven-state contract that follows it. The
+   board never adopted it, so the screen and football/fbs/slate.json published
+   two different completeness numbers for the same game out of the same files.
+
+   This is that contract, emitted by the code that assembles the request, so
+   it cannot drift from what was actually handed to the engine. Same field
+   names, same states, same denominator rule as the offline assembly:
+
+     USABLE         retrieved, current, fed to the model
+     RESEARCH_ONLY  retrieved and trustworthy, deliberately not priced
+     STALE          retrieved, older than this field's own floor
+     NOT_APPLICABLE the question does not arise here
+     FETCH_FAILED   EdgeDesk tried and the source refused
+     UNAVAILABLE    no source EdgeDesk can reach publishes it at all
+
+   A REFUSED SOURCE STILL COUNTS AGAINST THE PERCENTAGE. Only NOT_APPLICABLE
+   leaves the denominator. That is the difference between excluding a question
+   that does not arise and excusing a gap. */
+var FBP4_STALE_H={roster:24*14,availability:48,weather:12};
+function fbP4CRow(field,side,state,o){
+  o=o||{};
+  return {field:field,side:side||null,state:state,source:o.source||null,as_of:o.as_of||null,
+    detail:o.detail||null,priced:state==='USABLE'};
+}
+function fbP4AgeH(t){var a=Date.parse(t);return isFinite(a)?(Date.now()-a)/36e5:null;}
+function fbP4Contract(u){
+  var g=u.g,P=window.EDCfbP4Params,C=window.EDCARD;
+  var V=(P.universe&&P.universe.venues)||{};
+  var hk=fbP4Key(g.home_team),ak=fbP4Key(g.away_team);
+  var homeFbs=u.meta?u.meta.home.is_fbs:fbP4IsFbs(g.home_division,g.home_team);
+  var awayFbs=u.meta?u.meta.away.is_fbs:fbP4IsFbs(g.away_division,g.away_team);
+  var vh=V[hk]||null,va=V[ak]||null,dome=!!(vh&&vh.dome);
+  var K=[];
+
+  /* venue geography */
+  K.push(vh?fbP4CRow('venue_geography','home','USABLE',{source:'trained venue table',detail:vh.name||null})
+    :fbP4CRow('venue_geography','home','UNAVAILABLE',{source:'trained venue table',
+      detail:'no coordinates for '+g.home_team+'\u2019s venue in the table the model was trained on'}));
+  /* the away venue exists to measure travel, and a neutral site has no travel
+     asymmetry to measure. That is not a missing field. */
+  K.push(g.neutral_site?fbP4CRow('venue_geography','away','NOT_APPLICABLE',
+      {detail:'neutral site \u2014 no travel asymmetry is modelled, so the away venue does not enter'})
+    :(va?fbP4CRow('venue_geography','away','USABLE',{source:'trained venue table',detail:va.name||null})
+      :fbP4CRow('venue_geography','away','UNAVAILABLE',{source:'trained venue table',
+        detail:'no coordinates for '+g.away_team+'\u2019s home venue, so travel distance cannot be computed'})));
+
+  /* weather */
+  var wx=FB.p4.weather[g.game_id]||null,wxAge=wx?fbP4AgeH(wx.as_of):null;
+  /* A FORECAST THAT ARRIVES IS NOT A FORECAST THE MODEL PRICES. params.js
+     ships unavailable_by_design.weather_coefficients — no historical weather
+     series exists in this corpus, so supplied weather narrows the uncertainty
+     term and moves no points. Marking it USABLE claimed otherwise, and USABLE
+     is what priced coverage counts. Read from the parameters, so the row
+     upgrades itself the day a coefficient is earned. */
+  var wxPriced=!!(P&&P.weather);
+  var wxWhy=(P&&P.unavailable_by_design&&P.unavailable_by_design.weather_coefficients)||null;
+  K.push(dome?fbP4CRow('weather',null,'NOT_APPLICABLE',
+      {detail:(vh.name||'an indoor venue')+' is a dome \u2014 weather is neutralised, not missing'})
+    :(wx?fbP4CRow('weather',null,
+        (wxAge!=null&&wxAge>FBP4_STALE_H.weather)?'STALE':(wxPriced?'USABLE':'RESEARCH_ONLY'),
+        {source:'open-meteo forecast',as_of:wx.as_of||null,
+         detail:wxPriced?null:('retrieved and shown, and it narrows the weather uncertainty term, but it '
+           +'moves no points: '+(wxWhy||'no weather coefficient was earned on this corpus'))})
+      :fbP4CRow('weather',null,'FETCH_FAILED',
+        {detail:vh?'the venue coordinates are known; no forecast reached this game'
+          :'the venue has no coordinates, so no forecast can be located for it'})));
+
+  /* rosters, and roster talent as its OWN field: who is on it and how good
+     they are are two questions, and collapsing them hid the second for as
+     long as it was always empty */
+  var rAge=fbP4AgeH(FB.p4.rosterAsOf);
+  [['home',hk,homeFbs,g.home_team],['away',ak,awayFbs,g.away_team]].forEach(function(x){
+    var side=x[0],key=x[1],isFbs=x[2],name=x[3],r=FB.p4.roster[key]||null;
+    if(r)K.push(fbP4CRow('roster',side,(rAge!=null&&rAge>FBP4_STALE_H.roster)?'STALE':'USABLE',
+      {source:'EdgeDesk roster sync',as_of:FB.p4.rosterAsOf||null,detail:FB.p4.rosterNote||null}));
+    else if(!isFbs)K.push(fbP4CRow('roster',side,'NOT_APPLICABLE',
+      {detail:name+' is outside the FBS universe EdgeDesk rates; the roster layer is not defined for it'}));
+    else K.push(fbP4CRow('roster',side,'UNAVAILABLE',{detail:'no roster bundle resolved for '+name}));
+
+    var t=FB.p4.talent||null;
+    if(r&&typeof r.overall_talent==='number'&&isFinite(r.overall_talent))
+      K.push(fbP4CRow('roster_talent',side,'USABLE',{source:(t&&t.source)||'EdgeDesk player layer',
+        as_of:(t&&t.as_of)||null,
+        detail:'composite '+(Math.round(r.overall_talent*10)/10)
+          +(typeof r.overall_talent_confidence==='number'?(' at confidence '+r.overall_talent_confidence):'')
+          +' \u2014 measured production, not recruiting pedigree'}));
+    else if(!isFbs)K.push(fbP4CRow('roster_talent',side,'NOT_APPLICABLE',
+      {detail:name+' is outside the FBS field the player layer rates'}));
+    else K.push(fbP4CRow('roster_talent',side,'UNAVAILABLE',
+      {detail:'no rated roster resolved for '+name+(t?'':'; the player layer did not load')}));
+  });
+
+  /* availability. A refused source is FETCH_FAILED and still counts against
+     the percentage: EdgeDesk tried and got nothing, which is a real hole. */
+  var avAge=fbP4AgeH(fbP4AvailAsOf());
+  [['home',homeFbs,g.home_team],['away',awayFbs,g.away_team]].forEach(function(x){
+    var side=x[0],isFbs=x[1],name=x[2],list=fbP4Injuries(name),t=null;
+    try{ t=C&&C.cavTeam?C.cavTeam(name):null; }catch(_){ t=null; }
+    if(list&&list.length)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
+      {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
+        detail:list.length+' absence report'+(list.length===1?'':'s')+' on file'}));
+    else if(list)K.push(fbP4CRow('availability',side,(avAge!=null&&avAge>FBP4_STALE_H.availability)?'STALE':'USABLE',
+      {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
+        detail:'the sources were read and named nobody \u2014 a report of no absences, '
+          +'which is not the same as no report'}));
+    else if(!isFbs)K.push(fbP4CRow('availability',side,'NOT_APPLICABLE',
+      {detail:name+' is outside the FBS availability registry'}));
+    else K.push(fbP4CRow('availability',side,t?'FETCH_FAILED':'UNAVAILABLE',
+      {source:'EdgeDesk college availability layer',as_of:fbP4AvailAsOf(),
+        detail:t?('EdgeDesk read '+(t.sources_checked||0)+' source'+((t.sources_checked||0)===1?'':'s')+' for '+name
+            +((t.sources_failed||0)?(' and '+t.sources_failed+' refused'):' and none carried a usable report')
+            +' \u2014 graded '+String(t.dataQuality||'NONE').toUpperCase())
+          :(name+' is not in the availability registry')}));
+  });
+
+  /* the starter: retrieved, published as research, priced nowhere */
+  [['home',homeFbs,g.home_team],['away',awayFbs,g.away_team]].forEach(function(x){
+    var side=x[0],isFbs=x[1],name=x[2],rec=null;
+    try{ rec=fbStarterFor(name); }catch(_){ rec=null; }
+    if(!rec){
+      K.push(fbP4CRow('qb_starter',side,isFbs?'UNAVAILABLE':'NOT_APPLICABLE',
+        {detail:isFbs?('no starter record was built for '+name)
+          :(name+' is outside the rated universe; no starter context is assembled for it')}));
+      K.push(fbP4CRow('qb_availability',side,isFbs?'UNAVAILABLE':'NOT_APPLICABLE',
+        {detail:isFbs?'no starter record, so no availability statement about one':null}));
+      return;
+    }
+    K.push(fbP4CRow('qb_starter',side,'RESEARCH_ONLY',{source:rec.source||null,as_of:rec.retrieved_at||null,
+      detail:(rec.label||rec.player_name||'starter resolved')
+        +' \u2014 retrieved and published as research; the priced QB layer is not fed from it'}));
+    var av=rec.availability||{};
+    K.push(fbP4CRow('qb_availability',side,av.evidence==='EXPLICIT'?'USABLE':'UNAVAILABLE',
+      {source:av.source||null,as_of:av.retrieved_at||null,detail:av.why||null}));
+  });
+
+  /* documented, permanent gaps. They count, because a reader deciding how
+     much to trust this number should see them. */
+  K.push(fbP4CRow('recruiting_talent',null,'UNAVAILABLE',
+    {detail:'per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted'}));
+  K.push(fbP4CRow('coaching_continuity',null,'UNAVAILABLE',
+    {detail:'no public, keyless feed carries coordinator or staff continuity'}));
+
+  /* schedule context */
+  [['home',fbP4SchedCtx(g,'home')],['away',fbP4SchedCtx(g,'away')]].forEach(function(x){
+    K.push(x[1]?fbP4CRow('schedule_context',x[0],'USABLE',{source:'season schedule feed',
+        detail:'rest '+(x[1].rest_days==null?'n/a':(x[1].rest_days+'d'))})
+      :fbP4CRow('schedule_context',x[0],'NOT_APPLICABLE',
+        {detail:'the first game of the season has no preceding rest interval to measure'}));
+  });
+
+  return {rows:K,summary:fbP4Summarise(K)};
+}
+/* The SAME arithmetic football/matchup/inputs.js summarise() does, so the
+   screen and the published artifact cannot report different coverage for the
+   same game. */
+function fbP4Summarise(rows){
+  var by={USABLE:0,RESEARCH_ONLY:0,STALE:0,CONFLICTING:0,NOT_APPLICABLE:0,FETCH_FAILED:0,UNAVAILABLE:0},i;
+  for(i=0;i<rows.length;i++)by[rows[i].state]=(by[rows[i].state]||0)+1;
+  var applicable=rows.length-by.NOT_APPLICABLE;
+  /* STALE IS NOT KNOWN. inputs.js summarise() counts USABLE + RESEARCH_ONLY
+     and nothing else; a field retrieved past its own freshness floor is a
+     field EdgeDesk cannot vouch for today. Mirrored exactly, because the
+     whole point of this function is that the two cannot disagree. */
+  var known=by.USABLE+by.RESEARCH_ONLY;
+  return {fields:rows.length,applicable:applicable,by_state:by,known:known,priced:by.USABLE,
+    input_coverage:applicable?(Math.round((known/applicable)*1000)/1000):null,
+    priced_coverage:applicable?(Math.round((by.USABLE/applicable)*1000)/1000):null};
+}
+/* The contract for one board item, built once and reused: the summary tile,
+   the research check and the copied brief must not each assemble their own. */
+function fbP4ContractFor(u){
+  if(!u)return null;
+  /* keyed on the stamps of everything the contract reads, so a board reload
+     that brings fresher rosters, a talent merge or a new forecast rebuilds it
+     instead of serving a cached answer about data that has since changed */
+  var key=String(FB.p4.rosterAsOf)+'|'+String(FB.p4.talent&&FB.p4.talent.as_of)
+    +'|'+String(fbP4AvailAsOf())+'|'+String((FB.p4.weather[u.g.game_id]||{}).as_of);
+  if(u._contract&&u._contract.key===key)return u._contract.v;
+  var c=null;
+  try{ c=fbP4Contract(u); }catch(_){ c=null; }
+  u._contract={key:key,v:c};
+  return c;
 }
 
 /* ---- CSV export -------------------------------------------------------
@@ -44391,8 +44650,14 @@ function fbP4Contrib(p,key){
 var FBP4_FBS_TAIL_N=15;
 function fbP4FbsTail(u,p,mkt){
   var g=u.g,m=u.meta||(window.EDFbs&&FB.p4.uni?window.EDFbs.classifyGame(g,FB.p4.uni):null);
-  var ctx=(p&&p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
   var st=fbP4StatusFor(p,mkt||{});
+  /* THE COLUMN EXISTS SO A DOWNLOADED ROW RECONCILES WITH THE ROW ON SCREEN.
+     It carried the engine's internal probe count while the board carried the
+     input contract, which is precisely the divergence this column was added
+     to make impossible. It reads the contract the card reads. */
+  var tailCov=null;
+  try{ var tc=fbP4ContractFor(u); tailCov=(tc&&tc.summary&&tc.summary.input_coverage!=null)
+    ? Math.round(tc.summary.input_coverage*1000)/10 : null; }catch(_){ tailCov=null; }
   return [
     (m&&m.home.key)||fbP4Key(g.home_team)||'',
     (m&&m.away.key)||fbP4Key(g.away_team)||'',
@@ -44405,7 +44670,7 @@ function fbP4FbsTail(u,p,mkt){
     (m&&m.matchup_type)||'',
     m?String(!!m.is_conference_game):'',
     (p&&p.status)||'NO_PREDICTION',
-    (ctx&&ctx.information_missing!=null)?Math.round((1-ctx.information_missing)*1000)/10:'',
+    tailCov==null?'':tailCov,
     (mkt&&mkt.status)||'NO MARKET',
     (mkt&&mkt.as_of)||'',
     st.t
@@ -45745,11 +46010,23 @@ function fbGxSummary(u,p,gid){
   out+=cell('Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>','',
     'EdgeDesk’s own read, not advice');
   var conf=p.scores&&p.scores.confidence!=null?Math.round(p.scores.confidence):null;
-  var ctx=(p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
-  var compl=ctx&&ctx.information_missing!=null?Math.round((1-ctx.information_missing)*100):null;
+  /* COVERAGE COMES FROM THE INPUT CONTRACT, not from the engine's internal
+     probe count. The probe count is a volatility driver: ten hand-picked
+     fields, three of which nobody can deliver for this sport, so it pinned
+     every game near 40% whatever EdgeDesk retrieved and disagreed with
+     football/fbs/slate.json about the same game. fbP4Contract is emitted by
+     the code that assembles the request and summarised by the same arithmetic
+     the offline artifact uses, so the screen and the file now answer this
+     question identically. */
+  var cov=null;
+  try{ if(typeof fbP4ContractFor==='function')cov=fbP4ContractFor(u); }catch(_){ cov=null; }
+  var cs=cov&&cov.summary;
+  var covPct=(cs&&cs.input_coverage!=null)?Math.round(cs.input_coverage*100):null;
   out+=cell('Data confidence',conf!=null?(conf+'%'):'<span class="gx-miss">unknown</span>',
     conf==null?'':(conf>=60?'ok':(conf>=35?'warn':'neg')),
-    compl!=null?(compl+'% of the model’s inputs reached it'):'input coverage not reported');
+    covPct!=null?(covPct+'% of the input contract reached it — '+cs.known+' of '+cs.applicable
+      +' applicable fields')
+      :'input coverage not reported');
   out+='</div>';
   out+='<div class="gx-means '+st.cls+'"><b>What this means</b> '+fbEsc(st.means)+'</div>';
   out+=fbGxCheck(u,p);
@@ -45759,6 +46036,47 @@ function fbGxSummary(u,p,gid){
       ?'<button class="btn ghost sm" onclick="fbGxShare(\''+fbEsc(gid)+'\')">Share research</button>':'')
     +'</div>';
   return out;
+}
+
+/* ── the two "why" helpers the check rows read ──────────────────────────
+   Both answer from a committed artifact rather than from a constant, so a
+   row cannot keep asserting something that has stopped being true. */
+/* the resolved starter for one side, or null. Never throws: the card renders
+   in contexts where the starter context was never loaded, and a research row
+   that crashes the summary is worse than one that says it does not know. */
+function fbGxStarter(u,which){
+  var g=u&&u.g; if(!g)return null;
+  var r=null;
+  try{ r=fbStarterFor(which==='home'?g.home_team:g.away_team); }catch(_){ return null; }
+  return (r&&r.player_name)?r.player_name:null;
+}
+function fbGxStarterWhy(){
+  var e=null;
+  try{ e=FB.starters&&FB.starters.err; }catch(_){ e=null; }
+  return e?('the starter context could not be read this session ('+e+')')
+    :'no starter record was built for either team';
+}
+/* why the availability layer is dark for this game, in the registry's own
+   terms. "No report" and "the sources refused" are different statements and
+   only the second one is true today. */
+function fbP4AvailWhy(u){
+  var C=window.EDCARD,g=u&&u.g;
+  if(!C||!C.cavTeam||!g)return 'the availability registry could not be read in this session';
+  var out=[],seen={};
+  ['home','away'].forEach(function(which){
+    var nm=which==='home'?g.home_team:g.away_team,t=null;
+    try{ t=C.cavTeam(nm); }catch(_){ t=null; }
+    if(!t){ out.push(nm+' is not in the availability registry'); return; }
+    var q=String(t.dataQuality||'NONE').toUpperCase();
+    var key=q+'|'+(t.sources_failed||0)+'|'+(t.sources_checked||0);
+    if(seen[key])return; seen[key]=1;
+    if(q==='NONE'){ out.push('no source was reachable for '+nm); return; }
+    out.push('EdgeDesk read '+(t.sources_checked||0)+' source'+((t.sources_checked||0)===1?'':'s')+' for '+nm
+      +((t.sources_failed||0)?(' and '+t.sources_failed+' refused'):' and none carried a usable report')
+      +' — graded '+q);
+  });
+  return out.join('; ')+'. College football files no mandatory injury report, so silence is '
+    +'priced as maximum uncertainty and never as health.';
 }
 
 /* ── RESEARCH CHECK ─────────────────────────────────────────────────────
@@ -45774,23 +46092,77 @@ function fbGxCheckRows(u,p){
   var ra=L.offensive_line&&L.offensive_line.away&&L.offensive_line.away.continuity;
   var rok=(rh&&rh.available!==false)&&(ra&&ra.available!==false);
   st('roster loaded',rok?'AVAILABLE':((rh&&rh.available!==false)||(ra&&ra.available!==false)?'PARTIAL':'MISSING'));
+  /* ROSTER TALENT IS ITS OWN ROW. `roster loaded` above answers who is on it;
+     this answers how good they are, and the two were collapsed for as long as
+     the second was always empty. It is measured production from the player
+     layer, never recruiting pedigree — which is the row below, and stays × */
+  var th=L.talent&&L.talent.home&&L.talent.home.overall, ta=L.talent&&L.talent.away&&L.talent.away.overall;
+  var tok=(th&&th.available!==false)&&(ta&&ta.available!==false);
+  st('roster talent',tok?'AVAILABLE':(((th&&th.available!==false)||(ta&&ta.available!==false))?'PARTIAL':'MISSING'),
+     tok?'measured production from the player layer, not recruiting pedigree'
+        :'no rated roster reached this game');
   var ih=L.injuries&&L.injuries.home&&L.injuries.home.points, ia=L.injuries&&L.injuries.away&&L.injuries.away.points;
   var iok=(ih&&ih.available!==false)&&(ia&&ia.available!==false);
-  st('availability',iok?'AVAILABLE':'UNKNOWN',iok?'':'no absence report reached this game');
+  /* WHY the availability layer is dark, not merely that it is. Reading "no
+     absence report reached this game" on every game in the universe sends a
+     reader looking for a missing join; the truth is that the sources refused,
+     and EdgeDesk grades its own read rather than treating silence as health. */
+  st('availability',iok?'AVAILABLE':'UNKNOWN',
+     iok?'':fbP4AvailWhy(u));
+  /* THE STARTER IS NOT UNKNOWN. This row read "no public college depth chart
+     EdgeDesk trusts" on every game — written before this repository built its
+     own starter layer out of play attribution and started committing it
+     weekly. Where a starter is resolved the row says so and says why the
+     priced number still does not use him, which is a different sentence from
+     not knowing who he is. */
+  var stH=fbGxStarter(u,'home'), stA=fbGxStarter(u,'away');
   var qh=L.qb&&L.qb.home&&L.qb.home.value, qa=L.qb&&L.qb.away&&L.qb.away.value;
-  st('starting quarterback',(qh&&qh.available!==false)&&(qa&&qa.available!==false)?'AVAILABLE':'UNKNOWN',
-     'no public college depth chart EdgeDesk trusts');
-  st('recruiting','MISSING','no legal public feed exists');
-  /* weather is published under situation, not at the top of layers — reading
-     the wrong path made this row say UNKNOWN even when a forecast had reached
-     the projection. Wrong in the safe direction is still wrong. */
-  var w=L.situation&&L.situation.weather;
-  st('weather',w&&w.available!==false?'AVAILABLE':'UNKNOWN',
-     w&&w.available===false?(w.reason||'no forecast supplied'):'');
+  if((qh&&qh.available!==false)&&(qa&&qa.available!==false))
+    st('starting quarterback','AVAILABLE','');
+  else if(stH&&stA)
+    st('starting quarterback','RESEARCH',
+       stH+' / '+stA+' — resolved from play attribution and published as research. The priced QB layer '
+       +'is not fed from it: no feed EdgeDesk reads carries EPA per dropback for college football, so the '
+       +'QB layer has no value term, and the starter layer prices nothing until it has an out-of-sample record');
+  else if(stH||stA)
+    st('starting quarterback','PARTIAL',(stH||stA)+' resolved; the other side has no starter record');
+  else
+    st('starting quarterback','UNKNOWN',fbGxStarterWhy());
+  st('recruiting','MISSING','per-player star ratings are subscription data; no keyless feed carries them '
+     +'and none is substituted');
+  /* WEATHER, READ FROM THE MEASUREMENT RATHER THAN FROM THE BUNDLE.
+
+     `layers.situation.weather` is the whole weather bundle — {total_points,
+     spread_points, uncertainty, detail} — and a bundle has no `.available`.
+     Testing `w.available !== false` on it therefore compared undefined to
+     false, which is true, so this row rendered a green ✓ on every game in the
+     universe including games with no forecast at all. Fixing the path last
+     time moved the bug rather than removing it.
+
+     The measurement inside it is what the question is about, and its reason
+     separates the three states exactly: the engine only reaches "coefficients
+     not trained" when a forecast DID arrive. So a forecast that reached
+     EdgeDesk and cannot move the total reads as research, not as a tick —
+     params.js says in unavailable_by_design that it never will on this
+     corpus, and a green tick claimed the opposite. A dome is a real answer
+     and stays a tick. */
+  var w=L.situation&&L.situation.weather, wtp=w&&w.total_points;
+  if(wtp&&wtp.available!==false)
+    st('weather','AVAILABLE',wtp.source||'');
+  else if(wtp&&/coefficient/i.test(String(wtp.reason||'')))
+    st('weather','RESEARCH','a forecast reached this game and narrows the weather uncertainty term, '
+       +'but it moves no points: '+wtp.reason);
+  else
+    st('weather','UNKNOWN',(wtp&&wtp.reason)||'no forecast supplied');
   return rows;
 }
 function fbGxCheck(u,p){
-  var GL={AVAILABLE:['✓','ok'],PARTIAL:['~','warn'],STALE:['~','warn'],UNKNOWN:['?','warn'],MISSING:['×','neg']};
+  /* RESEARCH is deliberately neutral rather than green: EdgeDesk has the
+     input, and the published number does not use it. Painting that as healthy
+     would claim it reached the projection; painting it amber would claim it is
+     missing. It is neither. */
+  var GL={AVAILABLE:['✓','ok'],RESEARCH:['◇',''],PARTIAL:['~','warn'],STALE:['~','warn'],
+    UNKNOWN:['?','warn'],MISSING:['×','neg']};
   return '<div class="gx-chk"><span class="h">Research check</span>'
     +fbGxCheckRows(u,p).map(function(r){
       var gl=GL[r.s]||['?','warn'];
@@ -49693,7 +50065,16 @@ function fbBriefGame(q){
       var hwp=m.home_win_prob==null?null:Math.round(m.home_win_prob*100);
       var conf=(p.scores&&p.scores.confidence!=null)?Math.round(p.scores.confidence):null;
       var ctx=(p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
-      var reach=(ctx&&ctx.information_missing!=null)?Math.round((1-ctx.information_missing)*100):null;
+      /* The brief, the article pipeline and the newsletter all render this as
+         "<n>% of the model's inputs reached it". It was the engine's internal
+         ten-probe volatility count, which is not the input contract and which
+         counted three permanently-unavailable fields as collection failures.
+         It reads from the same contract the card and the offline artifact do,
+         so all four surfaces now state one number. */
+      var brCov=null;
+      try{ brCov=fbP4ContractFor(pr.u); }catch(_){ brCov=null; }
+      var reach=(brCov&&brCov.summary&&brCov.summary.input_coverage!=null)
+        ? Math.round(brCov.summary.input_coverage*100) : null;
       var st=fbP4StatusFor(p,mk);
       var scoreAbsent=null;
       if(!sc){
@@ -49728,6 +50109,16 @@ function fbBriefGame(q){
           note:'Quoted from '+schedHome+'’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90.'}:null,
         confidence_pct:conf,
         inputs_reached_pct:reach,
+        input_contract:(brCov&&brCov.summary)?{
+          fields:brCov.summary.fields,applicable:brCov.summary.applicable,
+          known:brCov.summary.known,priced:brCov.summary.priced,
+          priced_coverage_pct:brCov.summary.priced_coverage==null?null:Math.round(brCov.summary.priced_coverage*100),
+          by_state:brCov.summary.by_state,
+          absent:brCov.rows.filter(function(r){return r.state==='UNAVAILABLE'||r.state==='FETCH_FAILED';})
+            .map(function(r){return {field:r.field,side:r.side,state:r.state,why:r.detail};}),
+          basis:'Every applicable field EdgeDesk retrieved, over every applicable field. A question that '
+            +'does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; '
+            +'a source that refused does not.'}:null,
         status:st.t,
         status_note:fbBrStateNote(st.t,p,mk),
         engine:'EdgeDesk Power 4 game model'+(p.model_version?' '+p.model_version:''),
