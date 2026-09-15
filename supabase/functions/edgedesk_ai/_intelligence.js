@@ -4726,7 +4726,13 @@
          is dropped from this list rather than repeated. */
       limits: uniq((R.limits || []).filter(function (l) {
         var t = String(l).toLowerCase();
-        if (/availability for .* is unknown/.test(t) && (counter.all || []).some(function (c) { return /^availability_/.test(c.id); })) return false;
+        /* TWO WORDINGS, ONE FACT. The research packet states the gap per team
+           ("availability for X is unknown") and the starter layer states it
+           per player ("no availability report reached <name>"). Both are the
+           same caveat the counter case already makes, so both are dropped
+           here rather than one of them slipping past the wall. */
+        if ((/availability for .* is unknown/.test(t) || /no availability report reached /.test(t))
+          && (counter.all || []).some(function (c) { return /^availability_/.test(c.id); })) return false;
         if (/has not cleared validation/.test(t) && (counter.all || []).some(function (c) { return c.id === 'model_validation'; })) return false;
         return true;
       })),
@@ -5170,7 +5176,84 @@
     };
   }
 
-  var RESEARCH_SCHEMA = 'edgedesk_matchup_research_v1';
+  var RESEARCH_SCHEMA = 'edgedesk_matchup_research_v2';
+
+  /* ---------------------------------------------------------------------
+     STARTER CONTEXT, READ OFF THE PUBLISHED CARD.
+
+     The packet used to have no quarterback in it at all, so an answer about a
+     matchup could not say who was playing the position the whole sport turns
+     on — and the card it reads from carried nothing, because every caller of
+     the engine passed `qb: null`. The card now carries a typed starter record
+     per side and this reads it WITHOUT promoting it: an expected starter is
+     never narrated as a confirmed one, and an absent availability report is
+     never narrated as health.
+     --------------------------------------------------------------------- */
+  var STARTER_NARRATION = {
+    ANNOUNCED: 'announced by the team',
+    EXPECTED: 'expected on current reporting, not announced',
+    DEPTH_CHART: 'leads the published depth chart, not announced',
+    PREVIOUS_GAME: 'started the last game, not announced for this one',
+    COMPETITION: 'unresolved \u2014 the evidence names more than one player',
+    UNKNOWN: 'no starter evidence of any kind reached this team'
+  };
+  function starterRead(rec, side, SLATE) {
+    if (!rec) return null;
+    var st = String(rec.status || 'UNKNOWN').toUpperCase();
+    return {
+      side: side,
+      status: fact(st, { source: SLATE, basis: STARTER_NARRATION[st] || null }),
+      confirmed: fact(rec.confirmed === true, { source: SLATE,
+        basis: rec.confirmed === true ? 'an official source named him'
+          : 'NOT confirmed \u2014 this is an expectation with evidence behind it, and it may not be narrated as an announcement' }),
+      player: rec.player_name
+        ? fact(rec.player_name, { source: rec.source || SLATE, observed_at: rec.retrieved_at,
+          known_at: rec.published_at || rec.retrieved_at, note: rec.source_url || null })
+        : missingFact('no single player is named by the evidence for this side', rec.source || SLATE),
+      player_id: fact(rec.player_id, { source: rec.source || SLATE }),
+      label: fact(rec.label, { source: SLATE }),
+      availability: rec.availability ? {
+        state: fact(rec.availability.state, { source: rec.availability.source || SLATE,
+          observed_at: rec.availability.retrieved_at || null }),
+        evidence: fact(rec.availability.evidence, { source: SLATE,
+          basis: rec.availability.evidence === 'EXPLICIT'
+            ? 'an availability report names this player'
+            : 'no report names him, which is UNKNOWN and is never read as healthy' }),
+        why: fact(rec.availability.why, { source: SLATE })
+      } : null,
+      conflicts: fact(rec.conflicts, { source: SLATE, unit: 'count of sources naming somebody else' }),
+      priced: fact(false, { source: SLATE,
+        basis: rec.priced_why || 'the starter layer is research-only until it has an out-of-sample record; it is '
+          + 'evidence for an explanation, never an input to the published number' })
+    };
+  }
+
+  /* The input contract, in the seven states that are not the same thing. The
+     old packet had one number for this and it was zero on every game. */
+  function contractRead(row, SLATE) {
+    if (!row || !row.input_contract_summary) return null;
+    var s = row.input_contract_summary;
+    var rows = row.input_contract || [];
+    function pick(state) { return rows.filter(function (r) { return r.state === state; })
+      .map(function (r) { return { field: r.field, side: r.side, detail: r.detail, source: r.source, as_of: r.as_of }; }); }
+    return {
+      input_coverage: fact(num(row.input_coverage), { source: SLATE, unit: 'ratio 0-1',
+        basis: 'share of APPLICABLE contracted fields EdgeDesk retrieved. Fields that do not apply to this game \u2014 '
+          + 'weather in a dome, travel at a neutral site, a talent rating for a programme outside the rated universe \u2014 '
+          + 'are excluded from the denominator and are NOT counted as missing' }),
+      priced_input_coverage: fact(num(row.priced_input_coverage), { source: SLATE, unit: 'ratio 0-1',
+        basis: 'the share the published number actually prices from; the rest is retrieved research' }),
+      engine_data_completeness: fact(num(row.data_completeness), { source: SLATE, unit: 'ratio 0-1',
+        basis: 'the engine\u2019s own internal probe count, a different measure from input_coverage' }),
+      by_state: fact(s.by_state, { source: SLATE }),
+      research_only: pick('RESEARCH_ONLY'),
+      not_applicable: pick('NOT_APPLICABLE'),
+      fetch_failed: pick('FETCH_FAILED'),
+      unavailable: pick('UNAVAILABLE'),
+      stale: pick('STALE'),
+      conflicting: pick('CONFLICTING')
+    };
+  }
 
   /**
    * The research context for one resolved matchup — the facts, with no prose.
@@ -5254,9 +5337,15 @@
           + 'output is WATCH. It may order research and may be quoted as an estimate; it may not become '
           + 'a probability, an expected value, or a reason to bet.');
       }
-      if (num(row.data_completeness) === 0) {
-        limits.push('The projection carries a data completeness of 0 for this game, so it is running on '
-          + 'the season rating alone rather than on this week’s inputs.');
+      /* The old sentence here fired on `data_completeness === 0` and said the
+         projection was "running on the season rating alone". It was true of
+         the ARTIFACT and false of the model: the builder that wrote the card
+         hard-coded every optional input to null, so the zero measured the
+         builder rather than the game. The card now carries the real contract
+         and the sentence is derived from it. */
+      if (num(row.input_coverage) == null && num(row.data_completeness) === 0) {
+        limits.push('The card carries no input-contract breakdown for this game and an engine completeness of 0, '
+          + 'so what the projection could see cannot be established from it.');
       }
     } else {
       gap('model', row ? ('the published card carries model_status ' + (row.model_status || 'NONE')
@@ -5360,6 +5449,45 @@
     }
     var availability = { home: availOf(homeKey, home || 'the home side'), away: availOf(awayKey, away || 'the away side') };
 
+    /* ---- starter context and the input contract ------------------------ */
+    var starters = row ? {
+      home: starterRead(row.home_starter, 'home', SLATE),
+      away: starterRead(row.away_starter, 'away', SLATE)
+    } : null;
+    if (row && !row.home_starter && !row.away_starter) {
+      gap('starter_context', SPORT === NFL_SPORT
+        ? 'the NFL board carries no starter record on its rows. football/starters/nfl_' + (row.season || '')
+          + '.json is built and committed — depth chart, previous-game usage and the league injury report — and the '
+          + 'NFL card does not yet read it, so this is a wiring gap on the board rather than an absent source'
+        : 'the published card carries no starter record for either side of this game');
+      starters = null;
+    }
+    if (starters) {
+      ['home', 'away'].forEach(function (k) {
+        var s = starters[k];
+        if (!s) return;
+        if (s.status.value === 'COMPETITION')
+          limits.push('The ' + k + ' quarterback is unresolved: ' + (s.label.value || 'sources disagree')
+            + '. That is a stated competition, not an unknown team.');
+        else if (s.status.value !== 'ANNOUNCED' && s.player.value)
+          limits.push(s.player.value + ' is the best-supported ' + k + ' starter (' + s.status.value
+            + '), not an announced one; it may not be described as confirmed.');
+        if (s.availability && s.availability.evidence.value !== 'EXPLICIT')
+          limits.push('No availability report reached ' + (s.player.value || ('the ' + k + ' quarterback'))
+            + '. Unknown is carried as unknown; it is never read as healthy.');
+      });
+    }
+    var contract = contractRead(row, SLATE);
+    if (contract && num(row.input_coverage) != null && num(row.input_coverage) < 0.6) {
+      limits.push('This projection is running on ' + Math.round(num(row.input_coverage) * 100)
+        + '% of its applicable input contract, so part of any disagreement with the market is absence of '
+        + 'information rather than a view about the football.');
+    }
+    if (row && row.shadow_effect && row.shadow_effect.why) {
+      limits.push('A shadow projection with the starter context wired in is published beside the model number and '
+        + 'priced nowhere. ' + row.shadow_effect.why);
+    }
+
     /* ---- what this can and cannot answer ------------------------------ */
     var answerable = !!(identity.home.value && identity.away.value);
     return {
@@ -5373,6 +5501,7 @@
       resolution: { state: res.state || null, how: res.how || null, named: res.named || [], source: res.source || SLATE },
       identity: identity, model: model, market: market, ratings: ratings,
       previous_games: previous, availability: availability,
+      starters: starters, input_contract: contract,
       missing: missing, limits: uniq(limits.filter(Boolean)),
       status: {
         answerable: answerable,

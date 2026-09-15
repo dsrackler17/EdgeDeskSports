@@ -212,6 +212,25 @@ jobs:
           ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
           ${{ github.event.inputs.rewrite_history == 'true' && '--rewrite-history' || '' }}
 
+      # THE INPUTS THE COVERAGE GATE NOW JOINS. build_coverage.js used to send
+      # the engine a request with every optional field null; it now sends the
+      # same request the terminal sends, and reads the starter context and the
+      # team profiles to do it. Both are rebuilt here so a weekly run is
+      # self-consistent rather than publishing a card against last week's
+      # starters. They are cheap against the cache this job already warms, and
+      # a failure is not fatal: the assembly degrades to a declared gap.
+      - name: Starter context
+        if: steps.go.outputs.run == 'true'
+        run: node football/starters/build_starters.js --sport cfb
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Team-game profiles
+        if: steps.go.outputs.run == 'true'
+        run: node football/matchup/build_profiles.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       # THE FBS COVERAGE GATE. The board claims to carry every game involving
       # an active FBS team; this is the job allowed to say that is no longer
       # true. It rebuilds the universe from the season's own schedule feed,
@@ -285,7 +304,8 @@ jobs:
                   football/data/box football/rankings/current.json \
                   football/rankings/snapshots football/rankings/params.js \
                   football/rankings/history.json football/rankings/health.json \
-                  football/fbs/coverage.json football/fbs/slate.json
+                  football/fbs/coverage.json football/fbs/slate.json \
+                  football/starters football/matchup
           if git diff --cached --quiet; then
             echo 'nothing changed — quiet day, no commit'
             exit 0

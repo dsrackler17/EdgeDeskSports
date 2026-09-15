@@ -1468,7 +1468,16 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
      ===================================================================== */
   {
     const slate = FX.SLATE;
-    chk('the committed card is the size the board showed', slate.games.length === 75, slate.games.length);
+    /* THE COUNT IS A ROLLING WINDOW, NOT A CONSTANT. This asserted `=== 75`,
+       which was the number of games inside the ten-day lookahead on the day it
+       was written; the assertion therefore failed the first time the window
+       rolled forward and one more game came into it, reporting a regression
+       where there was a Tuesday. What has to hold is that the artifact agrees
+       with ITSELF and still describes a full slate. */
+    chk('the committed card reconciles with its own count',
+      slate.games.length === slate.counts.slate, { games: slate.games.length, counts: slate.counts.slate });
+    chk('the committed card still carries a full week of football',
+      slate.games.length >= 40 && slate.games.length <= 140, slate.games.length);
 
     /* cfb.lines.spread is a BETTING number, the convention the artifact
        publishes model_home_line in, so a correctly stored row IS that number.
