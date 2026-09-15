@@ -317,11 +317,22 @@ const MLB_PACKET = {
 
     /* AND WHEN THE SCHOOL IS ON THE CARD TWICE, THE GAME STAYS UNRESOLVED.
        Asserted through the resolver directly, because which programs play
-       twice in a window depends on the card. */
-    const twice = m.bareTeamWords('How about Oregon?');
+       twice in a window depends on the card.
+
+       bareTeamWords used to live in the edge function. It is now
+       EDINTEL.teamPhrases, shared verbatim with app.html — which is the point:
+       the browser had no reader of its own, so a question naming a school left
+       it as a baseball board and none of this ever ran. */
+    const KERNEL = globalThis.EDINTEL;
+    const cardIx = KERNEL.fbsIndexFor(FX.SLATE.games.map((g) => ({
+      home_team: g.home_team, away_team: g.away_team,
+      home_id: g.home_team_id, away_id: g.away_team_id,
+    })));
+    const twice = KERNEL.teamPhrases('How about Oregon?', cardIx).map((x) => x.phrase);
     chk('a bare word is offered to the card resolver at all', twice.indexOf('Oregon') >= 0, twice);
-    chk('and ordinary words are not', m.bareTeamWords('Anything worth betting?').length === 0,
-      m.bareTeamWords('Anything worth betting?'));
+    chk('and ordinary words are not',
+      KERNEL.teamPhrases('Anything worth betting?', cardIx).length === 0,
+      KERNEL.teamPhrases('Anything worth betting?', cardIx));
   }
 
   /* =====================================================================
@@ -363,7 +374,8 @@ const MLB_PACKET = {
       rows: {}, });
     /* routed through a router that 404s the artifact */
     m.clearCache();
-    route = (u) => (u.indexOf('/football/fbs/slate.json') >= 0 ? null : []);
+    route = (u) => (u.indexOf('/subscriptions') >= 0 ? FX.SUBSCRIBED
+      : (u.indexOf('/football/fbs/slate.json') >= 0 ? null : []));
     const r2 = await m.handle(new Request('https://fn.test/edgedesk_ai?dry=1', {
       method: 'POST', headers: { authorization: 'Bearer u', 'content-type': 'application/json' },
       body: JSON.stringify({ mode: 'chat', question: 'What do you think about North Texas vs Texas State?',
@@ -650,8 +662,12 @@ const MLB_PACKET = {
     /* THE LINE THE REPORTED FAILURE ENDED ON. */
     chk('the ledger notice no longer renders the database detail',
       !/esc\(String\(L\.detail\)/.test(APP));
+    /* Pinned on the BEHAVIOUR, not the sentence: the detail is handed to the
+       console and to nothing else. A test that pins the exact warning string
+       fails on a wording change that improves it, which is how a suite starts
+       costing more than it catches. */
     chk('and sends it to the console instead',
-      /console\.warn\('EdgeDesk ledger write failed:'/.test(APP));
+      /console\.warn\('EdgeDesk ledger [^']*',\s*L\.state/.test(APP));
     chk('the fact card separates a captured quote from a consensus reference',
       /not an executable sportsbook quote/.test(APP) && /captured/.test(APP));
     /* NO PRIVILEGED CREDENTIAL MOVES TO THE BROWSER.

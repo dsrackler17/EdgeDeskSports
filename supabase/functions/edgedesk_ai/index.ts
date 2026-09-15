@@ -9205,7 +9205,13 @@ export function deriveState(
     if (availability && availability.status === 'NOT_PUBLISHED' && !gapsIn.some(function (g) { return /injur/.test(String(g && (g.field || g) || '')); })) gapsIn.push('injury_report');
     var gaps = gapSentences(gapsIn);
     if (availability && availability.status === 'NOT_PUBLISHED' && availability.reason) gaps = gaps.map(function (s) { return /injury and availability/i.test(s) ? 'Injury and availability data is not on file: ' + availability.reason + '. Do not read that as a clean injury report.' : s; });
+    /* OPPOSING EVIDENCE ONLY. "Take a fresh capture confirming the price is
+       still live" is a step, not an argument, and while it sat in this list it
+       could become the WATCH LINE of a perfectly sound call — the single
+       sentence a reader takes away. Operational blockers travel separately in
+       checks_required and are said as checks. */
     var against = (det.reasons_against || []).map(function (r) { return publicReason(r, facts); }).filter(Boolean);
+    var checks = (det.checks_required || []).map(function (r) { return publicReason(r, facts); }).filter(Boolean);
     var fals = (det.falsifiers || []).map(function (r) { return publicReason(r, facts); }).filter(Boolean);
     var watchText, changeText;
     if (displayVerdict === 'WAIT' && (det.is_wait || suppressed)) {
@@ -9352,6 +9358,9 @@ export function deriveState(
       confidence: det.confidence || null,
       score: num(det.score),
       copy_source: 'deterministic',
+      /* Said as checks, under their own name, so a reader can tell a thing to
+         confirm from a reason to doubt. */
+      checks_required: checks,
       /* the engine's graded receipt, verbatim (null until the close pipeline grades the row) */
       outcome: p.clv ? outcomeOf({ clv: p.clv.clv, beat_close: p.clv.beat_close, closing: p.clv.closing, result: p.clv.result, closed_at: p.clv.closed_at, graded_at: p.clv.graded_at, entry_am: detAm != null ? detAm : curAm }) : null,
       game: {
@@ -9366,6 +9375,7 @@ export function deriveState(
         remaining: num(edge.remaining), floor: num(edge.floor), has_sharp: conf.has_sharp == null ? null : !!conf.has_sharp,
         n_books: num(conf.n_books), confidence: det.confidence || null, score: num(det.score), band: det.band || null,
         why: det.why || null, reasons_for: (det.reasons_for || []).slice(), reasons_against: (det.reasons_against || []).slice(),
+        checks_required: (det.checks_required || []).slice(),
         falsifiers: (det.falsifiers || []).slice(), is_wait: !!det.is_wait, wait_reason: det.wait_reason || null
       }
     };
@@ -14511,6 +14521,574 @@ const EDPRES: any = (globalThis as any).EDPRES;
     };
   }
 
+  /* ==================================================================
+     WHO IS THE READER ASKING ABOUT?
+
+     The website used to answer this question nowhere. app.html's chat had
+     three routes — a daily-scan follow-up, a loaded signal, or "the board" —
+     and a question that named a team matched none of them, so it fell to the
+     board. The board is whatever card is loaded, which in September is
+     baseball. "How does Texas State look this week?" therefore arrived at the
+     reasoning function as an MLB board packet with no football anywhere in
+     it, and every symptom followed from that one routing decision: the sport
+     came back baseball, "Texas" was resolved against the only team list in
+     scope (MLB clubs), the research was about starting pitchers, and the
+     decision card belonged to a Padres game.
+
+     So resolution happens HERE, in the kernel both the browser and the edge
+     function already load, against the card the site itself publishes. No
+     second alias table: resolveTeam and TEAM_ALIASES above are the same ones
+     the board joins its market with.
+     ================================================================== */
+
+  /* Words that are never part of a school name, trimmed from the ENDS of a
+     candidate phrase. Deliberately not applied in the middle — "Miami of
+     Ohio" and "Texas A and M" keep their connectives. */
+  var NOT_A_NAME = {};
+  ('a an the is it its was are am do does did how what which who whom whose why when where '
+    + 'this that these those there here look looks looking looked play plays playing played '
+    + 'week weekend tonight today tomorrow season game games matchup matchups line lines odds '
+    + 'price prices spread total bet bets betting worth anything something nothing good bad '
+    + 'about against over under vs versus at on in for of and or but so if then than i we you '
+    + 'they them their my me us he she his her think thinks thought like likes want need have '
+    + 'has had be been being get gets got make makes made take takes took give gives gave say '
+    + 'says said tell tells told show shows showed any some all both each few more most other '
+    + 'such only own same too very can will just should now next last first second '
+    + 'were been being had having could would might must shall may who whom whose whats hows '
+    + 'anything something nothing everything anyone someone everybody nobody').split(/\s+/)
+    .forEach(function (w) { NOT_A_NAME[w] = 1; });
+
+  /* A single word only counts as a team when the writer capitalised it, or
+     when nothing in the sentence is capitalised and capitalisation therefore
+     carries no signal at all. Without this rule an ordinary sentence
+     containing "army", "rice" or "temple" names a football team. */
+  function soloAllowed(word, text) {
+    if (!word || word.length < 3) return false;
+    if (/^[A-Z]/.test(word)) return true;
+    return !/[A-Z]/.test(String(text || ''));
+  }
+
+  /* Capitalised runs that LOOK like a proper name, whether or not this card
+     knows them. Used for one thing only: telling "who have they played?"
+     (which names nobody, so the conversation's subject stands) apart from
+     "what about the Padres?" (which names somebody else, so it must not be
+     answered as the football game that was under discussion). A question in
+     all lower case yields nothing here, because capitalisation carries no
+     signal in it and guessing would be worse than declining. */
+  /* A CONTRACTION IS THE SAME ORDINARY WORD. "What's the line?" was reading as
+     a question about somebody called What's — the apostrophe form was not in
+     the stop list — so a market follow-up dropped the subject the conversation
+     had just established. Strip the clitic before the lookup rather than
+     enumerating every contraction. */
+  function plainWord(w) {
+    return String(w == null ? '' : w).toLowerCase()
+      .replace(/n['’]t$/, '').replace(/['’](s|re|ve|ll|d|m)$/, '').replace(/[^a-z]/g, '');
+  }
+  function isFiller(w) { var k = plainWord(w); return !k || !!NOT_A_NAME[k]; }
+
+  function nameCandidates(text) {
+    var raw = String(text == null ? '' : text);
+    if (!/[A-Z]/.test(raw)) return [];
+    var out = [], seen = {};
+    var re = /([A-Z][A-Za-z'&.()-]*(?:[ ](?:of|and|de|the)?[ ]?[A-Z][A-Za-z'&.()-]*)*)/g, m;
+    while ((m = re.exec(raw)) != null) {
+      var words = m[1].split(/\s+/);
+      while (words.length && isFiller(words[0])) words = words.slice(1);
+      while (words.length && isFiller(words[words.length - 1])) words = words.slice(0, -1);
+      if (!words.length) continue;
+      var phrase = words.join(' ');
+      if (words.length === 1 && phrase.length < 3) continue;
+      /* A SENTENCE-INITIAL SINGLE WORD IS GRAMMAR, NOT A NAME, and no stop
+         list can be relied on to know which words those are. "What's the
+         line?" and "Were those teams any good?" each broke the carried subject
+         once, because each begins with a capitalised word that happened not to
+         be in the list; the answer is not a longer list, it is that this test
+         is structural. It is safe because this function is only consulted
+         AFTER the card resolver has found nothing: a sentence-initial word
+         that really is a team ("Oregon looks good?") has already resolved and
+         never reaches here. */
+      var before = raw.slice(0, m.index).replace(/\s+$/, '');
+      var initial = !before || /[.!?]$/.test(before);
+      /* TWO TESTS, EACH COVERING THE OTHER'S GAP. The first word of the whole
+         message is dropped outright when it stands alone — it is the one
+         position where capitalisation is pure grammar. A word opening a LATER
+         sentence is only dropped when the stop list agrees it is ordinary, so
+         "Forget that. Padres tonight?" still changes the subject while
+         "Who have they played? Were those any good?" does not. Neither test
+         alone was enough: the stop list missed "Were", and position alone
+         would have swallowed a real name. */
+      if (words.length === 1 && (!before || (initial && isFiller(phrase)))) continue;
+      var k = phrase.toLowerCase();
+      if (seen[k]) continue;
+      seen[k] = 1;
+      out.push(phrase);
+    }
+    return out.slice(0, 6);
+  }
+
+  /**
+   * Every team named in a piece of text, LONGEST NAME FIRST.
+   *
+   * This is the rule the brief asks for in one line: "Texas State" must not
+   * become "Texas". A phrase is tested at every length from four words down
+   * to one and the longest hit wins its words outright, so the two-word
+   * school is found before the one-word school that is a prefix of it, and
+   * "North Texas vs Texas State" yields both programs rather than one team
+   * twice. Only exact, alias and St./State expansions count — a loose prefix
+   * match on a bare word is precisely how a college question ends up on a
+   * professional club.
+   *
+   * @param text  the reader's question
+   * @param ix    a resolver index (fbsIndexFor / teamIndex)
+   * @returns [{phrase, key, name, how, start, end}] in reading order
+   */
+  function teamPhrases(text, ix) {
+    var raw = String(text == null ? '' : text);
+    if (!raw.trim() || !ix) return [];
+    var words = raw.split(/[\s]+/).map(function (w) {
+      return w.replace(/^[^A-Za-z0-9'&.()-]+/, '').replace(/[^A-Za-z0-9'&.()-]+$/, '');
+    });
+    var taken = {}, found = [], MAXN = 4, n, i, j, phrase, r, blocked, ok;
+    for (n = MAXN; n >= 1; n--) {
+      for (i = 0; i + n <= words.length; i++) {
+        blocked = false;
+        for (j = i; j < i + n; j++) if (taken[j] || !words[j]) { blocked = true; break; }
+        if (blocked) continue;
+        /* Ordinary words are trimmed from both ends of a MULTI-word window,
+           which is how "does Texas State" becomes "Texas State" without a
+           separate pass; a window that is all filler is skipped. */
+        var a = i, b = i + n - 1;
+        while (a <= b && isFiller(words[a])) a++;
+        while (b >= a && isFiller(words[b])) b--;
+        if (b < a || (b - a + 1) !== n) continue;     /* trimmed: a shorter window will catch it */
+        phrase = words.slice(a, b + 1).join(' ');
+        if (n === 1 && !soloAllowed(phrase, raw)) continue;
+        if (n === 1 && isFiller(phrase)) continue;
+        r = resolveTeam(phrase, ix);
+        ok = r && r.key && (r.how === 'exact' || r.how === 'alias' || r.how === 'state-expansion');
+        if (!ok) continue;
+        for (j = a; j <= b; j++) taken[j] = 1;
+        found.push({ phrase: phrase, key: r.key, name: (r.team && r.team.name) || phrase, how: r.how, start: a, end: b });
+      }
+    }
+    found.sort(function (x, y) { return x.start - y.start; });
+    return found;
+  }
+
+  /* AN EXPLICIT MATCHUP, whether or not this card knows either side. "A vs B"
+     is a claim about a specific game, so two sides that resolve to nothing are
+     a matchup EdgeDesk does not carry — a thing to ask about — and NOT a
+     wandering subject to be quietly dropped. Those are different answers and
+     the difference has to survive into the state below. */
+  var MATCHUP_LEAD = /^(?:analyz|analys|compar|previewi?|research|break down|look at|tell me about|show me|explain|give me|what about|how about|thoughts on|take on)\w*\s+/i;
+  function matchupPair(text) {
+    var t = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+    if (!t) return [];
+    var SIDE = "[A-Z][A-Za-z'&.()-]*(?:[ -](?:of|and|&|the|at)?[ ]?[A-Z][A-Za-z'&.()-]*)*";
+    var m = new RegExp('(' + SIDE + ')\\s+(?:versus|vs\\.?|@|at)\\s+(' + SIDE + ')').exec(t);
+    if (!m) return [];
+    function cut(v) { return v.replace(MATCHUP_LEAD, '').replace(/[.,;:!?]+$/, '').trim(); }
+    var a = cut(m[1]), b = cut(m[2]);
+    if (!a || !b || normName(a) === normName(b)) return [];
+    if (a.split(' ').length > 5 || b.split(' ').length > 5) return [];
+    return [a, b];
+  }
+
+  var MATCHUP_STATES = {
+    RESOLVED: 'a named team was found on the published card',
+    AMBIGUOUS: 'the team plays more than one game in this window',
+    NOT_ON_CARD: 'the team resolved but plays no game in the published window',
+    NONE_NAMED: 'the question named no team this card knows',
+    SUBJECT_CHANGED: 'the question named somebody this card does not carry, so the previous subject does not stand',
+    NO_CARD: 'the published card could not be read, so absence cannot be claimed'
+  };
+
+  /**
+   * Resolve the matchup a question is about, against a published slate.
+   *
+   * PURE. The caller supplies the games — the browser from the static slate
+   * artifact it already publishes, the edge function from the same artifact
+   * through its DAL — so there is one resolution rule and one alias table for
+   * both, and a test can drive it with the real card and no network.
+   *
+   * Precedence, in the order the brief sets out:
+   *   1. two teams named in THIS question that share a scheduled game
+   *   2. one team named in THIS question with exactly one game in the window
+   *   3. the subject the conversation already established (`carried`)
+   * A board that happens to be open is NOT consulted here and cannot win: an
+   * MLB tab must not override an explicit college football matchup.
+   *
+   * @param o.question  the reader's text
+   * @param o.games     [{game_id, home_team, away_team, home_id, away_id, kickoff, week}]
+   * @param o.carried   a previous resolution to fall back to on a follow-up
+   * @param o.card_error  why the card could not be read, if it could not
+   */
+  function resolveMatchup(o) {
+    o = o || {};
+    var games = o.games || [], question = String(o.question == null ? '' : o.question);
+    var carried = o.carried && o.carried.game_id ? o.carried : null;
+    var none = {
+      state: 'NONE_NAMED', named: [], sport: null, game_id: null, home: null, away: null,
+      home_id: null, away_id: null, kickoff: null, week: null, subject: null, subject_id: null,
+      source: null, how: null, note: null, candidates: null
+    };
+    if (!games.length) {
+      if (o.card_error) {
+        return Object.assign({}, none, {
+          state: 'NO_CARD', note: 'The published FBS card could not be read (' + o.card_error
+            + '), so EdgeDesk cannot tell whether that game exists. This is a retrieval failure, '
+            + 'not a finding that the matchup is absent, and may not be reported as one.'
+        });
+      }
+      return carried ? Object.assign({}, carried, { how: 'carried' }) : none;
+    }
+    var rows = games.map(function (g) {
+      return {
+        game_id: String(g.game_id == null ? '' : g.game_id),
+        home_team: String(g.home_team == null ? '' : g.home_team),
+        away_team: String(g.away_team == null ? '' : g.away_team),
+        home_key: canonKey(g.home_id != null ? g.home_id : g.home_team_id, g.home_team),
+        away_key: canonKey(g.away_id != null ? g.away_id : g.away_team_id, g.away_team),
+        kickoff: g.kickoff || null, week: g.week == null ? null : g.week
+      };
+    });
+    var ix = fbsIndexFor(games.map(function (g) {
+      return {
+        home_team: g.home_team, away_team: g.away_team,
+        home_id: g.home_id != null ? g.home_id : g.home_team_id,
+        away_id: g.away_id != null ? g.away_id : g.away_team_id
+      };
+    }));
+    var named = teamPhrases(question, ix);
+    function hit(row, how, subject) {
+      return {
+        state: 'RESOLVED', named: named.map(function (t) { return t.phrase; }),
+        sport: 'americanfootball_ncaaf', game_id: row.game_id,
+        home: row.home_team, away: row.away_team, home_id: row.home_key, away_id: row.away_key,
+        kickoff: row.kickoff, week: row.week, subject: subject ? subject.name : null,
+        subject_id: subject ? subject.key : null,
+        source: o.source || 'football/fbs/slate.json', how: how, note: null, candidates: null
+      };
+    }
+    /* ---- 1. two named teams that share a game ---------------------- */
+    var i, j, a, b, k;
+    for (i = 0; i < named.length; i++) {
+      for (j = i + 1; j < named.length; j++) {
+        a = named[i]; b = named[j];
+        for (k = 0; k < rows.length; k++) {
+          if ((rows[k].home_key === a.key && rows[k].away_key === b.key)
+            || (rows[k].home_key === b.key && rows[k].away_key === a.key)) return hit(rows[k], 'both-teams-named', null);
+        }
+      }
+    }
+    /* ---- 1b. AN EXPLICIT PAIR IS ANSWERED AS A PAIR, OR NOT AT ALL ----
+       "Texas State vs Boise State" names a specific game. When no such game is
+       on the card, resolving it to Texas State's OTHER game is substitution —
+       the reader is handed a different matchup under the name of the one they
+       asked for, which is the exact failure this whole resolver exists to
+       stop. Step 2 below is for a question that named ONE team; a question
+       that named two and matched none stops here. */
+    var explicit = matchupPair(question);
+    if (explicit.length === 2) {
+      return Object.assign({}, none, {
+        state: 'NOT_ON_CARD', named: explicit, sport: null,
+        source: o.source || 'football/fbs/slate.json',
+        note: '"' + explicit[0] + '" and "' + explicit[1] + '" were named as a matchup, and no scheduled game '
+          + 'with BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
+          + ' games were checked on the FBS slate).'
+      });
+    }
+
+    /* ---- 2. one named team with exactly one game in the window -----
+       Every named team is tried before any of them is reported as absent: a
+       question that names a program on the card and one that is not ("Texas
+       State against somebody") must answer about the one that is playing,
+       not stop at the first name that missed. */
+    var ambiguous = null, offCard = null;
+    for (i = 0; i < named.length; i++) {
+      var subj = named[i];
+      var mine = rows.filter(function (r) { return r.home_key === subj.key || r.away_key === subj.key; });
+      /* A PROGRAM PLAYING TWICE IS NOT AMBIGUOUS IF THE CONVERSATION ALREADY
+         PICKED ONE. "How does Texas State look now?" on turn four names the
+         same team and means the same game; asking which one again would be
+         the resolver forgetting what it just answered. */
+      if (mine.length > 1 && carried) {
+        var same = mine.filter(function (r) { return r.game_id === String(carried.game_id); });
+        if (same.length === 1) return hit(same[0], 'carried-subject-named', subj);
+      }
+      if (mine.length === 1) return hit(mine[0], 'one-team-named', subj);
+      if (mine.length > 1 && !ambiguous) {
+        ambiguous = Object.assign({}, none, {
+          state: 'AMBIGUOUS', named: [subj.phrase], sport: 'americanfootball_ncaaf',
+          subject: subj.name, subject_id: subj.key, source: o.source || 'football/fbs/slate.json',
+          candidates: mine.map(function (r) {
+            return { game_id: r.game_id, home: r.home_team, away: r.away_team, kickoff: r.kickoff };
+          }),
+          note: '"' + subj.phrase + '" is a college football program on the card EdgeDesk publishes, and it '
+            + 'appears in ' + mine.length + ' scheduled games in this window ('
+            + mine.map(function (r) { return r.away_team + ' @ ' + r.home_team; }).join(', ') + '). '
+            + 'The SPORT is settled — this is a college football question and must not be answered from any other '
+            + 'sport\u2019s board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.'
+        });
+      } else if (!mine.length && !offCard) {
+        /* Resolved to a real program that is not playing inside the window. */
+        offCard = Object.assign({}, none, {
+          state: 'NOT_ON_CARD', named: [subj.phrase], sport: 'americanfootball_ncaaf',
+          subject: subj.name, subject_id: subj.key, source: o.source || 'football/fbs/slate.json',
+          note: subj.phrase + ' is on the FBS card but has no game inside the published window.'
+        });
+      }
+    }
+    if (ambiguous) return ambiguous;
+    if (offCard) return offCard;
+    /* ---- 2b. an explicit "A vs B" whose sides this card does not know -
+       Step 1b above catches a pair whose names DID resolve. This catches the
+       pair whose names resolved to nothing at all, which is the same answer
+       for a different reason: ask, never substitute. */
+    var pair = matchupPair(question);
+    if (pair.length === 2) {
+      return Object.assign({}, none, {
+        state: 'NOT_ON_CARD', named: pair, sport: null,
+        source: o.source || 'football/fbs/slate.json',
+        note: '"' + pair[0] + '" and "' + pair[1] + '" were named as a matchup, and no scheduled game with '
+          + 'BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
+          + ' games were checked on the FBS slate).'
+      });
+    }
+    /* ---- 3. the subject the conversation already established -------
+       A follow-up names nobody, so the subject stands. A question that names
+       SOMEBODY ELSE — a club from another sport, a player, a program this
+       card does not carry — must not be answered as the game that happened to
+       be under discussion, which is the same "whatever is loaded wins" bug
+       one turn later. */
+    var other = nameCandidates(question).filter(function (p) {
+      var r = resolveTeam(p, ix);
+      return !(r && r.key && (r.how === 'exact' || r.how === 'alias' || r.how === 'state-expansion'));
+    });
+    if (carried && !other.length) {
+      /* THE TRACE MUST NOT CLAIM THIS WAS NAMED IN THIS MESSAGE. It is the
+         subject the conversation is on, which is a true and different thing,
+         and a reader of the trace should be able to tell them apart. */
+      return Object.assign({}, carried, {
+        how: 'carried', named: [],
+        source: String(carried.source || (o.source || 'football/fbs/slate.json')).replace(/ \(carried subject\)$/, '')
+          + ' (carried subject)',
+      });
+    }
+    if (other.length) {
+      return Object.assign({}, none, {
+        state: 'SUBJECT_CHANGED', named: other,
+        note: other[0] + ' is not on the published FBS card, so this is not a follow-up about '
+          + (carried ? (carried.away + ' @ ' + carried.home) : 'the previous subject') + '.'
+      });
+    }
+    return none;
+  }
+
+  var RESEARCH_SCHEMA = 'edgedesk_matchup_research_v1';
+
+  /**
+   * The research context for one resolved matchup — the facts, with no prose.
+   *
+   * PURE, and deliberately so. The website calls it with what it already
+   * holds and renders the result in the browser; the edge function calls it
+   * with what its DAL read and narrates the same object. That is the whole
+   * point of putting it here: the card a reader sees when the model is
+   * unreachable and the card they see when it answers are built from ONE
+   * assembly, so the two can never disagree about a number, a book or a gap.
+   *
+   * Every field is a fact() — a value with a source and a time context, or a
+   * declared absence with a reason. Nothing is defaulted, averaged or carried
+   * over from another game, and the model's decision ceiling travels with it.
+   */
+  function matchupResearch(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var res = o.resolution || {};
+    var row = o.slate_row || null;
+    var SLATE = o.slate_source || 'football/fbs/slate.json';
+    var subjectKey = res.subject_id || null;
+    var homeKey = res.home_id || (row ? canonKey(row.home_team_id, row.home_team) : null);
+    var awayKey = res.away_id || (row ? canonKey(row.away_team_id, row.away_team) : null);
+    var home = res.home || (row && row.home_team) || null;
+    var away = res.away || (row && row.away_team) || null;
+    /* The subject is the team the reader named; the opponent is the other
+       side. With no named subject (a "A vs B" question) the home team is the
+       frame, because that is the side every line in this system is written
+       from. */
+    var subjectIsHome = subjectKey ? (subjectKey === homeKey) : true;
+    var missing = [], limits = [];
+    function gap(field, reason) { missing.push({ field: field, reason: reason }); }
+
+    /* ---- identity ---------------------------------------------------- */
+    var identity = {
+      game_id: fact(res.game_id || (row && String(row.game_id)) || null, { source: SLATE }),
+      home: fact(home, { source: SLATE }), away: fact(away, { source: SLATE }),
+      kickoff: fact(res.kickoff || (row && row.kickoff) || null, { source: SLATE, unit: 'ISO-8601 UTC' }),
+      week: fact(res.week != null ? res.week : (row ? row.week : null), { source: SLATE }),
+      season: fact(row ? row.season : null, { source: SLATE }),
+      venue: fact(row ? row.venue : null, { source: SLATE }),
+      neutral_site: fact(row ? !!row.neutral_site : null, { source: SLATE }),
+      matchup_type: fact(row ? row.matchup_type : null, { source: SLATE }),
+      home_conference: fact(row ? row.home_conference : null, { source: SLATE }),
+      away_conference: fact(row ? row.away_conference : null, { source: SLATE })
+    };
+
+    /* ---- model ------------------------------------------------------- */
+    var val = validationFor('americanfootball_ncaaf', 'spreads');
+    var model = null;
+    if (row && row.model_status === 'PREDICTED' && num(row.model_home_line) != null) {
+      var hl = num(row.model_home_line);
+      /* THE TWO CONVENTIONS, NAMED RATHER THAN ASSUMED. The artifact publishes
+         a BETTING line: negative means the home side is favoured. The margin
+         is its mirror. Both are carried so no reader and no prompt has to
+         infer which one it is looking at. */
+      model = {
+        status: fact(row.model_status, { source: SLATE }),
+        home_line: fact(hl, { source: SLATE, unit: 'points', basis: 'betting convention — negative is the home favourite' }),
+        home_margin: fact(num(row.model_home_margin) != null ? num(row.model_home_margin) : -hl,
+          { source: SLATE, unit: 'points', basis: 'margin convention — positive is the home side favoured' }),
+        favourite: fact(hl < 0 ? home : (hl > 0 ? away : null), { source: SLATE }),
+        by_points: fact(Math.abs(r2(hl)), { source: SLATE, unit: 'points' }),
+        fair_total: fact(num(row.model_fair_total), { source: SLATE, unit: 'points' }),
+        data_completeness: fact(num(row.data_completeness), { source: SLATE, unit: 'ratio 0-1' }),
+        tier: fact(val.tier, { source: 'EDINTEL.MODEL_VALIDATION' }),
+        max_decision: fact(val.max_decision, { source: 'EDINTEL.MODEL_VALIDATION' })
+      };
+      limits.push(val.limitations);
+      if (val.max_decision === 'WATCH') {
+        limits.push('This model has not cleared validation for this market, so its strongest possible '
+          + 'output is WATCH. It may order research and may be quoted as an estimate; it may not become '
+          + 'a probability, an expected value, or a reason to bet.');
+      }
+      if (num(row.data_completeness) === 0) {
+        limits.push('The projection carries a data completeness of 0 for this game, so it is running on '
+          + 'the season rating alone rather than on this week’s inputs.');
+      }
+    } else {
+      gap('model', row ? ('the published card carries model_status ' + (row.model_status || 'NONE')
+        + ' for this game, so there is no projection to quote') : 'no row for this game on the published card');
+    }
+
+    /* ---- market ------------------------------------------------------ */
+    var market = null, mk = null;
+    if ((o.signals && o.signals.length) || (o.lines && o.lines.length)) {
+      mk = resolveMarket({
+        signals: o.signals || [], lines: o.lines || [], now: now,
+        kickoff: res.kickoff || (row && row.kickoff) || null,
+        home_team: home, away_team: away,
+        model_home_line: row ? num(row.model_home_line) : null,
+        lines_convention: o.lines_convention || 'betting'
+      });
+    }
+    if (mk && mk.spread && mk.spread.line != null) {
+      market = {
+        spread: fact(mk.spread.line, {
+          source: mk.spread.source === 'signals' ? 'captured signals' : 'cfb.lines',
+          unit: 'points', observed_at: mk.spread.observed_at,
+          provenance: mk.spread.executable ? 'executable quote' : 'consensus number',
+          basis: mk.spread.executable
+            ? 'a price a book was actually showing when it was captured'
+            : 'a consensus number with no book and no capture time — a reference, not something you can bet'
+        }),
+        book: mk.spread.executable ? fact(mk.spread.book, { source: 'captured signals' })
+          : missingFact('a consensus line carries no book', 'cfb.lines'),
+        odds: mk.spread.executable ? fact(mk.spread.odds_american, { source: 'captured signals' })
+          : missingFact('a consensus line carries no price', 'cfb.lines'),
+        executable: fact(!!mk.spread.executable, { source: mk.spread.source || null }),
+        freshness: mk.spread.freshness || null,
+        total: mk.total && mk.total.line != null
+          ? fact(mk.total.line, { source: mk.total.source === 'signals' ? 'captured signals' : 'cfb.lines', unit: 'points', observed_at: mk.total.observed_at })
+          : missingFact('no total on file for this game', 'signals + cfb.lines'),
+        fault: mk.spread.fault || null
+      };
+      if (!mk.spread.executable) {
+        limits.push('The number on file is a consensus line, not a price. Nothing here has been confirmed '
+          + 'as still available at a book, so no quote may be described as executable.');
+      }
+    } else {
+      gap('market', 'no captured quote and no consensus line joined to this game — the board shows it as NO MARKET, '
+        + 'which is an absence of a joined price, not a price of zero');
+    }
+
+    /* ---- ratings ------------------------------------------------------ */
+    function ratingOf(key, label) {
+      var t = key && o.ratings ? o.ratings[key] : null;
+      if (!t) { gap('ratings.' + label, 'no rating row on file for ' + label); return null; }
+      var p = t.performance || {};
+      return {
+        team: fact(t.team || label, { source: o.ratings_source || 'football/rankings/current.json' }),
+        rank: fact(num(t.rank), { source: o.ratings_source || 'football/rankings/current.json' }),
+        etsr: fact(num(t.etsr), { source: o.ratings_source || 'football/rankings/current.json', unit: 'points vs the league mean' }),
+        confidence: fact(t.confidence ? num(t.confidence.value) : null, { source: o.ratings_source || 'football/rankings/current.json', unit: 'ratio 0-1' }),
+        offense: fact(num(p.offense), { source: o.ratings_source || 'football/rankings/current.json' }),
+        defense: fact(num(p.defense), { source: o.ratings_source || 'football/rankings/current.json' }),
+        special_teams: fact(num(p.special_teams), { source: o.ratings_source || 'football/rankings/current.json' }),
+        games_used: fact(t.weights ? num(t.weights.games_used) : null, { source: o.ratings_source || 'football/rankings/current.json' }),
+        achievement: fact(t.achievement ? t.achievement.state : null, { source: o.ratings_source || 'football/rankings/current.json', note: t.achievement ? t.achievement.basis : null }),
+        conference: fact(t.conference || null, { source: o.ratings_source || 'football/rankings/current.json' })
+      };
+    }
+    var ratings = { home: ratingOf(homeKey, home || 'the home side'), away: ratingOf(awayKey, away || 'the away side') };
+
+    /* ---- previous games ---------------------------------------------- */
+    function priorOf(list, key, label) {
+      if (!list) { gap('previous_games.' + label, 'the completed-games table was not read for this answer'); return null; }
+      var rows = list.filter(function (g) { return g && g.completed; }).map(function (g) {
+        var isHome = canonKey(g.home_id, g.home_team) === key;
+        var us = num(isHome ? g.home_points : g.away_points), them = num(isHome ? g.away_points : g.home_points);
+        return {
+          week: g.week == null ? null : num(g.week),
+          opponent: isHome ? g.away_team : g.home_team,
+          site: g.neutral_site ? 'neutral' : (isHome ? 'home' : 'away'),
+          points_for: us, points_against: them,
+          result: (us == null || them == null) ? null : (us > them ? 'W' : us < them ? 'L' : 'T'),
+          margin: (us == null || them == null) ? null : us - them,
+          date: g.start_date || null
+        };
+      }).sort(function (a, b) { return (b.week || 0) - (a.week || 0); });
+      if (!rows.length) { gap('previous_games.' + label, 'no completed games on file for ' + label + ' this season'); return null; }
+      return rows.slice(0, 6);
+    }
+    var previous = {
+      home: priorOf(o.previous && o.previous.home, homeKey, home || 'the home side'),
+      away: priorOf(o.previous && o.previous.away, awayKey, away || 'the away side')
+    };
+
+    /* ---- availability -------------------------------------------------- */
+    function availOf(key, label) {
+      var rec = key && o.availability ? o.availability[key] : null;
+      if (!rec) { gap('availability.' + label, 'no availability record reached ' + label + '’s roster'); return null; }
+      var read = availabilityRead({ team: label, record: rec, now: now, generated_at: o.availability_generated_at || null });
+      if (read && read.state === 'UNKNOWN') {
+        limits.push('Availability for ' + label + ' is UNKNOWN, and unknown is carried as unknown — it is never read as healthy.');
+      }
+      return read;
+    }
+    var availability = { home: availOf(homeKey, home || 'the home side'), away: availOf(awayKey, away || 'the away side') };
+
+    /* ---- what this can and cannot answer ------------------------------ */
+    var answerable = !!(identity.home.value && identity.away.value);
+    return {
+      schema: RESEARCH_SCHEMA,
+      built_at: new Date(now).toISOString(),
+      sport: 'americanfootball_ncaaf',
+      game_id: identity.game_id.value,
+      subject: res.subject || (subjectIsHome ? home : away),
+      opponent: subjectIsHome ? away : home,
+      subject_is_home: subjectIsHome,
+      resolution: { state: res.state || null, how: res.how || null, named: res.named || [], source: res.source || SLATE },
+      identity: identity, model: model, market: market, ratings: ratings,
+      previous_games: previous, availability: availability,
+      missing: missing, limits: uniq(limits.filter(Boolean)),
+      status: {
+        answerable: answerable,
+        narration: 'pending',
+        why: answerable ? null : 'the matchup did not resolve to two named teams'
+      }
+    };
+  }
+
   return {
     VERSION: VERSION, PACKET_SCHEMA: PACKET_SCHEMA, LEDGER_SCHEMA: LEDGER_SCHEMA, DECISIONS: DECISIONS,
     DECISIONS_DISABLED: DECISIONS_DISABLED, decisionsEnabled: function () { return CONFIG.decisions_enabled !== false; },
@@ -14531,6 +15109,9 @@ const EDPRES: any = (globalThis as any).EDPRES;
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
     ratingTimeBasis: ratingTimeBasis, RATING_TIME_BASES: RATING_TIME_BASES,
     normKey: normKey, aliasKey: aliasKey, resolveTeam: resolveTeam, matchesEvent: matchesEvent,
+    teamPhrases: teamPhrases, nameCandidates: nameCandidates, matchupPair: matchupPair,
+    resolveMatchup: resolveMatchup, MATCHUP_STATES: MATCHUP_STATES,
+    matchupResearch: matchupResearch, RESEARCH_SCHEMA: RESEARCH_SCHEMA,
     teamIndex: teamIndex, expandState: expandState, TEAM_ALIASES: TEAM_ALIASES,
     SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,
     disagreementDiagnostics: disagreementDiagnostics,
@@ -14560,7 +15141,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-14-r9-research-context";
+export const BUILD = "edgedesk_ai-2026-09-15-r10-browser-resolution-and-gate";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -14590,6 +15171,121 @@ const MIN_PATTERN_N = parseInt(Deno.env.get("EDGEDESK_MIN_PATTERN_N") ?? "30", 1
 // Stats API for the traditional pitching line. Set to "0" to keep the engine
 // strictly on owned tables and report the gap instead.
 const MLB_FALLBACK = (Deno.env.get("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
+
+/* ── WHO IS ALLOWED TO SPEND A MODEL CALL ───────────────────────────────────
+   This endpoint is the small authenticated server the product needs and
+   already has: the provider key lives in this function's environment and has
+   never been in the browser, and every database read runs under the CALLER'S
+   token so row-level security decides what they can see. Two things were
+   missing from that picture and are added here.
+
+   SUBSCRIPTION. A valid Supabase token proves who somebody is, not what they
+   have bought. Without this check any signed-up account — free, lapsed,
+   cancelled — could spend provider tokens indefinitely. The rule is the SAME
+   one app.html's paywall applies (pgEntitled): active or trialing inside its
+   period, a comped row, or past_due inside the grace window.
+
+   RATE. An edge isolate has no shared store, so this is a per-isolate,
+   per-caller counter and it is honest about being one: it cannot stop a
+   determined abuser spread across isolates, and it is not presented as if it
+   could. What it does stop is the ordinary runaway — a stuck retry loop, a
+   page left open re-asking — which is what actually burns a budget.
+
+   Both are refusals with a plain reason, never a silent degradation, and
+   neither can be turned into an answer by anything the browser sends. */
+const REQUIRE_SUBSCRIPTION = !/^(0|false|off|no)$/i.test(
+  (Deno.env.get("EDGEDESK_REQUIRE_SUBSCRIPTION") ?? "1").trim(),
+);
+const RATE_PER_MIN = Math.max(1, parseInt(Deno.env.get("EDGEDESK_AI_RATE_PER_MIN") ?? "30", 10) || 30);
+const RATE_PER_HOUR = Math.max(1, parseInt(Deno.env.get("EDGEDESK_AI_RATE_PER_HOUR") ?? "300", 10) || 300);
+const RATE_BOOK = new Map<string, number[]>();
+const PG_GRACE_DAYS = 3;
+
+/* The rate bucket is keyed with the Dal's OWN callerKey — an FNV-1a tag over
+   the Authorization header. Deliberately not the decoded `sub` claim: a
+   credential must not sit in isolate memory for the life of the process, and
+   a hash of the token identifies one caller just as well for counting. */
+
+/** app.html's pgEntitled, server-side and unchanged in meaning. */
+export function entitled(sub: any, now = Date.now()): boolean {
+  if (!sub) return false;
+  const comp = String(sub.price_id ?? "") === "owner_comp";
+  if (comp && String(sub.status ?? "") === "active") return true;
+  const status = String(sub.status ?? "");
+  const endsAt = sub.current_period_end ? Date.parse(String(sub.current_period_end)) : NaN;
+  if (status === "active" || status === "trialing") {
+    if (isFinite(endsAt) && endsAt < now) return false;   /* a lapsed row left behind */
+    return true;
+  }
+  /* Card failed but Stripe has not given up. Access holds, briefly. */
+  if (status === "past_due") {
+    if (!isFinite(endsAt)) return true;
+    return (now - endsAt) < PG_GRACE_DAYS * 864e5;
+  }
+  return false;
+}
+
+export function resetRateLimit(): void { RATE_BOOK.clear(); }
+
+/** @returns null when the caller may proceed, or {status, body} to refuse. */
+export function rateVerdict(key: string, now = Date.now()): { status: number; body: any } | null {
+  const hits = (RATE_BOOK.get(key) ?? []).filter((t) => now - t < 3600e3);
+  const lastMin = hits.filter((t) => now - t < 60e3).length;
+  if (lastMin >= RATE_PER_MIN) {
+    return { status: 429, body: { error: "too many requests", retry_after_s: 60,
+      note: `EdgeDesk answers at most ${RATE_PER_MIN} questions a minute for one reader.` } };
+  }
+  if (hits.length >= RATE_PER_HOUR) {
+    return { status: 429, body: { error: "hourly limit reached", retry_after_s: 600,
+      note: `EdgeDesk answers at most ${RATE_PER_HOUR} questions an hour for one reader.` } };
+  }
+  hits.push(now);
+  RATE_BOOK.set(key, hits);
+  /* An isolate that has served many readers should not grow without bound. */
+  if (RATE_BOOK.size > 2000) {
+    for (const [k, v] of RATE_BOOK) { if (!v.some((t) => now - t < 3600e3)) RATE_BOOK.delete(k); }
+  }
+  return null;
+}
+
+/**
+ * Read the caller's OWN subscription row under their OWN token.
+ *
+ * RLS returns that reader's row and nothing else, so this cannot be used to
+ * enumerate anyone. A read that FAILS is an infrastructure fault, not a
+ * finding that somebody is unsubscribed — the two are told apart here, because
+ * conflating them either locks out every paying reader when a table is
+ * unreachable or lets everybody in when it is.
+ */
+export async function subscriptionGate(
+  auth: string, url: string, apikey: string, now = Date.now(),
+): Promise<{ ok: boolean; status: number; body?: any; why: string }> {
+  if (!REQUIRE_SUBSCRIPTION) return { ok: true, status: 200, why: "subscription checking is switched off" };
+  if (!url || !apikey) return { ok: true, status: 200, why: "no database configured to check against" };
+  let rows: any = null;
+  try {
+    const r = await fetch(
+      `${url}/rest/v1/subscriptions?select=status,price_id,current_period_end&limit=1`,
+      { headers: { apikey, authorization: auth } },
+    );
+    if (!r.ok) {
+      /* 404 = the table is not deployed. 401/403 = refused. Neither says the
+         reader has not paid, so neither locks them out. */
+      return { ok: true, status: 200, why: `the subscription table answered ${r.status}, so entitlement could not be checked` };
+    }
+    rows = await r.json();
+  } catch {
+    return { ok: true, status: 200, why: "the subscription table could not be reached, so entitlement could not be checked" };
+  }
+  const sub = Array.isArray(rows) ? rows[0] : null;
+  if (entitled(sub, now)) return { ok: true, status: 200, why: "an entitling subscription row is on file" };
+  return {
+    ok: false, status: 402, why: sub ? `subscription status ${sub.status}` : "no subscription row for this reader",
+    body: { error: "subscription required",
+      note: "EdgeDesk Intelligence is part of the subscription. The research board and the decision engine "
+        + "in the app do not need it and keep working." },
+  };
+}
 
 /* Where the published static artifacts live. The FBS board's own slate is a
    build output committed to the site, not a table, so the research engine
@@ -15502,93 +16198,17 @@ function needsFromCfb(plan: Plan, wants: (s: string) => boolean): Set<string> {
    sides", answered from the same published artifact the board renders.
    ======================================================================== */
 
-/* Capitalised multi-word phrases that could name a team, for the single-team
-   lookup above. This asserts nothing: every phrase it returns is handed to the
-   card resolver, and a phrase that resolves to no scheduled game is dropped
-   without a word. Single bare words are excluded — "Miami" alone is genuinely
-   ambiguous and "Thoughts" is not a team at all. */
-export function teamishPhrases(text: string): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  const re = /\b([A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?(?:[ ](?:of|and|&|the)?[ ]?[A-Z][A-Za-z'&.-]*(?:[ ]?\([A-Za-z.]{1,6}\))?)+)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(String(text ?? ""))) != null) {
-    let words = m[1].replace(MATCHUP_LEAD, "").replace(/[.,;:!?]+$/, "").trim().split(/\s+/);
-    /* A capitalised word at the start of a sentence is part of the sentence,
-       not part of the name: "Is North Texas worth a look?" captures "Is North
-       Texas", and "isnorthtexas" resolves to nothing at all. Ordinary words
-       are trimmed from BOTH ends until a real phrase is left. */
-    while (words.length && NOT_A_NAME.has(normName(words[0]))) words = words.slice(1);
-    while (words.length && NOT_A_NAME.has(normName(words[words.length - 1]))) words = words.slice(0, -1);
-    if (words.length < 2 || words.length > 4) continue;
-    const phrase = words.join(" ");
-    const k = normName(phrase);
-    if (!k || seen.has(k)) continue;
-    seen.add(k);
-    out.push(phrase);
-  }
-  return out.slice(0, 4);
-}
-
-/* Capitalised SINGLE words that could name a program. Handed to the card
-   resolver exactly as the multi-word phrases are, and asserted about only
-   after that lookup succeeds. Ordinary sentence words are excluded by the same
-   NOT_A_NAME list, so "Anything worth betting?" contributes nothing. */
-export function bareTeamWords(text: string): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  const re = /\b([A-Z][A-Za-z'&.()-]{2,})/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(String(text ?? ""))) != null) {
-    const w = m[1].replace(/[.,;:!?]+$/, "").trim();
-    const k = normName(w);
-    if (!k || seen.has(k) || NOT_A_NAME.has(k)) continue;
-    seen.add(k);
-    out.push(w);
-  }
-  return out.slice(0, 5);
-}
-
-/**
- * One bare word, read against the card.
- *
- * Exactly one game => the same resolution a full phrase would have produced.
- * More than one => the SPORT is settled and the GAME is not, which is reported
- * as an ambiguity to ask about rather than resolved by picking the first.
- */
-function bareWordRead(
-  words: string[], games: any[], ix: any, carriedGameId: string | null, none: MatchupResolution,
-): MatchupResolution {
-  for (const w of words) {
-    const r = EDINTEL.resolveTeam(w, ix);
-    if (!r?.key) continue;
-    const hits = games.filter((g: any) =>
-      EDINTEL.canonKey(g.home_id, g.home_team) === r.key || EDINTEL.canonKey(g.away_id, g.away_team) === r.key);
-    if (!hits.length) continue;
-    /* A carried subject that this word is consistent with keeps its game —
-       "how does Texas State look now?" on turn four is the same game. */
-    const carried = carriedGameId ? hits.find((h: any) => String(h.game_id) === String(carriedGameId)) : null;
-    const hit = carried ?? (hits.length === 1 ? hits[0] : null);
-    if (hit) {
-      return {
-        state: "RESOLVED", named: [w], sport: "americanfootball_ncaaf", game_id: String(hit.game_id),
-        home: hit.home_team, away: hit.away_team,
-        home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
-        away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
-        kickoff: hit.kickoff ?? null,
-        source: "football/fbs/slate.json" + (carried ? " (carried subject)" : ""), note: null,
-      };
-    }
-    return {
-      ...none, state: "AMBIGUOUS_ON_CARD", named: [w], sport: "americanfootball_ncaaf",
-      note: `"${w}" is a college football program on the card EdgeDesk publishes, and it appears in `
-        + `${hits.length} scheduled games in this window (${hits.map((h: any) => `${h.away_team} @ ${h.home_team}`).join(", ")}). `
-        + `The SPORT is settled — this is a college football question and must not be answered from any other `
-        + `sport's board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.`,
-    };
-  }
-  return none;
-}
+/* teamishPhrases, bareTeamWords and bareWordRead LIVED HERE and are gone.
+   They were this function's private way of reading a team out of a question,
+   and their existence was the problem: the browser had no equivalent, so a
+   college question left app.html as a baseball board and none of this code
+   ever ran on it. EDINTEL.teamPhrases replaces all three and is shared with
+   app.html verbatim, so there is one reader of a question in the product
+   rather than one here and none there. It is also stricter than what it
+   replaces: longest-name-first (so "Texas State" beats "Texas"), exact, alias
+   and St./State matches only, and a bare word only when the writer
+   capitalised it. The properties these three guaranteed are asserted against
+   the kernel in tools/intelligence/intelligence.test.js. */
 
 export interface MatchupResolution {
   /**
@@ -15625,146 +16245,121 @@ export interface MatchupResolution {
  */
 export async function resolveNamedMatchup(
   question: string, dal: Dal, carried: string[] = [], carriedGameId: string | null = null,
+  clientClaim: any = null,
 ): Promise<MatchupResolution> {
-  /* A follow-up names nothing — "who have they played?" — so the subject the
-     conversation established is used instead. Without this the resolution
-     lapses on turn two and the open board takes the wheel again. */
-  const fromQ = matchupFromText(question);
-  const named = fromQ.length === 2 ? fromQ : (carried.length === 2 ? carried.slice() : []);
-  /* Which of the two it was. The trace said "named in this message" for a
-     matchup the reader had not mentioned in four turns, which is a true
-     statement about the resolver and a false one about the conversation. */
-  const cameFromCarry = fromQ.length !== 2 && carried.length === 2;
-  const SRC = (base: string) => base + (cameFromCarry ? " (carried subject)" : "");
+  /* ONE RESOLVER, AND IT LIVES IN THE KERNEL. This was a second copy of the
+     rule — its own phrase extractor, its own two-teams-then-one-team ladder,
+     its own bare-word reader — which meant the BROWSER and this function could
+     disagree about who a question was about. They did: app.html had no
+     resolution at all, so a college question left the browser as a baseball
+     board and none of the work below ever saw it. EDINTEL.resolveMatchup is
+     now the only implementation, shared verbatim with app.html by inline.js,
+     and this is the retrieval around it: read the published card, hand it
+     over, translate the answer back into the states the handler consumes.
 
-  /* ONE TEAM IS THE SAME BUG WITH ONE NAME. "How does Texas State look this
-     week?" has no "vs" for matchupFromText to find, and reaches exactly the
-     same dead end: the only team resolver in this function knows MLB clubs,
-     "Texas State" becomes the Texas Rangers, and the sport is decided by
-     whatever board is open. So a single name gets the same treatment — an
-     UNAMBIGUOUS lookup against the published card, never a guess.
-     Deliberately conservative: a name that resolves to two programs, or that
-     matches a club in the sport already in scope, is left alone. */
-  const soloNames = named.length === 2 ? [] : teamishPhrases(question);
-  /* SINGLE BARE WORDS ARE LOOKED UP TOO — BUT ONLY TO ESTABLISH THE SPORT.
-     teamishPhrases deliberately refuses one-word names because "Miami" alone
-     is two programs and "Thoughts" is none. That was right about picking a
-     GAME and wrong about everything else: a question that says "Miami" and
-     nothing else fell through to NONE_NAMED, and the sport was then taken from
-     whatever board was open — so a college question became a baseball one in
-     silence, which is the one outcome the brief forbids outright. A bare word
-     that names a program on the card therefore settles the SPORT and reports
-     the game as ambiguous; it never selects one. */
-  const soloWords = named.length === 2 ? [] : bareTeamWords(question);
-  const none: MatchupResolution = {
-    state: "NONE_NAMED", named: [], sport: null, game_id: null, home: null, away: null,
-    home_id: null, away_id: null, kickoff: null, source: null, note: null,
-  };
-  /* THE SUBJECT SURVIVES A QUESTION THAT NAMES NOTHING.
-     "Who have they played?" names no team at all, and the two-name carry above
-     only fires for a matchup the reader wrote as "A vs B". A conversation that
-     started from ONE name — "How does Texas State look this week?" — therefore
-     lost its subject on the very next turn and fell back to the open board,
-     which is the original production failure arriving one turn late.
-
-     A carried GAME ID fixes that, and it is safe to carry because it is not
-     trusted: it is re-looked-up against the published card below exactly as a
-     freshly named matchup is, and a id that matches no scheduled game is
-     dropped without a word. */
-  const wantCarriedGame = named.length !== 2 && !soloNames.length && !soloWords.length && !!carriedGameId;
-  if (named.length !== 2 && !soloNames.length && !soloWords.length && !wantCarriedGame) return none;
-
+     Nothing the old ladder did is lost. Longest-name-first replaces
+     teamishPhrases and bareTeamWords together and is stricter than either —
+     "Texas State" is found before "Texas", and a bare word only counts when
+     the writer capitalised it. A program with two games in the window still
+     settles the SPORT and reports AMBIGUOUS_ON_CARD rather than picking one,
+     and a carried subject consistent with the name still keeps its game. */
   const art = await dal.getFbsSlateArtifact();
-  if (wantCarriedGame && art.games.length) {
-    const hit = art.games.find((g: any) => String(g.game_id) === String(carriedGameId));
-    if (hit) {
-      return {
-        state: "RESOLVED", named: [String(hit.away_team ?? ""), String(hit.home_team ?? "")],
-        sport: "americanfootball_ncaaf", game_id: String(hit.game_id),
-        home: String(hit.home_team ?? ""), away: String(hit.away_team ?? ""),
-        home_id: EDINTEL.canonKey(hit.home_team_id ?? null, hit.home_team),
-        away_id: EDINTEL.canonKey(hit.away_team_id ?? null, hit.away_team),
-        kickoff: hit.kickoff ?? null, source: "football/fbs/slate.json (carried subject)", note: null,
-      };
-    }
-  }
-  if (wantCarriedGame) return none;
-  if (art.error && !art.games.length) {
+  const games = (art.games ?? []).map((g: any) => ({
+    game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
+    home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null, week: g.week ?? null,
+  }));
+
+  /* THE SUBJECT THIS CONVERSATION ALREADY HAS, RE-DERIVED RATHER THAN TRUSTED.
+     Three things can supply it — a game id this function carried forward, the
+     two names it carried forward, and a `resolved_matchup` the browser sent —
+     and NONE is taken at its word. Each is turned back into a lookup against
+     this function's own copy of the published card, so a client that claims a
+     game id that is not on the card, or claims the wrong teams for one that
+     is, gets the card's answer and not its own. A browser may say WHICH GAME;
+     it may not say what is true about it, and every number this function
+     reports or records is its own read. */
+  let carriedRes: any = null;
+  function asResolution(row: any, how: string) {
     return {
-      ...none, state: "RETRIEVAL_FAILED", named,
-      note: `"${named[0]}" and "${named[1]}" were named, but the published FBS card could not be read `
-        + `(${art.error}), so EdgeDesk cannot tell whether that game exists. This is a RETRIEVAL failure, `
-        + `not a finding that the matchup is absent, and it may not be reported as one.`,
+      state: "RESOLVED", sport: "americanfootball_ncaaf", game_id: row.game_id,
+      home: row.home_team, away: row.away_team,
+      home_id: EDINTEL.canonKey(row.home_id, row.home_team),
+      away_id: EDINTEL.canonKey(row.away_id, row.away_team),
+      kickoff: row.kickoff, week: row.week, named: [], subject: null, subject_id: null,
+      source: "football/fbs/slate.json", how, note: null, candidates: null,
     };
   }
-  if (art.games.length) {
-    const games = art.games.map((g: any) => ({
-      game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
-      home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null,
-    }));
-    const ix = EDINTEL.fbsIndexFor(games);
-    const a = EDINTEL.resolveTeam(named[0], ix), b = EDINTEL.resolveTeam(named[1], ix);
-    if (a?.key && b?.key) {
-      /* Either orientation: a reader writes "A vs B" without caring who is home. */
-      const hit = games.find((g: any) => {
-        const hk = EDINTEL.canonKey(g.home_id, g.home_team), ak = EDINTEL.canonKey(g.away_id, g.away_team);
-        return (hk === a.key && ak === b.key) || (hk === b.key && ak === a.key);
-      });
-      if (hit) {
-        return {
-          state: "RESOLVED", named, sport: "americanfootball_ncaaf",
-          game_id: hit.game_id, home: hit.home_team, away: hit.away_team,
-          home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
-          away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
-          kickoff: hit.kickoff, source: SRC("football/fbs/slate.json"), note: null,
-        };
-      }
+  const claimId = clientClaim && clientClaim.game_id != null ? String(clientClaim.game_id) : null;
+  if (claimId) {
+    const row = games.find((g: any) => g.game_id === claimId) ?? null;
+    if (row) {
+      const hk = EDINTEL.canonKey(row.home_id, row.home_team), ak = EDINTEL.canonKey(row.away_id, row.away_team);
+      const cHome = clientClaim.home_id ?? clientClaim.home, cAway = clientClaim.away_id ?? clientClaim.away;
+      /* A claimed id whose teams do not match the card's own row for that id
+         is a mismatch, not a resolution — the card wins and the claim is
+         dropped rather than corrected into something nobody asked for. */
+      const sidesAgree = !cHome || !cAway
+        || ((EDINTEL.canonKey(null, String(cHome)) === hk || String(cHome) === hk)
+          && (EDINTEL.canonKey(null, String(cAway)) === ak || String(cAway) === ak));
+      if (sidesAgree) carriedRes = asResolution(row, "client-claim-verified");
     }
   }
-  /* ---- one named team, resolved to exactly one game on the card -------- */
-  if (named.length !== 2 && soloNames.length && art.games.length) {
-    const games = art.games.map((g: any) => ({
-      game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
-      home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null,
-    }));
-    const ix = EDINTEL.fbsIndexFor(games);
-    for (const phrase of soloNames) {
-      const r = EDINTEL.resolveTeam(phrase, ix);
-      if (!r?.key) continue;
-      const hits = games.filter((g: any) =>
-        EDINTEL.canonKey(g.home_id, g.home_team) === r.key || EDINTEL.canonKey(g.away_id, g.away_team) === r.key);
-      /* Two games for one program in the same window is a scheduling artefact
-         or a bad match; either way it is not a single answer. */
-      if (hits.length !== 1) continue;
-      const hit = hits[0];
-      return {
-        state: "RESOLVED", named: [phrase], sport: "americanfootball_ncaaf",
-        game_id: hit.game_id, home: hit.home_team, away: hit.away_team,
-        home_id: EDINTEL.canonKey(hit.home_id, hit.home_team),
-        away_id: EDINTEL.canonKey(hit.away_id, hit.away_team),
-        kickoff: hit.kickoff, source: "football/fbs/slate.json", note: null,
-      };
-    }
-    /* A name that looks like a team and is on no card is NOT a finding worth
-       interrupting for — the reader may have meant a player, another sport, or
-       nothing in particular. Fall through silently. */
-    return bareWordRead(soloWords, games, ix, carriedGameId, none);
+  if (!carriedRes && carriedGameId) {
+    const row = games.find((g: any) => g.game_id === String(carriedGameId)) ?? null;
+    if (row) carriedRes = asResolution(row, "carried");
   }
-  if (named.length !== 2 && soloWords.length && art.games.length) {
-    const games = art.games.map((g: any) => ({
-      game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
-      home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null,
-    }));
-    return bareWordRead(soloWords, games, EDINTEL.fbsIndexFor(games), carriedGameId, none);
+  if (!carriedRes && carried.length === 2) {
+    const back: any = EDINTEL.resolveMatchup({
+      question: carried.join(" vs "), games, source: "football/fbs/slate.json",
+    });
+    if (back.state === "RESOLVED") carriedRes = back;
   }
 
-  return {
-    ...none, state: "NOT_ON_ANY_CARD", named,
-    note: `"${named[0]}" and "${named[1]}" were named as a matchup, and no scheduled game with BOTH of those `
-      + `sides is on any card EdgeDesk publishes (${art.games.length} games were checked on the FBS slate). `
-      + `Ask which teams and which week are meant. Do NOT answer about a different game, do NOT fall back to `
-      + `whatever board is open, and do NOT retrieve another sport's evidence in its place.`,
+  const r: any = EDINTEL.resolveMatchup({
+    question, games, carried: carriedRes,
+    card_error: art.error && !games.length ? art.error : null,
+    source: "football/fbs/slate.json",
+  });
+
+  const base: MatchupResolution = {
+    state: r.state, named: r.named ?? [], sport: r.sport ?? null, game_id: r.game_id ?? null,
+    home: r.home ?? null, away: r.away ?? null, home_id: r.home_id ?? null, away_id: r.away_id ?? null,
+    kickoff: r.kickoff ?? null, source: r.source ?? null, note: r.note ?? null,
   };
+  if (r.state === "RESOLVED" || r.state === "NONE_NAMED") return base;
+
+  /* The states that are NOT a resolution each carry an instruction, because
+     each is a different failure and answering them the same way is how "the
+     card could not be read" became "that matchup does not exist". */
+  if (r.state === "NO_CARD") return { ...base, state: "RETRIEVAL_FAILED", note: r.note };
+
+  if (r.state === "AMBIGUOUS") {
+    /* The SPORT is settled and the GAME is not. Both halves matter: without
+       the first a college question is answered from whatever board is open. */
+    return { ...base, state: "AMBIGUOUS_ON_CARD", sport: "americanfootball_ncaaf", note: r.note };
+  }
+
+  if (r.state === "NOT_ON_CARD") {
+    const both = (r.named ?? []).length === 2;
+    return {
+      ...base, state: "NOT_ON_ANY_CARD",
+      note: (both
+        ? `"${r.named[0]}" and "${r.named[1]}" were named as a matchup, and no scheduled game with BOTH of those `
+          + `sides is on any card EdgeDesk publishes (${games.length} games were checked on the FBS slate). `
+          + `Ask which teams and which week are meant.`
+        : `${r.named[0]} resolved to a real FBS program with no game inside the published window `
+          + `(${games.length} games were checked on the FBS slate). Say that.`)
+        + ` Do NOT answer about a different matchup, do NOT fall back to whatever board is open, and do NOT `
+        + `retrieve and narrate another sport's evidence in its place.`,
+    };
+  }
+
+  if (r.state === "SUBJECT_CHANGED") {
+    /* Somebody the football card does not carry was named. That is not a
+       football answer, and it is not the previous football answer either. */
+    return { ...base, state: "NONE_NAMED", named: r.named ?? [], note: null };
+  }
+  return base;
 }
 
 /* ========================================================================
@@ -16296,9 +16891,19 @@ async function runResearch(
     state.sport = null;
   }
 
+  /* ONE CARRIED-SUBJECT CONTRACT, AND IT IS VERIFIED. `research_context` is
+     what the client hands back, sanitizeSubject() has already stripped it to
+     identifiers, and resolveNamedMatchup now checks the claimed game id
+     against this function's OWN copy of the published card AND checks that
+     the teams the client named are the teams that card has for that id. A
+     browser may say WHICH GAME; it may not say what is true about it, and a
+     claim whose sides do not match is dropped rather than half-believed.
+     A reader who has just switched league drops it with everything else — the
+     claim is about the conversation's subject, and the subject changed. */
+  const clientClaim = switchedAway ? null : (state.subject ?? null);
   const namedMatchup = await resolveNamedMatchup(
     question, dal, switchedAway ? [] : (state.namedMatchup ?? []),
-    switchedAway ? null : (state.subject?.game_id ?? null));
+    switchedAway ? null : (state.subject?.game_id ?? null), clientClaim);
   if (namedMatchup.state !== "NONE_NAMED") {
     data_path.named_matchup = {
       state: namedMatchup.state, named: namedMatchup.named, sport: namedMatchup.sport,
@@ -16306,6 +16911,12 @@ async function runResearch(
       source: namedMatchup.source, note: namedMatchup.note,
       /* Stated as data so no downstream reader has to infer it from a sport
          that silently changed underneath them. */
+      client_claim: clientClaim ? {
+        game_id: String(clientClaim.game_id ?? ""), sport: clientClaim.sport ?? null,
+        /* Said out loud so a reader of the trace can see whether the browser's
+           claim survived verification or was discarded for the card's own. */
+        accepted: namedMatchup.state === "RESOLVED" && String(clientClaim.game_id ?? "") === String(namedMatchup.game_id ?? ""),
+      } : null,
       overrode_open_board: namedMatchup.state === "RESOLVED"
         && !!(packet?.game?.sport_key ?? (boardScope as any).sport)
         && (packet?.game?.sport_key ?? (boardScope as any).sport) !== namedMatchup.sport,
@@ -18401,6 +19012,15 @@ let LAST_MEMORY_WRITE: Record<string, unknown> | null = null;
    failure is the one failure that must not stay silent. */
 let LAST_LEDGER_WRITE: Record<string, unknown> | null = null;
 
+/* THE ONE SENTENCE A READER GETS. The reported failure ended with PostgREST's
+   own text about public.recommendation_ledger printed under the answer. A
+   tracking failure does not make the research wrong and it is not the
+   reader's to debug, so they are told the fact and nothing operational: the
+   status, the body and the diagnosis reach an operator through ?probe=1 and
+   this function's logs. */
+export const LEDGER_NOTICE = "Research available; tracking is unavailable right now, so this decision was "
+  + "not recorded and will not appear in the published record. The research above is unaffected.";
+
 export interface LedgerWrite {
   state: "RECORDED" | "NOT_RECORDED" | "NOTHING_TO_RECORD" | "NOT_CONFIGURED" | "DECISIONS_DISABLED";
   rows: number;
@@ -18445,8 +19065,8 @@ export async function publishLedger(
   if (!SUPABASE_URL) {
     return { state: "NOT_CONFIGURED", rows: rows.length, status: null, at,
       detail: "SUPABASE_URL is not set on this deployment",
-      notice: "TRACKING UNAVAILABLE: this deployment has no database configured, so this decision was NOT recorded "
-        + "and will not appear in the published record." };
+      operator_hint: "SUPABASE_URL is not set on this deployment, so there is nowhere to write the ledger.",
+      notice: LEDGER_NOTICE };
   }
   const f = fetchImpl ?? fetch;
   const payload = rows.slice(0, 25).map((r: any) => ({
@@ -18481,28 +19101,74 @@ export async function publishLedger(
          name and a migration filename are the operator's business and reach
          them through ?probe=1 and the deployment doctor. What the reader must
          not be left with is the impression that it WAS recorded. */
-      notice: ok ? null
-        : "Tracking is unavailable right now, so this decision was not recorded and will not appear in the "
-          + "published record. The research above is unaffected.",
-      /* Operator-side only; redactLedgerDetail() strips this before it is sent. */
-      operator_hint: ok ? null
-        : (detail && /relation|does not exist|schema cache/i.test(detail)
-          ? "The ledger table is missing on this deployment — supabase/recommendation_ledger.sql has not been applied."
-          : `HTTP ${res.status} from the ledger insert. Operational fault, not a change to the recommendation.`),
+      notice: ok ? null : LEDGER_NOTICE,
+      /* Operator-side only; redactLedgerDetail() strips this before it is sent.
+         CLASSIFIED BY STATUS, NOT BY THE BODY. This used to read the response
+         text for "relation", "does not exist" or "schema cache" and, on a hit,
+         report that the migration had not been applied — with no reference to
+         the status code, which is the field that actually distinguishes absent
+         from refused. A permissions problem therefore read as an unapplied
+         migration and sent somebody to re-run one that was already applied. */
+      operator_hint: ok ? null : ledgerDiagnosis(res.status, detail).operator,
     };
-    LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
+    LAST_LEDGER_WRITE = { ...out, diagnosis: ok ? null : ledgerDiagnosis(res.status, detail) } as Record<string, unknown>;
+    if (!ok) { try { console.error("edgedesk_ai ledger write failed", res.status, detail); } catch { /* no console */ } }
     return out;
   } catch (e) {
     const detail = String((e as Error)?.message ?? e).slice(0, 300);
     const out: LedgerWrite = {
       state: "NOT_RECORDED", rows: payload.length, status: null, detail, at,
-      notice: "Tracking is unavailable right now, so this decision was not recorded and will not appear in the "
-        + "published record. The research above is unaffected.",
-      operator_hint: detail,
+      notice: LEDGER_NOTICE,
+      operator_hint: ledgerDiagnosis(null, detail).operator,
     };
-    LAST_LEDGER_WRITE = { ...out } as Record<string, unknown>;
+    LAST_LEDGER_WRITE = { ...out, diagnosis: ledgerDiagnosis(null, detail) } as Record<string, unknown>;
+    try { console.error("edgedesk_ai ledger write threw", detail); } catch { /* no console */ }
     return out;
   }
+}
+
+/**
+ * WHAT A FAILED LEDGER WRITE ACTUALLY TELLS YOU — and what it does not.
+ *
+ * Status first. 404/410 is the only answer that means the table is not
+ * reachable through this API at all, and even that is "not exposed to this
+ * client" until schema visibility has been checked — PostgREST 404s a table
+ * that exists but is not in its exposed schemas exactly as it 404s one that
+ * was never created. Saying "the migration has not been applied" from a 404
+ * alone is a guess, and it is the guess that wastes an operator's evening.
+ */
+export function ledgerDiagnosis(status: number | null, raw: string | null): {
+  code: string; operator: string; conclusive: boolean;
+} {
+  if (status === 404 || status === 410) {
+    return { code: "NOT_VISIBLE_TO_THIS_CLIENT", conclusive: false,
+      operator: "PostgREST answered " + status + " for recommendation_ledger. That is ONE of two things and this "
+        + "response cannot tell them apart: the table was never created (apply supabase/recommendation_ledger.sql), "
+        + "or it exists but its schema is not in PostgREST's exposed list (check the project's exposed schemas and "
+        + "reload the schema cache). Check both before reporting either." };
+  }
+  if (status === 401 || status === 403) {
+    return { code: "REFUSED", conclusive: true,
+      operator: "The write was refused (" + status + "). The table's existence is NOT in question — this is row-level "
+        + "security or an expired token. Check the insert policy on recommendation_ledger for authenticated callers." };
+  }
+  if (status === 409) {
+    return { code: "CONFLICT", conclusive: true,
+      operator: "A uniqueness conflict (409). The ledger is append-only with entry_key unique; this row already exists "
+        + "or collided with one. Nothing is lost." };
+  }
+  if (status != null && status >= 500) {
+    return { code: "UPSTREAM", conclusive: true,
+      operator: "The database answered " + status + ". An outage or a statement timeout, not a schema problem." };
+  }
+  if (status === 400) {
+    return { code: "REJECTED_PAYLOAD", conclusive: true,
+      operator: "The row was rejected (400) — a column the deployed table does not carry, or a constraint it does. "
+        + "Compare the deployed table against supabase/recommendation_ledger.sql." };
+  }
+  return { code: "UNREACHABLE", conclusive: false,
+    operator: "The request did not complete" + (raw ? " (" + raw + ")" : "") + ". Nothing about the table's state "
+      + "can be concluded from this." };
 }
 
 /**
@@ -18921,6 +19587,15 @@ export async function handle(req: Request): Promise<Response> {
 
   const auth = req.headers.get("authorization") ?? "";
   if (!auth.toLowerCase().startsWith("bearer ")) return json({ error: "missing bearer" }, 401);
+
+  /* THE TWO GATES, BEFORE ANY WORK IS DONE. Rate first, because it is free;
+     entitlement second, because it costs one read. Both run for ?dry=1 as
+     well — a dry run still spends this function's retrieval budget against
+     the caller's own database. */
+  const limited = rateVerdict(callerKey(auth));
+  if (limited) return json(limited.body, limited.status);
+  const gate = await subscriptionGate(auth, SUPABASE_URL, SUPABASE_ANON_KEY);
+  if (!gate.ok) return json(gate.body, gate.status);
   // ?dry=1 runs retrieval and returns the packet, so the research layer can be
   // verified without spending a model call or depending on the key being set.
   if (!ANTHROPIC_API_KEY && !dry) return json({ error: "ANTHROPIC_API_KEY not set" }, 503);
@@ -19273,7 +19948,7 @@ export async function handle(req: Request): Promise<Response> {
       .catch((e): LedgerWrite => ({
         state: "NOT_RECORDED", rows: (research?.ledger_rows ?? []).length, status: null,
         detail: String((e as Error)?.message ?? e).slice(0, 200), at: new Date().toISOString(),
-        notice: "TRACKING UNAVAILABLE: the recommendation ledger write failed, so this decision was NOT recorded.",
+        notice: LEDGER_NOTICE,
       }));
 
     // Fire-and-forget memory write.

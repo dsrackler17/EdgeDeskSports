@@ -156,6 +156,16 @@ function router(fx, opts) {
   const signals = opts.signals === undefined ? [fx.signal()] : opts.signals;
   const lines = opts.lines === undefined ? fx.lines : opts.lines;
   return function (u) {
+    /* AN ENTITLED READER. The function refuses to spend a model call for an
+       account with no subscription, so every scenario needs one — and a
+       scenario that wants to test the refusal passes opts.subscription. */
+    if (u.indexOf('/subscriptions') >= 0) {
+      if (opts.subscription === null) return [];
+      return [opts.subscription || {
+        status: 'active', price_id: 'price_test',
+        current_period_end: new Date(Date.now() + 30 * 864e5).toISOString(),
+      }];
+    }
     if (u.indexOf('/football/fbs/slate.json') >= 0) return opts.slate === null ? null : (opts.slate || fx.slate);
     if (u.indexOf('/football/availability/current.json') >= 0) {
       return opts.avail === null ? null : (opts.avail || fx.avail);
@@ -181,4 +191,10 @@ function router(fx, opts) {
   };
 }
 
-module.exports = { build, router, SLATE, AVAIL };
+/* The entitling row every scenario needs, so a suite that builds its own
+   router does not accidentally test the paywall instead of the thing it meant
+   to test. */
+const SUBSCRIBED = [{ status: 'active', price_id: 'price_test',
+  current_period_end: new Date(Date.now() + 30 * 864e5).toISOString() }];
+
+module.exports = { build, router, SLATE, AVAIL, SUBSCRIBED };

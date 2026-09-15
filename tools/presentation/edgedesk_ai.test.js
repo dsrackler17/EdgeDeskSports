@@ -49,8 +49,16 @@ globalThis.fetch = async function (url, init) {
     return { ok: r.status < 300, status: r.status, json: async () => r.json, text: async () => JSON.stringify(r.json) };
   }
   if (u.indexOf('sb.test') >= 0) {
-    /* Every owned table answers empty: research runs, retrieves nothing, and
-       the packet the client attached is the only deterministic source. */
+    /* THE READER IS SUBSCRIBED. The endpoint refuses to spend a model call for
+       an account with no entitling row, so every scenario here needs one — the
+       refusal itself is proved in tools/intelligence/intelligence.test.js. */
+    if (u.indexOf('/subscriptions') >= 0) {
+      const sub = [{ status: 'active', price_id: 'price_test',
+        current_period_end: new Date(Date.now() + 30 * 864e5).toISOString() }];
+      return { ok: true, status: 200, text: async () => JSON.stringify(sub), json: async () => sub };
+    }
+    /* Every other owned table answers empty: research runs, retrieves nothing,
+       and the packet the client attached is the only deterministic source. */
     if (init && init.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => '*/0' }, text: async () => '', json: async () => null };
     return { ok: true, status: 200, text: async () => '[]', json: async () => [] };
   }

@@ -57,6 +57,11 @@ globalThis.fetch = async function (url, init) {
    scenario's rows would otherwise answer the next one's query. Cleared
    between scenarios; production keeps the cache. */
 let clearCache = () => {};
+/* THE RATE LIMIT IS REAL, SO THE SUITE HAS TO CLEAR IT. Forty scenarios in one
+   isolate inside a second is exactly the burst the limiter exists to refuse;
+   resetting between scenarios keeps it enforced in production and out of the
+   way here. Scenario 32 proves it still refuses. */
+let resetRate = () => {};
 
 function req(body, qs) {
   return new Request('https://fn.test/edgedesk_ai' + (qs || ''), {
@@ -70,6 +75,9 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   const m = await import(path.join(__dirname, '..', '..', 'supabase', 'functions', 'edgedesk_ai', 'index.ts'));
   const I = globalThis.EDINTEL;
   clearCache = m.clearCache;
+  resetRate = m.resetRateLimit;
+  const _cc = clearCache;
+  clearCache = function () { _cc(); resetRate(); };
   chk('the intelligence kernel is loaded inside the function', !!I && I.VERSION === 1);
 
   /* =====================================================================
@@ -108,7 +116,8 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
      ===================================================================== */
   {
     const fx = FX.build();
-    clearCache(); route = (u) => (u.indexOf('/football/fbs/slate.json') >= 0 ? null : (u.indexOf('/signals?') >= 0 ? [] : []));
+    clearCache(); route = (u) => (u.indexOf('/subscriptions') >= 0 ? FX.SUBSCRIBED
+      : (u.indexOf('/football/fbs/slate.json') >= 0 ? null : []));
     const r = await m.handle(req({ mode: 'chat', question: 'Any CFB games worth betting?',
       packet: { board_scope: SCOPE }, history: [] }, '?dry=1'));
     const j = await r.json();
@@ -827,18 +836,15 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       status: 404, text: async () => '{"message":"relation \"public.recommendation_ledger\" does not exist"}',
     }));
     eq('a failed write is NOT_RECORDED', missing.state, 'NOT_RECORDED');
-    chk('and says tracking is unavailable in words a reader will understand',
-      /[Tt]racking is unavailable/.test(missing.notice || '') && /not recorded/.test(missing.notice || ''), missing.notice);
-    chk('and says the research itself still stands',
-      /research above is unaffected/.test(missing.notice || ''), missing.notice);
-    /* THE READER IS NOT SHOWN THE DATABASE. This is the line the reported
-       failure ended on: a paying customer asking about a football team was
-       given PostgREST's own sentence about public.recommendation_ledger. The
-       operator still gets it — on the operator's channel. */
+    /* THE READER GETS A SENTENCE. THE OPERATOR GETS THE EXCEPTION.
+       This is the line the reported failure ended on: a paying customer asking
+       about a football team was given PostgREST's own sentence about
+       public.recommendation_ledger. */
+    eq('the reader is told once, plainly', missing.notice, m.LEDGER_NOTICE);
+    chk('and the sentence says tracking failed AND the research still stands',
+      /not recorded/.test(m.LEDGER_NOTICE) && /[Rr]esearch available/.test(m.LEDGER_NOTICE), m.LEDGER_NOTICE);
     chk('the reader-facing notice carries no table name, no SQL file and no HTTP code',
       !/recommendation_ledger|\.sql|relation|schema cache|HTTP \d|404/i.test(missing.notice || ''), missing.notice);
-    chk('a missing table names the migration that fixes it, to the OPERATOR',
-      /recommendation_ledger\.sql has not been applied/.test(missing.operator_hint || ''), missing.operator_hint);
     chk('and the redacted shape sent to a client drops both detail and the hint',
       (function () {
         const red = m.redactLedgerDetail(missing);
@@ -846,11 +852,37 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
           && red.diagnostic_available === true && red.notice === missing.notice;
       })(), m.redactLedgerDetail(missing));
 
+    /* AND THE OPERATOR'S HINT DOES NOT GUESS. It used to read the response
+       BODY for "relation", "does not exist" or "schema cache" and, on a hit,
+       report that the migration had not been applied — with no reference to
+       the status code, which is the field that actually distinguishes absent
+       from refused. A permissions problem therefore read as an unapplied
+       migration, and whoever read that re-ran a migration that was fine. */
+    const d404 = m.ledgerDiagnosis(404, '{"message":"relation \"public.recommendation_ledger\" does not exist"}');
+    eq('a 404 is not conclusive about the table existing', d404.conclusive, false);
+    chk('and names BOTH things it could be', /never created/.test(d404.operator) && /exposed/.test(d404.operator), d404);
+    chk('and says to check both before reporting either', /before reporting either/.test(d404.operator), d404);
+    chk('the operator still gets the migration path to apply',
+      /recommendation_ledger\.sql/.test(missing.operator_hint || ''), missing.operator_hint);
+
+    const d403 = m.ledgerDiagnosis(403, '{"message":"new row violates row-level security policy"}');
+    eq('a refusal is conclusive', d403.conclusive, true);
+    eq('and is not a missing table', d403.code, 'REFUSED');
+    chk('it says the table’s existence is not in question',
+      /existence is NOT in question/.test(d403.operator), d403);
+
+    /* THE BODY IS NOT THE CLASSIFIER. */
+    const d403b = m.ledgerDiagnosis(403, 'could not find the table in the schema cache');
+    eq('a body that mentions the schema cache does not override a 403', d403b.code, 'REFUSED');
+    eq('a 500 is an outage, not a schema problem', m.ledgerDiagnosis(500, 'timeout').code, 'UPSTREAM');
+    eq('a 400 is a rejected row', m.ledgerDiagnosis(400, 'column x does not exist').code, 'REJECTED_PAYLOAD');
+    eq('a request that never completed concludes nothing', m.ledgerDiagnosis(null, 'network down').conclusive, false);
+
     const threw = await m.publishLedger('Bearer t', [row], async () => { throw new Error('network down'); });
     eq('a thrown write is still reported rather than swallowed', threw.state, 'NOT_RECORDED');
+    eq('and the reader still gets the one sentence', threw.notice, m.LEDGER_NOTICE);
     chk('with the underlying reason attached for the operator', /network down/.test(threw.operator_hint || ''), threw.operator_hint);
     chk('and withheld from the reader', !/network down/.test(threw.notice || ''), threw.notice);
-
     eq('nothing to record is its own state',
       (await m.publishLedger('Bearer t', [])).state, 'NOTHING_TO_RECORD');
 
@@ -1308,15 +1340,42 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
         !(j.entities.teams || []).some((t) => /Orioles|Yankees|Rangers/.test(t)), j.entities.teams);
     }
 
-    /* THE EXTRACTOR ASSERTS NOTHING — every phrase goes to the card resolver,
-       and the conversational questions must produce none at all. */
-    const none = ['Any CFB matchups look good?', 'What price makes it a pass?', 'Who have they played?',
-      'Did opponent quality inflate their numbers?', 'What is the strongest argument against that lean?'];
-    none.forEach((q) => chk(`"${q}" yields no team phrase`, m.teamishPhrases(q).length === 0, m.teamishPhrases(q)));
-    chk('a leading sentence word is trimmed, not kept',
-      JSON.stringify(m.teamishPhrases('Is North Texas worth a look?')) === '["North Texas"]',
-      m.teamishPhrases('Is North Texas worth a look?'));
-    eq('a lone bare word is never a team phrase', m.teamishPhrases('Thoughts on Miami?').length, 0);
+    /* THE EXTRACTOR, WHICH IS NOW THE KERNEL'S AND SHARED WITH THE BROWSER.
+       teamishPhrases and bareTeamWords were this function's private readers,
+       and their being private was the defect: app.html had no equivalent, so a
+       college question never reached any of this. Same properties, asserted
+       against the one implementation both hosts run. */
+    {
+      const cardGames = FX.SLATE.games.map((g) => ({
+        game_id: String(g.game_id), home_team: g.home_team, away_team: g.away_team,
+        home_id: g.home_team_id, away_id: g.away_team_id,
+      }));
+      const ix = I.fbsIndexFor(cardGames);
+      const phrases = (q) => I.teamPhrases(q, ix).map((p) => p.phrase);
+
+      const none = ['Any CFB matchups look good?', 'What price makes it a pass?', 'Who have they played?',
+        'Did opponent quality inflate their numbers?', 'What is the strongest argument against that lean?'];
+      none.forEach((q) => chk(`"${q}" yields no team phrase`, phrases(q).length === 0, phrases(q)));
+      chk('a leading sentence word is trimmed, not kept',
+        JSON.stringify(phrases('Is North Texas worth a look?')) === '["North Texas"]',
+        phrases('Is North Texas worth a look?'));
+
+      /* THE RULE THE WHOLE INCIDENT TURNS ON, and the one the old extractor
+         could not express: the COMPLETE name is found before the shorter name
+         that is a prefix of it. "Texas State" must never become "Texas". */
+      eq('the complete name wins over the shorter one it contains',
+        JSON.stringify(phrases('How does Texas State look this week?')), '["Texas State"]');
+      eq('and both sides of a matchup survive, each at full length',
+        JSON.stringify(phrases('What do you think about North Texas vs Texas State this week?')),
+        '["North Texas","Texas State"]');
+      chk('a bare word the writer capitalised is read as the team it names',
+        phrases('Thoughts on Miami?').length === 1, phrases('Thoughts on Miami?'));
+      chk('an all-lower-case question still resolves, because capitals carry no signal in it',
+        JSON.stringify(phrases('how does texas state look this week')) === '["texas state"]',
+        phrases('how does texas state look this week'));
+      chk('a contraction is the ordinary word it contracts, not a name',
+        phrases("What's the line?").length === 0, phrases("What's the line?"));
+    }
 
     /* A TEAMISH PHRASE ON NO CARD FALLS THROUGH SILENTLY — it is not a finding
        worth interrupting for, because the reader may have meant a player. */
@@ -1345,6 +1404,78 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       chk('and is not interrupted by a clarification',
         !/ASK ONE SHORT CLARIFYING QUESTION/.test(j.prompt || ''));
     }
+  }
+
+  /* =====================================================================
+     32. THE ENDPOINT IS A GATE, NOT A DOOR.
+
+     The provider key lives in this function and never in the browser, so this
+     endpoint is the only thing standing between a signed-up account and an
+     unbounded provider bill. A valid Supabase token proves identity, not
+     entitlement, and before this it was the only thing checked.
+     ===================================================================== */
+  {
+    const fx = FX.build();
+
+    /* ---- entitlement, by the same rule the app's paywall applies -------- */
+    const NOW = Date.UTC(2026, 8, 14);
+    const day = 864e5;
+    eq('nothing on file is not entitled', m.entitled(null, NOW), false);
+    eq('an active row inside its period is entitled',
+      m.entitled({ status: 'active', current_period_end: new Date(NOW + 5 * day).toISOString() }, NOW), true);
+    eq('trialing is entitled', m.entitled({ status: 'trialing' }, NOW), true);
+    eq('a comped row is entitled with no Stripe anything',
+      m.entitled({ status: 'active', price_id: 'owner_comp' }, NOW), true);
+    eq('an active row left behind past its period is NOT entitled',
+      m.entitled({ status: 'active', current_period_end: new Date(NOW - day).toISOString() }, NOW), false);
+    eq('past_due inside the grace window still works',
+      m.entitled({ status: 'past_due', current_period_end: new Date(NOW - day).toISOString() }, NOW), true);
+    eq('past_due long past the grace window does not',
+      m.entitled({ status: 'past_due', current_period_end: new Date(NOW - 9 * day).toISOString() }, NOW), false);
+    eq('canceled is not entitled', m.entitled({ status: 'canceled' }, NOW), false);
+
+    /* ---- and the endpoint actually refuses ------------------------------ */
+    clearCache(); route = FX.router(fx, { subscription: null });
+    const refused = await m.handle(req({ mode: 'chat', question: 'How does Texas State look this week?',
+      packet: null, history: [] }, '?dry=1'));
+    eq('an account with no subscription row is refused', refused.status, 402);
+    const rb = await refused.json();
+    chk('and is told what is still free rather than just blocked',
+      /research board|decision engine/i.test(rb.note || ''), rb);
+    chk('the refusal leaks no provider key and no service role',
+      !/sk-ant|service_role|ANTHROPIC/.test(JSON.stringify(rb)));
+
+    /* A LAPSED ROW IS A REFUSAL, NOT A DEGRADED ANSWER. */
+    clearCache(); route = FX.router(fx, { subscription: { status: 'canceled', price_id: 'price_test' } });
+    eq('a cancelled subscription is refused too',
+      (await m.handle(req({ mode: 'chat', question: 'How does Texas State look?', history: [] }, '?dry=1'))).status, 402);
+
+    /* AN UNREACHABLE TABLE IS NOT A FINDING THAT SOMEBODY HAS NOT PAID.
+       Locking out every paying reader because a table 404s is worse than the
+       hole it would close, and this is the distinction the whole codebase
+       keeps making: refused is not absent. */
+    clearCache();
+    route = (u) => (u.indexOf('/subscriptions') >= 0 ? null : FX.router(fx)(u));
+    const open = await m.handle(req({ mode: 'chat', question: 'How does Texas State look this week?',
+      history: [] }, '?dry=1'));
+    eq('a subscription table that cannot be read does NOT lock out a reader', open.status, 200);
+
+    /* ---- rate, which is what actually burns a budget -------------------- */
+    resetRate();
+    const key = 'one-reader';
+    let firstRefusal = null;
+    for (let i = 0; i < 40 && firstRefusal == null; i++) {
+      const v = m.rateVerdict(key);
+      if (v) firstRefusal = { at: i, v };
+    }
+    chk('one caller is cut off inside a minute', firstRefusal != null, firstRefusal);
+    eq('and is refused with 429, not a wrong answer', firstRefusal && firstRefusal.v.status, 429);
+    chk('the refusal says how long to wait', firstRefusal && firstRefusal.v.body.retry_after_s > 0, firstRefusal && firstRefusal.v.body);
+    chk('a DIFFERENT caller is unaffected by it', m.rateVerdict('another-reader') === null);
+    resetRate();
+    chk('and the limiter forgets old hits rather than counting forever',
+      m.rateVerdict(key, Date.now() + 2 * 3600e3) === null);
+    resetRate();
   }
 
   done();

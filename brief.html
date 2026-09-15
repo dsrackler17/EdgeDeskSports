@@ -1329,7 +1329,13 @@ a.pg-btn{text-decoration:none;display:inline-block}
     if (availability && availability.status === 'NOT_PUBLISHED' && !gapsIn.some(function (g) { return /injur/.test(String(g && (g.field || g) || '')); })) gapsIn.push('injury_report');
     var gaps = gapSentences(gapsIn);
     if (availability && availability.status === 'NOT_PUBLISHED' && availability.reason) gaps = gaps.map(function (s) { return /injury and availability/i.test(s) ? 'Injury and availability data is not on file: ' + availability.reason + '. Do not read that as a clean injury report.' : s; });
+    /* OPPOSING EVIDENCE ONLY. "Take a fresh capture confirming the price is
+       still live" is a step, not an argument, and while it sat in this list it
+       could become the WATCH LINE of a perfectly sound call — the single
+       sentence a reader takes away. Operational blockers travel separately in
+       checks_required and are said as checks. */
     var against = (det.reasons_against || []).map(function (r) { return publicReason(r, facts); }).filter(Boolean);
+    var checks = (det.checks_required || []).map(function (r) { return publicReason(r, facts); }).filter(Boolean);
     var fals = (det.falsifiers || []).map(function (r) { return publicReason(r, facts); }).filter(Boolean);
     var watchText, changeText;
     if (displayVerdict === 'WAIT' && (det.is_wait || suppressed)) {
@@ -1476,6 +1482,9 @@ a.pg-btn{text-decoration:none;display:inline-block}
       confidence: det.confidence || null,
       score: num(det.score),
       copy_source: 'deterministic',
+      /* Said as checks, under their own name, so a reader can tell a thing to
+         confirm from a reason to doubt. */
+      checks_required: checks,
       /* the engine's graded receipt, verbatim (null until the close pipeline grades the row) */
       outcome: p.clv ? outcomeOf({ clv: p.clv.clv, beat_close: p.clv.beat_close, closing: p.clv.closing, result: p.clv.result, closed_at: p.clv.closed_at, graded_at: p.clv.graded_at, entry_am: detAm != null ? detAm : curAm }) : null,
       game: {
@@ -1490,6 +1499,7 @@ a.pg-btn{text-decoration:none;display:inline-block}
         remaining: num(edge.remaining), floor: num(edge.floor), has_sharp: conf.has_sharp == null ? null : !!conf.has_sharp,
         n_books: num(conf.n_books), confidence: det.confidence || null, score: num(det.score), band: det.band || null,
         why: det.why || null, reasons_for: (det.reasons_for || []).slice(), reasons_against: (det.reasons_against || []).slice(),
+        checks_required: (det.checks_required || []).slice(),
         falsifiers: (det.falsifiers || []).slice(), is_wait: !!det.is_wait, wait_reason: det.wait_reason || null
       }
     };
