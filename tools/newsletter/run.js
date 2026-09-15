@@ -990,7 +990,20 @@ async function main() {
           + '  this would send carries an unsubscribe link that answers 404 — and the\n'
           + '  same function serves signup, confirmation and the bounce/complaint\n'
           + '  webhook, so nobody could join, leave, or be suppressed.\n\n'
+          + '  From a workstation with the CLI:\n\n'
           + '    supabase functions deploy newsletter --no-verify-jwt\n\n'
+          + '  Or with no CLI at all. The file imports nothing, so it pastes\n'
+          + '  whole into the dashboard editor:\n\n'
+          + '    Supabase dashboard -> Edge Functions -> deploy a new function\n'
+          + '    -> name it exactly `newsletter`\n'
+          + '    -> paste supabase/functions/newsletter/index.ts\n'
+          + '    -> turn OFF "Verify JWT" before deploying\n\n'
+          + '  Verify JWT has to be off: /unsubscribe, /confirm and /webhook are\n'
+          + '  opened by mail clients and by Resend, and neither carries a Supabase\n'
+          + '  token. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected for\n'
+          + '  you, so the unsubscribe link needs nothing further. Signup mail also\n'
+          + '  wants RESEND_API_KEY, and the webhook NEWSLETTER_WEBHOOK_SECRET, as\n'
+          + '  function secrets.\n\n'
           + '  Then run this again. --force opens it anyway.\n');
         record({ phase: 'gate', ok: false, reason: 'unsubscribe_endpoint_missing' });
         STORE.appendRuns(runRows, { now });
@@ -1101,7 +1114,11 @@ async function main() {
           });
           const body = (await res.text()).slice(0, 200);
           verdict = res.status === 404 ? 'NOT DEPLOYED (404)' : res.status + ' ' + body;
-          if (res.status === 404) todo.push('supabase functions deploy ' + fn + ' --no-verify-jwt');
+          if (res.status === 404) {
+            todo.push('supabase functions deploy ' + fn + ' --no-verify-jwt'
+              + '  (no CLI? paste supabase/functions/' + fn + '/index.ts into the'
+              + ' dashboard editor as `' + fn + '`, Verify JWT OFF)');
+          }
         } catch (e) {
           verdict = 'unreachable — ' + String((e && e.message) || e).slice(0, 120);
         }

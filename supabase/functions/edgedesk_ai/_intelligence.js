@@ -2710,7 +2710,9 @@
     + 'they them their my me us he she his her think thinks thought like likes want need have '
     + 'has had be been being get gets got make makes made take takes took give gives gave say '
     + 'says said tell tells told show shows showed any some all both each few more most other '
-    + 'such only own same too very can will just should now next last first second next').split(/\s+/)
+    + 'such only own same too very can will just should now next last first second '
+    + 'were been being had having could would might must shall may who whom whose whats hows '
+    + 'anything something nothing everything anyone someone everybody nobody').split(/\s+/)
     .forEach(function (w) { NOT_A_NAME[w] = 1; });
 
   /* A single word only counts as a team when the writer capitalised it, or
@@ -2753,9 +2755,26 @@
       if (!words.length) continue;
       var phrase = words.join(' ');
       if (words.length === 1 && phrase.length < 3) continue;
-      /* A sentence-initial capital is grammar, not a name — unless the word
-         carries its own capital elsewhere or is plainly not an ordinary word. */
-      if (m.index === 0 && words.length === 1 && isFiller(phrase)) continue;
+      /* A SENTENCE-INITIAL SINGLE WORD IS GRAMMAR, NOT A NAME, and no stop
+         list can be relied on to know which words those are. "What's the
+         line?" and "Were those teams any good?" each broke the carried subject
+         once, because each begins with a capitalised word that happened not to
+         be in the list; the answer is not a longer list, it is that this test
+         is structural. It is safe because this function is only consulted
+         AFTER the card resolver has found nothing: a sentence-initial word
+         that really is a team ("Oregon looks good?") has already resolved and
+         never reaches here. */
+      var before = raw.slice(0, m.index).replace(/\s+$/, '');
+      var initial = !before || /[.!?]$/.test(before);
+      /* TWO TESTS, EACH COVERING THE OTHER'S GAP. The first word of the whole
+         message is dropped outright when it stands alone — it is the one
+         position where capitalisation is pure grammar. A word opening a LATER
+         sentence is only dropped when the stop list agrees it is ordinary, so
+         "Forget that. Padres tonight?" still changes the subject while
+         "Who have they played? Were those any good?" does not. Neither test
+         alone was enough: the stop list missed "Were", and position alone
+         would have swallowed a real name. */
+      if (words.length === 1 && (!before || (initial && isFiller(phrase)))) continue;
       var k = phrase.toLowerCase();
       if (seen[k]) continue;
       seen[k] = 1;
@@ -2919,6 +2938,24 @@
         }
       }
     }
+    /* ---- 1b. AN EXPLICIT PAIR IS ANSWERED AS A PAIR, OR NOT AT ALL ----
+       "Texas State vs Boise State" names a specific game. When no such game is
+       on the card, resolving it to Texas State's OTHER game is substitution —
+       the reader is handed a different matchup under the name of the one they
+       asked for, which is the exact failure this whole resolver exists to
+       stop. Step 2 below is for a question that named ONE team; a question
+       that named two and matched none stops here. */
+    var explicit = matchupPair(question);
+    if (explicit.length === 2) {
+      return Object.assign({}, none, {
+        state: 'NOT_ON_CARD', named: explicit, sport: null,
+        source: o.source || 'football/fbs/slate.json',
+        note: '"' + explicit[0] + '" and "' + explicit[1] + '" were named as a matchup, and no scheduled game '
+          + 'with BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
+          + ' games were checked on the FBS slate).'
+      });
+    }
+
     /* ---- 2. one named team with exactly one game in the window -----
        Every named team is tried before any of them is reported as absent: a
        question that names a program on the card and one that is not ("Texas
@@ -2928,6 +2965,14 @@
     for (i = 0; i < named.length; i++) {
       var subj = named[i];
       var mine = rows.filter(function (r) { return r.home_key === subj.key || r.away_key === subj.key; });
+      /* A PROGRAM PLAYING TWICE IS NOT AMBIGUOUS IF THE CONVERSATION ALREADY
+         PICKED ONE. "How does Texas State look now?" on turn four names the
+         same team and means the same game; asking which one again would be
+         the resolver forgetting what it just answered. */
+      if (mine.length > 1 && carried) {
+        var same = mine.filter(function (r) { return r.game_id === String(carried.game_id); });
+        if (same.length === 1) return hit(same[0], 'carried-subject-named', subj);
+      }
       if (mine.length === 1) return hit(mine[0], 'one-team-named', subj);
       if (mine.length > 1 && !ambiguous) {
         ambiguous = Object.assign({}, none, {
@@ -2936,7 +2981,11 @@
           candidates: mine.map(function (r) {
             return { game_id: r.game_id, home: r.home_team, away: r.away_team, kickoff: r.kickoff };
           }),
-          note: subj.phrase + ' has more than one game in this window — say which one.'
+          note: '"' + subj.phrase + '" is a college football program on the card EdgeDesk publishes, and it '
+            + 'appears in ' + mine.length + ' scheduled games in this window ('
+            + mine.map(function (r) { return r.away_team + ' @ ' + r.home_team; }).join(', ') + '). '
+            + 'The SPORT is settled — this is a college football question and must not be answered from any other '
+            + 'sport\u2019s board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.'
         });
       } else if (!mine.length && !offCard) {
         /* Resolved to a real program that is not playing inside the window. */
@@ -2949,11 +2998,12 @@
     }
     if (ambiguous) return ambiguous;
     if (offCard) return offCard;
-    /* ---- 2b. an explicit "A vs B" that this card does not carry -----
-       Both sides were named as a matchup and neither is on the card. That is a
-       question to ask back, never a licence to answer about something else. */
+    /* ---- 2b. an explicit "A vs B" whose sides this card does not know -
+       Step 1b above catches a pair whose names DID resolve. This catches the
+       pair whose names resolved to nothing at all, which is the same answer
+       for a different reason: ask, never substitute. */
     var pair = matchupPair(question);
-    if (pair.length === 2 && !named.length) {
+    if (pair.length === 2) {
       return Object.assign({}, none, {
         state: 'NOT_ON_CARD', named: pair, sport: null,
         source: o.source || 'football/fbs/slate.json',
@@ -2972,7 +3022,16 @@
       var r = resolveTeam(p, ix);
       return !(r && r.key && (r.how === 'exact' || r.how === 'alias' || r.how === 'state-expansion'));
     });
-    if (carried && !other.length) return Object.assign({}, carried, { how: 'carried', named: [] });
+    if (carried && !other.length) {
+      /* THE TRACE MUST NOT CLAIM THIS WAS NAMED IN THIS MESSAGE. It is the
+         subject the conversation is on, which is a true and different thing,
+         and a reader of the trace should be able to tell them apart. */
+      return Object.assign({}, carried, {
+        how: 'carried', named: [],
+        source: String(carried.source || (o.source || 'football/fbs/slate.json')).replace(/ \(carried subject\)$/, '')
+          + ' (carried subject)',
+      });
+    }
     if (other.length) {
       return Object.assign({}, none, {
         state: 'SUBJECT_CHANGED', named: other,

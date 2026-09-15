@@ -1,0 +1,135 @@
+# Deploy what is merged.
+#
+# THIS WORKFLOW EXISTS BECAUSE ITS ABSENCE WAS THE ROOT CAUSE OF AN INCIDENT.
+#
+# On 2026-09-14 a customer asked "How does Texas State look this week?" and got
+# baseball. The routing fix for exactly that question had been written, reviewed
+# and merged to main. It had never been deployed: the deployment doctor, run
+# against production that day, reported
+#
+#   DEPLOYED   serving build edgedesk_ai-2026-09-14-r6-cfb-market-join
+#   STALE      this checkout would deploy edgedesk_ai-2026-09-14-r8-matchup-routing-fix
+#
+# app.html ships on merge because GitHub Pages serves the repository. The edge
+# function and every .sql migration did not ship at all — they were carried by
+# hand, from someone's laptop, whenever someone remembered. "Merged" and
+# "running" were two different facts and nothing in the repository connected
+# them, so the site and the desk drifted apart silently for two releases.
+#
+# It is MANUAL ON PURPOSE (workflow_dispatch). Deploying a research desk in the
+# middle of a Saturday card is a decision a person should make. What this
+# removes is not the decision; it is the laptop, the forgotten step and the
+# undeclared drift.
+#
+# ---------------------------------------------------------------------------
+# SECRETS IT NEEDS. Neither is used anywhere else in this repository, so both
+# have to be added once, by the account owner, in
+#   Settings -> Secrets and variables -> Actions
+#
+#   SUPABASE_ACCESS_TOKEN  a Supabase personal access token
+#                          (Supabase dashboard -> Account -> Access Tokens).
+#                          Required to deploy a function.
+#   SUPABASE_PROJECT_REF   the project ref, the subdomain of SB_URL.
+#   SB_DB_URL              the pooled Postgres connection string, for migrations
+#                          (Project Settings -> Database -> Connection string).
+#                          Only needed to apply SQL; leave it unset and the
+#                          migration step reports that it was skipped.
+#
+# Until SUPABASE_ACCESS_TOKEN exists this workflow stops on its first step and
+# says so, which is still better than a deploy nobody knows did not happen.
+# ---------------------------------------------------------------------------
+name: Deploy intelligence
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/edgedesk_ai'
+        type: boolean
+        default: true
+      apply_ledger:
+        description: 'Apply supabase/recommendation_ledger.sql (idempotent)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-intelligence
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # NEVER SHIP A BUILD THAT FAILS ITS OWN ACCEPTANCE CONVERSATION.
+      # The suite below drives the reported questions through the real handler.
+      - name: The desk must answer its acceptance conversation first
+        run: npm run intel:test
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
+            echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the function cannot be deployed from CI. Add them in Settings > Secrets and variables > Actions."
+          fi
+
+      - name: Install the Supabase CLI
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy edgedesk_ai
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy edgedesk_ai \
+            --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
+            --no-verify-jwt=false
+
+      - name: Apply the recommendation ledger migration
+        if: ${{ inputs.apply_ledger && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # The migration is written to be re-appliable; ledger_sql.test.js
+          # proves that by applying it twice against a throwaway server.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/recommendation_ledger.sql
+
+      - name: Say what is skipped, rather than leaving it unsaid
+        if: always()
+        run: |
+          {
+            echo '## Deploy intelligence'
+            echo ''
+            [ "${{ steps.creds.outputs.have_token }}" = "yes" ] && echo '- Supabase access token: present' || echo '- Supabase access token: **missing — the function was NOT deployed**'
+            [ "${{ steps.creds.outputs.have_ref }}" = "yes" ]   && echo '- Project ref: present'          || echo '- Project ref: **missing**'
+            [ "${{ steps.creds.outputs.have_db }}" = "yes" ]    && echo '- Database URL: present'         || echo '- Database URL: missing (migrations skipped)'
+            echo ''
+            echo 'Confirm what is actually running with the **Intelligence doctor** workflow — it asks the'
+            echo 'deployment rather than trusting this one.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # THE ONLY HONEST CONFIRMATION IS THE DEPLOYMENT'S OWN ANSWER.
+      - name: Ask production what it is now running
+        if: always()
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/intelligence/deploy_doctor.js || true

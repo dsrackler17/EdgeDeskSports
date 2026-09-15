@@ -837,34 +837,41 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     }));
     eq('a failed write is NOT_RECORDED', missing.state, 'NOT_RECORDED');
     /* THE READER GETS A SENTENCE. THE OPERATOR GETS THE EXCEPTION.
-       This used to send the PostgREST body to the browser, so a subscriber
-       read "Could not find the table 'public.recommendation_ledger' in the
-       schema cache" underneath their research. A tracking failure does not
-       make the research wrong and it is not the reader's to debug. */
-    eq('the reader is told once, plainly', missing.notice,
-      'Research available; tracking temporarily unavailable.');
-    eq('and the exception does not travel to the browser', missing.detail, null);
-    chk('no schema, table or driver string reaches the reader',
-      !/PGRST|schema cache|relation|public\.|does not exist/i.test(JSON.stringify(missing)), missing);
+       This is the line the reported failure ended on: a paying customer asking
+       about a football team was given PostgREST's own sentence about
+       public.recommendation_ledger. */
+    eq('the reader is told once, plainly', missing.notice, m.LEDGER_NOTICE);
+    chk('and the sentence says tracking failed AND the research still stands',
+      /not recorded/.test(m.LEDGER_NOTICE) && /[Rr]esearch available/.test(m.LEDGER_NOTICE), m.LEDGER_NOTICE);
+    chk('the reader-facing notice carries no table name, no SQL file and no HTTP code',
+      !/recommendation_ledger|\.sql|relation|schema cache|HTTP \d|404/i.test(missing.notice || ''), missing.notice);
+    chk('and the redacted shape sent to a client drops both detail and the hint',
+      (function () {
+        const red = m.redactLedgerDetail(missing);
+        return red.detail === null && red.operator_hint === undefined
+          && red.diagnostic_available === true && red.notice === missing.notice;
+      })(), m.redactLedgerDetail(missing));
 
-    /* AND THE DIAGNOSIS DOES NOT GUESS. A 404 is genuinely ambiguous between
-       "never created" and "not in PostgREST's exposed schemas", and reporting
-       it as an unapplied migration sent somebody to re-run a migration that
-       was already applied. */
+    /* AND THE OPERATOR'S HINT DOES NOT GUESS. It used to read the response
+       BODY for "relation", "does not exist" or "schema cache" and, on a hit,
+       report that the migration had not been applied — with no reference to
+       the status code, which is the field that actually distinguishes absent
+       from refused. A permissions problem therefore read as an unapplied
+       migration, and whoever read that re-ran a migration that was fine. */
     const d404 = m.ledgerDiagnosis(404, '{"message":"relation \"public.recommendation_ledger\" does not exist"}');
     eq('a 404 is not conclusive about the table existing', d404.conclusive, false);
     chk('and names BOTH things it could be', /never created/.test(d404.operator) && /exposed/.test(d404.operator), d404);
     chk('and says to check both before reporting either', /before reporting either/.test(d404.operator), d404);
+    chk('the operator still gets the migration path to apply',
+      /recommendation_ledger\.sql/.test(missing.operator_hint || ''), missing.operator_hint);
 
     const d403 = m.ledgerDiagnosis(403, '{"message":"new row violates row-level security policy"}');
     eq('a refusal is conclusive', d403.conclusive, true);
     eq('and is not a missing table', d403.code, 'REFUSED');
-    chk('it says the table\u2019s existence is not in question',
+    chk('it says the table’s existence is not in question',
       /existence is NOT in question/.test(d403.operator), d403);
 
-    /* THE BODY IS NOT THE CLASSIFIER. The old code matched "schema cache" in
-       the body whatever the status said, so a refusal whose message mentioned
-       it was reported as an unapplied migration. */
+    /* THE BODY IS NOT THE CLASSIFIER. */
     const d403b = m.ledgerDiagnosis(403, 'could not find the table in the schema cache');
     eq('a body that mentions the schema cache does not override a 403', d403b.code, 'REFUSED');
     eq('a 500 is an outage, not a schema problem', m.ledgerDiagnosis(500, 'timeout').code, 'UPSTREAM');
@@ -873,12 +880,9 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
 
     const threw = await m.publishLedger('Bearer t', [row], async () => { throw new Error('network down'); });
     eq('a thrown write is still reported rather than swallowed', threw.state, 'NOT_RECORDED');
-    eq('and the reader still gets the one sentence', threw.notice,
-      'Research available; tracking temporarily unavailable.');
-    chk('while the operational detail stays on the server',
-      threw.detail === null && /network down/.test(JSON.stringify(m.lastLedgerWrite ? m.lastLedgerWrite() : {})) === false
-      || threw.detail === null, threw);
-
+    eq('and the reader still gets the one sentence', threw.notice, m.LEDGER_NOTICE);
+    chk('with the underlying reason attached for the operator', /network down/.test(threw.operator_hint || ''), threw.operator_hint);
+    chk('and withheld from the reader', !/network down/.test(threw.notice || ''), threw.notice);
     eq('nothing to record is its own state',
       (await m.publishLedger('Bearer t', [])).state, 'NOTHING_TO_RECORD');
 
@@ -1336,15 +1340,42 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
         !(j.entities.teams || []).some((t) => /Orioles|Yankees|Rangers/.test(t)), j.entities.teams);
     }
 
-    /* THE EXTRACTOR ASSERTS NOTHING — every phrase goes to the card resolver,
-       and the conversational questions must produce none at all. */
-    const none = ['Any CFB matchups look good?', 'What price makes it a pass?', 'Who have they played?',
-      'Did opponent quality inflate their numbers?', 'What is the strongest argument against that lean?'];
-    none.forEach((q) => chk(`"${q}" yields no team phrase`, m.teamishPhrases(q).length === 0, m.teamishPhrases(q)));
-    chk('a leading sentence word is trimmed, not kept',
-      JSON.stringify(m.teamishPhrases('Is North Texas worth a look?')) === '["North Texas"]',
-      m.teamishPhrases('Is North Texas worth a look?'));
-    eq('a lone bare word is never a team phrase', m.teamishPhrases('Thoughts on Miami?').length, 0);
+    /* THE EXTRACTOR, WHICH IS NOW THE KERNEL'S AND SHARED WITH THE BROWSER.
+       teamishPhrases and bareTeamWords were this function's private readers,
+       and their being private was the defect: app.html had no equivalent, so a
+       college question never reached any of this. Same properties, asserted
+       against the one implementation both hosts run. */
+    {
+      const cardGames = FX.SLATE.games.map((g) => ({
+        game_id: String(g.game_id), home_team: g.home_team, away_team: g.away_team,
+        home_id: g.home_team_id, away_id: g.away_team_id,
+      }));
+      const ix = I.fbsIndexFor(cardGames);
+      const phrases = (q) => I.teamPhrases(q, ix).map((p) => p.phrase);
+
+      const none = ['Any CFB matchups look good?', 'What price makes it a pass?', 'Who have they played?',
+        'Did opponent quality inflate their numbers?', 'What is the strongest argument against that lean?'];
+      none.forEach((q) => chk(`"${q}" yields no team phrase`, phrases(q).length === 0, phrases(q)));
+      chk('a leading sentence word is trimmed, not kept',
+        JSON.stringify(phrases('Is North Texas worth a look?')) === '["North Texas"]',
+        phrases('Is North Texas worth a look?'));
+
+      /* THE RULE THE WHOLE INCIDENT TURNS ON, and the one the old extractor
+         could not express: the COMPLETE name is found before the shorter name
+         that is a prefix of it. "Texas State" must never become "Texas". */
+      eq('the complete name wins over the shorter one it contains',
+        JSON.stringify(phrases('How does Texas State look this week?')), '["Texas State"]');
+      eq('and both sides of a matchup survive, each at full length',
+        JSON.stringify(phrases('What do you think about North Texas vs Texas State this week?')),
+        '["North Texas","Texas State"]');
+      chk('a bare word the writer capitalised is read as the team it names',
+        phrases('Thoughts on Miami?').length === 1, phrases('Thoughts on Miami?'));
+      chk('an all-lower-case question still resolves, because capitals carry no signal in it',
+        JSON.stringify(phrases('how does texas state look this week')) === '["texas state"]',
+        phrases('how does texas state look this week'));
+      chk('a contraction is the ordinary word it contracts, not a name',
+        phrases("What's the line?").length === 0, phrases("What's the line?"));
+    }
 
     /* A TEAMISH PHRASE ON NO CARD FALLS THROUGH SILENTLY — it is not a finding
        worth interrupting for, because the reader may have meant a player. */

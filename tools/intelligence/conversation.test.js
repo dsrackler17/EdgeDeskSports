@@ -116,6 +116,9 @@ function done() {
   chk('and the earlier turns travel with it, so a pronoun has a referent',
     T[5].history_turns_sent >= 6, T.map((t) => t.history_turns_sent));
 
+  /* The function's own module, for the constants and readers asserted below. */
+  const m = await import(path.join(__dirname, '..', '..', 'supabase', 'functions', 'edgedesk_ai', 'index.ts'));
+
   /* ---- what the answer path did with it -------------------------------- */
   chk('the ledger write is reported on every turn',
     T.every((t) => t.ledger && typeof t.ledger.state === 'string'), T.map((t) => t.ledger && t.ledger.state));
@@ -127,17 +130,21 @@ function done() {
   chk('a failed ledger write is surfaced on every turn that had a decision',
     broken.turns.every((t) => !t.decisions.length || t.ledger.state === 'NOT_RECORDED'),
     broken.turns.map((t) => t.ledger.state));
-  chk('with the one sentence a reader gets, and nothing operational in it',
-    broken.turns.some((t) => (t.ledger && t.ledger.notice) === 'Research available; tracking temporarily unavailable.'),
+  /* THE READER GETS A SENTENCE. THE OPERATOR GETS THE EXCEPTION.
+     The reported failure ended with PostgREST's own sentence about
+     public.recommendation_ledger printed under the answer. */
+  chk('the reader is told once, plainly, that tracking did not happen',
+    broken.turns.some((t) => (t.ledger && t.ledger.notice) === m.LEDGER_NOTICE),
     broken.turns.map((t) => t.ledger && t.ledger.notice));
-  chk('and no status code, exception or table name travels with it',
-    broken.turns.every((t) => !t.ledger || (t.ledger.detail == null
-      && !/PGRST|schema cache|relation|HTTP \d/i.test(String(t.ledger.notice || '')))),
-    broken.turns.map((t) => t.ledger));
+  chk('and the sentence says the research still stands',
+    /[Rr]esearch available/.test(m.LEDGER_NOTICE) && /not recorded/.test(m.LEDGER_NOTICE), m.LEDGER_NOTICE);
+  chk('and no database text, status code or table name reaches the reader',
+    broken.turns.every((t) => !t.ledger
+      || !/recommendation_ledger|relation |schema cache|PGRST|HTTP \d{3}/i.test(String(t.ledger.notice || ''))),
+    broken.turns.map((t) => t.ledger && t.ledger.notice).filter(Boolean)[0]);
   chk('and the answers still arrive', broken.turns.every((t) => typeof t.answer === 'string' && t.answer.length > 0));
 
   /* ---- the matchup reader itself, on the phrasings people use ---------- */
-  const m = await import(path.join(__dirname, '..', '..', 'supabase', 'functions', 'edgedesk_ai', 'index.ts'));
   const cases = [
     ['Analyze North Texas versus Texas State.', ['North Texas', 'Texas State']],
     ['what about Miami at Wake Forest', ['Miami', 'Wake Forest']],

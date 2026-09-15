@@ -154,8 +154,42 @@ function buildDataset(teamResults, ctx) {
       }))
     };
   });
+  /* 276 IS NOT 276 PROBLEMS.
+     A live run reported "276 failed source reads", which reads as a pipeline
+     falling over at random. It was two systematic faults counted once per
+     team: one endpoint that does not serve this sport (404 on all 138) and one
+     that refuses access (403 on all 138). They need opposite responses — the
+     first is repairable, the second must NOT be worked around — and a single
+     total hides which is which. So the failures are grouped by their cause,
+     with the affected team count, and the raw list is kept alongside. */
+  const failureGroups = (function () {
+    const by = new Map();
+    for (const t of teamResults) {
+      for (const f of t.failed_sources) {
+        /* Per-team URLs collapse to the source label; the error keeps its
+           shape (an HTTP code, a timeout) without its one-off detail. */
+        const label = String(f.source || 'unknown').replace(/^(official|beat):.*/, '$1');
+        const cause = String(f.error || '').replace(/\b\d{3,}\b/g, (n) => (/^[45]\d\d$/.test(n) ? n : 'N'));
+        const key = label + ' :: ' + cause.slice(0, 120);
+        const g = by.get(key) || { source: label, error: cause.slice(0, 120), teams: 0, example_team: t.team_name };
+        g.teams += 1;
+        by.set(key, g);
+      }
+    }
+    return [...by.values()].sort((a, b) => b.teams - a.teams).map((g) => Object.assign(g, {
+      /* Stated, so nobody tries to "fix" an access restriction by evading it. */
+      kind: /\b403\b|forbidden/i.test(g.error) ? 'ACCESS_RESTRICTED'
+        : /\b404\b/.test(g.error) ? 'ENDPOINT_NOT_SERVING_THIS_SPORT'
+        : /timeout|abort/i.test(g.error) ? 'TIMEOUT' : 'OTHER',
+      systematic: g.teams >= Math.max(5, Math.floor(teamResults.length * 0.5)),
+    }));
+  })();
+
   const head = { schema: SCHEMA, version: A.VERSION, season: ctx.season, week: ctx.week, generated_at: ctx.now,
-    team_count: Object.keys(teams).length, records, flagged, unresolved, failed_sources: failed, teams_with_official: official,
+    team_count: Object.keys(teams).length, records, flagged, unresolved, failed_sources: failed,
+    /* The same number, told usefully. */
+    failure_groups: failureGroups,
+    teams_with_official: official,
     coverage: { with_records: Object.values(lean).filter(t => t.counts.records > 0).length, strong: Object.values(lean).filter(t => t.dataQuality === 'STRONG').length,
       partial: Object.values(lean).filter(t => t.dataQuality === 'PARTIAL').length, limited: Object.values(lean).filter(t => t.dataQuality === 'LIMITED').length,
       none: Object.values(lean).filter(t => t.dataQuality === 'NONE').length } };
@@ -231,7 +265,10 @@ async function main() {
     return processTeam(res, ctx);
   });
   const ds = buildDataset(collected, ctx);
-  const line = `[availability] ${ds.current.team_count} teams · ${ds.current.records} records · ${ds.current.flagged} flagged · ${ds.current.unresolved} unresolved · ${ds.current.failed_sources} failed sources · coverage ${JSON.stringify(ds.current.coverage)}`;
+  const groups = (ds.current.failure_groups || []).map((g) =>
+    `${g.source} ${g.error} on ${g.teams} teams [${g.kind}${g.systematic ? ', SYSTEMATIC' : ''}]`).join(' | ');
+  const line = `[availability] ${ds.current.team_count} teams · ${ds.current.records} records · ${ds.current.flagged} flagged · ${ds.current.unresolved} unresolved · ${ds.current.failed_sources} failed sources · coverage ${JSON.stringify(ds.current.coverage)}`
+    + (groups ? `\n[availability] failures by cause: ${groups}` : '');
   if (dry) { console.error(line + ' · DRY RUN, nothing written'); console.log(JSON.stringify(ds.current.coverage)); return 0; }
   const a = writeIfChanged(path.join(out, 'current.json'), ds.current);
   const b = writeIfChanged(path.join(out, 'current.full.json'), ds.full);

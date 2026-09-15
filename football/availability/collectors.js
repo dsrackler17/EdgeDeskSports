@@ -77,9 +77,41 @@ async function espnInjuries(team, ctx) {
 
 /* Depth charts give the ROLE, which is what turns "a corner is out" into
    "a starting corner is out". They never carry a status here. */
+/* THE ENDPOINT THAT ANSWERS, NAMED RATHER THAN ASSUMED.
+
+   A live run failed this collector for all 138 programs with HTTP 404 — the
+   same code, the same error, every team. A uniform 404 is not 138 teams
+   without depth charts; it is one path that does not serve college football,
+   counted 138 times and reported as "276 failed source reads" alongside a
+   genuine access restriction. Those two need different responses and the
+   report gave them the same one.
+
+   So the candidates are tried in order and the one that answered is recorded.
+   This invents nothing: every candidate is a documented ESPN path, a 404 from
+   all of them is still a 404, and the note says which was used so the next
+   person reads a fact instead of repeating this diagnosis. */
+const DEPTH_ENDPOINTS = [
+  (id) => `${CORE}/teams/${id}/depthcharts?limit=50`,
+  (id) => `${SITE}/teams/${id}/depthchart`,
+  (id) => `${CORE}/teams/${id}/depthchart?limit=50`,
+];
+
 async function espnDepthRoles(team) {
   const roles = {};
-  const dc = await getJson(`${CORE}/teams/${team.espn_team_id}/depthcharts?limit=50`);
+  let dc = null, usedEndpoint = null;
+  const tried = [];
+  for (const build of DEPTH_ENDPOINTS) {
+    const url = build(team.espn_team_id);
+    try { dc = await getJson(url); usedEndpoint = url; break; }
+    catch (e) { tried.push({ url, error: String((e && e.message) || e).slice(0, 60) }); }
+  }
+  /* Every candidate refused. That is a real failure and is raised as one — the
+     caller counts it, and an unknown depth chart stays unknown. */
+  if (!dc) {
+    const err = new Error(`no depth-chart endpoint answered (${tried.map((t) => t.error).join('; ')})`);
+    err.tried = tried;
+    throw err;
+  }
   const items = (dc && dc.items) || [];
   for (const it of items.slice(0, 12)) {
     let group = it;
@@ -100,7 +132,8 @@ async function espnDepthRoles(team) {
       }
     }
   }
-  return { roles, note: { source: 'espn_depth', team: team.team_name, rows: Object.keys(roles).length } };
+  return { roles, note: { source: 'espn_depth', team: team.team_name, rows: Object.keys(roles).length,
+    endpoint: usedEndpoint, candidates_tried: tried.length + 1 } };
 }
 
 /* Participation: who actually recorded a stat in the last completed game.

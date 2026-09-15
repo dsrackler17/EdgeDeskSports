@@ -5,20 +5,133 @@ is still missing. It is written for whoever has to operate or extend this next.
 
 ---
 
-## 0. The website never asked the question (2026-09-15)
+## 0. The 2026-09-14 incident — "How does Texas State look this week?"
+
+A paying customer asked that, with an MLB board open, and got baseball: intent
+`unknown`, retrieval scoped to `baseball_mlb`, "Texas State" unresolved with
+"texas" reaching the **Texas Rangers**, MLB pitcher/bullpen/offense evidence, a
+long explanation that no college football module had been queried, an unrelated
+Padres–Rockies decision card, and a raw error about
+`public.recommendation_ledger`.
+
+**The root cause has two halves, and the first one is not a code defect.**
+
+### 0.1 Merged was not deployed
+
+`tools/intelligence/deploy_doctor.js`, run against production on the day:
+
+```
+this checkout would deploy: edgedesk_ai-2026-09-14-r8-matchup-routing-fix
+  DEPLOYED     serving build edgedesk_ai-2026-09-14-r6-cfb-market-join
+  STALE        deployed r6, this checkout would deploy r8
+               fix: supabase functions deploy edgedesk_ai
+  NOT_APPLIED  recommendation_ledger — the table is not in the schema
+               fix: psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql
+```
+
+`app.html` ships on merge because GitHub Pages serves the repository. The edge
+function and every `.sql` shipped only when a person remembered to run a
+command. PRs #233–#235 fixed most of the routing and **none of it was running**.
+The ledger error the customer saw was the same fact from the other end: the
+table had never been created.
+
+`.github/workflows/deploy-intelligence.yml` now exists so "merged" and
+"running" are connected. It is manual on purpose; what it removes is the
+laptop, the forgotten step and the undeclared drift. It needs
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF` and `SB_DB_URL`, which this
+repository has never held.
+
+### 0.2 And the routing was still wrong, on current main
+
+Reproduced through the real handler on the unmodified checkout, so this is not
+inference:
+
+| what | was |
+|---|---|
+| `intent` | `unknown` — `classify()` runs BEFORE any retrieval and can only see words. "Texas State" is not in the curated `COLLEGE_SCHOOLS` registry and carries no league word, so `detectSport` found nothing and the question fell through to the baseball catch-all |
+| steps executed | `slate, focus_signal, market, matchup, pitcher_features, opponent_offense` — on a college football game, and reported to the reader as such |
+| the sport | *was* corrected, by `resolveNamedMatchup`, one step too late to route anything. Two authorities disagreed and nothing noticed |
+| the Padres card | the client's open packet was labelled "authoritative" unconditionally, and `presentationSource` built the decision card from it whatever the question was |
+| follow-ups | the subject was re-derived each turn by scanning the transcript for "A vs B". A conversation that began with ONE name had nothing to find, so turn two fell back to the open board |
+| the ledger error | `publishLedger` put PostgREST's own sentence in `detail`, and `ledgerNoticeHTML` printed it under the answer |
+
+### 0.3 What changed
+
+**One research context, resolved once**, with a stated precedence (a matchup
+named in this message → the carried subject, re-validated against the card → an
+explicit league word → the open game → the board → nothing), the rule that
+decided it, and its ambiguity state. `sportKey` was a third chain reachable
+through `state.sport`; it now reads the context, because the point of having
+one is that there is only one.
+
+**The plan is classified a second time** once the context has a sport, so a
+college football question runs a college football plan.
+`scopeStepsToSport()` swaps the six MLB-only retrieval layers for the sport's
+own — one rule rather than sixty duplicated branches, so generic intents
+(`attack`, `compare`, `price`) route correctly in every sport.
+
+**The context is a filter, not a caption.** Decisions, evidence packets, the
+client packet and the rendered card are all checked against it; what does not
+match is withheld and counted. Explaining a wrong-sport answer is not the same
+as not giving one.
+
+**The subject is carried structurally** as a game id and re-validated against
+the published card each turn. The browser may remind the server what was being
+discussed; `sanitizeSubject()` keeps identifiers only, so it can never assert a
+price, a projection or a ledger entry.
+
+**Narration failure no longer costs the research.** Every retrieval runs before
+the model is called, so the 502 carries the research and the panel renders the
+facts with a retry instead of an invented opinion — and instead of
+`narrative(x)`, which answered from whatever signal was open.
+
+`tools/intelligence/acceptance.test.js` drives the exact reported messages
+through the real handler: 213 assertions, none about what the answer *says*.
+It caught four further defects after the first fixes, including an explicit
+league word losing to a carried subject, and a bare school name ("How about
+Oregon?") never being looked up at all — so the sport came from whichever board
+was open, which is the forbidden silent default to MLB.
+
+### 0.4 Availability, correctly counted
+
+The reported "276 failed source reads" was not 276 problems. It was two
+systematic faults counted once per team, on all 138: `espn_depth` **404** (the
+path does not serve college football) and `espn_participation` **403** (access
+restricted). Those need opposite responses. Failures are now grouped by cause
+and classified; the depth collector tries the documented endpoints in order and
+records which answered, and still raises when none does. The 403 is left alone.
+Coverage is unchanged — 138 LIMITED, 0 official reports — and availability
+still reads UNKNOWN rather than healthy.
+
+### 0.5 And the browser was never sending football at all
+
+Sections 0.1 to 0.4 above are the edge function's half of this incident: a stale
+deployment, and a routing rule that was wrong on current `main` once it was
+deployed. Both are real and both are fixed.
+
+They are not sufficient, and the reason is section **0A** below: `app.html` had
+no team or matchup resolution anywhere in its chat path, so the question left
+the browser as an MLB board packet with no football in it. No amount of correct
+routing inside the function can route a request that never mentions the sport.
+Read 0A next — it is where the customer-visible failure actually lived.
+
+
+---
+
+## 0A. The other half: the website never asked the question (2026-09-15)
 
 Everything in sections 1 to 10 below is about the edge function. This section is
 about the half of the product that reaches the reader first, and it is where the
 reported failure actually lived.
 
-### 0.1 What was reported
+### 0A.1 What was reported
 
 > "How does Texas State look this week?" produces `intent=unknown`,
 > `baseball_mlb` retrieval, Texas → Texas Rangers aliasing, MLB pitcher and
 > bullpen research, an unrelated Padres decision card, and a missing
 > recommendation ledger error.
 
-### 0.2 The root cause, in one paragraph
+### 0A.2 The browser-side root cause
 
 `EDAI.sendText()` in `app.html` had **no team or matchup resolution at all**. It
 routed a question three ways — a daily-scan follow-up, a signal the reader had
@@ -53,7 +166,7 @@ The server-side precedence fix merged as `r8` is correct and still stands, but i
 could never have fixed this: it decides what the function does with a football
 packet, and the browser was never sending one.
 
-### 0.3 What changed
+### 0A.3 What changed in the browser
 
 **One resolver, in the kernel, shared by both hosts.** `EDINTEL.resolveMatchup`
 and `EDINTEL.teamPhrases` live in `supabase/functions/edgedesk_ai/_intelligence.js`
@@ -84,6 +197,40 @@ A board that happens to be open never wins. Naming somebody the FBS card does
 not carry (`"what about the Padres?"`) returns `SUBJECT_CHANGED`, which clears
 the football subject and hands the turn back rather than answering about a game
 the reader has moved on from.
+
+**And letting go of the subject is part of holding it.** Every path that hands
+the turn back clears `LAST_CTX` as well as `SESSION.matchup`, because `callFn`
+attaches `LAST_CTX` to *every* request as `research_context`. Leaving it behind
+told the server that a board question was about the football game — the reported
+failure with the roles swapped, a carried subject beating what the reader just
+explicitly asked for.
+
+**An explicit pair is answered as a pair, or not at all.** `"Texas State vs
+Boise State"` names a specific game; when no such game is on the card, resolving
+it to Texas State's *other* game hands the reader a different matchup under the
+name of the one they asked for. The single-team ladder is for a question that
+named one team. (Caught by `tools/intelligence/acceptance.test.js`, which came
+from the other half of this work.)
+
+**Deciding what is a name is structural, not a word list.** `"What's the line?"`
+and `"Were those teams any good?"` each broke the carried subject once, because
+each begins with a capitalised word that happened not to be in the stop list.
+The fix is not a longer list: a single capitalised word at the very start of a
+message is grammar, and a word opening a *later* sentence is ordinary only when
+the list agrees. Both tests run, each covering the other's gap, so
+`"Forget that. Padres tonight?"` still changes the subject and
+`"Who have they played? Were those any good?"` does not.
+
+**How this composes with The Desk (§0.3).** The two are one turn, not two
+answers. `matchupTurn()` renders the browser-built card first — within a frame
+of the question, from artifacts the site already serves — then calls the
+function. When the function returns a `matchup_summary`, The Desk's read
+**replaces** the card: it is the fuller job (a read, ONE market, what would make
+it wrong, the limitations) and two copies of the same market line is not more
+information. When it returns prose without a summary, the prose goes under the
+card. When it returns nothing usable, the card is the answer. The card is never
+wasted work — it is what stands while the function is older than this checkout,
+which for a manually deployed function is most of the time.
 
 **The card does not wait for the model.** `matchupTurn()` renders in three
 passes: the published artifacts first (slate, ratings, availability — all static
@@ -117,7 +264,7 @@ a table that was never created and one outside PostgREST's exposed schemas*,
 because reporting it as an unapplied migration sent somebody to re-run a
 migration that was already applied.
 
-### 0.4 The endpoint is a gate, not a door
+### 0A.4 The endpoint is a gate, not a door
 
 The provider key has never been in the browser: it is an environment variable on
 the edge function, and every database read runs under the caller's own token so
@@ -150,7 +297,7 @@ to the browser is public — so the function stays, and the work went into givin
 it less to do: the deterministic research assembly now lives in the shared
 kernel, where the browser runs it too.
 
-### 0.5 How it is verified
+### 0A.5 How it is verified, in a real browser
 
 `tools/intelligence/chat.e2e.js` loads `app.html` in Chromium, opens the chat
 panel, **loads an MLB signal first** (the state the failure was reported in), and
@@ -172,7 +319,7 @@ npm run intel:e2e          # 48 assertions, in a browser
 It is non-vacuous: with `matchupRoute()` removed from `sendText()` and nothing
 else changed, 30 of the 48 fail.
 
-### 0.6 What could not be verified here, and why
+### 0A.6 What could not be verified here, and why
 
 The session this was built in has **no outbound network access**: the agent
 proxy answers `403` to `CONNECT` for both `edgedesksports.com:443` and the
@@ -182,30 +329,42 @@ Supabase project host. So:
 |---|---|
 | `app.html` chat path, the exact question, in a real browser | **verified** — `npm run intel:e2e`, 48 assertions, against the real published artifacts |
 | the shared kernel, the endpoint gates, the ledger diagnosis | **verified** — `npm run ai:test`, and the whole repo suite is green |
-| the live site answering the question | **not verified** — no egress |
-| the deployed function's build | **not verified** — `intel:doctor` reports `UNKNOWN`, `HTTP 403 from the probe`, which is the proxy refusing, not the function being absent |
-| the production `recommendation_ledger` schema and migration state | **not verified** — the same block, plus no `SB_ANON` / `SB_SERVICE_ROLE` in this environment |
+| the live site answering the question | **not verified here** — no egress |
+| the deployed function's build | **not verified here** — `intel:doctor` reports `UNKNOWN`, `HTTP 403 from the probe`, which is the proxy refusing, not the function being absent |
+| the production `recommendation_ledger` schema | **verified, by the session in §0.1, not by this one** — that run reached production and reported `NOT_APPLIED`. It has not been re-checked since, and nothing here applied it. |
 
 **The tracking repair is therefore half done and should be read that way.** The
 reader-facing half is complete and tested: one sentence, no exception text, and
-a diagnosis that refuses to call a 404 an unapplied migration. Applying the
-migration and proving an authenticated write and read against production needs
-a machine with direct network access and the project credentials:
+a diagnosis that refuses to call a 404 an unapplied migration on the strength of
+a status code alone. **The migration itself is still unapplied** — §0.1's doctor
+run is the evidence, and nothing in this change applies it. Doing so, and proving
+an authenticated write and read afterwards, needs a machine with direct network
+access and the project credentials:
+
+Both are now one button rather than somebody's laptop:
+`.github/workflows/deploy-intelligence.yml` (Actions → **Deploy Intelligence** →
+Run workflow) deploys the function and applies the migration, and refuses
+rather than guessing when its secrets are missing. Manually, the same two steps
+are:
 
 ```
-SB_ANON=...  node tools/intelligence/deploy_doctor.js      # what is actually there
+SB_ANON=...  node tools/intelligence/deploy_doctor.js      # what is actually there now
 psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql # idempotent
-supabase functions deploy edgedesk_ai                      # r9
+supabase functions deploy edgedesk_ai                      # r10
 ```
 
 `app.html` and the artifacts ship on merge through GitHub Pages, so the browser
 half of this change is live once the pull request merges. **The edge function is
 not**, and nothing here should be read as saying the production endpoint is
-running `r9` until `intel:doctor` says so from somewhere that can reach it.
+running `r10` until `intel:doctor` says so from somewhere that can reach it.
+Until it does, the browser is talking to an older function — which is exactly
+why `ledgerNoticeHTML()` refuses database text on the client side as well as the
+server side.
 
 ---
 
 ## 1. Root causes
+
 
 Six symptoms were reported. Four of them turned out to be the same structural
 problem wearing different clothes, and two were labelling faults with a single

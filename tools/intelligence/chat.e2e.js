@@ -253,6 +253,7 @@ const MLB_SIGNALS = [{
     'no raw database exception reaches the reader');
   lacks(a1, /\{"|\[\{|"value":/, 'no raw JSON in the answer');
   has(a1, 'Research available; tracking temporarily unavailable.', 'a tracking failure is one plain sentence');
+  has(a1, 'was not recorded', 'and says the decision was not recorded');
   has(a1, 'NARRATION_MARKER', 'the written read is appended to the card');
 
   /* the facts the card is required to carry */
@@ -270,7 +271,10 @@ const MLB_SIGNALS = [{
 
   /* what actually went over the wire */
   const sent = fnCalls[fnCalls.length - 1] || {};
-  chk('the request carries the resolved college football game',
+  chk('the request carries the resolved college football game, on the server\u2019s own contract',
+    sent.research_context && String(sent.research_context.game_id) === String(SUBJ.game.game_id),
+    sent.research_context);
+  chk('and the same game rides in the packet for an older deployment',
     sent.packet && sent.packet.resolved_matchup && String(sent.packet.resolved_matchup.game_id) === String(SUBJ.game.game_id),
     sent.packet && sent.packet.resolved_matchup);
   chk('the request declares the sport as college football',
@@ -329,9 +333,13 @@ const MLB_SIGNALS = [{
   chk('and no request claims a college matchup for it',
     new6.every(c => !(c.packet && c.packet.resolved_matchup)),
     new6.map(c => c.packet && c.packet.resolved_matchup));
-  chk('any request it does make is a board request',
-    new6.every(c => !!(c.packet && (c.packet.board_mode || c.packet.board))),
-    new6.map(c => Object.keys(c.packet || {})));
+  /* Whatever shape the board path sends, it must not be a college matchup
+     request — that is the property under test, and pinning the packet's keys
+     instead would break on any change to the board contract. */
+  chk('and no request it does make claims a college football game',
+    new6.every(c => !(c.research_context && c.research_context.game_id)
+      && String((c.packet && c.packet.game && c.packet.game.sport_key) || '') !== 'americanfootball_ncaaf'),
+    new6.map(c => ({ rc: c.research_context, sport: c.packet && c.packet.game && c.packet.game.sport_key })));
 
   /* =====================================================================
      5. THE MODEL IS DOWN. THE CARD IS NOT.
@@ -347,7 +355,7 @@ const MLB_SIGNALS = [{
     a7.indexOf(String(Math.abs(Math.round(SUBJ.game.model_home_line * 100) / 100))) >= 0 || /no projection published/.test(a7));
   has(a7, 'Where this came from', 'and still discloses its sources');
   chk('it says the written read is missing', /written (interpretation|read)/i.test(a7));
-  chk('and offers to try again', /Try the read again/.test(a7));
+  chk('and offers to try again', /retryLast/.test(a7) && /Retry analysis/.test(a7));
   lacks(a7, /\b(BET|LEAN|PLAY|take the|I like)\b/, 'NO lean is fabricated to fill the gap');
   lacks(a7, /fn 500|model upstream refused|Error:/, 'the raw failure is not shown to the reader');
   lacks(a7, /Padres|Dodgers|pitcher|bullpen/i, 'and it does not fall back to baseball');
