@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_feature_status_v1",
- "generated_at": "2026-09-04T13:57:21.206Z",
+ "generated_at": "2026-09-15T18:55:32.907Z",
  "rules": {
   "min_holdout_seasons": 2,
   "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
@@ -29,7 +29,9 @@
  ],
  "games_scored": 808,
  "summary": {
-  "RESEARCH_ONLY": [],
+  "RESEARCH_ONLY": [
+   "qb_epa_participant_v1"
+  ],
   "CANDIDATE": [
    "player_quality_v1",
    "player_quality_v2",
@@ -37,7 +39,8 @@
    "trench_matchup",
    "scheme",
    "etsr",
-   "all_enriched"
+   "all_enriched",
+   "qb_epa_pregame_v1"
   ],
   "VALIDATED": [],
   "REJECTED": []
@@ -612,6 +615,301 @@
     "require_leakage_clean": true,
     "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
    }
+  },
+  {
+   "feature": "qb_epa_pregame_v1",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.008,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.672,
+   "brier_delta": -0.0005,
+   "worst_season": 2022,
+   "worst_season_delta": 0.0259,
+   "conditions_passed": [
+    "holdout_breadth",
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "pooled_improvement",
+    "significance"
+   ],
+   "reasons": [
+    "pooled MAE improved by only 0.008 points, against a 0.02 bar",
+    "paired p = 0.672, above the 0.05 bar"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 4135,
+     "spread_mae": 12.8987,
+     "brier": 0.1882,
+     "feature": "baseline",
+     "label": "the rating gap alone, replayed cold"
+    },
+    "arm": {
+     "n": 4135,
+     "spread_mae": 12.8907,
+     "brier": 0.1877,
+     "feature": "qb_epa_pregame_v1",
+     "label": "quarterback passing EPA — pregame arm",
+     "coefficient": null,
+     "coefficients": {
+      "2020": [
+       9.1863,
+       -4.3239,
+       0.2315
+      ],
+      "2021": [
+       9.394,
+       -4.0279,
+       -0.3175
+      ],
+      "2022": [
+       9.1389,
+       -8.5844,
+       -0.523
+      ],
+      "2023": [
+       6.8885,
+       -0.6384
+      ],
+      "2024": [
+       8.0875,
+       -5.8373,
+       -0.6358
+      ],
+      "2025": [
+       6.8236,
+       -0.4784
+      ],
+      "2026": [
+       8.2864,
+       -7.664,
+       -0.3083
+      ]
+     },
+     "tune_n": 24084,
+     "paired": {
+      "n": 4135,
+      "mean_diff": 0.0081,
+      "p": 0.672
+     },
+     "per_season": [
+      {
+       "season": 2020,
+       "n": 447,
+       "mae_before": 13.514,
+       "mae_after": 13.4877
+      },
+      {
+       "season": 2021,
+       "n": 692,
+       "mae_before": 13.1924,
+       "mae_after": 13.1858
+      },
+      {
+       "season": 2022,
+       "n": 711,
+       "mae_before": 12.595,
+       "mae_after": 12.6209
+      },
+      {
+       "season": 2023,
+       "n": 733,
+       "mae_before": 12.9301,
+       "mae_after": 12.9083
+      },
+      {
+       "season": 2024,
+       "n": 751,
+       "mae_before": 12.7664,
+       "mae_after": 12.7699
+      },
+      {
+       "season": 2025,
+       "n": 754,
+       "mae_before": 12.5419,
+       "mae_after": 12.5131
+      },
+      {
+       "season": 2026,
+       "n": 47,
+       "mae_before": 14.6699,
+       "mae_after": 14.6612
+      }
+     ],
+     "leakage_clean": true,
+     "leakage_note": "every input is from a game that had finished before this kickoff, asserted by the harness",
+     "version": "qb_epa_v1",
+     "source": "football/cfb_p4/research/qb_epa.json"
+    }
+   },
+   "fitted_coefficient": null,
+   "date_validated": null,
+   "version": "qb_epa_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   },
+   "external": true,
+   "experiment": "football/cfb_p4/research/fit_qb_epa.js"
+  },
+  {
+   "feature": "qb_epa_participant_v1",
+   "status": "RESEARCH_ONLY",
+   "may_move_lines": false,
+   "effect_size": 0.0222,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.271,
+   "brier_delta": -0.0008,
+   "worst_season": 2021,
+   "worst_season_delta": 0.0384,
+   "conditions_passed": [
+    "holdout_breadth",
+    "pooled_improvement",
+    "season_stability",
+    "calibration"
+   ],
+   "conditions_failed": [
+    "significance",
+    "leakage"
+   ],
+   "reasons": [
+    "paired p = 0.271, above the 0.05 bar",
+    "a leakage test FAILED"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 4329,
+     "spread_mae": 13.0034,
+     "brier": 0.1871,
+     "feature": "baseline",
+     "label": "the rating gap alone, replayed cold"
+    },
+    "arm": {
+     "n": 4329,
+     "spread_mae": 12.9812,
+     "brier": 0.1863,
+     "feature": "qb_epa_participant_v1",
+     "label": "quarterback passing EPA — participant arm",
+     "coefficient": null,
+     "coefficients": {
+      "2020": [
+       11.0968,
+       0.2896
+      ],
+      "2021": [
+       10.8201,
+       -0.2375
+      ],
+      "2022": [
+       8.0189,
+       -0.35
+      ],
+      "2023": [
+       7.7836,
+       -0.3863
+      ],
+      "2024": [
+       8.487,
+       -0.3322
+      ],
+      "2025": [
+       8.5298,
+       -0.2095
+      ],
+      "2026": [
+       9.5687,
+       -0.0814
+      ]
+     },
+     "tune_n": 25742,
+     "paired": {
+      "n": 4329,
+      "mean_diff": 0.0222,
+      "p": 0.271
+     },
+     "per_season": [
+      {
+       "season": 2020,
+       "n": 495,
+       "mae_before": 13.3914,
+       "mae_after": 13.3581
+      },
+      {
+       "season": 2021,
+       "n": 713,
+       "mae_before": 13.1659,
+       "mae_after": 13.2043
+      },
+      {
+       "season": 2022,
+       "n": 725,
+       "mae_before": 12.832,
+       "mae_after": 12.8122
+      },
+      {
+       "season": 2023,
+       "n": 758,
+       "mae_before": 12.9658,
+       "mae_after": 12.9209
+      },
+      {
+       "season": 2024,
+       "n": 764,
+       "mae_before": 12.961,
+       "mae_after": 12.932
+      },
+      {
+       "season": 2025,
+       "n": 788,
+       "mae_before": 12.5158,
+       "mae_after": 12.479
+      },
+      {
+       "season": 2026,
+       "n": 86,
+       "mae_before": 16.0422,
+       "mae_after": 15.955
+      }
+     ],
+     "leakage_clean": false,
+     "leakage_note": "by construction this arm reads the quarterback out of the game being predicted; it is an upper bound, never a forecast, and it may not be promoted",
+     "version": "qb_epa_v1",
+     "source": "football/cfb_p4/research/qb_epa.json"
+    }
+   },
+   "fitted_coefficient": null,
+   "date_validated": null,
+   "version": "qb_epa_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   },
+   "external": true,
+   "experiment": "football/cfb_p4/research/fit_qb_epa.js"
   }
  ],
  "statement": "NO feature has cleared every promotion condition. Every enrichment in this repository is research: it changes confidence, warnings, explanations and what is shown, and it changes no projected number anywhere.",

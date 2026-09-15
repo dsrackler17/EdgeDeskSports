@@ -979,7 +979,10 @@
        The consequence was not a rounding error. The `qb` term carries the
        largest weight in the table (1.0 of 4.083, equal to the rating itself)
        and it scored ZERO on every game in the universe, because the college
-       QB layer prices EPA per dropback and no feed publishes it. A term that
+       QB layer prices EPA per dropback; football/fbs_epa now publishes that
+       measurement, and football/fbs_epa/epa_contract.js establishes it is not
+       on the scale this coefficient was fitted against, so it reaches the card
+       as research and not this term. A term that
        takes the same value on all 76 games of a slate carries no information
        about any of them; it subtracts a constant 24.5 points and tells a
        reader nothing. Meanwhile football/starters/ resolves the starting
@@ -1617,8 +1620,13 @@
         /* THE SECOND ROUTE TO A QB PRICE, for the sport where the first one
            has no input.
 
-           EPA per dropback is not published for college football, so the
-           branch above never fires there. football/cfb_p4/research/
+           EPA per dropback IS published for college football — football/fbs_epa
+           carries it from 2014 — and the branch above still never fires there,
+           because the caller deliberately passes null: the provider's series
+           comes from a different expected-points model, keeps garbage time, and
+           has a league average of +0.061 against this layer's replacement prior
+           of 0.0, so `points_per_epa_db` has no meaning on it
+           (football/fbs_epa/epa_contract.js). football/cfb_p4/research/
            fit_qb_quality.js measures a substitute from what the play feed DOES
            carry — career-to-date quality, shrunk, differenced between the two
            starters — and regresses it on the rating residual over the same
@@ -1721,7 +1729,9 @@
       youth: talent.youthVolatility(roster),
       qb: qbEngine.evaluate(side.qb, which),
       /* THE STARTER, FOR INFORMATION ONLY. `side.qb` is the PRICED input and
-         stays null for college because the QB layer needs EPA per dropback.
+         stays null for college because the QB layer needs EPA per dropback on
+         the scale its coefficient was fitted on, which the published series is
+         not (football/fbs_epa/epa_contract.js).
          `side.qb_context` is a different question — who is playing and how
          well do we know that — and it is read by the information layer and
          by nothing that computes a point. Two fields because they are two

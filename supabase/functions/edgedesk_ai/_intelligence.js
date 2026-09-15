@@ -5228,6 +5228,93 @@
     };
   }
 
+  /* ---------------------------------------------------------------------
+     WHAT THE QUARTERBACK HAS DONE, READ OFF THE PUBLISHED CARD.
+
+     `starterRead` above answers WHO is playing. This answers what he has
+     actually done, and the two are separate because they fail separately: a
+     resolved starter with no measured history and an unresolved identity used
+     to come out of this packet as the same shrug, and they are not the same
+     statement.
+
+     Every field here was computed once, in football/fbs_epa/fbs_epa.js, and
+     written onto the card by the slate build. Nothing is recomputed here — a
+     browser that divides EPA by its own idea of a denominator is how one
+     surface ends up disagreeing with another. The card carries its own
+     sentences (`kind_means`, `state_means`, `pricing_statement`) so this
+     reader never has to invent one.
+
+     NOTHING HERE IS PRICED. `points_applied` comes off the card and is false:
+     the provider's EPA is not on the scale the engine's coefficient was
+     fitted against (football/fbs_epa/epa_contract.js). It is research
+     evidence for an explanation, exactly like the starter above.
+     --------------------------------------------------------------------- */
+  function qbEpaRead(card, side, SLATE) {
+    if (!card) return null;
+    var src = card.source || SLATE;
+    function meas(m, scope) {
+      if (!m) return null;
+      if (m.state !== 'MEASURED') {
+        return { state: fact(m.state, { source: src, basis: card.state_means || null }),
+          games: fact(m.games == null ? 0 : m.games, { source: src, unit: 'games' }),
+          epa_per_dropback: missingFact(
+            m.state === 'NO_OBSERVATIONS'
+              ? 'no FBS passing row in this history carries this athlete \u2014 an empty sample, never an average one'
+              : 'no game in this window carries an EPA total that reconciles against its own denominator', src) };
+      }
+      return {
+        state: fact('MEASURED', { source: src }),
+        games: fact(m.games, { source: src, unit: 'games' }),
+        dropbacks: fact(m.dropbacks, { source: src, unit: 'attempts + sacks' }),
+        epa_per_dropback: fact(m.epa_per_dropback, { source: src, unit: 'expected points per dropback',
+          n: m.dropbacks, observed_at: m.observed_through,
+          basis: scope + '; passing EPA only \u2014 scrambles are not in it and garbage time is' }),
+        yards_per_attempt: fact(m.yards_per_attempt, { source: src, unit: 'yards', n: m.attempts }),
+        sack_rate: fact(m.sack_rate, { source: src, unit: 'share of dropbacks', n: m.dropbacks,
+          basis: 'a joint measurement of the passer, his line and the opponent \u2014 never of the passer alone' }),
+        interception_rate: fact(m.interception_rate, { source: src, unit: 'share of attempts', n: m.attempts }),
+        first_season: fact(m.first_season, { source: src }),
+        seasons_observed: fact(m.seasons_observed, { source: src })
+      };
+    }
+    var id = card.identity || null;
+    return {
+      side: side,
+      state: fact(card.state, { source: src, basis: card.state_means || null }),
+      identity: id ? {
+        kind: fact(id.kind, { source: src, basis: id.kind_means || null }),
+        player: id.player ? fact(id.player, { source: id.source || src, observed_at: id.retrieved_at,
+          known_at: id.published_at || id.retrieved_at, note: id.source_url || null })
+          : missingFact('no single player is named by the evidence for this side', src),
+        confirmed: fact(id.confirmed === true, { source: src,
+          basis: id.confirmed === true ? 'an official source named him'
+            : 'NOT confirmed \u2014 it may not be narrated as an announcement' })
+      } : null,
+      career: meas(card.career, 'career to date, cut at this kickoff'),
+      season: meas(card.season, 'this season, cut at this kickoff'),
+      recent_5: meas(card.recent_5, 'his last five completed games, which may cross a season'),
+      vs_league: fact(card.vs_league, { source: src, unit: 'expected points per dropback',
+        basis: 'his career rate minus this season\u2019s league rate over every reconciled dropback' }),
+      league_epa_per_dropback: fact(card.league_epa_per_dropback, { source: src }),
+      team_pass_epa_per_play: fact(card.team_pass_epa_per_play, { source: src, n: card.team_games,
+        basis: 'an unweighted mean over the team\u2019s last five completed games, NOT opponent-adjusted' }),
+      opponent_allowed_pass_epa_per_play: fact(card.opponent_allowed_pass_epa_per_play,
+        { source: src, n: card.opponent_games,
+          basis: 'what this opponent has allowed over its last five completed games, NOT opponent-adjusted \u2014 '
+            + 'a defence that has faced weaker offences reads better here than it is' }),
+      coverage: card.coverage_state ? {
+        state: fact(card.coverage_state, { source: src, basis: card.coverage_means || null }),
+        games_without_passing_data: fact((card.games_without_passing_data || []).length,
+          { source: src, unit: 'completed games with no published passing row' })
+      } : null,
+      cutoff: fact(card.cutoff, { source: src, unit: 'ISO-8601 UTC',
+        basis: 'every measurement above is cut here; a game that had not finished is not inside it' }),
+      priced: fact(card.points_applied === true, { source: src,
+        basis: card.pricing_statement
+          || 'research context; it does not affect the fair line' })
+    };
+  }
+
   /* The input contract, in the seven states that are not the same thing. The
      old packet had one number for this and it was zero on every game. */
   function contractRead(row, SLATE) {
@@ -5477,6 +5564,39 @@
             + '. Unknown is carried as unknown; it is never read as healthy.');
       });
     }
+    /* ---- what the quarterbacks have measurably done -------------------- */
+    var quarterback = row ? {
+      home: qbEpaRead(row.home_qb_epa, 'home', SLATE),
+      away: qbEpaRead(row.away_qb_epa, 'away', SLATE)
+    } : null;
+    if (row && !row.home_qb_epa && !row.away_qb_epa) {
+      gap('quarterback_efficiency', SPORT === NFL_SPORT
+        ? 'the NFL board carries no quarterback efficiency card on its rows'
+        : 'the published card carries no quarterback efficiency measurement for this game \u2014 '
+          + 'football/fbs_epa has published nothing for it, and no number is substituted');
+      quarterback = null;
+    }
+    if (quarterback) {
+      ['home', 'away'].forEach(function (k) {
+        var q = quarterback[k];
+        if (!q) return;
+        if (q.state.value === 'UNRESOLVED_IDENTITY') {
+          limits.push('No quarterback identity resolves for the ' + k + ' side, so there is nobody to measure. '
+            + 'That is an unresolved identity, not a quarterback without a history.');
+        } else if (q.career && q.career.state.value === 'NO_OBSERVATIONS') {
+          limits.push((q.identity && q.identity.player.value ? q.identity.player.value : 'The ' + k + ' quarterback')
+            + ' has thrown no FBS pass inside the measured history \u2014 an empty sample, never an average one.');
+        }
+        if (q.coverage && q.coverage.state.value === 'PARTIAL') {
+          limits.push('A completed game in this matchup has no published passing row yet, so nothing measured for '
+            + 'the ' + k + ' quarterback includes it. That is a publication gap, not a game that was not played.');
+        }
+        if (q.priced && q.priced.value === false && q.career && q.career.state.value === 'MEASURED') {
+          limits.push('The ' + k + ' quarterback\u2019s passing EPA is measured and is RESEARCH ONLY: '
+            + q.priced.basis);
+        }
+      });
+    }
     var contract = contractRead(row, SLATE);
     if (contract && num(row.input_coverage) != null && num(row.input_coverage) < 0.6) {
       limits.push('This projection is running on ' + Math.round(num(row.input_coverage) * 100)
@@ -5501,7 +5621,7 @@
       resolution: { state: res.state || null, how: res.how || null, named: res.named || [], source: res.source || SLATE },
       identity: identity, model: model, market: market, ratings: ratings,
       previous_games: previous, availability: availability,
-      starters: starters, input_contract: contract,
+      starters: starters, quarterback: quarterback, input_contract: contract,
       missing: missing, limits: uniq(limits.filter(Boolean)),
       status: {
         answerable: answerable,

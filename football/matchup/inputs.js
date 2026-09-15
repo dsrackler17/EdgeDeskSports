@@ -176,6 +176,32 @@ function load(opts) {
   if (!out.qb_quality) out.problems.push('football/cfb_p4/research/qb_quality.json is missing — run '
     + 'football/cfb_p4/research/fit_qb_quality.js; until then the QB layer has no quality input either');
 
+  /* THE MEASURED EPA HISTORY, and the audit that says what may be done with
+     it. `football/fbs_epa` carries expected points added per dropback for
+     every FBS quarterback from 2014 — the input the QB layer's VALUE term has
+     never had — together with the semantic audit establishing that it is NOT
+     on the same scale as the shipped coefficient. Both are loaded here so a
+     caller cannot pick up the numbers without the verdict attached to them. */
+  out.fbs_epa = null;
+  out.fbs_epa_index = null;
+  try {
+    const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
+    const ix = readJson(path.join(ROOT, 'football', 'fbs_epa', 'index.json'), null);
+    const artSeason = ix ? ix.season : season;
+    const art = readJson(path.join(ROOT, 'football', 'fbs_epa', `qb_epa_${artSeason}.json`), null);
+    if (art && artSeason === season) {
+      out.fbs_epa = art;
+      out.fbs_epa_index = ix;
+      out.fbs_epa_freshness = EPA.freshness(ix, Date.now());
+    } else if (art) {
+      out.problems.push(`football/fbs_epa has published season ${artSeason}, not ${season} — the quarterback `
+        + 'efficiency history is not read for this season rather than read from the wrong one');
+    } else {
+      out.problems.push('football/fbs_epa/qb_epa_' + season + '.json is missing — run '
+        + 'football/fbs_epa/build_epa.js; until then no quarterback carries a measured EPA history');
+    }
+  } catch (e) { out.problems.push('the FBS EPA layer could not be loaded: ' + ((e && e.message) || e)); }
+
   out.persistence = readJson(path.join(ROOT, 'football', 'starters', 'persistence.json'), null);
   if (!out.persistence) out.problems.push('football/starters/persistence.json is missing — run '
     + 'football/starters/calibrate_persistence.js; until then no starter carries a measured reliability');
@@ -440,6 +466,66 @@ function buildRequest(ctx, o) {
       { source: av.source, as_of: av.retrieved_at, detail: av.why || null }));
   });
 
+  /* ---- quarterback efficiency history --------------------------------- */
+  /* THE FIELD THAT USED TO BE A DOCUMENTED PERMANENT GAP.
+
+     `qbOpts` below passes season_epa_per_db: null and always did, on the
+     grounds that no feed published it. One now does, and it is loaded, joined
+     on the same athlete ids and published on every card. It is still NOT
+     priced, and for a different and more specific reason: the audit in
+     football/fbs_epa/epa_contract.js establishes that the provider's series
+     is not on the scale the shipped coefficient was fitted on. So the row is
+     RESEARCH_ONLY, which is a retrieved field that the published number does
+     not price — the distinction this contract exists to keep.
+
+     Four states, and they are four different statements: measured, a
+     publication gap in the provider's table, an unresolved identity, and a
+     quarterback who has genuinely never thrown an FBS pass. */
+  const qbEpa = { home: null, away: null };
+  if (ctx.fbs_epa) {
+    const EPAMOD = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
+    const kickoff = Date.parse(g.start_date);
+    [['home', sh, hk, ak, homeFbs, g.home_team], ['away', sa, ak, hk, awayFbs, g.away_team]]
+      .forEach(([side, rec, key, opp, isFbs, name]) => {
+        const pk = EPAMOD.quarterback({ artifact: ctx.fbs_epa, starter: rec, team_key: key,
+          opponent_key: opp, cutoff: isFinite(kickoff) ? kickoff : now, side });
+        qbEpa[side] = pk;
+        const card = EPAMOD.cardForm(pk);
+        const stale = ctx.fbs_epa_freshness && ctx.fbs_epa_freshness.state === 'STALE';
+        let state, detail;
+        if (pk.state === 'MEASURED' && pk.career.state === 'MEASURED') {
+          state = stale ? 'STALE' : 'RESEARCH_ONLY';
+          detail = pk.identity.player + ' — ' + pk.career.epa_per_dropback + ' EPA per dropback over '
+            + pk.career.dropbacks + ' career dropbacks'
+            + (card.coverage_state === 'PARTIAL' ? ' (partial: a completed game has no passing row yet)' : '')
+            + '. Research only: the provider\u2019s EPA is not on the scale the engine\u2019s coefficient '
+            + 'was fitted on (football/fbs_epa/epa_contract.js)';
+        } else if (pk.state === 'UNRESOLVED_IDENTITY') {
+          state = isFbs ? 'UNAVAILABLE' : 'NOT_APPLICABLE';
+          detail = isFbs ? 'no quarterback identity resolves for ' + name + ', so there is nobody to measure '
+            + '\u2014 an unresolved identity, not a quarterback without history'
+            : name + ' is outside the rated universe';
+        } else if (pk.state === 'NO_OBSERVATIONS' || (pk.career && pk.career.state === 'NO_OBSERVATIONS')) {
+          state = 'UNAVAILABLE';
+          detail = (pk.identity && pk.identity.player ? pk.identity.player : 'this quarterback')
+            + ' has thrown no FBS pass inside this history \u2014 an empty sample, never an average one';
+        } else {
+          state = 'UNAVAILABLE';
+          detail = pk.why || 'no measured efficiency history for this side';
+        }
+        contract.push(row('qb_efficiency_history', side, state, {
+          source: 'football/fbs_epa \u2014 sportsdataverse/cfbfastR-cfb-data adv_passing',
+          as_of: ctx.fbs_epa.generated_at,
+          age_hours: hoursSince(ctx.fbs_epa.generated_at, now),
+          detail
+        }));
+      });
+  } else {
+    ['home', 'away'].forEach(side => contract.push(row('qb_efficiency_history', side, 'UNAVAILABLE',
+      { detail: 'football/fbs_epa has published no artifact for this season \u2014 run '
+        + 'football/fbs_epa/build_epa.js' })));
+  }
+
   /* ---- documented, permanent gaps ------------------------------------ */
   contract.push(row('recruiting_talent', null, 'UNAVAILABLE',
     { detail: 'per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted '
@@ -465,7 +551,8 @@ function buildRequest(ctx, o) {
       venue_id: g.venue_id, kickoff: g.start_date, home_fbs: homeFbs, away_fbs: awayFbs },
     teams: {
       /* `qb` is the PRICED input and stays null: the college QB layer prices
-         EPA per dropback and no feed publishes it. `qb_context` is a
+         EPA per dropback on the scale its coefficient was fitted on, which
+         the published series is not (see qbOpts below). `qb_context` is a
          different question — who is playing and how well do we know it — and
          the engine reads it for its information score and for nothing that
          computes a point. The starter reaching the projection as CONTEXT is
@@ -501,6 +588,12 @@ function buildRequest(ctx, o) {
 
   return {
     baseline, enriched, contract, starters,
+    /* the measured efficiency history, carried beside the request and inside
+       neither of them. The engine is handed identity and availability; it is
+       NOT handed these numbers, because the coefficient that would turn them
+       into points was fitted on a different scale. */
+    qb_epa: qbEpa,
+    qb_epa_freshness: ctx.fbs_epa_freshness || null,
     qb_pricing: { home: { priced: qbh.priced, why: qbh.why }, away: { priced: qba.priced, why: qba.why },
       whitelist: PRICED_STARTER_STATUSES.slice() },
     summary: summarise(contract)
@@ -585,15 +678,32 @@ function qbOpts(ctx, teamKey, rec) {
   return {
     approved_statuses: PRICED_STARTER_STATUSES,
     quality: grp ? { rating: q ? q.epir : grp.rating, source: 'football/players EPIR' } : null,
-    /* EPA per dropback is NOT computable from any feed this repository reads
-       for college football (docs/football-data-sources.md), so it is left
-       null rather than approximated from yards — which means the engine's QB
-       layer contributes NO POINTS even in the shadow request. What the play
-       feed does publish is the start count and the dropback volume, and those
-       drive the engine's QB STABILITY term: an unknown starter is priced as
-       minimum stability, and a quarterback with fifteen measured starts is
-       not an unknown starter. That is the whole of the shadow difference, and
-       it moves the distribution rather than the mean. */
+    /* EPA PER DROPBACK IS NOW OBSERVED, AND STILL DOES NOT GO HERE.
+
+       This used to be null because no feed published it. That changed:
+       football/fbs_epa carries it for every FBS quarterback from 2014, joined
+       on these same athlete ids, and it is on every card. It stays null in
+       THIS object for a narrower and better-evidenced reason.
+
+       `params.qb.points_per_epa_db` is a slope in points per unit of EPA per
+       dropback, and it was fitted against EdgeDesk's own reconstructed
+       expected-points surface over a corpus with garbage time removed. The
+       provider's series comes from a different expected-points model, keeps
+       garbage time, and has a league average of +0.061 against the engine's
+       replacement prior of 0.0. Passing one series into the other's slope
+       would produce a football-sized number with no meaning behind it.
+
+       So the efficiency history travels beside the request as research and
+       the VALUE term stays missing, exactly as it was. What the play feed does
+       publish and what this object does pass is the start count and the
+       dropback volume, which drive the QB STABILITY term: an unknown starter
+       is the minimum-stability case, and a quarterback with fifteen measured
+       starts is not an unknown starter. That moves the distribution rather
+       than the mean, and it is the whole of the shadow difference.
+
+       football/fbs_epa/epa_contract.js holds the audit and the single flag;
+       COMPATIBILITY.what_would_settle_it is the list of what would change
+       this line. */
     season_epa_per_db: null, career_epa_per_db: null,
     /* THE SUBSTITUTE ROUTE. EPA per dropback stays null above because no feed
        publishes it; this is the measured stand-in and the coefficient fitted

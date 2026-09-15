@@ -124,6 +124,16 @@
 
     var status;
     if (failed.length === 0) status = 'VALIDATED';
+    /* A LEAKAGE TEST THAT RAN AND FAILED IS NOT THE SAME AS ONE THAT DID NOT
+       RUN, and the ladder collapsed them. An arm whose test has simply not run
+       yet stays CANDIDATE — it might be clean, nobody has looked, and that is
+       the case the registry already had a verdict for. An arm whose test RAN
+       and FAILED is demonstrably reading the outcome, and it cannot be a
+       candidate for anything: CANDIDATE is the word this repository uses for
+       something that might one day price, and an arm that knows the result
+       never will. Everything already in the registry is leakage_clean, so this
+       moves no existing verdict. */
+    else if (arm.leakage_clean === false) status = 'RESEARCH_ONLY';
     else if (failed.length === 1 && failed[0] === 'holdout_breadth') status = 'CANDIDATE';
     else if (pooled != null && pooled < 0 && failed.indexOf('pooled_improvement') >= 0) status = 'REJECTED';
     else if (passed.length >= 3) status = 'CANDIDATE';

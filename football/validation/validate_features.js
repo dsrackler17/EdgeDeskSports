@@ -19,6 +19,9 @@
      + scheme                the style-interaction gap
      + ETSR                  the whole national-rankings layer as one number
      + all enriched          every delta above, fitted jointly
+     + quarterback EPA       the two arms of football/cfb_p4/research/
+                             fit_qb_epa.js, folded in from its published
+                             artifact so the same gate judges them
 
    NO LEAKAGE, BY CONSTRUCTION
      * A game in season Y week W is priced from layers rebuilt out of plays in
@@ -66,6 +69,15 @@ const HOLD = String(arg('hold', '')).split(',').filter(Boolean).map(Number);
 const CACHE = arg('cache', process.env.EDP_CACHE || '') || null;
 const WEEK_STEP = Math.max(1, +(arg('week-step', 1)));
 const WRITE = !!arg('write', false);
+/* REFRESH THE PUBLISHED EXPERIMENTS WITHOUT REPLAYING THIRTEEN SEASONS.
+
+   The internal arms need the whole training cache to be rebuilt. The external
+   ones do not: their measurements are already published in their own
+   artifacts, and all this file does with them is apply the gate. `--external`
+   keeps every existing verdict in the registry exactly as measured, refreshes
+   the external ones from their artifacts, and re-runs registry() so the
+   summary and the statement are the same function's output as always. */
+const EXTERNAL_ONLY = !!arg('external', false);
 
 const isNum = x => typeof x === 'number' && isFinite(x);
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
@@ -211,7 +223,32 @@ function etsrDiff(tal, layer, home, away, prevEtsr, slope) {
 }
 
 /* ------------------------------------------------------------------ */
+function refreshExternalOnly(log) {
+  const file = path.join(__dirname, 'feature-status.json');
+  let prev = null;
+  try { prev = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { prev = null; }
+  if (!prev || !Array.isArray(prev.features)) {
+    console.error('no existing registry to refresh — run the full walk-forward first');
+    return 2;
+  }
+  const kept = prev.features.filter(f => f.external !== true);
+  const entries = kept.slice();
+  externalArms(entries, log);
+  const reg = PROMOTE.registry(entries, { tune: prev.tune_seasons, holdout: prev.holdout_seasons,
+    games: prev.games_scored });
+  if (prev.market_benchmark) reg.market_benchmark = prev.market_benchmark;
+  if (prev.baseline) reg.baseline = prev.baseline;
+  log('\n  ' + reg.statement);
+  if (WRITE) {
+    fs.writeFileSync(file, JSON.stringify(reg, null, 1));
+    log('  wrote football/validation/feature-status.json (' + kept.length + ' kept, '
+      + (entries.length - kept.length) + ' external refreshed)');
+  } else log('  (dry — pass --write to update the registry)');
+  return 0;
+}
+
 async function main() {
+  if (EXTERNAL_ONLY) return refreshExternalOnly((...x) => console.log(...x));
   const seasons = [];
   for (let y = FIRST; y <= LAST; y++) seasons.push(y);
   const tune = TUNE.length ? TUNE : seasons.slice(0, Math.max(1, seasons.length - 1));
@@ -358,6 +395,18 @@ async function main() {
     log(('    + ' + F.label).padEnd(42) + 'MAE ' + fmt(arm.spread_mae) + '  Brier ' + fmt(arm.brier, 4)
       + '  ' + verdict.status + (verdict.effect_size != null ? ('  (' + (verdict.effect_size >= 0 ? '+' : '') + verdict.effect_size.toFixed(3) + ')') : ''));
   }
+  /* ── THE EXPERIMENTS THAT RUN ELSEWHERE ─────────────────────────────────
+     Some arms cannot be rebuilt inside this harness: the quarterback EPA
+     experiment needs its own cold replay of thirteen seasons and its own
+     corpus, so it runs as football/cfb_p4/research/fit_qb_epa.js and publishes
+     its own artifact. Folding its results in here rather than letting it grade
+     itself is the point — one registry, one gate, one set of rules, and a
+     re-run of this file does not quietly drop it.
+
+     A missing artifact is a missing arm and nothing else. It is not an error,
+     and it is never a pass. */
+  externalArms(entries, log);
+
   const mktArm = scoreMarket(holdRows);
   log('    closing market'.padEnd(42) + 'MAE ' + fmt(mktArm.spread_mae) + '  (n=' + mktArm.n + ')');
 
@@ -372,6 +421,59 @@ async function main() {
     log('  wrote football/validation/feature-status.json');
   } else log('  (dry — pass --write to update the registry)');
   return 0;
+}
+
+/* Read a published experiment's arms and push them through the SAME promotion
+   gate every internal arm goes through. Nothing is re-measured here: the
+   artifact carries the measurements, this reshapes them into the gate's own
+   vocabulary and lets promote.js decide. */
+function externalArms(entries, log) {
+  const file = path.join(ROOT, 'cfb_p4', 'research', 'qb_epa.json');
+  let doc = null;
+  try { doc = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { doc = null; }
+  if (!doc || !doc.arms) {
+    log('    quarterback EPA'.padEnd(42) + 'no artifact — run football/cfb_p4/research/fit_qb_epa.js');
+    return;
+  }
+  ['pregame', 'participant'].forEach(armName => {
+    const A = doc.arms[armName];
+    const pooled = A && A.pooled;
+    if (!pooled) return;
+    const perSeason = (A.folds || []).filter(f => f.base_mae != null && f.adj_mae != null)
+      .map(f => ({ season: f.season, n: f.scored_games, mae_before: f.base_mae, mae_after: f.adj_mae }));
+    const baseline = { n: pooled.games, spread_mae: pooled.base_mae, brier: pooled.base_brier,
+      feature: 'baseline', label: 'the rating gap alone, replayed cold' };
+    const arm = {
+      n: pooled.games, spread_mae: pooled.adj_mae, brier: pooled.adj_brier,
+      feature: 'qb_epa_' + armName + '_v1',
+      label: 'quarterback passing EPA \u2014 ' + armName + ' arm',
+      coefficient: null,
+      coefficients: (A.folds || []).reduce((o, f) => { if (f.coefficients) o[f.season] = f.coefficients; return o; }, {}),
+      tune_n: (A.folds || []).reduce((a, f) => a + (f.train_games || 0), 0),
+      paired: pooled.paired ? { n: pooled.paired.n, mean_diff: pooled.paired.improvement,
+        p: pooled.paired.p_two_sided } : null,
+      per_season: perSeason,
+      /* THE PARTICIPANT ARM IS NOT LEAKAGE-CLEAN AND SAYS SO. It names the
+         quarterback from the game being predicted, which is a legitimate
+         retrospective question and an illegitimate forecast. Marking it clean
+         to let it compete would be the exact failure this gate exists to
+         prevent. */
+      leakage_clean: armName === 'pregame',
+      leakage_note: armName === 'pregame'
+        ? 'every input is from a game that had finished before this kickoff, asserted by the harness'
+        : 'by construction this arm reads the quarterback out of the game being predicted; it is an upper '
+          + 'bound, never a forecast, and it may not be promoted',
+      version: 'qb_epa_v1',
+      source: 'football/cfb_p4/research/qb_epa.json'
+    };
+    const verdict = PROMOTE.evaluate(arm, baseline);
+    verdict.external = true;
+    verdict.experiment = 'football/cfb_p4/research/fit_qb_epa.js';
+    entries.push(verdict);
+    log(('    + ' + arm.label + ' ').padEnd(44) + 'MAE ' + fmt(arm.spread_mae) + '  Brier ' + fmt(arm.brier, 4)
+      + '  ' + verdict.status + (verdict.effect_size != null
+        ? ('  (' + (verdict.effect_size >= 0 ? '+' : '') + verdict.effect_size.toFixed(3) + ')') : ''));
+  });
 }
 
 function cloneBefore(idx, season) {

@@ -494,6 +494,33 @@ function buildBrief(over) {
     || !counterIds.some((c) => /^availability_/.test(c)),
     { limits: B.limits.filter((l) => /availability/i.test(l)), counterIds });
 
+  /* THE QUARTERBACK, IN THE PACKET THE MODEL IS HANDED.
+
+     The card on screen and the object the edge function forwards are the same
+     object, and this is the end of that path. What matters here is not that a
+     number exists but that it arrives WITH the three things that stop it being
+     over-read: the sample it came off, what kind of answer the identity is,
+     and the sentence saying it did not reach the price. */
+  const { R: RQ, row: rowQ } = buildBrief();
+  if (rowQ && rowQ.home_qb_epa && rowQ.home_qb_epa.state === 'MEASURED') {
+    chk('the research packet the model receives carries a quarterback section',
+      !!(RQ.quarterback && RQ.quarterback.home), Object.keys(RQ.quarterback || {}));
+    const q = RQ.quarterback.home;
+    eq('and its EPA per dropback is the published one, not a recomputation',
+      q.career.epa_per_dropback.value, rowQ.home_qb_epa.career.epa_per_dropback);
+    eq('and the sample it came off travels with it',
+      q.career.dropbacks.value, rowQ.home_qb_epa.career.dropbacks);
+    chk('and what kind of answer the identity is, in words',
+      typeof q.identity.kind.basis === 'string' && q.identity.kind.basis.length > 20, q.identity.kind.basis);
+    chk('and it is marked unpriced with the reason',
+      q.priced.value === false && /does not affect the fair line/.test(q.priced.basis || ''), q.priced.basis);
+    chk('an expected starter is never handed over as a confirmed one',
+      q.identity.confirmed.value === true ? rowQ.home_qb_epa.identity.status === 'ANNOUNCED' : true);
+    lacks('the quarterback section names no market number',
+      JSON.stringify(RQ.quarterback), '"spread"');
+    lacks('and no QBR', JSON.stringify(RQ.quarterback), 'qbr');
+  }
+
   /* THE MODEL DOES NOT INVENT ANYTHING. */
   const flat = JSON.stringify(B);
   lacks('no probability is produced anywhere in the brief', flat, '"win_probability"');
