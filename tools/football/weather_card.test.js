@@ -197,6 +197,81 @@ const carriedHtml = render(Object.assign({}, W, { carried: true, as_of: '2026-09
 has(carriedHtml, 'Carried forward', 'a carried forecast says so on the card');
 has(carriedHtml, '2026-09-14 10:00 UTC', 'at the time it was actually observed');
 
+/* ═══ 6. the page and the build describe the same stadium the same way ═══
+   THE BUG THIS CATCHES, found on the live site. The page reads the trained
+   venue table straight out of params.js. That table carries coordinates,
+   elevation, capacity, roof and surface — everything the model was fitted on
+   — and NO CITY AT ALL. The offline build fills the city from
+   football/venues/resolved.json in its loader; the browser has no such
+   loader, so the card in the page said "Acrisure Stadium" while the committed
+   slate said "Acrisure Stadium, Pittsburgh, PA" about the same game.
+
+   That is the same drift football/matchup/forecast.js exists to end one level
+   down: one contract, two implementations, and a reader who cannot tell which
+   is right. football/venues/descriptions.js closes it, and this holds it
+   closed — on the REAL renderer, against the REAL trained table. */
+section('6. the page names the same stadium the build names');
+{
+  global.window = global.window || global;
+  require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
+  const PARAMS = global.window.EDCfbP4Params;
+  const TRAINED = (PARAMS && PARAMS.universe && PARAMS.universe.venues) || {};
+  let TEXT = null;
+  try { TEXT = require(path.join(ROOT, 'football', 'venues', 'descriptions.js')); } catch (_) { TEXT = null; }
+  ok(!!TEXT, 'football/venues/descriptions.js exists and loads');
+  ok(TEXT && Object.keys(TEXT).length > 100, 'and covers the FBS field, not a handful');
+
+  /* the trained table is the thing that lacks a city — if it ever gains one,
+     this whole layer is unnecessary and should be deleted rather than kept */
+  const trainedHasCity = Object.keys(TRAINED).some(k => TRAINED[k] && TRAINED[k].city);
+  ok(!trainedHasCity, 'the trained table still carries no city, which is why this layer exists');
+
+  /* NO COORDINATE, ROOF OR SURFACE may travel through the description map:
+     those are what the venue coefficients were fitted on. */
+  const FORBIDDEN = ['lat', 'lon', 'elev', 'capacity', 'dome', 'grass'];
+  const leaked = Object.keys(TEXT || {}).filter(k => FORBIDDEN.some(f => TEXT[k] && TEXT[k][f] !== undefined));
+  eq(leaked.length, 0, 'and it restates no coordinate, roof, surface, elevation or capacity');
+
+  /* the renderer, run exactly as the page runs it */
+  const FBS = require(path.join(ROOT, 'football', 'fbs', 'fbs.js'));
+  function renderAsPage(teamName, weather) {
+    const sandbox = {
+      window: { EDForecast: F, EDCfbP4Params: PARAMS, EDFbs: FBS, EDVenueText: TEXT },
+      FB: { p4: { weather: weather ? { g1: weather } : {} } },
+      fbEsc: (x) => String(x == null ? '' : x).replace(/[&<>"]/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])),
+      console: console
+    };
+    sandbox.globalThis = sandbox;
+    vm.createContext(sandbox);
+    vm.runInContext(fnSrc('fbGxWxTempClass') + '\n' + fnSrc('fbGxWeather'), sandbox);
+    return sandbox.fbGxWeather({ g: { game_id: 'g1', home_team: teamName } });
+  }
+  const pitt = renderAsPage('Pittsburgh', null);
+  has(pitt, 'Acrisure Stadium', 'the page names the stadium');
+  has(pitt, 'Pittsburgh, PA', 'AND the town it is in — the line that was missing on the live site');
+  has(pitt, '724 ft', 'elevation still comes from the trained table');
+  has(pitt, '≈68k', 'and so does capacity');
+
+  /* every home venue the published slate needs must name a town, or the card
+     is back to a stadium floating in no particular place */
+  let slate = null;
+  try { slate = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'fbs', 'slate.json'), 'utf8')); }
+  catch (_) { /* no slate on disk */ }
+  if (slate && slate.games && slate.games.length) {
+    const nameless = [];
+    slate.games.forEach(g => {
+      const k = FBS.normKey(g.home_team);
+      const v = TRAINED[k];
+      if (!v) return;
+      const city = (v.city != null && v.city !== '') ? v.city : ((TEXT && TEXT[k]) ? TEXT[k].city : null);
+      if (!city) nameless.push(g.home_team);
+    });
+    eq(nameless.length, 0, 'every home venue on the published slate can say what town it is in'
+      + (nameless.length ? ' (' + nameless.slice(0, 5).join(', ') + ')' : ''));
+  }
+}
+
 console.log('\n' + (failures ? 'FAILED ' + failures + ' of ' + checks
   : 'weather card: ' + checks + ' passed, 0 failed'));
 process.exit(failures ? 1 : 0);
