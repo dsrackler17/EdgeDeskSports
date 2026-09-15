@@ -2,7 +2,7 @@
  "schema": "edgedesk_starters_v1_index",
  "version": 1,
  "season": 2026,
- "generated_at": "2026-09-15T15:36:45.925Z",
+ "generated_at": "2026-09-15T21:50:35.328Z",
  "sports": {
   "CFB": {
    "ok": true,
@@ -43,7 +43,7 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-15T15:36:46.157Z"
+     "retrieved_at": "2026-09-15T21:50:35.872Z"
     },
     {
      "field": "roster identity",
@@ -52,7 +52,7 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-15T15:36:46.262Z"
+     "retrieved_at": "2026-09-15T21:50:36.288Z"
     },
     {
      "field": "schedule",
@@ -61,7 +61,7 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-15T15:36:46.346Z"
+     "retrieved_at": "2026-09-15T21:50:36.371Z"
     },
     {
      "field": "start count 2025",
@@ -70,7 +70,7 @@
      "from": "network",
      "status": 200,
      "error": null,
-     "retrieved_at": "2026-09-15T15:36:49.144Z"
+     "retrieved_at": "2026-09-15T21:50:38.957Z"
     }
    ],
    "notes": [
@@ -78,19 +78,97 @@
     "14 team(s) on the roster feed have no attributed dropback in 2026 yet, so no previous-game evidence exists for them"
    ],
    "file": "football/starters/cfb_2026.json"
+  },
+  "NFL": {
+   "ok": true,
+   "week": 1,
+   "teams": 32,
+   "coverage": {
+    "total": 32,
+    "by_status": {
+     "ANNOUNCED": 0,
+     "EXPECTED": 0,
+     "DEPTH_CHART": 32,
+     "PREVIOUS_GAME": 0,
+     "COMPETITION": 0,
+     "UNKNOWN": 0
+    },
+    "by_field_state": {
+     "USABLE": 32,
+     "RESEARCH_ONLY": 0,
+     "STALE": 0,
+     "CONFLICTING": 0,
+     "NOT_APPLICABLE": 0,
+     "FETCH_FAILED": 0,
+     "UNAVAILABLE": 0
+    },
+    "with_player": 32,
+    "announced": 0,
+    "availability_explicit": 2,
+    "availability_unknown": 30,
+    "conflicting": 3,
+    "stale": 0,
+    "resolved_share": 1
+   },
+   "sources": [
+    {
+     "field": "dropback attribution",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-15T21:50:41.890Z"
+    },
+    {
+     "field": "roster identity",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-15T21:50:42.003Z"
+    },
+    {
+     "field": "availability",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-15T21:50:42.145Z"
+    },
+    {
+     "field": "depth chart",
+     "url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "ok": true,
+     "from": "network",
+     "status": 200,
+     "error": null,
+     "retrieved_at": "2026-09-15T21:50:42.416Z"
+    }
+   ],
+   "notes": [
+    "NFL availability is the league injury report for week 1; a player with no row is UNKNOWN, not healthy"
+   ],
+   "file": "football/starters/nfl_2026.json"
   }
  },
  "retrieval": {
-  "started_at": "2026-09-15T15:36:45.925Z",
-  "elapsed_ms": 6167,
-  "requests": 4,
-  "bytes": 76332317,
-  "ok": 4,
+  "started_at": "2026-09-15T21:50:35.328Z",
+  "elapsed_ms": 9011,
+  "requests": 8,
+  "bytes": 132350658,
+  "ok": 8,
   "failed": 0,
   "from_cache": 0,
   "from_stale_cache": 0,
   "hosts": {
    "raw.githubusercontent.com": {
+    "consecutive_failures": 0,
+    "circuit_open": null
+   },
+   "github.com": {
     "consecutive_failures": 0,
     "circuit_open": null
    }
