@@ -13765,6 +13765,101 @@ const EDPRES: any = (globalThis as any).EDPRES;
     return teamIndex(universe);
   }
 
+  /* ====================================================================== */
+  /* THE OTHER FOOTBALL LEAGUE                                              */
+  /*                                                                        */
+  /* The FBS resolver above is the college card. The reader's football      */
+  /* board carries BOTH leagues, and a desk that can only resolve one of    */
+  /* them answers "there is no such game" about a game the page behind it   */
+  /* is displaying. That is the same board/desk split §1.1 of docs/         */
+  /* intelligence.md describes, one league over.                            */
+  /*                                                                        */
+  /* The two indexes are kept SEPARATE on purpose. Merged, the prefix rule  */
+  /* that protects Miami (OH) from Miami (FL) would start reaching across   */
+  /* leagues, and "Houston" — a real college programme and a real NFL city  */
+  /* — would silently become whichever row happened to be indexed first.    */
+  /* Two indexes make that collision a question to ask rather than a guess. */
+  /* ====================================================================== */
+  var CFB_SPORT = 'americanfootball_ncaaf';
+  var NFL_SPORT = 'americanfootball_nfl';
+
+  /* Keyed on the club's abbreviation, because that is what the NFL board
+     stores and what nflverse writes. The club NAME is indexed automatically
+     by teamIndex(), so only the spellings a reader actually types are listed.
+
+     A CITY IS ONLY AN ALIAS WHERE IT IS UNAMBIGUOUS. "Houston", "Buffalo",
+     "Cincinnati", "Miami", "Arizona", "Washington", "Pittsburgh", "Tennessee",
+     "Minnesota", "Jacksonville", "Las Vegas" and "Carolina" are all college
+     programmes (or, for Los Angeles and New York, two NFL clubs at once), so
+     none of them is aliased to a club here. The nickname is unique across the
+     NFL and is always safe; the city is listed only when nothing else wants
+     it. A name left out resolves through the club's full name instead, which
+     is indexed either way — the cost of leaving one out is a question, and
+     the cost of putting one in wrongly is the wrong team's number. */
+  var NFL_ALIASES = {
+    ari: ['cardinals', 'arizona cardinals'],
+    atl: ['falcons', 'atlanta', 'atlanta falcons'],
+    bal: ['ravens', 'baltimore', 'baltimore ravens'],
+    buf: ['bills', 'buffalo bills'],
+    car: ['panthers', 'carolina panthers'],
+    chi: ['bears', 'chicago', 'chicago bears'],
+    cin: ['bengals', 'cincinnati bengals'],
+    cle: ['browns', 'cleveland', 'cleveland browns'],
+    dal: ['cowboys', 'dallas', 'dallas cowboys'],
+    den: ['broncos', 'denver', 'denver broncos'],
+    det: ['lions', 'detroit', 'detroit lions'],
+    gb: ['packers', 'green bay', 'green bay packers'],
+    hou: ['texans', 'houston texans'],
+    ind: ['colts', 'indianapolis', 'indianapolis colts'],
+    jax: ['jaguars', 'jags', 'jacksonville jaguars'],
+    kc: ['chiefs', 'kansas city', 'kansas city chiefs'],
+    la: ['rams', 'los angeles rams'],
+    lac: ['chargers', 'los angeles chargers'],
+    lv: ['raiders', 'las vegas raiders'],
+    mia: ['dolphins', 'miami dolphins'],
+    min: ['vikings', 'minnesota vikings'],
+    ne: ['patriots', 'pats', 'new england', 'new england patriots'],
+    no: ['saints', 'new orleans', 'new orleans saints'],
+    nyg: ['giants', 'new york giants', 'ny giants'],
+    nyj: ['jets', 'new york jets', 'ny jets'],
+    phi: ['eagles', 'philadelphia', 'philadelphia eagles'],
+    pit: ['steelers', 'pittsburgh steelers'],
+    sea: ['seahawks', 'seattle', 'seattle seahawks'],
+    sf: ['49ers', 'niners', 'san francisco', 'san francisco 49ers'],
+    tb: ['buccaneers', 'bucs', 'tampa bay', 'tampa bay buccaneers'],
+    ten: ['titans', 'tennessee titans'],
+    was: ['commanders', 'washington commanders']
+  };
+
+  /* The NFL twin of fbsIndexFor: the card's own clubs, plus every club the
+     alias table knows, so a club that is on a bye still RESOLVES and is then
+     reported as having no game in the window rather than as an unknown name. */
+  function nflIndexFor(games) {
+    var universe = { teams: {}, order: [] };
+    function add(key, name, aliases, offCard) {
+      if (!key || universe.teams[key]) return;
+      universe.teams[key] = { key: key, name: name || key, aliases: aliases || [], off_card: !!offCard };
+      universe.order.push(key);
+    }
+    (games || []).forEach(function (g) {
+      [[g.home_team, g.home_id], [g.away_team, g.away_id]].forEach(function (pair) {
+        var name = clean(pair[0]);
+        if (!name) return;
+        var key = canonKey(pair[1], name);
+        add(key, name, NFL_ALIASES[key] || []);
+      });
+    });
+    Object.keys(NFL_ALIASES).forEach(function (key) { add(key, key, NFL_ALIASES[key], true); });
+    return teamIndex(universe);
+  }
+
+  /** The resolver index for a football league. Unknown sports read as college,
+      because that is the only card this kernel has ever carried and a silent
+      change of default is how a question ends up in the wrong sport. */
+  function footballIndexFor(sport, games) {
+    return String(sport || '') === NFL_SPORT ? nflIndexFor(games) : fbsIndexFor(games);
+  }
+
   /**
    * Join captured odds rows to scheduled games, by the BOARD'S OWN RULE.
    *
@@ -14058,6 +14153,388 @@ const EDPRES: any = (globalThis as any).EDPRES;
         + 'board counts as having a market. has_executable_price counts games with a real book price that could '
         + 'be bet into. They are different questions and the second is always the smaller number.'
     };
+  }
+
+  /* ====================================================================== */
+  /* THE PRICE BOARD FOR ONE GAME                                           */
+  /*                                                                        */
+  /* resolveMarket() above answers "what is the number on this game" in one */
+  /* line per market, which is what a decision needs. A RESEARCHER needs     */
+  /* something else: both sides of each market, the book behind each one,    */
+  /* when it was seen, what it opened at, and an honest statement of how     */
+  /* wide "best price" actually reaches.                                     */
+  /*                                                                        */
+  /* WHAT "BEST" MEANS HERE, EXACTLY. Capture writes one `signals` row per   */
+  /* (event, market, selection, handicap) and stores the BEST decimal price  */
+  /* it saw across the books it polled, together with the book that offered  */
+  /* it and how many books quoted the selection. So `best_dec` already IS    */
+  /* the best observed price for that exact selection — across EdgeDesk'S    */
+  /* COVERED BOOKS and no further. It is never described as the best price   */
+  /* in the market, because EdgeDesk does not poll the market; it polls a    */
+  /* list, and the list is reported with the number.                         */
+  /* ====================================================================== */
+  var MARKET_BOARD_SCHEMA = 'edgedesk_market_board_v1';
+
+  /* The five things that look identical from the outside and need opposite
+     responses. Conflating any two of them is how "no quote" becomes "0". */
+  var MARKET_STATES = {
+    LIVE: 'a book price was captured and is inside its freshness limit',
+    STALE: 'a book price was captured and is past its freshness limit',
+    LINE_ONLY: 'a consensus number exists with no book, no per-side price and no capture time',
+    NO_QUOTE: 'the price feed answered and no book it covers is quoting this game',
+    JOIN_FAILED: 'quotes existed in the window and none of them could be matched to this game',
+    CAPTURE_FAILED: 'the price read itself failed, so nothing is known either way',
+    NOT_ATTEMPTED: 'no price read was made on this turn'
+  };
+
+  /**
+   * Which of the five states this game is in, with the sentence a reader gets
+   * and the detail an operator needs.
+   *
+   * THE DISTINCTION THAT MATTERS MOST is between CAPTURE_FAILED / JOIN_FAILED
+   * and NO_QUOTE. The first two are EdgeDesk failing; the third is the market.
+   * A reader told "no book is pricing this" when the truth is "the read threw"
+   * has been handed a fact about football that is really a fact about a server.
+   */
+  function marketStatusRead(o) {
+    o = o || {};
+    var state, user, operator = o.operator_detail || null;
+    var rowsInWindow = num(o.rows_in_window);
+    var joined = num(o.rows_joined);
+    if (o.executable) {
+      state = o.actionable ? 'LIVE' : 'STALE';
+      user = o.actionable
+        ? 'A book price EdgeDesk captured, inside its freshness limit.'
+        : 'The last book price EdgeDesk captured is past its freshness limit. It is kept as research with its '
+          + 'timestamp; it is not a price you can be told is still on the board.';
+    } else if (o.has_line) {
+      state = 'LINE_ONLY';
+      user = 'A consensus number with no book, no per-side price and no capture time. It is something to compare '
+        + 'the model against, not something to bet into.';
+    } else if (o.read_failed) {
+      state = 'CAPTURE_FAILED';
+      user = 'EdgeDesk could not read the price feed for this game on this turn, so it does not know whether a '
+        + 'price exists. That is a retrieval failure, not an absence of a market.';
+    } else if (rowsInWindow != null && rowsInWindow > 0 && (joined == null || joined === 0)) {
+      state = 'JOIN_FAILED';
+      user = 'Quotes were returned for this window and none of them could be matched to this fixture, so EdgeDesk '
+        + 'is not showing a price rather than showing one that may belong to another game.';
+      operator = operator || (rowsInWindow + ' captured rows were in the kickoff window and 0 joined to this game.');
+    } else if (o.attempted === false) {
+      state = 'NOT_ATTEMPTED';
+      user = 'No price read was made for this game on this turn.';
+    } else {
+      state = 'NO_QUOTE';
+      user = 'No book EdgeDesk covers is quoting this game yet. That is an absence of a quote, not a quote of zero.';
+    }
+    return {
+      state: state, basis: MARKET_STATES[state], user: user, operator: operator,
+      executable: !!o.executable, actionable: !!(o.executable && o.actionable),
+      /* An absence EdgeDesk caused is never reported as an absence the market
+         caused, and both are reported as absences rather than as zeros. */
+      is_edgedesk_fault: state === 'CAPTURE_FAILED' || state === 'JOIN_FAILED',
+      may_quote_a_price: state === 'LIVE' || state === 'STALE',
+      may_call_it_live: state === 'LIVE'
+    };
+  }
+
+  function sideOf(selection, homeTeam, awayTeam) {
+    var s = normName(selection);
+    if (!s) return null;
+    if (/^over$|^o$/.test(s)) return 'over';
+    if (/^under$|^u$/.test(s)) return 'under';
+    if (homeTeam && s === normName(homeTeam)) return 'home';
+    if (awayTeam && s === normName(awayTeam)) return 'away';
+    if (/over/.test(s)) return 'over';
+    if (/under/.test(s)) return 'under';
+    return null;
+  }
+
+  /**
+   * Every captured selection on one game, best price first, with provenance.
+   *
+   * @param o.signals     captured rows for THIS game (already joined)
+   * @param o.lines       consensus rows for this game, if any
+   * @param o.home_team / o.away_team   the schedule's own names
+   * @param o.rows_in_window / o.rows_joined / o.read_failed   retrieval facts
+   */
+  function marketBoard(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var sigs = o.signals || [], lines = o.lines || [];
+    var home = o.home_team || null, away = o.away_team || null;
+
+    /* One group per (market, selection, handicap): those are different bets
+       and merging them would put an alternate line's price on the main one. */
+    var groups = {};
+    sigs.forEach(function (s) {
+      if (!s) return;
+      var mk = normMarket(s.market);
+      if (!mk) return;
+      var dec = num(s.best_dec);
+      if (dec == null || dec <= 1) return;
+      var pt = num(s.point);
+      var key = mk + '|' + normName(s.selection) + '|' + (pt == null ? '' : pt);
+      var g = groups[key];
+      var seen = String(s.last_seen_at || '');
+      if (!g || seen > g._seen || (seen === g._seen && dec > g.price_decimal)) {
+        groups[key] = {
+          _seen: seen,
+          market: mk, market_label: marketLabel(mk),
+          selection: s.selection || null,
+          side: sideOf(s.selection, home, away),
+          handicap: pt,
+          price_decimal: dec,
+          price_american: fmtAmerican(decToAmerican(dec)),
+          book: s.best_book || null,
+          observed_at: s.last_seen_at || null,
+          books_quoting: num(s.n_books),
+          book_families: num(s.n_books_eff),
+          opened: (num(s.first_best_dec) != null && num(s.first_best_dec) > 1) ? {
+            price_decimal: num(s.first_best_dec),
+            price_american: fmtAmerican(decToAmerican(num(s.first_best_dec))),
+            observed_at: s.first_seen_at || null
+          } : null,
+          source: 'captured signals',
+          provenance: 'A price a book was actually showing when EdgeDesk captured it.'
+        };
+      }
+    });
+
+    var rows = Object.keys(groups).map(function (k) {
+      var g = groups[k];
+      delete g._seen;
+      g.freshness = quoteState({ captured_at: g.observed_at, now: now, market: g.market, kickoff: o.kickoff });
+      g.age_min = g.freshness.age_min;
+      g.actionable = g.freshness.actionable;
+      /* MOVEMENT IS ONLY EVER TWO OBSERVATIONS EdgeDesk ACTUALLY MADE. There
+         is no reconstruction of an opening line here: `first_best_dec` is the
+         first price capture saw, which is not necessarily the market's open,
+         and it is labelled as the first OBSERVED price for exactly that
+         reason. */
+      if (g.opened && g.opened.price_decimal && g.price_decimal) {
+        var d = g.price_decimal - g.opened.price_decimal;
+        g.movement = {
+          direction: Math.abs(d) < 1e-9 ? 'unchanged' : (d > 0 ? 'lengthened' : 'shortened'),
+          from_american: g.opened.price_american, to_american: g.price_american,
+          first_observed_at: g.opened.observed_at,
+          basis: 'first observed price against the latest observed price, both from EdgeDesk’s own captures. '
+            + 'It is not an opening line from the book and is not described as one.'
+        };
+      } else {
+        g.movement = null;
+      }
+      return g;
+    });
+
+    function pickMarket(mk) {
+      var mine = rows.filter(function (r) { return r.market === mk; });
+      if (!mine.length) return null;
+      /* The freshest capture is the current line; a tie goes to the better
+         price, which is the only tie-break that can never mislead. */
+      mine.sort(function (a, b) {
+        var t = String(b.observed_at || '').localeCompare(String(a.observed_at || ''));
+        return t !== 0 ? t : (b.price_decimal - a.price_decimal);
+      });
+      var lead = mine[0];
+      var sides = {};
+      mine.forEach(function (r) {
+        if (!r.side) return;
+        var cur = sides[r.side];
+        if (!cur || String(r.observed_at || '') > String(cur.observed_at || '')) sides[r.side] = r;
+      });
+      return { current: lead, by_side: sides, all: mine, alternates: mine.length - Object.keys(sides).length };
+    }
+
+    var spreads = pickMarket('spreads'), totals = pickMarket('totals'), h2h = pickMarket('h2h');
+
+    /* The consensus row, when there is one. Named separately and NEVER merged
+       into the captured rows above. */
+    var cons = null;
+    lines.forEach(function (l) { if (!cons || String(l.provider || '').toLowerCase().indexOf('consensus') >= 0) cons = l; });
+    var consensus = cons ? {
+      provider: cons.provider || 'consensus',
+      spread_home_handicap: num(cons.spread),
+      total: num(cons.over_under),
+      home_moneyline: num(cons.home_moneyline),
+      away_moneyline: num(cons.away_moneyline),
+      source: 'cfb.lines',
+      provenance: 'A consensus number. No book, no per-side price, no capture time — a reference to compare a '
+        + 'model against, and not something to bet into.'
+    } : null;
+
+    var executable = !!(spreads || totals || h2h);
+    var actionable = rows.some(function (r) { return r.actionable; });
+    var hasLine = executable || !!(consensus && (consensus.spread_home_handicap != null || consensus.total != null
+      || (consensus.home_moneyline != null && consensus.away_moneyline != null)));
+
+    var books = {};
+    rows.forEach(function (r) { if (r.book) books[r.book] = 1; });
+    var bookList = Object.keys(books).sort();
+    var maxBooks = rows.reduce(function (a, r) { return Math.max(a, num(r.books_quoting) || 0); }, 0);
+
+    return {
+      schema: MARKET_BOARD_SCHEMA,
+      built_at: new Date(now).toISOString(),
+      game_id: o.game_id || null,
+      home_team: home, away_team: away,
+      spreads: spreads, totals: totals, moneyline: h2h,
+      rows: rows,
+      consensus: consensus,
+      status: marketStatusRead({
+        executable: executable, actionable: actionable, has_line: hasLine,
+        read_failed: !!o.read_failed, attempted: o.attempted !== false,
+        rows_in_window: o.rows_in_window, rows_joined: o.rows_joined,
+        operator_detail: o.operator_detail || null
+      }),
+      coverage: {
+        books_offering_best: bookList,
+        books_quoting_max: maxBooks || null,
+        note: bookList.length
+          ? 'Best of the ' + (maxBooks || bookList.length) + ' book' + ((maxBooks || bookList.length) === 1 ? '' : 's')
+            + ' EdgeDesk captured on this selection. EdgeDesk polls a list of books, not the whole market, so this '
+            + 'is the best price OBSERVED and is not claimed to be the best price available anywhere.'
+          : 'No book price was captured for this game, so there is no best price to report.'
+      },
+      contract: 'A captured price and a consensus number are never merged. No price is ever mirrored from the other '
+        + 'side of a handicap: a handicap is one number seen from two ends, but the two sides are priced '
+        + 'independently, so a side EdgeDesk did not capture has no price at all.'
+    };
+  }
+
+  /* ====================================================================== */
+  /* A PRICE THE READER SAYS THEY CAN GET                                   */
+  /*                                                                        */
+  /* "I can get -13.5 at -110" is evidence, and it is evidence of a         */
+  /* different KIND from a captured quote: EdgeDesk did not observe it,     */
+  /* cannot timestamp it beyond the moment it was typed, and cannot say     */
+  /* which book it came from unless told. It therefore travels with its own */
+  /* provenance and can never be counted in book coverage, in a best-price  */
+  /* claim, or in anything that says "EdgeDesk observed".                   */
+  /* ====================================================================== */
+  var USER_QUOTE_PATTERNS = [
+    /* -13.5 at -110 / -13.5 @ -110 / +3 -105 */
+    /([+-]?\d+(?:\.\d+)?)\s*(?:at|@|for)\s*([+-]\d{3,4})/i,
+    /* 13.5 at -110 with the side named elsewhere */
+    /([+-]?\d+(?:\.\d+)?)\s*\(\s*([+-]\d{3,4})\s*\)/
+  ];
+
+  /**
+   * Parse a reader-entered price out of their own sentence.
+   *
+   * Deliberately narrow. A number with no odds beside it is not read as a
+   * price — a reader saying "they should be -14" is stating an opinion, and
+   * turning that into a quote would be the same invention this whole layer
+   * exists to prevent.
+   */
+  function parseUserQuote(text, o) {
+    o = o || {};
+    var t = String(text == null ? '' : text);
+    if (!t.trim()) return null;
+    var m = null, i;
+    for (i = 0; i < USER_QUOTE_PATTERNS.length; i++) { m = USER_QUOTE_PATTERNS[i].exec(t); if (m) break; }
+    if (!m) return null;
+    var handicap = num(m[1]), odds = num(m[2]);
+    if (handicap == null || odds == null) return null;
+    var market = /total|over|under|o\/u/i.test(t) ? 'totals' : 'spreads';
+    if (/\bml\b|moneyline|money line/i.test(t)) market = 'h2h';
+    var bookM = /\b(?:at|on|with)\s+(draftkings|fanduel|betmgm|caesars|pinnacle|bet365|espn ?bet|fanatics|betrivers|pointsbet|bovada|circa|westgate)\b/i.exec(t);
+    return userQuote({
+      market: market, handicap: market === 'h2h' ? null : handicap,
+      price_american: odds, book: bookM ? titleCase(bookM[1]) : null,
+      text: t.slice(0, 200), now: o.now, team: o.team || null
+    });
+  }
+
+  function userQuote(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var am = num(o.price_american);
+    var dec = am == null ? null : americanToDec(am);
+    return {
+      schema: 'edgedesk_user_quote_v1',
+      market: normMarket(o.market) || 'spreads',
+      market_label: marketLabel(o.market) || 'Spread',
+      team: o.team || null,
+      handicap: num(o.handicap),
+      price_american: am, price_decimal: dec,
+      book: o.book || null,
+      entered_at: new Date(now).toISOString(),
+      source: 'reader',
+      observed_by_edgedesk: false,
+      provenance: 'A price the reader entered. EdgeDesk has not observed it, cannot timestamp it beyond the moment '
+        + 'it was typed, and does not count it as a captured quote, as book coverage, or in any best-price claim.',
+      verbatim: o.text || null
+    };
+  }
+
+  /**
+   * Compare a reader's price against the model and against what EdgeDesk has
+   * actually observed — and refuse the comparisons the evidence cannot carry.
+   *
+   * THE REFUSAL IS THE POINT. A fair spread is not a cover probability. The
+   * CFB spread model's own walk-forward record (49.9% ATS at one point of
+   * disagreement, falling to 46.4% at six) is why `validationFor` caps it at
+   * RESEARCH, and a number that cannot produce a probability cannot produce an
+   * expected value or a price threshold either. What CAN be said is the line
+   * difference, the price difference against an observed quote, and the
+   * break-even the reader's own price implies — all of which are arithmetic.
+   */
+  function compareUserQuote(o) {
+    o = o || {};
+    var q = o.quote, out = { quote: q, comparisons: [], refused: [], schema: 'edgedesk_user_quote_compare_v1' };
+    if (!q) return out;
+    var val = o.validation || validationFor(o.sport || CFB_SPORT, q.market);
+    var modelLine = num(o.model_line);              /* same convention as the quote */
+    var observed = o.observed || null;              /* a row from marketBoard */
+
+    if (modelLine != null && q.handicap != null) {
+      var d = r2(Math.abs(modelLine - q.handicap));
+      out.comparisons.push({
+        id: 'model_vs_quote', label: 'Against EdgeDesk’s number',
+        detail: 'EdgeDesk’s model line is ' + (modelLine > 0 ? '+' : '') + r2(modelLine)
+          + ' and the price you have is ' + (q.handicap > 0 ? '+' : '') + q.handicap + ' — '
+          + (d === 0 ? 'the same number.' : d + ' point' + (d === 1 ? '' : 's') + ' apart.'),
+        points: d,
+        basis: 'A difference between two numbers. It is not an edge, because the model that produced one of them '
+          + 'has no validated outcome probability in this market.'
+      });
+    }
+    if (observed && observed.price_american != null) {
+      out.comparisons.push({
+        id: 'quote_vs_observed', label: 'Against the best price EdgeDesk observed',
+        detail: 'EdgeDesk’s best observed price on this selection is ' + observed.price_american
+          + (observed.book ? ' at ' + observed.book : '')
+          + (observed.handicap != null ? ' on ' + (observed.handicap > 0 ? '+' : '') + observed.handicap : '')
+          + (observed.observed_at ? ', captured ' + (observed.freshness && observed.freshness.age_min != null
+            ? Math.round(observed.freshness.age_min) + ' minutes ago' : 'earlier') : '')
+          + '. Yours is ' + fmtAmerican(q.price_american)
+          + (q.handicap != null ? ' on ' + (q.handicap > 0 ? '+' : '') + q.handicap : '') + '.',
+        same_selection: observed.handicap != null && q.handicap != null && Math.abs(observed.handicap) === Math.abs(q.handicap),
+        basis: 'Two prices, one observed by EdgeDesk and one reported by you. They are shown side by side and not '
+          + 'merged: your price is not added to book coverage and does not change the best OBSERVED price.'
+      });
+    }
+    if (q.price_decimal) {
+      out.comparisons.push({
+        id: 'break_even', label: 'What your price needs to break even',
+        detail: 'At ' + fmtAmerican(q.price_american) + ' you need to win '
+          + pct(breakEvenProb(q.price_decimal, 0), 1) + ' of the time to break even before any push.',
+        break_even: r4(breakEvenProb(q.price_decimal, 0)),
+        basis: 'Arithmetic on the price alone. It says nothing about whether this selection wins that often.'
+      });
+    }
+    /* What cannot be computed, named rather than quietly skipped. */
+    if (!val || val.probability !== true) {
+      out.refused.push({
+        id: 'cover_probability',
+        why: 'EdgeDesk cannot give you a cover probability or an expected value on this. Its ' + (marketLabel(q.market) || 'market')
+          + ' model is validated at ' + ((val && val.tier) || 'RESEARCH') + ' — ' + ((val && val.limitations) || 'it has no validated outcome probability in this market')
+          + ' — and a fair spread on its own establishes neither. Quoting one would be inventing the number this '
+          + 'system exists not to invent.'
+      });
+    }
+    return out;
   }
 
   /* ==================================================================== */
@@ -15289,8 +15766,32 @@ const EDPRES: any = (globalThis as any).EDPRES;
    * @param o.carried   a previous resolution to fall back to on a follow-up
    * @param o.card_error  why the card could not be read, if it could not
    */
-  function resolveMatchup(o) {
+  /* The CFB wording, kept verbatim as the default so a college answer reads
+     exactly as it did before this card carried two leagues. */
+  var CFB_CARD = {
+    sport: CFB_SPORT, source: 'football/fbs/slate.json',
+    card: 'the FBS slate', card_the: 'the published FBS card',
+    programme: 'a college football program on the card EdgeDesk publishes',
+    on_card: 'is on the FBS card but has no game inside the published window.',
+    off_card: 'is not on the published FBS card',
+    sport_note: 'The SPORT is settled — this is a college football question and must not be answered from any other '
+      + 'sport\u2019s board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.'
+  };
+  var NFL_CARD = {
+    sport: NFL_SPORT, source: 'the NFL board',
+    card: 'the NFL card', card_the: 'the NFL card',
+    programme: 'an NFL club on the card EdgeDesk publishes',
+    on_card: 'is an NFL club but has no game inside the published window.',
+    off_card: 'is not on the NFL card',
+    sport_note: 'The SPORT is settled — this is an NFL question and must not be answered from any other '
+      + 'sport\u2019s board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.'
+  };
+  function cardFor(sport) { return String(sport || '') === NFL_SPORT ? NFL_CARD : CFB_CARD; }
+
+  function resolveOnCard(o) {
     o = o || {};
+    var CARD = o.card_spec || CFB_CARD;
+    var SPORT = CARD.sport, SOURCE = o.source || CARD.source;
     var games = o.games || [], question = String(o.question == null ? '' : o.question);
     var carried = o.carried && o.carried.game_id ? o.carried : null;
     var none = {
@@ -15301,7 +15802,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
     if (!games.length) {
       if (o.card_error) {
         return Object.assign({}, none, {
-          state: 'NO_CARD', note: 'The published FBS card could not be read (' + o.card_error
+          state: 'NO_CARD', sport: SPORT, note: CARD.card_the + ' could not be read (' + o.card_error
             + '), so EdgeDesk cannot tell whether that game exists. This is a retrieval failure, '
             + 'not a finding that the matchup is absent, and may not be reported as one.'
         });
@@ -15318,7 +15819,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
         kickoff: g.kickoff || null, week: g.week == null ? null : g.week
       };
     });
-    var ix = fbsIndexFor(games.map(function (g) {
+    var ix = footballIndexFor(SPORT, games.map(function (g) {
       return {
         home_team: g.home_team, away_team: g.away_team,
         home_id: g.home_id != null ? g.home_id : g.home_team_id,
@@ -15327,13 +15828,26 @@ const EDPRES: any = (globalThis as any).EDPRES;
     }));
     var named = teamPhrases(question, ix);
     function hit(row, how, subject) {
+      /* HOW MUCH OF THE QUESTION THIS MATCH ACTUALLY USED. Within one card the
+         longest name already wins, because teamPhrases takes its words
+         outright. Across two cards nothing compared them, so "Washington
+         Commanders" — two words on the NFL card — tied with "Washington", one
+         word on the college card, and a settled question came back as an
+         ambiguity. The same rule, applied at the same place it always was. */
+      var matched = subject ? subject.phrase : null;
+      if (!matched && named.length) {
+        matched = named.map(function (t) { return t.phrase; }).join(' ');
+      }
       return {
         state: 'RESOLVED', named: named.map(function (t) { return t.phrase; }),
-        sport: 'americanfootball_ncaaf', game_id: row.game_id,
+        matched_phrase: matched,
+        matched_words: matched ? clean(matched).split(/\s+/).length : 0,
+        matched_chars: matched ? clean(matched).replace(/\s+/g, '').length : 0,
+        sport: SPORT, game_id: row.game_id,
         home: row.home_team, away: row.away_team, home_id: row.home_key, away_id: row.away_key,
         kickoff: row.kickoff, week: row.week, subject: subject ? subject.name : null,
         subject_id: subject ? subject.key : null,
-        source: o.source || 'football/fbs/slate.json', how: how, note: null, candidates: null
+        source: SOURCE, how: how, note: null, candidates: null
       };
     }
     /* ---- 1. two named teams that share a game ---------------------- */
@@ -15358,10 +15872,10 @@ const EDPRES: any = (globalThis as any).EDPRES;
     if (explicit.length === 2) {
       return Object.assign({}, none, {
         state: 'NOT_ON_CARD', named: explicit, sport: null,
-        source: o.source || 'football/fbs/slate.json',
+        source: SOURCE,
         note: '"' + explicit[0] + '" and "' + explicit[1] + '" were named as a matchup, and no scheduled game '
           + 'with BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
-          + ' games were checked on the FBS slate).'
+          + ' games were checked on ' + CARD.card + ').'
       });
     }
 
@@ -15385,23 +15899,22 @@ const EDPRES: any = (globalThis as any).EDPRES;
       if (mine.length === 1) return hit(mine[0], 'one-team-named', subj);
       if (mine.length > 1 && !ambiguous) {
         ambiguous = Object.assign({}, none, {
-          state: 'AMBIGUOUS', named: [subj.phrase], sport: 'americanfootball_ncaaf',
-          subject: subj.name, subject_id: subj.key, source: o.source || 'football/fbs/slate.json',
+          state: 'AMBIGUOUS', named: [subj.phrase], sport: SPORT,
+          subject: subj.name, subject_id: subj.key, source: SOURCE,
           candidates: mine.map(function (r) {
             return { game_id: r.game_id, home: r.home_team, away: r.away_team, kickoff: r.kickoff };
           }),
-          note: '"' + subj.phrase + '" is a college football program on the card EdgeDesk publishes, and it '
+          note: '"' + subj.phrase + '" is ' + CARD.programme + ', and it '
             + 'appears in ' + mine.length + ' scheduled games in this window ('
             + mine.map(function (r) { return r.away_team + ' @ ' + r.home_team; }).join(', ') + '). '
-            + 'The SPORT is settled — this is a college football question and must not be answered from any other '
-            + 'sport\u2019s board — but the GAME is not. Ask which one is meant, in one short sentence, and do not pick.'
+            + CARD.sport_note
         });
       } else if (!mine.length && !offCard) {
         /* Resolved to a real program that is not playing inside the window. */
         offCard = Object.assign({}, none, {
-          state: 'NOT_ON_CARD', named: [subj.phrase], sport: 'americanfootball_ncaaf',
-          subject: subj.name, subject_id: subj.key, source: o.source || 'football/fbs/slate.json',
-          note: subj.phrase + ' is on the FBS card but has no game inside the published window.'
+          state: 'NOT_ON_CARD', named: [subj.phrase], sport: SPORT,
+          subject: subj.name, subject_id: subj.key, source: SOURCE,
+          note: subj.phrase + ' ' + CARD.on_card
         });
       }
     }
@@ -15415,10 +15928,10 @@ const EDPRES: any = (globalThis as any).EDPRES;
     if (pair.length === 2) {
       return Object.assign({}, none, {
         state: 'NOT_ON_CARD', named: pair, sport: null,
-        source: o.source || 'football/fbs/slate.json',
+        source: SOURCE,
         note: '"' + pair[0] + '" and "' + pair[1] + '" were named as a matchup, and no scheduled game with '
           + 'BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
-          + ' games were checked on the FBS slate).'
+          + ' games were checked on ' + CARD.card + ').'
       });
     }
     /* ---- 3. the subject the conversation already established -------
@@ -15437,18 +15950,1398 @@ const EDPRES: any = (globalThis as any).EDPRES;
          and a reader of the trace should be able to tell them apart. */
       return Object.assign({}, carried, {
         how: 'carried', named: [],
-        source: String(carried.source || (o.source || 'football/fbs/slate.json')).replace(/ \(carried subject\)$/, '')
+        source: String(carried.source || SOURCE).replace(/ \(carried subject\)$/, '')
           + ' (carried subject)',
       });
     }
     if (other.length) {
       return Object.assign({}, none, {
         state: 'SUBJECT_CHANGED', named: other,
-        note: other[0] + ' is not on the published FBS card, so this is not a follow-up about '
+        note: other[0] + ' ' + CARD.off_card + ', so this is not a follow-up about '
           + (carried ? (carried.away + ' @ ' + carried.home) : 'the previous subject') + '.'
       });
     }
     return none;
+  }
+
+  /**
+   * The college card, resolved exactly as it always was.
+   *
+   * Kept as its own entry point because every existing caller, test and
+   * fixture speaks it, and because a one-league question should not have to
+   * describe a league to be answered.
+   */
+  function resolveMatchup(o) {
+    o = o || {};
+    return resolveOnCard({
+      question: o.question, games: o.games, carried: o.carried,
+      card_error: o.card_error, source: o.source, card_spec: o.card_spec || CFB_CARD
+    });
+  }
+
+  /**
+   * THE WHOLE FOOTBALL BOARD, RESOLVED ONCE.
+   *
+   * The reader's football page carries college and professional games side by
+   * side. A desk that resolves only one of them reports "no such game" about a
+   * fixture the page behind it is displaying — which is the board/desk split
+   * that started this work, one league over.
+   *
+   * Each league is resolved on its OWN card with its OWN index, and the
+   * results are then combined under a stated precedence:
+   *
+   *   1. exactly one league resolved a game the question NAMED  -> that game
+   *   2. more than one did                                       -> ASK, with
+   *      both candidates listed. A name that is a college programme AND an NFL
+   *      city ("Washington", "Houston", "Miami") is a real ambiguity, and
+   *      picking one silently is how a reader gets the wrong team's number.
+   *   3. a league knows the team but not which game                -> ASK
+   *   4. a league knows the team and it is not playing             -> say so
+   *   5. the subject the conversation already established          -> stands
+   *   6. the question named somebody no card carries               -> hand back
+   *
+   * `carried` is only ever offered to the league it belongs to. A carried
+   * college subject cannot resolve against the NFL card and must not look as
+   * though it did.
+   *
+   * @param o.question   the reader's text
+   * @param o.leagues    [{sport, games, source, card_error}]
+   * @param o.carried    a previous resolution, with its own `sport`
+   */
+  function resolveFootballMatchup(o) {
+    o = o || {};
+    var leagues = (o.leagues || []).filter(function (L) { return L && (L.games || L.card_error); });
+    if (!leagues.length) leagues = [{ sport: CFB_SPORT, games: o.games || [], card_error: o.card_error || null }];
+    var carried = o.carried && o.carried.game_id ? o.carried : null;
+    var carriedSport = carried ? (carried.sport || CFB_SPORT) : null;
+
+    var runs = leagues.map(function (L) {
+      var spec = L.card_spec || cardFor(L.sport);
+      return {
+        league: L, spec: spec,
+        r: resolveOnCard({
+          question: o.question, games: L.games || [],
+          carried: (carriedSport && String(L.sport || CFB_SPORT) === String(carriedSport)) ? carried : null,
+          card_error: L.card_error || null, source: L.source, card_spec: spec
+        })
+      };
+    });
+
+    function pick(fn) { for (var i = 0; i < runs.length; i++) if (fn(runs[i].r)) return runs[i].r; return null; }
+
+    /* 1 & 2 — a game NAMED in this question. `carried-subject-named` counts:
+       the reader said the team out loud, and the conversation only decided
+       WHICH of that team's games was meant. */
+    var named = runs.filter(function (x) { return x.r.state === 'RESOLVED' && x.r.how !== 'carried'; });
+    if (named.length === 1) return named[0].r;
+    if (named.length > 1) {
+      /* THE LONGEST NAME WINS, ACROSS CARDS AS WELL AS WITHIN ONE. A reader
+         who wrote "Washington Commanders" named a club, and a college card
+         that also answers to "Washington" has not matched what they wrote. It
+         is only an ambiguity when the two cards matched the SAME words. */
+      var best = named.slice().sort(function (a, b) {
+        return (b.r.matched_words || 0) - (a.r.matched_words || 0)
+          || (b.r.matched_chars || 0) - (a.r.matched_chars || 0);
+      });
+      if ((best[0].r.matched_words || 0) > (best[1].r.matched_words || 0)
+        || ((best[0].r.matched_words || 0) === (best[1].r.matched_words || 0)
+          && (best[0].r.matched_chars || 0) > (best[1].r.matched_chars || 0))) return best[0].r;
+      named = best;
+      return {
+        state: 'AMBIGUOUS', named: named[0].r.named || [], sport: null,
+        game_id: null, home: null, away: null, home_id: null, away_id: null,
+        kickoff: null, week: null, subject: named[0].r.subject || null, subject_id: null,
+        source: 'the football board', how: 'two-leagues', ambiguous_leagues: true,
+        candidates: named.map(function (x) {
+          return { game_id: x.r.game_id, home: x.r.home, away: x.r.away, kickoff: x.r.kickoff,
+            sport: x.r.sport, league: x.r.sport === NFL_SPORT ? 'NFL' : 'college football' };
+        }),
+        note: 'That name belongs to a team in more than one league on EdgeDesk’s football board ('
+          + named.map(function (x) { return (x.r.sport === NFL_SPORT ? 'NFL: ' : 'college: ') + x.r.away + ' @ ' + x.r.home; }).join('; ')
+          + '). The SPORT is not settled, so the game is not either. Ask which one is meant and do not pick.'
+      };
+    }
+    /* 3, 4 — the team resolved, the game did not. */
+    var amb = pick(function (r) { return r.state === 'AMBIGUOUS'; });
+    if (amb) return amb;
+    var off = pick(function (r) { return r.state === 'NOT_ON_CARD' && r.subject; });
+    if (off) return off;
+    /* 5 — the subject the conversation is already on. */
+    var held = pick(function (r) { return r.how === 'carried'; });
+    if (held) return held;
+    /* An explicit "A vs B" neither card carries. */
+    var pair = pick(function (r) { return r.state === 'NOT_ON_CARD'; });
+    if (pair) return pair;
+    /* 6 — somebody else was named, on EVERY card. One league not knowing a
+       name proves nothing; all of them not knowing it is the finding. */
+    var changed = runs.filter(function (x) { return x.r.state === 'SUBJECT_CHANGED'; });
+    if (changed.length && changed.length === runs.length) return changed[0].r;
+    var noCard = pick(function (r) { return r.state === 'NO_CARD'; });
+    if (noCard) return noCard;
+    return runs[0].r;
+  }
+
+  /* ====================================================================== */
+  /* WHAT THE NUMBERS MEAN, AND HOW THE GAME PRODUCES THEM                  */
+  /*                                                                        */
+  /* The ratings build already publishes, per team and per metric, the RAW  */
+  /* rate, the OPPONENT-ADJUSTED rate, the league mean, the sample it rests */
+  /* on and a reliability weight. Nothing read it: the desk printed a       */
+  /* ratings table and left the reader to supply the football.              */
+  /*                                                                        */
+  /* This dictionary is the missing half. Every entry says what the metric  */
+  /* IS in ordinary language and, separately, the MECHANISM by which it     */
+  /* shows up on a field — because "Texas Tech is 1.4 z above the mean in   */
+  /* sack rate allowed" is not analysis and "their protection holds, so     */
+  /* they reach third-and-short instead of third-and-long" is.              */
+  /*                                                                        */
+  /* It is a dictionary and not a model. No entry here moves any number.    */
+  /* ====================================================================== */
+  var METRIC_FAMILIES = {
+    efficiency: 'staying on schedule',
+    passing: 'the passing game',
+    rushing: 'the running game',
+    disruption: 'pressure and negative plays',
+    finishing: 'finishing drives',
+    turnovers: 'turnovers'
+  };
+
+  function met(id, o) { o.id = id; return o; }
+  var METRIC_DICTIONARY = {};
+  (function () {
+    var D = [
+      met('success_rate', { unit: 'rate', family: 'efficiency', side: 'offense', counter: 'def_success_allowed',
+        label: 'Success rate',
+        plain: 'the share of plays that keep an offence on schedule — roughly half the yards needed on first down, '
+          + 'seventy per cent on second, and all of them on third or fourth.',
+        mechanism: 'An offence that stays on schedule keeps facing second-and-five instead of second-and-nine, and '
+          + 'third-and-short instead of third-and-long. Third-and-long is where sacks, pressure and interceptions '
+          + 'concentrate, so success rate moves the whole rest of the drive.' }),
+      met('early_down_success', { unit: 'rate', family: 'efficiency', side: 'offense', counter: 'def_early_down_allowed',
+        label: 'Early-down success',
+        plain: 'success rate on first and second down only.',
+        mechanism: 'First and second down are the downs a coach CHOOSES; third down is mostly the consequence. A team '
+          + 'that wins early downs is calling from its whole playbook, and the defence cannot commit to a rush.' }),
+      met('explosive_pass_rate', { unit: 'rate', family: 'passing', side: 'offense', counter: 'def_explosive_pass_allowed',
+        label: 'Explosive pass rate',
+        plain: 'the share of dropbacks that gain a chunk — the big plays rather than the steady ones.',
+        mechanism: 'College scoring margin comes disproportionately from explosives. One of them replaces a whole '
+          + 'drive of successful plays, which is why a defence that gives them up can hold a good success rate and '
+          + 'still lose the scoreboard.' }),
+      met('yards_per_attempt', { unit: 'yards', family: 'passing', side: 'offense', counter: 'def_yards_per_attempt',
+        label: 'Yards per pass attempt',
+        plain: 'passing yards divided by attempts — the volume-free measure of how far the passing game moves the ball.',
+        mechanism: 'It separates an offence that throws a lot from one that throws well. A high number against a '
+          + 'defence that concedes one is the single most direct route to points.' }),
+      met('explosive_rush_rate', { unit: 'rate', family: 'rushing', side: 'offense', counter: 'def_explosive_rush_allowed',
+        label: 'Explosive rush rate',
+        plain: 'the share of carries that break for a chunk.',
+        mechanism: 'Breakaway running is a front-and-second-level failure, not a yards-per-carry story. A defence that '
+          + 'concedes them is being beaten after the line of scrimmage, which safeties and pursuit angles decide.' }),
+      met('sack_rate_allowed', { unit: 'rate', family: 'disruption', side: 'offense', counter: 'def_sack_rate',
+        label: 'Sack rate allowed', invert: true,
+        plain: 'the share of dropbacks that end in a sack — protection and the quarterback’s pocket management together.',
+        mechanism: 'A sack is a drive-killer twice over: the yardage and the down. An offence that protects turns '
+          + 'third-and-seven into third-and-three; one that does not is pushed into the exact down-and-distance '
+          + 'where the defence already has the advantage.' }),
+      met('yards_per_rush', { unit: 'yards', family: 'rushing', side: 'offense', counter: 'def_yards_per_rush',
+        label: 'Yards per carry',
+        plain: 'rushing yards divided by attempts.',
+        mechanism: 'The blunt measure of whether the run game works against this front. It is noisier than success '
+          + 'rate because one long run moves it, which is why both are read together rather than either alone.' }),
+      met('third_success', { unit: 'rate', family: 'efficiency', side: 'offense', counter: 'def_third_allowed',
+        label: 'Third-down conversion',
+        plain: 'the share of third downs converted.',
+        mechanism: 'Largely a consequence of the first two downs rather than a skill of its own, so a third-down number '
+          + 'that disagrees with early-down success is usually distance, not clutch.' }),
+      met('stuff_rate', { unit: 'rate', family: 'disruption', side: 'offense', counter: 'def_stuff_rate',
+        label: 'Stuff rate (runs stopped at or behind the line)', invert: true,
+        plain: 'the share of carries stopped at or behind the line of scrimmage.',
+        mechanism: 'The clearest read on whether a line is being beaten at the point of attack. A stuffed run on first '
+          + 'down produces exactly the long-yardage down a defence wants.' }),
+      met('rz_success', { unit: 'rate', family: 'finishing', side: 'offense', counter: 'def_rz_allowed',
+        label: 'Red-zone success',
+        plain: 'how well an offence converts trips inside the twenty into points.',
+        mechanism: 'The field shortens and explosives disappear, so finishing is a different skill from moving the '
+          + 'ball. A team that moves well and finishes badly leaves points on the field that the margin will show.' }),
+      met('turnover_rate', { unit: 'rate', family: 'turnovers', side: 'offense', counter: 'def_turnovers_forced',
+        label: 'Turnover rate', invert: true,
+        plain: 'giveaways per play.',
+        mechanism: 'The least repeatable thing on this list. It decides games and predicts them badly, so it is read '
+          + 'as something that HAPPENED rather than as something a team reliably does.' })
+    ];
+    var DEF = {
+      def_success_allowed: ['Success rate allowed', 'the share of opponent plays that stayed on schedule.'],
+      def_early_down_allowed: ['Early-down success allowed', 'opponent success rate on first and second down.'],
+      def_explosive_pass_allowed: ['Explosive passes allowed', 'the share of opponent dropbacks that broke for a chunk.'],
+      def_yards_per_attempt: ['Yards per attempt allowed', 'opponent passing yards per attempt.'],
+      def_explosive_rush_allowed: ['Explosive runs allowed', 'the share of opponent carries that broke for a chunk.'],
+      def_sack_rate: ['Sack rate', 'the share of opponent dropbacks this defence sacks.'],
+      def_yards_per_rush: ['Yards per carry allowed', 'opponent rushing yards per carry.'],
+      def_third_allowed: ['Third downs allowed', 'the share of opponent third downs converted.'],
+      def_stuff_rate: ['Stuff rate', 'the share of opponent carries stopped at or behind the line.'],
+      def_rz_allowed: ['Red zone allowed', 'how well opponents finish trips inside the twenty.'],
+      def_turnovers_forced: ['Turnovers forced', 'takeaways per opponent play.']
+    };
+    D.forEach(function (m) {
+      METRIC_DICTIONARY[m.id] = m;
+      var c = m.counter, d = DEF[c];
+      if (c && d) {
+        METRIC_DICTIONARY[c] = met(c, {
+          unit: m.unit, family: m.family, side: 'defense', counter: m.id,
+          label: d[0], plain: d[1], mechanism: m.mechanism
+        });
+      }
+    });
+    /* The sub-unit metrics carry the same meanings under shorter ids. */
+    var SUB = { po_success: 'success_rate', po_explosive: 'explosive_pass_rate', po_ypa: 'yards_per_attempt',
+      po_sacks: 'sack_rate_allowed', pd_success: 'def_success_allowed', pd_explosive: 'def_explosive_pass_allowed',
+      pd_ypa: 'def_yards_per_attempt', pd_sacks: 'def_sack_rate',
+      ro_success: 'success_rate', ro_explosive: 'explosive_rush_rate', ro_ypc: 'yards_per_rush',
+      ro_stuffed: 'stuff_rate', rd_success: 'def_success_allowed', rd_explosive: 'def_explosive_rush_allowed',
+      rd_ypc: 'def_yards_per_rush', rd_stuffed: 'def_stuff_rate' };
+    Object.keys(SUB).forEach(function (k) {
+      var base = METRIC_DICTIONARY[SUB[k]];
+      if (base) METRIC_DICTIONARY[k] = met(k, { unit: base.unit, family: base.family, side: base.side,
+        label: base.label, plain: base.plain, mechanism: base.mechanism, alias_of: SUB[k] });
+    });
+  })();
+
+  /** The reader-facing meaning of a metric, or null rather than a guess. */
+  function explainMetric(id) { return METRIC_DICTIONARY[String(id || '')] || null; }
+
+  /* ====================================================================== */
+  /* THE SAMPLE, LABELLED FOR WHAT IT IS                                    */
+  /*                                                                        */
+  /* The ratings build weights a game against a non-FBS opponent at 0.45 of */
+  /* an FBS one, so a team that has played one of each carries 1.45. The    */
+  /* desk printed that as "1.45 games in the rating", which reads as an     */
+  /* arithmetic error rather than as a weighted sample size. It is a real   */
+  /* number with a real meaning and it needs its name.                      */
+  /* ====================================================================== */
+  var NON_FBS_GAME_WEIGHT = 0.45;
+  function sampleRead(o) {
+    o = o || {};
+    var eff = num(o.effective_games);
+    var played = num(o.games_played);
+    var fbs = num(o.fbs_games);
+    var share = num(o.non_fbs_share);
+    if (eff == null) {
+      return { effective_games: null, label: null, missing: true,
+        reason: 'the ratings build published no sample count for this team' };
+    }
+    var whole = Math.abs(eff - Math.round(eff)) < 1e-9;
+    var nonFbs = (played != null && fbs != null) ? Math.max(0, played - fbs) : null;
+    var label = eff + ' FBS-equivalent game' + (eff === 1 ? '' : 's');
+    var expl = 'Effective sample size, not a count of games. EdgeDesk weights a game against a non-FBS opponent at '
+      + NON_FBS_GAME_WEIGHT + ' of an FBS game, because that opponent pool is solved as a single team and one result '
+      + 'against it says much less about where a team sits among FBS teams.';
+    if (played != null) {
+      expl += ' ' + played + ' game' + (played === 1 ? '' : 's') + ' played'
+        + (nonFbs ? (', ' + nonFbs + ' of them against a non-FBS opponent') : '')
+        + ' — so the rating is leaning on ' + label + ' of evidence.';
+    }
+    return {
+      effective_games: eff, games_played: played, fbs_games: fbs,
+      non_fbs_games: nonFbs, non_fbs_share: share,
+      whole_number: whole,
+      label: label,
+      short: label,
+      explanation: expl,
+      /* What the weight buys the reader: how much of the rating is this
+         season at all. The ramp is w = g/(g+k) with k = 3. */
+      prior_weight: r2(3 / (eff + 3)),
+      performance_weight: r2(eff / (eff + 3)),
+      weight_basis: 'The rating mixes a preseason prior with this season’s play on a continuous ramp, '
+        + 'w = g/(g+3) in FBS-equivalent games. At ' + eff + ' that is '
+        + Math.round((eff / (eff + 3)) * 100) + '% this season and '
+        + Math.round((3 / (eff + 3)) * 100) + '% preseason prior — which is why an early-season rating moves so '
+        + 'little on one result, and why it should not be read as a settled measurement of this team.',
+      source: o.source || 'football/rankings/current.json'
+    };
+  }
+
+  /* ====================================================================== */
+  /* THE RATING, INTERPRETED                                                */
+  /* ====================================================================== */
+  function ratingRead(o) {
+    o = o || {};
+    var t = o.team_record || null;
+    if (!t) return null;
+    var etsr = num(t.etsr);
+    var rank = num(t.rank != null ? t.rank : (t.ranks && t.ranks.overall && t.ranks.overall.rank));
+    var conf = t.confidence ? num(t.confidence.value) : null;
+    var perf = t.performance || {};
+    var sample = sampleRead({
+      effective_games: (t.weights && num(t.weights.games_used)) != null ? num(t.weights.games_used)
+        : (perf.sample ? num(perf.sample.fbs_equivalent_games) : null),
+      games_played: perf.sample ? num(perf.sample.games_played) : null,
+      fbs_games: perf.sample ? num(perf.sample.fbs_games) : null,
+      non_fbs_share: perf.sample ? num(perf.sample.non_fbs_share) : null,
+      source: o.source
+    });
+    var gates = (t.gates || []).map(function (g) {
+      return { id: g.id, severity: g.severity, detail: g.detail || null, basis: g.basis || null };
+    });
+    /* RATED BUT UNRANKED IS NOT UNRATED. The build holds a team out of the
+       national rank when its confidence gate fires, and the artifact says why.
+       Printed as a dash, that reads as "EdgeDesk has nothing on this team",
+       which is a different and worse claim than the true one. */
+    var rankNote = null;
+    if (rank == null) {
+      var ro = t.ranks && t.ranks.overall;
+      rankNote = (ro && ro.reason) ? String(ro.reason)
+        : (etsr != null ? 'rated, but held out of the national rank by the confidence gate' : 'no rating was published for this team');
+    }
+    return {
+      team: t.team || o.team || null,
+      etsr: etsr, rank: rank, ranked_of: num(o.ranked_of), rank_note: rankNote,
+      conference: t.conference || null,
+      meaning: etsr == null ? null
+        : 'ETSR is points against an average FBS team on a neutral field: '
+          + (etsr >= 0 ? '+' : '') + r2(etsr) + ' means EdgeDesk would make them '
+          + Math.abs(r2(etsr)) + ' point' + (Math.abs(r2(etsr)) === 1 ? '' : 's') + ' '
+          + (etsr >= 0 ? 'better' : 'worse') + ' than that average team before home field, travel or rest. '
+          + 'It is a rating, not a spread: two ratings subtracted give a neutral-field margin, which is where a '
+          + 'projection starts and not where it ends.',
+      confidence: conf,
+      confidence_meaning: conf == null ? null
+        : 'Confidence is how much EdgeDesk KNOWS about this team, not how good they are — '
+          + Math.round(conf * 100) + '% here. A +8 at 40% and a +8 at 90% are different statements and this system '
+          + 'never merges them.',
+      sample: sample,
+      units: {
+        offense: num(perf.offense), defense: num(perf.defense), special_teams: num(perf.special_teams),
+        run_offense: num(perf.run_offense), pass_offense: num(perf.pass_offense),
+        run_defense: num(perf.run_defense), pass_defense: num(perf.pass_defense),
+        scale: 'Unit ratings are on a 0-100 scale where 50 is the FBS average and higher is better, including for '
+          + 'defence — a defence rated 64 is a good defence, not a bad one.'
+      },
+      opponent_adjusted: true,
+      adjustment_note: 'Every unit number here is opponent-adjusted: the build compares what a team did against what '
+        + 'its specific opponents usually concede. The raw rate and the adjusted rate are both published, and where '
+        + 'they disagree the difference is the schedule.',
+      achievement: t.achievement ? { state: t.achievement.state, basis: t.achievement.basis } : null,
+      gates: gates,
+      source: o.source || 'football/rankings/current.json'
+    };
+  }
+
+  /* ====================================================================== */
+  /* THE DRIVERS — ONE SIDE'S UNIT AGAINST THE UNIT THAT HAS TO STOP IT     */
+  /*                                                                        */
+  /* Built ONLY from pairs where both halves cleared their own observation  */
+  /* floor in the ratings build. A driver that rests on one side's number   */
+  /* and a guess about the other is exactly the "two results against        */
+  /* different opponents" inference this must not make.                     */
+  /* ====================================================================== */
+  function detailIndex(team) {
+    var ix = {};
+    if (!team) return ix;
+    var p = team.performance || {};
+    [p.offense_detail, p.defense_detail].forEach(function (d) {
+      if (!d || !d.used) return;
+      d.used.forEach(function (u) { ix[u.id] = u; });
+    });
+    Object.keys(p.sub_units || {}).forEach(function (k) {
+      (p.sub_units[k].used || []).forEach(function (u) { if (!ix[u.id]) ix[u.id] = u; });
+    });
+    return ix;
+  }
+
+  function fmtMetric(v, unit) {
+    var n2 = num(v);
+    if (n2 == null) return null;
+    if (unit === 'rate') return (n2 * 100).toFixed(1) + '%';
+    return n2.toFixed(2);
+  }
+  /* THE OPPONENT ADJUSTMENT IS LINEAR AND A RATE IS NOT. A team that has faced
+     one front and given up nothing can come out of the adjustment below zero,
+     and "-2.2% of dropbacks" is not a thing that happened. The z is still the
+     right ordering - it is what the build ranks on - so the RAW rate is what
+     gets printed and the adjustment is reported as a direction. Clamping the
+     number to 0 and printing it as though it were measured would be worse: it
+     would look like a fact. */
+  function metricShow(u, unit) {
+    var adj = num(u.adjusted), raw = num(u.raw);
+    var out = { raw: fmtMetric(raw, unit), adjusted: fmtMetric(adj, unit), league: fmtMetric(u.league, unit),
+      z: r2(num(u.z)), plays: num(u.n_obs), weighted_plays: num(u.n), out_of_range: false };
+    if (unit === 'rate' && adj != null && (adj < 0 || adj > 1)) {
+      out.out_of_range = true;
+      out.show = out.raw;
+      out.show_basis = 'raw rate: the opponent adjustment put the adjusted figure outside the range a rate can take ('
+        + out.adjusted + '), so the measured number is shown and the adjustment is reported as direction only';
+    } else {
+      out.show = out.adjusted != null ? out.adjusted : out.raw;
+      out.show_basis = out.adjusted != null ? 'opponent-adjusted' : 'raw rate - no adjusted figure was published';
+    }
+    return out;
+  }
+
+  /**
+   * Up to `limit` matchup drivers, strongest first, one per football family.
+   *
+   * @param o.attacker / o.defender   rating records, the artifact's own shape
+   * @param o.attacker_name / o.defender_name
+   * @param o.min_reliability   both sides must clear this (default 0.35)
+   */
+  function matchupDrivers(o) {
+    o = o || {};
+    var A = o.attacker, B = o.defender;
+    var aName = o.attacker_name || (A && A.team) || 'the offence';
+    var bName = o.defender_name || (B && B.team) || 'the defence';
+    var limit = num(o.limit) != null ? num(o.limit) : 3;
+    var minRel = num(o.min_reliability) != null ? num(o.min_reliability) : 0.35;
+    if (!A || !B) return { drivers: [], missing: [{ field: 'matchup_drivers', reason: 'a rating record is missing for one side, so no unit pair can be compared' }] };
+    var ai = detailIndex(A), bi = detailIndex(B), out = [], skipped = [];
+
+    Object.keys(METRIC_DICTIONARY).forEach(function (id) {
+      var m = METRIC_DICTIONARY[id];
+      if (m.side !== 'offense' || m.alias_of || !m.counter) return;
+      var off = ai[id], def = bi[m.counter];
+      if (!off || !def) {
+        skipped.push({ id: id, reason: !off ? aName + ' has no published ' + m.label.toLowerCase()
+          : bName + ' has no published ' + (METRIC_DICTIONARY[m.counter] || {}).label });
+        return;
+      }
+      var zo = num(off.z), zd = num(def.z);
+      if (zo == null || zd == null) { skipped.push({ id: id, reason: 'one side cleared no observation floor on this metric' }); return; }
+      var rel = Math.min(num(off.reliability) == null ? 1 : num(off.reliability), num(def.reliability) == null ? 1 : num(def.reliability));
+      if (rel < minRel) { skipped.push({ id: id, reason: 'the sample behind it is too thin to read (reliability ' + r2(rel) + ')' }); return; }
+      /* Both z values are already direction-corrected by the build, so higher
+         is better FOR THAT UNIT on every metric. The attacker's advantage is
+         therefore the simple difference. */
+      var adv = zo - zd;
+      var w = num(off.w) == null ? 0.1 : num(off.w);
+      out.push({
+        id: id, family: m.family, family_label: METRIC_FAMILIES[m.family] || m.family,
+        label: m.label, plain: m.plain, mechanism: m.mechanism,
+        attacker: aName, defender: bName,
+        advantage_z: r2(adv), advantage_side: adv >= 0 ? 'attacker' : 'defender',
+        weight: w, reliability: r2(rel),
+        strength: Math.abs(adv) * w * rel,
+        defender_label: (METRIC_DICTIONARY[m.counter] || {}).label || m.label,
+        attacker_value: metricShow(off, m.unit),
+        defender_value: metricShow(def, m.unit),
+        opponent_adjustment: {
+          attacker_delta: fmtMetric(off.delta, m.unit), defender_delta: fmtMetric(def.delta, m.unit),
+          note: 'The adjusted figure is what the build makes of the raw one after the opponents faced. Where the two '
+            + 'differ, the difference IS the schedule.'
+        },
+        source: o.source || 'football/rankings/current.json'
+      });
+    });
+
+    out.sort(function (x, y) { return y.strength - x.strength; });
+    /* One per family, so three passing metrics do not become three drivers. */
+    var seen = {}, picked = [];
+    out.forEach(function (d) {
+      if (picked.length >= limit || seen[d.family]) return;
+      seen[d.family] = 1; picked.push(d);
+    });
+    picked.forEach(function (d) {
+      var favoured = d.advantage_side === 'attacker' ? d.attacker : d.defender;
+      var mag = Math.abs(d.advantage_z);
+      var word = mag >= 1.5 ? 'a wide gap' : mag >= 0.8 ? 'a clear gap' : mag >= 0.3 ? 'a modest gap' : 'close to level';
+      d.gap_word = word;
+      d.statement = d.attacker + ' ' + d.label.toLowerCase() + ' ' + d.attacker_value.show
+        + ' (league ' + d.attacker_value.league + ') against ' + d.defender + ' '
+        + d.defender_label.toLowerCase() + ' ' + d.defender_value.show
+        + ' (league ' + d.defender_value.league + ') \u2014 ' + word
+        + (mag < 0.3 ? '.' : ' in ' + favoured + '\u2019s favour.');
+      if (d.attacker_value.out_of_range || d.defender_value.out_of_range) {
+        d.statement += ' One of these is the raw rate: the opponent adjustment put it outside the range a rate can '
+          + 'take, so the measured number is shown rather than an impossible one.';
+      }
+      d.reading = d.mechanism;
+    });
+    return {
+      drivers: picked, considered: out.length, skipped: skipped.slice(0, 12),
+      basis: 'Each driver is one side’s unit against the unit that has to stop it, from opponent-adjusted rates '
+        + 'the ratings build published for BOTH sides. A pair where either half cleared no observation floor is '
+        + 'skipped and named rather than half-answered.',
+      contract: 'These explain the matchup. They do not move EdgeDesk’s number: the projection comes from the '
+        + 'validated engine and nothing here is added to it.'
+    };
+  }
+
+  /* ====================================================================== */
+  /* AVAILABILITY, IN ONE LINE FOR THE READER AND IN FULL FOR AN OPERATOR   */
+  /*                                                                        */
+  /* availabilityRead() produces the whole finding, including the source    */
+  /* counts. Printed in full, under both teams, on every answer, it is the  */
+  /* caveat wall the research is supposed to be replacing - and "276 failed */
+  /* source reads" is an operator's number, not a reader's. So the finding  */
+  /* is unchanged and the PRESENTATION is split: a short state, one short   */
+  /* reason, and the diagnostics behind a fold.                             */
+  /*                                                                        */
+  /* UNKNOWN NEVER BECOMES HEALTHY. That is the one thing this split may    */
+  /* not cost, so may_claim_healthy travels with the headline.              */
+  /* ====================================================================== */
+  var AVAIL_HEADLINES = {
+    VERIFIED_FLAGS: 'Reported',
+    PARTIAL: 'Partly reported',
+    NO_REPORTED_INJURIES: 'Clean official report',
+    UNKNOWN: 'Not reported',
+    NOT_RETRIEVED: 'Not retrieved'
+  };
+  function availabilityHeadline(read) {
+    if (!read) {
+      return { state: 'NOT_RETRIEVED', label: 'Not retrieved', short: 'EdgeDesk did not read an availability record for this team on this turn.',
+        may_claim_healthy: false, operator: null, tone: 'unknown' };
+    }
+    var st = read.state, counts = read.counts || {};
+    var flagged = num(counts.flagged) || 0, records = num(counts.records) || 0;
+    var short;
+    if (st === 'VERIFIED_FLAGS' || st === 'PARTIAL') {
+      short = records + ' player' + (records === 1 ? '' : 's') + ' carried an availability note'
+        + (flagged ? ', ' + flagged + ' of them in doubt' : '')
+        + '. Anyone not named is unreported, which is not the same as fit.';
+    } else if (st === 'NO_REPORTED_INJURIES') {
+      short = 'An official report was read and listed nobody. This is the only case where "no reported injuries" is a fact.';
+    } else if (st === 'UNKNOWN') {
+      short = 'No availability record is on file. That is unknown, not healthy.';
+    } else {
+      short = 'No availability record was retrieved on this turn. That is a retrieval result, not a medical one.';
+    }
+    if (read.stale && read.artifact_age_hours != null) {
+      short += ' The build is ' + read.artifact_age_hours + 'h old, so read it as history.';
+    }
+    return {
+      state: st, label: AVAIL_HEADLINES[st] || st, short: short,
+      may_claim_healthy: read.may_claim_healthy === true,
+      tone: st === 'NO_REPORTED_INJURIES' ? 'ok' : (st === 'VERIFIED_FLAGS' || st === 'PARTIAL') ? 'note' : 'unknown',
+      players: (read.players || []).slice(0, 12),
+      /* An operator's number, kept out of the reader's way and not deleted. */
+      operator: {
+        sources_checked: read.sources_checked, sources_failed: read.sources_failed,
+        data_quality: read.data_quality, official_report_found: read.official_report_found,
+        artifact_age_hours: read.artifact_age_hours, stale: read.stale,
+        full_sentence: read.sentence, source: read.source
+      }
+    };
+  }
+
+  /* ====================================================================== */
+  /* THE CASE AGAINST                                                        */
+  /*                                                                        */
+  /* Ordered by what it would COST to be wrong about, not by how easy it is  */
+  /* to say. Every item names the evidence it rests on, so a reader can go   */
+  /* and check it rather than take it.                                       */
+  /* ====================================================================== */
+  function counterCase(o) {
+    o = o || {};
+    var out = [];
+    function add(id, weight, headline, detail, evidence) {
+      out.push({ id: id, weight: weight, headline: headline, detail: detail, evidence: evidence || null });
+    }
+    var R = o.research || {}, board = o.market_board || null;
+    var subj = o.subject || R.subject || 'this team', opp = o.opponent || R.opponent || 'the opponent';
+
+    /* 1. The model's own record. The largest structural argument there is. */
+    var val = o.validation || validationFor(o.sport || R.sport || CFB_SPORT, 'spreads');
+    if (val && val.max_decision === 'WATCH') {
+      add('model_validation', 100,
+        'EdgeDesk’s number is not evidence that the market is wrong.',
+        'In this market the model is validated at ' + val.tier + ': ' + val.limitations
+        + ' A gap between it and the price is a research lead, not an edge, and it gets LESS reliable as it gets bigger.',
+        { source: 'EDINTEL.MODEL_VALIDATION', field: 'validation_summary.market' });
+    }
+    /* 2. A thin effective sample on either side. */
+    [['subject', o.subject_sample, subj], ['opponent', o.opponent_sample, opp]].forEach(function (p) {
+      var s2 = p[1];
+      if (!s2 || s2.effective_games == null) return;
+      if (s2.effective_games < 3) {
+        add('thin_sample_' + p[0], 90 - s2.effective_games,
+          p[2] + '’s rating is mostly preseason prior, not this season.',
+          s2.label + ' of evidence puts roughly ' + Math.round((s2.prior_weight || 0) * 100)
+          + '% of the rating on the preseason prior. Every unit number below inherits that, so a driver built on '
+          + 'it is a statement about what EdgeDesk expected as much as about what has happened.',
+          { source: s2.source, field: 'weights.games_used' });
+      }
+    });
+    /* 3. Availability unknown. Never softened, never converted. */
+    ['home', 'away'].forEach(function (side) {
+      var h = o.availability && o.availability[side];
+      if (!h) return;
+      if (h.state === 'UNKNOWN' || h.state === 'NOT_RETRIEVED') {
+        add('availability_' + side, 80,
+          'Nobody has been confirmed available for ' + (h.team || side) + '.',
+          h.short + ' A starter could be out and EdgeDesk would not know. This is the largest unmodelled input in '
+          + 'college football and it is unknown here, not clean.',
+          { source: (h.operator && h.operator.source) || 'football/availability/current.json' });
+      } else if (h.state === 'VERIFIED_FLAGS' || h.state === 'PARTIAL') {
+        add('availability_' + side, 70,
+          'There are availability notes on ' + (h.team || side) + '.',
+          h.short + ' EdgeDesk does not move its projection on them, so whatever they are worth is not in the number.',
+          { source: (h.operator && h.operator.source) || 'football/availability/current.json' });
+      }
+    });
+    /* 4. The market disagrees, and the market is the better forecaster here. */
+    if (o.model_margin != null && o.market_margin != null) {
+      var gap = Math.abs(num(o.model_margin) - num(o.market_margin));
+      if (gap >= (CONFIG.disagreement_points || 3)) {
+        add('market_disagreement', 85,
+          'The market is ' + r2(gap) + ' points away from EdgeDesk, and the market has the better record here.',
+          'Against the closing line this model does not win, and its ATS record gets WORSE as the disagreement '
+          + 'widens. A gap this size is more often a fault in EdgeDesk’s inputs than a mispriced game, which is '
+          + 'why a large gap raises research priority and can never raise a recommendation.',
+          { source: 'EDINTEL.MODEL_VALIDATION', field: 'ats_vs_close' });
+      }
+    }
+    /* 5. The strongest driver, pointed the other way. */
+    (o.drivers || []).forEach(function (d, i) {
+      if (i > 0) return;
+      if (!d || Math.abs(d.advantage_z) < 0.3) return;
+      add('driver_reversed', 60,
+        'The read leans on one unit matchup that a small sample could reverse.',
+        d.statement + ' It rests on ' + (d.attacker_value.plays || '?') + ' and '
+        + (d.defender_value.plays || '?') + ' observed plays with a reliability of ' + d.reliability
+        + '. At that sample the ordering is real and the SIZE of it is not settled.',
+        { source: d.source, field: d.id });
+    });
+    /* 6. The price itself. */
+    if (board && board.status) {
+      if (board.status.state === 'STALE') {
+        add('stale_price', 75,
+          'The price this rests on is past its freshness limit.',
+          board.status.user, { source: 'captured signals' });
+      } else if (board.status.state === 'LINE_ONLY') {
+        add('no_executable_price', 65,
+          'There is a number but nothing to bet into.',
+          board.status.user, { source: 'cfb.lines' });
+      } else if (board.status.state === 'NO_QUOTE' || board.status.is_edgedesk_fault) {
+        add('no_price', 60, 'There is no price to test this against.', board.status.user, null);
+      }
+    }
+    /* 7. Distance from kickoff. */
+    var kick = toMs(o.kickoff), now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    if (kick != null && kick > now) {
+      var hrs = Math.round((kick - now) / 3600e3);
+      if (hrs >= 48) {
+        add('time_to_kickoff', 40,
+          'Kickoff is ' + hrs + ' hours away.',
+          'Most of the information that will move this number - availability, weather and late money - has not '
+          + 'arrived yet. A conclusion taken now is a conclusion taken on less than will be available.', null);
+      }
+    }
+    out.sort(function (a, b) { return b.weight - a.weight; });
+    return {
+      strongest: out.length ? out[0] : null,
+      others: out.slice(1),
+      all: out,
+      basis: 'Ordered by what it would cost to be wrong about, not by how easy it is to say. Every item names the '
+        + 'evidence it rests on.'
+    };
+  }
+
+  /* ====================================================================== */
+  /* WHAT WOULD CHANGE THE ASSESSMENT                                       */
+  /*                                                                        */
+  /* Falsifiers only: each one is a thing that can actually be observed and */
+  /* that would move the read if it were. "More information" is not on this */
+  /* list, because it is not checkable.                                     */
+  /* ====================================================================== */
+  function whatWouldChange(o) {
+    o = o || {};
+    var out = [], board = o.market_board || null;
+    function add(id, kind, text, watch) { out.push({ id: id, kind: kind, text: text, watch: watch || null }); }
+
+    var cur = o.market_row || (board && board.spreads && board.spreads.current);
+    if (cur && cur.handicap != null) {
+      add('line_move', 'price',
+        'The handicap moving off ' + (cur.handicap > 0 ? '+' : '') + cur.handicap
+        + '. A point either way changes which side the comparison favours, and EdgeDesk re-reads the price on every '
+        + 'turn rather than reusing the one above.',
+        { market: 'spreads', handicap: cur.handicap, book: cur.book });
+    } else if (board && board.status && board.status.state !== 'LIVE') {
+      add('price_appears', 'price',
+        'A book posting a price at all. There is nothing to compare the model against until one does, and EdgeDesk '
+        + 'will not invent one from the other side of a handicap.', null);
+    }
+    ['home', 'away'].forEach(function (side) {
+      var h = o.availability && o.availability[side];
+      if (h && (h.state === 'UNKNOWN' || h.state === 'NOT_RETRIEVED')) {
+        add('availability_' + side, 'information',
+          'An availability report landing for ' + (h.team || side) + '. Unknown is doing real work in this read, and '
+          + 'a named starter either way would move it more than any number below.', null);
+      }
+    });
+    (o.drivers || []).slice(0, 2).forEach(function (d) {
+      add('driver_' + d.id, 'evidence',
+        'Another game’s worth of ' + d.label.toLowerCase() + '. At reliability ' + d.reliability
+        + ' the ordering is established and the margin is not; one more opponent would settle it either way.',
+        { metric: d.id });
+    });
+    var samp = o.subject_sample;
+    if (samp && samp.effective_games != null && samp.effective_games < 4) {
+      add('sample_grows', 'evidence',
+        'The rating passing about four FBS-equivalent games, which is where this season overtakes the preseason '
+        + 'prior in the ramp. Until then the rating is describing expectation as much as evidence.', null);
+    }
+    if (o.weather_missing) {
+      add('weather', 'information',
+        'A wind or precipitation read at kickoff. EdgeDesk has none for this game, and wind is the one weather '
+        + 'variable that reliably moves a total.', null);
+    }
+    return { items: out, basis: 'Each is observable. A thing EdgeDesk cannot check is not a falsifier and is not listed.' };
+  }
+
+  /* ====================================================================== */
+  /* KICKOFF, WITH ITS TIMEZONE                                             */
+  /* A time with no zone on it is a time somebody will read wrongly, and a  */
+  /* reader in Lubbock and a reader in Boston do not have the same 7pm.     */
+  /* ====================================================================== */
+  function kickoffText(iso, tz) {
+    var ms = toMs(iso);
+    if (ms == null) return null;
+    var d = new Date(ms);
+    try {
+      var opt = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
+      if (tz) opt.timeZone = tz;
+      return d.toLocaleString('en-US', opt).replace(/,\s*(?=\d?\d:)/, ' ');
+    } catch (_) { return d.toISOString(); }
+  }
+
+  /* ====================================================================== */
+  /* THE MATCHUP BRIEF - the default answer to "how does X look this week?"  */
+  /*                                                                        */
+  /* The old card answered with a ratings table and a wall of caveats. A     */
+  /* reader asking about a matchup wants, in this order: what this game IS,  */
+  /* the two numbers, three reasons rooted in football, the best reason to   */
+  /* disbelieve it, and what would change it. Everything else is depth and   */
+  /* belongs behind a fold.                                                  */
+  /*                                                                         */
+  /* NOTHING HERE COMPUTES A FOOTBALL NUMBER. Every figure is read from      */
+  /* matchupResearch (the model artifact), marketBoard (captured prices) or  */
+  /* the ratings build. This function ORDERS and EXPLAINS them, which is     */
+  /* exactly the boundary the model guardrails draw.                         */
+  /* ====================================================================== */
+  var BRIEF_SCHEMA = 'edgedesk_matchup_brief_v1';
+
+  function matchupBrief(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var R = o.research || {};
+    var board = o.market_board || null;
+    var subj = R.subject || null, opp = R.opponent || null;
+    var subjIsHome = R.subject_is_home !== false;
+    var id = R.identity || {};
+    var f = function (x) { return (x && !x.missing) ? x.value : null; };
+
+    var subjRec = subjIsHome ? o.home_record : o.away_record;
+    var oppRec = subjIsHome ? o.away_record : o.home_record;
+    var subjRating = subjRec ? ratingRead({ team_record: subjRec, ranked_of: o.ranked_of, source: o.ratings_source }) : null;
+    var oppRating = oppRec ? ratingRead({ team_record: oppRec, ranked_of: o.ranked_of, source: o.ratings_source }) : null;
+
+    /* BOTH DIRECTIONS. A matchup is two offences against two defences, and a
+       read built from one of them is half a read. Each side contributes its
+       own strongest unit pairs and the merged list is trimmed to `limit`. */
+    var dSubj = matchupDrivers({ attacker: subjRec, defender: oppRec, attacker_name: subj, defender_name: opp,
+      limit: 3, source: o.ratings_source });
+    var dOpp = matchupDrivers({ attacker: oppRec, defender: subjRec, attacker_name: opp, defender_name: subj,
+      limit: 3, source: o.ratings_source });
+    var merged = [];
+    (dSubj.drivers || []).forEach(function (d) { d.direction = 'subject_offense'; merged.push(d); });
+    (dOpp.drivers || []).forEach(function (d) { d.direction = 'opponent_offense'; merged.push(d); });
+    merged.sort(function (a, b) { return b.strength - a.strength; });
+    /* BOTH OFFENCES GET A HEARING. Ranked purely on strength, one team's units
+       can take all three slots, and a matchup read that never mentions what
+       the other side does with the ball is half a read presented as a whole
+       one. The strongest pair from each direction is seated first; the last
+       slot goes to whatever is strongest overall. */
+    var limitN = num(o.driver_limit) != null ? num(o.driver_limit) : 3;
+    var drivers = [], famSeen = {}, dirSeen = {};
+    function seat(d) {
+      var k = d.family + '|' + d.direction;
+      if (drivers.length >= limitN || famSeen[k]) return false;
+      famSeen[k] = 1; dirSeen[d.direction] = 1; drivers.push(d); return true;
+    }
+    ['subject_offense', 'opponent_offense'].forEach(function (dir) {
+      for (var i = 0; i < merged.length; i++) if (merged[i].direction === dir) { seat(merged[i]); return; }
+    });
+    merged.forEach(function (d) { if (drivers.indexOf(d) < 0) seat(d); });
+
+    var avail = {
+      home: availabilityHeadline(R.availability && R.availability.home),
+      away: availabilityHeadline(R.availability && R.availability.away)
+    };
+    avail.home.team = f(id.home); avail.away.team = f(id.away);
+
+    /* ---- the two numbers, in ONE convention, named --------------------- */
+    var modelHomeLine = R.model ? f(R.model.home_line) : null;       /* betting: negative = home favourite */
+    var marketHomeHandicap = null, marketRow = null;
+    if (board && board.spreads && board.spreads.by_side && board.spreads.by_side.home) {
+      marketRow = board.spreads.by_side.home;
+      marketHomeHandicap = num(marketRow.handicap);
+    } else if (board && board.spreads && board.spreads.by_side && board.spreads.by_side.away) {
+      marketRow = board.spreads.by_side.away;
+      marketHomeHandicap = num(marketRow.handicap) == null ? null : -num(marketRow.handicap);
+    } else if (board && board.consensus && board.consensus.spread_home_handicap != null) {
+      marketHomeHandicap = num(board.consensus.spread_home_handicap);
+    } else if (R.market && f(R.market.spread) != null) {
+      /* matchupResearch publishes the MARGIN convention; flip it to betting. */
+      marketHomeHandicap = -num(f(R.market.spread));
+    }
+    /* A SPREAD IS QUOTED IN HALF POINTS. Reporting a difference to two
+       decimals implies a precision neither number has, and reads as though
+       the model were measuring something it is not. */
+    function pt1(v) { var n2 = num(v); return n2 == null ? null : Math.round(n2 * 10) / 10; }
+    var diff = (modelHomeLine != null && marketHomeHandicap != null) ? pt1(Math.abs(modelHomeLine - marketHomeHandicap)) : null;
+    var comparison = null;
+    if (diff != null) {
+      var modelSide = modelHomeLine < marketHomeHandicap ? f(id.home) : modelHomeLine > marketHomeHandicap ? f(id.away) : null;
+      comparison = {
+        points: diff,
+        model_home_line: modelHomeLine, market_home_handicap: marketHomeHandicap,
+        model_leans: modelSide,
+        convention: 'Both numbers are written the betting way: negative is the home side favoured by that many points.',
+        meaning: diff === 0
+          ? 'EdgeDesk and the market are on the same number.'
+          : 'EdgeDesk’s number is ' + diff + ' point' + (diff === 1 ? '' : 's') + ' '
+            + (modelSide ? 'toward ' + modelSide : 'away from the market')
+            + '. That is a difference between two numbers and not an edge: in this market EdgeDesk’s model does '
+            + 'not beat the closing line, and its record gets worse as the gap widens.'
+      };
+    }
+
+    var counter = counterCase({
+      research: R, market_board: board, drivers: drivers, subject: subj, opponent: opp,
+      sport: R.sport, availability: avail,
+      subject_sample: subjRating && subjRating.sample, opponent_sample: oppRating && oppRating.sample,
+      model_margin: modelHomeLine == null ? null : -modelHomeLine,
+      market_margin: marketHomeHandicap == null ? null : -marketHomeHandicap,
+      kickoff: f(id.kickoff), now: now
+    });
+    var change = whatWouldChange({
+      market_board: board, market_row: marketRow, availability: avail, drivers: drivers,
+      subject_sample: subjRating && subjRating.sample,
+      weather_missing: !o.weather, now: now
+    });
+
+    /* ---- the takeaway: description only, never a lean ------------------ */
+    var when = kickoffText(f(id.kickoff), o.timezone);
+    var lines = [];
+    lines.push(subj + (subjIsHome ? ' host ' : ' visit ') + opp
+      + (when ? ' on ' + when : '')
+      + (f(id.venue) && subjIsHome ? ' at ' + f(id.venue) : '')
+      + (f(id.week) != null ? ', week ' + f(id.week) : '') + '.');
+    if (R.model && f(R.model.favourite)) {
+      lines.push('EdgeDesk makes it ' + f(R.model.favourite) + ' by ' + pt1(f(R.model.by_points))
+        + (f(R.model.fair_total) != null ? ', total ' + pt1(f(R.model.fair_total)) : '') + '.');
+    } else {
+      lines.push('EdgeDesk has no projection published for this game.');
+    }
+    if (marketRow && marketRow.price_american != null) {
+      lines.push('The market has ' + (marketRow.side === 'home' ? f(id.home) : f(id.away)) + ' '
+        + (marketRow.handicap > 0 ? '+' : '') + marketRow.handicap + ' at ' + marketRow.price_american
+        + (marketRow.book ? ' (' + marketRow.book + ')' : '')
+        + (marketRow.freshness && marketRow.freshness.age_min != null
+          ? ', seen ' + Math.round(marketRow.freshness.age_min) + ' minutes ago' : '') + '.'
+        + (comparison ? ' That is ' + comparison.points + ' point' + (comparison.points === 1 ? '' : 's')
+          + ' from EdgeDesk’s number.' : ''));
+    } else if (board && board.consensus && marketHomeHandicap != null) {
+      lines.push('The only number on file is a consensus ' + (marketHomeHandicap > 0 ? '+' : '') + marketHomeHandicap
+        + ' for ' + f(id.home) + ' - a reference with no book and no capture time, so it is not a price.');
+    } else if (board && board.status) {
+      lines.push(board.status.user);
+    }
+    if (drivers.length) lines.push('The matchup turns most on ' + drivers[0].family_label + ': ' + drivers[0].statement);
+
+    return {
+      schema: BRIEF_SCHEMA,
+      built_at: new Date(now).toISOString(),
+      game_id: R.game_id || null,
+      sport: R.sport || CFB_SPORT,
+      subject: subj, opponent: opp, subject_is_home: subjIsHome,
+      takeaway: {
+        text: lines.join(' '),
+        lines: lines,
+        basis: 'Description only. EdgeDesk’s model is not validated to a probability in this market, so the '
+          + 'strongest thing this paragraph is allowed to do is describe.'
+      },
+      verified: {
+        home: f(id.home), away: f(id.away),
+        kickoff_iso: f(id.kickoff), kickoff_text: when,
+        venue: f(id.venue), neutral_site: f(id.neutral_site),
+        week: f(id.week), season: f(id.season),
+        source: (id.home && id.home.source) || R.resolution && R.resolution.source || null
+      },
+      numbers: {
+        model: R.model || null,
+        market_row: marketRow, market_status: board ? board.status : null,
+        consensus: board ? board.consensus : null,
+        comparison: comparison
+      },
+      /* The full price board, carried so a renderer never has to go and get
+         it a second time and risk showing a different number than the one the
+         takeaway above was written from. */
+      market_rows: board ? board.rows : [],
+      market_coverage: board ? board.coverage : null,
+      market_contract: board ? board.contract : null,
+      resolution_how: R.resolution ? ((R.resolution.how || 'resolved') + ' from ' + (R.resolution.source || 'the published card')) : null,
+      ratings: { subject: subjRating, opponent: oppRating },
+      drivers: drivers,
+      drivers_meta: { subject_offense: dSubj, opponent_offense: dOpp },
+      counter: counter.strongest, counter_others: counter.others, counter_all: counter.all,
+      what_would_change: change.items,
+      availability: avail,
+      previous_games: R.previous_games || null,
+      /* ONE CAVEAT, ONCE. matchupResearch, counterCase and the availability
+         headline all legitimately reach the same conclusion about the same
+         gap; printing all three is the wall this is replacing. The counter
+         case is the place a reader is told, so a limit already stated there
+         is dropped from this list rather than repeated. */
+      limits: uniq((R.limits || []).filter(function (l) {
+        var t = String(l).toLowerCase();
+        /* TWO WORDINGS, ONE FACT. The research packet states the gap per team
+           ("availability for X is unknown") and the starter layer states it
+           per player ("no availability report reached <name>"). Both are the
+           same caveat the counter case already makes, so both are dropped
+           here rather than one of them slipping past the wall. */
+        if ((/availability for .* is unknown/.test(t) || /no availability report reached /.test(t))
+          && (counter.all || []).some(function (c) { return /^availability_/.test(c.id); })) return false;
+        if (/has not cleared validation/.test(t) && (counter.all || []).some(function (c) { return c.id === 'model_validation'; })) return false;
+        return true;
+      })),
+      missing: R.missing || [],
+      sources: uniq([
+        R.resolution && R.resolution.source,
+        (subjRating || oppRating) ? (o.ratings_source || 'football/rankings/current.json') : null,
+        board && board.rows && board.rows.length ? 'captured signals' : null,
+        board && board.consensus ? board.consensus.source : null,
+        (R.availability && (R.availability.home || R.availability.away)) ? 'football/availability/current.json' : null,
+        (R.previous_games && (R.previous_games.home || R.previous_games.away)) ? o.results_source || 'cfb.games' : null
+      ].filter(Boolean)),
+      contract: 'Facts, model output, and interpretation are separate fields and stay separate. `verified` is read '
+        + 'from published artifacts, `numbers.model` is the tested engine’s own output, `drivers` and `counter` '
+        + 'are interpretation built only from figures in this object, and nothing here produces a probability, an '
+        + 'expected value or an adjustment.'
+    };
+  }
+
+  /* ====================================================================== */
+  /* SAVED RESEARCH                                                          */
+  /*                                                                        */
+  /* A RESEARCH SNAPSHOT IS NOT A WAGER, and this system keeps the two       */
+  /* apart on purpose. `recommendation_ledger` records a decision EdgeDesk   */
+  /* made and is the official performance record; a snapshot records what a  */
+  /* READER was looking at when they saved it. Mixing them would let saved   */
+  /* reading count as measured performance, which is the one thing the       */
+  /* record must never absorb.                                              */
+  /*                                                                        */
+  /* It is frozen. A snapshot that changes is not a snapshot, so the         */
+  /* pregame explanation is never rewritten after the result: a later view   */
+  /* is a SECOND snapshot and the pair is what a comparison reads.           */
+  /* ====================================================================== */
+  var SNAPSHOT_SCHEMA = 'edgedesk_research_snapshot_v1';
+
+  function snapshotDigest(o) {
+    /* Small, stable, and dependency-free - the same idea the editorial
+       snapshots use: a value identified by a hash of itself, so a snapshot
+       that was edited stops matching its own id. */
+    var s = JSON.stringify(o), h1 = 0x811c9dc5, h2 = 0x01000193, i;
+    for (i = 0; i < s.length; i++) {
+      h1 = (h1 ^ s.charCodeAt(i)) >>> 0;
+      h1 = (h1 * 0x01000193) >>> 0;
+      h2 = (h2 + s.charCodeAt(i) * (i + 7)) >>> 0;
+    }
+    return ('00000000' + h1.toString(16)).slice(-8) + ('00000000' + h2.toString(16)).slice(-8);
+  }
+
+  /**
+   * Freeze one matchup's research.
+   *
+   * @param o.brief        a matchupBrief
+   * @param o.model_version   the exact engine build the projection came from
+   * @param o.question     what the reader asked
+   * @param o.user_quote   a reader-entered price, if one was in play
+   * @param o.note         the reader's own note
+   * @param o.open_questions  what the reader still wants answered
+   */
+  function researchSnapshot(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var B = o.brief || {};
+    var mrow = B.numbers && B.numbers.market_row;
+    var body = {
+      schema: SNAPSHOT_SCHEMA,
+      kind: 'RESEARCH',
+      saved_at: new Date(now).toISOString(),
+      game_id: B.game_id || null,
+      sport: B.sport || CFB_SPORT,
+      matchup: (B.verified && B.verified.away ? B.verified.away + ' @ ' + B.verified.home : null),
+      subject: B.subject || null, opponent: B.opponent || null,
+      kickoff: B.verified ? B.verified.kickoff_iso : null,
+      question: o.question || null,
+      note: o.note || null,
+      open_questions: (o.open_questions || []).slice(0, 12),
+      /* WHAT THE NUMBERS WERE, EXACTLY, AND WHERE THEY CAME FROM. */
+      model: {
+        version: o.model_version || null,
+        home_line: B.numbers && B.numbers.model ? (B.numbers.model.home_line || {}).value : null,
+        fair_total: B.numbers && B.numbers.model ? (B.numbers.model.fair_total || {}).value : null,
+        tier: B.numbers && B.numbers.model ? (B.numbers.model.tier || {}).value : null,
+        data_completeness: B.numbers && B.numbers.model ? (B.numbers.model.data_completeness || {}).value : null
+      },
+      observed_price: mrow ? {
+        market: mrow.market, selection: mrow.selection, side: mrow.side, handicap: mrow.handicap,
+        price_american: mrow.price_american, book: mrow.book, observed_at: mrow.observed_at,
+        books_quoting: mrow.books_quoting, source: 'captured signals',
+        freshness_at_save: mrow.freshness ? mrow.freshness.status : null
+      } : null,
+      market_status: B.numbers && B.numbers.market_status ? B.numbers.market_status.state : null,
+      consensus: B.numbers ? B.numbers.consensus : null,
+      user_quote: o.user_quote || null,
+      comparison: B.numbers ? B.numbers.comparison : null,
+      drivers: (B.drivers || []).map(function (d) {
+        return { id: d.id, family: d.family, direction: d.direction, statement: d.statement,
+          advantage_z: d.advantage_z, reliability: d.reliability,
+          attacker: d.attacker, defender: d.defender,
+          attacker_value: d.attacker_value ? d.attacker_value.show : null,
+          defender_value: d.defender_value ? d.defender_value.show : null };
+      }),
+      counter: B.counter ? { id: B.counter.id, headline: B.counter.headline, detail: B.counter.detail } : null,
+      what_would_change: (B.what_would_change || []).map(function (c) { return { id: c.id, kind: c.kind, text: c.text }; }),
+      availability: {
+        home: B.availability && B.availability.home ? { state: B.availability.home.state, short: B.availability.home.short } : null,
+        away: B.availability && B.availability.away ? { state: B.availability.away.state, short: B.availability.away.short } : null
+      },
+      ratings: {
+        subject: B.ratings && B.ratings.subject ? { etsr: B.ratings.subject.etsr, rank: B.ratings.subject.rank,
+          effective_games: B.ratings.subject.sample ? B.ratings.subject.sample.effective_games : null } : null,
+        opponent: B.ratings && B.ratings.opponent ? { etsr: B.ratings.opponent.etsr, rank: B.ratings.opponent.rank,
+          effective_games: B.ratings.opponent.sample ? B.ratings.opponent.sample.effective_games : null } : null
+      },
+      sources: B.sources || [],
+      /* Said on the object itself so no consumer has to be trusted to know. */
+      is_a_wager: false,
+      record_note: 'A research snapshot. It is not a wager, it is not in EdgeDesk’s performance record, and it '
+        + 'is never counted as one.'
+    };
+    body.id = snapshotDigest(body);
+    return body;
+  }
+
+  /* What counts as a material change, and the size it has to reach. */
+  var SNAPSHOT_DELTAS = { spread_points: 0.5, total_points: 1, price_american: 10, etsr_points: 1 };
+
+  /**
+   * What changed between a saved snapshot and a later one.
+   *
+   * ONLY FROM TWO OBSERVATIONS THAT EXIST. Where the earlier snapshot has no
+   * price, this reports that there was nothing to compare rather than
+   * inventing an opening number and a movement story to go with it.
+   */
+  function compareSnapshots(before, after, o) {
+    o = o || {};
+    var out = { schema: 'edgedesk_snapshot_diff_v1', before_id: before && before.id, after_id: after && after.id,
+      before_at: before && before.saved_at, after_at: after && after.saved_at,
+      changes: [], unchanged: [], gaps: [], material: false };
+    if (!before || !after) { out.gaps.push('two snapshots are needed and only one was supplied'); return out; }
+    if (before.game_id && after.game_id && String(before.game_id) !== String(after.game_id)) {
+      out.gaps.push('these snapshots are of different games (' + before.game_id + ' vs ' + after.game_id
+        + '), so nothing is compared. A change report across two fixtures would be meaningless.');
+      return out;
+    }
+    function add(kind, field, headline, detail, material) {
+      out.changes.push({ kind: kind, field: field, headline: headline, detail: detail, material: !!material });
+      if (material) out.material = true;
+    }
+
+    /* ---- the market ---------------------------------------------------- */
+    var pb = before.observed_price, pa = after.observed_price;
+    if (!pb && !pa) {
+      out.gaps.push('Neither reading carried a captured price, so there is no market movement to report. EdgeDesk '
+        + 'does not reconstruct an opening line and will not narrate a move it did not observe.');
+    } else if (!pb && pa) {
+      add('market', 'observed_price', 'A price appeared.',
+        'There was no captured price when this was saved. There is one now: ' + pa.price_american
+        + (pa.book ? ' at ' + pa.book : '') + (pa.handicap != null ? ' on ' + (pa.handicap > 0 ? '+' : '') + pa.handicap : '')
+        + '.', true);
+    } else if (pb && !pa) {
+      add('market', 'observed_price', 'The price is gone.',
+        'A price was captured when this was saved (' + pb.price_american + (pb.book ? ' at ' + pb.book : '')
+        + ') and no book EdgeDesk covers is quoting this selection now. That is an absence, not a move to zero.', true);
+    } else {
+      var dh = (num(pb.handicap) != null && num(pa.handicap) != null) ? r2(num(pa.handicap) - num(pb.handicap)) : null;
+      if (dh != null && Math.abs(dh) >= SNAPSHOT_DELTAS.spread_points) {
+        add('market', 'handicap', 'The number moved ' + Math.abs(dh) + ' point' + (Math.abs(dh) === 1 ? '' : 's') + '.',
+          'From ' + (pb.handicap > 0 ? '+' : '') + pb.handicap + ' to ' + (pa.handicap > 0 ? '+' : '') + pa.handicap
+          + ' on ' + (pa.selection || 'this selection') + '. Both are prices EdgeDesk observed, at '
+          + (pb.observed_at || 'an unknown time') + ' and ' + (pa.observed_at || 'an unknown time') + '.', true);
+      } else if (dh != null) {
+        out.unchanged.push('The handicap is still ' + (pa.handicap > 0 ? '+' : '') + pa.handicap + '.');
+      }
+      var oldAm = num(String(pb.price_american).replace('+', '')), newAm = num(String(pa.price_american).replace('+', ''));
+      if (oldAm != null && newAm != null && Math.abs(newAm - oldAm) >= SNAPSHOT_DELTAS.price_american) {
+        add('market', 'price', 'The price moved.',
+          'From ' + pb.price_american + ' to ' + pa.price_american
+          + (pa.book && pb.book && pa.book !== pb.book ? ' (best book changed from ' + pb.book + ' to ' + pa.book + ')' : ''),
+          true);
+      }
+      if (pb.freshness_at_save !== pa.freshness_at_save) {
+        add('market', 'freshness', 'The quote’s freshness changed.',
+          'It was ' + pb.freshness_at_save + ' and is now ' + pa.freshness_at_save + '.',
+          pa.freshness_at_save === 'STALE');
+      }
+    }
+
+    /* ---- the model ----------------------------------------------------- */
+    var mb = (before.model || {}).home_line, ma = (after.model || {}).home_line;
+    if (num(mb) != null && num(ma) != null && Math.abs(num(ma) - num(mb)) >= SNAPSHOT_DELTAS.spread_points) {
+      add('model', 'home_line', 'EdgeDesk’s own number moved.',
+        'From ' + r2(mb) + ' to ' + r2(ma) + ' (betting convention, negative is the home favourite).', true);
+    }
+    if ((before.model || {}).version && (after.model || {}).version
+      && before.model.version !== after.model.version) {
+      add('model', 'version', 'The model build changed.',
+        'The saved reading came from ' + before.model.version + ' and this one from ' + after.model.version
+        + '. Two builds are not the same forecaster and their numbers are not directly comparable.', true);
+    }
+
+    /* ---- availability --------------------------------------------------- */
+    ['home', 'away'].forEach(function (side) {
+      var b = before.availability && before.availability[side], a = after.availability && after.availability[side];
+      if (!b || !a) return;
+      if (b.state !== a.state) {
+        add('availability', side, 'Availability for the ' + side + ' side changed state.',
+          'It was ' + b.state + ' and is now ' + a.state + '. ' + (a.short || ''), true);
+      }
+    });
+
+    /* ---- the ratings ---------------------------------------------------- */
+    ['subject', 'opponent'].forEach(function (k) {
+      var b = before.ratings && before.ratings[k], a = after.ratings && after.ratings[k];
+      if (!b || !a || num(b.etsr) == null || num(a.etsr) == null) return;
+      var d = r2(num(a.etsr) - num(b.etsr));
+      if (Math.abs(d) >= SNAPSHOT_DELTAS.etsr_points) {
+        add('rating', k, 'The ' + k + '’s rating moved ' + (d > 0 ? 'up ' : 'down ') + Math.abs(d) + '.',
+          'ETSR from ' + b.etsr + ' to ' + a.etsr
+          + (num(a.effective_games) != null && num(b.effective_games) != null && a.effective_games !== b.effective_games
+            ? ', on ' + a.effective_games + ' FBS-equivalent games against ' + b.effective_games + ' before' : ''), true);
+      }
+    });
+
+    /* ---- does the saved conclusion still stand? ------------------------- */
+    var cb = before.comparison, ca = after.comparison;
+    if (cb && ca && cb.model_leans && ca.model_leans && cb.model_leans !== ca.model_leans) {
+      add('conclusion', 'side', 'The comparison now favours the other side.',
+        'It leaned toward ' + cb.model_leans + ' when you saved it and toward ' + ca.model_leans + ' now.', true);
+    }
+    out.conclusion_still_applies = !out.changes.some(function (c) {
+      return c.material && (c.kind === 'conclusion' || c.field === 'handicap' || c.kind === 'availability' || c.field === 'version');
+    });
+    out.summary = out.material
+      ? out.changes.filter(function (c) { return c.material; }).length + ' material change'
+        + (out.changes.filter(function (c) { return c.material; }).length === 1 ? '' : 's') + ' since you saved this.'
+      : 'Nothing material moved since you saved this.';
+    out.basis = 'Every line here is a comparison of two observations EdgeDesk actually stored. Where an observation '
+      + 'is missing at one end, that is reported as a gap and no movement is narrated across it.';
+    return out;
+  }
+
+  /* ====================================================================== */
+  /* AFTER THE GAME                                                          */
+  /*                                                                        */
+  /* Three questions that get conflated constantly and are reported          */
+  /* separately here, and allowed to disagree:                               */
+  /*   OUTCOME        did the side you were looking at cover?                */
+  /*   PRICE QUALITY  was the number you saw better than the close? (CLV)    */
+  /*   FORECAST       was EdgeDesk's projection any good, result aside?      */
+  /* A winning side on a bad number is published as exactly that.            */
+  /* ====================================================================== */
+  function postgameReview(o) {
+    o = o || {};
+    var snap = o.snapshot || null, res = o.result || null;
+    var out = { schema: 'edgedesk_postgame_review_v1', snapshot_id: snap && snap.id,
+      game_id: snap && snap.game_id, matchup: snap && snap.matchup,
+      outcome: null, price_quality: null, forecast: null, gaps: [],
+      pregame_text_preserved: true };
+    if (!snap) { out.gaps.push('no saved research to grade'); return out; }
+    if (!res || num(res.home_points) == null || num(res.away_points) == null) {
+      out.gaps.push('no verified final score is on file for this game yet, so nothing is graded. A review is not '
+        + 'estimated from a projection.');
+      return out;
+    }
+    var hp = num(res.home_points), ap = num(res.away_points);
+    var margin = hp - ap;                       /* positive = home won by that much */
+    out.final = { home: res.home_team || null, away: res.away_team || null, home_points: hp, away_points: ap,
+      margin: margin, total: hp + ap, source: res.source || 'verified box score' };
+
+    /* ---- 1. the outcome, on the price that was saved ------------------- */
+    var p = snap.observed_price || snap.user_quote || null;
+    if (p && num(p.handicap) != null && (p.side === 'home' || p.side === 'away' || p.team)) {
+      var side = p.side || null;
+      var hcap = num(p.handicap);
+      var cover = side === 'home' ? (margin + hcap) : side === 'away' ? (-margin + hcap) : null;
+      if (cover != null) {
+        out.outcome = {
+          side: side, handicap: hcap,
+          result: Math.abs(cover) < 1e-9 ? 'PUSH' : cover > 0 ? 'COVERED' : 'DID NOT COVER',
+          by_points: r2(Math.abs(cover)),
+          basis: 'The saved handicap against the verified final margin. A push returns the stake and is neither a '
+            + 'win nor a loss.',
+          is_a_wager: false,
+          note: 'This grades the NUMBER that was on screen when the research was saved. EdgeDesk has no record that '
+            + 'anybody bet it, and this is not counted in the performance record.'
+        };
+      }
+    } else {
+      out.gaps.push('the saved research carried no priced selection, so there is no side to grade.');
+    }
+
+    /* ---- 2. price quality, only where a comparable close exists -------- */
+    var close = o.closing || null;
+    if (!close || num(close.handicap) == null) {
+      out.price_quality = { available: false,
+        why: 'No closing observation of the same event, market and selection is on file, so closing-line value '
+          + 'cannot be computed. It is left absent rather than estimated from the last price EdgeDesk happened to see.' };
+    } else if (!p || num(p.handicap) == null) {
+      out.price_quality = { available: false, why: 'No saved price to compare against the close.' };
+    } else if (close.market && p.market && normMarket(close.market) !== normMarket(p.market)) {
+      out.price_quality = { available: false,
+        why: 'The closing observation is on a different market (' + close.market + ' against ' + p.market
+          + '), so the two are not comparable and no CLV is reported.' };
+    } else {
+      var moved = r2(num(close.handicap) - num(p.handicap));
+      var better = p.side === 'home' ? moved < 0 : p.side === 'away' ? moved > 0 : null;
+      out.price_quality = {
+        available: true, saved_handicap: num(p.handicap), closing_handicap: num(close.handicap),
+        points: Math.abs(moved), direction: moved === 0 ? 'unchanged' : (moved > 0 ? 'toward the away side' : 'toward the home side'),
+        beat_close: better,
+        closing_source: close.source || null, closing_observed_at: close.observed_at || null,
+        basis: 'The closing number is defined here as the LAST observation EdgeDesk captured on this event, market '
+          + 'and selection before kickoff. That definition is used everywhere in this report and is stated because '
+          + 'two different definitions of "close" produce two different CLV numbers.',
+        note: 'Price quality is a separate question from whether the side won. Over a large sample it is the only '
+          + 'one of the three that says whether the process works.'
+      };
+    }
+
+    /* ---- 3. the forecast, result aside -------------------------------- */
+    var ml = snap.model && num(snap.model.home_line);
+    if (ml != null) {
+      var predictedMargin = -ml;               /* betting -> margin */
+      var err = r2(Math.abs(predictedMargin - margin));
+      out.forecast = {
+        model_version: snap.model.version || null,
+        projected_home_margin: r2(predictedMargin), actual_home_margin: margin,
+        absolute_error: err,
+        total_error: (num(snap.model.fair_total) != null) ? r2(Math.abs(num(snap.model.fair_total) - (hp + ap))) : null,
+        basis: 'One game. The engine’s own walk-forward mean absolute error on college spreads is about 12.8 '
+          + 'points against the market’s 12.0, so a single error of any size is inside ordinary noise and says '
+          + 'nothing on its own. It is recorded so a season of them can say something.',
+        proves_nothing_alone: true
+      };
+    }
+
+    /* ---- the three, kept apart ---------------------------------------- */
+    var bits = [];
+    if (out.outcome) bits.push('the saved side ' + out.outcome.result.toLowerCase());
+    if (out.price_quality && out.price_quality.available) {
+      bits.push('the number you saw was ' + (out.price_quality.beat_close ? 'better' : out.price_quality.points === 0 ? 'the same as' : 'worse') + ' than the close');
+    }
+    if (out.forecast) bits.push('EdgeDesk’s projection missed the margin by ' + out.forecast.absolute_error);
+    out.summary = bits.length ? bits.join('; ') + '.' : 'Nothing could be graded from this snapshot.';
+    out.separation_note = 'Outcome, price quality and forecast quality are three different questions and they are '
+      + 'allowed to disagree. A side that covered on a number that lost to the close is a good result from a poor '
+      + 'entry, and is reported as exactly that.';
+    out.pregame_note = 'The pregame research above is reproduced unchanged. Nothing in it is rewritten in the light '
+      + 'of the result.';
+    return out;
+  }
+
+  /* ====================================================================== */
+  /* THE FOOTBALL CARD, RANKED FOR RESEARCH                                 */
+  /*                                                                        */
+  /* "Today's research" built its candidate pool from `signals` — priced,    */
+  /* flagged rows — so a board showing a full week of scheduled football     */
+  /* produced a research queue of whatever happened to carry a quote, which  */
+  /* on a quiet capture is one game, and a stale one at that. The board and  */
+  /* the desk were reading two different repositories again.                 */
+  /*                                                                        */
+  /* THE DENOMINATOR IS THE SCHEDULE. Every scheduled game is a candidate;   */
+  /* a quote raises what can be SAID about a game and never whether it is    */
+  /* on the list. The three counts travel together everywhere, because       */
+  /* conflating any two of them is how a 75-game card was described as       */
+  /* having one game on it.                                                  */
+  /*                                                                        */
+  /* AND IT IS NOT SORTED ON THE BIGGEST GAP. This model's own walk-forward  */
+  /* record gets WORSE as its disagreement with the market widens, so a      */
+  /* queue sorted on gap size is sorted on where the model is least          */
+  /* trustworthy. researchPriority() scores the reasons a game rewards       */
+  /* attention and caps what a gap can earn.                                 */
+  /* ====================================================================== */
+  function rankFootballCard(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var games = o.games || [];
+    var withinH = num(o.within_hours);
+    var counts = { scheduled: 0, with_market_number: 0, with_executable_price: 0, stale_price: 0, in_window: 0 };
+    var rows = [];
+    games.forEach(function (g) {
+      counts.scheduled++;
+      var kick = toMs(g.kickoff);
+      if (withinH != null && kick != null && (kick < now - 6 * 3600e3 || kick > now + withinH * 3600e3)) return;
+      counts.in_window++;
+      var hasNumber = num(g.market_home_handicap) != null;
+      var hasPrice = !!g.quote_observed_at;
+      if (hasNumber) counts.with_market_number++;
+      if (hasPrice) counts.with_executable_price++;
+      var qs = hasPrice ? quoteState({ captured_at: g.quote_observed_at, now: now, market: 'spreads', kickoff: g.kickoff }) : null;
+      if (qs && !qs.actionable) counts.stale_price++;
+      var dis = null;
+      if (num(g.model_home_line) != null && hasNumber) {
+        /* Both onto the MARGIN convention before they are compared. A model
+           line and a book handicap are the same number seen from opposite
+           ends, and comparing them raw is how a correctly joined 19.8 became
+           a 39-point disagreement. */
+        dis = disagreementDiagnostics({ model_line: -num(g.model_home_line), market_line: -num(g.market_home_handicap), market: 'spreads' });
+      }
+      var missing = [];
+      if (!hasNumber) missing.push('a market number');
+      if (num(g.data_completeness) === 0) missing.push('this week’s model inputs');
+      if (g.availability_unknown) missing.push('availability');
+      var pr = researchPriority({
+        disagreement: dis, quote_state: qs, missing_critical: missing,
+        model_directional: !!g.model_directional, personnel_change: !!g.personnel_change
+      });
+      rows.push({
+        game_id: g.game_id, sport: g.sport || CFB_SPORT,
+        home: g.home, away: g.away, kickoff: g.kickoff, week: g.week == null ? null : g.week,
+        model_home_line: num(g.model_home_line),
+        market_home_handicap: num(g.market_home_handicap),
+        market_state: hasPrice ? (qs && qs.actionable ? 'PRICED' : 'PRICED (STALE)') : hasNumber ? 'LINE ONLY' : 'NO MARKET',
+        quote: hasPrice ? { book: g.quote_book || null, price_american: g.quote_price_american || null,
+          observed_at: g.quote_observed_at, age_min: qs ? qs.age_min : null, actionable: qs ? qs.actionable : false } : null,
+        disagreement: dis,
+        priority: pr.score, band: pr.band, drivers: pr.drivers,
+        why: pr.drivers.length ? pr.drivers[0].why
+          : 'Nothing about this game raises its research priority above the rest of the card. It is still researchable; it is simply not first.'
+      });
+    });
+    /* Priority first, then the game that kicks off soonest — a tie broken by
+       the clock is a tie broken by something real. */
+    rows.sort(function (a, b) {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      var ta = toMs(a.kickoff), tb = toMs(b.kickoff);
+      if (ta != null && tb != null && ta !== tb) return ta - tb;
+      return String(a.game_id).localeCompare(String(b.game_id));
+    });
+    return {
+      schema: 'edgedesk_football_card_rank_v1',
+      built_at: new Date(now).toISOString(),
+      ranked: rows, counts: counts,
+      statement: counts.in_window + ' football game' + (counts.in_window === 1 ? '' : 's') + ' in this window; '
+        + counts.with_market_number + ' carr' + (counts.with_market_number === 1 ? 'ies' : 'y') + ' a market number; '
+        + counts.with_executable_price + ' carr' + (counts.with_executable_price === 1 ? 'ies' : 'y') + ' a book price'
+        + (counts.stale_price ? ' (' + counts.stale_price + ' of them past its freshness limit)' : '') + '. '
+        + 'Any statement about the card covers ' + counts.in_window + '; about PRICES, ' + counts.with_executable_price + '.',
+      contract: 'Every scheduled game is researchable. A quote changes what can be SAID about a game, never whether '
+        + 'it is on this list, and this list is NOT sorted on the size of the model-market gap: on this model a '
+        + 'bigger gap is a weaker signal, not a stronger one.'
+    };
   }
 
   var RESEARCH_SCHEMA = 'edgedesk_matchup_research_v2';
@@ -15549,7 +17442,15 @@ const EDPRES: any = (globalThis as any).EDPRES;
     var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
     var res = o.resolution || {};
     var row = o.slate_row || null;
-    var SLATE = o.slate_source || 'football/fbs/slate.json';
+    /* THE SPORT IS CARRIED, NOT ASSUMED. This assembly was college-only and
+       its every source label said so; the reader's football board carries two
+       leagues, so the sport rides in from the resolution and the labels follow
+       it. College stays the default because it is the only card this function
+       has ever had, and a silent change of default is how an answer ends up in
+       the wrong sport. */
+    var SPORT = o.sport || res.sport || CFB_SPORT;
+    var SLATE = o.slate_source || (SPORT === NFL_SPORT ? 'the NFL board' : 'football/fbs/slate.json');
+    var CONSENSUS = o.consensus_source || (SPORT === NFL_SPORT ? 'the nflverse reference line' : 'cfb.lines');
     var subjectKey = res.subject_id || null;
     var homeKey = res.home_id || (row ? canonKey(row.home_team_id, row.home_team) : null);
     var awayKey = res.away_id || (row ? canonKey(row.away_team_id, row.away_team) : null);
@@ -15578,7 +17479,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
     };
 
     /* ---- model ------------------------------------------------------- */
-    var val = validationFor('americanfootball_ncaaf', 'spreads');
+    var val = validationFor(SPORT, 'spreads');
     var model = null;
     if (row && row.model_status === 'PREDICTED' && num(row.model_home_line) != null) {
       var hl = num(row.model_home_line);
@@ -15633,7 +17534,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
     if (mk && mk.spread && mk.spread.line != null) {
       market = {
         spread: fact(mk.spread.line, {
-          source: mk.spread.source === 'signals' ? 'captured signals' : 'cfb.lines',
+          source: mk.spread.source === 'signals' ? 'captured signals' : CONSENSUS,
           unit: 'points', observed_at: mk.spread.observed_at,
           provenance: mk.spread.executable ? 'executable quote' : 'consensus number',
           basis: mk.spread.executable
@@ -15641,14 +17542,14 @@ const EDPRES: any = (globalThis as any).EDPRES;
             : 'a consensus number with no book and no capture time — a reference, not something you can bet'
         }),
         book: mk.spread.executable ? fact(mk.spread.book, { source: 'captured signals' })
-          : missingFact('a consensus line carries no book', 'cfb.lines'),
+          : missingFact('a consensus line carries no book', CONSENSUS),
         odds: mk.spread.executable ? fact(mk.spread.odds_american, { source: 'captured signals' })
-          : missingFact('a consensus line carries no price', 'cfb.lines'),
+          : missingFact('a consensus line carries no price', CONSENSUS),
         executable: fact(!!mk.spread.executable, { source: mk.spread.source || null }),
         freshness: mk.spread.freshness || null,
         total: mk.total && mk.total.line != null
-          ? fact(mk.total.line, { source: mk.total.source === 'signals' ? 'captured signals' : 'cfb.lines', unit: 'points', observed_at: mk.total.observed_at })
-          : missingFact('no total on file for this game', 'signals + cfb.lines'),
+          ? fact(mk.total.line, { source: mk.total.source === 'signals' ? 'captured signals' : CONSENSUS, unit: 'points', observed_at: mk.total.observed_at })
+          : missingFact('no total on file for this game', 'signals + ' + CONSENSUS),
         fault: mk.spread.fault || null
       };
       if (!mk.spread.executable) {
@@ -15722,7 +17623,11 @@ const EDPRES: any = (globalThis as any).EDPRES;
       away: starterRead(row.away_starter, 'away', SLATE)
     } : null;
     if (row && !row.home_starter && !row.away_starter) {
-      gap('starter_context', 'the published card carries no starter record for either side of this game');
+      gap('starter_context', SPORT === NFL_SPORT
+        ? 'the NFL board carries no starter record on its rows. football/starters/nfl_' + (row.season || '')
+          + '.json is built and committed — depth chart, previous-game usage and the league injury report — and the '
+          + 'NFL card does not yet read it, so this is a wiring gap on the board rather than an absent source'
+        : 'the published card carries no starter record for either side of this game');
       starters = null;
     }
     if (starters) {
@@ -15756,7 +17661,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
     return {
       schema: RESEARCH_SCHEMA,
       built_at: new Date(now).toISOString(),
-      sport: 'americanfootball_ncaaf',
+      sport: SPORT,
       game_id: identity.game_id.value,
       subject: res.subject || (subjectIsHome ? home : away),
       opponent: subjectIsHome ? away : home,
@@ -15792,17 +17697,32 @@ const EDPRES: any = (globalThis as any).EDPRES;
     gameState: gameState, GAME_STATES: GAME_STATES,
     availabilityCoverageNote: availabilityCoverageNote,
     orientationFault: orientationFault, lineToMargin: lineToMargin, resolveMarket: resolveMarket,
+    marketBoard: marketBoard, marketStatusRead: marketStatusRead, MARKET_STATES: MARKET_STATES,
+    MARKET_BOARD_SCHEMA: MARKET_BOARD_SCHEMA, sideOf: sideOf,
+    userQuote: userQuote, parseUserQuote: parseUserQuote, compareUserQuote: compareUserQuote,
     fbsIndexFor: fbsIndexFor, joinSignalsToGames: joinSignalsToGames, canonKey: canonKey,
     availabilityRead: availabilityRead, AVAIL_STATES: AVAIL_STATES, AVAIL_STALE_H: AVAIL_STALE_H,
     ratingTimeBasis: ratingTimeBasis, RATING_TIME_BASES: RATING_TIME_BASES,
     normKey: normKey, aliasKey: aliasKey, resolveTeam: resolveTeam, matchesEvent: matchesEvent,
     teamPhrases: teamPhrases, nameCandidates: nameCandidates, matchupPair: matchupPair,
     resolveMatchup: resolveMatchup, MATCHUP_STATES: MATCHUP_STATES,
+    resolveFootballMatchup: resolveFootballMatchup, resolveOnCard: resolveOnCard,
+    CFB_SPORT: CFB_SPORT, NFL_SPORT: NFL_SPORT, NFL_ALIASES: NFL_ALIASES,
+    nflIndexFor: nflIndexFor, footballIndexFor: footballIndexFor, cardFor: cardFor,
     matchupResearch: matchupResearch, RESEARCH_SCHEMA: RESEARCH_SCHEMA,
+    METRIC_DICTIONARY: METRIC_DICTIONARY, METRIC_FAMILIES: METRIC_FAMILIES, explainMetric: explainMetric,
+    sampleRead: sampleRead, ratingRead: ratingRead, matchupDrivers: matchupDrivers,
+    availabilityHeadline: availabilityHeadline, AVAIL_HEADLINES: AVAIL_HEADLINES,
+    counterCase: counterCase, whatWouldChange: whatWouldChange,
+    matchupBrief: matchupBrief, BRIEF_SCHEMA: BRIEF_SCHEMA, kickoffText: kickoffText,
+    researchSnapshot: researchSnapshot, SNAPSHOT_SCHEMA: SNAPSHOT_SCHEMA, snapshotDigest: snapshotDigest,
+    compareSnapshots: compareSnapshots, SNAPSHOT_DELTAS: SNAPSHOT_DELTAS, postgameReview: postgameReview,
+    NON_FBS_GAME_WEIGHT: NON_FBS_GAME_WEIGHT, detailIndex: detailIndex,
     teamIndex: teamIndex, expandState: expandState, TEAM_ALIASES: TEAM_ALIASES,
     SLATE_STATES: SLATE_STATES, slateState: slateState, coverageReport: coverageReport,
     disagreementDiagnostics: disagreementDiagnostics,
     ATTENTION_TIERS: ATTENTION_TIERS, attentionTier: attentionTier, researchPriority: researchPriority,
+    rankFootballCard: rankFootballCard,
     decide: decide,
     fact: fact, missingFact: missingFact, evidencePacket: evidencePacket, packetStillValid: packetStillValid,
     ledgerEntry: ledgerEntry, ledgerUpdate: ledgerUpdate, measure: measure, wilson: wilson,

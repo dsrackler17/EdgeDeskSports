@@ -363,6 +363,186 @@ server side.
 
 ---
 
+## 0B. From a chat that answers about a game to a place you research one (2026-09-15)
+
+Sections 0 and 0A are about getting the desk to answer about the *right game*.
+This one is about what it says once it does, and about the half of the board it
+still could not see. Six symptoms were reported from screenshots; they are four
+structural faults and two labelling faults.
+
+### 0B.1 What was reported, and what each one actually was
+
+| symptom | what it actually was |
+|---|---|
+| "Today's research" returned ONE stale NFL matchup while the football page behind it showed other games | `dailyScanCore()` built its candidate pool from `window.EDGES` + `D5_POOL` — **captured, flagged signal rows**. The football page is built from a **schedule**. Same two-repository split as §1.1, one product surface over: on a quiet capture the queue is whatever happened to carry a quote, and `dscanToday()` filters on KICKOFF, not on quote age, so a stale row whose game is tonight survives |
+| a matchup answer carried a model spread and no joined sportsbook price | the card said "no market joined" and stopped there. Four different things produce that sentence — the provider has no quote, the capture read failed, the join failed, the quote is stale — and they need opposite responses |
+| availability sections reported failed sources and unknown status | `availabilityRead()` produces the whole finding, source counts included, and the card printed all of it under both teams on every answer. "3 sources checked, 2 failed" is an operator's number |
+| ratings displayed without enough interpretation | `ratingCell()` was `ETSR 6.4 · off 31.2 · def 24.8` and nothing else. Meanwhile `football/rankings/current.json` publishes, per team and per metric, the **raw rate, the opponent-adjusted rate, the league mean, the sample and a reliability weight** — and nothing in the desk read any of it |
+| "1.45 games in the rating" | a real number with the wrong name. `weights.games_used` is `sample.fbs_equivalent_games`: a game against a non-FBS opponent is weighted **0.45** of an FBS one, so one of each is 1.45. Printed as "games", it reads as an arithmetic error |
+| long caveats taking the space that should explain the matchup | the same fact stated three times. `matchupResearch().limits`, the counter case and the availability read all legitimately reach "availability is unknown", and all three were printed |
+
+**A seventh thing, which was not in the screenshots and is the largest of
+them:** the desk resolved the **college card only**. `resolveMatchup()` was
+hardcoded to `americanfootball_ncaaf` and to `football/fbs/slate.json`. An NFL
+question therefore reached the ordinary board route and was answered from
+whatever was loaded — §0A's reported failure, one league over.
+
+### 0B.2 What changed
+
+**One resolver, two leagues.** `resolveOnCard()` is the old resolver with its
+league made a parameter; `resolveFootballMatchup()` runs it per league and
+combines the results under a stated precedence. The NFL index is **separate**
+from the college one, because merging them would let the prefix rule that
+protects Miami (OH) from Miami (FL) start reaching across sports. **The longest
+name wins across cards as well as within one** — "Washington Commanders" is the
+club, a bare "Washington" is the programme — and two cards that matched the
+*same words* produce a question with both games listed, never a pick.
+
+**A price board per game, with the five states told apart.** `marketBoard()`
+returns every captured selection with its book, its capture time, its first
+observed price and its freshness; `marketStatusRead()` classifies the absence
+as `LIVE / STALE / LINE_ONLY / NO_QUOTE / JOIN_FAILED / CAPTURE_FAILED`. The
+last two carry `is_edgedesk_fault: true`, because "no book is pricing this" is a
+fact about football and "the read threw" is a fact about a server. The status
+code stays in `status.operator`; the reader gets one sentence.
+
+**Best price means best OBSERVED price.** Capture already stores the best
+decimal across the books it polled, per selection and handicap. That is what is
+shown, with the book and the count — and `coverage.note` says in words that
+EdgeDesk polls a list rather than the market, so it is never described as the
+best price available anywhere. No price is mirrored across a handicap.
+
+**The matchup is explained, from data that was already published.** The
+rankings build's per-metric detail is read for the first time.
+`matchupDrivers()` pairs one side's unit against the unit that has to stop it —
+success rate against success rate allowed, sack rate allowed against sack rate,
+explosive rate against explosive rate allowed — using the **opponent-adjusted**
+figures for BOTH halves, and refuses the pair when either half cleared no
+observation floor. `METRIC_DICTIONARY` supplies what each metric is in ordinary
+language and, separately, the mechanism by which it shows up on a field. Three
+drivers, one per part of football, and **both offences get a hearing**.
+
+*An honest detail:* the opponent adjustment is linear and a rate is not, so a
+team that has faced one front and given up nothing can come out below zero.
+"−2.2% of dropbacks" is not a thing that happened, so the **raw** rate is printed
+and the adjustment is reported as direction only. Clamping it to 0 would have
+looked like a measurement.
+
+**The counterargument is built, ordered and named.** `counterCase()` ranks by
+what it would cost to be wrong about: the model's own walk-forward record first
+(it does not beat the close, and gets worse as the gap widens), then a thin
+effective sample, then unknown availability, then the market's disagreement,
+then the driver a small sample could reverse, then the price. `whatWouldChange()`
+lists only falsifiers EdgeDesk can actually observe.
+
+**One caveat, once.** `matchupBrief()` drops a limit that the counter case
+already states. The provider diagnostics move to a fold headed *Operator
+diagnostics*, with the reader's version reduced to one sentence.
+
+**The sample size gets its name.** `sampleRead()` renders `1.45 FBS-equivalent
+games`, explains the 0.45 weight, says how many games were actually played, and
+adds what the ramp `w = g/(g+3)` means: at 1.45 the rating is 33% this season
+and 67% preseason prior.
+
+**"Today's research" sees the schedule.** `rankFootballCard()` ranks every
+scheduled game in the window, college and NFL, and `footballCard()` fetches the
+captured quotes for the whole window in ONE read and joins them to all of it.
+Three counts travel together — scheduled, carrying a market number, carrying a
+book price — and the ranking is **not** sorted on the size of the model-market
+gap, because on this model a bigger gap is a weaker signal.
+
+**Follow-ups reuse the evidence and refresh only the price.** The matchup, its
+research, its price board and the moment it was built are held structurally in
+`DESK`. Ten follow-up intents are answered from what is already in hand; only a
+price question re-reads the price (90-second floor). Every follow-up answer
+prints the matchup it is answering about, which is also how a reader can see
+with their eyes that the desk has not moved.
+
+**A reader's price is not a provider's price.** `parseUserQuote()` reads
+"-13.5 at -110" and marks it `source: 'reader'`, `observed_by_edgedesk: false`.
+`compareUserQuote()` gives the line difference, the comparison against the best
+observed price, and the break-even implied by the price — and **refuses** the
+cover probability and the expected value, naming the validation tier as the
+reason. A number with no odds beside it is not read as a price at all.
+
+**Saved research closes the loop, and stays out of the record.**
+`researchSnapshot()` freezes the brief with the exact model build, the evidence
+and the price EdgeDesk had observed, identified by a hash of itself.
+`compareSnapshots()` reports movement **only between two observations that
+exist** — no opening line is reconstructed and no movement is narrated across a
+gap — and says whether the saved conclusion still applies.
+`postgameReview()` keeps three questions apart and lets them disagree: did the
+saved side cover, was the number better than the close, was the projection any
+good. Closing is defined once, in the report itself, as the last observation
+before kickoff. The pregame text is reproduced unchanged.
+
+### 0B.3 The correction to §4
+
+§4 lists "CFB per-play efficiency (EPA/play, success rate, explosive rate)" as a
+gap. **For the edge function that is still true; for the browser it is not, and
+has not been for some time.** `football/rankings/current.json` publishes
+`performance.offense_detail` / `defense_detail` / `sub_units` — success rate,
+early-down success, explosive pass and rush rate, yards per attempt, yards per
+carry, sack rate allowed, sack rate, stuff rate, third down, red zone and
+turnover rate — each with its raw value, its opponent-adjusted value, the league
+mean, the observed plays and a reliability weight. The gap was never the data.
+It was that nothing read it.
+
+What remains genuinely absent is unchanged: no CFB injury report beyond the
+availability layer's own collection, no measured betting volume or book limits,
+and no server-side weather. The NFL's official injury report **is** ingested
+(`football/injuries/nfl_<season>.json`, from nflverse) and is now read by the
+desk, which is why an NFL availability answer can say "an official report was
+read and listed nobody" and a college one cannot.
+
+### 0B.4 How it is verified
+
+```
+npm run ai:test          # 1,753 assertions, including 192 new ones
+npm run intel:journey    # 64 assertions, the whole journey in Chromium
+npm run intel:ui         # 44 assertions, the panel at both widths
+npm run intel:e2e        # 50 assertions, the resolver in the real chat path
+```
+
+`tools/intelligence/matchup.test.js` runs against the **real** published
+artifacts — the FBS slate, the rankings build, the availability build — and
+every test is named after a way this fails in front of a reader. It asserts,
+among other things, that a failed read is never reported as an absent market,
+that a stale quote can never be described as live, that a side EdgeDesk did not
+capture carries no price at all, that an adjusted rate outside 0–100% falls back
+to the measured one and says so, that a pair with one measured half produces no
+driver, that unknown availability can never be read as healthy, that a reader's
+price is never added to book coverage, and that two readings with no price at
+either end narrate no movement.
+
+`tools/intelligence/journey.e2e.js` runs the seven-step journey in Chromium
+against the real card, with the reasoning function answering a **narration
+failure** — the harder case, because the research card has to be the whole
+answer. It re-checks the layout at 390px: no horizontal scroll, every table in
+its own scroller, the number cards stacking rather than squeezing. **The subject
+is not hardcoded**: it is chosen from the published card as a programme playing
+exactly once whose opponent the rankings build also rates, so next week's slate
+keeps testing the rule rather than the team.
+
+### 0B.5 What is NOT verified here
+
+Unchanged from §0A.6, and it matters as much:
+
+| check | state |
+|---|---|
+| the browser half, against the real committed artifacts | **verified** — `intel:journey`, `intel:ui`, `intel:e2e`, in Chromium |
+| the kernel, against the real artifacts | **verified** — `npm run ai:test` |
+| the live site answering these questions | **not verified here** — this session has no egress to it |
+| the deployed edge function's build | **not verified here** — `intel:doctor` needs a network that can reach the project |
+| the `signals` and `cfb.games` reads | **fixtures** — there is no Supabase here. The queries are the shipped ones; the rows are not live |
+| the NFL board | **not exercised live** — `FB.nfl` is built in the browser from two nflverse CSVs, which this session cannot fetch. The NFL card, its resolver and its injury adapter are tested against a declared card of the exact shape `FB.nfl.up` produces |
+
+Nothing in this change deploys the edge function or applies a migration. The
+browser half ships on merge through GitHub Pages; the function half does not,
+and §10 is still the operating rule.
+
+---
+
 ## 1. Root causes
 
 
