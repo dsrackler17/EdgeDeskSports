@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Stonehill vs. Massachusetts: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Stonehill vs. Massachusetts 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Stonehill at Massachusetts at Massachusetts -14.6. Massachusetts wins 83% of simulations. Data confidence 11%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Stonehill at Massachusetts at Massachusetts -14.6. Massachusetts wins 83% of simulations. Data confidence 14%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Massachusetts carries a full EdgeDesk team rating at -6.2; Stonehill is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement. EdgeDesk makes it Massachusetts -14.6 before any sportsbook…",
   "home_team": "Massachusetts",
   "away_team": "Stonehill",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T19:30:00.000Z",
   "game_when_label": "2026-09-19 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T17:15:33.743Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 11,
+  "confidence": 14,
   "priced": true,
   "fair_spread_text": "Massachusetts -14.6",
   "fair_total": null,
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -66,7 +66,7 @@
       "Massachusetts carries a full EdgeDesk team rating at -6.2; Stonehill is not one of the 138 FBS programmes EdgeDesk rates, so the comparison is one-sided by construction rather than by judgement.",
       "EdgeDesk makes it Massachusetts -14.6 before any sportsbook number is consulted, with Massachusetts winning 83% of simulations.",
       "The roster and position-group comparison below explains where EdgeDesk’s separation comes from on the side it can measure; Stonehill is absent from the FBS player dataset, so the exact size of that gap is not established.",
-      "Data confidence on this matchup is 11% — low enough that the exact margin should be read as provisional rather than as a settled number."
+      "Data confidence on this matchup is 14% — low enough that the exact margin should be read as provisional rather than as a settled number."
     ],
     "projection": {
       "priced": true,
@@ -96,12 +96,240 @@
         "volatility_discriminates": false,
         "note": "Quoted from Massachusetts’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 11,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 14,
+      "inputs_reached_pct": 53,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 15,
+        "known": 8,
+        "priced": 6,
+        "priced_coverage_pct": 40,
+        "by_state": {
+          "USABLE": 6,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 2,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "venue_geography",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no coordinates for Stonehill’s home venue, so travel distance cannot be computed"
+          },
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Massachusetts is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "NO MARKET",
       "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Stonehill",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Jack O'Connell",
+        "player_id": "5106897",
+        "label": "Jack O'Connell — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 15,
+          "dropbacks": 441,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5106897",
+              "player_name": "Jack O'Connell",
+              "dropbacks": 67,
+              "share": 1
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401867924",
+            "opponent": "New Haven",
+            "dropbacks": 21,
+            "starter": {
+              "player_id": "5106897",
+              "player_name": "Jack O'Connell",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401866631",
+            "opponent": "New Hampshire",
+            "dropbacks": 46,
+            "starter": {
+              "player_id": "5106897",
+              "player_name": "Jack O'Connell",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": null,
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Massachusetts",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "William Watson III",
+        "player_id": "4920153",
+        "label": "William Watson III — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 2,
+          "dropbacks": 39,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4920153",
+              "player_name": "William Watson III",
+              "dropbacks": 33,
+              "share": 0.767
+            },
+            {
+              "player_id": "4870900",
+              "player_name": "Dylan Lonergan",
+              "dropbacks": 5,
+              "share": 0.116
+            },
+            {
+              "player_id": "5327585",
+              "player_name": "Aedan McCarthy",
+              "dropbacks": 4,
+              "share": 0.093
+            },
+            {
+              "player_id": "5079717",
+              "player_name": "AJ Surace",
+              "dropbacks": 1,
+              "share": 0.023
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858423",
+            "opponent": "Rutgers",
+            "dropbacks": 29,
+            "starter": {
+              "player_id": "4920153",
+              "player_name": "William Watson III",
+              "share": 0.793
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401866420",
+            "opponent": "Sacred Heart",
+            "dropbacks": 14,
+            "starter": {
+              "player_id": "4920153",
+              "player_name": "William Watson III",
+              "share": 0.714
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T19:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -923,7 +1151,7 @@
         "bullets": [
           "The outcome range is 15.3 points wide at one sigma — p10 -8.4 to p90 +35.6 for Massachusetts, so a projection of +14.6 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "50% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
           "Stonehill is not in the FBS rating set, so EdgeDesk cannot measure what it does well. An unmeasured opponent is an unknown, not a weak one, and the size of the gap is not established."
         ]
       },
@@ -934,7 +1162,7 @@
         {
           "sev": "HIGH",
           "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
+          "text": "The projection could be wrong because 50% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
           "widening": null
         },
         {
@@ -1213,7 +1441,9 @@
       "EdgeDesk’s line is Massachusetts -14.6 on a neutral read of the two teams, before any book is consulted.",
       "Massachusetts wins 83% of the time in EdgeDesk’s simulation, Stonehill 17%.",
       "Eight games in ten land between -8.4 and +35.6 for Massachusetts. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "Stonehill quarterback: Jack O'Connell — started the last game; no announcement for this one.",
+      "Massachusetts quarterback: William Watson III — started the last game; no announcement for this one."
     ],
     "missing": [
       "No projected score: no total published — EdgeDesk can price the side but cannot responsibly split it into a projected score.",
@@ -1236,15 +1466,17 @@
       "Massachusetts — linebackers: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Massachusetts — secondary: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Massachusetts — depth: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Massachusetts — continuity: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Massachusetts — continuity: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Jack O'Connell — unknown is carried as unknown, never as healthy.",
+      "No availability report reached William Watson III — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

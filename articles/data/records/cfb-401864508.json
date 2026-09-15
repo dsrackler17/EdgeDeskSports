@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Wyoming vs. Central Michigan: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Wyoming vs. Central Michigan 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Wyoming at Central Michigan at Central Michigan -2.4 with a 42.7 fair total. Central Michigan wins 56% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices Wyoming at Central Michigan at Central Michigan -2.4 with a 42.7 fair total. Central Michigan wins 56% of simulations. Data confidence 49%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Wyoming carries the stronger underlying team rating — -3.8 against -5.2, a 1.4-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Central Michigan -2.4 before any sportsbook number is consulted, with Central…",
   "home_team": "Central Michigan",
   "away_team": "Wyoming",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T17:00:00.000Z",
   "game_when_label": "2026-09-19 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 41,
+  "confidence": 49,
   "priced": true,
   "fair_spread_text": "Central Michigan -2.4",
   "fair_total": "42.7",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Wyoming carries the stronger underlying team rating — -3.8 against -5.2, a 1.4-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Central Michigan -2.4 before any sportsbook number is consulted, with Central Michigan winning 56% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 49% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,240 @@
         "volatility_discriminates": false,
         "note": "Quoted from Central Michigan’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 49,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Central Michigan is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Wyoming is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "RESEARCH",
       "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Wyoming",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Tyler Hughes",
+        "player_id": "4838536",
+        "label": "Tyler Hughes — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 14,
+          "dropbacks": 352,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4838536",
+              "player_name": "Tyler Hughes",
+              "dropbacks": 44,
+              "share": 1
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401860878",
+            "opponent": "Colorado State",
+            "dropbacks": 17,
+            "starter": {
+              "player_id": "4838536",
+              "player_name": "Tyler Hughes",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401864506",
+            "opponent": "Northern Colorado",
+            "dropbacks": 27,
+            "starter": {
+              "player_id": "4838536",
+              "player_name": "Tyler Hughes",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T20:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Central Michigan",
+        "status": "COMPETITION",
+        "confirmed": false,
+        "player": "Angel Flores",
+        "player_id": "5084769",
+        "label": "unresolved: Angel H Flores 48% of recent dropbacks and Jadyn Glasser 37% of recent dropbacks.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 55,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": true,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5084769",
+              "player_name": "Angel H Flores",
+              "dropbacks": 22,
+              "share": 0.478
+            },
+            {
+              "player_id": "5149056",
+              "player_name": "Jadyn Glasser",
+              "dropbacks": 17,
+              "share": 0.37
+            },
+            {
+              "player_id": "5295480",
+              "player_name": "Marcus Beamon",
+              "dropbacks": 4,
+              "share": 0.087
+            },
+            {
+              "player_id": "5089309",
+              "player_name": "Jake Stearney",
+              "dropbacks": 2,
+              "share": 0.043
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401864498",
+            "opponent": "New Mexico",
+            "dropbacks": 20,
+            "starter": {
+              "player_id": "5084769",
+              "player_name": "Angel H Flores",
+              "share": 0.35
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401866415",
+            "opponent": "Colgate",
+            "dropbacks": 26,
+            "starter": {
+              "player_id": "5084769",
+              "player_name": "Angel H Flores",
+              "share": 0.577
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T17:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1103,19 +1331,13 @@
           "Conference strength differs and the in-season sample is still thin, worth 4.1 points to Wyoming (-4.1 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -20.6 to p90 +23.4 for Central Michigan, so a projection of +2.4 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "Wyoming — low sample size",
@@ -1149,7 +1371,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1192,6 +1414,12 @@
           "sev": "MEDIUM",
           "label": "Central Michigan — thin offensive data",
           "text": "96 offensive plays observed. Too few offensive snaps to score the offensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Central Michigan — thin defensive data",
+          "text": "114 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
           "widening": null
         }
       ],
@@ -1257,7 +1485,7 @@
       "total_market": "42.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1412,7 +1640,8 @@
       "EdgeDesk’s line is Central Michigan -2.4 on a neutral read of the two teams, before any book is consulted. Projected total 42.7.",
       "Central Michigan wins 56% of the time in EdgeDesk’s simulation, Wyoming 44%.",
       "Eight games in ten land between -20.6 and +23.4 for Central Michigan. A single result inside that band tells you nothing new about either team.",
-      "The market has Central Michigan -1.5 at captured · FanDuel, 0.9 points from EdgeDesk’s number."
+      "The market has Central Michigan -1.5 at captured · FanDuel, 0.9 points from EdgeDesk’s number.",
+      "Wyoming quarterback: Tyler Hughes — started the last game; no announcement for this one."
     ],
     "missing": [
       "Central Michigan — etsr (overall): confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1452,15 +1681,18 @@
       "Wyoming — linebackers: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Wyoming — secondary: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Wyoming — depth: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Wyoming — continuity: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Wyoming — continuity: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Tyler Hughes — unknown is carried as unknown, never as healthy.",
+      "Central Michigan quarterback unresolved: unresolved: Angel H Flores 48% of recent dropbacks and Jadyn Glasser 37% of recent dropbacks.",
+      "No availability report reached Angel Flores — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UAB vs. Louisiana: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UAB vs. Louisiana 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UAB at Louisiana at Louisiana -5.8 with a 59.4 fair total. Louisiana wins 65% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices UAB at Louisiana at Louisiana -5.8 with a 59.4 fair total. Louisiana wins 65% of simulations. Data confidence 50%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Louisiana carries the stronger underlying team rating — -4.0 against -4.7, a 0.7-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Louisiana -5.8 before any sportsbook number is consulted, with Louisiana winning…",
   "home_team": "Louisiana",
   "away_team": "UAB",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-20T00:00:00.000Z",
   "game_when_label": "2026-09-20 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Louisiana -5.8",
   "fair_total": "59.4",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Louisiana carries the stronger underlying team rating — -4.0 against -4.7, a 0.7-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Louisiana -5.8 before any sportsbook number is consulted, with Louisiana winning 65% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,240 @@
         "volatility_discriminates": false,
         "note": "Quoted from Louisiana’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Louisiana is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "UAB is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "RESEARCH",
       "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "UAB",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Ryder Burton",
+        "player_id": "5057381",
+        "label": "Ryder Burton — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 5,
+          "dropbacks": 155,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5057381",
+              "player_name": "Ryder Burton",
+              "dropbacks": 49,
+              "share": 0.942
+            },
+            {
+              "player_id": "5207934",
+              "player_name": "Austin Carlisle",
+              "dropbacks": 3,
+              "share": 0.058
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858424",
+            "opponent": "Illinois",
+            "dropbacks": 30,
+            "starter": {
+              "player_id": "5057381",
+              "player_name": "Ryder Burton",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401862708",
+            "opponent": "UL Monroe",
+            "dropbacks": 22,
+            "starter": {
+              "player_id": "5057381",
+              "player_name": "Ryder Burton",
+              "share": 0.864
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T19:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Louisiana",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Lunch Winfield",
+        "player_id": "4871091",
+        "label": "Lunch Winfield — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 10,
+          "dropbacks": 262,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4871091",
+              "player_name": "D'Wayne' Winfield",
+              "dropbacks": 43,
+              "share": 0.878
+            },
+            {
+              "player_id": "5146661",
+              "player_name": "Daniel Beale",
+              "dropbacks": 5,
+              "share": 0.102
+            },
+            {
+              "player_id": "4685454",
+              "player_name": "Jayden Maiava",
+              "dropbacks": 1,
+              "share": 0.02
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401869142",
+            "opponent": "Lamar",
+            "dropbacks": 25,
+            "starter": {
+              "player_id": "4871091",
+              "player_name": "D'Wayne' Winfield",
+              "share": 0.8
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401858445",
+            "opponent": "USC",
+            "dropbacks": 24,
+            "starter": {
+              "player_id": "4871091",
+              "player_name": "D'Wayne' Winfield",
+              "share": 0.958
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-13T03:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1103,19 +1331,13 @@
           "Stylistically the matchup favours UAB by 0.7 points: ball control vs front disruption (-0.7 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -17.2 to p90 +26.8 for Louisiana, so a projection of +5.8 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "The market disagrees by 3.7 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "UAB — low sample size",
@@ -1142,8 +1364,14 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 42h old",
+          "text": "odds is 47h old",
           "widening": null
         },
         {
@@ -1257,7 +1485,7 @@
       "total_market": "57.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T18:00:03.924+00:00",
-      "capture_age": "42 hours old",
+      "capture_age": "47 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1418,7 +1646,9 @@
       "EdgeDesk’s line is Louisiana -5.8 on a neutral read of the two teams, before any book is consulted. Projected total 59.4.",
       "Louisiana wins 65% of the time in EdgeDesk’s simulation, UAB 35%.",
       "Eight games in ten land between -17.2 and +26.8 for Louisiana. A single result inside that band tells you nothing new about either team.",
-      "The market has Louisiana -9.5 at captured · FanDuel, 3.7 points from EdgeDesk’s number."
+      "The market has Louisiana -9.5 at captured · FanDuel, 3.7 points from EdgeDesk’s number.",
+      "UAB quarterback: Ryder Burton — started the last game; no announcement for this one.",
+      "Louisiana quarterback: Lunch Winfield — started the last game; no announcement for this one."
     ],
     "missing": [
       "Louisiana — etsr (overall): confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1439,15 +1669,17 @@
       "Louisiana — linebackers: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Louisiana — secondary: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Louisiana — depth: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Louisiana — continuity: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Louisiana — continuity: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Ryder Burton — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Lunch Winfield — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

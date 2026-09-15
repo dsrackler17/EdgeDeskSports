@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Arizona State vs. Kansas: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Arizona State vs. Kansas 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Arizona State at Kansas at Kansas +0.5 with a 57.3 fair total. Arizona State wins 51% of simulations. Data confidence 43%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Arizona State at Kansas at Kansas +0.5 with a 57.3 fair total. Arizona State wins 51% of simulations. Data confidence 52%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Kansas carries the stronger underlying team rating — +2.3 against +1.7, a 0.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Kansas +0.5 before any sportsbook number is consulted, with Arizona State winning 51%…",
   "home_team": "Kansas",
   "away_team": "Arizona State",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T16:00:00.000Z",
   "game_when_label": "2026-09-19 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T17:15:33.743Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 43,
+  "confidence": 52,
   "priced": true,
   "fair_spread_text": "Kansas +0.5",
   "fair_total": "57.3",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Kansas carries the stronger underlying team rating — +2.3 against +1.7, a 0.6-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Kansas +0.5 before any sportsbook number is consulted, with Arizona State winning 51% of simulations.",
-      "Data confidence on this matchup is 43% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 52% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,258 @@
         "volatility_discriminates": false,
         "note": "Quoted from Kansas’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 43,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 52,
+      "inputs_reached_pct": 56,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 16,
+        "known": 9,
+        "priced": 7,
+        "priced_coverage_pct": 44,
+        "by_state": {
+          "USABLE": 7,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 1,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Kansas is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Arizona State is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "NO MARKET",
       "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Arizona State",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Cutter Boley",
+        "player_id": "5141378",
+        "label": "Cutter Boley — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 12,
+          "dropbacks": 377,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5141378",
+              "player_name": "Cutter Boley",
+              "dropbacks": 62,
+              "share": 0.805
+            },
+            {
+              "player_id": "4597499",
+              "player_name": "Mikey Keene",
+              "dropbacks": 7,
+              "share": 0.091
+            },
+            {
+              "player_id": "4870971",
+              "player_name": "Marcel Reed",
+              "dropbacks": 3,
+              "share": 0.039
+            },
+            {
+              "player_id": "5209295",
+              "player_name": "Jake Fette",
+              "dropbacks": 3,
+              "share": 0.039
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856774",
+            "opponent": "Morgan State",
+            "dropbacks": 40,
+            "starter": {
+              "player_id": "5141378",
+              "player_name": "Cutter Boley",
+              "share": 0.7
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401856683",
+            "opponent": "Texas A&M",
+            "dropbacks": 37,
+            "starter": {
+              "player_id": "5141378",
+              "player_name": "Cutter Boley",
+              "share": 0.919
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T16:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Kansas",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Isaiah Marshall",
+        "player_id": "5079604",
+        "label": "Isaiah Marshall — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 2,
+          "dropbacks": 56,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5079604",
+              "player_name": "Isaiah Marshall",
+              "dropbacks": 53,
+              "share": 0.841
+            },
+            {
+              "player_id": "5151060",
+              "player_name": "Cole Ballard",
+              "dropbacks": 7,
+              "share": 0.111
+            },
+            {
+              "player_id": "4837195",
+              "player_name": "Luca Stanzani",
+              "dropbacks": 2,
+              "share": 0.032
+            },
+            {
+              "player_id": "5304536",
+              "player_name": "Mekhi Moore",
+              "dropbacks": 1,
+              "share": 0.016
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856769",
+            "opponent": "Long Island University",
+            "dropbacks": 28,
+            "starter": {
+              "player_id": "5079604",
+              "player_name": "Isaiah Marshall",
+              "share": 0.679
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401856678",
+            "opponent": "Missouri",
+            "dropbacks": 35,
+            "starter": {
+              "player_id": "5079604",
+              "player_name": "Isaiah Marshall",
+              "share": 0.971
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T00:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1089,19 +1335,13 @@
           "Stylistically the matchup favours Kansas by 1.9 points: ball control vs front disruption (+1.9 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -23.5 to p90 +20.5 for Kansas, so a projection of -0.5 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "Arizona State — low sample size",
@@ -1179,6 +1419,12 @@
           "label": "Kansas — thin defensive data",
           "text": "100 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
           "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "early season",
+          "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
+          "widening": "4%"
         }
       ],
       "unmeasured": [
@@ -1388,7 +1634,9 @@
       "EdgeDesk’s line is Kansas +0.5 on a neutral read of the two teams, before any book is consulted. Projected total 57.3.",
       "Kansas wins 49% of the time in EdgeDesk’s simulation, Arizona State 51%.",
       "Eight games in ten land between -23.5 and +20.5 for Kansas. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "Arizona State quarterback: Cutter Boley — started the last game; no announcement for this one.",
+      "Kansas quarterback: Isaiah Marshall — started the last game; no announcement for this one."
     ],
     "missing": [
       "Kansas — etsr (overall): confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1428,15 +1676,17 @@
       "Arizona State — linebackers: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Arizona State — secondary: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Arizona State — depth: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Arizona State — continuity: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Arizona State — continuity: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Cutter Boley — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Isaiah Marshall — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

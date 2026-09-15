@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "East Carolina vs. Old Dominion: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "East Carolina vs. Old Dominion 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices East Carolina at Old Dominion at Old Dominion -3.5 with a 53.9 fair total. Old Dominion wins 59% of simulations. Data confidence 41%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices East Carolina at Old Dominion at Old Dominion -3.5 with a 53.9 fair total. Old Dominion wins 59% of simulations. Data confidence 50%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Old Dominion carries the stronger underlying team rating — +1.3 against -0.6, a 1.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Old Dominion -3.5 before any sportsbook number is consulted, with Old Dominion…",
   "home_team": "Old Dominion",
   "away_team": "East Carolina",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T22:00:00.000Z",
   "game_when_label": "2026-09-19 22:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T17:15:33.743Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Old Dominion -3.5",
   "fair_total": "53.9",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Old Dominion carries the stronger underlying team rating — +1.3 against -0.6, a 1.8-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Old Dominion -3.5 before any sportsbook number is consulted, with Old Dominion winning 59% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,246 @@
         "volatility_discriminates": false,
         "note": "Quoted from Old Dominion’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Old Dominion is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "East Carolina is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "NO MARKET",
       "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "East Carolina",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Mitch Griffis",
+        "player_id": "4433829",
+        "label": "Mitch Griffis — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 2,
+          "dropbacks": 97,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4433829",
+              "player_name": "Mitch Griffis",
+              "dropbacks": 53,
+              "share": 0.946
+            },
+            {
+              "player_id": "5075800",
+              "player_name": "Emory Williams",
+              "dropbacks": 3,
+              "share": 0.054
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856634",
+            "opponent": "Alabama",
+            "dropbacks": 18,
+            "starter": {
+              "player_id": "4433829",
+              "player_name": "Mitch Griffis",
+              "share": 0.833
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401864571",
+            "opponent": "App State",
+            "dropbacks": 38,
+            "starter": {
+              "player_id": "4433829",
+              "player_name": "Mitch Griffis",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T16:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Old Dominion",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Quinn Henicle",
+        "player_id": "5193346",
+        "label": "Quinn Henicle — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 2,
+          "dropbacks": 83,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5193346",
+              "player_name": "Quinn Henicle",
+              "dropbacks": 39,
+              "share": 0.907
+            },
+            {
+              "player_id": "5144078",
+              "player_name": "Ethan Grunkemeyer",
+              "dropbacks": 2,
+              "share": 0.047
+            },
+            {
+              "player_id": "5141366",
+              "player_name": "Bryce Baker",
+              "dropbacks": 1,
+              "share": 0.023
+            },
+            {
+              "player_id": "5295919",
+              "player_name": "Ryan Huff",
+              "dropbacks": 1,
+              "share": 0.023
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401867973",
+            "opponent": "Norfolk State",
+            "dropbacks": 13,
+            "starter": {
+              "player_id": "5193346",
+              "player_name": "Quinn Henicle",
+              "share": 0.923
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401858221",
+            "opponent": "Virginia Tech",
+            "dropbacks": 30,
+            "starter": {
+              "player_id": "5193346",
+              "player_name": "Quinn Henicle",
+              "share": 0.9
+            },
+            "settled": true,
+            "why": "the opening dropback was a 2-throw appearance by Ethan Grunkemeyer; Quinn Henicle took 90% of them"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T16:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1103,19 +1337,13 @@
           "Stylistically the matchup favours East Carolina by 0.2 points: field position (-0.2 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -19.5 to p90 +24.5 for Old Dominion, so a projection of +3.5 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "East Carolina — low sample size",
@@ -1193,6 +1421,12 @@
           "label": "early season",
           "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
           "widening": "4%"
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "home starting QB unknown",
+          "widening": null
         }
       ],
       "unmeasured": [
@@ -1408,7 +1642,9 @@
       "EdgeDesk’s line is Old Dominion -3.5 on a neutral read of the two teams, before any book is consulted. Projected total 53.9.",
       "Old Dominion wins 59% of the time in EdgeDesk’s simulation, East Carolina 41%.",
       "Eight games in ten land between -19.5 and +24.5 for Old Dominion. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "East Carolina quarterback: Mitch Griffis — started the last game; no announcement for this one.",
+      "Old Dominion quarterback: Quinn Henicle — started the last game; no announcement for this one."
     ],
     "missing": [
       "Old Dominion — etsr (overall): confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1429,15 +1665,17 @@
       "Old Dominion — linebackers: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Old Dominion — secondary: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Old Dominion — depth: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Old Dominion — continuity: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Old Dominion — continuity: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Mitch Griffis — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Quinn Henicle — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UTEP vs. Michigan: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UTEP vs. Michigan 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UTEP at Michigan at Michigan -30.0 with a 51.0 fair total. Michigan wins 98% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices UTEP at Michigan at Michigan -30.0 with a 51.0 fair total. Michigan wins 98% of simulations. Data confidence 49%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Michigan carries the stronger underlying team rating — +4.3 against -2.7, a 7.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Michigan -30.0 before any sportsbook number is consulted, with Michigan winning 98%…",
   "home_team": "Michigan",
   "away_team": "UTEP",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T19:30:00.000Z",
   "game_when_label": "2026-09-19 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 41,
+  "confidence": 49,
   "priced": true,
   "fair_spread_text": "Michigan -30.0",
   "fair_total": "51.0",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Michigan carries the stronger underlying team rating — +4.3 against -2.7, a 7.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Michigan -30.0 before any sportsbook number is consulted, with Michigan winning 98% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 49% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,242 @@
         "volatility_discriminates": false,
         "note": "Quoted from Michigan’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 49,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Michigan is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "UTEP is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "RESEARCH",
       "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "UTEP",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "EJ Colson Jr.",
+        "player_id": "5141395",
+        "label": "EJ Colson Jr. — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 10,
+          "dropbacks": 356,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5141395",
+              "player_name": "EJ Colson",
+              "dropbacks": 33,
+              "share": 0.846
+            },
+            {
+              "player_id": "5232049",
+              "player_name": "Raymond Moore III",
+              "dropbacks": 5,
+              "share": 0.128
+            },
+            {
+              "player_id": "4877714",
+              "player_name": "Jaden Smith",
+              "dropbacks": 1,
+              "share": 0.026
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856664",
+            "opponent": "Oklahoma",
+            "dropbacks": 18,
+            "starter": {
+              "player_id": "5141395",
+              "player_name": "EJ Colson",
+              "share": 0.667
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401864505",
+            "opponent": "Texas Southern",
+            "dropbacks": 21,
+            "starter": {
+              "player_id": "5141395",
+              "player_name": "EJ Colson",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-13T01:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Michigan",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Bryce Underwood",
+        "player_id": "5141741",
+        "label": "Bryce Underwood — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 13,
+          "dropbacks": 393,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5141741",
+              "player_name": "Bryce Underwood",
+              "dropbacks": 43,
+              "share": 0.878
+            },
+            {
+              "player_id": "4915980",
+              "player_name": "John Mateer",
+              "dropbacks": 4,
+              "share": 0.082
+            },
+            {
+              "player_id": "5074245",
+              "player_name": "Broc Lowry",
+              "dropbacks": 2,
+              "share": 0.041
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858428",
+            "opponent": "Western Michigan",
+            "dropbacks": 26,
+            "starter": {
+              "player_id": "5141741",
+              "player_name": "Bryce Underwood",
+              "share": 0.923
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401856679",
+            "opponent": "Oklahoma",
+            "dropbacks": 23,
+            "starter": null,
+            "settled": false,
+            "why": "the player who took the first dropback threw 17% of the dropbacks; the usage leader was Bryce Underwood"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T16:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -188,15 +418,15 @@
                 "note": "confidence 5% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
               },
               "h": {
-                "v": "58.0",
-                "n": 58,
+                "v": "58.1",
+                "n": 58.1,
                 "rank": "#17 of 68",
                 "rank_n": 17,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 20.5,
+                "gap": 20.6,
                 "rank_gap": null
               }
             },
@@ -1103,19 +1333,13 @@
         "bullets": [
           "The outcome range is 15.3 points wide at one sigma — p10 +7.0 to p90 +51.0 for Michigan, so a projection of +30.0 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "The market disagrees by 5.5 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "UTEP — low sample size",
@@ -1148,8 +1372,14 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1257,7 +1487,7 @@
       "total_market": "48.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1295,7 +1525,7 @@
         {
           "k": "Talent",
           "a": "37.5  unranked",
-          "h": "58.0  #17",
+          "h": "58.1  #17",
           "note": null
         },
         {
@@ -1418,7 +1648,9 @@
       "EdgeDesk’s line is Michigan -30.0 on a neutral read of the two teams, before any book is consulted. Projected total 51.0.",
       "Michigan wins 98% of the time in EdgeDesk’s simulation, UTEP 2%.",
       "Eight games in ten land between +7.0 and +51.0 for Michigan. A single result inside that band tells you nothing new about either team.",
-      "The market has Michigan -35.5 at captured · FanDuel, 5.5 points from EdgeDesk’s number."
+      "The market has Michigan -35.5 at captured · FanDuel, 5.5 points from EdgeDesk’s number.",
+      "UTEP quarterback: EJ Colson Jr. — started the last game; no announcement for this one.",
+      "Michigan quarterback: Bryce Underwood — started the last game; no announcement for this one."
     ],
     "missing": [
       "UTEP — etsr (overall): confidence 5% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1439,15 +1671,17 @@
       "UTEP — linebackers: confidence 5% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "UTEP — secondary: confidence 5% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "UTEP — depth: confidence 5% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "UTEP — continuity: confidence 5% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "UTEP — continuity: confidence 5% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached EJ Colson Jr. — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Bryce Underwood — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

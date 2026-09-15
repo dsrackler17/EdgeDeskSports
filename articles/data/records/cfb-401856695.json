@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "NC State vs. Vanderbilt: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "NC State vs. Vanderbilt 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices NC State at Vanderbilt at Vanderbilt -16.4 with a 57.7 fair total. Vanderbilt wins 86% of simulations. Data confidence 41%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices NC State at Vanderbilt at Vanderbilt -16.4 with a 57.7 fair total. Vanderbilt wins 86% of simulations. Data confidence 50%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Vanderbilt carries the stronger underlying team rating — +7.0 against +3.6, a 3.3-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Vanderbilt -16.4 before any sportsbook number is consulted, with Vanderbilt…",
   "home_team": "Vanderbilt",
   "away_team": "NC State",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T16:45:00.000Z",
   "game_when_label": "2026-09-19 16:45 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Vanderbilt -16.4",
   "fair_total": "57.7",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Vanderbilt carries the stronger underlying team rating — +7.0 against +3.6, a 3.3-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Vanderbilt -16.4 before any sportsbook number is consulted, with Vanderbilt winning 86% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,246 @@
         "volatility_discriminates": false,
         "note": "Quoted from Vanderbilt’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Vanderbilt is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "NC State is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "NC State",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "CJ Bailey",
+        "player_id": "5079301",
+        "label": "CJ Bailey — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 16,
+          "dropbacks": 449,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5079301",
+              "player_name": "CJ Bailey",
+              "dropbacks": 44,
+              "share": 0.746
+            },
+            {
+              "player_id": "5148611",
+              "player_name": "Will Wilson",
+              "dropbacks": 12,
+              "share": 0.203
+            },
+            {
+              "player_id": "4685696",
+              "player_name": "Beau Pribula",
+              "dropbacks": 1,
+              "share": 0.017
+            },
+            {
+              "player_id": "5083373",
+              "player_name": "Ashten Snelsire",
+              "dropbacks": 1,
+              "share": 0.017
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858202",
+            "opponent": "Virginia",
+            "dropbacks": 30,
+            "starter": {
+              "player_id": "5079301",
+              "player_name": "CJ Bailey",
+              "share": 0.833
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401858222",
+            "opponent": "Richmond",
+            "dropbacks": 29,
+            "starter": {
+              "player_id": "5079301",
+              "player_name": "CJ Bailey",
+              "share": 0.655
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-11T23:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Vanderbilt",
+        "status": "COMPETITION",
+        "confirmed": false,
+        "player": "Blaze Berlowitz",
+        "player_id": "5121691",
+        "label": "unresolved: Jared Curtis 55% of recent dropbacks and Blaze Berlowitz 45% of recent dropbacks.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 2,
+          "dropbacks": 43,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": true,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5158948",
+              "player_name": "Jared Curtis",
+              "dropbacks": 31,
+              "share": 0.554
+            },
+            {
+              "player_id": "5121691",
+              "player_name": "Blaze Berlowitz",
+              "dropbacks": 25,
+              "share": 0.446
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856669",
+            "opponent": "Austin Peay",
+            "dropbacks": 25,
+            "starter": {
+              "player_id": "5121691",
+              "player_name": "Blaze Berlowitz",
+              "share": 0.64
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401856684",
+            "opponent": "Delaware",
+            "dropbacks": 31,
+            "starter": {
+              "player_id": "5121691",
+              "player_name": "Blaze Berlowitz",
+              "share": 0.29
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T20:15:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1123,19 +1357,13 @@
         "bullets": [
           "The outcome range is 15.3 points wide at one sigma — p10 -6.6 to p90 +37.4 for Vanderbilt, so a projection of +16.4 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "The market disagrees by 11.9 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "NC State — low sample size",
@@ -1168,8 +1396,14 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1277,7 +1511,7 @@
       "total_market": "51.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1438,7 +1672,8 @@
       "EdgeDesk’s line is Vanderbilt -16.4 on a neutral read of the two teams, before any book is consulted. Projected total 57.7.",
       "Vanderbilt wins 86% of the time in EdgeDesk’s simulation, NC State 14%.",
       "Eight games in ten land between -6.6 and +37.4 for Vanderbilt. A single result inside that band tells you nothing new about either team.",
-      "The market has Vanderbilt -4.5 at captured · FanDuel, 11.9 points from EdgeDesk’s number."
+      "The market has Vanderbilt -4.5 at captured · FanDuel, 11.9 points from EdgeDesk’s number.",
+      "NC State quarterback: CJ Bailey — started the last game; no announcement for this one."
     ],
     "missing": [
       "Vanderbilt — etsr (overall): confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1459,15 +1694,18 @@
       "Vanderbilt — linebackers: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Vanderbilt — secondary: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Vanderbilt — depth: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Vanderbilt — continuity: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Vanderbilt — continuity: confidence 7% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached CJ Bailey — unknown is carried as unknown, never as healthy.",
+      "Vanderbilt quarterback unresolved: unresolved: Jared Curtis 55% of recent dropbacks and Blaze Berlowitz 45% of recent dropbacks.",
+      "No availability report reached Blaze Berlowitz — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

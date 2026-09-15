@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "BYU vs. Colorado State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "BYU vs. Colorado State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices BYU at Colorado State at Colorado State +19.2 with a 54.3 fair total. BYU wins 90% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices BYU at Colorado State at Colorado State +19.2 with a 54.3 fair total. BYU wins 90% of simulations. Data confidence 50%. Model status RESEARCH. Research, not picks.",
   "excerpt": "BYU carries the stronger underlying team rating — +3.4 against -7.7, a 11.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Colorado State +19.2 before any sportsbook number is consulted, with BYU winning 90% of…",
   "home_team": "Colorado State",
   "away_team": "BYU",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T23:30:00.000Z",
   "game_when_label": "2026-09-19 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Colorado State +19.2",
   "fair_total": "54.3",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "BYU carries the stronger underlying team rating — +3.4 against -7.7, a 11.1-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Colorado State +19.2 before any sportsbook number is consulted, with BYU winning 90% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,258 @@
         "volatility_discriminates": false,
         "note": "Quoted from Colorado State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Colorado State is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "BYU is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "RESEARCH",
       "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "BYU",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Bear Bachmeier",
+        "player_id": "5141367",
+        "label": "Bear Bachmeier — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 14,
+          "dropbacks": 446,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5141367",
+              "player_name": "Bear Bachmeier",
+              "dropbacks": 47,
+              "share": 0.887
+            },
+            {
+              "player_id": "4688540",
+              "player_name": "Treyson Bourguet",
+              "dropbacks": 2,
+              "share": 0.038
+            },
+            {
+              "player_id": "4993406",
+              "player_name": "CJ Tiller",
+              "dropbacks": 2,
+              "share": 0.038
+            },
+            {
+              "player_id": "5224562",
+              "player_name": "Bronson Barben",
+              "dropbacks": 2,
+              "share": 0.038
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856775",
+            "opponent": "Utah Tech",
+            "dropbacks": 27,
+            "starter": {
+              "player_id": "5141367",
+              "player_name": "Bear Bachmeier",
+              "share": 0.778
+            },
+            "settled": true,
+            "why": "the opening dropback was a 2-throw appearance by CJ Tiller; Bear Bachmeier took 78% of them"
+          },
+          {
+            "week": 2,
+            "game_id": "401856810",
+            "opponent": "Arizona",
+            "dropbacks": 26,
+            "starter": {
+              "player_id": "5141367",
+              "player_name": "Bear Bachmeier",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T19:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Colorado State",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Hauss Hejny",
+        "player_id": "5079443",
+        "label": "Hauss Hejny — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 75,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5079443",
+              "player_name": "Hauss Hejny",
+              "dropbacks": 64,
+              "share": 0.8
+            },
+            {
+              "player_id": "5212610",
+              "player_name": "Ksaan Farrar",
+              "dropbacks": 7,
+              "share": 0.088
+            },
+            {
+              "player_id": "4838536",
+              "player_name": "Tyler Hughes",
+              "dropbacks": 4,
+              "share": 0.05
+            },
+            {
+              "player_id": "5151171",
+              "player_name": "Will Burns",
+              "dropbacks": 4,
+              "share": 0.05
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401860878",
+            "opponent": "Wyoming",
+            "dropbacks": 38,
+            "starter": {
+              "player_id": "5079443",
+              "player_name": "Hauss Hejny",
+              "share": 0.868
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401860882",
+            "opponent": "Southern Utah",
+            "dropbacks": 42,
+            "starter": {
+              "player_id": "5079443",
+              "player_name": "Hauss Hejny",
+              "share": 0.738
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T23:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1099,19 +1345,13 @@
           "Playing at Colorado State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -42.2 to p90 +1.8 for Colorado State, so a projection of -19.2 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "BYU — low sample size",
@@ -1145,7 +1385,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1189,6 +1429,12 @@
           "label": "early season",
           "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
           "widening": "4%"
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "home starting QB unknown",
+          "widening": null
         }
       ],
       "unmeasured": [
@@ -1253,7 +1499,7 @@
       "total_market": "52.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1414,7 +1660,9 @@
       "EdgeDesk’s line is Colorado State +19.2 on a neutral read of the two teams, before any book is consulted. Projected total 54.3.",
       "Colorado State wins 10% of the time in EdgeDesk’s simulation, BYU 90%.",
       "Eight games in ten land between -42.2 and +1.8 for Colorado State. A single result inside that band tells you nothing new about either team.",
-      "The market has Colorado State +19.5 at captured · FanDuel, 0.3 points from EdgeDesk’s number."
+      "The market has Colorado State +19.5 at captured · FanDuel, 0.3 points from EdgeDesk’s number.",
+      "BYU quarterback: Bear Bachmeier — started the last game; no announcement for this one.",
+      "Colorado State quarterback: Hauss Hejny — started the last game; no announcement for this one."
     ],
     "missing": [
       "Colorado State — etsr (overall): confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1436,15 +1684,17 @@
       "Colorado State — secondary: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Colorado State — depth: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Colorado State — continuity: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "BYU — special teams: no rating was published for this category."
+      "BYU — special teams: no rating was published for this category.",
+      "No availability report reached Bear Bachmeier — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Hauss Hejny — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

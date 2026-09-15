@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "USC vs. Rutgers: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "USC vs. Rutgers 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices USC at Rutgers at Rutgers +12.7 with a 58.9 fair total. USC wins 80% of simulations. Data confidence 41%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices USC at Rutgers at Rutgers +12.7 with a 58.9 fair total. USC wins 80% of simulations. Data confidence 50%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "USC carries the stronger underlying team rating — +9.2 against +0.9, a 8.3-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Rutgers +12.7 before any sportsbook number is consulted, with USC winning 80% of…",
   "home_team": "Rutgers",
   "away_team": "USC",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T19:30:00.000Z",
   "game_when_label": "2026-09-19 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Rutgers +12.7",
   "fair_total": "58.9",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -66,7 +66,7 @@
       "USC carries the stronger underlying team rating — +9.2 against +0.9, a 8.3-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Rutgers +12.7 before any sportsbook number is consulted, with USC winning 80% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is scheme fit, where USC leads Rutgers by 61 places nationally.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -106,12 +106,234 @@
         "volatility_discriminates": false,
         "note": "Quoted from Rutgers’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Rutgers is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "USC is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "USC",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Jayden Maiava",
+        "player_id": "4685454",
+        "label": "Jayden Maiava — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 17,
+          "dropbacks": 478,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4685454",
+              "player_name": "Jayden Maiava",
+              "dropbacks": 54,
+              "share": 0.885
+            },
+            {
+              "player_id": "5161854",
+              "player_name": "Jonas Williams",
+              "dropbacks": 7,
+              "share": 0.115
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858436",
+            "opponent": "Fresno State",
+            "dropbacks": 31,
+            "starter": {
+              "player_id": "4685454",
+              "player_name": "Jayden Maiava",
+              "share": 0.806
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401858445",
+            "opponent": "Louisiana",
+            "dropbacks": 30,
+            "starter": {
+              "player_id": "4685454",
+              "player_name": "Jayden Maiava",
+              "share": 0.967
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-13T03:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Rutgers",
+        "status": "COMPETITION",
+        "confirmed": false,
+        "player": "AJ Surace",
+        "player_id": "5079717",
+        "label": "unresolved: AJ Surace 54% of recent dropbacks and Dylan Lonergan 46% of recent dropbacks — sources disagree.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 1,
+          "dropbacks": 51,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": true,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5079717",
+              "player_name": "AJ Surace",
+              "dropbacks": 32,
+              "share": 0.542
+            },
+            {
+              "player_id": "4870900",
+              "player_name": "Dylan Lonergan",
+              "dropbacks": 27,
+              "share": 0.458
+            }
+          ]
+        },
+        "conflicts": 1,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858423",
+            "opponent": "Massachusetts",
+            "dropbacks": 36,
+            "starter": {
+              "player_id": "4870900",
+              "player_name": "Dylan Lonergan",
+              "share": 0.75
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401858214",
+            "opponent": "Boston College",
+            "dropbacks": 23,
+            "starter": {
+              "player_id": "5079717",
+              "player_name": "AJ Surace",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-11T23:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1181,12 +1403,6 @@
       "items": [
         {
           "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
           "label": "Rutgers — low sample size",
           "text": "2 FBS-equivalent games played.",
           "widening": null
@@ -1199,8 +1415,14 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1326,7 +1548,7 @@
       "total_market": "55.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1487,16 +1709,21 @@
       "EdgeDesk’s line is Rutgers +12.7 on a neutral read of the two teams, before any book is consulted. Projected total 58.9.",
       "Rutgers wins 20% of the time in EdgeDesk’s simulation, USC 80%.",
       "Eight games in ten land between -35.7 and +8.3 for Rutgers. A single result inside that band tells you nothing new about either team.",
-      "The market has Rutgers +23.5 at captured · FanDuel, 10.8 points from EdgeDesk’s number."
+      "The market has Rutgers +23.5 at captured · FanDuel, 10.8 points from EdgeDesk’s number.",
+      "USC quarterback: Jayden Maiava — started the last game; no announcement for this one."
     ],
-    "missing": [],
+    "missing": [
+      "No availability report reached Jayden Maiava — unknown is carried as unknown, never as healthy.",
+      "Rutgers quarterback unresolved: unresolved: AJ Surace 54% of recent dropbacks and Dylan Lonergan 46% of recent dropbacks — sources disagree.",
+      "No availability report reached AJ Surace — unknown is carried as unknown, never as healthy."
+    ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

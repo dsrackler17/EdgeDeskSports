@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "North Dakota State vs. Sacramento State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "North Dakota State vs. Sacramento State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices North Dakota State at Sacramento State at Sacramento State +8.4 with a 53.3 fair total. North Dakota State wins 71% of simulations. Data confidence 19%. Model status THIN DATA. Research, not picks.",
+  "seo_description": "EdgeDesk prices North Dakota State at Sacramento State at Sacramento State +8.4 with a 53.3 fair total. North Dakota State wins 71% of simulations. Data confidence 25%. Model status THIN DATA. Research, not picks.",
   "excerpt": "North Dakota State carries the stronger underlying team rating — -0.1 against -9.1, a 9.0-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Sacramento State +8.4 before any sportsbook number is consulted, with…",
   "home_team": "Sacramento State",
   "away_team": "North Dakota State",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-20T02:30:00.000Z",
   "game_when_label": "2026-09-20 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "THIN DATA",
   "model_status_note": "EdgeDesk has a projection but not enough confidence behind it to weigh against a price.",
-  "confidence": 19,
+  "confidence": 25,
   "priced": true,
   "fair_spread_text": "Sacramento State +8.4",
   "fair_total": "53.3",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "North Dakota State carries the stronger underlying team rating — -0.1 against -9.1, a 9.0-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Sacramento State +8.4 before any sportsbook number is consulted, with North Dakota State winning 71% of simulations.",
-      "Data confidence on this matchup is 19% — low enough that the exact margin should be read as provisional rather than as a settled number."
+      "Data confidence on this matchup is 25% — low enough that the exact margin should be read as provisional rather than as a settled number."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,246 @@
         "volatility_discriminates": false,
         "note": "Quoted from Sacramento State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 19,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 25,
+      "inputs_reached_pct": 47,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 8,
+        "priced": 6,
+        "priced_coverage_pct": 35,
+        "by_state": {
+          "USABLE": 6,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 8
+        },
+        "absent": [
+          {
+            "field": "venue_geography",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no coordinates for Sacramento State’s venue in the table the model was trained on"
+          },
+          {
+            "field": "venue_geography",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no coordinates for North Dakota State’s home venue, so travel distance cannot be computed"
+          },
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue has no coordinates, so no forecast can be located for it"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Sacramento State is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "North Dakota State is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "THIN DATA",
       "status_note": "EdgeDesk has a projection but not enough confidence behind it to weigh against a price.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "North Dakota State",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Nathan Hayes",
+        "player_id": "5087156",
+        "label": "Nathan Hayes — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 115,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5087156",
+              "player_name": "Nathan Hayes",
+              "dropbacks": 44,
+              "share": 0.917
+            },
+            {
+              "player_id": "5156994",
+              "player_name": "Trey Drake",
+              "dropbacks": 4,
+              "share": 0.083
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401864499",
+            "opponent": "Fordham",
+            "dropbacks": 26,
+            "starter": {
+              "player_id": "5087156",
+              "player_name": "Nathan Hayes",
+              "share": 0.846
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401864502",
+            "opponent": "Air Force",
+            "dropbacks": 22,
+            "starter": {
+              "player_id": "5087156",
+              "player_name": "Nathan Hayes",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-13T02:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Sacramento State",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Jackson Sharman",
+        "player_id": "5158748",
+        "label": "Jackson Sharman — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 73,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5158748",
+              "player_name": "Jackson Sharman",
+              "dropbacks": 58,
+              "share": 0.983
+            },
+            {
+              "player_id": "5401458",
+              "player_name": "Brian Salazar",
+              "dropbacks": 1,
+              "share": 0.017
+            }
+          ]
+        },
+        "conflicts": 1,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401866411",
+            "opponent": "Mississippi Valley State",
+            "dropbacks": 28,
+            "starter": {
+              "player_id": "5158748",
+              "player_name": "Jackson Sharman",
+              "share": 0.964
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401860883",
+            "opponent": "Fresno State",
+            "dropbacks": 31,
+            "starter": {
+              "player_id": "5158748",
+              "player_name": "Jackson Sharman",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-13T02:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1066,19 +1300,13 @@
           "Playing at Sacramento State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "The outcome range is 15.1 points wide at one sigma — p10 -31.4 to p90 +12.6 for Sacramento State, so a projection of -8.4 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 3%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "The market disagrees by 18.1 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "North Dakota State — low sample size",
@@ -1099,8 +1327,14 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 42h old",
+          "text": "odds is 47h old",
           "widening": null
         },
         {
@@ -1220,7 +1454,7 @@
       "total_market": "53.5",
       "book": "captured · DraftKings",
       "captured": "2026-09-13T18:00:03.924+00:00",
-      "capture_age": "42 hours old",
+      "capture_age": "47 hours old",
       "stale": false,
       "classification": "THIN DATA",
       "classification_note": "EdgeDesk has a projection but not enough confidence behind it to weigh against a price.",
@@ -1375,7 +1609,9 @@
       "EdgeDesk’s line is Sacramento State +8.4 on a neutral read of the two teams, before any book is consulted. Projected total 53.3.",
       "Sacramento State wins 29% of the time in EdgeDesk’s simulation, North Dakota State 71%.",
       "Eight games in ten land between -31.4 and +12.6 for Sacramento State. A single result inside that band tells you nothing new about either team.",
-      "The market has Sacramento State +26.5 at captured · DraftKings, 18.1 points from EdgeDesk’s number."
+      "The market has Sacramento State +26.5 at captured · DraftKings, 18.1 points from EdgeDesk’s number.",
+      "North Dakota State quarterback: Nathan Hayes — started the last game; no announcement for this one.",
+      "Sacramento State quarterback: Jackson Sharman — started the last game; no announcement for this one."
     ],
     "missing": [
       "Sacramento State — etsr (overall): confidence 18% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1415,15 +1651,17 @@
       "North Dakota State — linebackers: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "North Dakota State — secondary: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "North Dakota State — depth: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "North Dakota State — continuity: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "North Dakota State — continuity: confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Nathan Hayes — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Jackson Sharman — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

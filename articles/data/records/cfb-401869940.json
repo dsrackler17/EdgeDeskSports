@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Coastal Carolina vs. Delaware: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Coastal Carolina vs. Delaware 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Coastal Carolina at Delaware at Delaware -6.9 with a 58.1 fair total. Delaware wins 67% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices Coastal Carolina at Delaware at Delaware -6.9 with a 58.1 fair total. Delaware wins 67% of simulations. Data confidence 50%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Delaware carries the stronger underlying team rating — -5.7 against -6.9, a 1.2-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Delaware -6.9 before any sportsbook number is consulted, with Delaware winning 67%…",
   "home_team": "Delaware",
   "away_team": "Coastal Carolina",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T15:30:00.000Z",
   "game_when_label": "2026-09-19 15:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Delaware -6.9",
   "fair_total": "58.1",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Delaware carries the stronger underlying team rating — -5.7 against -6.9, a 1.2-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Delaware -6.9 before any sportsbook number is consulted, with Delaware winning 67% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,254 @@
         "volatility_discriminates": false,
         "note": "Quoted from Delaware’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Delaware is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Coastal Carolina is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "RESEARCH",
       "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Coastal Carolina",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Deuce Bailey",
+        "player_id": "5296439",
+        "label": "Deuce Bailey — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 108,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5296439",
+              "player_name": "Deuce Bailey",
+              "dropbacks": 67,
+              "share": 0.859
+            },
+            {
+              "player_id": "4812381",
+              "player_name": "Gunnar Smith",
+              "dropbacks": 6,
+              "share": 0.077
+            },
+            {
+              "player_id": "5152029",
+              "player_name": "Tre Guerra",
+              "dropbacks": 4,
+              "share": 0.051
+            },
+            {
+              "player_id": "5079465",
+              "player_name": "Michael Hawkins Jr.",
+              "dropbacks": 1,
+              "share": 0.013
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856780",
+            "opponent": "West Virginia",
+            "dropbacks": 42,
+            "starter": {
+              "player_id": "5296439",
+              "player_name": "Deuce Bailey",
+              "share": 0.976
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401868008",
+            "opponent": "Fordham",
+            "dropbacks": 36,
+            "starter": {
+              "player_id": "5296439",
+              "player_name": "Deuce Bailey",
+              "share": 0.722
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T23:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Delaware",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Nick Minicucci",
+        "player_id": "5153846",
+        "label": "Nick Minicucci — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 10,
+          "dropbacks": 586,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5153846",
+              "player_name": "Nick Minicucci",
+              "dropbacks": 68,
+              "share": 0.773
+            },
+            {
+              "player_id": "5224762",
+              "player_name": "Braden Streeter",
+              "dropbacks": 13,
+              "share": 0.148
+            },
+            {
+              "player_id": "5146355",
+              "player_name": "AJ Hairston",
+              "dropbacks": 3,
+              "share": 0.034
+            },
+            {
+              "player_id": "5158948",
+              "player_name": "Jared Curtis",
+              "dropbacks": 2,
+              "share": 0.023
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401864424",
+            "opponent": "Merrimack",
+            "dropbacks": 48,
+            "starter": null,
+            "settled": false,
+            "why": "the player who took the first dropback threw 6% of the dropbacks; the usage leader was Nick Minicucci"
+          },
+          {
+            "week": 2,
+            "game_id": "401856684",
+            "opponent": "Vanderbilt",
+            "dropbacks": 40,
+            "starter": {
+              "player_id": "5153846",
+              "player_name": "Nick Minicucci",
+              "share": 0.8
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T20:15:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1103,19 +1345,13 @@
           "Conference strength differs and the in-season sample is still thin, worth 0.4 points to Coastal Carolina (-0.4 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -16.1 to p90 +27.9 for Delaware, so a projection of +6.9 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "Coastal Carolina — low sample size",
@@ -1149,7 +1385,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1193,6 +1429,12 @@
           "label": "Delaware — thin defensive data",
           "text": "103 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
           "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "early season",
+          "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
+          "widening": "4%"
         }
       ],
       "unmeasured": [
@@ -1257,7 +1499,7 @@
       "total_market": "57.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1418,7 +1660,9 @@
       "EdgeDesk’s line is Delaware -6.9 on a neutral read of the two teams, before any book is consulted. Projected total 58.1.",
       "Delaware wins 67% of the time in EdgeDesk’s simulation, Coastal Carolina 33%.",
       "Eight games in ten land between -16.1 and +27.9 for Delaware. A single result inside that band tells you nothing new about either team.",
-      "The market has Delaware -4.5 at captured · FanDuel, 2.4 points from EdgeDesk’s number."
+      "The market has Delaware -4.5 at captured · FanDuel, 2.4 points from EdgeDesk’s number.",
+      "Coastal Carolina quarterback: Deuce Bailey — started the last game; no announcement for this one.",
+      "Delaware quarterback: Nick Minicucci — started the last game; no announcement for this one."
     ],
     "missing": [
       "Coastal Carolina — etsr (overall): confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1439,15 +1683,17 @@
       "Coastal Carolina — linebackers: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Coastal Carolina — secondary: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Coastal Carolina — depth: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Coastal Carolina — continuity: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Coastal Carolina — continuity: confidence 8% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Deuce Bailey — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Nick Minicucci — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

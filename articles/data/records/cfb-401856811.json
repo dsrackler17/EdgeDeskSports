@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Houston vs. Texas Tech: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Houston vs. Texas Tech 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Houston at Texas Tech at Texas Tech -14.3 with a 54.8 fair total. Texas Tech wins 83% of simulations. Data confidence 41%. Model status RESEARCH. Research, not picks.",
+  "seo_description": "EdgeDesk prices Houston at Texas Tech at Texas Tech -14.3 with a 54.8 fair total. Texas Tech wins 83% of simulations. Data confidence 50%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Texas Tech carries the stronger underlying team rating — +7.0 against +1.4, a 5.7-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Texas Tech -14.3 before any sportsbook number is consulted, with Texas Tech…",
   "home_team": "Texas Tech",
   "away_team": "Houston",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T00:00:00.000Z",
   "game_when_label": "2026-09-19 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Texas Tech -14.3",
   "fair_total": "54.8",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -66,7 +66,7 @@
       "Texas Tech carries the stronger underlying team rating — +7.0 against +1.4, a 5.7-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Texas Tech -14.3 before any sportsbook number is consulted, with Texas Tech winning 83% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is scheme fit, where Texas Tech leads Houston by 51 places nationally.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -106,12 +106,248 @@
         "volatility_discriminates": false,
         "note": "Quoted from Texas Tech’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Texas Tech is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Houston is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "RESEARCH",
       "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Houston",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Conner Weigman",
+        "player_id": "4685574",
+        "label": "Conner Weigman — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 13,
+          "dropbacks": 393,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4685574",
+              "player_name": "Conner Weigman",
+              "dropbacks": 43,
+              "share": 0.768
+            },
+            {
+              "player_id": "5159035",
+              "player_name": "Keisean Henderson",
+              "dropbacks": 8,
+              "share": 0.143
+            },
+            {
+              "player_id": "5212654",
+              "player_name": "Braden Atkinson",
+              "dropbacks": 4,
+              "share": 0.071
+            },
+            {
+              "player_id": "5308438",
+              "player_name": "Ashton Strother",
+              "dropbacks": 1,
+              "share": 0.018
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856778",
+            "opponent": "Oregon State",
+            "dropbacks": 36,
+            "starter": null,
+            "settled": false,
+            "why": "the player who took the first dropback threw 11% of the dropbacks; the usage leader was Conner Weigman"
+          },
+          {
+            "week": 2,
+            "game_id": "401856787",
+            "opponent": "Southern",
+            "dropbacks": 20,
+            "starter": {
+              "player_id": "4685574",
+              "player_name": "Conner Weigman",
+              "share": 0.6
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T23:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Texas Tech",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Will Hammond",
+        "player_id": "5126468",
+        "label": "Will Hammond — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 170,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5126468",
+              "player_name": "Will Hammond",
+              "dropbacks": 59,
+              "share": 0.967
+            },
+            {
+              "player_id": "4773919",
+              "player_name": "Thomas Castellanos",
+              "dropbacks": 1,
+              "share": 0.016
+            },
+            {
+              "player_id": "5151618",
+              "player_name": "Kirk Francis",
+              "dropbacks": 1,
+              "share": 0.016
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856770",
+            "opponent": "Abilene Christian",
+            "dropbacks": 33,
+            "starter": {
+              "player_id": "5126468",
+              "player_name": "Will Hammond",
+              "share": 0.97
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401856783",
+            "opponent": "Oregon State",
+            "dropbacks": 28,
+            "starter": {
+              "player_id": "5126468",
+              "player_name": "Will Hammond",
+              "share": 0.964
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T23:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1212,12 +1448,6 @@
       "items": [
         {
           "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
           "label": "Houston — low sample size",
           "text": "1.45 FBS-equivalent games played.",
           "widening": null
@@ -1248,8 +1478,14 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1357,7 +1593,7 @@
       "total_market": "52.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1518,16 +1754,21 @@
       "EdgeDesk’s line is Texas Tech -14.3 on a neutral read of the two teams, before any book is consulted. Projected total 54.8.",
       "Texas Tech wins 83% of the time in EdgeDesk’s simulation, Houston 17%.",
       "Eight games in ten land between -8.7 and +35.3 for Texas Tech. A single result inside that band tells you nothing new about either team.",
-      "The market has Texas Tech -9.5 at captured · FanDuel, 4.8 points from EdgeDesk’s number."
+      "The market has Texas Tech -9.5 at captured · FanDuel, 4.8 points from EdgeDesk’s number.",
+      "Houston quarterback: Conner Weigman — started the last game; no announcement for this one.",
+      "Texas Tech quarterback: Will Hammond — started the last game; no announcement for this one."
     ],
-    "missing": [],
+    "missing": [
+      "No availability report reached Conner Weigman — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Will Hammond — unknown is carried as unknown, never as healthy."
+    ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

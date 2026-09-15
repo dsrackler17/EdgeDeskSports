@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Colorado vs. Northwestern: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Colorado vs. Northwestern 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Colorado at Northwestern at Northwestern -10.6 with a 50.9 fair total. Northwestern wins 75% of simulations. Data confidence 41%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices Colorado at Northwestern at Northwestern -10.6 with a 50.9 fair total. Northwestern wins 75% of simulations. Data confidence 50%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Northwestern carries the stronger underlying team rating — +1.1 against -3.7, a 4.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Northwestern -10.6 before any sportsbook number is consulted, with Northwestern…",
   "home_team": "Northwestern",
   "away_team": "Colorado",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T23:30:00.000Z",
   "game_when_label": "2026-09-19 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-15T11:37:06.426Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 41,
+  "confidence": 50,
   "priced": true,
   "fair_spread_text": "Northwestern -10.6",
   "fair_total": "50.9",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel and DraftKings on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Northwestern carries the stronger underlying team rating — +1.1 against -3.7, a 4.8-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Northwestern -10.6 before any sportsbook number is consulted, with Northwestern winning 75% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 50% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,229 @@
         "volatility_discriminates": false,
         "note": "Quoted from Northwestern’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 50,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "Northwestern is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Colorado is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "INVESTIGATE",
       "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Colorado",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Julian Lewis",
+        "player_id": "5159016",
+        "label": "Julian Lewis — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 4,
+          "dropbacks": 154,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5159016",
+              "player_name": "Julian Lewis",
+              "dropbacks": 53,
+              "share": 0.746
+            },
+            {
+              "player_id": "5214655",
+              "player_name": "Kaneal Sweetwyne",
+              "dropbacks": 10,
+              "share": 0.141
+            },
+            {
+              "player_id": "5191162",
+              "player_name": "Alberto Mendoza",
+              "dropbacks": 3,
+              "share": 0.042
+            },
+            {
+              "player_id": "5439505",
+              "player_name": "Nate Dahle",
+              "dropbacks": 3,
+              "share": 0.042
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401856776",
+            "opponent": "Georgia Tech",
+            "dropbacks": 30,
+            "starter": {
+              "player_id": "5159016",
+              "player_name": "Julian Lewis",
+              "share": 0.9
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401856785",
+            "opponent": "Weber State",
+            "dropbacks": 41,
+            "starter": {
+              "player_id": "5159016",
+              "player_name": "Julian Lewis",
+              "share": 0.634
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T19:30:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "Northwestern",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Aidan Chiles",
+        "player_id": "5075805",
+        "label": "Aidan Chiles — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 7,
+          "dropbacks": 239,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 1,
+          "players": [
+            {
+              "player_id": "5075805",
+              "player_name": "Aidan Chiles",
+              "dropbacks": 26,
+              "share": 0.897
+            },
+            {
+              "player_id": "5085784",
+              "player_name": "Chase Mason",
+              "dropbacks": 3,
+              "share": 0.103
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858431",
+            "opponent": "South Dakota State",
+            "dropbacks": 29,
+            "starter": null,
+            "settled": false,
+            "why": "the player who took the first dropback threw 10% of the dropbacks; the usage leader was Aidan Chiles"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-06T00:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -1098,19 +1315,13 @@
         "bullets": [
           "The outcome range is 15.5 points wide at one sigma — p10 -13.4 to p90 +31.6 for Northwestern, so a projection of +10.6 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 6%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "The market disagrees by 7.1 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "Colorado — low sample size",
@@ -1143,8 +1354,14 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 50h old",
+          "text": "odds is 55h old",
           "widening": null
         },
         {
@@ -1252,7 +1469,7 @@
       "total_market": "45.5",
       "book": "captured · FanDuel",
       "captured": "2026-09-13T10:00:02.682+00:00",
-      "capture_age": "50 hours old",
+      "capture_age": "55 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1407,7 +1624,9 @@
       "EdgeDesk’s line is Northwestern -10.6 on a neutral read of the two teams, before any book is consulted. Projected total 50.9.",
       "Northwestern wins 75% of the time in EdgeDesk’s simulation, Colorado 25%.",
       "Eight games in ten land between -13.4 and +31.6 for Northwestern. A single result inside that band tells you nothing new about either team.",
-      "The market has Northwestern -3.5 at captured · FanDuel, 7.1 points from EdgeDesk’s number."
+      "The market has Northwestern -3.5 at captured · FanDuel, 7.1 points from EdgeDesk’s number.",
+      "Colorado quarterback: Julian Lewis — started the last game; no announcement for this one.",
+      "Northwestern quarterback: Aidan Chiles — started the last game; no announcement for this one."
     ],
     "missing": [
       "Northwestern — etsr (overall): confidence 19% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1447,15 +1666,17 @@
       "Colorado — linebackers: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Colorado — secondary: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "Colorado — depth: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "Colorado — continuity: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "Colorado — continuity: confidence 10% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Julian Lewis — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Aidan Chiles — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }

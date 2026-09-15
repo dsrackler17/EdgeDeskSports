@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Ohio vs. South Alabama: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Ohio vs. South Alabama 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Ohio at South Alabama at South Alabama -2.3 with a 55.1 fair total. South Alabama wins 56% of simulations. Data confidence 41%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Ohio at South Alabama at South Alabama -2.3 with a 55.1 fair total. South Alabama wins 56% of simulations. Data confidence 49%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Ohio carries the stronger underlying team rating — -3.8 against -4.8, a 1.0-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it South Alabama -2.3 before any sportsbook number is consulted, with South Alabama…",
   "home_team": "South Alabama",
   "away_team": "Ohio",
@@ -21,12 +21,12 @@
   "game_time": "2026-09-19T23:00:00.000Z",
   "game_when_label": "2026-09-19 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-14T17:15:33.743Z",
-  "generated_at": "2026-09-15T11:37:06.426Z",
+  "updated_at": "2026-09-15T16:51:12.352Z",
+  "generated_at": "2026-09-15T16:51:12.352Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 41,
+  "confidence": 49,
   "priced": true,
   "fair_spread_text": "South Alabama -2.3",
   "fair_total": "55.1",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -65,7 +65,7 @@
     "lede": [
       "Ohio carries the stronger underlying team rating — -3.8 against -4.8, a 1.0-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it South Alabama -2.3 before any sportsbook number is consulted, with South Alabama winning 56% of simulations.",
-      "Data confidence on this matchup is 41% — enough to publish, not enough to treat the exact margin as settled."
+      "Data confidence on this matchup is 49% — enough to publish, not enough to treat the exact margin as settled."
     ],
     "projection": {
       "priced": true,
@@ -105,12 +105,234 @@
         "volatility_discriminates": false,
         "note": "Quoted from South Alabama’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 41,
-      "inputs_reached_pct": 40,
+      "confidence_pct": 49,
+      "inputs_reached_pct": 59,
+      "input_contract": {
+        "fields": 17,
+        "applicable": 17,
+        "known": 10,
+        "priced": 8,
+        "priced_coverage_pct": 47,
+        "by_state": {
+          "USABLE": 8,
+          "RESEARCH_ONLY": 2,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "FETCH_FAILED": 1,
+          "UNAVAILABLE": 6
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "FETCH_FAILED",
+            "why": "the venue coordinates are known; no forecast reached this game"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "South Alabama is not in the availability registry"
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "Ohio is not in the availability registry"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy"
+          },
+          {
+            "field": "recruiting_talent",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "per-player recruiting ratings are subscription data; no keyless feed carries them and none is substituted"
+          },
+          {
+            "field": "coaching_continuity",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no public, keyless feed carries coordinator or staff continuity"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
       "status": "NO MARKET",
       "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Ohio",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Nick Poulos",
+        "player_id": "5228762",
+        "label": "Nick Poulos — started the last game (did not finish week 2; no injury report on file); no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 2,
+          "dropbacks": 47,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5228762",
+              "player_name": "Nick Poulos",
+              "dropbacks": 36,
+              "share": 0.692
+            },
+            {
+              "player_id": "5171031",
+              "player_name": "Matt Vezza",
+              "dropbacks": 14,
+              "share": 0.269
+            },
+            {
+              "player_id": "5244755",
+              "player_name": "Levi Davis",
+              "dropbacks": 2,
+              "share": 0.038
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401858430",
+            "opponent": "Nebraska",
+            "dropbacks": 32,
+            "starter": {
+              "player_id": "5228762",
+              "player_name": "Nick Poulos",
+              "share": 0.969
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401866418",
+            "opponent": "Jacksonville State",
+            "dropbacks": 20,
+            "starter": {
+              "player_id": "5228762",
+              "player_name": "Nick Poulos",
+              "share": 0.25
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T22:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "home": {
+        "team": "South Alabama",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Bishop Davenport",
+        "player_id": "4869553",
+        "label": "Bishop Davenport — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 14,
+          "dropbacks": 377,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "4869553",
+              "player_name": "Bishop Davenport",
+              "dropbacks": 60,
+              "share": 1
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 1,
+            "game_id": "401868316",
+            "opponent": "SE Louisiana",
+            "dropbacks": 27,
+            "starter": {
+              "player_id": "4869553",
+              "player_name": "Bishop Davenport",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 2,
+            "game_id": "401864575",
+            "opponent": "Tulane",
+            "dropbacks": 33,
+            "starter": {
+              "player_id": "4869553",
+              "player_name": "Bishop Davenport",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-12T23:00:00.000Z",
+        "retrieved_at": "2026-09-15T15:36:46.157Z"
+      },
+      "generated_at": "2026-09-15T15:36:45.925Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
     "drivers": {
       "rows": [
@@ -158,7 +380,7 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "-3.8",
-                "n": -3.78,
+                "n": -3.79,
                 "rank": "#57 of 68",
                 "rank_n": 57,
                 "note": null
@@ -181,8 +403,8 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "42.0",
-                "n": 42,
+                "v": "41.9",
+                "n": 41.9,
                 "rank": "#61 of 68",
                 "rank_n": 61,
                 "note": null
@@ -196,7 +418,7 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 3.2,
+                "gap": 3.3,
                 "rank_gap": null
               }
             },
@@ -599,8 +821,8 @@
               "k": "Secondary",
               "note": null,
               "a": {
-                "v": "49.3",
-                "n": 49.3,
+                "v": "49.2",
+                "n": 49.2,
                 "rank": "#55 of 68",
                 "rank_n": 55,
                 "note": null
@@ -614,7 +836,7 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 0.6,
+                "gap": 0.7,
                 "rank_gap": null
               }
             },
@@ -817,12 +1039,12 @@
         "def": {
           "team": "Ohio",
           "label": "secondary",
-          "v": "49.3",
+          "v": "49.2",
           "rank": "#55 of 68",
           "note": null
         },
         "complete": true,
-        "read": "South Alabama’s QB room rates 56.1 against Ohio’s secondary at 49.3 (#55 of 68). South Alabama’s unit carries the higher rating."
+        "read": "South Alabama’s QB room rates 56.1 against Ohio’s secondary at 49.2 (#55 of 68). South Alabama’s unit carries the higher rating."
       },
       {
         "title": "Ohio offensive line vs South Alabama defensive line",
@@ -931,12 +1153,12 @@
         "def": {
           "team": "Ohio",
           "label": "secondary",
-          "v": "49.3",
+          "v": "49.2",
           "rank": "#55 of 68",
           "note": null
         },
         "complete": true,
-        "read": "South Alabama’s receivers rates 52.3 against Ohio’s secondary at 49.3 (#55 of 68). South Alabama’s unit carries the higher rating."
+        "read": "South Alabama’s receivers rates 52.3 against Ohio’s secondary at 49.2 (#55 of 68). South Alabama’s unit carries the higher rating."
       }
     ],
     "roster": {
@@ -1012,11 +1234,11 @@
         {
           "k": "Starter quality",
           "note": "projected starters, weighted by position value",
-          "a": "54.1",
+          "a": "54.0",
           "h": "54.6",
           "edge": {
             "side": "h",
-            "gap": 0.5
+            "gap": 0.6000000000000014
           }
         },
         {
@@ -1066,7 +1288,7 @@
         {
           "k": "Starter quality",
           "lead": "South Alabama",
-          "text": "South Alabama leads on starter quality — Ohio 54.1, South Alabama 54.6."
+          "text": "South Alabama leads on starter quality — Ohio 54.0, South Alabama 54.6."
         },
         {
           "k": "Returning production value",
@@ -1103,19 +1325,13 @@
           "Stylistically the matchup favours Ohio by 1.4 points: ball control vs front disruption (-1.4 pts).",
           "The outcome range is 15.3 points wide at one sigma — p10 -20.7 to p90 +23.3 for South Alabama, so a projection of +2.3 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 4%.",
-          "60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should."
+          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
-        {
-          "sev": "HIGH",
-          "label": "information missing",
-          "text": "The projection could be wrong because 60% of the model’s own input contract was empty for this game — no starter, injury or per-player talent context reached it, so the number leans on team strength more than it should.",
-          "widening": null
-        },
         {
           "sev": "HIGH",
           "label": "Ohio — low sample size",
@@ -1192,6 +1408,12 @@
           "sev": "LOW",
           "label": "missing",
           "text": "home starting QB unknown",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "away starting QB unknown",
           "widening": null
         }
       ],
@@ -1284,7 +1506,7 @@
         },
         {
           "k": "Talent",
-          "a": "42.0  #61",
+          "a": "41.9  #61",
           "h": "45.2  unranked",
           "note": null
         },
@@ -1374,7 +1596,7 @@
         },
         {
           "k": "Secondary",
-          "a": "49.3  #55",
+          "a": "49.2  #55",
           "h": "49.9  unranked",
           "note": null
         },
@@ -1408,7 +1630,9 @@
       "EdgeDesk’s line is South Alabama -2.3 on a neutral read of the two teams, before any book is consulted. Projected total 55.1.",
       "South Alabama wins 56% of the time in EdgeDesk’s simulation, Ohio 44%.",
       "Eight games in ten land between -20.7 and +23.3 for South Alabama. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "Ohio quarterback: Nick Poulos — started the last game (did not finish week 2; no injury report on file); no announcement for this one.",
+      "South Alabama quarterback: Bishop Davenport — started the last game; no announcement for this one."
     ],
     "missing": [
       "South Alabama — etsr (overall): confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
@@ -1429,15 +1653,17 @@
       "South Alabama — linebackers: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "South Alabama — secondary: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
       "South Alabama — depth: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
-      "South Alabama — continuity: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank."
+      "South Alabama — continuity: confidence 21% is below the 22% floor. below this a team is listed UNRANKED / LOW CONFIDENCE in that category rather than given a number that looks like the others. It keeps its rating; it does not keep its rank.",
+      "No availability report reached Nick Poulos — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Bishop Davenport — unknown is carried as unknown, never as healthy."
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 2, built 2026-09-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-15T11:37:06.426Z"
+    "at": "2026-09-15T16:51:12.352Z"
   }
 }
