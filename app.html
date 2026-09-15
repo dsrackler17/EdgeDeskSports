@@ -46569,17 +46569,27 @@ function fbGxCheckRows(u,p){
      model rebuilt this minute does not refresh a price captured two days
      ago, and a price EdgeDesk re-read without it changing is still as old as
      the moment it was captured. Each row now carries its OWN age. */
-  var builtAt=(u&&u.t)||null;
+  /* Both ages are formatted here rather than through the page's `ago`, so
+     this function carries no page-global dependency: it is sliced out and
+     run on its own by tools/app/game_research.test.js, and a renderer that
+     only works inside the whole page cannot be tested as a unit. */
+  function agedHours(iso){
+    if(!iso)return null;
+    var h=(Date.now()-Date.parse(iso))/3600000;
+    return isFinite(h)?h:null;
+  }
+  function agedText(h){ return h==null?null:(h<1?Math.round(h*60)+' min':h.toFixed(1)+' h'); }
+  var bAge=agedHours((u&&u.t)?new Date(u.t).toISOString():null);
   st('model built',p.status==='PREDICTED'?'AVAILABLE':'MISSING',
-     builtAt?('rebuilt '+ago(builtAt)+' — this is the MODEL\u2019s clock and says nothing about a price\u2019s age')
-            :'the model\u2019s own clock, which is not the market\u2019s');
+     bAge!=null?('rebuilt '+agedText(bAge)+' ago \u2014 this is the MODEL\u2019s clock and says nothing about a price\u2019s age')
+               :'the model\u2019s own clock, which is not the market\u2019s');
   var qAt=mk.captured_at||mk.observed_at||(mk.freshness&&mk.freshness.price_captured_at)||null;
-  var qAge=qAt?((Date.now()-Date.parse(qAt))/3600000):null;
+  var qAge=agedHours(qAt);
   st('market joined',mk.spread_line==null?'MISSING':(mk.stale?'STALE':'AVAILABLE'),
      mk.spread_line==null?'no quote on file'
        :((mk.book||'reference')
-         +(qAge!=null&&isFinite(qAge)
-           ?(' \u00b7 captured '+(qAge<1?Math.round(qAge*60)+' min':qAge.toFixed(1)+' h')+' ago')
+         +(qAge!=null
+           ?(' \u00b7 captured '+agedText(qAge)+' ago')
            :' \u00b7 capture time not published with this quote')));
   var rh=L.offensive_line&&L.offensive_line.home&&L.offensive_line.home.continuity;
   var ra=L.offensive_line&&L.offensive_line.away&&L.offensive_line.away.continuity;
