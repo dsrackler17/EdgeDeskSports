@@ -273,7 +273,13 @@ if (good.json) {
      answer about baseball to someone asking about Texas State. */
   const ALLOWED = ['SB_SERVICE_ROLE', 'SB_URL', 'COLLECTIVE_ADMIN_REFRESH_TOKEN', 'GITHUB_TOKEN',
     'ANTHROPIC_API_KEY', 'RESEND_API_KEY',
-    'SUPABASE_ACCESS_TOKEN', 'SUPABASE_PROJECT_REF', 'SB_DB_URL'];
+    'SUPABASE_ACCESS_TOKEN', 'SUPABASE_PROJECT_REF', 'SB_DB_URL',
+    /* The odds capture's backup scheduler. It must equal the CRON_SECRET the
+       deployed `capture` function holds; capture 401s every caller whose
+       x-cron-secret does not match, its own scheduler included. The PRIMARY
+       scheduler is pg_cron (supabase/capture_cron.sql) and needs no GitHub
+       secret at all — it reads the value from the database. */
+    'CAPTURE_CRON_SECRET'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));

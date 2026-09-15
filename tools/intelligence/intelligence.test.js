@@ -236,6 +236,68 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   }
 
   /* =====================================================================
+     5b. HOW OLD IS TOO OLD DEPENDS ON WHEN THE GAME STARTS.
+
+     A single number was wrong at both ends, and the expensive end was the
+     loose one: a 44-minute-old price twenty minutes before kickoff cleared
+     the old flat 45-minute check and was presented as the price. That is the
+     window where a line moves fastest and a book pulls a number soonest.
+
+     The other end cost credibility rather than money: a two-hour-old college
+     spread six days out was called stale, which is an ordinary Tuesday, and
+     a staleness warning that fires on everything stops being read.
+     ===================================================================== */
+  {
+    const now = Date.now();
+    const at = (kickMin, ageMin, market) => I.quoteState({
+      captured_at: now - ageMin * 60000, now, market: market || 'spreads',
+      kickoff: now + kickMin * 60000,
+    });
+
+    /* --- the loose end: the case that could show a customer a dead price --- */
+    const imminent = at(20, 44);
+    eq('44 minutes old with kickoff 20 minutes away is STALE', imminent.status, 'STALE');
+    chk('and is not actionable', imminent.actionable === false);
+    eq('because the limit inside half an hour is 5 minutes', imminent.limit_min, 5);
+    eq('and the limit says it came from the kickoff, not the market', imminent.limit_basis, 'imminent');
+    chk('and the sentence tells the reader why the limit is so tight',
+      /kickoff under 30 minutes away/.test(imminent.why), imminent.why);
+
+    eq('90 minutes out, the limit is 15 minutes', at(90, 5).limit_min, 15);
+    eq('and a 44-minute-old price there is stale too', at(90, 44).status, 'STALE');
+    eq('4 hours out, the limit is 45 minutes', at(240, 5).limit_min, 45);
+
+    /* --- the tight end: the false alarm that burns the word "stale" ------- */
+    const far = at(5 * 24 * 60, 120);
+    eq('2 hours old with kickoff 5 days away is CURRENT', far.status, 'CURRENT');
+    chk('and is actionable', far.actionable === true);
+    eq('because the limit that far out is 6 hours', far.limit_min, 360);
+
+    /* --- and the failure that started this is still caught ---------------- */
+    const live = at(5 * 24 * 60, 2345);
+    eq('the 2,345-minute quote production served is still STALE', live.status, 'STALE');
+    chk('and is still not actionable', live.actionable === false);
+
+    /* --- the rung that did not move -------------------------------------- */
+    eq('a game inside a day keeps the 90 minutes it always had', at(12 * 60, 5).limit_min, 90);
+    eq('and a 44-minute price there is still current', at(12 * 60, 44).status, 'CURRENT');
+
+    /* --- a future is not priced against a kickoff ------------------------- */
+    eq('a futures quote keeps its own 720-minute limit', at(5 * 24 * 60, 400, 'futures').limit_min, 720);
+    eq('and says the limit came from the market, not a kickoff',
+      at(5 * 24 * 60, 400, 'futures').limit_basis, 'market');
+
+    /* --- no kickoff means no ladder, which is the old behaviour exactly --- */
+    const noKick = I.quoteState({ captured_at: now - 44 * 60000, now, market: 'spreads' });
+    eq('with no kickoff the flat market limit stands', noKick.limit_min, 90);
+    eq('and nothing claims a bucket set it', noKick.limit_basis, 'market');
+
+    /* --- a caller naming its own limit is not asking for a lookup --------- */
+    eq('an explicit override wins over the ladder',
+      I.quoteTtlMin('spreads', { spreads: 30 }, 0.2), 30);
+  }
+
+  /* =====================================================================
      6. TRUNCATION CANNOT ERASE SCOPE OR CRITICAL BLOCKERS.
      Observed: 361 items retrieved, 130 withheld, and a categorical absence
      claim made anyway.

@@ -139,6 +139,58 @@ async function doctor(opts) {
     }
   }
 
+  /* ---- 3b. IS ANYTHING FILLING THE BOARD? ------------------------------
+     The failure this check exists for went unnoticed for as long as it did
+     because nothing was watching for it: `capture` was never scheduled, the
+     board quietly aged, and the first report came from a customer being shown
+     a thirty-nine-hour-old price. Every other check here answers "is the
+     right code deployed". This one answers "is the deployed code being run",
+     which is a different question and was the one that mattered.
+
+     It compares the newest capture against the reader's OWN rung for the
+     nearest kickoff, not against a flat number, so a six-day-out board that
+     is two hours old reads healthy and a board two hours old twenty minutes
+     before kickoff does not. */
+  if (!key) {
+    add('the board is being captured', 'UNKNOWN', 'no SB_ANON or SB_SERVICE_ROLE in the environment',
+      'SB_ANON=... node tools/intelligence/deploy_doctor.js');
+  } else {
+    const nowIso = new Date().toISOString();
+    const q = `${url}/rest/v1/signals?select=last_seen_at,commence_time,sport_key,market`
+      + `&commence_time=gte.${encodeURIComponent(nowIso)}&order=last_seen_at.desc&limit=1`;
+    const b = await get(q, { apikey: key, authorization: 'Bearer ' + key });
+    let rows = null; try { rows = JSON.parse(b.text); } catch (_) { /* below */ }
+    if (b.status === 0) {
+      add('the board is being captured', 'UNKNOWN', b.error || 'no response');
+    } else if (!b.ok && b.status !== 401 && b.status !== 403) {
+      add('the board is being captured', 'UNKNOWN', `HTTP ${b.status} reading signals`);
+    } else if (b.status === 401 || b.status === 403) {
+      add('the board is being captured', 'UNKNOWN',
+        `row-level security refused this key (HTTP ${b.status}), so the board's age could not be read`,
+        'Pass SB_SERVICE_ROLE to read it.');
+    } else if (!Array.isArray(rows) || !rows.length) {
+      add('the board is being captured', 'EMPTY',
+        'not one signal row exists for any game that has not started yet',
+        'Apply supabase/capture_cron.sql, then check cron.job_run_details.');
+    } else {
+      const r = rows[0];
+      const ageMin = (Date.now() - Date.parse(r.last_seen_at)) / 60000;
+      const hrsToKick = (Date.parse(r.commence_time) - Date.now()) / 3600000;
+      /* The reader's ladder, mirrored. capture/index.ts holds the same table as
+         READER_RUNGS and _intelligence.js holds it as quote_ttl_buckets. */
+      const RUNGS = [[0.5, 5], [2, 15], [6, 45], [24, 90], [72, 180], [Infinity, 360]];
+      const limit = (RUNGS.find(([h]) => hrsToKick <= h) || RUNGS[RUNGS.length - 1])[1];
+      const age = ageMin >= 120 ? `${(ageMin / 60).toFixed(1)} hours` : `${Math.round(ageMin)} minutes`;
+      add('the board is being captured',
+        ageMin <= limit ? 'CURRENT' : 'STALE',
+        `the newest capture on an upcoming game is ${age} old, against a ${limit}-minute limit `
+        + `for a game starting in ${hrsToKick < 24 ? hrsToKick.toFixed(1) + ' hours' : (hrsToKick / 24).toFixed(1) + ' days'}`,
+        ageMin <= limit ? null
+          : 'Nothing is calling capture on cadence. Apply supabase/capture_cron.sql and check '
+            + 'cron.job_run_details; the GitHub backup is .github/workflows/capture.yml.');
+    }
+  }
+
   /* ---- 4. the artifacts the desk reads over HTTP ----------------------- */
   for (const [label, p] of [['FBS slate', '/football/fbs/slate.json'], ['availability', '/football/availability/current.json']]) {
     const a = await get(site + p, { accept: 'application/json' });
@@ -164,7 +216,7 @@ async function doctor(opts) {
     }
   }
 
-  const bad = out.checks.filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT/.test(c.state));
+  const bad = out.checks.filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY/.test(c.state));
   out.verdict = bad.length ? 'ACTION NEEDED' : out.checks.some((c) => c.state === 'UNKNOWN') ? 'INCOMPLETE' : 'DEPLOYED AND CURRENT';
   return out;
 }

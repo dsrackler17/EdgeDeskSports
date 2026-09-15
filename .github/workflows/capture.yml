@@ -1,0 +1,133 @@
+name: Capture the board
+
+# THE BACKUP SCHEDULER for the odds capture, not the primary one.
+#
+# The primary is pg_cron, installed by supabase/capture_cron.sql, for a reason
+# this repository measured rather than assumed: on 2026-09-13 every scheduled
+# workflow here showed the same ~4.5 hour gap, settle-finals included, and
+# settle-finals is hourly. A price whose entire value is that it is current
+# cannot depend on a scheduler that skips four hours.
+#
+# So this exists as the SECOND independent path. Capture is idempotent -- a
+# duplicate run costs one odds request and upserts the same rows -- which is
+# what makes running two schedulers against it safe rather than merely
+# redundant. The cadences here are deliberately looser than pg_cron's: this is
+# the thing that keeps the board from going a day and a half stale if pg_cron
+# stops, not the thing that keeps it inside the reader's tightest rung.
+#
+# WHAT IT NEEDS. Two secrets, and it will not pretend otherwise:
+#   SB_URL                 already set; every other job here uses it
+#   CAPTURE_CRON_SECRET    the SAME value as the function's own CRON_SECRET
+#                          (`supabase secrets list` shows whether it is set)
+#
+# Capture refuses every caller whose x-cron-secret does not match, including
+# its own scheduler, and says so in the 401 body. A run without the secret
+# fails loudly here rather than exiting green having captured nothing -- which
+# is exactly how sync-schedule.yml came to load zero games on every scheduled
+# run it had ever had.
+#
+# NO ODDS API KEY AND NO SERVICE ROLE REACH THIS RUNNER. The function holds
+# both. This workflow knows a URL and a shared secret, and that is all it can
+# leak.
+
+on:
+  schedule:
+    # Hourly on the `day` tier: anything kicking off inside 30 hours. This is
+    # the one that matters if the primary is down -- it keeps the board a
+    # customer is actually researching from aging out.
+    - cron: '26 * * * *'
+    # Four times a day on the full horizon, so a fortnight of fixtures is never
+    # more than six hours behind even with pg_cron stopped entirely.
+    - cron: '41 1,7,13,19 * * *'
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'Which window to capture'
+        type: choice
+        options: [day, near, board]
+        required: false
+        default: day
+      diag:
+        description: 'Diagnostic run: price the board, report the funnel, write NOTHING.'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # Two captures writing the same board race each other into the same upsert.
+  group: capture
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The qualification rules decide what EdgeDesk is willing to put its name
+      # on. They pass before anything is asked to run against the real board.
+      - name: The qualification rules must pass before the board is captured
+        run: node tools/capture/capture.test.js
+
+      - name: Capture
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          CAPTURE_CRON_SECRET: ${{ secrets.CAPTURE_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${CAPTURE_CRON_SECRET:-}" ]; then
+            echo "::error::SB_URL and CAPTURE_CRON_SECRET are not both set, so capture cannot be invoked."
+            echo "CAPTURE_CRON_SECRET must equal the value the deployed function holds as CRON_SECRET."
+            echo "The primary scheduler is pg_cron (supabase/capture_cron.sql) and is unaffected by this."
+            exit 1
+          fi
+
+          # WHICH TIER THIS RUN IS. The two cron entries mean different things,
+          # so the schedule that fired decides; a manual run says for itself.
+          TIER="${{ inputs.tier }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "41 1,7,13,19 * * *" ]; then TIER=board; else TIER=day; fi
+          fi
+          if [ -z "$TIER" ]; then TIER=day; fi
+          QS="tier=$TIER"
+          if [ "${{ inputs.diag }}" = "true" ]; then QS="$QS&diag=1"; fi
+          echo "tier: $TIER"
+
+          # -s so a failure does not print the URL with its query string, --fail-with-body
+          # so a 401 still shows the reason capture gave rather than an empty exit code.
+          # The secret goes in a header from the environment and is never echoed.
+          CODE=$(curl -sS -o /tmp/capture.json -w '%{http_code}' \
+            --max-time 180 --retry 2 --retry-delay 5 --retry-connrefused \
+            -X POST "${SB_URL%/}/functions/v1/capture?$QS" \
+            -H "content-type: application/json" \
+            -H "x-cron-secret: ${CAPTURE_CRON_SECRET}" \
+            -d '{"source":"github_actions"}') || true
+
+          # The response is a report, not a log line. Print the parts that say
+          # whether the run did its job; the whole body is large and most of it
+          # is the policy echoed back.
+          node -e '
+            const fs = require("fs");
+            let j; try { j = JSON.parse(fs.readFileSync("/tmp/capture.json", "utf8")); }
+            catch { console.log("capture did not return JSON:"); console.log(fs.readFileSync("/tmp/capture.json","utf8").slice(0,800)); process.exit(1); }
+            const pick = (o, ks) => ks.filter(k => o[k] !== undefined).map(k => k + ": " + JSON.stringify(o[k])).join("\n");
+            console.log(pick(j, ["ok","status","build","error","reason","cadence","sports","priced",
+                                 "new_signals","refreshed","sports_skipped_no_near_events",
+                                 "quota_spent_this_run","quota_remaining","write_errors",
+                                 "schema_gaps","schema_warning","reference_warning"]));
+            if (j.funnel) console.log("funnel: " + JSON.stringify(j.funnel.stages));
+            if (!j.ok) process.exit(1);
+          '
+
+          if [ "$CODE" != "200" ]; then
+            echo "::error::capture answered HTTP $CODE"
+            exit 1
+          fi
