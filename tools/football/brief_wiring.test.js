@@ -52,6 +52,39 @@ ok(/\}\)\(\);\s*(\/\*[\s\S]*?\*\/\s*)*$/.test(MODULE.trim()), 'and closes as one
 const exported = new Set((MODULE.match(/window\.(fb[A-Za-z0-9_]+)\s*=/g) || []).map(s => s.slice(7).replace(/\s*=$/, '')));
 ok(exported.size > 40, 'it exports its public surface explicitly (' + exported.size + ' names) — that is the convention this test enforces');
 
+/* ═══ 1b. ONE CONFIDENCE LEDGER, NOT TWO ═════════════════════════════════
+   The board explains its own confidence number and the committed artifact
+   carries the same explanation. A second copy of that arithmetic in app.html
+   is how the screen and football/fbs/slate.json come to describe one game
+   differently, which is the exact class of bug the shared modules exist to
+   end. So the renderer must DELEGATE and must render nothing when the module
+   is absent — an explanation that might be wrong is worse than none. */
+section('1b. the board explains its confidence from the shared module, not from a second copy');
+{
+  const fn = (MODULE.match(/function fbGxLedger\(u,p,cov\)\{[\s\S]*?\n\}/) || [''])[0];
+  ok(fn.length > 0, 'the board carries a confidence-ledger renderer');
+  ok(/window\.EDConfidence\.ledger\(/.test(fn),
+    'and it calls the shared module rather than computing a ledger of its own');
+  ok(/if\(!window\.EDConfidence\|\|!window\.EDConfidence\.ledger\)return ''/.test(fn),
+    'with the module absent it renders nothing at all');
+  ok(!/lost_points\s*=\s*[^;]*\*/.test(fn),
+    'and it does no point arithmetic of its own');
+  ok(/football\/matchup\/confidence\.js/.test(SRC.module + SRC.rest),
+    'the page loads football/matchup/confidence.js');
+  ok(/football\/matchup\/qb_context\.js/.test(SRC.module + SRC.rest),
+    'and football/matchup/qb_context.js, so the starter is flattened once');
+  /* the browser's starter flattening must delegate too */
+  const qb = (MODULE.match(/function fbP4QbContext\(teamName\)\{[\s\S]*?\n\}/) || [''])[0];
+  ok(/window\.EDQbContext\.build\(/.test(qb), 'the browser flattens the starter through the shared module');
+  ok(/if\(!window\.EDQbContext\)return null/.test(qb),
+    'and keeps no fallback copy: with the module absent the board reports the starter unknown, which is true');
+  /* and no surface may round a probability across the boundary */
+  ok(!/home_win_prob\s*\*\s*100\)\.toFixed\(0\)/.test(MODULE),
+    'no board cell renders a win probability with a bare toFixed(0) any more');
+  ok(/function fbWinPair\(pHome\)/.test(MODULE) && /window\.fbWinPair=fbWinPair/.test(MODULE),
+    'the bounded renderer exists and is exported');
+}
+
 /* ═══ 2. every cross-scope reference resolves ════════════════════════════ */
 section('2. every window.fb* the rest of the page reaches for is defined by somebody');
 const definedOutside = new Set((REST.match(/window\.(fb[A-Za-z0-9_]+)\s*=/g) || []).map(s => s.slice(7).replace(/\s*=$/, '')));

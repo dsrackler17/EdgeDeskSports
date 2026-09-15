@@ -642,6 +642,67 @@ async function main() {
   out.ok = !overallFail;
   if (out.ok) out.last_ok_at = now;
 
+  /* WHAT `ok: true` ACTUALLY COVERS, said out loud.
+
+     This artifact reported HEALTHY next to a board that was missing a third
+     of its input contract, and a reader taking the two together concluded one
+     of them was lying. Neither was: `ok` is about whether the PIPELINE ran —
+     the suites pass, the feeds answered, completed games absorbed, no
+     projection is out of bounds, no line points the wrong way. It has never
+     been a statement about how much EdgeDesk knows, and it cannot become one
+     without turning every ordinary September gap into an outage.
+
+     So the scope is declared and the coverage numbers sit beside it, read
+     from the committed slate rather than recomputed. A green pipeline with
+     thin coverage is a normal week and now reads as one. */
+  out.scope = {
+    what_ok_means: 'the pipeline ran: the engine suites pass, every feed answered, completed games absorbed into '
+      + 'the ratings, every upcoming game projects inside bounds and no joined market line points the wrong way.',
+    what_ok_does_not_mean: 'it is NOT a statement about data coverage. A week where the conference availability '
+      + 'reports are not due yet, no forecast provider was called and half the slate is non-conference is a '
+      + 'perfectly healthy pipeline over thin inputs, and `coverage` below is where that shows.'
+  };
+  try {
+    const slate = JSON.parse(fs.readFileSync(path.join(REPO, 'football', 'fbs', 'slate.json'), 'utf8'));
+    const games = (slate.games || []).filter(g => g.confidence_ledger);
+    if (games.length) {
+      const conf = games.map(g => g.confidence_ledger.scoreboard.information_confidence.value_pct)
+        .filter(x => x != null).sort((a, b) => a - b);
+      const gaps = {};
+      games.forEach(g => (g.confidence_ledger.biggest_gaps || []).forEach(x => {
+        if (!(x.lost_points > 0.05)) return;
+        const k = x.field.replace(/:(home|away)$/, '');
+        gaps[k] = (gaps[k] || 0) + x.lost_points;
+      }));
+      out.coverage = {
+        games: games.length,
+        information_confidence: {
+          mean: Math.round((conf.reduce((a, b) => a + b, 0) / conf.length) * 10) / 10,
+          median: conf[Math.floor(conf.length / 2)],
+          lower_decile: conf[Math.floor(0.1 * (conf.length - 1))],
+          at_90: conf.filter(x => x >= 90).length,
+          at_95: conf.filter(x => x >= 95).length
+        },
+        biggest_gaps: Object.keys(gaps).sort((a, b) => gaps[b] - gaps[a]).slice(0, 6)
+          .map(k => ({ field: k, mean_points_lost: Math.round((gaps[k] / games.length) * 100) / 100 })),
+        ledgers_reconciling: games.filter(g => g.confidence_ledger.reconciles
+          && g.confidence_ledger.reconciles.agrees === true).length,
+        source: 'football/fbs/slate.json — read, not recomputed, so this cannot disagree with the board'
+      };
+      /* a ledger that does not add up IS a fault, and is raised as one */
+      const broken = games.length - out.coverage.ledgers_reconciling;
+      check('p4_confidence_ledger', 'CFB P4: every published confidence ledger adds to 100',
+        broken ? 'fail' : 'pass',
+        broken ? broken + ' of ' + games.length + ' do not' : games.length + ' games');
+      if (broken) out.ok = false;
+    } else {
+      out.coverage = { games: 0,
+        why: 'football/fbs/slate.json carries no confidence ledger — run football/fbs/build_coverage.js' };
+    }
+  } catch (e) {
+    out.coverage = { games: 0, why: 'the slate could not be read: ' + ((e && e.message) || e) };
+  }
+
   /* each ledger row reports ONLY its own checks — a projection-bound fault
      must not paint the ingest row red (the first live run did exactly that) */
   const st = s => s ? 'ok' : 'error';

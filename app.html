@@ -136,6 +136,27 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 /* ═══ GAME RESEARCH CARD ═══ summary, drivers, risk, the two cases ═══════ */
 .gx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:10px 0 0}
 .gx-c{background:var(--surface);padding:9px 10px;min-width:0}
+/* THE CONFIDENCE LEDGER. Collapsed by default: a reader who accepts the
+   number should not have to scroll past the arithmetic, and a reader who
+   does not should never have to ask for it. */
+.gxl{margin:8px 0 0;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.gxl>summary{cursor:pointer;padding:9px 11px;font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--faint)}
+.gxl>summary:hover{color:var(--text)}
+.gxl-b{padding:0 11px 11px;font-size:12px;line-height:1.5}
+.gxl-t{width:100%;border-collapse:collapse}
+.gxl-t td{padding:5px 6px 5px 0;vertical-align:top;border-top:1px solid var(--border)}
+.gxl-n{font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap;color:var(--faint)}
+.gxl-v{font-family:'JetBrains Mono',monospace;font-weight:700;text-align:right;white-space:nowrap;padding-right:10px!important}
+.gxl-m{color:var(--faint);font-size:11px}
+.gxl-m i{opacity:.8}
+.gxl-why{margin:9px 0;padding:8px 9px;border-radius:8px;background:rgba(127,127,127,.08);color:var(--faint);font-size:11.5px}
+.gxl-g{margin:6px 0 0;padding:0 0 0 16px}
+.gxl-g li{margin:0 0 7px}
+.gxl-pts{font-family:'JetBrains Mono',monospace;color:var(--warn)}
+.gxl-st{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint)}
+.gxl-e{color:var(--faint);font-size:11px;margin-top:2px}
+.gxl-f{font-size:11px;margin-top:2px}
+.gxl-r{margin-top:9px;font-size:11px;color:var(--faint)}
 .gx-c .l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700}
 .gx-c .v{font-size:16px;font-weight:700;line-height:1.28;margin-top:3px;font-family:'JetBrains Mono',monospace;word-break:break-word}
 .gx-c .v.mdl{color:var(--accent)}.gx-c .v.ok{color:var(--pos)}.gx-c .v.warn{color:var(--warn)}.gx-c .v.neg{color:var(--neg)}
@@ -42827,7 +42848,7 @@ function fbGameCardNfl(u){
   var mdl=p.model;
   var cov=p.cover,ov=p.over;
   var lines='';
-  lines+='<div class="gd-line"><span class="l">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)+' · total '+mdl.fair_total.toFixed(1)+' · home '+(mdl.home_win_prob*100).toFixed(0)+'%</span></div>';
+  lines+='<div class="gd-line"><span class="l">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)+' · total '+mdl.fair_total.toFixed(1)+' · home '+fbWinText(mdl.home_win_prob)+'</span></div>';
   if(mkt.spread_line!=null){
     lines+='<div class="gd-line"><span class="l">Market spread ('+fbEsc(mkt.spread_book||src)+')</span><span class="v">'+fbEsc(g.home_team)+' '+fbPts(-mkt.spread_line)
       +' · gap '+fbPts(p.market.spread_gap)+' '+fbEdgeTag(p.edge.spread)+'</span></div>';
@@ -42871,7 +42892,7 @@ function fbGameCardNflGraded(it){
     return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'+head+'<div class="gd-nodata">No pregame model snapshot for this game'+(p?(' ('+fbEsc(p.status)+')'):'')+' — nothing is graded rather than reconstructed after the fact.</div></div>';
   var G=fbGradeGame(g,p),m=p.model;
   var lines='';
-  lines+='<div class="gd-line"><span class="l">Pregame model</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-m.fair_spread)+' · total '+m.fair_total.toFixed(1)+' · home '+(m.home_win_prob*100).toFixed(0)+'%</span></div>';
+  lines+='<div class="gd-line"><span class="l">Pregame model</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-m.fair_spread)+' · total '+m.fair_total.toFixed(1)+' · home '+fbWinText(m.home_win_prob)+'</span></div>';
   lines+='<div class="gd-line"><span class="l">Close (nflverse consensus)</span><span class="v mut">'+fbEsc(g.home_team)+' '+(p.market.spread_line!=null?fbPts(-p.market.spread_line):'—')+' · total '+(p.market.total_line!=null?p.market.total_line:'—')+'</span></div>';
   var sPick=p.market.spread_gap!=null&&Math.abs(p.market.spread_gap)>1e-9?(p.market.spread_gap>0?g.home_team:g.away_team):null;
   var tPick=p.market.total_gap!=null&&Math.abs(p.market.total_gap)>1e-9?(p.market.total_gap>0?'Over':'Under'):null;
@@ -43502,7 +43523,7 @@ function fbGameCardCfb(u){
   var mdl=p.model,cov=p.cover,ov=p.over;
   var lines='';
   lines+='<div class="gd-line"><span class="l">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)
-    +(mdl.fair_total!=null?' · total '+mdl.fair_total.toFixed(1):'')+' · home '+(mdl.home_win_prob*100).toFixed(0)+'%</span></div>';
+    +(mdl.fair_total!=null?' · total '+mdl.fair_total.toFixed(1):'')+' · home '+fbWinText(mdl.home_win_prob)+'</span></div>';
   if(mkt.spread_line!=null){
     lines+='<div class="gd-line"><span class="l">Book ('+fbEsc(src||'')+')</span><span class="v">'+fbEsc(g.home_team)+' '+fbPts(-mkt.spread_line)
       +' · gap '+fbPts(p.market.spread_gap)+' '+fbEdgeTag(p.edge.spread)+'</span></div>';
@@ -44490,7 +44511,15 @@ function fbWinPair(pHome){
    down: app.html is sliced by module for testing, and an export that lands in
    a different slice from its function is a ReferenceError the moment that
    slice is evaluated on its own. */
+/* one side of the pair, for the many one-line renderers that print a single
+   percentage. Same rule, same module, one call. */
+function fbWinText(p){
+  if(p==null||!isFinite(p))return '—';
+  var r=fbWinPair(p);
+  return r?r.home.text:'—';
+}
 window.fbWinPair=fbWinPair;
+window.fbWinText=fbWinText;
 
 /* ---- THE STARTER, FLATTENED FOR THE ENGINE'S INFORMATION LAYER ----------
    Mirrors qbContext() in football/matchup/inputs.js field for field, because
@@ -46273,7 +46302,12 @@ function fbGxSummary(u,p,gid){
        +'<span class="gx-sc"><i>'+a+'</i><b>'+sc.away+'</b></span>')
       :'<span class="gx-miss">no total published</span>',
     '',sc?'from the model’s own spread and total':'a score line cannot be split without a total');
-  out+=cell('Win probability',h+' '+(m.home_win_prob*100).toFixed(0)+'%','',a+' '+((1-m.home_win_prob)*100).toFixed(0)+'%');
+  /* A PROBABILITY IS NEVER RENDERED AS A CERTAINTY. `.toFixed(0)` printed
+     "100% / 0%" on a projection whose own numbers were 0.9977 and 0.0023 —
+     the two values a continuous margin distribution cannot mean. */
+  var wp=fbWinPair(m.home_win_prob);
+  out+=cell('Win probability',h+' '+(wp?wp.home.text:'—'),'',
+    a+' '+(wp?wp.away.text:'—')+(wp&&(wp.home.bounded||wp.away.bounded)?' · bounded, never certain':''));
   out+=cell('Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>','',
     'EdgeDesk’s own read, not advice');
   var conf=p.scores&&p.scores.confidence!=null?Math.round(p.scores.confidence):null;
@@ -46302,6 +46336,14 @@ function fbGxSummary(u,p,gid){
     conf==null?'':(conf>=60?'ok':(conf>=35?'warn':'neg')),
     sub.length?sub.join(' · '):'input coverage not reported');
   out+='</div>';
+  /* WHERE THE OTHER TWENTY-SEVEN POINTS WENT.
+     Three numbers sat in that cell — 73%, "48% of it priced", "11 of 17
+     contract fields" — with nothing saying they have three different
+     denominators, so a reader comparing them concluded the page contradicted
+     itself. This says what each one measures and then attributes every lost
+     point to a named field with the fix beside it. One module computes it and
+     the committed artifact carries the same object. */
+  out+=fbGxLedger(u,p,cov);
   out+='<div class="gx-means '+st.cls+'"><b>What this means</b> '+fbEsc(st.means)+'</div>';
   out+=fbGxCheck(u,p);
   out+='<div class="gx-acts">'
@@ -46310,6 +46352,61 @@ function fbGxSummary(u,p,gid){
       ?'<button class="btn ghost sm" onclick="fbGxShare(\''+fbEsc(gid)+'\')">Share research</button>':'')
     +'</div>';
   return out;
+}
+
+/* ── THE CONFIDENCE LEDGER, on screen ───────────────────────────────────
+   Reads football/matchup/confidence.js, the same module the offline builder
+   uses, so the board and football/fbs/slate.json cannot describe the same
+   game's confidence differently. Renders nothing at all if the module did not
+   load: an explanation that might be wrong is worse than no explanation. */
+function fbGxLedger(u,p,cov){
+  if(!window.EDConfidence||!window.EDConfidence.ledger)return '';
+  var W=(window.EDCfbP4Params&&window.EDCfbP4Params.confidence&&window.EDCfbP4Params.confidence.weights)||null;
+  var info=p.layers&&p.layers.uncertainty&&p.layers.uncertainty.information;
+  if(!W||!info||!cov||!cov.rows)return '';
+  var den=0;for(var k in W)if(Object.prototype.hasOwnProperty.call(W,k))den+=W[k];
+  var unc=p.layers.uncertainty.context||{};
+  var L;
+  try{
+    L=window.EDConfidence.ledger({
+      contract:cov.rows, information:info, weights:W, summary:cov.summary,
+      confidence:p.scores.confidence, confidence_priced:p.scores.confidence_priced,
+      engine_completeness:unc.information_missing!=null?(1-unc.information_missing):null,
+      home_win_prob:p.model.home_win_prob, weight_total:den,
+      home:u.g.home_team, away:u.g.away_team, now:Date.now()
+    });
+  }catch(_){ return ''; }
+  var sb=L.scoreboard;
+  var rows=['information_confidence','priced_confidence','input_coverage','historical_sample','outcome_probability']
+    .map(function(id){ var v=sb[id]; if(!v||v.value_pct==null)return '';
+      return '<tr><td class="gxl-n">'+fbEsc(id.replace(/_/g,' '))+'</td>'
+        +'<td class="gxl-v">'+v.value_pct+'%</td>'
+        +'<td class="gxl-m">'+fbEsc(v.measures)+'<br><i>over '+fbEsc(v.denominator)
+        +'. NOT '+fbEsc(v.not_the_same_as)+'</i></td></tr>';
+    }).join('');
+  var gaps=(L.biggest_gaps||[]).filter(function(x){return x.lost_points>0.05;}).slice(0,6)
+    .map(function(x){
+      return '<li><b>'+fbEsc(x.field)+(x.team?' · '+fbEsc(x.team):'')+'</b> '
+        +'<span class="gxl-pts">\u2212'+x.lost_points.toFixed(2)+' of '+(x.of_max||0).toFixed(2)+' pts</span> '
+        +'<span class="gxl-st">'+fbEsc(x.state)+'</span>'
+        +(x.evidence?'<div class="gxl-e">'+fbEsc(String(x.evidence).slice(0,260))+'</div>':'')
+        +(x.fix?'<div class="gxl-f">Fix: '+fbEsc(String(x.fix).slice(0,220))+'</div>':'')+'</li>';
+    }).join('');
+  var rec=L.reconciles;
+  return '<details class="gxl"><summary>Where the other '
+    +(rec.points_lost_total!=null?rec.points_lost_total.toFixed(1):'?')
+    +' points went \u2014 the confidence ledger</summary>'
+    +'<div class="gxl-b">'
+    +'<table class="gxl-t"><tbody>'+rows+'</tbody></table>'
+    +'<div class="gxl-why">'+fbEsc(sb.why_they_differ)+'</div>'
+    +(gaps?'<ul class="gxl-g">'+gaps+'</ul>':'')
+    +'<div class="gxl-r">'+(rec.agrees
+      ?'The displayed score plus every attributed point is 100. Nothing here is unaccounted for.'
+      :'\u26a0 This ledger does not add to 100 \u2014 '+fbEsc(JSON.stringify(rec)))
+    +(L.disagreements&&L.disagreements.length
+      ?' '+L.disagreements.length+' input(s) are scored and described differently by the input contract; '
+       +'that disagreement is a bug in one of the two and is named rather than hidden.':'')
+    +'</div></div></details>';
 }
 
 /* ── the two "why" helpers the check rows read ──────────────────────────
@@ -46466,9 +46563,24 @@ function fbGxQb(u){
 function fbGxCheckRows(u,p){
   var L=p.layers||{},mk=p.market||{},rows=[];
   function st(label,state,note){rows.push({l:label,s:state,n:note||''});}
-  st('model built',p.status==='PREDICTED'?'AVAILABLE':'MISSING');
+  /* TWO CLOCKS, AND THEY ARE NEVER THE SAME CLOCK.
+     These two rows read "✓ model built · ✓ market joined" with no time on
+     either, and a reader took the pair for a statement about currency. A
+     model rebuilt this minute does not refresh a price captured two days
+     ago, and a price EdgeDesk re-read without it changing is still as old as
+     the moment it was captured. Each row now carries its OWN age. */
+  var builtAt=(u&&u.t)||null;
+  st('model built',p.status==='PREDICTED'?'AVAILABLE':'MISSING',
+     builtAt?('rebuilt '+ago(builtAt)+' — this is the MODEL\u2019s clock and says nothing about a price\u2019s age')
+            :'the model\u2019s own clock, which is not the market\u2019s');
+  var qAt=mk.captured_at||mk.observed_at||(mk.freshness&&mk.freshness.price_captured_at)||null;
+  var qAge=qAt?((Date.now()-Date.parse(qAt))/3600000):null;
   st('market joined',mk.spread_line==null?'MISSING':(mk.stale?'STALE':'AVAILABLE'),
-     mk.spread_line==null?'no quote on file':(mk.book||''));
+     mk.spread_line==null?'no quote on file'
+       :((mk.book||'reference')
+         +(qAge!=null&&isFinite(qAge)
+           ?(' \u00b7 captured '+(qAge<1?Math.round(qAge*60)+' min':qAge.toFixed(1)+' h')+' ago')
+           :' \u00b7 capture time not published with this quote')));
   var rh=L.offensive_line&&L.offensive_line.home&&L.offensive_line.home.continuity;
   var ra=L.offensive_line&&L.offensive_line.away&&L.offensive_line.away.continuity;
   var rok=(rh&&rh.available!==false)&&(ra&&ra.available!==false);
@@ -46750,7 +46862,7 @@ function fbGxBriefText(u,p){
   line('Market spread',mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)+' ('+(mk.book||'reference')+')'):'none joined');
   line('Difference',mk.spread_gap!=null?(Math.abs(mk.spread_gap).toFixed(1)+' pts'):'no market number to compare');
   line('Projected score',sc?(h+' '+sc.home+', '+a+' '+sc.away+' (from the model spread and total)'):'not available — the model published no total');
-  line('Win probability',h+' '+(m.home_win_prob*100).toFixed(0)+'%, '+a+' '+((1-m.home_win_prob)*100).toFixed(0)+'%');
+  line('Win probability',h+' '+fbWinText(m.home_win_prob)+', '+a+' '+fbWinText(m.home_win_prob==null?null:1-m.home_win_prob));
   line('Research state',st.label.toUpperCase());
   line('What this means',st.means);
   var P=window.EDCfbP4Params||{},minGap=(P.market&&P.market.min_research_gap)||2;
@@ -46932,7 +47044,7 @@ function fbP4Card(u){
     +(mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)+' <span class="mut">'+fbEsc(mk.book||'')+'</span>'):'<span class="mut">none joined</span>')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Model total</span><span class="v mdl">'+(m.fair_total!=null?m.fair_total.toFixed(1):'—')+'</span></div>';
   L+='<div class="gd-line"><span class="l">Market total</span><span class="v">'+(mk.total_line!=null?mk.total_line:'—')+'</span></div>';
-  L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+h+' '+(m.home_win_prob*100).toFixed(0)+'% · '+a+' '+((1-m.home_win_prob)*100).toFixed(0)+'%</span></div>';
+  L+='<div class="gd-line"><span class="l">Win probability</span><span class="v">'+h+' '+fbWinText(m.home_win_prob)+' · '+a+' '+fbWinText(1-m.home_win_prob)+'</span></div>';
   L+='<div class="gd-line"><span class="l">Fair moneyline</span><span class="v">'+h+' '+(m.fair_home_ml>0?'+':'')+m.fair_home_ml+' · '+a+' '+(m.fair_away_ml>0?'+':'')+m.fair_away_ml+'</span></div>';
   L+='<div class="gd-line"><span class="l">Edge</span><span class="v">'
     +(mk.spread_gap!=null?('spread '+fbPts(mk.spread_gap)+' pts '+fbP4EdgeTag(p.edge.spread)):'<span class="mut">no spread edge — no market</span>')
@@ -48090,7 +48202,7 @@ function fbMvmForRow(r){
     rows.push({l:'Difference',sub:'toward '+fbSideOf(r,r.gapS),v:Math.abs(r.gapS).toFixed(1)+' pts',c:'diff',p:true});
   }else rows.push({l:'Market spread',sub:'no number joined for this game',v:'—',c:'mut'});
   if(m.fair_total!=null)rows.push({l:'Totals',sub:'model · market · difference',v:m.fair_total.toFixed(1)+' · '+(mk.total_line!=null?mk.total_line:'—')+(r.gapT!=null?(' · '+fbPts(r.gapT)):'')});
-  if(m.home_win_prob!=null)rows.push({l:'Win probability',sub:'model · fair moneyline',v:fbEsc(r.hc)+' '+(m.home_win_prob*100).toFixed(0)+'% · '+(m.fair_home_ml!=null?((m.fair_home_ml>0?'+':'')+m.fair_home_ml):'—')});
+  if(m.home_win_prob!=null)rows.push({l:'Win probability',sub:'model · fair moneyline',v:fbEsc(r.hc)+' '+fbWinText(m.home_win_prob)+' · '+(m.fair_home_ml!=null?((m.fair_home_ml>0?'+':'')+m.fair_home_ml):'—')});
   if(r.sport==='p4'&&m.p10_margin!=null&&m.p90_margin!=null){
     band={lo:m.p10_margin,med:m.median_margin!=null?m.median_margin:m.fair_spread,hi:m.p90_margin,mkt:mk.spread_line,
       loLabel:'p10 '+fbPts(m.p10_margin),hiLabel:'p90 '+fbPts(m.p90_margin),centre:'home margin · σ '+(m.sigma_margin!=null?m.sigma_margin.toFixed(1):'—'),
