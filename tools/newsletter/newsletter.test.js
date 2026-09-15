@@ -1262,35 +1262,42 @@ section('7 — the provider');
       const PDIR = path.join(REPO, 'articles', 'data', 'newsletter', 'previews');
       const stored = FS.existsSync(EDIR)
         ? FS.readdirSync(EDIR).filter(f => /\.json$/.test(f)) : [];
-      /* ONLY THE EDITION THE PIPELINE WOULD BUILD RIGHT NOW is asked about its
-         figures, and the clock decides which that is rather than the highest
-         date on disk.
+      /* THE BUG THIS GUARDS was that storage drops `g.research`, so on the way
+         back out the supported set came up EMPTY and every printed figure was
+         reported as unsupported — no edition could ever be sent. The inverse
+         of that is what gets asserted over every stored edition below: the
+         re-attached payload must be what carries the figures. Drift moves a
+         number; it never takes the payload away.
 
-         A SUPERSEDED edition legitimately drifts: it printed the total the
-         book showed when it was built, the book moved, and the record behind
-         it moved with it — so a figure it printed really is no longer
-         supported and that edition really could not be sent today. That is
-         the check working. Asserting over every historical file turned it
-         into a failing suite the moment a line moved, which it did within
-         minutes of the file existing (NFL-2026-W02-2026-09-15 on 48.5, 47.5,
-         49.5 — an edition built earlier with a --now override, since
-         overtaken by the market).
+         WHAT MUST NOT BE ASSERTED ON A CLOSED EDITION is that its figures all
+         still trace. A superseded edition legitimately drifts: it printed the
+         number the book showed when it was built, the book moved, and the
+         record behind it moved with it — so a figure it printed really is no
+         longer supported, and that edition really could not be sent today.
+         That is the check working, not breaking.
 
-         The re-attachment itself is still asserted over EVERY stored edition,
-         because that is the regression guard: the payload must be findable
-         for every game of every edition, current or not. */
-      const currentKeys = SCHEDULE.sports().map(sp => {
+         `dueFor` returns the most recent window WHETHER OR NOT IT IS STILL
+         OPEN, so scoping to it is not enough: it kept pointing at an edition
+         whose send window had closed days earlier (NFL-2026-W02-2026-09-08,
+         9530 minutes late, on a single drifted 2.78) and reddened the suite —
+         which is the newsletter workflow's own pre-flight, so a stale figure
+         in a week-old file was stopping the NEXT edition from being built at
+         all. The window has to still be open, which is exactly the condition
+         under which the pipeline would send it. */
+      const liveKeys = SCHEDULE.sports().map(sp => {
         const d = SCHEDULE.dueFor(sp, Date.now());
-        return { sport: sp, date: d.edition_date };
-      });
-      const isCurrent = f => currentKeys.some(c => {
+        return d.stale ? null : { sport: sp, date: d.edition_date };
+      }).filter(Boolean);
+      const isLive = f => liveKeys.some(c => {
         const m = /^([A-Z]+)-\d{4}-W\d+-(\d{4}-\d{2}-\d{2})\.json$/.exec(f);
         return !!m && m[1] === c.sport && m[2] === c.date;
       });
 
       let checked = 0;
+      let supportProven = 0;
       const unsupported = [];
       const lostResearch = [];
+      const emptySupport = [];
       stored.forEach(f => {
         const key = f.replace(/\.json$/, '');
         const htmlFile = path.join(PDIR, key + '.html');
@@ -1300,9 +1307,18 @@ section('7 — the provider');
         if (!(ed.games || []).length) return;
         chk(key + ': storage really does drop the research payload',
           (ed.games || []).every(g => !g.research));
+        /* Measured BEFORE re-attachment, because an edition supports a handful
+           of figures on its own — dates, counts, the mailing address. Under
+           the bug this file still scored 69, so "the set is non-empty" would
+           have passed on the broken input. What the research has to do is
+           carry the REST of it: 69 became 1110 once re-attached. */
+        const bare = Object.keys(VALIDATE.supportedFor(ed, [])).length;
         const missing = RUN.attachResearch(ed);
         if (missing.length) { lostResearch.push(key + ': ' + missing.join(', ')); return; }
-        if (!isCurrent(f)) return;             /* re-attachment proven; drift is not a fault */
+        const rich = Object.keys(VALIDATE.supportedFor(ed, [])).length;
+        if (rich < bare * 2) emptySupport.push(key + ': ' + bare + ' -> ' + rich);
+        supportProven++;
+        if (!isLive(f)) return;                /* closed window; drift is not a fault */
         ed.html_free = FS.readFileSync(htmlFile, 'utf8');
         ed.text_free = FS.readFileSync(textFile, 'utf8');
         const v = VALIDATE.validate(ed, {
@@ -1319,9 +1335,14 @@ section('7 — the provider');
       });
       chk('the research is findable again for every game of every stored edition',
         lostResearch.length === 0, lostResearch.slice(0, 3).join(' | '));
-      chk('a current edition is actually checked by this', checked > 0,
-        checked + ' checked of ' + stored.length + ' stored');
-      chk('and every figure in a current edition is traceable again',
+      chk('an edition is actually put through this', supportProven > 0,
+        supportProven + ' of ' + stored.length + ' stored');
+      /* The assertion that would have caught the original bug on any day of
+         the week, open window or not. */
+      chk('and re-attachment is what makes the figures supported at all',
+        emptySupport.length === 0, emptySupport.slice(0, 3).join(' | '));
+      chk('every figure in a SENDABLE edition is traceable again'
+        + (checked ? '' : ' (no window open right now)'),
         unsupported.length === 0, unsupported.slice(0, 3).join(' | '));
     }
 
