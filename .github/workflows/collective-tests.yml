@@ -34,6 +34,12 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The confidence layer: the input contract, the canonical ledger, the
+      # quarterback flattening and the engine that scores them. These were in
+      # NEITHER path list, so a change to the module that decides what a
+      # confidence number means triggered no CI at all.
+      - 'football/matchup/**'
+      - 'football/cfb_p4/**'
       # The FBS universe: team identity, season conference, program grouping
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
@@ -78,6 +84,12 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The confidence layer: the input contract, the canonical ledger, the
+      # quarterback flattening and the engine that scores them. These were in
+      # NEITHER path list, so a change to the module that decides what a
+      # confidence number means triggered no CI at all.
+      - 'football/matchup/**'
+      - 'football/cfb_p4/**'
       # The FBS universe: team identity, season conference, program grouping
       # and the canonical slate. The board suite reads the renderer out of
       # app.html, so a change to either has to be able to trigger the job.
@@ -393,6 +405,41 @@ jobs:
       # app must read the rating file rather than manufacturing timestamps.
       - name: The EdgeDesk Rating measures what it claims to measure
         run: node football/rating/edr.test.js
+
+      # THE CONFIDENCE LAYER. These suites shipped with the work they guard and
+      # then ran nowhere: package.json had them, and the only workflow invoking
+      # `npm run cfb:test` fires on a path list that none of their files match.
+      # A test that no change can trigger protects nothing.
+      #
+      # The ledger is the canonical implementation every consumer reads, so the
+      # rules that matter are held here: a field that is stale, missing,
+      # inferred or conflicting can never earn verified-data credit, the
+      # displayed number and the lost points must add to 100, and the five
+      # different things people call "confidence" keep their own names.
+      - name: Confidence means what it says, and the ledger adds up
+        run: node football/matchup/confidence.test.js
+
+      # An availability report is evidence only when it was read, dated and
+      # comprehensive. Silence is not health: an empty response, a blocked
+      # request or a roster listing never becomes "everyone is available".
+      - name: An unread availability report is never read as good news
+        run: node football/availability/reports.test.js
+
+      # The per-input measurements the engine actually weights, and the
+      # quarterback composite that keeps "we know who he is", "we expect him to
+      # start", "we measured him" and "he is available" as four separate facts.
+      - name: The information layer scores evidence, not hope
+        run: node football/cfb_p4/information.test.js
+      - name: A projected starter is neither unknown nor confirmed
+        run: node football/cfb_p4/qb_quality.test.js
+
+      # WHAT IS SERVED, not what merged. The slate carried a build's own
+      # blocked forecast host as a fact about the weather for days while every
+      # PR was green. This holds the verifier that reads the deployed artifact
+      # — and holds it to its own standard: a host IT cannot reach is reported
+      # as "not verified", never as a missing fix. Loopback sockets only.
+      - name: The deployment verifier cannot mistake a blocked reader for a bad deploy
+        run: node tools/football/verify_deployment.test.js
 
       # CAPTURE. The single most consequential function in EdgeDesk: it decides
       # what becomes a signal. Imported here as the DEPLOYED file under Node's

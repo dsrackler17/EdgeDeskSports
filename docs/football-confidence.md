@@ -247,3 +247,49 @@ with a thirty-point lead lands in the same band as one who was benched, and
 removing garbage time to separate them sounds obviously right. It is not: it
 scores *worse* out of sample than the raw share. The theory was plausible and
 the data refused it, so the engine reads `band_x_run`.
+
+## Verifying the deployment, and not lying about the verification
+
+Requirement: verify that deployed code and artifacts contain the fixes, not
+merely that a pull request merged. `tools/football/verify_deployment.js` reads
+the **served** artifact and asserts the six things that are only true when the
+fix is live — the ledger reconciles, no observation time was reset by a
+re-read, the weather rows are not a build's own blocked host, the market never
+borrows the model's clock, no probability is published or rendered as 100%/0%,
+and every availability row carries a policy state rather than a shrug.
+
+It has three outcomes, not two:
+
+| Exit | Meaning |
+|---|---|
+| 0 | read, and it carries the fixes |
+| 1 | read, and it does **not** — a real deployment failure |
+| 2 | **not read** — nothing has been established in either direction |
+
+The third one exists because the tool made its own mistake. Run from a host
+whose egress refuses `edgedesksports.com`, it printed *"1 check(s) failed: the
+deployed artifact does not carry what the repository says it does."* That was
+false, and false in the same direction as the bug it was written to catch: a
+refusal at the **reader's** end reported as a fact about the deployment. The
+artifact was fine.
+
+So before it concludes anything it now asks the host for something else. If the
+host answers and withholds only the artifact, the artifact really is absent and
+that is exit 1. If the host answers nothing at all, it is this reader that is
+blocked, and the tool says so and asserts nothing. `diagnose()` is that decision
+as a pure function; `tools/football/verify_deployment.test.js` holds it against
+real loopback sockets, alongside one fixture per check that breaks exactly one
+rule and must be named by the check that owns it.
+
+Against the artifact served at `d932eb7`, all 17 checks pass — including
+`the weather rows are not one build's blocked host published as a fact about
+the sport — 0 failed of 77`, which is the reproduction case closed: the
+scheduled build now supplies forecasts instead of publishing its own blindness.
+
+To verify from a host that cannot reach the site:
+
+```
+curl -o /tmp/v/football/fbs/slate.json \
+  https://raw.githubusercontent.com/<owner>/<repo>/<deployed-sha>/football/fbs/slate.json
+node tools/football/verify_deployment.js --local --root /tmp/v
+```

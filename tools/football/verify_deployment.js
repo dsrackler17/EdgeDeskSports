@@ -25,11 +25,23 @@
      6  the availability layer publishes the policy state for each fixture,
         so "no report" is one of five specific statements rather than a shrug
 
-   Exit 1 on any failure: a deployment that does not carry the fix should not
-   be reported as one that does.
+   AND IT MUST NOT MAKE THE MISTAKE IT EXISTS TO CATCH. A reader that cannot
+   reach the site has learned nothing about the site. An earlier version of
+   this file printed "the deployed artifact does not carry what the
+   repository says it does" when the fetch was refused at THIS end — the same
+   category of error as publishing a blocked host as a forecast. A transport
+   failure is now a third outcome with its own exit code, and the one
+   discriminator that actually exists is used before deciding: ask the host
+   for something else. If the host answers and the artifact does not, the
+   artifact really is missing. If the host does not answer either, it is the
+   reader that is broken and nothing has been established.
+
+     exit 0   read, and it carries the fixes
+     exit 1   read, and it does NOT — a real deployment failure
+     exit 2   NOT READ — nothing established either way
 
      node tools/football/verify_deployment.js [--base https://edgedesksports.com]
-          [--local] [--json]
+          [--local] [--root DIR] [--json]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -46,11 +58,12 @@ function arg(name, fb) {
 }
 
 const checks = [];
+let unreadable = null;
 function chk(name, ok, detail) { checks.push({ name, ok: !!ok, detail: detail === undefined ? null : detail }); }
 
-async function load(rel, base, local) {
+async function load(rel, base, local, root) {
   if (local) {
-    try { return { ok: true, json: JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')), from: rel }; }
+    try { return { ok: true, json: JSON.parse(fs.readFileSync(path.join(root || ROOT, rel), 'utf8')), from: rel }; }
     catch (e) { return { ok: false, why: String((e && e.message) || e), from: rel }; }
   }
   const url = base.replace(/\/$/, '') + '/' + rel;
@@ -61,14 +74,44 @@ async function load(rel, base, local) {
   } catch (e) { return { ok: false, why: String((e && e.message) || e), from: url }; }
 }
 
+/* ask the host for something other than the artifact. this is the only
+   evidence available locally about WHICH end failed, so it is gathered
+   before anything is claimed. */
+async function reachable(base) {
+  const url = base.replace(/\/$/, '') + '/';
+  try {
+    const r = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(20000) });
+    return { ok: r.ok, status: r.status, from: url };
+  } catch (e) { return { ok: false, status: null, why: String((e && e.message) || e), from: url }; }
+}
+
+/* the whole decision, as a function, so it can be tested without a network:
+   MISSING only when the host demonstrably answered. */
+function diagnose(probe) { return (probe && probe.ok) ? 'MISSING' : 'UNREADABLE'; }
+
 async function main() {
   const base = String(arg('base', DEFAULT_BASE));
   const local = !!arg('local', false);
+  const rootArg = arg('root', null);
+  const root = (typeof rootArg === 'string') ? path.resolve(rootArg) : null;
   const asJson = !!arg('json', false);
 
-  const slate = await load('football/fbs/slate.json', base, local);
+  const slate = await load('football/fbs/slate.json', base, local, root);
   if (!slate.ok) {
-    chk('the deployed slate is readable', false, slate.from + ' — ' + slate.why);
+    if (local) {
+      /* a path on disk that does not parse is a fact about the file, not
+         about a network, so it is reported as the failure it is */
+      chk('the deployed slate is readable', false, slate.from + ' — ' + slate.why);
+      return report(asJson);
+    }
+    const probe = await reachable(base);
+    if (diagnose(probe) === 'UNREADABLE') {
+      unreadable = { base, artifact: slate.why, artifact_url: slate.from,
+        control: probe.status ? ('HTTP ' + probe.status) : String(probe.why || 'no answer') };
+      return report(asJson);
+    }
+    chk('the deployed slate is readable', false, slate.from + ' — ' + slate.why
+      + ' (the host itself answered HTTP ' + probe.status + ', so the artifact really is absent)');
     return report(asJson);
   }
   chk('the deployed slate is readable', true, slate.from);
@@ -159,8 +202,26 @@ async function main() {
 }
 
 function report(asJson) {
+  if (unreadable) {
+    if (asJson) console.log(JSON.stringify({ ok: false, verified: false, unreachable: unreadable, checks: [] }, null, 1));
+    else {
+      console.log('\nEdgeDesk deployment verification');
+      console.log('  NOT VERIFIED — the deployment could not be READ from here.');
+      console.log('    ' + unreadable.artifact_url + '  ' + unreadable.artifact);
+      console.log('    ' + unreadable.base.replace(/\/$/, '') + '/  answered ' + unreadable.control
+        + ' as well, so it is this READER that is blocked, not the deployment that is wrong.');
+      console.log('  Nothing about the deployed artifact has been established, in either direction. Saying');
+      console.log('  otherwise would be the exact mistake this tool exists to catch: a host you could not');
+      console.log('  reach is not a fact about the thing behind it.');
+      console.log('  To verify anyway, fetch the artifact where it IS reachable and re-read it from disk:');
+      console.log('    curl -o /tmp/v/football/fbs/slate.json \\');
+      console.log('      https://raw.githubusercontent.com/<owner>/<repo>/<deployed-sha>/football/fbs/slate.json');
+      console.log('    node tools/football/verify_deployment.js --local --root /tmp/v');
+    }
+    return 2;
+  }
   const failed = checks.filter(c => !c.ok);
-  if (asJson) console.log(JSON.stringify({ ok: failed.length === 0, checks }, null, 1));
+  if (asJson) console.log(JSON.stringify({ ok: failed.length === 0, verified: true, checks }, null, 1));
   else {
     console.log('\nEdgeDesk deployment verification');
     checks.forEach(c => console.log('  ' + (c.ok ? 'ok   ' : 'FAIL ') + c.name
@@ -172,4 +233,4 @@ function report(asJson) {
 }
 
 if (require.main === module) main().then(c => process.exit(c || 0)).catch(e => { console.error(String((e && e.stack) || e)); process.exit(2); });
-module.exports = { main };
+module.exports = { main, diagnose };
