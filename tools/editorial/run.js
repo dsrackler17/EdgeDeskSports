@@ -37,7 +37,9 @@
    reason in the run log and a held article, never a filled-in gap.
    ========================================================================== */
 'use strict';
+const fs = require('fs');
 const path = require('path');
+const REPO = path.join(__dirname, '..', '..');
 
 const ASTORE = require('../articles/store.js');
 const AMODEL = require('../articles/article_model.js');
@@ -206,8 +208,22 @@ async function phaseSelect(host) {
     } catch (_) { /* a game the terminal cannot price is scored on its occasion alone */ }
   });
 
+  /* THE PUBLISHED CARD, so the scorer can see what the model could actually
+     see. Without it the disagreement component had only the size of the gap
+     to go on, which is exactly the input it is not allowed to score from. */
+  const cards = Object.create(null);
+  let rankPool = null;
+  try {
+    const slateArtifact = JSON.parse(fs.readFileSync(path.join(REPO, 'football', 'fbs', 'slate.json'), 'utf8'));
+    (slateArtifact.games || []).forEach(g => { cards['CFB:' + g.game_id] = g; });
+  } catch (_) { /* the scorer degrades to "no coverage evidence" and says so */ }
+  try {
+    const rk = JSON.parse(fs.readFileSync(path.join(REPO, 'football', 'rankings', 'current.json'), 'utf8'));
+    rankPool = (rk.ranks && rk.ranks.overall && rk.ranks.overall.ranked) || null;
+  } catch (_) { /* the sport rule's constant stands and the card says which it used */ }
+
   const rows = FEATURED.scoreSlate(slate, {
-    ranks, rivalries: STORE.loadRivalries(), research, slate
+    ranks, rivalries: STORE.loadRivalries(), research, slate, cards, rank_pool: rankPool
   }, { prior: prior.games, now: NOW, thresholds: prior.settings.thresholds,
     caps: prior.settings.weekly_caps });
 

@@ -176,12 +176,65 @@ and says which.
 | `football/data/box/` | `npm run cfb:box` | player layer v2 |
 | `football/players/` | `npm run cfb:players` | rankings, research page |
 | `football/rankings/` | `npm run cfb:rankings` | research page |
+| `football/starters/` | `.github/workflows/starter-context.yml` | the published card, the research packet, the AI |
+| `football/matchup/profiles_<season>.json` | the same workflow | the research packet |
+| `football/fbs/slate.json` | the same workflow | the AI, the newsletter, every export |
 
 **Availability** deserves a note: college football has no universal injury
 report. EdgeDesk builds its own from ranked public evidence, and the honest
 state today is that **no live record reaches the player layer** — every stale
 report is discarded rather than counted, so the availability dimension reads
 near zero and says why. UNKNOWN is never read as healthy.
+
+### The two feeds that answer "who is playing quarterback"
+
+Added because the previous answer was "nobody knows", on 77 games at once, for
+a question the feeds already answer.
+
+| | |
+|---|---|
+| **Source** | `cfbfastR-data player_stats` (already downloaded above) |
+| **Carries** | `completion_player_id`, `incompletion_player_id`, `sack_taken_player_id`, `interception_thrown_player_id` and a `play_id` on every row — so the player who took a team's FIRST dropback of a game is read, not inferred |
+| **Produces** | the `PREVIOUS_GAME` starter state, the dropback split that makes a `COMPETITION`, and the **start count** (`experience.starts`) over the seasons the build reads |
+| **Does not carry** | an announcement, a depth chart, or EPA. None of those are inferred from it. |
+
+| | |
+|---|---|
+| **Source** | nflverse-data release assets — `play_by_play_<season>.csv`, `depth_charts_<season>.csv`, `roster_<season>.csv`, `injuries_<season>.csv` |
+| **Access** | public, keyless |
+| **Produces** | the NFL's `DEPTH_CHART` state (timestamped, refreshed daily — the file carries every snapshot of the season, so "latest" is read rather than assumed to be the last line), `PREVIOUS_GAME` from `passer_player_id`, and the league injury report as the availability axis |
+| **Size note** | the depth-chart file is ~50 MB because it is every snapshot of the season. It is a daily background job, never an interactive request; `--no-depth` builds everything else and says the field was skipped. |
+
+**What still has no feed.** There is no keyless source for an *announced*
+college starter. `football/availability/sources.json` is the registry where an
+official school or conference availability page is added per programme, and it
+currently carries **zero** official URLs — so the `ANNOUNCED` state is reachable
+and presently empty, which the artifacts say rather than implying an
+announcement does not exist.
+
+---
+
+## 7. Weather — open-meteo
+
+| | |
+|---|---|
+| **Source** | `api.open-meteo.com/v1/forecast`, keyless |
+| **Joined on** | the venue coordinates in the trained parameter table (135 of 138 FBS venues) |
+| **Read by** | `app.html` `fbP4Weather` (the board, already) and `football/matchup/weather.js` (the headless build, new) |
+
+The offline builder used to pass `weather: null` and then report the weather
+layer blind on every game, including the 73 whose coordinates it was holding at
+the time. It now makes the same request the board makes, bounded by
+`football/data/recovery.js`, and the contract distinguishes three sentences that
+had been collapsed into one: *nobody asked*, *somebody asked and was refused*,
+and *there is nothing to ask about* (a dome, or a venue with no coordinates).
+
+**The venue gap is two games, not a class of games.** `missouristate` and
+`sacramentostate` moved up to FBS after the parameter table was trained, so they
+carry no coordinates and no forecast can be located for them.
+`football/venues/supplement.json` is the injection point; it refuses an entry
+without a real latitude, a real longitude and a named source, so nothing can
+quietly substitute a plausible-looking point.
 
 ---
 
@@ -195,6 +248,7 @@ near zero and says why. UNKNOWN is never read as healthy.
 | **cfbfastR play-by-play with real EPA** | only published through 2022, in a directory that no longer resolves for recent seasons. The EP surface this repository once fitted is therefore not reproducible, and **no EPA is invented in its place**. |
 | **Coordinator / coaching history** | no public, keyless feed carries it. The input is contracted for in `config.js` and stays absent. |
 | **Snap counts** | do not exist publicly for college football at any price this project can reach. |
+| **ESPN depth charts and participation (college)** | every documented candidate path is tried in order and all of them refuse this repository (HTTP 404 / 403 on all 138 programmes — one cause, not 276 misfortunes). `football/data/recovery.js` cuts the host after three consecutive refusals and records the refusal as systematic, so the `DEPTH_CHART` state falls through for college rather than being faked. |
 
 ---
 

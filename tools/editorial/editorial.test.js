@@ -934,6 +934,75 @@ section('13. THE OPERATOR SURFACE');
   chk('there is no update policy on the snapshots for anybody',
     !/create policy[^;]*on public\.editorial_snapshots[^;]*for update/i.test(sql));
   has(sql, 'NO BROADCASTER COLUMN', 'and the schema says why it holds no network');
+
+  /* ====================================================================
+     A GAP ALONE ORDERS NO RESEARCH.
+
+     The disagreement component used to be `clamp(points * 3.2, 0, 24)` —
+     the size of the number, and nothing else, was the single largest thing
+     in the score. A twelve-point gap earned a permanent research trail
+     whether the price was two days old, whether the model had half its
+     inputs, and whether there was any football reason to think the market
+     was wrong; and "the gap is enormous" reads to a reader as "the
+     opportunity is enormous", which is the one inference this platform must
+     never invite.
+     ==================================================================== */
+  section('19. a model-market gap earns attention from the evidence around it, never from its size');
+  {
+    const entry = { sport: 'CFB', game_id: 'G1', home: 'Ole Miss', away: 'LSU',
+      kickoff: '2026-09-19T23:30:00.000Z', kickoff_ms: Date.parse('2026-09-19T23:30:00.000Z'),
+      neutral_site: false, conference_game: true, week: 3, season: 2026 };
+    const mkt = (stale) => ({ available: true, model: 'Ole Miss -8.5', market: 'Ole Miss +2.5',
+      difference: '11.0 points', book: 'DraftKings', stale: stale, classification: 'INVESTIGATE' });
+    const ctxFor = (stale, coverage, starters) => ({
+      ranks: {}, rivalries: [], slate: [entry],
+      research: { 'CFB:G1': { market: mkt(stale) } },
+      cards: coverage == null ? {} : { 'CFB:G1': {
+        input_coverage: coverage,
+        home_starter: starters ? { player_id: '1' } : null,
+        away_starter: starters ? { player_id: '2' } : null } }
+    });
+    const gapPts = (ctx) => {
+      const p = FEATURED.priorityFor(entry, ctx, { now: '2026-09-15T14:00:00Z' });
+      const c = (p.components || []).filter(x => x.key === 'model_disagreement')[0];
+      return { points: c ? c.points : null, detail: c ? c.detail : '' , score: p.score };
+    };
+    const none = gapPts(ctxFor(true, 0.3, false));
+    chk('a large gap with a stale price and a half-empty contract earns nothing',
+      none.points === 0, none);
+    chk('and the component says why rather than going quiet',
+      /stale/.test(none.detail) && /only 30% filled/.test(none.detail), none.detail);
+    const full = gapPts(ctxFor(false, 0.7, true));
+    chk('the same gap with a current price, a filled contract and two resolved starters earns the maximum',
+      full.points === 24, full);
+    chk('the detail itemises the EVIDENCE, and says a gap implies no expected value',
+      /the price is current/.test(full.detail) && /implies no expected value/.test(full.detail), full.detail);
+    chk('a gap with no evidence either way is held to a floor, not credited',
+      gapPts(ctxFor(null, null, false)).points <= 8, gapPts(ctxFor(null, null, false)));
+
+    /* a gap past anything the model has been right by out of sample is a fault
+       to investigate, not an opportunity to rank */
+    const huge = (() => {
+      const ctx = ctxFor(false, 0.9, true);
+      ctx.research['CFB:G1'].market = Object.assign(mkt(false), { difference: '22.0 points' });
+      const p = FEATURED.priorityFor(entry, ctx, { now: '2026-09-15T14:00:00Z' });
+      return (p.components || []).filter(x => x.key === 'model_disagreement')[0];
+    })();
+    chk('a 22-point gap is capped below the maximum a 11-point one can earn',
+      huge.points <= 8, huge);
+    chk('and is labelled a fault to investigate',
+      /fault to investigate/.test(huge.detail), huge.detail);
+
+    /* the rank pool comes from the artifact, not from a constant */
+    const withPool = FEATURED.priorityFor(entry,
+      Object.assign(ctxFor(false, 0.7, true), { ranks: { olemiss: 15, lsu: 5 }, rank_pool: 68 }),
+      { now: '2026-09-15T14:00:00Z' });
+    const rw = (withPool.components || []).filter(x => x.key === 'ranking_weight')[0];
+    chk('a rank is stated out of the pool the ranking actually ranked',
+      rw && /of 68/.test(rw.detail) && !/of 136/.test(rw.detail), rw && rw.detail);
+    chk('and names where that pool came from',
+      rw && /rankings artifact/.test(rw.detail), rw && rw.detail);
+  }
 })();
 
 /* ======================================================================== */

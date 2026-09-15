@@ -68,6 +68,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const SNAP = require(path.join(__dirname, '..', 'lib', 'snapshot_contract.js'));
 
 const ROOT = path.join(__dirname, '..', '..');
 /* The FBS universe, its alias table and its resolver — the same module
@@ -110,9 +111,16 @@ function config(env) {
 /* signals carries one row per (fixture, market, selection). The board reads
    `market`, `selection`, `point`, `best_book`, `first_seen_at`, `last_seen_at`;
    those and the join columns are all this asks for. */
+/* THE PRICE WAS ALWAYS THERE AND WAS NEVER READ. The capture stores the best
+   decimal odds it saw and how old that quote was when it stored it
+   (`best_dec`, `best_quote_age_s`), and this projection asked for neither —
+   so every committed snapshot carried a handicap with no price on it, and
+   nothing downstream could compute an expected value or say how stale the
+   number was when it was captured. Both columns are read now and travel into
+   the snapshot under the shared contract's names. */
 const COLUMNS = [
   'sig_key', 'event_id', 'sport_key', 'market', 'selection', 'point',
-  'commence_time', 'home_team', 'away_team', 'best_book',
+  'commence_time', 'home_team', 'away_team', 'best_book', 'best_dec', 'best_quote_age_s',
   'first_seen_at', 'last_seen_at',
 ].join(',');
 
@@ -182,7 +190,9 @@ function resolverFor(index) {
    (row, game) pair, which would be thirty thousand prefix scans a run — and
    newsletter.test.js pins this implementation to matchesEvent's own answer on
    a sample, so the two cannot drift apart quietly. */
-function quotesFromSignals(rows, games) {
+function quotesFromSignals(rows, games, opts) {
+  opts = opts || {};
+  const nowMs = opts.now || Date.now();
   const list = (games || []).filter(Boolean);
   const sport = String((list[0] && list[0].sport) || 'NFL').toUpperCase();
   const useResolver = sport === 'CFB';
@@ -262,11 +272,13 @@ function quotesFromSignals(rows, games) {
       const side = sk === hk ? 'home' : 'away';
       if (!slot.sides[side] || seen > slot.sides[side].seen) {
         slot.sides[side] = { selection: side === 'home' ? g.home : g.away, side, point: num(r.point),
-          book: txt(r.best_book), seen, seen_at: txt(r.last_seen_at || r.first_seen_at) };
+          book: txt(r.best_book), best_dec: num(r.best_dec), quote_age_s: num(r.best_quote_age_s),
+          seen, seen_at: txt(r.last_seen_at || r.first_seen_at) };
       }
     } else if (r.market === 'totals' && num(r.point) != null) {
       if (!slot.total || seen > slot.total.seen) {
-        slot.total = { point: num(r.point), book: txt(r.best_book), seen,
+        slot.total = { point: num(r.point), book: txt(r.best_book), best_dec: num(r.best_dec),
+          quote_age_s: num(r.best_quote_age_s), seen,
           seen_at: txt(r.last_seen_at || r.first_seen_at) };
       }
     }
@@ -291,8 +303,31 @@ function quotesFromSignals(rows, games) {
       captured_at: at,
       from: 'EdgeDesk odds capture (public.signals), read by the newsletter pipeline',
     };
-    if (s.spread) q.spread = { selection: s.spread.selection, side: s.spread.side, point: s.spread.point, book: s.spread.book };
-    if (s.total) q.total = { point: s.total.point, book: s.total.book };
+    /* The legacy shape stays exactly as it was, because the terminal replay
+       and every committed article read it. The shared contract rides BESIDE
+       it under `contract`, carrying the price, the market type, the capture
+       age and the freshness state that the legacy shape has no room for. */
+    if (s.spread) q.spread = { selection: s.spread.selection, side: s.spread.side, point: s.spread.point, book: s.spread.book,
+      odds_american: SNAP.decToAmerican(s.spread.best_dec), odds_decimal: s.spread.best_dec == null ? null : s.spread.best_dec,
+      captured_at: s.spread.seen_at, quote_age_s: s.spread.quote_age_s };
+    if (s.total) q.total = { point: s.total.point, book: s.total.book,
+      odds_american: SNAP.decToAmerican(s.total.best_dec), odds_decimal: s.total.best_dec == null ? null : s.total.best_dec,
+      captured_at: s.total.seen_at, quote_age_s: s.total.quote_age_s };
+    q.contract = [];
+    if (s.spread) q.contract.push(SNAP.quote({
+      game_id: s.game.game_id, sport: s.game.sport, market: 'spreads', selection: s.spread.selection,
+      side: s.spread.side, point: s.spread.point, book: s.spread.book, best_dec: s.spread.best_dec,
+      captured_at: s.spread.seen_at, kickoff: s.game.kickoff,
+      source: 'EdgeDesk odds capture (public.signals)'
+    }, { snapshot_kind: 'EDITION', now: nowMs, model_version: opts.model_version || null,
+      model_generated_at: opts.model_generated_at || null, input_cutoff: opts.input_cutoff || null }));
+    if (s.total) q.contract.push(SNAP.quote({
+      game_id: s.game.game_id, sport: s.game.sport, market: 'totals', selection: 'total',
+      point: s.total.point, book: s.total.book, best_dec: s.total.best_dec,
+      captured_at: s.total.seen_at, kickoff: s.game.kickoff,
+      source: 'EdgeDesk odds capture (public.signals)'
+    }, { snapshot_kind: 'EDITION', now: nowMs, model_version: opts.model_version || null,
+      model_generated_at: opts.model_generated_at || null, input_cutoff: opts.input_cutoff || null }));
     quotes.push(q);
   });
   return { quotes, refused, unresolved_slate: unresolvedSlate, resolver: useResolver ? 'EDFbs' : 'exact_key' };
@@ -318,6 +353,13 @@ function snapshotFileFor(season, week, dir) {
 }
 
 function writeSnapshot(file, season, quotes, opts) {
+  const body = writeSnapshotBody(season, quotes, opts);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(body, null, 2) + '\n');
+  return body;
+}
+
+function writeSnapshotBody(season, quotes, opts) {
   opts = opts || {};
   const body = {
     schema: 'edgedesk_article_market_snapshot_v1',
@@ -332,10 +374,19 @@ function writeSnapshot(file, season, quotes, opts) {
     note: 'These are SPORTSBOOK numbers, not EdgeDesk numbers, and every article and newsletter that uses one '
       + 'says so and names the book. Nothing here is an EdgeDesk projection, and no line in this file is read by '
       + 'any model: the engine has already priced the game before the market section is assembled.',
+    /* THE FRESHNESS PICTURE OF THE WHOLE FILE, so nothing downstream has to
+       infer it from a scatter of per-quote timestamps — and so a reader is
+       told when an edition was assembled from prices captured two days
+       earlier instead of being left to notice. */
+    contract_schema: SNAP.SCHEMA,
+    snapshot_kind: 'EDITION',
+    model_version: opts.model_version || null,
+    model_generated_at: opts.model_generated_at || null,
+    input_cutoff: opts.input_cutoff || null,
+    freshness: SNAP.coverage([].concat.apply([], quotes.map(q => q.contract || [])),
+      { model_generated_at: opts.model_generated_at || null }),
     quotes: quotes,
   };
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(body, null, 2) + '\n');
   return body;
 }
 
@@ -357,7 +408,12 @@ async function refresh(opts) {
     return { ok: false, reason: read.reason, detail: read.detail || null, wrote: null, quotes: 0,
       note: 'the committed market snapshot still replays; the edition records that the market was not refreshed' };
   }
-  const joined = quotesFromSignals(read.rows, games);
+  /* THE MODEL'S OWN STAMPS travel with the prices, so a reader of the file
+     can see the gap between "when this number was captured" and "when the
+     model that it is compared against was rebuilt". They were never in the
+     file before, which is why a fresh model could sit beside a two-day-old
+     price with nothing saying so. */
+  const joined = quotesFromSignals(read.rows, games, { now: opts.now });
   if (!joined.quotes.length) {
     return { ok: true, reason: 'no_quotes_joined', wrote: null, quotes: 0,
       signals_read: read.rows.length, resolver: joined.resolver,
@@ -367,9 +423,11 @@ async function refresh(opts) {
       refused: joined.refused.slice(0, 20) };
   }
   const file = snapshotFileFor(opts.season, opts.week, opts.dir);
-  if (!opts.dry) writeSnapshot(file, opts.season, joined.quotes, opts);
+  const body = opts.dry ? writeSnapshotBody(opts.season, joined.quotes, opts)
+    : writeSnapshot(file, opts.season, joined.quotes, opts);
   return {
     ok: true, reason: null,
+    freshness: body.freshness,
     wrote: opts.dry ? null : path.relative(ROOT, file),
     quotes: joined.quotes.length,
     signals_read: read.rows.length,
@@ -384,6 +442,6 @@ async function refresh(opts) {
 
 module.exports = {
   SPORT_KEYS, KICKOFF_TOLERANCE_MS, MARKET_DIR, COLUMNS,
-  teamKey, config, readSignals, quotesFromSignals, snapshotFileFor, writeSnapshot, refresh,
+  teamKey, config, readSignals, quotesFromSignals, snapshotFileFor, writeSnapshot, writeSnapshotBody, refresh, SNAP,
   indexFor, resolverFor, countBy, FBS,
 };

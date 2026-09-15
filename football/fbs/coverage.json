@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-14T16:00:36.958Z",
+ "generated_at": "2026-09-15T14:16:14.830Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,23 +119,23 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 75,
+  "total": 76,
   "by_group": {
    "p4": 48,
-   "other": 46,
+   "other": 47,
    "independent": 2
   },
   "by_matchup": {
    "conference": 14,
    "fbs_fcs": 18,
-   "non_conference": 43
+   "non_conference": 44
   },
   "by_conference": {
    "acc": 12,
    "big12": 14,
    "bigten": 16,
-   "cusa": 9,
-   "sunbelt": 14,
+   "cusa": 10,
+   "sunbelt": 15,
    "sec": 11,
    "american": 12,
    "mac": 13,
@@ -152,10 +152,23 @@
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 75
+  "PREDICTED": 76
+ },
+ "weather": {
+  "requested": 72,
+  "answered": 0,
+  "dome": 0,
+  "no_venue": 2,
+  "failed": 72,
+  "failures": {
+   "HTTP 403": 8,
+   "host circuit open: HTTP 403 x3": 64
+  },
+  "host": "api.open-meteo.com",
+  "summary": "0 of 72 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 2 had no coordinates to locate one; 72 request(s) failed (HTTP 403 x8, host circuit open: HTTP 403 x3 x64)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 75
+  "NO_MARKET": 76
  },
  "checks": [
   {
@@ -192,8 +205,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 27,
-    "total": 75,
+    "non_power_games": 28,
+    "total": 76,
     "example": [
      "Coastal Carolina @ Delaware",
      "North Texas @ Texas State",
@@ -244,8 +257,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 75,
-    "audit_total": 75
+    "slate": 76,
+    "audit_total": 76
    }
   },
   {

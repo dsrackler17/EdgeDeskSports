@@ -1,0 +1,7 @@
+{
+  "schema": "edgedesk_venue_supplement_v1",
+  "why": "The engine's venue table is part of the trained parameter set and covers the FBS field the model was built on (2025). A programme that moves up from the FCS, or a school that opens a new stadium, is therefore absent from it until the parameters are retrained — and an absent venue is an absent weather forecast, because a forecast is located by coordinates. This file is the injection point for those, and it is deliberately not a place to guess: an entry without a real latitude, a real longitude and a named source is REFUSED by football/matchup/inputs.js and reported as refused. Nothing here is interpolated from a city name.",
+  "how_to_add": "Add one entry keyed by the team's canonical key (lower-case, alphanumerics only: `missouristate`). Required: lat, lon, source (where the coordinates came from, as a URL or a named public dataset). Optional: name, elev (metres), tz (UTC offset hours), dome (boolean), grass (boolean), capacity. Run `node football/fbs/build_coverage.js` and the game's weather field moves from UNAVAILABLE to a real state.",
+  "source": null,
+  "venues": {}
+}

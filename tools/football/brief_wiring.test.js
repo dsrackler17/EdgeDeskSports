@@ -108,6 +108,35 @@ if (typeof win.fbBriefResearch === 'function' && win.FB && win.FB.rk) {
   ok(false, 'the module did not expose fbBriefResearch, so nothing downstream could be exercised');
 }
 
+/* ═══ 4b. the starter context reaches the payload ════════════════════════
+   The board reported an unknown starting quarterback on all 75 games because
+   every caller passed `qb:null` and nothing ever loaded the committed starter
+   artifact. The regression is not "the artifact is wrong" — it is "the page
+   never asks for it", which is invisible to a test that reads the artifact.
+   So this executes the module and checks the LOADER exists, the payload
+   carries the block, and the block cannot promote an expectation into a
+   confirmation.
+   ═══════════════════════════════════════════════════════════════════════ */
+section('4b. the starter context is loaded and carried, and never promoted');
+eq(typeof win.fbStartersEnsure, 'function', 'the starter loader is exported so the board can await it');
+eq(typeof win.fbBrStarters, 'function', 'the starter block builder is reachable');
+ok(/fbStartersEnsure\(cur\)/.test(MODULE), 'the board load chain asks for the starter artifact');
+{
+  const blk = win.fbBrStarters('Utah', 'Texas Tech');
+  ok(!!blk && !!blk.away && !!blk.home, 'the block has a side for each team');
+  ok(blk.away.confirmed === false && blk.home.confirmed === false,
+    'with no artifact loaded nothing is confirmed');
+  ok(blk.away.priced === false && blk.home.priced === false,
+    'and nothing in it is priced');
+  ok(/research-only/.test(blk.away.priced_why || ''), 'the record says why it is not priced');
+  ok(/never read as healthy/.test(blk.note || ''), 'and that an absent availability report is not health');
+  const payload = win.fbBriefGame({ home: 'Texas Tech', away: 'Utah' });
+  ok(!!payload && !!payload.starters, 'the college payload carries the starter block');
+  ok(!!payload && (payload.missing || []).concat(payload.notes || [])
+    .some(function (t) { return /quarterback/i.test(t); }),
+    'and the card says something about the quarterback either way');
+}
+
 /* ═══ 5. the callers name exactly these symbols ══════════════════════════ */
 section('5. the brief layer asks for the names the module exports');
 [['researchFor (college)', /window\.fbBriefGame\|\|window\.fbBriefResearch/],

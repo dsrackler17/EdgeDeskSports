@@ -28899,7 +28899,84 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return none;
   }
 
-  var RESEARCH_SCHEMA = 'edgedesk_matchup_research_v1';
+  var RESEARCH_SCHEMA = 'edgedesk_matchup_research_v2';
+
+  /* ---------------------------------------------------------------------
+     STARTER CONTEXT, READ OFF THE PUBLISHED CARD.
+
+     The packet used to have no quarterback in it at all, so an answer about a
+     matchup could not say who was playing the position the whole sport turns
+     on — and the card it reads from carried nothing, because every caller of
+     the engine passed `qb: null`. The card now carries a typed starter record
+     per side and this reads it WITHOUT promoting it: an expected starter is
+     never narrated as a confirmed one, and an absent availability report is
+     never narrated as health.
+     --------------------------------------------------------------------- */
+  var STARTER_NARRATION = {
+    ANNOUNCED: 'announced by the team',
+    EXPECTED: 'expected on current reporting, not announced',
+    DEPTH_CHART: 'leads the published depth chart, not announced',
+    PREVIOUS_GAME: 'started the last game, not announced for this one',
+    COMPETITION: 'unresolved \u2014 the evidence names more than one player',
+    UNKNOWN: 'no starter evidence of any kind reached this team'
+  };
+  function starterRead(rec, side, SLATE) {
+    if (!rec) return null;
+    var st = String(rec.status || 'UNKNOWN').toUpperCase();
+    return {
+      side: side,
+      status: fact(st, { source: SLATE, basis: STARTER_NARRATION[st] || null }),
+      confirmed: fact(rec.confirmed === true, { source: SLATE,
+        basis: rec.confirmed === true ? 'an official source named him'
+          : 'NOT confirmed \u2014 this is an expectation with evidence behind it, and it may not be narrated as an announcement' }),
+      player: rec.player_name
+        ? fact(rec.player_name, { source: rec.source || SLATE, observed_at: rec.retrieved_at,
+          known_at: rec.published_at || rec.retrieved_at, note: rec.source_url || null })
+        : missingFact('no single player is named by the evidence for this side', rec.source || SLATE),
+      player_id: fact(rec.player_id, { source: rec.source || SLATE }),
+      label: fact(rec.label, { source: SLATE }),
+      availability: rec.availability ? {
+        state: fact(rec.availability.state, { source: rec.availability.source || SLATE,
+          observed_at: rec.availability.retrieved_at || null }),
+        evidence: fact(rec.availability.evidence, { source: SLATE,
+          basis: rec.availability.evidence === 'EXPLICIT'
+            ? 'an availability report names this player'
+            : 'no report names him, which is UNKNOWN and is never read as healthy' }),
+        why: fact(rec.availability.why, { source: SLATE })
+      } : null,
+      conflicts: fact(rec.conflicts, { source: SLATE, unit: 'count of sources naming somebody else' }),
+      priced: fact(false, { source: SLATE,
+        basis: rec.priced_why || 'the starter layer is research-only until it has an out-of-sample record; it is '
+          + 'evidence for an explanation, never an input to the published number' })
+    };
+  }
+
+  /* The input contract, in the seven states that are not the same thing. The
+     old packet had one number for this and it was zero on every game. */
+  function contractRead(row, SLATE) {
+    if (!row || !row.input_contract_summary) return null;
+    var s = row.input_contract_summary;
+    var rows = row.input_contract || [];
+    function pick(state) { return rows.filter(function (r) { return r.state === state; })
+      .map(function (r) { return { field: r.field, side: r.side, detail: r.detail, source: r.source, as_of: r.as_of }; }); }
+    return {
+      input_coverage: fact(num(row.input_coverage), { source: SLATE, unit: 'ratio 0-1',
+        basis: 'share of APPLICABLE contracted fields EdgeDesk retrieved. Fields that do not apply to this game \u2014 '
+          + 'weather in a dome, travel at a neutral site, a talent rating for a programme outside the rated universe \u2014 '
+          + 'are excluded from the denominator and are NOT counted as missing' }),
+      priced_input_coverage: fact(num(row.priced_input_coverage), { source: SLATE, unit: 'ratio 0-1',
+        basis: 'the share the published number actually prices from; the rest is retrieved research' }),
+      engine_data_completeness: fact(num(row.data_completeness), { source: SLATE, unit: 'ratio 0-1',
+        basis: 'the engine\u2019s own internal probe count, a different measure from input_coverage' }),
+      by_state: fact(s.by_state, { source: SLATE }),
+      research_only: pick('RESEARCH_ONLY'),
+      not_applicable: pick('NOT_APPLICABLE'),
+      fetch_failed: pick('FETCH_FAILED'),
+      unavailable: pick('UNAVAILABLE'),
+      stale: pick('STALE'),
+      conflicting: pick('CONFLICTING')
+    };
+  }
 
   /**
    * The research context for one resolved matchup — the facts, with no prose.
@@ -28975,9 +29052,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           + 'output is WATCH. It may order research and may be quoted as an estimate; it may not become '
           + 'a probability, an expected value, or a reason to bet.');
       }
-      if (num(row.data_completeness) === 0) {
-        limits.push('The projection carries a data completeness of 0 for this game, so it is running on '
-          + 'the season rating alone rather than on this week’s inputs.');
+      /* The old sentence here fired on `data_completeness === 0` and said the
+         projection was "running on the season rating alone". It was true of
+         the ARTIFACT and false of the model: the builder that wrote the card
+         hard-coded every optional input to null, so the zero measured the
+         builder rather than the game. The card now carries the real contract
+         and the sentence is derived from it. */
+      if (num(row.input_coverage) == null && num(row.data_completeness) === 0) {
+        limits.push('The card carries no input-contract breakdown for this game and an engine completeness of 0, '
+          + 'so what the projection could see cannot be established from it.');
       }
     } else {
       gap('model', row ? ('the published card carries model_status ' + (row.model_status || 'NONE')
@@ -29081,6 +29164,41 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
     var availability = { home: availOf(homeKey, home || 'the home side'), away: availOf(awayKey, away || 'the away side') };
 
+    /* ---- starter context and the input contract ------------------------ */
+    var starters = row ? {
+      home: starterRead(row.home_starter, 'home', SLATE),
+      away: starterRead(row.away_starter, 'away', SLATE)
+    } : null;
+    if (row && !row.home_starter && !row.away_starter) {
+      gap('starter_context', 'the published card carries no starter record for either side of this game');
+      starters = null;
+    }
+    if (starters) {
+      ['home', 'away'].forEach(function (k) {
+        var s = starters[k];
+        if (!s) return;
+        if (s.status.value === 'COMPETITION')
+          limits.push('The ' + k + ' quarterback is unresolved: ' + (s.label.value || 'sources disagree')
+            + '. That is a stated competition, not an unknown team.');
+        else if (s.status.value !== 'ANNOUNCED' && s.player.value)
+          limits.push(s.player.value + ' is the best-supported ' + k + ' starter (' + s.status.value
+            + '), not an announced one; it may not be described as confirmed.');
+        if (s.availability && s.availability.evidence.value !== 'EXPLICIT')
+          limits.push('No availability report reached ' + (s.player.value || ('the ' + k + ' quarterback'))
+            + '. Unknown is carried as unknown; it is never read as healthy.');
+      });
+    }
+    var contract = contractRead(row, SLATE);
+    if (contract && num(row.input_coverage) != null && num(row.input_coverage) < 0.6) {
+      limits.push('This projection is running on ' + Math.round(num(row.input_coverage) * 100)
+        + '% of its applicable input contract, so part of any disagreement with the market is absence of '
+        + 'information rather than a view about the football.');
+    }
+    if (row && row.shadow_effect && row.shadow_effect.why) {
+      limits.push('A shadow projection with the starter context wired in is published beside the model number and '
+        + 'priced nowhere. ' + row.shadow_effect.why);
+    }
+
     /* ---- what this can and cannot answer ------------------------------ */
     var answerable = !!(identity.home.value && identity.away.value);
     return {
@@ -29094,6 +29212,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       resolution: { state: res.state || null, how: res.how || null, named: res.named || [], source: res.source || SLATE },
       identity: identity, model: model, market: market, ratings: ratings,
       previous_games: previous, availability: availability,
+      starters: starters, input_contract: contract,
       missing: missing, limits: uniq(limits.filter(Boolean)),
       status: {
         answerable: answerable,
@@ -40573,6 +40692,12 @@ function fbP4Load(force,signal){
     var P=window.EDCfbP4Params;
     var cur=fbP4Season();
     S.season=cur;
+    /* THE STARTER CONTEXT, loaded once with the board. It feeds no number —
+       fbP4Request still sends `qb:null` — but every card, article and
+       newsletter item built from this board reads it, and a board that
+       loaded without it is a board that says "unknown quarterback" on every
+       game while the answer sits in a committed artifact. */
+    fbStartersEnsure(cur);
     var st=E.newState();
     if(!st)throw new Error('parameters did not produce a rating state');
     /* advance the seeded state season by season, absorbing real results */
@@ -40727,6 +40852,9 @@ function fbP4Load(force,signal){
     }
     var lanes=[],li;
     for(li=0;li<Math.min(8,queue.length);li++)lanes.push(worker());
+    /* the starter artifact is small and already in flight; joining it here is
+       what stops a brief built the instant the board resolves from racing it */
+    lanes.push(fbStartersEnsure(S.season));
     return Promise.all(lanes);
   }).then(function(){
     FB.p4.loadedAt=Date.now();
@@ -45405,6 +45533,73 @@ var FBRK_HISTORY = 'football/rankings/history.json';
    things they are. */
 var FBRK_HEALTH = 'football/rankings/health.json';
 
+/* ---- THE STARTER CONTEXT -------------------------------------------------
+   Built by football/starters/build_starters.js and committed. It is loaded
+   here for ONE purpose: so the card, the article and the newsletter can say
+   who is expected at quarterback and what KIND of answer that is. It is not
+   an input to any number — fbP4Request still sends `qb:null`, and the record
+   carries `priced:false` with the reason, so nothing downstream can promote
+   an expectation into a price or into a confirmation.
+
+   A failure to load is a normal state: the starter block is absent and the
+   card says the context could not be read, which is what it used to say about
+   the quarterback himself on all 75 games. */
+var FBST_URL = function(y){ return 'football/starters/cfb_'+y+'.json'; };
+FB.starters = { data:null, err:null, _p:null, season:null };
+function fbStartersEnsure(season){
+  if(FB.starters.data&&FB.starters.season===season)return Promise.resolve(FB.starters.data);
+  if(FB.starters._p)return FB.starters._p;
+  FB.starters._p=fetch(FBST_URL(season),{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('starters '+r.status); return r.json(); })
+    .then(function(j){ FB.starters.data=j; FB.starters.season=season; FB.starters.err=null; FB.starters._p=null; return j; })
+    .catch(function(e){ FB.starters.err=String(e&&e.message||e).slice(0,140); FB.starters._p=null; return null; });
+  return FB.starters._p;
+}
+/* one team's record, or null. Never throws: an absent record is a normal
+   answer and the caller says so. */
+function fbStarterFor(teamName){
+  var d=FB.starters.data;
+  if(!d||!d.teams)return null;
+  var k=fbP4Key(teamName);
+  return (k&&d.teams[k])||null;
+}
+/* THE STARTER BLOCK THE PAYLOAD CARRIES. Six states kept apart, availability
+   on its own axis, and `confirmed` true for an official announcement and
+   nothing else. */
+function fbBrStarters(awayName,homeName){
+  var d=FB.starters.data;
+  function side(name){
+    var r=fbStarterFor(name);
+    if(!r)return { team:name, status:'UNKNOWN', confirmed:false, player:null,
+      label:d?'no starter record was built for this team':'the starter context could not be read in this session',
+      priced:false, priced_why:'the starter layer is research-only; it is evidence for an explanation, never an input to the published number',
+      availability:null, experience:null, conflicts:0, source:null, source_url:null, retrieved_at:null };
+    return {
+      team:name, status:r.status, confirmed:r.confirmed===true,
+      player:r.player_name||null, player_id:r.player_id||null,
+      label:r.label||null,
+      priced:false,
+      priced_why:'the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch',
+      availability:r.availability?{ state:r.availability.state, evidence:r.availability.evidence,
+        why:r.availability.why, source_url:r.availability.source_url||null }:null,
+      experience:r.experience||null,
+      competition:r.competition||null,
+      conflicts:(r.conflicts||[]).length,
+      history:(r.history||[]).slice(-2),
+      source:r.source||null, source_url:r.source_url||null,
+      published_at:r.published_at||null, retrieved_at:r.retrieved_at||null
+    };
+  }
+  return {
+    away:side(awayName), home:side(homeName),
+    generated_at:d?d.generated_at:null,
+    source:d?('football/starters/cfb_'+d.season+'.json'):null,
+    note:'An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, '
+      +'and no number on this page is priced from any of them. Availability is a separate axis: an absent report '
+      +'is UNKNOWN and is never read as healthy.'
+  };
+}
+
 function fbRkEnsure(){
   if(FB.rk.data)return Promise.resolve(FB.rk.data);
   if(FB.rk._p)return FB.rk._p;
@@ -45489,6 +45684,14 @@ function fbRkRank(t,cat){
    artifact is in memory before either is built. Without the export
    `researchFor()` returned null on its first line and every game brief fell
    back to the market-only page this work exists to replace. */
+/* the starter context: the loader so the board can await it, the block
+   builder so a brief can carry it, and the per-team accessor for the card. A
+   function inside this IIFE is invisible without these lines, which is the
+   whole reason tools/football/brief_wiring.test.js executes the module rather
+   than reading it. */
+window.fbStartersEnsure=fbStartersEnsure;
+window.fbBrStarters=fbBrStarters;
+window.fbStarterFor=fbStarterFor;
 window.fbBriefGame=fbBriefGame;
 window.fbBriefResearch=fbBriefResearch;
 /* the NFL matchup payload, by the same contract: one builder, reachable
@@ -46482,12 +46685,26 @@ function fbBriefGame(q){
         headline='EdgeDesk rates one side of this game and not the other. What it has is below; what it does not have is named.';
       }
     }
+    var starters=fbBrStarters(awayName,homeName);
+    /* THE ONE THING THE CARD COULD NOT SAY. Both sides' starter states go into
+       `missing` when they are unresolved and into the payload either way, so a
+       reader of the article and a reader of the terminal get the same sentence
+       about the same quarterback. */
+    ['away','home'].forEach(function(k){
+      var stq=starters[k];
+      if(stq.status==='UNKNOWN')missing.push('No starting-quarterback evidence reached '+stq.team+'.');
+      else if(stq.status==='COMPETITION')missing.push(stq.team+' quarterback unresolved: '+stq.label);
+      else if(!stq.confirmed)notes.push(stq.team+' quarterback: '+stq.label);
+      if(stq.availability&&stq.availability.evidence!=='EXPLICIT'&&stq.player)
+        missing.push('No availability report reached '+stq.player+' — unknown is carried as unknown, never as healthy.');
+    });
     return {
       /* the canonical sections */
       kind:'CFB_GAME',
       game:fbBrGameHead(q,pr,awayName,homeName,A,H),
       lede:lede,
       projection:projection,
+      starters:starters,
       drivers:drivers,
       compare:compare,
       advantages:advantages,

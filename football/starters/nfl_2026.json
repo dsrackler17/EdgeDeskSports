@@ -1,0 +1,3299 @@
+{
+ "schema": "edgedesk_starters_v1",
+ "version": 1,
+ "sport": "NFL",
+ "season": 2026,
+ "week": 1,
+ "generated_at": "2026-09-15T14:16:01.420Z",
+ "coverage": {
+  "total": 32,
+  "by_status": {
+   "ANNOUNCED": 0,
+   "EXPECTED": 0,
+   "DEPTH_CHART": 32,
+   "PREVIOUS_GAME": 0,
+   "COMPETITION": 0,
+   "UNKNOWN": 0
+  },
+  "by_field_state": {
+   "USABLE": 32,
+   "RESEARCH_ONLY": 0,
+   "STALE": 0,
+   "CONFLICTING": 0,
+   "NOT_APPLICABLE": 0,
+   "FETCH_FAILED": 0,
+   "UNAVAILABLE": 0
+  },
+  "with_player": 32,
+  "announced": 0,
+  "availability_explicit": 2,
+  "availability_unknown": 30,
+  "conflicting": 3,
+  "stale": 0,
+  "resolved_share": 1
+ },
+ "sources": [
+  {
+   "field": "dropback attribution",
+   "url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+   "ok": true,
+   "from": "network",
+   "status": 200,
+   "error": null,
+   "retrieved_at": "2026-09-15T14:16:07.296Z"
+  },
+  {
+   "field": "roster identity",
+   "url": "https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_2026.csv",
+   "ok": true,
+   "from": "network",
+   "status": 200,
+   "error": null,
+   "retrieved_at": "2026-09-15T14:16:07.461Z"
+  },
+  {
+   "field": "availability",
+   "url": "https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv",
+   "ok": true,
+   "from": "network",
+   "status": 200,
+   "error": null,
+   "retrieved_at": "2026-09-15T14:16:07.637Z"
+  },
+  {
+   "field": "depth chart",
+   "url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "ok": true,
+   "from": "network",
+   "status": 200,
+   "error": null,
+   "retrieved_at": "2026-09-15T14:16:08.940Z"
+  }
+ ],
+ "notes": [
+  "NFL availability is the league injury report for week 1; a player with no row is UNKNOWN, not healthy"
+ ],
+ "availability": {
+  "checked": true,
+  "generated_at": "2026-09-15T14:16:07.637Z",
+  "teams_with_records": 32
+ },
+ "depth_chart": {
+  "available": true,
+  "as_of": "2026-09-15T12:39:14Z",
+  "teams": 32
+ },
+ "teams": {
+  "ari": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "ARI",
+   "team_id": "ari",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0033119",
+   "player_name": "Jacoby Brissett",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0033119",
+      "player_name": "J.Brissett",
+      "dropbacks": 38,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0033119",
+     "player_name": "Jacoby Brissett",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0033119",
+     "player_name": "Jacoby Brissett",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "38 of 38 dropbacks in week 1 vs LAC; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.444Z",
+   "label": "Jacoby Brissett — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_ARI_LAC",
+     "opponent": "LAC",
+     "dropbacks": 38,
+     "starter": {
+      "player_id": "00-0033119",
+      "player_name": "J.Brissett",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "atl": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "ATL",
+   "team_id": "atl",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0039917",
+   "player_name": "Michael Penix Jr.",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "OUT",
+    "doubt": 100,
+    "evidence": "EXPLICIT",
+    "why": "Knee · Full Participation in Practice",
+    "source": "nflverse injuries (league injury report)",
+    "source_url": "https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv",
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0033662",
+      "player_name": "C.Rush",
+      "dropbacks": 26,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [
+    {
+     "tier": 3,
+     "disagrees_with": "00-0039917",
+     "names": [
+      {
+       "player_id": "00-0033662",
+       "player_name": "Cooper Rush",
+       "source": "nflverse play-by-play",
+       "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv"
+      }
+     ]
+    }
+   ],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0039917",
+     "player_name": "Michael Penix Jr.",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0033662",
+     "player_name": "Cooper Rush",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "26 of 26 dropbacks in week 1 vs PIT; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.445Z",
+   "label": "Michael Penix Jr. — leads the published depth chart (listed out); no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_ATL_PIT",
+     "opponent": "PIT",
+     "dropbacks": 26,
+     "starter": {
+      "player_id": "00-0033662",
+      "player_name": "C.Rush",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "bal": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "BAL",
+   "team_id": "bal",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0034796",
+   "player_name": "Lamar Jackson",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0034796",
+      "player_name": "L.Jackson",
+      "dropbacks": 26,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0034796",
+     "player_name": "Lamar Jackson",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0034796",
+     "player_name": "Lamar Jackson",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "26 of 26 dropbacks in week 1 vs IND; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.445Z",
+   "label": "Lamar Jackson — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_BAL_IND",
+     "opponent": "IND",
+     "dropbacks": 26,
+     "starter": {
+      "player_id": "00-0034796",
+      "player_name": "L.Jackson",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "buf": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "BUF",
+   "team_id": "buf",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0034857",
+   "player_name": "Josh Allen",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0034857",
+      "player_name": "J.Allen",
+      "dropbacks": 32,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0034857",
+     "player_name": "Josh Allen",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0034857",
+     "player_name": "Josh Allen",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "32 of 32 dropbacks in week 1 vs HOU; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.446Z",
+   "label": "Josh Allen — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_BUF_HOU",
+     "opponent": "HOU",
+     "dropbacks": 32,
+     "starter": {
+      "player_id": "00-0034857",
+      "player_name": "J.Allen",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "car": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "CAR",
+   "team_id": "car",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0039150",
+   "player_name": "Bryce Young",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0039150",
+      "player_name": "B.Young",
+      "dropbacks": 39,
+      "share": 0.975
+     },
+     {
+      "player_id": "00-0038102",
+      "player_name": "K.Pickett",
+      "dropbacks": 1,
+      "share": 0.025
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0039150",
+     "player_name": "Bryce Young",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0039150",
+     "player_name": "Bryce Young",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "39 of 40 dropbacks in week 1 vs CHI; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.446Z",
+   "label": "Bryce Young — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_CHI_CAR",
+     "opponent": "CHI",
+     "dropbacks": 40,
+     "starter": {
+      "player_id": "00-0039150",
+      "player_name": "B.Young",
+      "share": 0.975
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "chi": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "CHI",
+   "team_id": "chi",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0039918",
+   "player_name": "Caleb Williams",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0039918",
+      "player_name": "C.Williams",
+      "dropbacks": 31,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0039918",
+     "player_name": "Caleb Williams",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0039918",
+     "player_name": "Caleb Williams",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "31 of 31 dropbacks in week 1 vs CAR; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.447Z",
+   "label": "Caleb Williams — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_CHI_CAR",
+     "opponent": "CAR",
+     "dropbacks": 31,
+     "starter": {
+      "player_id": "00-0039918",
+      "player_name": "C.Williams",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "cin": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "CIN",
+   "team_id": "cin",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0036442",
+   "player_name": "Joe Burrow",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0036442",
+      "player_name": "J.Burrow",
+      "dropbacks": 36,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0036442",
+     "player_name": "Joe Burrow",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0036442",
+     "player_name": "Joe Burrow",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "36 of 36 dropbacks in week 1 vs TB; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.447Z",
+   "label": "Joe Burrow — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_TB_CIN",
+     "opponent": "TB",
+     "dropbacks": 36,
+     "starter": {
+      "player_id": "00-0036442",
+      "player_name": "J.Burrow",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "cle": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "CLE",
+   "team_id": "cle",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0033537",
+   "player_name": "Deshaun Watson",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0033537",
+      "player_name": "D.Watson",
+      "dropbacks": 27,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0033537",
+     "player_name": "Deshaun Watson",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0033537",
+     "player_name": "Deshaun Watson",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "27 of 27 dropbacks in week 1 vs JAX; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.447Z",
+   "label": "Deshaun Watson — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_CLE_JAX",
+     "opponent": "JAX",
+     "dropbacks": 27,
+     "starter": {
+      "player_id": "00-0033537",
+      "player_name": "D.Watson",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "dal": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "DAL",
+   "team_id": "dal",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0033077",
+   "player_name": "Dak Prescott",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0033077",
+      "player_name": "D.Prescott",
+      "dropbacks": 34,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0033077",
+     "player_name": "Dak Prescott",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0033077",
+     "player_name": "Dak Prescott",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "34 of 34 dropbacks in week 1 vs NYG; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.448Z",
+   "label": "Dak Prescott — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_DAL_NYG",
+     "opponent": "NYG",
+     "dropbacks": 34,
+     "starter": {
+      "player_id": "00-0033077",
+      "player_name": "D.Prescott",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "den": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "DEN",
+   "team_id": "den",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0039732",
+   "player_name": "Bo Nix",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0039732",
+      "player_name": "B.Nix",
+      "dropbacks": 32,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0039732",
+     "player_name": "Bo Nix",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0039732",
+     "player_name": "Bo Nix",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "32 of 32 dropbacks in week 1 vs KC; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.448Z",
+   "label": "Bo Nix — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_DEN_KC",
+     "opponent": "KC",
+     "dropbacks": 32,
+     "starter": {
+      "player_id": "00-0039732",
+      "player_name": "B.Nix",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "det": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "DET",
+   "team_id": "det",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0033106",
+   "player_name": "Jared Goff",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0033106",
+      "player_name": "J.Goff",
+      "dropbacks": 40,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0033106",
+     "player_name": "Jared Goff",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0033106",
+     "player_name": "Jared Goff",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "40 of 40 dropbacks in week 1 vs NO; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.448Z",
+   "label": "Jared Goff — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_NO_DET",
+     "opponent": "NO",
+     "dropbacks": 40,
+     "starter": {
+      "player_id": "00-0033106",
+      "player_name": "J.Goff",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "gb": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "GB",
+   "team_id": "gb",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0036264",
+   "player_name": "Jordan Love",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0036264",
+      "player_name": "J.Love",
+      "dropbacks": 46,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0036264",
+     "player_name": "Jordan Love",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0036264",
+     "player_name": "Jordan Love",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "46 of 46 dropbacks in week 1 vs MIN; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.449Z",
+   "label": "Jordan Love — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_GB_MIN",
+     "opponent": "MIN",
+     "dropbacks": 46,
+     "starter": {
+      "player_id": "00-0036264",
+      "player_name": "J.Love",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "hou": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "HOU",
+   "team_id": "hou",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0039163",
+   "player_name": "C.J. Stroud",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0039163",
+      "player_name": "C.Stroud",
+      "dropbacks": 41,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0039163",
+     "player_name": "C.J. Stroud",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0039163",
+     "player_name": "C.J. Stroud",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "41 of 41 dropbacks in week 1 vs BUF; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.449Z",
+   "label": "C.J. Stroud — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_BUF_HOU",
+     "opponent": "BUF",
+     "dropbacks": 41,
+     "starter": {
+      "player_id": "00-0039163",
+      "player_name": "C.Stroud",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "ind": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "IND",
+   "team_id": "ind",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0035710",
+   "player_name": "Daniel Jones",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0035710",
+      "player_name": "D.Jones",
+      "dropbacks": 33,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0035710",
+     "player_name": "Daniel Jones",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0035710",
+     "player_name": "Daniel Jones",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "33 of 33 dropbacks in week 1 vs BAL; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.450Z",
+   "label": "Daniel Jones — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_BAL_IND",
+     "opponent": "BAL",
+     "dropbacks": 33,
+     "starter": {
+      "player_id": "00-0035710",
+      "player_name": "D.Jones",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "jax": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "JAX",
+   "team_id": "jax",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0036971",
+   "player_name": "Trevor Lawrence",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0036971",
+      "player_name": "T.Lawrence",
+      "dropbacks": 24,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0036971",
+     "player_name": "Trevor Lawrence",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0036971",
+     "player_name": "Trevor Lawrence",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "24 of 24 dropbacks in week 1 vs CLE; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.452Z",
+   "label": "Trevor Lawrence — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_CLE_JAX",
+     "opponent": "CLE",
+     "dropbacks": 24,
+     "starter": {
+      "player_id": "00-0036971",
+      "player_name": "T.Lawrence",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "kc": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "KC",
+   "team_id": "kc",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0033873",
+   "player_name": "Patrick Mahomes",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "EXPLICIT",
+    "why": "Full Participation in Practice",
+    "source": "nflverse injuries (league injury report)",
+    "source_url": "https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv",
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0033873",
+      "player_name": "P.Mahomes",
+      "dropbacks": 29,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0033873",
+     "player_name": "Patrick Mahomes",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0033873",
+     "player_name": "Patrick Mahomes",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "29 of 29 dropbacks in week 1 vs DEN; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.453Z",
+   "label": "Patrick Mahomes — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_DEN_KC",
+     "opponent": "DEN",
+     "dropbacks": 29,
+     "starter": {
+      "player_id": "00-0033873",
+      "player_name": "P.Mahomes",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "la": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "LA",
+   "team_id": "la",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0026498",
+   "player_name": "Matthew Stafford",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0026498",
+      "player_name": "M.Stafford",
+      "dropbacks": 25,
+      "share": 0.893
+     },
+     {
+      "player_id": "00-0039107",
+      "player_name": "S.Bennett",
+      "dropbacks": 3,
+      "share": 0.107
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0026498",
+     "player_name": "Matthew Stafford",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0026498",
+     "player_name": "Matthew Stafford",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "25 of 28 dropbacks in week 1 vs SF; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.453Z",
+   "label": "Matthew Stafford — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_SF_LA",
+     "opponent": "SF",
+     "dropbacks": 28,
+     "starter": {
+      "player_id": "00-0026498",
+      "player_name": "M.Stafford",
+      "share": 0.893
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "lac": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "LAC",
+   "team_id": "lac",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0036355",
+   "player_name": "Justin Herbert",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0036355",
+      "player_name": "J.Herbert",
+      "dropbacks": 30,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0036355",
+     "player_name": "Justin Herbert",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0036355",
+     "player_name": "Justin Herbert",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "30 of 30 dropbacks in week 1 vs ARI; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.454Z",
+   "label": "Justin Herbert — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_ARI_LAC",
+     "opponent": "ARI",
+     "dropbacks": 30,
+     "starter": {
+      "player_id": "00-0036355",
+      "player_name": "J.Herbert",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "lv": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "LV",
+   "team_id": "lv",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0029604",
+   "player_name": "Kirk Cousins",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0029604",
+      "player_name": "K.Cousins",
+      "dropbacks": 30,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0029604",
+     "player_name": "Kirk Cousins",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0029604",
+     "player_name": "Kirk Cousins",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "30 of 30 dropbacks in week 1 vs MIA; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.454Z",
+   "label": "Kirk Cousins — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_MIA_LV",
+     "opponent": "MIA",
+     "dropbacks": 30,
+     "starter": {
+      "player_id": "00-0029604",
+      "player_name": "K.Cousins",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "mia": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "MIA",
+   "team_id": "mia",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0038128",
+   "player_name": "Malik Willis",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0038128",
+      "player_name": "M.Willis",
+      "dropbacks": 32,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0038128",
+     "player_name": "Malik Willis",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0038128",
+     "player_name": "Malik Willis",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "32 of 32 dropbacks in week 1 vs LV; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.454Z",
+   "label": "Malik Willis — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_MIA_LV",
+     "opponent": "LV",
+     "dropbacks": 32,
+     "starter": {
+      "player_id": "00-0038128",
+      "player_name": "M.Willis",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "min": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "MIN",
+   "team_id": "min",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0035228",
+   "player_name": "Kyler Murray",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": {
+     "evidence": "PARTICIPATION",
+     "week": 1,
+     "share": 0.179,
+     "replaced_by": "C.Wentz",
+     "note": "opened week 1 and took 18% of the dropbacks, with C.Wentz taking the rest — a participation fact, not an injury report, and not a reason on its own to expect an absence",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv"
+    }
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0032950",
+      "player_name": "C.Wentz",
+      "dropbacks": 23,
+      "share": 0.821
+     },
+     {
+      "player_id": "00-0035228",
+      "player_name": "K.Murray",
+      "dropbacks": 5,
+      "share": 0.179
+     }
+    ]
+   },
+   "conflicts": [
+    {
+     "tier": 3,
+     "disagrees_with": "00-0035228",
+     "names": [
+      {
+       "player_id": "00-0032950",
+       "player_name": "Carson Wentz",
+       "source": "nflverse play-by-play",
+       "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv"
+      }
+     ]
+    }
+   ],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0035228",
+     "player_name": "Kyler Murray",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0035228",
+     "player_name": "Kyler Murray",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "opened week 1 vs GB but took only 18% of the dropbacks",
+     "week": 1
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0032950",
+     "player_name": "Carson Wentz",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "led week 1 vs GB with 82% of the dropbacks but did not open the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.455Z",
+   "label": "Kyler Murray — leads the published depth chart (did not finish week 1; no injury report on file); no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_GB_MIN",
+     "opponent": "GB",
+     "dropbacks": 28,
+     "starter": null,
+     "settled": false,
+     "why": "the player who took the first dropback threw 18% of the dropbacks; the usage leader was C.Wentz"
+    }
+   ]
+  },
+  "ne": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "NE",
+   "team_id": "ne",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0039851",
+   "player_name": "Drake Maye",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0039851",
+      "player_name": "D.Maye",
+      "dropbacks": 36,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0039851",
+     "player_name": "Drake Maye",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0039851",
+     "player_name": "Drake Maye",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "36 of 36 dropbacks in week 1 vs SEA; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.455Z",
+   "label": "Drake Maye — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_NE_SEA",
+     "opponent": "SEA",
+     "dropbacks": 36,
+     "starter": {
+      "player_id": "00-0039851",
+      "player_name": "D.Maye",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "no": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "NO",
+   "team_id": "no",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0040743",
+   "player_name": "Tyler Shough",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0040743",
+      "player_name": "T.Shough",
+      "dropbacks": 61,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0040743",
+     "player_name": "Tyler Shough",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0040743",
+     "player_name": "Tyler Shough",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "61 of 61 dropbacks in week 1 vs DET; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.455Z",
+   "label": "Tyler Shough — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_NO_DET",
+     "opponent": "DET",
+     "dropbacks": 61,
+     "starter": {
+      "player_id": "00-0040743",
+      "player_name": "T.Shough",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "nyg": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "NYG",
+   "team_id": "nyg",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0040691",
+   "player_name": "Jaxson Dart",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0040691",
+      "player_name": "J.Dart",
+      "dropbacks": 31,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0040691",
+     "player_name": "Jaxson Dart",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0040691",
+     "player_name": "Jaxson Dart",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "31 of 31 dropbacks in week 1 vs DAL; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.456Z",
+   "label": "Jaxson Dart — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_DAL_NYG",
+     "opponent": "DAL",
+     "dropbacks": 31,
+     "starter": {
+      "player_id": "00-0040691",
+      "player_name": "J.Dart",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "nyj": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "NYJ",
+   "team_id": "nyj",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0030565",
+   "player_name": "Geno Smith",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0030565",
+      "player_name": "G.Smith",
+      "dropbacks": 24,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0030565",
+     "player_name": "Geno Smith",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0030565",
+     "player_name": "Geno Smith",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "24 of 24 dropbacks in week 1 vs TEN; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.456Z",
+   "label": "Geno Smith — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_NYJ_TEN",
+     "opponent": "TEN",
+     "dropbacks": 24,
+     "starter": {
+      "player_id": "00-0030565",
+      "player_name": "G.Smith",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "phi": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "PHI",
+   "team_id": "phi",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0036389",
+   "player_name": "Jalen Hurts",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0036389",
+      "player_name": "J.Hurts",
+      "dropbacks": 28,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0036389",
+     "player_name": "Jalen Hurts",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0036389",
+     "player_name": "Jalen Hurts",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "28 of 28 dropbacks in week 1 vs WAS; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.456Z",
+   "label": "Jalen Hurts — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_WAS_PHI",
+     "opponent": "WAS",
+     "dropbacks": 28,
+     "starter": {
+      "player_id": "00-0036389",
+      "player_name": "J.Hurts",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "pit": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "PIT",
+   "team_id": "pit",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0023459",
+   "player_name": "Aaron Rodgers",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0023459",
+      "player_name": "A.Rodgers",
+      "dropbacks": 42,
+      "share": 0.977
+     },
+     {
+      "player_id": "00-0033729",
+      "player_name": "C.Johnston",
+      "dropbacks": 1,
+      "share": 0.023
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0023459",
+     "player_name": "Aaron Rodgers",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0023459",
+     "player_name": "Aaron Rodgers",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "42 of 43 dropbacks in week 1 vs ATL; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.457Z",
+   "label": "Aaron Rodgers — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_ATL_PIT",
+     "opponent": "ATL",
+     "dropbacks": 43,
+     "starter": {
+      "player_id": "00-0023459",
+      "player_name": "A.Rodgers",
+      "share": 0.977
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "sea": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "SEA",
+   "team_id": "sea",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0034869",
+   "player_name": "Sam Darnold",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": {
+     "evidence": "PARTICIPATION",
+     "week": 1,
+     "share": 0.115,
+     "replaced_by": "D.Lock",
+     "note": "opened week 1 and took 12% of the dropbacks, with D.Lock taking the rest — a participation fact, not an injury report, and not a reason on its own to expect an absence",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv"
+    }
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0035704",
+      "player_name": "D.Lock",
+      "dropbacks": 23,
+      "share": 0.885
+     },
+     {
+      "player_id": "00-0034869",
+      "player_name": "S.Darnold",
+      "dropbacks": 3,
+      "share": 0.115
+     }
+    ]
+   },
+   "conflicts": [
+    {
+     "tier": 3,
+     "disagrees_with": "00-0034869",
+     "names": [
+      {
+       "player_id": "00-0035704",
+       "player_name": "Drew Lock",
+       "source": "nflverse play-by-play",
+       "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv"
+      }
+     ]
+    }
+   ],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0034869",
+     "player_name": "Sam Darnold",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0034869",
+     "player_name": "Sam Darnold",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "opened week 1 vs NE but took only 12% of the dropbacks",
+     "week": 1
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0035704",
+     "player_name": "Drew Lock",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "led week 1 vs NE with 89% of the dropbacks but did not open the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.457Z",
+   "label": "Sam Darnold — leads the published depth chart (did not finish week 1; no injury report on file); no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_NE_SEA",
+     "opponent": "NE",
+     "dropbacks": 26,
+     "starter": null,
+     "settled": false,
+     "why": "the player who took the first dropback threw 12% of the dropbacks; the usage leader was D.Lock"
+    }
+   ]
+  },
+  "sf": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "SF",
+   "team_id": "sf",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0037834",
+   "player_name": "Brock Purdy",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0037834",
+      "player_name": "B.Purdy",
+      "dropbacks": 34,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0037834",
+     "player_name": "Brock Purdy",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0037834",
+     "player_name": "Brock Purdy",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "34 of 34 dropbacks in week 1 vs LA; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.458Z",
+   "label": "Brock Purdy — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_SF_LA",
+     "opponent": "LA",
+     "dropbacks": 34,
+     "starter": {
+      "player_id": "00-0037834",
+      "player_name": "B.Purdy",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "tb": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "TB",
+   "team_id": "tb",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0034855",
+   "player_name": "Baker Mayfield",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0034855",
+      "player_name": "B.Mayfield",
+      "dropbacks": 32,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0034855",
+     "player_name": "Baker Mayfield",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0034855",
+     "player_name": "Baker Mayfield",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "32 of 32 dropbacks in week 1 vs CIN; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.458Z",
+   "label": "Baker Mayfield — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_TB_CIN",
+     "opponent": "CIN",
+     "dropbacks": 32,
+     "starter": {
+      "player_id": "00-0034855",
+      "player_name": "B.Mayfield",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "ten": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "TEN",
+   "team_id": "ten",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0040676",
+   "player_name": "Cam Ward",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0040676",
+      "player_name": "C.Ward",
+      "dropbacks": 35,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0040676",
+     "player_name": "Cam Ward",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0040676",
+     "player_name": "Cam Ward",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "35 of 35 dropbacks in week 1 vs NYJ; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.458Z",
+   "label": "Cam Ward — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_NYJ_TEN",
+     "opponent": "NYJ",
+     "dropbacks": 35,
+     "starter": {
+      "player_id": "00-0040676",
+      "player_name": "C.Ward",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  },
+  "was": {
+   "schema": "edgedesk_starter_context_v1",
+   "version": 1,
+   "team": "WAS",
+   "team_id": "was",
+   "season": 2026,
+   "week": 2,
+   "position": "QB",
+   "status": "DEPTH_CHART",
+   "announced": false,
+   "confirmed": false,
+   "player_id": "00-0039910",
+   "player_name": "Jayden Daniels",
+   "identity_basis": "athlete_id on the current-season roster",
+   "identity_corroborated": true,
+   "source": "nflverse depth charts",
+   "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+   "published_at": "2026-09-15T12:39:14Z",
+   "retrieved_at": "2026-09-15T14:16:08.940Z",
+   "basis": "tier 2 evidence, one name",
+   "availability": {
+    "state": "UNKNOWN",
+    "doubt": 50,
+    "evidence": "NONE",
+    "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+    "source": null,
+    "source_url": null,
+    "published_at": null,
+    "retrieved_at": "2026-09-15T14:16:07.637Z",
+    "checked": true,
+    "participation": null
+   },
+   "competition": {
+    "contested": false,
+    "games": 1,
+    "players": [
+     {
+      "player_id": "00-0039910",
+      "player_name": "J.Daniels",
+      "dropbacks": 36,
+      "share": 1
+     }
+    ]
+   },
+   "conflicts": [],
+   "evidence": [
+    {
+     "kind": "DEPTH_CHART",
+     "tier": 2,
+     "player_id": "00-0039910",
+     "player_name": "Jayden Daniels",
+     "source": "nflverse depth charts",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv",
+     "published_at": "2026-09-15T12:39:14Z",
+     "retrieved_at": "2026-09-15T14:16:08.940Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "QB1 on the published depth chart as of 2026-09-15T12:39:14Z",
+     "week": 2
+    },
+    {
+     "kind": "GAME_USAGE",
+     "tier": 3,
+     "player_id": "00-0039910",
+     "player_name": "Jayden Daniels",
+     "source": "nflverse play-by-play",
+     "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.csv",
+     "published_at": null,
+     "retrieved_at": "2026-09-15T14:16:07.296Z",
+     "age_hours": 0,
+     "stale": false,
+     "stale_why": null,
+     "detail": "36 of 36 dropbacks in week 1 vs PHI; took the first dropback of the game",
+     "week": 1
+    }
+   ],
+   "refused": [],
+   "resolved_at": "2026-09-15T14:16:11.459Z",
+   "label": "Jayden Daniels — leads the published depth chart; no start has been announced.",
+   "field_state": "USABLE",
+   "history": [
+    {
+     "week": 1,
+     "game_id": "2026_01_WAS_PHI",
+     "opponent": "PHI",
+     "dropbacks": 36,
+     "starter": {
+      "player_id": "00-0039910",
+      "player_name": "J.Daniels",
+      "share": 1
+     },
+     "settled": true,
+     "why": "took the first dropback of the game"
+    }
+   ]
+  }
+ }
+}

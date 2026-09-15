@@ -55,6 +55,9 @@ global.window = global.window || global;
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 const E = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
 const FBS = require(path.join(HERE, 'fbs.js'));
+const IN = require(path.join(ROOT, 'football', 'matchup', 'inputs.js'));
+const WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js'));
+const RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const P = global.EDCfbP4Params;
 
 const SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_${y}.csv`;
@@ -148,23 +151,67 @@ function buildState(rowsBySeason, season) {
   return { st, absorbed };
 }
 
-function project(st, item, season) {
+/* PROJECT A GAME THE WAY THE TERMINAL DOES.
+
+   This used to hand the engine a request with every optional input hard-coded
+   null — no roster, no injuries, no schedule context, no weather — which is
+   why football/fbs/slate.json published `data_completeness: 0` on all 75
+   games while the board on screen was pricing the same games with four of
+   those inputs present. The artifact was not measuring EdgeDesk's coverage;
+   it was measuring this function's own nulls.
+
+   The assembly now lives in football/matchup/inputs.js, shared with the
+   board, and returns two requests: the BASELINE (what the published number
+   is priced from) and the ENRICHED one (baseline + the new starter context),
+   whose output is published under `shadow_` names and priced nowhere. */
+function project(st, item, season, ctx, si) {
   const g = item.g, m = item.meta;
-  const V = (P.universe && P.universe.venues) || {};
-  const req = {
-    season: g.season, week: g.week, state: st,
-    game: { home: g.home_team, away: g.away_team, neutral_site: g.neutral_site,
-      venue_id: g.venue_id, kickoff: g.start_date,
-      home_fbs: m.home.is_fbs, away_fbs: m.away.is_fbs },
-    teams: {
-      home: { conference: g.home_conference, roster: null, qb: null, injuries: null, news: null, coaching: null, schedule: null },
-      away: { conference: g.away_conference, roster: null, qb: null, injuries: null, news: null, coaching: null, schedule: null }
-    },
-    venue: { home: V[FBS.normKey(g.home_team)] || null, away: V[FBS.normKey(g.away_team)] || null },
-    weather: null, market: {}, timestamps: {}
-  };
-  try { return E.projectGame(req); } catch (e) { return { status: 'THREW', reason: String(e && e.message) }; }
+  let asm;
+  try {
+    asm = IN.buildRequest(ctx, { game: g, meta: m, state: st, schedule_index: si, now: Date.now() });
+  } catch (e) { return { status: 'THREW', reason: 'input assembly: ' + String(e && e.message) }; }
+  let base, shadow = null;
+  try { base = E.projectGame(asm.baseline); } catch (e) { return { status: 'THREW', reason: String(e && e.message), assembly: asm }; }
+  try { shadow = E.projectGame(asm.enriched); } catch (e) { shadow = { status: 'THREW', reason: String(e && e.message) }; }
+  base.assembly = asm;
+  base.shadow = shadow;
+  return base;
 }
+
+
+/* The difference the starter context made, in the engine's own terms. */
+function shadowEffect(base, sh, asm) {
+  if (!asm || !sh || sh.status !== 'PREDICTED' || !base || base.status !== 'PREDICTED') return null;
+  const st = (p, side) => {
+    const q = p && p.layers && p.layers.qb && p.layers.qb[side];
+    return q && q.stability && q.stability.available ? q.stability.value : null;
+  };
+  const line = Math.round((-sh.model.fair_spread - -base.model.fair_spread) * 100) / 100;
+  const sig = Math.round((sh.model.sigma_margin - base.model.sigma_margin) * 1000) / 1000;
+  const lam = (P.volatility && P.volatility.lambda) || {};
+  const qbLambda = lam.qb_uncertainty;
+  return {
+    line_change: line, sigma_change: sig,
+    qb_stability: { home: { baseline: st(base, 'home'), shadow: st(sh, 'home') },
+      away: { baseline: st(base, 'away'), shadow: st(sh, 'away') } },
+    why: (line === 0 && sig === 0)
+      ? 'The resolved starter moved the engine\u2019s QB stability term off its "unknown starter" floor and moved '
+        + 'nothing the engine prices. Two reasons, both structural and both documented: no feed this repository '
+        + 'reads carries EPA per dropback for college football, so the QB layer\u2019s VALUE term has no input and '
+        + 'contributes no points; and the trained volatility model kept exactly one driver (early_season), so '
+        + 'qb_uncertainty carries '
+        + (qbLambda == null ? 'no coefficient at all' : ('a coefficient of ' + qbLambda))
+        + ' and cannot widen or narrow the distribution either. The starter context is therefore research '
+        + 'evidence and explanation today, not a model input, and this field says so instead of letting two '
+        + 'identical numbers imply the starter was weighed and dismissed.'
+      : 'The resolved starter changed the shadow line by ' + line + ' points and sigma by ' + sig
+        + '. Research only until the starter layer has an out-of-sample record.'
+  };
+}
+
+/* A NUMBER OR NOTHING, never a zero standing in for a null. */
+function isFiniteNum(v) { return typeof v === 'number' && isFinite(v); }
+function r2n(v, scale) { return isFiniteNum(v) ? Math.round(v * scale) / scale : null; }
 
 /* ------------------------------------------------------------- the checks */
 function run(report, name, detail, ok) {
@@ -210,11 +257,49 @@ async function main() {
   const built = FBS.buildSlate({ rows: target, universe, now: Date.now(), lookaheadDays: a.lookahead });
   const slate = built.items;
 
+  /* Every committed input, read once, and the season's own schedule index so
+     rest and travel are measured off the same rows the slate is built from. */
+  const ctx = IN.load({ season: a.season, params: P, normKey: FBS.normKey });
+  const si = IN.scheduleIndex(target, st.r);
+
+  let weatherReport = null;
+  /* THE FORECAST THE BOARD ALREADY FETCHES. This job passed `weather: null`
+     and then reported the weather layer blind on every game, including the 73
+     whose venue coordinates it was holding at the time. Same endpoint the
+     terminal uses, through the recovery layer so it is bounded, and a refusal
+     is recorded as a refusal rather than as an absence. */
+  if (!a.offline) {
+    const sess = RECOVERY.session({ host_min_gap_ms: 80, budget_ms: 120000 });
+    const wanted = slate.filter(it => !it.g.neutral_site).map(it => ({
+      game_id: it.g.game_id, kickoff: it.g.start_date,
+      venue: ctx.venues[(it.meta && it.meta.home.key) || FBS.normKey(it.g.home_team)] || null
+    }));
+    try {
+      const wx = await WX.fetchForGames(sess, wanted, { concurrency: 6 });
+      ctx.weather = wx.byGame;
+      ctx.weather_attempted = true;
+      ctx.weather_source = 'open-meteo forecast (keyless), joined on the trained venue coordinates';
+      ctx.weather_failure = wx.report.failed
+        ? Object.keys(wx.report.failures).map(k => k + ' x' + wx.report.failures[k]).join(', ')
+        : null;
+      weatherReport = wx.report;
+      log('[fbs] weather: ' + wx.report.summary);
+    } catch (e) {
+      ctx.weather_attempted = true;
+      ctx.weather_failure = String((e && e.message) || e).slice(0, 160);
+      weatherReport = { error: ctx.weather_failure };
+      log('[fbs] weather: ' + ctx.weather_failure);
+    }
+  } else {
+    weatherReport = { skipped: '--offline: no forecast was requested' };
+  }
+  ctx.problems.forEach(x => log('[fbs] input: ' + x));
+
   const projected = {};
   const statuses = {};
   const recs = {};
   for (const it of slate) {
-    const p = project(st, it, a.season);
+    const p = project(st, it, a.season, ctx, si);
     projected[it.meta.id] = p;
     statuses[p.status] = (statuses[p.status] || 0) + 1;
     const rec = (p.edge && p.edge.spread && p.edge.spread.recommendation) || 'NO_PROJECTION';
@@ -227,6 +312,7 @@ async function main() {
   report.absorbed_games = absorbed;
   report.engine = { model_version: P.model_version, trained_through: P.trained_through_season };
   report.projection_status = statuses;
+  report.weather = weatherReport;
   report.spread_recommendation = recs;
   report.checks = [];
   report.failures = [];
@@ -318,7 +404,7 @@ async function main() {
   const staleProbe = (() => {
     const it = slate.find(x => x.meta.fbs_sides === 2);
     if (!it) return null;
-    const live = project(st, it, a.season);
+    const live = project(st, it, a.season, ctx, si);
     return live && live.status === 'PREDICTED';
   })();
   run(report, 'the market layer is present and able to separate a live quote from a stale one',
@@ -383,7 +469,20 @@ async function main() {
   /* ------------------------------------------------------- the artifacts */
   const slateRows = slate.map(it => {
     const m = it.meta, g = it.g, p = projected[m.id];
-    const ctx = (p && p.layers && p.layers.uncertainty && p.layers.uncertainty.context) || null;
+    const unc = (p && p.layers && p.layers.uncertainty && p.layers.uncertainty.context) || null;
+    const asm = (p && p.assembly) || null;
+    const sh = (p && p.shadow) || null;
+    const starter = (side) => {
+      const r = asm && asm.starters && asm.starters[side];
+      if (!r) return null;
+      return { status: r.status, confirmed: r.confirmed === true, player_id: r.player_id,
+        player_name: r.player_name, label: r.label, source: r.source, source_url: r.source_url,
+        published_at: r.published_at, retrieved_at: r.retrieved_at,
+        availability: r.availability ? { state: r.availability.state, evidence: r.availability.evidence,
+          why: r.availability.why, source_url: r.availability.source_url } : null,
+        conflicts: (r.conflicts || []).length, priced: false,
+        priced_why: asm.qb_pricing && asm.qb_pricing[side] ? asm.qb_pricing[side].why : null };
+    };
     return {
       game_id: m.id, season: g.season, week: g.week, kickoff: g.start_date,
       neutral_site: !!g.neutral_site, venue: g.venue || null,
@@ -395,10 +494,43 @@ async function main() {
       home_division: m.home.is_fbs ? 'fbs' : 'non-fbs', away_division: m.away.is_fbs ? 'fbs' : 'non-fbs',
       matchup_type: m.matchup_type, is_conference_game: !!m.is_conference_game,
       model_status: (p && p.status) || 'NO_PREDICTION',
-      model_home_margin: (p && p.status === 'PREDICTED') ? Math.round(p.model.fair_spread * 100) / 100 : null,
-      model_home_line: (p && p.status === 'PREDICTED') ? Math.round(-p.model.fair_spread * 100) / 100 : null,
-      model_fair_total: (p && p.status === 'PREDICTED') ? Math.round(p.model.fair_total * 10) / 10 : null,
-      data_completeness: (ctx && ctx.information_missing != null) ? Math.round((1 - ctx.information_missing) * 1000) / 1000 : null,
+      /* `Math.round(null * 10) / 10` IS ZERO, and that is how eighteen
+         FBS-vs-FCS games came to publish a projected total of 0.0. The engine
+         had said the total was UNAVAILABLE for them — an FCS opponent has no
+         scoring profile to build one from — and the rounding turned a declared
+         absence into a number the AI, the newsletter and every export then
+         read as EdgeDesk's projection. Guarded explicitly, the same way the
+         board's own CSV writer guards it. */
+      model_home_margin: r2n(p && p.status === 'PREDICTED' ? p.model.fair_spread : null, 100),
+      model_home_line: r2n((p && p.status === 'PREDICTED' && isFiniteNum(p.model.fair_spread)) ? -p.model.fair_spread : null, 100),
+      model_fair_total: r2n(p && p.status === 'PREDICTED' ? p.model.fair_total : null, 10),
+      data_completeness: (unc && unc.information_missing != null) ? Math.round((1 - unc.information_missing) * 1000) / 1000 : null,
+      /* THE CONTRACT, IN THE SEVEN STATES THAT ARE NOT THE SAME THING. The
+         engine's own `data_completeness` is its internal probe count and is
+         kept exactly as it was; these are the fields EdgeDesk went and got,
+         with what does not apply to this game excluded from the denominator
+         rather than counted as a hole. */
+      input_coverage: asm ? asm.summary.input_coverage : null,
+      priced_input_coverage: asm ? asm.summary.priced_coverage : null,
+      input_contract: asm ? asm.contract : null,
+      input_contract_summary: asm ? asm.summary : null,
+      home_starter: starter('home'),
+      away_starter: starter('away'),
+      /* the unvalidated experiment, kept apart from the priced number and
+         never published as one */
+      shadow_model_version: sh && sh.status === 'PREDICTED' ? 'edgedesk_cfb_p4_v1.0.0+starter_context_v1' : null,
+      shadow_home_line: r2n((sh && sh.status === 'PREDICTED' && isFiniteNum(sh.model.fair_spread)) ? -sh.model.fair_spread : null, 100),
+      shadow_fair_total: r2n(sh && sh.status === 'PREDICTED' ? sh.model.fair_total : null, 10),
+      shadow_delta_vs_model: (sh && sh.status === 'PREDICTED' && p && p.status === 'PREDICTED'
+        && isFiniteNum(sh.model.fair_spread) && isFiniteNum(p.model.fair_spread))
+        ? Math.round((-sh.model.fair_spread - -p.model.fair_spread) * 100) / 100 : null,
+      shadow_status: 'RESEARCH ONLY — unvalidated, priced nowhere, graded on its own record',
+      /* WHAT THE SHADOW ACTUALLY CHANGED, stated rather than left for a reader
+         to infer from two identical numbers. Publishing a shadow line beside
+         an unchanged model line with no explanation invites exactly the wrong
+         conclusion — that the starter was considered and found irrelevant —
+         when the truth is more specific and more useful than that. */
+      shadow_effect: shadowEffect(p, sh, asm),
       spread_recommendation: (p && p.edge && p.edge.spread) ? p.edge.spread.recommendation : null,
       /* no market is joined in this offline job — the board and the exports
          carry the live quote. Stated, never faked as a number. */

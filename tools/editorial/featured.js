@@ -213,7 +213,13 @@
      article says so; neither is a poll. */
   function ranksFor(entry, ctx) {
     var R = rulesFor(entry.sport);
-    var out = { home: null, away: null, pool: R ? R.rank_pool : null, source: null };
+    /* THE POOL IS WHATEVER THE RANKING ACTUALLY RANKED. `rank_pool: 136` was a
+       constant, and the rankings build ranks only the teams its confidence gate
+       clears — 68 of 138 in the current artifact — so the card said "#15 of
+       136" about a rank that was #15 of 68. The constant stays as a last
+       resort and the artifact's own count wins. */
+    var out = { home: null, away: null, pool: R ? R.rank_pool : null, pool_source: 'sport rule constant', source: null };
+    if (ctx && ctx.rank_pool != null) { out.pool = num(ctx.rank_pool); out.pool_source = 'the rankings artifact\u2019s own ranked count'; }
     var research = ctx && ctx.research && ctx.research[entry.sport + ':' + entry.game_id];
     if (research && research.compare && research.compare.groups) {
       var row = null;
@@ -241,11 +247,25 @@
   function disagreementFor(entry, ctx) {
     var research = ctx && ctx.research && ctx.research[entry.sport + ':' + entry.game_id];
     var m = research && research.market;
-    if (!m || !m.available) return { points: null, text: null, available: false };
+    var card = ctx && ctx.cards && ctx.cards[entry.sport + ':' + entry.game_id];
+    if (!m || !m.available) return { points: null, text: null, available: false,
+      stale: null, coverage: card ? num(card.input_coverage) : null };
     var d = num(String(m.difference || '').replace(/[^0-9.]/g, ''));
     return { points: d, text: txt(m.difference), available: d != null,
       model: txt(m.model), market: txt(m.market), book: txt(m.book),
-      classification: txt(m.classification) };
+      classification: txt(m.classification),
+      /* THE EVIDENCE AROUND THE GAP, which is what decides whether it is worth
+         a research trail. A stale price and a half-empty input contract make a
+         large number a reason to doubt the model, not a reason to look. */
+      /* THREE STATES, NOT TWO. `m.stale === true` collapsed "we know it is
+         fresh" and "we do not know" into the same `false`, which then read as
+         evidence that the price was current. Unknown stays null. */
+      stale: m.stale === true ? true : (m.stale === false ? false : null),
+      capture_age: txt(m.capture_age),
+      coverage: card ? num(card.input_coverage) : null,
+      starters_resolved: card
+        ? !!(card.home_starter && card.home_starter.player_id && card.away_starter && card.away_starter.player_id)
+        : null };
   }
 
   /* Does this game stand alone in its window? Computed from the slate, so it
@@ -364,7 +384,8 @@
       if (pts) {
         components.push(comp('ranking_weight', label, pts, TIER.MODEL,
           'EdgeDesk rank — ' + entry.away + ' #' + ranks.away + ', ' + entry.home + ' #' + ranks.home
-          + ' of ' + R.rank_pool + '. EdgeDesk’s own rating, not a poll.'));
+          + ' of ' + (ranks.pool != null ? ranks.pool : R.rank_pool)
+          + ' (' + (ranks.pool_source || 'sport rule constant') + '). EdgeDesk’s own rating, not a poll.'));
       }
     } else {
       components.push(comp('ranking_weight', 'Team ranks not available for both sides', 0, TIER.MODEL,
@@ -382,11 +403,46 @@
            ABOUT THE RESEARCH rather than about the occasion, and the reason a
            quiet Week 3 game can still earn a trail. */
     if (dis.available && dis.points != null) {
-      var dpts = clamp(dis.points * 3.2, 0, 24);
+      /* THE RULE THIS COMPONENT USED TO BREAK.
+
+         It was `clamp(points * 3.2, 0, 24)`: the size of the gap, and nothing
+         else, was the single largest thing in the whole score. A twelve-point
+         disagreement earned a permanent research trail whether the price was
+         two days old, whether the model had half its inputs, and whether there
+         was any football reason to think the market was wrong — and "the gap
+         is enormous" reads to a reader as "the opportunity is enormous", which
+         is the one inference this platform must never invite.
+
+         So the gap no longer earns anything on its own. It earns attention in
+         PROPORTION TO THE EVIDENCE AROUND IT: a current price, an input
+         contract that is actually filled, and two resolved quarterbacks. With
+         none of those the component is worth nothing however big the number
+         is, and a gap past the band the model has never been right by out of
+         sample is capped hard and labelled as a fault to investigate. */
+      var evidence = 0, notes = [];
+      if (dis.stale === false) { evidence += 0.4; notes.push('the price is current'); }
+      else if (dis.stale === true) notes.push('the price is stale, so the gap may be against a number that no longer exists');
+      if (dis.coverage != null && dis.coverage >= 0.6) { evidence += 0.35; notes.push('the input contract is ' + Math.round(dis.coverage * 100) + '% filled'); }
+      else if (dis.coverage != null) notes.push('the input contract is only ' + Math.round(dis.coverage * 100) + '% filled, so part of the gap is absence of information');
+      if (dis.starters_resolved === true) { evidence += 0.25; notes.push('both starting quarterbacks are resolved'); }
+      else if (dis.starters_resolved === false) notes.push('at least one starting quarterback is unresolved');
+      /* NOTHING KNOWN EITHER WAY. The gap is not credited for being large; it
+         is discounted to a floor so a disagreement on a board that publishes
+         no input contract can still be noticed without becoming the dominant
+         term in the score. */
+      if (dis.coverage == null && dis.stale == null) { evidence = 0.3; notes.push('no input-contract or freshness evidence reached this scorer, so the gap is held to a floor rather than credited'); }
+
+      var sized = clamp(dis.points * 3.2, 0, 24);
+      var dpts = Math.round(sized * evidence * 10) / 10;
+      var fault = dis.points >= 12;
+      if (fault) { dpts = Math.min(dpts, 8); notes.push('a gap this large is outside anything this model has been right by out of sample and is treated as a fault to investigate, not an opportunity to rank'); }
       components.push(comp('model_disagreement',
         'EdgeDesk differs from the market by ' + dis.text, dpts, TIER.MODEL,
         (dis.model || '') + ' against ' + (dis.market || '') + (dis.book ? ' at ' + dis.book : '')
-        + (dis.classification ? ' — ' + dis.classification : '')));
+        + (dis.classification ? ' — ' + dis.classification : '')
+        + ' · the gap earns ' + dpts + ' of a possible ' + Math.round(sized * 10) / 10
+        + ' because ' + (notes.length ? notes.join('; ') : 'nothing supports investigating it')
+        + '. A gap alone orders no research and implies no expected value.'));
     } else {
       components.push(comp('model_disagreement', 'No captured market number to disagree with', 0, TIER.MODEL,
         'the game is scored on its occasion alone'));
@@ -491,6 +547,7 @@
       home_rank: p.ranks && p.ranks.home,
       away_rank: p.ranks && p.ranks.away,
       rank_pool: p.ranks && p.ranks.pool,
+      rank_pool_source: p.ranks && p.ranks.pool_source,
       model_disagreement: p.disagreement && p.disagreement.points,
       model_disagreement_text: p.disagreement && p.disagreement.text,
       editorial_priority: p.score,
