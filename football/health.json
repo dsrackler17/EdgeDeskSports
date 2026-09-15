@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-14T15:58:14.191Z",
+  "generated_at": "2026-09-15T14:25:10.226Z",
   "ok": true,
-  "last_ok_at": "2026-09-14T15:58:14.191Z",
+  "last_ok_at": "2026-09-15T14:25:10.226Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -21,10 +21,10 @@
   },
   "learning": {
     "nfl": {
-      "completed_in_feed": 15,
-      "absorbed": 15,
+      "completed_in_feed": 16,
+      "absorbed": 16,
       "join_missed": 0,
-      "data_through": "2026-09-13",
+      "data_through": "2026-09-14",
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
@@ -36,9 +36,9 @@
   },
   "lines": {
     "nfl": {
-      "compared": 17,
+      "compared": 16,
       "median_gap": 2.98,
-      "max_gap": 6.41,
+      "max_gap": 5.96,
       "outliers": [],
       "orientation_faults": []
     },
@@ -79,7 +79,7 @@
       "id": "nfl_ingest",
       "label": "NFL: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "15/15 absorbed, data through 2026-09-13"
+      "detail": "16/16 absorbed, data through 2026-09-14"
     },
     {
       "id": "nfl_projections",
@@ -91,19 +91,19 @@
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "17 lines inside plausible bounds"
+      "detail": "16 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines_orientation",
       "label": "NFL: market lines point the right way",
       "status": "pass",
-      "detail": "17 joined line(s), none reconciled by negation"
+      "detail": "16 joined line(s), none reconciled by negation"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 2.98 pts over 17 games, max 6.41"
+      "detail": "median gap 2.98 pts over 16 games, max 5.96"
     },
     {
       "id": "p4_season_window",
@@ -127,7 +127,7 @@
       "id": "p4_roster",
       "label": "CFB P4: 2026 roster source",
       "status": "pass",
-      "detail": "cfbfastR published (the app’s primary source); ESPN sync also present (138 teams, 136 with continuity vs 2025, fetched 2026-09-07)"
+      "detail": "cfbfastR published (the app’s primary source); ESPN sync also present (138 teams, 136 with continuity vs 2025, fetched 2026-09-14)"
     },
     {
       "id": "p4_calibration",
@@ -145,7 +145,7 @@
       "id": "p4_universe",
       "label": "CFB: the FBS universe resolves from this season’s own feed",
       "status": "pass",
-      "detail": "138 active FBS programs across 11 conferences · 75 game(s) on the slate, 60 sampled"
+      "detail": "138 active FBS programs across 11 conferences · 76 game(s) on the slate, 60 sampled"
     },
     {
       "id": "p4_lines_src",
@@ -157,7 +157,7 @@
       "id": "p4_projections",
       "label": "CFB: upcoming FBS slate projects to sane numbers",
       "status": "pass",
-      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 47/60 · {\"conference\":14,\"fbs_fcs\":13,\"non_conference\":33}"
+      "detail": "60/60 sampled FBS games PREDICTED, all inside bounds · roster bundles joined on 48/60 · {\"conference\":11,\"fbs_fcs\":12,\"non_conference\":37}"
     },
     {
       "id": "p4_lines_market",
@@ -179,20 +179,20 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-14T15:58:14.191Z",
+    "daily_check_last_run": "2026-09-15T14:25:10.226Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-14T15:58:14.191Z",
+    "engine_tests_last_run": "2026-09-15T14:25:10.226Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-14T15:58:14.191Z",
+    "nfl_ingest_last_run": "2026-09-15T14:25:10.226Z",
     "nfl_ingest_last_status": "ok",
-    "row_count_nfl_ingest": 15,
-    "p4_ingest_last_run": "2026-09-14T15:58:14.191Z",
+    "row_count_nfl_ingest": 16,
+    "p4_ingest_last_run": "2026-09-15T14:25:10.226Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 185,
-    "projection_guard_last_run": "2026-09-14T15:58:14.191Z",
+    "projection_guard_last_run": "2026-09-15T14:25:10.226Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-14T15:58:14.191Z",
+    "line_guard_last_run": "2026-09-15T14:25:10.226Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 17
+    "row_count_line_guard": 16
   }
 }
