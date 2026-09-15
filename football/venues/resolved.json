@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_venue_geography_v1",
  "season": 2026,
- "generated_at": "2026-09-15T21:36:54.902Z",
+ "generated_at": "2026-09-15T21:54:19.993Z",
  "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_teams/parquet/cfb_teams_2026.parquet",
  "source_note": "cfbfastR team table, one row per team per season, carrying the venue’s coordinates, elevation, capacity, surface, roof and IANA timezone. The same public mirror this repository already reads for schedules, rosters, player stats and team talent.",
  "precedence": "the trained parameter table wins, then football/venues/supplement.json (hand-checked against a named source), then this file. Nothing here overwrites either of those: 136 key(s) were already known and were left alone.",
@@ -10,7 +10,827 @@
   "rows_in_season": 827,
   "keys_written": 2128,
   "keys_already_known": 136,
+  "described": 136,
   "refused": 173
+ },
+ "describe_note": "descriptive fields only — name, city, IANA zone, venue id — for keys the trained table or the supplement already owns. No coordinate, roof or surface is here: those belong to the layer the model was fitted against and are never restated.",
+ "describe": {
+  "auburn": {
+   "name": "Jordan-Hare Stadium",
+   "city": "Auburn, AL",
+   "tz_name": "America/Chicago",
+   "venue_id": 3785
+  },
+  "uab": {
+   "name": "Legion Field (AL)",
+   "city": "Birmingham, AL",
+   "tz_name": "America/Chicago",
+   "venue_id": 3803
+  },
+  "southalabama": {
+   "name": "Hancock Whitney Stadium",
+   "city": "Mobile, AL",
+   "tz_name": "America/Chicago",
+   "venue_id": 6526
+  },
+  "arkansas": {
+   "name": "Donald W. Reynolds Razorback Stadium",
+   "city": "Fayetteville, AR",
+   "tz_name": "America/Chicago",
+   "venue_id": 3887
+  },
+  "arizonastate": {
+   "name": "Mountain America Stadium",
+   "city": "Tempe, AZ",
+   "tz_name": "America/Phoenix",
+   "venue_id": 3947
+  },
+  "arizona": {
+   "name": "Casino Del Sol Stadium",
+   "city": "Tucson, AZ",
+   "tz_name": "America/Phoenix",
+   "venue_id": 3619
+  },
+  "sacramentostate": {
+   "name": "Hornet Stadium",
+   "city": "Sacramento, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3757
+  },
+  "sandiegostate": {
+   "name": "SDCCU Stadium",
+   "city": "San Diego, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3932
+  },
+  "stanford": {
+   "name": "Stanford Stadium",
+   "city": "Stanford, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3940
+  },
+  "california": {
+   "name": "California Memorial Stadium",
+   "city": "Berkeley, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3831
+  },
+  "ucla": {
+   "name": "Rose Bowl",
+   "city": "Pasadena, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 1056
+  },
+  "usc": {
+   "name": "Los Angeles Memorial Coliseum",
+   "city": "Los Angeles, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 477
+  },
+  "coloradostate": {
+   "name": "Hughes Stadium (CO)",
+   "city": "Fort Collins, CO",
+   "tz_name": "America/Denver",
+   "venue_id": 3761
+  },
+  "colorado": {
+   "name": "Folsom Field",
+   "city": "Boulder, CO",
+   "tz_name": "America/Denver",
+   "venue_id": 3726
+  },
+  "uconn": {
+   "name": "Pratt & Whitney Stadium",
+   "city": "East Hartford, CT",
+   "tz_name": "America/New_York",
+   "venue_id": 3892
+  },
+  "delaware": {
+   "name": "Delaware Stadium",
+   "city": "Newark, DE",
+   "tz_name": "America/New_York",
+   "venue_id": 3695
+  },
+  "floridastate": {
+   "name": "Doak Campbell Stadium",
+   "city": "Tallahassee, FL",
+   "tz_name": "America/New_York",
+   "venue_id": 3697
+  },
+  "jacksonvillestate": {
+   "name": "AmFirst Stadium",
+   "city": "Jacksonville, AL",
+   "tz_name": "America/Chicago",
+   "venue_id": 3662
+  },
+  "florida": {
+   "name": "Ben Hill Griffin Stadium",
+   "city": "Gainesville, FL",
+   "tz_name": "America/New_York",
+   "venue_id": 3634
+  },
+  "southflorida": {
+   "name": "Raymond James Stadium",
+   "city": "Tampa, FL",
+   "tz_name": "America/New_York",
+   "venue_id": 3886
+  },
+  "georgiatech": {
+   "name": "Bobby Dodd Stadium",
+   "city": "Atlanta, GA",
+   "tz_name": "America/New_York",
+   "venue_id": 721
+  },
+  "georgia": {
+   "name": "Sanford Stadium",
+   "city": "Athens, GA",
+   "tz_name": "America/New_York",
+   "venue_id": 3917
+  },
+  "hawaii": {
+   "name": "Aloha Stadium",
+   "city": "Honolulu, HI",
+   "tz_name": "Pacific/Honolulu",
+   "venue_id": 3610
+  },
+  "iowastate": {
+   "name": "Jack Trice Stadium",
+   "city": "Ames, IA",
+   "tz_name": "America/Chicago",
+   "venue_id": 3772
+  },
+  "boisestate": {
+   "name": "Albertsons Stadium",
+   "city": "Boise, ID",
+   "tz_name": "America/Boise",
+   "venue_id": 3653
+  },
+  "northwestern": {
+   "name": "Ryan Field (1926)",
+   "city": "Evanston, IL",
+   "tz_name": "America/Chicago",
+   "venue_id": 3911
+  },
+  "indiana": {
+   "name": "Memorial Stadium (Bloomington, IN)",
+   "city": "Bloomington, IN",
+   "tz_name": "America/Indiana/Indianapolis",
+   "venue_id": 3830
+  },
+  "notredame": {
+   "name": "Notre Dame Stadium",
+   "city": "Notre Dame, IN",
+   "tz_name": "America/Indiana/Indianapolis",
+   "venue_id": 3855
+  },
+  "kentucky": {
+   "name": "Kroger Field",
+   "city": "Lexington, KY",
+   "tz_name": "America/New_York",
+   "venue_id": 3683
+  },
+  "louisville": {
+   "name": "L&N Federal Credit Union Stadium",
+   "city": "Louisville, KY",
+   "tz_name": "America/Kentucky/Louisville",
+   "venue_id": 3873
+  },
+  "westernkentucky": {
+   "name": "Houchens Industries-L.T. Smith Stadium",
+   "city": "Bowling Green, KY",
+   "tz_name": "America/Chicago",
+   "venue_id": 3796
+  },
+  "lsu": {
+   "name": "Tiger Stadium (LA)",
+   "city": "Baton Rouge, LA",
+   "tz_name": "America/Chicago",
+   "venue_id": 3958
+  },
+  "bostoncollege": {
+   "name": "Alumni Stadium (Chestnut Hill, MA)",
+   "city": "Chestnut Hill, MA",
+   "tz_name": "America/New_York",
+   "venue_id": 3615
+  },
+  "massachusetts": {
+   "name": "Warren McGuirk Alumni Stadium",
+   "city": "Amherst, MA",
+   "tz_name": "America/New_York",
+   "venue_id": 3985
+  },
+  "maryland": {
+   "name": "SECU Stadium",
+   "city": "College Park, MD",
+   "tz_name": "America/New_York",
+   "venue_id": 3665
+  },
+  "michiganstate": {
+   "name": "Spartan Stadium",
+   "city": "East Lansing, MI",
+   "tz_name": "America/Detroit",
+   "venue_id": 3936
+  },
+  "michigan": {
+   "name": "Michigan Stadium",
+   "city": "Ann Arbor, MI",
+   "tz_name": "America/Detroit",
+   "venue_id": 3558
+  },
+  "minnesota": {
+   "name": "Huntington Bank Stadium",
+   "city": "Minneapolis, MN",
+   "tz_name": "America/Chicago",
+   "venue_id": 3953
+  },
+  "missouri": {
+   "name": "Memorial Stadium",
+   "city": "Columbia, MO",
+   "tz_name": "America/Chicago",
+   "venue_id": 3838
+  },
+  "olemiss": {
+   "name": "Vaught-Hemingway Stadium",
+   "city": "Oxford, MS",
+   "tz_name": "America/Chicago",
+   "venue_id": 3974
+  },
+  "duke": {
+   "name": "Wallace Wade Stadium",
+   "city": "Durham, NC",
+   "tz_name": "America/New_York",
+   "venue_id": 3982
+  },
+  "eastcarolina": {
+   "name": "Dowdy-Ficklen Stadium",
+   "city": "Greenville, NC",
+   "tz_name": "America/New_York",
+   "venue_id": 3699
+  },
+  "ncstate": {
+   "name": "Carter-Finley Stadium",
+   "city": "Raleigh, NC",
+   "tz_name": "America/New_York",
+   "venue_id": 3670
+  },
+  "northcarolina": {
+   "name": "Kenan Stadium",
+   "city": "Chapel Hill, NC",
+   "tz_name": "America/New_York",
+   "venue_id": 3787
+  },
+  "wakeforest": {
+   "name": "Allegacy Federal Credit Union Stadium",
+   "city": "Winston-Salem, NC",
+   "tz_name": "America/New_York",
+   "venue_id": 3630
+  },
+  "nebraska": {
+   "name": "Memorial Stadium (Lincoln, NE)",
+   "city": "Lincoln, NE",
+   "tz_name": "America/Chicago",
+   "venue_id": 3834
+  },
+  "rutgers": {
+   "name": "HighPoint.com Stadium",
+   "city": "Piscataway, NJ",
+   "tz_name": "America/New_York",
+   "venue_id": 3754
+  },
+  "newmexicostate": {
+   "name": "Aggie Memorial Stadium",
+   "city": "Las Cruces, NM",
+   "tz_name": "America/Denver",
+   "venue_id": 3601
+  },
+  "newmexico": {
+   "name": "University Stadium (NM)",
+   "city": "Albuquerque, NM",
+   "tz_name": "America/Denver",
+   "venue_id": 3971
+  },
+  "syracuse": {
+   "name": "JMA Wireless Dome",
+   "city": "Syracuse, NY",
+   "tz_name": "America/New_York",
+   "venue_id": 1964
+  },
+  "bowlinggreen": {
+   "name": "Doyt L. Perry Stadium",
+   "city": "Bowling Green, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3700
+  },
+  "miamioh": {
+   "name": "Yager Stadium",
+   "city": "Oxford, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3996
+  },
+  "ohiostate": {
+   "name": "Ohio Stadium",
+   "city": "Columbus, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3861
+  },
+  "ohio": {
+   "name": "Peden Stadium",
+   "city": "Athens, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3876
+  },
+  "oklahomastate": {
+   "name": "Boone Pickens Stadium",
+   "city": "Stillwater, OK",
+   "tz_name": "America/Chicago",
+   "venue_id": 3646
+  },
+  "oklahoma": {
+   "name": "Memorial Stadium (Norman, OK)",
+   "city": "Norman, OK",
+   "tz_name": "America/Chicago",
+   "venue_id": 3835
+  },
+  "tulsa": {
+   "name": "H. A. Chapman Stadium",
+   "city": "Tulsa, OK",
+   "tz_name": "America/Chicago",
+   "venue_id": 3674
+  },
+  "oregonstate": {
+   "name": "Reser Stadium",
+   "city": "Corvallis, OR",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3893
+  },
+  "pennstate": {
+   "name": "Beaver Stadium",
+   "city": "University Park, PA",
+   "tz_name": "America/New_York",
+   "venue_id": 3632
+  },
+  "temple": {
+   "name": "Lincoln Financial Field",
+   "city": "Philadelphia, PA",
+   "tz_name": "America/New_York",
+   "venue_id": 3806
+  },
+  "pittsburgh": {
+   "name": "Acrisure Stadium",
+   "city": "Pittsburgh, PA",
+   "tz_name": "America/New_York",
+   "venue_id": 3752
+  },
+  "clemson": {
+   "name": "Memorial Stadium (Clemson, SC)",
+   "city": "Clemson, SC",
+   "tz_name": "America/New_York",
+   "venue_id": 3836
+  },
+  "memphis": {
+   "name": "Simmons Bank Liberty Stadium",
+   "city": "Memphis, TN",
+   "tz_name": "America/Chicago",
+   "venue_id": 3805
+  },
+  "vanderbilt": {
+   "name": "FirstBank Stadium",
+   "city": "Nashville, TN",
+   "tz_name": "America/Chicago",
+   "venue_id": 3973
+  },
+  "baylor": {
+   "name": "Floyd Casey Stadium",
+   "city": "Waco, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3724
+  },
+  "rice": {
+   "name": "Rice Stadium",
+   "city": "Houston, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3895
+  },
+  "texasam": {
+   "name": "Kyle Field",
+   "city": "College Station, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3795
+  },
+  "houston": {
+   "name": "Robertson Stadium",
+   "city": "Houston, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 453
+  },
+  "northtexas": {
+   "name": "DATCU Stadium",
+   "city": "Denton, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3825
+  },
+  "texas": {
+   "name": "DKR-Texas Memorial Stadium",
+   "city": "Austin, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3910
+  },
+  "byu": {
+   "name": "LaVell Edwards Stadium",
+   "city": "Provo, UT",
+   "tz_name": "America/Denver",
+   "venue_id": 3801
+  },
+  "utah": {
+   "name": "Rice-Eccles Stadium",
+   "city": "Salt Lake City, UT",
+   "tz_name": "America/Denver",
+   "venue_id": 587
+  },
+  "jamesmadison": {
+   "name": "Bridgeforth Stadium",
+   "city": "Harrisonburg, VA",
+   "tz_name": "America/New_York",
+   "venue_id": 3651
+  },
+  "virginia": {
+   "name": "Scott Stadium",
+   "city": "Charlottesville, VA",
+   "tz_name": "America/New_York",
+   "venue_id": 3923
+  },
+  "virginiatech": {
+   "name": "Lane Stadium",
+   "city": "Blacksburg, VA",
+   "tz_name": "America/New_York",
+   "venue_id": 3799
+  },
+  "washington": {
+   "name": "Husky Stadium",
+   "city": "Seattle, WA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3765
+  },
+  "washingtonstate": {
+   "name": "Martin Stadium",
+   "city": "Pullman, WA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3820
+  },
+  "wisconsin": {
+   "name": "Camp Randall Stadium",
+   "city": "Madison, WI",
+   "tz_name": "America/Chicago",
+   "venue_id": 347
+  },
+  "marshall": {
+   "name": "Joan C. Edwards Stadium",
+   "city": "Huntington, WV",
+   "tz_name": "America/New_York",
+   "venue_id": 3775
+  },
+  "westvirginia": {
+   "name": "Milan Puskar Stadium",
+   "city": "Morgantown, WV",
+   "tz_name": "America/New_York",
+   "venue_id": 3842
+  },
+  "fresnostate": {
+   "name": "Valley Children's Stadium",
+   "city": "Fresno, CA",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3660
+  },
+  "georgiasouthern": {
+   "name": "Allen E. Paulson Stadium",
+   "city": "Statesboro, GA",
+   "tz_name": "America/New_York",
+   "venue_id": 3608
+  },
+  "olddominion": {
+   "name": "S.B. Ballard Stadium",
+   "city": "Norfolk, VA",
+   "tz_name": "America/New_York",
+   "venue_id": 3918
+  },
+  "louisiana": {
+   "name": "Our Lady of Lourdes Stadium",
+   "city": "Lafayette, LA",
+   "tz_name": "America/Chicago",
+   "venue_id": 3666
+  },
+  "coastalcarolina": {
+   "name": "Brooks Stadium (SC)",
+   "city": "Conway, SC",
+   "tz_name": "America/New_York",
+   "venue_id": 3654
+  },
+  "texasstate": {
+   "name": "UFCU Stadium",
+   "city": "San Marcos, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3644
+  },
+  "utahstate": {
+   "name": "Maverik Stadium",
+   "city": "Logan, UT",
+   "tz_name": "America/Denver",
+   "venue_id": 3905
+  },
+  "alabama": {
+   "name": "Bryant-Denny Stadium",
+   "city": "Tuscaloosa, AL",
+   "tz_name": "America/Chicago",
+   "venue_id": 3657
+  },
+  "kennesawstate": {
+   "name": "Walens Family Field at Fifth Third Stadium",
+   "city": "Kennesaw, GA",
+   "tz_name": "America/New_York",
+   "venue_id": 4899
+  },
+  "mississippistate": {
+   "name": "Davis Wade Stadium",
+   "city": "Starkville, MS",
+   "tz_name": "America/Chicago",
+   "venue_id": 3693
+  },
+  "army": {
+   "name": "Michie Stadium",
+   "city": "West Point, NY",
+   "tz_name": "America/New_York",
+   "venue_id": 3841
+  },
+  "illinois": {
+   "name": "Foster Stadium",
+   "city": "Lexington, VA",
+   "tz_name": "America/Chicago",
+   "venue_id": 3597
+  },
+  "airforce": {
+   "name": "Falcon Stadium",
+   "city": "USAF Academy, CO",
+   "tz_name": "America/Denver",
+   "venue_id": 3713
+  },
+  "akron": {
+   "name": "InfoCision Stadium",
+   "city": "Akron, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3768
+  },
+  "appstate": {
+   "name": "Kidd Brewer Stadium",
+   "city": "Boone, NC",
+   "tz_name": "America/New_York",
+   "venue_id": 3792
+  },
+  "arkansasstate": {
+   "name": "Centennial Bank Stadium",
+   "city": "Jonesboro, AR",
+   "tz_name": "America/Chicago",
+   "venue_id": 3625
+  },
+  "ballstate": {
+   "name": "Scheumann Stadium",
+   "city": "Muncie, IN",
+   "tz_name": "America/Indiana/Indianapolis",
+   "venue_id": 3919
+  },
+  "buffalo": {
+   "name": "Broadview Stadium",
+   "city": "Buffalo, NY",
+   "tz_name": "America/New_York",
+   "venue_id": 3965
+  },
+  "ucf": {
+   "name": "Acrisure Bounce House",
+   "city": "Orlando, FL",
+   "tz_name": "America/New_York",
+   "venue_id": 3652
+  },
+  "centralmichigan": {
+   "name": "Kelly/Shorts Stadium",
+   "city": "Mount Pleasant, MI",
+   "tz_name": "America/Detroit",
+   "venue_id": 3786
+  },
+  "cincinnati": {
+   "name": "Nippert Stadium",
+   "city": "Cincinnati, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3854
+  },
+  "easternmichigan": {
+   "name": "Rynearson Stadium",
+   "city": "Ypsilanti, MI",
+   "tz_name": "America/Detroit",
+   "venue_id": 3912
+  },
+  "floridaatlantic": {
+   "name": "Flagler Credit Union Stadium",
+   "city": "Boca Raton, FL",
+   "tz_name": "America/New_York",
+   "venue_id": 3715
+  },
+  "floridainternational": {
+   "name": "Riccardo Silva Stadium",
+   "city": "Miami, FL",
+   "tz_name": "America/New_York",
+   "venue_id": 218
+  },
+  "georgiastate": {
+   "name": "Center Parc Stadium",
+   "city": "Atlanta, GA",
+   "tz_name": "America/New_York",
+   "venue_id": 4246
+  },
+  "iowa": {
+   "name": "Kinnick Stadium",
+   "city": "Iowa City, IA",
+   "tz_name": "America/Chicago",
+   "venue_id": 3793
+  },
+  "kansas": {
+   "name": "David Booth Kansas Memorial Stadium",
+   "city": "Lawrence, KS",
+   "tz_name": "America/Chicago",
+   "venue_id": 3833
+  },
+  "kansasstate": {
+   "name": "Bill Snyder Family Stadium",
+   "city": "Manhattan, KS",
+   "tz_name": "America/Chicago",
+   "venue_id": 3636
+  },
+  "kentstate": {
+   "name": "Zoeller Field at Dix Stadium",
+   "city": "Kent, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3696
+  },
+  "liberty": {
+   "name": "Williams Stadium (VA)",
+   "city": "Lynchburg, VA",
+   "tz_name": "America/New_York",
+   "venue_id": 3992
+  },
+  "louisianatech": {
+   "name": "Joe Aillet Stadium",
+   "city": "Ruston, LA",
+   "tz_name": "America/Chicago",
+   "venue_id": 3776
+  },
+  "miami": {
+   "name": "Hard Rock Stadium",
+   "city": "Miami Gardens, FL",
+   "tz_name": "America/New_York",
+   "venue_id": 3948
+  },
+  "middletennessee": {
+   "name": "Johnny \"Red\" Floyd Stadium",
+   "city": "Murfreesboro, TN",
+   "tz_name": "America/Chicago",
+   "venue_id": 3725
+  },
+  "navy": {
+   "name": "Navy-Marine Corps Memorial Stadium",
+   "city": "Annapolis, MD",
+   "tz_name": "America/New_York",
+   "venue_id": 3852
+  },
+  "charlotte": {
+   "name": "Jerry Richardson Stadium",
+   "city": "Charlotte, NC",
+   "tz_name": "America/New_York",
+   "venue_id": 4418
+  },
+  "ulmonroe": {
+   "name": "Malone Stadium",
+   "city": "Monroe, LA",
+   "tz_name": "America/Chicago",
+   "venue_id": 3817
+  },
+  "unlv": {
+   "name": "Sam Boyd Stadium",
+   "city": "Las Vegas, NV",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3914
+  },
+  "nevada": {
+   "name": "Mackay Stadium",
+   "city": "Reno, NV",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3816
+  },
+  "northernillinois": {
+   "name": "Huskie Stadium",
+   "city": "Dekalb, IL",
+   "tz_name": "America/Chicago",
+   "venue_id": 3764
+  },
+  "oregon": {
+   "name": "Autzen Stadium",
+   "city": "Eugene, OR",
+   "tz_name": "America/Los_Angeles",
+   "venue_id": 3626
+  },
+  "purdue": {
+   "name": "Ross-Ade Stadium",
+   "city": "West Lafayette, IN",
+   "tz_name": "America/Indiana/Indianapolis",
+   "venue_id": 3907
+  },
+  "samhouston": {
+   "name": "Elliott T. Bowers Stadium",
+   "city": "Huntsville, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3647
+  },
+  "smu": {
+   "name": "Gerald J. Ford Stadium",
+   "city": "Dallas, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3735
+  },
+  "southernmiss": {
+   "name": "M. M. Roberts Stadium",
+   "city": "Hattiesburg, MS",
+   "tz_name": "America/Chicago",
+   "venue_id": 3815
+  },
+  "southcarolina": {
+   "name": "Williams-Brice Stadium",
+   "city": "Columbia, SC",
+   "tz_name": "America/New_York",
+   "venue_id": 3994
+  },
+  "missouristate": {
+   "name": "Robert W. Plaster Stadium",
+   "city": "Springfield, MO",
+   "tz_name": "America/Chicago",
+   "venue_id": 3878
+  },
+  "tcu": {
+   "name": "Amon G. Carter Stadium",
+   "city": "Fort Worth, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3616
+  },
+  "tennessee": {
+   "name": "Neyland Stadium",
+   "city": "Knoxville, TN",
+   "tz_name": "America/New_York",
+   "venue_id": 3853
+  },
+  "utsa": {
+   "name": "Alamodome",
+   "city": "San Antonio, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3604
+  },
+  "utep": {
+   "name": "Sun Bowl",
+   "city": "El Paso, TX",
+   "tz_name": "America/Denver",
+   "venue_id": 3946
+  },
+  "texastech": {
+   "name": "Galaxy Stadium",
+   "city": "Lubbock, TX",
+   "tz_name": "America/Chicago",
+   "venue_id": 3784
+  },
+  "toledo": {
+   "name": "Glass Bowl",
+   "city": "Toledo, OH",
+   "tz_name": "America/New_York",
+   "venue_id": 3739
+  },
+  "troy": {
+   "name": "Veterans Memorial Stadium (AL)",
+   "city": "Troy, AL",
+   "tz_name": "America/Chicago",
+   "venue_id": 3975
+  },
+  "tulane": {
+   "name": "Yulman Stadium",
+   "city": "New Orleans, LA",
+   "tz_name": "America/Chicago",
+   "venue_id": 4729
+  },
+  "westernmichigan": {
+   "name": "Waldo Stadium",
+   "city": "Kalamazoo, MI",
+   "tz_name": "America/Detroit",
+   "venue_id": 3980
+  },
+  "wyoming": {
+   "name": "War Memorial Stadium",
+   "city": "Laramie, WY",
+   "tz_name": "America/Denver",
+   "venue_id": 3984
+  }
  },
  "refused": [
   {

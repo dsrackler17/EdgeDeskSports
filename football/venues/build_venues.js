@@ -188,7 +188,7 @@ async function main() {
   catch (e) { console.error('[venues] the parquet could not be read: ' + ((e && e.message) || e)); return 2; }
   if (!rows.length) { console.error('[venues] the table is empty'); return 2; }
 
-  const venues = {}, refused = [];
+  const venues = {}, describe = {}, refused = [];
   let written = 0, held = 0;
   const seen = {};
   for (const r of rows) {
@@ -206,8 +206,19 @@ async function main() {
       const k = normKey(n);
       if (!k) continue;
       /* THE PRECEDENCE, ENFORCED HERE rather than left to the reader. */
-      if (trained[k]) { if (!seen[k]) { held++; seen[k] = 1; } continue; }
-      if (supplement[k]) { if (!seen[k]) { held++; seen[k] = 1; } continue; }
+      /* A KEY THE WINNING LAYERS OWN STILL HAS A DESCRIPTION TO OFFER.
+         The trained table carries coordinates, elevation, capacity, roof and
+         surface — and no city at all, so a card that knew a stadium's seating
+         capacity could not say what town it was in. The coordinates stay
+         where they are; only the fields the winning layer LACKS are recorded
+         here, and lat/lon/dome/grass are deliberately not among them because
+         those are what the venue coefficients were fitted on. */
+      if (trained[k] || supplement[k]) {
+        if (!seen[k]) { held++; seen[k] = 1; }
+        if (!describe[k]) describe[k] = { name: res.v.name, city: res.v.city,
+          tz_name: res.v.tz_name, venue_id: res.v.venue_id };
+        continue;
+      }
       if (venues[k]) {
         /* two rows claiming one key is an identity collision, never a
            silent last-one-wins */
@@ -238,7 +249,12 @@ async function main() {
     refuses: 'a row without real coordinates, or with coordinates and no stadium name, is refused and listed in '
       + '`refused` rather than written as a half-venue. Nothing is interpolated from a city name.',
     counts: { rows_in_season: rows.filter(r => num(r.season) === season).length,
-      keys_written: written, keys_already_known: held, refused: refused.length },
+      keys_written: written, keys_already_known: held, described: Object.keys(describe).length,
+      refused: refused.length },
+    describe_note: 'descriptive fields only \u2014 name, city, IANA zone, venue id \u2014 for keys the trained '
+      + 'table or the supplement already owns. No coordinate, roof or surface is here: those belong to the '
+      + 'layer the model was fitted against and are never restated.',
+    describe: describe,
     refused: refused.slice(0, 60),
     venues: venues
   };

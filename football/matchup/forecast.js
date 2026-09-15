@@ -254,7 +254,7 @@
     venue = venue || {};
     var chips = [];
     if (venue.grass === true) chips.push({ kind: 'surface', text: 'GRASS', icon: '🌱' });
-    else if (venue.grass === false) chips.push({ kind: 'surface', text: 'TURF', icon: '🌱' });
+    else if (venue.grass === false) chips.push({ kind: 'surface', text: 'TURF', icon: '▦' });
     chips.push(venue.dome ? { kind: 'roof', text: 'INDOOR', icon: '🏟️' }
       : { kind: 'roof', text: 'OPEN AIR', icon: '☁️' });
 

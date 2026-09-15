@@ -148,6 +148,26 @@ function load(opts) {
      changes. It answers the HEAD COACH question only — that feed carries no
      coordinators — so `new_oc` and `new_dc` arrive null and the engine is
      told which of the three were actually supplied. */
+  /* OFF-FIELD SIGNALS, through the one door that exists.
+     football/offfield/record_signal.js validates every entry against the four
+     properties the engine's decay actually reads and refuses anything short of
+     all four. `for(key)` returns NULL when nobody looked and [] when a
+     registered source was read and carried nothing — the engine already
+     prices those two differently and EdgeDesk previously could produce
+     neither. */
+  let offfield = null;
+  try { offfield = require(path.join(ROOT, 'football', 'offfield', 'record_signal.js')).load({ now: Date.now() }); }
+  catch (_) { offfield = null; }
+  if (offfield) {
+    out.off_field_for = offfield.for;
+    out.off_field_source = 'EdgeDesk off-field register (football/offfield/signals.json)';
+    out.off_field_as_of = offfield.as_of || null;
+    out.off_field_counts = offfield.counts;
+    if (offfield.refused && offfield.refused.length) out.problems.push(offfield.refused.length
+      + ' off-field signal(s) are refused for missing a source, a date or a severity grade — run '
+      + 'node football/offfield/record_signal.js --list');
+  }
+
   const coach = readJson(path.join(ROOT, 'football', 'coaching', 'continuity.json'), null);
   out.coaching = (coach && coach.by_team) || {};
   out.coaching_source = coach ? (coach.source || null) : null;
@@ -176,6 +196,31 @@ function load(opts) {
         continue;
       }
       if (!out.venues[k]) { out.venues[k] = v; out.venue_resolved.entries++; }
+      else {
+        /* THE COORDINATES STAY WHERE THEY ARE; the DESCRIPTION does not have
+           to. The trained table carries no city at all, so a card that knew
+           the stadium's seating capacity still could not say what town it was
+           in. Filling a field the winning layer LACKS is not overriding it —
+           and lat/lon/dome/grass are deliberately not in this list, because
+           those are what the venue coefficients were fitted on. */
+        const keep = out.venues[k];
+        ['city', 'tz_name', 'venue_id'].forEach(f => {
+          if ((keep[f] == null || keep[f] === '') && v[f] != null) keep[f] = v[f];
+        });
+        if (!keep.name && v.name) keep.name = v.name;
+      }
+    }
+    /* AND THE DESCRIPTIONS FOR THE KEYS THE WINNING LAYERS OWN. build_venues
+       records these separately precisely so the precedence above cannot be
+       smuggled past: the map holds name, city, zone and venue id, and no
+       coordinate, roof or surface at all. */
+    const desc = gen.describe || {};
+    for (const k of Object.keys(desc)) {
+      const have = out.venues[k];
+      if (!have) continue;
+      ['name', 'city', 'tz_name', 'venue_id'].forEach(f => {
+        if ((have[f] == null || have[f] === '') && desc[k][f] != null) have[f] = desc[k][f];
+      });
     }
   }
 
@@ -977,12 +1022,21 @@ function buildRequest(ctx, o) {
       { source: ctx.off_field_source || 'supplied public reporting', as_of: ctx.off_field_as_of || null,
         detail: 'the configured reporting sources were read and carried nothing material for this side' }));
     else contract.push(row('off_field', side, 'UNAVAILABLE',
-      { detail: 'no off-field reporting feed is wired in. The engine scores this input and it is missing on every '
-          + 'game, so it is published here rather than left invisible. A signal must be public, sourced, dated and '
-          + 'severity-graded before it may move even the confidence score, and no keyless feed EdgeDesk reads '
-          + 'supplies all four; the availability layer answers a different question and is not substituted for it',
-        fix: 'supply dated, sourced, severity-graded signals through ctx.off_field_for(teamKey) — the assembly '
-          + 'passes whatever it returns straight to the engine’s off-field layer' }));
+      { source: ctx.off_field_source || null,
+        detail: 'no source is registered for this programme, so nothing has been read and an empty result would '
+          + 'be a false clean bill of health rather than a finding. The engine scores this input and it is '
+          + 'missing on every game, so it is published here rather than left invisible. A signal must be all '
+          + 'four of public, sourced, dated and severity-graded before it may move even the confidence score — '
+          + 'a general news search supplies neither a severity nor a reliability a model may use, and a wire '
+          + 'that supplies all four may not be redistributed as a committed artifact. The availability layer '
+          + 'answers a different question (who can play) and is never substituted for this one'
+          + ((ctx.off_field_counts && ctx.off_field_counts.refused)
+            ? ('. ' + ctx.off_field_counts.refused + ' recorded signal(s) are currently REFUSED for missing one '
+              + 'of the four') : ''),
+        fix: 'record a dated, sourced, severity-graded signal with '
+          + 'node football/offfield/record_signal.js, or register a source EdgeDesk actually reads in '
+          + 'football/offfield/sources.json — an entry there is a commitment that something reads it, and is '
+          + 'what turns an empty result from a gap into "read, and nothing material"' }));
   });
 
   /* ---- coaching continuity -------------------------------------------
