@@ -365,8 +365,28 @@ chk('this season is trusted more the more of it has been played',
     /injuries:fbP4Injuries\(g\.home_team\)/.test(app) && /injuries:fbP4Injuries\(g\.away_team\)/.test(app));
   chk('a team EdgeDesk could not read still reports NO injury report rather than a clean one',
     /if\(q==='NONE'\|\|q==='LIMITED'\) return null;/.test(app));
-  chk('the starting QB stays unsupplied, because college football publishes no depth chart EdgeDesk trusts',
-    /qb:null,injuries:fbP4Injuries/.test(app));
+  /* THE PRICED QB INPUT STAYS NULL — and that is now a narrower claim than it
+     used to be, so it is asserted more carefully than by matching two
+     unrelated properties that happened to sit next to each other.
+
+     EdgeDesk DOES resolve the starting quarterback: football/starters/ reads
+     him off play attribution for most of the field, and he reaches the engine
+     as `qb_context`, which only the information layer consumes. What must not
+     happen is that record reaching `qb`, the PRICED input — the college QB
+     layer prices EPA per dropback, no feed publishes it, and
+     PRICED_STARTER_STATUSES is the one switch for changing that. */
+  chk('the priced QB input is still null on both sides',
+    (app.match(/\bqb:null\b/g) || []).length >= 2, (app.match(/\bqb:null\b/g) || []).length);
+  chk('and the starter reaches the engine only as context, never as the priced input',
+    /qb:null,qb_context:fbP4QbContext\(g\.home_team\)/.test(app)
+    && /qb:null,qb_context:fbP4QbContext\(g\.away_team\)/.test(app));
+  chk('the starter context carries no efficiency field that could reach the priced layer',
+    (() => {
+      const i = app.indexOf('function fbP4QbContext(');
+      if (i < 0) return false;
+      const body = app.slice(i, app.indexOf('\nfunction ', i + 10));
+      return !/epa_per_db|rush_value|season_epa|career_epa/.test(body);
+    })());
   chk('snap share and replacement quality are left null rather than invented for college football',
     /snap_share:null,/.test(app) && /replacement_quality:null,/.test(app));
   chk('the app reads the committed rating file', /football\/rating\/current\.json/.test(app));

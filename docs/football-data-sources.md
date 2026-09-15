@@ -282,80 +282,123 @@ as college evidence accumulates.
 
 ---
 
-## Data confidence: where every point of it goes
+## Data confidence: what it measures, and what it used to
 
 The research card publishes two numbers and they answer different questions.
-Both were wrong in ways worth writing down, because the same mistake is easy to
-make again.
+Getting them right took two passes, and the second one found that the first had
+been measuring the wrong thing entirely.
 
-**Data confidence** is `scores.confidence` — the engine's own weighted answer to
-"how good is my information?", over twelve measurements with trained weights
-summing to 4.083. **Input coverage** is the share of the seventeen-field input
-contract EdgeDesk actually retrieved (`football/matchup/inputs.js`, mirrored in
-the board's `fbP4Contract`). They are not the same number and neither is the
-engine's internal `information_missing`, which is a ten-probe volatility driver
-and was being printed on the card under the label "% of the model's inputs
-reached it". Three of those ten probes are permanently unfillable for this
-sport, so the sentence pinned every game near 40% no matter what EdgeDesk
-retrieved, and disagreed with `football/fbs/slate.json` about the same game.
+**Data confidence** is `scores.confidence` — the engine's weighted answer to
+"how good is my information?", over twelve measurements whose trained weights
+sum to 4.083. **Priced confidence** is `scores.confidence_priced`: the same
+table over the measurements the published spread actually uses. Both ship on
+every game, because either one alone misleads. The gap between them is the
+share of what EdgeDesk knows that the number deliberately does not price, and
+it is meant to be visible rather than hidden behind whichever figure is
+flattering.
 
-Measured on Miami (OH) @ Cincinnati, week 3 2026 — a game with full rosters, a
-joined market, a resolved starter and a forecast:
+### The category error
 
-| measurement | weight | state | points of the 100 it costs |
+`uncertainty.confidence` states its own contract in a comment above itself: it
+answers "how good is my information?", explicitly not "how wide is the
+outcome?" and explicitly not "what does the model price?". Its call site was
+handing it **priced** measurements for five of its twelve inputs — the QB
+points gap, the injury points gap, the schedule points gap, the travel points
+and the weather total.
+
+A priced measurement is missing whenever the *layer* is unpriced. That is a
+statement about the model's coefficients, not about what EdgeDesk retrieved. So:
+
+| input | weight | what it scored | what EdgeDesk actually had |
 |---|---|---|---|
-| **qb** | 1.0 | no value term | **24.5** |
-| **injuries** | 0.35 | no graded read | **8.6** |
-| schedule | 0.283 | present, confidence fixed at 0.4 | 4.2 |
-| roster talent, two sides | 0.25 each | present at the player layer's own confidence (~0.48) | 6.4 |
-| weather | 0.1 | forecast present, no coefficient earned | 2.4 |
-| venue | 0.25 | present at 0.7 | 1.8 |
-| off-field, two sides | 0.05 each | no public feed | 2.4 |
-| travel | 0.1 | present at 0.95 | 0.1 |
-| rating | 1.0 | full | 0 |
-| matchup | 0.4 | full | 0 |
+| **qb** | 1.0 — the heaviest, equal to the rating itself | **0 on every game in the universe** | the starter resolved for 96% of the field by athlete id, corroborated against the current roster, with his measured dropbacks and start count |
+| injuries | 0.35 | 0 | a measured observation of the quarterback — the only position the trained injury layer prices |
+| schedule | 0.283 | 0.4, a coefficient's strength | rest, road sequence and opponent identity, known exactly off the schedule feed |
+| weather | 0.1 | 0 | the forecast, present or a dome |
+| travel | 0.1 | 0 | two stadium coordinates and one haversine |
 
-**80% is not reachable today, and the two reasons are exactly the top two rows.**
-Together they are 33.1 of the 100 points. Clearing both would land at roughly
-82%; clearing neither caps the number in the high forties however many games are
-played. Neither is a modelling choice and neither is fixed by waiting:
+A term that takes the same value on all 76 games of a slate carries no
+information about any of them. The `qb` term subtracted a flat 24.5 points from
+every game and could not tell a resolved veteran starter from an unknown one.
 
-* **QB — 24.5 points.** The engine's QB layer prices EPA per dropback
-  (`params.qb.points_per_epa_db`). No feed this repository reads publishes it
-  for college football: cfbfastR's real-EPA play-by-play stops at 2022 in a
-  directory that no longer resolves, and `football/players/config.js` records
-  EPA as not observed for the same reason. EdgeDesk *does* resolve the starter
-  for most of the field from play attribution and publishes him, and the player
-  layer measures his success rate, yards per attempt, explosive rate,
-  completion percentage, sack rate and interception rate — but those are a
-  unit-rating scale, not points of spread, and nothing converts one to the
-  other. The honest routes are (a) a licensed EPA feed, or (b) training a
-  points-per-z coefficient for the QB layer on the same tune window the rest of
-  the model used, with its own walk-forward record. Substituting EPIR for EPA
-  is neither.
-* **Availability — 8.6 points.** College football files no mandatory injury
-  report. Of the three sources the collector reads, two (`espn_depth`,
-  `espn_participation`) refuse this repository on all 138 programmes with
-  HTTP 403/404, and the third answers with zero rows for all 138. The read is
-  graded `LIMITED`, and a `LIMITED` read reaches the engine as **null** — not
-  as an empty list. That distinction is the whole layer: "we read the sources
-  and nobody is hurt" and "no source answered" are different statements, and
-  collapsing them would claim all 138 programmes are healthy on the strength of
-  two refusals and an empty response. Fixing this means a source that answers,
-  not a looser gate.
+### The calibration
 
-What **does** move with more games: the `rating` and `matchup` confidences scale
-with games played (`rating.games_for_full_confidence`, six), and the roster
-talent confidence rises as the play feed attributes production to more of each
-roster — 1,746 of 15,542 rated players had attributed production at week 3.
-That is worth a few points across the season, not thirty.
+The replacement is not a set of numbers somebody picked. College football
+publishes no depth chart this repository can read, so for essentially the whole
+field the best evidence is `PREVIOUS_GAME` — he opened the last one. How well
+that predicts the next one is an empirical question, and
+`football/starters/calibrate_persistence.js` measures it over four seasons of
+play attribution, writing `football/starters/persistence.json`:
 
-What is **declared unfixable in the parameters themselves**, in
-`params.unavailable_by_design`: weather coefficients, injury position weights
-beyond quarterback, blue-chip ratio, NIL and off-field, coaching continuity. A
-field in that list is not a collection failure and the contract does not render
-it as one — but it is not excluded from the denominator either, because a
-reader deciding how much to trust the number should see it. Only
-`NOT_APPLICABLE` leaves the denominator: a dome has no weather to be missing, a
-neutral site has no travel asymmetry, an FCS visitor has no roster in a rated
-universe that does not contain it.
+| opener's share of last game's dropbacks | opens the next game | pairs |
+|---|---|---|
+| 85%+ | **87.0%** | 7,511 |
+| 65–85% | **76.7%** | 1,600 |
+| 40–65% | **50.9%** | 743 |
+| under 40% | **12.1%** | 989 |
+| all | 76.1% | 10,843 |
+
+That is the confidence the engine uses, and it discriminates in a way a chosen
+constant could not have: an opener who immediately handed the ball over tells
+you almost nothing about next week, and the old term scored him identically to
+a dominant returning starter. A band with fewer than 200 observed pairs
+publishes `rate: null`, and the engine then declares the starter's reliability
+**unmeasured** rather than substituting a constant.
+
+### Availability, scoped to what is actually priced
+
+`params.injury.position_weight` carries **one** position — QB at 3.902,
+measured over 2,846 games — and `params.unavailable_by_design` says why: "only
+the quarterback's absence is observable in public data; every other position
+ships untrained." An absence anywhere else moves no point of the projection
+however well it were reported.
+
+The quarterback *is* observed, from EdgeDesk's own play attribution, and the
+persistence rates above already count the relevant events — a quarterback who
+is hurt does not open the next game. So the availability term is the measured
+quarterback observation, and it says so in its own basis string.
+
+It does **not** claim EdgeDesk knows who else is hurt. It does not, because
+nobody publishes it and the two endpoints carrying proxies refuse this
+repository. That gap is real and is carried where it belongs: the volatility
+layer prices an unreported injury situation as maximum injury uncertainty and
+widens sigma on every one of these games. Confidence and volatility answer
+different questions, and this is the case the distinction exists for.
+
+### Where it lands
+
+On the week 3 2026 slate, with the projection **byte-identical** on all 76
+games — spread, total, win probability, sigma, every contribution:
+
+| | n | mean | median |
+|---|---|---|---|
+| conference games | 14 | **81.8** | 83.6 |
+| non-conference FBS | 44 | **79.9** | 83.2 |
+| FBS vs FCS | 18 | 46.0 | 50.1 |
+
+Board median 82.5. Miami (OH) @ Cincinnati, the game this work started from,
+went from 41% to **83%**.
+
+**The FCS games are supposed to be low.** Those opponents are outside the rated
+universe: no roster bundle, no starter record, no player ratings, and a single
+shared floor rating rather than a trained seed. A first attempt at the rating
+term credited that shared floor as if it were knowledge of the specific
+opponent, which scored an FBS-vs-FCS game *above* a conference game; the fix is
+tested (`football/cfb_p4/information.test.js`).
+
+### What is still dark, and what it would take
+
+| input | cost | what would change it |
+|---|---|---|
+| off-field / NIL, both sides | 2.4 | no public feed exists for anyone; `params.unavailable_by_design` |
+| roster talent | ~6 | rises through the season as the play feed attributes production to more of each roster — 1,746 of 15,542 rated players had attributed production at week 3. This is the genuine "more games" item |
+| rating, matchup | ~7 early | scale with games played; the trained prior now carries its share, so this falls faster than it used to |
+
+**Priced confidence is the real remaining headroom**: 39% board-wide against 72%
+information. The largest single unpriced layer is the QB value term, and
+closing it means either a licensed EPA-per-dropback feed or fitting a
+points-per-quality coefficient on the same tune window the rest of the model
+used, with its own walk-forward record and `points_applied` decided by that
+record rather than by whoever writes the patch. Until then the starter informs
+the confidence score and prices nothing — `PRICED_STARTER_STATUSES` is still
+empty.
