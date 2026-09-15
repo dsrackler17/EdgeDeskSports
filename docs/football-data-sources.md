@@ -402,3 +402,99 @@ used, with its own walk-forward record and `points_applied` decided by that
 record rather than by whoever writes the patch. Until then the starter informs
 the confidence score and prices nothing — `PRICED_STARTER_STATUSES` is still
 empty.
+
+
+---
+
+## What is a quarterback worth? — measured, and the answer is "not enough to price"
+
+The engine's QB layer prices **EPA per dropback**, and no feed this repository
+reads publishes it for college football. So the term has contributed **zero to
+every college spread EdgeDesk has ever produced**. The obvious move is to
+measure a substitute from what the play feed does carry and fit a coefficient
+the same way `params.qb.points_per_epa_db` was fitted. That is
+`football/cfb_p4/research/fit_qb_quality.js`, and this is what it found.
+
+### Method
+
+Replay the rating state season by season in kickoff order. **Before** absorbing
+each game, take the model's own baseline — rating gap plus league home-field
+advantage — and record the residual. Identify each side's opening quarterback
+the way the starter layer does (first dropback), score him from his dropbacks
+in games **already processed and nothing else**, shrink toward the league mean
+by the engine's own `n/(n+100)`, and difference the two sides. Then fit the
+slope, and walk it forward: train on every season before Y, score Y.
+
+FBS-vs-FBS only — an FCS opponent sits at a shared floor rating, so its residual
+is dominated by the floor rather than by its quarterback.
+
+Three features were tried, plus their combination:
+
+- **ypd** — career-to-date net yards per dropback (sacks negative)
+- **sr** — dropback success rate on the conventional down thresholds
+- **delta** — the change from the *incumbent*, on the theory that the rating
+  already contains whoever has been taking the snaps, so only a **change** of
+  quarterback is news to it
+
+### Result: 5121 tune-window games, 7 walk-forward folds
+
+| fold season | trained on | scored | baseline MAE | with the adjustment |
+|---|---|---|---|---|
+| 2020 | 733 | 485 | 13.6891 | 13.5728 |
+| 2021 | 1218 | 703 | 13.1051 | 13.1617 |
+| 2022 | 1921 | 718 | 12.911 | 12.9217 |
+| 2023 | 2639 | 785 | 13.0519 | 13.0157 |
+| 2024 | 3424 | 794 | 12.9836 | 13.0094 |
+| 2025 | 4218 | 804 | 12.6895 | 12.5559 |
+| 2026 | 5022 | 99 | 15.6354 | 15.6609 |
+
+| feature | coefficient | held-out MAE change | folds improved |
+|---|---|---|---|
+| **ypd** | 1.584 pts per unit | **-0.0277** | **3 of 7** |
+| sr | 32.5358 | -0.0039 | 2 of 7 |
+| delta | -0.2404 | 0.0009 | 3 of 7 |
+| combined | — | -0.0126 | 3 of 7 |
+
+`ypd` is the best of them. Its implied adjustment is football-sized — about
+**±1.9 points** at the 10th and 90th percentiles — so this is not a case of an
+effect too small to matter in principle. It is a case of an effect that **does
+not hold up**: three folds better, four worse, alternating, netting 0.028
+points a game against a baseline error of 13.
+
+**`points_applied` is false.** The QB layer contributes zero to the spread,
+exactly as it did before this job existed — the same outcome
+`params.travel.points_applied` records for travel ("every specification raised
+held-out MAE"). The decision rule — lower held-out MAE **and** a majority of
+folds improved — was written into the job before any result came back, and the
+test re-derives it from the folds so the rule and the artifact cannot drift
+apart to suit an answer.
+
+### The interesting negative
+
+`delta` is the one worth dwelling on. **1,901 of the games had a genuine change
+of starting quarterback**, and the fitted coefficient was **-0.2404** — indistinguishable
+from zero, and the wrong sign. Changing quarterbacks does not move the rating
+residual in a predictable direction.
+
+Taken with `ypd`'s coin-flip record, the finding is that at the level of an
+FBS team rating, **who plays quarterback carries almost no incremental
+predictive signal over the team rating itself**. The rating has already
+absorbed it. That is a real answer to a real question, and it is worth more
+than a coefficient that looked plausible in-sample.
+
+### What would change it
+
+The switch is wired and tested in both directions, so none of this needs new
+code to turn on:
+
+- a **licensed EPA-per-dropback feed** — the trained coefficient
+  (`points_per_epa_db: 10.0868`) is already in the parameters and would take
+  over the moment the input exists;
+- **opponent adjustment** on the quality metric, which this fit does not do —
+  a passer's raw yards per dropback carries his offensive line and his
+  receivers as much as himself;
+- **more seasons**, though seven folds saying the same thing is not a sample
+  problem.
+
+Re-run `fit_qb_quality.js`; if the walk-forward turns positive the artifact
+flips `points_applied` and the engine prices it. Nothing else has to change.
