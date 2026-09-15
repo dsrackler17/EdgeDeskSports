@@ -261,6 +261,23 @@ jobs:
       # regression — an unmapped program, a conference that vanished, an
       # eligible game dropped, a duplicate, an FCS opponent quietly graded.
       # It also writes the machine-readable diagnostic the site links to.
+      # EVERY STADIUM THE SLATE NEEDS, AND WHO IS COACHING. Both are read
+      # from the same public mirror this job already reads for schedules and
+      # rosters, and both fill contract fields that were published as
+      # permanent gaps. The venue build is what lets the away side of an
+      # FBS-vs-FCS game have a travel distance at all; the coaching build
+      # answers the head-coach half of the staff question and refuses the
+      # coordinator half, which that feed does not carry.
+      - name: Stadium geography
+        run: node football/venues/build_venues.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Coaching continuity
+        run: node football/coaching/build_coaching.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       - name: FBS coverage gate
         if: steps.go.outputs.run == 'true'
         run: node football/fbs/build_coverage.js

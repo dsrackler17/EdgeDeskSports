@@ -1,0 +1,4584 @@
+{
+ "schema": "edgedesk_coaching_continuity_v1",
+ "season": 2026,
+ "generated_at": "2026-09-15T21:39:43.798Z",
+ "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_<season>.parquet",
+ "source_note": "cfbfastR coach table, one row per team per season, derived from play-by-play. It carries HEAD COACHES ONLY: every row’s role is HC, so coordinator continuity is not in this feed and is published as unknown rather than as unchanged.",
+ "method": "tenure is walked back season by season until the name changes, rather than diffed against last season alone — a team that fired its coach in October has an INTERIM in last season’s play-by-play, and diffing would report the permanent hire as a second change and a fourth-year coach as new.",
+ "seasons_read": [
+  2026,
+  2025,
+  2024,
+  2023,
+  2022,
+  2021,
+  2020,
+  2019
+ ],
+ "seasons_missing": [],
+ "counts": {
+  "teams": 138,
+  "new_hc": 22,
+  "returning_hc": 103,
+  "unknown_hc": 13,
+  "coordinators_known": 0,
+  "refused": 0
+ },
+ "refused": [],
+ "by_team": {
+  "auburn": {
+   "team": "Auburn Tigers",
+   "team_id": 2,
+   "hc": "Alex Golesh",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "auburn"
+  },
+  "uab": {
+   "team": "UAB Blazers",
+   "team_id": 5,
+   "hc": "Alex Mortensen",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "uab"
+  },
+  "southalabama": {
+   "team": "South Alabama Jaguars",
+   "team_id": 6,
+   "hc": "Major Applewhite",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Major Applewhite",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "southalabama"
+  },
+  "arkansas": {
+   "team": "Arkansas Razorbacks",
+   "team_id": 8,
+   "hc": "Ryan Silverfield",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "arkansas"
+  },
+  "arizonastate": {
+   "team": "Arizona State Sun Devils",
+   "team_id": 9,
+   "hc": "Kenny Dillingham",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Kenny Dillingham",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "arizonastate"
+  },
+  "arizona": {
+   "team": "Arizona Wildcats",
+   "team_id": 12,
+   "hc": "Brent Brennan",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Brent Brennan",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "arizona"
+  },
+  "sacramentostate": {
+   "team": "Sacramento State Hornets",
+   "team_id": 16,
+   "hc": "Alonzo Carter",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "sacramentostate"
+  },
+  "sandiegostate": {
+   "team": "San Diego State Aztecs",
+   "team_id": 21,
+   "hc": "Sean Lewis",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Sean Lewis",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "sandiegostate"
+  },
+  "sanjosstate": {
+   "team": "San José State Spartans",
+   "team_id": 23,
+   "hc": "Ken Niumatalolo",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Ken Niumatalolo",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "sanjosstate"
+  },
+  "stanford": {
+   "team": "Stanford Cardinal",
+   "team_id": 24,
+   "hc": "Tavita Pritchard",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Frank Reich",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "stanford"
+  },
+  "california": {
+   "team": "California Golden Bears",
+   "team_id": 25,
+   "hc": "Tosh Lupoi",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Justin Wilcox",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "california"
+  },
+  "ucla": {
+   "team": "UCLA Bruins",
+   "team_id": 26,
+   "hc": "Bob Chesney",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "ucla"
+  },
+  "usc": {
+   "team": "USC Trojans",
+   "team_id": 30,
+   "hc": "Lincoln Riley",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Lincoln Riley",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "usc"
+  },
+  "coloradostate": {
+   "team": "Colorado State Rams",
+   "team_id": 36,
+   "hc": "Jim Mora",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "coloradostate"
+  },
+  "colorado": {
+   "team": "Colorado Buffaloes",
+   "team_id": 38,
+   "hc": "Deion Sanders",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Deion Sanders",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "colorado"
+  },
+  "uconn": {
+   "team": "UConn Huskies",
+   "team_id": 41,
+   "hc": "Jason Candle",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Jim Mora",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "uconn"
+  },
+  "delaware": {
+   "team": "Delaware Blue Hens",
+   "team_id": 48,
+   "hc": "Ryan Carty",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Ryan Carty",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "delaware"
+  },
+  "floridastate": {
+   "team": "Florida State Seminoles",
+   "team_id": 52,
+   "hc": "Mike Norvell",
+   "since_season": 2020,
+   "tenure_seasons": 7,
+   "tenure_is_floor": false,
+   "previous_hc": "Mike Norvell",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "floridastate"
+  },
+  "jacksonvillestate": {
+   "team": "Jacksonville State Gamecocks",
+   "team_id": 55,
+   "hc": "Charles Kelly",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Charles Kelly",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "jacksonvillestate"
+  },
+  "florida": {
+   "team": "Florida Gators",
+   "team_id": 57,
+   "hc": "Jon Sumrall",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "florida"
+  },
+  "southflorida": {
+   "team": "South Florida Bulls",
+   "team_id": 58,
+   "hc": "Brian Hartline",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Alex Golesh",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "southflorida"
+  },
+  "georgiatech": {
+   "team": "Georgia Tech Yellow Jackets",
+   "team_id": 59,
+   "hc": "Brent Key",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Brent Key",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "georgiatech"
+  },
+  "georgia": {
+   "team": "Georgia Bulldogs",
+   "team_id": 61,
+   "hc": "Kirby Smart",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Kirby Smart",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "georgia"
+  },
+  "hawaii": {
+   "team": "Hawai'i Rainbow Warriors",
+   "team_id": 62,
+   "hc": "Timmy Chang",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Timmy Chang",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "hawaii"
+  },
+  "iowastate": {
+   "team": "Iowa State Cyclones",
+   "team_id": 66,
+   "hc": "Jimmy Rogers",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Matt Campbell",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "iowastate"
+  },
+  "boisestate": {
+   "team": "Boise State Broncos",
+   "team_id": 68,
+   "hc": "Spencer Danielson",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Spencer Danielson",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "boisestate"
+  },
+  "northwestern": {
+   "team": "Northwestern Wildcats",
+   "team_id": 77,
+   "hc": "David Braun",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "David Braun",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "northwestern"
+  },
+  "indiana": {
+   "team": "Indiana Hoosiers",
+   "team_id": 84,
+   "hc": "Curt Cignetti",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Curt Cignetti",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "indiana"
+  },
+  "notredame": {
+   "team": "Notre Dame Fighting Irish",
+   "team_id": 87,
+   "hc": "Marcus Freeman",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Marcus Freeman",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "notredame"
+  },
+  "kentucky": {
+   "team": "Kentucky Wildcats",
+   "team_id": 96,
+   "hc": "Will Stein",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Mark Stoops",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "kentucky"
+  },
+  "louisville": {
+   "team": "Louisville Cardinals",
+   "team_id": 97,
+   "hc": "Jeff Brohm",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Jeff Brohm",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "louisville"
+  },
+  "westernkentucky": {
+   "team": "Western Kentucky Hilltoppers",
+   "team_id": 98,
+   "hc": "Tyson Helton",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Tyson Helton",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "westernkentucky"
+  },
+  "lsu": {
+   "team": "LSU Tigers",
+   "team_id": 99,
+   "hc": "Lane Kiffin",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "lsu"
+  },
+  "bostoncollege": {
+   "team": "Boston College Eagles",
+   "team_id": 103,
+   "hc": "Bill O'Brien",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Bill O'Brien",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "bostoncollege"
+  },
+  "massachusetts": {
+   "team": "Massachusetts Minutemen",
+   "team_id": 113,
+   "hc": "Joe Harasymiak",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Joe Harasymiak",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "massachusetts"
+  },
+  "maryland": {
+   "team": "Maryland Terrapins",
+   "team_id": 120,
+   "hc": "Mike Locksley",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Mike Locksley",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "maryland"
+  },
+  "michiganstate": {
+   "team": "Michigan State Spartans",
+   "team_id": 127,
+   "hc": "Pat Fitzgerald",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Jonathan Smith",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "michiganstate"
+  },
+  "michigan": {
+   "team": "Michigan Wolverines",
+   "team_id": 130,
+   "hc": "Kyle Whittingham",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Sherrone Moore",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "michigan"
+  },
+  "minnesota": {
+   "team": "Minnesota Golden Gophers",
+   "team_id": 135,
+   "hc": "P.J. Fleck",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "P.J. Fleck",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "minnesota"
+  },
+  "missouri": {
+   "team": "Missouri Tigers",
+   "team_id": 142,
+   "hc": "Eli Drinkwitz",
+   "since_season": 2020,
+   "tenure_seasons": 7,
+   "tenure_is_floor": false,
+   "previous_hc": "Eli Drinkwitz",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "missouri"
+  },
+  "olemiss": {
+   "team": "Ole Miss Rebels",
+   "team_id": 145,
+   "hc": "Pete Golding",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Lane Kiffin",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "olemiss"
+  },
+  "duke": {
+   "team": "Duke Blue Devils",
+   "team_id": 150,
+   "hc": "Manny Diaz",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Manny Diaz",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "duke"
+  },
+  "eastcarolina": {
+   "team": "East Carolina Pirates",
+   "team_id": 151,
+   "hc": "Blake Harrell",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Blake Harrell",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "eastcarolina"
+  },
+  "ncstate": {
+   "team": "NC State Wolfpack",
+   "team_id": 152,
+   "hc": "Dave Doeren",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Dave Doeren",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "ncstate"
+  },
+  "northcarolina": {
+   "team": "North Carolina Tar Heels",
+   "team_id": 153,
+   "hc": "Bill Belichick",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Bill Belichick",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "northcarolina"
+  },
+  "wakeforest": {
+   "team": "Wake Forest Demon Deacons",
+   "team_id": 154,
+   "hc": "Jake Dickert",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Jake Dickert",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "wakeforest"
+  },
+  "nebraska": {
+   "team": "Nebraska Cornhuskers",
+   "team_id": 158,
+   "hc": "Matt Rhule",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Matt Rhule",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "nebraska"
+  },
+  "rutgers": {
+   "team": "Rutgers Scarlet Knights",
+   "team_id": 164,
+   "hc": "Greg Schiano",
+   "since_season": 2020,
+   "tenure_seasons": 7,
+   "tenure_is_floor": false,
+   "previous_hc": "Greg Schiano",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "rutgers"
+  },
+  "newmexicostate": {
+   "team": "New Mexico State Aggies",
+   "team_id": 166,
+   "hc": "Tony Sanchez",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Tony Sanchez",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "newmexicostate"
+  },
+  "newmexico": {
+   "team": "New Mexico Lobos",
+   "team_id": 167,
+   "hc": "Jason Eck",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Jason Eck",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "newmexico"
+  },
+  "syracuse": {
+   "team": "Syracuse Orange",
+   "team_id": 183,
+   "hc": "Fran Brown",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Fran Brown",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "syracuse"
+  },
+  "bowlinggreen": {
+   "team": "Bowling Green Falcons",
+   "team_id": 189,
+   "hc": "Eddie George",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Eddie George",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "bowlinggreen"
+  },
+  "miamioh": {
+   "team": "Miami (OH) RedHawks",
+   "team_id": 193,
+   "hc": "Chuck Martin",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Chuck Martin",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "miamioh"
+  },
+  "ohiostate": {
+   "team": "Ohio State Buckeyes",
+   "team_id": 194,
+   "hc": "Ryan Day",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Ryan Day",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "ohiostate"
+  },
+  "ohio": {
+   "team": "Ohio Bobcats",
+   "team_id": 195,
+   "hc": "John Hauser",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Brian Smith",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "ohio"
+  },
+  "oklahomastate": {
+   "team": "Oklahoma State Cowboys",
+   "team_id": 197,
+   "hc": "Eric Morris",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "oklahomastate"
+  },
+  "oklahoma": {
+   "team": "Oklahoma Sooners",
+   "team_id": 201,
+   "hc": "Brent Venables",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Brent Venables",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "oklahoma"
+  },
+  "tulsa": {
+   "team": "Tulsa Golden Hurricane",
+   "team_id": 202,
+   "hc": "Tre Lamb",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Tre Lamb",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "tulsa"
+  },
+  "oregonstate": {
+   "team": "Oregon State Beavers",
+   "team_id": 204,
+   "hc": "JaMarcus Shephard",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "oregonstate"
+  },
+  "pennstate": {
+   "team": "Penn State Nittany Lions",
+   "team_id": 213,
+   "hc": "Matt Campbell",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "pennstate"
+  },
+  "temple": {
+   "team": "Temple Owls",
+   "team_id": 218,
+   "hc": "K.C. Keeler",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "K.C. Keeler",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "temple"
+  },
+  "pittsburgh": {
+   "team": "Pittsburgh Panthers",
+   "team_id": 221,
+   "hc": "Pat Narduzzi",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Pat Narduzzi",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "pittsburgh"
+  },
+  "clemson": {
+   "team": "Clemson Tigers",
+   "team_id": 228,
+   "hc": "Dabo Swinney",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Dabo Swinney",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "clemson"
+  },
+  "memphis": {
+   "team": "Memphis Tigers",
+   "team_id": 235,
+   "hc": "Charles Huff",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Ryan Silverfield",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "memphis"
+  },
+  "vanderbilt": {
+   "team": "Vanderbilt Commodores",
+   "team_id": 238,
+   "hc": "Clark Lea",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Clark Lea",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "vanderbilt"
+  },
+  "baylor": {
+   "team": "Baylor Bears",
+   "team_id": 239,
+   "hc": "Dave Aranda",
+   "since_season": 2020,
+   "tenure_seasons": 7,
+   "tenure_is_floor": false,
+   "previous_hc": "Dave Aranda",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "baylor"
+  },
+  "rice": {
+   "team": "Rice Owls",
+   "team_id": 242,
+   "hc": "Scott Abell",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Scott Abell",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "rice"
+  },
+  "texasam": {
+   "team": "Texas A&M Aggies",
+   "team_id": 245,
+   "hc": "Mike Elko",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Mike Elko",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "texasam"
+  },
+  "houston": {
+   "team": "Houston Cougars",
+   "team_id": 248,
+   "hc": "Willie Fritz",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Willie Fritz",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "houston"
+  },
+  "northtexas": {
+   "team": "North Texas Mean Green",
+   "team_id": 249,
+   "hc": "Neal Brown",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Eric Morris",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "northtexas"
+  },
+  "texas": {
+   "team": "Texas Longhorns",
+   "team_id": 251,
+   "hc": "Steve Sarkisian",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Steve Sarkisian",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "texas"
+  },
+  "byu": {
+   "team": "BYU Cougars",
+   "team_id": 252,
+   "hc": "Kalani Sitake",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Kalani Sitake",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "byu"
+  },
+  "utah": {
+   "team": "Utah Utes",
+   "team_id": 254,
+   "hc": "Morgan Scalley",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Kyle Whittingham",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "utah"
+  },
+  "jamesmadison": {
+   "team": "James Madison Dukes",
+   "team_id": 256,
+   "hc": "Billy Napier",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Bob Chesney",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "jamesmadison"
+  },
+  "virginia": {
+   "team": "Virginia Cavaliers",
+   "team_id": 258,
+   "hc": "Tony Elliott",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Tony Elliott",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "virginia"
+  },
+  "virginiatech": {
+   "team": "Virginia Tech Hokies",
+   "team_id": 259,
+   "hc": "James Franklin",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "virginiatech"
+  },
+  "washington": {
+   "team": "Washington Huskies",
+   "team_id": 264,
+   "hc": "Jedd Fisch",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Jedd Fisch",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "washington"
+  },
+  "washingtonstate": {
+   "team": "Washington State Cougars",
+   "team_id": 265,
+   "hc": "Kirby Moore",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Jimmy Rogers",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "washingtonstate"
+  },
+  "wisconsin": {
+   "team": "Wisconsin Badgers",
+   "team_id": 275,
+   "hc": "Luke Fickell",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Luke Fickell",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "wisconsin"
+  },
+  "marshall": {
+   "team": "Marshall Thundering Herd",
+   "team_id": 276,
+   "hc": "Tony Gibson",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Tony Gibson",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "marshall"
+  },
+  "westvirginia": {
+   "team": "West Virginia Mountaineers",
+   "team_id": 277,
+   "hc": "Rich Rodriguez",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Rich Rodriguez",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "westvirginia"
+  },
+  "fresnostate": {
+   "team": "Fresno State Bulldogs",
+   "team_id": 278,
+   "hc": "Matt Entz",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Matt Entz",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "fresnostate"
+  },
+  "georgiasouthern": {
+   "team": "Georgia Southern Eagles",
+   "team_id": 290,
+   "hc": "Clay Helton",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Clay Helton",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "georgiasouthern"
+  },
+  "olddominion": {
+   "team": "Old Dominion Monarchs",
+   "team_id": 295,
+   "hc": "Ricky Rahne",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Ricky Rahne",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "olddominion"
+  },
+  "louisiana": {
+   "team": "Louisiana Ragin' Cajuns",
+   "team_id": 309,
+   "hc": "Michael Desormeaux",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Michael Desormeaux",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "louisiana"
+  },
+  "coastalcarolina": {
+   "team": "Coastal Carolina Chanticleers",
+   "team_id": 324,
+   "hc": "Ryan Beard",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Tim Beck",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "coastalcarolina"
+  },
+  "texasstate": {
+   "team": "Texas State Bobcats",
+   "team_id": 326,
+   "hc": "G.J. Kinne",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "G.J. Kinne",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "texasstate"
+  },
+  "utahstate": {
+   "team": "Utah State Aggies",
+   "team_id": 328,
+   "hc": "Bronco Mendenhall",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Bronco Mendenhall",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "utahstate"
+  },
+  "alabama": {
+   "team": "Alabama Crimson Tide",
+   "team_id": 333,
+   "hc": "Kalen DeBoer",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Kalen DeBoer",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "alabama"
+  },
+  "kennesawstate": {
+   "team": "Kennesaw State Owls",
+   "team_id": 338,
+   "hc": "Jerry Mack",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Jerry Mack",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "kennesawstate"
+  },
+  "mississippistate": {
+   "team": "Mississippi State Bulldogs",
+   "team_id": 344,
+   "hc": "Jeff Lebby",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Jeff Lebby",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "mississippistate"
+  },
+  "army": {
+   "team": "Army Black Knights",
+   "team_id": 349,
+   "hc": "Jeff Monken",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Jeff Monken",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "army"
+  },
+  "illinois": {
+   "team": "Illinois Fighting Illini",
+   "team_id": 356,
+   "hc": "Bret Bielema",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Bret Bielema",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "illinois"
+  },
+  "airforce": {
+   "team": "Air Force Falcons",
+   "team_id": 2005,
+   "hc": "Troy Calhoun",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Troy Calhoun",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "airforce"
+  },
+  "akron": {
+   "team": "Akron Zips",
+   "team_id": 2006,
+   "hc": "Joe Moorhead",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Joe Moorhead",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "akron"
+  },
+  "appstate": {
+   "team": "App State Mountaineers",
+   "team_id": 2026,
+   "hc": "Dowell Loggains",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Dowell Loggains",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "appstate"
+  },
+  "arkansasstate": {
+   "team": "Arkansas State Red Wolves",
+   "team_id": 2032,
+   "hc": "Butch Jones",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Butch Jones",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "arkansasstate"
+  },
+  "ballstate": {
+   "team": "Ball State Cardinals",
+   "team_id": 2050,
+   "hc": "Mike Uremovich",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Mike Uremovich",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "ballstate"
+  },
+  "buffalo": {
+   "team": "Buffalo Bulls",
+   "team_id": 2084,
+   "hc": "Pete Lembo",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Pete Lembo",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "buffalo"
+  },
+  "ucf": {
+   "team": "UCF Knights",
+   "team_id": 2116,
+   "hc": "Scott Frost",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Scott Frost",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "ucf"
+  },
+  "centralmichigan": {
+   "team": "Central Michigan Chippewas",
+   "team_id": 2117,
+   "hc": "Matt Drinkall",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Matt Drinkall",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "centralmichigan"
+  },
+  "cincinnati": {
+   "team": "Cincinnati Bearcats",
+   "team_id": 2132,
+   "hc": "Scott Satterfield",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Scott Satterfield",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "cincinnati"
+  },
+  "easternmichigan": {
+   "team": "Eastern Michigan Eagles",
+   "team_id": 2199,
+   "hc": "Chris Creighton",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Chris Creighton",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "easternmichigan"
+  },
+  "floridaatlantic": {
+   "team": "Florida Atlantic Owls",
+   "team_id": 2226,
+   "hc": "Zach Kittley",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Zach Kittley",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "floridaatlantic"
+  },
+  "floridainternational": {
+   "team": "Florida International Panthers",
+   "team_id": 2229,
+   "hc": "Willie Simmons",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Willie Simmons",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "floridainternational"
+  },
+  "georgiastate": {
+   "team": "Georgia State Panthers",
+   "team_id": 2247,
+   "hc": "Dell McGee",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Dell McGee",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "georgiastate"
+  },
+  "iowa": {
+   "team": "Iowa Hawkeyes",
+   "team_id": 2294,
+   "hc": "Kirk Ferentz",
+   "since_season": 2019,
+   "tenure_seasons": 8,
+   "tenure_is_floor": true,
+   "previous_hc": "Kirk Ferentz",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "iowa"
+  },
+  "kansas": {
+   "team": "Kansas Jayhawks",
+   "team_id": 2305,
+   "hc": "Lance Leipold",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Lance Leipold",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "kansas"
+  },
+  "kansasstate": {
+   "team": "Kansas State Wildcats",
+   "team_id": 2306,
+   "hc": "Collin Klein",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Chris Klieman",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "kansasstate"
+  },
+  "kentstate": {
+   "team": "Kent State Golden Flashes",
+   "team_id": 2309,
+   "hc": "Mark Carney",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Mark Carney",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "kentstate"
+  },
+  "liberty": {
+   "team": "Liberty Flames",
+   "team_id": 2335,
+   "hc": "Jamey Chadwell",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Jamey Chadwell",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "liberty"
+  },
+  "louisianatech": {
+   "team": "Louisiana Tech Bulldogs",
+   "team_id": 2348,
+   "hc": "Sonny Cumbie",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Sonny Cumbie",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "louisianatech"
+  },
+  "miami": {
+   "team": "Miami Hurricanes",
+   "team_id": 2390,
+   "hc": "Mario Cristobal",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Mario Cristobal",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "miami"
+  },
+  "middletennessee": {
+   "team": "Middle Tennessee Blue Raiders",
+   "team_id": 2393,
+   "hc": "Derek Mason",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Derek Mason",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "middletennessee"
+  },
+  "navy": {
+   "team": "Navy Midshipmen",
+   "team_id": 2426,
+   "hc": "Brian Newberry",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Brian Newberry",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "navy"
+  },
+  "charlotte": {
+   "team": "Charlotte 49ers",
+   "team_id": 2429,
+   "hc": "Tim Albin",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Tim Albin",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "charlotte"
+  },
+  "ulmonroe": {
+   "team": "UL Monroe Warhawks",
+   "team_id": 2433,
+   "hc": "Bryant Vincent",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Bryant Vincent",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "ulmonroe"
+  },
+  "unlv": {
+   "team": "UNLV Rebels",
+   "team_id": 2439,
+   "hc": "Dan Mullen",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Dan Mullen",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "unlv"
+  },
+  "nevada": {
+   "team": "Nevada Wolf Pack",
+   "team_id": 2440,
+   "hc": "Jeff Choate",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Jeff Choate",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "nevada"
+  },
+  "northdakotastate": {
+   "team": "North Dakota State Bison",
+   "team_id": 2449,
+   "hc": "Tim Polasek",
+   "since_season": null,
+   "tenure_seasons": null,
+   "tenure_is_floor": null,
+   "previous_hc": null,
+   "new_hc": null,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "northdakotastate"
+  },
+  "northernillinois": {
+   "team": "Northern Illinois Huskies",
+   "team_id": 2459,
+   "hc": "Rob Harley",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Thomas Hammock",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "northernillinois"
+  },
+  "oregon": {
+   "team": "Oregon Ducks",
+   "team_id": 2483,
+   "hc": "Dan Lanning",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Dan Lanning",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "oregon"
+  },
+  "purdue": {
+   "team": "Purdue Boilermakers",
+   "team_id": 2509,
+   "hc": "Barry Odom",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Barry Odom",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "purdue"
+  },
+  "samhouston": {
+   "team": "Sam Houston Bearkats",
+   "team_id": 2534,
+   "hc": "Phil Longo",
+   "since_season": 2025,
+   "tenure_seasons": 2,
+   "tenure_is_floor": false,
+   "previous_hc": "Phil Longo",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "samhouston"
+  },
+  "smu": {
+   "team": "SMU Mustangs",
+   "team_id": 2567,
+   "hc": "Rhett Lashlee",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Rhett Lashlee",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "smu"
+  },
+  "southernmiss": {
+   "team": "Southern Miss Golden Eagles",
+   "team_id": 2572,
+   "hc": "Blake Anderson",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Charles Huff",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "southernmiss"
+  },
+  "southcarolina": {
+   "team": "South Carolina Gamecocks",
+   "team_id": 2579,
+   "hc": "Shane Beamer",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Shane Beamer",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "southcarolina"
+  },
+  "missouristate": {
+   "team": "Missouri State Bears",
+   "team_id": 2623,
+   "hc": "Casey Woods",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Ryan Beard",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "missouristate"
+  },
+  "tcu": {
+   "team": "TCU Horned Frogs",
+   "team_id": 2628,
+   "hc": "Sonny Dykes",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Sonny Dykes",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "tcu"
+  },
+  "tennessee": {
+   "team": "Tennessee Volunteers",
+   "team_id": 2633,
+   "hc": "Josh Heupel",
+   "since_season": 2021,
+   "tenure_seasons": 6,
+   "tenure_is_floor": false,
+   "previous_hc": "Josh Heupel",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "tennessee"
+  },
+  "utsa": {
+   "team": "UTSA Roadrunners",
+   "team_id": 2636,
+   "hc": "Jeff Traylor",
+   "since_season": 2020,
+   "tenure_seasons": 7,
+   "tenure_is_floor": false,
+   "previous_hc": "Jeff Traylor",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "utsa"
+  },
+  "utep": {
+   "team": "UTEP Miners",
+   "team_id": 2638,
+   "hc": "Scotty Walden",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Scotty Walden",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "utep"
+  },
+  "texastech": {
+   "team": "Texas Tech Red Raiders",
+   "team_id": 2641,
+   "hc": "Joey McGuire",
+   "since_season": 2022,
+   "tenure_seasons": 5,
+   "tenure_is_floor": false,
+   "previous_hc": "Joey McGuire",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "texastech"
+  },
+  "toledo": {
+   "team": "Toledo Rockets",
+   "team_id": 2649,
+   "hc": "Mike Jacobs",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Jason Candle",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "toledo"
+  },
+  "troy": {
+   "team": "Troy Trojans",
+   "team_id": 2653,
+   "hc": "Gerad Parker",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Gerad Parker",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "troy"
+  },
+  "tulane": {
+   "team": "Tulane Green Wave",
+   "team_id": 2655,
+   "hc": "Will Hall",
+   "since_season": 2026,
+   "tenure_seasons": 1,
+   "tenure_is_floor": false,
+   "previous_hc": "Jon Sumrall",
+   "new_hc": true,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "tulane"
+  },
+  "westernmichigan": {
+   "team": "Western Michigan Broncos",
+   "team_id": 2711,
+   "hc": "Lance Taylor",
+   "since_season": 2023,
+   "tenure_seasons": 4,
+   "tenure_is_floor": false,
+   "previous_hc": "Lance Taylor",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "westernmichigan"
+  },
+  "wyoming": {
+   "team": "Wyoming Cowboys",
+   "team_id": 2751,
+   "hc": "Jay Sawvel",
+   "since_season": 2024,
+   "tenure_seasons": 3,
+   "tenure_is_floor": false,
+   "previous_hc": "Jay Sawvel",
+   "new_hc": false,
+   "new_oc": null,
+   "new_dc": null,
+   "known": [
+    "hc"
+   ],
+   "unknown": [
+    "oc",
+    "dc"
+   ],
+   "why_unknown": "this feed publishes head coaches only — every row carries role HC — so coordinator turnover is unmeasured rather than absent",
+   "in_season_change": null,
+   "source": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/coach_tendencies/parquet/coach_tendencies_2026.parquet",
+   "seasons_read": [
+    2026,
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019
+   ],
+   "key": "wyoming"
+  }
+ }
+}

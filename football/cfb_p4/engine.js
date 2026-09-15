@@ -668,21 +668,44 @@
       var num = 0, den = 0;
       for (i = 0; i < parts.length; i++) { num += parts[i].w * parts[i].v; den += parts[i].w; }
       var base = num / den;
-      var coachPenalty = 0, coachKnown = false;
+      /* HOW MUCH OF THE STAFF WAS ACTUALLY ANSWERED.
+         This used to be a boolean: any `coaching` object at all flipped
+         confidence from 0.55 to 0.80 and the basis to "continuity and staff
+         turnover". That was safe only while nothing ever supplied one. The
+         feed that now does — cfbfastR's coach table — carries HEAD COACHES
+         ONLY, so a supplier answering one of the three questions would have
+         been credited with all three, which is the precise overstatement
+         this engine is not allowed to make.
+         So each role is counted separately, `null` is read as UNKNOWN rather
+         than as "no change", and confidence scales with how much of the
+         staff is genuinely known. One role out of three earns a third of the
+         difference, not all of it. */
+      var coachPenalty = 0, coachKnown = [], coachUnknown = [];
+      var ROLES = ['new_hc', 'new_oc', 'new_dc'];
       if (extra && extra.coaching) {
-        coachKnown = true;
-        if (extra.coaching.new_hc) coachPenalty += w.new_hc || 0;
-        if (extra.coaching.new_oc) coachPenalty += w.new_oc || 0;
-        if (extra.coaching.new_dc) coachPenalty += w.new_dc || 0;
-      }
+        for (i = 0; i < ROLES.length; i++) {
+          var rk = ROLES[i], rv = extra.coaching[rk];
+          if (rv === true || rv === false) {
+            coachKnown.push(rk.replace('new_', ''));
+            if (rv === true) coachPenalty += w[rk] || 0;
+          } else coachUnknown.push(rk.replace('new_', ''));
+        }
+      } else coachUnknown = ['hc', 'oc', 'dc'];
+      var coachShare = coachKnown.length / ROLES.length;
       var score = clamp(100 * base - 100 * coachPenalty, 0, 100);
       return M(score, {
-        confidence: coachKnown ? 0.8 : 0.55,
+        confidence: 0.55 + 0.25 * coachShare,
         n: parts.length,
-        source: 'roster continuity' + (coachKnown ? ' + supplied coaching continuity' : ''),
-        basis: coachKnown ? 'continuity and staff turnover'
-          : 'continuity only — coaching-staff turnover was NOT supplied, so this score '
+        source: 'roster continuity' + (coachKnown.length
+          ? (' + ' + coachKnown.join('/') + ' continuity') : ''),
+        basis: !coachKnown.length
+          ? 'continuity only — coaching-staff turnover was NOT supplied, so this score '
             + 'cannot see a new staff; the gap is carried in the volatility layer instead'
+          : (coachUnknown.length
+            ? ('continuity, plus ' + coachKnown.join(' and ') + ' turnover. '
+              + coachUnknown.join(' and ') + ' turnover is UNMEASURED, not unchanged, so this score '
+              + 'still cannot see a scheme change that came from a coordinator')
+            : 'continuity and staff turnover')
       });
     },
     /* Section XVII — YOUTH VOLATILITY. Youth is treated as VARIANCE, never
@@ -1922,7 +1945,22 @@
       weather_uncertainty: wxU,
       travel: travelU,
       early_season: early == null ? 0 : early,
-      coaching_change_unknown: (H.supplied.coaching && A.supplied.coaching) ? 0 : 1,
+      /* PARTIAL KNOWLEDGE IS PARTIAL, not total. This read "both sides
+         supplied a coaching object" and treated that as the staff question
+         answered. The feed that supplies it carries HEAD COACHES ONLY, so
+         answering it in full would price two unknown coordinators as known.
+         The counter is therefore the SHARE of the six role-questions (three
+         per side) still unanswered. */
+      coaching_change_unknown: (function () {
+        var R = ['new_hc', 'new_oc', 'new_dc'], unknown = 0, i, j, sides = [H.supplied.coaching, A.supplied.coaching];
+        for (j = 0; j < 2; j++) {
+          for (i = 0; i < R.length; i++) {
+            var v = sides[j] ? sides[j][R[i]] : undefined;
+            if (v !== true && v !== false) unknown++;
+          }
+        }
+        return unknown / 6;
+      })(),
       information_missing: 0
     };
     /* the meta-driver: how much of the model's own input contract was empty */
@@ -2429,7 +2467,7 @@
       else if (d.name === 'ol_uncertainty') why = 'an offensive line with unclear continuity can swing a game in either direction';
       else if (d.name === 'early_season') why = 'it is early enough that both ratings still lean on preseason belief';
       else if (d.name === 'weather_uncertainty') why = 'the weather at kickoff is not known';
-      else if (d.name === 'coaching_change_unknown') why = 'coordinator and staff continuity was not supplied, and a scheme change is invisible to the ratings';
+      else if (d.name === 'coaching_change_unknown') why = 'coordinator continuity is not published by any feed EdgeDesk reads, so a scheme change that came from a coordinator is invisible to the ratings';
       else why = name + ' is elevated';
       counters.push({ key: d.name, widening_pct: pctWider,
         text: 'The projection could be wrong because ' + why + ' — it widens the outcome range by about '

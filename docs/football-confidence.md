@@ -293,3 +293,159 @@ curl -o /tmp/v/football/fbs/slate.json \
   https://raw.githubusercontent.com/<owner>/<repo>/<deployed-sha>/football/fbs/slate.json
 node tools/football/verify_deployment.js --local --root /tmp/v
 ```
+
+## The game-time forecast, the stadiums, and the staff
+
+Three contract fields were empty on every game of every slate: `weather`
+0/77, `coaching_continuity` 0/77, `off_field` 0/154. Two are now filled and
+the third has a door.
+
+### Weather: 0/77 → 75/77
+
+The layer asked open-meteo for three variables at one hour and discarded the
+rest of the answer. A projection reads the temperature at kickoff; a person
+reads the game — what it is like at kick and what it is like in the fourth
+quarter, which is where a total goes wrong. A 77° kickoff that finishes at
+72° in the rain is not a 77° game, and one number cannot say so.
+
+The request now carries what a person actually asks about, and each variable
+is there because something on the card would otherwise be a guess:
+
+| Variable | Why |
+|---|---|
+| `apparent_temperature` | 77° at 92% humidity is an 84° game |
+| `precipitation_probability` | **whether** it rains, not only how much |
+| `wind_gusts_10m` | the gust is what moves a kick; the average is not |
+| `relative_humidity_2m` | why 77° feels like 84° |
+| `weather_code` | the icon, from the provider rather than reverse-engineered from millimetres |
+| `is_day` | sun or moon beside the hour |
+
+**Venue local means daylight saving.** The trained venue table stores `tz` as
+a fixed UTC offset — Pittsburgh is `-5` — and on 17 September Pittsburgh is
+on `-4`. Labelling the hours from that column would print a 7:30 PM kickoff
+as a 6 PM row for half the season. `timezone=auto` returns the hours already
+local along with `utc_offset_seconds`, which is also what makes the match to
+kickoff exact rather than approximate.
+
+**The hour the game kicks off in, not the nearest one.** A 7:30 kickoff
+belongs to the 7 PM row the way a broadcast does; rounding to 8 PM would
+label the pregame as the game.
+
+**One implementation.** `fbP4Weather()` in `app.html` and `urlFor`/`parse` in
+`football/matchup/weather.js` were two copies of one contract — the same
+duplication `football/matchup/inputs.js` exists to end one level up. Both now
+read `football/matchup/forecast.js`.
+
+### The stadiums
+
+Every **home** venue already resolved, which is why the weather layer was
+never short of coordinates: a forecast is located at the home venue.
+Nineteen **FCS visitors** had none, so `venue_geography:away` was UNAVAILABLE
+on those games and travel distance could not be computed.
+
+`football/venues/build_venues.js` reads the venue geography from the same
+public mirror this repository already reads for schedules, rosters, player
+stats and team talent. Identity is resolved on the ESPN id with name
+corroboration — the rule `build_team_talent.js` learned when a longest-prefix
+match silently joined "Houston Christian Huskies" onto `houston`. A row
+without real coordinates, or with coordinates and no stadium name, is
+refused.
+
+Precedence is enforced in the loader, not left to the reader: the trained
+table wins (its venue coefficients were fitted on it), then the hand-checked
+supplement, then this. Descriptive fields — name, city, IANA zone, venue id —
+are recorded separately for keys the winning layers already own, because the
+trained table carries no city at all and a card that knew a stadium's seating
+capacity could not say what town it was in. No coordinate, roof or surface is
+ever restated from the second source.
+
+    home venues  77 of 77      away venues  75 of 75
+
+### Coaching: 0/77 → 122/154
+
+The row was filed under "documented, permanent gaps" and read *"sportsdataverse
+publishes rosters, schedules, play attribution and team talent for this season
+and no coaching table"*. It was checked once and believed thereafter. There is
+one — `coach_tendencies` — carrying the head coach for all 138 FBS programmes.
+
+**Tenure, not a one-year diff.** A team that fired its coach in October has an
+INTERIM in last season's play-by-play, so diffing against last season would
+report the permanent hire as a second change and a fourth-year coach as new.
+The tenure is walked back season by season until the name changes. A tenure
+that reaches the edge of the window is marked a floor rather than reported as
+a fact.
+
+    22 new head coaches · 103 returning · 13 with no prior season · 0 refused
+
+**It carries no coordinators, and that stays unmeasured rather than becoming
+unchanged.** This required an engine correction with a semantic reason:
+`coachKnown` was a boolean that any `coaching` object flipped, taking
+confidence from 0.55 to 0.80 and the basis to "continuity and staff turnover".
+That was safe only while nothing ever supplied one. A feed answering one of
+the three role questions would have been credited with all three — the exact
+overstatement this engine may not make. Each role is now counted separately,
+`null` reads as UNKNOWN rather than as no-change, and confidence scales with
+the share genuinely known: **0.55 + 0.25 × (known/3)**, so one role of three
+earns 0.633, not 0.80. The volatility counter is the same correction — the
+share of the six role questions (three per side) still unanswered.
+
+### Off-field: the door, and why the room is empty
+
+The engine already distinguishes two answers EdgeDesk could not produce:
+`null` means **nobody looked** and `[]` means the registered sources **were
+read and carried nothing**. The second is a finding; the first is a gap;
+collapsing them turns a gap into a clean bill of health.
+
+`football/offfield/record_signal.js` is the door and it refuses more than it
+accepts. A signal moves the confidence and volatility terms only if it is all
+four of **public, sourced, dated and severity-graded**; three of four is
+refused. An undated signal is refused because the engine decays on a 21-day
+half-life and an undated one decays at a flat 0.5, which measures nothing. A
+headline saying "nothing happened" is refused, for the same reason the
+availability operator has no "everybody available" status.
+
+`football/offfield/sources.json` ships **empty, deliberately**. No keyless
+public feed supplies all four: a general news search carries neither a
+severity nor a reliability a model may use, and a wire that carries all four
+may not be redistributed as a committed artifact. Registering a source
+nothing reads would convert the gap into a false clean bill of health, so the
+contract row stays UNAVAILABLE and names the two routes that would change it.
+
+### Availability: mostly correct behaviour, one real bug
+
+| State | Rows | What it is |
+|---|---|---|
+| `NOT_REQUIRED` | 71 | that conference covers **conference games only** and this is non-conference — a true statement |
+| `NOT_DUE_YET` | 28 | the first filing is 48–72 hours before kickoff; on a Tuesday it does not exist yet |
+| `FETCH_FAILED` | 37 | **the bug** |
+| `UNAVAILABLE` | 18 | FCS opponents outside the FBS registry |
+
+The 37 have one cause. Two ESPN endpoints refuse for **all 138 programmes on
+every run** — 276 refusals, the same status every time, `systematic: true` in
+the registry's own failure groups. That is a provider that closed an endpoint,
+not 138 unlucky reads, and the row now says so — the same lesson the weather
+layer learned when an identical HTTP status on every game turned out to be a
+build environment rather than the sport.
+
+### Measured, same 77-game slate
+
+| | before | after |
+|---|---|---|
+| `weather` | 0 / 77 | **75 / 77** |
+| `venue_geography` | 133 / 154 | **152 / 154** |
+| `coaching_continuity` | 0 / 77 | **122 / 154** |
+| input coverage | 61.1% | **69.7%** |
+| information confidence | 70.9% | **73.5%** |
+| priced confidence | 39.33% | 39.33% |
+
+`priced_confidence` is unchanged to two decimal places and says so. None of
+this is priced: the weather rows are RESEARCH_ONLY because no weather
+coefficient was earned on this corpus, and the coaching row is RESEARCH_ONLY
+because two thirds of the staff question is still unanswered.
+
+**The artifact was built by GitHub Actions, not by a session.** A slate built
+where open-meteo is blocked carries 77 of 77 weather rows FETCH_FAILED with an
+identical HTTP 403 — this build's blocked host, not the sport — which is
+exactly what `tools/football/verify_deployment.js` exists to catch. The
+weather figures above come from the committed artifact of a build that could
+actually reach the provider.

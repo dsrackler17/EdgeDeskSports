@@ -175,6 +175,34 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .gx-means.ok{border-left-color:var(--pos)}.gx-means.warn{border-left-color:var(--warn)}
 .gx-means.neg{border-left-color:var(--neg)}.gx-means.mut{border-left-color:var(--border)}
 .gx-means b{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:3px}
+/* THE VENUE AND THE GAME-TIME FORECAST. A projection reads one hour; a
+   person reads the game, so the strip carries the hour of kickoff and the
+   three after it. Every value here comes from football/matchup/forecast.js,
+   which the offline build reads too. */
+.gx-wxv{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.gx-wxv .nm{font-size:15px;font-weight:700;line-height:1.25}
+.gx-wxv .ct{font-size:11.5px;color:var(--dim);margin-top:2px}
+.gx-wxchips{display:flex;gap:6px;flex-wrap:wrap;flex:none}
+.gx-wxchip{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--border);border-radius:7px;padding:3px 8px;color:var(--dim);white-space:nowrap}
+.gx-wxchip.grass{color:var(--pos);border-color:rgba(118,189,62,.42)}
+.gx-wxchip.air{color:var(--accent);border-color:rgba(90,150,230,.42)}
+.gx-wxchip.roof{color:var(--warn);border-color:rgba(214,158,60,.42)}
+.gx-wxfacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.gx-wxnow{font-size:12px;color:var(--dim);margin-top:11px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.gx-wxnow b{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text);font-weight:700}
+.gx-wxnow .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.gx-wxhead{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:13px 0 7px}
+.gx-wxhead i{font-style:normal;color:var(--border-strong,var(--border));margin-left:6px}
+.gx-wxrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
+.gx-wxh{background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:11px 6px 10px;text-align:center;min-width:0}
+.gx-wxh .hr{font-size:11px;font-weight:700;color:var(--dim);white-space:nowrap}
+.gx-wxh .ic{font-size:21px;line-height:1.6}
+.gx-wxh .tp{font-size:17px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.1}
+.gx-wxh .tp.hot{color:var(--neg)}.gx-wxh .tp.warm{color:var(--warn)}
+.gx-wxh .tp.mild{color:var(--pos)}.gx-wxh .tp.cool{color:var(--accent)}
+.gx-wxh .wd{font-size:10.5px;color:var(--faint);margin-top:4px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.gx-wxh .pp{font-size:10.5px;color:var(--accent);margin-top:2px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.gx-wxnote{font-size:11.5px;color:var(--dim);margin-top:9px;line-height:1.5}
 .gx-chk{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:9px}
 .gx-chk .h{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:2px}
 .gx-ck{font-size:10.5px;border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--dim);white-space:nowrap;cursor:help}
@@ -43625,6 +43653,7 @@ function fbP4Ensure(){
        projected number, so a missing file must not gate a board. */
     .then(function(){return fbScript('football/matchup/confidence.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/qb_context.js').catch(function(){});})
+    .then(function(){return fbScript('football/matchup/forecast.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/policy.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/overlay.js').catch(function(){});})
     .then(function(){return fbScript('football/availability/operator.js').catch(function(){});})
@@ -43973,24 +44002,22 @@ function fbP4HthHTML(id){
   return html;
 }
 
-/* ---- weather, keyless, joined on the venue coordinates in params.js ---- */
+/* ---- weather, keyless, joined on the venue coordinates in params.js ----
+   THE REQUEST AND THE READING BOTH MOVED to football/matchup/forecast.js.
+   This function used to hold its own copy of the URL and its own copy of the
+   hour-matching, and football/matchup/weather.js held a second copy for the
+   offline build — two implementations of one contract, which is how the page
+   and the committed artifact come to describe the same kickoff differently.
+   A dome is answered without a request, because the answer is known. */
 function fbP4Weather(venue,kickIso){
   if(!venue||venue.lat==null||!kickIso)return Promise.resolve(null);
-  var day=String(kickIso).slice(0,10);
-  var url='https://api.open-meteo.com/v1/forecast?latitude='+venue.lat+'&longitude='+venue.lon
-    +'&hourly=temperature_2m,precipitation,wind_speed_10m&temperature_unit=fahrenheit'
-    +'&wind_speed_unit=mph&precipitation_unit=inch&timezone=UTC&start_date='+day+'&end_date='+day;
+  var F=window.EDForecast;
+  if(!F)return Promise.resolve(null);
+  if(venue.dome)return Promise.resolve(F.forDome(venue));
+  var url=F.urlFor(venue,kickIso);
+  if(!url)return Promise.resolve(null);
   return fbFetchText(url).then(function(t){
-    var j=JSON.parse(t),h=j&&j.hourly;if(!h||!h.time)return null;
-    var want=Date.parse(kickIso),best=-1,bd=1e15;
-    for(var i=0;i<h.time.length;i++){
-      var d=Math.abs(Date.parse(h.time[i]+'Z')-want);
-      if(d<bd){bd=d;best=i;}
-    }
-    if(best<0||bd>4*3600e3)return null;
-    return {temp_f:h.temperature_2m[best],precip_in:h.precipitation[best],
-      wind_mph:h.wind_speed_10m[best],dome:!!venue.dome,
-      source:'open-meteo forecast',as_of:new Date().toISOString()};
+    return F.parse(t,venue,kickIso);
   }).catch(function(){return null;});
 }
 
@@ -46837,6 +46864,92 @@ function fbGxScale(u,p){
 /* ── A COLLAPSIBLE SECTION ──────────────────────────────────────────────
    Warnings are never behind one of these. */
 var FB_GX_OPEN={};
+/* ── THE VENUE AND THE GAME-TIME FORECAST ───────────────────────────────
+   WHAT THIS REPLACED. The weather layer held four numbers — temperature,
+   wind, rain and a dome flag — and showed none of them anywhere a reader
+   could see. The venue held eight more (surface, roof, elevation, capacity,
+   coordinates, timezone) and showed none either, so "the weather layer is
+   blind at that venue" was the only sentence the card could say about a
+   stadium it knew the seating capacity of.
+
+   THE STRIP IS FOUR HOURS BECAUSE A GAME IS. A single kickoff number cannot
+   say that a 77° start finishes at 72° in the rain, and the fourth quarter
+   is where a total goes wrong. Every value is read from
+   football/matchup/forecast.js — the same module the offline build parses
+   with, so this cannot drift from the committed artifact.
+
+   AND IT NEVER INVENTS. No forecast means the card says WHICH of the three
+   reasons applies (no coordinates, nobody asked, the provider refused), and
+   an indoor venue says so instead of drawing four identical rows. */
+function fbGxWxTempClass(f){
+  if(f==null||!isFinite(f))return '';
+  if(f>=86)return 'hot'; if(f>=76)return 'warm';
+  if(f>=50)return 'mild'; return 'cool';
+}
+function fbGxWeather(u){
+  if(!u||!u.g)return '';
+  var g=u.g,P=window.EDCfbP4Params||{},V=(P.universe&&P.universe.venues)||{};
+  var hk=(window.EDFbs&&window.EDFbs.normKey)?window.EDFbs.normKey(g.home_team):null;
+  var ven=(hk&&V[hk])||null;
+  var w=null;try{w=(FB&&FB.p4&&FB.p4.weather)?FB.p4.weather[g.game_id]:null;}catch(_){}
+  if(!ven&&!w)return '';
+  var F=window.EDForecast||null;
+  /* THE VIEW MODEL IS BUILT IN THE SHARED MODULE, never here: the brief and
+     any export must describe the same stadium the same way. */
+  var c=F?F.card(w,ven||{}):null;
+  if(!c)return '';
+  var H='';
+  H+='<div class="gx-wxv"><div style="min-width:0">'
+    +'<div class="nm">'+fbEsc(c.venue.name||g.venue||'Venue not named')+'</div>'
+    +(c.venue.city?'<div class="ct">'+fbEsc(c.venue.city)+'</div>':'')
+    +'</div><div class="gx-wxchips">'
+    +c.venue.chips.map(function(ch){
+        var k=ch.kind==='surface'?(ch.text==='GRASS'?'grass':''):(ch.text==='INDOOR'?'roof':'air');
+        return '<span class="gx-wxchip '+k+'">'+ch.icon+' '+fbEsc(ch.text)+'</span>';
+      }).join('')
+    +'</div></div>';
+  if(c.venue.facts.length)H+='<div class="gx-wxfacts">'
+    +c.venue.facts.map(function(f){return '<span class="gx-wxchip">'+f.icon+' '+fbEsc(f.text)+'</span>';}).join('')
+    +'</div>';
+
+  if(c.state==='INDOOR'){
+    H+='<div class="gx-wxnote">'+fbEsc(c.note||'')+'</div>';
+    return H;
+  }
+  if(c.state==='NONE'||!c.hours.length){
+    /* THE THREE SENTENCES, KEPT APART. "No weather" was doing the work of
+       all three and a reader could not tell a blocked host from a dome. */
+    var why=ven?(w?'the provider answered with no hour inside four hours of kickoff'
+                 :'no forecast has been retrieved for this kickoff yet')
+               :'this venue has no coordinates on file, so no forecast can be located for it';
+    H+='<div class="gx-wxnote">No game-time forecast: '+fbEsc(why)+'. '
+      +'The engine widens its outcome range rather than assuming one.</div>';
+    return H;
+  }
+  if(c.conditions)H+='<div class="gx-wxnow"><span class="dot"></span><b>'
+    +fbEsc(String(c.conditions).split(' · ')[0])+'</b>'
+    +fbEsc(String(c.conditions).split(' · ').slice(1).map(function(x){return ' · '+x;}).join(''))
+    +'</div>';
+  H+='<div class="gx-wxhead">Game-time forecast<i>· venue local'+(c.tz?(' ('+fbEsc(c.tz)+')'):'')+'</i></div>';
+  H+='<div class="gx-wxrow">'+c.hours.map(function(h){
+    return '<div class="gx-wxh">'
+      +'<div class="hr">'+fbEsc(h.label||'')+' '+(h.is_day?'☀️':'🌙')+'</div>'
+      +'<div class="ic" title="'+fbEsc(h.text||'')+'">'+(h.icon||'')+'</div>'
+      +'<div class="tp '+fbGxWxTempClass(h.temp_f)+'">'+(h.temp_f==null?'—':Math.round(h.temp_f)+'°')+'</div>'
+      +(h.wind_mph==null?'':'<div class="wd">'+(h.wind_arrow||'')+' '+Math.round(h.wind_mph)+'</div>')
+      +(h.precip_pct==null?'':'<div class="pp">☔ '+Math.round(h.precip_pct)+'%</div>')
+      +'</div>';
+  }).join('')+'</div>';
+  if(c.note)H+='<div class="gx-wxnote">'+fbEsc(c.note)+'</div>';
+  /* A CARRIED FORECAST SAYS SO, AT ITS REAL AGE. */
+  if(c.carried)H+='<div class="gx-wxnote">Carried forward from the last forecast EdgeDesk actually observed'
+    +(c.observed_at?(', at '+fbEsc(String(c.observed_at).replace('T',' ').slice(0,16))+' UTC'):'')
+    +' — this build could not reach the provider.</div>';
+  return H;
+}
+window.fbGxWeather=fbGxWeather;
+window.fbGxWxTempClass=fbGxWxTempClass;
+
 function fbGxSec(gid,id,label,body,open,note){
   if(!body)return '';
   var k=gid+':'+id,isOpen=FB_GX_OPEN[k]!==undefined?FB_GX_OPEN[k]:!!open;
@@ -47117,6 +47230,8 @@ function fbP4Card(u){
   var body=fbGxSummary(u,p,gid)
     +fbGxSec(gid,'matchup','Programs, conferences and the FBS rating',fbP4MatchupHTML(u,p),true,
       'who is playing, on one all-FBS scale')
+    +fbGxSec(gid,'venue','Venue and game-time forecast',fbGxWeather(u),true,
+        'surface, roof, elevation, and the forecast for kickoff and the three hours after it')
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
     +fbGxSec(gid,'wrong','Why this number could be wrong',fbGxWrong(p),true)
     +fbGxSec(gid,'qb','The quarterbacks · measured',fbGxQb(u),true,
