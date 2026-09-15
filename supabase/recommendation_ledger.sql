@@ -329,3 +329,26 @@ comment on view public.recommendation_record is
   'and n_corrected counts how many results in this population were officially corrected.';
 
 commit;
+
+/* ---------------------------------------------------------------------------
+   TELL POSTGREST THE TABLE EXISTS.
+
+   Applying this file is not the last step, and finding that out the hard way
+   cost a release. A live run on 2026-09-15 created the table, the indexes, the
+   triggers, the policies and the view, committed cleanly — and the deployment
+   doctor, one second later, still reported
+
+     NOT_APPLIED  recommendation_ledger — the table is not in the schema
+
+   because PostgREST caches the database schema in memory and had started
+   before this table existed. Everything that reaches this table goes through
+   PostgREST: the doctor's check, and the edge function's insert. So a
+   perfectly applied migration left the ledger invisible to the only clients
+   that use it, and edgedesk_ai went on failing its writes with the SAME
+   "schema cache" error the migration was supposed to end.
+
+   NOTIFY is queued and delivered at COMMIT, so it fires after everything above
+   is durable, and it is harmless to repeat — which matters, because this file
+   is written to be re-appliable and ledger_sql.test.js applies it twice.
+   --------------------------------------------------------------------------- */
+notify pgrst, 'reload schema';
