@@ -23,6 +23,15 @@ name: Intelligence doctor
 
 on:
   workflow_dispatch:
+    inputs:
+      probe_answer:
+        description: "Also send ONE real question to the deployment and report the shape of the reply"
+        type: boolean
+        default: false
+      question:
+        description: "The question to send (blank = the reported North Texas / Texas State one)"
+        type: string
+        required: false
   schedule:
     # Once a day, off the hour for the reason editorial.yml documents.
     - cron: '17 14 * * *'
@@ -54,6 +63,33 @@ jobs:
             echo '## Intelligence deployment'
             echo '```'
             cat doctor.txt 2>/dev/null || echo 'the doctor produced no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # WHAT IT IS RUNNING IS NOT WHAT IT ANSWERS.
+      # The doctor above establishes the build. This asks the deployment the
+      # question a customer asked and reports the SHAPE of the reply — did the
+      # writing model answer, did the four sections arrive, did any internal
+      # label leak into the prose, and was a deterministic read served when
+      # narration failed. No secret is printed and the answer is summarised,
+      # never dumped, so a public run log is not a copy of someone's research.
+      - name: Ask the deployment the customer's question
+        if: ${{ inputs.probe_answer }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          node tools/intelligence/probe_live.js \
+            ${{ inputs.question && format('--question "{0}"', inputs.question) || '' }} | tee probe.txt
+        continue-on-error: true
+
+      - name: Put the answer's shape in the run summary
+        if: ${{ always() && inputs.probe_answer }}
+        run: |
+          {
+            echo '## What the deployment answered'
+            echo '```'
+            cat probe.txt 2>/dev/null || echo 'the probe produced no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
