@@ -1496,6 +1496,17 @@ section('7 — the provider');
       /reachable && !FORCE|!reachable && !FORCE/.test(gate) && /REFUSED/.test(gate));
     chk('\u2026and names the deploy that fixes it',
       /supabase functions deploy newsletter/.test(gate));
+    /* The CLI is not the only way in, and for someone without it installed
+       it is the larger ask: both functions import nothing, so the dashboard
+       editor takes the file whole. */
+    chk('\u2026and the no-CLI route through the dashboard',
+      /Edge Functions/.test(gate)
+      && /supabase\/functions\/newsletter\/index\.ts/.test(gate));
+    /* Pasting it with the default toggle left on deploys a function that
+       401s the unsubscribe link \u2014 a worse failure than the 404, because the
+       gate would open on it. The refusal has to say so. */
+    chk('\u2026and that Verify JWT must be turned off',
+      /Verify JWT/.test(gate) && /unsubscribe/.test(gate));
     chk('an operator can still force it knowingly', /FORCE/.test(gate));
     chk('CLOSING the gate is never blocked',
       gate.indexOf('reachable') > gate.indexOf('if (wantOn)'),
