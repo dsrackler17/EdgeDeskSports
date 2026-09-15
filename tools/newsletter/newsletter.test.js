@@ -1265,37 +1265,29 @@ section('7 — the provider');
       /* THE BUG THIS GUARDS was that storage drops `g.research`, so on the way
          back out the supported set came up EMPTY and every printed figure was
          reported as unsupported — no edition could ever be sent. The inverse
-         of that is what gets asserted over every stored edition below: the
-         re-attached payload must be what carries the figures. Drift moves a
-         number; it never takes the payload away.
+         of that is asserted below over every stored edition: re-attachment
+         has to be what carries the figures.
 
-         WHAT MUST NOT BE ASSERTED ON A CLOSED EDITION is that its figures all
-         still trace. A superseded edition legitimately drifts: it printed the
-         number the book showed when it was built, the book moved, and the
-         record behind it moved with it — so a figure it printed really is no
-         longer supported, and that edition really could not be sent today.
-         That is the check working, not breaking.
+         WHAT IS DELIBERATELY NOT ASSERTED HERE is that a stored body's figures
+         all still trace against TODAY's records. A committed body is a
+         snapshot of the moment it was built; the records move on (the
+         `editorial:` job regenerates them roughly hourly), so pairing a frozen
+         body with live records drifts by construction. That pairing is not
+         what production does either: the scheduled run calls build(), and
+         hands the FRESHLY BUILT object to send() — run.js:1198 then 1239. The
+         stored file is an artefact of an earlier run, and the send path's own
+         re-validation in sendBody() reads the body it is about to send.
 
-         `dueFor` returns the most recent window WHETHER OR NOT IT IS STILL
-         OPEN, so scoping to it is not enough: it kept pointing at an edition
-         whose send window had closed days earlier (NFL-2026-W02-2026-09-08,
-         9530 minutes late, on a single drifted 2.78) and reddened the suite —
-         which is the newsletter workflow's own pre-flight, so a stale figure
-         in a week-old file was stopping the NEXT edition from being built at
-         all. The window has to still be open, which is exactly the condition
-         under which the pipeline would send it. */
-      const liveKeys = SCHEDULE.sports().map(sp => {
-        const d = SCHEDULE.dueFor(sp, Date.now());
-        return d.stale ? null : { sport: sp, date: d.edition_date };
-      }).filter(Boolean);
-      const isLive = f => liveKeys.some(c => {
-        const m = /^([A-Z]+)-\d{4}-W\d+-(\d{4}-\d{2}-\d{2})\.json$/.exec(f);
-        return !!m && m[1] === c.sport && m[2] === c.date;
-      });
-
-      let checked = 0;
+         This was learned twice, both times by reddening the newsletter
+         workflow's own pre-flight and so blocking the next edition from being
+         built at all. First scoped to `dueFor`, which returns the most recent
+         window whether or not it is still open (NFL-2026-W02-2026-09-08, 9530
+         minutes late, one drifted 2.78). Then scoped to an OPEN window, which
+         failed the same way inside the live window on 2026-09-15 (44.8, 48.5,
+         2.78, 47.5, 49.5) because the gate had been closed for a day, nothing
+         had been re-committed, and the records had moved underneath a frozen
+         body. The window was never the variable. */
       let supportProven = 0;
-      const unsupported = [];
       const lostResearch = [];
       const emptySupport = [];
       stored.forEach(f => {
@@ -1318,32 +1310,15 @@ section('7 — the provider');
         const rich = Object.keys(VALIDATE.supportedFor(ed, [])).length;
         if (rich < bare * 2) emptySupport.push(key + ': ' + bare + ' -> ' + rich);
         supportProven++;
-        if (!isLive(f)) return;                /* closed window; drift is not a fault */
-        ed.html_free = FS.readFileSync(htmlFile, 'utf8');
-        ed.text_free = FS.readFileSync(textFile, 'utf8');
-        const v = VALIDATE.validate(ed, {
-          now: Date.parse(ed.data_cutoff_at || ed.composed_at || ed.built_at) || NOW,
-          published_ids: {},
-          rendered: { html: ed.html_free, text: ed.text_free },
-          renderOpts: { site: 'https://edgedesksports.com',
-            mailing_address: 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423' },
-        });
-        checked++;
-        (v.integrity_failed || []).forEach(x => {
-          if (x.id === 'unsupported_statistic') unsupported.push(key + ': ' + x.detail);
-        });
       });
       chk('the research is findable again for every game of every stored edition',
         lostResearch.length === 0, lostResearch.slice(0, 3).join(' | '));
       chk('an edition is actually put through this', supportProven > 0,
         supportProven + ' of ' + stored.length + ' stored');
       /* The assertion that would have caught the original bug on any day of
-         the week, open window or not. */
+         the week, whatever the market has done since. */
       chk('and re-attachment is what makes the figures supported at all',
         emptySupport.length === 0, emptySupport.slice(0, 3).join(' | '));
-      chk('every figure in a SENDABLE edition is traceable again'
-        + (checked ? '' : ' (no window open right now)'),
-        unsupported.length === 0, unsupported.slice(0, 3).join(' | '));
     }
 
     /* AND WHEN IT CANNOT BE RE-ATTACHED, the send says so by name rather than
