@@ -21268,18 +21268,40 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
 #edaiScrim{position:fixed;inset:0;z-index:40;background:rgba(6,8,12,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .18s}
 #edaiScrim.open{opacity:1;pointer-events:auto}
-#edaiPanel{position:fixed;z-index:41;background:var(--bg);border-left:1px solid var(--border);
+/* ══ THE DESK — indigo ink and citron ═══════════════════════════════════
+   EdgeDesk Intelligence answers as "The Desk", and it looks like it. The
+   panel carried the app's teal-on-brown, which is the board's palette and
+   reads as a generic assistant bolted onto the side of a product. These
+   tokens are scoped to the panel so the board keeps its own colours and The
+   Desk keeps an identity a reader recognises before they read a word.
+   Ink is the ground, citron is the one accent, and citron is spent only on
+   the thing the reader should act on. */
+#edaiPanel{
+  --ink:#141a3a; --ink-2:#1b2350; --ink-3:#242e63; --ink-line:#2f3a72;
+  --citron:#d8f24b; --citron-dim:#a8bf2e; --on-citron:#131a05;
+  --desk-fg:#eef1ff; --desk-dim:#9aa3d0; --desk-faint:#6f78a8;
+  color:var(--desk-fg);
+}
+#edaiPanel{position:fixed;z-index:41;background:var(--ink);border-left:1px solid var(--ink-line);
   display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);
   top:0;right:0;bottom:0;width:min(440px,100%);box-shadow:-14px 0 40px rgba(0,0,0,.5)}
 #edaiPanel.open{transform:translateX(0)}
 @media(max-width:620px){#edaiPanel{width:100%;border-left:none}}
 
-.edai-top{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:env(safe-area-inset-top) solid transparent;
-  border-bottom:1px solid var(--border);background:rgba(25,21,16,.92);backdrop-filter:blur(8px)}
-.edai-brand{display:flex;flex-direction:column;line-height:1.15}
-.edai-brand b{font-size:14px;font-weight:800;letter-spacing:.01em}
-.edai-brand span{font-size:10px;color:var(--dim)}
-.edai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(47,167,154,.15)}
+.edai-top{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:env(safe-area-inset-top) solid transparent;
+  border-bottom:1px solid var(--ink-line);background:rgba(20,26,58,.94);backdrop-filter:blur(8px)}
+.edai-brand{display:flex;flex-direction:column;line-height:1.18}
+.edai-brand b{font-size:15px;font-weight:800;letter-spacing:.01em;color:var(--desk-fg)}
+/* THE TAGLINE IS THE PROMISE, so it sits under the name and never moves. */
+.edai-brand span{font-size:10px;color:var(--desk-dim);letter-spacing:.015em}
+/* THE MARK. An ED monogram behind a scan line — the desk reading a card.
+   Deliberately not a face and not a mascot: this thing has no opinions it
+   cannot evidence, and a cartoon implies otherwise. */
+.edai-mark{width:28px;height:28px;flex:0 0 28px;border-radius:8px;background:var(--ink-3);
+  border:1px solid var(--ink-line);position:relative;overflow:hidden;display:grid;place-items:center}
+.edai-mark i{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  letter-spacing:-.04em;color:var(--citron)}
+.edai-mark:after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--citron);opacity:.55}
 .edai-x{margin-left:auto;background:none;border:1px solid var(--border);color:var(--dim);border-radius:9px;
   width:32px;height:32px;font-size:16px;cursor:pointer;line-height:1}
 .edai-x:active{transform:scale(.95)}
@@ -21291,22 +21313,61 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
 .edai-actions{display:flex;gap:7px;padding:10px 14px;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none}
 .edai-actions::-webkit-scrollbar{display:none}
-.edai-qa{flex:0 0 auto;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+.edai-qa{flex:0 0 auto;background:var(--ink-2);border:1px solid var(--ink-line);color:var(--desk-fg);
   border-radius:20px;padding:7px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap}
+.edai-qa:hover{border-color:var(--citron-dim)}
 .edai-qa:active{transform:scale(.97)}
-.edai-qa.hot{border-color:rgba(47,167,154,.5);color:var(--accent)}
+.edai-qa.hot{border-color:var(--citron);color:var(--citron)}
 
 .edai-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
 .edai-msg{max-width:100%;font-size:13.5px;line-height:1.5}
-.edai-msg.u{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-radius:14px 14px 4px 14px;padding:9px 12px;font-weight:500;max-width:82%}
+.edai-msg.u{align-self:flex-end;background:var(--citron);color:var(--on-citron);border-radius:14px 14px 4px 14px;padding:9px 12px;font-weight:600;max-width:82%}
 .edai-msg.a{align-self:flex-start;color:var(--text)}
 .edai-msg.a p{margin:0 0 8px}.edai-msg.a p:last-child{margin:0}
 .edai-msg.a b{color:#fff}
+.edai-msg.a{color:var(--desk-fg)}
+.edai-msg.a li{color:var(--desk-fg)}
 .edai-msg.a ul{margin:4px 0 8px;padding-left:2px;list-style:none}
 .edai-msg.a li{padding:2px 0 2px 16px;position:relative;color:var(--text)}
 .edai-msg.a li:before{content:'';position:absolute;left:2px;top:10px;width:5px;height:5px;border-radius:50%;background:var(--dim)}
 .edai-msg.a li.pos:before{background:var(--pos)}.edai-msg.a li.neg:before{background:var(--neg)}.edai-msg.a li.warn:before{background:var(--warn)}
-.edai-src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-top:6px;border-top:1px dashed var(--border);padding-top:5px}
+.edai-src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--desk-faint);margin-top:6px;border-top:1px dashed var(--ink-line);padding-top:5px}
+
+/* ── THE DESK'S ANSWER ─────────────────────────────────────────────────
+   Four sections, in the order a reader asks for them. The read is the
+   answer and is styled as the answer; everything under it is support. */
+.dk-read{border:1px solid var(--ink-line);border-left:3px solid var(--citron);background:var(--ink-2);
+  border-radius:10px;padding:11px 13px;margin:0 0 10px}
+.dk-read .lab{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--citron)}
+.dk-read p{margin:5px 0 0;font-size:14px;line-height:1.52;color:var(--desk-fg)}
+.dk-sec{margin:10px 0 0}
+.dk-sec > .h{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--desk-dim);margin-bottom:4px}
+.dk-sec ul{margin:0;padding-left:2px;list-style:none}
+.dk-sec li{position:relative;padding:3px 0 3px 15px;font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
+.dk-sec li:before{content:'';position:absolute;left:2px;top:10px;width:5px;height:5px;border-radius:50%;background:var(--desk-faint)}
+.dk-sec.wrong li:before{background:var(--neg)}
+.dk-sec.limits li:before{background:var(--warn)}
+.dk-price{border:1px dashed var(--ink-line);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--desk-fg)}
+.dk-price b{color:var(--citron)}
+/* The one market that leads, and the disclosure holding the rest. */
+.dk-primary{border:1px solid var(--ink-line);border-radius:10px;padding:10px 12px;margin:10px 0 0;background:var(--ink-2)}
+.dk-primary .mk{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--desk-dim);text-transform:uppercase}
+.dk-primary .sel{font-size:14px;font-weight:700;margin-top:2px;color:var(--desk-fg)}
+.dk-primary .px{font-size:12.5px;color:var(--desk-dim);margin-top:2px}
+.dk-primary .stale{color:var(--warn);font-weight:600}
+.dk-more{margin-top:8px}
+.dk-more summary{cursor:pointer;font-size:11.5px;color:var(--desk-dim);list-style:none}
+.dk-more summary::-webkit-details-marker{display:none}
+.dk-more summary:before{content:'▸ ';color:var(--citron)}
+.dk-more[open] summary:before{content:'▾ '}
+.dk-more table{width:100%;border-collapse:collapse;margin-top:6px;font-size:11.5px}
+.dk-more td{padding:4px 6px;border-top:1px solid var(--ink-line);color:var(--desk-dim)}
+.dk-more td.s{color:var(--desk-fg);font-weight:600}
+/* Contextual follow-ups: what a reader asks next, not a generic menu. */
+.dk-next{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.dk-next button{background:none;border:1px solid var(--ink-line);color:var(--desk-dim);border-radius:16px;
+  padding:6px 11px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer}
+.dk-next button:hover{border-color:var(--citron);color:var(--citron)}
 
 /* structured verdict card */
 .edai-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
@@ -21869,10 +21930,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 }
 /*__EDB_CSS_END__*/
 </style>
-<div id="edaiPanel" role="dialog" aria-label="EdgeDesk Intelligence">
+<div id="edaiPanel" role="dialog" aria-label="The Desk — EdgeDesk Intelligence">
   <div class="edai-top">
-    <span class="edai-dot"></span>
-    <div class="edai-brand"><b>EdgeDesk Intelligence</b><span>Your market research analyst</span></div>
+    <span class="edai-mark" aria-hidden="true"><i>ED</i></span>
+    <div class="edai-brand"><b>The Desk</b><span>Sharp research. No fake certainty.</span></div>
     <button class="edai-x" onclick="EDAI.close()" aria-label="Close">&times;</button>
   </div>
   <div class="edai-loaded hide" id="edaiLoaded">
@@ -21882,7 +21943,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   <div class="edai-actions" id="edaiActions"></div>
   <div class="edai-log" id="edaiLog"></div>
   <div class="edai-input">
-    <textarea id="edaiText" rows="1" placeholder="Ask about an edge, a price, a matchup…"
+    <textarea id="edaiText" rows="1" placeholder="Ask The Desk about a matchup, a price, a team…"
       onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();EDAI.sendText();}"
       oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'"></textarea>
     <button class="edai-send" id="edaiSend" onclick="EDAI.sendText()">&#8593;</button>
@@ -30738,9 +30799,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     thinking(true);
     var board=null; try{ board=await buildBoard(); }catch(_){}
     if(!board||(!board.slate.length&&!board.mlb_starters.length)){
+      /* AN EMPTY LOCAL BOARD IS NOT AN EMPTY WORLD.
+         Every question asked without a signal loaded arrives here, and this
+         used to answer "there is nothing on the board to reason over yet" and
+         stop — for a question naming a specific matchup, which the server can
+         research from the published card whether or not this browser has
+         scored any signals. A reader asking about North Texas at Texas State
+         was told to rescan. The server is asked instead; if IT has nothing,
+         its own answer says so, with the reason. */
+      var res0=await askAI('chat', question, null, null);
       thinking(false);
-      push('a','<p>There is nothing on the board to reason over yet — no scored signals in the window and no MLB card loaded. Rescan once the board populates.</p>'
-        +'<div style="margin-top:6px"><button class="edai-qa" onclick="EDAI.scanSlate()">Rescan</button></div>');
+      var d0=push('a',res0.html);
+      if(res0.src&&d0){ var s0=document.createElement('div'); s0.className='edai-src'; s0.textContent=res0.src; d0.appendChild(s0); }
       return;
     }
     var res=await askAI('board', question, null, {board:board});
@@ -31058,6 +31128,113 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      rendering against the same object so the two cannot disagree. */
   function ctxOf(r){ return (r && r.research_context) || null; }
 
+  /* ======================================================================
+     THE DESK'S ANSWER, IN THE ORDER THE READER ASKED FOR IT.
+
+     The reported reply put six near-identical PASS cards where the answer
+     should have been, filed the PRICE NEEDED under "against it", and spoke in
+     the engine's vocabulary instead of football's. This renders the four
+     sections the answer contract asks the model for — and renders the SAME
+     four from structured data when the model does not answer, so the reader
+     cannot tell from the shape whether narration succeeded, only from the
+     honesty of what it says.
+     ====================================================================== */
+
+  /* The heading the reader sees, in one spelling. The MATCHER below accepts
+     either apostrophe because the writing model will use whichever it likes;
+     the LABEL is always the typographic one, so the narrated answer and the
+     deterministic one are indistinguishable in shape. */
+  var DESK_SECTIONS = [
+    {key:'read',  h:'The Desk\u2019s read',        cls:'read', re:"The Desk['\u2019]s read"},
+    {key:'why',   h:'Why',                        cls:'why',   re:'Why'},
+    {key:'wrong', h:'What could make it wrong',   cls:'wrong', re:'What could make it wrong'},
+    {key:'limits',h:'Price and data limitations', cls:'limits',re:'Price and data limitations'}
+  ];
+
+  /* The model's prose, given the same hierarchy as the deterministic read.
+     The contract asks for these four headings; when they are present they are
+     promoted, and when they are not the prose is rendered as it always was. */
+  function deskProseHTML(answer){
+    var txt=String(answer||''); if(!txt.trim()) return '';
+    var idx=DESK_SECTIONS.map(function(sec){
+      var re=new RegExp('(^|\\n)\\s*\\**\\s*'+(sec.re||sec.h)+'\\s*\\**\\s*:?\\s*(\\n|$)','i');
+      var m=re.exec(txt); return {sec:sec, at:m?m.index:-1, len:m?m[0].length:0};
+    }).filter(function(x){return x.at>=0;}).sort(function(a,b){return a.at-b.at;});
+    if(idx.length<2) return mdToHtml(txt);            // not the four-section shape
+    var out='';
+    idx.forEach(function(cur,i){
+      var start=cur.at+cur.len, end=(i+1<idx.length)?idx[i+1].at:txt.length;
+      var body=txt.slice(start,end).trim(); if(!body) return;
+      if(cur.sec.key==='read'){
+        out+='<div class="dk-read"><div class="lab">'+esc(cur.sec.h)+'</div>'+mdToHtml(body)+'</div>';
+      } else {
+        out+='<div class="dk-sec '+cur.sec.cls+'"><div class="h">'+esc(cur.sec.h)+'</div>'+mdToHtml(body)+'</div>';
+      }
+    });
+    return out;
+  }
+
+  /* The same four, built from structured fields, when the writer did not
+     answer. Nothing here is a lean the engine did not make. */
+  function deskReadHTML(S){
+    if(!S) return '';
+    var h='<div class="dk-read"><div class="lab">'+esc(DESK_SECTIONS[0].h)+'</div><p>'+esc(S.read||'')+'</p></div>';
+    function list(cls,head,arr){
+      if(!arr||!arr.length) return '';
+      return '<div class="dk-sec '+cls+'"><div class="h">'+esc(head)+'</div><ul>'
+        +arr.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';
+    }
+    h+=list('why',DESK_SECTIONS[1].h,S.why);
+    h+=list('wrong',DESK_SECTIONS[2].h,S.could_be_wrong);
+    /* PRICE NEEDED AND DATA BLOCKERS ARE NOT COUNTERARGUMENTS, and putting
+       them here rather than above is the whole correction. */
+    var lim=[];
+    if(S.price_needed) lim.push(S.price_needed);
+    (S.data_blockers||[]).forEach(function(b){ lim.push(b); });
+    h+=list('limits',DESK_SECTIONS[3].h,lim);
+    return h;
+  }
+
+  /* ONE market leads. The rest are available and out of the way. */
+  function deskMarketHTML(S, decisions){
+    if(!S||!S.primary) return '';
+    var p=S.primary, stale=p.freshness&&p.freshness!=='CURRENT';
+    var line=esc(p.selection||'')+(p.handicap!=null?' '+(p.handicap>0?'+':'')+p.handicap:'');
+    var h='<div class="dk-primary"><div class="mk">'+esc(marketWord(p.market))+'</div>'
+      +'<div class="sel">'+line+'</div>'
+      +'<div class="px">'+(p.offered_american?esc(p.offered_american):'no price')
+      +(p.book?' &middot; '+esc(p.book):'')
+      +(stale?' &middot; <span class="stale">stale quote</span>':'')+'</div>';
+    if(S.ev_provenance) h+='<div class="px" style="margin-top:4px">'+esc(S.ev_provenance)+'</div>';
+    h+='</div>';
+    var others=(decisions||[]).filter(function(d){ return !d.primary; });
+    if(others.length){
+      h+='<details class="dk-more"><summary>View all markets ('+(others.length+1)+')</summary><table>';
+      h+='<tr><td class="s">'+esc(marketWord(p.market))+'</td><td class="s">'+line+'</td><td>'
+        +(p.offered_american?esc(p.offered_american):'—')+'</td><td>'+esc(p.decision||'')+'</td></tr>';
+      others.forEach(function(d){
+        var dl=esc(d.selection||'')+(d.handicap!=null?' '+(d.handicap>0?'+':'')+d.handicap:'');
+        h+='<tr><td>'+esc(marketWord(d.market))+'</td><td>'+dl+'</td><td>'
+          +((d.price&&d.price.offered_american)?esc(d.price.offered_american):'—')+'</td><td>'
+          +esc(d.decision||'')+'</td></tr>';
+      });
+      h+='</table></details>';
+    }
+    return h;
+  }
+  function marketWord(m){
+    return m==='spreads'?'Spread':m==='totals'?'Total':m==='h2h'?'Moneyline':(m||'Market');
+  }
+
+  /* What a reader asks next about THIS game, not a generic menu. */
+  function deskNextHTML(S){
+    if(!S) return '';
+    var qs=['Pressure-test this','Who have they played?','What price works?'];
+    return '<div class="dk-next">'+qs.map(function(q){
+      return '<button onclick="EDAI.followUp('+JSON.stringify(q).replace(/"/g,'&quot;')+')">'+esc(q)+'</button>';
+    }).join('')+'</div>';
+  }
+
   /* Is the reader's open signal the thing they just asked about?
      Answered through the board's OWN resolver — the same EDINTEL block the
      server uses — never a normalised string compare, because the book writes
@@ -31214,10 +31391,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* The card shown when the writing model did not answer. Facts only, plus a
      retry. The wording never implies EdgeDesk formed a view it did not form. */
   function factualFallbackHTML(d, question){
-    var r=d&&d.research; if(!r) return '';
+    var r=d&&d.research; if(!r&&!d.matchup_summary) return '';
     var c=ctxOf(r);
     var why=(d.narration&&d.narration.reason)||'the writing model did not answer';
-    var h=factHeadHTML(c, 'Research completed. The written analysis is unavailable — the facts below are EdgeDesk’s own and are unaffected.');
+    /* THE SAME FOUR SECTIONS. A reader who asked about a football game gets a
+       football answer whether or not the writer answered; what they do not get
+       is a lean nobody made. The shape is identical on purpose. */
+    var S=d.matchup_summary||null;
+    var h='';
+    if(S){
+      h+=deskReadHTML(S)+deskMarketHTML(S,(r&&r.decisions)||[]);
+      h+='<div class="dk-price" style="border-style:solid;border-color:var(--warn)">'
+        +'<b>Written by EdgeDesk, not by the model.</b> The research ran and is complete; the written '
+        +'analysis failed, so the read above is built from EdgeDesk\u2019s own fields. No view has been '
+        +'invented in its place. <button class="edai-qa" style="margin-left:6px" onclick="EDAI.retryLast()">Retry analysis</button></div>';
+      h+=deskNextHTML(S)+researchSectionsHTML(r);
+      return h;
+    }
+    h=factHeadHTML(c, 'Research completed. The written analysis is unavailable — the facts below are EdgeDesk’s own and are unaffected.');
     h+=scopeHTMLFor(r)+decisionListHTML(r)+researchSectionsHTML(r);
     if(!h) return '';
     h+='<div class="gd-modelnote" style="border-left:3px solid var(--warn,#d99a2b);padding-left:10px;margin-top:8px;font-size:12px">'
@@ -31240,6 +31431,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return h;
   }
 
+  /* Reader-facing words for what the desk just did. Unknown intents fall back
+     to the shape of the name rather than the name itself, so a new intent
+     added tomorrow still cannot leak an identifier onto the screen. */
+  function traceLabel(r){
+    var i=String((r&&r.intent)||'');
+    if(/_research_matchup$/.test(i)) return 'Matchup research';
+    if(/_betting_candidate$/.test(i)) return 'Betting research';
+    if(/_what_changed$/.test(i)||i==='what_changed') return 'Market movement';
+    if(/_historical/.test(i)||i==='historical') return 'Historical record';
+    if(i==='attack') return 'Thesis attack';
+    if(i==='price') return 'Price check';
+    if(i==='postmortem') return 'Postmortem';
+    if(/_best_matchups$|_best_teams$/.test(i)) return 'Card research';
+    if(i==='slate_overview'||i==='best_bets'||i==='research_priority') return 'Card research';
+    if(/pitcher|bullpen|offense/.test(i)) return 'Matchup research';
+    return 'Research';
+  }
+
   function traceHTMLFor(r){
     if(!r || typeof r!=='object') return '';
     var bits=[];
@@ -31248,7 +31457,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(r.completeness && r.completeness.pct!=null) bits.push(r.completeness.pct+'% complete');
     if(r.conflicts) bits.push(r.conflicts+' conflict'+(r.conflicts===1?'':'s'));
     if(r.attack) bits.push('thesis '+String(r.attack).toLowerCase());
-    var head='<div class="edai-rstate">'+esc((r.intent||'research')+' · '+(r.depth||'')+(bits.length?' · '+bits.join(' · '):''))+'</div>';
+    /* THE TRACE IS PROVENANCE, NOT A DEBUG LINE.
+       This printed the raw intent and depth — "CFB_RESEARCH_MATCHUP · DEEP" —
+       at the foot of every answer, which is the engine talking about itself in
+       its own vocabulary, and exactly the operational language the reader was
+       promised they would not see. The COUNTS are genuinely useful and stay;
+       the internal names are translated into what they mean. */
+    var head='<div class="edai-rstate">'+esc(traceLabel(r)+(bits.length?' · '+bits.join(' · '):''))+'</div>';
     var body='';
     if(r.sources && r.sources.length)
       body+='<div style="font-size:11px;color:var(--faint);margin-top:3px">Sources: '+esc(r.sources.join(', '))+'</div>';
@@ -31384,12 +31599,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
           home_id:rc.home_id,away_id:rc.away_id} : LAST_CTX; }catch(_){}
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
+        /* A MATCHUP ANSWER IS SHAPED LIKE THE QUESTION, not like the board.
+           When one game is the subject the answer leads with The Desk's read
+           and ONE market; the ranked decision list is a card-wide device and
+           is exactly what buried the useful part of the reported reply. */
+        var S=d.matchup_summary||null;
+        if(S){ LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+          return {html:integrityHTMLFor(d.research)+deskProseHTML(d.answer)
+            +deskMarketHTML(S,(d.research&&d.research.decisions)||[])
+            +ledgerNoticeHTML(d)+deskNextHTML(S)+researchSectionsHTML(d.research)+traceHTMLFor(d.research),
+            src:d.model?('The Desk \u00b7 reasoned by '+d.model+(d.cached?' \u00b7 cached':'')):null}; }
         return {html:presCardHTML(d,x,mode)+integrityHTMLFor(d.research)+scopeHTMLFor(d.research)+mdToHtml(d.answer)
           +decisionListHTML(d.research)+ledgerNoticeHTML(d)+researchSectionsHTML(d.research)+traceHTMLFor(d.research),
           src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
       /* Narration failed but the research came back. Render the facts and
          offer the prose again — do NOT fall through to the catch block, which
          answers from whatever signal is open and would be a different game. */
+      /* edgedesk_ai answers 200 with answer:"" when narration failed twice and
+         it served the deterministic read instead. That is a successful turn
+         with no prose, not an error. */
       var fb=factualFallbackHTML(d, question);
       if(fb){ LAST_ASK={mode:mode,question:question,x:x,extra:extra};
         return {html:fb+traceHTMLFor(d.research), src:'EdgeDesk research · written analysis unavailable'}; }
@@ -34054,6 +34282,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        cheap second attempt at the same turn rather than a new one. Nothing is
        fabricated in the meantime: the factual card says plainly that EdgeDesk
        has not formed a view. */
+    /* A CONTEXTUAL FOLLOW-UP IS JUST THE NEXT QUESTION, asked for the reader.
+       It rides the same path as typing it, so the carried subject keeps the
+       conversation on the same game. */
+    followUp:function(q){
+      try{ var t=$id('edaiText'); if(t){ t.value=String(q||''); } }catch(_){}
+      return window.EDAI.sendText();
+    },
+
     retryLast:async function(){
       if(BUSY || !LAST_ASK) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
       try{
