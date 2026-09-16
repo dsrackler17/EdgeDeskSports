@@ -48,6 +48,11 @@ on:
         type: boolean
         required: false
         default: false
+      report_schema:
+        description: 'Also print the collective schema exactly as production serves it (relations, columns, routines; no rows).'
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   # Two runs loading the same week race each other into the same upsert.
@@ -81,6 +86,25 @@ jobs:
 
       - name: Prove the source is live before anything is written
         run: node tools/collective/sync_schedule.js --verify || true
+
+      # WHAT IS ACTUALLY THERE. A sync or a settle that refuses because a
+      # table or column is not in the schema names what it wanted; this
+      # names what production holds instead. Relations, columns and routines
+      # only -- no row is read and no value is printed.
+      - name: Report the collective schema as production serves it
+        if: ${{ inputs.report_schema }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          set -o pipefail
+          node tools/collective/schema_report.js | tee schema.txt
+          {
+            echo '## Collective schema (production)'
+            echo '```'
+            cat schema.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Sync
         env:
