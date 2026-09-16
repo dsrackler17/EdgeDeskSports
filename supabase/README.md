@@ -44,6 +44,21 @@ deploy that worked and changed nothing.
 
 ## The files
 
+### `research_packets.sql` — the prediction ledger of EdgeDesk Intelligence
+One row per normalised research packet the desk built before kickoff: the
+projection and its version, the price it was compared against (and the
+`sig_key` of that signal), the label the rules produced, both confidence
+scores and the whole packet as JSON. Write-once and no-delete by trigger, a
+forward record cannot postdate kickoff, RLS by `user_id`. Two views:
+`research_packet_grades` joins each packet to its signal's close, CLV and
+result (state NO_SIGNAL_KEY / SIGNAL_NOT_FOUND / NOT_CLOSED /
+CLOSED_NO_RESULT / GRADED, with a Brier score where graded), and
+`research_packet_calibration` groups by model version, sport, market and
+label with a sample floor. Tested against a real PostgreSQL by
+`tools/intelligence/research_packets_sql.test.js`; applied by the
+`Deploy intelligence` workflow's `apply_research_packets` input. The
+function reports its last write in `?probe=1 → packet_health`.
+
 ### `ufc_live_center.sql` — the UFC Live Fight Center contract
 The Fight Center used to read a live layer no file in this repository ever
 created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,

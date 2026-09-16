@@ -55,6 +55,10 @@ on:
         description: 'Apply supabase/recommendation_ledger.sql (idempotent)'
         type: boolean
         default: false
+      apply_research_packets:
+        description: 'Apply supabase/research_packets.sql — the prediction ledger the desk snapshots every packet into (idempotent)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -150,6 +154,15 @@ jobs:
           # The migration is written to be re-appliable; ledger_sql.test.js
           # proves that by applying it twice against a throwaway server.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/recommendation_ledger.sql
+
+      - name: Apply the research packets migration
+        if: ${{ inputs.apply_research_packets && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent; research_packets_sql.test.js applies it twice against a
+          # throwaway server and attacks it. Its last statement is a report.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/research_packets.sql
 
       - name: Say what is skipped, rather than leaving it unsaid
         if: always()

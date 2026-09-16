@@ -59,6 +59,25 @@ claim opens a review candidate, and only a person closes one.
 
 See [`tools/editorial/README.md`](tools/editorial/README.md).
 
+## EdgeDesk Intelligence — the research desk
+
+The chat panel in `app.html` is served by `supabase/functions/edgedesk_ai`.
+Since Slice 1 (2026-09-16) every single-game football turn builds a normalised
+**research packet** (the game, the captured prices with capture times, the
+projection with its version and validation record, the model-versus-market
+comparison oriented onto one side, EV from a named probability, a deterministic
+label — PASS / RESEARCH LEAD / PRICE DEPENDENT / MODEL DISAGREEMENT / STALE
+MARKET / INSUFFICIENT DATA — data and conclusion confidence, and a source
+manifest), asks the writing model for five headed sections, checks the prose
+against the packet with a critic that rejects invented numbers, people,
+movement causes and certainties, and snapshots the packet write-once to
+`research_packets` for grading against the close.
+
+- `docs/intelligence-audit.md` — what was found before the change
+- `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
+- `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`
+- `npm run intel:test` — the kernel, the evaluation harness, the migrations
+
 ## The weekly research email
 Twice a week the same research goes out as an email nobody sends: **College
 Football Week Ahead** on Monday and **NFL Week Ahead** on Tuesday, both at 10:00
