@@ -20449,6 +20449,12 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
      6. SIZING only for a VALIDATED tier: a quarter-Kelly fraction capped at
         two percent, from the same cover probability. Otherwise null with
         the reason.
+     7. MOVEMENT (Slice 6). From the opener, the current number and the fair
+        line, and the validated movement tendency
+        (football/validation/movement_<sport>.json): where the number tends
+        to go, and BET NOW / WAIT per side. Only a LEAN or VALIDATED movement
+        tier may say either; otherwise NO READ, with the reason. The size of
+        a move is quoted only when the regression beat the no-move baseline.
 
    THE RULES
      - Nothing here claims a betting record. The tiers and their basis
@@ -20472,6 +20478,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
   var DEFAULT_SIGMA = { americanfootball_nfl: { spread: 13.2, total: 13.5 }, americanfootball_ncaaf: { spread: 16.3, total: 17 } };
   var KELLY_FRACTION = 0.25, KELLY_CAP = 0.02;
   var VALIDATION = {};
+  var MOVEMENT = {};
 
   /* ---------------------------------------------------------------- util */
   function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
@@ -20519,6 +20526,41 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     var blend = m.blend && m.blend.latest_coef ? { intercept: num(m.blend.latest_coef.intercept), close: num(m.blend.latest_coef.close), model_minus_close: num(m.blend.latest_coef.model_minus_close), sigma: num(m.blend.latest_sigma), held_out: m.blend.pooled_holdout || null, information: m.blend.incremental_information || null } : null;
     if (market === 'moneyline' && m.holdouts && m.holdouts.length) { var h = m.holdouts[m.holdouts.length - 1]; blend = { market: num(h.coef.market), model_minus_market: num(h.coef.model_minus_market), brier: m.brier || null }; }
     return { tier: m.tier || 'RESEARCH', required_edge_points: num(m.required_edge_points), basis: str(m.tier_basis), blend: blend, frame: v.frame || null, pooled: m.pooled || null, ats: m.ats_vs_close ? (m.ats_vs_close.raw_model_oos || m.ats_vs_close.raw_model || null) : null, loaded: true, generated_at: v.generated_at || null };
+  }
+  /** Register football/validation/movement_<sport>.json for a sport. */
+  function loadMovement(sport, json) { if (!sport || !json || !json.result) return false; MOVEMENT[sport] = json; return true; }
+  function movementFor(sport) {
+    var m = MOVEMENT[sport]; var r = m && m.result ? m.result : null;
+    if (!r) return { tier: 'RESEARCH', required_gap_points: null, basis: 'no movement validation is loaded for ' + (sport || 'this sport'), move_per_gap_point: null, toward_rate: null, magnitude_read: false, loaded: false };
+    var t = r.required_gap_points != null && r.toward_rating_by_gap ? r.toward_rating_by_gap[String(r.required_gap_points)] : null;
+    var mag = !!(r.regression && r.regression.pooled_mae_pred != null && r.regression.pooled_mae_no_move != null && r.regression.pooled_mae_pred < r.regression.pooled_mae_no_move);
+    return { tier: r.tier || 'RESEARCH', required_gap_points: num(r.required_gap_points), basis: str(r.tier_basis), move_per_gap_point: r.latest ? num(r.latest.move_per_gap_point) : null, magnitude_read: mag, toward_rate: t ? num(t.toward_rate) : null, toward_n: t ? num(t.n) : null, open_vs_close: r.open_vs_close_by_gap && r.required_gap_points != null ? r.open_vs_close_by_gap[String(r.required_gap_points)] || null : null, loaded: true, generated_at: m.generated_at || null };
+  }
+  /** TIMING: where the number is likely to go from here, from the validated movement tendency, and what that means for each side. Home-line units throughout. */
+  function movement(o) {
+    o = o || {};
+    var sport = o.sport || null, v = o.validation || movementFor(sport);
+    var open = num(o.open_home_line), cur = num(o.market_home_line), fair = num(o.fair_home_line);
+    if (open == null) return { ok: false, status: 'NO_OPENER', tier: v.tier, why: 'no opening number is on file for this game; movement cannot be read', required_gap_points: v.required_gap_points, tier_basis: v.basis };
+    if (fair == null) return { ok: false, status: 'NO_FAIR_LINE', tier: v.tier, why: 'no fair line to compare the opener against', open_home_line: open, tier_basis: v.basis };
+    var gap = r2(fair - open); /* negative: the fair line has the home side MORE favoured than the opener */
+    var moved = cur != null ? r2(cur - open) : null;
+    var remaining = cur != null ? r2(fair - cur) : gap;
+    var expectedClose = v.magnitude_read && v.move_per_gap_point != null ? r2(open + v.move_per_gap_point * gap) : null;
+    var favoured = gap < 0 ? 'home' : gap > 0 ? 'away' : null; /* the side the fair line likes better than the opener did */
+    var sides = { home: null, away: null };
+    var status, why;
+    if (v.tier === 'RESEARCH') { status = 'NO_READ'; why = 'the movement validation is RESEARCH for this league: ' + v.basis; }
+    else if (v.required_gap_points != null && Math.abs(gap) < v.required_gap_points) { status = 'NO_READ'; why = 'the fair line disagrees with the opener by ' + Math.abs(gap) + ' points, below the ' + v.required_gap_points + '-point threshold the tendency was graded on'; }
+    else if (cur != null && remaining !== 0 && Math.sign(remaining) !== Math.sign(gap)) { status = 'MOVED_PAST'; why = 'the number opened ' + fmtLine(open) + ' and has already moved to ' + fmtLine(cur) + ', past the fair line ' + fmtLine(fair) + '; the tendency has played out'; }
+    else {
+      status = v.tier === 'VALIDATED' ? 'READ' : 'LEAN_READ';
+      why = 'the number opened ' + fmtLine(open) + (cur != null && cur !== open ? ', is now ' + fmtLine(cur) : '') + ' and the fair line is ' + fmtLine(fair) + '; when a rating disagreed with the opener by ' + v.required_gap_points + '+ points the number moved toward the rating ' + r1(v.toward_rate * 100) + '% of the time (n ' + v.toward_n + ')' + (v.tier === 'LEAN' ? ' — a tendency, not a record' : '') + (v.magnitude_read ? '' : '; the size of the move is not predictable beyond the direction');
+      sides.home = favoured === 'home' ? { verdict: 'BET_NOW', why: 'the number tends to move toward the home side; the current number is likely the best available' } : favoured === 'away' ? { verdict: 'WAIT', why: 'the number tends to move toward the away side, so the home line should improve' } : null;
+      sides.away = favoured === 'away' ? { verdict: 'BET_NOW', why: 'the number tends to move toward the away side; the current number is likely the best available' } : favoured === 'home' ? { verdict: 'WAIT', why: 'the number tends to move toward the home side, so the away line should improve' } : null;
+    }
+    return { ok: true, status: status, tier: v.tier, required_gap_points: v.required_gap_points, open_home_line: open, market_home_line: cur, fair_home_line: fair, gap_at_open: gap, moved_points: moved, remaining_points: remaining, favoured_by_fair: favoured, expected_close: status === 'READ' || status === 'LEAN_READ' ? expectedClose : null, toward_rate: v.toward_rate, open_vs_close: v.open_vs_close, sides: sides, why: why, tier_basis: v.basis,
+      note: 'A movement read says where a number tends to go, not whether a side wins; BET NOW and WAIT are statements about the number, and only a LEAN or VALIDATED tier may make them.' };
   }
   function sigmaFor(sport, market, v) {
     if (v && v.blend && num(v.blend.sigma) != null) return { sigma: v.blend.sigma, basis: 'held-out residual sigma of the validated blend' };
@@ -20684,6 +20726,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     var kml = cons ? { home: num(cons.home_moneyline), away: num(cons.away_moneyline) } : { home: null, away: null };
     if (prim && prim.market === 'h2h' && prim.side && num(prim.odds_american) != null) kml[prim.side] = num(prim.odds_american);
     var FS = fairSpread({ sport: sport, model_home_line: mhl, market_home_line: khl });
+    var MV = FS.ok ? movement({ sport: sport, open_home_line: o.open_home_line, market_home_line: khl, fair_home_line: FS.fair_home_line }) : null;
     var FT = fairTotal({ sport: sport, model_total: mt, market_total: kt });
     var FM = fairMoneyline({ sport: sport, model_home_win_prob: mwp, market_home_ml: kml.home, market_away_ml: kml.away });
     var sides = [];
@@ -20698,6 +20741,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     return {
       schema: SCHEMA, version: VERSION, built_at: new Date(o.now || Date.now()).toISOString(), sport: sport, game: { home: home, away: away },
       fair: { spread: FS, total: FT, moneyline: FM },
+      movement: MV,
       sides: sides, best: best, quoted_side: quoted, sizing: sizing(best),
       headline: headline,
       validation: { spread: validationFor(sport, 'spread'), total: validationFor(sport, 'total'), moneyline: validationFor(sport, 'moneyline') },
@@ -20755,6 +20799,8 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     if (FS && FS.ok) L.push('FAIR SPREAD: ' + P.game.home + ' ' + fmtLine(FS.fair_home_line) + ' [' + FS.status + '; projection ' + fmtLine(FS.model_home_line) + ', market ' + fmtLine(FS.market_home_line) + ', gap ' + (FS.gap_points == null ? '—' : FS.gap_points) + ' pts; sigma ' + FS.sigma + '; tier ' + FS.tier + (FS.required_edge_points != null ? ', graded threshold ' + FS.required_edge_points + ' pts' : '') + ']. Basis: ' + FS.basis + '. Tier basis: ' + FS.tier_basis);
     var FT = P.fair.total; if (FT && FT.ok) L.push('FAIR TOTAL: ' + FT.fair_total + ' [' + FT.status + '; projection ' + (FT.model_total == null ? '—' : FT.model_total) + ', market ' + (FT.market_total == null ? '—' : FT.market_total) + '; tier ' + FT.tier + ']');
     var FM = P.fair.moneyline; if (FM && FM.ok) L.push('FAIR MONEYLINE: ' + P.game.home + ' ' + r1(FM.fair_home_win_prob * 100) + '% (' + fmtAm(FM.fair_home_ml) + ') [' + FM.status + '; tier ' + FM.tier + ']');
+    var MV2 = P.movement;
+    if (MV2) L.push('MOVEMENT: ' + (MV2.ok ? MV2.status + ' [tier ' + MV2.tier + ']. Opened ' + fmtLine(MV2.open_home_line) + (MV2.market_home_line != null ? ', now ' + fmtLine(MV2.market_home_line) : '') + ', fair ' + fmtLine(MV2.fair_home_line) + ' (gap at open ' + MV2.gap_at_open + ')' + (MV2.expected_close != null ? ', expected close ' + fmtLine(MV2.expected_close) : '') + '. ' + (MV2.sides && MV2.sides.home ? P.game.home + ': ' + MV2.sides.home.verdict.replace('_', ' ') + '; ' + P.game.away + ': ' + MV2.sides.away.verdict.replace('_', ' ') + '. ' : '') + MV2.why : MV2.status + ': ' + MV2.why));
     L.push('SIDES (status — what the price requires vs what the fair line gives):');
     P.sides.forEach(function (s) {
       if (s.market === 'spread') L.push('  ' + s.selection + ' ' + fmtLine(s.market_line) + ' ' + fmtAm(s.odds_american) + (s.odds_assumed ? ' (price assumed)' : '') + ': ' + s.status + '. requires ' + (s.break_even == null ? '—' : r1(s.break_even * 100) + '%') + ', fair line gives ' + (s.cover_at_market == null ? '—' : r1(s.cover_at_market * 100) + '%') + (s.edge_pp != null ? ' (' + (s.edge_pp >= 0 ? '+' : '') + s.edge_pp + ' pp)' : '') + '; bet-to ' + fmtLine(s.bet_to_line) + '; price that makes ' + fmtLine(s.market_line) + ' break-even ' + fmtAm(s.price_at_market_line) + '. Why: ' + s.why);
@@ -20762,7 +20808,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
       else L.push('  ' + s.selection + ' ML ' + fmtAm(s.market_price) + ': ' + s.status + '. requires ' + (s.break_even == null ? '—' : r1(s.break_even * 100) + '%') + ', fair ' + r1(s.fair_win_prob * 100) + '% (' + fmtAm(s.fair_price) + '). Why: ' + s.why);
     });
     L.push('SIZING: ' + (P.sizing && P.sizing.fraction != null ? (P.sizing.fraction * 100) + '% of bankroll (' + P.sizing.basis + ')' : 'none — ' + (P.sizing ? P.sizing.reason : 'no side')));
-    L.push('RULES: never say "bet", "play", "worth betting", "bet to" or a bankroll fraction unless the status above is PLAY or LEAN_PLAY, and say "LEAN" when it is LEAN_PLAY. Never state an EV, ROI or profit; none is produced. A CONDITIONAL status is arithmetic on an unvalidated projection and must be called that.');
+    L.push('RULES: never say "bet", "play", "worth betting", "bet to" or a bankroll fraction unless the status above is PLAY or LEAN_PLAY, and say "LEAN" when it is LEAN_PLAY. Never state an EV, ROI or profit; none is produced. A CONDITIONAL status is arithmetic on an unvalidated projection and must be called that. Say "bet now" or "wait" only when MOVEMENT above is READ or LEAN_READ and gives that verdict for the side; a movement read is about the number, never about the result.');
     return L.join('\n');
   }
   function criticExtras(o) {
@@ -20774,6 +20820,8 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     if (!anyPlay && /\b(bet to|worth (a )?bet(ting)?|is a play|a play (down|up) to|play it|lay it|take it|fire on|hammer)\b/i.test(a)) issues.push({ code: 'BET_TO_UNSUPPORTED', severity: 'FAIL', detail: 'the answer recommends a bet and no side carries PLAY or LEAN_PLAY (statuses: ' + P.sides.map(function (s) { return s.status; }).join(', ') + ')' });
     if (/\b(\+?\d+(\.\d+)?\s*%\s*(ev|edge|roi)|expected value of|positive ev|\+ev|long[- ]term profit|profitable)\b/i.test(a)) issues.push({ code: 'EV_CLAIM', severity: 'FAIL', detail: 'the answer states an EV, ROI or profit; the pricing layer produces none' });
     if (P.sizing && P.sizing.fraction == null && /\b(\d+(\.\d+)?\s*%\s*of (your )?bankroll|units? on|\d+\s*units?\b)/i.test(a)) issues.push({ code: 'SIZING_UNSUPPORTED', severity: 'FAIL', detail: 'the answer sizes a bet; no sizing fraction was produced (' + P.sizing.reason + ')' });
+    var mv = P.movement; var timingOk = !!(mv && mv.ok && (mv.status === 'READ' || mv.status === 'LEAN_READ'));
+    if (!timingOk && /\b(bet (it )?now|get (it|in) now|before (it|the number|the line) moves|the number is going away|wait for (a )?better (number|line)|wait (on|for) (it|this)|hold off (on|for) (a )?better)\b/i.test(a)) issues.push({ code: 'TIMING_UNSUPPORTED', severity: 'FAIL', detail: 'the answer makes a timing call (bet now / wait) and the movement layer has no read (' + (mv ? mv.status : 'no movement') + ')' });
     var leanOnly = anyPlay && plays.every(function (s) { return s.status === 'LEAN_PLAY'; });
     if (leanOnly && /\b(edge|profitable|\+ev|value bet)\b/i.test(a) && !/\blean\b/i.test(a)) issues.push({ code: 'LEAN_STATED_AS_EDGE', severity: 'WARN', detail: 'the only playable status is LEAN_PLAY (break-even history) and the answer calls it an edge without saying LEAN' });
     return issues;
@@ -20784,7 +20832,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     function tool(name, description, input, run) { Rk.TOOLS[name] = { name: name, llm: true, category: 'data', description: description, input: input, output: T.any(), run: run }; }
     function P(ctx) { return ctx && ctx.packet && ctx.packet.pricing ? ctx.packet.pricing : null; }
     tool('get_price_ranges', 'EdgeDesk’s fair line for this game and, per side and market, what the price requires vs what the fair line gives, the bet-to line, the price at which the market line breaks even, and the STATUS (PLAY / LEAN_PLAY / PASS / PROBABILITY / CONDITIONAL). Optional market: spread | total | moneyline.',
-      T.obj({ market: T.opt(T.enm(['spread', 'total', 'moneyline'])) }), function (i, ctx) { var p = P(ctx); if (!p) return { ok: false, error: 'no pricing on this turn', missing: ['pricing'] }; var sides = i && i.market ? p.sides.filter(function (s) { return s.market === i.market; }) : p.sides; return { ok: true, headline: p.headline, fair: p.fair, sides: sides, best: p.best, sizing: p.sizing, note: p.note }; });
+      T.obj({ market: T.opt(T.enm(['spread', 'total', 'moneyline'])) }), function (i, ctx) { var p = P(ctx); if (!p) return { ok: false, error: 'no pricing on this turn', missing: ['pricing'] }; var sides = i && i.market ? p.sides.filter(function (s) { return s.market === i.market; }) : p.sides; return { ok: true, headline: p.headline, fair: p.fair, movement: p.movement || null, sides: sides, best: p.best, sizing: p.sizing, note: p.note }; });
     tool('get_ranked_slate', 'The board ranked by the pricing layer: every side’s fair line, market line, cover probability vs break-even, bet-to line and status, best first. Sizes nothing. Input: {sport?, top?}.',
       T.obj({ sport: T.opt(T.str({ max: 40 })), top: T.opt(T.num()) }), function (i, ctx) { var s = ctx && ctx.slate_pricing ? ctx.slate_pricing : null; if (!s) return { ok: false, error: 'no ranked slate on this turn', missing: ['slate_pricing'] }; return { ok: true, sport: s.sport, tier: s.tier, tier_basis: s.tier_basis, plays: s.plays, top: s.rows.slice(0, num(i && i.top) || 8), note: s.note }; });
     return true;
@@ -20793,7 +20841,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
 
   return {
     VERSION: VERSION, SCHEMA: SCHEMA, TIER_RANK: TIER_RANK, TOOL_NAMES: TOOL_NAMES, DEFAULT_SIGMA: DEFAULT_SIGMA,
-    loadValidation: loadValidation, validationFor: validationFor, sigmaFor: sigmaFor,
+    loadValidation: loadValidation, validationFor: validationFor, sigmaFor: sigmaFor, loadMovement: loadMovement, movementFor: movementFor, movement: movement,
     fairSpread: fairSpread, fairTotal: fairTotal, fairMoneyline: fairMoneyline,
     coverAt: coverAt, breakEven: breakEven, normInv: normInv, devig2: devig2,
     priceSpreadSide: priceSpreadSide, priceTotalSide: priceTotalSide, priceMoneylineSide: priceMoneylineSide, sizing: sizing,
@@ -24907,7 +24955,8 @@ async function publishResearchPacket(auth: string, packet: any, question: string
     /* Slice 4: the price the desk quoted at observation time, so closing-line value can be graded against it */
     pricing_summary: P ? { headline: P.headline, fair_home_line: P.fair?.spread?.fair_home_line ?? null, market_home_line: P.fair?.spread?.market_home_line ?? null, model_home_line: P.fair?.spread?.model_home_line ?? null, tier: P.fair?.spread?.tier ?? null, fair_total: P.fair?.total?.fair_total ?? null, market_total: P.fair?.total?.market_total ?? null,
       quoted: P.quoted_side ? { selection: P.quoted_side.selection, side: P.quoted_side.side, market_line: P.quoted_side.market_line, odds_american: P.quoted_side.odds_american, book: P.quoted_side.book, observed_at: P.quoted_side.observed_at, status: P.quoted_side.status, edge_pp: P.quoted_side.edge_pp, bet_to_line: P.quoted_side.bet_to_line } : null,
-      best: P.best ? { market: P.best.market, side: P.best.side, selection: P.best.selection, status: P.best.status, edge_pp: P.best.edge_pp } : null, sizing: P.sizing ? P.sizing.fraction : null } : null,
+      best: P.best ? { market: P.best.market, side: P.best.side, selection: P.best.selection, status: P.best.status, edge_pp: P.best.edge_pp } : null, sizing: P.sizing ? P.sizing.fraction : null,
+      open_home_line: P.opener ? P.opener.home_line : null, open_seen_at: P.opener ? P.opener.seen_at : null, movement_status: P.movement ? P.movement.status : null, movement_verdicts: P.movement?.sides ? { home: P.movement.sides.home?.verdict ?? null, away: P.movement.sides.away?.verdict ?? null } : null } : null,
     analysis_summary: A ? { decisive: (A.interactions?.decisive_factors ?? []).map((d: any) => d.id + ":" + d.favours), counter: A.interactions?.counter_case ? A.interactions.counter_case.id + ":" + A.interactions.counter_case.favours : null, investigation: A.investigation ? A.investigation.outcomes : null, sensitivity: A.sensitivity && A.sensitivity.ok ? { at: A.sensitivity.at_market, status: A.sensitivity.probability_status } : null } : null };
   const rec = EDRESEARCH.predictionRecord(slim, { question, sig_key: packet.market?.primary?.sig_key ?? null });
   if (!rec.ok) { LAST_PACKET_WRITE = { ok: false, status: null, at: new Date().toISOString(), packet_id: packet.packet_id ?? null, detail: rec.why }; return; }
@@ -26321,7 +26370,7 @@ export async function handle(req: Request): Promise<Response> {
         structured_answer: STRUCTURED_ANSWER,
         tool_loop: { enabled: TOOL_LOOP, max_rounds: TOOL_LOOP_MAX_ROUNDS, budget: TOOL_BUDGET, allowlist: TOOL_ALLOWLIST },
         analyst: { enabled: ANALYST_ENABLED, kernel: !!EDANALYST, version: EDANALYST ? EDANALYST.VERSION : null, tools: EDANALYST ? EDANALYST.TOOL_NAMES : [] },
-        pricing: { enabled: PRICING_ENABLED, kernel: !!EDPRICE, version: EDPRICE ? EDPRICE.VERSION : null, tools: EDPRICE ? EDPRICE.TOOL_NAMES : [], validation_artifacts: ["football/validation/pricing_nfl.json", "football/validation/pricing_cfb.json"] },
+        pricing: { enabled: PRICING_ENABLED, kernel: !!EDPRICE, version: EDPRICE ? EDPRICE.VERSION : null, tools: EDPRICE ? EDPRICE.TOOL_NAMES : [], validation_artifacts: ["football/validation/pricing_nfl.json", "football/validation/pricing_cfb.json", "football/validation/movement_nfl.json", "football/validation/movement_cfb.json"], openers: ["football/pricing/openers_nfl.json", "football/pricing/openers_cfb.json"] },
         investigation: { enabled: INVESTIGATE, budgets: { ms: INVESTIGATE_MS, requests: INVESTIGATE_REQUESTS, search_calls: INVESTIGATE_SEARCH_CALLS }, providers: RESEARCH_PROVIDERS.map((p) => ({ id: p.id, label: p.label, sports: p.sports, answers: p.answers, cost: p.cost, live: p.live, configured: p.configured().ok, blocker: p.configured().reason })), cache_entries: INVESTIGATION_CACHE.size },
         tools: EDRESEARCH ? EDRESEARCH.toolNames() : [],
         labels: EDRESEARCH ? EDRESEARCH.LABELS : [],
@@ -26543,7 +26592,18 @@ export async function handle(req: Request): Promise<Response> {
           const pvRel = "football/validation/pricing_" + (isNfl ? "nfl" : "cfb") + ".json";
           const pv = await dal.getArtifact(pvRel, { free: true });
           if (pv.json) EDPRICE.loadValidation(research.context.sport, pv.json);
-          pricing = EDPRICE.price({ packet: rpacket, now: Date.now() });
+          /* Slice 6: the movement tendency and where this number opened (the desk's own ledger for the NFL, the archive's current season for college) */
+          const mvRel = "football/validation/movement_" + (isNfl ? "nfl" : "cfb") + ".json";
+          const mv = await dal.getArtifact(mvRel, { free: true });
+          if (mv.json) EDPRICE.loadMovement(research.context.sport, mv.json);
+          let openHomeLine: number | null = null, openSeenAt: string | null = null, openSource: string | null = null;
+          try {
+            const op = await dal.getArtifact("football/pricing/openers_" + (isNfl ? "nfl" : "cfb") + ".json", { free: true });
+            const og = op.json?.games?.[String(research.context.game_id ?? "")] ?? null;
+            if (og?.open && og.open.home_line != null) { openHomeLine = Number(og.open.home_line); openSeenAt = og.open.seen_at ?? op.json?.updated_at ?? null; openSource = op.json?.source ?? ("football/pricing/openers_" + (isNfl ? "nfl" : "cfb") + ".json"); }
+          } catch { /* no opener: the kernel says NO_OPENER */ }
+          pricing = EDPRICE.price({ packet: rpacket, now: Date.now(), open_home_line: openHomeLine });
+          if (pricing) { pricing.movement_artifact = mv.json ? mvRel : null; pricing.opener = openHomeLine != null ? { home_line: openHomeLine, seen_at: openSeenAt, source: openSource } : null; }
           if (pricing) { pricing.validation_artifact = pv.json ? pvRel : null; pricing.validation_error = pv.json ? null : (pv.error ?? "not on file"); rpacket.pricing = pricing; }
           if (isNfl && Array.isArray(research.slate_index) && research.slate_index.length) {
             slatePricing = EDPRICE.rankSlate({ sport: research.context.sport, top: 5, games: research.slate_index.map((g: any) => ({ game_id: g.game_id, home: g.home_team, away: g.away_team, kickoff: g.kickoff ?? null, model_home_line: g.model_home_line ?? null, market_home_line: g.reference_market?.home_line ?? null, completeness: g.model_completeness ?? null, market_source: g.reference_market ? "nflverse consensus (reference, no book, no capture time)" : null })) });
@@ -26566,6 +26626,7 @@ export async function handle(req: Request): Promise<Response> {
     fair: { spread: P.fair?.spread?.ok ? { fair_home_line: P.fair.spread.fair_home_line, model_home_line: P.fair.spread.model_home_line, market_home_line: P.fair.spread.market_home_line, gap_points: P.fair.spread.gap_points, status: P.fair.spread.status, weights: P.fair.spread.weights, sigma: P.fair.spread.sigma, basis: P.fair.spread.basis, tier: P.fair.spread.tier, required_edge_points: P.fair.spread.required_edge_points, tier_basis: P.fair.spread.tier_basis } : null,
       total: P.fair?.total?.ok ? { fair_total: P.fair.total.fair_total, model_total: P.fair.total.model_total, market_total: P.fair.total.market_total, status: P.fair.total.status, tier: P.fair.total.tier, tier_basis: P.fair.total.tier_basis } : null,
       moneyline: P.fair?.moneyline?.ok ? { fair_home_win_prob: P.fair.moneyline.fair_home_win_prob, fair_home_ml: P.fair.moneyline.fair_home_ml, fair_away_ml: P.fair.moneyline.fair_away_ml, status: P.fair.moneyline.status, tier: P.fair.moneyline.tier } : null },
+    movement: P.movement ?? null, opener: P.opener ?? null,
     sides: P.sides, best: P.best, quoted_side: P.quoted_side, sizing: P.sizing, validation_artifact: P.validation_artifact ?? null, validation_error: P.validation_error ?? null, note: P.note,
   } : null;
   const slateSummary = (S: any) => S ? { schema: S.schema, sport: S.sport, games: S.games, plays: S.plays, tier: S.tier, required_edge_points: S.required_edge_points, tier_basis: S.tier_basis, note: S.note, top: S.rows.slice(0, 8) } : null;

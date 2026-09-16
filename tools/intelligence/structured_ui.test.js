@@ -205,6 +205,8 @@ const PX = { headline: 'Fair line Buffalo Bills -5.6 against a market of -4.5 (v
     { market: 'spread', side: 'away', selection: 'Detroit Lions', market_line: 4.5, odds_american: -110, odds_assumed: true, break_even: 0.5238, cover_at_market: 0.4573, edge_pp: -6.65, bet_to_line: 6.5, status: 'PASS', why: 'the projection favours the other side' },
     { market: 'total', side: 'over', cover_at_market: 0.52, status: 'CONDITIONAL' }, { market: 'moneyline', side: 'home', selection: 'Buffalo Bills', status: 'CONDITIONAL' }],
   quoted_side: { status: 'LEAN_PLAY', why: 'LEAN tier: the graded record cleared break-even, not a profit.' }, sizing: { fraction: null, reason: 'sizing is produced only for a VALIDATED tier; this market is LEAN' }, validation_error: null };
+PX.movement = { ok: true, status: 'LEAN_READ', tier: 'LEAN', open_home_line: -3.5, market_home_line: -4, fair_home_line: -5.63, gap_at_open: -2.13, expected_close: null, sides: { home: { verdict: 'BET_NOW' }, away: { verdict: 'WAIT' } }, why: 'FIXTURE: the number moved toward the rating 53% of the time (n 4369) — a tendency, not a record' };
+PX.game = { home: 'Buffalo Bills', away: 'Detroit Lions' };
 const px = ctx.structuredPanelsHTML({ structured: Object.assign({}, CFB, { pricing: PX, slate_pricing: { games: 14, plays: 3, tier: 'LEAN', note: 'FIXTURE note', top: [{ selection: 'Detroit Lions', market_line: -7, fair_line: -9.29, gap_points: 6.77, cover_at_market: 0.57, bet_to_line: -9, status: 'LEAN_PLAY' }, { home: 'A', away: 'B', status: 'NO_NUMBER' }] } }) });
 has('the headline is rendered first in the price panel', px, '<div class="hl">Fair line Buffalo Bills -5.6 against a market of -4.5');
 has('the tier is a chip', px, 'The price <span class="dk-kind">LEAN</span>');
@@ -215,6 +217,8 @@ chk('a LEAN never renders the play chip', px.indexOf('dk-st play') < 0);
 has('an assumed price is starred and explained', px, '-110*</td>');
 has('and the star is explained', px, '* price assumed at -110');
 has('sizing states its absence and the reason', px, 'Sizing: none — sizing is produced only for a VALIDATED tier');
+has('the movement line shows the opener, the current number, the fair line and a verdict per side', px, '<span class="dk-st lean">LEAN READ</span> opened -3.5 · now -4 · fair -5.63 — Buffalo Bills: BET NOW · Detroit Lions: WAIT');
+has('the movement basis is quoted', px, 'a tendency, not a record');
 has('the tier basis is quoted', px, 'Tier basis: FIXTURE: cleared break-even, not a profit');
 has('the ranked board is rendered with its counts', px, 'The board, priced (14 games, 3 on the right side of the number, tier LEAN)');
 has('a board row with no number names the game', px, '(A v B)');

@@ -102,7 +102,7 @@ globalThis.fetch = async function (url, init) {
       probability_claimed_as_betting: !!(an && an.sensitivity && an.sensitivity.probability_status === 'VALIDATED'),
       conversation_state: !!j.conversation_state,
       /* Slice 4: the price */
-      pricing: (function () { const P = j.pricing || null; if (!P || !P.fair || !P.fair.spread) return null; const q = P.quoted_side || P.best; return { fair_status: P.fair.spread.status, tier: P.fair.spread.tier, fair_home_line: P.fair.spread.fair_home_line, market_home_line: P.fair.spread.market_home_line, sides: P.sides.length, quoted_status: q ? q.status : null, bet_to: q && q.bet_to_line != null ? q.bet_to_line : null, sizing: P.sizing ? P.sizing.fraction : null, slate_rows: j.slate_pricing ? j.slate_pricing.top.length : 0, plays: j.slate_pricing ? j.slate_pricing.plays : 0 }; })(),
+      pricing: (function () { const P = j.pricing || null; if (!P || !P.fair || !P.fair.spread) return null; const q = P.quoted_side || P.best; return { fair_status: P.fair.spread.status, tier: P.fair.spread.tier, fair_home_line: P.fair.spread.fair_home_line, market_home_line: P.fair.spread.market_home_line, sides: P.sides.length, quoted_status: q ? q.status : null, bet_to: q && q.bet_to_line != null ? q.bet_to_line : null, sizing: P.sizing ? P.sizing.fraction : null, slate_rows: j.slate_pricing ? j.slate_pricing.top.length : 0, plays: j.slate_pricing ? j.slate_pricing.plays : 0, movement: P.movement ? { status: P.movement.status, open: P.movement.open_home_line, verdicts: P.movement.sides ? [P.movement.sides.home && P.movement.sides.home.verdict, P.movement.sides.away && P.movement.sides.away.verdict] : null } : null }; })(),
     };
     /* follow-ups, carried on the state the first turn returned */
     const rc = (j.research && j.research.research_context) || j.research_context || null;
@@ -127,6 +127,9 @@ globalThis.fetch = async function (url, init) {
       GOOD + '\\nThis is a +EV spot with a 4% edge.',
       GOOD + '\\nPut 2% of your bankroll on it.',
     ];
+    /* Slice 6: a timing call is only a BAD answer when the movement layer made no read; under a read the words are permitted, so the row is counted only where it is bad */
+    const mvRead = rec.pricing && rec.pricing.movement && /READ$/.test(rec.pricing.movement.status) && rec.pricing.movement.status !== 'NO_READ';
+    if (!mvRead) bads.push(GOOD + '\\nWait for a better number on the favourite.');
     let leaked = 0;
     for (const b of bads) { const r = await ask(q.question, { board: q.board, dry: false, answer: b }); if (!(r.critic && r.critic.verdict === 'FAIL')) leaked++; }
     const g = await ask(q.question, { board: q.board, dry: false, answer: GOOD });
@@ -166,6 +169,7 @@ const rows = [
   row('quoted side status / bet-to', (q) => q.pricing ? (q.pricing.quoted_status || '—') + ' / ' + (q.pricing.bet_to == null ? '—' : q.pricing.bet_to) : 'none'),
   row('sides priced / sizing', (q) => q.pricing ? q.pricing.sides + ' / ' + (q.pricing.sizing == null ? 'none' : q.pricing.sizing) : 'none'),
   row('board rows priced (plays)', (q) => q.pricing ? q.pricing.slate_rows + ' (' + q.pricing.plays + ')' : 'none'),
+  row('movement read (opener -> verdicts)', (q) => q.pricing && q.pricing.movement ? q.pricing.movement.status + (q.pricing.movement.open != null ? ' (opened ' + q.pricing.movement.open + (q.pricing.movement.verdicts && q.pricing.movement.verdicts[0] ? '; ' + q.pricing.movement.verdicts.join('/') : '') + ')' : '') : 'none'),
   row('follow-ups resolved', (q) => q.follow_up_accuracy.resolved_to_layer + '/' + q.follow_up_accuracy.of + ' (stayed on game ' + q.follow_up_accuracy.stayed_on_game + '/' + q.follow_up_accuracy.of + ')'),
   row('bad answers let through', (q) => q.unsupported_claim_rate.leaked + '/' + q.unsupported_claim_rate.of),
   row('prompt chars', (q) => q.prompt_chars),
@@ -191,7 +195,7 @@ for (const id of ['cfb', 'nfl']) {
   chk(id + ': the critic lets no bad answer through after, and no more than before', a.unsupported_claim_rate.leaked === 0 && b.unsupported_claim_rate.leaked >= a.unsupported_claim_rate.leaked, [b.unsupported_claim_rate, a.unsupported_claim_rate]);
   chk(id + ': the good answer is not rejected', !a.unsupported_claim_rate.good_rejected);
   chk(id + ': no model-conditional figure is claimed as a betting probability', !a.probability_claimed_as_betting);
-  chk(id + ': the prompt grew by less than 12k characters', a.prompt_chars - b.prompt_chars < 12000, [b.prompt_chars, a.prompt_chars]);
+  chk(id + ': the prompt grew by less than 15k characters (the pricing and movement blocks)', a.prompt_chars - b.prompt_chars < 15000, [b.prompt_chars, a.prompt_chars]);
   chk(id + ': latency stays under two seconds on fixtures', a.latency_ms < 2000, a.latency_ms);
   chk(id + ': a conversation state is returned after', a.conversation_state);
 }

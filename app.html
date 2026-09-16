@@ -34652,6 +34652,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var tot=(P.sides||[]).filter(function(x){return x.market==='total';}), ml=(P.sides||[]).filter(function(x){return x.market==='moneyline';});
     if(tot.length&&P.fair.total) h+='<div class="why">Total: fair '+esc(P.fair.total.fair_total)+(P.fair.total.market_total!=null?' vs market '+esc(P.fair.total.market_total):'')+' — '+tot.map(function(x){return esc(x.side)+' '+(x.cover_at_market!=null?esc(Math.round(x.cover_at_market*1000)/10)+'%':'—')+' <span class="dk-st '+stClass(x.status)+'">'+esc(stWord(x.status))+'</span>';}).join(' · ')+'</div>';
     if(ml.length&&P.fair.moneyline) h+='<div class="why">Moneyline: fair '+esc(Math.round(P.fair.moneyline.fair_home_win_prob*1000)/10)+'% home ('+esc(fmtPts(P.fair.moneyline.fair_home_ml))+') — '+ml.map(function(x){return esc(x.selection||x.side)+' <span class="dk-st '+stClass(x.status)+'">'+esc(stWord(x.status))+'</span>';}).join(' · ')+'</div>';
+    var MV=P.movement;
+    if(MV){ var rd=MV.ok&&(MV.status==='READ'||MV.status==='LEAN_READ');
+      h+='<div class="why"><b>Movement</b> <span class="dk-st '+(MV.status==='READ'?'play':MV.status==='LEAN_READ'?'lean':'cond')+'">'+esc(String(MV.status||'').replace(/_/g,' '))+'</span>'
+        +(MV.ok?' opened '+esc(fmtPts(MV.open_home_line))+(MV.market_home_line!=null?' · now '+esc(fmtPts(MV.market_home_line)):'')+' · fair '+esc(fmtPts(MV.fair_home_line))+(MV.expected_close!=null?' · expected close '+esc(fmtPts(MV.expected_close)):''):'')
+        +(rd&&MV.sides&&MV.sides.home?' — '+esc(P.game&&P.game.home||'home')+': '+esc(MV.sides.home.verdict.replace('_',' '))+' · '+esc(P.game&&P.game.away||'away')+': '+esc(MV.sides.away.verdict.replace('_',' ')):'')
+        +'<div class="why">'+esc(MV.why||'')+'</div></div>'; }
     var q=P.quoted_side||P.best; if(q&&q.why) h+='<div class="why">'+esc(q.why)+'</div>';
     h+='<div class="why">Sizing: '+esc(P.sizing&&P.sizing.fraction!=null?(P.sizing.fraction*100)+'% of bankroll — '+P.sizing.basis:'none — '+(P.sizing?P.sizing.reason:'no side'))+'</div>';
     if(F.tier_basis) h+='<div class="why">Tier basis: '+esc(F.tier_basis)+'</div>';

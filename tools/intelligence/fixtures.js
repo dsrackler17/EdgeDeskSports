@@ -32,6 +32,8 @@ const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/fo
    shape the identity build writes. */
 const PRICING = {};
 ['nfl', 'cfb'].forEach(function (k) { try { PRICING[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/validation/pricing_' + k + '.json'), 'utf8')); } catch (_) { PRICING[k] = null; } });
+const MOVEMENT = {};
+['nfl', 'cfb'].forEach(function (k) { try { MOVEMENT[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/validation/movement_' + k + '.json'), 'utf8')); } catch (_) { MOVEMENT[k] = null; } });
 const IDENTITY = {};
 ['northtexas', 'texasstate', 'buf', 'det'].forEach(function (k) {
   try { IDENTITY[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/identity/teams/' + k + '.json'), 'utf8')); } catch (_) { IDENTITY[k] = null; }
@@ -239,6 +241,14 @@ function router(fx, opts) {
        the tiers the replay actually produced; opts.pricing === null withholds them. */
     var pm = /\/football\/validation\/pricing_(nfl|cfb)\.json/.exec(u);
     if (pm) return opts.pricing === null ? null : PRICING[pm[1]];
+    /* Slice 6: the movement validations are the REAL committed artifacts; the openers are LABELLED FIXTURES
+       (college: opened -1, market now +2.5, so the fair line disagrees with the opener by 3.5; NFL: opened -1). */
+    var mm = /\/football\/validation\/movement_(nfl|cfb)\.json/.exec(u);
+    if (mm) return opts.movement === null ? null : MOVEMENT[mm[1]];
+    var om = /\/football\/pricing\/openers_(nfl|cfb)\.json/.exec(u);
+    if (om) return opts.openers === null ? null : (opts.openers || (om[1] === 'cfb'
+      ? { schema: 'edgedesk_opener_ledger_v1', sport: 'americanfootball_ncaaf', season: 2026, updated_at: new Date(fx.now - 3 * 86400000).toISOString(), source: 'FIXTURE opener ledger', games: { '401858900': { home: 'Texas State', away: 'North Texas', week: 3, open: { home_line: -1, total: 55, seen_at: new Date(fx.now - 3 * 86400000).toISOString() }, latest: { home_line: 2.5, total: 55 }, closed: false } } }
+      : { schema: 'edgedesk_opener_ledger_v1', sport: 'americanfootball_nfl', started_at: new Date(fx.now - 3 * 86400000).toISOString(), source: 'FIXTURE opener ledger', games: { 'nfl-fx-det-buf': { home: 'BUF', away: 'DET', week: 3, open: { home_line: -1, total: 47, seen_at: new Date(fx.now - 3 * 86400000).toISOString() }, latest: { home_line: -2.5, total: 47 }, moves: 1, closed: false } } }));
     /* Slice 4: the desk's notebook. A LABELLED FIXTURE note: a person recorded the Texas State starter from a named source. */
     if (u.indexOf('/football/notes/current.json') >= 0) return opts.notes === null ? null : (opts.notes || { schema: 'edgedesk_desk_notes_v1', notes: [
       { id: 'note_fixture1', sport: 'americanfootball_ncaaf', team: 'TEXASSTATE', kind: 'starting_qb_confirmation', text: 'FIXTURE: Brad Jackson named the starter for Saturday by the head coach at the Monday availability', source: 'Texas State Athletics', url: 'https://txstatebobcats.com/news/fixture', published_at: new Date(fx.now - 6 * 3600000).toISOString(), recorded_at: new Date(fx.now - 5 * 3600000).toISOString(), recorded_by: 'fixture operator', expires_at: new Date(fx.now + 5 * 86400000).toISOString(), game_id: null, source_kind: 'OFFICIAL_SITE' },
@@ -277,4 +287,4 @@ function router(fx, opts) {
 const SUBSCRIBED = [{ status: 'active', price_id: 'price_test',
   current_period_end: new Date(Date.now() + 30 * 864e5).toISOString() }];
 
-module.exports = { build, router, SLATE, AVAIL, SUBSCRIBED, IDENTITY, PRICING, injuriesCsv, openMeteo };
+module.exports = { build, router, SLATE, AVAIL, SUBSCRIBED, IDENTITY, PRICING, MOVEMENT, injuriesCsv, openMeteo };
