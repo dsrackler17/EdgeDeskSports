@@ -21,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const R = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
+const { writeIfChanged } = require(path.join(__dirname, 'write_if_changed.js'));
 const CACHE = path.join(ROOT, 'football', 'nfl', '.cache');
 const URL = (s) => 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_' + s + '.csv';
 const FILE = (s) => path.join(CACHE, URL(s).replace(/[^a-z0-9.]+/gi, '_').slice(-120));
@@ -72,7 +73,7 @@ async function main() {
   const art = build(texts, { retrieved_at: new Date().toISOString() });
   console.log(`injury archive: seasons ${art.counts.first_season}-${art.counts.last_season} (${art.counts.seasons}), ${art.counts.status_rows} status rows`);
   if (args.includes('--check')) { if (!fs.existsSync(OUT)) { console.error('CHECK: no artifact'); process.exit(1); } const prev = JSON.parse(fs.readFileSync(OUT, 'utf8')); const same = JSON.stringify(prev.seasons) === JSON.stringify(art.seasons); console.log(same ? 'CHECK: artifact is current' : 'CHECK: artifact differs from a fresh build'); process.exit(same ? 0 : 1); }
-  fs.mkdirSync(path.dirname(OUT), { recursive: true }); fs.writeFileSync(OUT, JSON.stringify(art)); console.log('wrote ' + path.relative(ROOT, OUT) + ' (' + Math.round(fs.statSync(OUT).size / 1024) + ' KB)');
+  console.log(writeIfChanged(OUT, art) + ' ' + path.relative(ROOT, OUT) + ' (' + Math.round(fs.statSync(OUT).size / 1024) + ' KB)');
 }
 module.exports = { build, GROUP, GROUPS, OUT, FILE, URL };
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(2); });

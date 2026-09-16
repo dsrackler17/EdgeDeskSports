@@ -29,6 +29,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const CLV = require(path.join(__dirname, 'clv.js'));
 const PM = require(path.join(__dirname, 'postmortem.js'));
+const { writeIfChanged } = require(path.join(ROOT, 'tools', 'football', 'write_if_changed.js'));
 const OUT = path.join(ROOT, 'football', 'validation', 'scorecard.json');
 
 function readJson(rel) { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch (_) { return null; } }
@@ -89,9 +90,9 @@ async function main() {
   const archives = { nfl: readJson('football/pricing/lines_nfl.json'), cfb: readJson('football/pricing/lines_cfb.json') };
   const validations = { pricing_nfl: readJson('football/validation/pricing_nfl.json'), pricing_cfb: readJson('football/validation/pricing_cfb.json'), movement_nfl: readJson('football/validation/movement_nfl.json'), movement_cfb: readJson('football/validation/movement_cfb.json'), features_nfl: readJson('football/validation/feature-status-nfl.json') };
   const card = build(rows, archives, validations, { rows_status: status, rows_detail: detail });
-  fs.mkdirSync(path.dirname(OUT), { recursive: true }); fs.writeFileSync(OUT, JSON.stringify(card, null, 1));
+  const w = writeIfChanged(OUT, card, { pretty: true });
   console.log(`scorecard: ${card.inputs.rows} packets (${status}${detail ? ': ' + detail : ''}); CLV all: ${JSON.stringify(card.clv.groups.all || null)}; postmortem ${JSON.stringify(card.postmortem.by_class)}; tiers ${JSON.stringify(card.tiers.pricing)} movement ${JSON.stringify(card.tiers.movement)}`);
-  console.log('wrote ' + path.relative(ROOT, OUT));
+  console.log(w + ' ' + path.relative(ROOT, OUT));
 }
 module.exports = { build, closes, fetchRows, OUT };
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(2); });

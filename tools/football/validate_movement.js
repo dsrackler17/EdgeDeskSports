@@ -43,6 +43,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const OUT_DIR = path.join(ROOT, 'football', 'validation');
+const { writeIfChanged } = require(path.join(__dirname, 'write_if_changed.js'));
 const CFB = path.join(ROOT, 'football', 'pricing', 'lines_cfb.json');
 const NFL_LEDGER = path.join(ROOT, 'football', 'pricing', 'openers_nfl.json');
 const NFL_ARCHIVE = path.join(ROOT, 'football', 'pricing', 'lines_nfl.json');
@@ -147,7 +148,7 @@ function main() {
   if (r.toward_rating_by_gap) Object.keys(r.toward_rating_by_gap).sort((a, b) => a - b).forEach((k) => { const e = r.toward_rating_by_gap[k], o = r.open_vs_close_by_gap[k]; console.log(`  gap >= ${k}: n ${e.n} toward ${e.toward_rate} p ${e.p_one_sided} later ${e.later.toward_rate}; cover at open ${o.cover_at_open} vs close ${o.cover_at_close}, +${o.points_gained_by_betting_early} pts early`); });
   if (r.regression) console.log(`  move regression: MAE ${r.regression.pooled_mae_pred} vs no-move ${r.regression.pooled_mae_no_move}; move per gap point ${r.latest && r.latest.move_per_gap_point}`);
   if (args.includes('--check')) { if (!fs.existsSync(out)) { console.error('CHECK: no artifact'); process.exit(1); } const prev = JSON.parse(fs.readFileSync(out, 'utf8')); const strip = (a) => JSON.stringify(Object.assign({}, a, { generated_at: null })); const same = strip(prev) === strip(art); console.log(same ? 'CHECK: artifact is current' : 'CHECK: artifact differs from a fresh build'); process.exit(same ? 0 : 1); }
-  fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(out, JSON.stringify(art, null, 1)); console.log('wrote ' + path.relative(ROOT, out));
+  console.log(writeIfChanged(out, art, { pretty: true }) + ' ' + path.relative(ROOT, out));
 }
 module.exports = { cfbRows, score, directionTable, tierOf, passes, ols, buildCfb, buildNfl, RULES, THRESHOLDS };
 if (require.main === module) main();
