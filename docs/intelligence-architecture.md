@@ -577,6 +577,30 @@ record write, the retry, the rejected prose and every follow-up), the panel
 renderer in `structured_ui.test.js`, and `tools/intelligence/board_probe_live.js`
 for the live read-only check against a deployment.
 
+**The MLB faults a live packet showed (2026-09-16), and their fixes.** A
+production answer to a card-wide MLB question came back EVIDENCE INTEGRITY:
+FAIL with 21 items dated the previous day, 26 starters "attached to two
+teams", 4 matchups under two event ids, "column games.sport_key does not
+exist" on the schedule read, empty season tables and a memory read that
+failed on `research_sessions.confidence`. Each was traced:
+
+| symptom | cause | fix |
+|---|---|---|
+| yesterday's games in tonight's packet (temporal, duplicate events) | the only finished-game test was `status === "final"`; the MLB ingest writes other words ("Game Over", "Completed Early") or never updates the status | `mlbGameFinished()`: the feed's status words, then the clock (dated before today ET with a start more than six hours past); postponed and cancelled games off the card; one row per pairing, date and game number; applied in the card read, the pitcher read, the slate scope and the board's MLB schedule |
+| 26 starters on two teams | `mlb_game_cards` and `games` spell one club two ways ("NY Yankees" / "New York Yankees") and the subject check compared raw strings | `mlbClubKey()` resolves any spelling through the MLB alias registry; the subject check compares clubs, not spellings |
+| a series read as a duplicate | the duplicate check keyed on the matchup name alone | keyed on matchup and date: the same pairing on the same day under two ids is still flagged |
+| "column games.sport_key does not exist" | the deployed `games` table is the MLB schedule and carries no sport column; the multisport branch filtered on one | the board reads MLB from `games` by date with the finished rule; another sport's 400 falls back to the captured markets as its universe and says so (NO_GAMES with the source named), never a silent RETRIEVAL_FAILED |
+| memory read failed | the prior-session read selected `confidence`, which is neither written nor present | column dropped from the select |
+| "timestamped in the future" | the card's game item used the start time as its observation time | observation time is null; the start rides in the value |
+| `pitcher_season` / `team_season` empty | the deployed `ingest_pitcher_season` has not run; the tables are genuinely empty | not a code fault; the answer already names it. Operational: run the ingest |
+| a 1169-minute-old quote | the capture job had not run in nineteen hours | not a code fault; the desk reports it stale and never acts on it. Operational: the capture schedule, or `EDGEDESK_QUOTE_REFRESH=1` with `CRON_SECRET` on the function |
+
+The fixture reproduces the live shape (a "Game Over" game on the previous
+day, reversed sides the next day, two spellings of one club, a schedule
+table that answers 400 to a sport filter, the missing memory column) and the
+`mlb data faults` family in `evals.test.js` (23 assertions) drives both the
+board and the MLB matchup path over it.
+
 **Still not verified here, and why.** The live Supabase tables and the
 deployed function (no credentials in the build environment; run
 `intel:board:live`); the writing model's prose (the critic is exercised

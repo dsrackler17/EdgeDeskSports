@@ -201,7 +201,55 @@ function build(now) {
     }, over || {});
   }
 
-  return { now, kickoff, slate, avail: AVAIL, metrics: METRICS, identity: IDENTITY, injuries_csv: injuriesCsv(now), open_meteo: openMeteo(now), nfl, forecasts: FORECASTS, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
+  /* THE MLB SHAPE A LIVE PACKET SHOWED (2026-09-16). Yesterday's game of a
+     series is in `games` with a status the ingest wrote ("Game Over", not
+     "final"), today's game reverses the sides, the card table spells the
+     club differently from the schedule table ("NY Yankees" vs "New York
+     Yankees"), and pitcher rows exist for BOTH days. A fixture that used
+     "final" and one spelling would pass against the code that produced the
+     fault. Dates are ET days relative to the clock. */
+  function etDay(offset) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now + offset * 86400000)); }
+  const mlbToday = etDay(0), mlbYday = etDay(-1);
+  const mlbStart = new Date(now + 5 * 3600000).toISOString();
+  const mlbGames = [
+    { game_id: 776001, game_date: mlbYday, home_team: 'Boston Red Sox', away_team: 'New York Yankees', start_time: new Date(now - 22 * 3600000).toISOString(), status: 'Game Over', park_id: 3 },
+    { game_id: 776002, game_date: mlbToday, home_team: 'New York Yankees', away_team: 'Boston Red Sox', start_time: mlbStart, status: 'Scheduled', park_id: 3313 },
+    { game_id: 776003, game_date: mlbToday, home_team: 'Philadelphia Phillies', away_team: 'Washington Nationals', start_time: mlbStart, status: 'Postponed', park_id: 2681 },
+  ];
+  const mlbCards = [
+    { game_date: mlbYday, start_time: mlbGames[0].start_time, start_time_local: '7:10 PM', venue: 'Fenway Park', status: 'Game Over', doubleheader: 'N', game_number: 1, away_team_id: 147, away_team_name: 'NY Yankees', home_team_id: 111, home_team_name: 'Boston Red Sox', away_pitcher_name: 'Carlos Rodón', away_pitcher_throws: 'L', home_pitcher_name: 'Brayan Bello', home_pitcher_throws: 'R', park_factor: 1.02, hr_factor: 0.98, run_factor: 1.03, roof_type: 'open', is_dome: false, temp_f: 68, humidity: 55, precip_prob: 10, wind_mph: 8, wind_dir: 'SW', wind_rel: 'out' },
+    { game_date: mlbToday, start_time: mlbStart, start_time_local: '7:05 PM', venue: 'Yankee Stadium', status: 'Scheduled', doubleheader: 'N', game_number: 1, away_team_id: 111, away_team_name: 'Boston Red Sox', home_team_id: 147, home_team_name: 'NY Yankees', away_pitcher_name: 'Garrett Crochet', away_pitcher_throws: 'L', home_pitcher_name: 'Max Fried', home_pitcher_throws: 'L', park_factor: 1.05, hr_factor: 1.12, run_factor: 1.04, roof_type: 'open', is_dome: false, temp_f: 71, humidity: 50, precip_prob: 5, wind_mph: 6, wind_dir: 'S', wind_rel: 'in' },
+  ];
+  const mlbPitchers = [
+    { game_id: 776001, side: 'away', pitcher_id: 607074, name: 'Carlos Rodón', xera: 3.4, k_pct: 0.28, bb_pct: 0.08, barrel_pct: 0.07, hardhit_pct: 0.38, era: 3.1, fip: 3.3, whip: 1.1, whiff_pct: 0.3, xwoba_against: 0.29, updated_at: new Date(now - 20 * 3600000).toISOString() },
+    { game_id: 776001, side: 'home', pitcher_id: 678394, name: 'Brayan Bello', xera: 4.1, k_pct: 0.21, bb_pct: 0.09, barrel_pct: 0.08, hardhit_pct: 0.41, era: 3.9, fip: 4.0, whip: 1.3, whiff_pct: 0.24, xwoba_against: 0.32, updated_at: new Date(now - 20 * 3600000).toISOString() },
+    { game_id: 776002, side: 'away', pitcher_id: 676979, name: 'Garrett Crochet', xera: 2.9, k_pct: 0.31, bb_pct: 0.06, barrel_pct: 0.06, hardhit_pct: 0.36, era: 2.7, fip: 2.8, whip: 1.0, whiff_pct: 0.33, xwoba_against: 0.27, updated_at: new Date(now - 40 * 60000).toISOString() },
+    { game_id: 776002, side: 'home', pitcher_id: 608331, name: 'Max Fried', xera: 3.2, k_pct: 0.24, bb_pct: 0.06, barrel_pct: 0.06, hardhit_pct: 0.37, era: 2.9, fip: 3.2, whip: 1.1, whiff_pct: 0.27, xwoba_against: 0.28, updated_at: new Date(now - 40 * 60000).toISOString() },
+  ];
+  const mlbOffense = [
+    { game_id: 776002, side: 'away', obp: 0.33, iso: 0.17, k_pct: 0.22, runs_per_game: 4.9, avg: 0.26, slg: 0.43, ops: 0.76, bb_pct: 0.09, vs_lhp: 0.75, vs_rhp: 0.77, updated_at: new Date(now - 40 * 60000).toISOString() },
+    { game_id: 776002, side: 'home', obp: 0.34, iso: 0.19, k_pct: 0.23, runs_per_game: 5.1, avg: 0.25, slg: 0.44, ops: 0.78, bb_pct: 0.1, vs_lhp: 0.79, vs_rhp: 0.77, updated_at: new Date(now - 40 * 60000).toISOString() },
+    { game_id: 776001, side: 'away', obp: 0.34, iso: 0.19, k_pct: 0.23, runs_per_game: 5.1, avg: 0.25, slg: 0.44, ops: 0.78, bb_pct: 0.1, vs_lhp: 0.79, vs_rhp: 0.77, updated_at: new Date(now - 20 * 3600000).toISOString() },
+    { game_id: 776001, side: 'home', obp: 0.33, iso: 0.17, k_pct: 0.22, runs_per_game: 4.9, avg: 0.26, slg: 0.43, ops: 0.76, bb_pct: 0.09, vs_lhp: 0.75, vs_rhp: 0.77, updated_at: new Date(now - 20 * 3600000).toISOString() },
+  ];
+  function mlbSignal(over) {
+    return Object.assign({
+      sig_key: 'mlb-bos-nyy-tot', event_id: 'ev-mlb-bos-nyy', sport_key: 'baseball_mlb', sport_title: 'MLB',
+      market: 'totals', selection: 'Over', point: 8.5,
+      best_dec: 2.0, first_best_dec: 1.95, best_book: 'Caesars',
+      sharp_fair: 0.52, sharp_book_fair: 0.52, consensus_fair: 0.515,
+      reference_type: 'sharp', reference_book: 'pinnacle', pin_dec: 1.87, pin_opp_dec: 1.98,
+      edge: 0.04, first_edge: 0.02, n_books: 8, n_books_eff: 6, has_sharp: true,
+      corrob_n: 2, corrob_ref: 'pinnacle', qual_tier: 'A', qual_reason: 'ok', quality_score: 75, fresh_books: 6,
+      flagged_at: new Date(now - 12 * 60000).toISOString(), flagged_edge: 0.02, flagged_best_dec: 1.95, flagged_best_book: 'Caesars',
+      home_team: 'New York Yankees', away_team: 'Boston Red Sox', commence_time: mlbStart,
+      first_seen_at: new Date(now - 240 * 60000).toISOString(), last_seen_at: new Date(now - 12 * 60000).toISOString(),
+      clv: null, beat_close: null, result: null, graded_at: null, closing_sharp_fair: null,
+    }, over || {});
+  }
+  const mlb = { today: mlbToday, yesterday: mlbYday, start: mlbStart, games: mlbGames, cards: mlbCards, pitchers: mlbPitchers, offense: mlbOffense, signal: mlbSignal };
+
+  return { now, kickoff, slate, avail: AVAIL, metrics: METRICS, identity: IDENTITY, injuries_csv: injuriesCsv(now), open_meteo: openMeteo(now), nfl, forecasts: FORECASTS, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal, mlb };
 }
 
 /**
@@ -277,6 +325,41 @@ function router(fx, opts) {
       if (!m) return lines;
       const want = new Set(m[1].split(',').map((x) => x.trim()));
       return lines.filter((l) => want.has(String(l.game_id)));
+    }
+    /* THE DEPLOYED `games` TABLE IS THE MLB SCHEDULE AND HAS NO sport_key
+       COLUMN. A read that filters on one answers HTTP 400 in production
+       (PostgREST 42703); the fixture answers the same so the fallback that
+       exists for it is exercised, not assumed. `opts.mlb` switches the MLB
+       rows on; without it the MLB tables are empty, as they were before. */
+    if (u.indexOf('games?') >= 0 && u.indexOf('sport_key=eq.') >= 0 && u.indexOf('completed=') < 0) {
+      return { __error: '{"code":"42703","details":null,"hint":null,"message":"column games.sport_key does not exist"}', __status: 400 };
+    }
+    if (u.indexOf('games?') >= 0 && u.indexOf('game_date=in.') >= 0) {
+      if (!opts.mlb) return [];
+      const dm = /game_date=in\.\(([^)]*)\)/.exec(decodeURIComponent(u));
+      const want = dm ? new Set(dm[1].split(',')) : null;
+      return fx.mlb.games.filter((g) => !want || want.has(g.game_date));
+    }
+    if (u.indexOf('mlb_game_cards?') >= 0) {
+      if (!opts.mlb) return [];
+      const dm = /game_date=in\.\(([^)]*)\)/.exec(decodeURIComponent(u));
+      const want = dm ? new Set(dm[1].split(',')) : null;
+      return fx.mlb.cards.filter((g) => !want || want.has(g.game_date));
+    }
+    if (u.indexOf('pitcher_features?') >= 0) {
+      if (!opts.mlb) return [];
+      const im = /game_id=in\.\(([^)]*)\)/.exec(decodeURIComponent(u));
+      const want = im ? new Set(im[1].split(',').map((x) => x.trim())) : null;
+      return fx.mlb.pitchers.filter((r) => !want || want.has(String(r.game_id)));
+    }
+    if (u.indexOf('offense_features?') >= 0) {
+      if (!opts.mlb) return [];
+      const im = /game_id=in\.\(([^)]*)\)/.exec(decodeURIComponent(u));
+      const want = im ? new Set(im[1].split(',').map((x) => x.trim())) : null;
+      return fx.mlb.offense.filter((r) => !want || want.has(String(r.game_id)));
+    }
+    if (u.indexOf('research_sessions?') >= 0 && u.indexOf('confidence') >= 0) {
+      return { __error: '{"code":"42703","message":"column research_sessions.confidence does not exist"}', __status: 400 };
     }
     if (u.indexOf('teams?') >= 0) return fx.teams;
     if (u.indexOf('ratings?') >= 0) return fx.ratings;

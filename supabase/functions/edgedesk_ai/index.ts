@@ -511,7 +511,10 @@ export function evidenceIntegrity(
       const team = String(v?.team ?? "").trim();
       if (!who || !team) continue;
       const s = teamsOf.get(personKey(who)) ?? new Set<string>();
-      s.add(normName(team));
+      /* compared on the CLUB, not the spelling: "NY Yankees" in one table and
+         "New York Yankees" in another are one team, and reading them as two
+         is what flagged 26 starters on a live packet */
+      s.add(clubKeyFor(e.sport ?? v?.sport, team));
       teamsOf.set(personKey(who), s);
     }
     const split = [...teamsOf.entries()].filter(([, s]) => s.size > 1);
@@ -533,9 +536,13 @@ export function evidenceIntegrity(
       const game = String(v?.game ?? (e.field === "game" ? e.entity : "") ?? "").trim();
       const id = e.event_id ?? v?.game_id;
       if (!game || id == null) continue;
-      const s = idsOf.get(normName(game)) ?? new Set<string>();
+      /* the same two clubs on DIFFERENT days are a series, not a duplicate:
+         the key carries the date the item is bound to */
+      const gd = String(v?.game_date ?? v?.date ?? e.date ?? "").slice(0, 10);
+      const key = normName(game) + (gd ? "|" + gd : "");
+      const s = idsOf.get(key) ?? new Set<string>();
       s.add(String(id));
-      idsOf.set(normName(game), s);
+      idsOf.set(key, s);
     }
     const dupes = [...idsOf.entries()].filter(([, s]) => s.size > 1);
     checks.push(dupes.length
@@ -852,6 +859,69 @@ export function personKey(s: unknown): string {
     ? raw.split(",").map((p) => p.trim()).reverse().join(" ")
     : raw;
   return normName(flipped);
+}
+
+/* ========================================================================
+   MLB GAME STATE AND CLUB IDENTITY — the two faults a live packet showed.
+
+   A production packet carried 21 items dated the day before, 4 matchups
+   under two event ids and 26 starters "attached to two teams". All three
+   had one cause each, and none was a wrong join:
+     - yesterday's games were not marked "final" in the schedule table (the
+       ingest writes its own status words), so the only status test that
+       existed let a played game through as tonight's;
+     - consecutive games of one series carry different ids and different
+       dates, and the duplicate check keyed on the matchup name alone;
+     - two tables spell one club two ways ("New York Yankees" / "NY
+       Yankees"), and the subject check compared the raw strings.
+   ======================================================================== */
+
+/** Has this MLB game been played, whatever the ingest calls it? Status words first; then the clock: a game dated before today (ET) whose start passed more than six hours ago is over even when its status never updated. Suspended games are kept (they resume). */
+export function mlbGameFinished(row: any, now = Date.now()): boolean {
+  const st = String(row?.status ?? "").toLowerCase();
+  if (/suspend|delay/.test(st)) return false;
+  if (/final|game over|completed|cancel|postpon|forfeit/.test(st) || st === "f") return true;
+  const gd = String(row?.game_date ?? "").slice(0, 10);
+  const t = Date.parse(String(row?.start_time ?? ""));
+  if (gd && gd < etDay(0) && (!Number.isFinite(t) || t < now - 6 * 3600000)) return true;
+  if (Number.isFinite(t) && t < now - 6 * 3600000 && !/progress|live|warmup|pre/.test(st)) return true;
+  return false;
+}
+/** A game that will not be played in this window: postponed or cancelled. */
+export function mlbGameOff(row: any): boolean { return /postpon|cancel/.test(String(row?.status ?? "").toLowerCase()); }
+
+let MLB_CLUB_INDEX: Map<string, string> | null = null;
+/** The canonical club for any spelling a table uses: the full name, a nickname, a city or an abbreviation. Falls back to the normalised input so two unknown spellings still compare. */
+export function mlbClubKey(name: unknown): string {
+  const n = normName(name);
+  if (!n) return "";
+  if (!MLB_CLUB_INDEX) {
+    MLB_CLUB_INDEX = new Map();
+    for (const t of MLB_TEAMS) {
+      MLB_CLUB_INDEX.set(normName(t.name), t.name);
+      for (const a of t.aliases) { const k = normName(a); if (k && !MLB_CLUB_INDEX.has(k)) MLB_CLUB_INDEX.set(k, t.name); }
+    }
+  }
+  const exact = MLB_CLUB_INDEX.get(n);
+  if (exact) return exact;
+  /* "NY Yankees", "Yankees (NYY)", "New York Yankees" — the longest alias that is a whole-word part of the name decides; a city alone is refused where two clubs share it */
+  let best: { key: string; club: string } | null = null;
+  for (const [k, club] of MLB_CLUB_INDEX) {
+    if (k.length < 4) continue;
+    if ((" " + n + " ").indexOf(" " + k + " ") >= 0 && (!best || k.length > best.key.length)) best = { key: k, club };
+  }
+  return best ? best.club : n;
+}
+/** The key two team spellings are compared on, by sport. */
+export function clubKeyFor(sport: unknown, name: unknown): string {
+  const n = normName(name);
+  if (sport === "baseball_mlb" || sport == null || sport === "") {
+    /* an item that names no sport still resolves when the spelling is a known MLB club */
+    const k = normName(mlbClubKey(name));
+    if (k && k !== n) return k;
+    if (sport === "baseball_mlb") return k || n;
+  }
+  return n;
 }
 
 /** Fallback key: first initial + last name, for "J. Sears" vs "JP Sears". */
@@ -4257,16 +4327,69 @@ export class Dal {
           if (hit) { g.cfb_game_id = String(hit.game_id); g.week = g.week ?? num(hit.week); }
         }
       }
+    } else if (sportKey === "baseball_mlb") {
+      /* THE MLB SCHEDULE IS `games` WITHOUT A SPORT COLUMN. The deployed table
+         is written by the MLB ingest (game_id, game_date, teams, start_time,
+         status, park_id) and carries no sport_key; filtering on one answered
+         HTTP 400 ("column games.sport_key does not exist") on every MLB
+         board, which read as "the schedule retrieval for MLB failed". The
+         same read getPitcherFeatures already makes, with the same
+         finished-game rule, is the universe. */
+      const days = [etDay(-1), etDay(0), etDay(1)];
+      const g = await this.read(
+        `games?select=game_id,game_date,home_team,away_team,start_time,status,park_id&game_date=in.(${days.join(",")})&order=start_time.asc&limit=80`, "schedule");
+      path.games = { rows: g.rows.length, error: g.error, days, table: "games (the MLB schedule; no sport column)" };
+      if (g.error) errors.push(`games could not be read (${g.error})`);
+      const nowMs = Date.now();
+      const seen = new Set<string>();
+      let droppedFinished = 0, droppedOff = 0, droppedDup = 0;
+      for (const r of g.rows) {
+        if (mlbGameFinished(r, nowMs)) { droppedFinished++; continue; }
+        if (mlbGameOff(r)) { droppedOff++; continue; }
+        const k = `${normName(r.away_team)}|${normName(r.home_team)}|${String(r.game_date ?? "").slice(0, 10)}|${String(r.start_time ?? "").slice(0, 16)}`;
+        if (seen.has(k)) { droppedDup++; continue; }
+        seen.add(k);
+        index.push({
+          game_id: String(r.game_id), cfb_game_id: null, source: "games",
+          season: null, week: null, kickoff: r.start_time ?? null,
+          home_team: mlbClubKey(r.home_team) || String(r.home_team ?? ""), away_team: mlbClubKey(r.away_team) || String(r.away_team ?? ""),
+          home_id: null, away_id: null, home_conference: null, away_conference: null,
+          home_group: null, away_group: null, neutral_site: null, venue: r.park_id != null ? String(r.park_id) : null,
+          matchup: `${mlbClubKey(r.away_team) || r.away_team} @ ${mlbClubKey(r.home_team) || r.home_team}`,
+          status: r.status ?? "scheduled",
+          model_home_line: null, model_total: null, model_status: null, model_completeness: null,
+          quote: null, has_quote: false, has_signal: false, signals: [],
+        });
+      }
+      path.games_scope = { returned: g.rows.length, kept: index.length, dropped_finished: droppedFinished, dropped_postponed: droppedOff, dropped_duplicate: droppedDup,
+        note: "A game is finished by its status words or by the clock (dated before today ET with a start more than six hours past); a series is one game per date." };
+      if (index.length) { source = "games"; sourceLabel = "the MLB schedule table (games), finished and postponed games dropped"; }
     } else if (sportKey) {
       /* Every other sport: the multisport schedule table. Same contract — the
          universe comes from a schedule, never from the price rows. */
       const days = [etDay(0), etDay(1), etDay(2)];
-      const g = await this.read(
+      let g = await this.read(
         `games?select=game_id,game_date,home_team,away_team,start_time,status`
         + `&sport_key=eq.${encodeURIComponent(sportKey)}&game_date=in.(${days.join(",")})`
         + `&order=start_time.asc&limit=200`, "schedule");
       path.games = { rows: g.rows.length, error: g.error, days };
-      if (g.error) errors.push(`games could not be read (${g.error})`);
+      if (g.error && /sport_key/.test(g.error)) {
+        /* No multisport schedule table is deployed (games is the MLB table).
+           The captured markets are the only schedule this sport has: every
+           distinct event with a price in the window is a game that exists,
+           said as such — a capture, not a schedule. */
+        path.schedule_fallback = { reason: `no schedule table for this sport (${g.error.slice(0, 80)})`, universe: "the captured markets" };
+        const sg = await this.read(
+          `signals?select=event_id,home_team,away_team,commence_time&sport_key=eq.${encodeURIComponent(sportKey)}`
+          + `&commence_time=gte.${new Date(Date.now() - 6 * 3600_000).toISOString()}&commence_time=lte.${new Date(Date.now() + 3 * 86400_000).toISOString()}&limit=600`, "");
+        path.signals_as_schedule = { rows: sg.rows.length, error: sg.error };
+        if (sg.error) errors.push(`no schedule table for this sport and the captured markets could not be read either (${sg.error})`);
+        sourceLabel = "the captured markets (no schedule table is deployed for this sport)";
+        const seenEv = new Set<string>();
+        g = { rows: sg.rows.filter((r: any) => { const k = String(r.event_id); if (seenEv.has(k)) return false; seenEv.add(k); return true; })
+          .map((r: any) => ({ game_id: r.event_id, game_date: String(r.commence_time ?? "").slice(0, 10), home_team: r.home_team, away_team: r.away_team, start_time: r.commence_time, status: "scheduled" })), error: sg.error, cached: false };
+        if (g.rows.length) source = "signals";
+      } else if (g.error) errors.push(`games could not be read (${g.error})`);
       for (const r of g.rows) {
         if (String(r.status ?? "").toLowerCase() === "final") continue;
         index.push({
@@ -4281,7 +4404,7 @@ export class Dal {
           quote: null, has_quote: false, has_signal: false, signals: [],
         });
       }
-      if (index.length) { source = "games"; sourceLabel = "the multisport schedule table"; }
+      if (index.length && !source) { source = "games"; sourceLabel = "the multisport schedule table"; }
     }
 
     /* ---- A2b. poll rank, the one attention input EdgeDesk actually holds --
@@ -4664,9 +4787,21 @@ export class Dal {
        date is KEPT — a suspended or postponed carryover really is on tonight's
        card. Live games are ordered first so any remaining budget pressure falls
        on tomorrow, never on tonight. */
-    const isFinal = (r: any) => String(r?.status ?? "").toLowerCase() === "final";
+    /* "final" was the only word tested, and the ingest does not always write
+       it: a live packet carried the previous day's whole card as tonight's.
+       The rule now reads the status words the feed uses AND the clock. */
+    const nowMs = Date.now();
+    const isFinal = (r: any) => mlbGameFinished(r, nowMs);
     const today = etDay(0);
-    const liveRows = rows.filter((r: any) => !isFinal(r));
+    const seenCard = new Set<string>();
+    const liveRows = rows.filter((r: any) => {
+      if (isFinal(r) || mlbGameOff(r)) return false;
+      /* one row per game: the same pairing, date and game number is one card however many times the sync wrote it */
+      const k = `${normName(r.away_team_name)}|${normName(r.home_team_name)}|${String(r.game_date ?? "").slice(0, 10)}|${r.game_number ?? 1}`;
+      if (seenCard.has(k)) return false;
+      seenCard.add(k);
+      return true;
+    });
     const dropped = rows.length - liveRows.length;
     liveRows.sort((a: any, b: any) => {
       // today first, then the rest chronologically
@@ -4692,16 +4827,17 @@ export class Dal {
     for (const g of rows) {
       const entity = `${g.away_team_name} @ ${g.home_team_name}`;
       out.push(ev({
-        source: "mlb_game_cards", entity, field: "game", relevance: "schedule",
-        value: { date: g.game_date, start: g.start_time, local: g.start_time_local, venue: g.venue, status: g.status },
-        status: "VERIFIED", source_timestamp: g.start_time, freshness: freshnessOf("schedule", Date.now()),
+        source: "mlb_game_cards", entity, field: "game", relevance: "schedule", sport: "baseball_mlb",
+        value: { date: g.game_date, game_date: g.game_date, start: g.start_time, local: g.start_time_local, venue: g.venue, status: g.status },
+        /* the start time is WHEN THE GAME IS, not when this was observed; as an observation time it read as "timestamped in the future" on every live card */
+        status: "VERIFIED", source_timestamp: null, freshness: freshnessOf("schedule", Date.now()),
       }));
       for (const side of ["away", "home"] as const) {
         const nm = side === "away" ? g.away_pitcher_name : g.home_pitcher_name;
         const th = side === "away" ? g.away_pitcher_throws : g.home_pitcher_throws;
         out.push(nm
           ? ev({
-            source: "mlb_game_cards", entity: nm, field: "probable_starter",
+            source: "mlb_game_cards", entity: nm, field: "probable_starter", sport: "baseball_mlb",
             value: { name: nm, throws: th, team: side === "away" ? g.away_team_name : g.home_team_name,
               game: entity, side, game_date: g.game_date ?? null, status: g.status ?? null },
             status: "PROBABLE", freshness: "CURRENT", relevance: "pitching",
@@ -6207,7 +6343,8 @@ export class Dal {
        printing it, it is to stop fetching the rows that cause it. A game from
        the earlier date that is NOT final is kept — a suspended or postponed
        carryover really is on tonight's card. */
-    const finalOf = (r: any) => String(r?.status ?? "").toLowerCase() === "final";
+    const nowMs = Date.now();
+    const finalOf = (r: any) => mlbGameFinished(r, nowMs) || mlbGameOff(r);
     const live = g.rows.filter((r) => !finalOf(r));
     path.games_live = { total: g.rows.length, live: live.length, dropped_final: g.rows.length - live.length };
     let ids: string[] = live.map((r) => r.game_id).filter((v) => v != null).map(String);
@@ -6936,7 +7073,8 @@ export class Dal {
       "research_calibration?select=bucket,n,mean_edge_predicted,mean_clv_realised,beat_rate,beat_lo,shortfall,updated_at"
       + "&order=bucket.asc&limit=10", "memory");
     const prior = ents.length
-      ? await this.read(`research_sessions?select=question,intent,conclusion,confidence,sport,entities,created_at&entities=ov.{${ents.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",")}}&order=created_at.desc&limit=10`, "memory")
+      /* `confidence` was selected here and is neither written by rememberSession nor present on the deployed table; the read answered 400 and every prior session was lost with it */
+      ? await this.read(`research_sessions?select=question,intent,conclusion,sport,entities,created_at&entities=ov.{${ents.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",")}}&order=created_at.desc&limit=10`, "memory")
       : { rows: [], error: null, cached: false };
 
     // Facts decay. A fact past its validity window informs research but is never
@@ -7559,7 +7697,7 @@ export function buildSlateScope(sport: string | null, allRows: any[], liveRows: 
   const onToday = allRows.filter((r) => String(r?.game_date ?? "").slice(0, 10) === today);
   const universe = onToday.length ? onToday : allRows;
 
-  const final = universe.filter((r) => statusOf(r) === "final").length;
+  const final = universe.filter((r) => mlbGameFinished(r)).length;
   const postponed = universe.filter((r) => /postpon|suspend|cancel/.test(statusOf(r))).length;
   const scheduled = universe.length - final - postponed;
   const expected = universe.length;
