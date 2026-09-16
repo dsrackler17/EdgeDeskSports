@@ -153,10 +153,13 @@ async function runImport(db, ds, verdict, o) {
     throw Object.assign(new Error(`the promote gate refused this import (${code}): ${detail}`), { promote: out, code });
   }
 
+  /* The shell's pipeline ledger reads <job>_last_run / <job>_last_status, and
+     prints the job name to an operator. "import" could be anything; the file
+     that runs is what they need to see. */
   await P.writeMeta(db, SCHEMA, {
-    import_last_run: new Date().toISOString(),
-    import_last_status: 'ok',
-    import_last_id: importId,
+    import_pitcher_history_last_run: new Date().toISOString(),
+    import_pitcher_history_last_status: 'ok',
+    import_pitcher_history_last_id: importId,
     coverage_start: String(ds.coverage.start),
     coverage_end: String(ds.coverage.end),
     provisional_seasons: (ds.provisional_seasons || []).join(',')
@@ -275,7 +278,7 @@ async function main() {
   } catch (e) {
     reportFailure('import_pitcher_history', e);
     await ledger.finish('failed', String(e.message).slice(0, 500));
-    try { await P.writeMeta(db, SCHEMA, { import_last_run: new Date().toISOString(), import_last_status: 'failed' }); } catch (_) { /* best effort */ }
+    try { await P.writeMeta(db, SCHEMA, { import_pitcher_history_last_run: new Date().toISOString(), import_pitcher_history_last_status: 'error' }); } catch (_) { /* best effort */ }
     console.error(`::error::the import failed: ${e.message}`);
     console.error('::error::the previously promoted dataset is unchanged — nothing was replaced.');
     process.exit(1);

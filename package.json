@@ -162,6 +162,8 @@
     "mlb:import:commit": "node tools/mlb/import_pitcher_history.js --commit",
     "mlb:sql": "node tools/mlb/mlb_pitchers_sql.test.js",
     "mlb:e2e": "node tools/mlb/import.test.js",
-    "mlb:ai": "node tools/intelligence/mlb_history.test.js"
+    "mlb:ai": "node tools/intelligence/mlb_history.test.js",
+    "mlb:ui": "node tools/mlb/baseball_ui.e2e.js",
+    "mlb:test": "node tools/mlb/dataset.js && node tools/mlb/import.test.js && node tools/intelligence/mlb_history.test.js"
   }
 }

@@ -333,6 +333,131 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .atp-form i.w{background:var(--pos)}.atp-form i.l{background:var(--neg)}
 .rs-stale{color:var(--warn)}
 .rs-panelwrap{margin-bottom:12px}
+/* ===== Baseball research — the historical pitching record ================ */
+.mlbh-cov{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:11px 12px;font-size:12.5px;line-height:1.55;color:var(--dim)}
+.mlbh-cov b{color:var(--text)}
+.mlbh-cov-m{display:block;margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)}
+.mlbh-ctls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.mlbh-ctl{flex:1 1 150px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.mlbh-ctl>span{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.mlbh-ctl select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:9px 8px;font-family:inherit;font-size:13px;min-height:38px}
+.mlbh-ctl select:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.mlbh-amb{background:rgba(217,154,43,.08);border:1px solid rgba(217,154,43,.4);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--dim);margin:-2px 0 8px}
+.mlbh-amb b{color:var(--warn)}
+.mlbh-srch{margin:-4px 0 12px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.mlbh-hit{display:block;width:100%;text-align:left;background:var(--surface2);border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:inherit;padding:10px 12px;cursor:pointer}
+.mlbh-hit:last-child{border-bottom:none}
+.mlbh-hit:hover,.mlbh-hit:focus-visible{background:rgba(47,167,154,.1);outline:none}
+.mlbh-hit .nm{display:block;font-weight:700;font-size:13.5px}
+.mlbh-hit .sub{display:block;font-size:11.5px;color:var(--dim);margin-top:1px}
+.mlbh-hit .meta{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:2px}
+.mlbh-tbl th,.mlbh-tbl td{text-align:right;white-space:nowrap}
+.mlbh-tbl th.l,.mlbh-tbl td.l{text-align:left}
+.mlbh-tbl td.mut{color:var(--faint)}
+.mlbh-tbl th.on,.mlbh-tbl td.on{color:var(--accent);font-weight:700}
+.mlbh-row{cursor:pointer}
+.mlbh-row:hover td,.mlbh-row:focus-visible td{background:rgba(47,167,154,.08)}
+.mlbh-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.mlbh-split,.mlbh-gap,.mlbh-short{display:inline-block;margin-left:5px;padding:1px 5px;border:1px solid rgba(217,154,43,.45);border-radius:5px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);font-family:'Inter',sans-serif}
+.mlbh-notes{margin:10px 0 4px;font-size:11.5px;color:var(--faint);line-height:1.5}
+.mlbh-notes ul{margin:0;padding-left:16px}
+.mlbh-notes li{margin:3px 0}
+.mlbh-rename{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--dim);margin-bottom:10px}
+.mlbh-cmpbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:12px 0}
+.mlbh-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:6px 8px 6px 12px;font-size:12.5px;font-weight:600}
+.mlbh-chip.empty-chip{color:var(--faint);font-weight:400;padding-right:12px}
+.mlbh-chip button{background:none;border:none;color:var(--dim);font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
+.mlbh-chip button:hover{color:var(--neg)}
+.mlbh-cmp th,.mlbh-cmp td{text-align:center;white-space:nowrap}
+.mlbh-cmp th.l,.mlbh-cmp td.l{text-align:left}
+.mlbh-cmp td.l .dir{display:block;font-size:10px;color:var(--faint);font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0}
+.mlbh-cmp th .sub{display:block;font-size:10.5px;color:var(--faint);font-weight:400}
+.mlbh-cmp td.win{color:var(--pos);font-weight:700}
+.mlbh-cmp tr.mlbh-sample td{color:var(--dim);font-size:11.5px}
+.mlbh-cmp tr.mlbh-sample td .sub{display:block;font-size:10.5px;color:var(--faint)}
+.mlbh-cmp tr.mlbh-nc td{text-align:left;font-size:11px;color:var(--warn);padding-top:0}
+.mlbh-x{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--dim);font-size:26px;line-height:1;cursor:pointer;padding:0 4px}
+.mlbh-x:hover{color:var(--text)}
+.mlbh-ph{padding-right:34px;margin-bottom:12px}
+.mlbh-ph h3{margin:0;font-size:19px}
+.mlbh-ph .sub{font-size:11.5px;color:var(--dim);margin-top:3px;font-family:'JetBrains Mono',monospace}
+.mlbh-pact{margin-top:9px}
+.mlbh-kpis{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.mlbh-kpi{flex:1 1 92px;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 10px}
+.mlbh-kpi .l{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.mlbh-kpi .n{display:block;font-size:17px;font-weight:700;font-family:'JetBrains Mono',monospace;margin:2px 0 1px}
+.mlbh-kpi .s{display:block;font-size:10px;color:var(--faint);line-height:1.35}
+.mlbh-gapnote,.mlbh-warn{background:rgba(217,154,43,.08);border:1px solid rgba(217,154,43,.35);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--dim);margin:10px 0}
+.mlbh-warn{margin:6px 0 0}
+.mlbh-latest{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.mlbh-spark{display:flex;align-items:center;gap:9px;margin:5px 0;color:var(--dim)}
+.mlbh-spark.up{color:var(--pos)}.mlbh-spark.dn{color:var(--neg)}
+.mlbh-spark .lbl{flex:0 0 86px;font-size:11px;color:var(--faint);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.mlbh-spark svg{flex:1 1 auto;height:26px;min-width:60px}
+.mlbh-spark .ends{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint)}
+.mlbh-spark .ends b.up{color:var(--pos)}.mlbh-spark .ends b.dn{color:var(--neg)}
+.mlbh-ef{display:flex;flex-direction:column;gap:4px}
+.mlbh-efr{display:flex;align-items:baseline;gap:9px;font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:5px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)}
+.mlbh-efr .y{flex:0 0 38px;font-weight:700}
+.mlbh-efr .n{flex:1 1 auto;color:var(--dim);min-width:0;overflow-wrap:anywhere}
+.mlbh-efr .g{flex:0 0 54px;text-align:right;font-weight:700}
+.mlbh-efr .lbl{flex:0 0 auto;font-family:'Inter',sans-serif;font-size:10.5px;color:var(--faint)}
+.mlbh-efr.ok{border-color:rgba(118,189,62,.35)}.mlbh-efr.ok .g{color:var(--pos)}
+.mlbh-efr.over{border-color:rgba(226,96,68,.35)}.mlbh-efr.over .g{color:var(--neg)}
+.mlbh-efr.under{border-color:rgba(47,167,154,.35)}.mlbh-efr.under .g{color:var(--accent)}
+.mlbh-yoy{display:flex;flex-direction:column;gap:6px}
+.mlbh-yoyr{border:1px solid var(--border);border-radius:9px;padding:8px 10px;background:var(--surface2)}
+.mlbh-yoyr .hd{font-size:12px;font-weight:700;margin-bottom:4px}
+.mlbh-yoyr .hd .gap,.mlbh-yoyr .hd .ch{display:inline-block;margin-left:6px;padding:1px 5px;border:1px solid rgba(217,154,43,.45);border-radius:5px;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--warn);font-weight:600}
+.mlbh-yoyr .ds{display:flex;flex-wrap:wrap;gap:5px}
+.mlbh-yoyr .d{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);border:1px solid var(--border);border-radius:5px;padding:2px 5px}
+.mlbh-yoyr .d.up{color:var(--pos);border-color:rgba(118,189,62,.35)}
+.mlbh-yoyr .d.dn{color:var(--neg);border-color:rgba(226,96,68,.35)}
+.mlbh-yoyr .d.na{opacity:.7}
+.mlbh-foot{font-size:11.5px;color:var(--faint);line-height:1.55;margin:8px 0}
+.mlbh-prov{margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--faint);line-height:1.5}
+.mlbh-rating .body{font-size:12px;line-height:1.55;color:var(--dim)}
+.mlbh-formula{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;overflow-x:auto;margin-bottom:8px;color:var(--text)}
+.mlbh-src{font-size:10.5px;color:var(--faint)}
+.mlbh-gc{margin-top:10px;padding-top:9px;border-top:1px dashed rgba(51,42,27,.6)}
+.mlbh-gc-l{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px}
+.mlbh-gc-b{font-size:12px;color:var(--dim)}
+.mlbh-gc-b.mut{color:var(--faint)}
+.mlbh-gc-rows{display:flex;flex-wrap:wrap;gap:8px}
+.mlbh-gcs{flex:1 1 220px;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+.mlbh-gcs .hd{font-size:12.5px;font-weight:700;margin-bottom:4px}
+.mlbh-gcs .hd a{color:var(--accent);text-decoration:none}
+.mlbh-gcs .hd a:hover{color:var(--text)}
+.mlbh-gcs .st{display:inline-block;margin-left:5px;padding:1px 5px;border:1px solid rgba(217,154,43,.45);border-radius:5px;font-size:9px;letter-spacing:.06em;color:var(--warn);font-weight:600}
+.mlbh-gcs .ln{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:11px;padding:3px 0;border-bottom:1px dashed rgba(51,42,27,.45)}
+.mlbh-gcs .ln:last-child{border-bottom:none}
+.mlbh-gcs .ln .k{flex:0 0 auto;color:var(--faint)}
+.mlbh-gcs .ln .v{flex:1 1 auto;text-align:right;font-family:'JetBrains Mono',monospace;overflow-wrap:anywhere}
+.mlbh-gcs .ln .v.mut{color:var(--faint);font-family:'Inter',sans-serif}
+.mlbh-gcs .ln.cur{border-top:1px solid rgba(47,167,154,.28);margin-top:2px;padding-top:5px}
+.mlbh-gcs .ln.cur .k{color:var(--accent)}
+.mlbh-gcs .na{font-size:11px;color:var(--warn)}
+.mlbh-gc-cmp{margin-top:9px}
+.mlbh-gc-cmp .sc{font-size:10.5px;color:var(--faint);margin-bottom:4px}
+.mlbh-gc-cmp .sc b{color:var(--dim)}
+.mlbh-gc-f{margin-top:8px;font-size:10.5px;color:var(--faint);line-height:1.55}
+.mlbh-gc-f b{color:var(--dim)}
+.mlbh-lnk{margin-left:7px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);text-decoration:none;border-bottom:1px dotted rgba(47,167,154,.5)}
+.mlbh-lnk:hover{color:var(--text)}
+/* a phone: the control row stacks, the tables keep their own scroll, and the
+   sparkline label and endpoints drop under the line rather than squeezing it */
+@media(max-width:520px){
+  .mlbh-ctl{flex:1 1 100%}
+  .mlbh-kpi{flex:1 1 calc(50% - 4px)}
+  .mlbh-spark{flex-wrap:wrap}
+  .mlbh-spark .lbl{flex:0 0 100%}
+  .mlbh-spark svg{flex:1 1 100%;min-width:0}
+  .mlbh-spark .ends{flex:0 0 100%;text-align:right}
+  .mlbh-efr{flex-wrap:wrap}
+  .mlbh-efr .n{flex:1 1 100%;order:3}
+  #mlbhModalCard{margin:0;border-radius:0;min-height:100%}
+}
+
 .rs-srch input{width:100%;box-sizing:border-box}
 .rs-hit{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;
   background:var(--surface);margin-bottom:6px;cursor:pointer}
@@ -2782,7 +2907,7 @@ body.focus .dk-focusnote{display:block}
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -2882,6 +3007,22 @@ body.focus .dk-focusnote{display:block}
     <div id="tddSystem"></div>
     <div id="tddModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)tddClosePlayer()">
       <div id="tddModalCard" style="max-width:580px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
+    </div>
+    </div>
+    <!-- BASEBALL — the historical pitching record, 2016-2025.
+         Reads the mlbhist schema (supabase/mlb_pitcher_history.sql) through the
+         same anon/RLS door every other research table uses. Every number is
+         computed by lib/mlb_pitcher_history.js, the one query layer the import
+         pipeline and EdgeDesk Intelligence also read through. -->
+    <div id="v-baseball" class="rpanel hide">
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Baseball</h2><span class="spacer"></span><span class="freshness" id="mlbhFresh">&mdash;</span><button class="refreshbtn" id="mlbhRefreshBtn" title="Refresh" aria-label="Refresh the pitching archive" onclick="researchRefresh('baseball')">&#8635;</button></div>
+    <div id="rsMeta-baseball" class="rs-panelwrap"></div>
+    <p class="rs-lede">Ten completed MLB regular seasons of pitching &mdash; how a pitcher has changed, which clubs he threw for and how he did with each, and whether an ERA was supported by the FIP underneath it. <b style="color:var(--warn)">A record, not a forecast, and never tonight&rsquo;s data.</b></p>
+    <div class="stseg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="board" class="on" onclick="mlbhSetSeg('board')">Season board</button><button data-seg="teams" onclick="mlbhSetSeg('teams')">Clubs</button><button data-seg="compare" onclick="mlbhSetSeg('compare')">Compare</button></div>
+    <div id="mlbhBody"><div class="empty">Loading&hellip;</div></div>
+    <div id="rsSys-baseball" class="fb-ov" style="margin-top:var(--sp5)"></div>
+    <div id="mlbhModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)mlbhClosePitcher()">
+      <div id="mlbhModalCard" style="max-width:720px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
     </div>
     </div>
     <!-- STATS -->
@@ -3414,6 +3555,10 @@ window.mcRefresh=function(){
 
 <script src="/lib/ufc_research.js?v=20260909a"></script>
 <script src="/lib/tennis_research.js?v=20260910a"></script>
+<!-- The MLB historical pitching query layer. The SAME file the import
+     pipeline validates with and the AI function carries inlined, so a
+     pitcher's K-BB% is one number rather than three that agree. -->
+<script src="/lib/mlb_pitcher_history.js?v=20260917a"></script>
 <script>
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
@@ -4648,6 +4793,14 @@ var RS_TIER={
 /* Every research value class this section displays, with its tier, its factual
    data lineage, and (T3 only) the registry key of the model that produced it. */
 var RS_PROV={
+  baseball:[
+    {nm:'Pitcher seasons, club splits, career and club summaries, league baselines',tier:'T0',src:'MLB Stats API (statsapi.mlb.com/api/v1), regular season, sport 1, game type R \u2014 imported into the mlbhist schema and reconciled player by player against MLB\u2019s own all-team totals across 14 counting fields'},
+    {nm:'ERA, WHIP, K/9, BB/9, HR/9, K%, BB%, K-BB%',tier:'T0',src:'Recomputed from counting statistics and exact OUTS by lib/mlb_pitcher_history.js; the import refuses to publish when any of them disagrees with the packaged value'},
+    {nm:'FIP',tier:'T2',src:'MLB glossary construction with the annual league constant derived from the same pull. All walks, intentional included. Not identical to another publisher\u2019s FIP variant.'},
+    {nm:'performance_index',tier:'T2',model:'ED_PITCH_PERF_V1',src:'A custom DESCRIPTIVE index: 100 = league average, shrunk toward 100 by IP/(IP+40). Weights (0.70 FIP / 0.30 ERA) are explicit design choices, not fitted. Not a percentile, not WAR, not ERA+, not a probability, and never converted into a price or an edge.'},
+    {nm:'Year-over-year change, club splits, comparisons, leaderboards',tier:'T2',src:'Deterministic arithmetic over the rows above, computed in lib/mlb_pitcher_history.js \u2014 the same code the tests assert on and the AI retrieves through'},
+    {nm:'Seasons with a club',tier:'T0',src:'Distinct seasons with a recorded MLB pitching appearance for that club. NOT a contract, signing, trade or roster date; the data establishes none of those.'}
+  ],
   cfb:[
     {nm:'Scores, records, season totals, recruiting, AP poll, roster',tier:'T0',src:'CollegeFootballData ingest (cfb.games / records / team_season_stats / recruiting / rankings / roster)'},
     {nm:'Book line (spread, total, moneyline)',tier:'T0',src:'cfb.lines — consensus book numbers, not Pinnacle'},
@@ -4720,6 +4873,16 @@ var RS_PROV={
 };
 /* First-class known limitations, from module metadata — not buried in prose. */
 var RS_LIMITS={
+  baseball:['The archive ends with the 2025 regular season. It is never current-season data, it cannot say who is pitching tonight, and the last club a pitcher appears for is a fact about the window \u2014 not about today.',
+       'Postseason, minor leagues, spring training and rostered players with no MLB pitching appearance are excluded.',
+       'performance_index is a custom descriptive index (ED_PITCH_PERF_V1), not a percentile, a 0\u2013100 grade, WAR, ERA+ or a win probability. It is not park- or opponent-adjusted, and starters and relievers are rated against one common league baseline rather than separate ones.',
+       'Small samples are shrunk toward 100 by IP/(IP+40), which suppresses but does not remove them: a one-inning score near 100 is shrinkage, not evidence of league-average ability. Every rating is shown with its innings.',
+       'A blank is undefined, never a zero. A pitcher who recorded no outs keeps his counting statistics and has no ERA, FIP, WHIP or rating.',
+       'The season row and the club rows are the same innings at two grains and must never be added together. A traded pitcher\u2019s club rows are parts of his season, and the screen labels them as such.',
+       'Velocity, pitch mix, handedness splits, injuries, game logs, opponent-specific results and batter-versus-pitcher history are NOT in this dataset and are not estimated from season totals.',
+       '2020 was a 60-game season. Its workload is not comparable with a full year and its rates sit on a smaller sample; the screen marks it.',
+       'position_reported is the source-reported position, not a reconstructed historical roster classification. Boards exclude non-pitchers by default and say so.',
+       'Boards are capped at 50 rows, a career at 20 seasons and a club at 60 pitchers. A cap is stated when it bites.'],
   cfb:['Season totals are read without a season filter, so they are labelled without claiming a season.',
        'Lines are consensus book numbers, not Pinnacle, and are not a CLV measurement.',
        'Per-play and drive data are not ingested (free CollegeFootballData tier), so the deep dive is season aggregates only.',
@@ -4908,7 +5071,7 @@ function rsStateHTML(modId){
 /* ---- freshness SLA ------------------------------------------------------
    A module that publishes no build time renders a visibly inactive state.
    No age is ever computed from "now" as a stand-in for a real build time. */
-var RS_FRESH_EL={cfb:'cfbFresh',ufc:'ufcFresh',wta:'wtaFresh',tennis:'tddFresh',stats:'stFresh',props:'prFresh'};
+var RS_FRESH_EL={cfb:'cfbFresh',ufc:'ufcFresh',wta:'wtaFresh',tennis:'tddFresh',stats:'stFresh',props:'prFresh',baseball:'mlbhFresh'};
 /* A build stamp the browser cannot parse is not a build time. Accepts ISO-8601
    and Postgres' own "YYYY-MM-DD HH:MM:SS.ffffff+00" rendering (which V8 takes
    but other engines reject); anything else returns null, so the module falls
@@ -6635,7 +6798,39 @@ function mlbLookup(e){
   if(e.commence_time){var d=String(e.commence_time).slice(0,10);if(m[base+'|'+d])return m[base+'|'+d];}
   return m[base]||null;
 }
-function mlbPitcherTxt(nm,th){return nm?(nm+(th?' ('+th+')':'')):'TBD';}
+/* A probable starter's name on a game card, with a way into his ten-season
+   record. The link is the ONLY thing added: the name, the hand and the word
+   TBD are unchanged, and nothing here promotes a probable start to a
+   confirmed one or reads a club out of the archive. */
+function mlbPitcherTxt(nm,th){
+  if(!nm)return 'TBD';
+  var base=nm+(th?' ('+th+')':'');
+  if(!window.EDMlbPitchers)return base;
+  return base+' <a class="mlbh-lnk" href="#research/baseball" '
+    +'onclick="return mlbhOpenByName('+JSON.stringify(nm).replace(/"/g,'&quot;')+')" '
+    +'title="Open this pitcher\u2019s 2016\u20132025 record">history</a>';
+}
+/* Resolve the card's name against the archive before opening anything. An
+   ambiguous name is NOT collapsed onto the busier pitcher: the reader is shown
+   the candidates and picks. A name with no record in the window says so. */
+window.mlbhOpenByName=async function(nm){
+  try{
+    researchGo('baseball');
+    var svc=(typeof mlbhSvc==='function')?mlbhSvc():null;
+    if(!svc)return false;
+    var r=await svc.resolvePlayer({name:nm});
+    if(r.ok&&r.data&&r.data.resolved){window.mlbhOpenPitcher(r.data.resolved.player_id);return false;}
+    MLBH.q=nm;
+    MLBH.search={ok:r.ok,code:r.code,error:r.error,
+      data:(r.data&&r.data.candidates)?r.data.candidates.map(function(c){
+        return {player_id:c.player_id,player_name:c.player_name,teams:c.teams,
+          first_observed_season:c.first_observed_season,last_observed_season:c.last_observed_season,
+          seasons_with_appearances:c.seasons_with_appearances,innings:c.innings,
+          weighted_performance_index:c.weighted_performance_index};}):[]};
+    renderBaseball();
+  }catch(_){/* a link that cannot resolve leaves the card exactly as it was */}
+  return false;
+};
 function mlbOrd(n){n=parseInt(n,10);if(!n)return '';var sf=['th','st','nd','rd'],v=n%100;return n+(sf[(v-20)%10]||sf[v]||sf[0]);}
 function mlbStandTxt(div,rank,gb,rec,recLbl,streak){
   var p=[];
@@ -6681,6 +6876,136 @@ function mlbPenTxt(teamId){
   if(arr.length>2)parts.push('+'+(arr.length-2)+' more taxed');
   return parts.join(' \u00b7 ');
 }
+/* ===== The historical pitching block on an MLB game card ==================
+   THE ONE RULE THIS BLOCK EXISTS TO OBEY. Three different things get shown
+   next to each other here, and they are never blended:
+
+     the card       who the club says is starting, and whether that is
+                    confirmed, probable or projected. mlb_game_cards publishes
+                    PROBABLES and never confirmations, so that is what is said.
+     the archive    2016-2025. A completed record. It cannot say who is
+                    starting, what club a pitcher is on now, or how he is
+                    throwing this month.
+     this season    public.pitcher_season, season-to-date, with its own as-of
+                    stamp. A different measurement of a different period.
+
+   Each carries its own label and its own timestamp. Nothing here averages the
+   archive with the current season, and nothing infers tonight's assignment
+   from either.
+
+   The block is a PLACEHOLDER at render time and fills asynchronously: a game
+   card is built synchronously from rows already in memory, and two pitcher
+   resolutions are two database reads. A card whose reads fail keeps every
+   number it already had. */
+var MLBH_GC=0, MLBH_GC_DONE={};
+function mlbHistGameHTML(g){
+  if(!g||!window.EDMlbPitchers)return '';
+  if(!g.away_pitcher_name&&!g.home_pitcher_name)return '';
+  var id='mlbhgc'+(++MLBH_GC);
+  setTimeout(function(){mlbHistGameFill(id,g);},0);
+  return '<div class="mlbh-gc" id="'+id+'"><div class="mlbh-gc-l">Historical record (2016–2025)</div>'
+    +'<div class="mlbh-gc-b">reading the archive…</div></div>';
+}
+async function mlbHistGameFill(id,g){
+  var host=document.getElementById(id);if(!host)return;
+  var M=window.EDMlbPitchers;if(!M)return;
+  try{
+    var svc=M.createService({read:function(rel,q){return sbGetMlbHist(rel+'?'+q);}});
+    var st=await svc.status();
+    if(!st.ok){
+      host.innerHTML='<div class="mlbh-gc-l">Historical record</div>'
+        +'<div class="mlbh-gc-b mut">The 2016–2025 pitching archive is not available on this deployment, so no '
+        +'historical context is shown for these starters.</div>';
+      return;
+    }
+    /* THE CARD'S CLAIM, CARRIED THROUGH UNCHANGED. mlb_game_cards publishes a
+       probable starter; it has no confirmed state at all. Saying "probable" is
+       therefore a fact about the source, not a hedge. */
+    var sides=[{side:'away',name:g.away_pitcher_name,team:g.away_team_name,throws:g.away_pitcher_throws},
+               {side:'home',name:g.home_pitcher_name,team:g.home_team_name,throws:g.home_pitcher_throws}];
+    var ctx=await svc.gamePitcherContext({
+      game:(g.away_team_name||'Away')+' @ '+(g.home_team_name||'Home'),
+      starters:sides.filter(function(s){return s.name;}).map(function(s){
+        return {side:s.side,name:s.name,team:s.team,status:'probable'};})});
+    var cur=await mlbCurrentSeasonLines(sides.map(function(s){return s.name;}).filter(Boolean));
+    host.innerHTML=mlbHistGameRender(g,ctx,cur,st);
+  }catch(e){
+    host.innerHTML='<div class="mlbh-gc-l">Historical record</div>'
+      +'<div class="mlbh-gc-b mut">The archive did not answer ('+stEsc(String(e&&e.message||e)).slice(0,120)+'). '
+      +'Nothing is shown in its place.</div>';
+  }
+}
+/* The CURRENT season line EdgeDesk already holds, read from the season-to-date
+   table it has always had. Separate read, separate table, separate label. */
+async function mlbCurrentSeasonLines(names){
+  var out={};
+  var live=(names||[]).filter(Boolean);
+  if(!live.length)return out;
+  try{
+    var season=Number(new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric'}).format(new Date()));
+    var q='pitcher_season?select=name,team,season,games_started,ip,era,fip,whip,k_bb_pct,as_of'
+      +'&season=eq.'+season+'&name=in.('+live.map(function(n){return '"'+String(n).replace(/"/g,'')+'"';}).join(',')+')&limit=4';
+    var rows=await sbGet(q);
+    (rows||[]).forEach(function(r){out[r.name]=r;});
+  }catch(_){/* the season table is optional here; its absence is stated below */}
+  return out;
+}
+function mlbHistGameRender(g,ctx,cur,st){
+  var M=window.EDMlbPitchers;
+  var d=ctx.data||{};
+  var starters=d.starters||[];
+  var rows=starters.map(function(s){
+    var nm=stEsc(s.named||'');
+    if(!s.history){
+      var why=s.resolution.code==='AMBIGUOUS_PLAYER'
+        ? 'more than one pitcher in the archive carries this name, so EdgeDesk will not pick one'
+        : (s.resolution.code==='UNRESOLVED_PLAYER'
+          ? 'no pitcher of this name has an MLB appearance inside '+st.coverage.start+'–'+st.coverage.end
+          : 'not resolved ('+stEsc(s.resolution.code||'')+')');
+      return '<div class="mlbh-gcs"><div class="hd">'+nm+' <span class="st">PROBABLE</span></div>'
+        +'<div class="na">'+why+'</div></div>';
+    }
+    var h=s.history, last=h.latest_observed_season, ov=h.overview;
+    var c=cur[s.named]||null;
+    return '<div class="mlbh-gcs"><div class="hd"><a href="#research/baseball/p'+h.player_id+'" '
+      +'onclick="researchGo(\'baseball\');mlbhOpenPitcher('+h.player_id+');return false;">'+nm+'</a>'
+      +' <span class="st">PROBABLE</span></div>'
+      +'<div class="ln"><span class="k">Career '+ov.first_observed_season+'–'+ov.last_observed_season+'</span>'
+      +'<span class="v">'+stEsc(ov.innings)+' IP · ERA '+mlbhFmt(ov.era,'era')
+      +' · K-BB% '+mlbhFmt(ov.k_minus_bb_pct,'k_minus_bb_pct')
+      +' · index '+mlbhFmt(ov.weighted_performance_index,'performance_index')+'</span></div>'
+      +(last?('<div class="ln"><span class="k">'+last.season+' (last in archive)</span>'
+        +'<span class="v">'+stEsc(last.innings)+' IP · ERA '+mlbhFmt(last.era,'era')
+        +' · FIP '+mlbhFmt(last.fip,'fip')+' · index '+mlbhFmt(last.performance_index,'performance_index')+'</span></div>'):'')
+      +(c?('<div class="ln cur"><span class="k">'+stEsc(c.season)+' season to date</span>'
+        +'<span class="v">'+(c.ip!=null?stEsc(c.ip)+' IP':'—')+' · ERA '+mlbhFmt(c.era,'era')
+        +' · FIP '+mlbhFmt(c.fip,'fip')+' · WHIP '+mlbhFmt(c.whip,'whip')
+        +(c.as_of?(' · as of '+stEsc(ago(new Date(c.as_of).getTime()))):'')+'</span></div>')
+        :'<div class="ln cur"><span class="k">This season</span><span class="v mut">no season-to-date line on file for this pitcher</span></div>')
+      +'</div>';
+  }).join('');
+  var cmp='';
+  if(d.comparison){
+    var C=d.comparison;
+    var head='<tr><th class="l"></th>'+C.sides.map(function(x){
+      return '<th>'+stEsc(M.shortName(x.player_name))+'</th>';}).join('')+'</tr>';
+    var body=C.metrics.filter(function(m){
+      return ['innings_decimal','era','fip','k_pct','bb_pct','k_minus_bb_pct','performance_index'].indexOf(m.metric)>=0;
+    }).map(function(m){
+      return '<tr><td class="l">'+stEsc(m.label)+'</td>'+m.formatted.map(function(v,i){
+        return '<td'+(m.better_index===i?' class="win"':'')+'>'+stEsc(v)+'</td>';}).join('')+'</tr>';
+    }).join('');
+    cmp='<div class="mlbh-gc-cmp"><div class="sc">Side by side · <b>'+stEsc(C.scope)+'</b></div>'
+      +'<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-cmp">'+head+body+'</table></div></div>';
+  }
+  return '<div class="mlbh-gc-l">Historical record · '+st.coverage.start+'–'+st.coverage.end+'</div>'
+    +'<div class="mlbh-gc-rows">'+rows+'</div>'+cmp
+    +'<div class="mlbh-gc-f"><b>Three different things, kept apart.</b> The starters are what the card says — '
+    +'<b>probable, never confirmed</b>, and they can change until first pitch. The career and last-archive lines end in '
+    +st.coverage.end+' and say nothing about tonight’s club, health or form. The season-to-date line is a separate '
+    +'measurement with its own as-of time. None of them is averaged with another.</div>';
+}
+
 function mlbSchedHTML(g){
   if(!g)return '';
   var fp=g.start_time_local?(g.start_time_local+' local'):'';
@@ -6701,6 +7026,7 @@ function mlbSchedHTML(g){
     +ln(hN+' bullpen usage', mlbPenTxt(g.home_team_id),'mut')
     +ln('Status', (g.status&&g.status!=='Scheduled')?g.status:'', '');
   if(!obs)return '';
+  obs+=mlbHistGameHTML(g);
   var head='<div class="cfa-h"><span class="cfa-t">Matchup context</span>'
     +'<span class="cfa-badge observed">OBSERVED</span>'
     +'<span class="cfa-uv">Tier 0 \u00b7 facts</span></div>';
@@ -12430,6 +12756,695 @@ researchRegister({id:'tennis',label:'Tennis',schema:'tennis',cadenceMs:86400000,
   availability:function(){var m=RESEARCH_MODULES.tennis;return (m._.uistate&&m._.uistate.state)||'unread';},
   limitations:function(){return RS_LIMITS.tennis;},
   provenance:RS_PROV.tennis});
+
+/* ================= BASEBALL — the historical pitching record =================
+   Reads the contract supabase/mlb_pitcher_history.sql defines, through the same
+   anon/RLS door every other research table uses. No Edge Function is in the
+   path, and no credential reaches this file.
+
+   ONE QUERY LAYER, THREE HOSTS. Every number on this screen is computed by
+   lib/mlb_pitcher_history.js — the same file the import pipeline validates
+   with and the same block the AI function carries inlined. A pitcher's K-BB%
+   is therefore one number, not three that happen to agree.
+
+   WHAT THIS SCREEN IS. Ten completed MLB regular seasons of pitching, 2016
+   through 2025. It is a RECORD, not a forecast and not tonight's data:
+   the coverage window is printed at the top of every view, the latest season
+   a pitcher appears in is labelled as the latest in the archive rather than
+   his current club, and performance_index is shown with its methodology
+   beside it every single time.
+
+   WHAT IT WILL NOT DO. It will not add a season row to its own team splits
+   (they are the same innings at two grains). It will not turn the index into
+   a price or an edge. It will not tell you who is pitching tonight.
+   ========================================================================= */
+async function sbGetMlbHist(q,signal){return sbFetch(q,{'accept-profile':'mlbhist'},signal);}
+
+var MLBH={
+  seg:'board', status:null, at:null, err:null, errCode:null,
+  season:null, role:'', minIp:'', metric:'performance_index',
+  board:null, boardKey:null,
+  q:'', search:null, searching:false,
+  profile:null, profileId:null, profileErr:null,
+  cmp:{ids:[],season:'',res:null,err:null}, meta:null,
+  teamId:'', teamSeason:'', teamRole:'', team:null, teamErr:null,
+  clubs:null, signal:null
+};
+
+/* The service, built over this panel's own fetch so an abort while the reader
+   navigates away cancels the reads in flight. */
+function mlbhSvc(){
+  var M=window.EDMlbPitchers;
+  if(!M)return null;
+  return M.createService({read:function(rel,q){return sbGetMlbHist(rel+'?'+q,MLBH.signal);}});
+}
+function mlbhM(){return window.EDMlbPitchers||null;}
+function mlbhFmt(v,m){var M=mlbhM();return M?M.fmt(v,m):(v==null?'—':String(v));}
+function mlbhDelta(v,m){var M=mlbhM();return M?M.fmtDelta(v,m):(v==null?'—':String(v));}
+function mlbhEsc(s){return stEsc(s==null?'':String(s));}
+
+/* ---- load ---------------------------------------------------------------
+   Coverage first, always. Everything else on the screen is meaningless
+   without the window it describes, and a screen that showed rows before it
+   knew its own coverage is a screen that can be read as current. */
+window.loadBaseball=async function(force,signal){
+  MLBH.signal=signal||null;
+  var M=mlbhM();
+  if(!M){MLBH.err='The MLB history query layer (lib/mlb_pitcher_history.js) did not load, so this panel cannot render. Reload the page.';renderBaseball();return;}
+  var svc=mlbhSvc();
+  try{
+    var st=await svc.status(!!force);
+    MLBH.status=st;MLBH.at=Date.now();
+    if(!st.ok){MLBH.err=st.detail||'The historical pitching archive is not available.';MLBH.errCode=st.code;renderBaseball();return;}
+    MLBH.err=null;MLBH.errCode=null;
+    if(MLBH.season==null)MLBH.season=st.coverage.end;
+    /* The pipeline ledger the shell reads. It is written by the importer, so a
+       job that failed reads as failed here rather than leaving rows on screen
+       that still look fine. Best effort: a database without the ledger simply
+       shows no pipeline block. */
+    try{
+      var meta=await sbGetMlbHist('meta?select=key,value&limit=40',MLBH.signal);
+      MLBH.meta={};(meta||[]).forEach(function(r){MLBH.meta[r.key]=r.value;});
+    }catch(_){MLBH.meta=null;}
+    renderBaseball();
+    /* The meta block is painted by the shell at activation, BEFORE this load
+       has answered — so the freshness line said "no build time published"
+       about a pipeline that publishes one. Repainted now that the promoted
+       import's own timestamp is on hand. */
+    try{rsMetaRender('baseball');}catch(_){}
+    await mlbhLoadSeg(force);
+  }catch(e){
+    MLBH.err=String(e&&e.message||e);MLBH.errCode='QUERY_UNAVAILABLE';renderBaseball();
+  }
+};
+window.mlbhSetSeg=function(seg){
+  MLBH.seg=seg;
+  var b=document.querySelectorAll('#mlbhSeg button');
+  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',b[i].dataset.seg===seg);
+  renderBaseball();mlbhLoadSeg(false);
+};
+/* Every segment load carries a token. Two controls changed in quick
+   succession start two reads, and the first can answer LAST — which put a
+   whole-window club list on screen under a heading that said one season. A
+   superseded load discards its own result rather than painting it. */
+var MLBH_LOAD=0;
+async function mlbhLoadSeg(force){
+  var svc=mlbhSvc();if(!svc||MLBH.err)return;
+  var token=++MLBH_LOAD;
+  try{
+    if(MLBH.seg==='board'){
+      var key=[MLBH.season,MLBH.role,MLBH.minIp,MLBH.metric].join('|');
+      if(force||MLBH.boardKey!==key||!MLBH.board){
+        var lb=await svc.leaderboard({season:Number(MLBH.season),role:MLBH.role||null,
+          min_innings:MLBH.minIp===''?null:Number(MLBH.minIp),metric:MLBH.metric,limit:50});
+        if(token!==MLBH_LOAD)return;
+        MLBH.board=lb;MLBH.boardKey=key;
+      }
+    }else if(MLBH.seg==='teams'){
+      if(!MLBH.clubs)MLBH.clubs=await mlbhClubs(svc);
+      if(MLBH.teamId){
+        var tp=await svc.teamPitching({team_id:Number(MLBH.teamId),
+          season:MLBH.teamSeason===''?null:Number(MLBH.teamSeason),role:MLBH.teamRole||null,limit:60});
+        if(token!==MLBH_LOAD)return;
+        MLBH.team=tp;MLBH.teamErr=tp.ok?null:(tp.error||tp.code);
+      }
+    }else if(MLBH.seg==='compare'){
+      if(MLBH.cmp.ids.length>=2){
+        var cr=await svc.compare({player_ids:MLBH.cmp.ids,
+          season:MLBH.cmp.season===''?null:Number(MLBH.cmp.season)});
+        if(token!==MLBH_LOAD)return;
+        MLBH.cmp.res=cr;MLBH.cmp.err=cr.ok?null:(cr.error||cr.code);
+      }
+    }
+  }catch(e){if(token===MLBH_LOAD)MLBH.err=String(e&&e.message||e);}
+  if(token!==MLBH_LOAD)return;
+  renderBaseball();
+}
+/* The club list, from the season-specific team table. A franchise that changed
+   its name keeps one id and is offered once, under every name it has had. */
+async function mlbhClubs(svc){
+  try{
+    var M=mlbhM();
+    var rows=await sbGetMlbHist('teams?select=team_id,team_name,season,abbreviation&order=season.desc,team_name.asc&limit=400',MLBH.signal);
+    var by={};
+    (rows||[]).forEach(function(r){
+      var id=Number(r.team_id);
+      if(!by[id])by[id]={team_id:id,names:[],latest:r.team_name,abbr:r.abbreviation};
+      if(by[id].names.indexOf(r.team_name)<0)by[id].names.push(r.team_name);
+    });
+    return Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){
+      return String(a.latest).localeCompare(String(b.latest));});
+  }catch(_){return [];}
+}
+
+/* ---- search -------------------------------------------------------------
+   Two characters minimum, folded through the same name key the archive
+   indexes, so "Luis Garcia" finds "Luis García". */
+var MLBH_SEARCH_T=null;
+window.mlbhSearchInput=function(v){
+  MLBH.q=v;
+  if(MLBH_SEARCH_T)clearTimeout(MLBH_SEARCH_T);
+  MLBH_SEARCH_T=setTimeout(function(){mlbhRunSearch();},220);
+};
+async function mlbhRunSearch(){
+  var svc=mlbhSvc();if(!svc)return;
+  var q=String(MLBH.q||'').trim();
+  if(q.length<2){MLBH.search=null;renderBaseball();return;}
+  MLBH.searching=true;renderBaseball();
+  try{MLBH.search=await svc.search({q:q,limit:12});}
+  catch(e){MLBH.search={ok:false,code:'QUERY_UNAVAILABLE',error:String(e&&e.message||e),data:[]};}
+  MLBH.searching=false;renderBaseball();
+}
+
+/* ---- the pitcher profile ------------------------------------------------ */
+window.mlbhOpenPitcher=async function(id){
+  var svc=mlbhSvc();if(!svc)return;
+  MLBH.profileId=String(id);MLBH.profile=null;MLBH.profileErr=null;
+  var m=document.getElementById('mlbhModal');
+  if(m){m.style.display='block';document.body.style.overflow='hidden';}
+  mlbhRenderProfile();
+  researchSetHash('baseball','p'+id,true);
+  try{
+    var ov=await svc.pitcherOverview({player_id:Number(id)});
+    if(!ov.ok){MLBH.profileErr=ov;mlbhRenderProfile();return;}
+    var hist=await svc.seasonHistory({player_id:Number(id)});
+    var clubs=await svc.teamHistory({player_id:Number(id)});
+    MLBH.profile={overview:ov,history:hist,clubs:clubs};
+  }catch(e){MLBH.profileErr={code:'QUERY_UNAVAILABLE',error:String(e&&e.message||e)};}
+  mlbhRenderProfile();
+};
+window.mlbhClosePitcher=function(){
+  var m=document.getElementById('mlbhModal');
+  if(m)m.style.display='none';
+  document.body.style.overflow='';
+  MLBH.profileId=null;MLBH.profile=null;MLBH.profileErr=null;
+  researchSetHash('baseball',null,false);
+};
+window.mlbhCompareFromProfile=function(){
+  var id=Number(MLBH.profileId);
+  if(!id)return;
+  if(MLBH.cmp.ids.indexOf(id)<0)MLBH.cmp.ids=MLBH.cmp.ids.concat([id]).slice(-2);
+  mlbhClosePitcher();
+  mlbhSetSeg('compare');
+};
+window.mlbhCmpRemove=function(id){
+  MLBH.cmp.ids=MLBH.cmp.ids.filter(function(x){return x!==Number(id);});
+  MLBH.cmp.res=null;renderBaseball();mlbhLoadSeg(false);
+};
+window.mlbhCmpAdd=function(id){
+  id=Number(id);
+  if(MLBH.cmp.ids.indexOf(id)<0)MLBH.cmp.ids=MLBH.cmp.ids.concat([id]).slice(-2);
+  MLBH.cmp.res=null;mlbhSetSeg('compare');
+};
+window.mlbhSetCtl=function(k,v){
+  if(k==='season')MLBH.season=v;
+  else if(k==='role')MLBH.role=v;
+  else if(k==='minIp')MLBH.minIp=v;
+  else if(k==='metric')MLBH.metric=v;
+  else if(k==='teamId'){MLBH.teamId=v;MLBH.team=null;}
+  else if(k==='teamSeason')MLBH.teamSeason=v;
+  else if(k==='teamRole')MLBH.teamRole=v;
+  else if(k==='cmpSeason')MLBH.cmp.season=v;
+  renderBaseball();mlbhLoadSeg(false);
+};
+
+/* ---- rendering ---------------------------------------------------------- */
+function mlbhCoverageHTML(){
+  var st=MLBH.status;
+  if(!st||!st.ok)return '';
+  var c=st.coverage;
+  var prov=(c.provisional_seasons||[]).length
+    ? ' <b style="color:var(--warn)">Provisional: '+mlbhEsc((c.provisional_seasons||[]).join(', '))+'</b> — imported before the season finished, so those ratings will change.'
+    : '';
+  return '<div class="mlbh-cov"><b>'+c.start+'–'+c.end+' MLB regular seasons.</b> '
+    +'This is a historical record. It is <b>not current-season data</b> and it cannot say who is pitching tonight, '
+    +'which club a pitcher is on now, or whether he is available.'+prov
+    +'<span class="mlbh-cov-m">'+(st.counts?(st.counts.pitchers+' pitchers · '+st.counts.pitcher_seasons+' pitcher-seasons · '+st.counts.pitcher_team_seasons+' club rows'):'')
+    +' · rating '+mlbhEsc(c.rating_version)+(c.promoted_at?(' · imported '+mlbhEsc(ago(new Date(c.promoted_at).getTime()))):'')+'</span></div>';
+}
+function mlbhRatingHTML(){
+  var M=mlbhM();if(!M)return '';
+  var R=M.RATING;
+  return '<details class="rs-prov mlbh-rating"><summary><b>What the performance index is</b> · '+mlbhEsc(R.scale)+' · tap for the formula and what it is not</summary>'
+    +'<div class="body"><div class="mlbh-formula">'+mlbhEsc(R.formula)+'</div>'
+    +'<p>'+mlbhEsc(R.shrinkage)+'</p>'
+    +'<p>It is <b>not</b> '+mlbhEsc(R.is_not.join(', '))+'. It is never converted into a price, a probability or an edge anywhere in EdgeDesk.</p>'
+    +'<ul>'+R.caveats.map(function(c){return '<li>'+mlbhEsc(c)+'</li>';}).join('')+'</ul>'
+    +'<p class="mlbh-src">Source: '+mlbhEsc(M.SOURCE)+'. Version '+mlbhEsc(R.version)+'.</p></div></details>';
+}
+function mlbhSampleChip(flag,ip){
+  var lbl={zero_outs:'no outs recorded',under_10_IP:'under 10 IP',"10_to_39_IP":'10–39 IP',"40_plus_IP":'40+ IP'}[flag]||flag||'—';
+  var cls=flag==='40_plus_IP'?'starter':(flag==='zero_outs'?'missing':'probable');
+  return '<span class="pic-tag '+cls+'" title="Workload band. The index is shrunk toward 100 by IP/(IP+40), so a small sample sits near the league average by construction.">'+mlbhEsc(ip!=null?ip+' IP':lbl)+'</span>';
+}
+
+function renderBaseball(){
+  var host=document.getElementById('mlbhBody');if(!host)return;
+  var M=mlbhM();
+  if(!M){host.innerHTML='<div class="empty">The MLB history engine (<span class="mono">lib/mlb_pitcher_history.js</span>) did not load, so this panel cannot render. Reload the page.</div>';return;}
+  if(MLBH.err){
+    var fix=MLBH.errCode==='NOT_INSTALLED'
+      ? 'Run <span class="mono">supabase/mlb_pitcher_history.sql</span> once in the SQL editor, then import with <span class="mono">npm run mlb:import:commit</span>.'
+      : (MLBH.errCode==='NO_RECORDS_IN_WINDOW'
+        ? 'The schema is installed but no import has been promoted yet. Run <span class="mono">npm run mlb:import:commit</span>.'
+        : 'Nothing is shown in its place.');
+    host.innerHTML='<div class="empty"><b>The historical pitching archive did not answer.</b><br>'
+      +mlbhEsc(MLBH.err)+'<div style="margin-top:9px">'+fix+'</div></div>';
+    return;
+  }
+  if(!MLBH.status){host.innerHTML='<div class="empty">Loading the pitching archive&hellip;</div>';return;}
+  var h=mlbhCoverageHTML()+mlbhSearchHTML();
+  if(MLBH.seg==='board')h+=mlbhBoardHTML();
+  else if(MLBH.seg==='teams')h+=mlbhTeamsHTML();
+  else if(MLBH.seg==='compare')h+=mlbhCompareHTML();
+  h+=mlbhRatingHTML();
+  host.innerHTML=h;
+}
+
+function mlbhSearchHTML(){
+  var s=MLBH.search;
+  var box='<input class="stsearch" id="mlbhQ" placeholder="Search a pitcher… (accents optional)" value="'+mlbhEsc(MLBH.q)+'" '
+    +'oninput="mlbhSearchInput(this.value)" autocomplete="off" style="margin:10px 0">';
+  if(MLBH.searching)return box+'<div class="mlbh-srch"><div class="empty" style="padding:14px">Searching…</div></div>';
+  if(!s)return box;
+  /* AN AMBIGUOUS NAME IS A CHOICE, NOT A FAILURE.
+     Two pitchers share “Luis Garcia” in this archive and one of them is spelled
+     García. Rendering the resolver’s refusal as an error message dropped both
+     candidates off the screen and left the reader with nothing to act on — so a
+     result carrying candidates is shown as candidates, whatever its ok flag
+     says, with a banner explaining why nobody was picked for them. */
+  var amb=(s.code==='AMBIGUOUS_PLAYER'&&s.data&&s.data.length)
+    ? '<div class="mlbh-amb"><b>'+s.data.length+' pitchers share that name in this archive.</b> '
+      +'MLB ids are the join key, not names, so EdgeDesk will not pick one for you. Choose below.</div>'
+    : '';
+  if(!s.ok&&!amb&&s.code!=='EMPTY_RESULT')return box+'<div class="mlbh-srch"><div class="empty" style="padding:14px">'+mlbhEsc(s.error||s.code)+'</div></div>';
+  if(!s.data||!s.data.length)return box+'<div class="mlbh-srch"><div class="empty" style="padding:14px">No pitcher in the '
+    +MLBH.status.coverage.start+'–'+MLBH.status.coverage.end+' archive matches “'+mlbhEsc(MLBH.q)+'”. '
+    +'A pitcher with no MLB appearance inside this window is absent by design.</div></div>';
+  var rows=s.data.map(function(r){
+    return '<button class="mlbh-hit" onclick="mlbhOpenPitcher('+r.player_id+')">'
+      +'<span class="nm">'+mlbhEsc(r.player_name)+'</span>'
+      +'<span class="sub">'+mlbhEsc(r.teams||'—')+'</span>'
+      +'<span class="meta">'+r.first_observed_season+'–'+r.last_observed_season+' · '
+      +r.seasons_with_appearances+' season'+(r.seasons_with_appearances===1?'':'s')+' · '+mlbhEsc(r.innings)+' IP'
+      +(r.weighted_performance_index!=null?(' · index '+mlbhFmt(r.weighted_performance_index,'performance_index')):'')+'</span>'
+      +'</button>';
+  }).join('');
+  return box+amb+'<div class="mlbh-srch">'+rows+'</div>';
+}
+
+function mlbhCtlHTML(){
+  var st=MLBH.status,M=mlbhM();
+  var years=[];for(var y=st.coverage.end;y>=st.coverage.start;y--)years.push(y);
+  var metrics=['performance_index','era','fip','whip','k_pct','bb_pct','k_minus_bb_pct','k_per_9','bb_per_9','hr_per_9','innings_decimal','strikeouts','saves','holds'];
+  function sel(id,k,opts,cur){
+    return '<label class="mlbh-ctl"><span>'+mlbhEsc(id)+'</span><select onchange="mlbhSetCtl(\''+k+'\',this.value)">'
+      +opts.map(function(o){return '<option value="'+mlbhEsc(o[0])+'"'+(String(o[0])===String(cur)?' selected':'')+'>'+mlbhEsc(o[1])+'</option>';}).join('')
+      +'</select></label>';
+  }
+  return '<div class="mlbh-ctls">'
+    +sel('Season','season',years.map(function(y){return [y,String(y)];}),MLBH.season)
+    +sel('Role','role',[['','Any role'],['starter','Starters'],['reliever','Relievers'],['mixed','Mixed']],MLBH.role)
+    +sel('Minimum workload','minIp',[['','No minimum'],['20','20+ IP'],['40','40+ IP'],['60','60+ IP'],['100','100+ IP'],['120','120+ IP'],['162','162+ IP']],MLBH.minIp)
+    +sel('Ranked by','metric',metrics.map(function(m){return [m,M.METRICS[m].label+' ('+(M.METRICS[m].better==='lower'?'lower better':'higher better')+')'];}),MLBH.metric)
+    +'</div>';
+}
+
+function mlbhBoardHTML(){
+  var b=MLBH.board,M=mlbhM();
+  var h=mlbhCtlHTML();
+  if(!b)return h+'<div class="empty">Loading the board&hellip;</div>';
+  if(!b.ok&&b.code!=='EMPTY_RESULT')return h+'<div class="empty">'+mlbhEsc(b.error||b.code)+'</div>';
+  var d=b.data||{};
+  if(!d.rows||!d.rows.length)return h+'<div class="empty">No pitcher in '+mlbhEsc(d.season)+' matches those filters. '
+    +(d.min_innings?('The minimum of '+d.min_innings+' innings may be excluding everyone at this role.'):'')+'</div>';
+  var cols=['era','fip','whip','k_pct','bb_pct','k_minus_bb_pct','performance_index'];
+  var head='<tr><th class="l">#</th><th class="l">Pitcher</th><th class="l">Club</th><th>IP</th><th>G/GS</th>'
+    +cols.map(function(c){return '<th'+(c===d.metric?' class="on"':'')+'>'+mlbhEsc(M.METRICS[c].label)+'</th>';}).join('')+'</tr>';
+  var body=d.rows.map(function(r){
+    return '<tr class="mlbh-row" onclick="mlbhOpenPitcher('+r.player_id+')" tabindex="0" '
+      +'onkeydown="if(event.key===\'Enter\')mlbhOpenPitcher('+r.player_id+')">'
+      +'<td class="l mut">'+r.rank+'</td>'
+      +'<td class="l"><b>'+mlbhEsc(r.player_name)+'</b></td>'
+      +'<td class="l mut">'+mlbhEsc(r.teams||'—')+(r.team_count>1?' <span class="mlbh-split" title="Traded during the season. This row is his COMBINED season; the club splits are on his profile.">split</span>':'')+'</td>'
+      +'<td>'+mlbhEsc(r.innings)+'</td>'
+      +'<td class="mut">'+(r.games==null?'—':r.games)+'/'+(r.starts==null?'—':r.starts)+'</td>'
+      +cols.map(function(c){return '<td'+(c===d.metric?' class="on"':'')+'>'+mlbhFmt(r[c],c)+'</td>';}).join('')
+      +'</tr>';
+  }).join('');
+  var notes=(b.notes||[]).map(function(n){return '<li>'+mlbhEsc(n)+'</li>';}).join('');
+  return h
+    +'<div class="fb-sechd"><span>'+mlbhEsc(d.season)+' · '+mlbhEsc(M.METRICS[d.metric].label)+'</span>'
+    +'<span class="r">'+d.rows.length+' shown'+(d.truncated?' (capped)':'')+(d.league_baseline?(' · league ERA '+mlbhFmt(d.league_baseline.league_era,'era')):'')+'</span></div>'
+    +'<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
+    +'<div class="mlbh-notes"><ul>'+notes+'</ul></div>';
+}
+
+function mlbhTeamsHTML(){
+  var st=MLBH.status,M=mlbhM();
+  var clubs=MLBH.clubs||[];
+  var years=[];for(var y=st.coverage.end;y>=st.coverage.start;y--)years.push(y);
+  var h='<div class="mlbh-ctls">'
+    +'<label class="mlbh-ctl"><span>Club</span><select onchange="mlbhSetCtl(\'teamId\',this.value)">'
+    +'<option value="">Choose a club…</option>'
+    +clubs.map(function(c){return '<option value="'+c.team_id+'"'+(String(c.team_id)===String(MLBH.teamId)?' selected':'')+'>'
+      +mlbhEsc(c.names.join(' / '))+'</option>';}).join('')
+    +'</select></label>'
+    +'<label class="mlbh-ctl"><span>Season</span><select onchange="mlbhSetCtl(\'teamSeason\',this.value)">'
+    +'<option value="">Whole window</option>'
+    +years.map(function(yy){return '<option value="'+yy+'"'+(String(yy)===String(MLBH.teamSeason)?' selected':'')+'>'+yy+'</option>';}).join('')
+    +'</select></label>'
+    +'<label class="mlbh-ctl"><span>Role</span><select onchange="mlbhSetCtl(\'teamRole\',this.value)">'
+    +[['','Any role'],['starter','Rotation (starters)'],['reliever','Bullpen (relievers)'],['mixed','Mixed']].map(function(o){
+      return '<option value="'+o[0]+'"'+(o[0]===MLBH.teamRole?' selected':'')+'>'+mlbhEsc(o[1])+'</option>';}).join('')
+    +'</select></label></div>';
+  if(!MLBH.teamId)return h+'<div class="empty">Choose a club to see every pitcher who threw for it in the window, and what he did <b>for that club</b>. A pitcher traded mid-season appears with his club portion only — never his combined season line.</div>';
+  var t=MLBH.team;
+  if(!t)return h+'<div class="empty">Loading the club&hellip;</div>';
+  if(!t.ok)return h+'<div class="empty">'+mlbhEsc(t.error||t.code)+'</div>';
+  var d=t.data;
+  var out=h;
+  if(d.names_observed&&d.names_observed.length>1){
+    out+='<div class="mlbh-rename">This franchise appears under '+d.names_observed.length+' names in the window ('
+      +mlbhEsc(d.names_observed.join(', '))+'). The MLB team id is stable across the change, so the record is not split in two.</div>';
+  }
+  if(d.season!=null&&d.club_seasons.length){
+    var head='<tr><th class="l">Pitcher</th><th>Role</th><th>IP</th><th>G/GS</th><th>ERA</th><th>FIP</th><th>WHIP</th><th>K%</th><th>BB%</th><th>Index</th></tr>';
+    var body=d.club_seasons.map(function(r){
+      return '<tr class="mlbh-row" onclick="mlbhOpenPitcher('+r.player_id+')" tabindex="0">'
+        +'<td class="l"><b>'+mlbhEsc(r.player_name)+'</b></td>'
+        +'<td class="mut">'+mlbhEsc(r.role||'—')+'</td>'
+        +'<td>'+mlbhEsc(r.innings)+'</td>'
+        +'<td class="mut">'+(r.games==null?'—':r.games)+'/'+(r.starts==null?'—':r.starts)+'</td>'
+        +'<td>'+mlbhFmt(r.era,'era')+'</td><td>'+mlbhFmt(r.fip,'fip')+'</td><td>'+mlbhFmt(r.whip,'whip')+'</td>'
+        +'<td>'+mlbhFmt(r.k_pct,'k_pct')+'</td><td>'+mlbhFmt(r.bb_pct,'bb_pct')+'</td>'
+        +'<td>'+mlbhFmt(r.performance_index,'performance_index')+'</td></tr>';
+    }).join('');
+    out+='<div class="fb-sechd"><span>'+mlbhEsc(d.season)+' · '+mlbhEsc(MLBH.teamRole||'every role')+'</span><span class="r">'+d.club_seasons.length+' pitchers</span></div>'
+      +'<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+  }else{
+    var head2='<tr><th class="l">Pitcher</th><th class="l">Seasons with the club</th><th>IP</th><th>G/GS</th><th>ERA</th><th>WHIP</th><th>K-BB%</th><th>Index</th></tr>';
+    var body2=d.pitchers.map(function(r){
+      return '<tr class="mlbh-row" onclick="mlbhOpenPitcher('+r.player_id+')" tabindex="0">'
+        +'<td class="l"><b>'+mlbhEsc(r.player_name)+'</b></td>'
+        +'<td class="l mut">'+mlbhEsc((r.observed_seasons||[]).join(', '))
+        +(r.missed_seasons&&r.missed_seasons.length?(' <span class="mlbh-gap" title="No MLB pitching appearance for this club in these years. It may be injury, the minors, another club or inactivity — this record does not say which.">gap '+mlbhEsc(r.missed_seasons.join(', '))+'</span>'):'')
+        +'</td>'
+        +'<td>'+mlbhEsc(r.innings)+'</td>'
+        +'<td class="mut">'+(r.games==null?'—':r.games)+'/'+(r.starts==null?'—':r.starts)+'</td>'
+        +'<td>'+mlbhFmt(r.era,'era')+'</td><td>'+mlbhFmt(r.whip,'whip')+'</td>'
+        +'<td>'+mlbhFmt(r.k_minus_bb_pct,'k_minus_bb_pct')+'</td>'
+        +'<td>'+mlbhFmt(r.weighted_performance_index,'performance_index')+'</td></tr>';
+    }).join('');
+    out+='<div class="fb-sechd"><span>'+mlbhEsc(st.coverage.start)+'–'+mlbhEsc(st.coverage.end)+' · contributions to this club</span><span class="r">'+d.pitchers.length+' pitchers</span></div>'
+      +'<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead>'+head2+'</thead><tbody>'+body2+'</tbody></table></div>';
+  }
+  out+='<div class="mlbh-notes"><ul>'+(t.notes||[]).map(function(n){return '<li>'+mlbhEsc(n)+'</li>';}).join('')+'</ul></div>';
+  return out;
+}
+
+function mlbhCompareHTML(){
+  var st=MLBH.status,M=mlbhM();
+  var years=[];for(var y=st.coverage.end;y>=st.coverage.start;y--)years.push(y);
+  var chips=MLBH.cmp.ids.length
+    ? MLBH.cmp.ids.map(function(id){
+        var nm=mlbhCmpName(id);
+        return '<span class="mlbh-chip">'+mlbhEsc(nm)+'<button onclick="mlbhCmpRemove('+id+')" aria-label="Remove">×</button></span>';
+      }).join('')
+    : '<span class="mlbh-chip empty-chip">no pitcher chosen yet</span>';
+  var h='<div class="mlbh-cmpbar">'+chips
+    +'<label class="mlbh-ctl"><span>Scope</span><select onchange="mlbhSetCtl(\'cmpSeason\',this.value)">'
+    +'<option value="">Whole window, combined</option>'
+    +years.map(function(yy){return '<option value="'+yy+'"'+(String(yy)===String(MLBH.cmp.season)?' selected':'')+'>'+yy+' only</option>';}).join('')
+    +'</select></label></div>';
+  if(MLBH.cmp.ids.length<2)return h+'<div class="empty">Search a pitcher above and tap <b>Compare</b> on his profile, or tap a board row. Two pitchers are needed, and the scope — one season or the whole window — is part of the answer.</div>';
+  var c=MLBH.cmp.res;
+  if(!c)return h+'<div class="empty">Loading the comparison&hellip;</div>';
+  if(!c.ok)return h+'<div class="empty">'+mlbhEsc(c.error||c.code)+'</div>';
+  var cmp=c.data.comparison;
+  var sides=cmp.sides;
+  var head='<tr><th class="l"></th>'+sides.map(function(s){
+    return '<th>'+mlbhEsc(s.player_name)+(s.season?('<span class="sub">'+s.season+'</span>'):'')+'</th>';}).join('')+'</tr>';
+  var sample='<tr class="mlbh-sample"><td class="l">Sample</td>'+sides.map(function(s){
+    return '<td>'+mlbhEsc(s.innings)+' IP<span class="sub">'+mlbhEsc(s.role||'—')+'</span></td>';}).join('')+'</tr>';
+  var body=cmp.metrics.map(function(m){
+    return '<tr><td class="l">'+mlbhEsc(m.label)+'<span class="dir">'+(m.better==='lower'?'lower better':'higher better')+'</span></td>'
+      +m.formatted.map(function(v,i){
+        return '<td'+(m.better_index===i?' class="win"':'')+'>'+mlbhEsc(v)+'</td>';}).join('')
+      +'</tr>'+(m.comparable?'':'<tr class="mlbh-nc"><td class="l" colspan="'+(sides.length+1)+'">'+mlbhEsc(m.note||'not comparable')+'</td></tr>');
+  }).join('');
+  return h
+    +'<div class="fb-sechd"><span>Side by side</span><span class="r">scope: '+mlbhEsc(cmp.scope)+'</span></div>'
+    +'<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-cmp"><thead>'+head+'</thead><tbody>'+sample+body+'</tbody></table></div>'
+    +'<div class="mlbh-notes"><p>'+mlbhEsc(cmp.note)+'</p><ul>'
+    +(c.notes||[]).map(function(n){return '<li>'+mlbhEsc(n)+'</li>';}).join('')+'</ul></div>';
+}
+function mlbhCmpName(id){
+  var r=MLBH.cmp.res&&MLBH.cmp.res.ok?MLBH.cmp.res.data.comparison.sides.filter(function(s){return s.player_id===Number(id);})[0]:null;
+  if(r)return r.player_name;
+  var s=MLBH.search&&MLBH.search.data?MLBH.search.data.filter(function(x){return x.player_id===Number(id);})[0]:null;
+  if(s)return s.player_name;
+  var b=MLBH.board&&MLBH.board.ok?MLBH.board.data.rows.filter(function(x){return x.player_id===Number(id);})[0]:null;
+  return b?b.player_name:('MLB id '+id);
+}
+
+/* ---- the profile -------------------------------------------------------- */
+function mlbhRenderProfile(){
+  var card=document.getElementById('mlbhModalCard');if(!card)return;
+  var close='<button class="mlbh-x" onclick="mlbhClosePitcher()" aria-label="Close">×</button>';
+  if(MLBH.profileErr){
+    card.innerHTML=close+'<div class="empty">'+mlbhEsc(MLBH.profileErr.error||MLBH.profileErr.code)+'</div>';return;
+  }
+  if(!MLBH.profile){card.innerHTML=close+'<div class="empty">Loading the pitcher&hellip;</div>';return;}
+  card.innerHTML=close+mlbhProfileHTML(MLBH.profile);
+}
+function mlbhProfileHTML(p){
+  var M=mlbhM();
+  var ov=p.overview.data.overview;
+  var latest=p.overview.data.latest_observed_season;
+  var seasons=p.history.ok?p.history.data.seasons:[];
+  var yoy=p.history.ok?p.history.data.year_over_year:[];
+  var trend=p.history.ok?p.history.data.trend:null;
+  var clubs=p.clubs.ok?p.clubs.data.clubs:[];
+  var splits=p.clubs.ok?p.clubs.data.club_seasons:[];
+  var multi=p.clubs.ok?p.clubs.data.multi_club_seasons:[];
+
+  var h='<div class="mlbh-ph"><h3>'+mlbhEsc(ov.player_name)+'</h3>'
+    +'<div class="sub">MLB id '+ov.player_id+' · '+ov.first_observed_season+'–'+ov.last_observed_season
+    +' · '+ov.seasons_with_appearances+' season'+(ov.seasons_with_appearances===1?'':'s')+' with appearances'
+    +' · '+mlbhEsc(ov.teams||'—')+'</div>'
+    +'<div class="mlbh-pact"><button class="btn sm" onclick="mlbhCompareFromProfile()">Compare</button></div></div>';
+
+  /* the career window */
+  h+='<div class="mlbh-kpis">'
+    +mlbhKpi('Innings',ov.innings,'career window')
+    +mlbhKpi('ERA',mlbhFmt(ov.era,'era'),'27 × ER / outs')
+    +mlbhKpi('WHIP',mlbhFmt(ov.whip,'whip'),'3 × (BB+H) / outs')
+    +mlbhKpi('K-BB%',mlbhFmt(ov.k_minus_bb_pct,'k_minus_bb_pct'),'of batters faced')
+    +mlbhKpi('Index',mlbhFmt(ov.weighted_performance_index,'performance_index'),'innings-weighted, 100 = league average')
+    +'</div>';
+  if(ov.missed_seasons&&ov.missed_seasons.length){
+    h+='<div class="mlbh-gapnote">No MLB pitching appearance in <b>'+mlbhEsc(ov.missed_seasons.join(', '))+'</b>. '
+      +'A missed season may be injury, the minors, another club or inactivity — this record does not say which.</div>';
+  }
+  if(latest){
+    h+='<div class="fb-sechd"><span>Latest observed season</span><span class="r">'+latest.season+'</span></div>'
+      +'<div class="mlbh-latest"><div class="gd-line"><span class="l">'+latest.season+' · '+mlbhEsc(latest.teams||'—')+'</span>'
+      +'<span class="v">'+mlbhEsc(latest.innings)+' IP · ERA '+mlbhFmt(latest.era,'era')+' · FIP '+mlbhFmt(latest.fip,'fip')
+      +' · index '+mlbhFmt(latest.performance_index,'performance_index')+'</span></div>'
+      +'<p class="mlbh-warn">This is the last season in the archive with a recorded appearance. It is <b>not</b> a statement '
+      +'about his current club, role or availability.</p></div>';
+  }
+
+  /* annual performance and workload */
+  if(seasons.length){
+    h+='<div class="fb-sechd"><span>Season by season</span><span class="r">'+seasons.length+' observed</span></div>';
+    h+=mlbhSpark(seasons,'performance_index','Performance index')
+      +mlbhSpark(seasons,'innings_decimal','Workload (IP)');
+    var head='<tr><th class="l">Season</th><th class="l">Club</th><th>Role</th><th>IP</th><th>G/GS</th><th>ERA</th><th>FIP</th><th>WHIP</th><th>K%</th><th>BB%</th><th>K-BB%</th><th>Index</th><th class="l">Sample</th></tr>';
+    var body=seasons.map(function(r){
+      return '<tr><td class="l"><b>'+r.season+'</b>'+(r.season===2020?'<span class="mlbh-short" title="60-game season. Workload is not comparable with a full year and the rates sit on a smaller sample.">60g</span>':'')+'</td>'
+        +'<td class="l mut">'+mlbhEsc(r.teams||'—')+'</td>'
+        +'<td class="mut">'+mlbhEsc(r.role||'—')+'</td>'
+        +'<td>'+mlbhEsc(r.innings)+'</td>'
+        +'<td class="mut">'+(r.games==null?'—':r.games)+'/'+(r.starts==null?'—':r.starts)+'</td>'
+        +'<td>'+mlbhFmt(r.era,'era')+'</td><td>'+mlbhFmt(r.fip,'fip')+'</td><td>'+mlbhFmt(r.whip,'whip')+'</td>'
+        +'<td>'+mlbhFmt(r.k_pct,'k_pct')+'</td><td>'+mlbhFmt(r.bb_pct,'bb_pct')+'</td><td>'+mlbhFmt(r.k_minus_bb_pct,'k_minus_bb_pct')+'</td>'
+        +'<td'+(r.performance_index==null?' class="mut"':'')+'>'+mlbhFmt(r.performance_index,'performance_index')+'</td>'
+        +'<td class="l">'+mlbhSampleChip(r.sample_flag,null)+'</td></tr>';
+    }).join('');
+    h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+  }
+
+  /* ERA against FIP */
+  var withBoth=seasons.filter(function(s){return s.era!=null&&s.fip!=null;});
+  if(withBoth.length){
+    h+='<div class="fb-sechd"><span>ERA against FIP</span><span class="r">was the run prevention supported?</span></div>';
+    h+='<div class="mlbh-ef">'+withBoth.map(function(s){
+      var g=s.era_vs_fip;
+      var cls=g.gap==null?'':(Math.abs(g.gap)<0.25?'ok':(g.gap>0?'over':'under'));
+      return '<div class="mlbh-efr '+cls+'"><span class="y">'+s.season+'</span>'
+        +'<span class="n">ERA '+mlbhFmt(s.era,'era')+' · FIP '+mlbhFmt(s.fip,'fip')+'</span>'
+        +'<span class="g">'+mlbhEsc(g.gap==null?'—':(g.gap>0?'+':'')+g.gap.toFixed(2))+'</span>'
+        +'<span class="lbl">'+mlbhEsc(g.label||'')+'</span></div>';
+    }).join('')+'</div>'
+    +'<p class="mlbh-foot">ERA minus FIP, per season. FIP is built from home runs, walks, hit batters and strikeouts with '
+    +'that year’s league constant, so a gap says runs and the strikeout/walk/home-run profile disagree. It does not say '
+    +'why: fielding, sequencing and the balls in play are not separated in this data.</p>';
+  }
+
+  /* strikeout and walk trends */
+  if(seasons.length>1){
+    h+='<div class="fb-sechd"><span>Strikeouts and walks</span><span class="r">share of batters faced</span></div>'
+      +mlbhSpark(seasons,'k_pct','K%')
+      +mlbhSpark(seasons,'bb_pct','BB%')
+      +mlbhSpark(seasons,'k_minus_bb_pct','K-BB%');
+  }
+
+  /* year over year */
+  if(yoy.length){
+    h+='<div class="fb-sechd"><span>Year over year</span><span class="r">consecutive observed seasons</span></div>';
+    h+='<div class="mlbh-yoy">'+yoy.map(function(y){
+      var parts=['era','fip','whip','k_pct','bb_pct','k_minus_bb_pct','innings_decimal','performance_index'].map(function(m){
+        var c=y.changes[m];
+        if(!c)return '';
+        if(c.delta==null)return '<span class="d na" title="'+mlbhEsc(c.undefined_reason||'')+'">'+mlbhEsc(M.METRICS[m].label)+' —</span>';
+        return '<span class="d '+(c.improved===true?'up':(c.improved===false?'dn':''))+'">'+mlbhEsc(M.METRICS[m].label)+' '+mlbhEsc(mlbhDelta(c.delta,m))+'</span>';
+      }).join('');
+      return '<div class="mlbh-yoyr"><div class="hd">'+y.from_season+' → '+y.to_season
+        +(y.consecutive?'':'<span class="gap" title="'+mlbhEsc(y.note||'')+'">gap</span>')
+        +(y.role_changed?('<span class="ch">role '+mlbhEsc(y.role_from)+'→'+mlbhEsc(y.role_to)+'</span>'):'')
+        +(y.team_changed?('<span class="ch">club change</span>'):'')
+        +(y.shortened_season_involved?'<span class="ch">2020 was 60 games</span>':'')
+        +'</div><div class="ds">'+parts+'</div></div>';
+    }).join('')+'</div>';
+  }
+  if(trend){
+    h+='<p class="mlbh-foot">'+mlbhEsc(trend.note)+'</p>';
+  }
+
+  /* team history */
+  if(clubs.length){
+    h+='<div class="fb-sechd"><span>Club by club</span><span class="r">'+clubs.length+' club'+(clubs.length===1?'':'s')+'</span></div>';
+    var head3='<tr><th class="l">Club</th><th class="l">Seasons</th><th>IP</th><th>G/GS</th><th>ERA</th><th>WHIP</th><th>K-BB%</th><th>Index</th></tr>';
+    var body3=clubs.map(function(c){
+      return '<tr><td class="l"><b>'+mlbhEsc(c.team_names_observed||('club '+c.team_id))+'</b></td>'
+        +'<td class="l mut">'+mlbhEsc((c.observed_seasons||[]).join(', '))
+        +(c.missed_seasons&&c.missed_seasons.length?('<span class="mlbh-gap" title="No appearance for this club in these years.">gap '+mlbhEsc(c.missed_seasons.join(', '))+'</span>'):'')+'</td>'
+        +'<td>'+mlbhEsc(c.innings)+'</td>'
+        +'<td class="mut">'+(c.games==null?'—':c.games)+'/'+(c.starts==null?'—':c.starts)+'</td>'
+        +'<td>'+mlbhFmt(c.era,'era')+'</td><td>'+mlbhFmt(c.whip,'whip')+'</td>'
+        +'<td>'+mlbhFmt(c.k_minus_bb_pct,'k_minus_bb_pct')+'</td>'
+        +'<td>'+mlbhFmt(c.weighted_performance_index,'performance_index')+'</td></tr>';
+    }).join('');
+    h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead>'+head3+'</thead><tbody>'+body3+'</tbody></table></div>';
+    if(multi&&multi.length){
+      h+='<div class="fb-sechd"><span>Split seasons</span><span class="r">traded mid-season</span></div>';
+      var head4='<tr><th class="l">Season</th><th class="l">Club</th><th>IP</th><th>ERA</th><th>FIP</th><th>WHIP</th><th>Index</th></tr>';
+      var body4=splits.filter(function(s){return multi.indexOf(s.season)>=0;}).map(function(s){
+        return '<tr><td class="l">'+s.season+'</td><td class="l">'+mlbhEsc(s.team_name||'—')+'</td>'
+          +'<td>'+mlbhEsc(s.innings)+'</td><td>'+mlbhFmt(s.era,'era')+'</td><td>'+mlbhFmt(s.fip,'fip')+'</td>'
+          +'<td>'+mlbhFmt(s.whip,'whip')+'</td><td>'+mlbhFmt(s.performance_index,'performance_index')+'</td></tr>';
+      }).join('');
+      h+='<div class="fb-tbl-wrap"><table class="fb-tbl mlbh-tbl"><thead>'+head4+'</thead><tbody>'+body4+'</tbody></table></div>'
+        +'<p class="mlbh-foot"><b>These are parts of the seasons above, not extra innings.</b> The season row is their sum; '
+        +'adding the two together double-counts the same performances.</p>';
+    }
+    h+='<p class="mlbh-foot">Time with a club here means <b>seasons with a recorded MLB pitching appearance</b>. It is not a '
+      +'contract, a signing date or a roster span, and this data establishes none of those.</p>';
+  }
+
+  h+='<div class="mlbh-prov"><b>Source.</b> '+mlbhEsc(M.SOURCE)+'. Coverage '
+    +MLBH.status.coverage.start+'–'+MLBH.status.coverage.end+', rating '+mlbhEsc(MLBH.status.coverage.rating_version)
+    +(MLBH.status.coverage.import_id?(' · import '+mlbhEsc(MLBH.status.coverage.import_id)):'')+'.</div>';
+  return h;
+}
+function mlbhKpi(l,v,sub){
+  return '<div class="mlbh-kpi"><span class="l">'+mlbhEsc(l)+'</span><span class="n">'+mlbhEsc(v)+'</span><span class="s">'+mlbhEsc(sub)+'</span></div>';
+}
+
+/* A sparkline over the observed seasons. Inline SVG, no library, no colour
+   that carries meaning on its own: the direction is also printed as text, so
+   the shape is a convenience rather than the only way to read it. A season
+   with an undefined value leaves a GAP rather than a line through zero. */
+function mlbhSpark(seasons,metric,label){
+  var M=mlbhM();
+  var pts=seasons.map(function(s){return {x:s.season,y:s.era!==undefined?s[metric]:null};});
+  var defined=pts.filter(function(p){return p.y!=null;});
+  if(defined.length<2)return '';
+  var ys=defined.map(function(p){return p.y;});
+  var lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys);
+  if(hi===lo){hi=lo+1;lo=lo-1;}
+  var W=100,Hh=26,pad=2;
+  var x0=pts[0].x,x1=pts[pts.length-1].x,span=(x1-x0)||1;
+  var better=M.METRICS[metric].better;
+  var segs=[],cur=[];
+  pts.forEach(function(p){
+    if(p.y==null){if(cur.length>1)segs.push(cur);cur=[];return;}
+    var X=pad+((p.x-x0)/span)*(W-2*pad);
+    var Y=Hh-pad-((p.y-lo)/(hi-lo))*(Hh-2*pad);
+    cur.push(X.toFixed(1)+','+Y.toFixed(1));
+  });
+  if(cur.length>1)segs.push(cur);
+  var first=defined[0].y,last=defined[defined.length-1].y;
+  var imp=M.improved(metric,first,last);
+  var dirTxt=imp==null?'unchanged':(imp?'better':'worse');
+  var path=segs.map(function(s){return '<polyline points="'+s.join(' ')+'" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>';}).join('');
+  var dots=defined.map(function(p){
+    var X=pad+((p.x-x0)/span)*(W-2*pad);
+    var Y=Hh-pad-((p.y-lo)/(hi-lo))*(Hh-2*pad);
+    return '<circle cx="'+X.toFixed(1)+'" cy="'+Y.toFixed(1)+'" r="1.4" fill="currentColor"/>';
+  }).join('');
+  var gaps=pts.filter(function(p){return p.y==null;}).length;
+  return '<div class="mlbh-spark '+(imp===true?'up':(imp===false?'dn':''))+'">'
+    +'<span class="lbl">'+mlbhEsc(label)+'</span>'
+    +'<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" role="img" aria-label="'
+    +mlbhEsc(label+' from '+x0+' to '+x1+', '+dirTxt)+'">'+path+dots+'</svg>'
+    +'<span class="ends">'+mlbhEsc(x0+' '+mlbhFmt(first,metric))+' → '+mlbhEsc(x1+' '+mlbhFmt(last,metric))
+    +' <b class="'+(imp===true?'up':(imp===false?'dn':''))+'">'+mlbhEsc(dirTxt)+'</b>'
+    +(gaps?(' · '+gaps+' season'+(gaps===1?'':'s')+' undefined'):'')+'</span></div>';
+}
+
+/* ---- module registration ------------------------------------------------ */
+researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null,
+  load:function(force,signal){return window.loadBaseball(force,signal);},
+  render:function(){renderBaseball();},
+  hasData:function(){return !!(MLBH.status&&MLBH.status.ok);},
+  search:function(q){
+    /* the shell's global search offers whatever this panel has already loaded;
+       the panel's own box is the live one */
+    var n=rsNorm(q),out=[];
+    var pool=[];
+    if(MLBH.search&&MLBH.search.data)pool=pool.concat(MLBH.search.data);
+    if(MLBH.board&&MLBH.board.ok)pool=pool.concat(MLBH.board.data.rows);
+    for(var i=0;i<pool.length&&out.length<8;i++){
+      var p=pool[i];
+      if(rsNorm(p.player_name).indexOf(n)>=0)
+        out.push({id:'p'+p.player_id,label:p.player_name,sub:(p.teams||'')+(p.innings?(' · '+p.innings+' IP'):'')});
+    }
+    return out;},
+  openEntity:function(id){
+    var m=/^p(\d+)$/.exec(String(id));
+    if(m){window.mlbhOpenPitcher(Number(m[1]));return;}
+    var c=/^vs-(\d+)-(\d+)$/.exec(String(id));
+    if(c){MLBH.cmp.ids=[Number(c[1]),Number(c[2])];mlbhSetSeg('compare');}
+  },
+  closeEntity:function(){window.mlbhClosePitcher();},
+  entityOpen:function(){var m=document.getElementById('mlbhModal');return !!(m&&m.style.display==='block');},
+  entityKey:function(){return MLBH.profileId?('p'+MLBH.profileId):null;},
+  freshness:function(){
+    /* The only build time this module can honestly publish is the moment an
+       import was PROMOTED. It is not computed from the clock, and a schema
+       with no promoted import publishes nothing. */
+    var c=MLBH.status&&MLBH.status.ok?MLBH.status.coverage:null;
+    var t=c&&c.promoted_at?new Date(c.promoted_at).getTime():NaN;
+    return {loadedAt:MLBH.at||null,builtAt:isNaN(t)?null:t};},
+  availability:function(){
+    if(!MLBH.status)return 'unread';
+    return MLBH.status.ok?'ok':'unreachable';},
+  pipeline:function(){return MLBH.meta||null;},
+  limitations:function(){return RS_LIMITS.baseball;},
+  provenance:RS_PROV.baseball});
 
 /* ===== CFB module (injected) ===== */
 /* ================= CFB (College Football) =================
