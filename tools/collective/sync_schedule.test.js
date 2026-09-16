@@ -98,6 +98,58 @@ chk('nothing missing means nothing to write',
     return { home: f.home_team, away: f.away_team };
   }), FEED).length === 0; });
 
+/* ---- THE CODE IS NOT ALWAYS A PREFIX OF THE NAME --------------------------
+   The real run of 2026-09-15: the Collective held WAS @ DAL (NFL codes) and
+   ARIZONA @ WASHINGTO2 (a code minted around a collision), the feed spelled
+   them Washington / WSH and Washington State, neither matched by name, both
+   were reported "not in the feed" AND "missing", and the insert of the
+   "missing" one hit the unique key on (teams, kickoff date) -- refusing the
+   whole week's batch with it. The team ids are what that key is built on. */
+const NFL_FEED = [ev('Washington', 'Dallas', '2026-09-20T20:25Z')].map(S.normEspn);
+NFL_FEED[0].home_names = ['Dallas', 'Dallas Cowboys', 'Cowboys', 'DAL'];
+NFL_FEED[0].away_names = ['Washington', 'Washington Commanders', 'Commanders', 'WSH'];
+chk('by name alone, an NFL code the feed does not spell is not recognised (the defect, pinned)',
+  function () { return Y.alreadyHave({ home: 'DAL', away: 'WAS' }, NFL_FEED[0]) === false; });
+chk('with the team ids on both sides, the same fixture is recognised whatever the names say',
+  function () {
+    return Y.alreadyHave({ home: 'DAL', away: 'WAS', home_team_id: 'dal', away_team_id: 'was' },
+      Object.assign({}, NFL_FEED[0], { home_team_id: 'dal', away_team_id: 'was' })) === true;
+  });
+chk('and a collision code (WASHINGTO2) matches Washington State through its id',
+  function () {
+    var f = Object.assign({}, ev('Arizona', 'Washington State', '2026-09-26T23:30Z'), {});
+    f = S.normEspn(f); f.home_team_id = 'wsu'; f.away_team_id = 'ariz';
+    return Y.alreadyHave({ home: 'WASHINGTO2', away: 'ARIZONA', home_team_id: 'wsu', away_team_id: 'ariz' }, f) === true
+      && Y.alreadyHave({ home: 'WASHINGTO2', away: 'ARIZONA' }, f) === false;
+  });
+chk('ids that disagree are a different game, even when the names would agree',
+  function () {
+    return Y.alreadyHave({ home: 'RUTGERS', away: 'MASSACHUSE', home_team_id: 'x', away_team_id: 'y' },
+      Object.assign({}, FEED[0], { home_team_id: 'x', away_team_id: 'z' })) === false;
+  });
+chk('a side with no id falls back to the names',
+  function () {
+    return Y.alreadyHave({ home: 'RUTGERS', away: 'MASSACHUSE', home_team_id: 'x' },
+      Object.assign({}, FEED[0], { home_team_id: 'x' })) === true;
+  });
+chk('the feed resolves its sides to stored team ids through the same resolver the loader uses',
+  function () {
+    var roster = { teams: [{ id: 'dal', code: 'DAL', name: 'Dallas' }, { id: 'was', code: 'WAS', name: 'Washington' },
+      { id: 'wsu', code: 'WASHINGTO2', name: 'Washington State' }], aliases: [] };
+    var rows = Y.resolveFeedTeams([Object.assign({}, NFL_FEED[0])], roster);
+    var wsu = Y.resolveFeedTeams([S.normEspn(ev('Arizona', 'Washington State', '2026-09-26T23:30Z'))], roster)[0];
+    return rows[0].home_team_id === 'dal' && rows[0].away_team_id === 'was' && wsu.home_team_id === 'wsu' && wsu.away_team_id === null;
+  });
+chk('so the plan updates the held fixture in place (filling its provider id) and inserts nothing',
+  function () {
+    var held = [{ game_id: 'g-was', home: 'DAL', away: 'WAS', week: 2, kickoff_at: '2026-09-20T20:25Z',
+      status: 'scheduled', external_ref: null, home_team_id: 'dal', away_team_id: 'was' }];
+    var feed = [Object.assign({}, NFL_FEED[0], { espn_id: '9001', week: 2, home_team_id: 'dal', away_team_id: 'was' })];
+    var p = Y.planWeek(held, feed, 2, { now: Date.parse('2026-09-15T00:00:00Z'), refs: true });
+    return p.inserts.length === 0 && p.notInFeed.length === 0 && p.updates.length === 1
+      && p.updates[0].how === 'teams' && p.updates[0].patch.external_ref === 'espn:9001';
+  });
+
 /* ---- teams before games ------------------------------------------------ */
 chk('every team the missing games name is collected',
   function () {
@@ -376,6 +428,45 @@ chk('the code is derived exactly as collective_admin derives it',
       var out = Y.gameRows({ games: ['id', 'week', 'kickoff_at'] }, 'CFB', 2026, plan.inserts, t.ids);
       return out.rows.length === 0 && out.refused.length === 1 && /home_team_id/.test(out.refused[0].detail);
     });
+  /* THE BATCH IS ATOMIC. One fixture the database already holds under its
+     unique key refused fourteen genuinely missing games with it. */
+  var dupCalls = [];
+  var dupDb = {
+    insert: async function (rel, rows) {
+      dupCalls.push({ rel: rel, n: rows.length, refs: rows.map(function (r) { return r.external_ref; }) });
+      if (rel !== 'games') return rows;
+      if (rows.some(function (r) { return r.external_ref === 'espn:401'; })) {
+        var e = new Error('POST games -> 409: {"code":"23505","details":"Key (sport_code, season, home_team_id, away_team_id, ((kickoff_at AT TIME ZONE \'UTC\'::text)::date))=(CFB, 2026, x, y, 2026-09-12) already exists.","message":"duplicate key value violates unique constraint"}');
+        e.status = 409; throw e;
+      }
+      return rows.map(function (r) { return Object.assign({ id: 'new-' + r.external_ref }, r); });
+    },
+    select: async function (rel, q) {
+      dupCalls.push({ rel: rel, q: q });
+      return [{ id: 'g-held', external_ref: null, week: 2, kickoff_at: '2026-09-12T16:00:00Z' }];
+    },
+    patch: async function (rel, q, body) { dupCalls.push({ rel: rel, q: q, patch: body }); return [{ id: 'g-held' }]; },
+  };
+  var dg = await Y.insertGames(dupDb, schema, 'CFB', 2026, plan.inserts, t.ids);
+  chk('DIRECT  a duplicate inside the batch no longer refuses the whole batch: the rest are loaded one by one',
+    dg.inserted.length === 2 && dg.refused.length === 0 && dg.held.length === 1
+      && dupCalls.filter(function (c) { return c.rel === 'games' && c.n === 1; }).length === 3,
+    { inserted: dg.inserted.length, refused: dg.refused, held: dg.held, calls: dupCalls.length });
+  chk('DIRECT  the held fixture is found by the key that refused it -- both team ids and the UTC kickoff date',
+    (function () {
+      var q = (dupCalls.find(function (c) { return c.q && c.rel === 'games'; }) || {}).q || '';
+      return /home_team_id=eq\./.test(q) && /away_team_id=eq\./.test(q) && /kickoff_at=gte\.2026-09-12T00/.test(q) && /kickoff_at=lt\.2026-09-13T00/.test(q)
+        && dg.held[0].game_id === 'g-held' && dg.held[0].label === 'SMU @ Baylor';
+    })(), dg.held);
+  chk('DIRECT  and its blank provider id is filled so the next run matches it outright',
+    (function () {
+      var pc = dupCalls.find(function (c) { return c.patch; });
+      return pc && /id=eq\.g-held/.test(pc.q) && pc.patch.external_ref === 'espn:401' && dg.held[0].external_ref_filled === true;
+    })());
+  chk('DIRECT  a refusal that is not a duplicate is still a refusal',
+    (function () {
+      return Y.isDuplicateKey(new Error('POST games -> 409: {"code":"23505"}')) && !Y.isDuplicateKey(new Error('POST games -> 500: exploded'));
+    })());
   chk('DIRECT  a dry run creates nothing and still says what it would create',
     async function () { return true; });
   var dry = await Y.ensureTeams({ insert: async function () { throw new Error('must not write'); } }, schema, 'CFB', plan.inserts,
@@ -390,13 +481,17 @@ chk('the code is derived exactly as collective_admin derives it',
         home: 'TCU', away: 'NORTHCAROL', label: 'NORTHCAROL @ TCU', home_score: null, away_score: null, closing_spread: null, closing_total: null },
       { game_id: 'g2', sport: 'CFB', season: 2026, week: 2, kickoff_at: '2026-09-12T16:00:00Z', status: 'scheduled',
         home: 'BAYLOR', away: 'SMU', label: 'SMU @ BAYLOR', home_score: null, away_score: null, closing_spread: null, closing_total: null }];
-    if (rel === 'games') return [{ id: 'g2', external_ref: 'espn:401' }, { id: 'g1', external_ref: null }];
+    if (rel === 'games') return [{ id: 'g2', external_ref: 'espn:401', home_team_id: 'bay', away_team_id: 'smu' },
+      { id: 'g1', external_ref: null, home_team_id: 'tcu', away_team_id: 'unc' }];
     throw new Error('unexpected ' + rel + '?' + q);
   } };
   var held = await Y.loadSeason(sdb, schema, 'CFB', 2026);
   chk('DIRECT  the season comes off game_detail with the provider id joined in from games',
     held.length === 2 && held[1].external_ref === 'espn:401' && held[0].external_ref === null
       && held[0].home === 'TCU' && held[0].result === null,
+    held);
+  chk('DIRECT  and with the team ids the unique key is built on, so a code that is not a prefix of its name still matches',
+    held[0].home_team_id === 'tcu' && held[0].away_team_id === 'unc' && held[1].home_team_id === 'bay',
     held);
   chk('DIRECT  and Current is decided over that whole season by the shared rule',
     require('../../collective/week.js').resolveCurrentWeek(held, NOW) === 2);
