@@ -123,6 +123,23 @@ side in the price panel only under a validated tendency, and
 `tools/intelligence/learning_loop.js`, which grades every quoted price against
 its close, opener and result and publishes `football/validation/scorecard.json`.
 
+Slice 7 (the board) answers the card-wide question — "What are the best bets
+today?", "your strongest college football bet this week", "the best NFL
+total", "another single that isn't in my parlay" — across every supported
+sport in season, in the reader's own time zone, from the same schedule
+sources, decision pass and pricing kernel the single-game desk uses. A
+question used to be answered from the one highest-edge cached signal, in
+UTC, with started games included and no record; now every sport in scope is
+read and its coverage stated, only pregame games inside the window are
+considered, both pricing methods (the sharp de-vig and the validated model
+blend) are shown with their tier, an outlier is held for a data check rather
+than promoted, nothing is forced when nothing qualifies (the watchlist
+carries the price or line that would change it), follow-ups keep exclusions
+and re-evaluate a changed price, the written answer is checked against the
+board, and every emitted opportunity is snapshotted write-once with a
+deterministic id. `npm run intel:board` proves the kernel;
+`npm run intel:board:live` asks a deployment for its board.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`

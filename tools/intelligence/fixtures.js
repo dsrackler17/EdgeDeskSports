@@ -260,7 +260,15 @@ function router(fx, opts) {
     if (u.indexOf('/football/availability/current.json') >= 0) {
       return opts.avail === null ? null : (opts.avail || fx.avail);
     }
-    if (u.indexOf('/signals?') >= 0) return signals;
+    /* The board sweep reads signals PER SPORT; a router that ignored the
+       sport filter would hand the college signal to the NFL read and report
+       a join fault that the code never made. */
+    if (u.indexOf('/signals?') >= 0) {
+      const sm = /sport_key=eq\.([A-Za-z0-9_%]+)/.exec(u);
+      if (!sm) return signals;
+      const want = decodeURIComponent(sm[1]);
+      return signals.filter((x) => !x.sport_key || x.sport_key === want);
+    }
     /* cfb.lines is read with a chunked game_id=in.(...) filter, so the fixture
        honours the filter rather than returning the whole table: a router that
        ignores it would hide a broken filter. */

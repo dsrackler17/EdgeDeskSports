@@ -22,12 +22,14 @@ const JS = [
   'supabase/functions/edgedesk_ai/_research.js',
   'supabase/functions/edgedesk_ai/_analyst.js',
   'supabase/functions/edgedesk_ai/_pricing.js',
+  'supabase/functions/edgedesk_ai/_board.js',
   'supabase/functions/edgedesk_ai/_intelligence.js',
   'supabase/functions/edgedesk_ai/_presentation.js',
   'tools/presentation/inline.js',
   'tools/intelligence/research.test.js', 'tools/intelligence/evals.test.js', 'tools/intelligence/intelligence.test.js',
   'tools/intelligence/acceptance.test.js', 'tools/intelligence/conversation.test.js', 'tools/intelligence/matchup.test.js',
   'tools/intelligence/research_packets_sql.test.js', 'tools/intelligence/ledger_sql.test.js', 'tools/intelligence/lint.js',
+  'tools/intelligence/board.test.js', 'tools/intelligence/board_probe_live.js',
 ];
 let bad = 0;
 for (const f of JS) {

@@ -31536,6 +31536,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      to whichever board is open. The server re-validates them against the
      published card, so nothing here is authoritative. */
   var LAST_CTX=null;
+  /* Slice 7: the board this conversation is on. Identifiers and the server's
+     own numbers, handed straight back; the server re-reads every price. */
+  var LAST_BOARD=null;
+  function clientTimeZone(){ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||null; }catch(_){ return null; } }
+  function carriedContext(){ var c=LAST_CTX?Object.assign({},LAST_CTX):{}; if(LAST_BOARD) c.board=LAST_BOARD; return (LAST_CTX||LAST_BOARD)?c:null; }
   /* The last question, so a failed narration can be asked for again without
      the reader retyping it. */
   var LAST_ASK=null;
@@ -34816,6 +34821,72 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<span>Research below is pregame. EdgeDesk holds no live price, score or clock.</span></div>';
   }
 
+  /* ═══ THE BOARD (Slice 7) ═══════════════════════════════════════════════
+     A card-wide answer: the prose first, then the server's ranked list with
+     expandable detail, the watchlist with thresholds, the research leads,
+     the coverage per sport and the window. Every number, source and time
+     comes from d.board; nothing is computed in the browser. Operational
+     states stay in the trace. */
+  function boardWhen(c){ return esc(c.kickoff_local||c.kickoff||''); }
+  function boardLine(c){ if(c.line==null) return c.market==='h2h'?' ML':''; return ' '+(c.market==='totals'?String(c.line):((c.line>0?'+':'')+c.line)); }
+  function boardQuoteHTML(c){
+    var q=c.quote||{};
+    if(!q.executable) return '<div class="s">no executable price captured \u00b7 '+esc(q.source||'reference line')+' '+freshBadge('UNKNOWN')+'</div>';
+    return '<div class="s">'+esc(q.book||'')+' '+esc((q.odds_american>0?'+':'')+q.odds_american)+' \u00b7 captured '+esc(obsAt(q.captured_at))+(q.age_min!=null?' ('+esc(q.age_min)+' min ago)':'')+' '+freshBadge(q.freshness)+'</div>';
+  }
+  function boardFairHTML(c){
+    var f=c.fair||{}, e=c.edge||{};
+    if(f.method==='MARKET_DEVIG') return '<div class="s">fair '+esc(f.american!=null?((f.american>0?'+':'')+f.american):(f.probability!=null?(f.probability*100).toFixed(1)+'%':'\u2014'))+' ('+esc(f.label||'de-vig')+')'
+      +(e.ev_per_unit!=null?' \u00b7 expected return '+esc((e.ev_per_unit>=0?'+':'')+(e.ev_per_unit*100).toFixed(1))+'% per unit':'')+(e.probability_edge_pp!=null?' \u00b7 '+esc((e.probability_edge_pp>=0?'+':'')+e.probability_edge_pp)+' pp over break-even':'')+'</div>';
+    var v=f.validation||{};
+    return '<div class="s">fair '+esc(f.is_total?'total ':'line ')+esc(f.fair_line!=null?(f.is_total?String(f.fair_line):((f.fair_line>0?'+':'')+f.fair_line)):'\u2014')+' \u00b7 '+esc(v.tier||'RESEARCH')+' tier'
+      +(f.probability!=null?' \u00b7 cover '+esc((f.probability*100).toFixed(1))+'% vs '+esc(e.break_even!=null?(e.break_even*100).toFixed(1):'\u2014')+'% required':'')
+      +(c.qualification&&c.qualification.lean?' \u00b7 <b>LEAN</b>: break-even history, not a profit':'')+'</div>';
+  }
+  function boardThresholdHTML(c){
+    var t=c.threshold||{};
+    if(t.kind==='price') return 'Playable to '+esc((t.price_limit_american>0?'+':'')+t.price_limit_american)+' at '+esc((t.line>0?'+':'')+t.line)+' \u2014 '+esc(t.method||'');
+    if(t.kind==='line') return 'Bet-to '+esc(c.fair&&c.fair.is_total?String(t.bet_to_line):((t.bet_to_line>0?'+':'')+t.bet_to_line))+(t.price_at_market_line!=null?', or '+esc((t.price_at_market_line>0?'+':'')+t.price_at_market_line)+' at the market number':'')+' \u2014 '+esc(t.method||'')+(t.note?' '+esc(t.note):'');
+    return esc(t.note||'No threshold can be calculated.');
+  }
+  function boardOppHTML(c,i){
+    var h='<div class="dk-primary" style="margin-top:8px"><div class="mk">'+(i!=null?'#'+(i+1)+' \u00b7 ':'')+esc(c.sport_label||'')+' \u00b7 '+esc(marketWord(c.market))+'</div>'
+      +'<div class="v"><b>'+esc(c.selection)+esc(boardLine(c))+'</b> \u2014 '+esc(c.matchup)+'</div>'
+      +'<div class="s">'+boardWhen(c)+'</div>'+boardQuoteHTML(c)+boardFairHTML(c);
+    var d='';
+    (c.reasons||[]).slice(0,3).forEach(function(r){ d+='<li>'+esc(r.text)+'<div class="m">'+esc(r.source||'')+(r.observed_at?' \u00b7 '+esc(obsAt(r.observed_at)):'')+'</div></li>'; });
+    var body='<div class="dk-sec why"><div class="h">Why</div><ul class="dk-drv">'+d+'</ul></div>';
+    if(c.counter) body+='<div class="dk-sec wrong"><div class="h">Strongest case against</div><ul><li>'+esc(c.counter)+'</li></ul></div>';
+    if(c.would_change&&c.would_change.length) body+='<div class="dk-sec"><div class="h">What would change it</div><ul>'+c.would_change.slice(0,3).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';
+    body+='<div class="dk-sec limits"><div class="h">Threshold</div><ul><li>'+boardThresholdHTML(c)+'</li></ul></div>';
+    if(c.edge&&c.edge.uncertainty) body+='<div class="dk-sec"><div class="h">Uncertainty</div><ul><li>'+esc(c.edge.uncertainty)+'</li></ul></div>';
+    if(c.model_case) body+='<div class="dk-sec"><div class="h">Model case</div><ul><li>'+esc(c.model_case.status+' ('+c.model_case.tier+' tier), fair line '+(c.model_case.fair_line>0?'+':'')+c.model_case.fair_line+(c.model_case.cover_at_market!=null?', cover '+(c.model_case.cover_at_market*100).toFixed(1)+'%':''))+(c.model_case.outlier?' \u2014 data check: '+esc(c.model_case.outlier):'')+'</li></ul></div>';
+    if(c.qualification&&c.qualification.rules&&c.qualification.rules.length) body+='<div class="m" style="margin-top:4px">'+esc(c.qualification.rules.join(' \u00b7 '))+'</div>';
+    h+='<details class="dk-more"><summary>Evidence, counter-case, threshold</summary><div style="margin-top:6px">'+body+'</div></details></div>';
+    return h;
+  }
+  function boardAnswerHTML(d, answer){
+    var B=d.board; if(!B) return '';
+    var h='';
+    if(B.repriced){ h+='<div class="dk-label"><span class="tag">AT YOUR NUMBER</span><span class="txt">'+esc(B.repriced.selection||'')+': '+esc(B.repriced.ok?(B.repriced.verdict+'. '+(B.repriced.note||'')+' '+(B.repriced.freshness_note||'')):(B.repriced.why||''))+'</span></div>'; }
+    if(answer&&String(answer).trim()) h+='<div class="dk-read"><div class="lab">The Desk\u2019s read</div>'+mdToHtml(answer)+'</div>';
+    else h+='<div class="dk-read"><div class="lab">The Desk\u2019s read</div><p>'+esc(B.headline||'')+'</p></div>';
+    if(B.focus&&B.scope&&B.scope.follow_up&&B.scope.follow_up.kind!=='price_changed'){ h+='<div class="dk-sec"><div class="h">About '+esc(B.focus.selection)+'</div></div>'+boardOppHTML(B.focus,null); }
+    if(B.opportunities&&B.opportunities.length){ h+='<div class="dk-sec"><div class="h">Qualified ('+B.opportunities.length+' of '+esc(B.candidates_considered)+' candidates)</div></div>'; B.opportunities.forEach(function(c,i){ h+=boardOppHTML(c,i); }); }
+    if(B.watchlist&&B.watchlist.length){ h+='<div class="dk-sec"><div class="h">'+(B.opportunities&&B.opportunities.length?'Watchlist \u2014 a threshold, not a bet':'Nothing qualifies \u2014 the closest, with the number that would change it')+'</div><ul>'
+      +B.watchlist.map(function(c){ return '<li><b>'+esc(c.selection)+esc(boardLine(c))+'</b> \u2014 '+esc(c.matchup)+' ('+esc(c.sport_label||'')+', '+boardWhen(c)+')'+boardQuoteHTML(c)+boardFairHTML(c)+'<div class="m">'+esc((c.qualification&&c.qualification.rules[0])||'')+'</div><div class="m">'+boardThresholdHTML(c)+'</div></li>'; }).join('')+'</ul></div>'; }
+    if(B.research_leads&&B.research_leads.length){ h+='<div class="dk-sec"><div class="h">Research leads \u2014 not bets</div><ul>'+B.research_leads.map(function(c){ return '<li><b>'+esc(c.selection)+esc(boardLine(c))+'</b> \u2014 '+esc(c.matchup)+': projection '+esc(c.market==='totals'?c.model_line:((c.model_line>0?'+':'')+c.model_line))+' vs market, '+esc(c.gap_points)+' pts apart \u00b7 '+esc(c.tier)+' tier<div class="m">'+esc(c.note||'')+'</div></li>'; }).join('')+'</ul></div>'; }
+    if(B.data_checks&&B.data_checks.length){ h+='<div class="dk-sec wrong"><div class="h">Held for a data check (not promoted)</div><ul>'+B.data_checks.map(function(c){ return '<li>'+esc(c.selection)+' \u2014 '+esc(c.matchup)+': '+esc(c.outlier||'')+'</li>'; }).join('')+'</ul></div>'; }
+    if(B.unsupported&&B.unsupported.length){ h+='<div class="dk-sec limits"><div class="h">Not supported</div><ul>'+B.unsupported.map(function(u){ return '<li>'+esc(u.note||u.label)+'</li>'; }).join('')+'</ul></div>'; }
+    if(B.coverage&&B.coverage.length){ h+='<div class="dk-sec"><div class="h">Coverage</div><ul>'+B.coverage.map(function(c){ var st=String(c.status||'').toLowerCase().replace(/_/g,' '); return '<li>'+esc(c.label||c.sport)+' \u2014 '+(c.status==='EVALUATED'?esc(c.eligible)+' eligible game'+(c.eligible===1?'':'s')+' evaluated':esc(st))+(c.errors&&c.errors.length&&c.status!=='EVALUATED'?'<div class="m">'+esc(c.errors[0])+'</div>':'')+'</li>'; }).join('')+'</ul></div>'; }
+    var tz=B.scope&&B.scope.timezone||{}, w=B.scope&&B.scope.window||{}, fr=B.freshness||{};
+    h+='<div class="edai-src">'+esc((w.label||'')+' \u00b7 '+(tz.zone||'')+(tz.source==='fallback'?' ('+(tz.basis||'fallback')+')':''))
+      +(fr.quotes&&fr.quotes.newest?' \u00b7 quotes captured '+esc(obsAt(fr.quotes.oldest))+' to '+esc(obsAt(fr.quotes.newest)):' \u00b7 no captured quotes')
+      +(fr.research&&fr.research.newest?' \u00b7 research artifacts built '+esc(obsAt(fr.research.newest)):'')+'</div>';
+    h+='<div class="edai-src">'+esc(B.note||'')+' '+esc(B.no_bankroll_assumption||'')+'</div>';
+    return h;
+  }
+
   function deskAnswerHTML(answer, S){
     var live=deskLiveHTML(S);
     var shaped=deskProseHTML(answer);
@@ -36692,8 +36763,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
       body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:compareArr||null,
         presentation_mode:pm, preset:(extra&&extra.preset)||null,
-        /* Identifiers only — see LAST_CTX. */
-        research_context:LAST_CTX})});
+        /* The reader's own time zone, so "today" and "tonight" are their day. */
+        timezone:clientTimeZone(),
+        /* Identifiers only — see LAST_CTX and LAST_BOARD. */
+        research_context:carriedContext()})});
     if(!r.ok){
       var body='', parsed=null;
       try{ var t=await r.text(); try{ parsed=JSON.parse(t); body=parsed&&(parsed.error||parsed.message)||t; }catch(_){ body=t; } }catch(_){}
@@ -36746,6 +36819,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          researched deeper than this one rather than repeating it. It is a
          count, not a claim: the server clamps it and it can only raise how
          much EdgeDesk retrieves. */
+      /* Slice 7: the board state rides back on its own field. */
+      try{ if(d&&d.board_state&&d.board_state.schema==='edgedesk_board_state_v1') LAST_BOARD=d.board_state; }catch(_){}
       try{ var rc=d&&d.research&&d.research.research_context;
         /* Slice 3: the server's structured conversation state (side, market,
            quoted line and odds, unresolved questions) rides back inside the
@@ -36756,6 +36831,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
           home_id:rc.home_id,away_id:rc.away_id,turns:rc.turns||1,
           state:(cs&&cs.game&&String(cs.game.game_id)===String(rc.game_id))?cs:null} : LAST_CTX; }catch(_){}
+      /* Slice 7: A CARD-WIDE ANSWER IS THE BOARD. The ranked list, the
+         watchlist, the coverage and every source and timestamp come from the
+         server's own board object; the prose is the model's when its checks
+         passed and EdgeDesk's rendering when they did not or when it never
+         answered. Nothing about the board is computed here. */
+      if(d&&d.board&&d.board.schema==='edgedesk_board_v1'){
+        var ansB=(d.answer&&String(d.answer).trim())||d.deterministic_board_answer||'';
+        if(ansB){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:ansB}); }
+        LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+        return {html:boardAnswerHTML(d,ansB)+ledgerNoticeHTML(d)+traceHTMLFor(d.research),
+          src:d.model?('The Desk \u00b7 reasoned by '+d.model+(d.narration&&d.narration.prose==='REJECTED_BY_CRITIC'?' \u00b7 written read rejected, EdgeDesk\u2019s own rendering shown':'')):'EdgeDesk board \u00b7 written analysis unavailable'};
+      }
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
         /* A MATCHUP ANSWER IS SHAPED LIKE THE QUESTION, not like the board.
            When one game is the subject the answer leads with The Desk's read
@@ -36821,7 +36908,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'This is a service fault, not a finding about the game.</p>'
         +'<p><button class="edai-qa" onclick="EDAI.retryLast()">Try again</button> '
         +'Or open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
-        src:'AI call failed: '+why+hint};
+        src:'AI call failed: '+why+hint, failed:true};
     }
   }
   // very small markdown -> html (bold, bullets, paragraphs). The function returns plain prose.
@@ -39227,10 +39314,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(/\bdaily\s+research\b/.test(q)) return true;
     if(/\bscan\b.*\b(slate|board|mlb|today|tonight)\b/.test(q)) return true;
     if(/\brun\b.*\bscan\b/.test(q)) return true;
-    if(/\b(best|strongest|top)\s*(bet|play|edge|signal)\b/.test(q)) return true;   // "best bet", "strongest edge", "top signal"
+    /* "best bet", "what should I bet", "find me an edge" used to run the
+       browser's own scan of captured prices and never reached the research
+       desk, so the answer carried no projection, no validation tier, no
+       critic and no server-side record. They go to the desk now (Slice 7);
+       the local scan is the OFFLINE FALLBACK when the desk cannot be reached
+       (see wantsBoard / sendText). */
+    return false;
+  }
+  /* A card-wide betting question, in the reader's words. */
+  function wantsBoard(t){
+    var q=(t||'').toLowerCase().trim();
+    if(/\b(best|strongest|top)\s*(bet|bets|play|plays|edge|edges|signal|signals|total|totals|spread|spreads|side|sides|moneyline|dog|underdog|value)\b/.test(q)) return true;
     if(/\bwhat\s+(?:should|to)\s+(?:i\s+)?(?:bet|play)\b/.test(q)) return true;
     if(/\bwhat(?:'?s| is)\s+worth\s+(?:betting|playing|a bet)\b/.test(q)) return true;
     if(/\bfind\b.*\b(?:bet|edge|play)\b/.test(q)) return true;
+    if(/\b(another|different)\s+(single|bet|play|pick)\b|\bnot in my parlay\b|\btake (that|the|this) (game|one|pick) out\b|\bonly (college football|nfl|cfb|mlb|nba|nhl)\b/.test(q)) return true;
     return false;
   }
 
@@ -39255,7 +39354,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* A new conversation drops the subject as well as the log — otherwise the
        first question of the next conversation inherits the last one's game. */
     newConversation:function(){
-      HIST=[]; SESSION={eventId:null,cache:{},matchup:null,matchupId:null}; LAST_TURN=null;
+      HIST=[]; SESSION={eventId:null,cache:{},matchup:null,matchupId:null}; LAST_TURN=null; LAST_BOARD=null; LAST_CTX=null;
       emptyState(); renderActions();
     },
     resolveMatchupFor:function(q){
@@ -39568,6 +39667,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            that names nobody. */
         if(await matchupRoute(t)) return;
         var ctx=buildCtx();
+        /* Slice 7: A CARD-WIDE BETTING QUESTION GOES TO THE DESK. The server
+           reads every sport's schedule, decides and prices each game with
+           its own methods, checks the written answer and records what it
+           said. The browser's scan of captured prices is the offline
+           fallback, said so on screen, never the first answer. */
+        if(wantsBoard(t) || (LAST_BOARD && !ctx && !isDailyScan(t))){
+          thinking(true);
+          LAST_ASK={mode:'chat',question:t,x:null,extra:null};
+          var resB=await askAI('chat',t,null);
+          thinking(false);
+          if(resB&&resB.failed){
+            push('a','<p><b>The research desk could not be reached.</b> What follows is the browser\u2019s own scan of the prices it has captured: no projection, no validation tier and no server-side record. It is an offline fallback, not the desk\u2019s answer.</p>');
+            await dailyScanCore(); return;
+          }
+          var dB=push('a',resB.html);
+          if(resB.src&&dB){ var sB=document.createElement('div'); sB.className='edai-src'; sB.textContent=resB.src; dB.appendChild(sB); }
+          return;
+        }
         // BOARD/RESEARCH mode: broader questions, and anything asked with no signal open.
         // The board data the app already holds goes to the AI — it never answers "I can't see the slate".
         if(!ctx || isBoardQuestion(t)){ await boardAnswer(t); return; }
