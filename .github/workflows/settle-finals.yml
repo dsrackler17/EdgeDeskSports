@@ -166,18 +166,8 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add collective/settled
-          if git diff --cached --quiet; then
-            echo 'settlement record unchanged — nothing to publish'
-            exit 0
-          fi
           N=$(node -e "const fs=require('fs');let n=0;for(const f of fs.readdirSync('collective/settled'))if(f.endsWith('.json'))n+=Object.keys(require('./collective/settled/'+f).games).length;console.log(n)")
-          git commit -m "collective: settlement record (${N} settled games)"
-          # a concurrent push to main loses the race politely, not the record
-          for i in 1 2 3 4; do
-            git push origin main && exit 0
-            git pull --rebase origin main || true
-            sleep $((2 ** i))
-          done
-          echo 'could not push the settlement record after 4 attempts'
-          exit 1
+          # a concurrent push to main loses the race politely, not the record:
+          # the shared helper rebuilds this commit on the remote tip (no
+          # rebase, no force-push) and retries with backoff
+          bash tools/ci/push_generated.sh main "collective: settlement record (${N} settled games)" -- collective/settled

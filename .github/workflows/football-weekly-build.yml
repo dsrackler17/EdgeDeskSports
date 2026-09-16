@@ -365,32 +365,24 @@ jobs:
           # is exactly when one is. This job regenerates the stadium geography
           # and the coaching table; without them listed it rebuilt both every
           # week and committed neither.
-          git add -A -- football/players/current.json football/players/index.json \
-                  football/players/params.js football/players/teams \
-                  football/players/snapshots football/players/candidates \
-                  football/data/box football/rankings/current.json \
-                  football/rankings/snapshots football/rankings/params.js \
-                  football/rankings/history.json football/rankings/health.json \
-                  football/fbs/coverage.json football/fbs/slate.json \
-                  football/starters football/matchup \
-                  football/venues football/coaching
-          if git diff --cached --quiet; then
-            echo 'nothing changed — quiet day, no commit'
-            exit 0
-          fi
           SEASON=$(node -p "require('./football/rankings/current.json').season")
           WEEK=$(node -p "require('./football/rankings/current.json').week_label")
-          git commit -m "football: ${SEASON} ${WEEK} ratings and rankings"
           # AND THE PUSH RETRIES, because this repository pushes to main from
           # several scheduled jobs and they overlap. This one raced the model
           # health job, was rejected non-fast-forward, and failed the whole
           # weekly build over a two-second overlap after every test had
-          # passed. starter-context.yml and availability-sync.yml already
-          # retry with a rebase; this is the same loop.
-          for i in 1 2 3 4; do
-            git push origin HEAD:"${GITHUB_REF_NAME}" && exit 0
-            git pull --rebase origin "${GITHUB_REF_NAME}" || true
-            sleep $((2 ** i))
-          done
-          echo 'could not push the weekly artifacts after 4 attempts'
-          exit 1
+          # passed. The shared helper stages these paths (a missing one is
+          # skipped rather than aborting the add), commits, and on a rejected
+          # push rebuilds the commit on the remote tip -- no rebase, so a
+          # generated file both sides rewrote cannot leave unmerged paths.
+          bash tools/ci/push_generated.sh "${GITHUB_REF_NAME}" \
+            "football: ${SEASON} ${WEEK} ratings and rankings" -- \
+            football/players/current.json football/players/index.json \
+            football/players/params.js football/players/teams \
+            football/players/snapshots football/players/candidates \
+            football/data/box football/rankings/current.json \
+            football/rankings/snapshots football/rankings/params.js \
+            football/rankings/history.json football/rankings/health.json \
+            football/fbs/coverage.json football/fbs/slate.json \
+            football/starters football/matchup \
+            football/venues football/coaching

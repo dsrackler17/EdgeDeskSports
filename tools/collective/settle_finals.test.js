@@ -486,8 +486,10 @@ chk('--record names the directory the record is written to',
   const code = wf.split('\n').map(l => l.replace(/(^|\s)#.*$/, '')).join('\n');
   chk('settle-finals.yml passes the service role and the project URL under the names the script reads',
     code.indexOf('EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}') >= 0 && code.indexOf('EDGD_SB_URL: ${{ secrets.SB_URL }}') >= 0);
-  chk('it writes the settlement record and commits it',
-    code.indexOf('--record collective/settled') >= 0 && code.indexOf('git add collective/settled') >= 0 &&
+  chk('it writes the settlement record and commits it through the shared push helper (no rebase, no force-push)',
+    code.indexOf('--record collective/settled') >= 0 &&
+    /push_generated\.sh main "collective: settlement record[^"]*" -- collective\/settled/.test(code) &&
+    code.indexOf('git pull --rebase') < 0 && code.indexOf('push -f') < 0 &&
     /permissions:\s*\n\s*contents:\s*write/.test(code));
   chk('a missing credential no longer ends the run before the script has a chance to build the record',
     (() => {

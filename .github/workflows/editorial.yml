@@ -214,21 +214,17 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add articles sitemap.xml sitemap-articles.xml
-          if git diff --cached --quiet; then
-            echo 'the editorial system changed nothing this run'
-            exit 0
-          fi
           N=$(node -e "const f=require('./articles/data/editorial/featured.json');console.log(f.counts.featured)" 2>/dev/null || echo '?')
-          git commit -m "editorial: featured games, research snapshots and postgame audits (${N} featured)"
-          # a concurrent push to main loses the race politely, not the work
-          for i in 1 2 3 4; do
-            git push origin main && exit 0
-            git pull --rebase origin main || true
-            sleep $((2 ** i))
-          done
-          echo 'could not push the editorial run after 4 attempts'
-          exit 1
+          # A concurrent push to main loses the race politely, not the work.
+          # This used to be `git pull --rebase` in a loop, and on 2026-09-14
+          # the rebase conflicted on articles/data/index.json (another job
+          # had rewritten the same generated file), stopped with unmerged
+          # paths, and every remaining attempt failed on "you have unmerged
+          # files". The shared helper puts this run's artifacts on the remote
+          # tip instead of merging them; nothing generated needs a merge.
+          bash tools/ci/push_generated.sh main \
+            "editorial: featured games, research snapshots and postgame audits (${N} featured)" \
+            -- articles sitemap.xml sitemap-articles.xml
 
       # THE RUN LOG IS THE ANSWER TO "WHY DID THIS GAME NOT GET AN ARTICLE?"
       # and it is worth having in the summary as well as in the commit.
