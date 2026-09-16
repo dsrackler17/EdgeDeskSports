@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-16T15:37:29.706Z",
+ "generated_at": "2026-09-16T16:04:45.973Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,24 +119,24 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 122,
+  "total": 124,
   "by_group": {
-   "p4": 78,
+   "p4": 80,
    "other": 68,
    "independent": 4
   },
   "by_matchup": {
-   "conference": 42,
-   "fbs_fcs": 20,
+   "conference": 43,
+   "fbs_fcs": 21,
    "non_conference": 60
   },
   "by_conference": {
-   "acc": 19,
+   "acc": 20,
    "big12": 21,
    "bigten": 26,
    "cusa": 13,
    "sunbelt": 22,
-   "sec": 17,
+   "sec": 18,
    "american": 19,
    "mac": 20,
    "pac12": 11,
@@ -152,22 +152,24 @@
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 122
+  "PREDICTED": 124
  },
  "weather": {
-  "requested": 119,
-  "answered": 119,
+  "requested": 121,
+  "answered": 120,
   "dome": 1,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 1,
+  "carried": 1,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 1
+  },
   "host": "api.open-meteo.com",
-  "summary": "119 of 119 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "120 of 121 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (HTTP 429 x1)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 122
+  "NO_MARKET": 124
  },
  "checks": [
   {
@@ -205,7 +207,7 @@
    "ok": true,
    "detail": {
     "non_power_games": 44,
-    "total": 122,
+    "total": 124,
     "example": [
      "Coastal Carolina @ Delaware",
      "North Texas @ Texas State",
@@ -224,7 +226,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 42,
+    "conference_games": 43,
     "wrong": 0
    }
   },
@@ -232,7 +234,7 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 20,
+    "fbs_fcs_games": 21,
     "graded": []
    }
   },
@@ -256,8 +258,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 122,
-    "audit_total": 122
+    "slate": 124,
+    "audit_total": 124
    }
   },
   {
