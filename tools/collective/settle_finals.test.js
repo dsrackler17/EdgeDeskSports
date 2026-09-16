@@ -420,6 +420,88 @@ DRIVES.push((async () => {
     up2 && up2.body);
   chk('DEPLOYED SHAPE  running it twice writes the same row twice, never a second one',
     realCalls.filter(c => c.method === 'POST' && c.url.indexOf('/game_results') >= 0).every(c => /on_conflict=game_id/.test(c.url)));
+
+  /* THE TABLE'S REAL NAME. The schema report of 2026-09-16 (sync-schedule
+     run 35044140756) shows what production actually serves: no game_results
+     at all; the score lives in `results` (game_id, home_score, away_score,
+     closing_spread, closing_total, closing_home_ml_prob, source, settled_at),
+     and game_detail is the view over it. Every hourly settle run from
+     2026-09-14 on threw "game_results carries none either (saw: nothing)"
+     for all 120 finished games and ended 2. */
+  const PROD = { definitions: {
+    games: REAL.definitions.games,
+    results: { properties: Object.fromEntries(['game_id', 'home_score', 'away_score', 'closing_spread', 'closing_total',
+      'closing_home_ml_prob', 'source', 'settled_at'].map(c => [c, {}])) },
+    game_detail: { properties: Object.fromEntries(['game_id', 'sport', 'season', 'week', 'kickoff_at', 'status', 'home', 'away',
+      'label', 'home_score', 'away_score', 'closing_spread', 'closing_total'].map(c => [c, {}])) },
+    projections: { properties: Object.fromEntries(['id', 'submission_id', 'model_id', 'game_id', 'sport_code', 'season', 'week',
+      'pick_side', 'projected_spread', 'projected_total', 'proj_home_score', 'proj_away_score', 'home_win_prob',
+      'data_origin', 'received_at', 'is_late', 'is_graded_candidate', 'resolution_status'].map(c => [c, {}])) },
+    grades: { properties: Object.fromEntries(['projection_id', 'game_id', 'model_id', 'pick_result', 'margin_error',
+      'total_error', 'brier', 'grading_version', 'graded_at'].map(c => [c, {}])) },
+  } };
+  chk('the score table is found by shape under either name, and never the view',
+    S.scoreTableOf(S.columnsFrom(PROD)) === 'results' && S.scoreTableOf(S.columnsFrom(REAL)) === 'game_results'
+      && S.scoreTableOf({ games: ['id', 'home_score', 'away_score'] }) === 'games'
+      && S.scoreTableOf({ games: ['id'], game_detail: ['game_id', 'home_score', 'away_score'] }) === null);
+  const prodCalls = [];
+  const prodFetch = async (url, opts) => {
+    const u = String(url), m = (opts && opts.method) || 'GET';
+    const body = opts && opts.body ? JSON.parse(opts.body) : null;
+    prodCalls.push({ url: u, method: m, body, headers: (opts && opts.headers) || {} });
+    const reply = (status, obj) => ({ ok: status < 400, status, text: async () => JSON.stringify(obj) });
+    if (u.endsWith('/rest/v1/') && m === 'GET') return reply(200, PROD);
+    if (u.indexOf('/rest/v1/results') >= 0 && m === 'POST') return reply(201, body.map(r => ({ ...r, settled_at: 'now' })));
+    if (u.indexOf('/rest/v1/game_results') >= 0) return reply(404, { code: 'PGRST205', message: 'Could not find the table collective.game_results' });
+    if (u.indexOf('/rest/v1/games?id=eq.g1') >= 0 && m === 'PATCH') {
+      if ('home_score' in body) return reply(400, { message: 'column games.home_score does not exist' });
+      return reply(200, [{ id: 'g1', ...body }]);
+    }
+    if (u.indexOf('/rest/v1/projections?select=') >= 0 && m === 'GET') return reply(200, PROJ);
+    if (u.indexOf('/rest/v1/rpc/grade_game') >= 0 && m === 'POST') return reply(200, 3);
+    return reply(404, { message: 'no route ' + m + ' ' + u });
+  };
+  const pdb = S.dbClient({ url: 'https://x.supabase.co', key: 'svc' }, prodFetch);
+  const pschema = await pdb.schema();
+  const pout = await S.settleDirect(pdb, pschema, unsettled, TCU_FINAL,
+    { closing_spread: -7.5, closing_total: 52.5, closing_home_ml_prob: 0.73 });
+  const pup = prodCalls.find(c => c.method === 'POST' && c.url.indexOf('/results') >= 0);
+  chk('PRODUCTION SHAPE  the score and the close go into results, keyed by the game, and nothing is asked of game_results',
+    pup && /\/rest\/v1\/results\?on_conflict=game_id/.test(pup.url) && pup.body[0].game_id === 'g1' && pup.body[0].home_score === 48
+      && pup.body[0].away_score === 14 && pup.body[0].closing_spread === -7.5 && pup.body[0].closing_home_ml_prob === 0.73
+      && !prodCalls.some(c => c.url.indexOf('/game_results') >= 0),
+    pup && { url: pup.url, body: pup.body });
+  const pst = prodCalls.find(c => c.method === 'PATCH' && c.url.indexOf('/games?id=eq.g1') >= 0);
+  chk('PRODUCTION SHAPE  and the games row is marked final', pst && pst.body.status === 'final' && Object.keys(pst.body).length === 1, pst && pst.body);
+  chk('PRODUCTION SHAPE  the game is written, with no gap on the results columns it has',
+    pout.game_written === true && !pout.gaps.some(g => /^results\./.test(g)), pout.gaps);
+  /* grades live in their own table there, and the database has the routine
+     that fills it: projections carries no grade column, so the routine is
+     asked by game instead of PATCHing columns that do not exist */
+  const gg = prodCalls.find(c => c.method === 'POST' && c.url.indexOf('/rest/v1/rpc/grade_game') >= 0);
+  chk('PRODUCTION SHAPE  grading goes through grade_game(p_game_id), the database\'s own routine',
+    gg && gg.body.p_game_id === 'g1' && gg.headers['content-profile'] === 'collective' && pout.graded_by === 'grade_game'
+      && pout.graded === 3 && !prodCalls.some(c => c.method === 'PATCH' && c.url.indexOf('/projections') >= 0)
+      && !pout.gaps.some(g => /^projections\./.test(g)),
+    { gg: gg && gg.body, out: pout });
+  chk('PRODUCTION SHAPE  a routine the database refuses is reported as a refused grade, and the score still stands',
+    await (async () => {
+      const calls2 = [];
+      const f2 = async (url, opts) => {
+        const u = String(url), m = (opts && opts.method) || 'GET';
+        calls2.push({ url: u, method: m });
+        if (u.indexOf('/rpc/grade_game') >= 0) return { ok: false, status: 404, text: async () => JSON.stringify({ code: 'PGRST202', message: 'Could not find the function collective.grade_game' }) };
+        return prodFetch(url, opts);
+      };
+      const d2 = S.dbClient({ url: 'https://x.supabase.co', key: 'svc' }, f2);
+      const o2 = await S.settleDirect(d2, pschema, unsettled, TCU_FINAL, null);
+      return o2.game_written === true && o2.refused.length === 1 && /grade_game\(g1\)/.test(o2.refused[0].detail) && /PGRST202/.test(o2.refused[0].detail);
+    })());
+  let noTable = null;
+  try { await S.settleDirect(pdb, { games: pschema.games, game_detail: pschema.game_detail, projections: [] }, unsettled, TCU_FINAL, null); }
+  catch (e) { noTable = e.message; }
+  chk('and a database with neither table names the relations that DO carry a score, so the next rename is diagnosable',
+    /game_results, results/.test(noTable || '') && /relations carrying both scores: game_detail/.test(noTable || ''), noTable);
 })().catch(e => chk('the database door drive did not crash', false, String(e && e.stack || e))));
 
 /* The committed record. */
@@ -486,8 +568,10 @@ chk('--record names the directory the record is written to',
   const code = wf.split('\n').map(l => l.replace(/(^|\s)#.*$/, '')).join('\n');
   chk('settle-finals.yml passes the service role and the project URL under the names the script reads',
     code.indexOf('EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}') >= 0 && code.indexOf('EDGD_SB_URL: ${{ secrets.SB_URL }}') >= 0);
-  chk('it writes the settlement record and commits it',
-    code.indexOf('--record collective/settled') >= 0 && code.indexOf('git add collective/settled') >= 0 &&
+  chk('it writes the settlement record and commits it through the shared push helper (no rebase, no force-push)',
+    code.indexOf('--record collective/settled') >= 0 &&
+    /push_generated\.sh main "collective: settlement record[^"]*" -- collective\/settled/.test(code) &&
+    code.indexOf('git pull --rebase') < 0 && code.indexOf('push -f') < 0 &&
     /permissions:\s*\n\s*contents:\s*write/.test(code));
   chk('a missing credential no longer ends the run before the script has a chance to build the record',
     (() => {

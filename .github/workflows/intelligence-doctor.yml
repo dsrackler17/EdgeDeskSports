@@ -48,9 +48,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: intelligence-doctor
+  cancel-in-progress: false
+
 jobs:
   doctor:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

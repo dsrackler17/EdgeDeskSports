@@ -241,8 +241,10 @@ function tournamentRollup(prev, allMatches, nowIso) {
   return { tournament_id: prev.tournament_id, state, matches_total: total, matches_completed: done, matches_live: live, source_updated_at: nowIso };
 }
 
-/* Fields the poller owns on a tournament row. Everything else (name, surface,
-   dates, venue) belongs to the sync and is never overwritten from a day view. */
+/* Fields the poller owns on a tournament row it already holds. Everything
+   else (name, surface, dates, venue) belongs to the sync and is never
+   overwritten from a day view. A row the table does not hold yet is written
+   whole instead -- see pollOnce. */
 function tournamentTouch(t, nowIso) {
   return { tournament_id: t.tournament_id, source_updated_at: nowIso };
 }
@@ -314,8 +316,31 @@ async function pollOnce(ctx) {
     });
   });
 
+  /* A TOURNAMENT THE TABLE DOES NOT HOLD YET gets its whole row; one it
+     already holds gets a touch. The touch alone was the whole write for
+     every tournament, and an upsert that only names tournament_id and
+     source_updated_at INSERTS a row of nulls when the id is new -- which
+     tennis.tournaments refuses (provider_tournament_id and tour are not
+     null), and did, twenty-two polls in a row, for a WTA event the pre-poll
+     sync had not filed. The poller then gave up at ninety minutes with "the
+     source failed" when the source had answered every time. */
   if (!o.dryRun && seenTournaments.length) {
-    await db.upsert('tennis', 'tournaments', seenTournaments.map(t => tournamentTouch(t, nowIso)), 'tournament_id', { returning: false });
+    const known = state.knownTournaments = state.knownTournaments || {};
+    const unknown = seenTournaments.filter(t => !known[t.tournament_id]);
+    if (unknown.length) {
+      const have = await db.select('tennis', 'tournaments',
+        `select=tournament_id&tournament_id=in.${D.inList(unknown.map(t => t.tournament_id))}`);
+      (have || []).forEach(r => { known[r.tournament_id] = true; });
+    }
+    const fresh = seenTournaments.filter(t => !known[t.tournament_id]);
+    const touch = seenTournaments.filter(t => known[t.tournament_id]);
+    if (fresh.length) {
+      await db.upsert('tennis', 'tournaments', fresh, 'tournament_id', { returning: false });
+      fresh.forEach(t => { known[t.tournament_id] = true; });
+    }
+    if (touch.length) {
+      await db.upsert('tennis', 'tournaments', touch.map(t => tournamentTouch(t, nowIso)), 'tournament_id', { returning: false });
+    }
     writes.tournaments += seenTournaments.length;
   }
   /* WRITE WHAT MOVED. A slam day carries hundreds of matches, almost all of
@@ -616,7 +641,11 @@ async function run(o, deps) {
         const backoff = Math.min(300, LIVE_INTERVAL_S * Math.pow(2, Math.max(0, summary.consecutive - 1)));
         log(`poll failed (${summary.consecutive} in a row): ${e && e.message || e} — retrying in ${backoff}s`);
         await ledger.beat({ consecutive_failures: summary.consecutive, message: `source failing: ${String(e && e.message || e).slice(0, 200)}` });
-        if (Date.parse(clock()) - failSince > FAIL_GIVE_UP_MS) { summary.status = 'error'; summary.message = 'source failed for 90 minutes'; break; }
+        if (Date.parse(clock()) - failSince > FAIL_GIVE_UP_MS) {
+          summary.status = 'error';
+          summary.message = `polling failed for 90 minutes; last failure: ${String(e && e.message || e).slice(0, 300)}`;
+          break;
+        }
         interval = backoff;
       }
       if (o.once) break;

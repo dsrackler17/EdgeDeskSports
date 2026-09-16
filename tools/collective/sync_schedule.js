@@ -237,11 +237,38 @@ async function collectiveWeek(sport, season, week, token) {
    comparison that does not know that reports every game as missing and loads
    the whole week a second time. */
 function alreadyHave(game, feed) {
+  /* THE TEAM IDS DECIDE when both sides carry them. The Collective's stored
+     names are codes, and a code is not always a prefix of the name the feed
+     spells: the NFL's WAS is ESPN's "Washington" / WSH, and a code minted
+     around a collision (WASHINGTO2 for Washington State) shares nine letters
+     with "Washington State" and then diverges. Both were reported "not in
+     the feed" while the feed's own row was "missing", the insert hit the
+     table's unique key on (teams, kickoff date), and the whole week's batch
+     was refused with it. The ids are what the unique key is built on, so
+     they are what a match is built on. Names decide only when a side has
+     no id to compare. */
+  const gh = game.home_team_id, ga = game.away_team_id, fh = feed.home_team_id, fa = feed.away_team_id;
+  if (gh && ga && fh && fa) return String(gh) === String(fh) && String(ga) === String(fa);
   const home = String(game.home || game.home_team || '');
   const away = String(game.away || game.away_team || '');
   if (!home || !away) return false;
-  return S.teamsAgreeAny(home, feed.home_names.concat([feed.home_team])) &&
-    S.teamsAgreeAny(away, feed.away_names.concat([feed.away_team]));
+  return S.teamsAgreeAny(home, (feed.home_names || []).concat([feed.home_team])) &&
+    S.teamsAgreeAny(away, (feed.away_names || []).concat([feed.away_team]));
+}
+
+/* The feed's sides, resolved to the stored teams the database keys its
+   games on -- through the same resolver the loader uses to create them, so
+   a fixture matches the row it would otherwise collide with. A side no
+   stored team answers to stays without an id and is matched by name. */
+function resolveFeedTeams(rows, roster) {
+  if (!roster) return rows;
+  (rows || []).forEach(r => {
+    const h = findTeam(roster, (r.home_names || []).concat([r.home_team]), r.home_team);
+    const a = findTeam(roster, (r.away_names || []).concat([r.away_team]), r.away_team);
+    r.home_team_id = h ? h.id : null;
+    r.away_team_id = a ? a.id : null;
+  });
+  return rows;
 }
 
 /* ---- the provider's stable id ------------------------------------------ */
@@ -472,11 +499,17 @@ async function loadSeason(db, schema, sport, season) {
     `select=*&sport=eq.${enc(sport)}&season=eq.${enc(season)}&order=kickoff_at.asc`);
   const held = detail.map(S.gameFromDetail);
   const gcols = (schema && schema.games) || [];
-  if (gcols.indexOf('external_ref') >= 0) {
+  const want = ['id', 'external_ref', 'home_team_id', 'away_team_id'].filter(c => gcols.indexOf(c) >= 0);
+  if (want.length > 1) {
     const refs = await db.select('games',
-      `select=id,external_ref&sport_code=eq.${enc(sport)}&season=eq.${enc(season)}`);
-    const by = new Map(refs.map(r => [String(r.id), r.external_ref]));
-    held.forEach(g => { g.external_ref = by.has(String(g.game_id)) ? by.get(String(g.game_id)) : null; });
+      `select=${want.join(',')}&sport_code=eq.${enc(sport)}&season=eq.${enc(season)}`);
+    const by = new Map(refs.map(r => [String(r.id), r]));
+    held.forEach(g => {
+      const r = by.get(String(g.game_id)) || {};
+      if (want.indexOf('external_ref') >= 0) g.external_ref = r.external_ref == null ? null : r.external_ref;
+      if (want.indexOf('home_team_id') >= 0) g.home_team_id = r.home_team_id == null ? null : r.home_team_id;
+      if (want.indexOf('away_team_id') >= 0) g.away_team_id = r.away_team_id == null ? null : r.away_team_id;
+    });
   }
   return held;
 }
@@ -605,7 +638,7 @@ async function ensureTeams(db, schema, sport, rows, roster, commit) {
    columns is a different shape and is refused rather than half-written. */
 function gameRows(schema, sport, season, rows, ids) {
   const cols = (schema && schema.games) || [];
-  const out = { rows: [], refused: [] };
+  const out = { rows: [], labels: [], refused: [] };
   if (cols.indexOf('home_team_id') < 0 || cols.indexOf('away_team_id') < 0) {
     out.refused.push({ detail: `collective.games carries no home_team_id/away_team_id (saw: ${cols.join(', ') || 'nothing'})` });
     return out;
@@ -621,18 +654,69 @@ function gameRows(schema, sport, season, rows, ids) {
     const row = {};
     Object.keys(want).forEach(c => { if (cols.indexOf(c) >= 0 && want[c] !== null) row[c] = want[c]; });
     out.rows.push(row);
+    out.labels.push(`${r.away_team} @ ${r.home_team}`);
   });
   return out;
 }
+
+/* PostgreSQL's unique-violation code, as PostgREST relays it. */
+function isDuplicateKey(e) {
+  return /23505|duplicate key/i.test(String((e && e.message) || e || ''));
+}
+
+/* The row the database already holds under the key it refused: the same two
+   teams on the same UTC kickoff date in the same season -- the columns the
+   unique constraint names. Null when it cannot be read. */
+async function heldUnderKey(db, row) {
+  const enc = v => encodeURIComponent(String(v));
+  const k = new Date(row.kickoff_at);
+  if (!isFinite(k.getTime())) return null;
+  const day = new Date(Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate()));
+  const next = new Date(day.getTime() + 86400e3);
+  const rows = await db.select('games',
+    `select=id,external_ref,week,kickoff_at&sport_code=eq.${enc(row.sport_code)}&season=eq.${enc(row.season)}` +
+    `&home_team_id=eq.${enc(row.home_team_id)}&away_team_id=eq.${enc(row.away_team_id)}` +
+    `&kickoff_at=gte.${enc(day.toISOString())}&kickoff_at=lt.${enc(next.toISOString())}&limit=1`);
+  return (rows && rows[0]) || null;
+}
+
+/* LOADING IS IDEMPOTENT. The batch is one atomic insert, so one fixture the
+   database already holds under its unique key used to refuse every other
+   fixture in the week with it -- fifteen missing games, fourteen of them
+   genuinely absent, none loaded, run red. A refused batch is retried one
+   row at a time; a row the key refuses is looked up by that key and
+   reported as already held, and the provider id is written onto it where
+   the column is blank so the next run matches it outright. */
 async function insertGames(db, schema, sport, season, rows, ids) {
   const built = gameRows(schema, sport, season, rows, ids);
-  const out = { inserted: [], refused: built.refused };
+  const out = { inserted: [], refused: built.refused, held: [] };
   if (!built.rows.length) return out;
   try {
     const made = await db.insert('games', built.rows);
     out.inserted = made || [];
+    return out;
   } catch (e) {
-    out.refused.push({ detail: e.message.slice(0, 400) });
+    if (!isDuplicateKey(e)) { out.refused.push({ detail: e.message.slice(0, 400) }); return out; }
+  }
+  const hasRef = ((schema && schema.games) || []).indexOf('external_ref') >= 0;
+  for (let i = 0; i < built.rows.length; i++) {
+    const row = built.rows[i], label = built.labels[i];
+    try {
+      const made = await db.insert('games', [row]);
+      out.inserted.push(...(made || []));
+    } catch (e) {
+      if (!isDuplicateKey(e)) { out.refused.push({ label, detail: e.message.slice(0, 400) }); continue; }
+      let existing = null;
+      try { existing = await heldUnderKey(db, row); } catch (_) { existing = null; }
+      const rec = { label, game_id: existing ? existing.id : null, external_ref_filled: false };
+      if (existing && hasRef && row.external_ref && (existing.external_ref == null || existing.external_ref === '')) {
+        try {
+          const p = await db.patch('games', `id=eq.${encodeURIComponent(String(existing.id))}`, { external_ref: row.external_ref });
+          rec.external_ref_filled = !!(p && p.length);
+        } catch (_) { rec.external_ref_filled = false; }
+      }
+      out.held.push(rec);
+    }
   }
   return out;
 }
@@ -680,7 +764,8 @@ async function postGames(sport, season, games, token) {
 
 module.exports = {
   espnScoreboardUrl, espnAddress, espnWeek, collectiveWeekOf,
-  alreadyHave, missingFrom, updatesFor, planWeek, teamsNeeded, gamePayload,
+  alreadyHave, resolveFeedTeams, missingFrom, updatesFor, planWeek, teamsNeeded, gamePayload,
+  isDuplicateKey, heldUnderKey,
   refOf, refMatches, REF_PREFIX,
   statusFromFeed, settledAlready, kickoffMoved, drift, applyUpdates,
   loadSeason, loadSports, loadRoster, findTeam, nextCode, teamCode, ensureTeams, gameRows, insertGames,
@@ -837,6 +922,7 @@ async function main() {
 
       const scope = held || await collectiveWeek(sport, season, week, token).catch(() => []);
       const refs = !!(schema && (schema.games || []).indexOf('external_ref') >= 0);
+      if (roster) resolveFeedTeams(feed, roster);
       const plan = planWeek(scope, feed, week, { now, refs });
       const inBucket = held ? held.filter(g => MCWeek.weekOf(g) === Number(week)).length : scope.length;
       log(`${sport} ${season} w${week}: ESPN ${feed.length}, Collective ${inBucket}, ` +
@@ -886,8 +972,12 @@ async function main() {
         t.failed.slice(0, 5).forEach(f => log(`    ! ${f.name}: ${f.message}`));
         const g = await insertGames(db, schema, sport, season, plan.inserts, t.ids);
         addedGames += g.inserted.length;
-        log(`  games: ${g.inserted.length} loaded, ${g.refused.length} refused`);
+        log(`  games: ${g.inserted.length} loaded, ${g.refused.length} refused` +
+          (g.held.length ? `, ${g.held.length} already held` : ''));
         g.refused.slice(0, 5).forEach(f => log(`    ! ${f.label ? f.label + ': ' : ''}${f.detail}`));
+        g.held.slice(0, 10).forEach(h => log(`    = ${h.label} is already held` +
+          (h.game_id ? ` as ${h.game_id}` : '') + ' (same teams, same kickoff date)' +
+          (h.external_ref_filled ? '; provider id written onto it' : '')));
         if (g.refused.length) problems++;
         /* the season in hand now holds them, so the next week's plan -- and
            a second run inside the same process -- cannot load them again */
