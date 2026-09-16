@@ -1291,6 +1291,18 @@
   /**
    * Run one tool under a budget and an allowlist, and wrap the result in the
    * envelope every caller can rely on. Never throws.
+   *
+   * SYNCHRONOUS AND ASYNCHRONOUS TOOLS, one path. Every tool here was a pure
+   * calculation or a read from the packet already in memory, so `run` returned
+   * a value. A tool that reads a database cannot: it returns a promise. If
+   * that promise were treated as a value it would sail through the permissive
+   * output schema and reach the model as "[object Promise]" \u2014 a tool call that
+   * looks successful and carries nothing.
+   *
+   * So a thenable result is awaited and the SAME envelope is built from what it
+   * resolves to. The return is a promise only when the tool's own result was;
+   * `await runTool(...)` is correct either way, and a caller that does not
+   * await keeps working with every tool that was here before.
    */
   function runTool(name, input, ctx) {
     ctx = ctx || {};
@@ -1307,17 +1319,27 @@
     }
     var vi = validate(t.input, input == null ? {} : input);
     if (!vi.ok) return fail('INVALID_INPUT', vi.errors.map(function (e) { return e.path + ': ' + e.message; }).join('; '));
+
+    function finish(out) {
+      if (out && out.ok === false) { env.missing = out.missing || []; return fail(out.code || 'TOOL_REFUSED', out.error || 'the tool refused', false); }
+      var vo = validate(t.output, out);
+      if (!vo.ok) return fail('INVALID_OUTPUT', vo.errors.map(function (e) { return e.path + ': ' + e.message; }).join('; '));
+      env.ok = true; env.data = out; env.ms = Date.now() - t0;
+      env.freshness = t.category === 'calc' ? 'LIVE' : (out && out.freshness) || (ctx.packet && ctx.packet.market ? ctx.packet.market.freshness : null);
+      env.sources = t.category === 'calc' ? ['EDRESEARCH calculator v' + VERSION]
+        : (out && out.sources) ? out.sources.slice(0, 12)
+          : (ctx.packet && ctx.packet.sources ? ctx.packet.sources.map(function (s) { return s.source; }).slice(0, 12) : []);
+      env.missing = (out && out.missing) || [];
+      if (out && Array.isArray(out.quality_flags)) env.quality_flags = out.quality_flags;
+      return env;
+    }
+
     var out;
     try { out = t.run(input == null ? {} : input, ctx); } catch (e) { return fail('TOOL_THREW', clip(String(e && e.message || e), 200), true); }
-    if (out && out.ok === false) { env.missing = out.missing || []; return fail(out.code || 'TOOL_REFUSED', out.error || 'the tool refused', false); }
-    var vo = validate(t.output, out);
-    if (!vo.ok) return fail('INVALID_OUTPUT', vo.errors.map(function (e) { return e.path + ': ' + e.message; }).join('; '));
-    env.ok = true; env.data = out; env.ms = Date.now() - t0;
-    env.freshness = t.category === 'calc' ? 'LIVE' : (out && out.freshness) || (ctx.packet && ctx.packet.market ? ctx.packet.market.freshness : null);
-    env.sources = t.category === 'calc' ? ['EDRESEARCH calculator v' + VERSION] : (ctx.packet && ctx.packet.sources ? ctx.packet.sources.map(function (s) { return s.source; }).slice(0, 12) : []);
-    env.missing = (out && out.missing) || [];
-    if (out && Array.isArray(out.quality_flags)) env.quality_flags = out.quality_flags;
-    return env;
+    if (out && typeof out.then === 'function') {
+      return out.then(finish, function (e) { return fail('TOOL_THREW', clip(String(e && e.message || e), 200), true); });
+    }
+    return finish(out);
   }
 
   return {

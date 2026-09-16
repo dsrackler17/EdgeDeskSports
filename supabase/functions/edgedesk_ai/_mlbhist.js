@@ -1,46 +1,55 @@
-/* ===========================================================================
-   EdgeDesk MLB — the historical pitching query layer, shared by the page, the
-   pipeline and the desk.
+// deno-lint-ignore-file
+/* ============================================================================
+   EdgeDesk MLB HISTORY — the desk's access to the 2016–2025 pitching record.
 
-   ONE implementation of every rule the historical record depends on, loaded by
-   tools/mlb/*.js under Node (where it is tested), by app.html in the browser
-   (where it is displayed) and by supabase/functions/edgedesk_ai (where the AI
-   retrieves through it). If the three ever disagreed, a pitcher's rating would
-   read one way on a profile page, another in a chat answer, and a third in the
-   feature build — which is the failure this file exists to prevent.
+   ONE FILE, ONE HOST. This exact block is inlined into
+     - supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js; presentation_sync.test.js fails when the
+   copy drifts. Edit THIS file, then `node tools/presentation/inline.js`.
 
-   WHAT LIVES HERE, and the rule each part obeys:
+   It carries the shared query layer (lib/mlb_pitcher_history.js, copied in
+   between the EDMLBQ markers below) so the number a chat answer quotes is
+   produced by the same code the pitcher profile page renders and the feature
+   build reads. Three implementations of "what is his K-BB%" is three answers.
 
-     identity    name folding and player resolution. A name matching two MLB
-                 ids is AMBIGUOUS and is never silently collapsed onto the
-                 busier of the two — the candidates come back and the caller
-                 asks. An id is always preferred to a name.
-     arithmetic  innings from OUTS, never from the 6.2 display string; every
-                 rate recomputed from counting stats so a screen can be checked
-                 against the database rather than trusted.
-     rating      ED_PITCH_PERF_V1 exactly as the package defines it, with its
-                 shrinkage weight and its terms carried beside every number.
-     queries     bounded PostgREST reads against the mlbhist schema. Every one
-                 has a hard row cap; none of them can ask for the table.
-     shaping     season history, team history, comparisons, leaderboards and
-                 year-over-year change, computed deterministically here so the
-                 model explains numbers rather than producing them.
-     outcomes    four different nothings, told apart: a player who cannot be
-                 resolved, a player with no record in this window, a query that
-                 could not run, and a field that is genuinely undefined.
+   WHAT THIS GIVES THE MODEL
 
-   WHAT THIS FILE WILL NOT DO
-     - It will not turn performance_index into a probability, a fair price or
-       an edge. It is a descriptive index; 100 is league average and that is
-       the whole claim.
-     - It will not add a season row to its own team splits. They are the same
-       innings at two grains.
-     - It will not present this archive as current-season data. Coverage
-       travels on every envelope and ends where the dataset ends.
-     - It will not infer today's club, availability or start assignment from
-       the last historical row. The most recent season a pitcher appears in is
-       a fact about 2016–2025, not about tonight.
-   =========================================================================== */
+     Seven tools over real rows, with typed inputs, a budget and an allowlist,
+     registered into the SAME EDRESEARCH.TOOLS registry every other tool lives
+     in — so runTool's envelope, budget and allowlist govern them unchanged:
+
+       resolve_mlb_player           name or id -> one MLB id, or the candidates
+       get_pitcher_overview         the career window and the latest season in it
+       get_pitcher_season_history   season by season, with year-over-year change
+       get_pitcher_team_history     performance for each club, and the gaps
+       compare_pitchers             two to four, on one named season or range
+       search_pitcher_leaderboard   a season board with role and workload filters
+       get_game_pitcher_context     the starters on a card, with their history
+
+     AND a deterministic retrieval pass that runs WITHOUT the model's tool
+     loop. The loop is off by default in this project, so a historical question
+     would otherwise reach the model with nothing retrieved at all. The router
+     below reads the question, resolves the pitchers, fetches exactly the
+     records that question needs and attaches them to the turn as evidence.
+     The model explains rows it was handed; it never produces them.
+
+   THE RULES THIS FILE ENFORCES
+
+     - Deterministic first. Every ranking, difference, filter and aggregate is
+       computed in code. The model's job is to say what the rows mean.
+     - Never the current season. This archive ends where the dataset ends and
+       every block says so. The most recent club in it is not tonight's club,
+       and nothing here upgrades a probable starter to a confirmed one.
+     - Four nothings, four answers. An unresolvable name, an ambiguous name, a
+       player with no rows in the window and a genuinely undefined value are
+       different sentences, and the critic checks the prose kept them apart.
+     - The rating is descriptive. performance_index is ED_PITCH_PERF_V1 with
+       100 as league average; it is never converted to a probability, a fair
+       price or an edge, and the critic rejects prose that does.
+     - Follow-ups carry ids, not names. "Now compare him to the other starter"
+       resolves against the ids this conversation already established.
+   ============================================================================ */
+/*__EDMLBHIST_START__*/
 /*__EDMLBQ_START__*/
 (function (root, factory) {
   var api = factory();
@@ -1565,3 +1574,960 @@
   };
 });
 /*__EDMLBQ_END__*/
+
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDMLBHIST = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 1;
+  var SCHEMA = 'edgedesk_mlb_history_v1';
+
+  function Q() {
+    return (root && root.EDMlbPitchers) || (typeof module === 'object' && module && module.exports
+      ? tryRequire() : null);
+  }
+  function tryRequire() {
+    try { return require('../../../lib/mlb_pitcher_history.js'); } catch (_) { return null; }
+  }
+  function R() { return root && root.EDRESEARCH ? root.EDRESEARCH : null; }
+
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v == null || v === '') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
+  function int(v) { var n = num(v); return n == null ? null : Math.round(n); }
+  function uniq(a) { var s = {}, o = []; (a || []).forEach(function (x) { var k = String(x); if (!s[k]) { s[k] = 1; o.push(x); } }); return o; }
+
+  /* ====================================================================== */
+  /* 1. THE ROUTER — is this a historical pitcher question, and which one?   */
+  /*                                                                        */
+  /* Deterministic and conservative. A question that merely mentions a       */
+  /* pitcher's name while asking about tonight is NOT a history question,    */
+  /* and routing it here would answer "how is he pitching" with a 2019 line. */
+  /* ====================================================================== */
+
+  /* Words that put a question in the past, inside this archive. */
+  var HISTORY_WORDS = /\b(hist(ory|orical(ly)?)|career|over the (last|past)|past (three|four|five|six|seven|eight|nine|ten|\d+) (season|year)s?|last (three|four|five|six|seven|eight|nine|ten|\d+) (season|year)s?|since \d{4}|in \d{4}|back in|used to|previously|track record|year[- ]over[- ]year|season by season|each season|every season|trend(s|ed|ing)?|develop(ed|ment)|progress(ed|ion)?|changed?|improv(ed|ement|ing)|declin(ed|e|ing)|regress(ed|ion))\b/i;
+  /* Words that make it about pitching specifically. */
+  var PITCH_WORDS = /\b(pitch(er|ers|ing)?|starter(s)?|reliever(s)?|bullpen|rotation|era|fip|whip|k[- ]?bb|strikeout(s)?|walk(s)?|k\/9|bb\/9|hr\/9|k%|bb%|innings|ip\b|workload|saves?|holds?|quality start)\b/i;
+  /* Words that are explicitly about right now — these VETO the history route
+     unless a history word is also present, in which case both are answered and
+     kept apart. */
+  var CURRENT_WORDS = /\b(tonight|today|tomorrow|this (evening|afternoon)|right now|currently|current (season|form|year)|so far this (season|year)|latest start|last start|next start|is he (starting|pitching)|who('s| is) (pitching|starting))\b/i;
+
+  var INTENTS = {
+    pitcher_history: /\b(how (has|have).*(chang|develop|progress|improv|declin|look)|career|track record|season by season|year[- ]over[- ]year|over the (last|past)|history)\b/i,
+    pitcher_team_history: /\b(which (teams?|clubs?)|what (teams?|clubs?)|(each|every|all|both) (of (his|their) )?(teams?|clubs?)|(teams?|clubs?) (he|they|each of them) (play|pitch|threw|thrown|pitched|played)|(play|pitch|threw|pitched|played) for|team history|club history|with each (team|club)|for each (team|club)|traded|moved to)\b/i,
+    compare_pitchers: /\b(compar(e|ing|ison)|versus|vs\.?|against each other|better (than|of the two)|head to head|side by side|both starters|two starters|either starter)\b/i,
+    era_vs_fip: /\b(era\s*(vs|versus|against|compared (with|to))\s*fip|supported by (his|the)? ?fip|deserved|fip\s*(vs|versus)\s*era|luck(y|ier)?|unlucky|peripheral)\b/i,
+    leaderboard: /\b(who (had|has|were|was) the (best|worst|strongest|weakest|top|highest|lowest)|best|worst|strongest|weakest|top \d+|leader(s|board)?|rank(ed|ing)?|league leaders?|most|fewest)\b/i,
+    improvement: /\b(improv(ed|ement)|declin(ed|e)|better|worse|gain(ed)?|lost|from \d{4} to \d{4}|between \d{4} and \d{4})\b/i,
+    game_context: /\b(matchup|this (game|matchup)|tonight'?s (game|starters?)|what does the (historical|history).*(add|say)|both starters|starting pitchers)\b/i
+  };
+
+  var ROLE_WORDS = { starter: /\b(starter|starting pitcher|rotation|sp\b)/i, reliever: /\b(reliever|relief|bullpen|closer|rp\b)/i };
+
+  /**
+   * Decide whether this turn is about the historical pitching record, and what
+   * it is asking for. Returns null when it is not — the caller then does
+   * nothing at all, which is the correct behaviour for a football question.
+   */
+  function route(o) {
+    o = o || {};
+    var text = str(o.question);
+    if (!text.trim()) return null;
+    var sport = str(o.sport);
+    /* A sport that is named and is not baseball is a hard no. An unnamed sport
+       is allowed through only when the wording is unmistakably about pitching. */
+    if (sport && sport !== 'baseball_mlb') return null;
+
+    var hist = HISTORY_WORDS.test(text);
+    var pitch = PITCH_WORDS.test(text);
+    var current = CURRENT_WORDS.test(text);
+    var carried = sanitizeState(o.state);
+    var followUp = isFollowUp(text, carried);
+
+    var names = pitcherNamesIn(text);
+    var shape = INTENTS.leaderboard.test(text) || INTENTS.compare_pitchers.test(text)
+      || INTENTS.pitcher_team_history.test(text) || INTENTS.era_vs_fip.test(text);
+
+    /* THE GATE, and the one case where a keyword list is the wrong judge.
+
+       "How has Gerrit Cole changed over the last five seasons?" contains no
+       pitching word at all. What makes it a pitching question is that Gerrit
+       Cole is a pitcher — a fact in the archive, not in a regular expression.
+       So a question pairing a person-shaped name with history wording is
+       routed as a PROBE: resolution is attempted, and if the name is not a
+       pitcher in this archive the whole block is dropped and the turn proceeds
+       as though this file had never run. A probe costs one indexed read on a
+       2,450-row table and buys the questions a keyword list cannot reach.
+
+       Everything else needs pitching wording. A bare "who's pitching tonight"
+       is a live question and is left to the live layers. */
+    var probeOnly = false;
+    if (!followUp) {
+      if (!pitch) {
+        if (!(hist && names.length)) return null;
+        probeOnly = true;
+      }
+      if (!hist && !shape && !probeOnly) return null;
+      if (current && !hist && !INTENTS.compare_pitchers.test(text) && !INTENTS.era_vs_fip.test(text)) return null;
+      /* A subject is required unless the question is about a population.
+         "Now compare him to the other starter" is a real question with a
+         carried conversation behind it and nonsense without one: routed with
+         no name and no carried id, it retrieves nothing and attaches a block
+         whose only content is that nothing resolved. */
+      if (!names.length && !POPULATION.test(text) && !INTENTS.leaderboard.test(text)
+        && !INTENTS.game_context.test(text)) return null;
+    }
+
+    var intents = [];
+    Object.keys(INTENTS).forEach(function (k) { if (INTENTS[k].test(text)) intents.push(k); });
+    if (!intents.length) intents.push(followUp ? (carried && carried.last_intent) || 'pitcher_history' : 'pitcher_history');
+
+    var role = null;
+    Object.keys(ROLE_WORDS).forEach(function (k) { if (ROLE_WORDS[k].test(text)) role = k; });
+
+    var seasons = seasonsIn(text);
+    var lastN = lastNSeasons(text);
+    var minIp = minInningsIn(text);
+
+    return {
+      is_history: true,
+      /* The question itself travels with the plan: metricFor() reads it to
+         decide which column a leaderboard is actually ordering on, and a plan
+         that lost its own text would silently rank everything by the default. */
+      question_text: text,
+      /* True when only a name and history wording put us here. The archive
+         decides: nothing resolves, nothing is attached. */
+      probe_only: probeOnly,
+      follow_up: followUp,
+      intents: uniq(intents),
+      primary_intent: pickPrimary(intents, text, names, carried),
+      names: names,
+      carried_player_ids: carried ? carried.player_ids : [],
+      seasons: seasons,
+      season: seasons.length === 1 ? seasons[0] : null,
+      season_range: seasons.length >= 2 ? { from: Math.min.apply(null, seasons), to: Math.max.apply(null, seasons) } : null,
+      last_n_seasons: lastN,
+      role: role,
+      min_innings: minIp,
+      mentions_current: current,
+      /* A question that asks about BOTH the archive and the current season is
+         answered as two labelled things, never as one blended number. */
+      wants_current_too: current && hist
+    };
+  }
+
+  /* A question about a POPULATION — "which relievers improved", "who had the
+     best 2025" — is a board with a deterministic join over it, never a
+     per-player history. It is told apart by asking about a group of pitchers
+     while naming none of them. */
+  var POPULATION = /\b(which|who|what|name the|list the|show me the)\b[^?]{0,40}\b(pitchers?|starters?|relievers?|arms|closers?)\b/i;
+
+  function pickPrimary(intents, text, names, carried) {
+    var hasSubject = (names && names.length) || (carried && carried.player_ids && carried.player_ids.length);
+    var population = POPULATION.test(str(text)) || (!hasSubject && intents.indexOf('leaderboard') >= 0);
+    /* "Which relievers improved their K-BB% from 2024 to 2025" trips
+       `improvement` and nothing else, but it is a board question: without this
+       it falls through to the per-player branch with no player to read. */
+    if (population && (intents.indexOf('improvement') >= 0 || intents.indexOf('leaderboard') >= 0)) return 'leaderboard';
+    /* Order matters: a question can trip several patterns and only one of them
+       decides what is retrieved. Comparison and leaderboard are the most
+       specific shapes, so they win over the generic "history". */
+    var order = ['game_context', 'compare_pitchers', 'leaderboard', 'pitcher_team_history', 'era_vs_fip', 'improvement', 'pitcher_history'];
+    for (var i = 0; i < order.length; i++) if (intents.indexOf(order[i]) >= 0) return order[i];
+    return 'pitcher_history';
+  }
+
+  /** Four-digit seasons named in the question, inside a plausible range. */
+  function seasonsIn(text) {
+    var out = [], m, re = /\b(19[89]\d|20[0-4]\d)\b/g;
+    while ((m = re.exec(str(text)))) { var y = Number(m[1]); if (y >= 1980 && y <= 2049) out.push(y); }
+    return uniq(out).sort(function (a, b) { return a - b; });
+  }
+  var WORD_N = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  function lastNSeasons(text) {
+    var m = /\b(?:last|past)\s+(one|two|three|four|five|six|seven|eight|nine|ten|\d{1,2})\s+(?:season|year)s?\b/i.exec(str(text));
+    if (!m) return null;
+    var v = WORD_N[String(m[1]).toLowerCase()] != null ? WORD_N[String(m[1]).toLowerCase()] : Number(m[1]);
+    return Number.isFinite(v) && v > 0 && v <= 20 ? v : null;
+  }
+  function minInningsIn(text) {
+    var m = /\b(?:at least|minimum(?: of)?|min\.?|≥|>=)\s*(\d{1,3})\s*(?:\+\s*)?(?:innings|ip)\b/i.exec(str(text))
+      || /\b(\d{2,3})\s*(?:\+|or more)?\s*(?:innings|ip)\b/i.exec(str(text));
+    return m ? Number(m[1]) : null;
+  }
+
+  /* Capitalised name-shaped runs, minus the words that are capitalised for
+     other reasons. Names are a HINT: every one is resolved against the archive
+     and an ambiguous one is reported, never picked. */
+  var NOT_A_NAME = new RegExp('^(?:' + [
+    /* sentence furniture */
+    'The|A|An|And|But|Or|How|What|Which|Who|Whose|Why|When|Where|Is|Was|Are|Were|Did|Does|Do|Has|Have|Had',
+    'Can|Could|Should|Would|Will|Now|Also|Then|If|In|On|At|For|From|To|With|About|Between|Versus|Vs',
+    'Compare|Show|Tell|Give|List|Find|Rank|Explain|Look|Check|Consider',
+    /* the vocabulary of the question itself */
+    'MLB|ERA|FIP|WHIP|IP|K|BB|HR|WAR|AL|NL|East|West|Central|League|Division|Season|Seasons|Year|Years',
+    'Best|Worst|Top|Bottom|Him|His|He|Them|Their|Both|Either|Starter|Starters|Pitcher|Pitchers|Reliever',
+    'Relievers|Closer|Closers|Rotation|Bullpen|Team|Teams|Club|Clubs|Innings|Strikeouts|Walks|EdgeDesk',
+    /* MLB club nicknames AND city tokens. Without the city tokens "the New
+       York Yankees rotation" yields the name "New York", which is then
+       reported as an unresolved pitcher on every such question. */
+    'Yankees|Red|Sox|Dodgers|Mets|Cubs|Giants|Angels|Astros|Braves|Padres|Phillies|Guardians|Indians',
+    'Rangers|Mariners|Twins|Royals|Tigers|Brewers|Cardinals|Pirates|Reds|Marlins|Nationals|Orioles',
+    'Rays|Blue|Jays|White|Athletics|Rockies|Diamondbacks|Backs',
+    'New|York|Los|Angeles|San|Francisco|Diego|St|Saint|Louis|Kansas|City|Tampa|Bay|Toronto|Boston',
+    'Chicago|Cleveland|Detroit|Minnesota|Houston|Seattle|Texas|Oakland|Colorado|Arizona|Atlanta|Miami',
+    'Philadelphia|Washington|Milwaukee|Pittsburgh|Cincinnati|Baltimore|Sacramento|Anaheim|Denver|Phoenix'
+  ].join('|') + ')\\.?$');
+
+  var SUFFIX = /^(Jr\.?|Sr\.?|II|III|IV)$/;
+
+  /**
+   * Capitalised runs that look like people.
+   *
+   * Written as a scan rather than one regex because the obvious regex loses
+   * names: "Compare Gerrit Cole and Zack Wheeler" opens with a capitalised
+   * verb, and a pattern that discards any candidate containing a stop word
+   * throws away "Gerrit Cole" along with "Compare". Here a stop word simply
+   * ENDS the current run, so both names survive.
+   */
+  function pitcherNamesIn(text) {
+    var runs = [], run = [];
+    function flush() {
+      while (run.length && SUFFIX.test(run[run.length - 1])) run.pop();
+      if (run.length >= 2) runs.push(run.slice(0, 3).join(' '));
+      run = [];
+    }
+    str(text).split(/\s+/).forEach(function (raw) {
+      var t = raw.replace(/^[^\wÀ-ÿ]+/, '').replace(/[^\w'À-ÿ.-]+$/, '').replace(/['’]s$/, '');
+      if (!t) { flush(); return; }
+      if (!/^[A-ZÀ-Ü]/.test(t) || NOT_A_NAME.test(t)) { flush(); return; }
+      run.push(t);
+      /* Four capitalised tokens in a row is a title or an organisation, not a
+         person; the run is closed at three and restarted. */
+      if (run.length >= 3) flush();
+    });
+    flush();
+    return uniq(runs).slice(0, 4);
+  }
+
+  /* A follow-up is a question that leans on what was already resolved: a bare
+     pronoun, "the other starter", "now compare them". It only counts when this
+     conversation actually carries resolved ids. */
+  var FOLLOW_WORDS = /\b(he|him|his|they|them|their|the other (starter|pitcher|guy|one)|both of them|that (pitcher|starter)|same (pitcher|starter)|now (compare|show|what about)|what about|and (him|his|them)|compare (them|him|the two))\b/i;
+  function isFollowUp(text, carried) {
+    if (!carried || !carried.player_ids || !carried.player_ids.length) return false;
+    return FOLLOW_WORDS.test(str(text)) || /^\s*(and|also|what about|now)\b/i.test(str(text));
+  }
+
+  /* ====================================================================== */
+  /* 2. CARRIED STATE — ids and scope, never numbers                        */
+  /*                                                                        */
+  /* The client hands this back on the next turn. It carries MLB ids and a   */
+  /* season scope so "now compare him to the other starter" resolves without */
+  /* a name; it carries NO statistics, because every number is re-read from  */
+  /* the database each turn rather than believed from a client.              */
+  /* ====================================================================== */
+
+  function sanitizeState(s) {
+    if (!s || typeof s !== 'object') return null;
+    var ids = (Array.isArray(s.player_ids) ? s.player_ids : []).map(int)
+      .filter(function (x) { return x != null && x > 0; }).slice(0, 6);
+    if (!ids.length) return null;
+    var names = {};
+    if (s.player_names && typeof s.player_names === 'object') {
+      Object.keys(s.player_names).slice(0, 6).forEach(function (k) {
+        if (int(k) != null) names[int(k)] = str(s.player_names[k]).slice(0, 80);
+      });
+    }
+    return {
+      schema: SCHEMA,
+      player_ids: ids,
+      player_names: names,
+      season: int(s.season),
+      from_season: int(s.from_season),
+      to_season: int(s.to_season),
+      last_intent: str(s.last_intent).slice(0, 40) || null,
+      role: ROLE_LIST.indexOf(str(s.role)) >= 0 ? str(s.role) : null,
+      turns: (int(s.turns) || 0) + 0
+    };
+  }
+  var ROLE_LIST = ['starter', 'reliever', 'mixed'];
+
+  function conversationState(o) {
+    o = o || {};
+    var prev = sanitizeState(o.previous);
+    var res = o.result || null;
+    var ids = [];
+    var names = {};
+    if (res && res.players) {
+      res.players.forEach(function (p) {
+        if (p && p.player_id != null) { ids.push(int(p.player_id)); names[int(p.player_id)] = str(p.player_name); }
+      });
+    }
+    if (!ids.length && prev) { ids = prev.player_ids; names = prev.player_names || {}; }
+    if (!ids.length) return null;
+    var plan = o.plan || {};
+    return {
+      schema: SCHEMA,
+      player_ids: ids.slice(0, 6),
+      player_names: names,
+      season: plan.season != null ? plan.season : (prev ? prev.season : null),
+      from_season: plan.season_range ? plan.season_range.from : (prev ? prev.from_season : null),
+      to_season: plan.season_range ? plan.season_range.to : (prev ? prev.to_season : null),
+      last_intent: plan.primary_intent || (prev ? prev.last_intent : null),
+      role: plan.role || (prev ? prev.role : null),
+      turns: (prev && prev.turns ? prev.turns : 0) + 1,
+      coverage: res && res.coverage ? res.coverage : null,
+      note: 'MLB ids and the season scope this conversation is on. No statistic is carried: every number is re-read '
+        + 'from the archive each turn, so a follow-up cannot quote a figure the server did not just retrieve.'
+    };
+  }
+
+  /* ====================================================================== */
+  /* 3. RETRIEVAL — deterministic, and it runs whether or not the model has  */
+  /*    a tool loop                                                         */
+  /* ====================================================================== */
+
+  /**
+   * Run the plan against the archive.
+   *
+   * o.plan      from route()
+   * o.service   a lib/mlb_pitcher_history.js service
+   * o.game      optional {starters:[…]} from the live card, for game context
+   * Returns a structured result the prompt block, the evidence array, the
+   * critic and the conversation state are all built from. Never throws.
+   */
+  async function retrieve(o) {
+    o = o || {};
+    var plan = o.plan, svc = o.service;
+    var out = {
+      schema: SCHEMA, version: VERSION,
+      intent: plan ? plan.primary_intent : null,
+      requested: plan || null,
+      coverage: null, rating: null, rating_version: null,
+      players: [], resolution: [], sections: [], notes: [], errors: [],
+      unavailable: null
+    };
+    if (!plan || !svc) { out.unavailable = 'no plan or no service'; return out; }
+
+    var st = await svc.status();
+    out.coverage = st && st.coverage ? st.coverage : null;
+    if (!st || st.ok !== true) {
+      out.unavailable = (st && st.detail) || 'the historical pitching archive could not be read';
+      out.code = (st && st.code) || 'QUERY_UNAVAILABLE';
+      return out;
+    }
+    var QL = Q();
+    out.rating = QL ? QL.RATING : null;
+    out.rating_version = out.coverage.rating_version;
+    out.notes.push(QL ? QL.coverageNote(out.coverage) : '');
+
+    /* ---- who is being asked about ---------------------------------------- */
+    var resolved = [];
+    var wanted = [];
+    (plan.names || []).forEach(function (n) { wanted.push({ name: n }); });
+    if (!wanted.length && plan.carried_player_ids && plan.carried_player_ids.length) {
+      plan.carried_player_ids.forEach(function (id) { wanted.push({ player_id: id }); });
+    }
+    /* Game context supplies its starters directly from the card. */
+    if (plan.primary_intent === 'game_context' && o.game && o.game.starters && o.game.starters.length) {
+      wanted = o.game.starters.map(function (s) { return { name: s.name, player_id: s.player_id, side: s.side, team: s.team, status: s.status }; });
+    }
+
+    for (var i = 0; i < wanted.length && i < 4; i++) {
+      var w = wanted[i];
+      var r = await svc.resolvePlayer({ name: w.name, player_id: w.player_id, season: plan.season, team_id: w.team_id });
+      out.resolution.push({
+        asked: w.name || ('MLB id ' + w.player_id),
+        code: r.code, ok: r.ok,
+        matched_on: r.data && r.data.matched_on,
+        candidates: (r.data && r.data.candidates) || [],
+        error: r.error || null
+      });
+      if (r.ok && r.data && r.data.resolved) resolved.push(r.data.resolved);
+    }
+    out.players = resolved.map(function (p) { return { player_id: p.player_id, player_name: p.player_name }; });
+
+    /* A leaderboard needs no player at all; everything else does. */
+    var needsPlayer = plan.primary_intent !== 'leaderboard';
+    if (needsPlayer && !resolved.length) {
+      out.unavailable = out.resolution.length
+        ? 'none of the named pitchers resolved to the archive'
+        : 'the question named no pitcher this archive could resolve';
+      out.code = out.resolution.length ? out.resolution[0].code : 'UNRESOLVED_PLAYER';
+      return out;
+    }
+
+    /* ---- what the question needs ----------------------------------------- */
+    var seasonScope = plan.season != null ? { season: plan.season }
+      : plan.season_range ? { from: plan.season_range.from, to: plan.season_range.to }
+        : {};
+
+    try {
+      if (plan.primary_intent === 'leaderboard') {
+        var season = plan.season != null ? plan.season : (plan.season_range ? plan.season_range.to : out.coverage.end);
+        var metric = metricFor(plan);
+        var lb = await svc.leaderboard({
+          season: season, role: plan.role, metric: metric.metric, order: metric.order,
+          min_innings: plan.min_innings, limit: 15
+        });
+        out.sections.push({ kind: 'leaderboard', ok: lb.ok, code: lb.code, scope: lb.scope,
+          sample: lb.sample, data: lb.data, notes: lb.notes });
+        if (plan.intents.indexOf('improvement') >= 0 && season > out.coverage.start) {
+          /* "who improved from 2024 to 2025" is two boards and a deterministic
+             join, not a model comparing two lists in prose. */
+          var prev = await svc.leaderboard({
+            season: season - 1, role: plan.role, metric: metric.metric, order: metric.order,
+            min_innings: plan.min_innings, limit: 200
+          });
+          out.sections.push({ kind: 'improvement', ok: lb.ok && prev.ok,
+            scope: (season - 1) + '→' + season,
+            data: improvementJoin(prev.data && prev.data.rows, lb.data && lb.data.rows, metric.metric, plan),
+            notes: ['Both seasons carry the same role and workload filter. A pitcher missing from either season is '
+              + 'listed as such rather than treated as a zero.'] });
+        }
+      } else if (plan.primary_intent === 'compare_pitchers' && resolved.length >= 2) {
+        var cmp = await svc.compare({
+          player_ids: resolved.map(function (p) { return p.player_id; }),
+          season: seasonScope.season, from: seasonScope.from, to: seasonScope.to
+        });
+        out.sections.push({ kind: 'comparison', ok: cmp.ok, code: cmp.code, scope: cmp.scope,
+          sample: cmp.sample, data: cmp.data, notes: cmp.notes });
+        for (var c = 0; c < resolved.length; c++) {
+          var h = await svc.seasonHistory({ player_id: resolved[c].player_id });
+          out.sections.push({ kind: 'season_history', player_id: resolved[c].player_id,
+            player_name: resolved[c].player_name, ok: h.ok, code: h.code, scope: h.scope,
+            sample: h.sample, data: trimHistory(h.data, plan), notes: h.notes });
+        }
+      } else if (plan.primary_intent === 'pitcher_team_history') {
+        for (var t = 0; t < resolved.length; t++) {
+          var th = await svc.teamHistory({ player_id: resolved[t].player_id });
+          out.sections.push({ kind: 'team_history', player_id: resolved[t].player_id,
+            player_name: resolved[t].player_name, ok: th.ok, code: th.code, scope: th.scope,
+            sample: th.sample, data: th.data, notes: th.notes });
+        }
+      } else if (plan.primary_intent === 'game_context') {
+        var gc = await svc.gamePitcherContext({
+          game: o.game && o.game.label, compare_season: plan.season,
+          starters: (o.game && o.game.starters) || []
+        });
+        out.sections.push({ kind: 'game_context', ok: gc.ok, code: gc.code, scope: gc.scope,
+          sample: gc.sample, data: gc.data, notes: gc.notes });
+      } else {
+        /* pitcher_history, era_vs_fip and improvement for a named pitcher all
+           want the same rows: the seasons, the change between them, and the
+           clubs. Fetched once, read differently. */
+        for (var p2 = 0; p2 < resolved.length; p2++) {
+          var id = resolved[p2].player_id;
+          var ov = await svc.pitcherOverview({ player_id: id });
+          out.sections.push({ kind: 'overview', player_id: id, player_name: resolved[p2].player_name,
+            ok: ov.ok, code: ov.code, scope: ov.scope, sample: ov.sample, data: ov.data, notes: ov.notes });
+          var ch = await svc.changes({ player_id: id, from: seasonScope.from, to: seasonScope.to,
+            last_n_seasons: plan.last_n_seasons });
+          out.sections.push({ kind: 'changes', player_id: id, player_name: resolved[p2].player_name,
+            ok: ch.ok, code: ch.code, scope: ch.scope, sample: ch.sample, data: ch.data, notes: ch.notes });
+          if (plan.intents.indexOf('era_vs_fip') >= 0 || plan.intents.indexOf('pitcher_team_history') >= 0) {
+            var th2 = await svc.teamHistory({ player_id: id });
+            out.sections.push({ kind: 'team_history', player_id: id, player_name: resolved[p2].player_name,
+              ok: th2.ok, code: th2.code, scope: th2.scope, sample: th2.sample, data: th2.data, notes: th2.notes });
+          }
+        }
+      }
+    } catch (e) {
+      out.errors.push(str(e && e.message || e).slice(0, 200));
+    }
+
+    /* Links, so an answer can send the reader to the page carrying the rows. */
+    out.links = {};
+    if (QL) {
+      resolved.forEach(function (p) { out.links['pitcher:' + p.player_id] = QL.profileLink(p.player_id); });
+      if (resolved.length === 2) out.links.comparison = QL.matchupLink(resolved[0].player_id, resolved[1].player_id);
+    }
+    return out;
+  }
+
+  /* The minimum-workload clause, removed before a metric is chosen.
+
+     "Who had the strongest 2025 ratings among starters with AT LEAST 120
+     INNINGS" asks for a rating board with a workload FILTER. Matching "innings"
+     anywhere in the question ranked it by innings instead — the filter was read
+     as the sort key and the board came back listing the busiest arms, under a
+     heading that said "strongest ratings". The filter phrase is consumed here
+     so it can never be mistaken for the subject. */
+  var MIN_CLAUSE = /\b(?:at least|minimum(?: of)?|min\.?|≥|>=)\s*\d{1,3}\s*(?:\+\s*)?(?:innings|ip)\b|\b\d{2,3}\s*(?:\+|or more)\s*(?:innings|ip)\b/gi;
+
+  /** Which column a leaderboard question is actually ordering on. */
+  function metricFor(plan) {
+    var t = str(plan && plan.question_text).replace(MIN_CLAUSE, ' ');
+    var intents = (plan && plan.intents) || [];
+    var worst = /\b(worst|weakest|lowest|fewest|bottom)\b/i.test(t);
+    if (/\bk[- ]?bb|strikeout.minus.walk\b/i.test(t)) return { metric: 'k_minus_bb_pct', order: worst ? 'asc' : 'desc' };
+    if (/\bstrikeout|k%|k\/9\b/i.test(t)) return { metric: 'k_pct', order: worst ? 'asc' : 'desc' };
+    if (/\bwalk|bb%|bb\/9\b/i.test(t)) return { metric: 'bb_pct', order: worst ? 'desc' : 'asc' };
+    if (/\bera\b/i.test(t)) return { metric: 'era', order: worst ? 'desc' : 'asc' };
+    if (/\bfip\b/i.test(t)) return { metric: 'fip', order: worst ? 'desc' : 'asc' };
+    if (/\bwhip\b/i.test(t)) return { metric: 'whip', order: worst ? 'desc' : 'asc' };
+    /* Innings only when the WORKLOAD is what is being ranked, not merely
+       mentioned: "most innings", "the biggest workload", "innings leaders". */
+    if (/\b(most|fewest|biggest|largest|smallest|heaviest|lightest|top|bottom|leaders? in|ranked by|sorted by)\s+(?:\w+\s+){0,2}(innings|workload)\b/i.test(t)
+      || /\b(innings|workload)\s+(leaders?|leaderboard|ranking)\b/i.test(t)) {
+      return { metric: 'innings_decimal', order: worst ? 'asc' : 'desc' };
+    }
+    if (/\bsaves?\b/i.test(t)) return { metric: 'saves', order: worst ? 'asc' : 'desc' };
+    if (intents.indexOf('era_vs_fip') >= 0) return { metric: 'fip', order: worst ? 'desc' : 'asc' };
+    return { metric: 'performance_index', order: worst ? 'asc' : 'desc' };
+  }
+
+  /** Two boards, joined on player id, ranked by the deterministic change. */
+  function improvementJoin(prevRows, curRows, metric, plan) {
+    var byId = {};
+    (prevRows || []).forEach(function (r) { byId[r.player_id] = r; });
+    var QL = Q();
+    var rows = (curRows || []).map(function (cur) {
+      var prev = byId[cur.player_id] || null;
+      var a = prev ? num(prev[metric]) : null, b = num(cur[metric]);
+      return {
+        player_id: cur.player_id, player_name: cur.player_name,
+        from: a, to: b,
+        delta: (a == null || b == null) ? null : Math.round((b - a) * 10000) / 10000,
+        improved: QL ? QL.improved(metric, a, b) : null,
+        from_innings: prev ? prev.innings : null, to_innings: cur.innings,
+        from_role: prev ? prev.role : null, to_role: cur.role,
+        status: prev ? 'both seasons' : 'no qualifying season in the earlier year'
+      };
+    });
+    var better = QL && QL.METRICS[metric] ? QL.METRICS[metric].better : 'higher';
+    var scored = rows.filter(function (r) { return r.delta != null; });
+    scored.sort(function (x, y) { return better === 'lower' ? x.delta - y.delta : y.delta - x.delta; });
+    return {
+      metric: metric, better: better,
+      improved: scored.filter(function (r) { return r.improved === true; }).slice(0, 15),
+      declined: scored.filter(function (r) { return r.improved === false; }).slice(0, 5),
+      unmatched: rows.filter(function (r) { return r.delta == null; }).slice(0, 10),
+      role: plan && plan.role ? plan.role : null,
+      min_innings: plan ? plan.min_innings : null
+    };
+  }
+
+  /** Keep a season history inside the window the question asked for. */
+  function trimHistory(data, plan) {
+    if (!data || !data.seasons) return data;
+    var rows = data.seasons;
+    if (plan && plan.last_n_seasons) rows = rows.slice(-plan.last_n_seasons);
+    if (rows === data.seasons) return data;
+    var QL = Q();
+    return Object.assign({}, data, { seasons: rows, year_over_year: QL ? QL.yearOverYear(rows) : data.year_over_year });
+  }
+
+  /* ====================================================================== */
+  /* 4. THE PROMPT BLOCK — rows, plainly, with the terms attached            */
+  /* ====================================================================== */
+
+  function promptBlock(res) {
+    if (!res) return '';
+    var QL = Q();
+    var L = [];
+    L.push('=== MLB HISTORICAL PITCHING RECORD (retrieved this turn, from EdgeDesk’s own database) ===');
+    if (res.unavailable) {
+      L.push('RETRIEVAL FAILED: ' + res.unavailable);
+      L.push('Say exactly this and do not substitute anything for it. Do not answer the historical question from memory.');
+      if (res.resolution && res.resolution.length) {
+        res.resolution.forEach(function (r) {
+          L.push('  ' + r.asked + ' -> ' + r.code + (r.error ? ' (' + r.error + ')' : ''));
+          if (r.candidates && r.candidates.length) {
+            L.push('    candidates: ' + r.candidates.map(function (c) {
+              return c.player_name + ' (MLB id ' + c.player_id + ', ' + c.first_observed_season + '–'
+                + c.last_observed_season + ', ' + (c.teams || 'club unknown') + ')';
+            }).join(' | '));
+            L.push('    ASK WHICH ONE IS MEANT. Do not pick one.');
+          }
+        });
+      }
+      return L.join('\n');
+    }
+    var cov = res.coverage || {};
+    L.push('Coverage: ' + cov.start + '–' + cov.end + ' MLB regular seasons. Rating: ' + (res.rating_version || 'ED_PITCH_PERF_V1') + '.');
+    L.push('THIS IS NOT CURRENT-SEASON DATA. It ends in ' + cov.end + '. It cannot say who is pitching tonight, which club a '
+      + 'pitcher is on now, whether he is healthy, his velocity, his pitch mix, his platoon splits or any batter-versus-pitcher record.');
+    if (cov.provisional_seasons && cov.provisional_seasons.length) {
+      L.push('Provisional (imported before the season finished, so ratings will change): ' + cov.provisional_seasons.join(', ') + '.');
+    }
+    if (res.rating) {
+      L.push('performance_index: ' + res.rating.scale + ' ' + res.rating.formula
+        + ' It is NOT ' + res.rating.is_not.join(', ') + '. Never convert it to a probability, a fair price or an edge.');
+    }
+    (res.resolution || []).forEach(function (r) {
+      if (r.ok) return;
+      L.push('UNRESOLVED: ' + r.asked + ' -> ' + r.code + (r.error ? ' — ' + r.error : ''));
+      if (r.candidates && r.candidates.length) {
+        L.push('  candidates: ' + r.candidates.map(function (c) { return c.player_name + ' (id ' + c.player_id + ', ' + (c.teams || '?') + ')'; }).join(' | ')
+          + ' — ASK WHICH ONE. Do not choose.');
+      }
+    });
+
+    (res.sections || []).forEach(function (s) {
+      L.push('');
+      L.push('--- ' + s.kind.toUpperCase().replace(/_/g, ' ')
+        + (s.player_name ? ': ' + s.player_name + ' (MLB id ' + s.player_id + ')' : '')
+        + (s.scope ? ' [' + s.scope + ']' : '') + ' ---');
+      if (!s.ok) { L.push('not available: ' + (s.code || 'unknown') + (s.notes && s.notes.length ? ' — ' + s.notes[0] : '')); return; }
+      L.push(renderSection(s, QL));
+      (s.notes || []).slice(0, 3).forEach(function (n) { if (n) L.push('note: ' + n); });
+    });
+
+    if (res.links) {
+      var ln = Object.keys(res.links).filter(function (k) { return res.links[k]; });
+      if (ln.length) L.push('\nLinks to the pages carrying these rows: '
+        + ln.map(function (k) { return k + ' ' + res.links[k]; }).join('  '));
+    }
+    L.push('');
+    L.push('HOW TO USE THIS. Answer the question directly first, then support it with these rows. Name the seasons and the '
+      + 'innings behind every number you quote. Every figure in your answer must appear above; do not compute a new one and '
+      + 'do not recall one. Where a value is undefined, say it is undefined and why, rather than omitting the pitcher. '
+      + 'Keep description ("his ERA was 3.41 over 174 innings") apart from interpretation ("that is a good season").');
+    return L.join('\n');
+  }
+
+  function renderSection(s, QL) {
+    var d = s.data || {};
+    var f = function (v, m) { return QL ? QL.fmt(v, m) : (v == null ? '—' : String(v)); };
+    var lines = [];
+    if (s.kind === 'overview') {
+      var o = d.overview || {};
+      lines.push('career window ' + o.first_observed_season + '–' + o.last_observed_season
+        + ': ' + o.seasons_with_appearances + ' seasons with appearances, ' + o.games + ' G / ' + o.starts + ' GS, '
+        + o.innings + ' IP, ERA ' + f(o.era, 'era') + ', WHIP ' + f(o.whip, 'whip')
+        + ', K% ' + f(o.k_pct, 'k_pct') + ', BB% ' + f(o.bb_pct, 'bb_pct') + ', K-BB% ' + f(o.k_minus_bb_pct, 'k_minus_bb_pct')
+        + ', innings-weighted index ' + f(o.weighted_performance_index, 'performance_index'));
+      lines.push('observed seasons: ' + (o.observed_seasons || []).join(', ')
+        + (o.missed_seasons && o.missed_seasons.length ? '  |  NO appearance in: ' + o.missed_seasons.join(', ') : ''));
+      lines.push('clubs: ' + (o.teams || '—') + ' (' + o.team_count + ')');
+      if (d.latest_observed_season) {
+        var l = d.latest_observed_season;
+        lines.push('latest observed season ' + l.season + ': ' + l.innings + ' IP, ERA ' + f(l.era, 'era')
+          + ', FIP ' + f(l.fip, 'fip') + ', index ' + f(l.performance_index, 'performance_index')
+          + ', role ' + (l.role || '—') + ', clubs ' + (l.teams || '—')
+          + '  [LATEST IN THE ARCHIVE — not his current club or role]');
+      }
+    } else if (s.kind === 'changes' || s.kind === 'season_history') {
+      (d.seasons || []).forEach(function (r) {
+        lines.push('  ' + r.season + '  ' + pad(r.role || '?', 9) + ' ' + pad(r.teams || '?', 34)
+          + ' ' + pad(r.innings + ' IP', 10)
+          + ' ERA ' + pad(f(r.era, 'era'), 6) + ' FIP ' + pad(f(r.fip, 'fip'), 6) + ' WHIP ' + pad(f(r.whip, 'whip'), 6)
+          + ' K% ' + pad(f(r.k_pct, 'k_pct'), 6) + ' BB% ' + pad(f(r.bb_pct, 'bb_pct'), 6)
+          + ' K-BB% ' + pad(f(r.k_minus_bb_pct, 'k_minus_bb_pct'), 6)
+          + ' index ' + pad(f(r.performance_index, 'performance_index'), 6)
+          + ' [' + (r.sample_flag || '?') + ']'
+          + (r.era_vs_fip && r.era_vs_fip.gap != null ? '  ERA−FIP ' + r.era_vs_fip.gap.toFixed(2) + ' (' + r.era_vs_fip.label + ')' : ''));
+      });
+      (d.year_over_year || []).forEach(function (y) {
+        var parts = [];
+        ['era', 'fip', 'whip', 'k_pct', 'bb_pct', 'k_minus_bb_pct', 'innings_decimal', 'performance_index'].forEach(function (m) {
+          var c = y.changes[m];
+          if (!c) return;
+          parts.push(m + ' ' + (c.delta == null ? 'undefined (' + c.undefined_reason + ')'
+            : (QL ? QL.fmtDelta(c.delta, m) : c.delta) + (c.improved == null ? '' : c.improved ? ' better' : ' worse')));
+        });
+        lines.push('  ' + y.from_season + '→' + y.to_season + (y.consecutive ? '' : ' (GAP: ' + y.gap_seasons + ' season(s) with no appearance)')
+          + (y.role_changed ? ' ROLE ' + y.role_from + '→' + y.role_to : '')
+          + (y.team_changed ? ' CLUB ' + y.teams_from + '→' + y.teams_to : '')
+          + '  ' + parts.join('; '));
+      });
+      if (d.trend) {
+        lines.push('  net ' + d.trend.from_season + '→' + d.trend.to_season + ': '
+          + d.trend.moved.map(function (m) { return m.label + ' ' + m.formatted + (m.improved ? ' better' : ' worse'); }).join(', ')
+          + (d.trend.undefined_metrics.length ? '  undefined: ' + d.trend.undefined_metrics.join(', ') : ''));
+      }
+    } else if (s.kind === 'team_history') {
+      (d.clubs || []).forEach(function (c) {
+        lines.push('  club ' + c.team_id + ' ' + pad(c.team_names_observed || '?', 26)
+          + ' seasons ' + (c.observed_seasons || []).join('/') + (c.missed_seasons && c.missed_seasons.length ? ' [gap: ' + c.missed_seasons.join(',') + ']' : '')
+          + '  ' + pad(c.innings + ' IP', 10) + ' ' + c.games + 'G/' + c.starts + 'GS'
+          + ' ERA ' + pad(f(c.era, 'era'), 6) + ' K-BB% ' + pad(f(c.k_minus_bb_pct, 'k_minus_bb_pct'), 6)
+          + ' weighted index ' + f(c.weighted_performance_index, 'performance_index'));
+      });
+      if (d.multi_club_seasons && d.multi_club_seasons.length) {
+        lines.push('  split seasons (traded): ' + d.multi_club_seasons.join(', ')
+          + ' — the club rows for those years are PARTS of the season; never add them to the season line.');
+        (d.club_seasons || []).filter(function (cs) { return d.multi_club_seasons.indexOf(cs.season) >= 0; })
+          .forEach(function (cs) {
+            lines.push('    ' + cs.season + ' ' + pad(cs.team_name || '?', 24) + ' ' + pad(cs.innings + ' IP', 10)
+              + ' ERA ' + pad(f(cs.era, 'era'), 6) + ' FIP ' + pad(f(cs.fip, 'fip'), 6)
+              + ' index ' + f(cs.performance_index, 'performance_index'));
+          });
+      }
+      lines.push('  TENURE MEANS: seasons with a recorded MLB pitching appearance for that club. Not contract or roster dates.');
+    } else if (s.kind === 'leaderboard') {
+      lines.push('  season ' + d.season + ', ordered by ' + d.metric_label + ' (' + d.better + ' is better), '
+        + (d.role ? 'role ' + d.role : 'any role')
+        + (d.min_innings ? ', minimum ' + d.min_innings + ' IP' : ', NO minimum workload')
+        + (d.league_baseline ? ', league ERA ' + f(d.league_baseline.league_era, 'era') : ''));
+      (d.rows || []).forEach(function (r) {
+        lines.push('  ' + pad('#' + r.rank, 4) + pad(r.player_name, 24) + pad(r.teams || '?', 28)
+          + pad(r.innings + ' IP', 10) + ' ERA ' + pad(f(r.era, 'era'), 6) + ' FIP ' + pad(f(r.fip, 'fip'), 6)
+          + ' K-BB% ' + pad(f(r.k_minus_bb_pct, 'k_minus_bb_pct'), 6)
+          + ' index ' + pad(f(r.performance_index, 'performance_index'), 6) + ' [' + (r.sample_flag || '?') + ']');
+      });
+      if (d.truncated) lines.push('  (cut at ' + (d.rows || []).length + ' rows; there are more below this line)');
+    } else if (s.kind === 'improvement') {
+      lines.push('  ' + d.metric + ', ' + d.better + ' is better'
+        + (d.role ? ', role ' + d.role : '') + (d.min_innings ? ', minimum ' + d.min_innings + ' IP' : ''));
+      (d.improved || []).forEach(function (r) {
+        lines.push('  + ' + pad(r.player_name, 24) + ' ' + (QL ? QL.fmt(r.from, d.metric) : r.from) + ' → '
+          + (QL ? QL.fmt(r.to, d.metric) : r.to) + '  (' + (QL ? QL.fmtDelta(r.delta, d.metric) : r.delta) + ')  '
+          + r.from_innings + ' → ' + r.to_innings + ' IP'
+          + (r.from_role !== r.to_role ? '  ROLE ' + r.from_role + '→' + r.to_role : ''));
+      });
+      if (d.unmatched && d.unmatched.length) {
+        lines.push('  no comparison possible for: ' + d.unmatched.map(function (r) { return r.player_name + ' (' + r.status + ')'; }).join(', '));
+      }
+    } else if (s.kind === 'comparison') {
+      var c2 = d.comparison || {};
+      lines.push('  scope: ' + c2.scope);
+      lines.push('  ' + pad('', 16) + (c2.sides || []).map(function (x) { return pad(x.player_name + (x.season ? ' ' + x.season : ''), 26); }).join(''));
+      lines.push('  ' + pad('innings', 16) + (c2.sides || []).map(function (x) { return pad(String(x.innings) + ' IP (' + (x.sample_flag || '?') + ')', 26); }).join(''));
+      lines.push('  ' + pad('role', 16) + (c2.sides || []).map(function (x) { return pad(String(x.role || '?'), 26); }).join(''));
+      (c2.metrics || []).forEach(function (m) {
+        lines.push('  ' + pad(m.label, 16) + m.formatted.map(function (v, i) {
+          return pad(v + (m.better_index === i ? '  <' : ''), 26);
+        }).join('') + (m.comparable ? '' : '  [' + m.note + ']'));
+      });
+      lines.push('  "<" marks the better recorded number on that row. It describes what happened; it is not a projection.');
+    } else if (s.kind === 'game_context') {
+      lines.push('  game: ' + (d.game || 'unnamed'));
+      (d.starters || []).forEach(function (x) {
+        lines.push('  ' + (x.side || '?') + ': ' + (x.named || '?') + ' — card says ' + x.starter_status
+          + ' (' + x.starter_status_note + ')');
+        if (!x.history) { lines.push('    no archive record: ' + x.resolution.code); return; }
+        var h = x.history, ov = h.overview;
+        lines.push('    archive ' + ov.first_observed_season + '–' + ov.last_observed_season + ': '
+          + ov.innings + ' IP, ERA ' + f(ov.era, 'era') + ', K-BB% ' + f(ov.k_minus_bb_pct, 'k_minus_bb_pct')
+          + ', weighted index ' + f(ov.weighted_performance_index, 'performance_index'));
+        (h.recent_seasons || []).forEach(function (r) {
+          lines.push('      ' + r.season + '  ' + pad(r.teams || '?', 28) + pad(r.innings + ' IP', 10)
+            + ' ERA ' + pad(f(r.era, 'era'), 6) + ' FIP ' + pad(f(r.fip, 'fip'), 6)
+            + ' index ' + f(r.performance_index, 'performance_index'));
+        });
+        lines.push('      profile: ' + h.profile_link);
+      });
+      if (d.comparison) {
+        lines.push('  side by side [' + d.comparison.scope + ']:');
+        (d.comparison.metrics || []).forEach(function (m) {
+          lines.push('    ' + pad(m.label, 16) + m.formatted.map(function (v, i) { return pad(v + (m.better_index === i ? '  <' : ''), 22); }).join(''));
+        });
+      }
+    } else {
+      lines.push('  ' + JSON.stringify(d).slice(0, 1500));
+    }
+    return lines.join('\n');
+  }
+  function pad(s, n) { s = String(s == null ? '' : s); return s.length >= n ? s.slice(0, n) : s + new Array(n - s.length + 1).join(' '); }
+
+  /* ====================================================================== */
+  /* 5. THE CRITIC'S EXTRA CHECKS                                            */
+  /*                                                                        */
+  /* The prose is checked against the rows that were retrieved. These are    */
+  /* the four ways an answer about this archive goes wrong.                  */
+  /* ====================================================================== */
+
+  var CURRENT_CLAIM = /\b(this season|current season|so far this year|right now he|currently (he|pitching)|tonight he|his current (era|fip|whip|form))\b/i;
+  var INVENTED_DETAIL = /\b(velocity|fastball|slider|changeup|curveball|sinker|cutter|splitter|pitch mix|spin rate|release point|platoon split|versus (lefties|righties)|vs\.? (lhb|rhb)|batter[- ]versus[- ]pitcher|career (against|vs)\.? (the )?[A-Z])/i;
+  var RATING_AS_PROBABILITY = /\b(performance index|index of \d)[^.]{0,60}\b(probability|chance|odds|edge|expected value|ev\b|win(s| probability)|implies? a)\b/i;
+  var TENURE_AS_CONTRACT = /\b(signed|contract|under contract|free agen|traded to .* in (january|february|march|november|december)|joined .* in \d{4} on)\b/i;
+
+  function criticExtras(o) {
+    o = o || {};
+    var res = o.result, answer = str(o.answer);
+    var findings = [];
+    if (!res || !answer) return findings;
+
+    if (res.unavailable && !/could not|unavailable|not (installed|on file|available)|no record|does not (carry|hold)/i.test(answer)) {
+      findings.push({ code: 'MLBHIST_INVENTED_ON_FAILURE', severity: 'FAIL',
+        detail: 'the historical archive could not be read this turn (' + res.unavailable + ') and the answer does not say so' });
+    }
+    if (CURRENT_CLAIM.test(answer) && res.coverage) {
+      findings.push({ code: 'MLBHIST_ARCHIVE_AS_CURRENT', severity: 'FAIL',
+        detail: 'the answer speaks about the current season from an archive that ends in ' + res.coverage.end });
+    }
+    if (INVENTED_DETAIL.test(answer)) {
+      findings.push({ code: 'MLBHIST_INVENTED_DETAIL', severity: 'FAIL',
+        detail: 'the answer names velocity, pitch mix, handedness splits or a batter-versus-pitcher record; this archive '
+          + 'holds season and team totals only and none of those are in it' });
+    }
+    if (RATING_AS_PROBABILITY.test(answer)) {
+      findings.push({ code: 'MLBHIST_RATING_AS_PROBABILITY', severity: 'FAIL',
+        detail: 'performance_index is a descriptive index, not a probability, price or edge' });
+    }
+    if (TENURE_AS_CONTRACT.test(answer)) {
+      findings.push({ code: 'MLBHIST_TENURE_AS_CONTRACT', severity: 'WARN',
+        detail: 'the archive records seasons with appearances, not signing, trade or roster dates' });
+    }
+    /* An ambiguous name the retrieval refused to resolve must not be resolved
+       in prose instead. */
+    (res.resolution || []).forEach(function (r) {
+      if (r.code !== 'AMBIGUOUS_PLAYER') return;
+      var picked = (r.candidates || []).filter(function (c) {
+        return new RegExp('\\b' + String(c.player_id) + '\\b').test(answer);
+      });
+      if (!picked.length && !/which|ambiguous|more than one|two pitchers|clarify|do you mean/i.test(answer)) {
+        findings.push({ code: 'MLBHIST_AMBIGUITY_RESOLVED_IN_PROSE', severity: 'FAIL',
+          detail: '"' + r.asked + '" matches ' + (r.candidates || []).length + ' MLB ids and the answer does not ask which' });
+      }
+    });
+    /* Numbers in the prose that are nowhere in the retrieved rows. Deliberately
+       narrow: rates with two decimals and percentages, which is what these
+       answers quote and what a model recalls wrongly. */
+    var allowed = numbersIn(JSON.stringify(res.sections || []));
+    var quoted = (answer.match(/\b\d+\.\d{1,3}\b|\b\d{1,2}\.\d%|\b\d{1,3}%/g) || []);
+    var strays = quoted.filter(function (q) {
+      var v = parseFloat(q);
+      if (!Number.isFinite(v)) return false;
+      return !allowed.some(function (a) { return Math.abs(a - v) < 0.011 || Math.abs(a * 100 - v) < 0.11; });
+    });
+    if (strays.length) {
+      findings.push({ code: 'MLBHIST_NUMBER_NOT_RETRIEVED', severity: 'WARN',
+        detail: 'the answer quotes ' + strays.slice(0, 4).join(', ') + ' which does not appear in the rows retrieved this turn' });
+    }
+    return findings;
+  }
+  function numbersIn(s) {
+    var out = [], m, re = /-?\d+(?:\.\d+)?/g;
+    while ((m = re.exec(String(s)))) { var v = parseFloat(m[0]); if (Number.isFinite(v)) out.push(v); }
+    return out;
+  }
+
+  /* ====================================================================== */
+  /* 6. TOOLS — registered into EDRESEARCH.TOOLS so the same runTool,        */
+  /*    budget and allowlist govern them                                     */
+  /*                                                                        */
+  /* These are ASYNC: they read a database. runTool awaits a thenable result, */
+  /* so a tool that returns a promise is handled exactly like one that does   */
+  /* not — the envelope, the validation and the budget are unchanged.         */
+  /* ====================================================================== */
+
+  var TOOL_NAMES = ['resolve_mlb_player', 'get_pitcher_overview', 'get_pitcher_season_history',
+    'get_pitcher_team_history', 'compare_pitchers', 'search_pitcher_leaderboard', 'get_game_pitcher_context'];
+
+  function registerTools() {
+    var Rk = R();
+    if (!Rk || !Rk.TOOLS || !Rk.T) return false;
+    var T = Rk.T;
+    var QL = Q();
+    var COV = 'EdgeDesk’s own MLB historical pitching archive (regular seasons only). It is NOT current-season data and '
+      + 'cannot say who is pitching tonight, a pitcher’s present club, health, velocity, pitch mix or platoon splits.';
+
+    function tool(name, description, input, run) {
+      Rk.TOOLS[name] = { name: name, llm: true, category: 'data', description: description, input: input, output: T.any(), run: run };
+    }
+    function svcOf(ctx) {
+      var s = ctx && ctx.mlb_history;
+      return s && typeof s.resolvePlayer === 'function' ? s : null;
+    }
+    /** Turn the query layer's envelope into the tool layer's, keeping the code. */
+    function envOut(env) {
+      if (!env) return { ok: false, error: 'the archive returned nothing', missing: ['mlb_history'] };
+      if (env.ok === false) {
+        return { ok: false, code: env.code, error: env.error || env.code,
+          missing: [env.code === 'AMBIGUOUS_PLAYER' ? 'player_choice' : 'records'],
+          candidates: (env.data && env.data.candidates) || undefined };
+      }
+      return {
+        ok: true, code: env.code, coverage: env.coverage, rating_version: env.rating_version,
+        rating: env.rating, scope: env.scope, sample: env.sample, sources: env.sources,
+        notes: env.notes, data: env.data, freshness: 'STALE',
+        quality_flags: env.coverage && env.coverage.provisional_seasons && env.coverage.provisional_seasons.length
+          ? ['provisional_seasons:' + env.coverage.provisional_seasons.join(',')] : []
+      };
+    }
+    function noService() {
+      return { ok: false, error: 'the MLB historical archive is not attached to this turn', missing: ['mlb_history'] };
+    }
+
+    tool('resolve_mlb_player',
+      'Resolve a pitcher name to one MLB player id inside ' + COV + ' Supply name, or player_id to confirm one. A name '
+      + 'matching more than one pitcher comes back AMBIGUOUS_PLAYER with the candidates — ask which is meant, never pick. '
+      + 'Optional season or team_id narrow an ambiguous name using what the asker said, not by guessing.',
+      T.obj({ name: T.opt(T.str({ max: 80 })), player_id: T.opt(T.int()), season: T.opt(T.int()), team_id: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.resolvePlayer(i).then(envOut) : noService(); });
+
+    tool('get_pitcher_overview',
+      'The career window for one pitcher inside ' + COV + ' Totals across the window, the seasons he appeared in, the '
+      + 'seasons he did NOT, every club, and his latest observed season. The latest observed season is the last one in '
+      + 'the archive, not his current club or role.',
+      T.obj({ player_id: T.int() }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.pitcherOverview(i).then(envOut) : noService(); });
+
+    tool('get_pitcher_season_history',
+      'Season by season for one pitcher inside ' + COV + ' Each season carries innings, ERA, FIP, WHIP, K%, BB%, K-BB%, '
+      + 'role, workload band, the ED_PITCH_PERF_V1 index and the ERA-minus-FIP gap. The year-over-year change between '
+      + 'consecutive OBSERVED seasons is computed for you; a comparison spanning a missed season says so. Optional from/to '
+      + 'bound the window.',
+      T.obj({ player_id: T.int(), from: T.opt(T.int()), to: T.opt(T.int()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.seasonHistory(i).then(envOut) : noService(); });
+
+    tool('get_pitcher_team_history',
+      'Performance for each club one pitcher threw for inside ' + COV + ' Includes the season splits for a traded year '
+      + '(the club rows are PARTS of that season and must never be added to the season line), the consecutive observed '
+      + 'runs with each club, and the gap years. Team duration means seasons with a recorded appearance, not contract dates.',
+      T.obj({ player_id: T.int() }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.teamHistory(i).then(envOut) : noService(); });
+
+    tool('compare_pitchers',
+      'Compare two to four pitchers inside ' + COV + ' on ONE explicitly named scope: pass season for a single year, or '
+      + 'from/to for a range, or neither for the whole window combined. Multi-season sides are recomputed from summed '
+      + 'counting statistics and outs, never averaged rates. The better recorded number per metric is marked; that is a '
+      + 'description of what happened, not a projection.',
+      T.obj({ player_ids: T.arr(T.int(), { max: 4 }), season: T.opt(T.int()), from: T.opt(T.int()), to: T.opt(T.int()),
+        metrics: T.opt(T.arr(T.str({ max: 32 }), { max: 12 })) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.compare(i).then(envOut) : noService(); });
+
+    tool('search_pitcher_leaderboard',
+      'A season leaderboard inside ' + COV + ' Filter by role (starter / reliever / mixed) and a minimum innings '
+      + 'workload, and order by any of: performance_index, era, fip, whip, k_pct, bb_pct, k_minus_bb_pct, k_per_9, '
+      + 'bb_per_9, hr_per_9, innings_decimal, saves, holds, strikeouts, walks, games, starts. Position players who '
+      + 'pitched are excluded unless exclude_position_players is false. With no minimum workload, short samples sit '
+      + 'beside full seasons and the index shrinkage only partly suppresses that — say so if you quote one.',
+      T.obj({ season: T.int(), role: T.opt(T.enm(['starter', 'reliever', 'mixed'])), min_innings: T.opt(T.num({ min: 0 })),
+        metric: T.opt(T.str({ max: 32 })), order: T.opt(T.enm(['asc', 'desc'])), limit: T.opt(T.int({ min: 1, max: 200 })),
+        exclude_position_players: T.opt(T.bool()) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.leaderboard(i).then(envOut) : noService(); });
+
+    tool('get_game_pitcher_context',
+      'Historical context from ' + COV + ' for the pitchers already attached to an upcoming game. Pass the starters '
+      + 'exactly as the card states them, INCLUDING whether each is confirmed, probable or projected — this tool never '
+      + 'upgrades that status and never infers tonight’s club from the archive. Returns each starter’s career '
+      + 'window, recent seasons and a side-by-side on a scope it names.',
+      T.obj({ game: T.opt(T.str({ max: 120 })), compare_season: T.opt(T.int()),
+        starters: T.arr(T.obj({ name: T.opt(T.str({ max: 80 })), player_id: T.opt(T.int()), side: T.opt(T.str({ max: 8 })),
+          team: T.opt(T.str({ max: 60 })), status: T.opt(T.nul(T.str({ max: 40 }))) }, { open: true }), { max: 4 }) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.gamePitcherContext(i).then(envOut) : noService(); });
+
+    /* Also expose the team board, which the website uses and a question about a
+       club's rotation history needs. Not in the brief's seven, but the same
+       query layer and the same rules. */
+    tool('get_team_pitching_history',
+      'One MLB club’s pitching record inside ' + COV + ' Every pitcher who threw for it in the window with his '
+      + 'contribution FOR THAT CLUB, optionally narrowed to one season, a role and a minimum workload. A club that '
+      + 'changed its name keeps one team id and both names are returned.',
+      T.obj({ team_id: T.int(), season: T.opt(T.int()), role: T.opt(T.enm(['starter', 'reliever', 'mixed'])),
+        min_innings: T.opt(T.num({ min: 0 })), limit: T.opt(T.int({ min: 1, max: 60 })) }),
+      function (i, ctx) { var s = svcOf(ctx); return s ? s.teamPitching(i).then(envOut) : noService(); });
+
+    return true;
+  }
+
+  return {
+    VERSION: VERSION, SCHEMA: SCHEMA, TOOL_NAMES: TOOL_NAMES.concat(['get_team_pitching_history']),
+    HISTORY_WORDS: HISTORY_WORDS, PITCH_WORDS: PITCH_WORDS, CURRENT_WORDS: CURRENT_WORDS, INTENTS: INTENTS,
+    route: route, seasonsIn: seasonsIn, lastNSeasons: lastNSeasons, minInningsIn: minInningsIn,
+    pitcherNamesIn: pitcherNamesIn, isFollowUp: isFollowUp, metricFor: metricFor, improvementJoin: improvementJoin,
+    sanitizeState: sanitizeState, conversationState: conversationState,
+    retrieve: retrieve, promptBlock: promptBlock, renderSection: renderSection,
+    criticExtras: criticExtras, registerTools: registerTools
+  };
+});
+/*__EDMLBHIST_END__*/
