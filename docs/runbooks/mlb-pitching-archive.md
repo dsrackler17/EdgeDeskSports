@@ -133,6 +133,51 @@ pitching appearance are out of scope by design.
 
 ---
 
+## Model research
+
+`supabase/mlb_pitcher_features.sql` adds one view, `mlbhist.pitcher_prior_features`
+— for each `(player_id, season)`, everything EdgeDesk knew about that pitcher
+**before** that season: the prior season's rates and workload, its ERA-minus-FIP
+gap, strikeout and walk trends against the season before it, the innings-weighted
+three-season baseline, role and club movement, and the share of that baseline
+that came from the 60-game 2020.
+
+The as-of property is structural, not a filter someone has to remember: every
+field comes from a window frame that ends **one row short** of the season it
+describes. `outcome_*` columns carry the season being predicted and are never
+features.
+
+```bash
+npm run mlb:features          # next-season K-BB%, walk-forward
+npm run mlb:features:era      # next-season ERA
+npm run mlb:features:write    # write both reports to mlb/pitchers/validation
+```
+
+The evaluation walks forward: for target season S every predictor is built from
+seasons strictly earlier than S, the fitted candidate is **refit at each S** on
+pairs earlier than it, the league reference is the league's *prior* season, and
+2020 is excluded as a target. The incumbent to beat is carry-forward — last
+season's own number.
+
+What it found, as committed in `mlb/pitchers/validation/`:
+
+* **Next-season K-BB%** — carry-forward 0.0467 MAE over 2,272 out-of-sample
+  pitcher-seasons; a three-year baseline shrunk toward the prior league value
+  gets 0.0390, about 17% better, comfortably outside its own spread. A ridge
+  fit on twelve as-of features adds essentially nothing on top of the
+  shrinkage.
+* **Next-season ERA** — carrying a pitcher's own prior ERA forward is *worse
+  than predicting the league average*. That is a fact about ERA's year-to-year
+  instability and it is reported rather than buried.
+
+**Nothing is promoted.** `research_model_current` is untouched, no live price,
+fair line or EV reads any of this, and `performance_index` is never converted
+into a probability or an odds number. A next-season rate forecast is not a game
+model, and this data — season totals with no game logs — cannot become one
+without leaking a season's own result into a prediction made before it.
+
+---
+
 ## Tests
 
 ```bash
@@ -142,8 +187,9 @@ npm run mlb:e2e       # the shipped importer over the real dataset, end to end
 npm run mlb:ai        # routing, retrieval, the eight tools, the critic
 npm run mlb:ui        # the research surface in Chromium against a real database
 npm run mlb:refresh:test   # the refresh path: provisional flags, staging, publish
+npm run mlb:features:test  # the as-of property, proved by corrupting the future
 ```
 
-CI runs the first five in `games-sql.yml` against a real PostgreSQL service,
+CI runs all of these in `games-sql.yml` against a real PostgreSQL service,
 and that job **refuses a silent skip**: a suite that skipped is a failure
 there, not a pass.

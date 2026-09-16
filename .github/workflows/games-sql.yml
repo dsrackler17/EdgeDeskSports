@@ -69,6 +69,7 @@ on:
       # one — so reasoning about it is not evidence. The import suite drives
       # the shipped importer over the committed dataset end to end.
       - 'supabase/mlb_pitcher_history.sql'
+      - 'supabase/mlb_pitcher_features.sql'
       - 'lib/mlb_pitcher_history.js'
       - 'mlb/pitchers/dataset/**'
       - 'tools/mlb/**'
@@ -127,6 +128,7 @@ on:
       # one — so reasoning about it is not evidence. The import suite drives
       # the shipped importer over the committed dataset end to end.
       - 'supabase/mlb_pitcher_history.sql'
+      - 'supabase/mlb_pitcher_features.sql'
       - 'lib/mlb_pitcher_history.js'
       - 'mlb/pitchers/dataset/**'
       - 'tools/mlb/**'
@@ -326,6 +328,26 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/mlb/import.test.js | tee mlb_import.log
 
+      # THE AS-OF FEATURES, and the property a backtest cannot report on
+      # itself: a feature row for season S must not contain one atom of
+      # information from season S or later. Proved by corrupting every later
+      # season and requiring the row to come back identical. Also proves the
+      # SQL view and its JavaScript mirror agree field for field.
+      - name: Run the MLB as-of feature suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/features.test.js | tee mlb_features.log
+
+      # The refresh path: the provisional flag traced to what a reader sees, a
+      # build that cannot reach MLB, and the proof that the workflow actually
+      # invokes the importer rather than merely existing.
+      - name: Run the MLB refresh suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/refresh.test.js | tee mlb_refresh.log
+
       # The desk's access to the same archive: routing, deterministic
       # retrieval, all eight tools through the real runTool, the follow-up that
       # resolves from carried ids alone, and the critic attacked with prose
@@ -358,7 +380,7 @@ jobs:
           # NOTE, not fixed here because it is not this change's to widen:
           # cards.log, season.log and offline.log are produced by steps above
           # and are still absent from this list.
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_ai.log mlb_ui.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_ui.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
