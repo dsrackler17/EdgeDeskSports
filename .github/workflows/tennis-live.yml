@@ -17,7 +17,11 @@
 # RECOVERY. The lock has a TTL, so a job that dies without releasing it is
 # fenced out for two and a half minutes, not forever. A source failure backs off
 # and keeps the run alive; ninety minutes of failure ends the run so the next
-# gate starts a fresh one. A day that outlasts the runner's limit hands off: the
+# gate starts a fresh one. A write the DATABASE refuses (a 4xx from PostgREST)
+# is not waited out: three in a row end the run with the refusal named, because
+# the same request gets the same answer however long the runner sleeps — from
+# 2026-09-11 to 09-16 every poll was one, and every run spent ninety minutes
+# retrying it. A run that never polled successfully does not hand itself off. A day that outlasts the runner's limit hands off: the
 # poller dispatches this workflow again for the same tour-day before it exits,
 # and the job-level concurrency group (one per tour-day) means at most one such
 # run is ever queued behind it. workflow_dispatch with a tour is the manual
@@ -48,6 +52,11 @@ on:
         description: 'How long the poller may stay alive (GitHub caps a job at 360).'
         required: false
         default: '330'
+      no_continuation:
+        description: 'Do not dispatch a continuation at the time limit (a bounded verification run).'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -124,4 +133,6 @@ jobs:
         run: |
           MAX="${{ inputs.max_minutes }}"
           if [ -z "$MAX" ]; then MAX=330; fi
-          node tools/tennis/live_poll.js --tour "${{ matrix.tour }}" --day "${{ matrix.day }}" --max-minutes "$MAX"
+          EXTRA=""
+          if [ "${{ inputs.no_continuation }}" = "true" ]; then EXTRA="--no-dispatch"; fi
+          node tools/tennis/live_poll.js --tour "${{ matrix.tour }}" --day "${{ matrix.day }}" --max-minutes "$MAX" $EXTRA

@@ -119,6 +119,25 @@ async function doctor(opts) {
         j.env && j.env.anthropic_key ? 'PRESENT' : 'ABSENT',
         j.env && j.env.anthropic_key ? 'set (value never read)' : 'ANTHROPIC_API_KEY is not set, so chat will 503',
         j.env && j.env.anthropic_key ? null : 'supabase secrets set ANTHROPIC_API_KEY=...');
+      /* What the deployed build says about its own last packet write. Absent
+         on a build older than r12, which is not a finding about that build;
+         null on a build that has not yet answered a single-game football
+         question in this isolate, which is a fact and not a failure. */
+      if (j.packet_health && typeof j.packet_health === 'object') {
+        const w = j.packet_health.last_packet_write;
+        if (w == null) {
+          add('research packets are being snapshotted', 'IDLE',
+            'no single-game football question has run in this isolate yet, so there is no write to judge');
+        } else if (w.ok === false) {
+          add('research packets are being snapshotted', 'FAILING',
+            `the deployed build's last packet write failed${w.at ? ' at ' + w.at : ''}${w.status ? ' (HTTP ' + w.status + ')' : ''}`
+              + (w.detail ? ': ' + String(w.detail).slice(0, 160) : ''),
+            'apply supabase/research_packets.sql (Deploy intelligence with apply_research_packets), then re-run this doctor');
+        } else {
+          add('research packets are being snapshotted', 'WRITING',
+            `the deployed build's last packet write succeeded${w.at ? ' at ' + w.at : ''}`);
+        }
+      }
     }
   }
 
@@ -150,6 +169,28 @@ async function doctor(opts) {
         noCol ? 'psql "$DATABASE_URL" -f supabase/recommendation_ledger.sql  (it is idempotent)' : null);
     } else {
       add('recommendation_ledger applied', 'UNKNOWN', `HTTP ${t.status}`);
+    }
+
+    /* THE PACKET LEDGER, which the r12+ build snapshots every single-game
+       football packet into for grading against the close. The function
+       carries on when the write fails — a customer's answer does not wait on
+       a ledger — so a missing migration is silent from the outside: the desk
+       answers, nothing is recorded, and every calibration built on the table
+       later is built on nothing. The doctor asks the table directly, and the
+       deployed build reports the outcome of its own last write. */
+    const rp = await get(`${url}/rest/v1/research_packets?select=packet_id&limit=1`,
+      { apikey: key, authorization: 'Bearer ' + key });
+    const rpMissing = /does not exist|schema cache|PGRST205|42P01/i.test(rp.text);
+    if (rp.status === 0) add('research_packets applied', 'UNKNOWN', rp.error || 'no response');
+    else if (rpMissing || rp.status === 404) {
+      add('research_packets applied', 'NOT_APPLIED',
+        'the table is not in the schema — every research packet the desk builds is going unrecorded',
+        'run the Deploy intelligence workflow with apply_research_packets, or psql "$DATABASE_URL" -f supabase/research_packets.sql');
+    } else if (rp.ok || rp.status === 401 || rp.status === 403) {
+      add('research_packets applied', 'APPLIED',
+        rp.ok ? 'the table answered' : `the table exists and row-level security refused this key (HTTP ${rp.status}), which is the table being there`);
+    } else {
+      add('research_packets applied', 'UNKNOWN', `HTTP ${rp.status}`);
     }
   }
 
@@ -291,7 +332,7 @@ async function doctor(opts) {
     }
   }
 
-  const bad = out.checks.filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY/.test(c.state));
+  const bad = out.checks.filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state));
   out.verdict = bad.length ? 'ACTION NEEDED' : out.checks.some((c) => c.state === 'UNKNOWN') ? 'INCOMPLETE' : 'DEPLOYED AND CURRENT';
   return out;
 }
@@ -317,7 +358,7 @@ function annotations(r) {
     `::${level}::${c.name} — ${String(c.state)}`
     + (c.detail ? ': ' + c.detail : '')
     + (c.fix ? ' | fix: ' + c.fix : '');
-  const bad = (r.checks || []).filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY/.test(c.state));
+  const bad = (r.checks || []).filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state));
   const unknown = (r.checks || []).filter((c) => c.state === 'UNKNOWN');
   bad.forEach((c) => out.push(one('error', c)));
   unknown.forEach((c) => out.push(one('warning', c)));

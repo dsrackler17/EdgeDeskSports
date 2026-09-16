@@ -71,6 +71,16 @@ const IDLE_INTERVAL_S = 90;
 const MARKET_EVERY_S = 60;
 const ROLLUP_EVERY_S = 300;
 const FAIL_GIVE_UP_MS = 90 * 60 * 1000;
+/* A REFUSED WRITE IS NOT WAITED OUT. The ninety-minute window above is for a
+   source that stops answering: the provider goes quiet, the run backs off and
+   stays alive so the day is picked up the moment it returns. A 4xx from the
+   database is the opposite kind of failure — the request itself is wrong and
+   the same request gets the same answer — and from 2026-09-11 to 2026-09-16
+   every poll of every run was one, retried twenty-two times for ninety
+   minutes, and reported as "source failed". Three in a row is enough to rule
+   out a schema cache reload; after that the run ends and says what was
+   refused, and the next gate starts a fresh one against whatever was fixed. */
+const REFUSED_GIVE_UP = 3;
 const QUIET_DAY_MS = 16 * 3600 * 1000;
 const TERMINAL = ['final', 'walkover', 'cancelled'];
 
@@ -244,9 +254,24 @@ function tournamentRollup(prev, allMatches, nowIso) {
 /* Fields the poller owns on a tournament row it already holds. Everything
    else (name, surface, dates, venue) belongs to the sync and is never
    overwritten from a day view. A row the table does not hold yet is written
-   whole instead -- see pollOnce. */
+   whole instead -- see pollOnce.
+
+   WRITTEN AS AN UPDATE, NEVER AS AN UPSERT. PostgREST's upsert is an INSERT
+   ... ON CONFLICT DO UPDATE, and Postgres checks the proposed row against
+   every NOT NULL column BEFORE it looks for the conflict. tennis.tournaments
+   requires provider_tournament_id and tour, so a two-column touch is refused
+   with 23502 whether or not the row exists — which is what production
+   answered on every poll of every run from 2026-09-11 to 2026-09-16, and
+   what the "write the fresh row whole" change of 09-16 could not fix,
+   because the row it failed on was the one that WAS on file. A PATCH names
+   only the columns it changes and touches nothing else. */
 function tournamentTouch(t, nowIso) {
   return { tournament_id: t.tournament_id, source_updated_at: nowIso };
+}
+async function touchTournaments(db, ids, nowIso) {
+  if (!ids.length) return 0;
+  await db.patch('tennis', 'tournaments', `tournament_id=in.${D.inList(ids)}`, { source_updated_at: nowIso });
+  return ids.length;
 }
 
 function stripInternal(m) {
@@ -317,13 +342,12 @@ async function pollOnce(ctx) {
   });
 
   /* A TOURNAMENT THE TABLE DOES NOT HOLD YET gets its whole row; one it
-     already holds gets a touch. The touch alone was the whole write for
-     every tournament, and an upsert that only names tournament_id and
-     source_updated_at INSERTS a row of nulls when the id is new -- which
-     tennis.tournaments refuses (provider_tournament_id and tour are not
-     null), and did, twenty-two polls in a row, for a WTA event the pre-poll
-     sync had not filed. The poller then gave up at ninety minutes with "the
-     source failed" when the source had answered every time. */
+     already holds gets a touch, as an UPDATE (see touchTournaments). The
+     touch used to be an upsert naming only tournament_id and
+     source_updated_at, and Postgres refuses that INSERT on a table with
+     required columns before it ever resolves the conflict — for a row that
+     is on file exactly as for one that is not. Twenty-two polls in a row,
+     every run, five days; and the source had answered every time. */
   if (!o.dryRun && seenTournaments.length) {
     const known = state.knownTournaments = state.knownTournaments || {};
     const unknown = seenTournaments.filter(t => !known[t.tournament_id]);
@@ -338,9 +362,7 @@ async function pollOnce(ctx) {
       await db.upsert('tennis', 'tournaments', fresh, 'tournament_id', { returning: false });
       fresh.forEach(t => { known[t.tournament_id] = true; });
     }
-    if (touch.length) {
-      await db.upsert('tennis', 'tournaments', touch.map(t => tournamentTouch(t, nowIso)), 'tournament_id', { returning: false });
-    }
+    await touchTournaments(db, touch.map(t => t.tournament_id), nowIso);
     writes.tournaments += seenTournaments.length;
   }
   /* WRITE WHAT MOVED. A slam day carries hundreds of matches, almost all of
@@ -474,8 +496,18 @@ async function pollOnce(ctx) {
         const prev = state.tournaments[t.tournament_id] || { tournament_id: t.tournament_id, state: t.state };
         const roll = tournamentRollup(prev, all, nowIso);
         state.tournaments[t.tournament_id] = roll;
-        if (!o.dryRun) await db.upsert('tennis', 'tournaments', [roll], 'tournament_id', { returning: false });
-      } catch (e) { state.lastRollupError = String(e && e.message || e); }
+        /* the same UPDATE-not-upsert rule as the touch: the rollup names the
+           counts and the state, never the columns the sync owns */
+        if (!o.dryRun) {
+          const patch = Object.assign({}, roll); delete patch.tournament_id;
+          await db.patch('tennis', 'tournaments', `tournament_id=eq.${encodeURIComponent(t.tournament_id)}`, patch);
+        }
+        state.lastRollupError = null;
+      } catch (e) {
+        const msg = String(e && e.message || e);
+        if (state.lastRollupError !== msg) log(`tournament rollup for ${t.tournament_id} was not written: ${msg.slice(0, 200)}`);
+        state.lastRollupError = msg;
+      }
     }
     state.lastRollupAt = nowMs;
   }
@@ -638,18 +670,44 @@ async function run(o, deps) {
       } catch (e) {
         summary.failures++; summary.consecutive++;
         failSince = failSince || Date.parse(clock());
+        const what = String(e && e.message || e);
+        /* WHICH KIND OF FAILURE. A refusal from the database is a fact about
+           the request and does not change with time; an outage at the source
+           or the network might. They are named apart in the log and in the
+           ledger, and only the second is waited out. */
+        const refusal = D.refused(e);
+        summary.last_error = what.slice(0, 300);
+        summary.last_error_kind = refusal ? 'database_refused' : 'source_or_network';
         const backoff = Math.min(300, LIVE_INTERVAL_S * Math.pow(2, Math.max(0, summary.consecutive - 1)));
-        log(`poll failed (${summary.consecutive} in a row): ${e && e.message || e} — retrying in ${backoff}s`);
-        await ledger.beat({ consecutive_failures: summary.consecutive, message: `source failing: ${String(e && e.message || e).slice(0, 200)}` });
+        if (refusal && summary.consecutive >= REFUSED_GIVE_UP) {
+          summary.status = 'error';
+          summary.message = `the database refused the write ${summary.consecutive} times in a row; not retrying: ${what.slice(0, 300)}`;
+          log(`poll failed (${summary.consecutive} in a row): ${what} — a refused write does not become accepted by waiting; stopping`);
+          await ledger.beat({ consecutive_failures: summary.consecutive, message: `database refused: ${what.slice(0, 200)}` });
+          break;
+        }
+        log(`poll failed (${summary.consecutive} in a row): ${what} — retrying in ${backoff}s`);
+        await ledger.beat({ consecutive_failures: summary.consecutive,
+          message: `${refusal ? 'database refused' : 'source failing'}: ${what.slice(0, 200)}` });
         if (Date.parse(clock()) - failSince > FAIL_GIVE_UP_MS) {
           summary.status = 'error';
-          summary.message = `polling failed for 90 minutes; last failure: ${String(e && e.message || e).slice(0, 300)}`;
+          summary.message = `polling failed for ${Math.round(FAIL_GIVE_UP_MS / 60000)} minutes; last failure: ${what.slice(0, 300)}`;
           break;
         }
         interval = backoff;
       }
       if (o.once) break;
       if (Date.parse(clock()) + interval * 1000 > deadline) {
+        /* A CONTINUATION IS FOR A RUN THAT WAS WORKING. A run that reached
+           its time limit without one successful poll has nothing to continue;
+           dispatching it again only queues the same failure behind itself,
+           and the gate will start a fresh poller in any case if the day is
+           still on court. */
+        if (summary.polls === 0) {
+          summary.status = 'error';
+          summary.message = `time limit reached with no successful poll; last failure: ${summary.last_error || 'none recorded'}`;
+          break;
+        }
         if (!o.dryRun && !o.noDispatch) handedOff = await dispatchContinuation(tour, day);
         summary.status = 'handed_off';
         summary.message = handedOff ? 'time limit reached — continuation dispatched' : 'time limit reached — no continuation dispatched';
@@ -668,7 +726,9 @@ async function run(o, deps) {
   if (done && lastCounts) summary.message = `${lockKey} settled · ${lastCounts.done} complete, ${lastCounts.scheduled} never started`;
   if (!o.dryRun) { try { await db.rpc('tennis', 'release_live_lock', { p_lock_key: lockKey, p_owner: owner }); } catch (_) {} }
   await ledger.finish(summary.status, summary.message, { polls: summary.polls, writes: summary.writes, consecutive_failures: summary.consecutive,
-    details: { owner, tour, day, unmapped_keys: unmappedAll, done, handed_off: handedOff, counts: lastCounts } });
+    details: { owner, tour, day, unmapped_keys: unmappedAll, done, handed_off: handedOff, counts: lastCounts,
+      last_error: summary.last_error || null, last_error_kind: summary.last_error_kind || null,
+      rollup_error: state.lastRollupError || null } });
   if (!o.dryRun) await D.writeMeta(db, { tennis_live_last_run: clock(),
     tennis_live_last_status: (summary.status === 'ok' || summary.status === 'handed_off') ? 'ok' : summary.status,
     tennis_live_last_scope: lockKey });
@@ -693,6 +753,6 @@ async function main() {
 }
 
 module.exports = { parseArgs, fixtureSource, applyFirstPoint, diffStats, setEndsFromSnapshots, setRowsFromEnds, setRowsFromProvider,
-  tournamentRollup, statsFromSummary, pollOnce, loadState, ownedTours, run, hashOf, matchHash, gamesInSet, SET_FIELDS, SNAP_FIELDS, MATCH_MUTABLE,
-  LOCK_TTL_S, LIVE_INTERVAL_S, IDLE_INTERVAL_S, MARKET_EVERY_S, TERMINAL };
+  tournamentRollup, tournamentTouch, touchTournaments, statsFromSummary, pollOnce, loadState, ownedTours, run, hashOf, matchHash, gamesInSet,
+  SET_FIELDS, SNAP_FIELDS, MATCH_MUTABLE, LOCK_TTL_S, LIVE_INTERVAL_S, IDLE_INTERVAL_S, MARKET_EVERY_S, FAIL_GIVE_UP_MS, REFUSED_GIVE_UP, TERMINAL };
 if (require.main === module) main();

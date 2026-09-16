@@ -46,6 +46,20 @@
        PARTIAL   something was read and it names people at a weaker tier
        LIMITED   sources were asked and none carried a usable report
        NONE      nothing could be asked                                     */
+  /* THE VOCABULARY, IN ONE PLACE. Every consumer that decides what a grade
+     MEANS — the offline assembly deciding whether a read reaches the engine,
+     the browser, the tests — reads it from here rather than carrying its own
+     copy. The copies drifted once: the assembly's test knew STRONG and
+     PARTIAL as the graded reads, OFFICIAL was added here, and the first
+     ingested conference filing failed the weekly build's suite on four teams
+     the layer had actually read best. A grade is GRADED when a source was
+     read and what it says can be handed to the engine as a report, empty or
+     not; LIMITED and NONE are not reports and are never handed on. */
+  var GRADES = ['OFFICIAL', 'STRONG', 'PARTIAL', 'LIMITED', 'NONE'];
+  var GRADED = { OFFICIAL: true, STRONG: true, PARTIAL: true };
+  function normGrade(q) { return String(q == null ? 'NONE' : q).toUpperCase(); }
+  function isGraded(q) { return GRADED[normGrade(q)] === true; }
+
   function gradeOf(t) {
     if (t.official_report && t.official_report.ok) return 'OFFICIAL';
     var n = (t.players || []).length;
@@ -185,5 +199,5 @@
         + 'report_of_no_absences.' };
   }
 
-  return { build: build, gradeOf: gradeOf, normKey: nk };
+  return { build: build, gradeOf: gradeOf, normKey: nk, GRADES: GRADES, GRADED: GRADED, isGraded: isGraded, normGrade: normGrade };
 });

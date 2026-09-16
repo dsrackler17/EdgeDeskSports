@@ -58,6 +58,30 @@ begin
     on conflict (key) do update set value = excluded.value;
   perform pg_temp.ok('service role can write tennis.meta', (select value from tennis.meta where key = 'tennis_sync_last_status') = 'ok');
 
+  -- ── 0. a partial upsert is refused BEFORE the conflict is resolved ────────
+  -- The poller wrote existing tournaments as an upsert naming only the key and
+  -- source_updated_at, and production refused every one with 23502 from
+  -- 2026-09-11 to 09-16: Postgres checks the proposed row against NOT NULL
+  -- before ON CONFLICT is consulted, so the row being on file changes nothing.
+  -- An UPDATE names only what it changes. Both facts are pinned here so the
+  -- fake the unit suite drives (tools/lib/fake_pgrest.js) and the real database
+  -- agree on them.
+  failed := false;
+  begin
+    insert into tennis.tournaments(tournament_id, source_updated_at) values ('espn:7000001', now())
+      on conflict (tournament_id) do update set source_updated_at = excluded.source_updated_at;
+  exception when not_null_violation then failed := true; end;
+  perform pg_temp.ok('a key-and-timestamp upsert of a tournament ON FILE is refused with 23502, as the poller''s touch was', failed);
+  update tennis.tournaments set source_updated_at = now() where tournament_id = 'espn:7000001';
+  perform pg_temp.ok('an UPDATE of the same columns on the same row is accepted',
+    (select source_updated_at is not null from tennis.tournaments where tournament_id = 'espn:7000001'));
+  update tennis.tournaments set state = 'live', matches_total = 2, matches_completed = 0, matches_live = 1, source_updated_at = now()
+   where tournament_id = 'espn:7000001';
+  perform pg_temp.ok('and so is the rollup, written the same way',
+    (select state = 'live' and matches_total = 2 from tennis.tournaments where tournament_id = 'espn:7000001'));
+  update tennis.tournaments set state = 'scheduled', matches_total = null, matches_completed = null, matches_live = null
+   where tournament_id = 'espn:7000001';
+
   -- ── 1. clients read, clients never write ────────────────────────────────
   perform pg_temp.as_anon();
   select count(*) into n from tennis.tournaments;
