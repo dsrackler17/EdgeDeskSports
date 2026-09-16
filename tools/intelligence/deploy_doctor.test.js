@@ -85,6 +85,12 @@ const OK_BOARD = signals(40, 144);
       await board(signals(40, 0.33)), 'STALE');
     eq('the 39-hour board production served is STALE',
       await board(signals(2345, 60)), 'STALE');
+    chk('and a STALE verdict names the sport, the market and the kickoff of the row it judged',
+      await (async () => {
+        net([...base, signals(99, 0.02)]);
+        const d = detailOf(await D.doctor(OPTS), 'the board is being captured');
+        return /americanfootball_ncaaf/.test(d) && /spreads/.test(d) && /kicks off 20\d\d-/.test(d);
+      })());
     eq('a board with no upcoming game on it at all is EMPTY',
       await board(['/rest/v1/signals', { status: 200, body: '[]' }]), 'EMPTY');
 
