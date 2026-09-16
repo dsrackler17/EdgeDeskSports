@@ -27,7 +27,7 @@ begin
   select decrypted_secret into v_secret
   from vault.decrypted_secrets where name = 'capture_cron_secret';
   if nullif(v_secret, '') is null then
-    raise exception 'capture_poke: Vault capture_cron_secret is missing';
+    raise exception 'capture_poke: Vault capture_cron_secret is missing -- nothing was sent. Set it in Vault before this schedule can call capture.';
   end if;
   select net.http_post(
     url := 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/capture?tier=' || p_tier,
