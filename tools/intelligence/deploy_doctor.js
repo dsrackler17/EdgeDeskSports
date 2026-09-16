@@ -198,7 +198,12 @@ async function doctor(opts) {
       add('the board is being captured',
         ageMin <= limit ? 'CURRENT' : 'STALE',
         `the newest capture on an upcoming game is ${age} old, against a ${limit}-minute limit `
-        + `for a game starting in ${hrsToKick < 24 ? hrsToKick.toFixed(1) + ' hours' : (hrsToKick / 24).toFixed(1) + ' days'}`,
+        + `for a game starting in ${hrsToKick < 24 ? hrsToKick.toFixed(1) + ' hours' : (hrsToKick / 24).toFixed(1) + ' days'}`
+        /* which game: a STALE verdict at 01:39 UTC on a Wednesday read as a
+           football board nobody was capturing, and was a tennis match — the
+           board's sports are not all football, and the sport is the first
+           thing the operator needs to know */
+        + ` (${r.sport_key || 'unknown sport'}, ${r.market || 'market unknown'}, kicks off ${r.commence_time || 'at an unknown time'})`,
         ageMin <= limit ? null
           : 'Nothing is calling capture on cadence. Read the next check first — it says whether capture is '
             + 'refusing its callers or simply not being called. Then apply supabase/capture_cron.sql and check '

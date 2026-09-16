@@ -146,15 +146,17 @@ jobs:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
         run: node games/publish_board.js
 
+      # THE PUSH RACES THE OTHER JOBS THAT COMMIT TO MAIN -- the editorial job
+      # alone commits every ten minutes -- and a plain `git push` lost that
+      # race five times in two days after every suite had passed. The shared
+      # helper rebuilds this job's artifact on the remote tip and pushes
+      # again; it never rebases, never force-pushes, and treats an identical
+      # board already on main as success.
       - name: Commit
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add games/data/challenges.json
-          if git diff --cached --quiet; then
-            echo 'board unchanged — no commit'
-            exit 0
-          fi
           N=$(node -p "require('./games/data/challenges.json').challenges.length")
-          git commit -m "games: challenge board (${N} matchups)"
-          git push
+          # to the branch this run checked out, as the plain push did: main
+          # when scheduled, the dispatched branch when dispatched
+          bash tools/ci/push_generated.sh "${GITHUB_REF_NAME}" "games: challenge board (${N} matchups)" -- games/data/challenges.json

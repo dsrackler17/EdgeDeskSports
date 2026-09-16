@@ -544,11 +544,23 @@ chk('the poll clock is deliberately not part of the hash', P.MATCH_MUTABLE.index
     dayMs: Date.parse('2026-08-24T12:00:00Z'), lockKey: 'atp:2026-08-24', links: [],
     state: await P.loadState(sdb, 'atp', '2026-08-24') };
   const first = await P.pollOnce(sctx);
+  /* THE TOURNAMENT ROW ON AN EMPTY TABLE. The table was empty here -- the
+     pre-poll sync had not filed this event -- and the poller wrote only
+     (tournament_id, source_updated_at), which inserts nulls into columns
+     the schema declares not null. Production refused it 22 polls running. */
+  const trows = sdb.rows('tennis', 'tournaments');
+  chk('a tournament the table does not hold yet is written whole, not as a touch of nulls',
+    trows.length === 1 && trows[0].provider_tournament_id && trows[0].tour && trows[0].name && trows[0].state,
+    JSON.stringify(trows));
   eq('the ATP poller takes the men’s and the mixed rows', first.counts.written, 2);
   eq('and leaves the women’s row to the WTA poller', first.counts.other_tour, 1);
   eq('so only the rows it owns are on file', sdb.count('tennis', 'live_matches'), 2);
   stick += 20000;
+  /* the sync owns the descriptive columns: a later poll touches, never rewrites */
+  sdb.rows('tennis', 'tournaments'); sdb.tables['tennis.tournaments'][0].name = 'Set By The Sync';
   const second = await P.pollOnce(sctx);
+  eq('a tournament already on file is touched, and its sync-owned columns are left alone',
+    sdb.rows('tennis', 'tournaments')[0].name, 'Set By The Sync');
   eq('a second poll of an unchanged draw writes nothing', second.counts.written, 0);
   eq('and adds no rows', sdb.count('tennis', 'live_matches'), 2);
   const wctx = Object.assign({}, sctx, { tour: 'wta', lockKey: 'wta:2026-08-24', state: await P.loadState(sdb, 'wta', '2026-08-24') });
