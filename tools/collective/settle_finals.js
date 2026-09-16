@@ -987,6 +987,22 @@ function countingRows(rows) {
 
 const enc = v => encodeURIComponent(String(v));
 
+/* Where a final score is written, by shape rather than by one remembered
+   name: on games itself when it carries the columns, else the first of
+   these relations that is keyed by game_id and carries both scores.
+   game_detail also carries them, and is a view over whichever of these
+   exists; it is never written. */
+const SCORE_TABLES = ['game_results', 'results'];
+function scoreTableOf(schema) {
+  schema = schema || {};
+  const has = (t, c) => (schema[t] || []).indexOf(c) >= 0;
+  if (has('games', 'home_score') && has('games', 'away_score')) return 'games';
+  for (const t of SCORE_TABLES) {
+    if (has(t, 'game_id') && has(t, 'home_score') && has(t, 'away_score')) return t;
+  }
+  return null;
+}
+
 /* One game, settled and graded in the database. Returns what it did and
    what it could not do; throws only when the score itself could not be
    written, because a game with no score has nothing to grade. */
@@ -1012,12 +1028,25 @@ async function settleDirect(db, schema, game, final, close) {
      season stood unsettled in the database with 58 agreed finals in hand:
      status never became final, the server's settled count stayed at 0, and
      the whole record lived in the committed JSON file alone. */
-  const rcols = schema.game_results || [];
-  const onGames = gcols.indexOf('home_score') >= 0 && gcols.indexOf('away_score') >= 0;
-  const onResults = !onGames && rcols.indexOf('home_score') >= 0 && rcols.indexOf('away_score') >= 0;
+  /* AND WHAT THAT TABLE IS CALLED. The deployed database names it
+     `results` (game_id, home_score, away_score, closing_spread,
+     closing_total, closing_home_ml_prob, source, settled_at); the fixture
+     this suite grew up on names it `game_results`. This path knew one name,
+     so on the real database every finished game threw "game_results carries
+     none either (saw: nothing)", 120 times an hour, exit 2, while the
+     committed record went on being written as if nothing were wrong. The
+     table is found by shape under either name, and a refusal now says which
+     relations DO carry both scores so the next rename is diagnosable. */
+  const table = scoreTableOf(schema);
+  const rcols = table && table !== 'games' ? (schema[table] || []) : [];
+  const onGames = table === 'games';
+  const onResults = !!table && !onGames;
   if (!onGames && !onResults) {
-    throw new Error(`collective.games carries no home_score/away_score column (saw: ${gcols.join(', ') || 'nothing'})` +
-      ` and collective.game_results carries none either (saw: ${rcols.join(', ') || 'nothing'})`);
+    const holders = Object.keys(schema).filter(t => (schema[t] || []).indexOf('home_score') >= 0 &&
+      (schema[t] || []).indexOf('away_score') >= 0);
+    throw new Error(`no table this run knows holds a final score: collective.games carries no home_score/away_score column ` +
+      `(saw: ${gcols.join(', ') || 'nothing'}) and none of ${SCORE_TABLES.join(', ')} exists with game_id, home_score and away_score` +
+      ` (relations carrying both scores: ${holders.join(', ') || 'none'})`);
   }
   /* a close the row already holds is never blanked by a run that found none */
   const had = game.result || {};
@@ -1038,11 +1067,11 @@ async function settleDirect(db, schema, game, final, close) {
        one and this run found none) stays exactly as it was. */
     const row = { game_id: game.game_id };
     ['home_score', 'away_score', 'closing_spread', 'closing_total', 'closing_home_ml_prob'].forEach(c => {
-      if (rcols.indexOf(c) >= 0) row[c] = want[c]; else gaps.push('game_results.' + c);
+      if (rcols.indexOf(c) >= 0) row[c] = want[c]; else gaps.push(table + '.' + c);
     });
     keepHeldClose(row);
-    const rows = await db.upsert('game_results', [row], 'game_id');
-    if (!rows.length) throw new Error(`collective.game_results took no row for ${game.game_id}`);
+    const rows = await db.upsert(table, [row], 'game_id');
+    if (!rows.length) throw new Error(`collective.${table} took no row for ${game.game_id}`);
     patch = Object.assign({}, row);
     delete patch.game_id;
     /* The games row still carries the status the board, the settle sweep
@@ -1681,7 +1710,7 @@ module.exports = {
   normNfl, normCfb, normEspn, espnUrl, compactDate, parseArgs,
   feedTeamKeys, truncationIsAmbiguous,
   directConfig, columnsFrom, dbClient, gameFromDetail, seasonsFrom, gradeProjection,
-  countingRows, settleDirect,
+  countingRows, settleDirect, scoreTableOf, SCORE_TABLES,
   recordPath, loadRecord, recordEntry, mergeRecord, writeRecord, RECORD_SCHEMA,
   FEED, ODDS_LEAGUE,
 };
