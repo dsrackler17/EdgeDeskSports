@@ -13,6 +13,11 @@
                                   the model-validation gate, the ledger.
        hosts: edgedesk_ai/index.ts, app.html
 
+     _research.js      EDRESEARCH — the typed tool layer, the normalised
+                                  research packet, the label rules, the answer
+                                  contract and the critic.
+       hosts: edgedesk_ai/index.ts
+
      fbs.js  EDFBSKEY + EDFBSRESOLVE — the team resolver and its alias table,
                                   the ONLY thing that can join a book's
                                   "North Texas Mean Green" to a schedule's
@@ -63,6 +68,16 @@ const LIBS = [
     src: path.join(FN, '_intelligence.js'),
     start: '/*__EDINTEL_START__*/', end: '/*__EDINTEL_END__*/',
     hosts: [path.join(FN, 'index.ts'), path.join(ROOT, 'app.html')],
+  },
+  /* The typed tool layer, the normalised research packet, the label rules,
+     the answer contract and the critic. Server-side only for now: the
+     browser renders the structured answer the function returns rather than
+     rebuilding it. */
+  {
+    name: 'EDRESEARCH',
+    src: path.join(FN, '_research.js'),
+    start: '/*__EDRESEARCH_START__*/', end: '/*__EDRESEARCH_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
   },
 ];
 
