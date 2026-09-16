@@ -1,41 +1,89 @@
 {
  "schema": "edgedesk_fbs_epa_index_v1",
  "version": 1,
- "generated_at": "2026-09-15T18:52:15.612Z",
+ "generated_at": "2026-09-16T18:22:13.982Z",
  "season": 2026,
  "source": {
   "repository": "https://github.com/sportsdataverse/cfbfastR-cfb-data",
   "corpus": {
    "path": "football/data/cache/fbs_epa/corpus",
-   "present": true,
-   "rows": {
-    "games": 11262,
-    "passer_games": 32450,
-    "team_games": 20755
-   }
+   "present": false,
+   "rows": null
   },
-  "refreshed": null,
-  "commit": "46b4eb8d0e80ab522cb681918755efd4cb061ad2",
-  "corpus_retrieved_at": "2026-09-15T17:42:48.861745+00:00",
-  "files": 52
+  "manifest": null,
+  "refreshed": {
+   "at": "2026-09-16T18:22:13.982Z",
+   "commit": "main",
+   "season": 2026
+  }
  },
  "refresh": {
-  "attempted": false,
-  "ok": false,
-  "why": "not requested",
-  "files": []
+  "attempted": true,
+  "ok": true,
+  "why": null,
+  "files": [
+   {
+    "file": "adv_passing_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_passing/parquet/adv_passing_2026.parquet",
+    "ok": true,
+    "bytes": 63839,
+    "sha256": "0241f0cf9c5cf448cf7aad52c4352cf59ec5cd3334d10fd64dac75d3cfd72d88",
+    "why": null,
+    "retrieved_at": "2026-09-16T18:22:13.982Z"
+   },
+   {
+    "file": "adv_team_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_team/parquet/adv_team_2026.parquet",
+    "ok": true,
+    "bytes": 96388,
+    "sha256": "21ffa08ab0b919b3517d8d35fbfe5b23392485b5760fc991044f3cf1265c4fca",
+    "why": null,
+    "retrieved_at": "2026-09-16T18:22:13.982Z"
+   },
+   {
+    "file": "cfb_schedules_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_schedules/parquet/cfb_schedules_2026.parquet",
+    "ok": true,
+    "bytes": 86237,
+    "sha256": "41298abe469e130f31984a42a3c6d663fabc03321783640a5b69dec24d51386b",
+    "why": null,
+    "retrieved_at": "2026-09-16T18:22:13.982Z"
+   },
+   {
+    "file": "cfb_rosters_2026.parquet",
+    "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_rosters/parquet/cfb_rosters_2026.parquet",
+    "ok": true,
+    "bytes": 100197,
+    "sha256": "ee60d376a2550ce89a01ac256883992d71ccbb4ce06c8c6bf3c803da1dd5e8b1",
+    "why": null,
+    "retrieved_at": "2026-09-16T18:22:13.982Z"
+   }
+  ],
+  "built": {
+   "games": 888,
+   "passer_games": 535,
+   "team_games": 357,
+   "quarantined": 0,
+   "issues": {
+    "epa_denominator_consistent": 531,
+    "identity_unique_season_team_name": 397,
+    "team_or_unnamed_passing_rows_excluded": 4,
+    "identity_unmatched": 138,
+    "epa_denominator_unverified": 4
+   }
+  }
  },
  "freshness": {
-  "generated_at": "2026-09-15T18:52:15.612Z",
+  "generated_at": "2026-09-16T18:22:13.982Z",
   "observations_through": "2026-09-13T03:59:00.000Z",
   "last_completed_game": "2026-09-13T03:59:00.000Z",
-  "observation_age_hours": 62.888,
+  "observation_age_hours": 86.387,
   "completed_games_without_passing_data": 7,
   "coverage": "PARTIAL",
   "coverage_why": "7 completed games have no advanced passing row yet. The provider publishes that table on its own cadence, so those games are NOT in any quarterback’s history here — partial coverage, not an absence of football.",
-  "source_commit": "46b4eb8d0e80ab522cb681918755efd4cb061ad2",
-  "source_retrieved_at": "2026-09-15T17:42:48.861745+00:00",
-  "source_age_hours": 1.157,
+  "source_commit": null,
+  "source_retrieved_at": "2026-09-16T18:22:13.982Z",
+  "source_age_hours": 0,
   "state": "FRESH",
   "why": null
  },
@@ -45,137 +93,39 @@
   "completed_by_cutoff": 185,
   "completed_games_with_passing_data": 178,
   "passer_rows": 532,
-  "passer_rows_with_athlete_id": 474,
+  "passer_rows_with_athlete_id": 397,
   "identity": {
    "repaired": 3,
    "ambiguous": 0,
-   "unresolved": 58,
+   "unresolved": 135,
    "by_method": {
     "initial_surname": 3
    },
-   "resolved_at_assembly": 474,
+   "resolved_at_assembly": 397,
    "same_athlete_rows_merged": {
-    "groups": 16,
-    "rows_merged": 16,
+    "groups": 3,
+    "rows_merged": 3,
     "by_season": {
-     "2021": 1,
-     "2025": 12,
      "2026": 3
     }
    },
    "unresolved_reasons": {
-    "no athlete of that name is on this team’s roster for this season": 1,
-    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 57
+    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 134,
+    "no athlete of that name is on this team’s roster for this season": 1
    }
   },
-  "players_in_artifact": 460,
-  "players_with_frozen_career": 366,
-  "players_with_current_season_games": 322,
+  "players_in_artifact": 387,
+  "players_with_frozen_career": 330,
+  "players_with_current_season_games": 250,
   "teams_in_artifact": 238,
   "fbs_teams": 138,
   "by_season": {
-   "2014": {
-    "games": 868,
-    "completed": 868,
-    "fbs_teams": 128,
-    "passer_rows": 2608,
-    "passer_rows_with_athlete_id": 2596,
-    "epa_reconciled_rows": 2602
-   },
-   "2015": {
-    "games": 870,
-    "completed": 870,
-    "fbs_teams": 128,
-    "passer_rows": 2782,
-    "passer_rows_with_athlete_id": 2744,
-    "epa_reconciled_rows": 2776
-   },
-   "2016": {
-    "games": 873,
-    "completed": 873,
-    "fbs_teams": 128,
-    "passer_rows": 2689,
-    "passer_rows_with_athlete_id": 2670,
-    "epa_reconciled_rows": 2684
-   },
-   "2017": {
-    "games": 874,
-    "completed": 874,
-    "fbs_teams": 130,
-    "passer_rows": 2700,
-    "passer_rows_with_athlete_id": 2671,
-    "epa_reconciled_rows": 2696
-   },
-   "2018": {
-    "games": 884,
-    "completed": 884,
-    "fbs_teams": 130,
-    "passer_rows": 2821,
-    "passer_rows_with_athlete_id": 2779,
-    "epa_reconciled_rows": 2814
-   },
-   "2019": {
-    "games": 888,
-    "completed": 888,
-    "fbs_teams": 130,
-    "passer_rows": 2843,
-    "passer_rows_with_athlete_id": 2812,
-    "epa_reconciled_rows": 2840
-   },
-   "2020": {
-    "games": 570,
-    "completed": 570,
-    "fbs_teams": 128,
-    "passer_rows": 1765,
-    "passer_rows_with_athlete_id": 1755,
-    "epa_reconciled_rows": 1764
-   },
-   "2021": {
-    "games": 887,
-    "completed": 887,
-    "fbs_teams": 130,
-    "passer_rows": 2620,
-    "passer_rows_with_athlete_id": 2611,
-    "epa_reconciled_rows": 2619
-   },
-   "2022": {
-    "games": 896,
-    "completed": 896,
-    "fbs_teams": 131,
-    "passer_rows": 2596,
-    "passer_rows_with_athlete_id": 2590,
-    "epa_reconciled_rows": 2592
-   },
-   "2023": {
-    "games": 910,
-    "completed": 910,
-    "fbs_teams": 133,
-    "passer_rows": 2783,
-    "passer_rows_with_athlete_id": 2782,
-    "epa_reconciled_rows": 2783
-   },
-   "2024": {
-    "games": 920,
-    "completed": 919,
-    "fbs_teams": 134,
-    "passer_rows": 2727,
-    "passer_rows_with_athlete_id": 2725,
-    "epa_reconciled_rows": 2723
-   },
-   "2025": {
-    "games": 934,
-    "completed": 934,
-    "fbs_teams": 136,
-    "passer_rows": 2968,
-    "passer_rows_with_athlete_id": 2959,
-    "epa_reconciled_rows": 2953
-   },
    "2026": {
     "games": 888,
     "completed": 185,
     "fbs_teams": 138,
     "passer_rows": 532,
-    "passer_rows_with_athlete_id": 474,
+    "passer_rows_with_athlete_id": 397,
     "epa_reconciled_rows": 528
    }
   },
@@ -294,9 +244,9 @@
   "career_spine": "football/fbs_epa/career_through_2025.json"
  },
  "career_history": {
-  "source": "the 2014-onwards corpus",
+  "source": "football/fbs_epa/career_through_2025.json (frozen spine — the corpus for earlier seasons was not present on this run)",
   "frozen_through_season": 2025,
-  "spine_rewritten_this_run": true
+  "spine_rewritten_this_run": false
  },
  "note": "source coverage, information coverage and PRICED coverage are three different numbers. This file reports the first two. Nothing here changes the third: every measurement it describes is research, and football/fbs_epa/epa_contract.js says why in detail."
 }

@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-16T16:30:34.361Z",
+ "generated_at": "2026-09-16T18:22:49.709Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,26 +119,26 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 124,
+  "total": 126,
   "by_group": {
-   "p4": 80,
-   "other": 68,
+   "p4": 81,
+   "other": 70,
    "independent": 4
   },
   "by_matchup": {
    "conference": 43,
-   "fbs_fcs": 21,
-   "non_conference": 60
+   "fbs_fcs": 22,
+   "non_conference": 61
   },
   "by_conference": {
    "acc": 20,
    "big12": 21,
    "bigten": 26,
    "cusa": 13,
-   "sunbelt": 22,
-   "sec": 18,
+   "sunbelt": 23,
+   "sec": 19,
    "american": 19,
-   "mac": 20,
+   "mac": 21,
    "pac12": 11,
    "mwc": 10,
    "independents": 4
@@ -152,11 +152,11 @@
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 124
+  "PREDICTED": 126
  },
  "weather": {
-  "requested": 121,
-  "answered": 121,
+  "requested": 123,
+  "answered": 123,
   "dome": 1,
   "no_venue": 0,
   "failed": 0,
@@ -164,10 +164,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "121 of 121 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "123 of 123 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 124
+  "NO_MARKET": 126
  },
  "checks": [
   {
@@ -204,8 +204,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 44,
-    "total": 124,
+    "non_power_games": 45,
+    "total": 126,
     "example": [
      "Coastal Carolina @ Delaware",
      "North Texas @ Texas State",
@@ -232,7 +232,7 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 21,
+    "fbs_fcs_games": 22,
     "graded": []
    }
   },
@@ -256,8 +256,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 124,
-    "audit_total": 124
+    "slate": 126,
+    "audit_total": 126
    }
   },
   {
