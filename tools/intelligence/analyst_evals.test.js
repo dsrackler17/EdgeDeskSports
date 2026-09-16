@@ -48,7 +48,7 @@ const path = require('path');
 const ROOT = ${JSON.stringify(ROOT)};
 const FX = require(path.join(ROOT, 'tools/intelligence/fixtures.js'));
 const NOW = Number(process.env.EVAL_NOW);
-const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_ANALYST: process.env.MODE_ANALYST, EDGEDESK_INVESTIGATE: process.env.MODE_ANALYST };
+const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_ANALYST: process.env.MODE_ANALYST, EDGEDESK_INVESTIGATE: process.env.MODE_ANALYST, EDGEDESK_PRICING: process.env.MODE_ANALYST };
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 let route = () => [], modelText = 'ok', calls = 0;
 globalThis.fetch = async function (url, init) {
@@ -101,6 +101,8 @@ globalThis.fetch = async function (url, init) {
       sensitivity: an && an.sensitivity && an.sensitivity.at_market ? { status: an.sensitivity.probability_status, sum: (an.sensitivity.at_market.cover || 0) + (an.sensitivity.at_market.push || 0) + (an.sensitivity.at_market.lose || 0), requires: an.sensitivity.requires ? an.sensitivity.requires.break_even_cover_probability : null, price: p.market.primary ? p.market.primary.odds_american : null } : null,
       probability_claimed_as_betting: !!(an && an.sensitivity && an.sensitivity.probability_status === 'VALIDATED'),
       conversation_state: !!j.conversation_state,
+      /* Slice 4: the price */
+      pricing: (function () { const P = j.pricing || null; if (!P || !P.fair || !P.fair.spread) return null; const q = P.quoted_side || P.best; return { fair_status: P.fair.spread.status, tier: P.fair.spread.tier, fair_home_line: P.fair.spread.fair_home_line, market_home_line: P.fair.spread.market_home_line, sides: P.sides.length, quoted_status: q ? q.status : null, bet_to: q && q.bet_to_line != null ? q.bet_to_line : null, sizing: P.sizing ? P.sizing.fraction : null, slate_rows: j.slate_pricing ? j.slate_pricing.top.length : 0, plays: j.slate_pricing ? j.slate_pricing.plays : 0 }; })(),
     };
     /* follow-ups, carried on the state the first turn returned */
     const rc = (j.research && j.research.research_context) || j.research_context || null;
@@ -120,6 +122,10 @@ globalThis.fetch = async function (url, init) {
       GOOD + '\\nEdgeDesk searched the latest reports and confirmed every starter is healthy.',
       GOOD + '\\nThe pass rush wins because they blitz on 41.7% of dropbacks against a line allowing 2.31 seconds to throw.',
       GOOD + '\\nThis is a lock at the number.',
+      /* Slice 4: a bet, an EV and a stake the pricing block did not produce */
+      GOOD + '\\nWorth a bet down to -17 on the favourite.',
+      GOOD + '\\nThis is a +EV spot with a 4% edge.',
+      GOOD + '\\nPut 2% of your bankroll on it.',
     ];
     let leaked = 0;
     for (const b of bads) { const r = await ask(q.question, { board: q.board, dry: false, answer: b }); if (!(r.critic && r.critic.verdict === 'FAIL')) leaked++; }
@@ -156,6 +162,10 @@ const rows = [
   row('weather on file', (q) => q.weather_on_file ? 'yes' : 'no'),
   row('injury report live', (q) => q.injury_report_live ? 'yes' : 'no'),
   row('line sensitivity', (q) => q.sensitivity ? q.sensitivity.status : 'none'),
+  row('fair line (status, tier)', (q) => q.pricing ? q.pricing.fair_home_line + ' (' + q.pricing.fair_status + ', ' + q.pricing.tier + ')' : 'none'),
+  row('quoted side status / bet-to', (q) => q.pricing ? (q.pricing.quoted_status || '—') + ' / ' + (q.pricing.bet_to == null ? '—' : q.pricing.bet_to) : 'none'),
+  row('sides priced / sizing', (q) => q.pricing ? q.pricing.sides + ' / ' + (q.pricing.sizing == null ? 'none' : q.pricing.sizing) : 'none'),
+  row('board rows priced (plays)', (q) => q.pricing ? q.pricing.slate_rows + ' (' + q.pricing.plays + ')' : 'none'),
   row('follow-ups resolved', (q) => q.follow_up_accuracy.resolved_to_layer + '/' + q.follow_up_accuracy.of + ' (stayed on game ' + q.follow_up_accuracy.stayed_on_game + '/' + q.follow_up_accuracy.of + ')'),
   row('bad answers let through', (q) => q.unsupported_claim_rate.leaked + '/' + q.unsupported_claim_rate.of),
   row('prompt chars', (q) => q.prompt_chars),

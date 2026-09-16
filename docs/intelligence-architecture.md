@@ -324,16 +324,125 @@ scorecard (supported claims, evidence sources, questions investigated,
 interactions measured, follow-ups resolved, bad answers let through, prompt
 size, latency, provider cost).
 
-## 11. Next slices
+## 11. Slice 4 — the pricer (shipped)
 
-**Slice 4 — market intelligence.** Per-book board from `book_quotes`,
-movement series from `signal_ticks`, opener point capture, movement
-classification with honest unknown states, CLV against the correct close.
-Still open from Slice 3: NFL venue geography (so the live forecast can run
-for NFL games), travel distance and time zone, coordinator turnover, a
-per-quarterback EPA feed for the NFL, an NFL opponent-adjusted expected
-margin for the form read, and the web-search provider verified against a
-live key.
+The desk now quotes a price before it looks at a book, and says exactly
+what that price is worth. Every piece is built on the closing-line archive
+and a time-separated validation; nothing prices itself.
+
+**The closing-line archive** (`tools/football/build_lines_archive.js` →
+`football/pricing/lines_nfl.json`): every NFL game since 1999 with the
+consensus close (spread, total, moneyline from 2006), the result, roof,
+temperature, wind, rest, division flag and starting quarterbacks, with the
+sign convention written into the file (`close.home_line = -spread_line`).
+The CFB archive is `sportsdataverse/cfbfastR-data` `cfb_line_odds.csv.gz`,
+read by the Power 4 walk-forward; its backtest is copied, not re-run.
+
+**The pricing validation** (`tools/football/validate_pricing.js` →
+`football/validation/pricing_<sport>.json`): the shipped NFL engine
+replayed cold from 2006 in kickoff order (seeds discarded; a game projected
+before it is absorbed), scored on 2016-2025 against the close. Per market:
+model vs close MAE; a blend `margin ~ a + b·close + c·(model − close)`
+fitted on 2016..S−1 and scored on S for S = 2019..2025; ATS by
+disagreement threshold with a one-sided binomial p; cover-probability
+calibration; the required edge. Tiers:
+
+| tier | rule |
+|---|---|
+| VALIDATED | 53.5%+ (a point above break-even), p < 0.01, n ≥ 500, most seasons, holds on 2019-2025 |
+| LEAN | 52.38%+ (break-even at −110), p < 0.05, n ≥ 300, most seasons: not a losing side, not a profit |
+| PROBABILITY | no threshold cleared; the cover probabilities are calibrated (Brier beats 0.25 by 0.002) |
+| RESEARCH | none of the above |
+
+Results at build time: NFL spread LEAN at 1.5+ points (52.75% over 1,892
+picks, p 0.009, 7 of 10 seasons; blend held-out MAE 9.81 vs close 9.81, c =
+0.23); NFL total and moneyline RESEARCH; CFB spread, total and moneyline
+RESEARCH (no threshold clears break-even; the biggest disagreements are the
+worst), with the open-to-close movement table (53.5-56% moved toward the
+model by gap) carried as a LEAN, not a record.
+
+**The feature intake** (same script → `football/validation/feature-status-nfl.json`):
+rest difference, division game, dome, cold, wind and an unknown starter,
+each fitted as a term on the blend on seasons before the held-out season
+and scored on it with a paired test, under the CFB walk-forward's rules
+(two held-out seasons, 0.02 points of MAE, p < 0.05, no season degraded by
+more than 0.15). All ten arms are REJECTED and the file says why. A
+validated arm would be a reviewed change to the engine, never applied here.
+OL availability cannot be evaluated this way yet: no historical injury
+archive is on file for either league.
+
+**The pricing kernel** (`supabase/functions/edgedesk_ai/_pricing.js`,
+`EDPRICE`, inlined into the function):
+
+1. **Fair line.** The validated blend of projection and market; with no
+   market the projection alone (MODEL_ONLY); with no validated blend the
+   market is the fair price and the projection a stated disagreement
+   (MARKET_ANCHORED).
+2. **Cover probability** at any line from the blend's held-out residual
+   sigma, with a one-point push mass on whole numbers; break-even from the
+   quoted price with pushes refunded.
+3. **Bet-to.** The selection line where the fair cover meets break-even,
+   rounded to the half point, and the price at which the market line is
+   break-even.
+4. **Status per side**, governed by the tier: PLAY (VALIDATED, disagreement
+   at or past the required edge, price at or better than bet-to),
+   LEAN_PLAY (the same under LEAN: break-even history, not a profit), PASS
+   (below the threshold, the projection favours the other side, or the
+   price is short), PROBABILITY (calibrated only), CONDITIONAL (RESEARCH:
+   arithmetic, never a recommendation), NO_MARKET.
+5. **The ranked board.** Every side by edge (cover minus break-even, in
+   percentage points) times data completeness, PLAY above PASS, published in
+   `football/nfl/slate.json` (`pricing`) and recomputed per turn with a
+   captured price.
+6. **Sizing** only for a VALIDATED tier: quarter Kelly capped at 2%.
+   Otherwise null with the reason.
+7. **Critic extras**: a bet, an EV, a profit or a stake the block did not
+   produce fails the answer; a LEAN called an edge without the word LEAN is
+   a warning.
+
+The handler (build r15) loads the validation record as a budget-free
+artifact, prices the packet after the analyst layer, ranks the NFL slate
+for the turn, adds the pricing block to the prompt and its numbers to the
+critic's allowed set, exposes `get_price_ranges` and `get_ranked_slate`,
+and snapshots `pricing_summary` (the quoted side, line, price, book,
+observation time, status, bet-to, fair and market lines) into the packet
+for closing-line grading. `EDGEDESK_PRICING=0` restores the r14 answer.
+
+**The scorecard.** `research_packet_pricing` (view) reads the quoted price
+through from the packet beside the grades; `tools/intelligence/clv.js`
+grades the quoted line against the archive close in points from the
+selection's side (quoted − close: home −4.5 that closed −6 is +1.5) and the
+result, grouped by sport, tier and status with a 50-packet floor; the
+postmortem carries `clv_points` on every classified row. None of it claims
+a profit.
+
+**The Desk.** The price is the first panel of the analyst lead: the
+headline, each spread side's required vs fair probability, bet-to, the
+break-even price at the market line and a status chip (LEAN never renders
+as PLAY), the total and moneyline lines, sizing and the tier basis; the
+priced board is expandable below.
+
+**Data.** NFL starters and depth-chart backups carry this season's EPA per
+dropback and CPOE from the player-week feed (`tools/football/fetch_nfl_feeds.js`
+caches games, team-week and player-week). NFL venue geography is still
+absent: the venue register covers 5 of 38 stadiums used since 2025 and the
+sourced lookups this build could reach were blocked, so the live NFL
+forecast stays BLOCKED rather than guessed. The CFB availability feed
+returns zero records because ESPN's depth and participation endpoints
+answer 403/404 to the sync; that is an access failure at the source, not a
+parser fault.
+
+## 12. Next slices
+
+**Market intelligence.** Per-book board from `book_quotes`, movement series
+from `signal_ticks`, opener point capture for the NFL (the archive carries
+only the close), movement classification with honest unknown states, and
+the closing-line scorecard run on a schedule. Still open: NFL venue
+geography from a sourced table, travel distance and time zone, coordinator
+turnover, a historical injury archive so OL availability can enter the
+feature intake, an NFL opponent-adjusted expected margin for the form read,
+an alternative CFB availability source, and the web-search provider
+verified against a live key.
 
 **Slice 5 — the learning loop, scheduled.** Grade `research_packets` on a
 schedule, run the postmortem over the grades view, publish drift and

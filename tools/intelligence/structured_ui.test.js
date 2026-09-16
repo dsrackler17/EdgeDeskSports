@@ -194,6 +194,33 @@ has('a missing forecast says so with an UNKNOWN badge', nf, 'no weather forecast
 chk('no ratings disclosure is drawn when nothing is on file', nf.indexOf('Ratings, coaching and play profile') < 0);
 chk('football evidence is not drawn for a packet without those layers', ctx.structuredPanelsHTML({ structured: S }).indexOf('dk-state') < 0 && ctx.structuredPanelsHTML({ structured: S }).indexOf('Projected starting quarterbacks') < 0);
 
+/* ---- Slice 4: the price ---------------------------------------------------- */
+has('the pricing renderer exists', src, 'function pricingHTML');
+has('the price is the first panel of the analyst lead', src, 'return pricingHTML(S)+(A?factorsHTML(A)');
+has('the ranked board is expandable', src, 'function slatePricingHTML');
+has('the CSS for the status chips exists', APP, '.dk-st.lean{');
+const PX = { headline: 'Fair line Buffalo Bills -5.6 against a market of -4.5 (validated blend). Buffalo Bills -4.5 at -110 is on the right side of the number, to -5 — LEAN tier: break-even history, not an edge.',
+  fair: { spread: { fair_home_line: -5.63, model_home_line: -9, market_home_line: -4.5, gap_points: 4.5, status: 'BLENDED', sigma: 12.8, tier: 'LEAN', required_edge_points: 1.5, tier_basis: 'FIXTURE: cleared break-even, not a profit' }, total: { fair_total: 44.6, market_total: 44 }, moneyline: { fair_home_win_prob: 0.61, fair_home_ml: -156 } },
+  sides: [{ market: 'spread', side: 'home', selection: 'Buffalo Bills', market_line: -4.5, odds_american: -110, odds_assumed: false, break_even: 0.5238, cover_at_market: 0.5427, edge_pp: 1.89, bet_to_line: -5, price_at_market_line: -119, status: 'LEAN_PLAY', why: 'LEAN tier: the graded record cleared break-even, not a profit.' },
+    { market: 'spread', side: 'away', selection: 'Detroit Lions', market_line: 4.5, odds_american: -110, odds_assumed: true, break_even: 0.5238, cover_at_market: 0.4573, edge_pp: -6.65, bet_to_line: 6.5, status: 'PASS', why: 'the projection favours the other side' },
+    { market: 'total', side: 'over', cover_at_market: 0.52, status: 'CONDITIONAL' }, { market: 'moneyline', side: 'home', selection: 'Buffalo Bills', status: 'CONDITIONAL' }],
+  quoted_side: { status: 'LEAN_PLAY', why: 'LEAN tier: the graded record cleared break-even, not a profit.' }, sizing: { fraction: null, reason: 'sizing is produced only for a VALIDATED tier; this market is LEAN' }, validation_error: null };
+const px = ctx.structuredPanelsHTML({ structured: Object.assign({}, CFB, { pricing: PX, slate_pricing: { games: 14, plays: 3, tier: 'LEAN', note: 'FIXTURE note', top: [{ selection: 'Detroit Lions', market_line: -7, fair_line: -9.29, gap_points: 6.77, cover_at_market: 0.57, bet_to_line: -9, status: 'LEAN_PLAY' }, { home: 'A', away: 'B', status: 'NO_NUMBER' }] } }) });
+has('the headline is rendered first in the price panel', px, '<div class="hl">Fair line Buffalo Bills -5.6 against a market of -4.5');
+has('the tier is a chip', px, 'The price <span class="dk-kind">LEAN</span>');
+has('each spread side shows what the price requires and what the fair line gives', px, '<td class="n">52.4%</td><td class="n">54.3% (+1.89 pp)</td>');
+has('the bet-to line and the break-even price at the market line are shown', px, '<td class="n">-5 · -4.5 at -119</td>');
+has('LEAN_PLAY renders as the word LEAN, never PLAY', px, '<span class="dk-st lean">LEAN</span>');
+chk('a LEAN never renders the play chip', px.indexOf('dk-st play') < 0);
+has('an assumed price is starred and explained', px, '-110*</td>');
+has('and the star is explained', px, '* price assumed at -110');
+has('sizing states its absence and the reason', px, 'Sizing: none — sizing is produced only for a VALIDATED tier');
+has('the tier basis is quoted', px, 'Tier basis: FIXTURE: cleared break-even, not a profit');
+has('the ranked board is rendered with its counts', px, 'The board, priced (14 games, 3 on the right side of the number, tier LEAN)');
+has('a board row with no number names the game', px, '(A v B)');
+chk('the price panel precedes the decisive factors', px.indexOf('class="dk-px"') < px.indexOf('dk-fac') || px.indexOf('dk-fac') < 0);
+chk('no price panel is drawn without pricing', ctx.structuredPanelsHTML({ structured: CFB }).indexOf('dk-px') < 0);
+
 /* ---- Slice 3: the analyst layer ------------------------------------------- */
 has('the analyst lead renderer exists', src, 'function analystLeadHTML');
 has('and is rendered before the movement block', src, 'h+=analystLeadHTML(S);');

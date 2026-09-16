@@ -21495,6 +21495,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .dk-lad td:first-child{color:var(--desk-fg);font-family:'JetBrains Mono',monospace}
 .dk-lad tr.at td{color:var(--citron);font-weight:700}
 .dk-inv{margin:6px 0 0;padding:0;list-style:none;font-size:11.5px;color:var(--desk-fg)}
+.dk-px{border:1px solid var(--ink-line);border-radius:9px;padding:8px 10px;margin-top:8px;background:var(--ink-2)}
+.dk-px .hl{font-size:13px;color:var(--desk-fg);font-weight:600}
+.dk-px table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.dk-px th{font-weight:600;color:var(--desk-dim);text-align:left;padding:2px 4px;border-bottom:1px solid var(--ink-line)}
+.dk-px td{padding:3px 4px;border-bottom:1px solid var(--ink-line);vertical-align:top}
+.dk-px td.n{font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.dk-st{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.06em;padding:1px 5px;border-radius:5px;border:1px solid var(--ink-line);color:var(--desk-dim)}
+.dk-st.play{border-color:rgba(46,160,67,.6);color:#2ea043}
+.dk-st.lean{border-color:rgba(217,154,43,.6);color:#d99a2b}
+.dk-st.cond{border-color:var(--ink-line);color:var(--desk-dim)}
+.dk-px .why{font-size:11px;color:var(--desk-dim);margin-top:4px}
 .dk-inv li{padding:3px 0;border-top:1px solid var(--ink-line);overflow-wrap:anywhere}
 .dk-inv li:first-child{border-top:0}
 .dk-inv .q{font-weight:600}
@@ -34621,8 +34632,40 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(!d.ok) return '<details class="dk-more"><summary>What changed since last time</summary><div style="font-size:11px;color:var(--desk-dim)">'+esc(d.error||'no previous snapshot')+'</div></details>';
     return '<details class="dk-more" open><summary>What changed since '+esc(obsAt(d.from&&d.from.built_at))+'</summary>'+(d.changes.length?'<ul class="dk-list">'+d.changes.map(function(c){return '<li><b>'+esc(c.field)+'</b>'+(c.added||c.removed?(c.added&&c.added.length?' added '+esc(c.added.join(', ')):'')+(c.removed&&c.removed.length?' removed '+esc(c.removed.join(', ')):''):': '+esc(JSON.stringify(c.from))+' → '+esc(JSON.stringify(c.to)))+'</li>';}).join('')+'</ul>':'<div style="font-size:11px;color:var(--desk-dim)">'+esc(d.note||'nothing measured changed')+'</div>')+'</details>';
   }
-  function analystLeadHTML(S){ var A=S&&S.analysis; if(!A) return ''; return factorsHTML(A)+counterHTML(A)+changesHTML(A)+sensitivityHTML(A); }
-  function analystMoreHTML(S){ var A=S&&S.analysis; if(!A) return ''; return investigationHTML(A)+scenariosHTML(A)+formHTML(A)+identityHTML(A)+diffHTML(A); }
+  /* Slice 4: THE PRICE. The fair line against the market, then every side
+     with what the price requires, what the fair line gives, the bet-to number
+     and the STATUS — the only word that may read as a recommendation. */
+  function stClass(st){ return st==='PLAY'?'play':st==='LEAN_PLAY'?'lean':'cond'; }
+  function stWord(st){ return st==='LEAN_PLAY'?'LEAN':String(st||'').replace(/_/g,' '); }
+  function pricingHTML(S){
+    var P=S&&S.pricing; if(!P||!P.fair||!P.fair.spread) return '';
+    var F=P.fair.spread, h='<div class="dk-px"><div class="h" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--desk-dim)">The price <span class="dk-kind">'+esc(F.tier||'RESEARCH')+'</span></div>';
+    h+='<div class="hl">'+esc(P.headline||'')+'</div>';
+    h+='<div class="why">Fair '+esc(fmtPts(F.fair_home_line))+' = '+esc(F.status==='BLENDED'?'validated blend':F.status==='MARKET_ANCHORED'?'the market, projection stated as a disagreement':F.status==='MODEL_ONLY'?'the projection alone (no market on file)':'the market')+(F.gap_points!=null?' · projection '+esc(fmtPts(F.model_home_line))+' vs market '+esc(fmtPts(F.market_home_line))+' (gap '+esc(F.gap_points)+' pts'+(F.required_edge_points!=null?', graded threshold '+esc(F.required_edge_points):'')+')':'')+' · sigma '+esc(F.sigma)+'</div>';
+    var sides=(P.sides||[]).filter(function(x){return x.market==='spread';});
+    if(sides.length){
+      h+='<table><tr><th>side</th><th>line · price</th><th>requires</th><th>fair gives</th><th>bet to</th><th>status</th></tr>';
+      sides.forEach(function(x){ h+='<tr><td>'+esc(x.selection||x.side)+'</td><td class="n">'+esc(fmtPts(x.market_line))+' '+esc(x.odds_american>0?'+'+x.odds_american:x.odds_american)+(x.odds_assumed?'*':'')+'</td><td class="n">'+(x.break_even!=null?esc(Math.round(x.break_even*1000)/10)+'%':'—')+'</td><td class="n">'+(x.cover_at_market!=null?esc(Math.round(x.cover_at_market*1000)/10)+'%'+(x.edge_pp!=null?' ('+esc(fmtPts(x.edge_pp))+' pp)':''):'—')+'</td><td class="n">'+esc(fmtPts(x.bet_to_line))+(x.price_at_market_line!=null?' · '+esc(fmtPts(x.market_line))+' at '+esc(x.price_at_market_line>0?'+'+x.price_at_market_line:x.price_at_market_line):'')+'</td><td><span class="dk-st '+stClass(x.status)+'">'+esc(stWord(x.status))+'</span></td></tr>'; });
+      h+='</table>';
+      if(sides.some(function(x){return x.odds_assumed;})) h+='<div class="why">* price assumed at -110: no captured price for that side.</div>';
+    }
+    var tot=(P.sides||[]).filter(function(x){return x.market==='total';}), ml=(P.sides||[]).filter(function(x){return x.market==='moneyline';});
+    if(tot.length&&P.fair.total) h+='<div class="why">Total: fair '+esc(P.fair.total.fair_total)+(P.fair.total.market_total!=null?' vs market '+esc(P.fair.total.market_total):'')+' — '+tot.map(function(x){return esc(x.side)+' '+(x.cover_at_market!=null?esc(Math.round(x.cover_at_market*1000)/10)+'%':'—')+' <span class="dk-st '+stClass(x.status)+'">'+esc(stWord(x.status))+'</span>';}).join(' · ')+'</div>';
+    if(ml.length&&P.fair.moneyline) h+='<div class="why">Moneyline: fair '+esc(Math.round(P.fair.moneyline.fair_home_win_prob*1000)/10)+'% home ('+esc(fmtPts(P.fair.moneyline.fair_home_ml))+') — '+ml.map(function(x){return esc(x.selection||x.side)+' <span class="dk-st '+stClass(x.status)+'">'+esc(stWord(x.status))+'</span>';}).join(' · ')+'</div>';
+    var q=P.quoted_side||P.best; if(q&&q.why) h+='<div class="why">'+esc(q.why)+'</div>';
+    h+='<div class="why">Sizing: '+esc(P.sizing&&P.sizing.fraction!=null?(P.sizing.fraction*100)+'% of bankroll — '+P.sizing.basis:'none — '+(P.sizing?P.sizing.reason:'no side'))+'</div>';
+    if(F.tier_basis) h+='<div class="why">Tier basis: '+esc(F.tier_basis)+'</div>';
+    if(P.validation_error) h+='<div class="why">Validation record: '+esc(P.validation_error)+' <span class="dk-fresh unknown">UNKNOWN</span></div>';
+    return h+'</div>';
+  }
+  function slatePricingHTML(S){
+    var R2=S&&S.slate_pricing; if(!R2||!R2.top||!R2.top.length) return '';
+    return '<details class="dk-more"><summary>The board, priced ('+R2.games+' games, '+R2.plays+' on the right side of the number, tier '+esc(R2.tier||'RESEARCH')+')</summary><div class="dk-px"><table><tr><th>side</th><th>market</th><th>fair</th><th>gap</th><th>fair gives</th><th>bet to</th><th>status</th></tr>'
+      +R2.top.map(function(r){ return '<tr><td>'+esc(r.selection||r.side||'')+(r.status==='NO_NUMBER'?' ('+esc(r.home)+' v '+esc(r.away)+')':'')+'</td><td class="n">'+esc(fmtPts(r.market_line))+'</td><td class="n">'+esc(fmtPts(r.fair_line))+'</td><td class="n">'+(r.gap_points!=null?esc(r.gap_points):'—')+'</td><td class="n">'+(r.cover_at_market!=null?esc(Math.round(r.cover_at_market*1000)/10)+'%':'—')+'</td><td class="n">'+esc(fmtPts(r.bet_to_line))+'</td><td><span class="dk-st '+stClass(r.status)+'">'+esc(stWord(r.status))+'</span></td></tr>'; }).join('')
+      +'</table><div class="why">'+esc(R2.note||'')+' Reference market at an assumed -110; a captured price re-prices the side.</div></div></details>';
+  }
+  function analystLeadHTML(S){ var A=S&&S.analysis; return pricingHTML(S)+(A?factorsHTML(A)+counterHTML(A)+changesHTML(A)+sensitivityHTML(A):''); }
+  function analystMoreHTML(S){ var A=S&&S.analysis; return slatePricingHTML(S)+(A?investigationHTML(A)+scenariosHTML(A)+formHTML(A)+identityHTML(A)+diffHTML(A):''); }
   function structuredPanelsHTML(d){
     var S=d&&d.structured; if(!S) return '';
     var mm=S.model_vs_market||{}, pd=S.price_discipline||{}, cf=S.confidence||{}, h='';

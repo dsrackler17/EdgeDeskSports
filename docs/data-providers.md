@@ -69,6 +69,17 @@ claim a check only for a question in it.
 |---|---|---|---|
 | `football/identity/teams/<key>.json` | rankings, profiles, starters and the depth chart, coaching, talent, the NFL report, the team-week feed, venue geography | rating 7 d (each block keeps its own `as_of`) | `Dal.getIdentity()` (two small budget-free reads per game) |
 
+## The pricer's artifacts (Slice 4)
+
+| artifact | from | freshness category | read by |
+|---|---|---|---|
+| `football/pricing/lines_nfl.json` | nflverse/nfldata games.csv (consensus close, results, context) via `tools/football/build_lines_archive.js`; sign convention in the file | weekly | the pricing validation, the CLV scorecard |
+| `football/validation/pricing_nfl.json` | the shipped NFL engine replayed cold 2006-2025 against the archive by `tools/football/validate_pricing.js` | weekly | `EDPRICE` (tiers, blend, sigma, required edge), the NFL slate's priced board |
+| `football/validation/pricing_cfb.json` | the Power 4 backtest report (`football/cfb_p4/research/report/`), copied | with the research run | `EDPRICE` |
+| `football/validation/feature-status-nfl.json` | the held-out feature intake in the same script | weekly | reviewers; nothing reads it into a price |
+| `football/nfl/slate.json` → `pricing` | the kernel over the slate's reference market at an assumed −110 | with the slate | the Desk's board panel, `get_ranked_slate` |
+| `football/nfl/.cache/stats_player_week_<season>.csv` | nflverse player-week (cached by `tools/football/fetch_nfl_feeds.js`, gitignored) | weekly | the identity build (per-quarterback EPA) |
+
 ## Provider interfaces and fallbacks
 
 - `EXTERNAL_ADAPTERS` in `index.ts` declares every credentialed adapter with

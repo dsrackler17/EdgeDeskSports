@@ -63,6 +63,9 @@ function classify(row, opts) {
   if (!outcome || outcome === 'UNGRADED' || finalMargin == null) { out.why = 'no final margin on file'; return out; }
   const resid = modelHome != null ? finalMargin - (-modelHome) : null; /* home margin minus projected home margin */
   out.residual = r2(resid);
+  /* Slice 4: closing-line value in points from the graded side, when the packet quoted a line and a close is on file */
+  const quoted = num(row.quoted_line != null ? row.quoted_line : row.handicap);
+  out.clv_points = quoted != null && closeHome != null && (out.side === 'home' || out.side === 'away') ? r2(quoted - (out.side === 'home' ? closeHome : -closeHome)) : null;
   const win = /WIN|W$/.test(outcome), push = /PUSH/.test(outcome);
   if (win || push) { out.class = win ? 'HIT' : 'PUSH'; out.why = win ? 'the graded side covered' : 'the number pushed'; return out; }
   /* a miss: which kind? */

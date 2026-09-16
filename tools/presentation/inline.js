@@ -89,6 +89,15 @@ const LIBS = [
     start: '/*__EDANALYST_START__*/', end: '/*__EDANALYST_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The pricing layer: the fair line from the validated blend, cover
+     probability at any number, bet-to lines, per-side status, the ranked
+     slate and the sizing rule. Server-side only. */
+  {
+    name: 'EDPRICE',
+    src: path.join(FN, '_pricing.js'),
+    start: '/*__EDPRICE_START__*/', end: '/*__EDPRICE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
 ];
 
 function block(src, START, END) {

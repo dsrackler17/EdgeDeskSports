@@ -136,6 +136,15 @@ try {
   chk('and labels are never merged', rows === '2', rows);
   chk('a small sample is flagged as insufficient', psql("select bool_and(not sufficient_sample) from public.research_packet_calibration") === 't');
 
+  /* Slice 4: the quoted price rides in the packet and the pricing view reads it through */
+  psql(`insert into public.research_packets (packet_id, packet_hash, built_at, sport, game_id, kickoff, model_version, market, fair_probability, sig_key, label, decision, packet)
+        values ('g3:px','px','${BUILT}','americanfootball_nfl','2026_03_DET_BUF','${KICK}','edgedesk_football_v1.0.0','spreads',0.52,'sig-3','PRICE DEPENDENT','WATCH',
+          '{"pricing_summary":{"headline":"Fair line Buffalo Bills -5.6 against a market of -4.5 (validated blend).","fair_home_line":-5.63,"market_home_line":-4.5,"model_home_line":-9,"tier":"LEAN","fair_total":44.6,"market_total":44,"quoted":{"selection":"Buffalo Bills","side":"home","market_line":-4.5,"odds_american":-110,"book":"DraftKings","observed_at":"${BUILT}","status":"LEAN_PLAY","edge_pp":1.89,"bet_to_line":-5},"best":{"status":"LEAN_PLAY"},"sizing":null}}'::jsonb)`);
+  const px = psql("select quoted_selection||'|'||quoted_side||'|'||quoted_line||'|'||quoted_odds_american||'|'||quoted_book||'|'||quoted_status||'|'||quoted_bet_to_line||'|'||fair_home_line||'|'||pricing_tier||'|'||coalesce(sizing_fraction::text,'none')||'|'||grade_state from public.research_packet_pricing where packet_id='g3:px'");
+  chk('the pricing view reads the quoted side, its line, price, book, status, bet-to, the fair line and the tier', px === 'Buffalo Bills|home|-4.5|-110|DraftKings|LEAN_PLAY|-5|-5.63|LEAN|none|SIGNAL_NOT_FOUND', px);
+  chk('a packet without a pricing summary reads null price fields, not an error', psql("select count(*) filter (where quoted_line is null) from public.research_packet_pricing where packet_id in ('g1:abc','g2:def')") === '2');
+  chk('the checklist names the pricing view', psql("select count(*) from (select 1) x") === '1' && /pricing view/.test(SQL));
+
   /* RLS: another user cannot read this one's rows */
   const other_uid = path.join(HOME, 'uid2.sql');
   fs.writeFileSync(other_uid, "create or replace function auth.uid() returns uuid language sql stable as $fn$ select '00000000-0000-0000-0000-000000000002'::uuid $fn$;");
