@@ -53,6 +53,7 @@ const path = require('path');
 
 const HERE = __dirname;
 const ROOT = path.join(HERE, '..', '..');
+const AV_OVERLAY = require(path.join(ROOT, 'football', 'availability', 'overlay.js'));
 
 /* THE STATES A CONTRACT ROW MAY TAKE. Two were added with the availability
    policy and both are deliberately NOT excused from the denominator:
@@ -465,8 +466,10 @@ function injuriesFor(ctx, teamName) {
      So the same gate the terminal applies is applied here. It makes the
      published completeness number smaller and makes it true, and it makes the
      offline artifact agree with the screen instead of contradicting it. */
-  const q = String(t.dataQuality || t.data_quality || 'NONE').toUpperCase();
-  if (q === 'NONE' || q === 'LIMITED') return null;
+  /* The grade vocabulary is the overlay's, not a copy: OFFICIAL, STRONG and
+     PARTIAL are reads that reached a report; LIMITED and NONE are not. */
+  const q = AV_OVERLAY.normGrade(t.dataQuality || t.data_quality);
+  if (!AV_OVERLAY.isGraded(q)) return null;
   const out = [];
   (t.players || []).forEach(p => {
     const st = AVAIL_TO_ENGINE[String(p.status || '').toUpperCase()];

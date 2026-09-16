@@ -80,11 +80,36 @@ function matches(row, f) {
 }
 
 /* opts.lockArg   — the RPC's lock-identity argument ('p_event_id', 'p_lock_key')
-   opts.serialTables — tables whose rows get a synthetic id on insert */
+   opts.serialTables — tables whose rows get a synthetic id on insert
+   opts.notNull   — { rel: [column, ...] }: the columns the real schema declares
+                    NOT NULL with no default. A write that omits one, or sends
+                    null, is refused with Postgres's 23502 — EVEN WHEN THE ROW
+                    ALREADY EXISTS. That is what Postgres does: an upsert is an
+                    INSERT whose proposed tuple is checked against NOT NULL
+                    before ON CONFLICT is ever consulted, so a "touch" that
+                    names only the key and a timestamp fails on a table with
+                    any required column. The tennis poller did exactly that on
+                    tennis.tournaments and this fake let it pass for five days
+                    of red runs. */
 function fakePgrest(seed, opts) {
   opts = opts || {};
   const lockArg = opts.lockArg || 'p_lock_key';
   const serial = new Set(opts.serialTables || []);
+  const notNull = opts.notNull || {};
+  function refuse(what, schema, rel, code, message) {
+    const e = new Error(`${what} ${schema}.${rel} -> 400: ${JSON.stringify({ code, message })}`);
+    e.status = 400; e.postgrest = true; e.code = code;
+    return e;
+  }
+  function checkNotNull(what, schema, rel, rows) {
+    const cols = notNull[rel] || [];
+    rows.forEach(r => {
+      cols.forEach(c => {
+        if (r[c] == null) throw refuse(what, schema, rel, '23502',
+          `null value in column "${c}" of relation "${rel}" violates not-null constraint`);
+      });
+    });
+  }
   const tables = {};
   const stats = { requests: 0, failures: 0, writes: 0, lastLatencyMs: 1 };
   const locks = {};
@@ -124,13 +149,10 @@ function fakePgrest(seed, opts) {
       groups.forEach(g => {
         const sig = Object.keys(g[0]).sort().join(',');
         g.forEach(r => {
-          if (Object.keys(r).sort().join(',') !== sig) {
-            const e = new Error(`UPSERT ${schema}.${rel} -> 400: {"code":"PGRST102","message":"All object keys must match"}`);
-            e.status = 400;
-            throw e;
-          }
+          if (Object.keys(r).sort().join(',') !== sig) throw refuse('UPSERT', schema, rel, 'PGRST102', 'All object keys must match');
         });
       });
+      checkNotNull('UPSERT', schema, rel, rows);
       const keys = String(onConflict || '').split(',').map(s => s.trim()).filter(Boolean);
       const t = tbl(schema, rel), out = [];
       rows.forEach(r => {
@@ -152,6 +174,11 @@ function fakePgrest(seed, opts) {
     async insert(schema, rel, rows) { return api.upsert(schema, rel, rows, null, {}); },
     async patch(schema, rel, q, patch) {
       stats.requests++; stats.writes++;
+      /* an UPDATE checks NOT NULL only on the columns it names */
+      (notNull[rel] || []).forEach(c => {
+        if (Object.prototype.hasOwnProperty.call(patch, c) && patch[c] == null)
+          throw refuse('PATCH', schema, rel, '23502', `null value in column "${c}" of relation "${rel}" violates not-null constraint`);
+      });
       const p = parseQuery(q), out = [];
       tbl(schema, rel).forEach(r => { if (p.filters.every(f => matches(r, f))) { Object.assign(r, patch); r.updated_at = nowFn(); out.push(Object.assign({}, r)); } });
       return out;

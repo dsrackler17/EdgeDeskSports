@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-09-16T01:39:46.233Z",
+ "generated_at": "2026-09-16T12:00:40.648Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,29 +119,29 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 80,
+  "total": 122,
   "by_group": {
-   "p4": 50,
-   "other": 49,
-   "independent": 2
+   "p4": 78,
+   "other": 68,
+   "independent": 4
   },
   "by_matchup": {
-   "conference": 17,
-   "fbs_fcs": 19,
-   "non_conference": 44
+   "conference": 42,
+   "fbs_fcs": 20,
+   "non_conference": 60
   },
   "by_conference": {
-   "acc": 12,
-   "big12": 14,
-   "bigten": 18,
-   "cusa": 10,
-   "sunbelt": 15,
-   "sec": 11,
-   "american": 14,
-   "mac": 13,
-   "pac12": 8,
-   "mwc": 7,
-   "independents": 2
+   "acc": 19,
+   "big12": 21,
+   "bigten": 26,
+   "cusa": 13,
+   "sunbelt": 22,
+   "sec": 17,
+   "american": 19,
+   "mac": 20,
+   "pac12": 11,
+   "mwc": 10,
+   "independents": 4
   }
  },
  "ok": true,
@@ -152,22 +152,22 @@
   "trained_through": 2025
  },
  "projection_status": {
-  "PREDICTED": 80
+  "PREDICTED": 122
  },
  "weather": {
-  "requested": 78,
-  "answered": 78,
-  "dome": 0,
+  "requested": 119,
+  "answered": 119,
+  "dome": 1,
   "no_venue": 0,
   "failed": 0,
   "carried": 0,
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "78 of 78 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "119 of 119 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 80
+  "NO_MARKET": 122
  },
  "checks": [
   {
@@ -204,8 +204,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 30,
-    "total": 80,
+    "non_power_games": 44,
+    "total": 122,
     "example": [
      "Coastal Carolina @ Delaware",
      "North Texas @ Texas State",
@@ -224,7 +224,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 17,
+    "conference_games": 42,
     "wrong": 0
    }
   },
@@ -232,7 +232,7 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 19,
+    "fbs_fcs_games": 20,
     "graded": []
    }
   },
@@ -256,8 +256,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 80,
-    "audit_total": 80
+    "slate": 122,
+    "audit_total": 122
    }
   },
   {

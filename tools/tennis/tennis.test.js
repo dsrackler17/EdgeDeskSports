@@ -586,6 +586,88 @@ chk('the poll clock is deliberately not part of the hash', P.MATCH_MUTABLE.index
   const stoodDown = await P.run(popt, { db: ldb, source: psrc, now: clock, sleep: async () => {}, owner: 'me' });
   eq('a second poller stands down rather than racing', stoodDown.status, 'cancelled');
 
+  /* ---- a refused write is not waited out ---------------------------------
+     Production, 2026-09-11 to 09-16: every poll of every run was answered
+     UPSERT tennis.tournaments -> 400 23502, retried twenty-two times over
+     ninety minutes, and reported as "source failed" with 0 polls. Two things
+     are pinned here. First, the fake now refuses what Postgres refuses: a
+     partial upsert of a row that IS on file, because NOT NULL is checked on
+     the proposed tuple before the conflict is resolved. Second, the poller
+     writes an existing tournament as an UPDATE, and when the database does
+     refuse a write it stops after three, names the refusal, and leaves no
+     lock behind. */
+  {
+    const seeded = fakeDb({ 'tennis.tournaments': [{ tournament_id: 'espn:887-2026', provider: 'espn', provider_tournament_id: '887-2026',
+      tour: 'WTA', name: 'Ljubljana', state: 'live' }] });
+    let refusedTouch = null;
+    try { await seeded.upsert('tennis', 'tournaments', [P.tournamentTouch({ tournament_id: 'espn:887-2026' }, clock())], 'tournament_id', { returning: false }); }
+    catch (e) { refusedTouch = e; }
+    chk('the fake refuses a two-column upsert of a tournament that is on file, as Postgres does (23502 before ON CONFLICT)',
+      refusedTouch && refusedTouch.code === '23502' && D.refused(refusedTouch), refusedTouch && refusedTouch.message);
+    await P.touchTournaments(seeded, ['espn:887-2026'], '2026-09-16T09:27:46.925Z');
+    const touched = seeded.rows('tennis', 'tournaments')[0];
+    eq('the poller touches a tournament on file as an UPDATE that moves only source_updated_at',
+      [touched.source_updated_at, touched.name, touched.provider_tournament_id], ['2026-09-16T09:27:46.925Z', 'Ljubljana', '887-2026']);
+    const rolled = await P.pollOnce({ db: seeded, src: { async day() { return { tournaments: [], latency: 1, via: 'fixture' }; } },
+      o: { dryRun: false }, now: clock, tour: 'wta', day: '2026-09-16', dayMs: Date.parse('2026-09-16T12:00:00Z'),
+      lockKey: 'wta:2026-09-16', links: [], state: await P.loadState(seeded, 'wta', '2026-09-16') });
+    eq('an empty scoreboard is a legitimate empty day, not a failure', [rolled.counts.live, rolled.counts.done, rolled.counts.scheduled], [0, 0, 0]);
+
+    /* the database refusing every tournament write, as it did in production */
+    const rdb2 = fakeDb({});
+    let rtick = Date.parse('2026-09-16T09:27:45Z');
+    const rclock = () => new Date(rtick).toISOString();
+    rdb2.setNow(rclock);
+    const refusing = Object.assign(Object.create(null), rdb2, {
+      async upsert(schema, rel, rows, oc, o) {
+        if (rel === 'tournaments') {
+          const e = new Error('UPSERT tennis.tournaments -> 400: {"code":"23502","message":"null value in column \"provider_tournament_id\" of relation \"tournaments\" violates not-null constraint"}');
+          e.status = 400; e.postgrest = true; e.code = '23502'; throw e;
+        }
+        return rdb2.upsert(schema, rel, rows, oc, o);
+      }
+    });
+    const wsrc = { async day(tour) { return { tournaments: E.parseScoreboard(slamDoc(tour), tour), latency: 4, via: 'fixture' }; } };
+    const slept = [];
+    const refusedRun = await P.run({ tour: 'wta', day: '2026-09-16', noDispatch: false },
+      { db: refusing, source: wsrc, now: rclock, sleep: async ms => { slept.push(ms); rtick += ms; }, owner: 'refused-run' });
+    eq('a refused write ends the run after three polls, not ninety minutes', [refusedRun.status, refusedRun.failures, refusedRun.polls], ['error', P.REFUSED_GIVE_UP, 0]);
+    chk('and the run says the database refused the write, naming the constraint',
+      /database refused the write 3 times/.test(refusedRun.message) && /23502/.test(refusedRun.message), refusedRun.message);
+    chk('having waited under two minutes in total', slept.reduce((a, b) => a + b, 0) <= 120000, slept);
+    eq('the failure is classified in the summary', refusedRun.last_error_kind, 'database_refused');
+    eq('no continuation is dispatched for a run that never polled', refusedRun.handedOff, false);
+    eq('the lock is released on the way out', Object.keys(rdb2.locks).length, 0);
+    const rmeta = {}; rdb2.rows('tennis', 'meta').forEach(m => { rmeta[m.key] = m.value; });
+    eq('and the meta ledger records the error, not ok', rmeta.tennis_live_last_status, 'error');
+    const rrun = rdb2.rows('tennis', 'pipeline_runs').find(r => r.job === 'tennis_live');
+    chk('the run ledger carries the refusal for the health read', rrun && rrun.status === 'error' && rrun.details
+      && rrun.details.last_error_kind === 'database_refused' && /23502/.test(rrun.details.last_error), rrun && rrun.details);
+
+    /* a source outage IS waited out: ninety minutes of backoff, then a named give-up */
+    const odb = fakeDb({});
+    let otick = Date.parse('2026-09-16T09:27:45Z');
+    const oclock = () => new Date(otick).toISOString();
+    odb.setNow(oclock);
+    const outage = { async day(tour) { const e = new Error(`${tour} day request failed: day -> 503; plain -> 503`); throw e; } };
+    const outageRun = await P.run({ tour: 'wta', day: '2026-09-16', noDispatch: true },
+      { db: odb, source: outage, now: oclock, sleep: async ms => { otick += ms; }, owner: 'outage-run' });
+    chk('a source outage keeps the run alive with backoff and gives up only at the ninety-minute window',
+      outageRun.status === 'error' && outageRun.failures > P.REFUSED_GIVE_UP && /polling failed for 90 minutes/.test(outageRun.message)
+        && otick - Date.parse('2026-09-16T09:27:45Z') >= P.FAIL_GIVE_UP_MS, [outageRun.failures, outageRun.message, otick]);
+    eq('and is classified as the source, not the database', outageRun.last_error_kind, 'source_or_network');
+
+    /* a run that reaches its time limit with nothing polled does not hand itself off */
+    const ddb = fakeDb({});
+    let dtick = Date.parse('2026-09-16T09:27:45Z');
+    const dclock = () => new Date(dtick).toISOString();
+    ddb.setNow(dclock);
+    const limited = await P.run({ tour: 'wta', day: '2026-09-16', maxMinutes: 2, noDispatch: false },
+      { db: ddb, source: outage, now: dclock, sleep: async ms => { dtick += ms; }, owner: 'limited-run' });
+    chk('a run at its time limit with no successful poll ends as an error and dispatches no continuation',
+      limited.status === 'error' && limited.handedOff === false && /no successful poll/.test(limited.message), limited);
+  }
+
   /* ---- the baseline builder over what the poller watched ---------------- */
   const finals = [{ match_id: 'm1', is_doubles: false, home_player_id: 'p1', away_player_id: 'p2', best_of: 3, status: 'final',
     winner_side: 'home', set_scores: [{ home: 6, away: 4 }, { home: 6, away: 3 }] }];
