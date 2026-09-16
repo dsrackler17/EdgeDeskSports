@@ -1,0 +1,71 @@
+{
+ "schema": "edgedesk_scorecard_v1",
+ "generated_at": "2026-09-16T16:18:19.196Z",
+ "inputs": {
+  "rows": 0,
+  "rows_status": "NO_DATABASE_ACCESS",
+  "rows_detail": "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set; pass --rows <file> for an export",
+  "nfl_archive": {
+   "games": 7324,
+   "with_opener": 32
+  },
+  "cfb_archive": {
+   "games": 11502,
+   "with_open": 8557
+  }
+ },
+ "clv": {
+  "groups": {},
+  "sample_floor": 50,
+  "note": "Closing-line value measures whether the number the desk quoted was better than the number the market closed at. It is the honest scorecard for a pricer. A win-loss record at this sample size is variance, and neither figure is a claim of profit."
+ },
+ "postmortem": {
+  "counts": {
+   "rows": 0,
+   "graded": 0,
+   "hits": 0,
+   "pushes": 0,
+   "misses": 0,
+   "ungraded": 0
+  },
+  "by_class": {},
+  "candidates": [],
+  "note": "Data failures, analytical errors, model errors and variance are separated because each calls for a different fix. One loss is not proof of bad reasoning; one win is not proof of skill. Nothing here changes a model, a threshold or a prompt, and nothing generated here becomes a verified fact."
+ },
+ "tiers": {
+  "pricing": {
+   "nfl": {
+    "spread": "LEAN",
+    "total": "RESEARCH",
+    "moneyline": "RESEARCH",
+    "generated_at": "2026-09-16T15:56:21.561Z"
+   },
+   "cfb": {
+    "spread": "RESEARCH",
+    "total": "RESEARCH",
+    "moneyline": "RESEARCH",
+    "generated_at": "2026-09-16T15:37:24.106Z"
+   }
+  },
+  "movement": {
+   "nfl": {
+    "tier": "RESEARCH",
+    "basis": "NOT_ESTABLISHED: 0 closed games in the ledger; 300 are the floor for a reading"
+   },
+   "cfb": {
+    "tier": "LEAN",
+    "required_gap_points": 2,
+    "basis": "the number moved toward a disagreeing rating more often than not at 2+ points (0.5299, n 4369, p 0): a tendency, not a record"
+   }
+  },
+  "features": {
+   "validated": 0,
+   "candidates": [
+    "players out or doubtful, all positions, home minus away",
+    "quarterbacks out or doubtful, both sides summed"
+   ]
+  }
+ },
+ "by_model_version": {},
+ "note": "Produced unattended. Nothing here promotes a tier, a coefficient or a prompt; a candidate is a hypothesis with the held-out evaluation it must pass named beside it. A closing-line-value record is evidence about the pricing process; a win-loss record at these sizes is variance; neither is a claim of profit."
+}

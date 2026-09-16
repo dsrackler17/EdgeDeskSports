@@ -436,11 +436,71 @@ sets of their own:
 | web search | `football/notes/current.json`, the desk's notebook: what a person looked up, with the team, the question it answers, the text, the source name and url, the publication time, the recorder and an expiry (`tools/football/add_note.js`) | a person, with a receipt | the investigation loop reads it as the `desk_notes` provider and reports each note as FOUND from its source at its publication time, never as a search; a note without a url, a publication time or a recorder is refused; expired notes are not read |
 | CFB availability | `football/availability/manual/<week>.csv` + `football/availability/import_corrections.js`: a batch of operator corrections through the same narrow door as `record_correction.js` | a person, from the conference report or the school's release | every row is validated by `operator.js` (named player, fixture, source name and url, publication time, recorder); refused rows are printed with reasons and never written. ESPN's depth and participation endpoints still answer 403/404 to the sync, so the official feed stays down and the manual path is the live one |
 
-## 12. Next slices
+## 12. Slice 6 — the linemaker's timing and the learning loop (shipped)
+
+Every validation so far says the projections do not beat the close. What a
+linemaker gets paid for is knowing where the number is going. Slice 6 builds
+that read on data and holds it to the same rules.
+
+**The CFB archive with openers** (`tools/football/build_lines_archive.js --sport cfb`
+→ `football/pricing/lines_cfb.json`, 11,502 FBS games 2006-2025, 8,557 with
+an opener from 2015 on): sportsdataverse's per-book opening and closing
+numbers, medians across books after exact duplicates are dropped, each
+spread row resolved to home-relative by the abbreviation's data-derived
+team id (the one id present in every game it appears in), then the teams
+file, then elimination; the schedules supply the result, week, neutral
+site and both sides' pregame Elo. `football/pricing/openers_cfb.json` is the
+last season's openers, compact, for the edge function.
+
+**The movement validation** (`tools/football/validate_movement.js` →
+`football/validation/movement_<sport>.json`): a rating line from pregame
+Elo and home field fitted on seasons before each held-out season (2011 on,
+in practice 2016 on where openers exist); the gap is the rating home line
+minus the opener; a move is the close minus the opener. Graded: the share
+of moves toward the rating by gap threshold with a one-sided binomial p and
+a later-window check; a move regression scored against the no-move
+baseline; and open-vs-close, the cover rate of the rating's side at the
+opening number against the close. Tiers: VALIDATED (55%+, p < 0.01, n ≥
+500, most seasons, holds later), LEAN (52.5%+, p < 0.05, n ≥ 300), RESEARCH.
+
+Result at build time: CFB LEAN at 2+ points (the number moved toward the
+rating 53.0% of the time, n 4,369, p ≈ 0; 50.9% on 2019-2025; the rating's
+side gained 0.26 points by betting at the open). The move regression did
+not beat the no-move baseline (1.64 vs 1.60), so the size of a move is not
+quoted, only its direction. NFL: NOT_ESTABLISHED, accumulating from the
+opener ledger (300 closed games are the floor).
+
+**The kernel's movement read** (`EDPRICE.movement`): from the opener, the
+current number and the fair line, with the tendency: READ / LEAN_READ (the
+gap clears the graded threshold), MOVED_PAST (the number already went
+through the fair line), NO_READ (below the threshold or a RESEARCH tier),
+NO_OPENER. Under a read, BET NOW for the side the fair line favours over
+the opener and WAIT for the other, as statements about the number, never
+the result. The expected close is quoted only when the regression beat the
+baseline. The prompt carries the read; the critic fails a "bet now" or
+"wait" the layer did not make; the Desk shows it in the price panel; the
+snapshot keeps the opener and the verdicts for grading.
+
+**The learning loop** (`tools/intelligence/learning_loop.js`,
+`.github/workflows/learning-loop.yml`, nightly): refreshes both archives,
+the injury archive, the pricing and movement validations; reads the desk's
+quoted prices from `research_packet_pricing` when `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` are set (names only) or from an export; joins
+every quote to its close, result and opener; runs the CLV scorecard and the
+postmortem; and publishes `football/validation/scorecard.json` with the
+tiers by market, the movement tiers, the feature verdicts and the counts by
+model version. Without database access it says NO_DATABASE_ACCESS and still
+runs the archive parts. Nothing in the loop promotes a tier, a coefficient
+or a prompt.
+
+## 13. Next slices
 
 **Market intelligence.** Per-book board from `book_quotes`, movement series
-from `signal_ticks`, movement classification with honest unknown states,
-and the closing-line scorecard run on a schedule over the opener ledger.
+from `signal_ticks` folded into the movement read (a per-book number that
+lags the consensus is where a validated tendency is worth the most), and
+the NFL movement test once the ledger reaches its floor. The desk's own
+fair line replaces the Elo rating in the movement test as packets accumulate
+with closes (the scorecard already joins them).
 Still open: an independent coordinate check for the 35 NFL stadiums the
 college register does not cover (a reachable geocoder or a sourced table),
 travel distance, coordinator turnover, an NFL opponent-adjusted expected

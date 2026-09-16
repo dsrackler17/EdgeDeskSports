@@ -85,6 +85,10 @@ claim a check only for a question in it.
 | `football/pricing/openers_nfl.json` | EdgeDesk's own opener ledger from the nflverse consensus feed (`tools/football/build_lines_archive.js`) | every six hours, daily, weekly | the archive (`open` per game), the CLV scorecard (open-to-close) |
 | `football/notes/current.json` | the desk's notebook, written by `tools/football/add_note.js` with a source, url, publication time, recorder and expiry | on entry; expires in seven days | the `desk_notes` investigation provider |
 | `football/availability/manual/<week>.csv` → `operator.json` | hand-entered availability corrections through `football/availability/import_corrections.js` | on entry; entries expire | `overlay.js`, every availability consumer |
+| `football/pricing/lines_cfb.json` | sportsdataverse/cfbfastR-data line archive (per-book openers and closes, 2006 on) joined to its schedules (result, pregame Elo) by `tools/football/build_lines_archive.js --sport cfb` | nightly with the learning loop | the movement validation, the scorecard |
+| `football/pricing/openers_cfb.json` | the last season's openers from the archive, compact | nightly | the edge function's movement read |
+| `football/validation/movement_<sport>.json` | `tools/football/validate_movement.js`: the move-toward-rating tendency held out by season, open-vs-close, tiers | nightly | `EDPRICE.movement`, the scorecard |
+| `football/validation/scorecard.json` | `tools/intelligence/learning_loop.js`: every quoted price graded against its close, opener and result; postmortem; tiers by market and model version | nightly | reviewers, the Desk's record pages |
 
 ## Provider interfaces and fallbacks
 

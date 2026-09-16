@@ -86,6 +86,48 @@ const imp = IMP.importRows([
 chk('a complete row is accepted, a row without a url is refused with its reason, and the template example is refused', imp.accepted.length === 2 && imp.refused.length === 2 && imp.refused.some((r) => r.row === 2 && r.reasons.join(' ').length > 0) && imp.refused.some((r) => /template/.test(r.reasons[0])), { accepted: imp.accepted.map((a) => a.player), refused: imp.refused });
 chk('an accepted entry carries the recorder and the recording time', imp.accepted.every((a) => a.recorded_by === 'operator' && a.recorded_at === '2026-09-17T12:00:00.000Z'));
 
+/* ---- the CFB archive with openers ---------------------------------------------- */
+const LH = 'id,game_id,season,game_desc,date_time,market_type,abbr,lines,odds,opening_lines,opening_odds,book,season_type,week,home_team_id,away_team_id';
+const lrow = (gid, mt, ab, lines, open, book, hid, aid) => ['1', gid, '2025.0', 'X@Y', '2025-08-30', mt, ab, lines, '', open, '', book, 'regular', '1', hid, aid].join(',');
+const LINES = [LH,
+  lrow('g1', 'spread', 'CLEM', '-5.5', '-3.5', 'Bovada', '228', '99'), lrow('g1', 'spread', 'LSU', '5.5', '3.5', 'Bovada', '228', '99'), lrow('g1', 'spread', 'CLEM', '-5', '-3', 'DK', '228', '99'), lrow('g1', 'spread', 'CLEM', '-5', '-3', 'DK', '228', '99'),
+  lrow('g1', 'total', 'over', '55.5', '57.5', 'Bovada', '228', '99'), lrow('g1', 'total', 'under', '55.5', '57.5', 'Bovada', '228', '99'),
+  lrow('g2', 'spread', 'ZZQ', '-7', '-6', 'Bovada', '5', '6'), lrow('g2', 'spread', 'QQZ', '7', '6', 'Bovada', '5', '6'), lrow('g3', 'spread', 'ZZQ', '-3', '', 'Bovada', '9', '5') ].join('\n');
+const SH = 'game_id,season,week,season_type,start_date,start_time_tbd,completed,neutral_site,conference_game,attendance,venue_id,venue,home_id,home_team,home_division,home_conference,home_points,home_post_win_prob,home_pregame_elo,home_postgame_elo,away_id,away_team,away_division,away_conference,away_points,away_post_win_prob,away_pregame_elo,away_postgame_elo';
+const srow = (gid, hid, home, hp, helo, aid, away, ap, aelo, neutral) => [gid, '2025', '1', 'regular', '2025-08-30T23:30:00.000Z', 'FALSE', 'TRUE', neutral, 'FALSE', 'NA', '1', 'V', hid, home, 'fbs', 'ACC', hp, '0.5', helo, helo, aid, away, 'fbs', 'SEC', ap, '0.5', aelo, aelo].join(',');
+const SCHED = [SH, srow('g1', '228', 'Clemson', '10', '1704', '99', 'LSU', '17', '1718', 'FALSE'), srow('g2', '5', 'Alpha', '30', '1600', '6', 'Beta', '20', '1500', 'TRUE'), srow('g3', '9', 'Gamma', '21', '1550', '5', 'Alpha', '24', '1600', 'FALSE')].join('\n');
+const TEAMS = 'team_id,abbreviation\n228,CLEM\n99,LSU\n';
+const cfb = A.buildCfb({ lines: LINES, teams: TEAMS, schedules: { 2025: SCHED } }, { now: '2026-09-16T00:00:00Z' });
+const g1 = cfb.games.find((g) => g.id === 'g1');
+chk('a game\'s opener and close are medians across books, home-relative, with duplicates dropped', g1 && g1.open.home_line === -3.5 && g1.close.home_line === -5.5 && g1.open.total === 57.5 && g1.close.total === 55.5 && g1.close.books === 3 && cfb.counts.duplicates_dropped === 1, g1);
+chk('the schedule supplies the result, the margin, the pregame Elo and the neutral flag', g1.margin === -7 && g1.points === 27 && g1.ctx.home_pregame_elo === 1704 && g1.neutral === false && cfb.games.find((g) => g.id === 'g2').neutral === true);
+chk('an abbreviation absent from the teams file resolves by the games it appears in (ZZQ is team 5 in both g2 and g3)', cfb.games.find((g) => g.id === 'g2').close.home_line === -7 && cfb.games.find((g) => g.id === 'g3').close.home_line === 3, cfb.games.map((g) => [g.id, g.close.home_line]));
+chk('a game with a close but no opener keeps a null opener', cfb.games.find((g) => g.id === 'g3').open.home_line === null && cfb.counts.with_open === 2);
+chk('the openers artifact is the last season, compact, keyed by game id', A.cfbOpeners(cfb).games.g1.open.home_line === -3.5 && A.cfbOpeners(cfb).counts.games === 3);
+
+/* ---- the movement validation --------------------------------------------------- */
+const M = require(path.join(ROOT, 'tools', 'football', 'validate_movement.js'));
+const mrows = []; let ms = 11;
+const mr = () => { ms = (ms * 9301 + 49297) % 233280; return ms / 233280; };
+for (let s = 2006; s <= 2025; s++) for (let i = 0; i < 300; i++) { const elo = (mr() - 0.5) * 400; const home = i % 4 ? 1 : 0; const trueMargin = elo / 25 + 2.5 * home; const open = -Math.round((trueMargin + (mr() - 0.5) * 8) * 2) / 2; const noise = (mr() + mr() + mr() - 1.5) * 20; const toward = -trueMargin - open; const close = open + (mr() < 0.7 ? Math.sign(toward) * Math.min(Math.abs(toward), 1 + mr() * 2) : (mr() - 0.5) * 2); mrows.push({ id: s + '_' + i, season: s, week: 1, open, close: Math.round(close * 2) / 2, margin: Math.round(trueMargin + noise), elo_diff: elo, home, move: Math.round((Math.round(close * 2) / 2 - open) * 100) / 100 }); }
+const msc = M.score(mrows, { first_holdout: 2011, later_from: 2019 });
+chk('a planted 70% move toward the Elo rating is read as VALIDATED at some threshold', msc.tier === 'VALIDATED' && msc.required_gap_points != null && msc.toward_rating_by_gap[String(msc.required_gap_points)].toward_rate > 0.6, { tier: msc.tier, edge: msc.required_gap_points, t: msc.toward_rating_by_gap['2'] });
+chk('the rating fit recovers the planted scale (about 0.04 points per Elo point and a home field near 2.5)', Math.abs(msc.latest.rating.points_per_elo - 0.04) < 0.01 && Math.abs(msc.latest.rating.home_field - 2.5) < 1.5, msc.latest);
+chk('open-vs-close is stated per threshold and the note says a tendency is not a result', msc.open_vs_close_by_gap['2'] && msc.open_vs_close_by_gap['2'].cover_at_open != null && /number|move/.test(msc.tier_basis));
+const coin = mrows.map((r) => Object.assign({}, r, { close: r.open + (Math.round(((r.id.length % 2) ? 0.5 : -0.5) * 2) / 2), move: (r.id.length % 2) ? 0.5 : -0.5 }));
+chk('a coin-flip move is RESEARCH', M.score(coin, { first_holdout: 2011, later_from: 2019 }).tier === 'RESEARCH');
+chk('the committed CFB movement validation carries a tier, its basis and the open-vs-close table', (function () { const j = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'movement_cfb.json'), 'utf8')); return /LEAN|VALIDATED|RESEARCH/.test(j.result.tier) && j.result.tier_basis && j.result.open_vs_close_by_gap && j.frame.rating_is; })());
+
+/* ---- the learning loop ---------------------------------------------------------- */
+const LL = require(path.join(ROOT, 'tools', 'intelligence', 'learning_loop.js'));
+const llRows = [{ packet_id: 'p1', sport: 'americanfootball_nfl', game_id: 'n1', model_version: 'v1', label: 'PRICE DEPENDENT', pricing_tier: 'LEAN', quoted_status: 'LEAN_PLAY', quoted_side: 'home', quoted_selection: 'Home', quoted_line: -4.5, model_home_line: -9, fair_home_line: -5.6 }, { packet_id: 'p2', sport: 'americanfootball_ncaaf', game_id: 'c1', model_version: 'v1', label: 'PASS', pricing_tier: 'RESEARCH', quoted_status: 'CONDITIONAL', quoted_side: 'away', quoted_selection: 'Away', quoted_line: 6.5, model_home_line: -3, fair_home_line: -6 }];
+const llArch = { nfl: { counts: { games: 1, with_opener: 1 }, games: [{ id: 'n1', close: { home_line: -6, total: 44 }, margin: 10, open: { home_line: -4, seen_at: '2026-09-15T00:00:00Z' } }] }, cfb: { counts: { games: 1, with_open: 0 }, games: [{ id: 'c1', close: { home_line: -6, total: 50 }, margin: 3, open: { home_line: null } }] } };
+const card = LL.build(llRows, llArch, { pricing_nfl: { markets: { spread: { tier: 'LEAN' }, total: { tier: 'RESEARCH' }, moneyline: { tier: 'RESEARCH' } } }, movement_cfb: { result: { tier: 'LEAN', required_gap_points: 2, tier_basis: 'x' } } }, { now: '2026-09-16T00:00:00Z', rows_status: 'FILE' });
+chk('the scorecard grades each quote against its close (home -4.5 that closed -6 gained 1.5; away +6.5 that closed +6 gained 0.5) and the result', card.clv.groups.all.with_close === 2 && card.clv.groups.all.mean_clv_points === 1 && card.clv.groups.all.wins === 2, card.clv.groups.all);
+chk('open-to-close toward the fair line is counted where an opener exists', card.clv.groups.all.with_opener === 1 && card.clv.groups.all.moved_toward_fair_rate === 1, card.clv.groups.all);
+chk('the postmortem, the tiers by market and the movement tier ride on the card, and the note refuses to promote', card.postmortem.counts.graded === 2 && card.tiers.pricing.nfl.spread === 'LEAN' && card.tiers.movement.cfb.tier === 'LEAN' && /promotes/.test(card.note) && card.by_model_version.v1.packets === 2);
+chk('without database access the card says so instead of pretending', LL.build([], llArch, {}, { rows_status: 'NO_DATABASE_ACCESS', rows_detail: 'no env' }).inputs.rows_status === 'NO_DATABASE_ACCESS');
+
 /* ---- desk notes ------------------------------------------------------------- */
 const now = Date.parse('2026-09-16T12:00:00Z');
 const bad = N.validate({ sport: 'nfl', team: 'BUF', kind: 'starting_qb', text: 'Josh Allen starts', source: 'Bills' }, now);
