@@ -107,6 +107,14 @@ Today the NFL spread is LEAN (break-even history at 1.5+ points of
 disagreement, not a profit) and everything else is RESEARCH; the desk says so
 in every answer and never states an EV.
 
+Slice 5 closes the pricer's data gaps with data sets the desk builds or keeps
+itself: a verified hand-entered NFL stadium table (`football/venues/nfl_stadiums.json`),
+the official NFL injury report archived 2009 on (`football/pricing/injuries_nfl.json`)
+and fed to the feature intake, an opener ledger the builds capture every six
+hours (`football/pricing/openers_nfl.json`), a desk notebook the investigation
+reads as a provider (`football/notes/current.json`), and a batch import for
+hand-entered college availability. See `docs/runbooks/desk-data.md`.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`

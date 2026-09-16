@@ -33,6 +33,14 @@ on:
       - 'tools/football/build_lines_archive.js'
       - 'tools/football/validate_pricing.js'
       - 'tools/football/pricing_validation.test.js'
+      - 'tools/football/data_builds.test.js'
+      - 'tools/football/verify_nfl_stadiums.js'
+      - 'tools/football/nfl_venues.js'
+      - 'tools/football/build_injury_archive.js'
+      - 'tools/football/add_note.js'
+      - 'football/venues/nfl_stadiums.json'
+      - 'football/notes/**'
+      - 'football/availability/import_corrections.js'
       - 'tools/intelligence/pricing.test.js'
       - 'tools/intelligence/clv.js'
       - 'tools/intelligence/clv.test.js'
@@ -136,6 +144,10 @@ jobs:
         run: node tools/football/team_identity.test.js
       - name: The closing-line archive copies and the pricing validation grades honestly
         run: node tools/football/pricing_validation.test.js
+      - name: The desk's own data sets refuse what they cannot verify
+        run: node tools/football/data_builds.test.js
+      - name: The NFL stadium table verifies
+        run: node tools/football/verify_nfl_stadiums.js
 
   migrations:
     runs-on: ubuntu-latest
