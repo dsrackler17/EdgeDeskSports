@@ -79,6 +79,23 @@ jobs:
         with:
           node-version: '22'
 
+      # THE PARQUET READER, INSTALLED RATHER THAN ASSUMED. Four builds in this
+      # job read the season in progress in the one format it is published in:
+      # the quarterback EPA refresh, the stadium table, the coach table and
+      # the play feed. football/data/tools/parquet_to_csv.py needs pyarrow and
+      # nothing else. The scheduled run of 2026-09-16 (run 35129376683) found
+      # the hosted runner without it: every parquet read printed "pyarrow is
+      # not installed", the EPA refresh went STALE, the stadium build exited 2
+      # and the coach build reported a table that IS published as "not
+      # published yet" and failed the job. The weekly build and the validation
+      # workflow already install it this way; this job now does the same,
+      # instead of depending on what the runner image happens to carry.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the parquet reader
+        run: pip install --quiet pyarrow
+
       # THE RULES BEFORE THE DATA. An expected starter published as a confirmed
       # one, a research-only input reaching the priced number, or a collapsed
       # column scored as a zero are all failures these suites catch, and none
@@ -150,8 +167,16 @@ jobs:
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
+      # A FEED THAT CANNOT BE READ THIS RUN KEEPS THE PREVIOUS ARTIFACT, the
+      # same rule the stadium step above and the EPA refresh follow: the
+      # builder writes nothing when it cannot read the season's coach table,
+      # so continuity.json stays what the last successful run published and
+      # the card is rebuilt against it. The step still goes red in the run so
+      # the failure is visible; it just no longer stops the starters, the
+      # profiles and the card from being committed.
       - name: Coaching continuity
         run: node football/coaching/build_coaching.js
+        continue-on-error: true
 
       # THE RESEARCH DESK'S TWO ARTIFACTS. The metrics file is the compact,
       # per-team copy of what the builds above published (rankings detail,
