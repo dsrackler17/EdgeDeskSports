@@ -1,0 +1,1377 @@
+{
+ "schema": "edgedesk_nfl_stadiums_verification_v1",
+ "generated_at": "2026-09-16T15:56:21.628Z",
+ "table": "football/venues/nfl_stadiums.json",
+ "rows": 40,
+ "verified": 40,
+ "refused": 0,
+ "with_independent_coordinate_check": 5,
+ "basis": "hand-entered coordinates checked against the college venue register (CFBD coordinates) where the stadium hosts college games, nflverse games.csv roof and surface, the state bounding box and the time zone; a stadium with no independent coordinate is VERIFIED on the other checks only and says so",
+ "verdicts": [
+  {
+   "name": "Highmark Stadium",
+   "club": "BUF",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 2 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says outdoors / a_turf)"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "NY"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Hard Rock Stadium",
+   "club": "MIA",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": true,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": true,
+     "detail": "0.01 km from the register (Hard Rock Stadium)"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "FL"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Gillette Stadium",
+   "club": "NE",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface fieldturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "MA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "MetLife Stadium",
+   "club": "NYJ",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface fieldturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "NJ"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "M&T Bank Stadium",
+   "club": "BAL",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "MD"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Paycor Stadium",
+   "club": "CIN",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface fieldturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "OH"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Huntington Bank Field",
+   "club": "CLE",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 1 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says outdoors / grass)"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "OH"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Acrisure Stadium",
+   "club": "PIT",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": true,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": true,
+     "detail": "0.01 km from the register (Acrisure Stadium)"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "PA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "NRG Stadium",
+   "club": "HOU",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof closed, table closed"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface astroturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "TX"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Lucas Oil Stadium",
+   "club": "IND",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof closed, table closed"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface fieldturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "IN"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "EverBank Stadium",
+   "club": "JAX",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 2 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says outdoors / grass)"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "FL"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Nissan Stadium",
+   "club": "TEN",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": true,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": true,
+     "detail": "0 km from the register (Nissan Stadium)"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "TN"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Empower Field at Mile High",
+   "club": "DEN",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "CO"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -7, tz offset -7"
+    }
+   ]
+  },
+  {
+   "name": "GEHA Field at Arrowhead Stadium",
+   "club": "KC",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "MO"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Allegiant Stadium",
+   "club": "LV",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof dome, table dome"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "NV"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -8, tz offset -8"
+    }
+   ]
+  },
+  {
+   "name": "SoFi Stadium",
+   "club": "LAC",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof dome, table dome"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface matrixturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "CA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -8, tz offset -8"
+    }
+   ]
+  },
+  {
+   "name": "AT&T Stadium",
+   "club": "DAL",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof closed, table closed"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface matrixturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "TX"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Northwest Stadium",
+   "club": "WAS",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 1 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says outdoors / grass)"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "MD"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Lincoln Financial Field",
+   "club": "PHI",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": true,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": true,
+     "detail": "0 km from the register (Lincoln Financial Field)"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "PA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Soldier Field",
+   "club": "CHI",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "IL"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Ford Field",
+   "club": "DET",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof dome, table dome"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface fieldturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "MI"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Lambeau Field",
+   "club": "GB",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "WI"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "U.S. Bank Stadium",
+   "club": "MIN",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof dome, table dome"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface sportturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "MN"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Mercedes-Benz Stadium",
+   "club": "ATL",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof closed, table closed"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface fieldturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "GA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Bank of America Stadium",
+   "club": "CAR",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "NC"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -5, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "Caesars Superdome",
+   "club": "NO",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 1 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says dome / sportturf)"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "LA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Raymond James Stadium",
+   "club": "TB",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": true,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": true,
+     "detail": "0 km from the register (Raymond James Stadium)"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "FL"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -6, tz offset -5"
+    }
+   ]
+  },
+  {
+   "name": "State Farm Stadium",
+   "club": "ARI",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof closed, table closed"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "AZ"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -7, tz offset -7"
+    }
+   ]
+  },
+  {
+   "name": "Levi's Stadium",
+   "club": "SF",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "CA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -8, tz offset -8"
+    }
+   ]
+  },
+  {
+   "name": "Lumen Field",
+   "club": "SEA",
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface fieldturf, table a_turf"
+    },
+    {
+     "check": "inside_state",
+     "ok": true,
+     "detail": "WA"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -8, tz offset -8"
+    }
+   ]
+  },
+  {
+   "name": "Tottenham Hotspur Stadium",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 0, tz offset 0"
+    }
+   ]
+  },
+  {
+   "name": "Wembley Stadium",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": true,
+     "detail": "feed modal roof outdoors, table outdoors"
+    },
+    {
+     "check": "surface_vs_feed",
+     "ok": true,
+     "detail": "feed modal surface grass, table grass"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 0, tz offset 0"
+    }
+   ]
+  },
+  {
+   "name": "Allianz Arena",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 2 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says outdoors / null)"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 1, tz offset 1"
+    }
+   ]
+  },
+  {
+   "name": "Deutsche Bank Park",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 2 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says outdoors / grass)"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 1, tz offset 1"
+    }
+   ]
+  },
+  {
+   "name": "Estadio Azteca",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "no games since 2020 under this name in games.csv"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -7, tz offset -6"
+    }
+   ]
+  },
+  {
+   "name": "Santiago Bernabeu",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "no games since 2020 under this name in games.csv"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 0, tz offset 1"
+    }
+   ]
+  },
+  {
+   "name": "Croke Park",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "no games since 2020 under this name in games.csv"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 0, tz offset 0"
+    }
+   ]
+  },
+  {
+   "name": "Melbourne Cricket Ground",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 1 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says dome / grass)"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 10, tz offset 10"
+    }
+   ]
+  },
+  {
+   "name": "Maracana Stadium",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 1 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says null / matrixturf)"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -3, tz offset -3"
+    }
+   ]
+  },
+  {
+   "name": "Neo Quimica Arena",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 1 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says outdoors / null)"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone -3, tz offset -3"
+    }
+   ]
+  }
+ ]
+}
