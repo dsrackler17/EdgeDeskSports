@@ -2,13 +2,115 @@
  "schema": "edgedesk_nfl_slate_v1",
  "version": 1,
  "season": 2026,
- "generated_at": "2026-09-16T04:09:11.781Z",
+ "generated_at": "2026-09-16T12:14:23.160Z",
  "source": "nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html",
  "engine": {
   "model_version": "edgedesk_football_v1.0.0",
   "feature_version": "nfl_fv1",
   "trained_through": 2025,
   "built_at": "2026-08-21T19:18:15+00:00",
+  "distributions": {
+   "sigma_margin": 10.7,
+   "margin_resid_pmf": {
+    "0": 0.038301,
+    "1": 0.032346,
+    "2": 0.034117,
+    "3": 0.03122,
+    "4": 0.032185,
+    "5": 0.028806,
+    "6": 0.026231,
+    "7": 0.023978,
+    "8": 0.018989,
+    "9": 0.020921,
+    "10": 0.017863,
+    "11": 0.018989,
+    "12": 0.016254,
+    "13": 0.014805,
+    "14": 0.012713,
+    "15": 0.013196,
+    "16": 0.013518,
+    "17": 0.009334,
+    "18": 0.011265,
+    "19": 0.010943,
+    "20": 0.009173,
+    "21": 0.010138,
+    "22": 0.007242,
+    "23": 0.007403,
+    "24": 0.007242,
+    "25": 0.005472,
+    "26": 0.005472,
+    "27": 0.004667,
+    "28": 0.004667,
+    "29": 0.003058,
+    "30": 0.003058,
+    "31": 0.002575,
+    "32": 0.001448,
+    "33": 0.001448,
+    "34": 0.001609,
+    "35": 0.00177,
+    "36": 0.00177,
+    "37": 0.000966,
+    "38": 0.000644,
+    "39": 0.000161,
+    "40": 0.000644,
+    "-40": 0.000322,
+    "-39": 0.000322,
+    "-38": 0.001287,
+    "-37": 0.001126,
+    "-36": 0.001931,
+    "-35": 0.001931,
+    "-34": 0.001609,
+    "-33": 0.001448,
+    "-32": 0.00177,
+    "-31": 0.001287,
+    "-30": 0.002575,
+    "-29": 0.00354,
+    "-28": 0.003701,
+    "-27": 0.004023,
+    "-26": 0.002897,
+    "-25": 0.006437,
+    "-24": 0.007885,
+    "-23": 0.005793,
+    "-22": 0.009656,
+    "-21": 0.008046,
+    "-20": 0.009012,
+    "-19": 0.010943,
+    "-18": 0.011265,
+    "-17": 0.011104,
+    "-16": 0.01384,
+    "-15": 0.014966,
+    "-14": 0.014966,
+    "-13": 0.013679,
+    "-12": 0.018828,
+    "-11": 0.018024,
+    "-10": 0.022691,
+    "-9": 0.022208,
+    "-8": 0.030415,
+    "-7": 0.028323,
+    "-6": 0.027519,
+    "-5": 0.035887,
+    "-4": 0.026714,
+    "-3": 0.028967,
+    "-2": 0.031703,
+    "-1": 0.03476
+   },
+   "abs_margin_key_mass": {
+    "1": 0.0411,
+    "2": 0.0411,
+    "3": 0.1489,
+    "4": 0.0501,
+    "6": 0.0621,
+    "7": 0.0894,
+    "10": 0.0546,
+    "14": 0.0496
+   },
+   "pmf_spread_range": [
+    -14,
+    14
+   ],
+   "basis": "the engine’s own residual of projected home margin against the realised margin, and its spread-conditioned margin pmf; fitted on the training seasons and applied unchanged",
+   "limitations": "describes the spread of outcomes around THIS model’s projection; it is not a market-implied distribution and the validation tier decides whether it may be read as a betting probability"
+  },
   "validation": {
    "tier": "RESEARCH",
    "may_produce_probability": false,
@@ -91,8 +193,8 @@
  ],
  "lookahead_days": 12,
  "window": {
-  "from": "2026-09-15T22:09:11.765Z",
-  "to": "2026-09-28T04:09:11.765Z"
+  "from": "2026-09-16T06:14:23.062Z",
+  "to": "2026-09-28T12:14:23.062Z"
  },
  "feeds": [
   {
@@ -322,6 +424,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -5.3,
+     "delta_home_line": -0.09,
+     "total": 52.4,
+     "home_win_prob": 0.6897,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -5.17,
+     "delta_home_line": 0.04,
+     "total": 52.4,
+     "home_win_prob": 0.6855,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -5.2,
+     "delta_home_line": 0,
+     "total": 52.4,
+     "home_win_prob": 0.6867,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -5.2,
+     "delta_home_line": 0,
+     "total": 52.4,
+     "home_win_prob": 0.6867,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -4.34,
+     "delta_home_line": 0.87,
+     "total": 54.08,
+     "home_win_prob": 0.6574,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -5.2,
+     "delta_home_line": 0,
+     "total": 48.44,
+     "home_win_prob": 0.6867,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 2,
+     "win": 0.6628,
+     "push": 0.0183,
+     "lose": 0.3188,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6628,
+     "push": 0,
+     "lose": 0.3372,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6416,
+     "push": 0.0213,
+     "lose": 0.3372,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6416,
+     "push": 0,
+     "lose": 0.3584,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6398,
+     "push": 0.0018,
+     "lose": 0.3584,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6398,
+     "push": 0,
+     "lose": 0.3602,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.615,
+     "push": 0.0248,
+     "lose": 0.3602,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.615,
+     "push": 0,
+     "lose": 0.385,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.5934,
+     "push": 0.0216,
+     "lose": 0.385,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.5934,
+     "push": 0,
+     "lose": 0.4066,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.5068,
+     "push": 0.0866,
+     "lose": 0.4066,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.5068,
+     "push": 0,
+     "lose": 0.4932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4792,
+     "push": 0.0276,
+     "lose": 0.4932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4792,
+     "push": 0,
+     "lose": 0.5208,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4565,
+     "push": 0.0228,
+     "lose": 0.5208,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4565,
+     "push": 0,
+     "lose": 0.5435,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.4174,
+     "push": 0.0391,
+     "lose": 0.5435,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.4174,
+     "push": 0,
+     "lose": 0.5826,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3633,
+     "push": 0.0541,
+     "lose": 0.5826,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3633,
+     "push": 0,
+     "lose": 0.6367,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3365,
+     "push": 0.0268,
+     "lose": 0.6367,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3365,
+     "push": 0,
+     "lose": 0.6635,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.3281,
+     "push": 0.0084,
+     "lose": 0.6635,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.3281,
+     "push": 0,
+     "lose": 0.6719,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2919,
+     "push": 0.0362,
+     "lose": 0.6719,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.2919,
+     "push": 0,
+     "lose": 0.7081,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.2749,
+     "push": 0.0171,
+     "lose": 0.7081,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.2749,
+     "push": 0,
+     "lose": 0.7251,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.2628,
+     "push": 0.012,
+     "lose": 0.7251,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -552,6 +909,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -2.69,
+     "delta_home_line": 0.15,
+     "total": 43.5,
+     "home_win_prob": 0.5993,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -2.76,
+     "delta_home_line": 0.08,
+     "total": 43.5,
+     "home_win_prob": 0.6018,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -1.91,
+     "delta_home_line": 0.92,
+     "total": 43.5,
+     "home_win_prob": 0.571,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -3.04,
+     "delta_home_line": -0.21,
+     "total": 43.5,
+     "home_win_prob": 0.6119,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -1.97,
+     "delta_home_line": 0.87,
+     "total": 45.18,
+     "home_win_prob": 0.573,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -2.84,
+     "delta_home_line": 0,
+     "total": 39.54,
+     "home_win_prob": 0.6045,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 4,
+     "win": 0.7058,
+     "push": 0.0269,
+     "lose": 0.2672,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.7058,
+     "push": 0,
+     "lose": 0.2942,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.6371,
+     "push": 0.0687,
+     "lose": 0.2942,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.6371,
+     "push": 0,
+     "lose": 0.3629,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.6168,
+     "push": 0.0203,
+     "lose": 0.3629,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6168,
+     "push": 0,
+     "lose": 0.3832,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.5947,
+     "push": 0.0221,
+     "lose": 0.3832,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.5947,
+     "push": 0,
+     "lose": 0.4053,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.5931,
+     "push": 0.0016,
+     "lose": 0.4053,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.5931,
+     "push": 0,
+     "lose": 0.4069,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5686,
+     "push": 0.0245,
+     "lose": 0.4069,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5686,
+     "push": 0,
+     "lose": 0.4314,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.5463,
+     "push": 0.0223,
+     "lose": 0.4314,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.5463,
+     "push": 0,
+     "lose": 0.4537,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.4578,
+     "push": 0.0885,
+     "lose": 0.4537,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.4578,
+     "push": 0,
+     "lose": 0.5422,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4308,
+     "push": 0.027,
+     "lose": 0.5422,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4308,
+     "push": 0,
+     "lose": 0.5692,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4084,
+     "push": 0.0223,
+     "lose": 0.5692,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4084,
+     "push": 0,
+     "lose": 0.5916,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3702,
+     "push": 0.0382,
+     "lose": 0.5916,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3702,
+     "push": 0,
+     "lose": 0.6298,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.32,
+     "push": 0.0502,
+     "lose": 0.6298,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.32,
+     "push": 0,
+     "lose": 0.68,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.2943,
+     "push": 0.0256,
+     "lose": 0.68,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.2943,
+     "push": 0,
+     "lose": 0.7057,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.2858,
+     "push": 0.0086,
+     "lose": 0.7057,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.2858,
+     "push": 0,
+     "lose": 0.7142,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2515,
+     "push": 0.0342,
+     "lose": 0.7142,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -782,6 +1394,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -5.43,
+     "delta_home_line": -0.06,
+     "total": 44.9,
+     "home_win_prob": 0.6941,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -5.56,
+     "delta_home_line": -0.19,
+     "total": 44.9,
+     "home_win_prob": 0.6983,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -4.44,
+     "delta_home_line": 0.92,
+     "total": 44.9,
+     "home_win_prob": 0.661,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -5.57,
+     "delta_home_line": -0.21,
+     "total": 44.9,
+     "home_win_prob": 0.6987,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -4.5,
+     "delta_home_line": 0.87,
+     "total": 46.58,
+     "home_win_prob": 0.6629,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -5.37,
+     "delta_home_line": 0,
+     "total": 40.94,
+     "home_win_prob": 0.692,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 1.5,
+     "win": 0.674,
+     "push": 0,
+     "lose": 0.326,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6531,
+     "push": 0.0209,
+     "lose": 0.326,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6531,
+     "push": 0,
+     "lose": 0.3469,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6513,
+     "push": 0.0018,
+     "lose": 0.3469,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6513,
+     "push": 0,
+     "lose": 0.3487,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.6266,
+     "push": 0.0247,
+     "lose": 0.3487,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.6266,
+     "push": 0,
+     "lose": 0.3734,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6051,
+     "push": 0.0215,
+     "lose": 0.3734,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6051,
+     "push": 0,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.5196,
+     "push": 0.0856,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.5196,
+     "push": 0,
+     "lose": 0.4804,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4919,
+     "push": 0.0277,
+     "lose": 0.4804,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4919,
+     "push": 0,
+     "lose": 0.5081,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4692,
+     "push": 0.0227,
+     "lose": 0.5081,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4692,
+     "push": 0,
+     "lose": 0.5308,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.43,
+     "push": 0.0392,
+     "lose": 0.5308,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.43,
+     "push": 0,
+     "lose": 0.57,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3749,
+     "push": 0.0551,
+     "lose": 0.57,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3749,
+     "push": 0,
+     "lose": 0.6251,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.348,
+     "push": 0.0269,
+     "lose": 0.6251,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.348,
+     "push": 0,
+     "lose": 0.652,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.3396,
+     "push": 0.0084,
+     "lose": 0.652,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.3396,
+     "push": 0,
+     "lose": 0.6604,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.303,
+     "push": 0.0366,
+     "lose": 0.6604,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.303,
+     "push": 0,
+     "lose": 0.697,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.2859,
+     "push": 0.0171,
+     "lose": 0.697,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.2859,
+     "push": 0,
+     "lose": 0.7141,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.2738,
+     "push": 0.0122,
+     "lose": 0.7141,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.2738,
+     "push": 0,
+     "lose": 0.7262,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -1012,6 +1879,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -3.02,
+     "delta_home_line": 0.3,
+     "total": 42.26,
+     "home_win_prob": 0.6112,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -3.61,
+     "delta_home_line": -0.29,
+     "total": 42.26,
+     "home_win_prob": 0.6323,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -2.4,
+     "delta_home_line": 0.92,
+     "total": 42.26,
+     "home_win_prob": 0.5888,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -3.53,
+     "delta_home_line": -0.21,
+     "total": 42.26,
+     "home_win_prob": 0.6293,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -2.46,
+     "delta_home_line": 0.87,
+     "total": 43.95,
+     "home_win_prob": 0.5909,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -3.33,
+     "delta_home_line": 0,
+     "total": 38.31,
+     "home_win_prob": 0.622,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 3.5,
+     "win": 0.7165,
+     "push": 0,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.6486,
+     "push": 0.0679,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.6486,
+     "push": 0,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.6288,
+     "push": 0.0198,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6288,
+     "push": 0,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6068,
+     "push": 0.022,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6068,
+     "push": 0,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6051,
+     "push": 0.0017,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6051,
+     "push": 0,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5805,
+     "push": 0.0246,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5805,
+     "push": 0,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.5583,
+     "push": 0.0222,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.5583,
+     "push": 0,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.47,
+     "push": 0.0883,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.47,
+     "push": 0,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4428,
+     "push": 0.0272,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4428,
+     "push": 0,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4202,
+     "push": 0.0225,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4202,
+     "push": 0,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3817,
+     "push": 0.0385,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3817,
+     "push": 0,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3305,
+     "push": 0.0512,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3305,
+     "push": 0,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3044,
+     "push": 0.0261,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3044,
+     "push": 0,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.2959,
+     "push": 0.0085,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.2959,
+     "push": 0,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2612,
+     "push": 0.0348,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.2612,
+     "push": 0,
+     "lose": 0.7388,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -1242,6 +2364,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -6.14,
+     "delta_home_line": -0.17,
+     "total": 47.19,
+     "home_win_prob": 0.717,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -6.52,
+     "delta_home_line": -0.54,
+     "total": 47.19,
+     "home_win_prob": 0.7287,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -5.05,
+     "delta_home_line": 0.92,
+     "total": 47.19,
+     "home_win_prob": 0.6816,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -6.18,
+     "delta_home_line": -0.21,
+     "total": 47.19,
+     "home_win_prob": 0.7183,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -5.11,
+     "delta_home_line": 0.87,
+     "total": 48.88,
+     "home_win_prob": 0.6835,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -5.98,
+     "delta_home_line": 0,
+     "total": 43.24,
+     "home_win_prob": 0.7117,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 1,
+     "win": 0.6648,
+     "push": 0.0203,
+     "lose": 0.3148,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6648,
+     "push": 0,
+     "lose": 0.3352,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.663,
+     "push": 0.0019,
+     "lose": 0.3352,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.663,
+     "push": 0,
+     "lose": 0.337,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.6384,
+     "push": 0.0246,
+     "lose": 0.337,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.6384,
+     "push": 0,
+     "lose": 0.3616,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6171,
+     "push": 0.0213,
+     "lose": 0.3616,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6171,
+     "push": 0,
+     "lose": 0.3829,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.5326,
+     "push": 0.0845,
+     "lose": 0.3829,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.5326,
+     "push": 0,
+     "lose": 0.4674,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.5048,
+     "push": 0.0278,
+     "lose": 0.4674,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.5048,
+     "push": 0,
+     "lose": 0.4952,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4823,
+     "push": 0.0226,
+     "lose": 0.4952,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4823,
+     "push": 0,
+     "lose": 0.5177,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.443,
+     "push": 0.0393,
+     "lose": 0.5177,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.443,
+     "push": 0,
+     "lose": 0.557,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.387,
+     "push": 0.056,
+     "lose": 0.557,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.387,
+     "push": 0,
+     "lose": 0.613,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3601,
+     "push": 0.0269,
+     "lose": 0.613,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3601,
+     "push": 0,
+     "lose": 0.6399,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.3517,
+     "push": 0.0084,
+     "lose": 0.6399,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.3517,
+     "push": 0,
+     "lose": 0.6483,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.3146,
+     "push": 0.0371,
+     "lose": 0.6483,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.3146,
+     "push": 0,
+     "lose": 0.6854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.2975,
+     "push": 0.0171,
+     "lose": 0.6854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.2975,
+     "push": 0,
+     "lose": 0.7025,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.2852,
+     "push": 0.0123,
+     "lose": 0.7025,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.2852,
+     "push": 0,
+     "lose": 0.7148,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.2668,
+     "push": 0.0184,
+     "lose": 0.7148,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -1472,6 +2849,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -9.93,
+     "delta_home_line": -0.47,
+     "total": 42.39,
+     "home_win_prob": 0.8233,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -8.91,
+     "delta_home_line": 0.55,
+     "total": 42.39,
+     "home_win_prob": 0.7975,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -7.7,
+     "delta_home_line": 1.76,
+     "total": 42.39,
+     "home_win_prob": 0.7642,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -9.67,
+     "delta_home_line": -0.21,
+     "total": 42.39,
+     "home_win_prob": 0.8169,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -8.6,
+     "delta_home_line": 0.87,
+     "total": 44.07,
+     "home_win_prob": 0.7891,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -9.46,
+     "delta_home_line": 0,
+     "total": 38.43,
+     "home_win_prob": 0.8117,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": -2.5,
+     "win": 0.7044,
+     "push": 0,
+     "lose": 0.2956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.6277,
+     "push": 0.0768,
+     "lose": 0.2956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.6277,
+     "push": 0,
+     "lose": 0.3723,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.5996,
+     "push": 0.0281,
+     "lose": 0.3723,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.5996,
+     "push": 0,
+     "lose": 0.4004,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.5795,
+     "push": 0.0201,
+     "lose": 0.4004,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.5795,
+     "push": 0,
+     "lose": 0.4205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.541,
+     "push": 0.0385,
+     "lose": 0.4205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.541,
+     "push": 0,
+     "lose": 0.459,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.4797,
+     "push": 0.0612,
+     "lose": 0.459,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.4797,
+     "push": 0,
+     "lose": 0.5203,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.4536,
+     "push": 0.0261,
+     "lose": 0.5203,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.4536,
+     "push": 0,
+     "lose": 0.5464,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.4438,
+     "push": 0.0098,
+     "lose": 0.5464,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.4438,
+     "push": 0,
+     "lose": 0.5562,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.4024,
+     "push": 0.0414,
+     "lose": 0.5562,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.4024,
+     "push": 0,
+     "lose": 0.5976,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.3861,
+     "push": 0.0163,
+     "lose": 0.5976,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.3861,
+     "push": 0,
+     "lose": 0.6139,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.3723,
+     "push": 0.0138,
+     "lose": 0.6139,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.3723,
+     "push": 0,
+     "lose": 0.6277,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.3513,
+     "push": 0.021,
+     "lose": 0.6277,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13.5,
+     "win": 0.3513,
+     "push": 0,
+     "lose": 0.6487,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14,
+     "win": 0.3066,
+     "push": 0.0447,
+     "lose": 0.6487,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14.5,
+     "win": 0.3066,
+     "push": 0,
+     "lose": 0.6934,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15,
+     "win": 0.2933,
+     "push": 0.0133,
+     "lose": 0.6934,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15.5,
+     "win": 0.2933,
+     "push": 0,
+     "lose": 0.7067,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -16,
+     "win": 0.2769,
+     "push": 0.0164,
+     "lose": 0.7067,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -16.5,
+     "win": 0.2769,
+     "push": 0,
+     "lose": 0.7231,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -1702,6 +3334,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": 6.01,
+     "delta_home_line": -0.73,
+     "total": 45.34,
+     "home_win_prob": 0.2873,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": 6.28,
+     "delta_home_line": -0.46,
+     "total": 45.34,
+     "home_win_prob": 0.2786,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": 7.66,
+     "delta_home_line": 0.92,
+     "total": 45.34,
+     "home_win_prob": 0.237,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 6.53,
+     "delta_home_line": -0.21,
+     "total": 45.34,
+     "home_win_prob": 0.2708,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 7.6,
+     "delta_home_line": 0.87,
+     "total": 47.03,
+     "home_win_prob": 0.2386,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 6.74,
+     "delta_home_line": 0,
+     "total": 41.39,
+     "home_win_prob": 0.2645,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 13.5,
+     "win": 0.7254,
+     "push": 0,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 13,
+     "win": 0.7117,
+     "push": 0.0137,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12.5,
+     "win": 0.7117,
+     "push": 0,
+     "lose": 0.2883,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12,
+     "win": 0.7015,
+     "push": 0.0102,
+     "lose": 0.2883,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11.5,
+     "win": 0.7015,
+     "push": 0,
+     "lose": 0.2985,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11,
+     "win": 0.6838,
+     "push": 0.0177,
+     "lose": 0.2985,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10.5,
+     "win": 0.6838,
+     "push": 0,
+     "lose": 0.3162,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10,
+     "win": 0.6457,
+     "push": 0.0381,
+     "lose": 0.3162,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9.5,
+     "win": 0.6457,
+     "push": 0,
+     "lose": 0.3543,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9,
+     "win": 0.6381,
+     "push": 0.0076,
+     "lose": 0.3543,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8.5,
+     "win": 0.6381,
+     "push": 0,
+     "lose": 0.3619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8,
+     "win": 0.614,
+     "push": 0.0241,
+     "lose": 0.3619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.614,
+     "push": 0,
+     "lose": 0.386,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.5586,
+     "push": 0.0554,
+     "lose": 0.386,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.5586,
+     "push": 0,
+     "lose": 0.4414,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.5228,
+     "push": 0.0359,
+     "lose": 0.4414,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.5228,
+     "push": 0,
+     "lose": 0.4772,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.4997,
+     "push": 0.0231,
+     "lose": 0.4772,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.4997,
+     "push": 0,
+     "lose": 0.5003,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.4645,
+     "push": 0.0352,
+     "lose": 0.5003,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.4645,
+     "push": 0,
+     "lose": 0.5355,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.3744,
+     "push": 0.0901,
+     "lose": 0.5355,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.3744,
+     "push": 0,
+     "lose": 0.6256,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.3518,
+     "push": 0.0226,
+     "lose": 0.6256,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.3518,
+     "push": 0,
+     "lose": 0.6482,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.3292,
+     "push": 0.0226,
+     "lose": 0.6482,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.3292,
+     "push": 0,
+     "lose": 0.6708,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.3258,
+     "push": 0.0034,
+     "lose": 0.6708,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.3258,
+     "push": 0,
+     "lose": 0.6742,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -1932,6 +3819,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -3.6,
+     "delta_home_line": -0.09,
+     "total": 40.56,
+     "home_win_prob": 0.6318,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -2.98,
+     "delta_home_line": 0.54,
+     "total": 40.56,
+     "home_win_prob": 0.6095,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -2.59,
+     "delta_home_line": 0.92,
+     "total": 40.56,
+     "home_win_prob": 0.5955,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -3.72,
+     "delta_home_line": -0.21,
+     "total": 40.56,
+     "home_win_prob": 0.6358,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -2.64,
+     "delta_home_line": 0.87,
+     "total": 42.24,
+     "home_win_prob": 0.5976,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -3.51,
+     "delta_home_line": 0,
+     "total": 36.6,
+     "home_win_prob": 0.6286,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 3.5,
+     "win": 0.7165,
+     "push": 0,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.6486,
+     "push": 0.0679,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.6486,
+     "push": 0,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.6288,
+     "push": 0.0198,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6288,
+     "push": 0,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6068,
+     "push": 0.022,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6068,
+     "push": 0,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6051,
+     "push": 0.0017,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6051,
+     "push": 0,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5805,
+     "push": 0.0246,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5805,
+     "push": 0,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.5583,
+     "push": 0.0222,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.5583,
+     "push": 0,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.47,
+     "push": 0.0883,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.47,
+     "push": 0,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4428,
+     "push": 0.0272,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4428,
+     "push": 0,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4202,
+     "push": 0.0225,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4202,
+     "push": 0,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3817,
+     "push": 0.0385,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3817,
+     "push": 0,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3305,
+     "push": 0.0512,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3305,
+     "push": 0,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3044,
+     "push": 0.0261,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3044,
+     "push": 0,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.2959,
+     "push": 0.0085,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.2959,
+     "push": 0,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2612,
+     "push": 0.0348,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.2612,
+     "push": 0,
+     "lose": 0.7388,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -2162,6 +4304,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": 5.84,
+     "delta_home_line": -0.11,
+     "total": 41.98,
+     "home_win_prob": 0.2925,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": 5.98,
+     "delta_home_line": 0.03,
+     "total": 41.98,
+     "home_win_prob": 0.288,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": 6.87,
+     "delta_home_line": 0.92,
+     "total": 41.98,
+     "home_win_prob": 0.2603,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 5.74,
+     "delta_home_line": -0.21,
+     "total": 41.98,
+     "home_win_prob": 0.2957,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 6.82,
+     "delta_home_line": 0.87,
+     "total": 43.67,
+     "home_win_prob": 0.262,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 5.95,
+     "delta_home_line": 0,
+     "total": 38.03,
+     "home_win_prob": 0.2891,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 13,
+     "win": 0.7214,
+     "push": 0.0135,
+     "lose": 0.2652,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12.5,
+     "win": 0.7214,
+     "push": 0,
+     "lose": 0.2786,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12,
+     "win": 0.7113,
+     "push": 0.01,
+     "lose": 0.2786,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11.5,
+     "win": 0.7113,
+     "push": 0,
+     "lose": 0.2887,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11,
+     "win": 0.6938,
+     "push": 0.0175,
+     "lose": 0.2887,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10.5,
+     "win": 0.6938,
+     "push": 0,
+     "lose": 0.3062,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10,
+     "win": 0.6554,
+     "push": 0.0385,
+     "lose": 0.3062,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9.5,
+     "win": 0.6554,
+     "push": 0,
+     "lose": 0.3446,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9,
+     "win": 0.6477,
+     "push": 0.0077,
+     "lose": 0.3446,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8.5,
+     "win": 0.6477,
+     "push": 0,
+     "lose": 0.3523,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8,
+     "win": 0.6241,
+     "push": 0.0236,
+     "lose": 0.3523,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.6241,
+     "push": 0,
+     "lose": 0.3759,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.5688,
+     "push": 0.0553,
+     "lose": 0.3759,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.5688,
+     "push": 0,
+     "lose": 0.4312,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.5327,
+     "push": 0.0361,
+     "lose": 0.4312,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.5327,
+     "push": 0,
+     "lose": 0.4673,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.5089,
+     "push": 0.0237,
+     "lose": 0.4673,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.5089,
+     "push": 0,
+     "lose": 0.4911,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.4739,
+     "push": 0.035,
+     "lose": 0.4911,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.4739,
+     "push": 0,
+     "lose": 0.5261,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.3849,
+     "push": 0.089,
+     "lose": 0.5261,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.3849,
+     "push": 0,
+     "lose": 0.6151,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.3623,
+     "push": 0.0227,
+     "lose": 0.6151,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.3623,
+     "push": 0,
+     "lose": 0.6377,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.3401,
+     "push": 0.0221,
+     "lose": 0.6377,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.3401,
+     "push": 0,
+     "lose": 0.6599,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.3369,
+     "push": 0.0032,
+     "lose": 0.6599,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.3369,
+     "push": 0,
+     "lose": 0.6631,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.3187,
+     "push": 0.0182,
+     "lose": 0.6631,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -2392,6 +4789,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": 1.44,
+     "delta_home_line": 0.07,
+     "total": 44.01,
+     "home_win_prob": 0.4463,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": 0.79,
+     "delta_home_line": -0.59,
+     "total": 44.01,
+     "home_win_prob": 0.4707,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": 2.09,
+     "delta_home_line": 0.71,
+     "total": 44.01,
+     "home_win_prob": 0.4225,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 1.17,
+     "delta_home_line": -0.21,
+     "total": 44.01,
+     "home_win_prob": 0.4564,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 2.24,
+     "delta_home_line": 0.87,
+     "total": 45.7,
+     "home_win_prob": 0.4169,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 1.38,
+     "delta_home_line": 0,
+     "total": 40.06,
+     "home_win_prob": 0.4488,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 8.5,
+     "win": 0.7459,
+     "push": 0,
+     "lose": 0.2541,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8,
+     "win": 0.7254,
+     "push": 0.0205,
+     "lose": 0.2541,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.7254,
+     "push": 0,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.6717,
+     "push": 0.0536,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.6717,
+     "push": 0,
+     "lose": 0.3283,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.6374,
+     "push": 0.0343,
+     "lose": 0.3283,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.6374,
+     "push": 0,
+     "lose": 0.3626,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6139,
+     "push": 0.0235,
+     "lose": 0.3626,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6139,
+     "push": 0,
+     "lose": 0.3861,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.581,
+     "push": 0.0329,
+     "lose": 0.3861,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.581,
+     "push": 0,
+     "lose": 0.419,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5027,
+     "push": 0.0783,
+     "lose": 0.419,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5027,
+     "push": 0,
+     "lose": 0.4973,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.4784,
+     "push": 0.0243,
+     "lose": 0.4973,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.4784,
+     "push": 0,
+     "lose": 0.5216,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.4575,
+     "push": 0.0208,
+     "lose": 0.5216,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.4575,
+     "push": 0,
+     "lose": 0.5425,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.4553,
+     "push": 0.0023,
+     "lose": 0.5425,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.4553,
+     "push": 0,
+     "lose": 0.5447,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.4338,
+     "push": 0.0215,
+     "lose": 0.5447,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.4338,
+     "push": 0,
+     "lose": 0.5662,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4125,
+     "push": 0.0213,
+     "lose": 0.5662,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4125,
+     "push": 0,
+     "lose": 0.5875,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3305,
+     "push": 0.082,
+     "lose": 0.5875,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3305,
+     "push": 0,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3083,
+     "push": 0.0222,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3083,
+     "push": 0,
+     "lose": 0.6917,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.2908,
+     "push": 0.0175,
+     "lose": 0.6917,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.2908,
+     "push": 0,
+     "lose": 0.7092,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -2622,6 +5274,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -6.43,
+     "delta_home_line": -0.28,
+     "total": 38.91,
+     "home_win_prob": 0.7261,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -6.73,
+     "delta_home_line": -0.57,
+     "total": 38.91,
+     "home_win_prob": 0.7353,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -5.23,
+     "delta_home_line": 0.92,
+     "total": 38.91,
+     "home_win_prob": 0.6876,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -6.36,
+     "delta_home_line": -0.21,
+     "total": 38.91,
+     "home_win_prob": 0.7239,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -6.16,
+     "delta_home_line": 0,
+     "total": 38.91,
+     "home_win_prob": 0.7175,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -7.02,
+     "delta_home_line": -0.87,
+     "total": 33.27,
+     "home_win_prob": 0.7442,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 1,
+     "win": 0.6648,
+     "push": 0.0203,
+     "lose": 0.3148,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6648,
+     "push": 0,
+     "lose": 0.3352,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.663,
+     "push": 0.0019,
+     "lose": 0.3352,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.663,
+     "push": 0,
+     "lose": 0.337,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.6384,
+     "push": 0.0246,
+     "lose": 0.337,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.6384,
+     "push": 0,
+     "lose": 0.3616,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6171,
+     "push": 0.0213,
+     "lose": 0.3616,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6171,
+     "push": 0,
+     "lose": 0.3829,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.5326,
+     "push": 0.0845,
+     "lose": 0.3829,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.5326,
+     "push": 0,
+     "lose": 0.4674,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.5048,
+     "push": 0.0278,
+     "lose": 0.4674,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.5048,
+     "push": 0,
+     "lose": 0.4952,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4823,
+     "push": 0.0226,
+     "lose": 0.4952,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4823,
+     "push": 0,
+     "lose": 0.5177,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.443,
+     "push": 0.0393,
+     "lose": 0.5177,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.443,
+     "push": 0,
+     "lose": 0.557,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.387,
+     "push": 0.056,
+     "lose": 0.557,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.387,
+     "push": 0,
+     "lose": 0.613,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3601,
+     "push": 0.0269,
+     "lose": 0.613,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3601,
+     "push": 0,
+     "lose": 0.6399,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.3517,
+     "push": 0.0084,
+     "lose": 0.6399,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.3517,
+     "push": 0,
+     "lose": 0.6483,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.3146,
+     "push": 0.0371,
+     "lose": 0.6483,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.3146,
+     "push": 0,
+     "lose": 0.6854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.2975,
+     "push": 0.0171,
+     "lose": 0.6854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.2975,
+     "push": 0,
+     "lose": 0.7025,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.2852,
+     "push": 0.0123,
+     "lose": 0.7025,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.2852,
+     "push": 0,
+     "lose": 0.7148,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.2668,
+     "push": 0.0184,
+     "lose": 0.7148,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -2852,6 +5759,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": 6.25,
+     "delta_home_line": -0.22,
+     "total": 44.33,
+     "home_win_prob": 0.2795,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": 7.14,
+     "delta_home_line": 0.67,
+     "total": 44.33,
+     "home_win_prob": 0.2523,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": 7.39,
+     "delta_home_line": 0.92,
+     "total": 44.33,
+     "home_win_prob": 0.2448,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 5.43,
+     "delta_home_line": -1.04,
+     "total": 44.33,
+     "home_win_prob": 0.306,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 7.34,
+     "delta_home_line": 0.87,
+     "total": 46.01,
+     "home_win_prob": 0.2465,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 6.47,
+     "delta_home_line": 0,
+     "total": 40.37,
+     "home_win_prob": 0.2727,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 13.5,
+     "win": 0.7254,
+     "push": 0,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 13,
+     "win": 0.7117,
+     "push": 0.0137,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12.5,
+     "win": 0.7117,
+     "push": 0,
+     "lose": 0.2883,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12,
+     "win": 0.7015,
+     "push": 0.0102,
+     "lose": 0.2883,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11.5,
+     "win": 0.7015,
+     "push": 0,
+     "lose": 0.2985,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11,
+     "win": 0.6838,
+     "push": 0.0177,
+     "lose": 0.2985,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10.5,
+     "win": 0.6838,
+     "push": 0,
+     "lose": 0.3162,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10,
+     "win": 0.6457,
+     "push": 0.0381,
+     "lose": 0.3162,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9.5,
+     "win": 0.6457,
+     "push": 0,
+     "lose": 0.3543,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9,
+     "win": 0.6381,
+     "push": 0.0076,
+     "lose": 0.3543,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8.5,
+     "win": 0.6381,
+     "push": 0,
+     "lose": 0.3619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8,
+     "win": 0.614,
+     "push": 0.0241,
+     "lose": 0.3619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.614,
+     "push": 0,
+     "lose": 0.386,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.5586,
+     "push": 0.0554,
+     "lose": 0.386,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.5586,
+     "push": 0,
+     "lose": 0.4414,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.5228,
+     "push": 0.0359,
+     "lose": 0.4414,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.5228,
+     "push": 0,
+     "lose": 0.4772,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.4997,
+     "push": 0.0231,
+     "lose": 0.4772,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.4997,
+     "push": 0,
+     "lose": 0.5003,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.4645,
+     "push": 0.0352,
+     "lose": 0.5003,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.4645,
+     "push": 0,
+     "lose": 0.5355,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.3744,
+     "push": 0.0901,
+     "lose": 0.5355,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.3744,
+     "push": 0,
+     "lose": 0.6256,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.3518,
+     "push": 0.0226,
+     "lose": 0.6256,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.3518,
+     "push": 0,
+     "lose": 0.6482,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.3292,
+     "push": 0.0226,
+     "lose": 0.6482,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.3292,
+     "push": 0,
+     "lose": 0.6708,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.3258,
+     "push": 0.0034,
+     "lose": 0.6708,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.3258,
+     "push": 0,
+     "lose": 0.6742,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -2869,8 +6031,8 @@
     "home_line": 3.5,
     "home_margin": -3.5,
     "total": 40.5,
-    "home_ml": 180,
-    "away_ml": -218,
+    "home_ml": 170,
+    "away_ml": -205,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -3082,6 +6244,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -3.11,
+     "delta_home_line": 0.53,
+     "total": 49.78,
+     "home_win_prob": 0.6143,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -3.1,
+     "delta_home_line": 0.54,
+     "total": 49.78,
+     "home_win_prob": 0.614,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -2.72,
+     "delta_home_line": 0.92,
+     "total": 49.78,
+     "home_win_prob": 0.6002,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -3.85,
+     "delta_home_line": -0.21,
+     "total": 49.78,
+     "home_win_prob": 0.6404,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -2.77,
+     "delta_home_line": 0.87,
+     "total": 51.46,
+     "home_win_prob": 0.6023,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -3.64,
+     "delta_home_line": 0,
+     "total": 45.82,
+     "home_win_prob": 0.6332,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 3.5,
+     "win": 0.7165,
+     "push": 0,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.6486,
+     "push": 0.0679,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.6486,
+     "push": 0,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.6288,
+     "push": 0.0198,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6288,
+     "push": 0,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6068,
+     "push": 0.022,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6068,
+     "push": 0,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6051,
+     "push": 0.0017,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6051,
+     "push": 0,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5805,
+     "push": 0.0246,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5805,
+     "push": 0,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.5583,
+     "push": 0.0222,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.5583,
+     "push": 0,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.47,
+     "push": 0.0883,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.47,
+     "push": 0,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4428,
+     "push": 0.0272,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4428,
+     "push": 0,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4202,
+     "push": 0.0225,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4202,
+     "push": 0,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3817,
+     "push": 0.0385,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3817,
+     "push": 0,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3305,
+     "push": 0.0512,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3305,
+     "push": 0,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3044,
+     "push": 0.0261,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3044,
+     "push": 0,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.2959,
+     "push": 0.0085,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.2959,
+     "push": 0,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2612,
+     "push": 0.0348,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.2612,
+     "push": 0,
+     "lose": 0.7388,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -3312,6 +6729,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -6.76,
+     "delta_home_line": -0.22,
+     "total": 45.67,
+     "home_win_prob": 0.7361,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -6.55,
+     "delta_home_line": -0.01,
+     "total": 45.67,
+     "home_win_prob": 0.7296,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -4.98,
+     "delta_home_line": 1.55,
+     "total": 45.67,
+     "home_win_prob": 0.6793,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -6.74,
+     "delta_home_line": -0.21,
+     "total": 45.67,
+     "home_win_prob": 0.7356,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -5.67,
+     "delta_home_line": 0.87,
+     "total": 47.35,
+     "home_win_prob": 0.7019,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -6.54,
+     "delta_home_line": 0,
+     "total": 41.71,
+     "home_win_prob": 0.7293,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 0.5,
+     "win": 0.6767,
+     "push": 0,
+     "lose": 0.3233,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6748,
+     "push": 0.0019,
+     "lose": 0.3233,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6748,
+     "push": 0,
+     "lose": 0.3252,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.6505,
+     "push": 0.0243,
+     "lose": 0.3252,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.6505,
+     "push": 0,
+     "lose": 0.3495,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6292,
+     "push": 0.0212,
+     "lose": 0.3495,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6292,
+     "push": 0,
+     "lose": 0.3708,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.546,
+     "push": 0.0833,
+     "lose": 0.3708,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.546,
+     "push": 0,
+     "lose": 0.454,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.5181,
+     "push": 0.0279,
+     "lose": 0.454,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.5181,
+     "push": 0,
+     "lose": 0.4819,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4957,
+     "push": 0.0224,
+     "lose": 0.4819,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4957,
+     "push": 0,
+     "lose": 0.5043,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.4564,
+     "push": 0.0393,
+     "lose": 0.5043,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.4564,
+     "push": 0,
+     "lose": 0.5436,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3995,
+     "push": 0.0569,
+     "lose": 0.5436,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3995,
+     "push": 0,
+     "lose": 0.6005,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3726,
+     "push": 0.0269,
+     "lose": 0.6005,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3726,
+     "push": 0,
+     "lose": 0.6274,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.3641,
+     "push": 0.0084,
+     "lose": 0.6274,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.3641,
+     "push": 0,
+     "lose": 0.6359,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.3266,
+     "push": 0.0376,
+     "lose": 0.6359,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.3266,
+     "push": 0,
+     "lose": 0.6734,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.3095,
+     "push": 0.0171,
+     "lose": 0.6734,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.3095,
+     "push": 0,
+     "lose": 0.6905,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.297,
+     "push": 0.0125,
+     "lose": 0.6905,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.297,
+     "push": 0,
+     "lose": 0.703,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.2783,
+     "push": 0.0187,
+     "lose": 0.703,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13.5,
+     "win": 0.2783,
+     "push": 0,
+     "lose": 0.7217,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -3542,6 +7214,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -0.86,
+     "delta_home_line": -0.18,
+     "total": 45.08,
+     "home_win_prob": 0.5321,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -0.76,
+     "delta_home_line": -0.08,
+     "total": 45.08,
+     "home_win_prob": 0.5284,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": 0.03,
+     "delta_home_line": 0.71,
+     "total": 45.08,
+     "home_win_prob": 0.4989,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -0.89,
+     "delta_home_line": -0.21,
+     "total": 45.08,
+     "home_win_prob": 0.5332,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 0.18,
+     "delta_home_line": 0.87,
+     "total": 46.77,
+     "home_win_prob": 0.4932,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -0.69,
+     "delta_home_line": 0,
+     "total": 41.13,
+     "home_win_prob": 0.5255,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 6.5,
+     "win": 0.7249,
+     "push": 0,
+     "lose": 0.2751,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.6931,
+     "push": 0.0319,
+     "lose": 0.2751,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.6931,
+     "push": 0,
+     "lose": 0.3069,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6728,
+     "push": 0.0203,
+     "lose": 0.3069,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6728,
+     "push": 0,
+     "lose": 0.3272,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.6419,
+     "push": 0.0308,
+     "lose": 0.3272,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.6419,
+     "push": 0,
+     "lose": 0.3581,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5687,
+     "push": 0.0733,
+     "lose": 0.3581,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5687,
+     "push": 0,
+     "lose": 0.4313,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.5457,
+     "push": 0.023,
+     "lose": 0.4313,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.5457,
+     "push": 0,
+     "lose": 0.4543,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.524,
+     "push": 0.0217,
+     "lose": 0.4543,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.524,
+     "push": 0,
+     "lose": 0.476,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.5221,
+     "push": 0.0018,
+     "lose": 0.476,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.5221,
+     "push": 0,
+     "lose": 0.4779,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.4991,
+     "push": 0.023,
+     "lose": 0.4779,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.4991,
+     "push": 0,
+     "lose": 0.5009,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4768,
+     "push": 0.0223,
+     "lose": 0.5009,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4768,
+     "push": 0,
+     "lose": 0.5232,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3909,
+     "push": 0.0859,
+     "lose": 0.5232,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3909,
+     "push": 0,
+     "lose": 0.6091,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3655,
+     "push": 0.0254,
+     "lose": 0.6091,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3655,
+     "push": 0,
+     "lose": 0.6345,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3454,
+     "push": 0.0201,
+     "lose": 0.6345,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3454,
+     "push": 0,
+     "lose": 0.6546,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3097,
+     "push": 0.0357,
+     "lose": 0.6546,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3097,
+     "push": 0,
+     "lose": 0.6903,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.2644,
+     "push": 0.0453,
+     "lose": 0.6903,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.2644,
+     "push": 0,
+     "lose": 0.7356,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -3772,6 +7699,261 @@
      "away": true
     }
    },
+   "scenarios": {
+    "home_qb_out": {
+     "home_line": -6.38,
+     "delta_home_line": 0.53,
+     "total": 49.25,
+     "home_win_prob": 0.7245,
+     "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_qb_out": {
+     "home_line": -6.89,
+     "delta_home_line": 0.02,
+     "total": 49.25,
+     "home_win_prob": 0.74,
+     "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "home_short_week": {
+     "home_line": -5.15,
+     "delta_home_line": 1.76,
+     "total": 49.25,
+     "home_win_prob": 0.6847,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -7.32,
+     "delta_home_line": -0.41,
+     "total": 49.25,
+     "home_win_prob": 0.753,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -6.9,
+     "delta_home_line": 0,
+     "total": 49.25,
+     "home_win_prob": 0.7406,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -7.77,
+     "delta_home_line": -0.87,
+     "total": 43.61,
+     "home_win_prob": 0.7662,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 0,
+     "win": 0.6868,
+     "push": 0.0019,
+     "lose": 0.3112,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6868,
+     "push": 0,
+     "lose": 0.3132,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.6628,
+     "push": 0.0241,
+     "lose": 0.3132,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.6628,
+     "push": 0,
+     "lose": 0.3372,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6416,
+     "push": 0.0212,
+     "lose": 0.3372,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6416,
+     "push": 0,
+     "lose": 0.3584,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.5595,
+     "push": 0.082,
+     "lose": 0.3584,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.5595,
+     "push": 0,
+     "lose": 0.4405,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.5316,
+     "push": 0.028,
+     "lose": 0.4405,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.5316,
+     "push": 0,
+     "lose": 0.4684,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.5095,
+     "push": 0.0221,
+     "lose": 0.4684,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.5095,
+     "push": 0,
+     "lose": 0.4905,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.4701,
+     "push": 0.0393,
+     "lose": 0.4905,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.4701,
+     "push": 0,
+     "lose": 0.5299,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.4123,
+     "push": 0.0578,
+     "lose": 0.5299,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.4123,
+     "push": 0,
+     "lose": 0.5877,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3855,
+     "push": 0.0268,
+     "lose": 0.5877,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3855,
+     "push": 0,
+     "lose": 0.6145,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.377,
+     "push": 0.0085,
+     "lose": 0.6145,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.377,
+     "push": 0,
+     "lose": 0.623,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.3389,
+     "push": 0.0381,
+     "lose": 0.623,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.3389,
+     "push": 0,
+     "lose": 0.6611,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.3219,
+     "push": 0.017,
+     "lose": 0.6611,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.3219,
+     "push": 0,
+     "lose": 0.6781,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.3092,
+     "push": 0.0127,
+     "lose": 0.6781,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.3092,
+     "push": 0,
+     "lose": 0.6908,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.2902,
+     "push": 0.0191,
+     "lose": 0.6908,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13.5,
+     "win": 0.2902,
+     "push": 0,
+     "lose": 0.7098,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14,
+     "win": 0.2535,
+     "push": 0.0366,
+     "lose": 0.7098,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -3992,6 +8174,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -4.22,
+     "delta_home_line": 0,
+     "total": 45.5,
+     "home_win_prob": 0.6535,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -4.22,
+     "delta_home_line": 0,
+     "total": 45.5,
+     "home_win_prob": 0.6535,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -3.36,
+     "delta_home_line": 0.87,
+     "total": 47.18,
+     "home_win_prob": 0.6231,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -4.22,
+     "delta_home_line": 0,
+     "total": 41.54,
+     "home_win_prob": 0.6535,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 3,
+     "win": 0.6596,
+     "push": 0.067,
+     "lose": 0.2733,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.6596,
+     "push": 0,
+     "lose": 0.3404,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.6403,
+     "push": 0.0193,
+     "lose": 0.3404,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6403,
+     "push": 0,
+     "lose": 0.3597,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6185,
+     "push": 0.0218,
+     "lose": 0.3597,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6185,
+     "push": 0,
+     "lose": 0.3815,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6168,
+     "push": 0.0017,
+     "lose": 0.3815,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6168,
+     "push": 0,
+     "lose": 0.3832,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.592,
+     "push": 0.0248,
+     "lose": 0.3832,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.592,
+     "push": 0,
+     "lose": 0.408,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.57,
+     "push": 0.022,
+     "lose": 0.408,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.57,
+     "push": 0,
+     "lose": 0.43,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.4821,
+     "push": 0.088,
+     "lose": 0.43,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.4821,
+     "push": 0,
+     "lose": 0.5179,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4548,
+     "push": 0.0273,
+     "lose": 0.5179,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4548,
+     "push": 0,
+     "lose": 0.5452,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4321,
+     "push": 0.0227,
+     "lose": 0.5452,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4321,
+     "push": 0,
+     "lose": 0.5679,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3933,
+     "push": 0.0387,
+     "lose": 0.5679,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3933,
+     "push": 0,
+     "lose": 0.6067,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3412,
+     "push": 0.0522,
+     "lose": 0.6067,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3412,
+     "push": 0,
+     "lose": 0.6588,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3148,
+     "push": 0.0264,
+     "lose": 0.6588,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3148,
+     "push": 0,
+     "lose": 0.6852,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.3063,
+     "push": 0.0084,
+     "lose": 0.6852,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.3063,
+     "push": 0,
+     "lose": 0.6937,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2711,
+     "push": 0.0352,
+     "lose": 0.6937,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.2711,
+     "push": 0,
+     "lose": 0.7289,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.2542,
+     "push": 0.0169,
+     "lose": 0.7289,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -4215,6 +8636,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -8.77,
+     "delta_home_line": 1.55,
+     "total": 45.88,
+     "home_win_prob": 0.7938,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -10.53,
+     "delta_home_line": -0.21,
+     "total": 45.88,
+     "home_win_prob": 0.8374,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -9.45,
+     "delta_home_line": 0.87,
+     "total": 47.56,
+     "home_win_prob": 0.8115,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -10.32,
+     "delta_home_line": 0,
+     "total": 41.92,
+     "home_win_prob": 0.8326,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": -3.5,
+     "win": 0.6533,
+     "push": 0,
+     "lose": 0.3467,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.6252,
+     "push": 0.0281,
+     "lose": 0.3467,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.6252,
+     "push": 0,
+     "lose": 0.3748,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.6061,
+     "push": 0.0191,
+     "lose": 0.3748,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.6061,
+     "push": 0,
+     "lose": 0.3939,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.5684,
+     "push": 0.0376,
+     "lose": 0.3939,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.5684,
+     "push": 0,
+     "lose": 0.4316,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.5064,
+     "push": 0.062,
+     "lose": 0.4316,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.5064,
+     "push": 0,
+     "lose": 0.4936,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.4807,
+     "push": 0.0258,
+     "lose": 0.4936,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.4807,
+     "push": 0,
+     "lose": 0.5193,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.4695,
+     "push": 0.0112,
+     "lose": 0.5193,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.4695,
+     "push": 0,
+     "lose": 0.5305,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.4267,
+     "push": 0.0428,
+     "lose": 0.5305,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.4267,
+     "push": 0,
+     "lose": 0.5733,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.4111,
+     "push": 0.0157,
+     "lose": 0.5733,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.4111,
+     "push": 0,
+     "lose": 0.5889,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.3968,
+     "push": 0.0143,
+     "lose": 0.5889,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.3968,
+     "push": 0,
+     "lose": 0.6032,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.3748,
+     "push": 0.022,
+     "lose": 0.6032,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13.5,
+     "win": 0.3748,
+     "push": 0,
+     "lose": 0.6252,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14,
+     "win": 0.327,
+     "push": 0.0478,
+     "lose": 0.6252,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14.5,
+     "win": 0.327,
+     "push": 0,
+     "lose": 0.673,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15,
+     "win": 0.3139,
+     "push": 0.0131,
+     "lose": 0.673,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15.5,
+     "win": 0.3139,
+     "push": 0,
+     "lose": 0.6861,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -16,
+     "win": 0.2976,
+     "push": 0.0163,
+     "lose": 0.6861,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -16.5,
+     "win": 0.2976,
+     "push": 0,
+     "lose": 0.7024,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -17,
+     "win": 0.2703,
+     "push": 0.0273,
+     "lose": 0.7024,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -17.5,
+     "win": 0.2703,
+     "push": 0,
+     "lose": 0.7297,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -4438,6 +9098,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -0.2,
+     "delta_home_line": 0.92,
+     "total": 40.71,
+     "home_win_prob": 0.5074,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -1.33,
+     "delta_home_line": -0.21,
+     "total": 40.71,
+     "home_win_prob": 0.5493,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -0.25,
+     "delta_home_line": 0.87,
+     "total": 42.39,
+     "home_win_prob": 0.5095,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -1.12,
+     "delta_home_line": 0,
+     "total": 36.75,
+     "home_win_prob": 0.5417,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 6,
+     "win": 0.706,
+     "push": 0.0313,
+     "lose": 0.2627,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.706,
+     "push": 0,
+     "lose": 0.294,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6865,
+     "push": 0.0195,
+     "lose": 0.294,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6865,
+     "push": 0,
+     "lose": 0.3135,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.6563,
+     "push": 0.0301,
+     "lose": 0.3135,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.6563,
+     "push": 0,
+     "lose": 0.3437,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5841,
+     "push": 0.0722,
+     "lose": 0.3437,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5841,
+     "push": 0,
+     "lose": 0.4159,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.5616,
+     "push": 0.0225,
+     "lose": 0.4159,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.5616,
+     "push": 0,
+     "lose": 0.4384,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.5398,
+     "push": 0.0219,
+     "lose": 0.4384,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.5398,
+     "push": 0,
+     "lose": 0.4602,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.538,
+     "push": 0.0018,
+     "lose": 0.4602,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.538,
+     "push": 0,
+     "lose": 0.462,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5146,
+     "push": 0.0234,
+     "lose": 0.462,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5146,
+     "push": 0,
+     "lose": 0.4854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4922,
+     "push": 0.0224,
+     "lose": 0.4854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4922,
+     "push": 0,
+     "lose": 0.5078,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.4054,
+     "push": 0.0868,
+     "lose": 0.5078,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.4054,
+     "push": 0,
+     "lose": 0.5946,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3795,
+     "push": 0.0259,
+     "lose": 0.5946,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3795,
+     "push": 0,
+     "lose": 0.6205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3588,
+     "push": 0.0207,
+     "lose": 0.6205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3588,
+     "push": 0,
+     "lose": 0.6412,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3224,
+     "push": 0.0364,
+     "lose": 0.6412,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3224,
+     "push": 0,
+     "lose": 0.6776,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.2761,
+     "push": 0.0463,
+     "lose": 0.6776,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.2761,
+     "push": 0,
+     "lose": 0.7239,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.2533,
+     "push": 0.0228,
+     "lose": 0.7239,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -4661,6 +9560,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -12.22,
+     "delta_home_line": 1.55,
+     "total": 49.32,
+     "home_win_prob": 0.8732,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -13.97,
+     "delta_home_line": -0.21,
+     "total": 49.32,
+     "home_win_prob": 0.9042,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -13.77,
+     "delta_home_line": 0,
+     "total": 49.32,
+     "home_win_prob": 0.9009,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -14.63,
+     "delta_home_line": -0.87,
+     "total": 43.68,
+     "home_win_prob": 0.9143,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": -7,
+     "win": 0.5918,
+     "push": 0.0591,
+     "lose": 0.349,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.5918,
+     "push": 0,
+     "lose": 0.4082,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.5673,
+     "push": 0.0246,
+     "lose": 0.4082,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.5673,
+     "push": 0,
+     "lose": 0.4327,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.5463,
+     "push": 0.021,
+     "lose": 0.4327,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.5463,
+     "push": 0,
+     "lose": 0.4537,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.5012,
+     "push": 0.0451,
+     "lose": 0.4537,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.5012,
+     "push": 0,
+     "lose": 0.4988,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.4892,
+     "push": 0.012,
+     "lose": 0.4988,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.4892,
+     "push": 0,
+     "lose": 0.5108,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.4724,
+     "push": 0.0168,
+     "lose": 0.5108,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.4724,
+     "push": 0,
+     "lose": 0.5276,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.4472,
+     "push": 0.0252,
+     "lose": 0.5276,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13.5,
+     "win": 0.4472,
+     "push": 0,
+     "lose": 0.5528,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14,
+     "win": 0.394,
+     "push": 0.0531,
+     "lose": 0.5528,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14.5,
+     "win": 0.394,
+     "push": 0,
+     "lose": 0.606,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15,
+     "win": 0.3822,
+     "push": 0.0118,
+     "lose": 0.606,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15.5,
+     "win": 0.3822,
+     "push": 0,
+     "lose": 0.6178,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -16,
+     "win": 0.3637,
+     "push": 0.0185,
+     "lose": 0.6178,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -16.5,
+     "win": 0.3637,
+     "push": 0,
+     "lose": 0.6363,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -17,
+     "win": 0.3301,
+     "push": 0.0336,
+     "lose": 0.6363,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -17.5,
+     "win": 0.3301,
+     "push": 0,
+     "lose": 0.6699,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -18,
+     "win": 0.3061,
+     "push": 0.0241,
+     "lose": 0.6699,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -18.5,
+     "win": 0.3061,
+     "push": 0,
+     "lose": 0.6939,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -19,
+     "win": 0.2872,
+     "push": 0.0188,
+     "lose": 0.6939,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -19.5,
+     "win": 0.2872,
+     "push": 0,
+     "lose": 0.7128,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -20,
+     "win": 0.2675,
+     "push": 0.0198,
+     "lose": 0.7128,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -20.5,
+     "win": 0.2675,
+     "push": 0,
+     "lose": 0.7325,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -21,
+     "win": 0.2345,
+     "push": 0.033,
+     "lose": 0.7325,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -4884,6 +10022,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": 1.29,
+     "delta_home_line": 0.92,
+     "total": 45.04,
+     "home_win_prob": 0.4521,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 0.16,
+     "delta_home_line": -0.21,
+     "total": 45.04,
+     "home_win_prob": 0.4941,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 1.23,
+     "delta_home_line": 0.87,
+     "total": 46.72,
+     "home_win_prob": 0.4542,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 0.36,
+     "delta_home_line": 0,
+     "total": 41.08,
+     "home_win_prob": 0.4864,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 7.5,
+     "win": 0.7509,
+     "push": 0,
+     "lose": 0.2491,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.6986,
+     "push": 0.0523,
+     "lose": 0.2491,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.6986,
+     "push": 0,
+     "lose": 0.3014,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.6655,
+     "push": 0.0331,
+     "lose": 0.3014,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.6655,
+     "push": 0,
+     "lose": 0.3345,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6436,
+     "push": 0.0219,
+     "lose": 0.3345,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6436,
+     "push": 0,
+     "lose": 0.3564,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.6116,
+     "push": 0.032,
+     "lose": 0.3564,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.6116,
+     "push": 0,
+     "lose": 0.3884,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5358,
+     "push": 0.0757,
+     "lose": 0.3884,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5358,
+     "push": 0,
+     "lose": 0.4642,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.512,
+     "push": 0.0238,
+     "lose": 0.4642,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.512,
+     "push": 0,
+     "lose": 0.488,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.4907,
+     "push": 0.0213,
+     "lose": 0.488,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.4907,
+     "push": 0,
+     "lose": 0.5093,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.4887,
+     "push": 0.0021,
+     "lose": 0.5093,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.4887,
+     "push": 0,
+     "lose": 0.5113,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.4665,
+     "push": 0.0222,
+     "lose": 0.5113,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.4665,
+     "push": 0,
+     "lose": 0.5335,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4446,
+     "push": 0.0219,
+     "lose": 0.5335,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4446,
+     "push": 0,
+     "lose": 0.5554,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3606,
+     "push": 0.084,
+     "lose": 0.5554,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3606,
+     "push": 0,
+     "lose": 0.6394,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3366,
+     "push": 0.024,
+     "lose": 0.6394,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3366,
+     "push": 0,
+     "lose": 0.6634,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3178,
+     "push": 0.0188,
+     "lose": 0.6634,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3178,
+     "push": 0,
+     "lose": 0.6822,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.2837,
+     "push": 0.0341,
+     "lose": 0.6822,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.2837,
+     "push": 0,
+     "lose": 0.7163,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -5107,6 +10484,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -1.98,
+     "delta_home_line": 0.92,
+     "total": 44.89,
+     "home_win_prob": 0.5735,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -3.11,
+     "delta_home_line": -0.21,
+     "total": 44.89,
+     "home_win_prob": 0.6144,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -2.04,
+     "delta_home_line": 0.87,
+     "total": 46.57,
+     "home_win_prob": 0.5755,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -2.9,
+     "delta_home_line": 0,
+     "total": 40.93,
+     "home_win_prob": 0.607,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 4,
+     "win": 0.7058,
+     "push": 0.0269,
+     "lose": 0.2672,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.7058,
+     "push": 0,
+     "lose": 0.2942,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.6371,
+     "push": 0.0687,
+     "lose": 0.2942,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.6371,
+     "push": 0,
+     "lose": 0.3629,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.6168,
+     "push": 0.0203,
+     "lose": 0.3629,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6168,
+     "push": 0,
+     "lose": 0.3832,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.5947,
+     "push": 0.0221,
+     "lose": 0.3832,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.5947,
+     "push": 0,
+     "lose": 0.4053,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.5931,
+     "push": 0.0016,
+     "lose": 0.4053,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.5931,
+     "push": 0,
+     "lose": 0.4069,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5686,
+     "push": 0.0245,
+     "lose": 0.4069,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5686,
+     "push": 0,
+     "lose": 0.4314,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.5463,
+     "push": 0.0223,
+     "lose": 0.4314,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.5463,
+     "push": 0,
+     "lose": 0.4537,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.4578,
+     "push": 0.0885,
+     "lose": 0.4537,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.4578,
+     "push": 0,
+     "lose": 0.5422,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4308,
+     "push": 0.027,
+     "lose": 0.5422,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4308,
+     "push": 0,
+     "lose": 0.5692,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4084,
+     "push": 0.0223,
+     "lose": 0.5692,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4084,
+     "push": 0,
+     "lose": 0.5916,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3702,
+     "push": 0.0382,
+     "lose": 0.5916,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3702,
+     "push": 0,
+     "lose": 0.6298,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.32,
+     "push": 0.0502,
+     "lose": 0.6298,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.32,
+     "push": 0,
+     "lose": 0.68,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.2943,
+     "push": 0.0256,
+     "lose": 0.68,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.2943,
+     "push": 0,
+     "lose": 0.7057,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.2858,
+     "push": 0.0086,
+     "lose": 0.7057,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.2858,
+     "push": 0,
+     "lose": 0.7142,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2515,
+     "push": 0.0342,
+     "lose": 0.7142,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -5330,6 +10946,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": 1.81,
+     "delta_home_line": 0.92,
+     "total": 41.38,
+     "home_win_prob": 0.4327,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 0.69,
+     "delta_home_line": -0.21,
+     "total": 41.38,
+     "home_win_prob": 0.4745,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 1.76,
+     "delta_home_line": 0.87,
+     "total": 43.06,
+     "home_win_prob": 0.4347,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 0.89,
+     "delta_home_line": 0,
+     "total": 37.42,
+     "home_win_prob": 0.4668,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 8,
+     "win": 0.7381,
+     "push": 0.0201,
+     "lose": 0.2418,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.7381,
+     "push": 0,
+     "lose": 0.2619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.6851,
+     "push": 0.053,
+     "lose": 0.2619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.6851,
+     "push": 0,
+     "lose": 0.3149,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.6514,
+     "push": 0.0337,
+     "lose": 0.3149,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.6514,
+     "push": 0,
+     "lose": 0.3486,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6286,
+     "push": 0.0227,
+     "lose": 0.3486,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6286,
+     "push": 0,
+     "lose": 0.3714,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.5961,
+     "push": 0.0325,
+     "lose": 0.3714,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.5961,
+     "push": 0,
+     "lose": 0.4039,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5191,
+     "push": 0.077,
+     "lose": 0.4039,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5191,
+     "push": 0,
+     "lose": 0.4809,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.495,
+     "push": 0.0241,
+     "lose": 0.4809,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.495,
+     "push": 0,
+     "lose": 0.505,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.474,
+     "push": 0.021,
+     "lose": 0.505,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.474,
+     "push": 0,
+     "lose": 0.526,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.4718,
+     "push": 0.0022,
+     "lose": 0.526,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.4718,
+     "push": 0,
+     "lose": 0.5282,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.45,
+     "push": 0.0218,
+     "lose": 0.5282,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.45,
+     "push": 0,
+     "lose": 0.55,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4284,
+     "push": 0.0216,
+     "lose": 0.55,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4284,
+     "push": 0,
+     "lose": 0.5716,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3454,
+     "push": 0.083,
+     "lose": 0.5716,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3454,
+     "push": 0,
+     "lose": 0.6546,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3222,
+     "push": 0.0232,
+     "lose": 0.6546,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3222,
+     "push": 0,
+     "lose": 0.6778,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3041,
+     "push": 0.0181,
+     "lose": 0.6778,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3041,
+     "push": 0,
+     "lose": 0.6959,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.2708,
+     "push": 0.0333,
+     "lose": 0.6959,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -5553,6 +11408,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -7.62,
+     "delta_home_line": 0.71,
+     "total": 44.11,
+     "home_win_prob": 0.7618,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -8.54,
+     "delta_home_line": -0.21,
+     "total": 44.11,
+     "home_win_prob": 0.7876,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -7.47,
+     "delta_home_line": 0.87,
+     "total": 45.79,
+     "home_win_prob": 0.7574,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -8.33,
+     "delta_home_line": 0,
+     "total": 40.15,
+     "home_win_prob": 0.782,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": -1.5,
+     "win": 0.7008,
+     "push": 0,
+     "lose": 0.2992,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6793,
+     "push": 0.0215,
+     "lose": 0.2992,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6793,
+     "push": 0,
+     "lose": 0.3207,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.6008,
+     "push": 0.0785,
+     "lose": 0.3207,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.6008,
+     "push": 0,
+     "lose": 0.3992,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.5727,
+     "push": 0.0281,
+     "lose": 0.3992,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.5727,
+     "push": 0,
+     "lose": 0.4273,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.5517,
+     "push": 0.021,
+     "lose": 0.4273,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.5517,
+     "push": 0,
+     "lose": 0.4483,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.5126,
+     "push": 0.0391,
+     "lose": 0.4483,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.5126,
+     "push": 0,
+     "lose": 0.4874,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.4526,
+     "push": 0.0601,
+     "lose": 0.4874,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.4526,
+     "push": 0,
+     "lose": 0.5474,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.4261,
+     "push": 0.0264,
+     "lose": 0.5474,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.4261,
+     "push": 0,
+     "lose": 0.5739,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.4171,
+     "push": 0.0091,
+     "lose": 0.5739,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.4171,
+     "push": 0,
+     "lose": 0.5829,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.3771,
+     "push": 0.0399,
+     "lose": 0.5829,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.3771,
+     "push": 0,
+     "lose": 0.6229,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.3604,
+     "push": 0.0167,
+     "lose": 0.6229,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.3604,
+     "push": 0,
+     "lose": 0.6396,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.3471,
+     "push": 0.0133,
+     "lose": 0.6396,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.3471,
+     "push": 0,
+     "lose": 0.6529,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.3269,
+     "push": 0.0201,
+     "lose": 0.6529,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13.5,
+     "win": 0.3269,
+     "push": 0,
+     "lose": 0.6731,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14,
+     "win": 0.2855,
+     "push": 0.0414,
+     "lose": 0.6731,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14.5,
+     "win": 0.2855,
+     "push": 0,
+     "lose": 0.7145,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15,
+     "win": 0.2723,
+     "push": 0.0132,
+     "lose": 0.7145,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15.5,
+     "win": 0.2723,
+     "push": 0,
+     "lose": 0.7277,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -5776,6 +11870,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": 1.05,
+     "delta_home_line": 0.92,
+     "total": 45.67,
+     "home_win_prob": 0.4607,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -0.07,
+     "delta_home_line": -0.21,
+     "total": 45.67,
+     "home_win_prob": 0.5028,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 1,
+     "delta_home_line": 0.87,
+     "total": 47.36,
+     "home_win_prob": 0.4628,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 0.13,
+     "delta_home_line": 0,
+     "total": 41.72,
+     "home_win_prob": 0.4951,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 7,
+     "win": 0.7119,
+     "push": 0.0515,
+     "lose": 0.2366,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.7119,
+     "push": 0,
+     "lose": 0.2881,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.6795,
+     "push": 0.0325,
+     "lose": 0.2881,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.6795,
+     "push": 0,
+     "lose": 0.3205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6584,
+     "push": 0.0211,
+     "lose": 0.3205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6584,
+     "push": 0,
+     "lose": 0.3416,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.6269,
+     "push": 0.0315,
+     "lose": 0.3416,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.6269,
+     "push": 0,
+     "lose": 0.3731,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5525,
+     "push": 0.0745,
+     "lose": 0.3731,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5525,
+     "push": 0,
+     "lose": 0.4475,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.529,
+     "push": 0.0235,
+     "lose": 0.4475,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.529,
+     "push": 0,
+     "lose": 0.471,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.5075,
+     "push": 0.0215,
+     "lose": 0.471,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.5075,
+     "push": 0,
+     "lose": 0.4925,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.5056,
+     "push": 0.0019,
+     "lose": 0.4925,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.5056,
+     "push": 0,
+     "lose": 0.4944,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.483,
+     "push": 0.0226,
+     "lose": 0.4944,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.483,
+     "push": 0,
+     "lose": 0.517,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4609,
+     "push": 0.0221,
+     "lose": 0.517,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4609,
+     "push": 0,
+     "lose": 0.5391,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3759,
+     "push": 0.085,
+     "lose": 0.5391,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3759,
+     "push": 0,
+     "lose": 0.6241,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3511,
+     "push": 0.0248,
+     "lose": 0.6241,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3511,
+     "push": 0,
+     "lose": 0.6489,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3316,
+     "push": 0.0195,
+     "lose": 0.6489,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3316,
+     "push": 0,
+     "lose": 0.6684,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.2967,
+     "push": 0.0349,
+     "lose": 0.6684,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.2967,
+     "push": 0,
+     "lose": 0.7033,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.2524,
+     "push": 0.0443,
+     "lose": 0.7033,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -5999,6 +12332,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": 6.4,
+     "delta_home_line": 0.92,
+     "total": 45.54,
+     "home_win_prob": 0.2749,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 5.27,
+     "delta_home_line": -0.21,
+     "total": 45.54,
+     "home_win_prob": 0.3112,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 6.34,
+     "delta_home_line": 0.87,
+     "total": 47.22,
+     "home_win_prob": 0.2766,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 5.48,
+     "delta_home_line": 0,
+     "total": 41.58,
+     "home_win_prob": 0.3044,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 12.5,
+     "win": 0.731,
+     "push": 0,
+     "lose": 0.269,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12,
+     "win": 0.7212,
+     "push": 0.0098,
+     "lose": 0.269,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11.5,
+     "win": 0.7212,
+     "push": 0,
+     "lose": 0.2788,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11,
+     "win": 0.704,
+     "push": 0.0172,
+     "lose": 0.2788,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10.5,
+     "win": 0.704,
+     "push": 0,
+     "lose": 0.296,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10,
+     "win": 0.6653,
+     "push": 0.0386,
+     "lose": 0.296,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9.5,
+     "win": 0.6653,
+     "push": 0,
+     "lose": 0.3347,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9,
+     "win": 0.6576,
+     "push": 0.0078,
+     "lose": 0.3347,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8.5,
+     "win": 0.6576,
+     "push": 0,
+     "lose": 0.3424,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8,
+     "win": 0.6343,
+     "push": 0.0232,
+     "lose": 0.3424,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.6343,
+     "push": 0,
+     "lose": 0.3657,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.5792,
+     "push": 0.0552,
+     "lose": 0.3657,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.5792,
+     "push": 0,
+     "lose": 0.4208,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.5428,
+     "push": 0.0364,
+     "lose": 0.4208,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.5428,
+     "push": 0,
+     "lose": 0.4572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.5185,
+     "push": 0.0243,
+     "lose": 0.4572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.5185,
+     "push": 0,
+     "lose": 0.4815,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.4837,
+     "push": 0.0348,
+     "lose": 0.4815,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.4837,
+     "push": 0,
+     "lose": 0.5163,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.3959,
+     "push": 0.0878,
+     "lose": 0.5163,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.3959,
+     "push": 0,
+     "lose": 0.6041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.373,
+     "push": 0.0229,
+     "lose": 0.6041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.373,
+     "push": 0,
+     "lose": 0.627,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.3513,
+     "push": 0.0217,
+     "lose": 0.627,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.3513,
+     "push": 0,
+     "lose": 0.6487,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.3482,
+     "push": 0.0031,
+     "lose": 0.6487,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.3482,
+     "push": 0,
+     "lose": 0.6518,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.3296,
+     "push": 0.0186,
+     "lose": 0.6518,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.3296,
+     "push": 0,
+     "lose": 0.6704,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -6222,6 +12794,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -2.62,
+     "delta_home_line": 0.92,
+     "total": 47.23,
+     "home_win_prob": 0.5968,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -3.75,
+     "delta_home_line": -0.21,
+     "total": 47.23,
+     "home_win_prob": 0.6371,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -2.68,
+     "delta_home_line": 0.87,
+     "total": 48.92,
+     "home_win_prob": 0.5989,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -3.55,
+     "delta_home_line": 0,
+     "total": 43.27,
+     "home_win_prob": 0.6298,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 3.5,
+     "win": 0.7165,
+     "push": 0,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.6486,
+     "push": 0.0679,
+     "lose": 0.2835,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.6486,
+     "push": 0,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.6288,
+     "push": 0.0198,
+     "lose": 0.3514,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.6288,
+     "push": 0,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6068,
+     "push": 0.022,
+     "lose": 0.3712,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6068,
+     "push": 0,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6051,
+     "push": 0.0017,
+     "lose": 0.3932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6051,
+     "push": 0,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5805,
+     "push": 0.0246,
+     "lose": 0.3949,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5805,
+     "push": 0,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.5583,
+     "push": 0.0222,
+     "lose": 0.4195,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.5583,
+     "push": 0,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.47,
+     "push": 0.0883,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.47,
+     "push": 0,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.4428,
+     "push": 0.0272,
+     "lose": 0.53,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.4428,
+     "push": 0,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.4202,
+     "push": 0.0225,
+     "lose": 0.5572,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.4202,
+     "push": 0,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3817,
+     "push": 0.0385,
+     "lose": 0.5798,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3817,
+     "push": 0,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.3305,
+     "push": 0.0512,
+     "lose": 0.6183,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.3305,
+     "push": 0,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3044,
+     "push": 0.0261,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3044,
+     "push": 0,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.2959,
+     "push": 0.0085,
+     "lose": 0.6956,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.2959,
+     "push": 0,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.2612,
+     "push": 0.0348,
+     "lose": 0.7041,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.2612,
+     "push": 0,
+     "lose": 0.7388,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -6445,6 +13256,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": 1.72,
+     "delta_home_line": 0.92,
+     "total": 41.02,
+     "home_win_prob": 0.436,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 0.59,
+     "delta_home_line": -0.21,
+     "total": 41.02,
+     "home_win_prob": 0.4779,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 1.67,
+     "delta_home_line": 0.87,
+     "total": 42.7,
+     "home_win_prob": 0.4381,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 0.8,
+     "delta_home_line": 0,
+     "total": 37.06,
+     "home_win_prob": 0.4702,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 8,
+     "win": 0.7381,
+     "push": 0.0201,
+     "lose": 0.2418,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.7381,
+     "push": 0,
+     "lose": 0.2619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.6851,
+     "push": 0.053,
+     "lose": 0.2619,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.6851,
+     "push": 0,
+     "lose": 0.3149,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.6514,
+     "push": 0.0337,
+     "lose": 0.3149,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.6514,
+     "push": 0,
+     "lose": 0.3486,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6286,
+     "push": 0.0227,
+     "lose": 0.3486,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6286,
+     "push": 0,
+     "lose": 0.3714,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.5961,
+     "push": 0.0325,
+     "lose": 0.3714,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.5961,
+     "push": 0,
+     "lose": 0.4039,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5191,
+     "push": 0.077,
+     "lose": 0.4039,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5191,
+     "push": 0,
+     "lose": 0.4809,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.495,
+     "push": 0.0241,
+     "lose": 0.4809,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.495,
+     "push": 0,
+     "lose": 0.505,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.474,
+     "push": 0.021,
+     "lose": 0.505,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.474,
+     "push": 0,
+     "lose": 0.526,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.4718,
+     "push": 0.0022,
+     "lose": 0.526,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.4718,
+     "push": 0,
+     "lose": 0.5282,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.45,
+     "push": 0.0218,
+     "lose": 0.5282,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.45,
+     "push": 0,
+     "lose": 0.55,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4284,
+     "push": 0.0216,
+     "lose": 0.55,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4284,
+     "push": 0,
+     "lose": 0.5716,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3454,
+     "push": 0.083,
+     "lose": 0.5716,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3454,
+     "push": 0,
+     "lose": 0.6546,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3222,
+     "push": 0.0232,
+     "lose": 0.6546,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3222,
+     "push": 0,
+     "lose": 0.6778,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3041,
+     "push": 0.0181,
+     "lose": 0.6778,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3041,
+     "push": 0,
+     "lose": 0.6959,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.2708,
+     "push": 0.0333,
+     "lose": 0.6959,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -6668,6 +13718,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": 2.55,
+     "delta_home_line": 0.92,
+     "total": 51.08,
+     "home_win_prob": 0.406,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 1.42,
+     "delta_home_line": -0.21,
+     "total": 51.08,
+     "home_win_prob": 0.4474,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 2.49,
+     "delta_home_line": 0.87,
+     "total": 52.77,
+     "home_win_prob": 0.408,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 1.62,
+     "delta_home_line": 0,
+     "total": 47.13,
+     "home_win_prob": 0.4398,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 8.5,
+     "win": 0.7459,
+     "push": 0,
+     "lose": 0.2541,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8,
+     "win": 0.7254,
+     "push": 0.0205,
+     "lose": 0.2541,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.7254,
+     "push": 0,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.6717,
+     "push": 0.0536,
+     "lose": 0.2746,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.6717,
+     "push": 0,
+     "lose": 0.3283,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.6374,
+     "push": 0.0343,
+     "lose": 0.3283,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.6374,
+     "push": 0,
+     "lose": 0.3626,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6139,
+     "push": 0.0235,
+     "lose": 0.3626,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6139,
+     "push": 0,
+     "lose": 0.3861,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.581,
+     "push": 0.0329,
+     "lose": 0.3861,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.581,
+     "push": 0,
+     "lose": 0.419,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5027,
+     "push": 0.0783,
+     "lose": 0.419,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5027,
+     "push": 0,
+     "lose": 0.4973,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.4784,
+     "push": 0.0243,
+     "lose": 0.4973,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.4784,
+     "push": 0,
+     "lose": 0.5216,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.4575,
+     "push": 0.0208,
+     "lose": 0.5216,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.4575,
+     "push": 0,
+     "lose": 0.5425,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.4553,
+     "push": 0.0023,
+     "lose": 0.5425,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.4553,
+     "push": 0,
+     "lose": 0.5447,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.4338,
+     "push": 0.0215,
+     "lose": 0.5447,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.4338,
+     "push": 0,
+     "lose": 0.5662,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4125,
+     "push": 0.0213,
+     "lose": 0.5662,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4125,
+     "push": 0,
+     "lose": 0.5875,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3305,
+     "push": 0.082,
+     "lose": 0.5875,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3305,
+     "push": 0,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3083,
+     "push": 0.0222,
+     "lose": 0.6695,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3083,
+     "push": 0,
+     "lose": 0.6917,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.2908,
+     "push": 0.0175,
+     "lose": 0.6917,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.2908,
+     "push": 0,
+     "lose": 0.7092,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -6891,6 +14180,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -6.85,
+     "delta_home_line": 0.92,
+     "total": 41.63,
+     "home_win_prob": 0.7391,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -7.98,
+     "delta_home_line": -0.21,
+     "total": 41.63,
+     "home_win_prob": 0.7722,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -7.78,
+     "delta_home_line": 0,
+     "total": 41.63,
+     "home_win_prob": 0.7664,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -8.64,
+     "delta_home_line": -0.87,
+     "total": 35.99,
+     "home_win_prob": 0.7904,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": -1,
+     "win": 0.688,
+     "push": 0.0233,
+     "lose": 0.2888,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.688,
+     "push": 0,
+     "lose": 0.312,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6666,
+     "push": 0.0213,
+     "lose": 0.312,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6666,
+     "push": 0,
+     "lose": 0.3334,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.5871,
+     "push": 0.0796,
+     "lose": 0.3334,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.5871,
+     "push": 0,
+     "lose": 0.4129,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.559,
+     "push": 0.028,
+     "lose": 0.4129,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.559,
+     "push": 0,
+     "lose": 0.441,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.5376,
+     "push": 0.0214,
+     "lose": 0.441,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.5376,
+     "push": 0,
+     "lose": 0.4624,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.4984,
+     "push": 0.0392,
+     "lose": 0.4624,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.4984,
+     "push": 0,
+     "lose": 0.5016,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.439,
+     "push": 0.0594,
+     "lose": 0.5016,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.439,
+     "push": 0,
+     "lose": 0.561,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.4124,
+     "push": 0.0266,
+     "lose": 0.561,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.4124,
+     "push": 0,
+     "lose": 0.5876,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.4036,
+     "push": 0.0088,
+     "lose": 0.5876,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.4036,
+     "push": 0,
+     "lose": 0.5964,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.3643,
+     "push": 0.0393,
+     "lose": 0.5964,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.3643,
+     "push": 0,
+     "lose": 0.6357,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.3475,
+     "push": 0.0168,
+     "lose": 0.6357,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.3475,
+     "push": 0,
+     "lose": 0.6525,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.3344,
+     "push": 0.0131,
+     "lose": 0.6525,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.3344,
+     "push": 0,
+     "lose": 0.6656,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13,
+     "win": 0.3146,
+     "push": 0.0198,
+     "lose": 0.6656,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -13.5,
+     "win": 0.3146,
+     "push": 0,
+     "lose": 0.6854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14,
+     "win": 0.2748,
+     "push": 0.0398,
+     "lose": 0.6854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -14.5,
+     "win": 0.2748,
+     "push": 0,
+     "lose": 0.7252,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -15,
+     "win": 0.2617,
+     "push": 0.0131,
+     "lose": 0.7252,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -7114,6 +14642,245 @@
      "away": false
     }
    },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -0.19,
+     "delta_home_line": 0.92,
+     "total": 45.6,
+     "home_win_prob": 0.507,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -1.11,
+     "delta_home_line": 0,
+     "total": 45.6,
+     "home_win_prob": 0.5412,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -0.24,
+     "delta_home_line": 0.87,
+     "total": 47.29,
+     "home_win_prob": 0.5091,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -1.11,
+     "delta_home_line": 0,
+     "total": 41.65,
+     "home_win_prob": 0.5414,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 6,
+     "win": 0.706,
+     "push": 0.0313,
+     "lose": 0.2627,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.706,
+     "push": 0,
+     "lose": 0.294,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6865,
+     "push": 0.0195,
+     "lose": 0.294,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6865,
+     "push": 0,
+     "lose": 0.3135,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.6563,
+     "push": 0.0301,
+     "lose": 0.3135,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.6563,
+     "push": 0,
+     "lose": 0.3437,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5841,
+     "push": 0.0722,
+     "lose": 0.3437,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5841,
+     "push": 0,
+     "lose": 0.4159,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.5616,
+     "push": 0.0225,
+     "lose": 0.4159,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.5616,
+     "push": 0,
+     "lose": 0.4384,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.5398,
+     "push": 0.0219,
+     "lose": 0.4384,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.5398,
+     "push": 0,
+     "lose": 0.4602,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.538,
+     "push": 0.0018,
+     "lose": 0.4602,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.538,
+     "push": 0,
+     "lose": 0.462,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5146,
+     "push": 0.0234,
+     "lose": 0.462,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5146,
+     "push": 0,
+     "lose": 0.4854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4922,
+     "push": 0.0224,
+     "lose": 0.4854,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4922,
+     "push": 0,
+     "lose": 0.5078,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.4054,
+     "push": 0.0868,
+     "lose": 0.5078,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.4054,
+     "push": 0,
+     "lose": 0.5946,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3795,
+     "push": 0.0259,
+     "lose": 0.5946,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3795,
+     "push": 0,
+     "lose": 0.6205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3588,
+     "push": 0.0207,
+     "lose": 0.6205,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3588,
+     "push": 0,
+     "lose": 0.6412,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3224,
+     "push": 0.0364,
+     "lose": 0.6412,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3224,
+     "push": 0,
+     "lose": 0.6776,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.2761,
+     "push": 0.0463,
+     "lose": 0.6776,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.2761,
+     "push": 0,
+     "lose": 0.7239,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.2533,
+     "push": 0.0228,
+     "lose": 0.7239,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
    "data_quality": {
     "status": "OK",
     "missing": [],
@@ -7225,7 +14992,21 @@
      "rank": 22,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_ARI_LAC",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Los Angeles Chargers",
+     "opponent_code": "LAC",
+     "venue": "away",
+     "points_for": 26,
+     "points_against": 14,
+     "margin": 12,
+     "result": "W"
+    }
+   ]
   },
   "ATL": {
    "code": "ATL",
@@ -7309,7 +15090,21 @@
      "rank": 4,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_ATL_PIT",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Pittsburgh Steelers",
+     "opponent_code": "PIT",
+     "venue": "away",
+     "points_for": 13,
+     "points_against": 20,
+     "margin": -7,
+     "result": "L"
+    }
+   ]
   },
   "BAL": {
    "code": "BAL",
@@ -7393,7 +15188,21 @@
      "rank": 26,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_BAL_IND",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Indianapolis Colts",
+     "opponent_code": "IND",
+     "venue": "away",
+     "points_for": 41,
+     "points_against": 23,
+     "margin": 18,
+     "result": "W"
+    }
+   ]
   },
   "BUF": {
    "code": "BUF",
@@ -7477,7 +15286,21 @@
      "rank": 27,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_BUF_HOU",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Houston Texans",
+     "opponent_code": "HOU",
+     "venue": "away",
+     "points_for": 36,
+     "points_against": 31,
+     "margin": 5,
+     "result": "W"
+    }
+   ]
   },
   "CAR": {
    "code": "CAR",
@@ -7561,7 +15384,21 @@
      "rank": 18,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_CHI_CAR",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Chicago Bears",
+     "opponent_code": "CHI",
+     "venue": "home",
+     "points_for": 37,
+     "points_against": 59,
+     "margin": -22,
+     "result": "L"
+    }
+   ]
   },
   "CHI": {
    "code": "CHI",
@@ -7645,7 +15482,21 @@
      "rank": 21,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_CHI_CAR",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Carolina Panthers",
+     "opponent_code": "CAR",
+     "venue": "away",
+     "points_for": 59,
+     "points_against": 37,
+     "margin": 22,
+     "result": "W"
+    }
+   ]
   },
   "CIN": {
    "code": "CIN",
@@ -7729,7 +15580,21 @@
      "rank": 10,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_TB_CIN",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Tampa Bay Buccaneers",
+     "opponent_code": "TB",
+     "venue": "home",
+     "points_for": 33,
+     "points_against": 27,
+     "margin": 6,
+     "result": "W"
+    }
+   ]
   },
   "CLE": {
    "code": "CLE",
@@ -7813,7 +15678,21 @@
      "rank": 6,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_CLE_JAX",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Jacksonville Jaguars",
+     "opponent_code": "JAX",
+     "venue": "away",
+     "points_for": 10,
+     "points_against": 34,
+     "margin": -24,
+     "result": "L"
+    }
+   ]
   },
   "DAL": {
    "code": "DAL",
@@ -7897,7 +15776,21 @@
      "rank": 28,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_DAL_NYG",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "New York Giants",
+     "opponent_code": "NYG",
+     "venue": "away",
+     "points_for": 20,
+     "points_against": 28,
+     "margin": -8,
+     "result": "L"
+    }
+   ]
   },
   "DEN": {
    "code": "DEN",
@@ -7981,7 +15874,21 @@
      "rank": 2,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_DEN_KC",
+     "week": 1,
+     "date": "2026-09-14",
+     "opponent": "Kansas City Chiefs",
+     "opponent_code": "KC",
+     "venue": "away",
+     "points_for": 10,
+     "points_against": 31,
+     "margin": -21,
+     "result": "L"
+    }
+   ]
   },
   "DET": {
    "code": "DET",
@@ -8065,7 +15972,21 @@
      "rank": 9,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_NO_DET",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "New Orleans Saints",
+     "opponent_code": "NO",
+     "venue": "home",
+     "points_for": 31,
+     "points_against": 30,
+     "margin": 1,
+     "result": "W"
+    }
+   ]
   },
   "GB": {
    "code": "GB",
@@ -8149,7 +16070,21 @@
      "rank": 29,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_GB_MIN",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Minnesota Vikings",
+     "opponent_code": "MIN",
+     "venue": "away",
+     "points_for": 22,
+     "points_against": 39,
+     "margin": -17,
+     "result": "L"
+    }
+   ]
   },
   "HOU": {
    "code": "HOU",
@@ -8233,7 +16168,21 @@
      "rank": 5,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_BUF_HOU",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Buffalo Bills",
+     "opponent_code": "BUF",
+     "venue": "home",
+     "points_for": 31,
+     "points_against": 36,
+     "margin": -5,
+     "result": "L"
+    }
+   ]
   },
   "IND": {
    "code": "IND",
@@ -8317,7 +16266,21 @@
      "rank": 25,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_BAL_IND",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Baltimore Ravens",
+     "opponent_code": "BAL",
+     "venue": "home",
+     "points_for": 23,
+     "points_against": 41,
+     "margin": -18,
+     "result": "L"
+    }
+   ]
   },
   "JAX": {
    "code": "JAX",
@@ -8401,7 +16364,21 @@
      "rank": 31,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_CLE_JAX",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Cleveland Browns",
+     "opponent_code": "CLE",
+     "venue": "home",
+     "points_for": 34,
+     "points_against": 10,
+     "margin": 24,
+     "result": "W"
+    }
+   ]
   },
   "KC": {
    "code": "KC",
@@ -8485,7 +16462,21 @@
      "rank": 19,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_DEN_KC",
+     "week": 1,
+     "date": "2026-09-14",
+     "opponent": "Denver Broncos",
+     "opponent_code": "DEN",
+     "venue": "home",
+     "points_for": 31,
+     "points_against": 10,
+     "margin": 21,
+     "result": "W"
+    }
+   ]
   },
   "LA": {
    "code": "LA",
@@ -8569,7 +16560,21 @@
      "rank": 16,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_SF_LA",
+     "week": 1,
+     "date": "2026-09-10",
+     "opponent": "San Francisco 49ers",
+     "opponent_code": "SF",
+     "venue": "home",
+     "points_for": 7,
+     "points_against": 27,
+     "margin": -20,
+     "result": "L"
+    }
+   ]
   },
   "LAC": {
    "code": "LAC",
@@ -8653,7 +16658,21 @@
      "rank": 3,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_ARI_LAC",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Arizona Cardinals",
+     "opponent_code": "ARI",
+     "venue": "home",
+     "points_for": 14,
+     "points_against": 26,
+     "margin": -12,
+     "result": "L"
+    }
+   ]
   },
   "LV": {
    "code": "LV",
@@ -8737,7 +16756,21 @@
      "rank": 15,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_MIA_LV",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Miami Dolphins",
+     "opponent_code": "MIA",
+     "venue": "home",
+     "points_for": 27,
+     "points_against": 13,
+     "margin": 14,
+     "result": "W"
+    }
+   ]
   },
   "MIA": {
    "code": "MIA",
@@ -8821,7 +16854,21 @@
      "rank": 20,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_MIA_LV",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Las Vegas Raiders",
+     "opponent_code": "LV",
+     "venue": "away",
+     "points_for": 13,
+     "points_against": 27,
+     "margin": -14,
+     "result": "L"
+    }
+   ]
   },
   "MIN": {
    "code": "MIN",
@@ -8905,7 +16952,21 @@
      "rank": 1,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_GB_MIN",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Green Bay Packers",
+     "opponent_code": "GB",
+     "venue": "home",
+     "points_for": 39,
+     "points_against": 22,
+     "margin": 17,
+     "result": "W"
+    }
+   ]
   },
   "NE": {
    "code": "NE",
@@ -8989,7 +17050,21 @@
      "rank": 23,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_NE_SEA",
+     "week": 1,
+     "date": "2026-09-09",
+     "opponent": "Seattle Seahawks",
+     "opponent_code": "SEA",
+     "venue": "away",
+     "points_for": 10,
+     "points_against": 13,
+     "margin": -3,
+     "result": "L"
+    }
+   ]
   },
   "NO": {
    "code": "NO",
@@ -9073,7 +17148,21 @@
      "rank": 7,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_NO_DET",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Detroit Lions",
+     "opponent_code": "DET",
+     "venue": "away",
+     "points_for": 30,
+     "points_against": 31,
+     "margin": -1,
+     "result": "L"
+    }
+   ]
   },
   "NYG": {
    "code": "NYG",
@@ -9157,7 +17246,21 @@
      "rank": 17,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_DAL_NYG",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Dallas Cowboys",
+     "opponent_code": "DAL",
+     "venue": "home",
+     "points_for": 28,
+     "points_against": 20,
+     "margin": 8,
+     "result": "W"
+    }
+   ]
   },
   "NYJ": {
    "code": "NYJ",
@@ -9241,7 +17344,21 @@
      "rank": 32,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_NYJ_TEN",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Tennessee Titans",
+     "opponent_code": "TEN",
+     "venue": "away",
+     "points_for": 23,
+     "points_against": 10,
+     "margin": 13,
+     "result": "W"
+    }
+   ]
   },
   "PHI": {
    "code": "PHI",
@@ -9325,7 +17442,21 @@
      "rank": 12,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_WAS_PHI",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Washington Commanders",
+     "opponent_code": "WAS",
+     "venue": "home",
+     "points_for": 24,
+     "points_against": 22,
+     "margin": 2,
+     "result": "W"
+    }
+   ]
   },
   "PIT": {
    "code": "PIT",
@@ -9409,7 +17540,21 @@
      "rank": 14,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_ATL_PIT",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Atlanta Falcons",
+     "opponent_code": "ATL",
+     "venue": "home",
+     "points_for": 20,
+     "points_against": 13,
+     "margin": 7,
+     "result": "W"
+    }
+   ]
   },
   "SEA": {
    "code": "SEA",
@@ -9493,7 +17638,21 @@
      "rank": 13,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_NE_SEA",
+     "week": 1,
+     "date": "2026-09-09",
+     "opponent": "New England Patriots",
+     "opponent_code": "NE",
+     "venue": "home",
+     "points_for": 13,
+     "points_against": 10,
+     "margin": 3,
+     "result": "W"
+    }
+   ]
   },
   "SF": {
    "code": "SF",
@@ -9577,7 +17736,21 @@
      "rank": 30,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_SF_LA",
+     "week": 1,
+     "date": "2026-09-10",
+     "opponent": "Los Angeles Rams",
+     "opponent_code": "LA",
+     "venue": "away",
+     "points_for": 27,
+     "points_against": 7,
+     "margin": 20,
+     "result": "W"
+    }
+   ]
   },
   "TB": {
    "code": "TB",
@@ -9661,7 +17834,21 @@
      "rank": 24,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_TB_CIN",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Cincinnati Bengals",
+     "opponent_code": "CIN",
+     "venue": "away",
+     "points_for": 27,
+     "points_against": 33,
+     "margin": -6,
+     "result": "L"
+    }
+   ]
   },
   "TEN": {
    "code": "TEN",
@@ -9745,7 +17932,21 @@
      "rank": 8,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_NYJ_TEN",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "New York Jets",
+     "opponent_code": "NYJ",
+     "venue": "home",
+     "points_for": 10,
+     "points_against": 23,
+     "margin": -13,
+     "result": "L"
+    }
+   ]
   },
   "WAS": {
    "code": "WAS",
@@ -9829,7 +18030,21 @@
      "rank": 11,
      "of": 32
     }
-   }
+   },
+   "results": [
+    {
+     "game_id": "2026_01_WAS_PHI",
+     "week": 1,
+     "date": "2026-09-13",
+     "opponent": "Philadelphia Eagles",
+     "opponent_code": "PHI",
+     "venue": "away",
+     "points_for": 22,
+     "points_against": 24,
+     "margin": -2,
+     "result": "L"
+    }
+   ]
   }
  },
  "market_note": "Every game reads NOT JOINED IN THIS BUILD: the artifact is a schedule and a projection, and captured prices are joined at read time."
