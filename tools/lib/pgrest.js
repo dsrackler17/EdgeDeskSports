@@ -70,6 +70,10 @@ function client(cfg, fetchImpl, opts) {
         }
         const err = new Error(`${what || method + ' ' + path} -> ${res.status}: ${String(text).slice(0, 400)}`);
         err.status = res.status;
+        err.postgrest = true;
+        /* PostgREST answers with Postgres's own SQLSTATE in the body; carried
+           so a caller can tell a constraint violation from a schema miss */
+        try { const j = JSON.parse(text); if (j && j.code) err.code = String(j.code); } catch (_) { /* not JSON */ }
         /* a 4xx is a fact about the request, not the network: no retry */
         if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) { stats.failures++; throw err; }
         lastErr = err;
@@ -140,6 +144,17 @@ function client(cfg, fetchImpl, opts) {
       return call('POST', schema, `rpc/${fn}`, args || {}, null, `RPC ${schema}.${fn}`);
     }
   };
+}
+
+/* A REFUSAL, NOT AN OUTAGE. A 4xx from PostgREST (other than a timeout or a
+   rate limit) is the database saying the request itself is wrong — a
+   constraint violated, a column that does not exist, a key that cannot write
+   here. Sending the same request again returns the same answer, so a loop
+   that backs off and retries it is not waiting for anything: the tennis poller
+   retried one for ninety minutes, twenty-two times, on every run for five
+   days. Callers use this to stop early and say what was refused. */
+function refused(e) {
+  return !!(e && e.postgrest && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429);
 }
 
 /* PostgREST `in.(...)` lists: every value quoted, so a name with a comma or a
@@ -238,4 +253,4 @@ function byKeyShape(rows) {
 }
 
 module.exports = {
-  notInstalled, contractHint, byKeyShape, config, client, inList, runLedger, writeMeta, sleep, DEFAULT_URL };
+  notInstalled, contractHint, byKeyShape, config, client, inList, refused, runLedger, writeMeta, sleep, DEFAULT_URL };

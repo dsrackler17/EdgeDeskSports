@@ -33,12 +33,15 @@ const CAP_BUILD = D.expectedCaptureBuild();
 const CAPTURE_ARMED = ['/functions/v1/capture',
   { status: 401, body: JSON.stringify({ ok: false, build: CAP_BUILD, error: 'unauthorized',
     reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }];
+/* The packet ledger present, as the same kind of default: the cases about it
+   list their own entry, which is matched first. */
+const PACKETS_APPLIED = ['/rest/v1/research_packets', { status: 200, body: '[]' }];
 
 /** Answer every URL from a table of {match: response}. */
 function net(table) {
   globalThis.fetch = async (url) => {
     const u = String(url);
-    for (const [frag, res] of [...table, CAPTURE_ARMED]) {
+    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED]) {
       if (u.indexOf(frag) >= 0) {
         if (res.throw) throw new Error(res.throw);
         return { ok: res.status >= 200 && res.status < 300, status: res.status, text: async () => res.body || '' };
@@ -105,6 +108,46 @@ const OK_BOARD = signals(40, 144);
     s = await D.doctor(OPTS);
     eq('a key that may not read signals reports UNKNOWN rather than guessing',
       stateOf(s, 'the board is being captured'), 'UNKNOWN');
+  }
+
+  /* --- IS THE PACKET LEDGER THERE, AND IS THE DEPLOYMENT WRITING TO IT? --
+     The r12+ build snapshots every single-game football packet into
+     research_packets and carries on when the write fails, so a missing
+     migration is invisible from the desk. */
+  {
+    const base = [['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], OK_BOARD, ...OK_ARTIFACTS];
+    net([['?probe=1', { status: 200, body: probeBody() }], ...base]);
+    let r = await D.doctor(OPTS);
+    eq('a packet table that answers is APPLIED', stateOf(r, 'research_packets applied'), 'APPLIED');
+    chk('a build that predates the packet probe field is not judged on it',
+      !r.checks.some((c) => c.name === 'research packets are being snapshotted'));
+    eq('and the verdict is clean', r.verdict, 'DEPLOYED AND CURRENT');
+
+    net([['?probe=1', { status: 200, body: probeBody() }],
+      ['/rest/v1/research_packets', { status: 404, body: JSON.stringify({ code: 'PGRST205', message: "Could not find the table 'public.research_packets' in the schema cache" }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a packet table the schema cache does not know is NOT_APPLIED', stateOf(r, 'research_packets applied'), 'NOT_APPLIED');
+    eq('which is actionable', r.verdict, 'ACTION NEEDED');
+    chk('and the fix names the migration', /research_packets\.sql/.test((r.checks.find((c) => c.name === 'research_packets applied') || {}).fix || ''));
+
+    net([['?probe=1', { status: 200, body: probeBody({ packet_health: { last_packet_write: null, migration: 'supabase/research_packets.sql' } }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a deployment that has not yet built a packet in this isolate is IDLE, not failing', stateOf(r, 'research packets are being snapshotted'), 'IDLE');
+    eq('and IDLE does not decide the verdict', r.verdict, 'DEPLOYED AND CURRENT');
+
+    net([['?probe=1', { status: 200, body: probeBody({ packet_health: { last_packet_write:
+      { ok: false, status: 404, at: '2026-09-16T12:00:00Z', packet_id: 'p1', detail: "Could not find the table 'public.research_packets'" } } }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a deployment whose last packet write failed is FAILING', stateOf(r, 'research packets are being snapshotted'), 'FAILING');
+    eq('which is actionable', r.verdict, 'ACTION NEEDED');
+    chk('and the detail carries the deployment\'s own reason, with no credential in it',
+      /Could not find the table/.test(detailOf(r, 'research packets are being snapshotted')) && !/k\b.*Bearer/.test(detailOf(r, 'research packets are being snapshotted')));
+
+    net([['?probe=1', { status: 200, body: probeBody({ packet_health: { last_packet_write: { ok: true, status: 201, at: '2026-09-16T12:00:00Z', packet_id: 'p1', detail: null } } }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a deployment whose last packet write succeeded is WRITING', stateOf(r, 'research packets are being snapshotted'), 'WRITING');
+    eq('and the verdict stays clean', r.verdict, 'DEPLOYED AND CURRENT');
   }
 
   /* --- IS CAPTURE REFUSING ITS CALLERS, OR IS NOBODY CALLING? ----------

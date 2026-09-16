@@ -85,6 +85,7 @@ module.exports = {
   config: P.config,
   client: P.client,
   inList: P.inList,
+  refused: P.refused,
   sleep: P.sleep,
   DEFAULT_URL: P.DEFAULT_URL,
   runLedger: (db, job, o) => P.runLedger(db, SCHEMA, job, o),

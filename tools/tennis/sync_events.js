@@ -304,8 +304,16 @@ async function resolveOnly(o, deps) {
   res.unmatched.slice(0, 25).forEach(u => log(`  unresolved: ${u.name} (${u.provider_id || 'no id'}) — ${u.reason}`));
   if (res.unmatched.length > 25) log(`  …and ${res.unmatched.length - 25} more`);
 
-  if (o.commit && moved.length) await db.upsert('tennis', 'live_matches', moved, 'match_id', { returning: false, chunk: 200 });
-  else if (moved.length) log(`  would write ${moved.length} resolved side pair(s)`);
+  /* an UPDATE per row, not an upsert: tennis.live_matches requires
+     tournament_id and provider_match_id, and Postgres checks a proposed
+     upsert row against them before it resolves the conflict, so a
+     three-column upsert here is refused even though every row is on file */
+  if (o.commit && moved.length) {
+    for (const m of moved) {
+      await db.patch('tennis', 'live_matches', `match_id=eq.${encodeURIComponent(m.match_id)}`,
+        { home_player_id: m.home_player_id, away_player_id: m.away_player_id });
+    }
+  } else if (moved.length) log(`  would write ${moved.length} resolved side pair(s)`);
   if (o.commit && res.aliasRows.length) summary.aliases = await writeAliases(db, res.aliasRows, summary);
   return summary;
 }

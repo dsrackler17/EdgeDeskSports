@@ -73,6 +73,29 @@ Object.keys(AVAIL.teams || {}).forEach((id) => {
 });
 function avFor(name) { return AVAIL_IX[cavNorm(name)] || null; }
 
+/* THE BRIEF'S SUBJECT IS PICKED FROM THE PUBLISHED CARD, NOT HARDCODED.
+   This file named Texas Tech, which resolved for as long as Texas Tech played
+   once inside the slate's ten-day window. The moment the window reached the
+   programme's next game the resolver answered AMBIGUOUS — correctly: "the
+   team plays more than one game in this window" — and the brief tests
+   dereferenced null. A programme playing twice is a fact about the calendar,
+   not a bug in either the card or the desk, so the subject is chosen the way
+   section 1 chooses its own: from what is actually on the card. Earliest
+   upcoming predicted game between two rated power-conference programmes that
+   each appear exactly once in the window; the old name is the fallback so a
+   card with no such game still says what it was looking for. */
+function pickBriefSubject() {
+  const seen = {};
+  SLATE.games.forEach((g) => { [g.home_team_id, g.away_team_id].forEach((k) => { seen[k] = (seen[k] || 0) + 1; }); });
+  const eligible = SLATE.games.filter((g) => g.model_status === 'PREDICTED'
+    && g.home_fbs_group === 'p4' && g.away_fbs_group === 'p4'
+    && Date.parse(g.kickoff) > NOW && seen[g.home_team_id] === 1 && seen[g.away_team_id] === 1
+    && rkFor(g.home_team) && rkFor(g.away_team))
+    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+  return eligible.length ? eligible[0].home_team : 'Texas Tech';
+}
+const BRIEF_SUBJECT = pickBriefSubject();
+
 /* A real NFL card, shaped exactly as app.html builds it from FB.nfl.up. There
    is no committed NFL schedule artifact in this repository — the NFL board is
    built in the browser from nflverse — so this one is declared, and it is the
@@ -189,13 +212,13 @@ section('follow-ups keep the matchup');
 
   /* CROSS-LEAGUE CARRY. A carried college subject must not resolve against
      the NFL card and must not look as though it did. */
-  const cfbFirst = resolve('Texas Tech matchup this week');
+  const cfbFirst = resolve(BRIEF_SUBJECT + ' matchup this week');
   if (cfbFirst.state === 'RESOLVED') {
     const cfbFollow = resolve('What about the total?', cfbFirst);
     eq('a carried college subject stays college', cfbFollow.sport, E.CFB_SPORT);
     eq('and stays on the same game', String(cfbFollow.game_id), String(cfbFirst.game_id));
   } else {
-    chk('Texas Tech is on the published card', false, cfbFirst.state);
+    chk(BRIEF_SUBJECT + ' is on the published card, playing once in the window', false, cfbFirst.state);
   }
 }
 
@@ -440,7 +463,8 @@ section('matchup drivers');
 section('the assembled brief');
 function buildBrief(over) {
   over = over || {};
-  const res = over.res || resolve('Texas Tech matchup this week');
+  const res = over.res || resolve(BRIEF_SUBJECT + ' matchup this week');
+  if (res.state !== 'RESOLVED') throw new Error('the brief subject ' + BRIEF_SUBJECT + ' did not resolve: ' + res.state);
   const row = cfbRow(res.game_id);
   const signals = over.signals !== undefined ? over.signals : [
     { market: 'spreads', selection: res.home, point: -13.5, best_dec: 1.91, best_book: 'DraftKings', n_books: 8,
@@ -591,8 +615,8 @@ section('the football card, ranked');
    ===================================================================== */
 section('saved research');
 {
-  const { B } = buildBrief();
-  const snap = E.researchSnapshot({ brief: B, model_version: 'edgedesk_cfb_p4_v1.0.0', question: 'Texas Tech matchup this week', now: NOW });
+  const { B, res } = buildBrief();
+  const snap = E.researchSnapshot({ brief: B, model_version: 'edgedesk_cfb_p4_v1.0.0', question: BRIEF_SUBJECT + ' matchup this week', now: NOW });
   chk('a snapshot is identified by a hash of itself', /^[0-9a-f]{16}$/.test(snap.id), snap.id);
   eq('it records the exact model build', snap.model.version, 'edgedesk_cfb_p4_v1.0.0');
   chk('and the price EdgeDesk had actually observed', snap.observed_price && snap.observed_price.book === 'DraftKings', snap.observed_price);
@@ -609,7 +633,7 @@ section('saved research');
 
   /* A later reading, and the diff. */
   const later = buildBrief({
-    signals: [{ market: 'spreads', selection: 'Texas Tech', point: -15.5, best_dec: 1.87, best_book: 'FanDuel',
+    signals: [{ market: 'spreads', selection: res.home, point: -15.5, best_dec: 1.87, best_book: 'FanDuel',
       n_books: 8, last_seen_at: '2026-09-16T17:50:00Z' }],
   });
   const snap2 = E.researchSnapshot({ brief: later.B, model_version: 'edgedesk_cfb_p4_v1.0.0', now: NOW + 864e5 });

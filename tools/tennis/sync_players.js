@@ -122,7 +122,12 @@ function rankingPatches(ranked, known) {
     if (!r || !r.provider_athlete_id) return;
     const id = directoryId(r.provider_athlete_id);
     if (!known[id]) return;
-    out.push({ player_id: id, current_rank: r.rank != null ? r.rank : null,
+    /* the row's required columns travel with the patch: an upsert that omits
+       a NOT NULL column is refused by Postgres before the conflict is
+       resolved, so a rank-only row would fail for a player who is on file */
+    const k = known[id];
+    out.push({ player_id: id, provider_athlete_id: k.provider_athlete_id, full_name: k.full_name,
+      current_rank: r.rank != null ? r.rank : null,
       rank_points: r.points != null ? r.points : null, rank_as_of: r.as_of || null });
   });
   return out;
@@ -212,7 +217,7 @@ async function run(o, deps) {
   const src = deps.source || E.source({ fetchImpl: deps.fetchImpl });
   const now = o.now ? new Date(o.now) : new Date();
   const nowIso = now.toISOString();
-  const summary = { matches: 0, athletes: 0, singles: 0, doubles: 0, enriched: 0, enrich_failed: 0,
+  const summary = { matches: 0, athletes: 0, singles: 0, doubles: 0, enriched: 0, enrich_failed: 0, write_failed: 0,
     ranked: 0, byTour: {}, errors: [] };
 
   const from = new Date(now.getTime() - o.backDays * 86400000).toISOString();
@@ -264,15 +269,27 @@ async function run(o, deps) {
       try {
         const r = await src.athlete(tour, p.provider_athlete_id);
         if (!r || !r.athlete) { summary.enrich_failed++; continue; }
-        const patch = Object.assign({ player_id: p.player_id, enriched_at: nowIso, source_detail: r.via || null }, r.athlete);
+        const patch = Object.assign({ enriched_at: nowIso, source_detail: r.via || null }, r.athlete);
         /* the scoreboard's name is not overwritten by a shorter one */
         if (!patch.full_name) delete patch.full_name;
         Object.keys(patch).forEach(k => { if (patch[k] === null) delete patch[k]; });
+        delete patch.player_id;
+        /* an UPDATE of the row on file, which names only what it enriches.
+           Counted as enriched only once it is written: the old count moved
+           before the write, so a run whose every write was refused reported
+           "enriched 60, 60 the feed would not describe" — both true of
+           nothing — and the refusals sat unprinted in the ledger. */
+        if (o.commit) await db.patch('tennis', 'player_directory', `player_id=eq.${encodeURIComponent(p.player_id)}`, patch);
         summary.enriched++;
-        if (o.commit) await db.upsert('tennis', 'player_directory', [patch], 'player_id', { returning: false });
-      } catch (e) { summary.enrich_failed++; summary.errors.push('enrich ' + p.player_id + ': ' + String(e && e.message || e).slice(0, 120)); }
+      } catch (e) { summary.write_failed++; summary.errors.push('enrich ' + p.player_id + ': ' + String(e && e.message || e).slice(0, 120)); }
     }
-    log(`  enriched ${summary.enriched}, ${summary.enrich_failed} the feed would not describe`);
+    log(`  enriched ${summary.enriched}, ${summary.enrich_failed} the feed would not describe`
+      + (summary.write_failed ? `, ${summary.write_failed} the database refused` : ''));
+  }
+  if (summary.errors.length) {
+    log(`  ${summary.errors.length} error(s):`);
+    summary.errors.slice(0, 5).forEach(e => log('    ' + e));
+    if (summary.errors.length > 5) log(`    …and ${summary.errors.length - 5} more`);
   }
   return summary;
 }

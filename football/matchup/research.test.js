@@ -39,6 +39,7 @@ const PROF = require(path.join(__dirname, 'profiles.js'));
 const PK = require(path.join(__dirname, 'packet.js'));
 const SNAP = require(path.join(__dirname, '..', '..', 'tools', 'lib', 'snapshot_contract.js'));
 const FBS = require(path.join(__dirname, '..', 'fbs', 'fbs.js'));
+const OVERLAY = require(path.join(__dirname, '..', 'availability', 'overlay.js'));
 
 let pass = 0, fail = 0; const failures = [];
 function chk(name, ok, detail) {
@@ -89,15 +90,40 @@ const NOW = Date.parse('2026-09-15T18:00:00Z');
      what comes out of it reflects the registry's own grade. A graded read
      yields a list (empty or not); an ungraded one yields null, which the
      engine prices as maximum injury uncertainty and never as health. */
-  const AV_GRADED = { STRONG: true, PARTIAL: true };
+  /* The graded set is read from the overlay, which is the module that grades.
+     This test carried its own copy ({ STRONG, PARTIAL }); when the overlay
+     began grading an ingested conference filing OFFICIAL, the copy was stale
+     and the weekly build's suite failed on the four teams with the best read
+     on file. The vocabulary itself is asserted just below. */
+  const AV_GRADED = OVERLAY.GRADED;
   Object.keys(ctx.availability_by_team).forEach(k => {
     const t = ctx.availability_by_team[k];
-    const q = String(t.dataQuality || t.data_quality || 'NONE').toUpperCase();
+    const q = OVERLAY.normGrade(t.dataQuality || t.data_quality);
     const got = IN.injuriesFor(ctx, t.team_name || t.team_display);
     const want = !!AV_GRADED[q];
     chk('availability grade ' + q + ' decides what reaches the engine for ' + (t.team_name || k),
       want ? Array.isArray(got) : got === null, { grade: q, got: got === null ? 'null' : ('array[' + got.length + ']') });
   });
+  chk('the overlay names every grade it can produce, and says which of them are reports',
+    OVERLAY.GRADES.join(',') === 'OFFICIAL,STRONG,PARTIAL,LIMITED,NONE'
+      && OVERLAY.isGraded('OFFICIAL') && OVERLAY.isGraded('STRONG') && OVERLAY.isGraded('PARTIAL')
+      && !OVERLAY.isGraded('LIMITED') && !OVERLAY.isGraded('NONE') && !OVERLAY.isGraded(undefined),
+    OVERLAY.GRADES);
+  chk('an OFFICIAL read — an ingested conference filing — reaches the engine as a real report',
+    (() => {
+      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'OFFICIAL',
+        players: [{ player_name: 'A Player', position: 'WR', status: 'OUT', depth_role: 'WR2' }] } },
+        availability_as_of: null };
+      const r = IN.injuriesFor(fake, 'Someteam');
+      return Array.isArray(r) && r.length === 1 && r[0].status === 'out';
+    })());
+  chk('an OFFICIAL read that lists nobody reaches the engine as a report of no absences, not as null',
+    (() => {
+      const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'OFFICIAL', players: [] } },
+        availability_as_of: null };
+      const r = IN.injuriesFor(fake, 'Someteam');
+      return Array.isArray(r) && r.length === 0;
+    })());
   chk('an ungraded availability read never reaches the engine as a clean report',
     (() => {
       const fake = { availability_by_team: { someteam: { team_name: 'Someteam', dataQuality: 'LIMITED', players: [] } },
