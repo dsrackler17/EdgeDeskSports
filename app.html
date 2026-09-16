@@ -21463,6 +21463,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .dk-more summary::-webkit-details-marker{display:none}
 .dk-more summary:before{content:'▸ ';color:var(--citron)}
 .dk-more[open] summary:before{content:'▾ '}
+/* Slice 2: the football evidence (drivers, availability, starters, situation) */
+.dk-state{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:1px 6px;border-radius:5px;border:1px solid var(--ink-line);color:var(--desk-dim);vertical-align:middle}
+.dk-state.official{color:var(--citron);border-color:rgba(216,242,75,.5)}
+.dk-state.unknown{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.dk-drv{margin:6px 0 0;padding:0;list-style:none}
+.dk-drv li{border-top:1px solid var(--ink-line);padding:6px 0;font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
+.dk-drv li:first-child{border-top:0;padding-top:2px}
+.dk-drv .fav{font-weight:700;color:var(--citron)}
+.dk-drv .m{font-size:11px;color:var(--desk-dim);margin-top:2px}
+.dk-inj{margin:6px 0 0;padding:0;list-style:none;font-size:11.5px;color:var(--desk-fg)}
+.dk-inj li{padding:2px 0;overflow-wrap:anywhere}
+.dk-inj .st{font-weight:700}
+.dk-inj .pr{color:var(--desk-dim)}
 .dk-more table{width:100%;border-collapse:collapse;margin-top:6px;font-size:11.5px}
 .dk-more td{padding:4px 6px;border-top:1px solid var(--ink-line);color:var(--desk-dim)}
 .dk-more td.s{color:var(--desk-fg);font-weight:600}
@@ -34392,6 +34405,114 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h+='</div>';
     return h;
   }
+  /* ═══ THE FOOTBALL EVIDENCE (Slice 2) ═══════════════════════════════════
+     Rendered from the packet's own layers, each with its source and the time
+     it was observed: the opponent-adjusted matchup drivers (or the NFL
+     engine's contributions), availability with the official injury report
+     where one is filed, the projected starters with the status that is NOT
+     a confirmation, and the situation (rest, roof, surface, forecast). A
+     missing layer is named as missing; nothing here is computed in the
+     browser and nothing here is an opinion. */
+  function sideName(S,side){
+    var m=S.matchup&&S.matchup[side]; return (m&&m.team)||(side==='home'?'Home':'Away');
+  }
+  function obsAt(iso){ return iso?String(iso).replace('T',' ').slice(0,16)+'Z':'—'; }
+  function stateBadge(st){
+    var k=String(st||'UNKNOWN').toUpperCase();
+    var cls=k==='OFFICIAL_REPORT'?'official':/UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/.test(k)?'unknown':'';
+    return '<span class="dk-state '+cls+'">'+esc(k.replace(/_/g,' '))+'</span>';
+  }
+  function humanStatus(st){ return String(st||'').toLowerCase().replace(/_/g,' '); }
+  function driversHTML(S){
+    var w=S.why_the_number||{}, ds=w.drivers||[], md=w.model_drivers||null, h='';
+    if(ds.length){
+      h+='<div class="dk-sec"><div class="h">Matchup drivers ('+ds.length+')</div><ul class="dk-drv">'
+        +ds.slice(0,8).map(function(x){
+          var head=(x.label?esc(x.label):esc(x.id||'driver'))+(x.favoured?' · <span class="fav">'+esc(x.favoured)+'</span>':'')+(x.gap_word?' · '+esc(x.gap_word):'');
+          var meta=[];
+          if(x.attacker_value&&x.attacker_value.show!=null) meta.push(esc(x.attacker)+' '+esc(x.attacker_value.show)+(x.attacker_value.league!=null?' (league '+esc(x.attacker_value.league)+')':''));
+          if(x.defender_value&&x.defender_value.show!=null) meta.push(esc(x.defender)+' allows '+esc(x.defender_value.show));
+          if(x.reliability!=null) meta.push('reliability '+esc(Math.round(Number(x.reliability)*100))+'%');
+          return '<li><div>'+head+'</div>'+(x.sentence?'<div>'+esc(x.sentence)+'</div>':'')+'<div class="m">'+meta.join(' · ')+(x.attacker_value&&x.attacker_value.show_basis?' · '+esc(x.attacker_value.show_basis):'')+' '+freshBadge(x.freshness)+'</div></li>';
+        }).join('')
+        +'</ul><div class="s" style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc((ds[0]&&ds[0].source)||'')+(ds[0]&&ds[0].observed_at?' · observed '+esc(obsAt(ds[0].observed_at)):'')+'</div></div>';
+    }
+    var pos=(md&&md.positive)||[], neg=(md&&md.negative)||[];
+    if(pos.length||neg.length){
+      h+='<div class="dk-sec"><div class="h">What carries the projection</div><ul class="dk-list">'
+        +pos.slice(0,6).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')
+        +neg.slice(0,6).map(function(x){return '<li style="color:var(--desk-dim)">'+esc(x)+'</li>';}).join('')
+        +'</ul>'+(md.source?'<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(md.source)+'</div>':'')+'</div>';
+    }
+    return h;
+  }
+  function availabilityHTML(S){
+    var av=S.availability, inj=S.injuries||{}; if(!av) return '';
+    var h='<div class="dk-sec"><div class="h">Availability</div><div class="dk-grid two">';
+    ['away','home'].forEach(function(side){
+      var a=av[side]||{}, r=inj[side]||null, st=a.missing?'UNKNOWN':a.state;
+      h+='<div class="dk-cell"><div class="k">'+esc(sideName(S,side))+'</div><div class="v">'+stateBadge(st)+'</div>';
+      if(a.missing) h+='<div class="s">'+esc(a.reason||'not retrieved')+'</div>';
+      else if(st==='OFFICIAL_REPORT'){
+        h+='<div class="s">'+esc(a.out||0)+' out · '+esc(a.doubtful||0)+' doubtful · '+esc(a.questionable||0)+' questionable'+(a.week!=null?' · week '+esc(a.week):'')+'</div>';
+        var ps=(r&&r.players)||a.players||[];
+        if(ps.length) h+='<ul class="dk-inj">'+ps.slice(0,8).map(function(x){return '<li><span class="st">'+esc(x.status||'')+'</span> '+esc(x.name||'')+(x.position?' ('+esc(x.position)+')':'')+(x.injury?' — '+esc(x.injury):'')+(x.practice?' <span class="pr">'+esc(x.practice)+'</span>':'')+'</li>';}).join('')+(ps.length>8?'<li class="pr">and '+(ps.length-8)+' more on the report</li>':'')+'</ul>';
+        h+='<div class="s">'+esc(a.source||'')+' · '+esc(obsAt(a.observed_at))+' '+freshBadge(a.freshness)+'</div>';
+      } else {
+        h+='<div class="s">'+esc(a.sentence||a.reason||'')+'</div>'
+          +'<div class="s">'+esc(a.source||'')+(a.observed_at?' · '+esc(obsAt(a.observed_at)):'')+' '+freshBadge(a.freshness)+'</div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>'+(av.states_note?'<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(av.states_note)+'</div>':'')+'</div>';
+    return h;
+  }
+  function startersHTML(S){
+    var st=S.starters; if(!st) return '';
+    var h='<div class="dk-sec"><div class="h">Projected starting quarterbacks</div><div class="dk-grid two">';
+    ['away','home'].forEach(function(side){
+      var x=st[side]||{};
+      h+='<div class="dk-cell"><div class="k">'+esc(sideName(S,side))+'</div>';
+      if(!x||x.missing) h+='<div class="v">—</div><div class="s">'+esc((x&&x.reason)||'no projected starter on file')+'</div>';
+      else h+='<div class="v">'+esc(x.player_name||'—')+'</div><div class="s">'+(x.confirmed?'confirmed':'<b>not confirmed</b>')+' · '+esc(humanStatus(x.status)||'status unknown')+(x.availability&&x.availability.state?' · availability '+esc(x.availability.state):'')+'</div>'
+        +'<div class="s">'+esc(x.source||'')+(x.retrieved_at?' · '+esc(obsAt(x.retrieved_at)):'')+' '+freshBadge(x.freshness)+'</div>';
+      h+='</div>';
+    });
+    return h+'</div>'+(st.note?'<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(st.note)+'</div>':'')+'</div>';
+  }
+  function situationHTML(S){
+    var s=S.situation; if(!s) return '';
+    var rd=s.rest_days||{}, w=s.weather||{}, cells='';
+    cells+='<div class="dk-cell"><div class="k">Rest</div><div class="v">'+(rd.away!=null?esc(rd.away)+'d':'—')+' · '+(rd.home!=null?esc(rd.home)+'d':'—')+'</div><div class="s">'+esc(sideName(S,'away'))+' · '+esc(sideName(S,'home'))+'</div></div>';
+    cells+='<div class="dk-cell"><div class="k">Venue</div><div class="v">'+esc(s.roof||'roof unknown')+'</div><div class="s">'+esc(s.surface?'surface '+s.surface:'surface not on file')+(s.division_game===true?' · division game':s.division_game===false?' · non-division':'')+'</div></div>';
+    if(w&&!w.missing&&w.value){
+      var v=w.value, bits=[];
+      if(v.temp_f!=null) bits.push(esc(Math.round(v.temp_f))+'°F');
+      if(v.wind_mph!=null) bits.push('wind '+esc(Math.round(v.wind_mph))+' mph'+(v.wind_from?' '+esc(v.wind_from):''));
+      if(v.precip_pct!=null) bits.push('precip '+esc(Math.round(v.precip_pct))+'%');
+      cells+='<div class="dk-cell"><div class="k">Forecast</div><div class="v">'+(bits.length?bits.join(' · '):esc(v.text||'—'))+'</div><div class="s">'+esc(v.text&&bits.length?v.text+' · ':'')+esc(w.source||'')+' · '+esc(obsAt(w.observed_at))+' '+freshBadge(w.freshness)+(s.weather_note?' · '+esc(s.weather_note):'')+'</div></div>';
+    } else cells+='<div class="dk-cell"><div class="k">Forecast</div><div class="v">—</div><div class="s">'+esc((w&&w.reason)||'not on file')+' '+freshBadge('UNKNOWN')+'</div></div>';
+    var t=s.travel; cells+='<div class="dk-cell"><div class="k">Travel</div><div class="v">'+(t&&!t.missing&&t.value?esc(typeof t.value==='object'?(t.value.text||JSON.stringify(t.value)):t.value):'—')+'</div><div class="s">'+esc(t&&t.missing?t.reason:'')+'</div></div>';
+    return '<div class="dk-sec"><div class="h">Situation</div><div class="dk-grid">'+cells+'</div></div>';
+  }
+  function matchupProfileHTML(S){
+    var m=S.matchup; if(!m) return '';
+    var rt=m.ratings||{}, co=m.coaching||{}, pf=m.profiles||{}, rows=[];
+    ['away','home'].forEach(function(side){
+      var r=rt[side], c=co[side], p=pf[side], name=sideName(S,side), parts=[];
+      if(r&&r.etsr!=null) parts.push('ETSR '+esc(fmtPts(r.etsr))+(r.rank!=null?' (#'+esc(r.rank)+')':'')+(r.confidence!=null?' · confidence '+esc(Math.round(Number(r.confidence)*100))+'%':'')+(r.games_used!=null?' · '+esc(r.games_used)+' games':''));
+      if(c&&!c.missing&&c.hc) parts.push('HC '+esc(c.hc)+(c.tenure_seasons!=null?' · season '+esc(c.tenure_seasons):'')+(c.new_hc?' · <b>new head coach</b>':'')+(c.unknown&&c.unknown.length?' · '+esc(c.unknown.join('/'))+' unknown':''));
+      if(p&&p.plays_per_game!=null) parts.push(esc(p.plays_per_game)+' plays/g'+(p.pass_rate!=null?' · pass '+esc(Math.round(Number(p.pass_rate)*100))+'%':'')+(p.points_for_per_game!=null?' · '+esc(p.points_for_per_game)+' for / '+esc(p.points_against_per_game)+' against':''));
+      if(parts.length) rows.push('<tr><td>'+esc(name)+'</td><td>'+parts.join('<br>')+'</td><td>'+freshBadge((r&&r.freshness)||(c&&c.freshness)||(p&&p.freshness))+'</td></tr>');
+    });
+    if(!rows.length) return '';
+    var basis=(rt.home&&rt.home.basis)||(rt.away&&rt.away.basis)||'';
+    return '<details class="dk-more"><summary>Ratings, coaching and play profile</summary><table class="dk-src">'+rows.join('')+'</table>'+(basis?'<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(basis)+'</div>':'')+'</details>';
+  }
+  function footballEvidenceHTML(S){
+    if(!S) return '';
+    return driversHTML(S)+availabilityHTML(S)+startersHTML(S)+situationHTML(S)+matchupProfileHTML(S);
+  }
   function structuredPanelsHTML(d){
     var S=d&&d.structured; if(!S) return '';
     var mm=S.model_vs_market||{}, pd=S.price_discipline||{}, cf=S.confidence||{}, h='';
@@ -34442,6 +34563,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           +'<div class="s">'+esc(c.missing&&c.missing.length?'missing: '+c.missing.slice(0,3).join(', '):(c.note||''))+'</div></div>'; });
       h+='</div>';
     }
+    /* the football evidence (Slice 2): drivers, availability, starters, situation */
+    h+=footballEvidenceHTML(S);
     /* unknowns */
     var unk=(S.what_could_break_it&&S.what_could_break_it.unknowns)||[];
     if(unk.length){ h+='<details class="dk-more"><summary>What EdgeDesk cannot see ('+unk.length+')</summary><ul class="dk-list">'+unk.slice(0,8).map(function(u){return '<li>'+esc(u)+'</li>';}).join('')+'</ul></details>'; }
