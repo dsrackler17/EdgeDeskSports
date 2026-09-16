@@ -117,6 +117,25 @@ their training code (`football/research/`, `football/cfb_p4/README.md`,
   scorecard grades the quoted number against the close and calls a
   win-loss record at its sample size variance.
 
+## Movement (Slice 6)
+
+- **What is validated.** On the CFB archive with openers (2015 on, held
+  out by season), when a pregame-Elo rating fitted before the season
+  disagreed with the opener by 2+ points, the number moved toward the
+  rating 53.0% of the time (n 4,369, p ≈ 0; 50.9% on 2019-2025). That is a
+  LEAN: a tendency, not a record. The size of a move is not predictable
+  beyond its direction (the regression did not beat the no-move baseline),
+  so no expected close is quoted.
+- **What the desk may say.** BET NOW for the side the fair line favours
+  over the opener and WAIT for the other, only under a LEAN or VALIDATED
+  movement tier and only when the gap clears the graded threshold; a
+  number that already moved past the fair line reads MOVED PAST. These are
+  statements about the number, never about the result, and the critic
+  fails a timing call the layer did not make.
+- **NFL.** Not established: no historical opener archive exists, so the
+  test accumulates from the desk's own ledger and reads NO READ until 300
+  closed games are on file.
+
 ## Rules the desk enforces for every model
 
 1. The model's number is never altered by the writing model; it is quoted

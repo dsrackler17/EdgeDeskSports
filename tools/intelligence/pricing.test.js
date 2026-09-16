@@ -110,6 +110,28 @@ chk('a bankroll fraction with no sizing fails the critic', P.criticExtras({ answ
 chk('calling a LEAN an edge without saying LEAN is a warning', P.criticExtras({ answer: 'Buffalo -4.5 is a value bet.', pricing: PR }).some((i) => i.code === 'LEAN_STATED_AS_EDGE'));
 chk('an answer that quotes the block cleanly passes', P.criticExtras({ answer: 'Fair line Buffalo -5.6; at -4.5 the LEAN record says this is the right side of the number, to -5. Not an edge.', pricing: PR }).length === 0);
 
+/* ---- movement ---------------------------------------------------------------- */
+const MV_CFB = { schema: 'edgedesk_movement_validation_v1', sport: CFB, generated_at: '2026-09-16T00:00:00Z', result: { tier: 'LEAN', required_gap_points: 2, tier_basis: 'FIXTURE: toward the rating 53% at 2+ points, a tendency', toward_rating_by_gap: { '2': { n: 4369, toward_rate: 0.53, p_one_sided: 0 } }, open_vs_close_by_gap: { '2': { n: 4369, cover_at_open: 0.509, cover_at_close: 0.497, points_gained_by_betting_early: 0.26 } }, latest: { move_per_gap_point: 0.057 }, regression: { pooled_mae_pred: 1.64, pooled_mae_no_move: 1.6 } } };
+const MV_VAL = JSON.parse(JSON.stringify(MV_CFB)); MV_VAL.result.tier = 'VALIDATED'; MV_VAL.result.regression = { pooled_mae_pred: 1.4, pooled_mae_no_move: 1.6 };
+chk('with no movement validation loaded the read is NO_READ and says so', P.movement({ sport: NFL, open_home_line: -3, fair_home_line: -7 }).status === 'NO_READ' && /no movement validation/.test(P.movement({ sport: NFL, open_home_line: -3, fair_home_line: -7 }).why));
+chk('without an opener there is no read', P.movement({ sport: CFB, fair_home_line: -7 }).status === 'NO_OPENER');
+P.loadMovement(CFB, MV_CFB);
+const mv = P.movement({ sport: CFB, open_home_line: -3.5, market_home_line: -4, fair_home_line: -8 });
+chk('under a LEAN movement tier a fair line 4.5 past the opener is a LEAN_READ: home BET NOW, away WAIT', mv.status === 'LEAN_READ' && mv.gap_at_open === -4.5 && mv.sides.home.verdict === 'BET_NOW' && mv.sides.away.verdict === 'WAIT' && /tendency, not a record/.test(mv.why), mv);
+chk('the size of the move is not quoted when the regression did not beat the no-move baseline', mv.expected_close === null && /not predictable beyond the direction/.test(mv.why));
+chk('a gap below the graded threshold is NO_READ naming the threshold', P.movement({ sport: CFB, open_home_line: -3.5, fair_home_line: -4.5 }).status === 'NO_READ' && /below the 2-point threshold/.test(P.movement({ sport: CFB, open_home_line: -3.5, fair_home_line: -4.5 }).why));
+chk('a number that already moved past the fair line reads MOVED_PAST', P.movement({ sport: CFB, open_home_line: -3.5, market_home_line: -9, fair_home_line: -8 }).status === 'MOVED_PAST');
+chk('the away side is favoured when the fair line likes the dog more than the opener did', P.movement({ sport: CFB, open_home_line: -7, fair_home_line: -3 }).sides.away.verdict === 'BET_NOW');
+P.loadMovement(CFB, MV_VAL);
+const mvV = P.movement({ sport: CFB, open_home_line: -3.5, fair_home_line: -8 });
+chk('under VALIDATED the read is READ and the expected close is quoted when the regression beat the baseline (-3.5 + 0.057 x -4.5)', mvV.status === 'READ' && Math.abs(mvV.expected_close + 3.76) < 0.02, mvV);
+P.loadMovement(CFB, MV_CFB);
+const PRm = P.price({ packet: { game: { sport: CFB, home: 'North Texas', away: 'Texas State' }, model: { home_line: { value: -20 } }, market: { consensus: { spread_home: -14 } }, comparison: {} }, open_home_line: -10 });
+chk('the packet carries the movement read against the fair line (market-anchored -14 vs an opener of -10)', PRm.movement && PRm.movement.status === 'LEAN_READ' && PRm.movement.gap_at_open === -4 && PRm.movement.sides.home.verdict === 'BET_NOW', PRm.movement);
+chk('the prompt block carries the movement line and the timing rule', /MOVEMENT: LEAN_READ \[tier LEAN\]\. Opened -10, now -14, fair -14/.test(P.promptBlock(PRm)) && /Say "bet now" or "wait" only when MOVEMENT/.test(P.promptBlock(PRm)));
+chk('a timing call with no movement read fails the critic', P.criticExtras({ answer: 'Bet it now before the number moves.', pricing: PR }).some((i) => i.code === 'TIMING_UNSUPPORTED'));
+chk('a timing call with a LEAN_READ passes the timing check', !P.criticExtras({ answer: 'North Texas: bet it now before the number moves; a tendency, not a record.', pricing: PRm }).some((i) => i.code === 'TIMING_UNSUPPORTED'));
+
 /* ---- tools ------------------------------------------------------------------ */
 const Rk = require(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', '_research.js'));
 chk('the tools register with the research kernel', P.registerTools() === true && Rk.TOOLS.get_price_ranges && Rk.TOOLS.get_ranked_slate);

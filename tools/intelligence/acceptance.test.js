@@ -796,10 +796,11 @@ const MLB_PACKET = {
     /* THE PROMPT HAS ROOM TO ANSWER IN. */
     chk('the card-wide blocks are dropped for a one-game question',
       !/THE CARD, RANKED/.test(j.prompt || '') && !/RESEARCH QUEUE/.test(j.prompt || ''));
-    /* ~110k characters is ~27k tokens: the analyst layer (Slice 3) adds its
-       block beside the packet, and the answer still has most of the window. */
+    /* ~120k characters is ~30k tokens: the analyst layer (Slice 3) and the
+       pricing and movement blocks (Slices 4-6) sit beside the packet, and the
+       answer still has most of the window. */
     chk('and the prompt is small enough to leave room for an answer',
-      (j.prompt || '').length < 110000, (j.prompt || '').length);
+      (j.prompt || '').length < 120000, (j.prompt || '').length);
   }
 
   done();

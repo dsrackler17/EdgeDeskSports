@@ -115,6 +115,14 @@ hours (`football/pricing/openers_nfl.json`), a desk notebook the investigation
 reads as a provider (`football/notes/current.json`), and a batch import for
 hand-entered college availability. See `docs/runbooks/desk-data.md`.
 
+Slice 6 gives the desk a linemaker's timing read and a nightly learning loop:
+a college line archive with openers and pregame Elo (`football/pricing/lines_cfb.json`),
+a time-separated movement validation (`football/validation/movement_*.json`;
+college is LEAN at 2+ points, a tendency, not a record), BET NOW / WAIT per
+side in the price panel only under a validated tendency, and
+`tools/intelligence/learning_loop.js`, which grades every quoted price against
+its close, opener and result and publishes `football/validation/scorecard.json`.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`
