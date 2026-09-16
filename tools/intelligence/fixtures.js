@@ -27,6 +27,34 @@ const AVAIL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/availability/
 const METRICS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/matchup/metrics.json'), 'utf8'));
 const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/nfl/slate.json'), 'utf8'));
 const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/forecasts.json'), 'utf8'));
+/* The Slice 3 identity profiles: the REAL committed team files for the four
+   clubs the suites name, so the interaction engine is exercised on the
+   shape the identity build writes. */
+const IDENTITY = {};
+['northtexas', 'texasstate', 'buf', 'det'].forEach(function (k) {
+  try { IDENTITY[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/identity/teams/' + k + '.json'), 'utf8')); } catch (_) { IDENTITY[k] = null; }
+});
+/* A live NFL injury report, as nflverse publishes it (CSV), for the two
+   fixture clubs. Fresher than the committed artifact on purpose, and with
+   one change (an OL out) so the investigation can be seen to update the
+   packet rather than repeat it. */
+function injuriesCsv(now) {
+  const dt = new Date(now - 30 * 60000).toISOString();
+  const rows = [
+    ['2026', 'BUF', '3', '00-0040192', 'Jordan Hancock', 'CB', 'Questionable', 'Full Participation in Practice', 'Quadricep', dt],
+    ['2026', 'BUF', '3', '00-0036355', 'Spencer Brown', 'T', 'Out', 'Did Not Participate In Practice', 'Ankle', dt],
+    ['2026', 'DET', '3', '00-0033106', 'Jared Goff', 'QB', 'Questionable', 'Limited Participation in Practice', 'Ribs', dt],
+    ['2026', 'DET', '3', '00-0031000', 'Taylor Decker', 'OT', 'Out', 'Did Not Participate In Practice', 'Shoulder', dt],
+  ];
+  return 'season,team,week,gsis_id,full_name,position,report_status,practice_status,report_primary_injury,date_modified\n' + rows.map(function (r) { return r.join(','); }).join('\n') + '\n';
+}
+/* An open-meteo answer for a college kickoff: the hourly block the function
+   reads, wind and temperature at the kickoff hour. */
+function openMeteo(now) {
+  const hours = [], t = [], w = [], g = [], pp = [], pr = [], code = [];
+  for (let i = 0; i < 24 * 8; i++) { const at = new Date(Math.floor(now / 3600000) * 3600000 + i * 3600000); hours.push(at.toISOString().slice(0, 16)); t.push(78.4); w.push(16.2); g.push(24.1); pp.push(35); pr.push(0.01); code.push(2); }
+  return { latitude: 33.2, longitude: -97.16, hourly_units: { temperature_2m: '\u00b0F', wind_speed_10m: 'mp/h' }, hourly: { time: hours, temperature_2m: t, wind_speed_10m: w, wind_gusts_10m: g, precipitation_probability: pp, precipitation: pr, weather_code: code } };
+}
 
 /* Relative to the clock, so freshness is genuinely exercised. */
 function build(now) {
@@ -169,7 +197,7 @@ function build(now) {
     }, over || {});
   }
 
-  return { now, kickoff, slate, avail: AVAIL, metrics: METRICS, nfl, forecasts: FORECASTS, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
+  return { now, kickoff, slate, avail: AVAIL, metrics: METRICS, identity: IDENTITY, injuries_csv: injuriesCsv(now), open_meteo: openMeteo(now), nfl, forecasts: FORECASTS, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
 }
 
 /**
@@ -199,6 +227,15 @@ function router(fx, opts) {
     if (u.indexOf('/football/matchup/metrics.json') >= 0) return opts.metrics === null ? null : (opts.metrics || fx.metrics);
     if (u.indexOf('/football/nfl/slate.json') >= 0) return opts.nfl === null ? null : (opts.nfl || fx.nfl);
     if (u.indexOf('/football/venues/forecasts.json') >= 0) return opts.forecasts === null ? null : (opts.forecasts || fx.forecasts);
+    /* Slice 3: identity files, one per team, and the live providers the
+       investigation may call. Each can be switched off per scenario. */
+    var im = /\/football\/identity\/teams\/([a-z0-9]+)\.json/.exec(u);
+    if (im) return opts.identity === null ? null : ((opts.identity && opts.identity[im[1]]) || fx.identity[im[1]] || null);
+    if (u.indexOf('/football/identity/index.json') >= 0) return opts.identity === null ? null : { schema: 'edgedesk_team_identity_v1_index', season: 2026, teams: Object.keys(fx.identity) };
+    if (/nflverse-data\/releases\/download\/injuries\/injuries_\d+\.csv/.test(u)) return opts.injuries_csv === null ? null : { __text: opts.injuries_csv || fx.injuries_csv };
+    if (u.indexOf('api.open-meteo.com') >= 0) return opts.open_meteo === null ? null : (opts.open_meteo || fx.open_meteo);
+    if (u.indexOf('api.search.brave.com') >= 0) return opts.search === undefined ? null : opts.search;
+    if (u.indexOf('api.collegefootballdata.com') >= 0) return opts.cfbd === undefined ? null : opts.cfbd;
     if (u.indexOf('/football/availability/current.json') >= 0) {
       return opts.avail === null ? null : (opts.avail || fx.avail);
     }
@@ -229,4 +266,4 @@ function router(fx, opts) {
 const SUBSCRIBED = [{ status: 'active', price_id: 'price_test',
   current_period_end: new Date(Date.now() + 30 * 864e5).toISOString() }];
 
-module.exports = { build, router, SLATE, AVAIL, SUBSCRIBED };
+module.exports = { build, router, SLATE, AVAIL, SUBSCRIBED, IDENTITY, injuriesCsv, openMeteo };

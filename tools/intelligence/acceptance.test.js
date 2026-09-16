@@ -79,7 +79,7 @@ globalThis.fetch = async function (url, init) {
   if (init && init.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => '*/0' }, text: async () => '' };
   const d = route(u, init);
   if (d === null) return { ok: false, status: 404, text: async () => 'nope', json: async () => null };
-  return { ok: true, status: 200, text: async () => JSON.stringify(d), json: async () => d };
+  return { ok: true, status: 200, text: async () => (d && typeof d.__text === 'string') ? d.__text : JSON.stringify(d), json: async () => d };
 };
 
 /* THE BOARD THE READER HAS OPEN, and the signal loaded on it. This is the
@@ -796,8 +796,10 @@ const MLB_PACKET = {
     /* THE PROMPT HAS ROOM TO ANSWER IN. */
     chk('the card-wide blocks are dropped for a one-game question',
       !/THE CARD, RANKED/.test(j.prompt || '') && !/RESEARCH QUEUE/.test(j.prompt || ''));
+    /* ~110k characters is ~27k tokens: the analyst layer (Slice 3) adds its
+       block beside the packet, and the answer still has most of the window. */
     chk('and the prompt is small enough to leave room for an answer',
-      (j.prompt || '').length < 100000, (j.prompt || '').length);
+      (j.prompt || '').length < 110000, (j.prompt || '').length);
   }
 
   done();

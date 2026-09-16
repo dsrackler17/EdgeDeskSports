@@ -50,7 +50,7 @@ globalThis.fetch = async function (url, init) {
   if (init && init.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => '*/0' }, text: async () => '' };
   const d = route(u, init);
   if (d === null) return { ok: false, status: 404, text: async () => 'nope', json: async () => null };
-  return { ok: true, status: 200, text: async () => JSON.stringify(d), json: async () => d };
+  return { ok: true, status: 200, text: async () => (d && typeof d.__text === 'string') ? d.__text : JSON.stringify(d), json: async () => d };
 };
 
 /* The retrieval cache is per-isolate and long-lived by design, so one

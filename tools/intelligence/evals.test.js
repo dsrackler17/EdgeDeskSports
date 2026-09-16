@@ -63,7 +63,7 @@ globalThis.fetch = async function (url, init) {
   if (init && init.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => '*/0' }, text: async () => '' };
   const d = route(u, init);
   if (d === null) return { ok: false, status: 404, text: async () => 'nope', json: async () => null };
-  return { ok: true, status: 200, text: async () => JSON.stringify(d), json: async () => d };
+  return { ok: true, status: 200, text: async () => (d && typeof d.__text === 'string') ? d.__text : JSON.stringify(d), json: async () => d };
 };
 
 const NOW = Date.now();
@@ -75,7 +75,7 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
 
   async function ask(question, opts) {
     opts = opts || {};
-    m.clearCache(); m.resetRateLimit();
+    m.clearCache(); m.resetRateLimit(); if (m.clearInvestigationCache) m.clearInvestigationCache();
     route = FX.router(fx, opts.rows || {});
     modelCalls = []; posted = [];
     modelText = opts.answer === undefined ? 'ok' : opts.answer;
@@ -155,11 +155,14 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   /* ═══ 5. missing data ══════════════════════════════════════════════════ */
   {
     const F = 'missing data';
-    const r = await ask('Analyze North Texas versus Texas State.');
+    /* the live forecast provider is switched off for this scenario, so the
+       weather stays missing and the investigation has to SAY it could not get it */
+    const r = await ask('Analyze North Texas versus Texas State.', { rows: { open_meteo: null } });
     const p = r.j.research_packet;
     chk(F, 'unknown availability is named as an unknown, not a clean sheet', p.unknowns.some((u) => /not a clean sheet/.test(u)));
     chk(F, 'the missing interval is declared with a reason', p.model.interval.missing === true && /no p10\/p90/.test(p.model.interval.reason));
     chk(F, 'weather is declared missing', p.situation.weather.missing === true);
+    chk(F, 'and the investigation records that the forecast provider was tried and answered nothing', r.j.investigation && r.j.investigation.log.some((l) => l.gap === 'weather' && l.provider === 'open_meteo_forecast' && l.outcome === 'UNAVAILABLE'), r.j.investigation && r.j.investigation.log.filter((l) => l.gap === 'weather'));
     chk(F, 'data confidence names what is missing', p.confidence.data.missing.length > 0);
     chk(F, 'the answer is still produced (no generic refusal)', r.j.structured && r.j.structured.bottom_line.label);
     const noMkt = await ask('Analyze Syracuse at Pittsburgh');
@@ -171,7 +174,7 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   /* ═══ 6. hallucination traps ═══════════════════════════════════════════ */
   {
     const F = 'hallucination traps';
-    let r = await ask('Analyze North Texas versus Texas State.', { dry: false, answer: GOOD('North Texas ran 78.4 plays per game at a 61.7% success rate, 156.3 rushing yards a game, and their edge rusher Devon Pryor has 13 sacks.') });
+    let r = await ask('Analyze North Texas versus Texas State.', { dry: false, answer: GOOD('North Texas ran 213.4 plays per game at a 61.3% success rate, 394.6 rushing yards a game and 157.8 passing yards, and their edge rusher Devon Pryor has 13 sacks.') });
     chk(F, 'numbers the packet does not carry are caught', r.j.critic.findings.some((f) => f.code === 'NUMBER_NOT_IN_EVIDENCE'), r.j.critic);
     chk(F, 'a player the packet does not carry is caught', r.j.critic.findings.some((f) => f.code === 'NAME_NOT_IN_EVIDENCE' && /Devon Pryor/.test(f.detail)));
     chk(F, 'three invented numbers fail the answer outright', r.j.critic.verdict === 'FAIL');
