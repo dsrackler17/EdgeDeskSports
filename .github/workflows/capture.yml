@@ -88,6 +88,10 @@ jobs:
           # CAPTURE_CRON_SECRET are not both set", which sends an operator to
           # check two secrets when one of them is already there -- and SB_URL
           # is, every other workflow in this repository uses it.
+          # A value pasted into the secrets form with a trailing newline or a
+          # carriage return is "set" and still never matches: the header would
+          # carry the line break. Strip it here, where it costs nothing.
+          CAPTURE_CRON_SECRET="$(printf '%s' "${CAPTURE_CRON_SECRET:-}" | tr -d '\r\n')"
           MISSING=""
           [ -z "${SB_URL:-}" ] && MISSING="$MISSING SB_URL"
           [ -z "${CAPTURE_CRON_SECRET:-}" ] && MISSING="$MISSING CAPTURE_CRON_SECRET"
@@ -156,5 +160,16 @@ jobs:
 
           if [ "$CODE" != "200" ]; then
             echo "::error::capture answered HTTP $CODE"
+            # THE 401 THAT SAYS "did not match" is the one this job cannot fix
+            # by itself. Both sides are set; they are set to different values.
+            # Every run of this workflow since it was created (2026-09-15) has
+            # ended here, so say exactly which value has to change and where.
+            if grep -q 'did not match' /tmp/capture.json 2>/dev/null; then
+              echo "::error::CAPTURE_CRON_SECRET (this repository's Actions secret) is not the CRON_SECRET the deployed capture function holds."
+              echo "Fix: Supabase dashboard -> Edge Functions -> Secrets -> CRON_SECRET (or: supabase secrets set CRON_SECRET=<value>),"
+              echo "then GitHub -> Settings -> Secrets and variables -> Actions -> CAPTURE_CRON_SECRET = the SAME value,"
+              echo "and the database setting edgedesk.cron_secret = the same value (supabase/capture_cron.sql, step 3) so pg_cron is not refused either."
+              echo "Nothing in the repository can supply this value; it is never printed."
+            fi
             exit 1
           fi
