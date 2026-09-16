@@ -152,6 +152,18 @@ jobs:
 
       - name: Coaching continuity
         run: node football/coaching/build_coaching.js
+
+      # THE RESEARCH DESK'S TWO ARTIFACTS. The metrics file is the compact,
+      # per-team copy of what the builds above published (rankings detail,
+      # profiles, starters, coaching, the NFL injury report) that the edge
+      # function can fetch per request; the NFL slate is the browser's own
+      # projection, run through the same module in Node so the function has an
+      # NFL number to quote. Neither computes anything new.
+      - name: Matchup metrics for the research desk
+        run: node tools/football/build_matchup_metrics.js
+
+      - name: NFL slate for the research desk
+        run: node tools/football/build_nfl_slate.js || echo "::warning::the NFL slate could not be rebuilt this run — the previous artifact stands"
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
@@ -181,7 +193,7 @@ jobs:
           # -A over the directories, for the same reason availability-sync.yml
           # does it: `git add a b c` stages NOTHING if any one path is missing,
           # and a new artifact's first run is exactly when one is.
-          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/
+          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/nfl/
           if git diff --cached --quiet; then
             echo 'starter context and profiles unchanged — nothing to commit'
             exit 0

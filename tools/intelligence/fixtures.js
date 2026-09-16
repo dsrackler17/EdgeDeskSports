@@ -20,6 +20,13 @@ const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/fbs/slate.jso
    report anywhere. A fixture with invented injuries would prove the opposite
    of what needs proving. */
 const AVAIL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/availability/current.json'), 'utf8'));
+/* The Slice 2 artifacts, real and committed: the compact matchup metrics
+   (rankings detail, profiles, starters, coaching, the NFL injury report), the
+   NFL slate the browser's own projection wrote through Node, and the venue
+   forecasts. Each is served as-is; a test that needs one absent passes null. */
+const METRICS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/matchup/metrics.json'), 'utf8'));
+const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/nfl/slate.json'), 'utf8'));
+const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/forecasts.json'), 'utf8'));
 
 /* Relative to the clock, so freshness is genuinely exercised. */
 function build(now) {
@@ -40,6 +47,26 @@ function build(now) {
     spread_recommendation: 'NO_MARKET', market_status: 'NOT JOINED IN THIS BUILD', quote_timestamp: null,
   };
   const slate = Object.assign({}, SLATE, { games: [NT].concat(SLATE.games.slice(0, 6)) });
+  /* One NFL game inside the window whatever the calendar says, on the front of
+     the REAL committed NFL artifact, so the NFL card always carries a game the
+     suites can name. The model fields are the shape the builder writes. */
+  const NFLG = {
+    game_id: 'nfl-fx-det-buf', season: 2026, week: 3, game_type: 'REG', kickoff: new Date(now + 6 * 86400000).toISOString(),
+    home_code: 'BUF', away_code: 'DET', home_team: 'Buffalo Bills', away_team: 'Detroit Lions', home_team_id: 'buf', away_team_id: 'det',
+    venue: 'Highmark Stadium', roof: 'outdoors', surface: 'a_turf', div_game: false, home_rest: 7, away_rest: 7,
+    home_starter: { player_name: 'Josh Allen', player_id: '00-0034857', source: 'nflverse games.csv', status: 'SCHEDULE_FEED' },
+    away_starter: { player_name: 'Jared Goff', player_id: '00-0033106', source: 'nflverse games.csv', status: 'SCHEDULE_FEED' },
+    model_status: 'PREDICTED', model_home_margin: 5.2, model_home_line: -5.2, model_fair_total: 52.4, model_home_win_prob: 0.6867,
+    outcome_range: { p10: -12, p50: 4, p90: 23, sigma: 10.7, basis: 'margin_pmf_by_spread', unit: 'home margin, points' },
+    contributions: { spread: [{ key: 'baseline', value: 0, points: 2.48 }, { key: 'net_epa', value: 0.0811, points: 0.82 }, { key: 'net_pass', value: 0.1272, points: 1.59 }, { key: 'qb_adj_diff', value: -0.0094, points: -0.05 }], total: [] },
+    data_quality: { status: 'OK', missing: [], warnings: [] }, model_version: NFL_SLATE.engine && NFL_SLATE.engine.model_version,
+    reference_market: { source: 'nflverse games.csv consensus (reference, not a price, no book, no capture time)', home_line: -2.5, home_margin: 2.5, total: 49.5, home_ml: -140, away_ml: 120, convention: 'home_line: negative = home favoured (betting)' },
+    market_status: 'NOT JOINED IN THIS BUILD',
+  };
+  /* The real card's Detroit and Buffalo games are left off so "the Lions at
+     Buffalo" resolves to exactly one game whatever week the artifact is from. */
+  const nflRest = NFL_SLATE.games.filter((g) => !/^(det|buf)$/i.test(String(g.home_team_id)) && !/^(det|buf)$/i.test(String(g.away_team_id))).slice(0, 6);
+  const nfl = Object.assign({}, NFL_SLATE, { games: [NFLG].concat(nflRest) });
 
   const teams = [
     { team_id: 1, school: 'North Texas', mascot: 'Mean Green', abbreviation: 'UNT', conference: 'American Athletic', classification: 'fbs' },
@@ -142,7 +169,7 @@ function build(now) {
     }, over || {});
   }
 
-  return { now, kickoff, slate, avail: AVAIL, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
+  return { now, kickoff, slate, avail: AVAIL, metrics: METRICS, nfl, forecasts: FORECASTS, teams, completed, upcoming, lines, ratings, records, seasonStats, rosterNT, rosterTX, signal };
 }
 
 /**
@@ -167,6 +194,11 @@ function router(fx, opts) {
       }];
     }
     if (u.indexOf('/football/fbs/slate.json') >= 0) return opts.slate === null ? null : (opts.slate || fx.slate);
+    /* The Slice 2 artifacts: the REAL committed files, because a fixture that
+       agreed with itself would prove nothing about the shape the builds write. */
+    if (u.indexOf('/football/matchup/metrics.json') >= 0) return opts.metrics === null ? null : (opts.metrics || fx.metrics);
+    if (u.indexOf('/football/nfl/slate.json') >= 0) return opts.nfl === null ? null : (opts.nfl || fx.nfl);
+    if (u.indexOf('/football/venues/forecasts.json') >= 0) return opts.forecasts === null ? null : (opts.forecasts || fx.forecasts);
     if (u.indexOf('/football/availability/current.json') >= 0) {
       return opts.avail === null ? null : (opts.avail || fx.avail);
     }

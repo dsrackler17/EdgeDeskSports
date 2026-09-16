@@ -710,6 +710,30 @@
     var decisionOut = decision ? { decision: decision.decision || null, strength: decision.strength || null, selection: decision.selection || null, market: decision.market || null, handicap: num(decision.handicap), why: decision.why || null, blockers: decision.blockers || [], price_limit_american: decision.price && decision.price.price_limit_american || null, price_needed_american: decision.price && decision.price.price_needed_american || null, what_would_change_it: decision.what_would_change_it || [], gates: decision.gates ? Object.keys(decision.gates).map(function (g) { return { gate: g, pass: !!decision.gates[g].pass }; }) : [] } : null;
 
     /* ---- availability, situation, matchup, evidence ---------------------- */
+    var matchup = o.matchup || null;
+    var drivers = o.drivers && o.drivers.length ? o.drivers : [];
+    /* ---- Slice 2: the football layers, each with a source and a time ------ */
+    var fc = o.football || {};
+    var starters = {
+      home: fc.starters && fc.starters.home ? fc.starters.home : missing('no projected starter on file for the home side', 'football/matchup/metrics.json'),
+      away: fc.starters && fc.starters.away ? fc.starters.away : missing('no projected starter on file for the away side', 'football/matchup/metrics.json'),
+      note: 'A projected starter is the starter-context build\u2019s read (announced, expected, depth chart, previous game or competition). Only ANNOUNCED with confirmed:true is a confirmed starter.'
+    };
+    ['home', 'away'].forEach(function (s) { var st = starters[s]; if (st && !st.missing && st.status && st.status !== 'ANNOUNCED') unknowns.push('The ' + s + ' starting quarterback is projected from ' + String(st.status).toLowerCase().replace(/_/g, ' ') + ' evidence, not announced.'); });
+    var injuries = {
+      home: fc.injuries && fc.injuries.home ? fc.injuries.home : null,
+      away: fc.injuries && fc.injuries.away ? fc.injuries.away : null,
+      note: 'The official NFL report where one is filed (nflverse), with practice status. College availability is the availability layer\u2019s own state.'
+    };
+    var coaching = {
+      home: fc.coaching && fc.coaching.home ? fc.coaching.home : missing('coaching continuity not on file', 'football/coaching/continuity.json'),
+      away: fc.coaching && fc.coaching.away ? fc.coaching.away : missing('coaching continuity not on file', 'football/coaching/continuity.json')
+    };
+    var profiles = { home: fc.profiles && fc.profiles.home || null, away: fc.profiles && fc.profiles.away || null,
+      note: 'Pace, pass rate, explosive and sack rates from the play feed; the garbage-time-free view sits beside the full one.' };
+    var ratings = { home: fc.ratings && fc.ratings.home || null, away: fc.ratings && fc.ratings.away || null };
+    if (fc.drivers && fc.drivers.length && !drivers.length) drivers = fc.drivers;
+    if (!drivers.length) unknowns.push('No opponent-adjusted matchup drivers are on file for this pairing' + (fc.drivers_missing ? ' (' + fc.drivers_missing + ')' : '') + '.');
     var avail = o.availability || null;
     var availability = avail ? {
       home: avail.home || missing('no availability record for the home side', 'football/availability/current.json'),
@@ -717,16 +741,28 @@
       coverage_note: avail.coverage_note || null,
       states_note: 'UNKNOWN is not healthy. Only NO_REPORTED_INJURIES means an official report was read and listed nobody.'
     } : { home: missing('availability was not retrieved'), away: missing('availability was not retrieved'), coverage_note: null };
-    ['home', 'away'].forEach(function (s) { var st = availability[s] && availability[s].state; if (!st || /UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/i.test(String(st))) unknowns.push('Availability for the ' + s + ' side is ' + (st || 'not on file') + ': injuries and absences are not known, and their absence from this packet is not a clean sheet.'); });
-    var situation = o.situation || {};
+    ['home', 'away'].forEach(function (s) {
+      var inj = injuries[s];
+      if (inj && inj.official && Array.isArray(inj.players)) {
+        availability[s] = { state: 'OFFICIAL_REPORT', source: inj.source, observed_at: inj.retrieved_at || null, freshness: inj.freshness || null,
+          week: inj.week, out: inj.out, doubtful: inj.doubtful, questionable: inj.questionable, players: inj.players.slice(0, 40),
+          sentence: 'An official report was read: ' + inj.out + ' out, ' + inj.doubtful + ' doubtful, ' + inj.questionable + ' questionable (week ' + inj.week + '). Players not listed are not on the report.' };
+      }
+      var st = availability[s] && availability[s].state;
+      if (!st || /UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/i.test(String(st))) unknowns.push('Availability for the ' + s + ' side is ' + (st || 'not on file') + ': injuries and absences are not known, and their absence from this packet is not a clean sheet.');
+    });
+    var situation = Object.assign({}, o.situation || {});
+    if (fc.weather && !situation.weather) { situation.weather = fc.weather.value; situation.weather_source = fc.weather.source; situation.weather_observed_at = fc.weather.observed_at; }
+    if (fc.rest) { if (situation.home_rest_days == null) situation.home_rest_days = fc.rest.home; if (situation.away_rest_days == null) situation.away_rest_days = fc.rest.away; }
+    if (fc.venue) { situation.surface = situation.surface || fc.venue.surface || null; situation.roof = fc.venue.roof || null; situation.division_game = fc.venue.div_game == null ? null : !!fc.venue.div_game; }
     var situationOut = {
       rest_days: { home: num(situation.home_rest_days), away: num(situation.away_rest_days) },
       weather: situation.weather ? fact(situation.weather, { source: situation.weather_source || 'football/venues/forecasts.json', observed_at: situation.weather_observed_at, now: now, category: 'weather' }) : missing('no weather forecast was retrieved for this game', 'football/venues/forecasts.json'),
-      travel: situation.travel || missing('travel distance and time zone are not computed'), surface: situation.surface || null, altitude: situation.altitude || null
+      travel: situation.travel || missing('travel distance and time zone are not computed'), surface: situation.surface || null, altitude: situation.altitude || null,
+      roof: situation.roof || null, division_game: situation.division_game == null ? null : situation.division_game
     };
+    if (situationOut.weather && !situationOut.weather.missing && situationOut.roof && /dome|closed/i.test(String(situationOut.roof))) situationOut.weather_note = 'Indoors: the forecast does not apply to play.';
     if (situationOut.weather.missing) unknowns.push('Weather is not on file for this game.');
-    var matchup = o.matchup || null;
-    var drivers = o.drivers && o.drivers.length ? o.drivers : [];
     var evidence = {
       for_favourite: (o.thesis && o.thesis.support) || [], for_underdog: (o.thesis && o.thesis.contradictions) || [],
       contradictions: (o.thesis && o.thesis.contradictions) || [], falsifiers: (o.thesis && o.thesis.falsifiers) || [],
@@ -743,6 +779,7 @@
       { name: 'model projection', weight: 3, present: !model.home_line.missing },
       { name: 'availability for both sides', weight: 2, present: ['home', 'away'].every(function (s) { var st = availability[s] && availability[s].state; return st && !/UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/i.test(String(st)); }) },
       { name: 'matchup drivers', weight: 2, present: drivers.length > 0 },
+      { name: 'projected starters on both sides', weight: 1, present: !!(starters.home && !starters.home.missing && starters.away && !starters.away.missing) },
       { name: 'previous games with opponent quality', weight: 1, present: !!(previous_games && ((previous_games.home && previous_games.home.length) || (previous_games.away && previous_games.away.length))) },
       { name: 'weather', weight: 1, present: !situationOut.weather.missing }
     ];
@@ -765,6 +802,7 @@
       model_version: model.version || o.model_version || null,
       game: game, market: market, model: model, comparison: comparison, decision: decisionOut,
       drivers: drivers, matchup: matchup, availability: availability, situation: situationOut,
+      starters: starters, injuries: injuries, coaching: coaching, profiles: profiles, ratings: ratings,
       previous_games: previous_games, comparables: comparables, evidence: evidence,
       unknowns: uniq(unknowns.concat(o.unknowns || [])), completeness: completeness, confidence: confidence,
       label: null, sources: [], packet_id: null, packet_hash: null
@@ -853,6 +891,13 @@
     if (p.availability) ['home', 'away'].forEach(function (s) { var a = p.availability[s]; if (a && !a.missing && a.source) add(a.source, a.observed_at || null, a.freshness || null, s + ' availability: ' + (a.state || '')); });
     if (p.situation && p.situation.weather && !p.situation.weather.missing) add(p.situation.weather.source, p.situation.weather.observed_at, p.situation.weather.freshness, 'weather');
     (p.drivers || []).forEach(function (d) { if (d && d.source) add(d.source, d.observed_at || null, d.freshness || null, 'matchup driver'); });
+    ['home', 'away'].forEach(function (s) {
+      var st = p.starters && p.starters[s]; if (st && !st.missing && st.source) add(st.source, st.retrieved_at || st.published_at || null, st.freshness || null, s + ' projected starter: ' + (st.player_name || '?') + ' (' + (st.status || '?') + ')');
+      var inj = p.injuries && p.injuries[s]; if (inj && inj.source) add(inj.source, inj.retrieved_at || null, inj.freshness || null, s + ' official injury report');
+      var co = p.coaching && p.coaching[s]; if (co && !co.missing && co.source) add(co.source, co.as_of || null, co.freshness || null, s + ' coaching continuity');
+      var pr = p.profiles && p.profiles[s]; if (pr && pr.source) add(pr.source, pr.as_of || null, pr.freshness || null, s + ' play profile');
+      var rt = p.ratings && p.ratings[s]; if (rt && rt.source) add(rt.source, rt.as_of || null, rt.freshness || null, s + ' rating');
+    });
     (extra || []).forEach(function (s) { if (s && s.source) add(s.source, s.observed_at || null, s.freshness || null, s.note || null); });
     return rows;
   }
@@ -1095,6 +1140,7 @@
     L.push('');
     L.push('**' + PROSE_SECTIONS[4].heading + '**');
     if (pd.current_price) L.push('- Price: ' + pd.current_price + (pd.playable_to ? '; playable to ' + pd.playable_to : '') + (pd.price_needed ? '; ' + pd.price_needed + ' or better would be needed' : '') + '.');
+    ['home', 'away'].forEach(function (s) { var st = p.starters && p.starters[s]; if (st && !st.missing && st.player_name) L.push('- ' + (s === 'home' ? (g.home || 'Home') : (g.away || 'Away')) + ' projected starter: ' + st.player_name + ' (' + String(st.status || '').toLowerCase().replace(/_/g, ' ') + (st.confirmed ? ', confirmed' : ', not confirmed') + ').'); });
     (p.unknowns || []).slice(0, 4).forEach(function (u) { L.push('- ' + u); });
     return L.join('\n');
   }
@@ -1123,7 +1169,8 @@
       bottom_line: { label: p.label ? p.label.label : 'INSUFFICIENT DATA', decision: p.label ? p.label.decision : null, sentence: labelSentence(p.label ? p.label.label : null), rules_fired: p.label ? p.label.rules_fired : [], why: p.label ? p.label.why : [], read: sec('read') },
       model_vs_market: modelVsMarket(p, now),
       why_the_number: { prose: sec('why'), drivers: p.drivers || [], model_drivers: p.model && p.model.drivers ? p.model.drivers : null },
-      matchup: p.matchup || null,
+      matchup: p.matchup ? Object.assign({}, p.matchup, { profiles: p.profiles || null, ratings: p.ratings || null, coaching: p.coaching || null }) : (p.profiles || p.ratings ? { profiles: p.profiles || null, ratings: p.ratings || null, coaching: p.coaching || null } : null),
+      availability: p.availability || null, starters: p.starters || null, injuries: p.injuries || null, situation: p.situation || null,
       case_for_each_side: { prose: sec('sides'), for_favourite: p.evidence ? p.evidence.for_favourite : [], for_underdog: p.evidence ? p.evidence.for_underdog : [] },
       what_could_break_it: { prose: sec('wrong'), contradictions: p.evidence ? p.evidence.contradictions : [], unknowns: p.unknowns || [], falsifiers: p.evidence ? p.evidence.falsifiers : [] },
       price_discipline: Object.assign(priceDiscipline(p), { prose: sec('limits') }),
@@ -1210,7 +1257,7 @@
     run: function (i, ctx) { return resolveSportsEntity({ text: i.text, sport: i.sport || null, cards: ctx && ctx.cards, resolver: ctx && ctx.resolver, aliases: ctx && ctx.aliases }); } });
   function fromPacket(name, pick, description) {
     def({ name: name, llm: true, category: 'data', description: description,
-      input: T.obj({}, { open: true }), output: T.any(),
+      input: name === 'get_team_profile' ? T.obj({ side: T.enm(['home', 'away']) }) : T.obj({}, { open: true }), output: T.any(),
       run: function (i, ctx) {
         var p = ctx && ctx.packet;
         if (!p) return { ok: false, error: 'no research packet is attached to this turn', missing: ['packet'] };
@@ -1225,6 +1272,15 @@
   fromPacket('get_model_projection', function (p) { return p.model && p.model.home_line && !p.model.home_line.missing ? { ok: true, model: p.model } : { ok: false, error: 'no projection for this game', missing: ['model'] }; }, 'EdgeDesk\u2019s projection with its version, age and validation record.');
   fromPacket('get_projection_drivers', function (p) { var d = (p.model && p.model.drivers) || {}; var any = (d.positive || []).length || (d.negative || []).length || (p.drivers || []).length; return any ? { ok: true, model_drivers: d, matchup_drivers: p.drivers } : { ok: false, error: 'no drivers are published for this projection', missing: ['drivers'] }; }, 'What is carrying the projection, where published.');
   fromPacket('get_source_manifest', function (p) { return { ok: true, sources: p.sources }; }, 'Every source in the packet with its observed time and freshness.');
+  fromPacket('get_matchup_metrics', function (p) { return (p.drivers && p.drivers.length) || p.matchup ? { ok: true, drivers: p.drivers, matchup: p.matchup, profiles: p.profiles, ratings: p.ratings, note: 'Opponent-adjusted unit pairs from the rankings build; a driver\u2019s advantage_z is stated for the attacker.' } : { ok: false, error: 'no matchup metrics for this pairing', missing: ['drivers'] }; }, 'Opponent-adjusted matchup drivers (success, explosiveness, pressure, rushing, finishing), the ratings and the play profiles for both sides.');
+  fromPacket('get_injury_report', function (p) { var a = p.availability || {}; return { ok: true, home: a.home, away: a.away, injuries: p.injuries, coverage_note: a.coverage_note, states_note: a.states_note, note: 'UNKNOWN is not healthy. An OFFICIAL_REPORT lists who is out, doubtful and questionable with practice status; anyone not listed is not on the report.' }; }, 'Availability and the official injury report per side, with the state that governs what may be claimed.');
+  fromPacket('get_weather_and_venue', function (p) { var s = p.situation || {}; return { ok: true, venue: p.game && p.game.venue, neutral_site: p.game && p.game.neutral_site, roof: s.roof, surface: s.surface, weather: s.weather, weather_note: s.weather_note || null, altitude: s.altitude }; }, 'Venue, roof, surface and the forecast on file (wind, temperature, precipitation) with its observation time.');
+  fromPacket('get_roster_and_depth_chart', function (p) { return p.starters ? { ok: true, starters: p.starters, note: 'Projected starting quarterbacks only; EdgeDesk publishes no full depth chart.' } : null; }, 'The projected starting quarterback per side with status, confirmation and availability evidence.');
+  fromPacket('get_schedule_rest_and_travel', function (p) { var s = p.situation || {}; return { ok: true, kickoff: p.game && p.game.kickoff, rest_days: s.rest_days, division_game: s.division_game, travel: s.travel, roof: s.roof, surface: s.surface }; }, 'Kickoff, rest days per side, division game flag, travel where computed.');
+  fromPacket('get_team_profile', function (p, i) { var side = i && i.side === 'home' ? 'home' : i && i.side === 'away' ? 'away' : null; if (!side) return { ok: false, error: 'side must be home or away', missing: ['side'] }; return { ok: true, side: side, team: p.game && p.game[side], rating: p.ratings && p.ratings[side], profile: p.profiles && p.profiles[side], coaching: p.coaching && p.coaching[side], starter: p.starters && p.starters[side], matchup: p.matchup && p.matchup[side] }; }, 'One side\u2019s rating, play profile, coaching continuity, projected starter and matchup record. Input: {side: "home"|"away"}.');
+  fromPacket('get_recent_form', function (p) { var pg = p.previous_games || {}; return (pg.home && pg.home.length) || (pg.away && pg.away.length) ? { ok: true, previous_games: pg, note: 'Each result carries the opponent\u2019s rating so a margin can be read against who it came against.' } : { ok: false, error: 'no previous games on file', missing: ['previous_games'] }; }, 'Completed games this season for both sides, each with the opponent\u2019s rating attached.');
+  fromPacket('get_opponent_adjusted_form', function (p) { return p.drivers && p.drivers.length ? { ok: true, drivers: p.drivers.map(function (d) { return { id: d.id, label: d.label, attacker: d.attacker, defender: d.defender, attacker_value: d.attacker_value, defender_value: d.defender_value, opponent_adjustment: d.opponent_adjustment, reliability: d.reliability }; }), note: 'raw versus adjusted per metric: where they differ, the difference is the schedule.' } : { ok: false, error: 'no opponent-adjusted metrics on file', missing: ['drivers'] }; }, 'Raw versus opponent-adjusted unit metrics for the pairing, with the sample behind each.');
+  fromPacket('get_coaching_and_scheme_context', function (p) { var c = p.coaching || {}; return (c.home && !c.home.missing) || (c.away && !c.away.missing) ? { ok: true, coaching: c, note: 'Head-coach continuity only; coordinator turnover is unmeasured where the feed carries no coordinator.' } : { ok: false, error: 'no coaching record on file', missing: ['coaching'] }; }, 'Head coach, tenure and turnover per side; what is unknown is named.');
   fromPacket('get_results_clv_and_calibration', function (p) { return p.model && p.model.validation ? { ok: true, validation: p.model.validation, note: 'Historical calibration of EdgeDesk\u2019s own record for this sport and market. Per-game grades live in the ledger and are not attached to a pregame packet.' } : null; }, 'The model\u2019s walk-forward record for this market.');
 
   function toolDefinitions(names) {

@@ -1,0 +1,214 @@
+#!/usr/bin/env node
+/* ============================================================================
+   THE NFL SLATE ARTIFACT — football/nfl/slate.json
+
+   WHY. The NFL projection has only ever existed in the browser: app.html
+   fetches nflverse's games.csv and stats_team_week, absorbs the season into
+   the trained rating state and projects each upcoming game with
+   EDFootball.predictGame(). The edge function had none of that — its NFL
+   slate came from `public.games` with no model line — so a server-side NFL
+   packet carried the model as missing. This job runs THE SAME MODULE, out of
+   the same app.html, in Node, and publishes what the board shows.
+
+   HOW. tools/football/_module.js boots the real football IIFE with a stub DOM
+   (the harness every football test uses). fetch is answered from the network
+   with a local cache; the Supabase read that joins captured quotes is answered
+   empty, so every number here is the MODEL'S with NO market attached — the
+   function joins the market itself. The module's own fbLoadNfl() does the
+   absorb pass and builds the upcoming board; fbPredict() projects each game
+   through fbNflGameReq(), exactly as the browser does.
+
+   Every row carries the model's home line in BOTH conventions, the fair total,
+   the home win probability, the outcome range as p10/p50/p90 home margins,
+   the contributions that carried the number, the data-quality warnings, the
+   schedule row's own rest/roof/surface/division context, the starter the
+   schedule feed names, and the nflverse reference lines labelled as
+   REFERENCE — never as a price.
+
+   Usage
+     node tools/football/build_nfl_slate.js                   # writes the artifact
+     node tools/football/build_nfl_slate.js --offline         # cached feeds only
+     node tools/football/build_nfl_slate.js --check           # build, compare, write nothing
+     node tools/football/build_nfl_slate.js --lookahead 10    # days (default: the module's own)
+   Exit 0 = written or current; 1 = the artifact differs (--check); 2 = the
+   feeds could not be read at all (reported, never a pass).
+   ========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const M = require('./_module.js');
+
+const ROOT = M.ROOT;
+const OUT_DIR = path.join(ROOT, 'football', 'nfl');
+const OUT = path.join(OUT_DIR, 'slate.json');
+const CACHE = path.join(OUT_DIR, '.cache');
+const SCHEMA = 'edgedesk_nfl_slate_v1';
+
+function r2(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
+function r4(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(n * 10000) / 10000 : null; }
+function num(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
+
+/** Eastern-time kickoff from games.csv's gameday + gametime, as ISO UTC. */
+function etToIso(gameday, gametime) {
+  if (!gameday) return null;
+  const hm = /^(\d{1,2}):(\d{2})/.exec(String(gametime || '12:00')) || ['', '12', '00'];
+  const guess = Date.parse(gameday + 'T' + hm[1].padStart(2, '0') + ':' + hm[2] + ':00Z');
+  if (!Number.isFinite(guess)) return null;
+  /* the ET offset on that date, from Intl, so DST is right without a table */
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(guess));
+  const tz = (parts.find((p) => p.type === 'timeZoneName') || {}).value || 'GMT-5';
+  const m = /GMT([+-]\d+)/.exec(tz);
+  const offsetH = m ? Number(m[1]) : -5;
+  return new Date(guess - offsetH * 3600000).toISOString();
+}
+
+async function fetchText(url, offline) {
+  const key = url.replace(/[^a-z0-9.]+/gi, '_').slice(-120);
+  const cached = path.join(CACHE, key);
+  if (offline && fs.existsSync(cached)) return fs.readFileSync(cached, 'utf8');
+  if (offline) throw new Error('offline and not cached: ' + url);
+  const r = await fetch(url, { redirect: 'follow' });
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + url);
+  const t = await r.text();
+  try { fs.mkdirSync(CACHE, { recursive: true }); fs.writeFileSync(cached, t); } catch (_) { /* cache is a convenience */ }
+  return t;
+}
+
+async function build(opts) {
+  opts = opts || {};
+  const B = M.boot({ probe: ['fbLoadNfl', 'fbNflGameReq', 'fbNflRefMarket', 'fbPredict', 'FB_CODE_NAMES', 'fbNflRanks', 'FB_LOOKAHEAD_D'] });
+  if (B.error) throw new Error('the football module would not run: ' + (B.error.message || B.error));
+  const win = B.win;
+  M.loadNflEngine(win, ROOT);
+  const T = win.__FBTEST;
+  const fetched = [];
+  /* the network, cached; the captured-quote read answered empty on purpose */
+  const getText = opts.fetchText || ((u) => fetchText(u, !!opts.offline));
+  win.fetch = async (url) => {
+    const u = String(url);
+    const text = await getText(u);
+    fetched.push({ url: u, bytes: text.length });
+    return { ok: true, status: 200, text: async () => text, json: async () => JSON.parse(text) };
+  };
+  win.sbGet = () => Promise.resolve([]);
+  win.renderFootball = () => {};
+  await T.fbLoadNfl(null);
+  const S = win.FB.nfl;
+  const season = S.curSeason;
+  const meta = win.EDFootball.meta();
+  const names = T.FB_CODE_NAMES || {};
+  const now = opts.now || Date.now();
+  const lookaheadDays = opts.lookahead || T.FB_LOOKAHEAD_D || 12;
+
+  /* the module already trimmed S.up to its window; widen from S.games when a
+     longer lookahead was asked for */
+  const pool = (S.games || []).filter((u) => !u.done && u.t >= now - 6 * 3600000 && u.t <= now + lookaheadDays * 86400000);
+  const games = pool.map((u) => {
+    const g = u.g;
+    let p = null, err = null;
+    try { p = T.fbPredict('nfl', T.fbNflGameReq(g), {}, num(g.season)); } catch (e) { err = String(e && e.message || e); }
+    const ref = T.fbNflRefMarket(g);
+    const priced = !!(p && p.status === 'PREDICTED');
+    const m = priced ? p.model : null;
+    const q = priced && p.outcome_range && p.outcome_range.q ? p.outcome_range.q : null;
+    const contributions = priced && p.contributions ? {
+      spread: (p.contributions.spread || []).map((c) => ({ key: c.key, value: r4(c.value), points: r2(c.points) })),
+      total: (p.contributions.total || []).map((c) => ({ key: c.key, value: r4(c.value), points: r2(c.points) })),
+    } : null;
+    return {
+      game_id: String(g.game_id), season: num(g.season), week: num(g.week), game_type: g.game_type || 'REG',
+      kickoff: etToIso(g.gameday, g.gametime), gameday: g.gameday || null, gametime_et: g.gametime || null,
+      home_code: g.home_team, away_code: g.away_team,
+      home_team: names[g.home_team] || g.home_team, away_team: names[g.away_team] || g.away_team,
+      home_team_id: String(g.home_team || '').toLowerCase(), away_team_id: String(g.away_team || '').toLowerCase(),
+      venue: g.stadium || null, roof: g.roof || null, surface: g.surface || null, div_game: num(g.div_game) === 1,
+      home_rest: num(g.home_rest), away_rest: num(g.away_rest),
+      home_starter: g.home_qb_name ? { player_name: g.home_qb_name, player_id: g.home_qb_id || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null,
+      away_starter: g.away_qb_name ? { player_name: g.away_qb_name, player_id: g.away_qb_id || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null,
+      model_status: priced ? 'PREDICTED' : (p ? p.status : 'ERROR'),
+      model_reason: priced ? null : (p ? (p.reason || (p.missing || []).join(', ')) : err),
+      /* BOTH conventions, named. fair_spread is the projected HOME MARGIN. */
+      model_home_margin: m ? r2(m.fair_spread) : null,
+      model_home_line: m ? r2(-m.fair_spread) : null,
+      model_fair_total: m ? r2(m.fair_total) : null,
+      model_home_win_prob: m ? r4(m.home_win_prob) : null,
+      model_fair_home_ml: m ? m.fair_home_ml : null, model_fair_away_ml: m ? m.fair_away_ml : null,
+      outcome_range: q ? { p10: r2(q['0.1']), p50: r2(q['0.5']), p90: r2(q['0.9']), sigma: r2(p.outcome_range.sigma), basis: p.outcome_range.basis, unit: 'home margin, points' } : null,
+      contributions, features: priced ? p.features : null,
+      data_quality: p ? p.data_quality : null, qb_known: priced && p.features ? p.features.qb_known : null,
+      model_version: p ? p.model_version : meta.model_version, feature_version: p ? p.feature_version : null, fingerprint: p ? p.fingerprint : null,
+      /* nflverse's consensus, labelled. spread_line is positive when the HOME
+         side is favoured; the betting home line is its negation. */
+      reference_market: (ref.spread_line != null || ref.total_line != null) ? {
+        source: 'nflverse games.csv consensus (reference, not a price, no book, no capture time)',
+        home_line: ref.spread_line == null ? null : r2(-ref.spread_line), home_margin: r2(ref.spread_line), total: r2(ref.total_line),
+        home_ml: ref.home_ml, away_ml: ref.away_ml, convention: 'home_line: negative = home favoured (betting)',
+      } : null,
+      market_status: 'NOT JOINED IN THIS BUILD',
+      market_note: 'Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.',
+    };
+  });
+
+  /* per-club ratings out of the state the absorb pass produced */
+  const teams = {};
+  const ranks = (() => { try { return T.fbNflRanks(); } catch (_) { return null; } })();
+  const st = S.state || {};
+  for (const code of Object.keys(st.team || {})) {
+    const t = st.team[code] || {};
+    const row = { code, team: names[code] || code, ratings: {}, ranks: {} };
+    for (const k of Object.keys(t)) if (typeof t[k] === 'number') row.ratings[k] = r4(t[k]);
+    if (ranks && ranks.by) for (const k of Object.keys(ranks.by)) if (ranks.by[k].rank && ranks.by[k].rank[code] != null) row.ranks[k] = { rank: ranks.by[k].rank[code], of: ranks.by[k].of };
+    if (st.qb && st.qb[code]) row.qb = st.qb[code];
+    teams[code] = row;
+  }
+
+  return {
+    schema: SCHEMA, version: 1, season, generated_at: new Date().toISOString(),
+    source: 'nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html',
+    engine: { model_version: meta.model_version, feature_version: meta.nfl && meta.nfl.feature_version, trained_through: meta.nfl && meta.nfl.trained_through, built_at: meta.built_at,
+      /* THE MODEL'S OWN RECORD, carried with the numbers it governs. Against
+         the closing consensus the NFL spread model does not beat the close at
+         any disagreement band, so the desk may quote it as an estimate and may
+         not turn it into a probability or an expected value. */
+      validation: meta.validation && meta.validation.nfl ? {
+        tier: 'RESEARCH', may_produce_probability: false, may_produce_model_ev: false, beats_market: false, max_decision: 'WATCH',
+        oos_test_window: meta.validation.nfl.oos_test_window || null,
+        spread_mae_model: meta.validation.nfl.spread_mae_model, spread_mae_closing_market: meta.validation.nfl.spread_mae_closing_market,
+        ats_vs_close: meta.validation.nfl.ats_vs_close || null, ou_vs_close: meta.validation.nfl.ou_vs_close || null,
+        record: (() => { const a = meta.validation.nfl.ats_vs_close || {}; const bands = Object.keys(a).sort((x, y) => Number(x) - Number(y)).map((k) => `${a[k].win_pct}% at ${k}+ points (n=${a[k].n}, p=${a[k].binom_p_one_sided})`); return `NFL ${meta.validation.nfl.oos_test_window || 'walk-forward'} vs the closing consensus: spread MAE ${meta.validation.nfl.spread_mae_model} against the market's ${meta.validation.nfl.spread_mae_closing_market}; ATS ${bands.join(', ')}. No band clears p<0.05; the model does not beat the close.`; })(),
+      } : null },
+    absorbed_games: S.absorbed || 0, notes: S.notes || [], lookahead_days: lookaheadDays,
+    window: { from: new Date(now - 6 * 3600000).toISOString(), to: new Date(now + lookaheadDays * 86400000).toISOString() },
+    feeds: fetched.map((f) => ({ url: f.url, bytes: f.bytes })),
+    counts: { games: games.length, predicted: games.filter((g) => g.model_status === 'PREDICTED').length, with_reference: games.filter((g) => g.reference_market).length, teams: Object.keys(teams).length },
+    ranks_of: ranks ? ranks.of || null : null,
+    games, teams,
+    market_note: 'Every game reads NOT JOINED IN THIS BUILD: the artifact is a schedule and a projection, and captured prices are joined at read time.',
+  };
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const check = args.includes('--check');
+  const offline = args.includes('--offline');
+  const li = args.indexOf('--lookahead');
+  let art;
+  try { art = await build({ offline, lookahead: li >= 0 ? Number(args[li + 1]) : null }); }
+  catch (e) { console.error('the NFL slate could not be built: ' + (e && e.message || e)); process.exit(2); }
+  const text = JSON.stringify(art, null, 1) + '\n';
+  console.log(`nfl slate: season ${art.season}, ${art.counts.games} games in ${art.lookahead_days} days (${art.counts.predicted} predicted, ${art.counts.with_reference} with a reference line), ${art.counts.teams} clubs, ${art.absorbed_games} games absorbed — ${Math.round(text.length / 1024)} KB`);
+  (art.notes || []).forEach((n) => console.log('  note: ' + n));
+  if (check) {
+    if (!fs.existsSync(OUT)) { console.log('CHECK: artifact not present'); process.exit(1); }
+    const cur = JSON.parse(fs.readFileSync(OUT, 'utf8'));
+    const strip = (a) => JSON.stringify(Object.assign({}, a, { generated_at: null, window: null, feeds: null }));
+    const same = strip(cur) === strip(art);
+    console.log(same ? 'CHECK: artifact is current' : 'CHECK: artifact differs from a fresh build');
+    process.exit(same ? 0 : 1);
+  }
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.writeFileSync(OUT, text);
+  console.log('wrote ' + path.relative(ROOT, OUT));
+}
+module.exports = { build, SCHEMA, OUT, etToIso };
+if (require.main === module) main();

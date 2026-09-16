@@ -7,9 +7,13 @@ Sources disclosure shows UNKNOWN badges where LIVE badges used to be.
 1. **Which source?** `GET /functions/v1/edgedesk_ai?probe=1` prints the
    capability matrix and env presence. `POST ?dry=1` with the question prints
    `provenance.retrieval_log` (table, ms, rows, error) and `unavailable`.
-2. **Artifact (slate, availability, rankings)?** Check the GitHub Actions run
-   that builds it (`football-weekly-build.yml`, `availability-sync.yml`,
-   `starter-context.yml`) and that `main` carries a fresh `generated_at`.
+2. **Artifact (slate, availability, rankings, matchup metrics, NFL slate)?**
+   Check the GitHub Actions run that builds it (`football-weekly-build.yml`,
+   `availability-sync.yml`, `starter-context.yml`, `injury-sync.yml`) and
+   that `main` carries a fresh `generated_at`. `football/matchup/metrics.json`
+   and `football/nfl/slate.json` can be rebuilt by hand with
+   `npm run football:metrics` and `npm run nfl:slate` (`--offline` reads the
+   cached feeds); `--check` on either compares without writing.
    GitHub Pages serves the file; a stale `generated_at` means the build did
    not run or did not commit. Re-run the workflow by hand.
 3. **`signals` empty or old?** `capture` is scheduled by pg_cron

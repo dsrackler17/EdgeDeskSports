@@ -25,7 +25,7 @@ function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.pu
 function has(name, hay, needle) { chk(name, String(hay).indexOf(needle) >= 0, 'missing: ' + needle); }
 function lacks(name, hay, needle) { chk(name, String(hay).indexOf(needle) < 0, 'present: ' + needle); }
 function done() {
-  failures.forEach((f) => console.log('FAIL | ' + f.name + '  ' + JSON.stringify(f.detail).slice(0, 300)));
+  failures.forEach((f) => console.log('FAIL | ' + f.name + '  ' + String(JSON.stringify(f.detail)).slice(0, 300)));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
   process.exit(fail === 0 ? 0 : 1);
 }
@@ -114,6 +114,85 @@ chk('no panel is rendered without a structured answer', ctx.structuredPanelsHTML
 const noMarket = ctx.structuredPanelsHTML({ structured: Object.assign({}, S, { model_vs_market: Object.assign({}, S.model_vs_market, { market_line: null, best_price: null, consensus: { spread_home: 2.5, total: 57.5 } }) }) });
 has('with no book price the consensus number is shown as a consensus', noMarket, 'consensus home +2.5');
 has('and labelled as having no book and no capture time', noMarket, 'no book, no capture time');
+
+/* ---- Slice 2: the football evidence ---------------------------------------- */
+has('the football evidence renderer exists', src, 'function footballEvidenceHTML');
+has('and is rendered inside the panels', src, 'h+=footballEvidenceHTML(S);');
+has('the CSS for the evidence exists', APP, '.dk-drv{');
+has('and for the availability state chip', APP, '.dk-state.official{');
+const CFB = Object.assign({}, S, {
+  matchup: { home: { team: 'Texas State' }, away: { team: 'North Texas' }, source: 'football/fbs/slate.json',
+    ratings: { home: { team: 'Texas State', etsr: 3.7, rank: 22, confidence: 0.405, games_used: 2, freshness: 'LIVE', basis: 'ETSR is a neutral-field rating in points against the league mean.' }, away: { team: 'North Texas', etsr: 6.1, rank: 14, confidence: 0.41, games_used: 2, freshness: 'LIVE' } },
+    coaching: { home: { hc: 'G.J. Kinne', tenure_seasons: 4, new_hc: false, unknown: ['oc', 'dc'], freshness: 'LIVE' }, away: { value: null, missing: true, reason: 'coaching continuity not on file' } },
+    profiles: { home: { plays_per_game: 75.5, pass_rate: 0.4041, points_for_per_game: 16.5, points_against_per_game: 45, freshness: 'LIVE' }, away: null } },
+  why_the_number: { prose: null, model_drivers: { positive: [], negative: [], source: null }, drivers: [
+    { id: 'explosive_pass_rate', label: 'Explosive pass rate', attacker: 'North Texas', defender: 'Texas State', favoured: 'North Texas', advantage_z: 1.7, gap_word: 'a wide gap',
+      attacker_value: { show: '28.3%', league: '10.4%', show_basis: 'opponent-adjusted' }, defender_value: { show: '7.5%', league: '10.4%' }, reliability: 0.76,
+      sentence: 'North Texas explosive pass rate 28.3% (league 10.4%) against Texas State explosive passes allowed 7.5% (league 10.4%) — a wide gap in North Texas’s favour.',
+      source: 'football/matchup/metrics.json (from football/rankings/current.json)', observed_at: '2026-09-16T04:04:38.630Z', freshness: 'LIVE' },
+    { id: 'pressure_rate', label: 'Pressure rate', attacker: 'Texas State', defender: 'North Texas', favoured: 'Texas State', gap_word: 'a narrow gap', attacker_value: { show: '9.1%', league: '8.0%' }, defender_value: { show: '7.2%', league: '8.0%' }, reliability: 0.5, sentence: 'x', source: 'football/matchup/metrics.json', observed_at: '2026-09-16T04:04:38.630Z', freshness: 'LIVE' },
+  ] },
+  availability: { home: { state: 'UNKNOWN', sentence: 'No availability record is on file for Texas State. THIS IS UNKNOWN, NOT HEALTHY.', source: 'football/availability/current.json', observed_at: '2026-09-15T21:15:29.273Z', freshness: 'LIVE' },
+    away: { value: null, missing: true, reason: 'no availability record for the away side' }, states_note: 'UNKNOWN is not healthy. Only NO_REPORTED_INJURIES means an official report was read and listed nobody.' },
+  starters: { home: { position: 'QB', player_name: 'Brad Jackson', status: 'PREVIOUS_GAME', confirmed: false, availability: { state: 'UNKNOWN' }, source: 'cfbfastR-data player_stats — play attribution', retrieved_at: '2026-09-16T01:39:32.535Z', freshness: 'LIVE' },
+    away: { value: null, missing: true, reason: 'no projected starter on file for the away side' }, note: 'Only ANNOUNCED with confirmed:true is a confirmed starter.' },
+  injuries: { home: null, away: null },
+  situation: { rest_days: { home: 14, away: 14 }, weather: { value: { temp_f: 84.2, wind_mph: 11.6, wind_from: 'S', precip_pct: 20, text: 'partly cloudy' }, source: 'football/venues/forecasts.json (open-meteo)', observed_at: '2026-09-16T00:10:00Z', freshness: 'LIVE' }, travel: { value: null, missing: true, reason: 'travel distance and time zone are not computed' }, surface: null, roof: null, division_game: null },
+});
+const fb = ctx.structuredPanelsHTML({ structured: CFB });
+has('the drivers section counts the drivers', fb, 'Matchup drivers (2)');
+has('a driver names the side it favours', fb, '<span class="fav">North Texas</span>');
+has('and the width of the gap', fb, 'a wide gap');
+has('and carries its sentence with both league means', fb, 'league 10.4%');
+has('and both unit values', fb, 'Texas State allows 7.5%');
+has('and its reliability', fb, 'reliability 76%');
+has('and says the figure is opponent-adjusted', fb, 'opponent-adjusted');
+has('and its source and observed time', fb, 'football/matchup/metrics.json (from football/rankings/current.json) · observed 2026-09-16 04:04Z');
+has('availability UNKNOWN is a warning chip, not a clean sheet', fb, 'dk-state unknown">UNKNOWN');
+has('and its sentence is shown', fb, 'THIS IS UNKNOWN, NOT HEALTHY');
+has('a missing availability side names the reason', fb, 'no availability record for the away side');
+has('the states note is shown', fb, 'Only NO_REPORTED_INJURIES means an official report was read');
+has('the projected starter is named', fb, 'Brad Jackson');
+has('and is marked not confirmed', fb, '<b>not confirmed</b> · previous game');
+has('with its source', fb, 'cfbfastR-data player_stats');
+has('a missing starter side says so', fb, 'no projected starter on file for the away side');
+has('rest days are shown for both sides', fb, '14d · 14d');
+has('the forecast carries temperature, wind and precipitation', fb, '84°F · wind 12 mph S · precip 20%');
+has('and its source and observed time', fb, 'football/venues/forecasts.json (open-meteo) · 2026-09-16 00:10Z');
+has('travel that is not computed says so', fb, 'travel distance and time zone are not computed');
+has('the ratings disclosure carries ETSR with the rank', fb, 'ETSR +3.7 (#22)');
+has('and the rating confidence', fb, 'confidence 41%');
+has('and the head coach with what is unknown', fb, 'HC G.J. Kinne · season 4 · oc/dc unknown');
+has('and the play profile', fb, '75.5 plays/g · pass 40%');
+has('and the neutral-field basis', fb, 'neutral-field rating');
+lacks('no engine contributions are shown when none are published', fb, 'What carries the projection');
+
+const NFL = Object.assign({}, CFB, {
+  matchup: { home: { team: 'Buffalo Bills' }, away: { team: 'Detroit Lions' }, source: 'football/nfl/slate.json', profiles: { home: null, away: null }, ratings: { home: null, away: null }, coaching: { home: { missing: true }, away: { missing: true } } },
+  why_the_number: { prose: null, drivers: [], model_drivers: { positive: ['net passing EPA per dropback: +1.59 points toward Buffalo Bills'], negative: ['quarterback adjustment: -0.05 points toward Detroit Lions'], source: 'football/nfl/slate.json (engine contributions)' } },
+  availability: { home: { state: 'OFFICIAL_REPORT', source: 'nflverse-data injuries_2026.csv (public, keyless)', observed_at: '2026-09-13T16:20:24.079Z', freshness: 'STALE', week: 1, out: 0, doubtful: 0, questionable: 3,
+      players: [{ name: 'Jordan Hancock', position: 'CB', status: 'Questionable', injury: 'Quadricep', practice: 'Full Participation in Practice' }] },
+    away: { state: 'OFFICIAL_REPORT', source: 'nflverse-data injuries_2026.csv (public, keyless)', observed_at: '2026-09-13T16:20:24.079Z', freshness: 'STALE', week: 1, out: 1, doubtful: 0, questionable: 2, players: [] } },
+  injuries: { home: { players: [{ name: 'Jordan Hancock', position: 'CB', status: 'Questionable', injury: 'Quadricep', practice: 'Full Participation in Practice' }] }, away: { players: [{ name: 'Taylor Decker', position: 'OT', status: 'Out', injury: 'Shoulder', practice: 'Did Not Participate In Practice' }] } },
+  starters: { home: { position: 'QB', player_name: 'Josh Allen', status: 'SCHEDULE_FEED', confirmed: false, source: 'nflverse games.csv', freshness: 'LIVE' }, away: { position: 'QB', player_name: 'Jared Goff', status: 'SCHEDULE_FEED', confirmed: false, source: 'nflverse games.csv', freshness: 'LIVE' } },
+  situation: { rest_days: { home: 7, away: 7 }, weather: { value: null, missing: true, reason: 'no weather forecast was retrieved for this game' }, travel: { missing: true, reason: 'not computed' }, surface: 'a_turf', roof: 'outdoors', division_game: false },
+});
+const nf = ctx.structuredPanelsHTML({ structured: NFL });
+has('the engine contributions lead when there are no unit pairs', nf, 'What carries the projection');
+has('with the positive contribution', nf, 'net passing EPA per dropback: +1.59 points toward Buffalo Bills');
+has('and the negative one', nf, 'quarterback adjustment: -0.05 points toward Detroit Lions');
+has('and their source', nf, 'football/nfl/slate.json (engine contributions)');
+lacks('no matchup drivers section is drawn without drivers', nf, 'Matchup drivers (');
+has('an official report is a green chip', nf, 'dk-state official">OFFICIAL REPORT');
+has('with its counts and week', nf, '0 out · 0 doubtful · 3 questionable · week 1');
+has('and the listed players with practice status', nf, '<span class="st">Questionable</span> Jordan Hancock (CB) — Quadricep <span class="pr">Full Participation in Practice</span>');
+has('the away report lists the player from the injuries layer', nf, 'Taylor Decker (OT) — Shoulder');
+has('a stale report wears a STALE badge', nf, 'nflverse-data injuries_2026.csv (public, keyless) · 2026-09-13 16:20Z <span class="dk-fresh stale">STALE</span>');
+has('the schedule-feed starter is not confirmed', nf, 'Josh Allen</div><div class="s"><b>not confirmed</b> · schedule feed');
+has('roof and surface are shown', nf, 'outdoors</div><div class="s">surface a_turf · non-division');
+has('a missing forecast says so with an UNKNOWN badge', nf, 'no weather forecast was retrieved for this game <span class="dk-fresh unknown">UNKNOWN</span>');
+chk('no ratings disclosure is drawn when nothing is on file', nf.indexOf('Ratings, coaching and play profile') < 0);
+chk('football evidence is not drawn for a packet without those layers', ctx.structuredPanelsHTML({ structured: S }).indexOf('dk-state') < 0 && ctx.structuredPanelsHTML({ structured: S }).indexOf('Projected starting quarterbacks') < 0);
 
 const five = ['**The Desk’s read**', 'a', '**Why**', '- b', '**The case for each side**', '- c', '**What could make it wrong**', '- d', '**Price and data limitations**', '- e'].join('\n');
 const prose = ctx.deskProseHTML(five);

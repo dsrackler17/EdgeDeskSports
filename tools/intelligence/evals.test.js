@@ -171,7 +171,7 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   /* ═══ 6. hallucination traps ═══════════════════════════════════════════ */
   {
     const F = 'hallucination traps';
-    let r = await ask('Analyze North Texas versus Texas State.', { dry: false, answer: GOOD('North Texas ran 78 plays per game at a 61% success rate, 156 rushing yards a game, and their edge rusher Devon Pryor has 13 sacks.') });
+    let r = await ask('Analyze North Texas versus Texas State.', { dry: false, answer: GOOD('North Texas ran 78.4 plays per game at a 61.7% success rate, 156.3 rushing yards a game, and their edge rusher Devon Pryor has 13 sacks.') });
     chk(F, 'numbers the packet does not carry are caught', r.j.critic.findings.some((f) => f.code === 'NUMBER_NOT_IN_EVIDENCE'), r.j.critic);
     chk(F, 'a player the packet does not carry is caught', r.j.critic.findings.some((f) => f.code === 'NAME_NOT_IN_EVIDENCE' && /Devon Pryor/.test(f.detail)));
     chk(F, 'three invented numbers fail the answer outright', r.j.critic.verdict === 'FAIL');
@@ -295,13 +295,51 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     }
   }
 
-  /* ═══ 15. golden questions — NFL (what the server can and cannot do) ════ */
+  /* ═══ 15. golden questions — NFL ════════════════════════════════════════ */
   {
     const F = 'golden NFL';
-    const r = await ask('How do the Cowboys look against Washington this week?', { board: { sport: 'americanfootball_nfl', label: 'week 2' } });
-    chk(F, 'an NFL question routes to the NFL module', r.j.sport === 'americanfootball_nfl', r.j.sport);
-    chk(F, 'and does not fabricate a packet for a game the schedule table does not carry', r.j.research_packet == null || r.j.research_packet.game.sport === 'americanfootball_nfl');
-    chk(F, 'the answer never claims the slate is empty as a categorical fact', !/there are no games/i.test(r.j.prompt || ''));
+    const r = await ask('How do the Lions look at Buffalo this week?', { board: { sport: 'baseball_mlb', label: 'today' } });
+    chk(F, 'an NFL club named with an MLB board open routes to the NFL', r.j.sport === 'americanfootball_nfl', r.j.sport);
+    chk(F, 'and resolves on the NFL card', r.j.research_context && r.j.research_context.game_id === 'nfl-fx-det-buf', r.j.research_context);
+    const p = r.j.research_packet;
+    chk(F, 'and builds a packet with the NFL projection', p && p.model.home_line && !p.model.home_line.missing && p.model.home_line.value === -5.2, p && p.model.home_line);
+    chk(F, 'with the p10/p50/p90 home-margin range', p && p.model.interval && !p.model.interval.missing && p.model.interval.value.p90 === 23);
+    chk(F, 'with the engine contributions as drivers', p && p.model.drivers && p.model.drivers.positive.length >= 1);
+    chk(F, 'with the model version stamped', p && /edgedesk_football/.test(String(p.model_version)));
+    chk(F, 'the official injury report is attached for both clubs', p && p.availability.home.state === 'OFFICIAL_REPORT' && p.availability.away.state === 'OFFICIAL_REPORT', p && [p.availability.home.state, p.availability.away.state]);
+    chk(F, 'and it names its source and retrieval time', p && /nflverse/.test(p.injuries.home.source) && !!p.injuries.home.retrieved_at);
+    chk(F, 'the schedule feed\u2019s starter is carried, unconfirmed', p && p.starters.home.player_name === 'Josh Allen' && p.starters.home.confirmed === false);
+    chk(F, 'rest, roof and surface ride in the situation', p && p.situation.rest_days.home === 7 && p.situation.roof === 'outdoors' && p.situation.surface === 'a_turf');
+    chk(F, 'the NFL validation record forbids a probability', p && p.model.validation.may_produce_probability === false);
+    chk(F, 'with no captured price the label is INSUFFICIENT DATA or RESEARCH LEAD', p && ['INSUFFICIENT DATA', 'RESEARCH LEAD'].indexOf(p.label.label) >= 0, p && p.label);
+    chk(F, 'the prompt tells the model the injury report is the official one', /THE INJURY REPORT IS THE OFFICIAL ONE/.test(modelCalls.length ? modelCalls[0].system : r.j.system || ''));
+    const inj = await ask('How do the Lions look at Buffalo this week?', { dry: false, answer: '**The Desk\u2019s read**\nINSUFFICIENT DATA: no price is on file for Detroit Lions at Buffalo Bills.\n**Why**\n- The model has Buffalo Bills at -5.2.\n**The case for each side**\n- a\n**What could make it wrong**\n- nothing measurable.\n**Price and data limitations**\n- No captured price.' });
+    chk(F, 'a grounded NFL answer passes the critic', inj.j.critic && inj.j.critic.verdict !== 'FAIL', inj.j.critic);
+    const cfb = await ask('Analyze North Texas versus Texas State.');
+    chk(F, 'a college question does not read the NFL card', !(cfb.j.provenance && cfb.j.provenance.retrieval_log.some((l) => /nfl\/slate/.test(l.table))), cfb.j.provenance && cfb.j.provenance.retrieval_log.map((l) => l.table));
+  }
+
+  /* ═══ 15b. football intelligence — CFB layers ═══════════════════════════ */
+  {
+    const F = 'football intelligence';
+    const r = await ask('Analyze North Texas versus Texas State.');
+    const p = r.j.research_packet;
+    chk(F, 'matchup drivers are attached from the metrics artifact', p && p.drivers.length >= 2, p && p.drivers.length);
+    chk(F, 'each driver names both units, the league mean and the side it favours', p && p.drivers.every((d) => d.sentence && /league/.test(d.sentence) && d.favoured));
+    chk(F, 'and carries its source and observation time', p && p.drivers.every((d) => /metrics\.json/.test(d.source) && d.observed_at));
+    chk(F, 'projected starters are attached with a status that is not confirmed', p && p.starters.home.player_name && p.starters.home.confirmed === false && p.starters.home.status);
+    chk(F, 'coaching continuity is attached', p && p.coaching.home && !p.coaching.home.missing && p.coaching.home.hc);
+    chk(F, 'play profiles carry pace and pass rate', p && p.profiles.home && p.profiles.home.plays_per_game != null && p.profiles.home.pass_rate != null);
+    chk(F, 'ratings carry ETSR with a confidence and a neutral-field basis', p && p.ratings.home && typeof p.ratings.home.etsr === 'number' && /neutral-field/.test(p.ratings.home.basis));
+    chk(F, 'data confidence now counts the drivers', p && p.confidence.data.missing.indexOf('matchup drivers') < 0);
+    chk(F, 'the structured answer carries the drivers', r.j.structured.why_the_number.drivers.length === p.drivers.length);
+    chk(F, 'get_matchup_metrics reads the same drivers', (() => { const t = R.runTool('get_matchup_metrics', {}, { packet: p }); return t.ok && t.data.drivers.length === p.drivers.length; })());
+    chk(F, 'get_roster_and_depth_chart names the projected starters', (() => { const t = R.runTool('get_roster_and_depth_chart', {}, { packet: p }); return t.ok && t.data.starters.home.player_name === p.starters.home.player_name; })());
+    chk(F, 'get_team_profile refuses without a side', R.runTool('get_team_profile', {}, { packet: p }).error && R.runTool('get_team_profile', {}, { packet: p }).error.code === 'INVALID_INPUT');
+    chk(F, 'get_team_profile returns one side', (() => { const t = R.runTool('get_team_profile', { side: 'away' }, { packet: p }); return t.ok && t.data.team === 'North Texas'; })());
+    chk(F, 'the prompt tells the model to lead the football with the drivers', /MATCHUP DRIVERS ARE UNIT PAIRS/.test(r.j.system));
+    const dr = await ask('Analyze North Texas versus Texas State.', { dry: false, answer: GOOD('Their edge rusher Devon Pryor is out with a hamstring.') });
+    chk(F, 'an injury claim over UNKNOWN college availability is still rejected', dr.j.critic.verdict === 'FAIL' && dr.j.critic.findings.some((f) => f.code === 'INJURY_CLAIM_UNSUPPORTED'));
   }
 
   /* ═══ 16. regressions from previous EdgeDesk AI failures ════════════════ */
@@ -315,7 +353,7 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     chk(F, '2026-09-15: a consensus line is never described as the best price', r2.j.research_packet.market.best_price.book !== 'consensus');
     chk(F, '2026-09-15: "sharp" is never claimed without a reference book', r2.j.research_packet.market.primary.fair_method === 'SHARP_REFERENCE_DEVIG');
     chk(F, '2026-09-15: a 39-hour-old FanDuel quote could not become actionable', R.freshness({ observed_at: NOW - 2345 * 60000, now: NOW, kickoff: new Date(NOW + 6 * 86400000).toISOString(), category: 'market' }).actionable === false);
-    chk(F, '2026-09-16: prompt bloat is bounded — the packet section is under 24 KB', (() => { const p = r2.j.prompt; const i = p.indexOf('RESEARCH PACKET — NORMALISED'); return i > 0 && (p.length - i) < 24000; })(), r2.j.prompt_chars);
+    chk(F, '2026-09-16: prompt bloat is bounded — the packet section is under 40 KB', (() => { const p = r2.j.prompt; const i = p.indexOf('RESEARCH PACKET — NORMALISED'); return i > 0 && (p.length - i) < 40000; })(), (() => { const p = r2.j.prompt; const i = p.indexOf('RESEARCH PACKET — NORMALISED'); return [i, p.length - i]; })());
   }
 
   done();

@@ -73,6 +73,14 @@ against the packet with a critic that rejects invented numbers, people,
 movement causes and certainties, and snapshots the packet write-once to
 `research_packets` for grading against the close.
 
+Slice 2 (football intelligence) routes the football layers into that packet:
+the opponent-adjusted matchup drivers, ratings, play profiles, projected
+starters and coaching from `football/matchup/metrics.json`, the official NFL
+injury report, the forecast where one is on file, rest, roof and surface —
+and publishes `football/nfl/slate.json`, the browser's own NFL projection run
+in Node, so the desk has an NFL number to quote under its validation record.
+The panel renders each layer with its source, observed time and freshness.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`
