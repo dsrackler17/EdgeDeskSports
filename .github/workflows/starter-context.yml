@@ -167,6 +167,14 @@ jobs:
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
+      # THE IDENTITY PROFILES: one dated file per FBS team and NFL club from
+      # everything above (rankings detail, profiles, starters and the depth
+      # chart this job just cached, coaching, the NFL report), measured,
+      # sourced and inferred kept apart. Copies; computes nothing new.
+      - name: Team identity profiles for the research desk
+        run: node tools/football/build_team_identity.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
       - name: Rebuild the published card with the inputs joined
         run: |
           ARGS=""
@@ -193,7 +201,7 @@ jobs:
           # -A over the directories, for the same reason availability-sync.yml
           # does it: `git add a b c` stages NOTHING if any one path is missing,
           # and a new artifact's first run is exactly when one is.
-          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/nfl/
+          git add -A -- football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ football/nfl/ football/identity/
           if git diff --cached --quiet; then
             echo 'starter context and profiles unchanged — nothing to commit'
             exit 0

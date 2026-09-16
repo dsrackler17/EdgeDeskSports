@@ -58,13 +58,17 @@ jobs:
       - name: Rebuild the matchup metrics artifact
         run: node tools/football/build_matchup_metrics.js
 
+      # The NFL identity profiles carry the report by position group.
+      - name: Rebuild the team identity profiles
+        run: node tools/football/build_team_identity.js
+
       - name: Commit the report
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           # a directory, not a glob: an unmatched glob is passed through
           # literally and fails the whole add
-          git add -A -- football/injuries/ football/matchup/metrics.json
+          git add -A -- football/injuries/ football/matchup/metrics.json football/identity/
           if git diff --cached --quiet; then
             echo 'injury report unchanged — nothing to commit'
             exit 0
