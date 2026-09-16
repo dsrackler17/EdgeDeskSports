@@ -21435,6 +21435,29 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .dk-primary .sel{font-size:14px;font-weight:700;margin-top:2px;color:var(--desk-fg)}
 .dk-primary .px{font-size:12.5px;color:var(--desk-dim);margin-top:2px}
 .dk-primary .stale{color:var(--warn);font-weight:600}
+/* r12: the structured answer */
+.dk-label{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 10px;padding:8px 11px;border-radius:9px;border:1px solid var(--ink-line);background:var(--ink-2)}
+.dk-label .tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;letter-spacing:.08em}
+.dk-label .txt{font-size:12px;color:var(--desk-dim)}
+.dk-structured{margin-top:10px}
+.dk-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+.dk-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:640px){.dk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dk-cell{border:1px solid var(--ink-line);border-radius:9px;padding:8px 10px;background:var(--ink-2);min-width:0}
+.dk-cell .k{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--desk-dim)}
+.dk-cell .v{font-size:14px;font-weight:700;color:var(--desk-fg);margin-top:2px;overflow-wrap:anywhere}
+.dk-cell .s{font-size:11px;color:var(--desk-dim);margin-top:2px;overflow-wrap:anywhere}
+.dk-fresh{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;padding:1px 5px;border-radius:5px;border:1px solid var(--ink-line);vertical-align:middle}
+.dk-fresh.live{color:var(--citron);border-color:rgba(216,242,75,.5)}
+.dk-fresh.recent{color:var(--desk-fg)}
+.dk-fresh.stale{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.dk-fresh.unknown{color:var(--desk-dim)}
+.dk-list{margin:6px 0 0;padding-left:16px;font-size:12px;color:var(--desk-fg)}
+.dk-list li{margin:2px 0}
+.dk-src{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.dk-src td{padding:3px 6px 3px 0;border-bottom:1px solid var(--ink-line);color:var(--desk-dim);vertical-align:top;overflow-wrap:anywhere}
+.dk-src td:first-child{color:var(--desk-fg)}
+.dk-feedback{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:11px;color:var(--desk-dim)}
 .dk-more{margin-top:8px}
 .dk-more summary{cursor:pointer;font-size:11.5px;color:var(--desk-dim);list-style:none}
 .dk-more summary::-webkit-details-marker{display:none}
@@ -34332,9 +34355,125 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   var DESK_SECTIONS = [
     {key:'read',  h:'The Desk\u2019s read',        cls:'read', re:"The Desk['\u2019]s read"},
     {key:'why',   h:'Why',                        cls:'why',   re:'Why'},
+    /* r12: required by the structured answer contract; absent from a
+       four-section answer from an older function build, which still parses. */
+    {key:'sides', h:'The case for each side',     cls:'sides', re:'The case for each side'},
     {key:'wrong', h:'What could make it wrong',   cls:'wrong', re:'What could make it wrong'},
     {key:'limits',h:'Price and data limitations', cls:'limits',re:'Price and data limitations'}
   ];
+
+  /* ═══ THE STRUCTURED ANSWER (r12) ═══════════════════════════════════════
+     The function returns `structured`: the label the rules produced, the
+     model-versus-market comparison with both timestamps, the price
+     discipline, the confidence split, the source manifest and the critic's
+     findings. Every number here is EdgeDesk's own and is rendered by
+     EdgeDesk; the prose above it is the model's only when the critic let it
+     through. Nothing below is computed in the browser. */
+  var LABEL_TONE = {
+    'PASS':{fg:'var(--desk-dim)',bd:'var(--ink-line)'},
+    'RESEARCH LEAD':{fg:'var(--citron)',bd:'rgba(216,242,75,.5)'},
+    'PRICE DEPENDENT':{fg:'var(--citron)',bd:'rgba(216,242,75,.5)'},
+    'MODEL DISAGREEMENT':{fg:'var(--warn)',bd:'rgba(217,154,43,.5)'},
+    'STALE MARKET':{fg:'var(--warn)',bd:'rgba(217,154,43,.5)'},
+    'INSUFFICIENT DATA':{fg:'var(--desk-dim)',bd:'var(--ink-line)'}
+  };
+  function freshBadge(f){
+    var k=String(f||'UNKNOWN').toUpperCase();
+    var cls=k==='LIVE'?'live':k==='RECENT'?'recent':k==='STALE'?'stale':'unknown';
+    return '<span class="dk-fresh '+cls+'">'+esc(k)+'</span>';
+  }
+  function fmtPts(v){ if(v==null) return '\u2014'; var n=Number(v); return (n>0?'+':'')+n; }
+  function structuredLabelHTML(d){
+    var S=d&&d.structured; if(!S||!S.bottom_line) return '';
+    var lab=S.bottom_line.label||'INSUFFICIENT DATA', t=LABEL_TONE[lab]||LABEL_TONE['INSUFFICIENT DATA'];
+    var h='<div class="dk-label" style="border-color:'+t.bd+'"><span class="tag" style="color:'+t.fg+'">'+esc(lab)+'</span>'
+      +'<span class="txt">'+esc(S.bottom_line.sentence||'')+'</span>';
+    if(S.prose_status==='REJECTED') h+='<span class="txt" style="color:var(--warn)">The written read was rejected by EdgeDesk\u2019s checks and replaced with EdgeDesk\u2019s own rendering.</span>';
+    h+='</div>';
+    return h;
+  }
+  function structuredPanelsHTML(d){
+    var S=d&&d.structured; if(!S) return '';
+    var mm=S.model_vs_market||{}, pd=S.price_discipline||{}, cf=S.confidence||{}, h='';
+    /* model vs market */
+    h+='<div class="dk-grid">';
+    h+='<div class="dk-cell"><div class="k">EdgeDesk model</div>';
+    if(mm.model_line){
+      h+='<div class="v">home '+esc(fmtPts(mm.model_line.home_line))+(mm.model_line.total!=null?' \u00b7 total '+esc(mm.model_line.total):'')+'</div>'
+        +'<div class="s">'+(mm.model_line.favourite?esc(mm.model_line.favourite)+' favoured \u00b7 ':'')+esc(mm.model_line.version||'unversioned')+' \u00b7 '+esc(mm.model_line.age||'')+' '+freshBadge(mm.model_line.freshness)+'</div>';
+    } else h+='<div class="v">\u2014</div><div class="s">no projection for this game</div>';
+    h+='</div>';
+    h+='<div class="dk-cell"><div class="k">Market</div>';
+    if(mm.market_line){
+      h+='<div class="v">'+esc(mm.market_line.selection||'')+(mm.market_line.handicap!=null?' '+esc(fmtPts(mm.market_line.handicap)):'')+' at '+esc(mm.market_line.price||'\u2014')+'</div>'
+        +'<div class="s">'+esc(mm.market_line.book||'')+' \u00b7 captured '+esc(mm.market_line.age||'')+' '+freshBadge(mm.market_line.freshness)+(mm.market_line.fair?' \u00b7 fair '+esc(mm.market_line.fair):'')+'</div>';
+    } else if(mm.consensus){
+      h+='<div class="v">consensus home '+esc(fmtPts(mm.consensus.spread_home))+(mm.consensus.total!=null?' \u00b7 total '+esc(mm.consensus.total):'')+'</div>'
+        +'<div class="s">no book, no capture time '+freshBadge('UNKNOWN')+'</div>';
+    } else h+='<div class="v">\u2014</div><div class="s">no market number on file</div>';
+    h+='</div>';
+    h+='<div class="dk-cell"><div class="k">Gap</div><div class="v">'+(mm.gap_points!=null?esc(Math.abs(mm.gap_points))+' pts':'\u2014')+'</div>'
+      +'<div class="s">'+esc(mm.orientation&&mm.orientation.favourite_model&&mm.orientation.favourite_market?('model '+mm.orientation.favourite_model+' \u00b7 market '+mm.orientation.favourite_market):(mm.gap_basis||'model against market, same side'))+'</div></div>';
+    h+='<div class="dk-cell"><div class="k">Best captured price</div><div class="v">'+(mm.best_price?esc(mm.best_price.american)+' '+esc(mm.best_price.book||''):'\u2014')+'</div>'
+      +'<div class="s">'+(mm.best_price?'among the books EdgeDesk captured '+freshBadge(mm.best_price.freshness):'no captured price')+'</div></div>';
+    h+='</div>';
+    /* price discipline */
+    if(pd.current_price||pd.playable_to||pd.break_even_probability!=null){
+      h+='<div class="dk-price"><b>Price discipline.</b> '
+        +(pd.current_price?'Current '+esc(pd.current_price)+'. ':'')
+        +(pd.playable_to?'Playable to <b>'+esc(pd.playable_to)+'</b>. ':'')
+        +(pd.price_needed?'Needs '+esc(pd.price_needed)+' or better. ':'')
+        +(pd.break_even_probability!=null?'Break-even '+esc(Math.round(pd.break_even_probability*1000)/10)+'%. ':'')
+        +(pd.ev_per_unit!=null?'Expected return '+esc(Math.round(pd.ev_per_unit*10000)/100)+'% per unit. ':'')
+        +'<span style="color:var(--desk-dim)">'+esc(pd.ev_basis||'')+'</span></div>';
+    }
+    /* movement, honestly */
+    if(mm.movement&&(mm.movement.price_move_cents!=null||mm.movement.point_move!=null)){
+      h+='<div class="dk-sec"><div class="h">Line movement</div><ul><li>'
+        +(mm.movement.point_move!=null?'Moved '+esc(fmtPts(mm.movement.point_move))+' points since the opener. ':'')
+        +(mm.movement.price_move_cents!=null?'Price moved '+esc(mm.movement.price_move_cents)+' cents ('+esc(mm.movement.opener_american||'?')+' \u2192 '+esc(mm.movement.current_american||'?')+'). ':'')
+        +'Cause: <b>'+esc(mm.movement.cause||'UNKNOWN')+'</b>. '+esc(mm.movement.cause_note||'')+'</li></ul></div>';
+    }
+    /* confidence split */
+    if(cf.data||cf.conclusion){
+      h+='<div class="dk-grid two">';
+      ['data','conclusion'].forEach(function(k){ var c=cf[k]; if(!c) return;
+        h+='<div class="dk-cell"><div class="k">'+(k==='data'?'Data confidence':'Conclusion confidence')+'</div><div class="v">'+esc(c.band||'')+(c.score!=null?' <span class="s">('+esc(c.score)+')</span>':'')+'</div>'
+          +'<div class="s">'+esc(c.missing&&c.missing.length?'missing: '+c.missing.slice(0,3).join(', '):(c.note||''))+'</div></div>'; });
+      h+='</div>';
+    }
+    /* unknowns */
+    var unk=(S.what_could_break_it&&S.what_could_break_it.unknowns)||[];
+    if(unk.length){ h+='<details class="dk-more"><summary>What EdgeDesk cannot see ('+unk.length+')</summary><ul class="dk-list">'+unk.slice(0,8).map(function(u){return '<li>'+esc(u)+'</li>';}).join('')+'</ul></details>'; }
+    /* sources with observed times */
+    var src=S.sources||[];
+    if(src.length){
+      h+='<details class="dk-more"><summary>Sources ('+src.length+')</summary><table class="dk-src">'
+        +src.slice(0,16).map(function(x){ return '<tr><td>'+esc(x.source)+'</td><td>'+esc(x.kind||'')+'</td><td>'+(x.observed_at?esc(String(x.observed_at).replace('T',' ').slice(0,16))+'Z':'\u2014')+'</td><td>'+freshBadge(x.freshness)+'</td></tr>'; }).join('')
+        +'</table></details>';
+    }
+    /* critic */
+    var c=d.critic;
+    if(c&&c.findings&&c.findings.length){
+      h+='<details class="dk-more"><summary>EdgeDesk\u2019s checks on the written read: '+esc(c.verdict)+' ('+c.findings.length+')</summary><ul class="dk-list">'
+        +c.findings.slice(0,8).map(function(f){return '<li><b>'+esc(f.code)+'</b> \u00b7 '+esc(f.detail||'')+'</li>';}).join('')+'</ul></details>';
+    }
+    /* feedback */
+    var pid=S.packet_id||'';
+    h+='<div class="dk-feedback"><span>Was this useful?</span>'
+      +'<button class="edai-qa" onclick="EDAI.feedback(\'helpful\','+JSON.stringify(pid).replace(/"/g,'&quot;')+')">Helpful</button>'
+      +'<button class="edai-qa" onclick="EDAI.feedback(\'unhelpful\','+JSON.stringify(pid).replace(/"/g,'&quot;')+')">Not helpful</button>'
+      +'<button class="edai-qa" onclick="EDAI.feedback(\'wrong_data\','+JSON.stringify(pid).replace(/"/g,'&quot;')+')">A number is wrong</button></div>';
+    return '<div class="dk-structured">'+h+'</div>';
+  }
+  var FEEDBACK_LOG=[];
+  function recordFeedback(kind, packetId){
+    try{
+      FEEDBACK_LOG.push({kind:kind, packet_id:packetId||null, at:new Date().toISOString()});
+      try{ localStorage.setItem('edai_feedback', JSON.stringify(FEEDBACK_LOG.slice(-50))); }catch(_){}
+      var host=document.querySelector('.dk-feedback'); if(host) host.innerHTML='<span>Thanks \u2014 recorded'+(kind==='wrong_data'?'. Tell us which number in the report form.':'.')+'</span>';
+    }catch(_){}
+  }
 
   /* The model's prose, given the same hierarchy as the deterministic read.
      The contract asks for these four headings; when they are present they are
@@ -35449,10 +35588,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            lede rather than a second answer above a second copy of the market
            line - and when the read does not come back, the card is unchanged
            and complete. */
-        var lede=narrated
+        var lede=structuredLabelHTML(d)+(narrated
           ? (integrityHTMLFor(d.research)+deskAnswerHTML(d.answer,S))
-          : factualFallbackHTML(d,t,{no_market:true});
+          : factualFallbackHTML(d,t,{no_market:true}));
         var deskHTML=researchCardHTML(B,{lede:lede})
+          +structuredPanelsHTML(d)
           +ledgerNoticeHTML(d)+researchSectionsHTML(d.research)+traceHTMLFor(d.research);
         if(host){ host.innerHTML=deskHTML; host.appendChild(note); }
         if(narrated){ HIST.push({role:'user',content:t}); HIST.push({role:'assistant',content:d.answer}); }
@@ -36330,8 +36470,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            is exactly what buried the useful part of the reported reply. */
         var S=d.matchup_summary||null;
         if(S){ LAST_ASK={mode:mode,question:question,x:x,extra:extra};
-          return {html:integrityHTMLFor(d.research)+deskAnswerHTML(d.answer,S)
+          return {html:structuredLabelHTML(d)+integrityHTMLFor(d.research)+deskAnswerHTML(d.answer,S)
             +deskMarketHTML(S,(d.research&&d.research.decisions)||[])
+            +structuredPanelsHTML(d)
             +ledgerNoticeHTML(d)+deskNextHTML(S)+researchSectionsHTML(d.research)+traceHTMLFor(d.research),
             src:d.model?('The Desk \u00b7 reasoned by '+d.model+(d.cached?' \u00b7 cached':'')):null}; }
         /* The board-shaped fallback, for a deployment that sends no summary.
@@ -38802,6 +38943,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   /* ======================= PUBLIC API ======================= */
   window.EDAI = {
+    feedback: recordFeedback,
     open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
       renderActions(); if(!$id('edaiLog').children.length){ try{ scanSlate(true); }catch(_){ emptyState(); } } },
     close:function(){ $id('edaiScrim').classList.remove('open'); $id('edaiPanel').classList.remove('open'); $id('edaiFab').classList.remove('hide'); },
