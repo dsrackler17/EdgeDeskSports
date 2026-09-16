@@ -107,6 +107,32 @@ const LIBS = [
     start: '/*__EDBOARD_START__*/', end: '/*__EDBOARD_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The MLB historical query layer. ORDER MATTERS, for the same reason the
+     FBS resolver above does: its host is _mlbhist.js, which is itself the
+     source EDMLBHIST is copied FROM, so this must land before EDMLBHIST is
+     read. One pass then carries a lib/mlb_pitcher_history.js edit all the way
+     to index.ts.
+
+     It is the SAME file the browser loads with a <script> tag and the pipeline
+     requires under Node, so a pitcher's K-BB% is computed once and reads the
+     same on a profile page, in a chat answer and in the feature build. */
+  {
+    name: 'EDMLBQ',
+    src: path.join(ROOT, 'lib', 'mlb_pitcher_history.js'),
+    start: '/*__EDMLBQ_START__*/', end: '/*__EDMLBQ_END__*/',
+    hosts: [path.join(FN, '_mlbhist.js')],
+  },
+  /* The MLB history layer: the router that decides a question is about the
+     2016-2025 pitching record, the deterministic retrieval that runs whether
+     or not the model has a tool loop, the prompt block, the seven tools and
+     the critic checks that keep an archive from being read as tonight.
+     Server-side only. */
+  {
+    name: 'EDMLBHIST',
+    src: path.join(FN, '_mlbhist.js'),
+    start: '/*__EDMLBHIST_START__*/', end: '/*__EDMLBHIST_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
 ];
 
 function block(src, START, END) {

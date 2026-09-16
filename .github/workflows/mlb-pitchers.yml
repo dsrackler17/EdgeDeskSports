@@ -1,0 +1,235 @@
+# EdgeDesk MLB — the historical pitching refresh.
+#
+# WHAT RUNS. The packaged updater (mlb/pitchers/build_dataset.py, Python 3
+# standard library only) rebuilds the pitching dataset from MLB's own Stats
+# API into a STAGING directory; tools/mlb/dataset.js re-derives what can be
+# re-derived and refuses to go further if anything disagrees; and
+# tools/mlb/import_pitcher_history.js stages it into mlbhist.stg_* and asks
+# mlbhist.promote_import() to swap it in — one transaction that checks the
+# staged counts against the package's own and refuses a short, duplicated or
+# unreconciled dataset.
+#
+# NO EDGE FUNCTION IS INVOLVED. The job writes over PostgREST with the service
+# role this repository already holds (SB_SERVICE_ROLE / SB_URL — the same
+# secrets the settle, schedule, UFC and tennis jobs use). The browser reads the
+# result through the anon/RLS door like every other research table.
+#
+# A FAILED RUN CANNOT DAMAGE A GOOD ARCHIVE. Nothing before the promote step
+# touches a live table, and the promote is all-or-nothing. A build that cannot
+# reach MLB, a dataset that does not validate and a promote the gate refuses
+# all end the same way: the previously promoted dataset is still the one being
+# served, the failure is written to mlbhist.meta (so the readers' freshness
+# line shows it rather than quietly serving stale rows), and the job is red.
+#
+# THE CURRENT SEASON IS PROVISIONAL. In season the end year is flagged on every
+# row it writes, so a partial season can never be shown as a finished one and
+# the ratings that will still move are marked as ratings that will still move.
+# Out of season the completed year is imported as final.
+#
+# CADENCE. Weekly through the year, and daily during the season — a completed
+# archive does not change often, and a provisional current season does. The
+# season window is decided in the job rather than by two cron lines, so there
+# is one place to read it.
+name: MLB pitching archive
+
+on:
+  schedule:
+    # Tuesdays 09:20 UTC — the weekly rebuild, in or out of season.
+    - cron: '20 9 * * 2'
+    # Daily 09:50 UTC (05:50 ET): in season this picks up the previous day's
+    # games; out of season the job checks and exits without importing.
+    - cron: '50 9 * * *'
+  # A pull request touching the pipeline runs the suites and PROBES THE SOURCE
+  # on a real runner, writing nothing. This is not decoration: the tennis
+  # adapter shipped correct-looking code that a provider's edge answered 403 to
+  # from GitHub's runners, and only a runner could show it. MLB's Stats API is
+  # keyless and public, which is exactly the kind of assumption worth checking
+  # in review rather than at 05:50.
+  pull_request:
+    paths:
+      - 'lib/mlb_pitcher_history.js'
+      - 'mlb/pitchers/build_dataset.py'
+      - 'tools/mlb/**'
+      - 'tools/lib/**'
+      - 'supabase/mlb_pitcher_history.sql'
+      - '.github/workflows/mlb-pitchers.yml'
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Import into the database. Unchecked validates the rebuild and imports nothing.'
+        type: boolean
+        required: false
+        default: true
+      through:
+        description: 'Last season to build (blank = the current calendar year).'
+        required: false
+        default: ''
+      final:
+        description: 'Treat the last season as COMPLETE rather than provisional. Only after the regular season ends.'
+        type: boolean
+        required: false
+        default: false
+      publish_dataset:
+        description: 'Also refresh the committed copy under mlb/pitchers/dataset and commit it.'
+        type: boolean
+        required: false
+        default: false
+      verify_only:
+        description: 'Only prove the source answers. Builds nothing and writes nothing.'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # Two rebuilds writing the same staging id race each other into the same
+  # promote. A pull-request probe writes nothing, so it gets its own group per
+  # branch rather than queueing behind the scheduled writer.
+  group: mlb-pitchers-${{ github.event_name == 'pull_request' && github.ref || 'write' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The arithmetic, the identity rules and the import gate must pass before
+      # anything is downloaded, let alone written.
+      - name: The query layer and the import rules must pass first
+        run: node tools/mlb/dataset.js
+
+      # THE COMMITTED ARCHIVE, CHECKED EVERY RUN. If the copy in the repository
+      # ever stopped validating, every test that uses it as a fixture would be
+      # asserting against a broken dataset. Cheap, and it fails loudly.
+      - name: The committed dataset still validates
+        run: node tools/mlb/import_pitcher_history.js --check
+
+      # Does MLB's Stats API still answer a keyless request from a GitHub
+      # runner, in the shape the builder expects? One request, no build.
+      - name: Prove the source answers before anything is built
+        id: probe
+        run: |
+          set +e
+          code=$(curl -sS -o /tmp/mlb_probe.json -w '%{http_code}' --max-time 30 \
+            'https://statsapi.mlb.com/api/v1/teams?sportId=1&season=2025')
+          rc=$?
+          set -e
+          if [ "$rc" != "0" ] || [ "$code" != "200" ]; then
+            echo "::warning::the MLB Stats API did not answer cleanly (curl $rc, HTTP $code)"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          n=$(python3 -c "import json;print(len(json.load(open('/tmp/mlb_probe.json'))['teams']))")
+          echo "teams in the 2025 feed: $n"
+          if [ "$n" != "30" ]; then
+            echo "::warning::the feed answered but returned $n clubs, not 30 — the builder will refuse this"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Say plainly that nothing will be written
+        if: ${{ github.event_name == 'pull_request' || inputs.verify_only == true }}
+        run: echo "This run proved the source answers and validated the committed dataset. Nothing is built or written."
+
+      # ── the rebuild ──────────────────────────────────────────────────────
+      # Out of season the daily run has nothing to add: the previous season is
+      # already final and the builder would spend forty minutes re-downloading
+      # it. The weekly run rebuilds regardless, which is what catches a
+      # historical correction MLB has since published.
+      - name: Decide whether this run rebuilds
+        id: plan
+        if: ${{ github.event_name != 'pull_request' && inputs.verify_only != true }}
+        run: |
+          MONTH=$(date -u +%m)
+          YEAR=$(TZ=America/New_York date +%Y)
+          THROUGH="${{ inputs.through }}"
+          if [ -z "$THROUGH" ]; then THROUGH="$YEAR"; fi
+          # MLB's regular season runs late March to early October.
+          IN_SEASON=false
+          if [ "$MONTH" -ge 03 ] && [ "$MONTH" -le 10 ]; then IN_SEASON=true; fi
+          RUN=true
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "50 9 * * *" ] && [ "$IN_SEASON" != "true" ]; then
+            RUN=false
+          fi
+          echo "through=$THROUGH" >> "$GITHUB_OUTPUT"
+          echo "in_season=$IN_SEASON" >> "$GITHUB_OUTPUT"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "through=$THROUGH in_season=$IN_SEASON run=$RUN"
+
+      - name: Out of season, the daily run has nothing to add
+        if: ${{ steps.plan.outputs.run == 'false' }}
+        run: echo "Out of season and this is the daily schedule. The archive is already final; the weekly run still rebuilds it."
+
+      # THE IMPORT. --commit stages and promotes; without it the rebuild is
+      # validated and discarded. The staging directory is inside the workspace
+      # and is discarded with the runner, so a failed build leaves nothing
+      # behind and the committed copy is untouched.
+      - name: Rebuild the dataset and import it
+        if: ${{ github.event_name != 'pull_request' && inputs.verify_only != true && steps.plan.outputs.run == 'true' && steps.probe.outputs.ok == 'true' }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be imported."
+            exit 1
+          fi
+          ARGS="--from 2016 --through ${{ steps.plan.outputs.through }}"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
+          if [ "${{ inputs.final }}" = "true" ]; then ARGS="$ARGS --final"; fi
+          if [ "${{ inputs.publish_dataset }}" = "true" ]; then ARGS="$ARGS --publish-dataset"; fi
+          node tools/mlb/refresh_dataset.js $ARGS
+
+      # A source that would not answer is a fact about the day, not a reason to
+      # pretend the run succeeded. It is a warning on the summary and the job
+      # stays green; the previously promoted archive is still being served and
+      # the readers' freshness line will age visibly if this keeps happening.
+      - name: The source did not answer
+        if: ${{ steps.probe.outputs.ok == 'false' && github.event_name != 'pull_request' && inputs.verify_only != true }}
+        run: |
+          echo "::warning::the MLB Stats API did not answer this run, so nothing was rebuilt or imported."
+          echo "The previously promoted archive is unchanged and is still what the site and the desk read."
+
+      # THE DATED SNAPSHOT, AND THE DATASET IF ASKED FOR. The snapshot is a
+      # manifest of what was promoted — coverage, counts, repairs, validation —
+      # kept in the repository so a later evaluation can state what the archive
+      # held on a given date rather than assuming it always held what it holds
+      # now. Committed on the default branch only.
+      - name: Commit the snapshot (and the dataset, if it was refreshed)
+        if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.commit == true) }}
+        run: |
+          git config user.name "edgedesk-bot"
+          git config user.email "bot@edgedesk.local"
+          git add mlb/pitchers/snapshots mlb/pitchers/dataset 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+            exit 0
+          fi
+          git commit -m "mlb: pitching archive refresh $(date -u +%Y-%m-%d)"
+          for i in 1 2 3 4; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((2 ** i))
+          done
+          echo "::warning::the snapshot could not be pushed; the import itself succeeded and is live"
+
+      # A FAILED RUN IS ANNOUNCED WHERE FAILURES ARE ALREADY WATCHED. The job's
+      # own red status is the primary channel this repository uses; this adds
+      # the one line an operator needs on the run summary so the cause does not
+      # have to be dug out of a forty-minute log.
+      - name: Say what broke
+        if: failure()
+        run: |
+          echo "::error::The MLB pitching refresh failed. The previously promoted archive is UNCHANGED and is still being served."
+          echo "::error::mlbhist.meta carries refresh_last_status=error with the reason; mlbhist.import_runs carries the refused import and its code."
+          echo "::error::Runbook: docs/runbooks/mlb-pitching-archive.md"

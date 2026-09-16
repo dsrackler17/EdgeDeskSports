@@ -1,0 +1,105 @@
+#!/usr/bin/env node
+/* ===========================================================================
+   EdgeDesk — supabase/mlb_pitcher_history.sql, run against a real PostgreSQL.
+
+   Applies the SHIPPED file unmodified to a throwaway database, checks its own
+   report says ok on every row, applies it again (idempotent), and then runs
+   tools/mlb/sql/mlb_pitcher_history.test.sql: reads as anon and authenticated,
+   every write a client could attempt, staging's invisibility, the promote
+   gate's four refusals and the proof that each one leaves the previously
+   promoted archive untouched.
+
+   Same shape and skip behaviour as tools/tennis/tennis_sql.test.js — without
+   PostgreSQL it skips loudly and passes; CI runs it with a database.
+
+   Run: node tools/mlb/mlb_pitchers_sql.test.js
+        EDGD_PG="-h 127.0.0.1 -p 5432 -U postgres" node tools/mlb/mlb_pitchers_sql.test.js
+   =========================================================================== */
+'use strict';
+const path = require('path');
+const cp = require('child_process');
+
+const ROOT = path.join(__dirname, '..', '..');
+const SCHEMA = path.join(ROOT, 'supabase', 'mlb_pitcher_history.sql');
+const SHIM = path.join(ROOT, 'tools', 'games', 'sql', 'supabase_shim.sql');
+const SUITE = path.join(__dirname, 'sql', 'mlb_pitcher_history.test.sql');
+const DB = 'edgedesk_mlbhist_sqltest';
+
+const have = (b) => cp.spawnSync('sh', ['-c', 'command -v ' + b], { encoding: 'utf8' }).status === 0;
+const psql = (conn, args, o) => cp.spawnSync('psql', conn.concat(args), Object.assign({ encoding: 'utf8' }, o || {}));
+
+function candidates() {
+  const out = [];
+  if (process.env.EDGD_PG) out.push(process.env.EDGD_PG.split(' '));
+  if (process.env.PGHOST) out.push([]);
+  out.push(['-h', '/var/tmp/edgpg/sock', '-p', '5433', '-U', 'postgres']);
+  out.push(['-h', '127.0.0.1', '-p', '5432', '-U', 'postgres']);
+  out.push([]);
+  return out;
+}
+function skip(why) {
+  console.log('SKIP | mlb pitcher history SQL | ' + why);
+  console.log('       (this suite needs PostgreSQL; CI runs it in games-sql.yml)');
+  process.exit(0);
+}
+if (!have('psql')) skip('psql is not installed');
+let conn = null;
+for (const c of candidates()) { if (psql(c, ['-d', 'postgres', '-tAc', 'select 1']).status === 0) { conn = c; break; } }
+if (!conn) skip('no reachable PostgreSQL server');
+
+function drop() { psql(conn, ['-d', 'postgres', '-q', '-c', 'drop database if exists ' + DB + ' (force)']); }
+drop();
+const mk = psql(conn, ['-d', 'postgres', '-q', '-c', 'create database ' + DB]);
+if (mk.status !== 0) { console.error(mk.stderr); skip('could not create the test database'); }
+
+let code = 0;
+try {
+  psql(conn, ['-d', DB, '-q', '-c', 'create extension if not exists pgcrypto']);
+  for (const f of [SHIM, SCHEMA]) {
+    const r = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', f]);
+    if (r.status !== 0) {
+      console.log('FAIL | mlb pitcher history SQL | ' + path.basename(f) + ' did not apply');
+      console.error((r.stderr || '').trim().split('\n').slice(0, 12).join('\n'));
+      throw new Error('apply');
+    }
+  }
+  const rep = psql(conn, ['-d', DB, '-tA', '-F', '|', '-f', SCHEMA]);
+  const bad = (rep.stdout || '').split('\n').filter((l) => /^\d+(\.\d+)?\|/.test(l) && !/\|ok/.test(l));
+  if (bad.length) {
+    console.log('FAIL | mlb pitcher history SQL | the migration report is not all ok');
+    bad.forEach((l) => console.log('     | ' + l));
+    throw new Error('report');
+  }
+  const twice = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', SCHEMA]);
+  if (twice.status !== 0) {
+    console.log('FAIL | mlb pitcher history SQL | the file is not idempotent — a second run failed');
+    console.error((twice.stderr || '').trim().split('\n').slice(0, 12).join('\n'));
+    throw new Error('idempotent');
+  }
+
+  const suite = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', SUITE]);
+  const out = ((suite.stderr || '') + (suite.stdout || '')).split('\n')
+    .filter((l) => /NOTICE:\s+(ok|ALL GREEN|FAIL)/.test(l))
+    .map((l) => l.replace(/^.*NOTICE:\s+/, ''));
+  out.forEach((l) => console.log('     | ' + l));
+  if (suite.status !== 0) {
+    console.log('FAIL | mlb pitcher history SQL | the attack suite failed');
+    console.error((suite.stderr || '').trim().split('\n').filter((l) => /ERROR|FAIL/.test(l)).slice(0, 8).join('\n'));
+    throw new Error('suite');
+  }
+  const checks = out.filter((l) => /^ok/.test(l)).length;
+  /* A SUITE THAT EXITED EARLY IS NOT A SUITE THAT PASSED. psql can return 0
+     on a file that stopped after two assertions, and a job that only reads the
+     status would call that green. */
+  if (checks < 30) {
+    console.log('FAIL | mlb pitcher history SQL | only ' + checks + ' assertions ran — the suite exited early');
+    throw new Error('short');
+  }
+  console.log('ALL GREEN mlb pitcher history SQL — report all ok, idempotent, ' + checks + ' contract checks');
+  console.log('PASS | mlb pitcher history SQL | ' + checks + ' assertions against a real PostgreSQL');
+} catch (e) {
+  code = 1;
+} finally {
+  drop();
+}
+process.exit(code);
