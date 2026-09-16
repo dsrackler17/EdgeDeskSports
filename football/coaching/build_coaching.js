@@ -182,12 +182,24 @@ async function main() {
     if (!got.ok) { missing.push({ season: y, why: got.why }); continue; }
     let rows;
     try { rows = parseCsv(execFileSync('python3', [PY_HELPER, tmp], { maxBuffer: 256 * 1024 * 1024 }).toString('utf8')); }
-    catch (e) { missing.push({ season: y, why: 'unreadable parquet: ' + ((e && e.message) || e) }); continue; }
+    catch (e) {
+      /* the helper says why on its last stderr line ("pyarrow is not
+         installed", "could not read ..."); that is the repair, so it is what
+         gets recorded, not the node wrapper's "Command failed: python3 ..." */
+      const said = e && e.stderr ? String(e.stderr).trim().split('\n').filter(Boolean).pop() : '';
+      missing.push({ season: y, why: 'unreadable parquet: ' + (said || (e && e.message) || e) }); continue;
+    }
     bySeason[y] = hcBySeason(rows, y);
     fetched.push(y);
   }
   if (!bySeason[season]) {
-    console.error('[coaching] the ' + season + ' coach table is not published yet; nothing is written');
+    /* SAY WHICH IT WAS. "Not published yet" was the only message here, and on
+       2026-09-16 it was printed for a table that IS published: the runner had
+       no pyarrow, so the fetched file was filed as unreadable and reported as
+       absent. A fetch that failed and a file that could not be read are two
+       different repairs, so the reason recorded for this season is printed. */
+    const why = (missing.find(m => m.season === season) || {}).why || 'not published yet';
+    console.error('[coaching] the ' + season + ' coach table could not be used (' + why + '); nothing is written');
     return check ? 2 : 1;
   }
   const earliest = Math.min.apply(null, fetched);
