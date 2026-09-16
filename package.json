@@ -155,6 +155,12 @@
     "football:data:test": "node tools/football/data_builds.test.js",
     "notes:add": "node tools/football/add_note.js",
     "availability:import": "node football/availability/import_corrections.js",
-    "intel:compare": "node tools/intelligence/analyst_evals.test.js"
+    "intel:compare": "node tools/intelligence/analyst_evals.test.js",
+    "mlb:dataset": "node tools/mlb/dataset.js",
+    "mlb:import": "node tools/mlb/import_pitcher_history.js",
+    "mlb:import:check": "node tools/mlb/import_pitcher_history.js --check",
+    "mlb:import:commit": "node tools/mlb/import_pitcher_history.js --commit",
+    "mlb:sql": "node tools/mlb/mlb_pitchers_sql.test.js",
+    "mlb:e2e": "node tools/mlb/import.test.js"
   }
 }
