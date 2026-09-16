@@ -1,4 +1,4 @@
-# EdgeDesk Intelligence — architecture after Slice 2 (truth, routing and football intelligence)
+# EdgeDesk Intelligence — architecture after Slice 3 (truth, routing, football intelligence, the active analyst)
 
 This describes how a research turn flows now, what each layer owns, how to
 switch each piece off, and what the next slices are. The audit that preceded
@@ -12,6 +12,9 @@ question ─▶ classify (words) ─▶ resolve the game on the published cards
         ─▶ ONE research context ─▶ re-classify with the sport known
         ─▶ Dal: slate artifacts (FBS card, NFL card) + cfb schema + signals + availability (under the caller's JWT)
         ─▶ Dal.getFootballContext(): matchup metrics + forecast for the one game  ← Slice 2
+        ─▶ Dal.getIdentity(): both teams' identity profiles                           ← Slice 3
+        ─▶ investigate(): the bounded research loop over configured providers        ← Slice 3
+        ─▶ EDANALYST.analyse(): interactions, form, sensitivity, scenarios, state     ← Slice 3
         ─▶ rankSlate ─▶ evidence packets ─▶ EDINTEL.decide() per quoted selection
         ─▶ EDRESEARCH.buildResearchPacket()          ← NEW: one normalised packet per game
         ─▶ EDRESEARCH.classifyResearch()             ← NEW: PASS / RESEARCH LEAD / PRICE DEPENDENT /
@@ -31,7 +34,8 @@ browser ─▶ structuredLabelHTML() + Desk prose + structuredPanelsHTML()  ← 
 | Intelligence kernel `EDINTEL` | `supabase/functions/edgedesk_ai/_intelligence.js` | slate state, fair-price provenance, quote freshness, push-aware EV, the model-validation gate, `decide()`, the ledger |
 | **Research kernel `EDRESEARCH`** | `supabase/functions/edgedesk_ai/_research.js` | typed tools, calculators, request classification, entity resolution over cards, orientation, the ResearchPacket, the label rules, the source manifest, the answer contract, the critic, the deterministic rendering, the prediction record |
 | Orchestrator | `supabase/functions/edgedesk_ai/index.ts` PART 2 | retrieval, decisions, prompt assembly, the model call, the critic gate, the snapshot write, the HTTP contract |
-| Panel | `app.html` (`structuredLabelHTML`, `structuredPanelsHTML`, `DESK_SECTIONS`) | rendering the structured answer beside the Desk prose |
+| **Analyst kernel `EDANALYST`** | `supabase/functions/edgedesk_ai/_analyst.js` | the ten matchup interaction modules, the recent-form read, nearby-line sensitivity from the registered margin distributions, conditional scenarios, follow-up resolution and the conversation state, the investigation planner, the packet diff, the analyst tools |
+| Panel | `app.html` (`structuredLabelHTML`, `structuredPanelsHTML`, `analystLeadHTML`, `analystMoreHTML`, `DESK_SECTIONS`) | rendering the structured answer beside the Desk prose |
 
 All three kernels are plain JavaScript UMD blocks inlined into `index.ts` by
 `tools/presentation/inline.js`; `presentation_sync.test.js` fails on drift.
@@ -209,19 +213,132 @@ Verified by `tools/football/matchup_metrics.test.js`,
 `tools/football/nfl_slate.test.js`, the `golden NFL` and `football
 intelligence` families in `evals.test.js`, and the existing suites.
 
-## 10. Next slices
+## 10. Slice 3 — the active analyst (shipped)
 
-**Slice 3 — market intelligence.** Per-book board from `book_quotes`,
+The desk investigates a matchup instead of listing what it holds. Every
+piece below is deterministic, reads the packet, and is off with
+`EDGEDESK_ANALYST=0` (the r13 answer), which is what the before/after
+harness compares against.
+
+**The research loop (`investigate()` in `index.ts`).** After the packet is
+built, `EDANALYST.investigationPlan` ranks the unanswered questions most
+likely to change the analysis — starting quarterback, offensive-line
+availability, opponent-adjusted performance, defensive personnel, weather,
+the current price — and the loop sends each to the configured providers
+that can answer it (`RESEARCH_PROVIDERS`): the live nflverse injury report
+(keyless), the live open-meteo kickoff forecast (keyless; needs the home
+venue's geography from the identity profile), CollegeFootballData advanced
+stats (`CFBD_API_KEY`), a re-read of EdgeDesk's own `book_quotes`, and web
+search (Brave, `EDGEDESK_SEARCH_API_KEY`). Free and official providers run
+first; paid search only for what they could not answer. Budgets:
+`EDGEDESK_INVESTIGATE_MS` (2500), `_REQUESTS` (4), `_SEARCH_CALLS` (2).
+Findings are cached per isolate with a TTL per provider. Every question ends
+FOUND, UNAVAILABLE, BLOCKED (naming the env var or access that would fix
+it), SKIPPED (budget) or ERROR, and the log rides in the packet, the prompt,
+the panel and the critic: the prose may say "EdgeDesk checked X" only for a
+question in the log, and a "confirmed" claim needs a FOUND question on that
+subject. A live finding that is fresher than the artifact copy (the injury
+report, the forecast) is applied to the research context and the packet is
+rebuilt; a conflict between the artifact and the live read is resolved by
+source tier then time (`EDANALYST.resolveConflicts`) and the resolution is
+logged.
+
+**Identity profiles (`football/identity/`).** `tools/football/build_team_identity.js`
+writes one dated file per FBS team and NFL club (`index.json` plus
+`teams/<key>.json`, ≤17 KB each) with `measured` (unit records with sample
+and source; play profile; rating; quarterback with starter, backup and
+competition; coaching; offensive-line continuity as the headcount share it
+is; pressure counts; availability; talent; schedule; home venue geography),
+`qualitative` (sourced statements with feed and date), `inferences` (labels
+from a stated rule over measured inputs, with inputs and a confidence),
+`trend` (the weekly rating series and per-game EPA rows; early-vs-recent
+deltas, called a hypothesis under four snapshots) and `not_measured`.
+Season, `effective_from`, `verified_at`; a profile from another season is
+refused at read time. The function reads the two files per game, budget-free.
+
+**Interactions (`EDANALYST.interactions`).** Ten modules — pass rush v
+protection, quarterback under pressure v expected pressure, rushing v front,
+explosive passing v coverage, personnel v availability, tempo v depth,
+finishing drives, weather v style, special teams and field position,
+late-game backdoor exposure — each returning the advantage, evidence from
+both sides, the mechanism, the counter-argument, the uncertainty and
+`in_model` (what edgedesk_cfb_p4 or the NFL engine already prices, per
+`IN_MODEL`). A module without a measured input says NOT_MEASURED; no
+coverage, route, personnel-grouping, snap-count or tracking statistic is
+ever invented. The three decisive factors and the strongest counter-case
+(the widest measured factor favouring the other side from the model
+favourite) lead the answer.
+
+**Recent form (`EDANALYST.formAssessment`).** Each previous game against the
+opponent's rating now (SP+ for college, the engine's net-EPA rank for the
+NFL, both marked as-assessed-now), the SP+-implied margin, garbage-time
+share, turnover margin, explosive dependence, and the three questions:
+improved or weak opponents, does the dominant win translate, is the
+defensive reputation supported. Under four games everything is a hypothesis.
+
+**Price connection (`EDANALYST.lineSensitivity`).** Cover / push / lose at
+nearby lines under the model's own residual distribution (the registered
+college pmf; the NFL build's spread-conditioned cover curve), key numbers
+named, the probability the price requires (arithmetic on the price alone)
+and a verdict that separates "likely to cover if the model is right" from
+"worth betting". The validation registry decides whether the figures are
+betting probabilities; for both football spreads they are MODEL_CONDITIONAL
+and feed no expected value. "Does that change at +7?" widens the ladder to
+the reader's line and labels it by the gap alone.
+
+**Scenarios (`EDANALYST.scenarios`).** Starter out (an engine re-run with
+the starter id removed, published per game by the NFL build as a
+CONDITIONAL_ESTIMATE; qualitative for college with the backup and the
+room), the favourite cannot protect, a slower game, win without covering
+(model-conditional from the same distribution), and which assumption
+carries the projection. None is the projection; the baseline is unchanged.
+
+**Follow-ups and state.** `conversation_state` (game, side, market, quoted
+line and odds, evidence retrieved, unresolved questions, turns) is returned
+with every turn and carried back inside `research_context.state`;
+`sanitizeState` keeps identifiers and the server's own numbers only, and
+every time-sensitive item is re-read. `EDANALYST.followUp` routes "what
+about their line?", "does that change at +7?", "who have they played?",
+"strongest case against us?" to the layer that answers it; a stated belief
+is a hypothesis to investigate, never a fact to save.
+
+**Memory.** `Dal.getPreviousPacket` reads the caller's own last snapshot of
+the game from `research_packets` and `EDANALYST.packetDiff` names what
+changed; `tools/intelligence/postmortem.js` classifies graded packets into
+data failures, analytical errors, model errors and variance, and turns
+repeats past a sample floor into candidates that must pass a time-separated
+held-out evaluation before anyone proposes promotion. Nothing generated
+becomes a fact.
+
+**Tools.** `get_matchup_interactions`, `get_line_sensitivity`,
+`run_matchup_scenario`, `get_recent_form_assessment`,
+`get_investigation_log`, `get_team_identity`, `get_what_changed`, registered
+into the same `runTool` envelope, budget and allowlist.
+
+**Proof.** `tools/intelligence/analyst.test.js` (the kernel),
+`tools/football/team_identity.test.js`, `tools/intelligence/postmortem.test.js`,
+the structured-panel test, the existing evals, and
+`tools/intelligence/analyst_evals.test.js`, which runs the same CFB and NFL
+questions and evidence cutoff with the layer off and on and prints the
+scorecard (supported claims, evidence sources, questions investigated,
+interactions measured, follow-ups resolved, bad answers let through, prompt
+size, latency, provider cost).
+
+## 11. Next slices
+
+**Slice 4 — market intelligence.** Per-book board from `book_quotes`,
 movement series from `signal_ticks`, opener point capture, movement
 classification with honest unknown states, CLV against the correct close.
-Also still open from Slice 2: travel distance and time zone (the venues
-build has the geography; the packet declares it not computed), NFL forecasts
-(the forecast artifact is keyed by ESPN college game id), college
-coordinator turnover (the feed carries no coordinators).
+Still open from Slice 3: NFL venue geography (so the live forecast can run
+for NFL games), travel distance and time zone, coordinator turnover, a
+per-quarterback EPA feed for the NFL, an NFL opponent-adjusted expected
+margin for the form read, and the web-search provider verified against a
+live key.
 
-**Slice 4 — learning loop.** Grade `research_packets` on a schedule, drift
-and calibration reports by model version, automated postmortems joining the
-editorial system's graded theses, champion/challenger registry.
+**Slice 5 — the learning loop, scheduled.** Grade `research_packets` on a
+schedule, run the postmortem over the grades view, publish drift and
+calibration by model version, and hold candidate improvements to the
+held-out evaluation the postmortem names.
 
-**Slice 5 — UFC and tennis adapters** over the existing `ufc.*` / `wta.*`
+**Slice 6 — UFC and tennis adapters** over the existing `ufc.*` / `wta.*`
 schemas and `lib/ufc_research.js`, `lib/tennis_research.js`.

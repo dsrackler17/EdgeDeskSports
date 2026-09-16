@@ -32,6 +32,9 @@ on:
       - 'football/availability/current.json'
       - 'football/matchup/metrics.json'
       - 'football/nfl/**'
+      - 'football/identity/**'
+      - 'tools/football/build_team_identity.js'
+      - 'tools/football/team_identity.test.js'
       - 'football/venues/forecasts.json'
       - 'tools/football/build_matchup_metrics.js'
       - 'tools/football/build_nfl_slate.js'
@@ -93,6 +96,12 @@ jobs:
         run: node tools/presentation/edgedesk_ai.test.js
       - name: The panel renders the structured answer
         run: node tools/intelligence/structured_ui.test.js
+      - name: The analyst kernel (interactions, form, sensitivity, scenarios, follow-ups)
+        run: node tools/intelligence/analyst.test.js
+      - name: Before and after on the same questions and evidence cutoff
+        run: node tools/intelligence/analyst_evals.test.js
+      - name: The postmortem separates data, analytical, model and variance misses
+        run: node tools/intelligence/postmortem.test.js
       - name: The deployment doctor never mistakes refused for absent
         run: node tools/intelligence/deploy_doctor.test.js
 
@@ -110,6 +119,8 @@ jobs:
         run: node tools/football/build_matchup_metrics.js --check
       - name: The NFL slate builder agrees with the browser engine
         run: node tools/football/nfl_slate.test.js
+      - name: The identity profiles copy, date and separate measured from inferred
+        run: node tools/football/team_identity.test.js
 
   migrations:
     runs-on: ubuntu-latest

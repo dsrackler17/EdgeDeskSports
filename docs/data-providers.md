@@ -50,6 +50,25 @@ each field came from; a missing upstream (a club with no report, a team
 with no profile) is absent from the artifact, and the packet names it
 missing.
 
+## The research loop's providers (Slice 3)
+
+| provider | answers | live | credential | ttl | how a refusal is reported |
+|---|---|---|---|---|---|
+| `nflverse_injury_report` | NFL availability, line, personnel, starter on the report | yes (public CSV) | none | 30 min | UNAVAILABLE with the HTTP status |
+| `open_meteo_forecast` | the kickoff forecast | yes | none | 60 min | BLOCKED when no venue geography is on file (NFL); SKIPPED under a roof |
+| `cfbd_advanced_stats` | opponent-adjusted efficiency (college) | yes | `CFBD_API_KEY` | 6 h | BLOCKED naming the key |
+| `book_quotes_recheck` | a fresher captured price | no (EdgeDesk's own capture) | caller's JWT | none | UNAVAILABLE: capture runs on cadence; no live book feed |
+| `web_search` | starter confirmation, line and personnel news | yes (Brave Search API) | `EDGEDESK_SEARCH_API_KEY` | 30 min | BLOCKED naming the key; results are reputable-media tier and never override an official feed |
+
+Free and official providers run first; paid search only for what they
+could not answer, and never past `EDGEDESK_INVESTIGATE_SEARCH_CALLS`. The
+log of every question and outcome rides in the packet, and the prose may
+claim a check only for a question in it.
+
+| artifact | from | freshness category | read by |
+|---|---|---|---|
+| `football/identity/teams/<key>.json` | rankings, profiles, starters and the depth chart, coaching, talent, the NFL report, the team-week feed, venue geography | rating 7 d (each block keeps its own `as_of`) | `Dal.getIdentity()` (two small budget-free reads per game) |
+
 ## Provider interfaces and fallbacks
 
 - `EXTERNAL_ADAPTERS` in `index.ts` declares every credentialed adapter with
