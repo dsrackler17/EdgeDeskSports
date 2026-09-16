@@ -1,5 +1,11 @@
 # EdgeDesk Intelligence — the research and decision layer
 
+> **2026-09-16, Slice 1 (truth and routing).** The typed tool layer, the
+> normalised research packet, the deterministic label, the answer contract,
+> the critic and the prediction ledger are described in
+> `docs/intelligence-architecture.md`; the audit that preceded them is
+> `docs/intelligence-audit.md`. Everything below still holds.
+
 This document records what was wrong, what changed, what was verified, and what
 is still missing. It is written for whoever has to operate or extend this next.
 
