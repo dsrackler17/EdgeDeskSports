@@ -30,6 +30,8 @@ const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/fo
 /* The Slice 3 identity profiles: the REAL committed team files for the four
    clubs the suites name, so the interaction engine is exercised on the
    shape the identity build writes. */
+const PRICING = {};
+['nfl', 'cfb'].forEach(function (k) { try { PRICING[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/validation/pricing_' + k + '.json'), 'utf8')); } catch (_) { PRICING[k] = null; } });
 const IDENTITY = {};
 ['northtexas', 'texasstate', 'buf', 'det'].forEach(function (k) {
   try { IDENTITY[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/identity/teams/' + k + '.json'), 'utf8')); } catch (_) { IDENTITY[k] = null; }
@@ -232,6 +234,11 @@ function router(fx, opts) {
     var im = /\/football\/identity\/teams\/([a-z0-9]+)\.json/.exec(u);
     if (im) return opts.identity === null ? null : ((opts.identity && opts.identity[im[1]]) || fx.identity[im[1]] || null);
     if (u.indexOf('/football/identity/index.json') >= 0) return opts.identity === null ? null : { schema: 'edgedesk_team_identity_v1_index', season: 2026, teams: Object.keys(fx.identity) };
+    /* Slice 4: the pricing validation records are the REAL committed artifacts
+       (football/validation/pricing_<sport>.json), so the fixture prices with
+       the tiers the replay actually produced; opts.pricing === null withholds them. */
+    var pm = /\/football\/validation\/pricing_(nfl|cfb)\.json/.exec(u);
+    if (pm) return opts.pricing === null ? null : PRICING[pm[1]];
     if (/nflverse-data\/releases\/download\/injuries\/injuries_\d+\.csv/.test(u)) return opts.injuries_csv === null ? null : { __text: opts.injuries_csv || fx.injuries_csv };
     if (u.indexOf('api.open-meteo.com') >= 0) return opts.open_meteo === null ? null : (opts.open_meteo || fx.open_meteo);
     if (u.indexOf('api.search.brave.com') >= 0) return opts.search === undefined ? null : opts.search;
@@ -266,4 +273,4 @@ function router(fx, opts) {
 const SUBSCRIBED = [{ status: 'active', price_id: 'price_test',
   current_period_end: new Date(Date.now() + 30 * 864e5).toISOString() }];
 
-module.exports = { build, router, SLATE, AVAIL, SUBSCRIBED, IDENTITY, injuriesCsv, openMeteo };
+module.exports = { build, router, SLATE, AVAIL, SUBSCRIBED, IDENTITY, PRICING, injuriesCsv, openMeteo };

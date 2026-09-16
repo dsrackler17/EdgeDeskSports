@@ -28,6 +28,13 @@ on:
       - 'tools/presentation/inline.js'
       - 'tools/presentation/presentation_sync.test.js'
       - 'football/fbs/fbs.js'
+      - 'football/pricing/**'
+      - 'football/validation/pricing_*.json'
+      - 'tools/football/build_lines_archive.js'
+      - 'tools/football/validate_pricing.js'
+      - 'tools/football/pricing_validation.test.js'
+      - 'tools/intelligence/pricing.test.js'
+      - 'supabase/functions/edgedesk_ai/_pricing.js'
       - 'football/fbs/slate.json'
       - 'football/availability/current.json'
       - 'football/matchup/metrics.json'
@@ -102,6 +109,8 @@ jobs:
         run: node tools/intelligence/analyst_evals.test.js
       - name: The postmortem separates data, analytical, model and variance misses
         run: node tools/intelligence/postmortem.test.js
+      - name: The pricing kernel (fair line, bet-to, status, ranked board, sizing gate)
+        run: node tools/intelligence/pricing.test.js
       - name: The deployment doctor never mistakes refused for absent
         run: node tools/intelligence/deploy_doctor.test.js
 
@@ -121,6 +130,8 @@ jobs:
         run: node tools/football/nfl_slate.test.js
       - name: The identity profiles copy, date and separate measured from inferred
         run: node tools/football/team_identity.test.js
+      - name: The closing-line archive copies and the pricing validation grades honestly
+        run: node tools/football/pricing_validation.test.js
 
   migrations:
     runs-on: ubuntu-latest

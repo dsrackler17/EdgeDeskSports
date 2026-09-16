@@ -231,8 +231,26 @@ async function build(opts) {
     counts: { games: games.length, predicted: games.filter((g) => g.model_status === 'PREDICTED').length, with_reference: games.filter((g) => g.reference_market).length, teams: Object.keys(teams).length },
     ranks_of: ranks ? ranks.of || null : null,
     games, teams,
+    /* Slice 4: THE RANKED BOARD. Every game priced by the pricing kernel from
+       its reference market at -110 (assumed, and said so), against the
+       validation record in football/validation/pricing_nfl.json, so the
+       desk and the site read the same fair lines, bet-to numbers and
+       statuses. A captured price at read time re-prices the game live. */
+    pricing: pricingBlock(games),
     market_note: 'Every game reads NOT JOINED IN THIS BUILD: the artifact is a schedule and a projection, and captured prices are joined at read time.',
   };
+}
+
+function pricingBlock(games) {
+  let EDPRICE = null, validation = null;
+  try { EDPRICE = require(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', '_pricing.js')); } catch (_) { EDPRICE = null; }
+  try { validation = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'pricing_nfl.json'), 'utf8')); } catch (_) { validation = null; }
+  if (!EDPRICE) return { error: 'the pricing kernel could not be loaded', rows: [] };
+  const sport = 'americanfootball_nfl';
+  if (validation) EDPRICE.loadValidation(sport, validation);
+  const ranked = EDPRICE.rankSlate({ sport, top: 8, games: games.map((g) => ({ game_id: g.game_id, home: g.home_team, away: g.away_team, kickoff: g.kickoff, model_home_line: g.model_home_line, market_home_line: g.reference_market ? g.reference_market.home_line : null, completeness: g.data_quality && num(g.data_quality.completeness) != null ? num(g.data_quality.completeness) : (g.qb_known === false ? 0.6 : 0.8), market_source: g.reference_market ? g.reference_market.source : null })) });
+  return Object.assign(ranked, { validation: validation ? { artifact: 'football/validation/pricing_nfl.json', generated_at: validation.generated_at, spread_tier: validation.markets.spread.tier, required_edge_points: validation.markets.spread.required_edge_points, tier_basis: validation.markets.spread.tier_basis } : { artifact: null, error: 'no pricing validation on file; every side is CONDITIONAL' },
+    price_basis: 'reference market at an assumed -110; a captured book price re-prices the side at read time', rows: ranked.rows });
 }
 
 async function main() {
