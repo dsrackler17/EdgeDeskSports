@@ -1,0 +1,104 @@
+# EdgeDesk Intelligence — the checks that gate every change to the research desk.
+#
+# Runs on pull requests and pushes that touch the edge function, its kernels,
+# the intelligence suites, the migrations they depend on, or the panel. Three
+# jobs, each fast, each offline:
+#
+#   lint       syntax of every intelligence file, the edge function parsed
+#              under Node 22's type stripping, the inlined kernels byte-identical
+#              to their canonical files, and no secret-shaped string.
+#   suites     the research kernel unit tests, the evaluation harness, and the
+#              existing intelligence suites — all through the real handler with
+#              a fixture network and a stubbed writing model.
+#   migrations every intelligence migration applied TWICE to a real PostgreSQL
+#              and attacked (edit, delete, look-ahead), on the runner's own
+#              throwaway cluster.
+#
+# Nothing here deploys. Deploying is .github/workflows/deploy-intelligence.yml,
+# and it is manual on purpose.
+name: Intelligence CI
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/edgedesk_ai/**'
+      - 'supabase/recommendation_ledger.sql'
+      - 'supabase/research_packets.sql'
+      - 'tools/intelligence/**'
+      - 'tools/presentation/inline.js'
+      - 'tools/presentation/presentation_sync.test.js'
+      - 'football/fbs/fbs.js'
+      - 'football/fbs/slate.json'
+      - 'football/availability/current.json'
+      - 'app.html'
+      - 'package.json'
+      - '.github/workflows/intelligence-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/edgedesk_ai/**'
+      - 'supabase/research_packets.sql'
+      - 'tools/intelligence/**'
+      - '.github/workflows/intelligence-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: intelligence-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax, type-stripped import, kernel sync, no secrets
+        run: node tools/intelligence/lint.js
+
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The research kernel (tools, calculators, packet, labels, critic)
+        run: node tools/intelligence/research.test.js
+      - name: The evaluation harness, through the real handler
+        run: node tools/intelligence/evals.test.js
+      - name: Intelligence tells the truth about the slate, the price and the model
+        run: node tools/intelligence/intelligence.test.js
+      - name: The matchup research layer against the real artifacts
+        run: node tools/intelligence/matchup.test.js
+      - name: The acceptance conversation
+        run: node tools/intelligence/acceptance.test.js
+      - name: A follow-up keeps the matchup, the sport and the price
+        run: node tools/intelligence/conversation.test.js
+      - name: The edge function keeps its contract
+        run: node tools/presentation/edgedesk_ai.test.js
+      - name: The panel renders the structured answer
+        run: node tools/intelligence/structured_ui.test.js
+      - name: The deployment doctor never mistakes refused for absent
+        run: node tools/intelligence/deploy_doctor.test.js
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # The runner image ships PostgreSQL; each suite starts its own throwaway
+      # cluster, applies the migration twice, and tears it down.
+      - name: A published recommendation cannot be edited, deleted or re-graded
+        run: node tools/intelligence/ledger_sql.test.js
+      - name: A recorded research packet cannot be edited, deleted or postdate kickoff
+        run: node tools/intelligence/research_packets_sql.test.js
