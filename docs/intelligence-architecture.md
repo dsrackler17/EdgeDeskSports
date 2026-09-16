@@ -485,7 +485,8 @@ snapshot keeps the opener and the verdicts for grading.
 `.github/workflows/learning-loop.yml`, nightly): refreshes both archives,
 the injury archive, the pricing and movement validations; reads the desk's
 quoted prices from `research_packet_pricing` when `SUPABASE_URL` and
-`SUPABASE_SERVICE_ROLE_KEY` are set (names only) or from an export; joins
+`SUPABASE_SERVICE_ROLE_KEY` are set (names only; the workflow maps the
+repository's `SB_URL` and `SB_SERVICE_ROLE` secrets to them) or from an export; joins
 every quote to its close, result and opener; runs the CLV scorecard and the
 postmortem; and publishes `football/validation/scorecard.json` with the
 tiers by market, the movement tiers, the feature verdicts and the counts by

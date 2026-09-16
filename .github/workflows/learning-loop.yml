@@ -5,9 +5,10 @@ name: Learning loop
 # against its close, and publish the scorecard. Nothing here promotes a
 # tier, a coefficient or a prompt.
 #
-# Secrets (names only): SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY let the
-# loop read the research_packet_pricing view. Without them the scorecard
-# reads NO_DATABASE_ACCESS and the archive-only parts still run.
+# Secrets (names only): the repository's SB_URL and SB_SERVICE_ROLE, the same
+# pair every other Supabase-reading workflow uses, let the loop read the
+# research_packet_pricing view. Without them the scorecard reads
+# NO_DATABASE_ACCESS and the archive-only parts still run.
 
 on:
   schedule:
@@ -53,8 +54,8 @@ jobs:
 
       - name: Grade the desk's quotes and publish the scorecard
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.SB_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SB_SERVICE_ROLE }}
         run: node tools/intelligence/learning_loop.js
 
       - name: Commit what changed

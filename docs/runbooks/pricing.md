@@ -66,7 +66,7 @@ for any reading, and the reading never says profit.
 node tools/football/build_lines_archive.js --sport cfb   # openers, closes, results, pregame Elo (2006 on)
 node tools/football/validate_movement.js --sport cfb     # the move-toward-rating tendency, held out by season
 node tools/football/validate_movement.js --sport nfl     # from the desk's own ledger; NOT_ESTABLISHED until 300 closed games
-node tools/intelligence/learning_loop.js                 # grades every quote against its close; needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (names only) or --rows <export>
+node tools/intelligence/learning_loop.js                 # grades every quote against its close; needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (the workflow maps the repository's SB_URL / SB_SERVICE_ROLE secrets) or --rows <export>
 ```
 
 The learning-loop workflow runs all of it nightly and commits
