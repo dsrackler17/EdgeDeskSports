@@ -2109,8 +2109,10 @@ export const SPORT_INTELLIGENCE: Record<string, SportIntelligenceModule> = {
       CAP("weather", "venue_weather", "OWNED_TABLE", "venue_weather", "PROBE", "weather", "L6_CURRENT",
         "Keyed by event_id. Populated for MLB venues; an NFL row may or may not exist."),
       CAP("market", "signals", "MARKET", "signals", "AVAILABLE", "odds", "L7_MARKET", "Moneyline, spread and total with sharp reference and movement."),
-      CAP("injuries_team_wide", "—", "OWNED_TABLE", "—", "NOT_AVAILABLE", "injury", "L6_CURRENT",
-        "EdgeDesk ingests no NFL injury report. Only the QUARTERBACK carries a status, on qb_features. Say that rather than implying full injury coverage."),
+      CAP("injuries_team_wide", "football/matchup/metrics.json", "ARTIFACT", "football/matchup/metrics.json → nfl.teams[code].injuries", "AVAILABLE", "injury", "L6_CURRENT",
+        "The official NFL injury report (nflverse injuries_<season>.csv, synced six-hourly) per club: status, injury, practice. Attached to the research packet as injuries.home/away with its retrieved time."),
+      CAP("nfl_projection", "football/nfl/slate.json", "ARTIFACT", "football/nfl/slate.json", "AVAILABLE", "model", "L5_MATCHUP",
+        "EdgeDesk's own NFL projection per upcoming game (home line, fair total, win probability, p10/p50/p90, contributions), the browser's module run in Node. Carries its walk-forward record; RESEARCH tier for spreads."),
       CAP("special_teams", "—", "OWNED_TABLE", "—", "NOT_AVAILABLE", "team_stats", "L3_TEAM_SEASON",
         "No kicking, punting or return columns exist in team_features. Not approximated."),
       CAP("snap_counts_and_target_share", "—", "OWNED_TABLE", "—", "NOT_AVAILABLE", "player_stats", "L4_PLAYER_SEASON",
@@ -2174,6 +2176,8 @@ export const SPORT_INTELLIGENCE: Record<string, SportIntelligenceModule> = {
         "Consensus book spread/total/moneyline by provider. CONTEXT ONLY — these are not Pinnacle and are not EdgeDesk prices.", null, "cfb"),
       CAP("analyst_flags", "cfb.analyst_flags", "OWNED_MODEL", "analyst_flags", "PROBE", "model", "L8_EXTERNAL_MODEL",
         "Another EdgeDesk module's derived classification, including SP+-implied and ELO-implied spreads. UNPROVEN and never an edge.", null, "cfb"),
+      CAP("unit_metrics", "football/matchup/metrics.json", "ARTIFACT", "football/matchup/metrics.json → teams[key].performance", "AVAILABLE", "team_stats", "L3_TEAM_SEASON",
+        "Opponent-adjusted success, early-down, explosive, sack, stuff, third-down and red-zone rates per unit from EdgeDesk's rankings build, with raw, adjusted, league mean, plays and reliability; paired into matchup drivers. Plus play profiles, projected starters and coaching continuity."),
       CAP("per_play_efficiency", "—", "OWNED_TABLE", "—", "NOT_AVAILABLE", "team_stats", "L3_TEAM_SEASON",
         "EPA per play and success rate are NOT ingested for CFB: per-game CFBD calls exceed the free tier. Say so; never substitute points per game or a poll ranking."),
       CAP("returning_production", "cfb.returning_production", "PROVIDER_API", "returning_production", "PROBE", "historical", "L3_TEAM_SEASON",
@@ -2626,7 +2630,7 @@ export function focusPlanOnOneGame(plan: Plan, sport: string): Plan {
   ])];
   return {
     ...plan,
-    intent: "research_matchup", mode: "MATCHUP", depth: "DEEP", budget: 22,
+    intent: "research_matchup", mode: "MATCHUP", depth: "DEEP", budget: 25,
     steps: scopeStepsToSport(steps, sport),
     why: `One scheduled game is the subject of this question, so it is researched as a matchup rather than `
       + `swept as a board. The classifier reached "${plan.intent}" from the wording alone, before the context `
@@ -2674,7 +2678,9 @@ function classifyRaw(question: string, mode?: string, hint?: ClassifyHint | null
        printing the second is the worst of both.
        QUICK stays cheap on purpose: a price question needs the signal row and
        nothing else. */
-    budget: depth === "QUICK" ? 5 : depth === "STANDARD" ? 16 : depth === "DEEP" ? 22 : depth === "SLATE" ? 28 : 32,
+    /* r13: three more than before, for the football artifacts a single-game
+       turn now reads (the metrics file, the forecast, the NFL card). */
+    budget: depth === "QUICK" ? 8 : depth === "STANDARD" ? 19 : depth === "DEEP" ? 25 : depth === "SLATE" ? 31 : 35,
     why,
   });
 
@@ -3059,6 +3065,18 @@ export interface SlateGame {
   model_home_win_prob?: number | null;
   model_home_margin?: number | null;
   model_version?: string | null;
+  /** r13: the NFL artifact's own context, verbatim. */
+  outcome_range?: { p10: number; p50: number; p90: number; sigma?: number; basis?: string; unit?: string } | null;
+  contributions?: { spread?: { key: string; value: number | null; points: number | null }[]; total?: any[] } | null;
+  home_rest?: number | null;
+  away_rest?: number | null;
+  roof?: string | null;
+  surface?: string | null;
+  div_game?: boolean | null;
+  home_starter?: any | null;
+  away_starter?: any | null;
+  model_generated_at?: string | null;
+  data_quality?: any | null;
   /** The market, joined ON to the schedule rather than standing in for it. */
   quote: {
     event_id: string; market: string; selection: string; point: number | null;
@@ -3127,6 +3145,45 @@ export function normalizeFbsArtifactGame(g: any, meta: any): SlateGame {
        engine family otherwise. */
     model_version: g.model_version ?? (typeof g.shadow_model_version === "string" && /cfb_p4/.test(g.shadow_model_version)
       ? "edgedesk_cfb_p4 (via " + String(meta?.version ?? "slate") + ")" : (meta?.version ?? null)),
+    quote: null, has_quote: false, has_signal: false, signals: [],
+  };
+}
+
+/** An NFL slate artifact row -> the shared shape. The artifact is the browser's
+    own projection run through the same module in Node; every field is carried
+    verbatim and nothing is recomputed. */
+export function normalizeNflArtifactGame(g: any, meta: any): SlateGame {
+  return {
+    game_id: String(g.game_id),
+    cfb_game_id: null,
+    source: "football/nfl/slate.json",
+    season: num(g.season) ?? num(meta?.season),
+    week: num(g.week),
+    kickoff: g.kickoff ?? null,
+    home_team: String(g.home_team ?? g.home_code ?? ""),
+    away_team: String(g.away_team ?? g.away_code ?? ""),
+    /* lowercase club codes, the keys NFL_ALIASES and the board's resolver use */
+    home_id: g.home_team_id ?? (g.home_code ? String(g.home_code).toLowerCase() : null),
+    away_id: g.away_team_id ?? (g.away_code ? String(g.away_code).toLowerCase() : null),
+    home_conference: null, away_conference: null, home_group: null, away_group: null,
+    neutral_site: false,
+    venue: g.venue ?? null,
+    matchup: `${g.away_team ?? g.away_code} @ ${g.home_team ?? g.home_code}`,
+    status: "scheduled",
+    model_home_line: num(g.model_home_line),
+    model_total: num(g.model_fair_total),
+    model_status: g.model_status ?? null,
+    model_completeness: null,
+    model_home_win_prob: num(g.model_home_win_prob),
+    model_home_margin: num(g.model_home_margin),
+    model_version: g.model_version ?? meta?.engine?.model_version ?? null,
+    model_generated_at: meta?.generated_at ?? null,
+    outcome_range: g.outcome_range ?? null,
+    contributions: g.contributions ?? null,
+    home_rest: num(g.home_rest), away_rest: num(g.away_rest),
+    roof: g.roof ?? null, surface: g.surface ?? null, div_game: g.div_game == null ? null : !!g.div_game,
+    home_starter: g.home_starter ?? null, away_starter: g.away_starter ?? null,
+    data_quality: g.data_quality ?? null,
     quote: null, has_quote: false, has_signal: false, signals: [],
   };
 }
@@ -3955,6 +4012,96 @@ export class Dal {
     }
   }
 
+  /* ---- r13: the football artifacts the desk reads, one HTTP read each ----
+     Same transport and same memoisation as the slate: a committed file the
+     site already serves, read once per request, costing one budget call. */
+  private _artifacts: Record<string, { json: any; error: string | null }> = {};
+  async getArtifact(rel: string): Promise<{ json: any; error: string | null }> {
+    if (this._artifacts[rel]) return this._artifacts[rel];
+    if (this.calls >= this.budget) return { json: null, error: `research budget exhausted before ${rel} could be read` };
+    this.calls++;
+    const url = `${SITE_BASE.replace(/\/+$/, "")}/${rel}`;
+    const t0 = Date.now();
+    try {
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
+      const r = await this.f(url, { signal: ctrl?.signal, headers: { accept: "application/json" } });
+      if (timer) clearTimeout(timer);
+      if (!r.ok) {
+        const err = `HTTP ${r.status} from ${url}`;
+        this.log.push({ table: rel, ms: Date.now() - t0, rows: 0, error: err });
+        this.note(rel, false, err);
+        return (this._artifacts[rel] = { json: null, error: err });
+      }
+      const j = await r.json();
+      const n = Array.isArray(j?.games) ? j.games.length : j?.teams ? Object.keys(j.teams).length : j?.by_game ? Object.keys(j.by_game).length : 1;
+      this.log.push({ table: rel, ms: Date.now() - t0, rows: n, error: null });
+      this.note(rel, true, null, n);
+      return (this._artifacts[rel] = { json: j, error: null });
+    } catch (e) {
+      const err = String((e as Error)?.message ?? e);
+      this.log.push({ table: rel, ms: Date.now() - t0, rows: 0, error: err });
+      this.note(rel, false, err);
+      return (this._artifacts[rel] = { json: null, error: err });
+    }
+  }
+  /** football/matchup/metrics.json — per-team metric detail, profiles, starters, coaching, NFL injuries. */
+  getMatchupMetrics() { return this.getArtifact("football/matchup/metrics.json"); }
+  /** football/nfl/slate.json — the NFL board's own projection, run in Node. */
+  async getNflSlateArtifact(): Promise<{ meta: any; games: any[]; error: string | null }> {
+    const a = await this.getArtifact("football/nfl/slate.json");
+    return { meta: a.json, games: Array.isArray(a.json?.games) ? a.json.games : [], error: a.error };
+  }
+  /** football/venues/forecasts.json — open-meteo forecasts per game, keyed by game id. */
+  getForecasts() { return this.getArtifact("football/venues/forecasts.json"); }
+
+  /**
+   * Everything the research packet reads for ONE football game beyond the
+   * slate row and the market: both sides' metric records, profiles, starters,
+   * coaching, the NFL injury report, and the forecast. Two artifact reads.
+   */
+  async getFootballContext(o: { sport: string | null; game_id: string | null; home_id: string | null; away_id: string | null; home: string | null; away: string | null }) {
+    const out: any = { sport: o.sport, metrics: null, forecast: null, home: null, away: null, nfl_home: null, nfl_away: null, nfl_validation: null, errors: [] as string[], sources: {} as Record<string, unknown> };
+    if (o.sport !== "americanfootball_ncaaf" && o.sport !== "americanfootball_nfl") return out;
+    if (o.sport === "americanfootball_nfl") {
+      /* The NFL artifact is memoised, so this is free when the slate index
+         already read it; the engine's validation record rides on its meta. */
+      const n = await this.getNflSlateArtifact();
+      out.nfl_validation = n.meta?.engine?.validation ?? null;
+      if (n.error) out.errors.push(`football/nfl/slate.json could not be read (${n.error})`);
+    }
+    const m = await this.getMatchupMetrics();
+    if (m.error) out.errors.push(`football/matchup/metrics.json could not be read (${m.error})`);
+    if (m.json) {
+      out.metrics = { generated_at: m.json.generated_at ?? null, season: m.json.season ?? null, sources: m.json.sources ?? null, counts: m.json.counts ?? null };
+      const teams = m.json.teams ?? {};
+      const find = (id: string | null, name: string | null) => {
+        if (!teams || (!id && !name)) return null;
+        const k1 = id ? EDINTEL.canonKey(id, name ?? "") : null;
+        if (k1 && teams[k1]) return teams[k1];
+        const k2 = name ? EDINTEL.normKey(name) : null;
+        if (k2 && teams[k2]) return teams[k2];
+        const byName = Object.values<any>(teams).find((t) => name && EDINTEL.normKey(t.team) === EDINTEL.normKey(name));
+        return byName ?? null;
+      };
+      if (o.sport === "americanfootball_ncaaf") { out.home = find(o.home_id, o.home); out.away = find(o.away_id, o.away); }
+      else {
+        const nfl = m.json.nfl?.teams ?? {};
+        out.nfl_home = o.home_id ? nfl[String(o.home_id).toUpperCase()] ?? null : null;
+        out.nfl_away = o.away_id ? nfl[String(o.away_id).toUpperCase()] ?? null : null;
+      }
+    }
+    if (o.sport === "americanfootball_ncaaf" && o.game_id) {
+      const f = await this.getForecasts();
+      if (f.error) out.errors.push(`football/venues/forecasts.json could not be read (${f.error})`);
+      const g = f.json?.by_game?.[String(o.game_id)] ?? null;
+      if (g) out.forecast = { value: { temp_f: num(g.temp_f), feels_f: num(g.feels_f), wind_mph: num(g.wind_mph), gust_mph: num(g.gust_mph), wind_from: g.wind_from ?? null, wind_word: g.wind_word ?? null, precip_in: num(g.precip_in), precip_pct: num(g.precip_pct), humidity_pct: num(g.humidity_pct), text: g.text ?? null, dome: !!g.dome, kickoff_local: g.kickoff_local ?? null },
+        source: g.source ? `football/venues/forecasts.json (${g.source})` : "football/venues/forecasts.json", observed_at: g.as_of ?? f.json?.generated_at ?? null };
+      else out.sources.forecast = "no forecast row for this game id";
+    }
+    return out;
+  }
+
   /**
    * The compact, COMPLETE slate index — stage A of staged retrieval.
    *
@@ -3972,7 +4119,24 @@ export class Dal {
     let sourceLabel = "";
 
     /* ---- A1. the schedule universe -------------------------------------- */
-    if (sportKey === "americanfootball_ncaaf") {
+    /* r13: the NFL has its own published card now, with the model on it. */
+    let nflArt: { meta: any; games: any[]; error: string | null } | null = null;
+    if (sportKey === "americanfootball_nfl") {
+      nflArt = await this.getNflSlateArtifact();
+      path.nfl_artifact = { error: nflArt.error, games: nflArt.games.length, schema: nflArt.meta?.schema ?? null, season: nflArt.meta?.season ?? null,
+        generated_at: nflArt.meta?.generated_at ?? null, engine: nflArt.meta?.engine?.model_version ?? null, lookahead_days: nflArt.meta?.lookahead_days ?? null };
+      if (nflArt.error) errors.push(`the published NFL slate could not be read (${nflArt.error}); the multisport schedule table is used instead`);
+    }
+    if (sportKey === "americanfootball_nfl" && nflArt && nflArt.games.length) {
+      const now = Date.now();
+      for (const g of nflArt.games) {
+        const t = Date.parse(String(g.kickoff ?? ""));
+        if (Number.isFinite(t) && t < now - 6 * 3600_000) continue;
+        index.push(normalizeNflArtifactGame(g, nflArt.meta));
+      }
+      source = "football/nfl/slate.json";
+      sourceLabel = `the NFL board's own published slate (${nflArt.meta?.engine?.model_version ?? "edgedesk_football"}, generated ${nflArt.meta?.generated_at ?? "unknown"})`;
+    } else if (sportKey === "americanfootball_ncaaf") {
       const art = await this.getFbsSlateArtifact();
       path.fbs_artifact = {
         error: art.error, games: art.games.length,
@@ -18562,6 +18726,30 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
     var decisionOut = decision ? { decision: decision.decision || null, strength: decision.strength || null, selection: decision.selection || null, market: decision.market || null, handicap: num(decision.handicap), why: decision.why || null, blockers: decision.blockers || [], price_limit_american: decision.price && decision.price.price_limit_american || null, price_needed_american: decision.price && decision.price.price_needed_american || null, what_would_change_it: decision.what_would_change_it || [], gates: decision.gates ? Object.keys(decision.gates).map(function (g) { return { gate: g, pass: !!decision.gates[g].pass }; }) : [] } : null;
 
     /* ---- availability, situation, matchup, evidence ---------------------- */
+    var matchup = o.matchup || null;
+    var drivers = o.drivers && o.drivers.length ? o.drivers : [];
+    /* ---- Slice 2: the football layers, each with a source and a time ------ */
+    var fc = o.football || {};
+    var starters = {
+      home: fc.starters && fc.starters.home ? fc.starters.home : missing('no projected starter on file for the home side', 'football/matchup/metrics.json'),
+      away: fc.starters && fc.starters.away ? fc.starters.away : missing('no projected starter on file for the away side', 'football/matchup/metrics.json'),
+      note: 'A projected starter is the starter-context build\u2019s read (announced, expected, depth chart, previous game or competition). Only ANNOUNCED with confirmed:true is a confirmed starter.'
+    };
+    ['home', 'away'].forEach(function (s) { var st = starters[s]; if (st && !st.missing && st.status && st.status !== 'ANNOUNCED') unknowns.push('The ' + s + ' starting quarterback is projected from ' + String(st.status).toLowerCase().replace(/_/g, ' ') + ' evidence, not announced.'); });
+    var injuries = {
+      home: fc.injuries && fc.injuries.home ? fc.injuries.home : null,
+      away: fc.injuries && fc.injuries.away ? fc.injuries.away : null,
+      note: 'The official NFL report where one is filed (nflverse), with practice status. College availability is the availability layer\u2019s own state.'
+    };
+    var coaching = {
+      home: fc.coaching && fc.coaching.home ? fc.coaching.home : missing('coaching continuity not on file', 'football/coaching/continuity.json'),
+      away: fc.coaching && fc.coaching.away ? fc.coaching.away : missing('coaching continuity not on file', 'football/coaching/continuity.json')
+    };
+    var profiles = { home: fc.profiles && fc.profiles.home || null, away: fc.profiles && fc.profiles.away || null,
+      note: 'Pace, pass rate, explosive and sack rates from the play feed; the garbage-time-free view sits beside the full one.' };
+    var ratings = { home: fc.ratings && fc.ratings.home || null, away: fc.ratings && fc.ratings.away || null };
+    if (fc.drivers && fc.drivers.length && !drivers.length) drivers = fc.drivers;
+    if (!drivers.length) unknowns.push('No opponent-adjusted matchup drivers are on file for this pairing' + (fc.drivers_missing ? ' (' + fc.drivers_missing + ')' : '') + '.');
     var avail = o.availability || null;
     var availability = avail ? {
       home: avail.home || missing('no availability record for the home side', 'football/availability/current.json'),
@@ -18569,16 +18757,28 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
       coverage_note: avail.coverage_note || null,
       states_note: 'UNKNOWN is not healthy. Only NO_REPORTED_INJURIES means an official report was read and listed nobody.'
     } : { home: missing('availability was not retrieved'), away: missing('availability was not retrieved'), coverage_note: null };
-    ['home', 'away'].forEach(function (s) { var st = availability[s] && availability[s].state; if (!st || /UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/i.test(String(st))) unknowns.push('Availability for the ' + s + ' side is ' + (st || 'not on file') + ': injuries and absences are not known, and their absence from this packet is not a clean sheet.'); });
-    var situation = o.situation || {};
+    ['home', 'away'].forEach(function (s) {
+      var inj = injuries[s];
+      if (inj && inj.official && Array.isArray(inj.players)) {
+        availability[s] = { state: 'OFFICIAL_REPORT', source: inj.source, observed_at: inj.retrieved_at || null, freshness: inj.freshness || null,
+          week: inj.week, out: inj.out, doubtful: inj.doubtful, questionable: inj.questionable, players: inj.players.slice(0, 40),
+          sentence: 'An official report was read: ' + inj.out + ' out, ' + inj.doubtful + ' doubtful, ' + inj.questionable + ' questionable (week ' + inj.week + '). Players not listed are not on the report.' };
+      }
+      var st = availability[s] && availability[s].state;
+      if (!st || /UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/i.test(String(st))) unknowns.push('Availability for the ' + s + ' side is ' + (st || 'not on file') + ': injuries and absences are not known, and their absence from this packet is not a clean sheet.');
+    });
+    var situation = Object.assign({}, o.situation || {});
+    if (fc.weather && !situation.weather) { situation.weather = fc.weather.value; situation.weather_source = fc.weather.source; situation.weather_observed_at = fc.weather.observed_at; }
+    if (fc.rest) { if (situation.home_rest_days == null) situation.home_rest_days = fc.rest.home; if (situation.away_rest_days == null) situation.away_rest_days = fc.rest.away; }
+    if (fc.venue) { situation.surface = situation.surface || fc.venue.surface || null; situation.roof = fc.venue.roof || null; situation.division_game = fc.venue.div_game == null ? null : !!fc.venue.div_game; }
     var situationOut = {
       rest_days: { home: num(situation.home_rest_days), away: num(situation.away_rest_days) },
       weather: situation.weather ? fact(situation.weather, { source: situation.weather_source || 'football/venues/forecasts.json', observed_at: situation.weather_observed_at, now: now, category: 'weather' }) : missing('no weather forecast was retrieved for this game', 'football/venues/forecasts.json'),
-      travel: situation.travel || missing('travel distance and time zone are not computed'), surface: situation.surface || null, altitude: situation.altitude || null
+      travel: situation.travel || missing('travel distance and time zone are not computed'), surface: situation.surface || null, altitude: situation.altitude || null,
+      roof: situation.roof || null, division_game: situation.division_game == null ? null : situation.division_game
     };
+    if (situationOut.weather && !situationOut.weather.missing && situationOut.roof && /dome|closed/i.test(String(situationOut.roof))) situationOut.weather_note = 'Indoors: the forecast does not apply to play.';
     if (situationOut.weather.missing) unknowns.push('Weather is not on file for this game.');
-    var matchup = o.matchup || null;
-    var drivers = o.drivers && o.drivers.length ? o.drivers : [];
     var evidence = {
       for_favourite: (o.thesis && o.thesis.support) || [], for_underdog: (o.thesis && o.thesis.contradictions) || [],
       contradictions: (o.thesis && o.thesis.contradictions) || [], falsifiers: (o.thesis && o.thesis.falsifiers) || [],
@@ -18595,6 +18795,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
       { name: 'model projection', weight: 3, present: !model.home_line.missing },
       { name: 'availability for both sides', weight: 2, present: ['home', 'away'].every(function (s) { var st = availability[s] && availability[s].state; return st && !/UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/i.test(String(st)); }) },
       { name: 'matchup drivers', weight: 2, present: drivers.length > 0 },
+      { name: 'projected starters on both sides', weight: 1, present: !!(starters.home && !starters.home.missing && starters.away && !starters.away.missing) },
       { name: 'previous games with opponent quality', weight: 1, present: !!(previous_games && ((previous_games.home && previous_games.home.length) || (previous_games.away && previous_games.away.length))) },
       { name: 'weather', weight: 1, present: !situationOut.weather.missing }
     ];
@@ -18617,6 +18818,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
       model_version: model.version || o.model_version || null,
       game: game, market: market, model: model, comparison: comparison, decision: decisionOut,
       drivers: drivers, matchup: matchup, availability: availability, situation: situationOut,
+      starters: starters, injuries: injuries, coaching: coaching, profiles: profiles, ratings: ratings,
       previous_games: previous_games, comparables: comparables, evidence: evidence,
       unknowns: uniq(unknowns.concat(o.unknowns || [])), completeness: completeness, confidence: confidence,
       label: null, sources: [], packet_id: null, packet_hash: null
@@ -18705,6 +18907,13 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
     if (p.availability) ['home', 'away'].forEach(function (s) { var a = p.availability[s]; if (a && !a.missing && a.source) add(a.source, a.observed_at || null, a.freshness || null, s + ' availability: ' + (a.state || '')); });
     if (p.situation && p.situation.weather && !p.situation.weather.missing) add(p.situation.weather.source, p.situation.weather.observed_at, p.situation.weather.freshness, 'weather');
     (p.drivers || []).forEach(function (d) { if (d && d.source) add(d.source, d.observed_at || null, d.freshness || null, 'matchup driver'); });
+    ['home', 'away'].forEach(function (s) {
+      var st = p.starters && p.starters[s]; if (st && !st.missing && st.source) add(st.source, st.retrieved_at || st.published_at || null, st.freshness || null, s + ' projected starter: ' + (st.player_name || '?') + ' (' + (st.status || '?') + ')');
+      var inj = p.injuries && p.injuries[s]; if (inj && inj.source) add(inj.source, inj.retrieved_at || null, inj.freshness || null, s + ' official injury report');
+      var co = p.coaching && p.coaching[s]; if (co && !co.missing && co.source) add(co.source, co.as_of || null, co.freshness || null, s + ' coaching continuity');
+      var pr = p.profiles && p.profiles[s]; if (pr && pr.source) add(pr.source, pr.as_of || null, pr.freshness || null, s + ' play profile');
+      var rt = p.ratings && p.ratings[s]; if (rt && rt.source) add(rt.source, rt.as_of || null, rt.freshness || null, s + ' rating');
+    });
     (extra || []).forEach(function (s) { if (s && s.source) add(s.source, s.observed_at || null, s.freshness || null, s.note || null); });
     return rows;
   }
@@ -18947,6 +19156,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
     L.push('');
     L.push('**' + PROSE_SECTIONS[4].heading + '**');
     if (pd.current_price) L.push('- Price: ' + pd.current_price + (pd.playable_to ? '; playable to ' + pd.playable_to : '') + (pd.price_needed ? '; ' + pd.price_needed + ' or better would be needed' : '') + '.');
+    ['home', 'away'].forEach(function (s) { var st = p.starters && p.starters[s]; if (st && !st.missing && st.player_name) L.push('- ' + (s === 'home' ? (g.home || 'Home') : (g.away || 'Away')) + ' projected starter: ' + st.player_name + ' (' + String(st.status || '').toLowerCase().replace(/_/g, ' ') + (st.confirmed ? ', confirmed' : ', not confirmed') + ').'); });
     (p.unknowns || []).slice(0, 4).forEach(function (u) { L.push('- ' + u); });
     return L.join('\n');
   }
@@ -18975,7 +19185,8 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
       bottom_line: { label: p.label ? p.label.label : 'INSUFFICIENT DATA', decision: p.label ? p.label.decision : null, sentence: labelSentence(p.label ? p.label.label : null), rules_fired: p.label ? p.label.rules_fired : [], why: p.label ? p.label.why : [], read: sec('read') },
       model_vs_market: modelVsMarket(p, now),
       why_the_number: { prose: sec('why'), drivers: p.drivers || [], model_drivers: p.model && p.model.drivers ? p.model.drivers : null },
-      matchup: p.matchup || null,
+      matchup: p.matchup ? Object.assign({}, p.matchup, { profiles: p.profiles || null, ratings: p.ratings || null, coaching: p.coaching || null }) : (p.profiles || p.ratings ? { profiles: p.profiles || null, ratings: p.ratings || null, coaching: p.coaching || null } : null),
+      availability: p.availability || null, starters: p.starters || null, injuries: p.injuries || null, situation: p.situation || null,
       case_for_each_side: { prose: sec('sides'), for_favourite: p.evidence ? p.evidence.for_favourite : [], for_underdog: p.evidence ? p.evidence.for_underdog : [] },
       what_could_break_it: { prose: sec('wrong'), contradictions: p.evidence ? p.evidence.contradictions : [], unknowns: p.unknowns || [], falsifiers: p.evidence ? p.evidence.falsifiers : [] },
       price_discipline: Object.assign(priceDiscipline(p), { prose: sec('limits') }),
@@ -19062,7 +19273,7 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
     run: function (i, ctx) { return resolveSportsEntity({ text: i.text, sport: i.sport || null, cards: ctx && ctx.cards, resolver: ctx && ctx.resolver, aliases: ctx && ctx.aliases }); } });
   function fromPacket(name, pick, description) {
     def({ name: name, llm: true, category: 'data', description: description,
-      input: T.obj({}, { open: true }), output: T.any(),
+      input: name === 'get_team_profile' ? T.obj({ side: T.enm(['home', 'away']) }) : T.obj({}, { open: true }), output: T.any(),
       run: function (i, ctx) {
         var p = ctx && ctx.packet;
         if (!p) return { ok: false, error: 'no research packet is attached to this turn', missing: ['packet'] };
@@ -19077,6 +19288,15 @@ const EDINTEL: any = (globalThis as any).EDINTEL;
   fromPacket('get_model_projection', function (p) { return p.model && p.model.home_line && !p.model.home_line.missing ? { ok: true, model: p.model } : { ok: false, error: 'no projection for this game', missing: ['model'] }; }, 'EdgeDesk\u2019s projection with its version, age and validation record.');
   fromPacket('get_projection_drivers', function (p) { var d = (p.model && p.model.drivers) || {}; var any = (d.positive || []).length || (d.negative || []).length || (p.drivers || []).length; return any ? { ok: true, model_drivers: d, matchup_drivers: p.drivers } : { ok: false, error: 'no drivers are published for this projection', missing: ['drivers'] }; }, 'What is carrying the projection, where published.');
   fromPacket('get_source_manifest', function (p) { return { ok: true, sources: p.sources }; }, 'Every source in the packet with its observed time and freshness.');
+  fromPacket('get_matchup_metrics', function (p) { return (p.drivers && p.drivers.length) || p.matchup ? { ok: true, drivers: p.drivers, matchup: p.matchup, profiles: p.profiles, ratings: p.ratings, note: 'Opponent-adjusted unit pairs from the rankings build; a driver\u2019s advantage_z is stated for the attacker.' } : { ok: false, error: 'no matchup metrics for this pairing', missing: ['drivers'] }; }, 'Opponent-adjusted matchup drivers (success, explosiveness, pressure, rushing, finishing), the ratings and the play profiles for both sides.');
+  fromPacket('get_injury_report', function (p) { var a = p.availability || {}; return { ok: true, home: a.home, away: a.away, injuries: p.injuries, coverage_note: a.coverage_note, states_note: a.states_note, note: 'UNKNOWN is not healthy. An OFFICIAL_REPORT lists who is out, doubtful and questionable with practice status; anyone not listed is not on the report.' }; }, 'Availability and the official injury report per side, with the state that governs what may be claimed.');
+  fromPacket('get_weather_and_venue', function (p) { var s = p.situation || {}; return { ok: true, venue: p.game && p.game.venue, neutral_site: p.game && p.game.neutral_site, roof: s.roof, surface: s.surface, weather: s.weather, weather_note: s.weather_note || null, altitude: s.altitude }; }, 'Venue, roof, surface and the forecast on file (wind, temperature, precipitation) with its observation time.');
+  fromPacket('get_roster_and_depth_chart', function (p) { return p.starters ? { ok: true, starters: p.starters, note: 'Projected starting quarterbacks only; EdgeDesk publishes no full depth chart.' } : null; }, 'The projected starting quarterback per side with status, confirmation and availability evidence.');
+  fromPacket('get_schedule_rest_and_travel', function (p) { var s = p.situation || {}; return { ok: true, kickoff: p.game && p.game.kickoff, rest_days: s.rest_days, division_game: s.division_game, travel: s.travel, roof: s.roof, surface: s.surface }; }, 'Kickoff, rest days per side, division game flag, travel where computed.');
+  fromPacket('get_team_profile', function (p, i) { var side = i && i.side === 'home' ? 'home' : i && i.side === 'away' ? 'away' : null; if (!side) return { ok: false, error: 'side must be home or away', missing: ['side'] }; return { ok: true, side: side, team: p.game && p.game[side], rating: p.ratings && p.ratings[side], profile: p.profiles && p.profiles[side], coaching: p.coaching && p.coaching[side], starter: p.starters && p.starters[side], matchup: p.matchup && p.matchup[side] }; }, 'One side\u2019s rating, play profile, coaching continuity, projected starter and matchup record. Input: {side: "home"|"away"}.');
+  fromPacket('get_recent_form', function (p) { var pg = p.previous_games || {}; return (pg.home && pg.home.length) || (pg.away && pg.away.length) ? { ok: true, previous_games: pg, note: 'Each result carries the opponent\u2019s rating so a margin can be read against who it came against.' } : { ok: false, error: 'no previous games on file', missing: ['previous_games'] }; }, 'Completed games this season for both sides, each with the opponent\u2019s rating attached.');
+  fromPacket('get_opponent_adjusted_form', function (p) { return p.drivers && p.drivers.length ? { ok: true, drivers: p.drivers.map(function (d) { return { id: d.id, label: d.label, attacker: d.attacker, defender: d.defender, attacker_value: d.attacker_value, defender_value: d.defender_value, opponent_adjustment: d.opponent_adjustment, reliability: d.reliability }; }), note: 'raw versus adjusted per metric: where they differ, the difference is the schedule.' } : { ok: false, error: 'no opponent-adjusted metrics on file', missing: ['drivers'] }; }, 'Raw versus opponent-adjusted unit metrics for the pairing, with the sample behind each.');
+  fromPacket('get_coaching_and_scheme_context', function (p) { var c = p.coaching || {}; return (c.home && !c.home.missing) || (c.away && !c.away.missing) ? { ok: true, coaching: c, note: 'Head-coach continuity only; coordinator turnover is unmeasured where the feed carries no coordinator.' } : { ok: false, error: 'no coaching record on file', missing: ['coaching'] }; }, 'Head coach, tenure and turnover per side; what is unknown is named.');
   fromPacket('get_results_clv_and_calibration', function (p) { return p.model && p.model.validation ? { ok: true, validation: p.model.validation, note: 'Historical calibration of EdgeDesk\u2019s own record for this sport and market. Per-game grades live in the ledger and are not attached to a pregame packet.' } : null; }, 'The model\u2019s walk-forward record for this market.');
 
   function toolDefinitions(names) {
@@ -19156,7 +19376,7 @@ const EDRESEARCH: any = (globalThis as any).EDRESEARCH;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-16-r12-research-packet-and-critic";
+export const BUILD = "edgedesk_ai-2026-09-16-r13-football-intelligence";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -19463,17 +19683,19 @@ Some evidence carries layer=external_model and source_type=EXTERNAL_MODEL: SP+, 
 COLLEGE FOOTBALL — WHAT IS THERE AND WHAT IS NOT
 EdgeDesk ingests a full CollegeFootballData mirror and you will usually have a lot: team identity with conferences, the whole schedule with results, SP+ split into overall/offence/defence/special teams with strength of schedule, pregame ELO, season stat lines, win-loss and conference records, poll rankings, recruiting classes, rosters and consensus book lines.
 - SP+ IS THE OPPONENT-ADJUSTED AXIS. It is an EXTERNAL MODEL — attribute it, never convert it. SP+ defence is measured in points allowed, so a LOWER defensive rating is better; say which direction you are reading. Strength of schedule is attached and college schedules are wildly unequal, so an unadjusted season stat compared across conferences is close to meaningless.
-- SEASON STATS ARE AGGREGATES, NOT EFFICIENCY. The stat lines are season totals and counts with no pace and no opponent adjustment. Per-play EPA and success rate are genuinely NOT ingested for college football, because per-game CFBD calls exceed the free tier. When per-play efficiency is what the question needs, say EdgeDesk does not have it — do NOT substitute points per game, a win-loss record or a poll ranking and present it as an efficiency read.
+- SEASON STATS ARE AGGREGATES, NOT EFFICIENCY. The cfb schema's stat lines are season totals and counts with no pace and no opponent adjustment. EPA per play is NOT ingested for college football. What IS on file, from EdgeDesk's own rankings build and attached to a RESEARCH PACKET as drivers, profiles and ratings: opponent-adjusted success rate, early-down success, explosive pass and rush rates, sack rate taken and made, stuff rate, third down and red zone — each with the raw rate, the adjusted rate, the league mean and the plays behind it — plus pace, pass rate and the garbage-time-free view. Use those for the efficiency read, attribute them to EdgeDesk's rankings build, and say "EPA per play is not on file" only about EPA. Never substitute points per game, a win-loss record or a poll ranking for an efficiency read.
+- MATCHUP DRIVERS ARE UNIT PAIRS. Each driver pairs one side's unit against the unit that has to stop it (explosive pass rate against explosive passes allowed), states which side the gap favours and how wide it is, and carries the mechanism by which it shows up on the field. Lead the football section with the two or three widest drivers, name both units' numbers with the league mean beside them, and say when the adjusted figure differs from the raw one — that difference IS the schedule. A driver's reliability under 0.5 is a thin sample; say so.
 - A POLL IS NOT A PROJECTION and a RECORD IS NOT A MEASUREMENT. Both are outcomes of a schedule, not properties of a team.
 - RECRUITING AND RETURNING PRODUCTION ARE INPUTS TO NEXT YEAR, not descriptions of this week. Returning production is the strongest year-over-year predictor in the sport; recruiting is the weakest evidence in the packet and must never outrank an on-field measurement.
 - A ROSTER IS NOT A DEPTH CHART. Being listed says a player is on the team. It does not say he starts, plays, or is healthy. Never call a roster quarterback the confirmed starter.
 - cfb_book_line rows are CONSENSUS BOOK NUMBERS FOR CONTEXT. They are not Pinnacle, not EdgeDesk's captured prices, and carry no timestamp. Never compute an edge against one or quote one as the current price — only the signals rows are prices EdgeDesk stands behind.
 Talent and variance gaps are wider in college than in the NFL, so a thin evidence base deserves a MORE provisional answer here, not a more confident one.
 
-NFL — WHAT IS NOT ON FILE, AND WHY IT MATTERS
-EdgeDesk has deep NFL efficiency: EPA per play on both sides, success rate, pass and rush splits, explosive rate, yards per play, third down, red zone, turnover margin, sack rate taken and allowed, plays per game, and a full quarterback line including pressure rate and backup status.
-It has NO INJURY REPORT. The only availability signal in the entire system is the quarterback's status on qb_features. If a question touches injuries, say explicitly that EdgeDesk does not ingest an NFL injury report and that you can speak only to the quarterback. Never let the absence of injury evidence read as a clean injury sheet — an unstated gap gets taken for a considered-and-dismissed factor, which is worse than an admitted absence.
-It also has NO SPECIAL TEAMS and NO SNAP COUNTS, TARGET SHARE OR AIR YARDS. stats_players carries a leaderboard line only; do not infer usage from a counting line.
+NFL — WHAT IS ON FILE, AND WHAT IS NOT
+EdgeDesk has deep NFL efficiency: EPA per play on both sides, success rate, pass and rush splits, explosive rate, yards per play, third down, red zone, turnover margin, sack rate taken and allowed, plays per game, and a full quarterback line including pressure rate and backup status. The published NFL slate carries EdgeDesk's own projection per game — home line, fair total, win probability, a p10/p50/p90 home-margin range and the contributions that carried the number — and its walk-forward record, which does not beat the closing consensus; quote the projection as an estimate and never as a probability the record does not support.
+THE INJURY REPORT IS THE OFFICIAL ONE. When a RESEARCH PACKET carries injuries.home / injuries.away with official:true, that is the league's filed report via nflverse, with out / doubtful / questionable and practice status per player, and its retrieved time. Read it: name the players it lists with their status, and say that anyone NOT on it is not on the report — not that they are healthy. When the packet carries no report for a side, say so; never let the absence read as a clean sheet.
+The projected starting quarterback comes from the schedule feed when it names one and from the depth chart otherwise, with a status that says which; only ANNOUNCED with confirmed:true is a confirmed starter.
+It has NO SPECIAL TEAMS and NO SNAP COUNTS, TARGET SHARE OR AIR YARDS. stats_players carries a leaderboard line only; do not infer usage from a counting line.
 
 COLLEGE BASKETBALL — TEMPO-FREE OR NOTHING
 Adjusted efficiency is the ranking column: adj_o is points scored per 100 possessions, adj_d is points ALLOWED per 100, and LOWER adj_d is better. adj_em is the margin between them and is the single best one-number summary.
@@ -20274,6 +20496,8 @@ interface ResearchOut {
   board_scope: SlateScopeRequest | null;
   /** Operational facts accumulated from this run, for the learning layer. */
   learning_context: Record<string, unknown>;
+  /** r13: both sides' metric records, profiles, starters, coaching, injuries and the forecast, for one football game. */
+  football_context: any | null;
 }
 
 /**
@@ -20418,6 +20642,25 @@ export async function resolveNamedMatchup(
     game_id: String(g.game_id), home_team: String(g.home_team ?? ""), away_team: String(g.away_team ?? ""),
     home_id: g.home_team_id ?? null, away_id: g.away_team_id ?? null, kickoff: g.kickoff ?? null, week: g.week ?? null,
   }));
+  /* r13: THE NFL CARD, from the published NFL slate, so an NFL club named in a
+     question resolves to its game exactly as a programme does on the FBS card.
+     The kernel's two-league resolver decides between them: the longest name
+     wins across cards, and the same words on both cards is an ambiguity. */
+  /* Read only when the NFL is in play — a club or the league named in this
+     message, a carried NFL subject, or a claimed NFL game — so a college turn
+     does not spend a read on a card it cannot need. The browser applies the
+     same rule (ensureDeskCards: nflNamedIn(q) || carried NFL). */
+  const NFLK = "americanfootball_nfl";
+  const wantNfl = (carried.length === 0 && !carriedGameId && !clientClaim ? false : (clientClaim?.sport === NFLK))
+    || detectSport(question).sport === NFLK
+    || (() => { try { return resolveTeamIdentity(question, NFLK).some((m: any) => m.status === "RESOLVED" || m.canonical_team_id); } catch { return false; } })()
+    || (carriedGameId != null && !games.some((g: any) => g.game_id === String(carriedGameId)));
+  const nflArt = wantNfl ? await dal.getNflSlateArtifact() : { meta: null, games: [], error: null };
+  const nflGames = (nflArt.games ?? []).map((g: any) => ({
+    game_id: String(g.game_id), home_team: String(g.home_team ?? g.home_code ?? ""), away_team: String(g.away_team ?? g.away_code ?? ""),
+    home_id: g.home_team_id ?? (g.home_code ? String(g.home_code).toLowerCase() : null), away_id: g.away_team_id ?? (g.away_code ? String(g.away_code).toLowerCase() : null),
+    kickoff: g.kickoff ?? null, week: g.week ?? null,
+  }));
 
   /* THE SUBJECT THIS CONVERSATION ALREADY HAS, RE-DERIVED RATHER THAN TRUSTED.
      Three things can supply it — a game id this function carried forward, the
@@ -20429,19 +20672,22 @@ export async function resolveNamedMatchup(
      it may not say what is true about it, and every number this function
      reports or records is its own read. */
   let carriedRes: any = null;
+  const cardOf = (row: any) => (nflGames.includes(row) ? { sport: NFLK, source: "football/nfl/slate.json" } : { sport: "americanfootball_ncaaf", source: "football/fbs/slate.json" });
   function asResolution(row: any, how: string) {
+    const card = cardOf(row);
     return {
-      state: "RESOLVED", sport: "americanfootball_ncaaf", game_id: row.game_id,
+      state: "RESOLVED", sport: card.sport, game_id: row.game_id,
       home: row.home_team, away: row.away_team,
       home_id: EDINTEL.canonKey(row.home_id, row.home_team),
       away_id: EDINTEL.canonKey(row.away_id, row.away_team),
       kickoff: row.kickoff, week: row.week, named: [], subject: null, subject_id: null,
-      source: "football/fbs/slate.json", how, note: null, candidates: null,
+      source: card.source, how, note: null, candidates: null,
     };
   }
+  const findRow = (id: string) => games.find((g: any) => g.game_id === id) ?? nflGames.find((g: any) => g.game_id === id) ?? null;
   const claimId = clientClaim && clientClaim.game_id != null ? String(clientClaim.game_id) : null;
   if (claimId) {
-    const row = games.find((g: any) => g.game_id === claimId) ?? null;
+    const row = findRow(claimId);
     if (row) {
       const hk = EDINTEL.canonKey(row.home_id, row.home_team), ak = EDINTEL.canonKey(row.away_id, row.away_team);
       const cHome = clientClaim.home_id ?? clientClaim.home, cAway = clientClaim.away_id ?? clientClaim.away;
@@ -20455,21 +20701,27 @@ export async function resolveNamedMatchup(
     }
   }
   if (!carriedRes && carriedGameId) {
-    const row = games.find((g: any) => g.game_id === String(carriedGameId)) ?? null;
+    const row = findRow(String(carriedGameId));
     if (row) carriedRes = asResolution(row, "carried");
   }
+  const leagues = [
+    { sport: "americanfootball_ncaaf", games, source: "football/fbs/slate.json", card_error: art.error && !games.length ? art.error : null },
+    { sport: NFLK, games: nflGames, source: "football/nfl/slate.json", card_error: nflArt.error && !nflGames.length ? nflArt.error : null },
+  ];
   if (!carriedRes && carried.length === 2) {
-    const back: any = EDINTEL.resolveMatchup({
-      question: carried.join(" vs "), games, source: "football/fbs/slate.json",
-    });
+    const back: any = EDINTEL.resolveFootballMatchup({ question: carried.join(" vs "), leagues });
     if (back.state === "RESOLVED") carriedRes = back;
   }
 
-  const r: any = EDINTEL.resolveMatchup({
-    question, games, carried: carriedRes,
-    card_error: art.error && !games.length ? art.error : null,
-    source: "football/fbs/slate.json",
-  });
+  const r0: any = EDINTEL.resolveFootballMatchup({ question, leagues, carried: carriedRes });
+  /* THE COLLEGE CARD COULD NOT BE READ. Unless the question resolved on the
+     NFL card, the honest state is still "the card could not be read", not
+     "no such game": the NFL card not carrying a college pairing proves
+     nothing about whether it exists. */
+  const r: any = (art.error && !games.length && r0.state !== "RESOLVED" && r0.state !== "NONE_NAMED" && r0.state !== "SUBJECT_CHANGED")
+    ? { ...r0, state: "NO_CARD", sport: null,
+        note: EDINTEL.resolveMatchup({ question, games: [], card_error: art.error, source: "football/fbs/slate.json" }).note ?? `the FBS card could not be read (${art.error})` }
+    : r0;
 
   const base: MatchupResolution = {
     state: r.state, named: r.named ?? [], sport: r.sport ?? null, game_id: r.game_id ?? null,
@@ -20484,9 +20736,11 @@ export async function resolveNamedMatchup(
   if (r.state === "NO_CARD") return { ...base, state: "RETRIEVAL_FAILED", note: r.note };
 
   if (r.state === "AMBIGUOUS") {
-    /* The SPORT is settled and the GAME is not. Both halves matter: without
-       the first a college question is answered from whatever board is open. */
-    return { ...base, state: "AMBIGUOUS_ON_CARD", sport: "americanfootball_ncaaf", note: r.note };
+    /* The SPORT is settled and the GAME is not — unless the same words matched
+       a club on both cards, in which case the kernel says so and leaves the
+       sport open. Both halves matter: without the first a college question is
+       answered from whatever board is open. */
+    return { ...base, state: "AMBIGUOUS_ON_CARD", sport: r.sport ?? (r.ambiguous_leagues ? null : "americanfootball_ncaaf"), note: r.note };
   }
 
   if (r.state === "NOT_ON_CARD") {
@@ -20757,7 +21011,10 @@ export function researchContextOf(input: {
      open board: "never silently default to MLB" is the whole point of it. */
   if (matchup.state === "AMBIGUOUS_ON_CARD") {
     ctx.sport = matchup.sport;
-    ctx.sport_source = "a program named in this message, found on the published college football card";
+    ctx.sport_source = matchup.sport === "americanfootball_nfl"
+      ? "a club named in this message, found on the published NFL card"
+      : matchup.sport ? "a program named in this message, found on the published college football card"
+      : "a name found on more than one published football card";
     ctx.team_names = matchup.named.slice();
     ctx.ambiguity = {
       state: "AMBIGUOUS_GAME",
@@ -21246,8 +21503,8 @@ async function runResearch(
     plan = { ...plan, depth: deeper.to, steps: [...plan.steps, ...deeper.added_steps] };
     /* Rebuilt from the new depth by the same ladder classify() uses, and taken
        as a MAXIMUM so an escalation can never shrink a budget. */
-    const escalatedBudget = deeper.to === "QUICK" ? 5 : deeper.to === "STANDARD" ? 16
-      : deeper.to === "DEEP" ? 22 : deeper.to === "SLATE" ? 28 : 32;
+    const escalatedBudget = deeper.to === "QUICK" ? 8 : deeper.to === "STANDARD" ? 19
+      : deeper.to === "DEEP" ? 25 : deeper.to === "SLATE" ? 31 : 35;
     plan.budget = Math.max(plan.budget, escalatedBudget);
     for (const st of plan.steps) steps.add(st);
     dal.budget = Math.max(dal.budget, plan.budget);
@@ -21273,6 +21530,26 @@ async function runResearch(
 
   const guard: ContextGuard = { ...EMPTY_GUARD, decisions_withheld: [], packets_withheld: [] };
   const earlySport: string | null = ctx.sport;
+
+  /* ---- 0a-iv. THE FOOTBALL LAYERS FOR THIS GAME ----------------------------
+     Two artifact reads for a single-game football turn: the compact metrics
+     file (both sides' opponent-adjusted unit records, play profiles, projected
+     starters, coaching continuity, the official NFL injury report) and the
+     forecast. Read here, once, so the packet, the tools and the prompt all
+     see the same copy. */
+  let footballContext: any = null;
+  if (ctx.single_game && ctx.game_id && (ctx.sport === "americanfootball_ncaaf" || ctx.sport === "americanfootball_nfl")) {
+    try {
+      footballContext = await dal.getFootballContext({ sport: ctx.sport, game_id: ctx.game_id, home_id: ctx.home_id, away_id: ctx.away_id, home: ctx.home, away: ctx.away });
+      data_path.football_context = {
+        metrics_generated_at: footballContext?.metrics?.generated_at ?? null,
+        home_record: !!(footballContext?.home || footballContext?.nfl_home), away_record: !!(footballContext?.away || footballContext?.nfl_away),
+        forecast: !!footballContext?.forecast, errors: footballContext?.errors ?? [],
+      };
+    } catch (e) {
+      data_path.football_context = { error: `the football context threw and was skipped — ${String((e as Error)?.message ?? e)}` };
+    }
+  }
 
   /* A resolved matchup also replaces the board's scope: the reader asked about
      THAT game, so the card researched is the card it is on. */
@@ -22473,6 +22750,7 @@ async function runResearch(
     evidence: ev0, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
     slate_index: slateIndex ? slateIndex.index : null,
+    football_context: footballContext,
     ranked, packets, decisions, ledger_rows,
     slate_state: slateIndex ? slateIndex.state : null,
     slate_source: slateIndex ? slateIndex.source_label : null,
@@ -22569,6 +22847,7 @@ export function turnResearchPacket(research: ResearchOut | null, now = Date.now(
   const ctx = research.context;
   const sport = ctx.sport;
   if (sport !== "americanfootball_ncaaf" && sport !== "americanfootball_nfl") return null;
+  const isNfl = sport === "americanfootball_nfl";
   const gid = String(ctx.game_id);
   const row: SlateGame | null = (research.ranked ?? []).map((r) => r.game).find((g) => String(g.game_id) === gid)
     ?? (research.slate_index ?? []).find((g) => String(g.game_id) === gid) ?? null;
@@ -22598,10 +22877,23 @@ export function turnResearchPacket(research: ResearchOut | null, now = Date.now(
   const consensusRows = sec.market?.consensus_book_lines?.value;
   const cons = Array.isArray(consensusRows) && consensusRows.length ? consensusRows[0] : null;
   const artifact: any = (research.data_path as any)?.slate_index?.fbs_artifact ?? null;
-  const validation = (() => { try { return EDINTEL.validationFor(sport, "spreads"); } catch { return null; } })();
+  const nflMeta: any = (research.data_path as any)?.slate_index?.nfl_artifact ?? null;
+  const fc: any = research.football_context ?? null;
+  const metricsAt = fc?.metrics?.generated_at ?? null;
+  const metricsSrc = "football/matchup/metrics.json";
+
+  /* ---- validation: the CFB record from the kernel, the NFL record from the artifact ---- */
+  let validation: any = null;
+  try { validation = EDINTEL.validationFor(sport, "spreads"); } catch { validation = null; }
+  if (isNfl) {
+    const v = (fc?.nfl_validation) ?? null;
+    if (!validation || !validation.tier) validation = v ?? { tier: "RESEARCH", may_produce_probability: false, may_produce_model_ev: false, beats_market: false, max_decision: "WATCH", record: "no NFL validation record was attached to this build" };
+  }
+
+  /* ---- availability (college) ---- */
   const availOf = (side: "home" | "away") => {
     const a = sec.matchup?.[side]?.availability;
-    if (!a || a.missing) return { state: "UNKNOWN", source: "football/availability/current.json", observed_at: null, reason: a?.reason ?? "not retrieved" };
+    if (!a || a.missing) return { state: "UNKNOWN", source: "football/availability/current.json", observed_at: null, reason: a?.reason ?? (isNfl ? "the college availability layer does not cover the NFL" : "not retrieved") };
     const v = a.value ?? {};
     return { state: v.state ?? "UNKNOWN", sentence: v.sentence ?? null, source: a.source ?? "football/availability/current.json", observed_at: a.observed_at ?? null,
       freshness: a.observed_at ? EDRESEARCH.freshness({ observed_at: a.observed_at, now, category: "availability" }).state : "UNKNOWN",
@@ -22616,17 +22908,84 @@ export function turnResearchPacket(research: ResearchOut | null, now = Date.now(
     strength_of_schedule: sec.matchup?.[side]?.strength_of_schedule?.value ?? null, rest_days: sec.matchup?.[side]?.rest_days?.value ?? null,
   });
 
+  /* ---- the football layers, from the metrics artifact and the NFL slate row ---- */
+  const football: any = { drivers: [], drivers_missing: null, starters: {}, injuries: {}, coaching: {}, profiles: {}, ratings: {}, weather: null, rest: null, venue: null };
+  const fresh = (at: string | null, cat: string) => (at ? EDRESEARCH.freshness({ observed_at: at, now, category: cat }).state : "UNKNOWN");
+  const starterOf = (rec: any, src: string) => rec ? ({ position: rec.position ?? "QB", player_name: rec.player_name ?? null, player_id: rec.player_id ?? null,
+    status: rec.status ?? "UNKNOWN", announced: !!rec.announced, confirmed: !!rec.confirmed, availability: rec.availability ?? null, basis: rec.basis ?? null,
+    source: rec.source ?? src, published_at: rec.published_at ?? null, retrieved_at: rec.retrieved_at ?? null, freshness: fresh(rec.retrieved_at ?? rec.published_at ?? null, "roster") }) : null;
+  if (!isNfl) {
+    const H = fc?.home ?? null, A = fc?.away ?? null;
+    if (H && A) {
+      const one = (att: any, def: any, an: string, dn: string) => { try { return EDINTEL.matchupDrivers({ attacker: att, defender: def, attacker_name: an, defender_name: dn, source: metricsSrc, limit: 3 }); } catch { return { drivers: [], missing: [] }; } };
+      const d1 = one(A, H, away ?? "the away offence", home ?? "the home defence"), d2 = one(H, A, home ?? "the home offence", away ?? "the away defence");
+      const all = [...(d1.drivers ?? []), ...(d2.drivers ?? [])].sort((x: any, y: any) => (y.strength ?? 0) - (x.strength ?? 0)).slice(0, 4);
+      football.drivers = all.map((d: any) => ({
+        id: d.id, label: d.label, family: d.family_label ?? d.family, attacker: d.attacker, defender: d.defender,
+        favoured: d.advantage_side === "attacker" ? d.attacker : d.defender, advantage_z: d.advantage_z, gap_word: d.gap_word,
+        attacker_value: d.attacker_value, defender_value: d.defender_value, reliability: d.reliability,
+        sentence: d.statement, reading: d.reading, opponent_adjustment: d.opponent_adjustment,
+        source: metricsSrc + " (from football/rankings/current.json)", observed_at: metricsAt, freshness: fresh(metricsAt, "rating"),
+      }));
+      if (!football.drivers.length) football.drivers_missing = [...(d1.missing ?? []), ...(d2.missing ?? [])].map((m: any) => m.reason).join("; ") || "no metric pair cleared the observation floor";
+    } else football.drivers_missing = fc ? "the metrics artifact carries no record for " + (!H && !A ? "either side" : !H ? (home ?? "the home side") : (away ?? "the away side")) : "the metrics artifact was not read";
+    for (const [side, rec, name] of [["home", H, home], ["away", A, away]] as const) {
+      const r: any = rec;
+      football.starters[side] = r?.starter ? starterOf(r.starter, metricsSrc) : null;
+      football.coaching[side] = r?.coaching ? { ...r.coaching, freshness: fresh(r.coaching.as_of ?? null, "static") } : null;
+      football.profiles[side] = r?.profile ? { ...r.profile, freshness: fresh(r.profile.as_of ?? null, "rating") } : null;
+      football.ratings[side] = r?.rating ? { team: name, etsr: r.rating.etsr, rank: r.rating.rank, confidence: r.rating.confidence, games_used: r.rating.games_used, gates: r.rating.gates,
+        offense_rating: r.rating.offense_rating, defense_rating: r.rating.defense_rating, special_teams: r.special_teams ?? null, continuity: r.continuity ? r.continuity.rating : null,
+        source: r.rating.source ?? "football/rankings/current.json", as_of: r.rating.as_of ?? metricsAt, freshness: fresh(r.rating.as_of ?? metricsAt, "rating"),
+        basis: "ETSR is a neutral-field rating in points against the league mean; ETSR(A) − ETSR(B) is a neutral-field spread. Home field, rest and availability are not in it." } : null;
+    }
+    football.weather = fc?.forecast ?? null;
+  } else {
+    const NH = fc?.nfl_home ?? null, NA = fc?.nfl_away ?? null;
+    const nflTeams: any = (research.data_path as any)?.__nfl_teams ?? null;
+    for (const [side, rec, name, feedStarter] of [["home", NH, home, row?.home_starter], ["away", NA, away, row?.away_starter]] as const) {
+      const r: any = rec;
+      const depth = r?.starter ? starterOf(r.starter, metricsSrc) : null;
+      const feed: any = feedStarter ? { position: "QB", player_name: feedStarter.player_name ?? null, player_id: feedStarter.player_id ?? null, status: "SCHEDULE_FEED", announced: false, confirmed: false,
+        availability: depth?.availability ?? null, basis: "the schedule feed names the starter; nflverse fills it close to kickoff", source: feedStarter.source ?? "nflverse games.csv", freshness: fresh(nflMeta?.generated_at ?? null, "roster") } : null;
+      football.starters[side] = feed ?? depth;
+      if (feed && depth && depth.player_name && feed.player_name && EDINTEL.normKey(depth.player_name) !== EDINTEL.normKey(feed.player_name)) feed.conflict = `the depth chart names ${depth.player_name}`;
+      football.injuries[side] = r?.injuries ? { ...r.injuries, team: name, freshness: fresh(r.injuries.retrieved_at ?? null, "injury") } : null;
+      football.coaching[side] = null; football.profiles[side] = null;
+      football.ratings[side] = null;
+    }
+    football.rest = { home: row?.home_rest ?? null, away: row?.away_rest ?? null };
+    football.venue = { roof: row?.roof ?? null, surface: row?.surface ?? null, div_game: row?.div_game ?? null };
+    /* the model's own contributions, as drivers */
+    const contrib = row?.contributions?.spread ?? [];
+    const LABEL: Record<string, string> = { baseline: "home-field baseline", net_pts: "net points margin", net_epa: "net EPA per play", net_pass: "net passing EPA per dropback", net_rush: "net rushing EPA per attempt", qb_adj_diff: "quarterback adjustment", rest_diff: "rest difference", div_game: "division game" };
+    football.model_drivers = contrib.filter((c: any) => c.key !== "baseline" && c.points != null).map((c: any) => ({
+      key: c.key, label: LABEL[c.key] ?? c.key, points: c.points, value: c.value, favours: c.points > 0 ? home : c.points < 0 ? away : null,
+      sentence: `${LABEL[c.key] ?? c.key}: ${c.points > 0 ? "+" : ""}${c.points} points toward ${c.points > 0 ? (home ?? "home") : c.points < 0 ? (away ?? "away") : "neither side"}`,
+      source: "football/nfl/slate.json (engine contributions)", observed_at: nflMeta?.generated_at ?? null,
+    }));
+  }
+
+  const modelInput = row && row.model_home_line != null ? {
+    home_line: row.model_home_line, home_margin: row.model_home_margin ?? null, total: row.model_total, home_win_prob: row.model_home_win_prob ?? null,
+    status: row.model_status, completeness: row.model_completeness,
+    version: row.model_version ?? (isNfl ? nflMeta?.engine : artifact?.version) ?? null,
+    generated_at: isNfl ? (row.model_generated_at ?? nflMeta?.generated_at ?? null) : (artifact?.generated_at ?? null),
+    p10: row.outcome_range?.p10 ?? null, p50: row.outcome_range?.p50 ?? null, p90: row.outcome_range?.p90 ?? null,
+    drivers: isNfl && football.model_drivers?.length ? {
+      positive: football.model_drivers.filter((d: any) => d.points > 0).map((d: any) => d.sentence),
+      negative: football.model_drivers.filter((d: any) => d.points < 0).map((d: any) => d.sentence),
+      source: "football/nfl/slate.json (engine contributions)",
+    } : null,
+  } : (row ? { status: row.model_status ?? "NONE" } : null);
+
   return EDRESEARCH.buildResearchPacket({
     now, sport,
     context: { sport, game_id: gid, home, away, home_id: ctx.home_id, away_id: ctx.away_id, kickoff: ctx.kickoff ?? row?.kickoff ?? null,
       season: ctx.season ?? row?.season ?? null, week: ctx.week ?? row?.week ?? null, venue: row?.venue ?? null, neutral_site: row?.neutral_site ?? null, status: row?.status ?? null },
-    slate_source: row?.source ?? (sport === "americanfootball_nfl" ? "games" : "football/fbs/slate.json"),
-    model: row && row.model_home_line != null ? {
-      home_line: row.model_home_line, home_margin: row.model_home_margin ?? null, total: row.model_total, home_win_prob: row.model_home_win_prob ?? null,
-      status: row.model_status, completeness: row.model_completeness,
-      version: row.model_version ?? artifact?.version ?? null, generated_at: artifact?.generated_at ?? null,
-    } : (row ? { status: row.model_status ?? "NONE" } : null),
-    model_version: row?.model_version ?? artifact?.version ?? null,
+    slate_source: row?.source ?? (isNfl ? "football/nfl/slate.json" : "football/fbs/slate.json"),
+    model: modelInput,
+    model_version: row?.model_version ?? (isNfl ? nflMeta?.engine : artifact?.version) ?? null,
     validation,
     quotes,
     primary_selection: prim?.selection ?? null, primary_market: prim?.market ?? null,
@@ -22639,11 +22998,12 @@ export function turnResearchPacket(research: ResearchOut | null, now = Date.now(
       sp_plus_gap: sec.matchup.sp_plus_gap?.value ?? null,
       source: "cfb.ratings (SP+, an EXTERNAL model — attribute it, never convert it)",
       not_ingested: Object.keys(sec.matchup.home ?? {}).filter((k) => sec.matchup.home[k]?.missing && /efficiency|explosive|success|pressure|turnover|red_zone|pace/.test(k)),
-    } : null,
-    situation: { home_rest_days: sec.matchup?.home?.rest_days?.value ?? null, away_rest_days: sec.matchup?.away?.rest_days?.value ?? null },
+    } : (isNfl && (football.ratings.home || football.starters.home) ? { home: { team: home }, away: { team: away }, source: "football/nfl/slate.json" } : null),
+    situation: { home_rest_days: sec.matchup?.home?.rest_days?.value ?? football.rest?.home ?? null, away_rest_days: sec.matchup?.away?.rest_days?.value ?? football.rest?.away ?? null },
+    football,
     thesis: { support: strings(ta.support), contradictions: strings(ta.counterarguments?.length ? ta.counterarguments : ta.contradictions), falsifiers: strings(ta.falsifiers) },
     completeness: pkt?.completeness ?? null,
-    unknowns: strings(ta.blockers),
+    unknowns: strings(ta.blockers).concat(fc?.errors ?? []),
     ev_floor: RESEARCH_FLOOR,
   });
 }
@@ -22680,7 +23040,13 @@ function compactPacketForPrompt(p: any): any {
       price_limit: p.comparison.price_ladder?.price_limit_american ?? null,
       line_sensitivity: p.comparison.line_sensitivity?.ladder ?? null,
     } : null,
-    decision: p.decision, drivers: p.drivers, matchup: p.matchup, availability: p.availability, situation: p.situation,
+    decision: p.decision,
+    drivers: (p.drivers ?? []).map((d: any) => ({ id: d.id, label: d.label, family: d.family, favoured: d.favoured, gap_word: d.gap_word, advantage_z: d.advantage_z, reliability: d.reliability, sentence: d.sentence, reading: d.reading, attacker_value: d.attacker_value ? { raw: d.attacker_value.raw, adjusted: d.attacker_value.adjusted, league: d.attacker_value.league, plays: d.attacker_value.plays } : null, defender_value: d.defender_value ? { raw: d.defender_value.raw, adjusted: d.defender_value.adjusted, league: d.defender_value.league, plays: d.defender_value.plays } : null, source: d.source, observed_at: d.observed_at, freshness: d.freshness })),
+    matchup: p.matchup, availability: p.availability, situation: p.situation,
+    starters: p.starters ? { home: p.starters.home, away: p.starters.away, note: p.starters.note } : null,
+    injuries: p.injuries ? { home: p.injuries.home ? { week: p.injuries.home.week, out: p.injuries.home.out, doubtful: p.injuries.home.doubtful, questionable: p.injuries.home.questionable, players: (p.injuries.home.players ?? []).slice(0, 24), source: p.injuries.home.source, retrieved_at: p.injuries.home.retrieved_at, freshness: p.injuries.home.freshness } : null,
+      away: p.injuries.away ? { week: p.injuries.away.week, out: p.injuries.away.out, doubtful: p.injuries.away.doubtful, questionable: p.injuries.away.questionable, players: (p.injuries.away.players ?? []).slice(0, 24), source: p.injuries.away.source, retrieved_at: p.injuries.away.retrieved_at, freshness: p.injuries.away.freshness } : null, note: p.injuries.note } : null,
+    coaching: p.coaching, profiles: p.profiles, ratings: p.ratings,
     previous_games: p.previous_games, evidence: p.evidence, unknowns: p.unknowns, confidence: p.confidence,
     sources: (p.sources ?? []).slice(0, 16),
   };
@@ -24084,6 +24450,7 @@ export async function handle(req: Request): Promise<Response> {
         tool_loop: { enabled: TOOL_LOOP, max_rounds: TOOL_LOOP_MAX_ROUNDS, budget: TOOL_BUDGET, allowlist: TOOL_ALLOWLIST },
         tools: EDRESEARCH ? EDRESEARCH.toolNames() : [],
         labels: EDRESEARCH ? EDRESEARCH.LABELS : [],
+        artifacts: ["football/fbs/slate.json", "football/nfl/slate.json", "football/matchup/metrics.json", "football/availability/current.json", "football/venues/forecasts.json"],
       },
       packet_health: {
         last_packet_write: LAST_PACKET_WRITE,
