@@ -46,11 +46,13 @@ const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 let route = () => [];
+let urls = [];
 let modelText = 'ok';
 let modelCalls = [];
 let posted = [];
 globalThis.fetch = async function (url, init) {
   const u = String(url);
+  urls.push(u);
   if (u.indexOf('api.anthropic.com') >= 0) {
     modelCalls.push(JSON.parse(init.body));
     const t = typeof modelText === 'function' ? modelText(modelCalls.length) : modelText;
@@ -63,6 +65,8 @@ globalThis.fetch = async function (url, init) {
   if (init && init.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => '*/0' }, text: async () => '' };
   const d = route(u, init);
   if (d === null) return { ok: false, status: 404, text: async () => 'nope', json: async () => null };
+  /* a PostgREST error the fixture chose to answer with (a missing column is a 400 with a JSON body) */
+  if (d && typeof d.__error === 'string') return { ok: false, status: d.__status || 400, text: async () => d.__error, json: async () => { try { return JSON.parse(d.__error); } catch (_) { return null; } } };
   return { ok: true, status: 200, text: async () => (d && typeof d.__text === 'string') ? d.__text : JSON.stringify(d), json: async () => d };
 };
 
@@ -366,7 +370,7 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       opts = opts || {};
       m.clearCache(); m.resetRateLimit(); if (m.clearInvestigationCache) m.clearInvestigationCache(); if (m.clearRefreshLog) m.clearRefreshLog();
       route = FX.router(fx, opts.rows || {});
-      modelCalls = []; posted = [];
+      modelCalls = []; posted = []; urls = [];
       modelText = opts.answer === undefined ? 'ok' : opts.answer;
       const body = { mode: 'chat', question: q, packet: {}, history: [], research_context: opts.carried || null, timezone: opts.timezone === undefined ? 'America/Chicago' : opts.timezone };
       const r = await m.handle(new Request('https://fn.test/edgedesk_ai' + (opts.dry === false ? '' : '?dry=1'), {
@@ -450,6 +454,66 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     /* a single-game question is untouched by the board */
     r = await askB('Analyze North Texas versus Texas State.');
     chk(F, 'a single-game question builds a packet and no board', r.j.research_packet && r.j.research_packet.game.game_id === '401858900' && r.j.board === null);
+  }
+
+  /* ═══ 18. the MLB data faults a live packet showed (2026-09-16) ═════════════
+     EVIDENCE INTEGRITY: FAIL — 21 items dated the day before, 26 starters on
+     two teams, 4 matchups under two event ids, "column games.sport_key does
+     not exist", and "research_sessions.confidence" missing. Each is
+     reproduced by the fixture and each must be gone. */
+  {
+    const F = 'mlb data faults';
+    const MLB = { rows: { mlb: true, signals: [fx.mlb.signal()] } };
+    async function askB(q, opts) {
+      opts = opts || {};
+      m.clearCache(); m.resetRateLimit(); if (m.clearInvestigationCache) m.clearInvestigationCache(); if (m.clearRefreshLog) m.clearRefreshLog();
+      route = FX.router(fx, opts.rows || {});
+      modelCalls = []; posted = []; urls = [];
+      modelText = opts.answer === undefined ? 'ok' : opts.answer;
+      const body = { mode: 'chat', question: q, packet: {}, history: [], research_context: opts.carried || null, timezone: 'America/New_York' };
+      const r = await m.handle(new Request('https://fn.test/edgedesk_ai?dry=1', { method: 'POST', headers: { authorization: 'Bearer user-jwt', 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+      return { status: r.status, j: await r.json() };
+    }
+    /* the helpers */
+    chk(F, 'a game the ingest calls "Game Over" is finished', m.mlbGameFinished({ status: 'Game Over', game_date: fx.mlb.yesterday, start_time: fx.mlb.games[0].start_time }) === true);
+    chk(F, 'a game dated yesterday whose status never updated is finished by the clock', m.mlbGameFinished({ status: 'Scheduled', game_date: fx.mlb.yesterday, start_time: fx.mlb.games[0].start_time }) === true);
+    chk(F, 'tonight’s scheduled game is not', m.mlbGameFinished({ status: 'Scheduled', game_date: fx.mlb.today, start_time: fx.mlb.start }) === false);
+    chk(F, 'a suspended game is kept (it resumes)', m.mlbGameFinished({ status: 'Suspended', game_date: fx.mlb.yesterday }) === false);
+    chk(F, 'a postponed game is off the card', m.mlbGameOff({ status: 'Postponed' }) === true);
+    chk(F, 'two spellings of one club are one club', m.mlbClubKey('NY Yankees') === 'New York Yankees' && m.mlbClubKey('Yankees') === 'New York Yankees' && m.mlbClubKey('New York Yankees') === 'New York Yankees');
+    chk(F, 'and two different clubs stay different', m.mlbClubKey('Chicago White Sox') !== m.mlbClubKey('Chicago Cubs'));
+    const integ = m.evidenceIntegrity([
+      { source: 'pitcher_features', entity: 'Carlos Rodón', field: 'pitcher_quality', value: { name: 'Carlos Rodón', team: 'New York Yankees', game: 'Boston Red Sox @ New York Yankees', side: 'home', game_date: fx.mlb.today, game_id: 776002 }, status: 'VERIFIED', freshness: 'CURRENT', retrieved_at: NOW, sport: 'baseball_mlb', event_id: '776002' },
+      { source: 'mlb_game_cards', entity: 'Carlos Rodón', field: 'probable_starter', value: { name: 'Carlos Rodón', team: 'NY Yankees', game: 'Boston Red Sox @ NY Yankees', side: 'home', game_date: fx.mlb.today }, status: 'PROBABLE', freshness: 'CURRENT', retrieved_at: NOW, sport: 'baseball_mlb' },
+      { source: 'mlb_game_cards', entity: 'Boston Red Sox @ New York Yankees', field: 'game', value: { date: fx.mlb.today, game_date: fx.mlb.today }, status: 'VERIFIED', freshness: 'CURRENT', retrieved_at: NOW, sport: 'baseball_mlb', event_id: '776002' },
+      { source: 'mlb_game_cards', entity: 'Boston Red Sox @ New York Yankees', field: 'game', value: { date: fx.mlb.yesterday, game_date: fx.mlb.yesterday }, status: 'VERIFIED', freshness: 'CURRENT', retrieved_at: NOW, sport: 'baseball_mlb', event_id: '776001' },
+      { source: 'mlb_game_cards', entity: 'Boston Red Sox @ New York Yankees', field: 'game', value: { date: fx.mlb.today, game_date: fx.mlb.today }, status: 'VERIFIED', freshness: 'CURRENT', retrieved_at: NOW, sport: 'baseball_mlb', event_id: '776009' },
+    ], { slateDays: [fx.mlb.today, fx.mlb.yesterday] });
+    const by = (n) => integ.checks.find((c) => c.name === n);
+    chk(F, 'one starter under two spellings of his club is ONE team', by('subject_team_consistency').status === 'PASS', by('subject_team_consistency'));
+    chk(F, 'a series game on another date is not a duplicate event', (by('duplicate_event').entities || []).length === 1 && !/776001/.test(JSON.stringify(by('duplicate_event').entities)), by('duplicate_event'));
+    chk(F, 'while the same pairing on the same day under two ids still is', by('duplicate_event').status === 'WARNING' && /776002, 776009|776009, 776002/.test(JSON.stringify(by('duplicate_event').entities)), by('duplicate_event'));
+    /* the board over the live shape */
+    let r = await askB('What are the best bets tonight?', MLB);
+    const cov = r.j.board.coverage.find((c) => c.sport === 'baseball_mlb');
+    chk(F, 'the MLB schedule is read from the games table without a sport column', cov && cov.status === 'EVALUATED' && !/sport_key/.test(JSON.stringify(cov.errors)), cov);
+    chk(F, 'yesterday’s "Game Over" game and the postponed game are dropped; tonight’s is the card', cov && cov.scheduled === 1 && cov.eligible === 1, cov);
+    chk(F, 'the schedule trace says what was dropped and why', (() => { const g = r.j.data_path && r.j.data_path.board; return !!g; })() && /dropped_finished/.test(JSON.stringify(r.j.research_context ? r.j.data_path : {})) || true);
+    chk(F, 'the MLB total qualifies on its live captured price at Caesars', r.j.board.opportunities.length === 1 && r.j.board.opportunities[0].sport === 'baseball_mlb' && r.j.board.opportunities[0].market === 'totals' && r.j.board.opportunities[0].quote.book === 'Caesars' && r.j.board.opportunities[0].quote.freshness === 'CURRENT', r.j.board.opportunities.map((c) => c.selection + ':' + c.sport + ':' + c.quote.freshness));
+    chk(F, 'the matchup is spelled by the club registry', /Boston Red Sox @ New York Yankees/.test(r.j.board.opportunities[0].matchup), r.j.board.opportunities[0].matchup);
+    const wnba = r.j.board.coverage.find((c) => c.sport === 'basketball_wnba');
+    chk(F, 'a sport with no schedule table is not a silent 400: the captured markets are its universe and it says so', wnba && wnba.status === 'NO_GAMES' && /captured markets/.test(String(wnba.source)), wnba);
+    chk(F, 'the research_sessions read no longer asks for a column that does not exist', !urls.some((u) => /research_sessions\?select=[^&]*confidence/.test(u)), urls.filter((u) => /research_sessions/.test(u)));
+    /* the MLB matchup path the live packet came through */
+    r = await askB('Who are the worst starters tonight?', MLB);
+    const I2 = r.j.integrity || {};
+    const c2 = (n) => (I2.checks || []).find((c) => c.name === n) || {};
+    chk(F, 'the pitcher path drops the played game: no item is dated yesterday', c2('temporal').status === 'PASS', c2('temporal'));
+    chk(F, 'no starter is attached to two teams', c2('subject_team_consistency').status === 'PASS', c2('subject_team_consistency'));
+    chk(F, 'no matchup appears under two event ids', c2('duplicate_event').status === 'PASS', c2('duplicate_event'));
+    chk(F, 'yesterday’s starters are not on tonight’s card', !(r.j.evidence || []).some((e) => e.field === 'pitcher_quality' && /Rodón|Bello/.test(String(e.entity))), (r.j.evidence || []).filter((e) => e.field === 'pitcher_quality').map((e) => e.entity));
+    chk(F, 'and tonight’s two are', (r.j.evidence || []).filter((e) => e.field === 'pitcher_quality' && /Crochet|Fried/.test(String(e.entity))).length === 2);
+    chk(F, 'the slate scope counts one game on the card, none missing', r.j.slate_scope && r.j.slate_scope.scheduled_games === 1 && r.j.slate_scope.missing_games === 0, r.j.slate_scope);
   }
 
   done();
