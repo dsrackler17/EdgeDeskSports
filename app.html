@@ -12803,7 +12803,7 @@ function mlbhFmt(v,m){var M=mlbhM();return M?M.fmt(v,m):(v==null?'—':String(v)
 function mlbhDelta(v,m){var M=mlbhM();return M?M.fmtDelta(v,m):(v==null?'—':String(v));}
 function mlbhEsc(s){return stEsc(s==null?'':String(s));}
 
-/* ---- load ---------------------------------------------------------------
+/* ---- baseball: load -----------------------------------------------------
    Coverage first, always. Everything else on the screen is meaningless
    without the window it describes, and a screen that showed rows before it
    knew its own coverage is a screen that can be read as current. */
@@ -12897,7 +12897,7 @@ async function mlbhClubs(svc){
   }catch(_){return [];}
 }
 
-/* ---- search -------------------------------------------------------------
+/* ---- baseball: search ---------------------------------------------------
    Two characters minimum, folded through the same name key the archive
    indexes, so "Luis Garcia" finds "Luis García". */
 var MLBH_SEARCH_T=null;
@@ -12916,7 +12916,7 @@ async function mlbhRunSearch(){
   MLBH.searching=false;renderBaseball();
 }
 
-/* ---- the pitcher profile ------------------------------------------------ */
+/* ---- baseball: the pitcher profile ------------------------------------- */
 window.mlbhOpenPitcher=async function(id){
   var svc=mlbhSvc();if(!svc)return;
   MLBH.profileId=String(id);MLBH.profile=null;MLBH.profileErr=null;
@@ -12968,7 +12968,7 @@ window.mlbhSetCtl=function(k,v){
   renderBaseball();mlbhLoadSeg(false);
 };
 
-/* ---- rendering ---------------------------------------------------------- */
+/* ---- baseball: rendering ------------------------------------------------ */
 function mlbhCoverageHTML(){
   var st=MLBH.status;
   if(!st||!st.ok)return '';
@@ -13208,7 +13208,7 @@ function mlbhCmpName(id){
   return b?b.player_name:('MLB id '+id);
 }
 
-/* ---- the profile -------------------------------------------------------- */
+/* ---- baseball: the profile ---------------------------------------------- */
 function mlbhRenderProfile(){
   var card=document.getElementById('mlbhModalCard');if(!card)return;
   var close='<button class="mlbh-x" onclick="mlbhClosePitcher()" aria-label="Close">×</button>';
@@ -13405,7 +13405,7 @@ function mlbhSpark(seasons,metric,label){
     +(gaps?(' · '+gaps+' season'+(gaps===1?'':'s')+' undefined'):'')+'</span></div>';
 }
 
-/* ---- module registration ------------------------------------------------ */
+/* ---- baseball: module registration -------------------------------------- */
 researchRegister({id:'baseball',label:'Baseball',schema:'mlbhist',cadenceMs:null,
   load:function(force,signal){return window.loadBaseball(force,signal);},
   render:function(){renderBaseball();},
@@ -32554,8 +32554,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* Slice 7: the board this conversation is on. Identifiers and the server's
      own numbers, handed straight back; the server re-reads every price. */
   var LAST_BOARD=null;
+  /* The MLB pitchers this conversation has resolved, so "now compare him to
+     the other starter" reaches the server with the ids it already established
+     rather than a pronoun. IDS AND A SEASON SCOPE ONLY: no statistic rides
+     here, because the server re-reads every number from the archive each turn
+     and a figure carried on the client could go stale and be quoted anyway.
+     It survives a turn about something else — a football question in the
+     middle of a baseball conversation does not forget who was being discussed
+     — and is replaced whenever the server resolves new pitchers. */
+  var LAST_MLB=null;
   function clientTimeZone(){ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||null; }catch(_){ return null; } }
-  function carriedContext(){ var c=LAST_CTX?Object.assign({},LAST_CTX):{}; if(LAST_BOARD) c.board=LAST_BOARD; return (LAST_CTX||LAST_BOARD)?c:null; }
+  function carriedContext(){
+    var c=LAST_CTX?Object.assign({},LAST_CTX):{};
+    if(LAST_BOARD) c.board=LAST_BOARD;
+    if(LAST_MLB) c.mlb_pitchers=LAST_MLB;
+    return (LAST_CTX||LAST_BOARD||LAST_MLB)?c:null;
+  }
   /* The last question, so a failed narration can be asked for again without
      the reader retyping it. */
   var LAST_ASK=null;
@@ -37836,6 +37850,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          much EdgeDesk retrieves. */
       /* Slice 7: the board state rides back on its own field. */
       try{ if(d&&d.board_state&&d.board_state.schema==='edgedesk_board_state_v1') LAST_BOARD=d.board_state; }catch(_){}
+      /* The pitcher ids this turn resolved. Only replaced when the server
+         actually returns a state; a turn that was not about pitchers leaves
+         the previous one in place. */
+      try{ if(d&&d.mlb_pitcher_state&&d.mlb_pitcher_state.schema==='edgedesk_mlb_history_v1') LAST_MLB=d.mlb_pitcher_state; }catch(_){}
       try{ var rc=d&&d.research&&d.research.research_context;
         /* Slice 3: the server's structured conversation state (side, market,
            quoted line and odds, unresolved questions) rides back inside the

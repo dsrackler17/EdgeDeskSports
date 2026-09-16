@@ -171,8 +171,15 @@ eq('--final overrides it deliberately', JSON.stringify(R.provisionalSeasons(2026
   ok('CI runs the import suite', /node tools\/mlb\/import\.test\.js/.test(sqlwf));
   ok('CI runs the intelligence suite', /node tools\/intelligence\/mlb_history\.test\.js/.test(sqlwf));
   ok('CI runs the browser surface suite', /node tools\/mlb\/baseball_ui\.e2e\.js/.test(sqlwf));
-  ok('…and a skip in any of them fails the job',
-    /mlb\.log mlb_import\.log mlb_ai\.log mlb_ui\.log/.test(sqlwf), 'the skip-refusal list is missing the mlb logs');
+  /* The refusal list is a single shell `for f in …` line. Asserting on its
+     exact spelling made this test break the moment two more suites were added
+     to it, which is the wrong thing to be brittle about: what matters is that
+     every log this job produces is in the list, in any order. */
+  const refusal = (sqlwf.split('\n').filter(l => /^\s*for f in .*\.log/.test(l))[0] || '');
+  const missing = ['mlb.log', 'mlb_import.log', 'mlb_features.log', 'mlb_refresh.log', 'mlb_ai.log', 'mlb_ui.log']
+    .filter(n => refusal.indexOf(n) < 0);
+  ok('…and a skip in any of them fails the job', missing.length === 0,
+    missing.length ? { missing_from_the_skip_refusal_list: missing } : refusal.trim().slice(0, 160));
   ok('…and the job is triggered by a change to the schema',
     /supabase\/mlb_pitcher_history\.sql/.test(sqlwf));
   ok('…and by a change to the pipeline', /tools\/mlb\/\*\*/.test(sqlwf));

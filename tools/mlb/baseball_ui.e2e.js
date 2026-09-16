@@ -522,6 +522,140 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
       await ctx.close();
     }
 
+    /* ══ 6c. THE EDGE CASES A READER WILL ACTUALLY HIT ════════════════════ */
+    {
+      const { page, ctx, errors } = await openApp({ width: 1280, height: 900 });
+      await gotoBaseball(page);
+
+      /* A ZERO-OUT APPEARANCE. He came in, recorded no outs, and left. The
+         counting statistics are real; the rates are undefined. A screen that
+         printed 0.00 there would be claiming he was unhittable. */
+      await page.evaluate(() => window.mlbhOpenPitcher(593833));
+      await page.waitForSelector('#mlbhModal .mlbh-ph h3', { timeout: 20000 });
+      const zero = db.rows(`select season, games, outs, era, fip, whip, performance_index, sample_flag
+                              from mlbhist.pitcher_seasons where player_id = 593833 and outs = 0`)[0];
+      chk('the archive really holds a zero-out season for this pitcher', !!zero, zero);
+      const zrow = await page.evaluate((season) => {
+        const t = document.querySelectorAll('#mlbhModal .mlbh-tbl')[0];
+        const tr = Array.from(t.querySelectorAll('tbody tr'))
+          .filter((x) => x.children[0].textContent.trim().replace(/60g$/, '') === String(season))[0];
+        if (!tr) return null;
+        return { ip: tr.children[3].textContent.trim(), g: tr.children[4].textContent.trim(),
+          era: tr.children[5].textContent.trim(), fip: tr.children[6].textContent.trim(),
+          whip: tr.children[7].textContent.trim(), idx: tr.children[11].textContent.trim(),
+          sample: tr.children[12].textContent.trim() };
+      }, Number(zero.season));
+      chk('the zero-out season is on the page', !!zrow, zrow);
+      eq('…its innings read 0.0', zrow.ip, '0.0');
+      eq('…its appearance is still counted', zrow.g, String(zero.games) + '/' + String(zero.starts == null ? 0 : zero.starts));
+      eq('…its ERA is an em dash, not 0.00', zrow.era, '—');
+      eq('…so is its FIP', zrow.fip, '—');
+      eq('…and its WHIP', zrow.whip, '—');
+      eq('…and its rating', zrow.idx, '—');
+      chk('…and it is flagged as a zero-out sample', /no outs|0 IP/.test(zrow.sample), zrow.sample);
+      await page.evaluate(() => window.mlbhClosePitcher());
+
+      /* A POSITION PLAYER WHO PITCHED. He is in the archive by design — the
+         package filters nobody — and his profile has to render without
+         pretending he is a pitcher. */
+      await page.evaluate(() => window.mlbhOpenPitcher(571912));
+      await page.waitForSelector('#mlbhModal .mlbh-ph h3', { timeout: 20000 });
+      const catcherName = await text(page, '#mlbhModal .mlbh-ph h3');
+      const sqlCatcher = db.rows(`select player_name, position_reported, count(*)::int as n, sum(outs)::int as outs
+                                    from mlbhist.pitcher_seasons where player_id = 571912
+                                    group by 1,2`)[0];
+      eq('a position player who pitched has a profile', catcherName, String(sqlCatcher.player_name));
+      chk('…and MLB reports him at a position other than P', sqlCatcher.position_reported !== 'P', sqlCatcher.position_reported);
+      const catcherRows = await page.evaluate(() =>
+        document.querySelectorAll('#mlbhModal .mlbh-tbl')[0].querySelectorAll('tbody tr').length);
+      eq('…with every one of his pitching seasons', catcherRows, Number(sqlCatcher.n));
+      /* …and he is NOT on the pitching board, which is the point of the filter */
+      await page.evaluate(() => window.mlbhClosePitcher());
+      await page.evaluate(() => { window.mlbhSetCtl('minIp', ''); window.mlbhSetCtl('role', ''); });
+      await page.evaluate(() => window.mlbhSetCtl('season', '2021'));
+      await page.waitForFunction(() => {
+        const h = document.querySelector('#mlbhBody .fb-sechd');
+        return h && /^2021/.test(h.textContent.replace(/\s+/g, ' ').trim());
+      }, null, { timeout: 15000 }).catch(() => {});
+      const boardIds = await page.evaluate(() => window.MLBH.board.data.rows.map((r) => r.player_id));
+      chk('…and a position player is not ranked on the pitching board',
+        boardIds.indexOf(571912) < 0 && boardIds.indexOf(518586) < 0, boardIds.slice(0, 5));
+
+      chk('no page error on the edge cases', errors.length === 0, errors.slice(0, 3));
+      await ctx.close();
+    }
+
+    /* ══ 6d. THE DESK CARRIES PITCHER IDS ACROSS A FOLLOW-UP ══════════════
+       The panel talks to the edge function, which cannot run here. What CAN
+       be checked — and is the half that lives in the browser — is whether the
+       client hands the server back the ids it resolved, because without that
+       "now compare him to the other starter" arrives as a pronoun. */
+    {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      await ctx.addInitScript(() => {
+        try {
+          localStorage.setItem('edgedesk_welcome_seen', String(Date.now()));
+          localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e',
+            expires_at: Math.floor(Date.now() / 1000) + 86400, user: { id: 'e2e', email: 'e2e@edgedesk.test' } }));
+        } catch (e) { /* private mode */ }
+      });
+      const sent = [];
+      const STATE = { schema: 'edgedesk_mlb_history_v1', player_ids: [543037, 554430],
+        player_names: { 543037: 'Gerrit Cole', 554430: 'Zack Wheeler' }, season: 2024,
+        last_intent: 'compare_pitchers', turns: 1 };
+      await ctx.route('**/*', async (route) => {
+        const url = route.request().url();
+        if (url.indexOf('127.0.0.1') >= 0) return route.continue();
+        if (/functions\/v1\/edgedesk_ai/.test(url)) {
+          let body = null;
+          try { body = JSON.parse(route.request().postData() || '{}'); } catch (_) { body = null; }
+          sent.push(body);
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+            build: 'e2e', model: 'claude-test',
+            answer: 'Over 2016-2025 Gerrit Cole carried the higher K-BB%. This is the historical record only.',
+            mlb_pitcher_state: STATE,
+            mlb_history: { schema: 'edgedesk_mlb_history_v1', intent: 'compare_pitchers',
+              coverage: { start: 2016, end: 2025, rating_version: 'ED_PITCH_PERF_V1' },
+              players: [{ player_id: 543037, player_name: 'Gerrit Cole' }, { player_id: 554430, player_name: 'Zack Wheeler' }],
+              resolution: [], sections: [], notes: [], links: {} },
+            narration: { ok: true }, ledger: { state: 'NOTHING_TO_RECORD', notice: null } }) });
+        }
+        if (/supabase\.co\/rest\/v1\//.test(url)) return answerSupabase(route);
+        if (/supabase\.co/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+        return route.fulfill({ status: 204, body: '' });
+      });
+      const page = await ctx.newPage();
+      await page.goto(`http://127.0.0.1:${site.port}/app.html`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => window.EDAI && typeof window.EDAI.open === 'function', null, { timeout: 30000 });
+      await page.evaluate(() => window.EDAI.open());
+      await page.waitForSelector('#edaiPanel.open', { timeout: 10000 });
+
+      const ask = async (q) => {
+        await page.evaluate((question) => {
+          document.getElementById('edaiText').value = question;
+          return window.EDAI.sendText();
+        }, q);
+        await page.waitForFunction((n) => {
+          const log = document.getElementById('edaiLog');
+          return log && (log.textContent.match(/historical record only/g) || []).length >= n;
+        }, sent.length + 1, { timeout: 20000 }).catch(() => {});
+      };
+      await ask('Compare Gerrit Cole and Zack Wheeler over your dataset.');
+      chk('the first turn reached the function', sent.length >= 1, sent.length);
+      chk('…carrying no pitcher state yet',
+        !(sent[0] && sent[0].research_context && sent[0].research_context.mlb_pitchers), sent[0] && sent[0].research_context);
+
+      await ask('Now compare him to the other starter.');
+      chk('the follow-up reached the function', sent.length >= 2, sent.length);
+      const carried = sent[1] && sent[1].research_context && sent[1].research_context.mlb_pitchers;
+      chk('…carrying the pitcher ids the server resolved', !!carried && Array.isArray(carried.player_ids)
+        && carried.player_ids.join(',') === '543037,554430', carried);
+      chk('…and the season scope', carried && carried.season === 2024, carried && carried.season);
+      chk('…and no statistic rides with them',
+        carried && !/\b(era|fip|whip|performance_index)\b/.test(Object.keys(carried).join(',')), carried && Object.keys(carried));
+      await ctx.close();
+    }
+
     /* ══ 7. A DEEP LINK, AND THE BACK BUTTON ════════════════════════════ */
     {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
