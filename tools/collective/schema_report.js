@@ -26,8 +26,22 @@ function report(openapi) {
     name,
     columns: Object.keys((defs[name] && defs[name].properties) || {}),
   }));
-  const routines = Object.keys(paths).filter(p => p.indexOf('/rpc/') === 0)
-    .map(p => p.slice('/rpc/'.length)).sort();
+  /* A routine's arguments, as PostgREST describes its POST body: the names
+     a caller has to send, which is the difference between settling through
+     settle_game and guessing at it. */
+  const routines = Object.keys(paths).filter(p => p.indexOf('/rpc/') === 0).sort().map(p => {
+    const post = (paths[p] && paths[p].post) || {};
+    const params = [];
+    (post.parameters || []).forEach(x => {
+      const schema = x && x.schema;
+      if (schema && schema.properties) {
+        Object.keys(schema.properties).forEach(k => params.push(k + (schema.required && schema.required.indexOf(k) >= 0 ? '' : '?')));
+      } else if (x && x.name && x.in !== 'header') {
+        params.push(x.name);
+      }
+    });
+    return { name: p.slice('/rpc/'.length), params };
+  });
   return { relations, routines };
 }
 
@@ -36,7 +50,7 @@ function render(r) {
   out.push(`${r.relations.length} relation(s) in the collective schema`);
   r.relations.forEach(t => out.push(`  ${t.name}: ${t.columns.join(', ') || '(no columns listed)'}`));
   out.push(`${r.routines.length} routine(s)`);
-  r.routines.forEach(f => out.push(`  rpc/${f}`));
+  r.routines.forEach(f => out.push(`  rpc/${f.name}(${(f.params || []).join(', ')})`));
   const scoreHolders = r.relations.filter(t =>
     t.columns.indexOf('home_score') >= 0 && t.columns.indexOf('away_score') >= 0);
   out.push('relations carrying home_score and away_score: ' +
