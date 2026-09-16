@@ -74,7 +74,25 @@ chk('with nothing measured nothing is inferred', none.length === 0, none);
 /* ---- NFL: raw season rates re-summed from the team-week rows ------------ */
 const N = Object.values(art.teams).filter((t) => t.league === 'NFL');
 chk('32 NFL clubs are profiled', N.length === 32, N.length);
-const buf = art.teams.buf;
+/* The team-week feed is a gitignored download that CI does not have, so the unit assertions run on a LABELLED FIXTURE:
+   four clubs, two weeks, counts chosen so the rates are checkable by hand (BUF week 1: 30 att + 2 sk = 32 dropbacks,
+   passing_epa 8 -> 0.25 per dropback). */
+const TW_HEAD = 'season,week,team,season_type,game_id,opponent_team,attempts,sacks_suffered,passing_epa,passing_20,carries,rushing_epa,rushing_10,def_sacks,def_qb_hits,passing_interceptions,sack_fumbles_lost,rushing_fumbles_lost,receiving_fumbles_lost';
+const twRow = (wk, team, opp, gid, att, sk, pepa, p20, car, repa, r10, dsk, dqh, ints) => [art.season, wk, team, 'REG', gid, opp, att, sk, pepa, p20, car, repa, r10, dsk, dqh, ints, 0, 0, 0].join(',');
+const TW_FIXTURE = [TW_HEAD,
+  twRow(1, 'BUF', 'NYJ', art.season + '_01_BUF_NYJ', 30, 2, 8, 4, 28, 2, 3, 3, 6, 0), twRow(1, 'NYJ', 'BUF', art.season + '_01_BUF_NYJ', 34, 3, -6, 2, 22, -1, 1, 2, 4, 1),
+  twRow(1, 'MIA', 'NE', art.season + '_01_MIA_NE', 36, 1, 3, 5, 24, 0, 2, 1, 3, 0), twRow(1, 'NE', 'MIA', art.season + '_01_MIA_NE', 28, 4, -2, 1, 30, 1, 2, 1, 2, 1),
+  twRow(2, 'BUF', 'MIA', art.season + '_02_BUF_MIA', 32, 1, 6, 3, 30, 3, 4, 4, 7, 1), twRow(2, 'MIA', 'BUF', art.season + '_02_BUF_MIA', 38, 4, -1, 4, 20, -2, 1, 1, 2, 2),
+  twRow(2, 'NYJ', 'NE', art.season + '_02_NYJ_NE', 26, 2, 1, 2, 32, 2, 3, 2, 5, 0), twRow(2, 'NE', 'NYJ', art.season + '_02_NYJ_NE', 30, 2, -4, 1, 26, -1, 1, 2, 3, 1),
+].join('\n');
+const artF = B.build({ team_week_csv: TW_FIXTURE, team_week_as_of: '2026-09-15T00:00:00.000Z' });
+chk('the fixture is named as a fixture in the sources, never as the feed', artF.sources && artF.sources.TW && /FIXTURE/.test(artF.sources.TW.path), artF.sources && artF.sources.TW);
+const bufF = artF.teams.buf;
+chk('BUF passing EPA per dropback is the summed count over summed dropbacks (14 / 65)', bufF && bufF.measured.units.pass_epa_db && bufF.measured.units.pass_epa_db.raw === Math.round(14 / 65 * 10000) / 10000 && bufF.measured.units.pass_epa_db.n === 65, bufF && bufF.measured.units.pass_epa_db);
+chk('BUF sack rate made is the defence\'s sacks over the opponents\' dropbacks (7 / 79)', bufF && bufF.measured.units.sack_rate_made && bufF.measured.units.sack_rate_made.raw === Math.round(7 / 79 * 10000) / 10000, bufF && bufF.measured.units.sack_rate_made);
+chk('the fixture as-of date is carried on every unit', bufF && Object.values(bufF.measured.units).every((u) => u.as_of === '2026-09-15T00:00:00.000Z'));
+chk('a club with no team-week rows names the missing units instead of inventing them', artF.teams.kc && artF.teams.kc.measured.missing_units.length === 1 && Object.keys(artF.teams.kc.measured.units).length === 0, artF.teams.kc && artF.teams.kc.measured.missing_units);
+const buf = bufF;
 if (buf) {
   chk('an NFL unit carries the raw rate, the league mean and a z, and says it is not opponent-adjusted', buf.measured.units.pass_epa_db && buf.measured.units.pass_epa_db.adjusted === null && buf.measured.units.pass_epa_db.league != null && /NOT opponent-adjusted/.test(buf.measured.units.pass_epa_db.basis));
   chk('the NFL rating is the engine deviation and says so', buf.measured.rating && /deviation/.test(buf.measured.rating.basis));
@@ -83,7 +101,8 @@ if (buf) {
   chk('per-game rows exist for the trend', Array.isArray(buf.trend.games) && buf.trend.games.length >= 1 && buf.trend.games[0].off_epa_play != null);
   chk('the NFL starter is carried with its status', buf.measured.quarterback.starter && buf.measured.quarterback.starter.name && buf.measured.quarterback.starter.confirmed === false);
 }
-chk('league means for the NFL are computed over the clubs', art.league_means.nfl && art.league_means.nfl.pass_rate > 0.4 && art.league_means.nfl.pass_rate < 0.7, art.league_means.nfl && art.league_means.nfl.pass_rate);
+chk('league means for the NFL are computed over the clubs with rows', artF.league_means.nfl && artF.league_means.nfl.pass_rate > 0.4 && artF.league_means.nfl.pass_rate < 0.7, artF.league_means.nfl && artF.league_means.nfl.pass_rate);
+chk('a z-score is against those clubs and direction-corrected for a lower-is-better unit', bufF && bufF.measured.units.sack_rate_all && bufF.measured.units.sack_rate_all.z > 0 && bufF.measured.units.pass_epa_db.z > 0, bufF && { sack: bufF.measured.units.sack_rate_all, pass: bufF.measured.units.pass_epa_db });
 
 /* ---- the artifact on disk matches the builder ------------------------- */
 const onDisk = path.join(ROOT, 'football', 'identity', 'index.json');

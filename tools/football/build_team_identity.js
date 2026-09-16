@@ -331,11 +331,13 @@ function build(opts) {
     SC: readJson('football/starters/cfb_' + season + '.json'), SN: readJson('football/starters/nfl_' + season + '.json'), C: readJson('football/coaching/continuity.json'),
     TT: readJson('football/players/team_talent.json'), AV: readJson('football/availability/current.json'), INJ: readJson('football/injuries/nfl_' + season + '.json'),
     BOX: readJson('football/data/box/' + season + '.json'), PR: readJson('football/matchup/profiles_' + season + '.json'), N: readJson('football/nfl/slate.json'), VEN: readJson('football/venues/resolved.json'),
-    TW: readText('football/nfl/.cache/https_github.com_nflverse_nflverse_data_releases_download_stats_team_stats_team_week_' + season + '.csv'),
+    /* the team-week feed is a gitignored download; a caller (the test) may hand in labelled fixture text instead */
+    TW: opts.team_week_csv != null ? { ok: true, text: String(opts.team_week_csv), mtime: opts.team_week_as_of || null, fixture: true }
+      : readText('football/nfl/.cache/https_github.com_nflverse_nflverse_data_releases_download_stats_team_stats_team_week_' + season + '.csv'),
   };
   inputs.DEPTH = depthChartQbs(season);
   const sources = {};
-  Object.keys(inputs).forEach((k) => { const v = inputs[k]; if (!v || k === 'DEPTH') return; sources[k] = v.path ? { path: v.path, ok: v.ok, error: v.error, generated_at: v.data && (v.data.generated_at || v.data.retrieved_at || v.data.data_as_of) || null } : { path: 'football/nfl/.cache/stats_team_week_' + season + '.csv', ok: !!v.ok, retrieved_at: v.mtime || null }; });
+  Object.keys(inputs).forEach((k) => { const v = inputs[k]; if (!v || k === 'DEPTH') return; sources[k] = v.path ? { path: v.path, ok: v.ok, error: v.error, generated_at: v.data && (v.data.generated_at || v.data.retrieved_at || v.data.data_as_of) || null } : { path: v.fixture ? 'FIXTURE (labelled test input, not the feed)' : 'football/nfl/.cache/stats_team_week_' + season + '.csv', ok: !!v.ok, retrieved_at: v.mtime || null }; });
   sources.DEPTH = { path: 'football/data/cache/nfl_depth_' + season + '.csv', ok: Object.keys(inputs.DEPTH).length > 0, clubs: Object.keys(inputs.DEPTH).length };
   const fbs = RK.ok ? fbsTeams(inputs, season) : { teams: {}, league_means: {} };
   const nfl = nflTeams(inputs, season);
