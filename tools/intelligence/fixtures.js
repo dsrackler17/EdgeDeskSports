@@ -239,6 +239,10 @@ function router(fx, opts) {
        the tiers the replay actually produced; opts.pricing === null withholds them. */
     var pm = /\/football\/validation\/pricing_(nfl|cfb)\.json/.exec(u);
     if (pm) return opts.pricing === null ? null : PRICING[pm[1]];
+    /* Slice 4: the desk's notebook. A LABELLED FIXTURE note: a person recorded the Texas State starter from a named source. */
+    if (u.indexOf('/football/notes/current.json') >= 0) return opts.notes === null ? null : (opts.notes || { schema: 'edgedesk_desk_notes_v1', notes: [
+      { id: 'note_fixture1', sport: 'americanfootball_ncaaf', team: 'TEXASSTATE', kind: 'starting_qb_confirmation', text: 'FIXTURE: Brad Jackson named the starter for Saturday by the head coach at the Monday availability', source: 'Texas State Athletics', url: 'https://txstatebobcats.com/news/fixture', published_at: new Date(fx.now - 6 * 3600000).toISOString(), recorded_at: new Date(fx.now - 5 * 3600000).toISOString(), recorded_by: 'fixture operator', expires_at: new Date(fx.now + 5 * 86400000).toISOString(), game_id: null, source_kind: 'OFFICIAL_SITE' },
+    ] });
     if (/nflverse-data\/releases\/download\/injuries\/injuries_\d+\.csv/.test(u)) return opts.injuries_csv === null ? null : { __text: opts.injuries_csv || fx.injuries_csv };
     if (u.indexOf('api.open-meteo.com') >= 0) return opts.open_meteo === null ? null : (opts.open_meteo || fx.open_meteo);
     if (u.indexOf('api.search.brave.com') >= 0) return opts.search === undefined ? null : opts.search;
