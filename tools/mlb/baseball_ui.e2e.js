@@ -52,6 +52,7 @@ function near(name, got, want, tol) {
 function done(code) {
   failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 300) : '')));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
+  if (fail === 0) console.log('PASS | baseball research surface | ' + pass + ' assertions in a real browser');
   process.exit(code !== undefined ? code : (fail === 0 ? 0 : 1));
 }
 
@@ -71,16 +72,16 @@ function siteHandler(req, res) {
 const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.listen(0, '127.0.0.1', () => r({ srv: s, port: s.address().port })); });
 
 const conn = PG.findServer();
-if (!conn) { console.log('SKIPPED: no reachable PostgreSQL server'); process.exit(0); }
+if (!conn) { console.log('SKIP | baseball research surface | no reachable PostgreSQL server'); process.exit(0); }
 
 (async function main() {
   let pw = null;
   try { pw = require('playwright'); } catch (_) {
     try { pw = require('/opt/node22/lib/node_modules/playwright'); } catch (e2) { pw = null; }
   }
-  if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
+  if (!pw) { console.log('SKIP | baseball research surface | playwright is not installed here'); process.exit(0); }
 
-  if (!PG.createDatabase(conn, DB)) { console.log('SKIPPED: could not create the test database'); process.exit(0); }
+  if (!PG.createDatabase(conn, DB)) { console.log('SKIP | baseball research surface | could not create the test database'); process.exit(0); }
   const db = PG.pgClient(conn, { database: DB });
   for (const f of [SHIM, SCHEMA_SQL]) {
     const a = PG.applyFile(conn, DB, f);
@@ -95,7 +96,7 @@ if (!conn) { console.log('SKIPPED: no reachable PostgreSQL server'); process.exi
   catch (e) {
     const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
     if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe });
-    else { console.log('SKIPPED: no Chromium (' + String(e.message).split('\n')[0] + ')'); site.srv.close(); db.close(); PG.dropDatabase(conn, DB); process.exit(0); }
+    else { console.log('SKIP | baseball research surface | no Chromium (' + String(e.message).split('\n')[0] + ')'); site.srv.close(); db.close(); PG.dropDatabase(conn, DB); process.exit(0); }
   }
 
   /* Every mlbhist read the page makes is answered from the REAL database, by

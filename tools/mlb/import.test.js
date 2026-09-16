@@ -354,4 +354,5 @@ if (!conn) {
   console.log('');
   if (fail) { console.log(`FAILED mlb import end to end — ${pass} passed, ${fail} failed`); process.exit(1); }
   console.log(`ALL GREEN mlb import end to end — ${pass} checks`);
+  console.log(`PASS | mlb import end to end | ${pass} assertions against a real PostgreSQL`);
 })();

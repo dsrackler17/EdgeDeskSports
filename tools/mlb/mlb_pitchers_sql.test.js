@@ -88,7 +88,15 @@ try {
     throw new Error('suite');
   }
   const checks = out.filter((l) => /^ok/.test(l)).length;
+  /* A SUITE THAT EXITED EARLY IS NOT A SUITE THAT PASSED. psql can return 0
+     on a file that stopped after two assertions, and a job that only reads the
+     status would call that green. */
+  if (checks < 30) {
+    console.log('FAIL | mlb pitcher history SQL | only ' + checks + ' assertions ran — the suite exited early');
+    throw new Error('short');
+  }
   console.log('ALL GREEN mlb pitcher history SQL — report all ok, idempotent, ' + checks + ' contract checks');
+  console.log('PASS | mlb pitcher history SQL | ' + checks + ' assertions against a real PostgreSQL');
 } catch (e) {
   code = 1;
 } finally {

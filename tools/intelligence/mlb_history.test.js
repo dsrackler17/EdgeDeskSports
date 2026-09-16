@@ -426,4 +426,5 @@ if (!conn) {
   console.log('');
   if (fail) { console.log(`FAILED mlb history — ${pass} passed, ${fail} failed`); process.exit(1); }
   console.log(`ALL GREEN mlb history — ${pass} checks`);
+  console.log(`PASS | mlb history intelligence | ${pass} assertions against a real PostgreSQL`);
 })();

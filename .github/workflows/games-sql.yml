@@ -63,6 +63,16 @@ on:
       - 'supabase/tennis_live_center.sql'
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
+      # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
+      # function and its refusals are the whole safety property — a short,
+      # duplicated or unreconciled dataset must not be able to replace a good
+      # one — so reasoning about it is not evidence. The import suite drives
+      # the shipped importer over the committed dataset end to end.
+      - 'supabase/mlb_pitcher_history.sql'
+      - 'lib/mlb_pitcher_history.js'
+      - 'mlb/pitchers/dataset/**'
+      - 'tools/mlb/**'
+      - 'tools/intelligence/mlb_history.test.js'
       - '.github/workflows/games-sql.yml'
   pull_request:
     paths:
@@ -111,6 +121,16 @@ on:
       - 'supabase/tennis_live_center.sql'
       - 'tools/tennis/sql/**'
       - 'tools/tennis/tennis_sql.test.js'
+      # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
+      # function and its refusals are the whole safety property — a short,
+      # duplicated or unreconciled dataset must not be able to replace a good
+      # one — so reasoning about it is not evidence. The import suite drives
+      # the shipped importer over the committed dataset end to end.
+      - 'supabase/mlb_pitcher_history.sql'
+      - 'lib/mlb_pitcher_history.js'
+      - 'mlb/pitchers/dataset/**'
+      - 'tools/mlb/**'
+      - 'tools/intelligence/mlb_history.test.js'
 
 jobs:
   sql:
@@ -282,6 +302,50 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/tennis/tennis_sql.test.js | tee tennis.log
 
+      # THE MLB HISTORICAL PITCHING ARCHIVE, three suites on one database.
+      #
+      # The contract: public reads, no client writes, staging invisible to a
+      # client, the promote gate unreachable from one, and each of its four
+      # refusals — EMPTY_STAGING, COUNT_MISMATCH, DUPLICATE_KEY,
+      # VALIDATION_FAILED — leaving the previously promoted archive intact.
+      - name: Run the MLB pitching archive SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/mlb_pitchers_sql.test.js | tee mlb.log
+
+      # The import, end to end: the SHIPPED importer over the COMMITTED dataset
+      # — all 8,233 pitcher-seasons and 9,212 club rows — through the real
+      # promote gate, then read back through the query layer and checked
+      # against independently computed SQL. Includes the repair regression
+      # (Luis García's 2024 Angels and Red Sox rows) and the proof that a
+      # truncated dataset is refused with the good archive untouched.
+      - name: Run the MLB import suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/import.test.js | tee mlb_import.log
+
+      # The desk's access to the same archive: routing, deterministic
+      # retrieval, all eight tools through the real runTool, the follow-up that
+      # resolves from carried ids alone, and the critic attacked with prose
+      # that reads a 2016-2025 record as tonight.
+      - name: Run the MLB intelligence suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/intelligence/mlb_history.test.js | tee mlb_ai.log
+
+      # THE BASEBALL RESEARCH SURFACE, IN A REAL BROWSER, against this same
+      # database — no stubbed rows. Every number read off the screen is checked
+      # back against SQL. Skips loudly if Chromium is absent, which the step
+      # below refuses.
+      - name: Run the baseball research surface e2e
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/mlb/baseball_ui.e2e.js | tee mlb_ui.log
+
       # A skip here would mean the guarantee was never tested. On this job that
       # is a failure, not a pass.
       - name: Refuse a silent skip
@@ -294,7 +358,7 @@ jobs:
           # NOTE, not fixed here because it is not this change's to widen:
           # cards.log, season.log and offline.log are produced by steps above
           # and are still absent from this list.
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log mlb.log mlb_import.log mlb_ai.log mlb_ui.log; do
             if grep -q '^SKIP' "$f"; then
               echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
               exit 1
