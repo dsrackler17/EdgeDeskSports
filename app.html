@@ -21476,6 +21476,29 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .dk-inj li{padding:2px 0;overflow-wrap:anywhere}
 .dk-inj .st{font-weight:700}
 .dk-inj .pr{color:var(--desk-dim)}
+/* Slice 3: the analyst layer */
+.dk-fac{margin:6px 0 0;padding:0;list-style:none;counter-reset:fac}
+.dk-fac li{position:relative;border-top:1px solid var(--ink-line);padding:7px 0 7px 26px;font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
+.dk-fac li:first-child{border-top:0;padding-top:2px}
+.dk-fac li:before{counter-increment:fac;content:counter(fac);position:absolute;left:0;top:7px;width:18px;height:18px;border-radius:50%;border:1px solid var(--ink-line);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;text-align:center;line-height:18px;color:var(--citron)}
+.dk-fac li:first-child:before{top:2px}
+.dk-fac .fav{font-weight:700;color:var(--citron)}
+.dk-fac .m{font-size:11px;color:var(--desk-dim);margin-top:2px}
+.dk-kind{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.07em;padding:1px 5px;border-radius:5px;border:1px solid var(--ink-line);color:var(--desk-dim);vertical-align:middle;margin-left:4px}
+.dk-kind.cond{color:var(--citron);border-color:rgba(216,242,75,.5)}
+.dk-kind.found{color:var(--citron);border-color:rgba(216,242,75,.5)}
+.dk-kind.blocked{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.dk-counter{border:1px solid rgba(217,154,43,.45);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--desk-fg);background:var(--ink-2)}
+.dk-counter .k{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--warn)}
+.dk-lad{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.dk-lad td,.dk-lad th{padding:3px 6px 3px 0;border-bottom:1px solid var(--ink-line);color:var(--desk-dim);text-align:left;font-weight:500}
+.dk-lad td:first-child{color:var(--desk-fg);font-family:'JetBrains Mono',monospace}
+.dk-lad tr.at td{color:var(--citron);font-weight:700}
+.dk-inv{margin:6px 0 0;padding:0;list-style:none;font-size:11.5px;color:var(--desk-fg)}
+.dk-inv li{padding:3px 0;border-top:1px solid var(--ink-line);overflow-wrap:anywhere}
+.dk-inv li:first-child{border-top:0}
+.dk-inv .q{font-weight:600}
+.dk-inv .s{color:var(--desk-dim)}
 .dk-more table{width:100%;border-collapse:collapse;margin-top:6px;font-size:11.5px}
 .dk-more td{padding:4px 6px;border-top:1px solid var(--ink-line);color:var(--desk-dim)}
 .dk-more td.s{color:var(--desk-fg);font-weight:600}
@@ -34513,6 +34536,93 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(!S) return '';
     return driversHTML(S)+availabilityHTML(S)+startersHTML(S)+situationHTML(S)+matchupProfileHTML(S);
   }
+  /* ═══ THE ANALYST LAYER (Slice 3) ═══════════════════════════════════════
+     Rendered from `structured.analysis`, which the function derives from the
+     packet: the three decisive matchup factors, the strongest counter-case,
+     what could change the conclusion, the nearby-line sensitivity with its
+     probability status, what EdgeDesk went and checked this turn, the
+     labelled scenarios, the recent-form read, the identity inferences and
+     the diff since the last snapshot. Every number is the function's; the
+     browser computes nothing. */
+  function inModelWord(v){ return v===true?'already in the rating':v==='partial'?'partly in the rating':v===false?'not in the rating':''; }
+  function factorsHTML(A){
+    var fs=(A&&A.decisive_factors)||[]; if(!fs.length) return '';
+    return '<div class="dk-sec"><div class="h">Three decisive matchup factors</div><ol class="dk-fac">'
+      +fs.slice(0,3).map(function(f){ return '<li><div>'+esc(f.label)+': '+esc(f.word||'')+(f.favours?' in <span class="fav">'+esc(f.favours)+'</span>’s favour':'')+' <span class="dk-kind">'+esc(inModelWord(f.in_model))+'</span></div>'
+        +(f.evidence&&f.evidence.length?'<div class="m">'+esc(f.evidence.slice(0,3).join(' · '))+'</div>':'')
+        +(f.mechanism?'<div class="m">'+esc(String(f.mechanism).slice(0,220))+'</div>':'')
+        +'<div class="m">uncertainty '+esc(String(f.uncertainty||'').toLowerCase())+'</div></li>'; }).join('')
+      +'</ol>'+(A.coverage?'<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(A.coverage.measured)+' of 10 interactions measured, '+esc(A.coverage.not_measured)+' not measured — '+esc(A.coverage.note||'')+'</div>':'')+'</div>';
+  }
+  function counterHTML(A){
+    var c=A&&A.counter_case; if(!c) return '';
+    return '<div class="dk-counter"><div class="k">Strongest counter-case</div><div>'+esc(c.label)+': '+esc(c.word||'')+(c.favours?' in '+esc(c.favours)+'’s favour':'')+' <span class="dk-kind">'+esc(inModelWord(c.in_model))+'</span></div>'
+      +(c.evidence&&c.evidence.length?'<div style="font-size:11px;color:var(--desk-dim);margin-top:2px">'+esc(c.evidence.slice(0,3).join(' · '))+'</div>':'')
+      +(c.counter?'<div style="font-size:11px;color:var(--desk-dim);margin-top:2px">'+esc(String(c.counter).slice(0,220))+'</div>':'')+'</div>';
+  }
+  function changesHTML(A){
+    var w=(A&&A.what_changes_it)||[]; if(!w.length) return '';
+    return '<div class="dk-sec"><div class="h">What could change the conclusion</div><ul class="dk-list">'+w.slice(0,5).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';
+  }
+  function sensitivityHTML(A){
+    var s=A&&A.sensitivity; if(!s||s.probability_status==='NOT_PRODUCED'&&!s.at_market) return '';
+    var st=s.probability_status||'NOT_PRODUCED';
+    var h='<div class="dk-sec"><div class="h">Nearby-line sensitivity <span class="dk-kind'+(st==='VALIDATED'?' cond':'')+'">'+esc(st.replace(/_/g,' '))+'</span></div>';
+    h+='<div style="font-size:12px;color:var(--desk-fg)">'+esc(s.selection||'')+' '+esc(fmtPts(s.market_selection_line))+' against the model’s '+esc(fmtPts(s.model_selection_line))+' (gap '+esc(fmtPts(s.gap_points))+')'
+      +(s.at_market&&s.at_market.cover!=null?' · model-conditional cover '+esc(Math.round(s.at_market.cover*1000)/10)+'%'+(s.at_market.push?' · push '+esc(Math.round(s.at_market.push*1000)/10)+'%':''):'')
+      +(s.requires?' · the price '+esc(fmtPts(s.requires.price))+' requires '+esc(Math.round(s.requires.break_even_cover_probability*1000)/10)+'%':'')+'</div>';
+    if(s.ladder&&s.ladder.length){
+      h+='<table class="dk-lad"><tr><th>line</th><th>vs model</th><th>cover</th><th>push</th><th></th></tr>'
+        +s.ladder.filter(function(r){return Math.abs((r.selection_line-s.market_selection_line)%1)<1e-9||r.key_number!=null||Math.abs(r.selection_line-s.market_selection_line)<1e-9;}).map(function(r){ var at=Math.abs(r.selection_line-s.market_selection_line)<1e-9; return '<tr'+(at?' class="at"':'')+'><td>'+esc(fmtPts(r.selection_line))+'</td><td>'+esc(fmtPts(r.points_vs_model))+'</td><td>'+(r.cover!=null?esc(Math.round(r.cover*100))+'%':'—')+'</td><td>'+(r.push!=null&&r.push>0?esc(Math.round(r.push*1000)/10)+'%':'—')+'</td><td>'+(r.key_number!=null?'key '+esc(r.key_number):'')+'</td></tr>'; }).join('')+'</table>';
+    }
+    if(s.key_numbers_crossed&&s.key_numbers_crossed.length) h+='<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">Key numbers between market and model: '+esc(s.key_numbers_crossed.map(function(k){return fmtPts(k.number);}).join(', '))+'</div>';
+    if(A.alternative_line&&A.alternative_line.ok) h+='<div class="dk-price"><b>Your line.</b> '+esc(A.alternative_line.note)+(A.alternative_line.change_in_cover_pp!=null?' Model-conditional cover moves '+esc(fmtPts(A.alternative_line.change_in_cover_pp))+' pp.':'')+'</div>';
+    if(s.verdict&&s.verdict.reading) h+='<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(s.verdict.reading)+'</div>';
+    else if(s.note) h+='<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(s.note)+'</div>';
+    return h+'</div>';
+  }
+  function investigationHTML(A){
+    var inv=A&&A.investigation; if(!inv||!inv.log||!inv.log.length) return '';
+    var b=inv.budget||{};
+    return '<details class="dk-more" open><summary>What EdgeDesk checked this turn ('+inv.log.length+' question'+(inv.log.length>1?'s':'')+(b.requests_used!=null?', '+b.requests_used+' request'+(b.requests_used===1?'':'s')+', '+b.ms_used+' ms':'')+')</summary><ul class="dk-inv">'
+      +inv.log.slice(0,10).map(function(l){ var cls=l.outcome==='FOUND'?'found':l.outcome==='BLOCKED'?'blocked':''; return '<li><span class="q">'+esc(l.question)+'</span> <span class="dk-kind '+cls+'">'+esc(l.outcome)+'</span>'
+        +(l.finding?'<div>'+esc(String(l.finding).slice(0,220))+'</div>':'')+(l.blocker?'<div class="s">'+esc(String(l.blocker).slice(0,200))+'</div>':'')
+        +(l.source?'<div class="s">'+esc(l.source)+(l.observed_at?' · '+esc(obsAt(l.observed_at)):'')+'</div>':'')+'</li>'; }).join('')
+      +'</ul><div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(inv.note||'')+'</div></details>';
+  }
+  function scenariosHTML(A){
+    var sc=(A&&A.scenarios)||[]; if(!sc.length) return '';
+    return '<details class="dk-more"><summary>Scenarios ('+sc.length+') — conditional, never the projection</summary><ul class="dk-inv">'
+      +sc.map(function(x){ var cond=x.kind==='CONDITIONAL_ESTIMATE'; return '<li><span class="q">'+esc(x.question)+'</span> <span class="dk-kind'+(cond?' cond':'')+'">'+esc(x.kind.replace(/_/g,' '))+'</span>'
+        +(x.result&&x.result.home_line!=null?'<div>home line '+esc(fmtPts(x.result.home_line))+' ('+esc(fmtPts(x.result.delta_home_line))+' vs baseline)'+(x.result.total!=null?' · total '+esc(x.result.total):'')+'</div>':'')
+        +(x.result&&x.result.direction?'<div>'+esc(String(x.result.direction).slice(0,240))+'</div>':'')
+        +(x.result&&x.result.win_without_cover!=null?'<div>win without cover '+esc(Math.round(x.result.win_without_cover*100))+'% (model-conditional)</div>':'')
+        +(x.assumptions&&x.assumptions.length?'<div class="s">assumes: '+esc(x.assumptions[0])+'</div>':'')
+        +(x.evidence&&x.evidence.length?'<div class="s">'+esc(x.evidence.slice(0,2).join(' · '))+'</div>':'')+'</li>'; }).join('')
+      +'</ul>'+(A.scenarios_note?'<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(A.scenarios_note)+'</div>':'')+'</details>';
+  }
+  function formHTML(A){
+    var f=A&&A.form; if(!f||!f.questions||!f.questions.length) return '';
+    return '<details class="dk-more"><summary>Recent form, read against opponent quality</summary><ul class="dk-list">'+f.questions.slice(0,6).map(function(q){return '<li><b>'+esc(q.question)+'</b> '+esc(q.answer)+'</li>';}).join('')+'</ul>'
+      +['away','home'].map(function(side){ var s=f.sides&&f.sides[side]; if(!s||!s.games||!s.games.length) return ''; return '<table class="dk-lad"><tr><th>'+esc(s.team)+'</th><th>opp SP+ now</th><th>margin</th><th>vs SP+ implied</th></tr>'+s.games.slice(0,6).map(function(g){return '<tr><td>'+esc(g.venue==='home'?'v ':g.venue==='away'?'@ ':'n ')+esc(g.opponent)+' '+esc(g.result||'')+'</td><td>'+(g.opponent_rating_now!=null?esc(g.opponent_rating_now):'—')+'</td><td>'+esc(fmtPts(g.margin))+'</td><td>'+(g.margin_vs_expected!=null?esc(fmtPts(g.margin_vs_expected)):'—')+'</td></tr>';}).join('')+'</table>'; }).join('')
+      +(f.note?'<div style="font-size:11px;color:var(--desk-dim);margin-top:4px">'+esc(f.note)+'</div>':'')+'</details>';
+  }
+  function identityHTML(A){
+    var idn=A&&A.identity; if(!idn||(!idn.home&&!idn.away)) return '';
+    return '<details class="dk-more"><summary>Team identity (measured, sourced and inferred kept apart)</summary>'
+      +['away','home'].map(function(side){ var t=idn[side]; if(!t) return ''; return '<div class="dk-sec"><div class="h">'+esc(t.team)+' · '+esc(t.season)+' · verified '+esc(String(t.verified_at||'').slice(0,10))+'</div>'
+        +(t.inferences&&t.inferences.length?'<ul class="dk-list">'+t.inferences.map(function(i){return '<li>'+esc(i.label)+' <span class="dk-kind">inferred · '+esc(Math.round((i.confidence||0)*100))+'%</span></li>';}).join('')+'</ul>':'<div class="s" style="font-size:11px;color:var(--desk-dim)">no inferences</div>')
+        +(t.trend&&t.trend.summary?'<div style="font-size:11px;color:var(--desk-dim);margin-top:3px">Trend: '+esc(t.trend.summary)+'</div>':'')
+        +(t.quarterback&&t.quarterback.backup?'<div style="font-size:11px;color:var(--desk-dim);margin-top:3px">Backup QB: '+esc(t.quarterback.backup.name)+' ('+esc(t.quarterback.backup.basis||'')+')</div>':'')
+        +(t.qualitative&&t.qualitative.length?'<ul class="dk-inv">'+t.qualitative.slice(0,4).map(function(q){return '<li>'+esc(q.claim)+' <span class="s">'+esc(q.source)+'</span></li>';}).join('')+'</ul>':'')+'</div>'; }).join('')+'</details>';
+  }
+  function diffHTML(A){
+    var d=A&&A.diff; if(!d) return '';
+    if(!d.ok) return '<details class="dk-more"><summary>What changed since last time</summary><div style="font-size:11px;color:var(--desk-dim)">'+esc(d.error||'no previous snapshot')+'</div></details>';
+    return '<details class="dk-more" open><summary>What changed since '+esc(obsAt(d.from&&d.from.built_at))+'</summary>'+(d.changes.length?'<ul class="dk-list">'+d.changes.map(function(c){return '<li><b>'+esc(c.field)+'</b>'+(c.added||c.removed?(c.added&&c.added.length?' added '+esc(c.added.join(', ')):'')+(c.removed&&c.removed.length?' removed '+esc(c.removed.join(', ')):''):': '+esc(JSON.stringify(c.from))+' → '+esc(JSON.stringify(c.to)))+'</li>';}).join('')+'</ul>':'<div style="font-size:11px;color:var(--desk-dim)">'+esc(d.note||'nothing measured changed')+'</div>')+'</details>';
+  }
+  function analystLeadHTML(S){ var A=S&&S.analysis; if(!A) return ''; return factorsHTML(A)+counterHTML(A)+changesHTML(A)+sensitivityHTML(A); }
+  function analystMoreHTML(S){ var A=S&&S.analysis; if(!A) return ''; return investigationHTML(A)+scenariosHTML(A)+formHTML(A)+identityHTML(A)+diffHTML(A); }
   function structuredPanelsHTML(d){
     var S=d&&d.structured; if(!S) return '';
     var mm=S.model_vs_market||{}, pd=S.price_discipline||{}, cf=S.confidence||{}, h='';
@@ -34548,6 +34658,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +(pd.ev_per_unit!=null?'Expected return '+esc(Math.round(pd.ev_per_unit*10000)/100)+'% per unit. ':'')
         +'<span style="color:var(--desk-dim)">'+esc(pd.ev_basis||'')+'</span></div>';
     }
+    /* the analyst layer (Slice 3): three factors, the counter-case, what changes it, the line sensitivity */
+    h+=analystLeadHTML(S);
     /* movement, honestly */
     if(mm.movement&&(mm.movement.price_move_cents!=null||mm.movement.point_move!=null)){
       h+='<div class="dk-sec"><div class="h">Line movement</div><ul><li>'
@@ -34565,6 +34677,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
     /* the football evidence (Slice 2): drivers, availability, starters, situation */
     h+=footballEvidenceHTML(S);
+    /* the analyst layer, expandable: what was checked, scenarios, form, identity, what changed */
+    h+=analystMoreHTML(S);
     /* unknowns */
     var unk=(S.what_could_break_it&&S.what_could_break_it.unknowns)||[];
     if(unk.length){ h+='<details class="dk-more"><summary>What EdgeDesk cannot see ('+unk.length+')</summary><ul class="dk-list">'+unk.slice(0,8).map(function(u){return '<li>'+esc(u)+'</li>';}).join('')+'</ul></details>'; }
@@ -36584,8 +36698,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          count, not a claim: the server clamps it and it can only raise how
          much EdgeDesk retrieves. */
       try{ var rc=d&&d.research&&d.research.research_context;
+        /* Slice 3: the server's structured conversation state (side, market,
+           quoted line and odds, unresolved questions) rides back inside the
+           same field so "does that change at +7?" resolves against the right
+           side and number. The server re-verifies every item; nothing here
+           is believed on the browser's say-so. */
+        var cs=d&&d.conversation_state||null;
         LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
-          home_id:rc.home_id,away_id:rc.away_id,turns:rc.turns||1} : LAST_CTX; }catch(_){}
+          home_id:rc.home_id,away_id:rc.away_id,turns:rc.turns||1,
+          state:(cs&&cs.game&&String(cs.game.game_id)===String(rc.game_id))?cs:null} : LAST_CTX; }catch(_){}
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
         /* A MATCHUP ANSWER IS SHAPED LIKE THE QUESTION, not like the board.
            When one game is the subject the answer leads with The Desk's read

@@ -194,6 +194,62 @@ has('a missing forecast says so with an UNKNOWN badge', nf, 'no weather forecast
 chk('no ratings disclosure is drawn when nothing is on file', nf.indexOf('Ratings, coaching and play profile') < 0);
 chk('football evidence is not drawn for a packet without those layers', ctx.structuredPanelsHTML({ structured: S }).indexOf('dk-state') < 0 && ctx.structuredPanelsHTML({ structured: S }).indexOf('Projected starting quarterbacks') < 0);
 
+/* ---- Slice 3: the analyst layer ------------------------------------------- */
+has('the analyst lead renderer exists', src, 'function analystLeadHTML');
+has('and is rendered before the movement block', src, 'h+=analystLeadHTML(S);');
+has('the expandable analyst renderer is rendered after the football evidence', src, 'h+=analystMoreHTML(S);');
+has('the CSS for the factors exists', APP, '.dk-fac{');
+const AN = {
+  decisive_factors: [
+    { id: 'explosive_pass_vs_coverage', label: 'Explosive passing versus coverage', favours: 'North Texas', word: 'a wide gap', in_model: true, uncertainty: 'MEDIUM', evidence: ['North Texas explosive pass rate 28.3% (league 10.4%)', 'Texas State explosive passes allowed 7.5%'], mechanism: 'One explosive replaces a whole drive of successful plays.' },
+    { id: 'pass_rush_vs_protection', label: 'Pass rush versus protection', favours: 'North Texas', word: 'a clear gap', in_model: 'partial', uncertainty: 'HIGH', evidence: ['North Texas sack rate allowed 2.1%'], mechanism: 'A sack is a drive-killer twice over.' },
+  ],
+  counter_case: { id: 'rushing_vs_front', label: 'Rushing attack versus defensive front', favours: 'Texas State', word: 'a modest gap', in_model: true, evidence: ['Texas State yards per carry 5.0'], counter: 'The blunt measure is noisy.' },
+  coverage: { measured: 7, partial: 1, not_measured: 2, note: 'No coverage, route, personnel-grouping, snap-count or tracking statistic exists.' },
+  what_changes_it: ['An answer to: Is Brad Jackson confirmed to start for Texas State?', 'A fresh price: the captured one is past its freshness limit.'],
+  sensitivity: { probability_status: 'MODEL_CONDITIONAL', basis: 'pooled residual pmf', validation_tier: 'RESEARCH', selection: 'North Texas', side: 'away', model_selection_line: -2.4, market_selection_line: -2.5, gap_points: -0.1,
+    at_market: { selection_line: -2.5, points_vs_model: -0.1, cover: 0.5171, push: 0, lose: 0.4829 },
+    ladder: [{ selection_line: -3.5, points_vs_model: -1.1, cover: 0.49, push: 0, key_number: null }, { selection_line: -3, points_vs_model: -0.6, cover: 0.49, push: 0.023, key_number: 3 }, { selection_line: -2.5, points_vs_model: -0.1, cover: 0.5171, push: 0, key_number: null }, { selection_line: -1.5, points_vs_model: 0.9, cover: 0.54, push: 0, key_number: null }],
+    key_numbers_crossed: [], requires: { price: -105, break_even_cover_probability: 0.5122 }, verdict: { reading: 'MODEL-CONDITIONAL, NOT AN EDGE. "Likely to cover if the model is right" and "worth betting at this price" are different questions.' }, note: 'x' },
+  alternative_line: { ok: true, note: 'At +7 the market gives this side +9.4 points against the model’s -2.4; 7 is a key number (a touchdown).', change_in_cover_pp: 23.5 },
+  investigation: { log: [{ question: 'What is the kickoff forecast?', outcome: 'FOUND', finding: 'UFCU Stadium at kickoff: 78°F, wind 16 mph', source: 'open-meteo forecast (live)', observed_at: '2026-09-16T11:00:00Z' }, { question: 'Is Texas State’s offensive line intact?', outcome: 'BLOCKED', blocker: 'EDGEDESK_SEARCH_API_KEY is not set; no web search provider is configured' }], budget: { requests_used: 1, ms_used: 42 }, note: 'Nothing outside this log was checked.' },
+  scenarios: [{ id: 'home_qb_out', question: 'What changes if Brad Jackson is out?', kind: 'QUALITATIVE', result: { direction: 'the projection would move against Texas State by the difference between the starter’s and the replacement’s EPA per dropback; that difference is not on file' }, assumptions: ['the p4 model prices only the quarterback’s absence'], evidence: ['depth-chart backup: Gavin Parkhurst'] }, { id: 'home_qb_out_nfl', question: 'What changes if Josh Allen is out?', kind: 'CONDITIONAL_ESTIMATE', result: { home_line: -3.1, delta_home_line: 2.1, total: 51 }, assumptions: ['the replacement carries the club’s carried quarterback level'] }],
+  scenarios_note: 'Neither is the projection; the baseline is unchanged.',
+  form: { questions: [{ side: 'home', question: 'Did they improve, or did they face weak opponents?', answer: 'Texas State has outperformed the margin its opponents’ ratings imply by 5.5 a game — over 2 games, a hypothesis, not an improvement.' }], sides: { home: { team: 'Texas State', games: [{ opponent: 'Eastern Michigan', venue: 'home', result: 'W', margin: 21, opponent_rating_now: -7.7, margin_vs_expected: 9.2 }] }, away: null }, note: 'Early-season improvement is a hypothesis to evaluate.' },
+  identity: { home: { team: 'Texas State', season: 2026, verified_at: '2026-09-16T01:39:42Z', inferences: [{ id: 'scheme_run_heavy', label: 'run-heavy offence', confidence: 0.9 }], trend: { summary: 'rating up 1.2 points from Preseason to Week 2 (rank 40 → 31). Over 3 snapshots this is a hypothesis, not a trend.' }, quarterback: { backup: { name: 'Gavin Parkhurst', basis: 'slot 2 of the projected quarterback room' } }, qualitative: [{ claim: 'new head coach G.J. Kinne', source: 'football/coaching/continuity.json' }] }, away: null },
+  diff: { ok: true, from: { built_at: '2026-09-15T12:00:00Z' }, changes: [{ field: 'market price', from: '-110 at -2.5 (DraftKings)', to: '-105 at -2.5 (DraftKings)' }, { field: 'Texas State injury report', added: ['Spencer Brown (Out)'], removed: [] }] },
+};
+const ap = ctx.structuredPanelsHTML({ structured: Object.assign({}, CFB, { analysis: AN }) });
+has('the three decisive factors are numbered with the side they favour', ap, 'Three decisive matchup factors');
+has('a factor names its side', ap, '<span class="fav">North Texas</span>’s favour');
+has('and whether the rating already prices it', ap, 'already in the rating');
+has('and its evidence with league means', ap, 'league 10.4%');
+has('the coverage line says how many interactions were measured', ap, '7 of 10 interactions measured, 2 not measured');
+has('the counter-case is drawn in its own box', ap, 'Strongest counter-case');
+has('and favours the other side', ap, 'Rushing attack versus defensive front: a modest gap in Texas State’s favour');
+has('what could change the conclusion is listed', ap, 'What could change the conclusion');
+has('the line sensitivity carries its probability status', ap, 'MODEL CONDITIONAL');
+has('and the model-conditional cover at the market', ap, 'model-conditional cover 51.7%');
+has('and what the price requires', ap, 'the price -105 requires 51.2%');
+has('the ladder marks the market row and the key number', ap, '<tr class="at"><td>-2.5</td>');
+has('with key 3 named', ap, 'key 3');
+has('the reader’s alternative line is answered', ap, '<b>Your line.</b> At +7 the market gives this side +9.4 points');
+has('and says the cover figure is not an edge', ap, 'NOT AN EDGE');
+has('the investigation log is shown, open, with its budget', ap, 'What EdgeDesk checked this turn (2 questions, 1 request, 42 ms)');
+has('a FOUND question shows its finding and source', ap, 'dk-kind found">FOUND');
+has('a BLOCKED question names the blocker', ap, 'EDGEDESK_SEARCH_API_KEY is not set');
+has('scenarios are labelled conditional, never the projection', ap, 'conditional, never the projection');
+has('a conditional estimate carries the engine re-run number', ap, 'home line -3.1 (+2.1 vs baseline)');
+has('a qualitative scenario says what is not on file', ap, 'that difference is not on file');
+has('recent form is read against opponent quality', ap, 'Recent form, read against opponent quality');
+has('with the opponent’s SP+ beside each margin', ap, '<td>-7.7</td><td>+21</td><td>+9.2</td>');
+has('the identity keeps inferences labelled as inferred with a confidence', ap, 'inferred · 90%');
+has('and shows the within-season trend', ap, 'Trend: rating up 1.2 points');
+has('and the backup quarterback with its basis', ap, 'Backup QB: Gavin Parkhurst');
+has('what changed since the last snapshot is listed', ap, 'What changed since 2026-09-15 12:00Z');
+has('with additions to the injury report', ap, 'added Spencer Brown (Out)');
+lacks('nothing is rendered when there is no analysis', ctx.structuredPanelsHTML({ structured: CFB }), 'Three decisive matchup factors');
+
 const five = ['**The Desk’s read**', 'a', '**Why**', '- b', '**The case for each side**', '- c', '**What could make it wrong**', '- d', '**Price and data limitations**', '- e'].join('\n');
 const prose = ctx.deskProseHTML(five);
 has('a five-section answer promotes the fifth heading', prose, 'The case for each side');

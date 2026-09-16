@@ -81,6 +81,20 @@ and publishes `football/nfl/slate.json`, the browser's own NFL projection run
 in Node, so the desk has an NFL number to quote under its validation record.
 The panel renders each layer with its source, observed time and freshness.
 
+Slice 3 (the active analyst) makes the desk investigate: a bounded research
+loop sends the consequential unanswered questions (starter, offensive line,
+opponent-adjusted performance, defensive personnel, weather, price) to the
+configured providers under a time, request and cost budget and logs every
+outcome; dated team identity profiles (`football/identity/`) keep measured,
+sourced and inferred apart; ten matchup interaction modules explain how one
+side's strengths meet the other's weaknesses, with the mechanism, the
+counter-case and whether the rating already prices it; recent form is read
+against opponent quality; nearby-line sensitivity comes from the model's own
+residual distribution and says when it is not a betting probability;
+scenarios are labelled conditional; follow-ups resolve against a carried
+conversation state; `tools/intelligence/analyst_evals.test.js` prints the
+before/after scorecard.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`

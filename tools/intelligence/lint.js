@@ -20,6 +20,7 @@ const ROOT = path.join(__dirname, '..', '..');
 
 const JS = [
   'supabase/functions/edgedesk_ai/_research.js',
+  'supabase/functions/edgedesk_ai/_analyst.js',
   'supabase/functions/edgedesk_ai/_intelligence.js',
   'supabase/functions/edgedesk_ai/_presentation.js',
   'tools/presentation/inline.js',

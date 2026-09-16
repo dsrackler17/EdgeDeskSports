@@ -281,6 +281,11 @@ jobs:
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
+      - name: Team identity profiles for the research desk
+        run: node tools/football/build_team_identity.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       - name: FBS coverage gate
         if: steps.go.outputs.run == 'true'
         run: node football/fbs/build_coverage.js

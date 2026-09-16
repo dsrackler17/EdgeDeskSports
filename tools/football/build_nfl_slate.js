@@ -106,10 +106,40 @@ async function build(opts) {
   const games = pool.map((u) => {
     const g = u.g;
     let p = null, err = null;
-    try { p = T.fbPredict('nfl', T.fbNflGameReq(g), {}, num(g.season)); } catch (e) { err = String(e && e.message || e); }
+    const req = T.fbNflGameReq(g);
+    try { p = T.fbPredict('nfl', req, {}, num(g.season)); } catch (e) { err = String(e && e.message || e); }
     const ref = T.fbNflRefMarket(g);
     const priced = !!(p && p.status === 'PREDICTED');
     const m = priced ? p.model : null;
+    /* THE ENGINE RE-RUN, ONE INPUT CHANGED — the same scenarios the board's
+       Scenario tester offers, published with the projection so the research
+       desk can quote a CONDITIONAL estimate instead of guessing one. Nothing
+       here is the projection: each row names the input it changed. */
+    const rerun = (mod) => { const r = Object.assign({}, req); mod(r); try { const q2 = T.fbPredict('nfl', r, {}, num(g.season)); return q2 && q2.status === 'PREDICTED' ? q2 : null; } catch (_) { return null; } };
+    const scen = {};
+    if (priced) {
+      const add = (key, mod, basis) => { const q2 = rerun(mod); if (q2) scen[key] = { home_line: r2(-q2.model.fair_spread), delta_home_line: r2(-(q2.model.fair_spread - m.fair_spread)), total: r2(q2.model.fair_total), home_win_prob: r4(q2.model.home_win_prob), basis, source: 'football/nfl/slate.json (engine re-run, one input changed)' }; };
+      if (req.home_qb_id) add('home_qb_out', (r) => { r.home_qb_id = null; }, 'engine re-run with home_qb_id = null: the replacement carries the club\u2019s carried quarterback level, exactly what the engine does live when the feed names no starter');
+      if (req.away_qb_id) add('away_qb_out', (r) => { r.away_qb_id = null; }, 'engine re-run with away_qb_id = null: the replacement carries the club\u2019s carried quarterback level');
+      add('home_short_week', (r) => { r.home_rest = 4; }, 'engine re-run with home_rest = 4');
+      add('away_short_week', (r) => { r.away_rest = 4; }, 'engine re-run with away_rest = 4');
+      add('dome', (r) => { r.roof = 'dome'; }, 'engine re-run with roof = dome (weather inputs ignored)');
+      add('cold_windy', (r) => { r.roof = 'outdoors'; r.temp = 25; r.wind = 20; }, 'engine re-run at 25\u00b0F and 20 mph wind (total inputs; the spread does not read weather)');
+    }
+    /* THE COVER CURVE — P(home covers) at every half-point home line within
+       seven points of the fair line, from the engine's own spread-conditioned
+       margin pmf (key-number aware) through the same fbPredict path the card
+       uses. The validation tier still governs what it may be called. */
+    const curve = [];
+    if (priced) {
+      const fair = m.fair_spread; /* projected HOME MARGIN */
+      for (let k = -14; k <= 14; k++) {
+        const hm = Math.round((fair + k * 0.5) * 2) / 2;       /* a market home margin near the fair one */
+        const q2 = (() => { try { return T.fbPredict('nfl', req, { spread_line: hm }, num(g.season)); } catch (_) { return null; } })();
+        const c = q2 && q2.status === 'PREDICTED' ? q2.cover : null;
+        if (c && num(c.win) != null) curve.push({ home_line: r2(-hm), win: r4(c.win), push: r4(c.push), lose: r4(c.lose), basis: c.basis || null });
+      }
+    }
     const q = priced && p.outcome_range && p.outcome_range.q ? p.outcome_range.q : null;
     const contributions = priced && p.contributions ? {
       spread: (p.contributions.spread || []).map((c) => ({ key: c.key, value: r4(c.value), points: r2(c.points) })),
@@ -135,6 +165,8 @@ async function build(opts) {
       model_fair_home_ml: m ? m.fair_home_ml : null, model_fair_away_ml: m ? m.fair_away_ml : null,
       outcome_range: q ? { p10: r2(q['0.1']), p50: r2(q['0.5']), p90: r2(q['0.9']), sigma: r2(p.outcome_range.sigma), basis: p.outcome_range.basis, unit: 'home margin, points' } : null,
       contributions, features: priced ? p.features : null,
+      scenarios: Object.keys(scen).length ? scen : null,
+      cover_curve: curve.length ? curve : null,
       data_quality: p ? p.data_quality : null, qb_known: priced && p.features ? p.features.qb_known : null,
       model_version: p ? p.model_version : meta.model_version, feature_version: p ? p.feature_version : null, fingerprint: p ? p.fingerprint : null,
       /* nflverse's consensus, labelled. spread_line is positive when the HOME
@@ -149,6 +181,16 @@ async function build(opts) {
     };
   });
 
+  /* per-club completed results this season, from the schedule feed the
+     absorb pass read: the games each club has ACTUALLY played, with the
+     score, so the desk can read form against who it came against */
+  const results = {};
+  (S.games || []).filter((u) => u.done && u.g && u.g.home_score != null && u.g.away_score != null).sort((a, b) => a.t - b.t).forEach((u) => {
+    const g = u.g;
+    [['home', g.home_team, g.away_team, num(g.home_score), num(g.away_score)], ['away', g.away_team, g.home_team, num(g.away_score), num(g.home_score)]].forEach(([venue, code, opp, pf, pa]) => {
+      (results[code] = results[code] || []).push({ game_id: String(g.game_id), week: num(g.week), date: g.gameday || null, opponent: names[opp] || opp, opponent_code: opp, venue, points_for: pf, points_against: pa, margin: pf != null && pa != null ? pf - pa : null, result: pf > pa ? 'W' : pf < pa ? 'L' : 'T' });
+    });
+  });
   /* per-club ratings out of the state the absorb pass produced */
   const teams = {};
   const ranks = (() => { try { return T.fbNflRanks(); } catch (_) { return null; } })();
@@ -159,6 +201,7 @@ async function build(opts) {
     for (const k of Object.keys(t)) if (typeof t[k] === 'number') row.ratings[k] = r4(t[k]);
     if (ranks && ranks.by) for (const k of Object.keys(ranks.by)) if (ranks.by[k].rank && ranks.by[k].rank[code] != null) row.ranks[k] = { rank: ranks.by[k].rank[code], of: ranks.by[k].of };
     if (st.qb && st.qb[code]) row.qb = st.qb[code];
+    row.results = results[code] || [];
     teams[code] = row;
   }
 
@@ -166,6 +209,11 @@ async function build(opts) {
     schema: SCHEMA, version: 1, season, generated_at: new Date().toISOString(),
     source: 'nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html',
     engine: { model_version: meta.model_version, feature_version: meta.nfl && meta.nfl.feature_version, trained_through: meta.nfl && meta.nfl.trained_through, built_at: meta.built_at,
+      /* THE MARGIN DISTRIBUTION, so the desk can read a nearby line under the
+         model's own residuals: sigma, the pooled residual pmf and the mass on
+         the key numbers. Fitted on the training seasons, applied unchanged. */
+      distributions: (() => { const P = win.EDFootballParams && win.EDFootballParams.nfl; if (!P) return null; return { sigma_margin: P.sigma_margin, margin_resid_pmf: P.margin_resid_pmf || null, abs_margin_key_mass: P.abs_margin_key_mass || null, pmf_spread_range: P.pmf_spread_range || null,
+        basis: 'the engine\u2019s own residual of projected home margin against the realised margin, and its spread-conditioned margin pmf; fitted on the training seasons and applied unchanged', limitations: 'describes the spread of outcomes around THIS model\u2019s projection; it is not a market-implied distribution and the validation tier decides whether it may be read as a betting probability' }; })(),
       /* THE MODEL'S OWN RECORD, carried with the numbers it governs. Against
          the closing consensus the NFL spread model does not beat the close at
          any disagreement band, so the desk may quote it as an estimate and may

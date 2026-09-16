@@ -70,6 +70,25 @@ their training code (`football/research/`, `football/cfb_p4/README.md`,
   is keyed by college game id), no play profile or coaching record for NFL
   clubs, no captured NFL price outside the season's capture window.
 
+## Nearby-line sensitivity and scenarios (Slice 3)
+
+- **Cover / push / lose at nearby lines** come from the model's own
+  residual distribution around its own projection (the registered college
+  pmf, sigma 14.9; the NFL build's spread-conditioned cover curve, sigma
+  10.7). They are labelled MODEL_CONDITIONAL for both football spreads
+  because the validation record forbids a probability there, and they feed
+  no expected value. The probability the price requires is arithmetic on
+  the price alone. "Likely to cover if the model is right" and "worth
+  betting at this price" are stated as different questions.
+- **Scenarios** re-run the validated engine with one input changed (the
+  NFL build publishes starter-out, short-week, dome and cold-wind re-runs
+  per game) and are labelled CONDITIONAL ESTIMATE; where no engine input
+  exists (a college quarterback change, protection, pace) the scenario is
+  QUALITATIVE and estimates nothing. The baseline projection is unchanged.
+- **Interactions** explain the number; `in_model` says what the rating
+  already prices, and a measured advantage the rating includes is not
+  counted twice.
+
 ## Rules the desk enforces for every model
 
 1. The model's number is never altered by the writing model; it is quoted
