@@ -1,0 +1,180 @@
+{
+ "schema": "edgedesk_pricing_validation_v1",
+ "sport": "americanfootball_ncaaf",
+ "generated_at": "2026-09-16T15:08:47.657Z",
+ "frame": {
+  "engine": "football/cfb_p4/engine.js (shipped) replayed cold by football/cfb_p4/research/backtest_engine.js",
+  "source": "football/cfb_p4/research/report/BACKTEST.md and error_slices.json, copied, not re-run here",
+  "eval_window": "out-of-sample error dashboard, eval window 2015-2025; calibrated uses each year’s own walk-forward fit (global)",
+  "archive": "sportsdataverse/cfbfastR-data betting/csv/cfb_line_odds.csv.gz (consensus median across books, duplicates dropped)"
+ },
+ "rules": {
+  "first_eval": 2016,
+  "first_holdout": 2019,
+  "last": 2025,
+  "break_even": 0.5238,
+  "replay_from": 2006,
+  "brier_margin": 0.002,
+  "min_cal_n": 100,
+  "validated": {
+   "win_pct": 0.535,
+   "p_max": 0.01,
+   "min_n": 500
+  },
+  "lean": {
+   "win_pct": 0.5238,
+   "p_max": 0.05,
+   "min_n": 300
+  },
+  "thresholds_tested": 7,
+  "multiple_comparisons": "seven thresholds are read; the VALIDATED p-threshold of 0.01 is the allowance for that, and a threshold must also hold on the later 2019-2025 sub-window"
+ },
+ "markets": {
+  "spread": {
+   "n": 7845,
+   "pooled": {
+    "model_mae": 13.057,
+    "close_mae": 12.291
+   },
+   "by_disagreement": {
+    "3_7": {
+     "n": 2943,
+     "mae_raw": 12.972,
+     "mae_calibrated": 12.269,
+     "mae_market": 12.269,
+     "bias_raw": 1.637,
+     "rmse_raw": 16.283,
+     "ats_raw_1plus": {
+      "n": 2888,
+      "win_pct": 48.75
+     }
+    },
+    "7_14": {
+     "n": 1200,
+     "mae_raw": 14.693,
+     "mae_calibrated": 12.363,
+     "mae_market": 12.363,
+     "bias_raw": 3.23,
+     "rmse_raw": 18.343,
+     "ats_raw_1plus": {
+      "n": 1169,
+      "win_pct": 48.08
+     }
+    },
+    "ge14": {
+     "n": 99,
+     "mae_raw": 20.588,
+     "mae_calibrated": 13.109,
+     "mae_market": 13.109,
+     "bias_raw": 4.13,
+     "rmse_raw": 24.476,
+     "ats_raw_1plus": {
+      "n": 99,
+      "win_pct": 42.42
+     }
+    },
+    "lt3": {
+     "n": 3603,
+     "mae_raw": 12.374,
+     "mae_calibrated": 12.264,
+     "mae_market": 12.264,
+     "bias_raw": 0.427,
+     "rmse_raw": 15.723,
+     "ats_raw_1plus": {
+      "n": 2282,
+      "win_pct": 48.9
+     }
+    }
+   },
+   "ats_vs_close": {
+    "raw_model": {
+     "1": {
+      "n": 2599,
+      "wins": 1298,
+      "win_pct": 0.4994,
+      "p_one_sided": 0.5313
+     },
+     "2": {
+      "n": 2140,
+      "wins": 1053,
+      "win_pct": 0.4921,
+      "p_one_sided": 0.7754
+     },
+     "3": {
+      "n": 1652,
+      "wins": 790,
+      "win_pct": 0.4782,
+      "p_one_sided": 0.9638
+     },
+     "4": {
+      "n": 1261,
+      "wins": 594,
+      "win_pct": 0.4711,
+      "p_one_sided": 0.9814
+     },
+     "6": {
+      "n": 722,
+      "wins": 335,
+      "win_pct": 0.464,
+      "p_one_sided": 0.9757
+     },
+     "0.5": {
+      "n": 2829,
+      "wins": 1399,
+      "win_pct": 0.4945,
+      "p_one_sided": 0.7263
+     },
+     "1.5": {
+      "n": 2366,
+      "wins": 1178,
+      "win_pct": 0.4979,
+      "p_one_sided": 0.5895
+     }
+    }
+   },
+   "required_edge_points": null,
+   "tier": "RESEARCH",
+   "tier_basis": "no disagreement threshold cleared break-even against the close in the shipped backtest (2022-2025); the biggest disagreements are the worst",
+   "blend": null,
+   "calibration": null
+  },
+  "total": {
+   "pooled": {
+    "model_mae": 12.913,
+    "close_mae": 12.501,
+    "source": "BACKTEST.md 2022-2025"
+   },
+   "tier": "RESEARCH",
+   "tier_basis": "the total is 0.4 points worse than the close and has no held-out cover-probability calibration on file",
+   "required_edge_points": null
+  },
+  "moneyline": {
+   "tier": "RESEARCH",
+   "tier_basis": "no moneyline backtest on file for the CFB engine",
+   "required_edge_points": null
+  }
+ },
+ "open_to_close": {
+  "table": {
+   "1": {
+    "n": 6866,
+    "moved_toward_model_pct": 53.54
+   },
+   "2": {
+    "n": 5444,
+    "moved_toward_model_pct": 54.21
+   },
+   "3": {
+    "n": 4214,
+    "moved_toward_model_pct": 54.7
+   },
+   "5": {
+    "n": 2313,
+    "moved_toward_model_pct": 56.07
+   }
+  },
+  "basis": "share of games whose line moved from the opener toward the side the model preferred, by size of the model-vs-opener gap; a movement tendency, not a betting record",
+  "tier": "LEAN"
+ },
+ "note": "Copied from the shipped backtest so the pricing kernel and the CFB replay agree by construction; re-run football/cfb_p4/research to change it."
+}
