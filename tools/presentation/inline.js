@@ -79,6 +79,16 @@ const LIBS = [
     start: '/*__EDRESEARCH_START__*/', end: '/*__EDRESEARCH_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The analyst layer: the matchup interaction engine, recent-form
+     assessment, nearby-line sensitivity from the registered margin
+     distributions, conditional scenarios, follow-up resolution and the
+     investigation planner. Server-side only, like EDRESEARCH. */
+  {
+    name: 'EDANALYST',
+    src: path.join(FN, '_analyst.js'),
+    start: '/*__EDANALYST_START__*/', end: '/*__EDANALYST_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
 ];
 
 function block(src, START, END) {
