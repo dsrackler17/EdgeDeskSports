@@ -59,6 +59,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const R = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const E = require(path.join(ROOT, 'football', 'engine.js'));
+const { writeIfChanged } = require(path.join(__dirname, 'write_if_changed.js'));
 
 const SCHEMA = 'edgedesk_pricing_validation_v1';
 const CACHE = path.join(ROOT, 'football', 'nfl', '.cache');
@@ -306,7 +307,7 @@ function buildNfl() {
   const spread = scoreMarket(rep.rows, { modelOf: (r) => r.model, closeOf: (r) => r.close, actualOf: (r) => r.margin });
   const total = scoreMarket(rep.rows, { modelOf: (r) => r.model_total, closeOf: (r) => r.close_total, actualOf: (r) => r.points });
   const moneyline = scoreMoneyline(rep.rows);
-  try { const fsArt = featureStatus(rep); fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(path.join(OUT_DIR, 'feature-status-nfl.json'), JSON.stringify(fsArt, null, 1)); const flat = [].concat(Object.values(fsArt.arms.spread), Object.values(fsArt.arms.total)); console.log('feature intake: ' + flat.filter((a) => a.status === 'VALIDATED').length + ' validated, ' + flat.filter((a) => a.status === 'CANDIDATE').length + ' candidates, ' + flat.filter((a) => a.status === 'REJECTED').length + ' rejected -> football/validation/feature-status-nfl.json'); } catch (e) { console.error('feature intake failed: ' + e.message); }
+  try { const fsArt = featureStatus(rep); writeIfChanged(path.join(OUT_DIR, 'feature-status-nfl.json'), fsArt, { pretty: true }); const flat = [].concat(Object.values(fsArt.arms.spread), Object.values(fsArt.arms.total)); console.log('feature intake: ' + flat.filter((a) => a.status === 'VALIDATED').length + ' validated, ' + flat.filter((a) => a.status === 'CANDIDATE').length + ' candidates, ' + flat.filter((a) => a.status === 'REJECTED').length + ' rejected -> football/validation/feature-status-nfl.json'); } catch (e) { console.error('feature intake failed: ' + e.message); }
   return {
     schema: SCHEMA, sport: 'americanfootball_nfl', generated_at: new Date().toISOString(),
     frame: { engine: 'football/engine.js ' + (E.version() || ''), params_trained_through: E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : null, replay: 'cold from ' + RULES.replay_from + ' in kickoff order; seeds discarded; a game is projected from the state before it and absorbed after; both clubs need 8 absorbed games', eval_window: RULES.first_eval + '-' + RULES.last, holdout_window: RULES.first_holdout + '-' + RULES.last, archive: path.relative(ROOT, ARCHIVE), injury_archive: injuries ? path.relative(ROOT, INJURIES) + ' (' + (injuries.counts ? injuries.counts.first_season + '-' + injuries.counts.last_season : '?') + ')' : null, seasons_loaded: rep.seasons_loaded, games_scored: rep.rows.length, games_absorbed: rep.absorbed, refused: rep.refused, without_team_week_rows: rep.no_rows,
@@ -364,7 +365,7 @@ async function main() {
     const prev = JSON.parse(fs.readFileSync(out, 'utf8')); const strip = (a) => JSON.stringify(Object.assign({}, a, { generated_at: null }));
     const same = strip(prev) === strip(art); console.log(same ? 'CHECK: artifact is current' : 'CHECK: artifact differs from a fresh build'); process.exit(same ? 0 : 1);
   }
-  fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(out, JSON.stringify(art, null, 1)); console.log('wrote ' + path.relative(ROOT, out));
+  console.log(writeIfChanged(out, art, { pretty: true }) + ' ' + path.relative(ROOT, out));
 }
 
 module.exports = { replayNfl, scoreMarket, scoreMoneyline, atsTable, requiredEdge, passes, calibration, ols, buildCfb, featureArms, featureStatus, pairedT, FEATURE_RULES, CANDIDATES, RULES, SCHEMA, THRESHOLDS };

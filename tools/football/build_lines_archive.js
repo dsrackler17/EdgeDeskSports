@@ -27,6 +27,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const R = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
+const { writeIfChanged } = require(path.join(__dirname, 'write_if_changed.js'));
 
 const SCHEMA = 'edgedesk_lines_archive_v1';
 const GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
@@ -97,8 +98,7 @@ function updateOpeners(ledger, art, nowIso) {
     if (!e) { if (g.margin != null) return; /* result already posted: no opener can be claimed */ ledger.games[g.id] = { season: g.season, week: g.week, home: g.home, away: g.away, date: g.date, open: snap, latest: snap, moves: 0, closed: false }; added++; return; }
     if (e.closed) return;
     if (g.margin != null) { e.closed = true; e.close = e.latest; return; }
-    if (e.latest.home_line !== snap.home_line || e.latest.total !== snap.total) { e.moves++; moved++; }
-    e.latest = snap;
+    if (e.latest.home_line !== snap.home_line || e.latest.total !== snap.total || e.latest.home_moneyline !== snap.home_moneyline) { e.moves++; moved++; e.latest = snap; }
   });
   ledger.updated_at = nowIso; ledger.counts = { games: Object.keys(ledger.games).length, closed: Object.values(ledger.games).filter((x) => x.closed).length, added_this_run: added, moved_this_run: moved };
   ledger.note = 'EdgeDesk’s own opener capture from the nflverse consensus feed: open = the first number this build saw, latest = the last, close = the last before the result posted. Coverage starts at started_at; a game seen first with a result gets no opener. Per-book openers for captured signals live in book_quote_ticks.';
@@ -199,8 +199,8 @@ async function mainCfb(args) {
   const c = art.counts;
   console.log(`cfb lines archive: ${c.games} games (${c.with_open} with an opener, ${c.with_close} with a close, ${c.played} played), seasons ${c.first_season}-${c.last_season}; ${c.duplicates_dropped} duplicate rows and ${c.unresolved_dropped} unresolved rows dropped`);
   if (args.includes('--check')) { if (!fs.existsSync(CFB_OUT)) { console.error('CHECK: no artifact'); process.exit(1); } const prev = JSON.parse(fs.readFileSync(CFB_OUT, 'utf8')); const same = JSON.stringify(prev.games.filter((g) => g.season < c.last_season)) === JSON.stringify(art.games.filter((g) => g.season < c.last_season)); console.log(same ? 'CHECK: artifact is current (past seasons)' : 'CHECK: artifact differs from a fresh build'); process.exit(same ? 0 : 1); }
-  fs.writeFileSync(CFB_OUT, JSON.stringify(art)); console.log('wrote ' + path.relative(ROOT, CFB_OUT) + ' (' + Math.round(fs.statSync(CFB_OUT).size / 1024) + ' KB)');
-  fs.writeFileSync(CFB_OPENERS, JSON.stringify(cfbOpeners(art), null, 1)); console.log('wrote ' + path.relative(ROOT, CFB_OPENERS));
+  console.log(writeIfChanged(CFB_OUT, art) + ' ' + path.relative(ROOT, CFB_OUT) + ' (' + Math.round(fs.statSync(CFB_OUT).size / 1024) + ' KB)');
+  console.log(writeIfChanged(CFB_OPENERS, cfbOpeners(art), { pretty: true }) + ' ' + path.relative(ROOT, CFB_OPENERS));
 }
 
 function main() {
@@ -215,7 +215,7 @@ function main() {
 function write(args) {
   let art = build(fs.readFileSync(CACHE, 'utf8'), { retrieved_at: new Date(fs.statSync(CACHE).mtimeMs).toISOString() });
   let ledger = null; try { ledger = JSON.parse(fs.readFileSync(OPENERS, 'utf8')); } catch (_) { ledger = null; }
-  if (!args.includes('--check')) { ledger = updateOpeners(ledger, art, new Date().toISOString()); fs.mkdirSync(path.dirname(OPENERS), { recursive: true }); fs.writeFileSync(OPENERS, JSON.stringify(ledger, null, 1)); console.log('opener ledger: ' + ledger.counts.games + ' games (' + ledger.counts.added_this_run + ' new, ' + ledger.counts.moved_this_run + ' moved, ' + ledger.counts.closed + ' closed)'); }
+  if (!args.includes('--check')) { ledger = updateOpeners(ledger, art, new Date().toISOString()); const w = writeIfChanged(OPENERS, ledger, { pretty: true }); console.log('opener ledger: ' + ledger.counts.games + ' games (' + ledger.counts.added_this_run + ' new, ' + ledger.counts.moved_this_run + ' moved, ' + ledger.counts.closed + ' closed) ' + w); }
   art = applyOpeners(art, ledger);
   const c = art.counts;
   console.log(`lines archive: ${c.games} NFL games with a close, ${c.played} played, seasons ${c.first_season}-${c.last_season}`);
@@ -227,9 +227,7 @@ function write(args) {
     console.log(same ? 'CHECK: artifact is current' : 'CHECK: artifact differs from a fresh build');
     process.exit(same ? 0 : 1);
   }
-  fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  fs.writeFileSync(OUT, JSON.stringify(art));
-  console.log('wrote ' + path.relative(ROOT, OUT) + ' (' + Math.round(fs.statSync(OUT).size / 1024) + ' KB)');
+  console.log(writeIfChanged(OUT, art) + ' ' + path.relative(ROOT, OUT) + ' (' + Math.round(fs.statSync(OUT).size / 1024) + ' KB)');
 }
 
 module.exports = { build, buildCfb, cfbOpeners, updateOpeners, applyOpeners, SCHEMA, OUT, OPENERS, CFB_OUT, CFB_OPENERS, CACHE, GAMES_URL, COLS };
