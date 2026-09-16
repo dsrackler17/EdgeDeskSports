@@ -48,6 +48,9 @@ function grade(row, close) {
   out.beat_close = out.clv_points > 0 ? true : out.clv_points < 0 ? false : null;
   if (num(close.margin) != null) { out.margin = num(close.margin); const cover = sgn * out.margin + q; out.result = cover > 0 ? 'WIN' : cover < 0 ? 'LOSS' : 'PUSH'; }
   else out.why = 'the game has no result on file';
+  /* open-to-close on the desk's OWN opener capture: did the market move toward the desk's fair line? */
+  if (num(close.open_home_line) != null && out.fair_home_line != null) { const o = num(close.open_home_line), c = out.close_home_line, f = out.fair_home_line; out.open_home_line = o; out.open_to_close_points = r2(c - o); out.moved_toward_fair = c === o ? null : (Math.sign(c - o) === Math.sign(f - o)); }
+  else { out.open_home_line = null; out.open_to_close_points = null; out.moved_toward_fair = null; }
   return out;
 }
 
@@ -55,7 +58,7 @@ function loadArchive(file) {
   const p = file || path.join(ROOT, 'football', 'pricing', 'lines_nfl.json');
   if (!fs.existsSync(p)) return { byId: {}, error: 'no closing-line archive at ' + path.relative(ROOT, p) };
   const a = JSON.parse(fs.readFileSync(p, 'utf8')); const byId = {};
-  (a.games || []).forEach((g) => { byId[g.id] = { home_line: g.close.home_line, margin: g.margin, total: g.close.total }; });
+  (a.games || []).forEach((g) => { byId[g.id] = { home_line: g.close.home_line, margin: g.margin, total: g.close.total, open_home_line: g.open ? g.open.home_line : null, open_seen_at: g.open ? g.open.seen_at : null }; });
   return { byId, error: null, games: (a.games || []).length };
 }
 
@@ -69,11 +72,12 @@ function report(rows, opts) {
     keys.forEach((k) => {
       const e = (groups[k] = groups[k] || { n: 0, with_close: 0, clv: [], beat: 0, missed: 0, wins: 0, losses: 0, pushes: 0 });
       e.n++; if (g.clv_points != null) { e.with_close++; e.clv.push(g.clv_points); if (g.beat_close === true) e.beat++; else if (g.beat_close === false) e.missed++; }
+      if (g.moved_toward_fair != null) { e.with_open = (e.with_open || 0) + 1; if (g.moved_toward_fair) e.toward = (e.toward || 0) + 1; }
       if (g.result === 'WIN') e.wins++; else if (g.result === 'LOSS') e.losses++; else if (g.result === 'PUSH') e.pushes++;
     });
   });
   const table = {};
-  Object.keys(groups).forEach((k) => { const e = groups[k]; table[k] = { packets: e.n, with_close: e.with_close, mean_clv_points: r3(mean(e.clv)), beat_close_rate: e.beat + e.missed ? r3(e.beat / (e.beat + e.missed)) : null, wins: e.wins, losses: e.losses, pushes: e.pushes, sufficient_sample: e.with_close >= SAMPLE_FLOOR, reading: e.with_close >= SAMPLE_FLOOR ? (mean(e.clv) > 0 ? 'the desk’s quotes have beaten the close on average; this is evidence about the pricing process, not a profit' : 'the desk’s quotes have not beaten the close on average') : 'below the sample floor of ' + SAMPLE_FLOOR + ' closed packets: no reading' }; });
+  Object.keys(groups).forEach((k) => { const e = groups[k]; table[k] = { packets: e.n, with_close: e.with_close, mean_clv_points: r3(mean(e.clv)), beat_close_rate: e.beat + e.missed ? r3(e.beat / (e.beat + e.missed)) : null, with_opener: e.with_open || 0, moved_toward_fair_rate: e.with_open ? r3((e.toward || 0) / e.with_open) : null, wins: e.wins, losses: e.losses, pushes: e.pushes, sufficient_sample: e.with_close >= SAMPLE_FLOOR, reading: e.with_close >= SAMPLE_FLOOR ? (mean(e.clv) > 0 ? 'the desk’s quotes have beaten the close on average; this is evidence about the pricing process, not a profit' : 'the desk’s quotes have not beaten the close on average') : 'below the sample floor of ' + SAMPLE_FLOOR + ' closed packets: no reading' }; });
   return { schema: 'edgedesk_clv_scorecard_v1', generated_at: new Date().toISOString(), rows: graded.length, archive: arch.error ? { error: arch.error } : { games: arch.games }, sample_floor: SAMPLE_FLOOR, groups: table, graded,
     note: 'Closing-line value measures whether the number the desk quoted was better than the number the market closed at. It is the honest scorecard for a pricer. A win-loss record at this sample size is variance, and neither figure is a claim of profit.' };
 }

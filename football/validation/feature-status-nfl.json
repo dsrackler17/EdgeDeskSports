@@ -1,17 +1,18 @@
 {
  "schema": "edgedesk_feature_status_nfl_v1",
- "generated_at": "2026-09-16T15:25:23.866Z",
+ "generated_at": "2026-09-16T15:56:21.397Z",
  "rules": {
   "min_holdout_seasons": 2,
   "p_max": 0.05,
   "min_pooled_improvement": 0.02,
   "max_season_degradation": 0.15
  },
- "frame": "candidate context terms on top of the validated projection-market blend, NFL 2016-2025 replay, held out 2019-2025",
+ "frame": "candidate context terms on top of the validated projection-market blend, NFL 2016-2025 replay, held out 2019-2025; injury terms from the official report archive (Out + Doubtful counts by position group)",
  "statuses": [
   "VALIDATED",
   "CANDIDATE",
-  "REJECTED"
+  "REJECTED",
+  "NOT_EVALUATED"
  ],
  "arms": {
   "spread": {
@@ -445,6 +446,438 @@
      "paired p 1 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "ol_out_diff": {
+    "label": "offensive linemen out or doubtful, home minus away (official report)",
+    "market": "spread",
+    "status": "REJECTED",
+    "pooled_improvement_mae": -0.005,
+    "paired_t": -1.74,
+    "paired_p": 0.0819,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.104,
+      "candidate_mae": 10.103,
+      "improvement": 0.001,
+      "coef": -0.2337
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 9.822,
+      "candidate_mae": 9.824,
+      "improvement": -0.002,
+      "coef": -0.0851
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.611,
+      "candidate_mae": 10.625,
+      "improvement": -0.014,
+      "coef": -0.1258
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 8.784,
+      "candidate_mae": 8.787,
+      "improvement": -0.003,
+      "coef": 0.1732
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.014,
+      "candidate_mae": 10.013,
+      "improvement": 0.001,
+      "coef": 0.0712
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.651,
+      "candidate_mae": 9.667,
+      "improvement": -0.016,
+      "coef": 0.2458
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 9.727,
+      "candidate_mae": 9.729,
+      "improvement": -0.002,
+      "coef": 0.0255
+     }
+    ],
+    "latest_coef": 0.0255,
+    "reasons": [
+     "pooled improvement -0.005 below 0.02 points of MAE",
+     "paired p 0.0819 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "qb_out_diff": {
+    "label": "quarterbacks out or doubtful, home minus away",
+    "market": "spread",
+    "status": "REJECTED",
+    "pooled_improvement_mae": -0.005,
+    "paired_t": -1.945,
+    "paired_p": 0.0518,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.104,
+      "candidate_mae": 10.102,
+      "improvement": 0.002,
+      "coef": 0.3229
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 9.822,
+      "candidate_mae": 9.822,
+      "improvement": 0.001,
+      "coef": 0.1935
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.611,
+      "candidate_mae": 10.625,
+      "improvement": -0.015,
+      "coef": 0.4086
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 8.784,
+      "candidate_mae": 8.784,
+      "improvement": 0.001,
+      "coef": 0.0329
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.014,
+      "candidate_mae": 10.012,
+      "improvement": 0.002,
+      "coef": 0.3252
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.651,
+      "candidate_mae": 9.67,
+      "improvement": -0.019,
+      "coef": 0.4577
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 9.727,
+      "candidate_mae": 9.73,
+      "improvement": -0.003,
+      "coef": -0.2373
+     }
+    ],
+    "latest_coef": -0.2373,
+    "reasons": [
+     "pooled improvement -0.005 below 0.02 points of MAE",
+     "paired p 0.0518 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "out_diff": {
+    "label": "players out or doubtful, all positions, home minus away",
+    "market": "spread",
+    "status": "CANDIDATE",
+    "pooled_improvement_mae": 0.006,
+    "paired_t": 1.326,
+    "paired_p": 0.1848,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.104,
+      "candidate_mae": 10.105,
+      "improvement": -0.001,
+      "coef": -0.1274
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 9.822,
+      "candidate_mae": 9.823,
+      "improvement": -0.001,
+      "coef": -0.0209
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.611,
+      "candidate_mae": 10.61,
+      "improvement": 0,
+      "coef": -0.0245
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 8.784,
+      "candidate_mae": 8.792,
+      "improvement": -0.008,
+      "coef": -0.0625
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.014,
+      "candidate_mae": 10.007,
+      "improvement": 0.007,
+      "coef": -0.0601
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.651,
+      "candidate_mae": 9.637,
+      "improvement": 0.014,
+      "coef": -0.0507
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 9.727,
+      "candidate_mae": 9.7,
+      "improvement": 0.027,
+      "coef": -0.1413
+     }
+    ],
+    "latest_coef": -0.1413,
+    "reasons": [
+     "pooled improvement 0.006 below 0.02 points of MAE",
+     "paired p 0.1848 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "dl_out_diff": {
+    "label": "defensive linemen out or doubtful, home minus away",
+    "market": "spread",
+    "status": "REJECTED",
+    "pooled_improvement_mae": -0.002,
+    "paired_t": -1.098,
+    "paired_p": 0.2721,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.104,
+      "candidate_mae": 10.104,
+      "improvement": -0.001,
+      "coef": 0.0428
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 9.822,
+      "candidate_mae": 9.824,
+      "improvement": -0.002,
+      "coef": -0.056
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.611,
+      "candidate_mae": 10.611,
+      "improvement": 0,
+      "coef": 0.0138
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 8.784,
+      "candidate_mae": 8.79,
+      "improvement": -0.006,
+      "coef": -0.1368
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.014,
+      "candidate_mae": 10.015,
+      "improvement": -0.001,
+      "coef": 0.0713
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.651,
+      "candidate_mae": 9.651,
+      "improvement": 0,
+      "coef": 0.0871
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 9.727,
+      "candidate_mae": 9.728,
+      "improvement": -0.001,
+      "coef": 0.1093
+     }
+    ],
+    "latest_coef": 0.1093,
+    "reasons": [
+     "pooled improvement -0.002 below 0.02 points of MAE",
+     "paired p 0.2721 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "db_out_diff": {
+    "label": "defensive backs out or doubtful, home minus away",
+    "market": "spread",
+    "status": "REJECTED",
+    "pooled_improvement_mae": -0.002,
+    "paired_t": -0.711,
+    "paired_p": 0.4772,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.104,
+      "candidate_mae": 10.117,
+      "improvement": -0.013,
+      "coef": -0.256
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 9.822,
+      "candidate_mae": 9.822,
+      "improvement": 0,
+      "coef": 0.1205
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.611,
+      "candidate_mae": 10.609,
+      "improvement": 0.001,
+      "coef": 0.0274
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 8.784,
+      "candidate_mae": 8.79,
+      "improvement": -0.006,
+      "coef": 0.0846
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.014,
+      "candidate_mae": 10.014,
+      "improvement": 0,
+      "coef": -0.0988
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.651,
+      "candidate_mae": 9.65,
+      "improvement": 0.001,
+      "coef": -0.0161
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 9.727,
+      "candidate_mae": 9.725,
+      "improvement": 0.002,
+      "coef": -0.0338
+     }
+    ],
+    "latest_coef": -0.0338,
+    "reasons": [
+     "pooled improvement -0.002 below 0.02 points of MAE",
+     "paired p 0.4772 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "wr_out_diff": {
+    "label": "receivers and tight ends out or doubtful, home minus away",
+    "market": "spread",
+    "status": "REJECTED",
+    "pooled_improvement_mae": 0.005,
+    "paired_t": 0.832,
+    "paired_p": 0.4053,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.104,
+      "candidate_mae": 10.11,
+      "improvement": -0.006,
+      "coef": 0.2127
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 9.822,
+      "candidate_mae": 9.83,
+      "improvement": -0.008,
+      "coef": 0.2273
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.611,
+      "candidate_mae": 10.627,
+      "improvement": -0.017,
+      "coef": 0.1911
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 8.784,
+      "candidate_mae": 8.785,
+      "improvement": 0,
+      "coef": -0.0146
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.014,
+      "candidate_mae": 10.008,
+      "improvement": 0.006,
+      "coef": -0.1282
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.651,
+      "candidate_mae": 9.628,
+      "improvement": 0.023,
+      "coef": -0.3647
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 9.727,
+      "candidate_mae": 9.693,
+      "improvement": 0.034,
+      "coef": -0.428
+     }
+    ],
+    "latest_coef": -0.428,
+    "reasons": [
+     "pooled improvement 0.005 below 0.02 points of MAE",
+     "paired p 0.4053 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    }
   },
   "total": {
@@ -733,6 +1166,222 @@
     "reasons": [
      "pooled improvement -0.005 below 0.02 points of MAE",
      "paired p 0.1467 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "out_sum": {
+    "label": "players out or doubtful, both sides summed",
+    "market": "total",
+    "status": "REJECTED",
+    "pooled_improvement_mae": -0.007,
+    "paired_t": -1.87,
+    "paired_p": 0.0615,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.985,
+      "candidate_mae": 11.007,
+      "improvement": -0.023,
+      "coef": -0.1397
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 10.242,
+      "candidate_mae": 10.272,
+      "improvement": -0.03,
+      "coef": -0.0866
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.893,
+      "candidate_mae": 10.888,
+      "improvement": 0.005,
+      "coef": 0.0601
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 10.414,
+      "candidate_mae": 10.422,
+      "improvement": -0.007,
+      "coef": 0.0483
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.178,
+      "candidate_mae": 10.185,
+      "improvement": -0.008,
+      "coef": -0.0457
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.758,
+      "candidate_mae": 9.764,
+      "improvement": -0.006,
+      "coef": -0.0328
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 10.398,
+      "candidate_mae": 10.385,
+      "improvement": 0.014,
+      "coef": 0.0471
+     }
+    ],
+    "latest_coef": 0.0471,
+    "reasons": [
+     "pooled improvement -0.007 below 0.02 points of MAE",
+     "paired p 0.0615 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "ol_out_sum": {
+    "label": "offensive linemen out or doubtful, both sides summed",
+    "market": "total",
+    "status": "REJECTED",
+    "pooled_improvement_mae": -0.002,
+    "paired_t": -1.042,
+    "paired_p": 0.2976,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.985,
+      "candidate_mae": 11.001,
+      "improvement": -0.016,
+      "coef": -0.1629
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 10.242,
+      "candidate_mae": 10.241,
+      "improvement": 0.001,
+      "coef": 0.0344
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.893,
+      "candidate_mae": 10.896,
+      "improvement": -0.002,
+      "coef": -0.1008
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 10.414,
+      "candidate_mae": 10.417,
+      "improvement": -0.003,
+      "coef": -0.0879
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.178,
+      "candidate_mae": 10.174,
+      "improvement": 0.003,
+      "coef": -0.0386
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.758,
+      "candidate_mae": 9.758,
+      "improvement": 0,
+      "coef": -0.1514
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 10.398,
+      "candidate_mae": 10.399,
+      "improvement": 0,
+      "coef": -0.1283
+     }
+    ],
+    "latest_coef": -0.1283,
+    "reasons": [
+     "pooled improvement -0.002 below 0.02 points of MAE",
+     "paired p 0.2976 not below 0.05"
+    ],
+    "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
+   },
+   "qb_out_sum": {
+    "label": "quarterbacks out or doubtful, both sides summed",
+    "market": "total",
+    "status": "CANDIDATE",
+    "pooled_improvement_mae": 0.007,
+    "paired_t": 1.924,
+    "paired_p": 0.0544,
+    "holdout_seasons": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.985,
+      "candidate_mae": 10.989,
+      "improvement": -0.004,
+      "coef": -0.159
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 10.242,
+      "candidate_mae": 10.237,
+      "improvement": 0.005,
+      "coef": 0.4516
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.893,
+      "candidate_mae": 10.893,
+      "improvement": 0,
+      "coef": 0.1039
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 10.414,
+      "candidate_mae": 10.416,
+      "improvement": -0.002,
+      "coef": 0.3333
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.178,
+      "candidate_mae": 10.173,
+      "improvement": 0.005,
+      "coef": 0.3931
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.758,
+      "candidate_mae": 9.751,
+      "improvement": 0.007,
+      "coef": 0.4672
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 10.398,
+      "candidate_mae": 10.365,
+      "improvement": 0.033,
+      "coef": 0.6441
+     }
+    ],
+    "latest_coef": 0.6441,
+    "reasons": [
+     "pooled improvement 0.007 below 0.02 points of MAE",
+     "paired p 0.0544 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    }

@@ -31,6 +31,7 @@ const SCHEMA = 'edgedesk_lines_archive_v1';
 const GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 const CACHE = path.join(ROOT, 'football', 'nfl', '.cache', GAMES_URL.replace(/[^a-z0-9.]+/gi, '_').slice(-120));
 const OUT = path.join(ROOT, 'football', 'pricing', 'lines_nfl.json');
+const OPENERS = path.join(ROOT, 'football', 'pricing', 'openers_nfl.json');
 const COLS = ['game_id', 'season', 'game_type', 'week', 'gameday', 'gametime', 'away_team', 'away_score', 'home_team', 'home_score', 'result', 'total', 'overtime',
   'away_rest', 'home_rest', 'away_moneyline', 'home_moneyline', 'spread_line', 'away_spread_odds', 'home_spread_odds', 'total_line', 'under_odds', 'over_odds',
   'div_game', 'roof', 'surface', 'temp', 'wind', 'away_qb_id', 'home_qb_id', 'stadium'];
@@ -73,6 +74,36 @@ function build(text, opts) {
   };
 }
 
+/* ---------------------------------------------------------------- openers */
+/** THE OPENER LEDGER, built by EdgeDesk itself: nflverse carries only a
+    closing consensus, so the desk records the FIRST number it sees for every
+    upcoming game and every later number until kickoff. Open-to-close value can
+    then be graded on the desk's own captures. Nothing is backfilled: a game
+    first seen with its result already posted gets no opener. */
+function updateOpeners(ledger, art, nowIso) {
+  ledger = ledger && ledger.games ? ledger : { schema: 'edgedesk_opener_ledger_v1', sport: 'americanfootball_nfl', started_at: nowIso, games: {} };
+  let added = 0, moved = 0;
+  art.games.forEach((g) => {
+    const num0 = (v) => (v == null ? null : v);
+    const snap = { home_line: num0(g.close.home_line), total: num0(g.close.total), home_moneyline: num0(g.close.home_moneyline), away_moneyline: num0(g.close.away_moneyline), seen_at: nowIso };
+    const e = ledger.games[g.id];
+    if (!e) { if (g.margin != null) return; /* result already posted: no opener can be claimed */ ledger.games[g.id] = { season: g.season, week: g.week, home: g.home, away: g.away, date: g.date, open: snap, latest: snap, moves: 0, closed: false }; added++; return; }
+    if (e.closed) return;
+    if (g.margin != null) { e.closed = true; e.close = e.latest; return; }
+    if (e.latest.home_line !== snap.home_line || e.latest.total !== snap.total) { e.moves++; moved++; }
+    e.latest = snap;
+  });
+  ledger.updated_at = nowIso; ledger.counts = { games: Object.keys(ledger.games).length, closed: Object.values(ledger.games).filter((x) => x.closed).length, added_this_run: added, moved_this_run: moved };
+  ledger.note = 'EdgeDesk’s own opener capture from the nflverse consensus feed: open = the first number this build saw, latest = the last, close = the last before the result posted. Coverage starts at started_at; a game seen first with a result gets no opener. Per-book openers for captured signals live in book_quote_ticks.';
+  return ledger;
+}
+function applyOpeners(art, ledger) {
+  if (!ledger || !ledger.games) return art;
+  art.games.forEach((g) => { const e = ledger.games[g.id]; if (e && e.open) g.open = { home_line: e.open.home_line, total: e.open.total, seen_at: e.open.seen_at, moves: e.moves, source: 'EdgeDesk opener ledger' }; });
+  art.counts.with_opener = art.games.filter((g) => g.open).length;
+  return art;
+}
+
 function main() {
   const args = process.argv.slice(2);
   if (!fs.existsSync(CACHE) || args.includes('--fetch')) {
@@ -82,13 +113,17 @@ function main() {
   write(args);
 }
 function write(args) {
-  const art = build(fs.readFileSync(CACHE, 'utf8'), { retrieved_at: new Date(fs.statSync(CACHE).mtimeMs).toISOString() });
+  let art = build(fs.readFileSync(CACHE, 'utf8'), { retrieved_at: new Date(fs.statSync(CACHE).mtimeMs).toISOString() });
+  let ledger = null; try { ledger = JSON.parse(fs.readFileSync(OPENERS, 'utf8')); } catch (_) { ledger = null; }
+  if (!args.includes('--check')) { ledger = updateOpeners(ledger, art, new Date().toISOString()); fs.mkdirSync(path.dirname(OPENERS), { recursive: true }); fs.writeFileSync(OPENERS, JSON.stringify(ledger, null, 1)); console.log('opener ledger: ' + ledger.counts.games + ' games (' + ledger.counts.added_this_run + ' new, ' + ledger.counts.moved_this_run + ' moved, ' + ledger.counts.closed + ' closed)'); }
+  art = applyOpeners(art, ledger);
   const c = art.counts;
   console.log(`lines archive: ${c.games} NFL games with a close, ${c.played} played, seasons ${c.first_season}-${c.last_season}`);
   if (args.includes('--check')) {
     if (!fs.existsSync(OUT)) { console.error('CHECK: no artifact on disk'); process.exit(1); }
     const prev = JSON.parse(fs.readFileSync(OUT, 'utf8'));
-    const same = JSON.stringify(prev.games) === JSON.stringify(art.games);
+    const strip = (gs) => JSON.stringify(gs.map((g) => Object.assign({}, g, { open: undefined })));
+    const same = strip(prev.games) === strip(art.games);
     console.log(same ? 'CHECK: artifact is current' : 'CHECK: artifact differs from a fresh build');
     process.exit(same ? 0 : 1);
   }
@@ -97,5 +132,5 @@ function write(args) {
   console.log('wrote ' + path.relative(ROOT, OUT) + ' (' + Math.round(fs.statSync(OUT).size / 1024) + ' KB)');
 }
 
-module.exports = { build, SCHEMA, OUT, CACHE, GAMES_URL, COLS };
+module.exports = { build, updateOpeners, applyOpeners, SCHEMA, OUT, OPENERS, CACHE, GAMES_URL, COLS };
 if (require.main === module) main();

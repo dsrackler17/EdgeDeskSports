@@ -62,6 +62,15 @@ jobs:
       - name: NFL feeds for the identity build (games, team-week, player-week)
         run: node tools/football/fetch_nfl_feeds.js || true
 
+      # Slice 4: the opener ledger captures the first number the desk sees for
+      # every upcoming NFL game, so open-to-close value is graded on EdgeDesk's
+      # own captures; the injury archive keeps the official report by season.
+      - name: Closing-line archive and opener ledger
+        run: node tools/football/build_lines_archive.js || true
+
+      - name: Injury archive (official report, every season)
+        run: node tools/football/build_injury_archive.js || true
+
       - name: Rebuild the team identity profiles
         run: node tools/football/build_team_identity.js
 
@@ -71,7 +80,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           # a directory, not a glob: an unmatched glob is passed through
           # literally and fails the whole add
-          git add -A -- football/injuries/ football/matchup/metrics.json football/identity/
+          git add -A -- football/injuries/ football/matchup/metrics.json football/identity/ football/pricing/
           if git diff --cached --quiet; then
             echo 'injury report unchanged — nothing to commit'
             exit 0
