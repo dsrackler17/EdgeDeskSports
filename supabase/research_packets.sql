@@ -177,8 +177,40 @@ select
 from public.research_packet_grades
 group by model_version, sport, market, label;
 
+-- THE PRICE THE DESK QUOTED, for closing-line grading. Slice 4 snapshots
+-- pricing_summary inside the packet: the fair line, the market line and the
+-- quoted side at observation time. This view reads it through so a grader
+-- can compare the desk's number with the close in POINTS (the archive or a
+-- captured close), beside the probability-based CLV the signals join already
+-- carries. A packet without pricing_summary reads null in every price field.
+create or replace view public.research_packet_pricing as
+select
+  g.packet_id, g.built_at, g.sport, g.game_id, g.kickoff, g.season, g.week, g.model_version, g.label,
+  p.packet -> 'pricing_summary' ->> 'headline'                              as headline,
+  (p.packet -> 'pricing_summary' ->> 'fair_home_line')::numeric              as fair_home_line,
+  (p.packet -> 'pricing_summary' ->> 'market_home_line')::numeric            as market_home_line,
+  (p.packet -> 'pricing_summary' ->> 'model_home_line')::numeric             as model_home_line,
+  p.packet -> 'pricing_summary' ->> 'tier'                                   as pricing_tier,
+  (p.packet -> 'pricing_summary' ->> 'fair_total')::numeric                  as fair_total,
+  (p.packet -> 'pricing_summary' ->> 'market_total')::numeric                as market_total,
+  p.packet -> 'pricing_summary' -> 'quoted' ->> 'selection'                  as quoted_selection,
+  p.packet -> 'pricing_summary' -> 'quoted' ->> 'side'                       as quoted_side,
+  (p.packet -> 'pricing_summary' -> 'quoted' ->> 'market_line')::numeric     as quoted_line,
+  (p.packet -> 'pricing_summary' -> 'quoted' ->> 'odds_american')::numeric   as quoted_odds_american,
+  p.packet -> 'pricing_summary' -> 'quoted' ->> 'book'                       as quoted_book,
+  (p.packet -> 'pricing_summary' -> 'quoted' ->> 'observed_at')::timestamptz as quoted_observed_at,
+  p.packet -> 'pricing_summary' -> 'quoted' ->> 'status'                     as quoted_status,
+  (p.packet -> 'pricing_summary' -> 'quoted' ->> 'edge_pp')::numeric         as quoted_edge_pp,
+  (p.packet -> 'pricing_summary' -> 'quoted' ->> 'bet_to_line')::numeric     as quoted_bet_to_line,
+  p.packet -> 'pricing_summary' -> 'best' ->> 'status'                       as best_status,
+  (p.packet -> 'pricing_summary' ->> 'sizing')::numeric                      as sizing_fraction,
+  g.grade_state, g.result, g.clv as clv_probability, g.beat_close, g.closing_fair_probability, g.closing_decimal, g.closing_observed_at
+from public.research_packet_grades g
+join public.research_packets p on p.packet_id = g.packet_id;
+
 grant select on public.research_packet_grades to authenticated;
 grant select on public.research_packet_calibration to authenticated;
+grant select on public.research_packet_pricing to authenticated;
 
 -- PostgREST caches the schema; without this the table is invisible to the
 -- function's insert until the next restart. Fires after commit.
@@ -198,4 +230,6 @@ select 'row level security', case when (select relrowsecurity from pg_class wher
 union all
 select 'grades view', case when to_regclass('public.research_packet_grades') is not null then 'ok' else 'CHECK THIS' end
 union all
-select 'calibration view', case when to_regclass('public.research_packet_calibration') is not null then 'ok' else 'CHECK THIS' end;
+select 'calibration view', case when to_regclass('public.research_packet_calibration') is not null then 'ok' else 'CHECK THIS' end
+union all
+select 'pricing view', case when to_regclass('public.research_packet_pricing') is not null then 'ok' else 'CHECK THIS' end;

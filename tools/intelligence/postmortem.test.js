@@ -41,6 +41,7 @@ const outlier = P.classify(row({ model_home_line: -7, closing_home_line: -7, fin
 chk('a miss beyond sigma the close also missed is VARIANCE, not a diagnosed error', outlier.class === 'VARIANCE' && /outlier/.test(outlier.why), outlier);
 chk('the residual is stated from the projection', variance.residual === -10 && P.classify(row({ final_home_margin: 10 })).residual === 3);
 chk('the favourite bucket is stated', P.classify(row({ model_home_line: -10 })).favourite_bucket === '7-14');
+chk('closing-line value in points rides on the classification when a quoted line and a close exist', P.classify(row({ handicap: -5.5, closing_home_line: -7 })).clv_points === 1.5 && P.classify(row({ side: 'away', selection: 'Away U', handicap: 6.5, closing_home_line: -7 })).clv_points === -0.5 && P.classify(row({})).clv_points === null);
 
 /* ---- aggregation and candidates ---------------------------------------- */
 const rows = [];

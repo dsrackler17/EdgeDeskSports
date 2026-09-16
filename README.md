@@ -95,6 +95,18 @@ scenarios are labelled conditional; follow-ups resolve against a carried
 conversation state; `tools/intelligence/analyst_evals.test.js` prints the
 before/after scorecard.
 
+Slice 4 (the pricer) makes the desk quote a price before it looks at a book:
+a closing-line archive (`football/pricing/`), a time-separated validation of
+the shipped engines against the close (`football/validation/pricing_*.json`,
+with tiers VALIDATED / LEAN / PROBABILITY / RESEARCH and the rule for each),
+a pricing kernel that states the fair line, the cover probability at any
+number, the bet-to line and a status per side that only a validated tier can
+turn into PLAY, a ranked board, sizing gated on VALIDATED, a held-out feature
+intake (all ten NFL candidates rejected), and a closing-line-value scorecard.
+Today the NFL spread is LEAN (break-even history at 1.5+ points of
+disagreement, not a profit) and everything else is RESEARCH; the desk says so
+in every answer and never states an EV.
+
 - `docs/intelligence-audit.md` — what was found before the change
 - `docs/intelligence-architecture.md` — how a turn flows now, switches, next slices
 - `docs/data-providers.md`, `docs/model-card-football.md`, `docs/runbooks/`

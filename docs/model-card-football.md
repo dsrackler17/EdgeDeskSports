@@ -89,6 +89,34 @@ their training code (`football/research/`, `football/cfb_p4/README.md`,
   already prices, and a measured advantage the rating includes is not
   counted twice.
 
+## The price (Slice 4)
+
+- **Fair line.** `margin = a + b·close + c·(projection − close)` with the
+  coefficients the pricing validation fitted on seasons before the one it
+  scored (NFL latest: a −0.38, b 1.16, c 0.23; held-out sigma 12.8). The
+  market carries the weight because that is what the data said; c is the
+  projection's measured incremental information. CFB has no validated
+  blend: the market is the fair price and the projection is stated as a
+  disagreement.
+- **Tiers** come from `football/validation/pricing_<sport>.json` and are
+  quoted verbatim with their basis: NFL spread LEAN at 1.5+ points (52.75%,
+  n 1,892, p 0.009: cleared break-even at −110, not a point above it);
+  NFL total and moneyline RESEARCH; every CFB market RESEARCH.
+- **Bet-to** is the selection line where the fair cover probability meets
+  the price's break-even; it is arithmetic, and the STATUS word beside it
+  is the only recommendation language: PLAY needs VALIDATED, LEAN_PLAY is
+  break-even history and says so, CONDITIONAL is a RESEARCH market's
+  arithmetic and is not a recommendation.
+- **Sizing** exists only for a VALIDATED tier (quarter Kelly, 2% cap), so
+  today it is always null with the reason.
+- **Feature intake.** Ten context candidates (rest, division, dome, cold,
+  wind, unknown starter) were held out on 2019-2025 and all REJECTED
+  (`football/validation/feature-status-nfl.json`); nothing was added to
+  the engine.
+- **No betting-performance claim** is made anywhere; the closing-line
+  scorecard grades the quoted number against the close and calls a
+  win-loss record at its sample size variance.
+
 ## Rules the desk enforces for every model
 
 1. The model's number is never altered by the writing model; it is quoted
