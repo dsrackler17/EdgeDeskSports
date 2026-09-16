@@ -1089,8 +1089,31 @@ async function settleDirect(db, schema, game, final, close) {
 
   const readCols = DIRECT_PROJ_READ.filter(c => pcols.indexOf(c) >= 0);
   const gradeCols = DIRECT_GRADE_COLS.filter(c => pcols.indexOf(c) >= 0);
+  const out = { game_written: true, graded: 0, candidates: 0, refused: [], gaps, patch, graded_by: null };
+  /* THE DATABASE GRADES ITS OWN where it can. Production keeps grades in
+     their own table (collective.grades, one row per projection) and
+     exposes grade_game(p_game_id), the routine settle_game itself runs
+     after it writes a result; projections there carries no grade column
+     at all. Writing pick_result onto projections would be a gap on every
+     row, and grading nothing would leave every settled game's board
+     record blank. So when projections cannot take a grade and a grades
+     table exists, the routine is asked, by game, and its answer is the
+     count. The published rule below is still applied where a deployment
+     keeps grades on the projection row. */
+  if (!gradeCols.length && (schema.grades || []).length) {
+    try {
+      const r = await db.rpc('grade_game', { p_game_id: game.game_id });
+      out.graded_by = 'grade_game';
+      const n = (r && typeof r === 'object') ? (r.graded != null ? r.graded : (r.count != null ? r.count : null))
+        : (typeof r === 'number' ? r : null);
+      if (n != null && Number.isFinite(Number(n))) out.graded = Number(n);
+      out.candidates = out.graded;
+    } catch (e) {
+      out.refused.push({ projection_id: null, detail: `grade_game(${game.game_id}) -> ${e.message}` });
+    }
+    return out;
+  }
   DIRECT_GRADE_COLS.forEach(c => { if (pcols.indexOf(c) < 0) gaps.push('projections.' + c); });
-  const out = { game_written: true, graded: 0, candidates: 0, refused: [], gaps, patch };
   if (!gradeCols.length || readCols.indexOf('id') < 0 || readCols.indexOf('game_id') < 0) return out;
 
   const all = await db.select('projections', `select=${readCols.join(',')}&game_id=eq.${enc(game.game_id)}`);
@@ -1573,6 +1596,7 @@ async function main() {
         report.graded += r.graded;
         r.gaps.forEach(gp => { if (report.schema_gaps.indexOf(gp) < 0) report.schema_gaps.push(gp); });
         log(`  settled ${item.label} — graded ${r.graded} of ${r.candidates} counting projection(s)` +
+          (r.graded_by ? ` by the database's ${r.graded_by}` : '') +
           (r.refused.length ? `; ${r.refused.length} grade write(s) refused` : ''));
         if (r.refused.length) {
           /* the score stands and the site grades from it; a grade the

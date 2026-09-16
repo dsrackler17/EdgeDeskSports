@@ -437,6 +437,8 @@ DRIVES.push((async () => {
     projections: { properties: Object.fromEntries(['id', 'submission_id', 'model_id', 'game_id', 'sport_code', 'season', 'week',
       'pick_side', 'projected_spread', 'projected_total', 'proj_home_score', 'proj_away_score', 'home_win_prob',
       'data_origin', 'received_at', 'is_late', 'is_graded_candidate', 'resolution_status'].map(c => [c, {}])) },
+    grades: { properties: Object.fromEntries(['projection_id', 'game_id', 'model_id', 'pick_result', 'margin_error',
+      'total_error', 'brier', 'grading_version', 'graded_at'].map(c => [c, {}])) },
   } };
   chk('the score table is found by shape under either name, and never the view',
     S.scoreTableOf(S.columnsFrom(PROD)) === 'results' && S.scoreTableOf(S.columnsFrom(REAL)) === 'game_results'
@@ -456,6 +458,7 @@ DRIVES.push((async () => {
       return reply(200, [{ id: 'g1', ...body }]);
     }
     if (u.indexOf('/rest/v1/projections?select=') >= 0 && m === 'GET') return reply(200, PROJ);
+    if (u.indexOf('/rest/v1/rpc/grade_game') >= 0 && m === 'POST') return reply(200, 3);
     return reply(404, { message: 'no route ' + m + ' ' + u });
   };
   const pdb = S.dbClient({ url: 'https://x.supabase.co', key: 'svc' }, prodFetch);
@@ -472,6 +475,28 @@ DRIVES.push((async () => {
   chk('PRODUCTION SHAPE  and the games row is marked final', pst && pst.body.status === 'final' && Object.keys(pst.body).length === 1, pst && pst.body);
   chk('PRODUCTION SHAPE  the game is written, with no gap on the results columns it has',
     pout.game_written === true && !pout.gaps.some(g => /^results\./.test(g)), pout.gaps);
+  /* grades live in their own table there, and the database has the routine
+     that fills it: projections carries no grade column, so the routine is
+     asked by game instead of PATCHing columns that do not exist */
+  const gg = prodCalls.find(c => c.method === 'POST' && c.url.indexOf('/rest/v1/rpc/grade_game') >= 0);
+  chk('PRODUCTION SHAPE  grading goes through grade_game(p_game_id), the database\'s own routine',
+    gg && gg.body.p_game_id === 'g1' && gg.headers['content-profile'] === 'collective' && pout.graded_by === 'grade_game'
+      && pout.graded === 3 && !prodCalls.some(c => c.method === 'PATCH' && c.url.indexOf('/projections') >= 0)
+      && !pout.gaps.some(g => /^projections\./.test(g)),
+    { gg: gg && gg.body, out: pout });
+  chk('PRODUCTION SHAPE  a routine the database refuses is reported as a refused grade, and the score still stands',
+    await (async () => {
+      const calls2 = [];
+      const f2 = async (url, opts) => {
+        const u = String(url), m = (opts && opts.method) || 'GET';
+        calls2.push({ url: u, method: m });
+        if (u.indexOf('/rpc/grade_game') >= 0) return { ok: false, status: 404, text: async () => JSON.stringify({ code: 'PGRST202', message: 'Could not find the function collective.grade_game' }) };
+        return prodFetch(url, opts);
+      };
+      const d2 = S.dbClient({ url: 'https://x.supabase.co', key: 'svc' }, f2);
+      const o2 = await S.settleDirect(d2, pschema, unsettled, TCU_FINAL, null);
+      return o2.game_written === true && o2.refused.length === 1 && /grade_game\(g1\)/.test(o2.refused[0].detail) && /PGRST202/.test(o2.refused[0].detail);
+    })());
   let noTable = null;
   try { await S.settleDirect(pdb, { games: pschema.games, game_detail: pschema.game_detail, projections: [] }, unsettled, TCU_FINAL, null); }
   catch (e) { noTable = e.message; }
