@@ -172,6 +172,9 @@ jobs:
       # chart this job just cached, coaching, the NFL report), measured,
       # sourced and inferred kept apart. Copies; computes nothing new.
       - name: Team identity profiles for the research desk
+        run: node tools/football/fetch_nfl_feeds.js || true
+
+      - name: Team identity profiles
         run: node tools/football/build_team_identity.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
 

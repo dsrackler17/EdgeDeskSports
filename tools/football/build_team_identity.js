@@ -219,8 +219,25 @@ function fbsTeams(inputs, season) {
 const NFL_UNITS = ['off_epa_play', 'pass_epa_db', 'rush_epa_att', 'expl_pass', 'expl_rush', 'sack_rate_all', 'pass_rate', 'plays', 'def_epa_play', 'def_pass_epa_db', 'def_rush_epa_att', 'def_expl_pass', 'def_expl_rush', 'sack_rate_made', 'def_qb_hit_rate', 'pts_for', 'pts_against'];
 const NFL_LOWER_BETTER = { sack_rate_all: true, def_epa_play: true, def_pass_epa_db: true, def_rush_epa_att: true, def_expl_pass: true, def_expl_rush: true, pts_against: true };
 function nflTeams(inputs, season) {
-  const { N, SN, INJ, TW, DEPTH } = inputs;
+  const { N, SN, INJ, TW, DEPTH, QBW } = inputs;
   const out = {};
+  /* per-quarterback season EPA per dropback from the player-week feed (summed counts, not a mean of rates) */
+  const qbEpa = {};
+  if (QBW && QBW.text && R) {
+    R.parseCsv(QBW.text, { columns: ['player_id', 'player_display_name', 'position', 'season', 'week', 'team', 'attempts', 'sacks_suffered', 'passing_epa', 'passing_cpoe'] }).forEach((r) => {
+      if (r.position !== 'QB' || num(r.season) !== season) return;
+      const id = r.player_id; if (!id) return;
+      const e = (qbEpa[id] = qbEpa[id] || { player_id: id, name: r.player_display_name, team: r.team, dropbacks: 0, attempts: 0, epa: 0, games: 0, cpoe_num: 0 });
+      const att = num(r.attempts) || 0, sk = num(r.sacks_suffered) || 0, epa = num(r.passing_epa);
+      if (epa == null) return;
+      e.dropbacks += att + sk; e.attempts += att; e.epa += epa; e.games += 1; e.team = r.team || e.team; if (num(r.passing_cpoe) != null) e.cpoe_num += num(r.passing_cpoe) * att;
+    });
+  }
+  const qbAsOf = QBW && QBW.mtime ? QBW.mtime : null;
+  function qbCard(id) {
+    const e = id ? qbEpa[id] : null; if (!e || !e.dropbacks) return null;
+    return { player_id: e.player_id, name: e.name, dropbacks: e.dropbacks, games: e.games, epa_per_dropback: r4(e.epa / e.dropbacks), cpoe: e.attempts ? r2(e.cpoe_num / e.attempts) : null, reliability: r3(Math.min(1, e.dropbacks / 250)), basis: 'this season\u2019s passing EPA over attempts plus sacks, raw, NOT opponent-adjusted', source: 'nflverse stats_player_week_' + season + '.csv (cached feed)', as_of: qbAsOf };
+  }
   const names = {};
   if (N.data && N.data.teams) Object.keys(N.data.teams).forEach((c) => { names[c] = N.data.teams[c].team || c; });
   /* per team-week rows, then per game with the opponent's row for the defensive side */
@@ -274,7 +291,8 @@ function nflTeams(inputs, season) {
     const quarterback = { starter: st ? { name: st.player_name || null, id: st.player_id || null, status: st.status || null, confirmed: !!st.confirmed, announced: !!st.announced, basis: st.basis || null, source: st.source || null, published_at: st.published_at || null, retrieved_at: st.retrieved_at || null } : null,
       backup, competition: st && st.competition ? { contested: !!st.competition.contested, games: num(st.competition.games), players: (st.competition.players || []).slice(0, 4).map((x) => ({ player_id: x.player_id, player_name: x.player_name, dropbacks: num(x.dropbacks), share: r3(x.share) })) } : null,
       experience: st && st.experience ? { starts: num(st.experience.starts), dropbacks: num(st.experience.dropbacks), seasons_observed: num(st.experience.seasons_observed) } : null, room_rating: null,
-      epa: null, epa_note: 'per-quarterback EPA is not on file for the NFL in this build (the player-week feed is not cached); the club\u2019s passing EPA per dropback stands in' };
+      epa: (function () { const sId = st ? st.player_id : null; const bId = depthQbs && depthQbs[2] ? depthQbs[2].gsis_id : null; const sc = qbCard(sId), bc = qbCard(bId); return sc || bc ? { season: sc, backup_season: bc, career: null, career_note: 'career EPA is not cached for the NFL; only this season\u2019s player-week rows are' } : null; })(),
+      epa_note: QBW && QBW.ok ? (st && st.player_id && !qbCard(st.player_id) ? 'the named starter has no player-week rows this season yet; the club\u2019s passing EPA per dropback stands in' : null) : 'per-quarterback EPA is not on file for the NFL in this build (the player-week feed is not cached); the club\u2019s passing EPA per dropback stands in' };
     const inj = INJ.data && INJ.data.teams ? INJ.data.teams[code] : null;
     const groups = { OL: [], DL: [], DB: [], LB: [], WR_TE: [], RB: [], QB: [], other: [] };
     const OLr = /^(OT|OG|C|G|T|OL|LT|RT|LG|RG)$/i, DLr = /^(DE|DT|NT|DL|EDGE)$/i, DBr = /^(CB|S|FS|SS|DB|NB)$/i, WRr = /^(WR|TE)$/i, RBr = /^(RB|FB|HB)$/i, LBr = /^(LB|ILB|MLB|OLB)$/i;
@@ -336,8 +354,10 @@ function build(opts) {
       : readText('football/nfl/.cache/https_github.com_nflverse_nflverse_data_releases_download_stats_team_stats_team_week_' + season + '.csv'),
   };
   inputs.DEPTH = depthChartQbs(season);
+  inputs.QBW = opts.player_week_csv != null ? { ok: true, text: String(opts.player_week_csv), mtime: opts.player_week_as_of || null, fixture: true }
+    : readText('football/nfl/.cache/https_github.com_nflverse_nflverse_data_releases_download_stats_player_stats_player_week_' + season + '.csv');
   const sources = {};
-  Object.keys(inputs).forEach((k) => { const v = inputs[k]; if (!v || k === 'DEPTH') return; sources[k] = v.path ? { path: v.path, ok: v.ok, error: v.error, generated_at: v.data && (v.data.generated_at || v.data.retrieved_at || v.data.data_as_of) || null } : { path: v.fixture ? 'FIXTURE (labelled test input, not the feed)' : 'football/nfl/.cache/stats_team_week_' + season + '.csv', ok: !!v.ok, retrieved_at: v.mtime || null }; });
+  Object.keys(inputs).forEach((k) => { const v = inputs[k]; if (!v || k === 'DEPTH') return; sources[k] = v.path ? { path: v.path, ok: v.ok, error: v.error, generated_at: v.data && (v.data.generated_at || v.data.retrieved_at || v.data.data_as_of) || null } : { path: v.fixture ? 'FIXTURE (labelled test input, not the feed)' : 'football/nfl/.cache/' + (k === 'QBW' ? 'stats_player_week_' : 'stats_team_week_') + season + '.csv', ok: !!v.ok, retrieved_at: v.mtime || null }; });
   sources.DEPTH = { path: 'football/data/cache/nfl_depth_' + season + '.csv', ok: Object.keys(inputs.DEPTH).length > 0, clubs: Object.keys(inputs.DEPTH).length };
   const fbs = RK.ok ? fbsTeams(inputs, season) : { teams: {}, league_means: {} };
   const nfl = nflTeams(inputs, season);

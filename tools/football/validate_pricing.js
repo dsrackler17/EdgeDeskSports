@@ -48,7 +48,8 @@
    same tier rule, and says where every number came from.
 
    Usage
-     node tools/football/validate_pricing.js               # NFL replay (cached feeds)
+     node tools/football/validate_pricing.js               # NFL replay (fetches missing team-week seasons)
+     node tools/football/validate_pricing.js --offline     # cached feeds only
      node tools/football/validate_pricing.js --sport cfb   # copy the CFB report
      node tools/football/validate_pricing.js --check       # exit 1 if the artifact is stale
    =========================================================================== */
@@ -110,7 +111,8 @@ function replayNfl(archive, opts) {
       const req = { sport: 'nfl', state: st, season: g.season, game: { home: g.home, away: g.away, week: g.week, home_rest: g.ctx.home_rest, away_rest: g.ctx.away_rest, roof: g.ctx.roof, surface: g.ctx.surface, div_game: g.ctx.divisional ? 1 : 0, temp: g.ctx.temp, wind: g.ctx.wind, home_qb_id: g.ctx.home_qb_id, away_qb_id: g.ctx.away_qb_id }, market: { spread_line: -g.close.home_line, total_line: g.close.total } };
       let p = null; try { p = E.predictGame(req); } catch (_) { p = null; }
       if (p && p.status === 'PREDICTED' && (st.ngames[g.home] || 0) >= 8 && (st.ngames[g.away] || 0) >= 8) {
-        rows.push({ id: g.id, season: g.season, week: g.week, type: g.type, model: p.model.fair_spread, close: -g.close.home_line, margin: g.margin, model_total: p.model.fair_total, close_total: g.close.total, points: g.points, p_home: p.model.home_win_prob, ml_home: g.close.home_moneyline, ml_away: g.close.away_moneyline });
+        rows.push({ id: g.id, season: g.season, week: g.week, type: g.type, model: p.model.fair_spread, close: -g.close.home_line, margin: g.margin, model_total: p.model.fair_total, close_total: g.close.total, points: g.points, p_home: p.model.home_win_prob, ml_home: g.close.home_moneyline, ml_away: g.close.away_moneyline,
+          ctx: { dome: g.ctx.roof === 'dome' || g.ctx.roof === 'closed', temp: g.ctx.temp, wind: g.ctx.wind, rest_diff: (g.ctx.home_rest != null && g.ctx.away_rest != null) ? g.ctx.home_rest - g.ctx.away_rest : null, divisional: !!g.ctx.divisional, grass: g.ctx.surface === 'grass', qb_known: !!(g.ctx.home_qb_id && g.ctx.away_qb_id) } });
       } else refused++;
     }
     const pair = stwByGame[g.id];
@@ -215,6 +217,69 @@ function scoreMoneyline(rows) {
   return { n: ev.length, holdouts, brier, tier, tier_basis: tier === 'PROBABILITY' ? 'the blended win probability beats the de-vigged market Brier on the held-out seasons' : 'the model does not improve on the de-vigged market win probability; the market is the fair price', required_edge_points: null };
 }
 
+/* ------------------------------------------------ the feature intake */
+/** Candidate corrections to the blend, each fitted on seasons before S and scored on S, paired against the blend itself.
+    A candidate EARNS nothing here: the verdict is written to feature-status-nfl.json for a reviewed change, never applied. */
+const FEATURE_RULES = { min_holdout_seasons: 2, p_max: 0.05, min_pooled_improvement: 0.02, max_season_degradation: 0.15 };
+const CANDIDATES = {
+  spread: [
+    { id: 'rest_diff', label: 'rest-day difference (home minus away)', f: (r) => (r.ctx && r.ctx.rest_diff != null ? r.ctx.rest_diff : 0) },
+    { id: 'divisional', label: 'division game', f: (r) => (r.ctx && r.ctx.divisional ? 1 : 0) },
+    { id: 'dome', label: 'dome or closed roof', f: (r) => (r.ctx && r.ctx.dome ? 1 : 0) },
+    { id: 'cold', label: 'kickoff temperature below 40F (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.temp != null && r.ctx.temp < 40 ? 1 : 0) },
+    { id: 'wind', label: 'wind above 15 mph (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.wind != null && r.ctx.wind > 15 ? 1 : 0) },
+    { id: 'qb_unknown', label: 'a starting quarterback unknown to the feed', f: (r) => (r.ctx && !r.ctx.qb_known ? 1 : 0) },
+  ],
+  total: [
+    { id: 'dome', label: 'dome or closed roof', f: (r) => (r.ctx && r.ctx.dome ? 1 : 0) },
+    { id: 'cold', label: 'kickoff temperature below 40F (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.temp != null && r.ctx.temp < 40 ? 1 : 0) },
+    { id: 'wind', label: 'wind above 15 mph (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.wind != null && r.ctx.wind > 15 ? 1 : 0) },
+    { id: 'divisional', label: 'division game', f: (r) => (r.ctx && r.ctx.divisional ? 1 : 0) },
+  ],
+};
+function pairedT(a, b) { /* paired two-sided t on per-game absolute errors: a = baseline, b = candidate */
+  const d = a.map((x, i) => x - b[i]); const n = d.length; if (n < 30) return { t: null, p: null };
+  const m = mean(d); const sd = Math.sqrt(d.reduce((s2, x) => s2 + (x - m) * (x - m), 0) / (n - 1)) || 1e-9; const t = m / (sd / Math.sqrt(n));
+  return { t: r3(t), p: r4(2 * (1 - normCdf(Math.abs(t)))) };
+}
+function featureArms(rows, market) {
+  const cfg = market === 'total' ? { modelOf: (r) => r.model_total, closeOf: (r) => r.close_total, actualOf: (r) => r.points } : { modelOf: (r) => r.model, closeOf: (r) => r.close, actualOf: (r) => r.margin };
+  const evalRows = rows.filter((r) => cfg.modelOf(r) != null && cfg.closeOf(r) != null && cfg.actualOf(r) != null && r.ctx);
+  const arms = {};
+  CANDIDATES[market].forEach((c) => {
+    const seasons = []; const baseErr = [], candErr = []; let coefLast = null;
+    for (let S = RULES.first_holdout; S <= RULES.last; S++) {
+      const tune = evalRows.filter((r) => r.season < S && r.season >= RULES.first_eval), test = evalRows.filter((r) => r.season === S);
+      if (tune.length < 300 || !test.length) continue;
+      const base = ols(tune, [cfg.closeOf, (r) => cfg.modelOf(r) - cfg.closeOf(r)], cfg.actualOf);
+      const cand = ols(tune, [cfg.closeOf, (r) => cfg.modelOf(r) - cfg.closeOf(r), c.f], cfg.actualOf);
+      coefLast = r4(cand.coef[3]);
+      const be = test.map((r) => Math.abs(cfg.actualOf(r) - base.pred(r))), ce = test.map((r) => Math.abs(cfg.actualOf(r) - cand.pred(r)));
+      baseErr.push(...be); candErr.push(...ce);
+      seasons.push({ season: S, n: test.length, base_mae: r3(mean(be)), candidate_mae: r3(mean(ce)), improvement: r3(mean(be) - mean(ce)), coef: coefLast });
+    }
+    const pooled = seasons.length ? r3(mean(baseErr) - mean(candErr)) : null;
+    const pt = pairedT(baseErr, candErr);
+    const worstSeason = seasons.length ? Math.min(...seasons.map((x) => x.improvement)) : null;
+    const reasons = [];
+    if (seasons.length < FEATURE_RULES.min_holdout_seasons) reasons.push('fewer than ' + FEATURE_RULES.min_holdout_seasons + ' held-out seasons');
+    if (pooled == null || pooled < FEATURE_RULES.min_pooled_improvement) reasons.push('pooled improvement ' + pooled + ' below ' + FEATURE_RULES.min_pooled_improvement + ' points of MAE');
+    if (pt.p == null || pt.p >= FEATURE_RULES.p_max) reasons.push('paired p ' + pt.p + ' not below ' + FEATURE_RULES.p_max);
+    if (worstSeason != null && worstSeason < -FEATURE_RULES.max_season_degradation) reasons.push('a held-out season degraded by ' + Math.abs(worstSeason) + ' (limit ' + FEATURE_RULES.max_season_degradation + ')');
+    const status = reasons.length ? (pooled != null && pooled > 0 && pt.p != null && pt.p < 0.2 ? 'CANDIDATE' : 'REJECTED') : 'VALIDATED';
+    arms[c.id] = { label: c.label, market, status, pooled_improvement_mae: pooled, paired_t: pt.t, paired_p: pt.p, holdout_seasons: seasons, latest_coef: coefLast, reasons, basis: 'the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors' };
+  });
+  return arms;
+}
+function featureStatus(rep) {
+  return {
+    schema: 'edgedesk_feature_status_nfl_v1', generated_at: new Date().toISOString(), rules: FEATURE_RULES,
+    frame: 'candidate context terms on top of the validated projection-market blend, NFL 2016-2025 replay, held out 2019-2025',
+    statuses: ['VALIDATED', 'CANDIDATE', 'REJECTED'], arms: { spread: featureArms(rep.rows, 'spread'), total: featureArms(rep.rows, 'total') },
+    note: 'A VALIDATED arm is a reviewed change to the engine or the blend, never an edit made here. Nothing in this file is applied to a price.',
+  };
+}
+
 function buildNfl() {
   if (!fs.existsSync(ARCHIVE)) throw new Error('no closing-line archive; run tools/football/build_lines_archive.js first');
   const archive = JSON.parse(fs.readFileSync(ARCHIVE, 'utf8'));
@@ -222,6 +287,7 @@ function buildNfl() {
   const spread = scoreMarket(rep.rows, { modelOf: (r) => r.model, closeOf: (r) => r.close, actualOf: (r) => r.margin });
   const total = scoreMarket(rep.rows, { modelOf: (r) => r.model_total, closeOf: (r) => r.close_total, actualOf: (r) => r.points });
   const moneyline = scoreMoneyline(rep.rows);
+  try { const fsArt = featureStatus(rep); fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(path.join(OUT_DIR, 'feature-status-nfl.json'), JSON.stringify(fsArt, null, 1)); const flat = [].concat(Object.values(fsArt.arms.spread), Object.values(fsArt.arms.total)); console.log('feature intake: ' + flat.filter((a) => a.status === 'VALIDATED').length + ' validated, ' + flat.filter((a) => a.status === 'CANDIDATE').length + ' candidates, ' + flat.filter((a) => a.status === 'REJECTED').length + ' rejected -> football/validation/feature-status-nfl.json'); } catch (e) { console.error('feature intake failed: ' + e.message); }
   return {
     schema: SCHEMA, sport: 'americanfootball_nfl', generated_at: new Date().toISOString(),
     frame: { engine: 'football/engine.js ' + (E.version() || ''), params_trained_through: E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : null, replay: 'cold from ' + RULES.replay_from + ' in kickoff order; seeds discarded; a game is projected from the state before it and absorbed after; both clubs need 8 absorbed games', eval_window: RULES.first_eval + '-' + RULES.last, holdout_window: RULES.first_holdout + '-' + RULES.last, archive: path.relative(ROOT, ARCHIVE), seasons_loaded: rep.seasons_loaded, games_scored: rep.rows.length, games_absorbed: rep.absorbed, refused: rep.refused, without_team_week_rows: rep.no_rows,
@@ -254,9 +320,21 @@ function buildCfb() {
   };
 }
 
-function main() {
+/** The historical team-week files the replay needs, fetched into the gitignored cache when absent (public, keyless). */
+async function ensureTeamWeek() {
+  const missing = []; for (let s = RULES.replay_from; s <= RULES.last; s++) if (!fs.existsSync(STW(s))) missing.push(s);
+  for (const s of missing) {
+    const url = 'https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_' + s + '.csv';
+    try { const r = await fetch(url, { redirect: 'follow' }); if (!r.ok) throw new Error('HTTP ' + r.status); const t = await r.text(); fs.mkdirSync(CACHE, { recursive: true }); fs.writeFileSync(STW(s), t); console.log('fetched stats_team_week_' + s + '.csv'); }
+    catch (e) { console.error('could not fetch stats_team_week_' + s + '.csv: ' + e.message + ' (the season is skipped in the replay)'); }
+  }
+  return missing.length;
+}
+
+async function main() {
   const args = process.argv.slice(2);
   const sport = args.includes('--sport') ? args[args.indexOf('--sport') + 1] : 'nfl';
+  if (sport !== 'cfb' && !args.includes('--offline')) await ensureTeamWeek();
   const art = sport === 'cfb' ? buildCfb() : buildNfl();
   const out = path.join(OUT_DIR, 'pricing_' + sport + '.json');
   const m = art.markets;
@@ -270,5 +348,5 @@ function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(out, JSON.stringify(art, null, 1)); console.log('wrote ' + path.relative(ROOT, out));
 }
 
-module.exports = { replayNfl, scoreMarket, scoreMoneyline, atsTable, requiredEdge, passes, calibration, ols, buildCfb, RULES, SCHEMA, THRESHOLDS };
-if (require.main === module) main();
+module.exports = { replayNfl, scoreMarket, scoreMoneyline, atsTable, requiredEdge, passes, calibration, ols, buildCfb, featureArms, featureStatus, pairedT, FEATURE_RULES, CANDIDATES, RULES, SCHEMA, THRESHOLDS };
+if (require.main === module) main().catch((e) => { console.error(e && e.stack || e); process.exit(2); });

@@ -281,9 +281,25 @@ jobs:
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
+      - name: NFL feeds for the identity and pricing builds (games, team-week, player-week)
+        run: node tools/football/fetch_nfl_feeds.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
       - name: Team identity profiles for the research desk
         run: node tools/football/build_team_identity.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # Slice 4: the closing-line archive and the pricing validation the desk
+      # prices from. The validation replays twenty seasons of the NFL engine
+      # against the close (a few seconds once the team-week files are cached).
+      - name: Closing-line archive
+        run: node tools/football/build_lines_archive.js
+        continue-on-error: true
+
+      - name: Pricing validation (NFL replay, CFB report copy)
+        run: node tools/football/validate_pricing.js && node tools/football/validate_pricing.js --sport cfb
         continue-on-error: true
 
       - name: FBS coverage gate
@@ -394,4 +410,5 @@ jobs:
             football/matchup/metrics.json \
             football/fbs/coverage.json football/fbs/slate.json \
             football/starters football/matchup \
-            football/venues football/coaching
+            football/venues football/coaching \
+            football/pricing football/validation/pricing_nfl.json football/validation/pricing_cfb.json

@@ -59,6 +59,9 @@ jobs:
         run: node tools/football/build_matchup_metrics.js
 
       # The NFL identity profiles carry the report by position group.
+      - name: NFL feeds for the identity build (games, team-week, player-week)
+        run: node tools/football/fetch_nfl_feeds.js || true
+
       - name: Rebuild the team identity profiles
         run: node tools/football/build_team_identity.js
 
