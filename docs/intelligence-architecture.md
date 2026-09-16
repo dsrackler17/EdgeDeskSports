@@ -1,4 +1,4 @@
-# EdgeDesk Intelligence — architecture after Slice 1 (truth and routing)
+# EdgeDesk Intelligence — architecture after Slice 2 (truth, routing and football intelligence)
 
 This describes how a research turn flows now, what each layer owns, how to
 switch each piece off, and what the next slices are. The audit that preceded
@@ -10,7 +10,8 @@ layer are in `docs/intelligence.md`.
 ```
 question ─▶ classify (words) ─▶ resolve the game on the published cards
         ─▶ ONE research context ─▶ re-classify with the sport known
-        ─▶ Dal: slate artifact + cfb schema + signals + availability (under the caller's JWT)
+        ─▶ Dal: slate artifacts (FBS card, NFL card) + cfb schema + signals + availability (under the caller's JWT)
+        ─▶ Dal.getFootballContext(): matchup metrics + forecast for the one game  ← Slice 2
         ─▶ rankSlate ─▶ evidence packets ─▶ EDINTEL.decide() per quoted selection
         ─▶ EDRESEARCH.buildResearchPacket()          ← NEW: one normalised packet per game
         ─▶ EDRESEARCH.classifyResearch()             ← NEW: PASS / RESEARCH LEAD / PRICE DEPENDENT /
@@ -54,14 +55,18 @@ output and returns one envelope, whether it succeeded or not:
 | `get_game_context`, `get_current_market`, `get_market_history`, `get_best_available_price`, `get_model_projection`, `get_projection_drivers`, `get_source_manifest`, `get_results_clv_and_calibration` | data | the packet already built for the turn (no database call inside a tool) |
 | `calculate_implied_probability`, `remove_vig` (proportional / additive / power), `calculate_ev`, `calculate_kelly_fraction`, `run_scenario_analysis` (price ladder, line sensitivity) | calc | nothing |
 
-Tools listed in the spec that Slice 1 does not implement are absent from the
-registry on purpose rather than stubbed: `get_team_profile`,
-`get_player_profile`, `get_roster_and_depth_chart`, `get_injury_report`,
-`get_weather_and_venue`, `get_schedule_rest_and_travel`,
-`get_matchup_metrics`, `get_recent_form`, `get_opponent_adjusted_form`,
-`get_coaching_and_scheme_context`, `get_historical_comparables`,
-`get_public_sharp_context`, `search_internal_research`. Slice 2 adds the
-football ones over the artifacts the audit found unrouted.
+Slice 2 added the football tools over the packet's new layers:
+`get_matchup_metrics` (opponent-adjusted unit pairs, ratings, profiles),
+`get_injury_report` (availability per side plus the official NFL report),
+`get_weather_and_venue`, `get_roster_and_depth_chart` (projected
+quarterbacks only; no full depth chart is published),
+`get_schedule_rest_and_travel`, `get_team_profile` (`{side}`),
+`get_recent_form`, `get_opponent_adjusted_form` and
+`get_coaching_and_scheme_context`. Every one reads the packet, so a layer
+that was not retrieved is a failure envelope naming the missing field.
+Still absent on purpose rather than stubbed: `get_player_profile`,
+`get_historical_comparables`, `get_public_sharp_context`,
+`search_internal_research`.
 
 ### The tool loop (off by default)
 
@@ -167,25 +172,52 @@ critic is exercised with chosen texts), the live Supabase tables (fixtures),
 the production build (no egress; `intel:doctor` from a machine that can reach
 it), and the tool loop against the real API.
 
-## 9. Next slices
+## 9. Slice 2 — football intelligence (shipped)
 
-**Slice 2 — football intelligence.** The audit's largest unrouted data:
-`football/rankings/current.json` (opponent-adjusted unit metrics),
-`football/injuries/nfl_2026.json`, `football/starters/*`,
-`football/venues/forecasts.json`, `football/matchup/profiles_2026.json`,
-`football/coaching/continuity.json`. Plan: a weekly-build step writes a
-compact per-team `football/matchup/metrics.json` (~100 KB) from
-`current.json` and `profiles_2026.json`; `Dal` reads it like the slate;
-`turnResearchPacket` fills `drivers` via `EDINTEL.matchupDrivers` and
-`matchup` with the metric pairs; `get_matchup_metrics`, `get_injury_report`,
-`get_weather_and_venue`, `get_roster_and_depth_chart`,
-`get_schedule_rest_and_travel` join the registry over the same artifacts.
-The NFL projection needs a Node builder for `football/nfl/slate.json`
-mirroring `fbPredict()` so the function has an NFL model to quote.
+The audit's largest unrouted data is now routed through two committed
+artifacts, both compact copies of what the football builds already publish.
+Neither computes anything new.
+
+| artifact | schema | built by | carries |
+|---|---|---|---|
+| `football/matchup/metrics.json` | `edgedesk_matchup_metrics_v1` | `tools/football/build_matchup_metrics.js` (starter-context, injury-sync and weekly-build jobs) | per FBS team: ETSR and rating confidence, the offense/defense/sub-unit metric records the rankings build used (raw, adjusted, league, z, sample), the play profile, the projected starter, coaching continuity; per NFL club: the projected starter and the official injury report |
+| `football/nfl/slate.json` | `edgedesk_nfl_slate_v1` | `tools/football/build_nfl_slate.js` (starter-context job; `--offline` from the cache) | the browser's own `edgedesk_football` projection run through the same module in Node: fair spread and total, win probability, p10/p50/p90 home margin, the engine's contributions, rest, roof, surface, the schedule feed's starter, and the engine's validation record |
+
+`Dal.getFootballContext()` reads both (memoised, counted against the
+retrieval budget, which rose by three per depth) for a single-game football
+turn, plus `football/venues/forecasts.json` for a college game with a
+forecast row. `turnResearchPacket` then fills the packet's `drivers`
+(`EDINTEL.matchupDrivers` both directions, top four each), `starters`,
+`injuries`, `coaching`, `profiles`, `ratings`, `situation.weather`, rest,
+roof and surface. An NFL side with an official report becomes
+`availability.state = OFFICIAL_REPORT` with the listed players; the NFL model
+fields, interval, contributions (as `model.drivers`) and validation come
+from the NFL artifact, so an NFL game now carries a projection the desk may
+quote under the same RESEARCH tier the browser applies.
+
+The NFL card is read only when the turn wants it (the client claims the NFL,
+the words say so, an NFL club resolves, or a carried game id is not on the
+FBS card), so a college question costs no NFL read. The prompt's NFL
+paragraph says what is and is not on file; the college bullet says the
+drivers are unit pairs to be read as such. The panel renders the drivers (or
+the NFL engine's contributions), availability with the report, the projected
+quarterbacks marked not confirmed, and the situation, each with its source,
+observed time and freshness badge (`footballEvidenceHTML` in `app.html`,
+covered by `structured_ui.test.js`).
+
+Verified by `tools/football/matchup_metrics.test.js`,
+`tools/football/nfl_slate.test.js`, the `golden NFL` and `football
+intelligence` families in `evals.test.js`, and the existing suites.
+
+## 10. Next slices
 
 **Slice 3 — market intelligence.** Per-book board from `book_quotes`,
 movement series from `signal_ticks`, opener point capture, movement
 classification with honest unknown states, CLV against the correct close.
+Also still open from Slice 2: travel distance and time zone (the venues
+build has the geography; the packet declares it not computed), NFL forecasts
+(the forecast artifact is keyed by ESPN college game id), college
+coordinator turnover (the feed carries no coordinators).
 
 **Slice 4 — learning loop.** Grade `research_packets` on a schedule, drift
 and calibration reports by model version, automated postmortems joining the

@@ -31,12 +31,24 @@ lower-quality source is kept from overwriting a better one.
 |---|---|---|---|---|---|
 | The Odds API | book prices, multi-book | commercial API | `ODDS_API_KEY` (capture) | `last_update` per book, `last_seen_at` per row | `capture` → `signals`, `book_quotes`, `signal_ticks` |
 | cfbfastR-data / sportsdataverse (GitHub) | schedules, play attribution, player box, QB EPA corpus | public, keyless | none | file `generated_at`; corpus commit hash | slate, rankings, players, profiles, EPA |
-| nflverse (GitHub) | NFL schedule + closing consensus, team-week EPA, rosters, official injury report | public, keyless, CORS-open | none | `retrieved_at` on the injuries artifact; release date per CSV | browser NFL board, `football/injuries`, `football/starters` |
+| nflverse (GitHub) | NFL schedule + closing consensus, team-week EPA, rosters, official injury report | public, keyless, CORS-open | none | `retrieved_at` on the injuries artifact; release date per CSV | browser NFL board, `football/injuries`, `football/starters`, `football/nfl/slate.json` (Slice 2) |
 | ESPN (public endpoints) | rosters, depth (CFB endpoint 404s), finals | public | none | sync `generated_at` | rosters, availability collectors, settlers |
 | CollegeFootballData | the `cfb` schema mirror (games, teams, SP+, records, rankings, season stats, roster, recruiting, lines) | API key | `CFBD_API_KEY` (deployed `cfb_ingest`; adapters dark without it) | ingest time (not on every row) | `Dal` reads via `Accept-Profile: cfb` |
-| open-meteo | forecasts per venue | keyless | none | `observed_at` per forecast; carried forecasts keep their original time | `football/venues/forecasts.json` (not yet read by the function) |
+| open-meteo | forecasts per venue | keyless | none | `observed_at` per forecast; carried forecasts keep their original time | `football/venues/forecasts.json` → `Dal.getFootballContext()` for a college game (Slice 2) |
 | MLB Stats API, Baseball Savant | MLB modules | keyless | none | per call | MLB retrieval |
 | Anthropic | the writing model | API | `ANTHROPIC_API_KEY` (server) | n/a | `edgedesk_ai` narration only |
+
+## The desk's own artifacts (Slice 2)
+
+| artifact | from | freshness category | read by |
+|---|---|---|---|
+| `football/matchup/metrics.json` | rankings, profiles, starters (CFB and NFL), coaching, NFL injuries | rating 7 d; injury 24 h (each record keeps its own `as_of` / `retrieved_at`) | `Dal.getMatchupMetrics()` |
+| `football/nfl/slate.json` | nflverse schedule, team-week EPA and rosters through the browser's own engine, in Node | projection 24 h | `Dal.getNflSlateArtifact()` |
+
+Both are copies with a `generated_at` and a `sources` block naming the file
+each field came from; a missing upstream (a club with no report, a team
+with no profile) is absent from the artifact, and the packet names it
+missing.
 
 ## Provider interfaces and fallbacks
 

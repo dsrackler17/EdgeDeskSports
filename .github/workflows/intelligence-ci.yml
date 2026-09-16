@@ -30,6 +30,14 @@ on:
       - 'football/fbs/fbs.js'
       - 'football/fbs/slate.json'
       - 'football/availability/current.json'
+      - 'football/matchup/metrics.json'
+      - 'football/nfl/**'
+      - 'football/venues/forecasts.json'
+      - 'tools/football/build_matchup_metrics.js'
+      - 'tools/football/build_nfl_slate.js'
+      - 'tools/football/matchup_metrics.test.js'
+      - 'tools/football/nfl_slate.test.js'
+      - 'tools/football/_module.js'
       - 'app.html'
       - 'package.json'
       - '.github/workflows/intelligence-ci.yml'
@@ -87,6 +95,21 @@ jobs:
         run: node tools/intelligence/structured_ui.test.js
       - name: The deployment doctor never mistakes refused for absent
         run: node tools/intelligence/deploy_doctor.test.js
+
+  football-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The matchup metrics artifact copies, never computes
+        run: node tools/football/matchup_metrics.test.js
+      - name: The committed metrics artifact matches its inputs
+        run: node tools/football/build_matchup_metrics.js --check
+      - name: The NFL slate builder agrees with the browser engine
+        run: node tools/football/nfl_slate.test.js
 
   migrations:
     runs-on: ubuntu-latest

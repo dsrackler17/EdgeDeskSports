@@ -25,26 +25,50 @@ their training code (`football/research/`, `football/cfb_p4/README.md`,
 - **Uncertainty:** the artifact publishes a point estimate; the packet
   declares the missing p10/p90 interval with a reason. Widening for unstable
   quarterbacks, new coaches and thin samples is expressed through the
-  rating's own confidence and gates (`football/rankings/current.json`), not
-  yet through an interval on the projection — Slice 2 work.
-- **Known gaps stated in every packet:** no per-play efficiency ingested
-  server-side (the rankings artifact carries opponent-adjusted unit metrics
-  the browser reads and the function does not yet), availability UNKNOWN for
-  every programme (0 official reports), no weather server-side.
+  rating's own confidence and gates, which since Slice 2 ride in the packet
+  (`ratings.<side>.confidence`, `ratings.<side>.gates`) from
+  `football/matchup/metrics.json`; no interval is published on the CFB
+  projection itself.
+- **Matchup drivers (Slice 2):** the packet's `drivers` are the rankings
+  build's opponent-adjusted unit pairs (`EDINTEL.matchupDrivers`, both
+  directions, top four each), each with raw, adjusted and league values, the
+  sample, a reliability, the side favoured and its source and time. They
+  explain the rating; they are not a second model and produce no number.
+- **Known gaps stated in every packet:** availability UNKNOWN for every
+  programme (0 official reports); weather only where the venue build
+  published a forecast row; travel not computed; coordinator turnover
+  unmeasured.
 - **Label ceiling:** a CFB spread disagreement alone produces RESEARCH LEAD
   or MODEL DISAGREEMENT, never PRICE DEPENDENT; PRICE DEPENDENT requires the
   kernel's market-anchored BET CANDIDATE.
 
-## NFL — `edgedesk_football` (browser-side)
+## NFL — `edgedesk_football_v1.0.0` (feature version `nfl_fv1`, trained through 2025)
 
-- The NFL projection (fair spread, fair total, projected score, win
-  probability, outcome range) is computed in `app.html` from nflverse
-  data and the trained `football/params.js`. **The edge function has no
-  server-side NFL projection**; its NFL slate comes from `public.games` with
-  no model line. A packet for an NFL game therefore carries the model as
-  missing with the reason, and the label is at most RESEARCH LEAD or
-  INSUFFICIENT DATA. Publishing `football/nfl/slate.json` from a Node build
-  is the Slice 2 step that changes this.
+- **Output quoted:** home line, home margin, fair total, home win
+  probability, the p10/p50/p90 home-margin range (`outcome_range`), and the
+  engine's per-feature contributions. Since Slice 2 they are published in
+  `football/nfl/slate.json` by `tools/football/build_nfl_slate.js`, which
+  boots the same football module `app.html` runs, in Node, over the same
+  nflverse feeds; the artifact and the browser agree by construction and the
+  desk quotes the artifact verbatim.
+- **Validation (walk-forward 2016–2025, hyperparameters frozen on ≤2015,
+  carried in the artifact's `engine.validation` and attached to every NFL
+  packet):** spread MAE 10.2 against the closing market's 9.78; against the
+  close the model wins 48.9% at 1+ points of disagreement (n = 1,962) and
+  50.8% at 3+ (n = 870); totals 50.8% at 1+ (n = 2,017) and 51.7% at 3+
+  (n = 940). No band is significant.
+- **Consequence in the desk:** tier RESEARCH — `may_produce_probability`
+  and `may_produce_model_ev` are false, `max_decision` is WATCH. An NFL
+  packet can reach RESEARCH LEAD or MODEL DISAGREEMENT on the projection
+  alone and PRICE DEPENDENT only through a captured price the kernel
+  accepts; it never produces an EV from the model's win probability.
+- **Availability:** the official league report (nflverse) is attached per
+  club with practice status; a side with a report is `OFFICIAL_REPORT`, and
+  players not listed are not on the report rather than healthy. The
+  schedule feed's named starter is carried with `confirmed: false`.
+- **Known gaps stated in every packet:** no forecast (the forecast artifact
+  is keyed by college game id), no play profile or coaching record for NFL
+  clubs, no captured NFL price outside the season's capture window.
 
 ## Rules the desk enforces for every model
 
