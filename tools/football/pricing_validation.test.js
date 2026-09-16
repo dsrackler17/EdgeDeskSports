@@ -60,6 +60,21 @@ const cal = V.calibration([[0.55, 1], [0.55, 0], [0.55, 1], [0.45, 0], [0.45, 0]
 chk('calibration buckets state predicted vs observed', cal.buckets.some((b) => b.bucket === '0.52-0.6' && b.n === 3 && Math.abs(b.observed - 0.667) < 0.01) && cal.brier > 0.2 && cal.brier < 0.26, cal);
 chk('the rules print the multiple-comparison allowance', /seven thresholds/.test(V.RULES.multiple_comparisons) && V.RULES.validated.p_max === 0.01);
 
+/* ---- the feature intake ---------------------------------------------------- */
+const ctxRows = []; let seed = 7;
+const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+for (let s = 2016; s <= 2025; s++) for (let i = 0; i < 260; i++) { const dome = i % 4 === 0; const close = Math.round((rnd() - 0.5) * 20); const noise = (rnd() + rnd() + rnd() - 1.5) * 14; ctxRows.push({ season: s, close, model: close + (rnd() - 0.5) * 4, margin: close + noise + (dome ? 3 : 0), ctx: { dome, temp: dome ? null : 30 + rnd() * 50, wind: rnd() * 20, rest_diff: 0, divisional: i % 2 === 0, grass: true, qb_known: true } }); }
+const arms = V.featureArms(ctxRows, 'spread');
+chk('every candidate arm carries a status, the held-out seasons and its reasons', Object.keys(arms).length === 6 && Object.values(arms).every((a) => /VALIDATED|CANDIDATE|REJECTED/.test(a.status) && a.holdout_seasons.length >= 5 && Array.isArray(a.reasons)), Object.keys(arms));
+chk('a planted three-point dome effect is VALIDATED with a positive coefficient near three', arms.dome.status === 'VALIDATED' && arms.dome.latest_coef > 2 && arms.dome.latest_coef < 4 && arms.dome.pooled_improvement_mae > 0.02 && arms.dome.paired_p < 0.05, arms.dome);
+chk('an absent effect is REJECTED with its reasons named', arms.rest_diff.status === 'REJECTED' && arms.rest_diff.reasons.length >= 1, arms.rest_diff);
+const pt = V.pairedT([1, 2, 3, 4, 5].concat(new Array(40).fill(3)), [1, 2, 3, 4, 5].concat(new Array(40).fill(3)));
+chk('a paired test on identical errors is not significant', pt.p == null || pt.p > 0.5, pt);
+const fsArt = V.featureStatus({ rows: ctxRows });
+chk('the feature status file says a validated arm is a reviewed change, never applied here', /never an edit made here/.test(fsArt.note) && fsArt.arms.spread && fsArt.arms.total);
+const onDisk = path.join(ROOT, 'football', 'validation', 'feature-status-nfl.json');
+if (fs.existsSync(onDisk)) { const f = JSON.parse(fs.readFileSync(onDisk, 'utf8')); chk('the committed NFL feature status carries the rules and every arm\'s reasons', f.rules.min_holdout_seasons === 2 && Object.values(f.arms.spread).every((a) => a.reasons.length > 0 || a.status === 'VALIDATED')); }
+
 /* ---- the artifacts on disk --------------------------------------------- */
 for (const sport of ['nfl', 'cfb']) {
   const p = path.join(ROOT, 'football', 'validation', 'pricing_' + sport + '.json');
