@@ -98,6 +98,15 @@ const LIBS = [
     start: '/*__EDPRICE_START__*/', end: '/*__EDPRICE_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The board layer (Slice 7): scope in the reader's time zone, the eligible
+     slate across sports, qualification and ranking of both pricing methods,
+     the deterministic answer, follow-ups and the record. Server-side only. */
+  {
+    name: 'EDBOARD',
+    src: path.join(FN, '_board.js'),
+    start: '/*__EDBOARD_START__*/', end: '/*__EDBOARD_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
 ];
 
 function block(src, START, END) {

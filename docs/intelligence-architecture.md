@@ -1,4 +1,4 @@
-# EdgeDesk Intelligence — architecture after Slice 3 (truth, routing, football intelligence, the active analyst)
+# EdgeDesk Intelligence — architecture after Slice 7 (truth, routing, football intelligence, the active analyst, the pricer, the board)
 
 This describes how a research turn flows now, what each layer owns, how to
 switch each piece off, and what the next slices are. The audit that preceded
@@ -494,7 +494,97 @@ model version. Without database access it says NO_DATABASE_ACCESS and still
 runs the archive parts. Nothing in the loop promotes a tier, a coefficient
 or a prompt.
 
-## 13. Next slices
+## 13. Slice 7 — the board (a card-wide question, answered across the card)
+
+**What was broken.** "What are the best bets today?" resolved no sport, so
+`runResearch` read no slate index at all; `getSlate()` read the flagged
+`signals` rows across every sport for the next 30 UTC hours and the top row
+by edge became the turn's "focus" — one cached signal standing in for the
+board, decided in isolation, with no projection, no pricing tier, no critic
+and no record. Two faults sat underneath: the MLB module registered the
+generic `best_bets` intent as its own, so `sportOfIntent()` locked every
+best-bets question with no league word to baseball; and the browser's
+`isDailyScan()` caught "best bet", "what should I bet" and "find me an edge"
+and ran its own scan of captured prices without ever calling the desk. Time
+was UTC throughout; nothing excluded a game that had already kicked off;
+follow-ups had no state to carry exclusions or a changed price.
+
+**The kernel (`supabase/functions/edgedesk_ai/_board.js`, `EDBOARD`,
+inlined like the others).** Deterministic and dependency-free; it reads
+EDINTEL and EDPRICE and computes no probability of its own.
+
+| step | owns |
+|---|---|
+| `resolveScope` | sports (the league named > the reader's open game or board > the carried board > every supported sport in season), the window as a calendar span in the reader's IANA zone (`today` = now to local midnight; `tonight` to 06:00; `tomorrow`; `this weekend` Friday–Monday morning; `this week` = 7 days; football with no day = 7 days; otherwise today, said so), markets, unsupported markets (props, team totals, derivatives, futures: declared, never approximated), book preferences, exclusions carried from earlier turns. A missing or invalid zone falls back to `EDGEDESK_DEFAULT_TIMEZONE` (America/New_York) and the answer says so. |
+| `eligible` | drops STARTED (kickoff passed or status final/in-progress), NO_KICKOFF, BEFORE/AFTER_WINDOW, EXCLUDED (by game id or team) and DUPLICATE (same sides, same day, mascot-suffixed names included), and lists what it dropped with why. |
+| `fromDecision` | the MARKET_DEVIG candidate from a decision-layer row: quote (book, line, odds, capture time, kickoff-ladder freshness), the de-vig fair with its method, EV per unit and the probability edge in separate units, the price limit at this line, sourced reasons, the counter-case, what would change it. |
+| `fromPricingRow` | the MODEL_BLEND candidate from the pricing kernel: fair line or total from the validated blend, cover vs break-even, tier, bet-to under VALIDATED/LEAN only, executable or reference-only. Totals and spreads both. |
+| `qualify` | the printed rules R0–R7: outlier → DATA_CHECK (EV past capture's sanity ceiling, or a 7+ point disagreement) and never promoted; fresh executable quote required; market BET CANDIDATE qualifies, WATCH watches, a BET CANDIDATE failing only freshness watches with a re-check; model PLAY qualifies, LEAN_PLAY qualifies only with a live quote and is labelled LEAN, CONDITIONAL/PROBABILITY never; a reference line can only watch with its bet-to. |
+| `rankScore` | edge × freshness weight × tier weight × completeness, labelled UNVALIDATED: it orders what already qualified and cannot promote anything. One emitted opportunity per game. |
+| `build` | coverage per sport (EVALUATED / NO_GAMES / NO_ELIGIBLE_GAMES / RETRIEVAL_FAILED / OUT_OF_SEASON / NOT_SUPPORTED), the ranked list, the watchlist with thresholds, research leads (the favoured side under a RESEARCH tier, research only) when nothing qualifies or watches, data checks, separate quote and research freshness, no forced pick, no bankroll assumption. |
+| `followUp` / `conversationState` / `sanitizeState` | "take that game out", "take North Texas out", "only college football", "another single that isn't in my parlay", "why that one", "what about the under", "I can only get +3 now", "now it's -125", "what would change your mind". The state the client carries is identifiers and the desk's own numbers; everything else is dropped; every price is re-read. |
+| `reprice` | a changed price re-evaluates the de-vig EV at that price; a changed line moves along the model case's cover curve labelled by its tier, or is refused when no model case exists ("needs a captured quote at that number"). |
+| `records` | one `research_packets` row per emitted opportunity (label PRICE DEPENDENT) and per watchlist item (RESEARCH LEAD), packet id a hash of sport, game, market, side, line, odds, book, capture time, method, model version and day — a retry writes nothing twice; the `packet` carries the request scope and exclusions, the quote, fair, edge, threshold, qualification, rank, reasons, assumptions and coverage. A started game never becomes a record. |
+| `promptBlock` / `criticExtras` / `render` | the block the model writes from; the checks that fail an answer recommending a watchlist or data-check side, forcing a pick, sizing a bet, promising, multiplying parlay legs, or naming a selection not on the board; the deterministic answer that replaces rejected prose. |
+
+**The sweep (`sweepBoard` in `index.ts`).** For a SLATE-depth question with
+no single game — a board intent, or a betting word, or a carried-board
+follow-up — every sport in scope is read through the same `getSlateIndex`,
+ranked and decided by the same `rankSlate`/`decideSlate`, and priced by
+`priceBoardGames` (every spread side and total side through EDPRICE, with
+the captured price attached to the side it was captured for and reference
+lines marked non-executable). A sport whose card cannot be read is
+RETRIEVAL_FAILED in coverage, not silence; a card-read failure on a
+question that named no team no longer counts as an ambiguity. The decisions
+and ledger rows the turn publishes become the board's, not the top
+signal's. `research_error` now travels on a dry run when retrieval throws.
+
+**The authorised refresh.** Off by default (`EDGEDESK_QUOTE_REFRESH=0`)
+because it spends odds-API credits. On, a board with a STALE or AGING
+captured price asks the capture function for one pass with the same
+`x-cron-secret` capture checks, once per sport per gap, under a timeout,
+then re-reads. Every outcome is in coverage: NOT_CONFIGURED (naming the
+variables), BLOCKED (CRON_SECRET missing on this function), THROTTLED,
+REFRESHED, FAILED, TIMED_OUT, NOT_NEEDED. An old quote's timestamp is never
+touched.
+
+**The handler.** `body.timezone` (validated) and `research_context.board`
+(sanitised) come in; `board`, `board_state`, `board_write` and, on the
+failure paths, `deterministic_board_answer` go out. The system prompt gains
+`BOARD_CONTRACT`; the user message leads with the board block and the
+evidence budget is cut to 20 KB. `boardCritic` runs the kernel's checks,
+the research kernel's injection scan and a numbers-in-block check; a FAIL
+replaces the prose with `EDBOARD.render`. `publishBoardRecords` writes the
+rows with `on_conflict=packet_id` and ignore-duplicates. `?probe=1` reports
+the kernel, the default zone, the sports and the refresh configuration.
+
+**The client.** `wantsBoard()` routes best-bet phrasings to the desk;
+`isDailyScan()` keeps only the explicit "daily scan / today's research /
+scan the slate" phrasings for the browser's own scan, which is now the
+announced offline fallback when the desk cannot be reached. Every call sends
+the browser's IANA zone and carries `research_context.board` back.
+`boardAnswerHTML` renders the prose, the ranked list with expandable
+evidence (source and time on every reason), the watchlist with thresholds,
+research leads, data checks, unsupported markets, coverage, the window and
+zone, and the two freshness dates; operational states stay in the trace.
+
+**Proof.** `tools/intelligence/board.test.js` (118 assertions: zones and
+windows, started games and duplicates, sign and side, freshness, EV with
+pushes, tiers, one-per-game, no forced pick, follow-ups, repricing, records
+and idempotency, the critic, source text as data), the `board` family in
+`evals.test.js` (42 assertions through the real handler, including the
+record write, the retry, the rejected prose and every follow-up), the panel
+renderer in `structured_ui.test.js`, and `tools/intelligence/board_probe_live.js`
+for the live read-only check against a deployment.
+
+**Still not verified here, and why.** The live Supabase tables and the
+deployed function (no credentials in the build environment; run
+`intel:board:live`); the writing model's prose (the critic is exercised
+with chosen texts); the capture refresh against the real function (off by
+default; the call shape and the throttle are unit-exercised, the credit
+cost is a decision for the account that pays).
+
+## 14. Next slices
 
 **Market intelligence.** Per-book board from `book_quotes`, movement series
 from `signal_ticks` folded into the movement read (a per-book number that

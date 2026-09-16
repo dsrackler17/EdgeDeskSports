@@ -648,8 +648,9 @@ const MLB_PACKET = {
         'San Diego Padres @ Colorado Rockies') == null);
 
     /* ---- the contract the panel now keeps ----------------------------- */
+    /* Slice 7: the subject and the board travel together through carriedContext(), which is LAST_CTX plus the board state. */
     chk('the panel sends the resolved subject back with every question',
-      /research_context\s*:\s*LAST_CTX/.test(APP));
+      /research_context\s*:\s*(LAST_CTX|carriedContext\(\))/.test(APP) && /if\(LAST_BOARD\) c\.board=LAST_BOARD;/.test(APP));
     chk('and keeps a failed response that still carries research',
       /if\(parsed && parsed\.research\)/.test(APP));
     chk('the local deep path is gated on the question being about the open signal',

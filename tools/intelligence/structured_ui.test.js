@@ -56,6 +56,60 @@ const ctx = {
 vm.createContext(ctx);
 vm.runInContext(src + '\nthis.DESK_SECTIONS=DESK_SECTIONS;this.structuredLabelHTML=structuredLabelHTML;this.structuredPanelsHTML=structuredPanelsHTML;this.deskProseHTML=deskProseHTML;this.freshBadge=freshBadge;', ctx);
 
+/* ---- Slice 7: the board renderer ------------------------------------------ */
+{
+  const ba = APP.indexOf('  function boardWhen(c){');
+  const bb = APP.indexOf('  function deskAnswerHTML(answer, S){');
+  chk('the board renderer is in app.html', ba > 0 && bb > ba, { ba, bb });
+  const bsrc = APP.slice(ba, bb);
+  has('the board is rendered before the matchup summary in askAI', APP, "if(d&&d.board&&d.board.schema==='edgedesk_board_v1'){");
+  has('best-bet questions go to the desk', APP, 'if(wantsBoard(t) || (LAST_BOARD && !ctx && !isDailyScan(t))){');
+  has('the local scan is announced as an offline fallback', APP, 'It is an offline fallback, not the desk');
+  has('the board state is carried back', APP, 'if(LAST_BOARD) c.board=LAST_BOARD;');
+  has('the browser sends its time zone', APP, 'timezone:clientTimeZone()');
+  const bctx = { esc: ctx.esc, mdToHtml: ctx.mdToHtml, freshBadge: (f) => '<i class="fb">' + f + '</i>', obsAt: (iso) => iso ? String(iso).slice(0, 16) : '—', marketWord: (m) => m === 'spreads' ? 'spread' : m === 'totals' ? 'total' : 'moneyline', console };
+  vm.createContext(bctx);
+  vm.runInContext(bsrc + '\nthis.boardAnswerHTML=boardAnswerHTML;', bctx);
+  const opp = { id: 'a', sport: 'americanfootball_ncaaf', sport_label: 'college football', game_id: '401858900', matchup: 'North Texas @ Texas State', home: 'Texas State', away: 'North Texas', kickoff: '2026-09-22T21:24:00.000Z', kickoff_local: 'Tue, Sep 22, 4:24 PM CDT', market: 'spreads', side: 'away', selection: 'North Texas', line: -2.5,
+    quote: { book: 'DraftKings', odds_american: -105, odds_decimal: 1.95, captured_at: '2026-09-16T21:11:28.903Z', freshness: 'CURRENT', actionable: true, age_min: 14, source: 'signals (EdgeDesk capture)', executable: true },
+    fair: { method: 'MARKET_DEVIG', label: 'Pinnacle de-vig fair', probability: 0.532, american: -114, validation: { tier: null, note: 'the fair is a de-vigged market reference' } },
+    edge: { ev_per_unit: 0.0374, probability_edge_pp: 1.92, break_even: 0.5128, uncertainty: 'The de-vig fair carries no confidence interval.' },
+    decision: { decision: 'BET CANDIDATE' }, threshold: { kind: 'price', price_limit_american: -112, line: -2.5, method: 'the worst price at which the de-vig fair still clears the floor' },
+    reasons: [{ text: 'Fair price -114 against -105 at DraftKings', source: 'signals (EdgeDesk capture, SHARP_REFERENCE_DEVIG)', observed_at: '2026-09-16T21:11:28.903Z' }, { text: '6 independent book families', source: 'signals', observed_at: '2026-09-16T21:11:28.903Z' }],
+    counter: 'The case is the price, not the matchup.', would_change: ['A price worse than -112 ends this.'], qualification: { status: 'QUALIFIED', rules: ['R3_MARKET: BET CANDIDATE with a live price'], lean: false }, rank: 1,
+    model_case: { status: 'CONDITIONAL', tier: 'RESEARCH', fair_line: -2.5, cover_at_market: 0.5 } };
+  const watch = Object.assign({}, opp, { id: 'w', sport: 'americanfootball_nfl', sport_label: 'NFL', matchup: 'Cincinnati Bengals @ Houston Texans', selection: 'Houston Texans', line: -3, quote: { executable: false, source: 'nflverse consensus (reference, no book, no capture time)', freshness: 'LINE_ONLY' }, fair: { method: 'MODEL_BLEND', fair_line: -3.6, probability: 0.53, validation: { tier: 'LEAN' } }, edge: { probability_edge_pp: 0.6, break_even: 0.524, uncertainty: 'sigma 13.2' }, threshold: { kind: 'line', bet_to_line: -3.5, method: 'the selection line where the fair cover meets break-even', note: 'LEAN tier' }, qualification: { status: 'WATCH', rules: ['R4_MODEL: LEAN_PLAY on a reference line with no executable price'], lean: true } });
+  const board = { schema: 'edgedesk_board_v1', headline: '1 qualified opportunity across 2 sports evaluated for the next 7 days.', opportunities: [opp], watchlist: [watch], research_leads: [], data_checks: [], unsupported: [{ market: 'player_prop', label: 'player props', note: 'EdgeDesk has no pricing method for player props' }], candidates_considered: 9,
+    coverage: [{ sport: 'americanfootball_nfl', label: 'NFL', status: 'EVALUATED', eligible: 7 }, { sport: 'tennis_wta', label: 'WTA tennis', status: 'RETRIEVAL_FAILED', eligible: 0, errors: ['games could not be read (HTTP 500)'] }],
+    scope: { timezone: { zone: 'America/Chicago', source: 'client' }, window: { label: 'the next 7 days' }, follow_up: null }, freshness: { quotes: { newest: '2026-09-16T21:11:28.903Z', oldest: '2026-09-16T21:11:28.903Z' }, research: { newest: '2026-09-16T18:22:49.709Z' } }, note: 'Research, not picks.', no_bankroll_assumption: 'No stake, bankroll or risk preference is assumed.' };
+  const html = bctx.boardAnswerHTML({ board }, 'The one qualified opportunity is North Texas -2.5.');
+  has('the prose leads', html, 'The Desk’s read');
+  has('the pick shows matchup, market and selection', html, '<b>North Texas -2.5</b> — North Texas @ Texas State');
+  has('with its local start time', html, 'Tue, Sep 22, 4:24 PM CDT');
+  has('the book, price and capture time with a freshness badge', html, 'DraftKings -105 · captured 2026-09-16T21:11 (14 min ago) <i class="fb">CURRENT</i>');
+  has('the fair estimate names its method', html, 'fair -114 (Pinnacle de-vig fair)');
+  has('the edge with its uncertainty', html, 'The de-vig fair carries no confidence interval.');
+  has('every reason carries its source and time', html, 'signals (EdgeDesk capture, SHARP_REFERENCE_DEVIG) · 2026-09-16T21:11');
+  has('the counterargument', html, 'Strongest case against');
+  has('what would change it', html, 'A price worse than -112 ends this.');
+  has('the threshold with its method', html, 'Playable to -112 at -2.5');
+  has('the detail is expandable', html, '<details class="dk-more"><summary>Evidence, counter-case, threshold</summary>');
+  has('the watchlist is labelled a threshold, not a bet', html, 'Watchlist — a threshold, not a bet');
+  has('a reference line says it has no executable price', html, 'no executable price captured · nflverse consensus');
+  has('LEAN is said on the watchlist row', html, '<b>LEAN</b>: break-even history, not a profit');
+  has('the unsupported market is named', html, 'EdgeDesk has no pricing method for player props');
+  has('coverage names the failed sport with the reason', html, 'WTA tennis — retrieval failed<div class="m">games could not be read (HTTP 500)</div>');
+  has('the window and time zone are shown', html, 'the next 7 days · America/Chicago');
+  has('quote freshness and research freshness are shown separately', html, 'quotes captured 2026-09-16T21:11 to 2026-09-16T21:11 · research artifacts built 2026-09-16T18:22');
+  has('no bankroll is assumed', html, 'No stake, bankroll or risk preference is assumed.');
+  lacks('no database state reaches the reader', html, 'RETRIEVAL_FAILED');
+  const none = bctx.boardAnswerHTML({ board: Object.assign({}, board, { opportunities: [], headline: 'Nothing qualifies.' }) }, '');
+  has('with no prose and nothing qualified the headline leads', none, '<p>Nothing qualifies.</p>');
+  has('and the watchlist is framed as the closest, not a pick', none, 'Nothing qualifies — the closest, with the number that would change it');
+  const rep = bctx.boardAnswerHTML({ board: Object.assign({}, board, { repriced: { ok: true, selection: 'North Texas', verdict: 'does not clear the floor at -125', note: '', freshness_note: 'The new price is the reader’s report.' } }) }, 'x');
+  has('a repriced follow-up is shown at the top', rep, 'AT YOUR NUMBER');
+}
+
 const S = {
   schema: 'edgedesk_structured_answer_v1', prose_status: 'MODEL', packet_id: '401858900:ca8396f3',
   bottom_line: { label: 'PRICE DEPENDENT', decision: 'BET CANDIDATE', sentence: 'PRICE DEPENDENT — the case rests on the price, and ends when the price does.', read: { text: 'x', author: 'model' } },

@@ -48,6 +48,8 @@ on:
       - 'tools/intelligence/clv.js'
       - 'tools/intelligence/clv.test.js'
       - 'supabase/functions/edgedesk_ai/_pricing.js'
+      - 'supabase/functions/edgedesk_ai/_board.js'
+      - 'tools/intelligence/board.test.js'
       - 'football/fbs/slate.json'
       - 'football/availability/current.json'
       - 'football/matchup/metrics.json'
@@ -124,6 +126,8 @@ jobs:
         run: node tools/intelligence/postmortem.test.js
       - name: The pricing kernel (fair line, bet-to, status, ranked board, sizing gate)
         run: node tools/intelligence/pricing.test.js
+      - name: The board kernel (time zone, eligible slate, qualification, follow-ups, records, critic)
+        run: node tools/intelligence/board.test.js
       - name: The closing-line-value scorecard grades in points and never claims a profit
         run: node tools/intelligence/clv.test.js
       - name: The deployment doctor never mistakes refused for absent
