@@ -59,6 +59,7 @@ missing.
 | `cfbd_advanced_stats` | opponent-adjusted efficiency (college) | yes | `CFBD_API_KEY` | 6 h | BLOCKED naming the key |
 | `book_quotes_recheck` | a fresher captured price | no (EdgeDesk's own capture) | caller's JWT | none | UNAVAILABLE: capture runs on cadence; no live book feed |
 | `web_search` | starter confirmation, line and personnel news | yes (Brave Search API) | `EDGEDESK_SEARCH_API_KEY` | 30 min | BLOCKED naming the key; results are reputable-media tier and never override an official feed |
+| `desk_notes` | starter, OL, personnel, weather, price, projection notes a person recorded with a source | no (the desk's own file) | none | 5 min | UNAVAILABLE: no desk note on file for this question; an expired note is not read |
 
 Free and official providers run first; paid search only for what they
 could not answer, and never past `EDGEDESK_INVESTIGATE_SEARCH_CALLS`. The
@@ -79,6 +80,11 @@ claim a check only for a question in it.
 | `football/validation/feature-status-nfl.json` | the held-out feature intake in the same script | weekly | reviewers; nothing reads it into a price |
 | `football/nfl/slate.json` → `pricing` | the kernel over the slate's reference market at an assumed −110 | with the slate | the Desk's board panel, `get_ranked_slate` |
 | `football/nfl/.cache/stats_player_week_<season>.csv` | nflverse player-week (cached by `tools/football/fetch_nfl_feeds.js`, gitignored) | weekly | the identity build (per-quarterback EPA) |
+| `football/venues/nfl_stadiums.json` (+ `.verification.json`) | hand-entered NFL stadium table, verified by `tools/football/verify_nfl_stadiums.js` against the college register, games.csv, state boxes and time zones | on edit; verified weekly | the identity build (NFL `home_venue`), the slate build (kickoff forecasts), the live forecast provider |
+| `football/pricing/injuries_nfl.json` | nflverse injuries_<season>.csv 2009-2025 as counts by position group per team-week (`tools/football/build_injury_archive.js`) | every six hours with the injury sync | the feature intake's injury arms |
+| `football/pricing/openers_nfl.json` | EdgeDesk's own opener ledger from the nflverse consensus feed (`tools/football/build_lines_archive.js`) | every six hours, daily, weekly | the archive (`open` per game), the CLV scorecard (open-to-close) |
+| `football/notes/current.json` | the desk's notebook, written by `tools/football/add_note.js` with a source, url, publication time, recorder and expiry | on entry; expires in seven days | the `desk_notes` investigation provider |
+| `football/availability/manual/<week>.csv` → `operator.json` | hand-entered availability corrections through `football/availability/import_corrections.js` | on entry; entries expire | `overlay.js`, every availability consumer |
 
 ## Provider interfaces and fallbacks
 

@@ -4102,7 +4102,9 @@ export class Dal {
         out.nfl_away = o.away_id ? nfl[String(o.away_id).toUpperCase()] ?? null : null;
       }
     }
-    if (o.sport === "americanfootball_ncaaf" && o.game_id) {
+    /* Slice 5: the store is keyed by game id for both leagues (the NFL slate
+       build writes its kickoff forecasts under the nflverse game id). */
+    if ((o.sport === "americanfootball_ncaaf" || o.sport === "americanfootball_nfl") && o.game_id) {
       const f = await this.getForecasts();
       if (f.error) out.errors.push(`football/venues/forecasts.json could not be read (${f.error})`);
       const g = f.json?.by_game?.[String(o.game_id)] ?? null;
@@ -21987,6 +21989,36 @@ export const RESEARCH_PROVIDERS: ResearchProvider[] = [
     },
   },
   {
+    /* THE DESK'S OWN NOTEBOOK (Slice 4): what a person looked up when no
+       provider could, recorded with a source, a url, a publication time, a
+       recorder and an expiry by tools/football/add_note.js. Each matching
+       note is reported as FOUND from that source at that time; the loop never
+       calls it a search, and an expired note is not read. */
+    id: "desk_notes", label: "EdgeDesk desk notes (football/notes/current.json, recorded by a person with a source)", answers: ["starting_qb", "starting_qb_confirmation", "ol_availability", "ol_replacement", "defensive_personnel", "weather", "current_price", "opponent_adjusted", "projection"], sports: ["americanfootball_ncaaf", "americanfootball_nfl"], live: false, cost: "free", ttl_ms: 5 * 60_000,
+    configured: () => ({ ok: true, reason: null }),
+    async run(ctx, gaps) {
+      const t0 = Date.now();
+      const key = "desk_notes|file";
+      let notes: any[] | null = investCacheGet(key);
+      if (!notes) {
+        const r = await ctx.dal.getArtifact("football/notes/current.json", { free: true });
+        if (!r.json) return gaps.map((g) => fin({ outcome: "UNAVAILABLE", blocker: `football/notes/current.json could not be read (${r.error ?? "not on file"})`, ms: Date.now() - t0 }, g, this));
+        notes = Array.isArray(r.json.notes) ? r.json.notes : []; investCacheSet(key, notes, this.ttl_ms);
+      }
+      const now = Date.now();
+      const live = notes.filter((n) => n && n.sport === ctx.sport && (!n.expires_at || Date.parse(n.expires_at) > now));
+      const gid = String(ctx.packet?.game?.game_id ?? ctx.research?.context?.game_id ?? "");
+      return gaps.map((g) => {
+        const side = g.side as "home" | "away" | null;
+        const codes = side ? [String((side === "home" ? ctx.home_id : ctx.away_id) ?? ""), String((side === "home" ? ctx.home : ctx.away) ?? "")].map((x) => x.toUpperCase()).filter(Boolean) : [];
+        const hits = live.filter((n) => n.kind === g.id && (!side || codes.includes(String(n.team).toUpperCase())) && (!n.game_id || !gid || String(n.game_id) === gid)).sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at));
+        if (!hits.length) return fin({ outcome: "UNAVAILABLE", blocker: "no desk note on file for this question" + (side ? ` (${codes[0] || side})` : ""), ms: Date.now() - t0 }, g, this);
+        const n = hits[0];
+        return fin({ outcome: "FOUND", finding: `${n.text} — recorded by ${n.recorded_by} from ${n.source}`, value: { note_id: n.id, text: n.text, team: n.team, recorded_by: n.recorded_by, recorded_at: n.recorded_at, url: n.url, others: hits.length - 1 }, source: `${n.source} (${n.url}); desk note recorded by ${n.recorded_by} at ${n.recorded_at}`, source_kind: n.source_kind === "OFFICIAL_SITE" ? "OFFICIAL_REPORT" : "REPUTABLE_MEDIA", observed_at: n.recorded_at, published_at: n.published_at, ms: Date.now() - t0, cost: "free" }, g, this);
+      });
+    },
+  },
+  {
     /* THE FORECAST, LIVE, for a game the venue build did not cover — from the
        same keyless provider the venue build reads, at the kickoff hour. */
     id: "open_meteo_forecast", label: "open-meteo forecast (live, kickoff hour)", answers: ["weather"], sports: ["americanfootball_ncaaf", "americanfootball_nfl"], live: true, cost: "free", ttl_ms: 60 * 60_000,
@@ -21997,7 +22029,7 @@ export const RESEARCH_PROVIDERS: ResearchProvider[] = [
       const roof = ctx.packet?.situation?.roof;
       if (roof && /dome|closed/i.test(String(roof))) return [fin({ outcome: "SKIPPED", blocker: `the roof is ${roof}; a forecast does not apply`, ms: 0 }, g, this)];
       const venue = ctx.identity?.home?.measured?.home_venue ?? null;
-      if (!venue || num(venue.lat) == null || num(venue.lon) == null) return [fin({ outcome: "BLOCKED", blocker: ctx.sport === "americanfootball_nfl" ? "no venue geography is on file for NFL stadiums (football/venues covers college venues only)" : "no venue geography is on file for the home team", ms: 0 }, g, this)];
+      if (!venue || num(venue.lat) == null || num(venue.lon) == null) return [fin({ outcome: "BLOCKED", blocker: ctx.sport === "americanfootball_nfl" ? "no venue geography on the home side's identity profile (football/venues/nfl_stadiums.json has no verified row for this club, or the identity build predates it)" : "no venue geography is on file for the home team", ms: 0 }, g, this)];
       if (venue.dome) return [fin({ outcome: "SKIPPED", blocker: `${venue.name} is a dome`, ms: 0 }, g, this)];
       const kick = ctx.kickoff ? Date.parse(ctx.kickoff) : NaN;
       if (!Number.isFinite(kick)) return [fin({ outcome: "UNAVAILABLE", blocker: "no kickoff time to read the forecast at", ms: 0 }, g, this)];

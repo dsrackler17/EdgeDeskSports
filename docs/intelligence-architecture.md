@@ -422,27 +422,30 @@ break-even price at the market line and a status chip (LEAN never renders
 as PLAY), the total and moneyline lines, sizing and the tier basis; the
 priced board is expandable below.
 
-**Data.** NFL starters and depth-chart backups carry this season's EPA per
-dropback and CPOE from the player-week feed (`tools/football/fetch_nfl_feeds.js`
-caches games, team-week and player-week). NFL venue geography is still
-absent: the venue register covers 5 of 38 stadiums used since 2025 and the
-sourced lookups this build could reach were blocked, so the live NFL
-forecast stays BLOCKED rather than guessed. The CFB availability feed
-returns zero records because ESPN's depth and participation endpoints
-answer 403/404 to the sync; that is an access failure at the source, not a
-parser fault.
+**Data (Slice 5 closed the gaps).** NFL starters and depth-chart backups
+carry this season's EPA per dropback and CPOE from the player-week feed
+(`tools/football/fetch_nfl_feeds.js` caches games, team-week and
+player-week). The five limitations the pricer shipped with are now data
+sets of their own:
+
+| gap | what was built | source | how it is checked |
+|---|---|---|---|
+| NFL venue geography | `football/venues/nfl_stadiums.json`: 40 stadiums (30 home venues with aliases for renamings, 10 international) with coordinates, roof, surface, time zone | hand-entered; no geocoder or reference API is reachable from the build environment | `tools/football/verify_nfl_stadiums.js`: within 2 km of the college venue register where a stadium also hosts college games (5 stadiums, all within 0.01 km), roof and surface against nflverse games.csv (three games minimum), the home state's bounding box, the time zone against the longitude; a failed row is REFUSED and never read. The identity build puts the verified venue on every NFL profile, the slate build fetches the kickoff forecast from open-meteo through the same module the college build uses, and the live forecast provider is no longer BLOCKED for the NFL |
+| OL availability history | `football/pricing/injuries_nfl.json`: the official report 2009-2025 as counts by position group per team-week, with the linemen and quarterbacks listed Out or Doubtful named | nflverse injuries_<season>.csv (public, keyless) | `tools/football/build_injury_archive.js --check`; the feature intake gains nine injury arms (OL, QB, all-position, DL, DB, WR/TE differences; sums for the total). On 2019-2025 none is VALIDATED: `out_diff` and `qb_out_sum` are CANDIDATES, the rest REJECTED, each with its reasons |
+| NFL openers | `football/pricing/openers_nfl.json`: EdgeDesk's own opener ledger, the first number the build sees for every upcoming game, every later number, and the last before the result | the nflverse consensus feed, captured by the injury sync every six hours, the starter build daily and the weekly build | nothing is backfilled: a game first seen with a result gets no opener; the CLV scorecard reports whether the market moved from the opener toward the desk's fair line; per-book openers for captured signals stay in `book_quote_ticks` |
+| web search | `football/notes/current.json`, the desk's notebook: what a person looked up, with the team, the question it answers, the text, the source name and url, the publication time, the recorder and an expiry (`tools/football/add_note.js`) | a person, with a receipt | the investigation loop reads it as the `desk_notes` provider and reports each note as FOUND from its source at its publication time, never as a search; a note without a url, a publication time or a recorder is refused; expired notes are not read |
+| CFB availability | `football/availability/manual/<week>.csv` + `football/availability/import_corrections.js`: a batch of operator corrections through the same narrow door as `record_correction.js` | a person, from the conference report or the school's release | every row is validated by `operator.js` (named player, fixture, source name and url, publication time, recorder); refused rows are printed with reasons and never written. ESPN's depth and participation endpoints still answer 403/404 to the sync, so the official feed stays down and the manual path is the live one |
 
 ## 12. Next slices
 
 **Market intelligence.** Per-book board from `book_quotes`, movement series
-from `signal_ticks`, opener point capture for the NFL (the archive carries
-only the close), movement classification with honest unknown states, and
-the closing-line scorecard run on a schedule. Still open: NFL venue
-geography from a sourced table, travel distance and time zone, coordinator
-turnover, a historical injury archive so OL availability can enter the
-feature intake, an NFL opponent-adjusted expected margin for the form read,
-an alternative CFB availability source, and the web-search provider
-verified against a live key.
+from `signal_ticks`, movement classification with honest unknown states,
+and the closing-line scorecard run on a schedule over the opener ledger.
+Still open: an independent coordinate check for the 35 NFL stadiums the
+college register does not cover (a reachable geocoder or a sourced table),
+travel distance, coordinator turnover, an NFL opponent-adjusted expected
+margin for the form read, a reachable official CFB availability feed, and
+the web-search provider verified against a live key.
 
 **Slice 5 — the learning loop, scheduled.** Grade `research_packets` on a
 schedule, run the postmortem over the grades view, publish drift and

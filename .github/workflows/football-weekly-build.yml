@@ -298,6 +298,14 @@ jobs:
         run: node tools/football/build_lines_archive.js
         continue-on-error: true
 
+      - name: Injury archive (official report, every season)
+        run: node tools/football/build_injury_archive.js
+        continue-on-error: true
+
+      - name: NFL stadium table verification
+        run: node tools/football/verify_nfl_stadiums.js
+        continue-on-error: true
+
       - name: Pricing validation (NFL replay, CFB report copy)
         run: node tools/football/validate_pricing.js && node tools/football/validate_pricing.js --sport cfb
         continue-on-error: true
@@ -411,4 +419,5 @@ jobs:
             football/fbs/coverage.json football/fbs/slate.json \
             football/starters football/matchup \
             football/venues football/coaching \
-            football/pricing football/validation/pricing_nfl.json football/validation/pricing_cfb.json
+            football/pricing football/validation/pricing_nfl.json football/validation/pricing_cfb.json \
+            football/validation/feature-status-nfl.json football/venues/nfl_stadiums.verification.json

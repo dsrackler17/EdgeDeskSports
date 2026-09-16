@@ -64,6 +64,7 @@ const SCHEMA = 'edgedesk_pricing_validation_v1';
 const CACHE = path.join(ROOT, 'football', 'nfl', '.cache');
 const STW = (s) => path.join(CACHE, ('https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_' + s + '.csv').replace(/[^a-z0-9.]+/gi, '_').slice(-120));
 const ARCHIVE = path.join(ROOT, 'football', 'pricing', 'lines_nfl.json');
+const INJURIES = path.join(ROOT, 'football', 'pricing', 'injuries_nfl.json');
 const OUT_DIR = path.join(ROOT, 'football', 'validation');
 const BREAK_EVEN = 0.5238; /* -110 both ways */
 const THRESHOLDS = [0.5, 1, 1.5, 2, 3, 4, 6];
@@ -94,6 +95,10 @@ function ols(rows, xf, yf) {
 
 /* ------------------------------------------------------------- the replay */
 function replayNfl(archive, opts) {
+  opts = opts || {};
+  const inj = opts.injuries && opts.injuries.seasons ? opts.injuries.seasons : null;
+  const injFor = (season, week, team) => { const t = inj && inj[String(season)] && inj[String(season)].teams[team]; return t && t[String(week)] ? t[String(week)] : null; };
+  const grp = (w, g, k) => (w && w.groups && w.groups[g] ? w.groups[g][k] || 0 : 0);
   const games = archive.games.filter((g) => g.margin != null && g.season >= RULES.replay_from && g.season <= RULES.last && g.close.home_line != null);
   const stwByGame = {}; const seasonsLoaded = [];
   for (let s = RULES.replay_from; s <= RULES.last; s++) {
@@ -112,7 +117,9 @@ function replayNfl(archive, opts) {
       let p = null; try { p = E.predictGame(req); } catch (_) { p = null; }
       if (p && p.status === 'PREDICTED' && (st.ngames[g.home] || 0) >= 8 && (st.ngames[g.away] || 0) >= 8) {
         rows.push({ id: g.id, season: g.season, week: g.week, type: g.type, model: p.model.fair_spread, close: -g.close.home_line, margin: g.margin, model_total: p.model.fair_total, close_total: g.close.total, points: g.points, p_home: p.model.home_win_prob, ml_home: g.close.home_moneyline, ml_away: g.close.away_moneyline,
-          ctx: { dome: g.ctx.roof === 'dome' || g.ctx.roof === 'closed', temp: g.ctx.temp, wind: g.ctx.wind, rest_diff: (g.ctx.home_rest != null && g.ctx.away_rest != null) ? g.ctx.home_rest - g.ctx.away_rest : null, divisional: !!g.ctx.divisional, grass: g.ctx.surface === 'grass', qb_known: !!(g.ctx.home_qb_id && g.ctx.away_qb_id) } });
+          ctx: (() => { const hi = injFor(g.season, g.week, g.home), ai = injFor(g.season, g.week, g.away); const outs = (w) => (w ? (w.out || 0) + (w.doubtful || 0) : 0); const go = (w, x) => grp(w, x, 'out') + grp(w, x, 'doubtful');
+            return { dome: g.ctx.roof === 'dome' || g.ctx.roof === 'closed', temp: g.ctx.temp, wind: g.ctx.wind, rest_diff: (g.ctx.home_rest != null && g.ctx.away_rest != null) ? g.ctx.home_rest - g.ctx.away_rest : null, divisional: !!g.ctx.divisional, grass: g.ctx.surface === 'grass', qb_known: !!(g.ctx.home_qb_id && g.ctx.away_qb_id),
+              injuries_on_file: !!(hi || ai), out_home: outs(hi), out_away: outs(ai), ol_out_home: go(hi, 'OL'), ol_out_away: go(ai, 'OL'), qb_out_home: go(hi, 'QB'), qb_out_away: go(ai, 'QB'), dl_out_home: go(hi, 'DL'), dl_out_away: go(ai, 'DL'), db_out_home: go(hi, 'DB'), db_out_away: go(ai, 'DB'), wr_out_home: go(hi, 'WR') + go(hi, 'TE'), wr_out_away: go(ai, 'WR') + go(ai, 'TE') }; })() });
       } else refused++;
     }
     const pair = stwByGame[g.id];
@@ -229,12 +236,22 @@ const CANDIDATES = {
     { id: 'cold', label: 'kickoff temperature below 40F (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.temp != null && r.ctx.temp < 40 ? 1 : 0) },
     { id: 'wind', label: 'wind above 15 mph (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.wind != null && r.ctx.wind > 15 ? 1 : 0) },
     { id: 'qb_unknown', label: 'a starting quarterback unknown to the feed', f: (r) => (r.ctx && !r.ctx.qb_known ? 1 : 0) },
+    /* the injury archive (official report, Out + Doubtful), home minus away */
+    { id: 'ol_out_diff', label: 'offensive linemen out or doubtful, home minus away (official report)', f: (r) => (r.ctx ? r.ctx.ol_out_home - r.ctx.ol_out_away : 0), needs: 'injuries' },
+    { id: 'qb_out_diff', label: 'quarterbacks out or doubtful, home minus away', f: (r) => (r.ctx ? r.ctx.qb_out_home - r.ctx.qb_out_away : 0), needs: 'injuries' },
+    { id: 'out_diff', label: 'players out or doubtful, all positions, home minus away', f: (r) => (r.ctx ? r.ctx.out_home - r.ctx.out_away : 0), needs: 'injuries' },
+    { id: 'dl_out_diff', label: 'defensive linemen out or doubtful, home minus away', f: (r) => (r.ctx ? r.ctx.dl_out_home - r.ctx.dl_out_away : 0), needs: 'injuries' },
+    { id: 'db_out_diff', label: 'defensive backs out or doubtful, home minus away', f: (r) => (r.ctx ? r.ctx.db_out_home - r.ctx.db_out_away : 0), needs: 'injuries' },
+    { id: 'wr_out_diff', label: 'receivers and tight ends out or doubtful, home minus away', f: (r) => (r.ctx ? r.ctx.wr_out_home - r.ctx.wr_out_away : 0), needs: 'injuries' },
   ],
   total: [
     { id: 'dome', label: 'dome or closed roof', f: (r) => (r.ctx && r.ctx.dome ? 1 : 0) },
     { id: 'cold', label: 'kickoff temperature below 40F (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.temp != null && r.ctx.temp < 40 ? 1 : 0) },
     { id: 'wind', label: 'wind above 15 mph (outdoors)', f: (r) => (r.ctx && !r.ctx.dome && r.ctx.wind != null && r.ctx.wind > 15 ? 1 : 0) },
     { id: 'divisional', label: 'division game', f: (r) => (r.ctx && r.ctx.divisional ? 1 : 0) },
+    { id: 'out_sum', label: 'players out or doubtful, both sides summed', f: (r) => (r.ctx ? r.ctx.out_home + r.ctx.out_away : 0), needs: 'injuries' },
+    { id: 'ol_out_sum', label: 'offensive linemen out or doubtful, both sides summed', f: (r) => (r.ctx ? r.ctx.ol_out_home + r.ctx.ol_out_away : 0), needs: 'injuries' },
+    { id: 'qb_out_sum', label: 'quarterbacks out or doubtful, both sides summed', f: (r) => (r.ctx ? r.ctx.qb_out_home + r.ctx.qb_out_away : 0), needs: 'injuries' },
   ],
 };
 function pairedT(a, b) { /* paired two-sided t on per-game absolute errors: a = baseline, b = candidate */
@@ -247,6 +264,7 @@ function featureArms(rows, market) {
   const evalRows = rows.filter((r) => cfg.modelOf(r) != null && cfg.closeOf(r) != null && cfg.actualOf(r) != null && r.ctx);
   const arms = {};
   CANDIDATES[market].forEach((c) => {
+    if (c.needs === 'injuries' && !evalRows.some((r) => r.ctx.injuries_on_file)) { arms[c.id] = { label: c.label, market, status: 'NOT_EVALUATED', reasons: ['the injury archive (football/pricing/injuries_nfl.json) is not on file'], holdout_seasons: [], basis: 'requires the official injury report archive' }; return; }
     const seasons = []; const baseErr = [], candErr = []; let coefLast = null;
     for (let S = RULES.first_holdout; S <= RULES.last; S++) {
       const tune = evalRows.filter((r) => r.season < S && r.season >= RULES.first_eval), test = evalRows.filter((r) => r.season === S);
@@ -274,8 +292,8 @@ function featureArms(rows, market) {
 function featureStatus(rep) {
   return {
     schema: 'edgedesk_feature_status_nfl_v1', generated_at: new Date().toISOString(), rules: FEATURE_RULES,
-    frame: 'candidate context terms on top of the validated projection-market blend, NFL 2016-2025 replay, held out 2019-2025',
-    statuses: ['VALIDATED', 'CANDIDATE', 'REJECTED'], arms: { spread: featureArms(rep.rows, 'spread'), total: featureArms(rep.rows, 'total') },
+    frame: 'candidate context terms on top of the validated projection-market blend, NFL 2016-2025 replay, held out 2019-2025; injury terms from the official report archive (Out + Doubtful counts by position group)',
+    statuses: ['VALIDATED', 'CANDIDATE', 'REJECTED', 'NOT_EVALUATED'], arms: { spread: featureArms(rep.rows, 'spread'), total: featureArms(rep.rows, 'total') },
     note: 'A VALIDATED arm is a reviewed change to the engine or the blend, never an edit made here. Nothing in this file is applied to a price.',
   };
 }
@@ -283,14 +301,15 @@ function featureStatus(rep) {
 function buildNfl() {
   if (!fs.existsSync(ARCHIVE)) throw new Error('no closing-line archive; run tools/football/build_lines_archive.js first');
   const archive = JSON.parse(fs.readFileSync(ARCHIVE, 'utf8'));
-  const rep = replayNfl(archive);
+  let injuries = null; try { injuries = JSON.parse(fs.readFileSync(INJURIES, 'utf8')); } catch (_) { injuries = null; }
+  const rep = replayNfl(archive, { injuries });
   const spread = scoreMarket(rep.rows, { modelOf: (r) => r.model, closeOf: (r) => r.close, actualOf: (r) => r.margin });
   const total = scoreMarket(rep.rows, { modelOf: (r) => r.model_total, closeOf: (r) => r.close_total, actualOf: (r) => r.points });
   const moneyline = scoreMoneyline(rep.rows);
   try { const fsArt = featureStatus(rep); fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(path.join(OUT_DIR, 'feature-status-nfl.json'), JSON.stringify(fsArt, null, 1)); const flat = [].concat(Object.values(fsArt.arms.spread), Object.values(fsArt.arms.total)); console.log('feature intake: ' + flat.filter((a) => a.status === 'VALIDATED').length + ' validated, ' + flat.filter((a) => a.status === 'CANDIDATE').length + ' candidates, ' + flat.filter((a) => a.status === 'REJECTED').length + ' rejected -> football/validation/feature-status-nfl.json'); } catch (e) { console.error('feature intake failed: ' + e.message); }
   return {
     schema: SCHEMA, sport: 'americanfootball_nfl', generated_at: new Date().toISOString(),
-    frame: { engine: 'football/engine.js ' + (E.version() || ''), params_trained_through: E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : null, replay: 'cold from ' + RULES.replay_from + ' in kickoff order; seeds discarded; a game is projected from the state before it and absorbed after; both clubs need 8 absorbed games', eval_window: RULES.first_eval + '-' + RULES.last, holdout_window: RULES.first_holdout + '-' + RULES.last, archive: path.relative(ROOT, ARCHIVE), seasons_loaded: rep.seasons_loaded, games_scored: rep.rows.length, games_absorbed: rep.absorbed, refused: rep.refused, without_team_week_rows: rep.no_rows,
+    frame: { engine: 'football/engine.js ' + (E.version() || ''), params_trained_through: E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : null, replay: 'cold from ' + RULES.replay_from + ' in kickoff order; seeds discarded; a game is projected from the state before it and absorbed after; both clubs need 8 absorbed games', eval_window: RULES.first_eval + '-' + RULES.last, holdout_window: RULES.first_holdout + '-' + RULES.last, archive: path.relative(ROOT, ARCHIVE), injury_archive: injuries ? path.relative(ROOT, INJURIES) + ' (' + (injuries.counts ? injuries.counts.first_season + '-' + injuries.counts.last_season : '?') + ')' : null, seasons_loaded: rep.seasons_loaded, games_scored: rep.rows.length, games_absorbed: rep.absorbed, refused: rep.refused, without_team_week_rows: rep.no_rows,
       caveats: ['league-mean priors come from the shipped parameter set (trained through ' + (E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : '?') + '); the club ratings start at zero', 'the close is nflverse’s consensus number, not a book’s; no opener is on file for the NFL, so open-to-close value cannot be measured here', 'quarterback starts are absorbed without pass-deviation splits, as the live board does'] },
     rules: RULES, markets: { spread, total, moneyline },
     note: 'A number that has not cleared this file is a projection, not a price. Tiers are read by the pricing kernel; nothing here promotes itself.',

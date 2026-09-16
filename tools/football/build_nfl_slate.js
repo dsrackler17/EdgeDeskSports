@@ -43,6 +43,35 @@ const OUT_DIR = path.join(ROOT, 'football', 'nfl');
 const OUT = path.join(OUT_DIR, 'slate.json');
 const CACHE = path.join(OUT_DIR, '.cache');
 const SCHEMA = 'edgedesk_nfl_slate_v1';
+let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
+let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
+const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
+
+/* Slice 4: THE NFL FORECAST. The same keyless provider and the same module the
+   college build uses, joined on the verified NFL stadium table. Only observed
+   forecasts are written into the shared store, keyed by the nflverse game id
+   the edge function reads; college entries are preserved. */
+function nflForecastWanted(games) {
+  if (!NV) return [];
+  return games.filter((g) => g.kickoff).map((g) => ({ game_id: g.game_id, kickoff: g.kickoff, venue: NV.venueFor({ stadium: g.venue, club: g.home_code }) }));
+}
+async function fetchNflForecasts(games, opts) {
+  const wanted = nflForecastWanted(games);
+  const report = { requested: wanted.length, no_venue: wanted.filter((w) => !w.venue).length, answered: 0, dome: 0, failed: 0, written: false, error: null };
+  if (!wanted.length || !WX || !RECOVERY || (opts && opts.offline)) { report.error = !WX ? 'weather module unavailable' : (opts && opts.offline ? 'offline' : null); return { report, byGame: {} }; }
+  let prev = {}; try { prev = JSON.parse(fs.readFileSync(FORECAST_STORE, 'utf8')); } catch (_) { prev = {}; }
+  try {
+    const sess = RECOVERY.session({ host_min_gap_ms: 80, budget_ms: 60000 });
+    const wx = await WX.fetchForGames(sess, wanted, { concurrency: 4, previous: (prev && prev.by_game) || {} });
+    report.answered = wx.report.answered; report.dome = wx.report.dome; report.failed = wx.report.failed;
+    if (wx.report.answered > 0 || wx.report.dome > 0) {
+      const merged = Object.assign({}, (prev && prev.by_game) || {}, WX.forCommit(wx.byGame, wanted));
+      fs.writeFileSync(FORECAST_STORE, JSON.stringify(Object.assign({}, prev, { schema: prev.schema || 'edgedesk_forecast_store_v1', generated_at: new Date().toISOString(), source: (prev.source ? prev.source + '; ' : '') .replace(/; NFL games joined on football\/venues\/nfl_stadiums\.json.*$/, '') + 'NFL games joined on football/venues/nfl_stadiums.json (hand-entered, verified)', by_game: merged }), null, 1) + '\n');
+      report.written = true;
+    }
+    return { report, byGame: wx.byGame };
+  } catch (e) { report.error = String(e && e.message || e); return { report, byGame: {} }; }
+}
 
 function r2(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function r4(v) { const n = Number(v); return Number.isFinite(n) ? Math.round(n * 10000) / 10000 : null; }
@@ -205,9 +234,13 @@ async function build(opts) {
     teams[code] = row;
   }
 
+  const forecast = await fetchNflForecasts(games, { offline: !!opts.offline });
+  games.forEach((g) => { const w = forecast.byGame[String(g.game_id)]; const v = nflForecastWanted([g])[0]; g.venue_geography = v && v.venue ? { name: v.venue.name, lat: v.venue.lat, lon: v.venue.lon, tz_name: v.venue.tz_name, roof: v.venue.roof, verification: v.venue.verification, source: v.venue.source } : null; if (w) g.forecast = w; });
+
   return {
     schema: SCHEMA, version: 1, season, generated_at: new Date().toISOString(),
     source: 'nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html',
+    forecasts: forecast.report,
     engine: { model_version: meta.model_version, feature_version: meta.nfl && meta.nfl.feature_version, trained_through: meta.nfl && meta.nfl.trained_through, built_at: meta.built_at,
       /* THE MARGIN DISTRIBUTION, so the desk can read a nearby line under the
          model's own residuals: sigma, the pooled residual pmf and the mass on
@@ -276,5 +309,5 @@ async function main() {
   fs.writeFileSync(OUT, text);
   console.log('wrote ' + path.relative(ROOT, OUT));
 }
-module.exports = { build, SCHEMA, OUT, etToIso };
+module.exports = { build, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso };
 if (require.main === module) main();
