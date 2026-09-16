@@ -275,6 +275,9 @@ jobs:
 
       - name: Coaching continuity
         run: node football/coaching/build_coaching.js
+
+      - name: Matchup metrics for the research desk
+        run: node tools/football/build_matchup_metrics.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 
@@ -383,6 +386,7 @@ jobs:
             football/data/box football/rankings/current.json \
             football/rankings/snapshots football/rankings/params.js \
             football/rankings/history.json football/rankings/health.json \
+            football/matchup/metrics.json \
             football/fbs/coverage.json football/fbs/slate.json \
             football/starters football/matchup \
             football/venues football/coaching
